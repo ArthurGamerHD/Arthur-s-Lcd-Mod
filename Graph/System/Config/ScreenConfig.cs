@@ -11,10 +11,13 @@ namespace Graph.System.Config
     [ProtoContract]
     public class ScreenConfig
     {
+        bool _customizedColors;
         public const float MAX_SCALE = 10f;
         public const float MIN_SCALE = 0.1f;
+
+        IMyTerminalBlock _parent;
         
-        public ScreenConfig() 
+        public ScreenConfig()
         {
             //Required by Protobuf
         }
@@ -22,13 +25,23 @@ namespace Graph.System.Config
         public ScreenConfig(int i, IMyTerminalBlock parent)
         {
             ScreenIndex = i;
-            HeaderColor = FactionHelper.GetIconColor(parent);
+            _parent = parent;
+            ResetDefaultColors();
+        }
+
+        public void ResetDefaultColors()
+        {
+            if(_parent != null)
+                HeaderColor = FactionHelper.GetIconColor(_parent);
+
+            ErrorColor = new Color(96, 32, 32);
+            WarningColor = new Color(224, 160, 16);
         }
 
         [ProtoMember(1)] public int ScreenIndex { get; set; }
 
         [ProtoMember(2)] public Color HeaderColor { get; set; }
-        
+
         [ProtoMember(11)] public bool TitleVisible { get; set; } = true;
 
         [ProtoMember(3)] public long[] SelectedBlocks { get; set; } = Array.Empty<long>();
@@ -56,10 +69,7 @@ namespace Graph.System.Config
 
                 return Array.Empty<MyDefinitionId>();
             }
-            set
-            {
-                SelectedDefinition = value.Select(a => a.ToString()).ToArray();
-            }
+            set { SelectedDefinition = value.Select(a => a.ToString()).ToArray(); }
         }
 
         public float Scale
@@ -76,16 +86,33 @@ namespace Graph.System.Config
         [ProtoMember(12)] public int DisplayInternal { get; set; }
 
         [ProtoMember(13)] public bool HideEmpty { get; set; } = true;
-        
+
         [ProtoMember(14)] public Color ErrorColor { get; set; } = new Color(96, 32, 32);
         [ProtoMember(15)] public Color WarningColor { get; set; } = new Color(224, 160, 16);
         [ProtoMember(16)] public float Rotation { get; set; }
+
+        [ProtoMember(17)]
+        public bool CustomizedColors
+        {
+            get
+            {
+                return _customizedColors;
+            }
+            set
+            {
+                if(!value)
+                    ResetDefaultColors();
+
+                _customizedColors = value;
+            }
+        }
+
         public SortMethod SortMethod
         {
             get { return (SortMethod)SortInternal; }
             set { SortInternal = (int)value; }
         }
-        
+
         public DisplayMode DisplayMode
         {
             get { return (DisplayMode)DisplayInternal; }
@@ -110,6 +137,7 @@ namespace Graph.System.Config
             ErrorColor = newValue.ErrorColor;
             WarningColor = newValue.WarningColor;
             Rotation = newValue.Rotation;
+            CustomizedColors = newValue.CustomizedColors;
         }
     }
 }

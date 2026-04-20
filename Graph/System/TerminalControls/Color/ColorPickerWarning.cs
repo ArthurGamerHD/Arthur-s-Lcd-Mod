@@ -21,6 +21,12 @@ namespace Graph.System.TerminalControls.Color
             colorPicker.Title = MyStringId.GetOrCompute("ContractScreen_Aministration_CreatinResultCaption_Error");
             TerminalControl = colorPicker;
         }
+        
+        public override bool Visible(IMyTerminalBlock block)
+        {
+            var config = ConfigManager.GetConfigForCurrentScreen(block);
+            return (config?.CustomizedColors ?? false) && base.Visible(block);
+        }
 
         void Setter(IMyTerminalBlock block, VRageMath.Color color)
         {

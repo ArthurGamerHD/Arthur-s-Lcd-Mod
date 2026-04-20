@@ -22,6 +22,12 @@ namespace Graph.System.TerminalControls.Color
             TerminalControl = colorPicker;
         }
 
+        public override bool Visible(IMyTerminalBlock block)
+        {
+            var config = ConfigManager.GetConfigForCurrentScreen(block);
+            return (config?.CustomizedColors ?? false) && base.Visible(block);
+        }
+        
         void Setter(IMyTerminalBlock block, VRageMath.Color color)
         {
             var config = ConfigManager.GetConfigForCurrentScreen(block);
