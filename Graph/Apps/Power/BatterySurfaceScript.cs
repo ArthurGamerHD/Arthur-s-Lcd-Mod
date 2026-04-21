@@ -32,10 +32,8 @@ namespace Graph.Apps.Power
         const float SCROLLER_W     = 8f;
         const int   SCROLL_TICK    = 12;
 
-        const float WARN_THRESHOLD  = 0.20f;
-        const float ERROR_THRESHOLD = 0.01f;
-
-        static readonly Color IconColorGood = new Color(44, 200, 44);
+        const float WARN_THRESHOLD  = 0.35f;
+        const float ERROR_THRESHOLD = 0.15f;
 
         readonly List<IMyBatteryBlock> _batteries = new List<IMyBatteryBlock>();
         readonly List<IMyBatteryBlock> _visible   = new List<IMyBatteryBlock>();
@@ -428,9 +426,9 @@ namespace Graph.Apps.Power
 
         Color GetBatteryIconColor(float ratio)
         {
-            if (ratio < ERROR_THRESHOLD)  return Config.ErrorColor;
-            if (ratio <= WARN_THRESHOLD)  return Config.WarningColor;
-            return IconColorGood;
+            if (ratio < ERROR_THRESHOLD) return Config.ErrorColor;
+            if (ratio < WARN_THRESHOLD)  return Config.WarningColor;
+            return Config.HeaderColor;
         }
     }
 }
