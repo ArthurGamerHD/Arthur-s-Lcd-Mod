@@ -45,6 +45,11 @@ namespace Graph.Apps.Power
         // Aggregate charge state shown in the title (set each frame by CollectBatteries)
         string _aggregateStatus = string.Empty;
 
+        // Footer aggregate values (set each frame by CollectBatteries)
+        float  _avgCharge   = 0f;
+        string _timeLabel   = "--:--";
+        bool   _isCharging  = false;
+
         // -----------------------------------------------------------------------
         // Lifecycle
         // -----------------------------------------------------------------------
@@ -55,7 +60,8 @@ namespace Graph.Apps.Power
         protected override void LayoutChanged()
         {
             base.LayoutChanged();
-            _labelsReady = false;
+            _labelsReady  = false;
+            FooterHeight  = TITLE_BAR_HEIGHT_BASE * Scale;
         }
 
         public override void Run()
@@ -114,6 +120,62 @@ namespace Graph.Apps.Power
                 _aggregateStatus = _labelDischarging;
             else
                 _aggregateStatus = string.Empty;
+
+            // Footer aggregates
+            if (_visible.Count > 0)
+            {
+                float sumRatio = 0f;
+                float totalStored = 0f;
+                float totalMax    = 0f;
+                float totalNetIn  = 0f;
+                float totalNetOut = 0f;
+                for (int i = 0; i < _visible.Count; i++)
+                {
+                    var b = _visible[i];
+                    sumRatio    += GetRatio(b);
+                    totalStored += b.CurrentStoredPower;
+                    totalMax    += b.MaxStoredPower;
+                    totalNetIn  += b.CurrentInput;
+                    totalNetOut += b.CurrentOutput;
+                }
+                _avgCharge  = sumRatio / _visible.Count;
+                _isCharging = totalNetIn > totalNetOut + eps;
+
+                float netRate = Math.Abs(totalNetIn - totalNetOut); // MW
+                if (netRate < eps)
+                {
+                    _timeLabel = "--:--";
+                }
+                else if (_isCharging)
+                {
+                    float remainingMWh = totalMax - totalStored;
+                    float hours = remainingMWh / netRate;
+                    _timeLabel = FormatTimeHours(hours);
+                }
+                else
+                {
+                    float hours = totalStored / netRate;
+                    _timeLabel = FormatTimeHours(hours);
+                }
+            }
+            else
+            {
+                _avgCharge  = 0f;
+                _isCharging = false;
+                _timeLabel  = "--:--";
+            }
+        }
+
+        static string FormatTimeHours(float hours)
+        {
+            if (hours < 0f) return "--:--";
+            // Cap display at 99h 59m to avoid overflow
+            if (hours > 99.99f) return ">99h";
+            int h = (int)hours;
+            int m = (int)((hours - h) * 60f);
+            if (h > 0)
+                return h.ToString() + "h " + m.ToString() + "m";
+            return m.ToString() + "m";
         }
 
         // -----------------------------------------------------------------------
@@ -169,6 +231,74 @@ namespace Graph.Apps.Power
 
             sprites.Add(MySprite.CreateClearClipRect());
             CaretY += TITLE_BAR_HEIGHT_BASE * Scale;
+        }
+
+        // -----------------------------------------------------------------------
+        // Footer — separator line + avg charge (left) + time remaining (right)
+        // -----------------------------------------------------------------------
+
+        protected override void DrawFooter(List<MySprite> sprites)
+        {
+            FooterHeight = TITLE_BAR_HEIGHT_BASE * Scale;
+            float footerTop = ViewBox.Bottom - FooterHeight;
+            float margin    = ViewBox.Size.X * Margin;
+            Color fg        = Surface.ScriptForegroundColor;
+            Color accent    = Config.HeaderColor;
+
+            // Separator line — 1px tall, full content width
+            var sepColor = new Color(fg.R, fg.G, fg.B, 160);
+            sprites.Add(new MySprite
+            {
+                Type      = SpriteType.TEXTURE,
+                Data      = "SquareSimple",
+                Position  = new Vector2(ViewBox.Center.X, footerTop),
+                Size      = new Vector2(ViewBox.Width - margin * 2f, Math.Max(1f, Scale)),
+                Color     = sepColor,
+                Alignment = TextAlignment.CENTER
+            });
+
+            // Vertical center of the footer band
+            float bandCY = footerTop + FooterHeight / 2f;
+
+            // --- Left side: battery icon + "Avg: 75%" ---
+            float iconSize   = FooterHeight * 0.55f;
+            float iconLeft   = ViewBox.X + margin;
+            var   iconCenter = new Vector2(iconLeft + iconSize / 2f, bandCY);
+
+            Color iconColor = GetBatteryIconColor(_avgCharge);
+            DrawBatteryGeometry(sprites, iconCenter, iconSize * 0.55f, iconSize, _avgCharge, iconColor, fg);
+
+            string avgText   = "Avg: " + FormatingHelper.PercentageToString(_avgCharge);
+            float  textLeft  = iconLeft + iconSize + margin * 0.5f;
+            float  textScale = Scale * 0.75f;
+
+            sprites.Add(new MySprite
+            {
+                Type            = SpriteType.TEXT,
+                Data            = avgText,
+                Position        = new Vector2(textLeft, bandCY - GetSizeInPixel(avgText, "White", textScale, Surface).Y / 2f),
+                RotationOrScale = textScale,
+                Color           = fg,
+                Alignment       = TextAlignment.LEFT,
+                FontId          = "White"
+            });
+
+            // --- Right side: direction arrow + time label ---
+            // Arrow: "+" when charging, "-" when discharging; use a small accent-colored glyph
+            string arrow     = _isCharging ? "+" : "-";
+            string rightText = arrow + " " + _timeLabel;
+            float  rightX    = ViewBox.Right - margin;
+
+            AddHeaderSprite(sprites, new MySprite
+            {
+                Type            = SpriteType.TEXT,
+                Data            = rightText,
+                Position        = new Vector2(rightX, bandCY - GetSizeInPixel(rightText, "White", textScale, Surface).Y / 2f),
+                RotationOrScale = textScale,
+                Color           = accent,
+                Alignment       = TextAlignment.RIGHT,
+                FontId          = "White"
+            });
         }
 
         // -----------------------------------------------------------------------
