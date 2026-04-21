@@ -41,7 +41,8 @@ namespace Graph.System.TerminalControls
                 CargoFilledSurfaceScript.ID,
                 AntennaSurfaceScript.ID,
                 IntegrityMonitorSurfaceScript.ID,
-                TopEnergyConsumptionSurfaceScript.ID
+                TopEnergyConsumptionSurfaceScript.ID,
+                EnergyDashboardSurfaceScript.ID
             };
 
         /// <summary>

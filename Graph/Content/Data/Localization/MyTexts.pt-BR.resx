@@ -12,4 +12,7 @@
   <data name="LCDMod_TopEnergy" xml:space="preserve">
     <value>Top Consumo de Energia</value>
   </data>
+  <data name="LCDMod_EnergyDashboard" xml:space="preserve">
+    <value>Painel de Energia</value>
+  </data>
 </root>
