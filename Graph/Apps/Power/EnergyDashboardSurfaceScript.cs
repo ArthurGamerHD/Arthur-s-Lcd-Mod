@@ -287,7 +287,7 @@ namespace Graph.Apps.Power
             float rowH     = 21f * Scale;
             float bigBarH  = 28f * Scale;
             float divH     = Math.Max(1f, Scale);
-            float batH     = rowH * 1.9f;
+            float batH     = rowH * 2.4f;
 
             int prodRows = 0;
             if (_solar.MaxW > 0)       prodRows++;
@@ -310,6 +310,7 @@ namespace Graph.Apps.Power
             // Section B: production rows
             if (prodRows > 0)
             {
+                y += gapH;
                 DrawProductionSection(sprites, xLeft, xRight, contentW, y, rowH);
                 y += prodRows * rowH + gapH;
 
@@ -347,8 +348,8 @@ namespace Graph.Apps.Power
             Color accent = Config.HeaderColor;
             float ts     = Scale * 0.72f;
 
-            string consumeLabel = "Consumo: " + FormatingHelper.WattsToString(_totalConsumptionW);
-            string capLabel     = "Max: " + FormatingHelper.WattsToString(_totalMaxW);
+            string consumeLabel = "Consumo atual: " + FormatingHelper.WattsToString(_totalConsumptionW);
+            string capLabel     = "Capacidade max: " + FormatingHelper.WattsToString(_totalMaxW);
 
             sprites.Add(new MySprite
             {
@@ -361,7 +362,7 @@ namespace Graph.Apps.Power
             {
                 Type = SpriteType.TEXT, Data = capLabel,
                 Position = new Vector2(xRight, y),
-                RotationOrScale = ts, Color = accent,
+                RotationOrScale = ts, Color = fg,
                 Alignment = TextAlignment.RIGHT, FontId = "White"
             });
 
@@ -423,8 +424,8 @@ namespace Graph.Apps.Power
         {
             Color fg     = Surface.ScriptForegroundColor;
             Color accent = Config.HeaderColor;
-            float labelW = contentW * 0.28f;
-            float barW   = contentW * 0.47f;
+            float labelW = contentW * 0.24f;
+            float barW   = contentW * 0.54f;
             float numW   = contentW - labelW - barW;
 
             if (_solar.MaxW > 0)
@@ -459,11 +460,13 @@ namespace Graph.Apps.Power
         {
             float ratio    = cat.MaxW > 0 ? (float)Math.Min(1.0, cat.CurrentW / cat.MaxW) : 0f;
             float rowCY    = y + rowH / 2f;
-            float ts       = Scale * 0.70f;
-            float barH     = rowH * 0.50f;
+            float ts       = Scale * 0.68f;
+            float tsBar    = Scale * 0.62f;
+            float barH     = rowH * 0.82f;
             Color barBg    = new Color(fg.R, fg.G, fg.B, 25);
             float barXLeft = xLeft + labelW;
 
+            // Source label (left column)
             Vector2 labelSz = GetSizeInPixel(label, "White", ts, Surface);
             sprites.Add(new MySprite
             {
@@ -473,6 +476,7 @@ namespace Graph.Apps.Power
                 Alignment = TextAlignment.LEFT, FontId = "White"
             });
 
+            // Bar background
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXTURE, Data = "SquareSimple",
@@ -480,6 +484,7 @@ namespace Graph.Apps.Power
                 Size = new Vector2(barW, barH), Color = barBg, Alignment = TextAlignment.CENTER
             });
 
+            // Bar fill
             if (ratio > 0.005f)
             {
                 float fillW = barW * ratio;
@@ -491,13 +496,25 @@ namespace Graph.Apps.Power
                 });
             }
 
-            string valText = FormatingHelper.WattsToString(cat.CurrentW);
-            Vector2 valSz  = GetSizeInPixel(valText, "White", ts, Surface);
+            // Current production — centred inside the bar
+            string curText = FormatingHelper.WattsToString(cat.CurrentW);
+            Vector2 curSz  = GetSizeInPixel(curText, "White", tsBar, Surface);
             sprites.Add(new MySprite
             {
-                Type = SpriteType.TEXT, Data = valText,
-                Position = new Vector2(barXLeft + barW + numW, rowCY - valSz.Y / 2f),
-                RotationOrScale = ts, Color = accent,
+                Type = SpriteType.TEXT, Data = curText,
+                Position = new Vector2(barXLeft + barW / 2f, rowCY - curSz.Y / 2f),
+                RotationOrScale = tsBar, Color = fg,
+                Alignment = TextAlignment.CENTER, FontId = "White"
+            });
+
+            // Max capacity — outside, right of bar (dimmed)
+            string maxText = FormatingHelper.WattsToString(cat.MaxW);
+            Vector2 maxSz  = GetSizeInPixel(maxText, "White", ts, Surface);
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXT, Data = maxText,
+                Position = new Vector2(barXLeft + barW + numW, rowCY - maxSz.Y / 2f),
+                RotationOrScale = ts, Color = new Color(fg.R, fg.G, fg.B, 170),
                 Alignment = TextAlignment.RIGHT, FontId = "White"
             });
         }
@@ -509,76 +526,111 @@ namespace Graph.Apps.Power
         void DrawLineGraph(List<MySprite> sprites, float xLeft, float xRight, float contentW,
             float y, float height, bool isProduction)
         {
-            Color fg     = Surface.ScriptForegroundColor;
-            Color accent = Config.HeaderColor;
-            Color warn   = Config.WarningColor;
-
-            string label   = isProduction ? "Produção" : "Consumo";
+            Color fg        = Surface.ScriptForegroundColor;
+            Color accent    = Config.HeaderColor;
+            Color warn      = Config.WarningColor;
             Color lineColor = isProduction ? accent : warn;
-            float ts       = Scale * 0.65f;
-            float labelH   = GetSizeInPixel(label, "White", ts, Surface).Y;
+            float ts        = Scale * 0.62f;
 
-            // Background
-            Color graphBg = new Color(fg.R, fg.G, fg.B, 12);
-            float plotY   = y + labelH + 2f * Scale;
-            float plotH   = Math.Max(4f, height - labelH - 2f * Scale);
-            float plotW   = contentW;
+            string label = isProduction ? "Produção de energia" : "Consumo de energia";
+            float  labelH = GetSizeInPixel(label, "White", ts, Surface).Y;
 
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE, Data = "SquareSimple",
-                Position = new Vector2(xLeft + plotW / 2f, plotY + plotH / 2f),
-                Size = new Vector2(plotW, plotH),
-                Color = graphBg, Alignment = TextAlignment.CENTER
-            });
-
-            // Label top-left
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXT, Data = label,
-                Position = new Vector2(xLeft, y),
-                RotationOrScale = ts, Color = lineColor,
-                Alignment = TextAlignment.LEFT, FontId = "White"
-            });
-
-            if (_sampleCount < 2)
-                return;
-
+            // ── scan samples to find max value ──
             float nowTime     = GetCurrentTime();
             float windowSecs  = GetWindowSeconds();
             float windowStart = nowTime - windowSecs;
 
-            // Collect samples within time window
-            double maxVal = 0;
-            int validCount = 0;
-
-            for (int i = 0; i < _sampleCount; i++)
+            double maxData  = 0;
+            int    validCnt = 0;
+            if (_sampleCount >= 2)
             {
-                int idx = (_sampleHead - _sampleCount + i + GRAPH_POINTS) % GRAPH_POINTS;
-                var s = _samples[idx];
-                if (s.TimeS < windowStart) continue;
-
-                double val = isProduction ? s.ProductionW : s.ConsumptionW;
-                if (val > maxVal) maxVal = val;
-                validCount++;
+                for (int i = 0; i < _sampleCount; i++)
+                {
+                    int idx = (_sampleHead - _sampleCount + i + GRAPH_POINTS) % GRAPH_POINTS;
+                    var s = _samples[idx];
+                    if (s.TimeS < windowStart) continue;
+                    double v = isProduction ? s.ProductionW : s.ConsumptionW;
+                    if (v > maxData) maxData = v;
+                    validCnt++;
+                }
             }
 
-            if (validCount < 2 || maxVal < 1.0) return;
+            // ── nice-step Y axis ──
+            double step    = CalcNiceStep(maxData > 0 ? maxData : 1.0, 4);
+            double axisMax = Math.Ceiling(maxData / step) * step;
+            if (axisMax < step) axisMax = step;
+            int numSteps = (int)Math.Round(axisMax / step);
 
-            // Draw max-value label (top right)
-            string maxLabel = FormatingHelper.WattsToString(maxVal);
-            Vector2 maxSz   = GetSizeInPixel(maxLabel, "White", ts, Surface);
+            // ── axis column width based on widest label ──
+            string topLabel  = FormatAxisWatts(axisMax);
+            float  axisW     = GetSizeInPixel(topLabel, "White", ts, Surface).X + 4f * Scale;
+
+            float plotXLeft = xLeft + axisW;
+            float plotW     = Math.Max(1f, contentW - axisW);
+            float plotY     = y + labelH + 2f * Scale;
+            float plotH     = Math.Max(4f, height - labelH - 2f * Scale);
+
+            // ── background ──
+            Color graphBg = new Color(fg.R, fg.G, fg.B, 12);
             sprites.Add(new MySprite
             {
-                Type = SpriteType.TEXT, Data = maxLabel,
-                Position = new Vector2(xRight, plotY),
-                RotationOrScale = ts, Color = new Color(fg.R, fg.G, fg.B, 160),
-                Alignment = TextAlignment.RIGHT, FontId = "White"
+                Type = SpriteType.TEXTURE, Data = "SquareSimple",
+                Position = new Vector2(plotXLeft + plotW / 2f, plotY + plotH / 2f),
+                Size = new Vector2(plotW, plotH),
+                Color = graphBg, Alignment = TextAlignment.CENTER
             });
 
-            // Plot line segments
+            // ── title label ──
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXT, Data = label,
+                Position = new Vector2(plotXLeft, y),
+                RotationOrScale = ts, Color = lineColor,
+                Alignment = TextAlignment.LEFT, FontId = "White"
+            });
+
+            // ── Y-axis labels + horizontal grid lines ──
+            Color axisColor = new Color(fg.R, fg.G, fg.B, 170);
+            Color gridColor = new Color(fg.R, fg.G, fg.B, 18);
+            float labelHHalf = GetSizeInPixel("0", "White", ts, Surface).Y / 2f;
+
+            for (int si = 0; si <= numSteps; si++)
+            {
+                double v      = si * step;
+                float  lineY  = plotY + plotH - (float)(v / axisMax) * plotH;
+                lineY = Math.Max(plotY, Math.Min(plotY + plotH, lineY));
+
+                // Grid line across plot area (skip baseline — just background)
+                if (si > 0)
+                {
+                    sprites.Add(new MySprite
+                    {
+                        Type = SpriteType.TEXTURE, Data = "SquareSimple",
+                        Position = new Vector2(plotXLeft + plotW / 2f, lineY),
+                        Size = new Vector2(plotW, Math.Max(1f, Scale * 0.5f)),
+                        Color = gridColor, Alignment = TextAlignment.CENTER
+                    });
+                }
+
+                // Y-axis label (right-aligned into the axis column)
+                string lbl   = FormatAxisWatts(v);
+                float  lblY  = lineY - labelHHalf;
+                lblY = Math.Max(plotY, Math.Min(plotY + plotH - labelHHalf * 2f, lblY));
+                sprites.Add(new MySprite
+                {
+                    Type = SpriteType.TEXT, Data = lbl,
+                    Position = new Vector2(xLeft + axisW - 2f * Scale, lblY),
+                    RotationOrScale = ts,
+                    Color = si == 0 ? new Color(fg.R, fg.G, fg.B, 110) : axisColor,
+                    Alignment = TextAlignment.RIGHT, FontId = "White"
+                });
+            }
+
+            if (validCnt < 2 || maxData < 1.0) return;
+
+            // ── plot line segments ──
             float prevX = 0f, prevY = 0f;
-            bool hasPrev = false;
+            bool  hasPrev       = false;
             float lineThickness = Math.Max(1.5f, Scale * 1.5f);
 
             for (int i = 0; i < _sampleCount; i++)
@@ -591,9 +643,9 @@ namespace Graph.Apps.Power
                     continue;
                 }
 
-                double val  = isProduction ? s.ProductionW : s.ConsumptionW;
-                float  px   = xLeft + (s.TimeS - windowStart) / windowSecs * plotW;
-                float  py   = plotY + plotH - (float)(val / maxVal) * plotH;
+                double val = isProduction ? s.ProductionW : s.ConsumptionW;
+                float  px  = plotXLeft + (s.TimeS - windowStart) / windowSecs * plotW;
+                float  py  = plotY + plotH - (float)(val / axisMax) * plotH;
                 py = Math.Max(plotY, Math.Min(plotY + plotH, py));
 
                 if (hasPrev)
@@ -604,6 +656,36 @@ namespace Graph.Apps.Power
                 prevY   = py;
                 hasPrev = true;
             }
+        }
+
+        // Returns a "nice" step value for ~targetDivisions equal intervals up to maxVal.
+        // Steps follow the 1-2-5 pattern (e.g. 10, 20, 50, 100, 200, 500, 1000 ...).
+        static double CalcNiceStep(double maxVal, int targetDivisions)
+        {
+            if (maxVal <= 0 || targetDivisions <= 0) return 1.0;
+
+            double rawStep  = maxVal / targetDivisions;
+            double mag      = Math.Pow(10, Math.Floor(Math.Log10(rawStep)));
+            double norm     = rawStep / mag;
+
+            double niceNorm;
+            if (norm <= 1.0)      niceNorm = 1;
+            else if (norm <= 2.0) niceNorm = 2;
+            else if (norm <= 5.0) niceNorm = 5;
+            else                  niceNorm = 10;
+
+            return niceNorm * mag;
+        }
+
+        // Formats a watt value as an integer with the appropriate unit (W / kW / MW).
+        static string FormatAxisWatts(double watts)
+        {
+            if (watts <= 0) return "0";
+            if (watts >= 1000000.0)
+                return ((int)Math.Round(watts / 1000000.0)).ToString() + " MW";
+            if (watts >= 1000.0)
+                return ((int)Math.Round(watts / 1000.0)).ToString() + " kW";
+            return ((int)Math.Round(watts)).ToString() + " W";
         }
 
         static void DrawLineSegment(List<MySprite> sprites, Vector2 p1, Vector2 p2,
@@ -644,38 +726,40 @@ namespace Graph.Apps.Power
             float y, float sectionH)
         {
             Color fg        = Surface.ScriptForegroundColor;
-            Color accent    = Config.HeaderColor;
             Color iconColor = GetBatteryIconColor(_avgBatteryCharge);
             float cy        = y + sectionH / 2f;
-            float ts        = Scale * 0.78f;
+            float ts        = Scale * 0.76f;
+            float tsSmall   = Scale * 0.63f;
 
-            // Horizontal battery icon: body lies on its side
-            float bodyH = sectionH * 0.62f;
-            float bodyW = bodyH * 2.8f;
+            // Wide horizontal battery icon (38% of content width)
+            float bodyH  = sectionH * 0.72f;
+            float bodyW  = contentW * 0.38f;
             float iconCX = xLeft + bodyW / 2f + 2f * Scale;
+            float pctScale = Math.Min(Scale * 0.90f, bodyH * 0.55f / 14f);
 
             DrawHorizontalBatteryIcon(sprites, Surface, new Vector2(iconCX, cy),
-                bodyW, bodyH, _avgBatteryCharge, iconColor, fg, Scale * 0.65f);
+                bodyW, bodyH, _avgBatteryCharge, iconColor, fg, pctScale);
 
-            float textX = iconCX + bodyW / 2f + 6f * Scale;
-
-            string avgText = "Avg: " + FormatingHelper.PercentageToString(_avgBatteryCharge);
-            Vector2 avgSz  = GetSizeInPixel(avgText, "White", ts, Surface);
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXT, Data = avgText,
-                Position = new Vector2(textX, cy - avgSz.Y / 2f),
-                RotationOrScale = ts, Color = iconColor,
-                Alignment = TextAlignment.LEFT, FontId = "White"
-            });
-
-            string stateText = (_isCharging ? "+" : "-") + " " + _timeLabel;
+            // State + time (right-aligned, two lines)
+            string stateWord = _isCharging ? "Carregando" : "Descarregando";
+            string stateText = stateWord + " — " + _timeLabel;
             Vector2 stSz     = GetSizeInPixel(stateText, "White", ts, Surface);
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT, Data = stateText,
-                Position = new Vector2(xRight, cy - stSz.Y / 2f),
-                RotationOrScale = ts, Color = accent,
+                Position = new Vector2(xRight, cy - stSz.Y - 1f * Scale),
+                RotationOrScale = ts, Color = fg,
+                Alignment = TextAlignment.RIGHT, FontId = "White"
+            });
+
+            int    batCount  = _batteries.Count;
+            string countText = batCount + (batCount == 1 ? " bateria" : " baterias");
+            Vector2 cSz      = GetSizeInPixel(countText, "White", tsSmall, Surface);
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXT, Data = countText,
+                Position = new Vector2(xRight, cy + 1f * Scale),
+                RotationOrScale = tsSmall, Color = new Color(fg.R, fg.G, fg.B, 170),
                 Alignment = TextAlignment.RIGHT, FontId = "White"
             });
         }
