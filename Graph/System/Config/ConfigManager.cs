@@ -145,6 +145,9 @@ namespace Graph.System.Config
                 if (provider.ParentGrid != block.CubeGrid.EntityId)
                     provider.ParentGrid = block.CubeGrid.EntityId;
 
+                foreach (var providerScreen in provider.Screens) 
+                    providerScreen.ParentBlock = (IMyTerminalBlock)block;
+                
                 return provider;
             }
 

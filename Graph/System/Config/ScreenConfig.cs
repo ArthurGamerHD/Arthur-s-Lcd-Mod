@@ -15,24 +15,24 @@ namespace Graph.System.Config
         public const float MAX_SCALE = 10f;
         public const float MIN_SCALE = 0.1f;
 
-        IMyTerminalBlock _parent;
+        public IMyTerminalBlock ParentBlock { private get; set; }
         
         public ScreenConfig()
         {
             //Required by Protobuf
         }
 
-        public ScreenConfig(int i, IMyTerminalBlock parent)
+        public ScreenConfig(int i, IMyTerminalBlock parentBlock)
         {
             ScreenIndex = i;
-            _parent = parent;
+            ParentBlock = parentBlock;
             ResetDefaultColors();
         }
 
         public void ResetDefaultColors()
         {
-            if(_parent != null)
-                HeaderColor = FactionHelper.GetIconColor(_parent);
+            if(ParentBlock != null)
+                HeaderColor = FactionHelper.GetIconColor(ParentBlock);
 
             ErrorColor = new Color(96, 32, 32);
             WarningColor = new Color(224, 160, 16);
