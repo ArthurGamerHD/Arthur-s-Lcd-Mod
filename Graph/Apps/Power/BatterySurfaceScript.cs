@@ -25,8 +25,11 @@ namespace Graph.Apps.Power
         protected override string DefaultTitle => TITLE;
 
         // Minimum slot dimensions (unscaled) — Scale controls how many fit per row/column
-        const float BATTERY_SLOT_W = 100f;
-        const float BATTERY_SLOT_H = 120f;
+        const float BATTERY_SLOT_W = 120f;
+        const float BATTERY_SLOT_H = 140f;
+        // Maximum slot dimensions (unscaled) — prevents a single battery from filling the entire screen
+        const float MAX_BATTERY_SLOT_W = 120f;
+        const float MAX_BATTERY_SLOT_H = 140f;
         const float POWER_TEXT_H   = 16f;
         const float SCROLLER_W     = 8f;
         const int   SCROLL_TICK    = 12;
@@ -218,6 +221,19 @@ namespace Graph.Apps.Power
             float slotW  = availW / cols;
             float slotH  = availH / rows;
 
+            // Clamp slot size so a small battery count does not stretch slots
+            // across the entire viewport (e.g. a single battery filling the screen).
+            float maxSlotW = MAX_BATTERY_SLOT_W * Scale;
+            float maxSlotH = MAX_BATTERY_SLOT_H * Scale;
+            slotW = Math.Min(slotW, maxSlotW);
+            slotH = Math.Min(slotH, maxSlotH);
+
+            // When the grid is narrower/shorter than the available area, center it.
+            float gridW      = cols * slotW;
+            float gridH      = rows * slotH;
+            float gridLeft   = xLeft  + (availW - gridW) / 2f;
+            float gridTop    = CaretY + (availH - gridH) / 2f;
+
             int startIdx = startRow * cols;
             int show     = Math.Min(rows * cols, count - startIdx);
 
@@ -225,8 +241,8 @@ namespace Graph.Apps.Power
             {
                 int   col    = i % cols;
                 int   row    = i / cols;
-                float xStart = xLeft + col * slotW;
-                float yStart = CaretY + row * slotH;
+                float xStart = gridLeft + col * slotW;
+                float yStart = gridTop  + row * slotH;
                 DrawBatterySlot(sprites, _visible[startIdx + i], xStart, yStart, slotW, slotH);
             }
         }

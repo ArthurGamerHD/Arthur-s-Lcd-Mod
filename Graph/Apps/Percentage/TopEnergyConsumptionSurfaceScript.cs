@@ -62,6 +62,9 @@ namespace Graph.Apps.Percentage
                 if (cmp != 0) return cmp;
                 return string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase);
             });
+
+            if (entries.Count > 10)
+                entries.RemoveRange(10, entries.Count - 10);
         }
 
         protected override string GetEntryName(Entry entry) => entry.Name;
