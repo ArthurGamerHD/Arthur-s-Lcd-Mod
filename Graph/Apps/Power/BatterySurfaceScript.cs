@@ -24,10 +24,8 @@ namespace Graph.Apps.Power
 
         protected override string DefaultTitle => TITLE;
 
-        // Minimum slot dimensions (unscaled) — Scale controls how many fit per row/column
         const float BATTERY_SLOT_W = 120f;
         const float BATTERY_SLOT_H = 140f;
-        // Maximum slot dimensions (unscaled) — prevents a single battery from filling the entire screen
         const float MAX_BATTERY_SLOT_W = 120f;
         const float MAX_BATTERY_SLOT_H = 140f;
         const float POWER_TEXT_H   = 16f;
