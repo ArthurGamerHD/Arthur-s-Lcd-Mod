@@ -12,4 +12,7 @@
   <data name="LCDMod_TopEnergy" xml:space="preserve">
     <value>最大能耗</value>
   </data>
+  <data name="LCDMod_EnergyDashboard" xml:space="preserve">
+    <value>能源仪表板</value>
+  </data>
 </root>

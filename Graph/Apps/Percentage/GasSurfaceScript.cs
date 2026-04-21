@@ -31,6 +31,8 @@ namespace Graph.Apps.Percentage
 
         protected override string DefaultTitle => TITLE;
 
+        protected override int GetMaxColsFromSurface() => 1;
+
         protected override void ReadEntries(List<Entry> entries)
         {
             string mode;

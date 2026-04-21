@@ -194,6 +194,7 @@ namespace Graph.System
                 Controls.Add(new SliderRotation());
 
                 Controls.Add(new ComboboxDisplayMode());
+                Controls.Add(new ComboboxGraphWindow());
                 Controls.Add(new SwitchToggleLines());
 
                 Controls.Add(new ListboxProjectorSelection());
