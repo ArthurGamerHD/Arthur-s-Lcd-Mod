@@ -28,6 +28,26 @@ namespace Graph.Apps.Power
         static readonly MyDefinitionId ElectricityId =
             new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
 
+        // Graph time window options in seconds
+        static readonly float[] WindowOptions = { 1f, 5f, 30f, 60f, 300f };
+
+        // Ring buffer for the two line graphs
+        const int GRAPH_POINTS = 90;
+
+        struct Sample
+        {
+            public float  TimeS;
+            public double ProductionW;
+            public double ConsumptionW;
+        }
+
+        readonly Sample[] _samples  = new Sample[GRAPH_POINTS];
+        int   _sampleHead           = 0;
+        int   _sampleCount          = 0;
+        float _lastSampleTime       = -999f;
+        float _lastWindowSeconds    = -1f;
+
+        // Per-category production
         struct Category
         {
             public double CurrentW;
@@ -42,6 +62,7 @@ namespace Graph.Apps.Power
         double _totalMaxW;
         double _totalConsumptionW;
 
+        // Battery aggregate
         float  _avgBatteryCharge;
         bool   _isCharging;
         string _timeLabel = "--";
@@ -53,6 +74,10 @@ namespace Graph.Apps.Power
         public EnergyDashboardSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
             : base(surface, block, size) { }
 
+        // -----------------------------------------------------------------------
+        // Main loop
+        // -----------------------------------------------------------------------
+
         public override void Run()
         {
             base.Run();
@@ -62,6 +87,7 @@ namespace Graph.Apps.Power
             UpdateViewBox();
 
             CollectData();
+            TryAddSample();
 
             using (var frame = Surface.DrawFrame())
             {
@@ -103,32 +129,32 @@ namespace Graph.Apps.Power
                     if (prod is IMyBatteryBlock)
                     {
                         _batteryProd.CurrentW += cur;
-                        _batteryProd.MaxW += max;
+                        _batteryProd.MaxW     += max;
                     }
                     else if (prod is IMySolarPanel)
                     {
                         _solar.CurrentW += cur;
-                        _solar.MaxW += max;
+                        _solar.MaxW     += max;
                     }
                     else if (prod is IMyWindTurbine)
                     {
                         _wind.CurrentW += cur;
-                        _wind.MaxW += max;
+                        _wind.MaxW     += max;
                     }
                     else if (prod is IMyReactor)
                     {
                         _reactor.CurrentW += cur;
-                        _reactor.MaxW += max;
+                        _reactor.MaxW     += max;
                     }
                     else
                     {
                         try
                         {
-                            var typeId = prod.BlockDefinition.TypeIdString ?? string.Empty;
-                            if (typeId.EndsWith("HydrogenEngine", StringComparison.OrdinalIgnoreCase))
+                            var tid = prod.BlockDefinition.TypeIdString ?? string.Empty;
+                            if (tid.EndsWith("HydrogenEngine", StringComparison.OrdinalIgnoreCase))
                             {
                                 _engine.CurrentW += cur;
-                                _engine.MaxW += max;
+                                _engine.MaxW     += max;
                             }
                         }
                         catch { }
@@ -160,7 +186,7 @@ namespace Graph.Apps.Power
 
             if (_batteries.Count > 0)
             {
-                const float eps = 0.001f;
+                const float eps   = 0.001f;
                 float sumRatio    = 0f;
                 float totalStored = 0f;
                 float totalMax    = 0f;
@@ -199,17 +225,56 @@ namespace Graph.Apps.Power
             }
         }
 
-        static string FormatTimeHours(float hours)
+        // -----------------------------------------------------------------------
+        // Ring buffer sampling
+        // -----------------------------------------------------------------------
+
+        float GetWindowSeconds()
         {
-            if (hours < 0f) return "--";
-            if (hours > 99.99f) return ">99h";
-            int h = (int)hours;
-            int m = (int)((hours - h) * 60f);
-            return h > 0 ? h.ToString() + "h " + m.ToString() + "m" : m.ToString() + "m";
+            if (Config == null) return 30f;
+            int idx = Math.Max(0, Math.Min(Config.GraphWindowIndex, WindowOptions.Length - 1));
+            return WindowOptions[idx];
+        }
+
+        void TryAddSample()
+        {
+            float windowSeconds = GetWindowSeconds();
+
+            if (Math.Abs(windowSeconds - _lastWindowSeconds) > 0.01f)
+            {
+                _sampleCount      = 0;
+                _sampleHead       = 0;
+                _lastSampleTime   = -999f;
+                _lastWindowSeconds = windowSeconds;
+            }
+
+            float now = 0f;
+            try
+            {
+                var sess = MyAPIGateway.Session;
+                if (sess != null) now = (float)sess.ElapsedPlayTime.TotalSeconds;
+            }
+            catch { return; }
+
+            float interval = windowSeconds / GRAPH_POINTS;
+            if (now - _lastSampleTime < interval) return;
+
+            double totalProd = _solar.CurrentW + _wind.CurrentW + _reactor.CurrentW
+                             + _engine.CurrentW + _batteryProd.CurrentW;
+
+            _samples[_sampleHead] = new Sample
+            {
+                TimeS       = now,
+                ProductionW = totalProd,
+                ConsumptionW = _totalConsumptionW
+            };
+            _sampleHead = (_sampleHead + 1) % GRAPH_POINTS;
+            if (_sampleCount < GRAPH_POINTS) _sampleCount++;
+            _lastSampleTime = now;
         }
 
         // -----------------------------------------------------------------------
-        // Layout
+        // Top-level layout
         // -----------------------------------------------------------------------
 
         void DrawDashboard(List<MySprite> sprites)
@@ -218,10 +283,11 @@ namespace Graph.Apps.Power
             float xLeft    = ViewBox.X + margin;
             float xRight   = ViewBox.Right - margin;
             float contentW = xRight - xLeft;
-            float gapH     = 6f * Scale;
-            float rowH     = 22f * Scale;
-            float bigBarH  = 32f * Scale;
+            float gapH     = 5f * Scale;
+            float rowH     = 21f * Scale;
+            float bigBarH  = 28f * Scale;
             float divH     = Math.Max(1f, Scale);
+            float batH     = rowH * 1.9f;
 
             int prodRows = 0;
             if (_solar.MaxW > 0)       prodRows++;
@@ -230,16 +296,18 @@ namespace Graph.Apps.Power
             if (_engine.MaxW > 0)      prodRows++;
             if (_batteryProd.MaxW > 0) prodRows++;
 
-            float y = CaretY + gapH;
+            float yBot = ViewBox.Bottom - margin;
+            float y    = CaretY + gapH;
 
-            // Section A: power balance bar (2 label rows + bar)
+            // Section A: power balance bar
+            float secAH = rowH + bigBarH + rowH;
             DrawPowerBalanceSection(sprites, xLeft, xRight, contentW, y, bigBarH, rowH);
-            y += rowH + bigBarH + rowH + gapH;
+            y += secAH + gapH;
 
             DrawDivider(sprites, xLeft, xRight, y);
             y += divH + gapH;
 
-            // Section B: production breakdown
+            // Section B: production rows
             if (prodRows > 0)
             {
                 DrawProductionSection(sprites, xLeft, xRight, contentW, y, rowH);
@@ -249,9 +317,22 @@ namespace Graph.Apps.Power
                 y += divH + gapH;
             }
 
-            // Section C: battery summary
-            float batH = rowH * 1.8f;
-            if (y + batH <= ViewBox.Bottom - margin)
+            // Section C+D: two line graphs (use remaining height minus battery row)
+            float graphAreaH = yBot - y - batH - gapH - divH - gapH;
+            if (graphAreaH > 30f * Scale)
+            {
+                float singleH = (graphAreaH - gapH) / 2f;
+                DrawLineGraph(sprites, xLeft, xRight, contentW, y, singleH, true);
+                y += singleH + gapH;
+                DrawLineGraph(sprites, xLeft, xRight, contentW, y, singleH, false);
+                y += singleH + gapH;
+
+                DrawDivider(sprites, xLeft, xRight, y);
+                y += divH + gapH;
+            }
+
+            // Section E: battery summary
+            if (y + batH <= yBot + 1f)
                 DrawBatterySection(sprites, xLeft, xRight, contentW, y, batH);
         }
 
@@ -266,7 +347,6 @@ namespace Graph.Apps.Power
             Color accent = Config.HeaderColor;
             float ts     = Scale * 0.72f;
 
-            // Top row: consumption (left) vs capacity (right)
             string consumeLabel = "Consumo: " + FormatingHelper.WattsToString(_totalConsumptionW);
             string capLabel     = "Max: " + FormatingHelper.WattsToString(_totalMaxW);
 
@@ -287,13 +367,11 @@ namespace Graph.Apps.Power
 
             y += rowH;
 
-            // Big horizontal bar: consumption / max-capacity
             float ratio   = _totalMaxW > 0 ? (float)Math.Min(1.0, _totalConsumptionW / _totalMaxW) : 0f;
             Color barBg   = new Color(fg.R, fg.G, fg.B, 25);
             Color barFill = GetLoadColor(ratio);
-
-            float barCX = xLeft + contentW / 2f;
-            float barCY = y + bigBarH / 2f;
+            float barCX   = xLeft + contentW / 2f;
+            float barCY   = y + bigBarH / 2f;
 
             sprites.Add(new MySprite
             {
@@ -313,19 +391,17 @@ namespace Graph.Apps.Power
                 });
             }
 
-            // Percentage centered inside bar
             string pctText = FormatingHelper.PercentageToString(ratio);
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT, Data = pctText,
                 Position = new Vector2(barCX, y + bigBarH * 0.08f),
-                RotationOrScale = Scale * 0.85f, Color = fg,
+                RotationOrScale = Scale * 0.82f, Color = fg,
                 Alignment = TextAlignment.CENTER, FontId = "White"
             });
 
             y += bigBarH;
 
-            // Bottom row: current production total (centered)
             double totalProd = _solar.CurrentW + _wind.CurrentW + _reactor.CurrentW
                              + _engine.CurrentW + _batteryProd.CurrentW;
             string prodLabel = "Produção: " + FormatingHelper.WattsToString(totalProd);
@@ -347,8 +423,8 @@ namespace Graph.Apps.Power
         {
             Color fg     = Surface.ScriptForegroundColor;
             Color accent = Config.HeaderColor;
-            float labelW = contentW * 0.30f;
-            float barW   = contentW * 0.45f;
+            float labelW = contentW * 0.28f;
+            float barW   = contentW * 0.47f;
             float numW   = contentW - labelW - barW;
 
             if (_solar.MaxW > 0)
@@ -384,11 +460,10 @@ namespace Graph.Apps.Power
             float ratio    = cat.MaxW > 0 ? (float)Math.Min(1.0, cat.CurrentW / cat.MaxW) : 0f;
             float rowCY    = y + rowH / 2f;
             float ts       = Scale * 0.70f;
-            float barH     = rowH * 0.52f;
+            float barH     = rowH * 0.50f;
             Color barBg    = new Color(fg.R, fg.G, fg.B, 25);
             float barXLeft = xLeft + labelW;
 
-            // Label
             Vector2 labelSz = GetSizeInPixel(label, "White", ts, Surface);
             sprites.Add(new MySprite
             {
@@ -398,16 +473,13 @@ namespace Graph.Apps.Power
                 Alignment = TextAlignment.LEFT, FontId = "White"
             });
 
-            // Bar background
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXTURE, Data = "SquareSimple",
                 Position = new Vector2(barXLeft + barW / 2f, rowCY),
-                Size = new Vector2(barW, barH),
-                Color = barBg, Alignment = TextAlignment.CENTER
+                Size = new Vector2(barW, barH), Color = barBg, Alignment = TextAlignment.CENTER
             });
 
-            // Bar fill
             if (ratio > 0.005f)
             {
                 float fillW = barW * ratio;
@@ -415,12 +487,10 @@ namespace Graph.Apps.Power
                 {
                     Type = SpriteType.TEXTURE, Data = "SquareSimple",
                     Position = new Vector2(barXLeft + fillW / 2f, rowCY),
-                    Size = new Vector2(fillW, barH),
-                    Color = accent, Alignment = TextAlignment.CENTER
+                    Size = new Vector2(fillW, barH), Color = accent, Alignment = TextAlignment.CENTER
                 });
             }
 
-            // Value: current watts
             string valText = FormatingHelper.WattsToString(cat.CurrentW);
             Vector2 valSz  = GetSizeInPixel(valText, "White", ts, Surface);
             sprites.Add(new MySprite
@@ -433,26 +503,161 @@ namespace Graph.Apps.Power
         }
 
         // -----------------------------------------------------------------------
-        // Section C: battery summary
+        // Sections C+D: line graphs
+        // -----------------------------------------------------------------------
+
+        void DrawLineGraph(List<MySprite> sprites, float xLeft, float xRight, float contentW,
+            float y, float height, bool isProduction)
+        {
+            Color fg     = Surface.ScriptForegroundColor;
+            Color accent = Config.HeaderColor;
+            Color warn   = Config.WarningColor;
+
+            string label   = isProduction ? "Produção" : "Consumo";
+            Color lineColor = isProduction ? accent : warn;
+            float ts       = Scale * 0.65f;
+            float labelH   = GetSizeInPixel(label, "White", ts, Surface).Y;
+
+            // Background
+            Color graphBg = new Color(fg.R, fg.G, fg.B, 12);
+            float plotY   = y + labelH + 2f * Scale;
+            float plotH   = Math.Max(4f, height - labelH - 2f * Scale);
+            float plotW   = contentW;
+
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE, Data = "SquareSimple",
+                Position = new Vector2(xLeft + plotW / 2f, plotY + plotH / 2f),
+                Size = new Vector2(plotW, plotH),
+                Color = graphBg, Alignment = TextAlignment.CENTER
+            });
+
+            // Label top-left
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXT, Data = label,
+                Position = new Vector2(xLeft, y),
+                RotationOrScale = ts, Color = lineColor,
+                Alignment = TextAlignment.LEFT, FontId = "White"
+            });
+
+            if (_sampleCount < 2)
+                return;
+
+            float nowTime     = GetCurrentTime();
+            float windowSecs  = GetWindowSeconds();
+            float windowStart = nowTime - windowSecs;
+
+            // Collect samples within time window
+            double maxVal = 0;
+            int validCount = 0;
+
+            for (int i = 0; i < _sampleCount; i++)
+            {
+                int idx = (_sampleHead - _sampleCount + i + GRAPH_POINTS) % GRAPH_POINTS;
+                var s = _samples[idx];
+                if (s.TimeS < windowStart) continue;
+
+                double val = isProduction ? s.ProductionW : s.ConsumptionW;
+                if (val > maxVal) maxVal = val;
+                validCount++;
+            }
+
+            if (validCount < 2 || maxVal < 1.0) return;
+
+            // Draw max-value label (top right)
+            string maxLabel = FormatingHelper.WattsToString(maxVal);
+            Vector2 maxSz   = GetSizeInPixel(maxLabel, "White", ts, Surface);
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXT, Data = maxLabel,
+                Position = new Vector2(xRight, plotY),
+                RotationOrScale = ts, Color = new Color(fg.R, fg.G, fg.B, 160),
+                Alignment = TextAlignment.RIGHT, FontId = "White"
+            });
+
+            // Plot line segments
+            float prevX = 0f, prevY = 0f;
+            bool hasPrev = false;
+            float lineThickness = Math.Max(1.5f, Scale * 1.5f);
+
+            for (int i = 0; i < _sampleCount; i++)
+            {
+                int idx = (_sampleHead - _sampleCount + i + GRAPH_POINTS) % GRAPH_POINTS;
+                var s = _samples[idx];
+                if (s.TimeS < windowStart)
+                {
+                    hasPrev = false;
+                    continue;
+                }
+
+                double val  = isProduction ? s.ProductionW : s.ConsumptionW;
+                float  px   = xLeft + (s.TimeS - windowStart) / windowSecs * plotW;
+                float  py   = plotY + plotH - (float)(val / maxVal) * plotH;
+                py = Math.Max(plotY, Math.Min(plotY + plotH, py));
+
+                if (hasPrev)
+                    DrawLineSegment(sprites, new Vector2(prevX, prevY), new Vector2(px, py),
+                        lineThickness, lineColor);
+
+                prevX   = px;
+                prevY   = py;
+                hasPrev = true;
+            }
+        }
+
+        static void DrawLineSegment(List<MySprite> sprites, Vector2 p1, Vector2 p2,
+            float thickness, Color color)
+        {
+            float dx  = p2.X - p1.X;
+            float dy  = p2.Y - p1.Y;
+            float len = (float)Math.Sqrt(dx * dx + dy * dy);
+            if (len < 0.5f) return;
+
+            sprites.Add(new MySprite
+            {
+                Type            = SpriteType.TEXTURE,
+                Data            = "SquareSimple",
+                Position        = new Vector2((p1.X + p2.X) / 2f, (p1.Y + p2.Y) / 2f),
+                Size            = new Vector2(len, thickness),
+                RotationOrScale = (float)Math.Atan2(dy, dx),
+                Color           = color,
+                Alignment       = TextAlignment.CENTER
+            });
+        }
+
+        static float GetCurrentTime()
+        {
+            try
+            {
+                var sess = MyAPIGateway.Session;
+                return sess != null ? (float)sess.ElapsedPlayTime.TotalSeconds : 0f;
+            }
+            catch { return 0f; }
+        }
+
+        // -----------------------------------------------------------------------
+        // Section E: battery summary (horizontal icon + avg% + time)
         // -----------------------------------------------------------------------
 
         void DrawBatterySection(List<MySprite> sprites, float xLeft, float xRight, float contentW,
             float y, float sectionH)
         {
-            Color fg     = Surface.ScriptForegroundColor;
-            Color accent = Config.HeaderColor;
-            float cy     = y + sectionH / 2f;
-            float ts     = Scale * 0.78f;
-
+            Color fg        = Surface.ScriptForegroundColor;
+            Color accent    = Config.HeaderColor;
             Color iconColor = GetBatteryIconColor(_avgBatteryCharge);
-            float iconH  = sectionH * 0.75f;
-            float iconW  = iconH * 0.55f;
-            float iconCX = xLeft + iconW / 2f + 2f * Scale;
+            float cy        = y + sectionH / 2f;
+            float ts        = Scale * 0.78f;
 
-            DrawBatteryIcon(sprites, new Vector2(iconCX, cy), iconW, iconH,
-                _avgBatteryCharge, iconColor, fg);
+            // Horizontal battery icon: body lies on its side
+            float bodyH = sectionH * 0.62f;
+            float bodyW = bodyH * 2.8f;
+            float iconCX = xLeft + bodyW / 2f + 2f * Scale;
 
-            float textX = iconCX + iconW / 2f + 6f * Scale;
+            DrawHorizontalBatteryIcon(sprites, Surface, new Vector2(iconCX, cy),
+                bodyW, bodyH, _avgBatteryCharge, iconColor, fg, Scale * 0.65f);
+
+            float textX = iconCX + bodyW / 2f + 6f * Scale;
 
             string avgText = "Avg: " + FormatingHelper.PercentageToString(_avgBatteryCharge);
             Vector2 avgSz  = GetSizeInPixel(avgText, "White", ts, Surface);
@@ -472,6 +677,80 @@ namespace Graph.Apps.Power
                 Position = new Vector2(xRight, cy - stSz.Y / 2f),
                 RotationOrScale = ts, Color = accent,
                 Alignment = TextAlignment.RIGHT, FontId = "White"
+            });
+        }
+
+        // -----------------------------------------------------------------------
+        // Horizontal battery icon (rotated 90° — body is landscape)
+        //   nub on right, fill from left to right, % text centred inside
+        // -----------------------------------------------------------------------
+
+        static void DrawHorizontalBatteryIcon(List<MySprite> sprites, Sandbox.ModAPI.Ingame.IMyTextSurface surf,
+            Vector2 center, float bodyW, float bodyH, float ratio,
+            Color fillColor, Color borderColor, float textScale)
+        {
+            const float border = 3f;
+            var emptyBg = new Color(borderColor.R, borderColor.G, borderColor.B, 40);
+
+            // Body background
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE, Data = "SquareSimple",
+                Position = center, Size = new Vector2(bodyW, bodyH),
+                Color = emptyBg, Alignment = TextAlignment.CENTER
+            });
+
+            // Fill — left to right
+            if (ratio > 0.005f)
+            {
+                float innerW = bodyW - border * 2f;
+                float fillW  = innerW * ratio;
+                float fillCX = center.X - innerW / 2f + fillW / 2f;
+                sprites.Add(new MySprite
+                {
+                    Type = SpriteType.TEXTURE, Data = "SquareSimple",
+                    Position = new Vector2(fillCX, center.Y),
+                    Size = new Vector2(fillW, bodyH - border * 2f),
+                    Color = fillColor, Alignment = TextAlignment.CENTER
+                });
+            }
+
+            // Nub on the right side
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE, Data = "SquareSimple",
+                Position = new Vector2(center.X + bodyW / 2f + bodyW * 0.05f, center.Y),
+                Size = new Vector2(bodyW * 0.07f, bodyH * 0.38f),
+                Color = borderColor, Alignment = TextAlignment.CENTER
+            });
+
+            // Border — top, bottom, left, right
+            float bw    = Math.Max(1f, border * 0.8f);
+            float halfW = bodyW / 2f;
+            float halfH = bodyH / 2f;
+
+            sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple",
+                Position = new Vector2(center.X, center.Y - halfH),
+                Size = new Vector2(bodyW, bw), Color = borderColor, Alignment = TextAlignment.CENTER });
+            sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple",
+                Position = new Vector2(center.X, center.Y + halfH),
+                Size = new Vector2(bodyW, bw), Color = borderColor, Alignment = TextAlignment.CENTER });
+            sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple",
+                Position = new Vector2(center.X - halfW, center.Y),
+                Size = new Vector2(bw, bodyH), Color = borderColor, Alignment = TextAlignment.CENTER });
+            sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple",
+                Position = new Vector2(center.X + halfW, center.Y),
+                Size = new Vector2(bw, bodyH), Color = borderColor, Alignment = TextAlignment.CENTER });
+
+            // Percentage text centred inside body
+            string pct    = FormatingHelper.PercentageToString(ratio);
+            Vector2 pctSz = GetSizeInPixel(pct, "White", textScale, surf);
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXT, Data = pct,
+                Position = new Vector2(center.X, center.Y - pctSz.Y / 2f),
+                RotationOrScale = textScale, Color = borderColor,
+                Alignment = TextAlignment.CENTER, FontId = "White"
             });
         }
 
@@ -506,58 +785,13 @@ namespace Graph.Apps.Power
             return Config.HeaderColor;
         }
 
-        static void DrawBatteryIcon(List<MySprite> sprites, Vector2 center, float bodyW, float bodyH,
-            float ratio, Color fillColor, Color borderColor)
+        static string FormatTimeHours(float hours)
         {
-            var emptyBg = new Color(borderColor.R, borderColor.G, borderColor.B, 40);
-            const float border = 3f;
-
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE, Data = "SquareSimple",
-                Position = center, Size = new Vector2(bodyW, bodyH),
-                Color = emptyBg, Alignment = TextAlignment.CENTER
-            });
-
-            if (ratio > 0.005f)
-            {
-                float innerH = bodyH - border * 2f;
-                float fillH  = innerH * ratio;
-                float fillCY = center.Y + innerH / 2f - fillH / 2f;
-                sprites.Add(new MySprite
-                {
-                    Type = SpriteType.TEXTURE, Data = "SquareSimple",
-                    Position = new Vector2(center.X, fillCY),
-                    Size = new Vector2(bodyW - border * 2f, fillH),
-                    Color = fillColor, Alignment = TextAlignment.CENTER
-                });
-            }
-
-            // Nub on top
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE, Data = "SquareSimple",
-                Position = new Vector2(center.X, center.Y - bodyH / 2f - bodyH * 0.07f),
-                Size = new Vector2(bodyW * 0.35f, bodyH * 0.10f),
-                Color = borderColor, Alignment = TextAlignment.CENTER
-            });
-
-            float bw    = Math.Max(1f, border * 0.8f);
-            float halfW = bodyW / 2f;
-            float halfH = bodyH / 2f;
-
-            sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple",
-                Position = new Vector2(center.X, center.Y - halfH),
-                Size = new Vector2(bodyW, bw), Color = borderColor, Alignment = TextAlignment.CENTER });
-            sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple",
-                Position = new Vector2(center.X, center.Y + halfH),
-                Size = new Vector2(bodyW, bw), Color = borderColor, Alignment = TextAlignment.CENTER });
-            sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple",
-                Position = new Vector2(center.X - halfW, center.Y),
-                Size = new Vector2(bw, bodyH), Color = borderColor, Alignment = TextAlignment.CENTER });
-            sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple",
-                Position = new Vector2(center.X + halfW, center.Y),
-                Size = new Vector2(bw, bodyH), Color = borderColor, Alignment = TextAlignment.CENTER });
+            if (hours < 0f) return "--";
+            if (hours > 99.99f) return ">99h";
+            int h = (int)hours;
+            int m = (int)((hours - h) * 60f);
+            return h > 0 ? h.ToString() + "h " + m.ToString() + "m" : m.ToString() + "m";
         }
     }
 }

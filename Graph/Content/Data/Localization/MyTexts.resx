@@ -15,4 +15,22 @@
   <data name="LCDMod_EnergyDashboard" xml:space="preserve">
     <value>Energy Dashboard</value>
   </data>
+  <data name="LCDMod_GraphWindow" xml:space="preserve">
+    <value>Graph Time Window</value>
+  </data>
+  <data name="LCDMod_GW_1s" xml:space="preserve">
+    <value>1 second</value>
+  </data>
+  <data name="LCDMod_GW_5s" xml:space="preserve">
+    <value>5 seconds</value>
+  </data>
+  <data name="LCDMod_GW_30s" xml:space="preserve">
+    <value>30 seconds</value>
+  </data>
+  <data name="LCDMod_GW_1m" xml:space="preserve">
+    <value>1 minute</value>
+  </data>
+  <data name="LCDMod_GW_5m" xml:space="preserve">
+    <value>5 minutes</value>
+  </data>
 </root>
