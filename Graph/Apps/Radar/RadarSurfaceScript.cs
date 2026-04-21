@@ -1,128 +1,123 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using Graph.Apps.Abstract;
+using Graph.Extensions;
 using Graph.Helpers;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
+using VRage;
+using VRage.Utils;
 using VRage.Game;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
-using IMyCubeBlock  = VRage.Game.ModAPI.IMyCubeBlock;
-using IMyCubeGrid   = VRage.Game.ModAPI.IMyCubeGrid;
-using IMySlimBlock  = VRage.Game.ModAPI.IMySlimBlock;
-using InGameSensor  = Sandbox.ModAPI.Ingame.IMySensorBlock;
-using InGameTurret  = Sandbox.ModAPI.Ingame.IMyLargeTurretBase;
-using DetectedInfo  = Sandbox.ModAPI.Ingame.MyDetectedEntityInfo;
+using IMyCockpit = Sandbox.ModAPI.IMyCockpit;
+using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
+using IMyCubeGrid = VRage.Game.ModAPI.IMyCubeGrid;
 
 namespace Graph.Apps.Radar
 {
-    internal enum ContactBehavior
-    {
-        Unknown,
-        Approaching,
-        MovingAway,
-        Lateral,
-        Stationary
-    }
-
     internal class ContactRecord
     {
-        public long   EntityId;
+        public long EntityId;
         public string Name;
         public MyRelationsBetweenPlayerAndBlock Relationship;
+        public string IconTexture;
         public Vector3D WorldPosition;
         public bool IsTargeted;
-        public ContactBehavior Behavior;
-        public float ApproachRate; // m/s, positive = getting closer
-        public int  MissedFrames;
-
-        // Sweep-highlight alpha (0–255); set each frame by UpdateContactSweepState
-        public byte SweepAlpha;
-
-        // Two-second history snapshot
-        public bool     HasHistory;
-        public Vector3D HistoryPosition;
-        public float    HistoryDistance;
-        public int      HistoryAge; // update-frames since snapshot was taken
+        public float TargetLockPercent;
+        public int MissedFrames;
     }
 
     [MyTextSurfaceScript(ID, TITLE)]
     public class RadarSurfaceScript : SurfaceScriptBase
     {
-        public const string ID    = "LCDMod_Radar";
+        public const string ID = "LCDMod_Radar";
         public const string TITLE = "LCDMod_Radar";
 
         protected override string DefaultTitle => TITLE;
 
-        // Fixed ring distances (meters) — drawn regardless of dynamic range
+        // Fixed ring distances (meters) drawn regardless of dynamic range
         const float RING_1_M = 800f;
         const float RING_2_M = 1400f;
         const float RING_3_M = 2000f;
         const float DEFAULT_RANGE = 3000f;
 
+        const float LOCK_ANIM_DISTANCE = 20f;
+
         // Timing intervals (Run() calls; each call ≈ 166 ms at Update10)
-        const int HISTORY_INTERVAL = 26; 
-        const int CONTACT_TIMEOUT  = 36; 
-        const int BLOCK_REFRESH    = 60;   // refresh block lists every ≈ 10 s
+        const int CONTACT_TIMEOUT = 36;
 
         const int MAX_CONTACTS = 32;
 
-        // Visual sizes in logical pixels — scaled by Scale at render time
+        // Visual sizes in logical pixels scaled by Scale at render time
         const float RADAR_MARGIN_PX = 14f;
-        const float RING_STROKE_PX  = 1.5f;
-        const float LINE_STROKE_PX  = 1.0f;
-        const float DIAG_STROKE_PX  = 0.8f;
-        const float CONTACT_SIZE_PX = 6f;
-        const float CONTACT_BIG_PX  = 10f;
-        const float MARKER_FONT     = 0.55f;
-        const float INFO_FONT       = 0.46f;
-        const float CLOSE_RATIO     = 0.10f; // fraction of max range that counts as "close"
-        const float APPROACH_MS     = 3f;    // m/s threshold for behaviour classification
 
-        // Sweep-line visual
-        const float SWEEP_LINE_STROKE_PX     = 2f;
-        const int   SWEEP_AFTERGLOW_COUNT    = 5;
-        const float SWEEP_AFTERGLOW_STEP_DEG = 6f;
-        const float SWEEP_LINE_ALPHA         = 0.82f;
+        const float RANGE_TEXT_SIZE = 1.2f;
+        const float DOT_SIZE = 16f;
+        const float QUADRANT_LABEL_TEXT_SIZE = 0.6f;
+        const float QUADRANT_LABEL_MARGIN_PX = 10f;
+        const float SIZE_TO_PX = 28.8f;
+        const float TGT_ELEVATION_LINE_WIDTH = 4f;
+        const float RADAR_RANGE_LINE_WIDTH = 8f;
+        const float QUADRANT_LINE_WIDTH = 4f;
+        const float RADAR_SIZE_SCALE = 0.95f;
+        const float QUADRANT_LINE_COVERAGE_PER_SIDE = .8f;
+        const float PROJECTION_ANGLE_DEG = 55f;
+        const int FOOTER_MAX_ROWS = 4;
+        const float FOOTER_ROW_HEIGHT_PX = 18f;
+        const float FOOTER_HEADER_HEIGHT_PX = 14f;
+        const float FOOTER_COL_WIDTH_PX = 230f;
+        const float FOOTER_RADAR_CLEARANCE_FACTOR = 0.35f;
+        const int FOOTER_SCROLL_STEP_SECONDS = 2;
 
-        // Entity contacts (sensor / turret) keyed by EntityId > 0
-        readonly Dictionary<long, ContactRecord>  _contacts       = new Dictionary<long, ContactRecord>();
-        // GPS contacts keyed by -(long)gps.Hash (always negative to avoid collisions)
-        readonly Dictionary<long, ContactRecord>  _gpsContacts    = new Dictionary<long, ContactRecord>();
 
-        readonly List<IMySensorBlock>             _sensors        = new List<IMySensorBlock>();
-        readonly List<IMyLargeTurretBase>         _turrets        = new List<IMyLargeTurretBase>();
-        readonly List<IMyRadioAntenna>            _antennas       = new List<IMyRadioAntenna>();
-        readonly List<IMySlimBlock>               _tempSlims      = new List<IMySlimBlock>();
-        readonly List<DetectedInfo>               _tempDetected   = new List<DetectedInfo>();
-        readonly List<IMyGps>                     _tempGps        = new List<IMyGps>();
-        readonly HashSet<long>                    _seenThisFrame  = new HashSet<long>();
-        readonly List<long>                       _toRemove       = new List<long>();
-        readonly List<ContactRecord>              _sortedContacts = new List<ContactRecord>();
+        readonly Dictionary<long, ContactRecord> _contacts = new Dictionary<long, ContactRecord>();
+        readonly HashSet<long> _seenThisFrame = new HashSet<long>();
+        readonly HashSet<long> _processedGroupGridIds = new HashSet<long>();
+        readonly Dictionary<long, string> _factionIconCache = new Dictionary<long, string>();
+        readonly List<long> _toRemove = new List<long>();
+        readonly List<ContactRecord> _sortedContacts = new List<ContactRecord>();
+        readonly List<IMyCubeGrid> _tempGroupGrids = new List<IMyCubeGrid>();
 
-        int   _frameCount;
-        float _maxRange     = DEFAULT_RANGE;
-        float _sweepAngleDeg; // degrees [0, 360); advanced each Run() call
+        float _maxRange = DEFAULT_RANGE;
+        long _debugLockedTargetEntityId;
+        float _debugLockedTargetPercent;
+        string _debugLockedTargetName = string.Empty;
 
-        // Diagnostic counters — updated each frame, shown on LCD
-        int _diagSensors;
-        int _diagSensorsWorking;
-        int _diagTurrets;
-        int _diagTurretsTargeting;
-        int _diagRawDetections;
-        int _diagGps;
-        int _diagEntities;
+        readonly List<IMyEntity> _tempEntities = new List<IMyEntity>();
+        readonly Vector2 _tgtIconSize = new Vector2(20f, 20f);
+        readonly Vector2 _shipIconSize = new Vector2(32f, 16f);
+        readonly Vector2 _borderPadding = new Vector2(16f, 64f);
+        readonly List<TargetInfo> _targetsBelowPlane = new List<TargetInfo>();
+        readonly List<TargetInfo> _targetsAbovePlane = new List<TargetInfo>();
+        readonly StringBuilder _footerTextBuilder = new StringBuilder();
+        long _cachedCharacterId;
+        Sandbox.Game.EntityComponents.MyTargetLockingComponent _cachedCharacterTargetLocking;
+        float _radarProjectionCos;
+        float _radarProjectionSin;
 
-        readonly HashSet<IMyEntity>               _tempEntities   = new HashSet<IMyEntity>();
+        struct TargetInfo
+        {
+            public Vector3 Position;
+            public Color IconColor;
+            public string IconTexture;
+            public Color ElevationColor;
+            public bool TargetLock;
+            public float TargetLockPercent;
+            public bool AbovePlane;
+            public float Rotation;
+            public Action<List<MySprite>, Vector2, Color, float, float> DrawFunction;
+        }
 
-        // ------------------------------------------------------------------ constructor
 
         public RadarSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
-            : base(surface, block, size) { }
+            : base(surface, block, size)
+        {
+        }
 
-        // ------------------------------------------------------------------ Run
 
         public override void Run()
         {
@@ -130,153 +125,30 @@ namespace Graph.Apps.Radar
             if (Config == null)
                 return;
 
-            _frameCount++;
-
-            // Advance sweep: one full rotation every ~60 frames (≈ 10 s at Update10).
-            const float SWEEP_DEG_PER_FRAME = 360f / 60f;
-            _sweepAngleDeg = (_sweepAngleDeg + SWEEP_DEG_PER_FRAME) % 360f;
-
-            if (_frameCount == 1 || _frameCount % BLOCK_REFRESH == 0)
-                RefreshBlocks();
-
             CollectContacts();
             PurgeStaleContacts();
+            UpdateFooterHeight();
 
             using (var frame = Surface.DrawFrame())
             {
                 var sprites = new List<MySprite>();
                 DrawTitle(sprites); // sets CaretY; respects Config.TitleVisible
                 RenderRadar(sprites);
+                DrawFooter(sprites);
                 frame.AddRange(sprites);
             }
         }
 
-        // ------------------------------------------------------------------ block discovery
-
-        void RefreshBlocks()
-        {
-            _sensors.Clear();
-            _turrets.Clear();
-            _antennas.Clear();
-            _tempSlims.Clear();
-
-            var grid = Block.CubeGrid as IMyCubeGrid;
-            if (grid == null)
-                return;
-
-            grid.GetBlocks(_tempSlims, s =>
-                s.FatBlock is IMySensorBlock    ||
-                s.FatBlock is IMyLargeTurretBase ||
-                s.FatBlock is IMyRadioAntenna);
-
-            for (int i = 0; i < _tempSlims.Count; i++)
-            {
-                var fat = _tempSlims[i].FatBlock;
-
-                var sensor = fat as IMySensorBlock;
-                if (sensor != null) { _sensors.Add(sensor); continue; }
-
-                var turret = fat as IMyLargeTurretBase;
-                if (turret != null) { _turrets.Add(turret); continue; }
-
-                var antenna = fat as IMyRadioAntenna;
-                if (antenna != null) _antennas.Add(antenna);
-            }
-
-            _tempSlims.Clear();
-        }
-
-        // ------------------------------------------------------------------ contact collection
 
         void CollectContacts()
         {
             _seenThisFrame.Clear();
             float detectedRange = 0f;
-            _diagRawDetections = 0;
-            _diagSensorsWorking = 0;
-            _diagTurretsTargeting = 0;
 
-            // --- Global entity scan — primary source, runs before sensors -------
             CollectEntityContacts();
-
-            // --- Sensors -------------------------------------------------------
-            _diagSensors = _sensors.Count;
-            for (int s = 0; s < _sensors.Count; s++)
-            {
-                var modSensor    = _sensors[s];
-                var ingameSensor = modSensor as InGameSensor;
-                if (!modSensor.IsWorking || ingameSensor == null) continue;
-                _diagSensorsWorking++;
-
-                float sensorRange = SensorMaxRange(ingameSensor);
-                if (sensorRange > detectedRange) detectedRange = sensorRange;
-
-                _tempDetected.Clear();
-                ingameSensor.DetectedEntities(_tempDetected);
-                _diagRawDetections += _tempDetected.Count;
-
-                for (int d = 0; d < _tempDetected.Count; d++)
-                {
-                    var info = _tempDetected[d];
-                    if (info.EntityId == 0) continue;
-                    if (!IsGridContact(info.Type)) continue; // ignore characters, asteroids, etc.
-                    if (_seenThisFrame.Contains(info.EntityId)) continue;
-                    _seenThisFrame.Add(info.EntityId);
-                    UpdateContact(info, false);
-                }
-            }
-
-            // --- Turrets -------------------------------------------------------
-            _diagTurrets = _turrets.Count;
-            for (int t = 0; t < _turrets.Count; t++)
-            {
-                var modTurret    = _turrets[t];
-                var ingameTurret = modTurret as InGameTurret;
-                if (!modTurret.IsWorking || ingameTurret == null || !ingameTurret.HasTarget) continue;
-                _diagTurretsTargeting++;
-
-                try
-                {
-                    var info = ingameTurret.GetTargetedEntity();
-                    if (info.EntityId == 0) continue;
-                    if (!IsGridContact(info.Type)) continue; // ignore characters, asteroids, etc.
-
-                    if (_seenThisFrame.Contains(info.EntityId))
-                    {
-                        // Already tracked by a sensor — only promote to targeted
-                        ContactRecord existing;
-                        if (_contacts.TryGetValue(info.EntityId, out existing))
-                            existing.IsTargeted = true;
-                    }
-                    else
-                    {
-                        _seenThisFrame.Add(info.EntityId);
-                        UpdateContact(info, true);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    ErrorHandlerHelper.LogError(ex, this);
-                }
-            }
-
-            // --- Antennas — contribute range only, no contact data ─────────────
-            for (int a = 0; a < _antennas.Count; a++)
-            {
-                var ant = _antennas[a];
-                if (!ant.IsWorking || !ant.IsBroadcasting) continue;
-                var ingameAnt = ant as Sandbox.ModAPI.Ingame.IMyRadioAntenna;
-                if (ingameAnt == null) continue;
-                float r = ingameAnt.Radius;
-                if (r > detectedRange) detectedRange = r;
-            }
 
             _maxRange = detectedRange > 1f ? detectedRange : DEFAULT_RANGE;
 
-            // --- GPS contacts (player HUD markers) ─────────────────────────────
-            CollectGpsContacts();
-
-            // Increment missed-frame counters for entity contacts not seen this frame
             foreach (var kv in _contacts)
             {
                 if (_seenThisFrame.Contains(kv.Key))
@@ -286,98 +158,101 @@ namespace Graph.Apps.Radar
             }
         }
 
-        void CollectGpsContacts()
-        {
-            _tempGps.Clear();
-            _diagGps = 0;
-
-            try
-            {
-                var session = MyAPIGateway.Session;
-                var player  = session?.LocalHumanPlayer;
-                if (player == null) return;
-
-                session.GPS.GetGpsList(player.IdentityId, _tempGps);
-                _diagGps = _tempGps.Count;
-
-                var seenHashes = new HashSet<long>();
-
-                for (int g = 0; g < _tempGps.Count; g++)
-                {
-                    var gps = _tempGps[g];
-                    if (!gps.ShowOnHud) continue;
-                    // Skip GPS at exact world origin — likely invalid/unset
-                    if (gps.Coords == Vector3D.Zero) continue;
-
-                    long key = -(long)gps.Hash; // negative to avoid EntityId collision
-
-                    seenHashes.Add(key);
-
-                    ContactRecord rec;
-                    if (!_gpsContacts.TryGetValue(key, out rec))
-                    {
-                        rec = new ContactRecord { EntityId = key };
-                        _gpsContacts[key] = rec;
-                    }
-
-                    rec.WorldPosition = gps.Coords;
-                    rec.Name          = gps.Name ?? string.Empty;
-                    // GPS has no relationship data — show as neutral (warning color)
-                    rec.Relationship  = MyRelationsBetweenPlayerAndBlock.Neutral;
-                    rec.IsTargeted    = false;
-                    rec.MissedFrames  = 0;
-                }
-
-                // Remove GPS contacts no longer in player list
-                _toRemove.Clear();
-                foreach (var kv in _gpsContacts)
-                    if (!seenHashes.Contains(kv.Key))
-                        _toRemove.Add(kv.Key);
-                for (int i = 0; i < _toRemove.Count; i++)
-                    _gpsContacts.Remove(_toRemove[i]);
-            }
-            catch (Exception ex)
-            {
-                ErrorHandlerHelper.LogError(ex, this);
-            }
-        }
-
-
         void CollectEntityContacts()
         {
-            _diagEntities = 0;
             try
             {
                 var session = MyAPIGateway.Session;
-                var player  = session?.LocalHumanPlayer;
-                if (player == null) return;
+                if (session == null) return;
 
-                long localIdentity = player.IdentityId;
-                var  myFaction     = session.Factions.TryGetPlayerFaction(localIdentity);
-                var  shipPos       = ((IMyEntity)Block.CubeGrid).WorldMatrix.Translation;
-                float range        = _maxRange;
-                long ownGridId     = Block.CubeGrid.EntityId;
+                var shipPos = ((IMyEntity)Block).WorldMatrix.Translation;
+                float range = _maxRange;
+                var ownGrid = Block.CubeGrid as IMyCubeGrid;
+                if (ownGrid == null) return;
+
+                long ownGridId = ownGrid.EntityId;
+                long ownGridOwnerId = GetPrimaryGridOwner(ownGrid);
+                long lockedTargetEntityId;
+                float lockedTargetPercent;
+                long lockedTargetGridId = GetLockedTargetGridId(out lockedTargetEntityId, out lockedTargetPercent);
+                var normalizedLockPercent = NormalizeLockPercent(lockedTargetPercent);
+                _debugLockedTargetEntityId = lockedTargetEntityId;
+                _debugLockedTargetPercent = normalizedLockPercent;
+                _debugLockedTargetName = ResolveGridName(lockedTargetGridId);
 
                 _tempEntities.Clear();
-                MyAPIGateway.Entities.GetEntities(_tempEntities, e =>
+                var sphere = new BoundingSphereD(shipPos, range);
+                var entitiesInSphere = MyAPIGateway.Entities.GetEntitiesInSphere(ref sphere);
+                if (entitiesInSphere != null)
                 {
-                    var g = e as IMyCubeGrid;
-                    if (g == null || g.Physics == null) return false;
-                    if (g.EntityId == ownGridId) return false;
-                    return Vector3D.Distance(e.WorldMatrix.Translation, shipPos) <= range;
-                });
+                    for (int i = 0; i < entitiesInSphere.Count; i++)
+                        _tempEntities.Add(entitiesInSphere[i]);
+                    entitiesInSphere.Clear();
+                }
 
-                _diagEntities = _tempEntities.Count;
-
+                _processedGroupGridIds.Clear();
                 foreach (var entity in _tempEntities)
                 {
-                    var grid = (IMyCubeGrid)entity;
-                    long entityId = grid.EntityId;
+                    var grid = entity as IMyCubeGrid;
+                    if (grid == null || grid.Physics == null)
+                        continue;
+                    if (grid.EntityId == ownGridId)
+                        continue;
 
+                    if (_processedGroupGridIds.Contains(grid.EntityId))
+                        continue;
+
+                    _tempGroupGrids.Clear();
+                    try
+                    {
+                        MyAPIGateway.GridGroups.GetGroup(grid, GridLinkTypeEnum.Logical, _tempGroupGrids);
+                    }
+                    catch
+                    {
+                    }
+
+                    if (_tempGroupGrids.Count == 0)
+                        _tempGroupGrids.Add(grid);
+
+                    IMyCubeGrid selectedGrid = null;
+                    double selectedScore = double.MinValue;
+                    bool ownGroup = false;
+                    bool groupHasLockedTarget = false;
+
+                    for (int i = 0; i < _tempGroupGrids.Count; i++)
+                    {
+                        var groupGrid = _tempGroupGrids[i];
+                        _processedGroupGridIds.Add(groupGrid.EntityId);
+                        if (lockedTargetGridId != 0 && groupGrid.EntityId == lockedTargetGridId)
+                            groupHasLockedTarget = true;
+
+                        if (groupGrid.EntityId == ownGridId)
+                        {
+                            ownGroup = true;
+                            continue;
+                        }
+
+                        if (groupGrid.Physics == null) continue;
+
+                        var groupPos = groupGrid.WorldMatrix.Translation;
+                        if (Vector3D.Distance(groupPos, shipPos) > range) continue;
+
+                        var score = GetGridVolumeScore(groupGrid);
+                        if (score > selectedScore)
+                        {
+                            selectedScore = score;
+                            selectedGrid = groupGrid;
+                        }
+                    }
+
+                    if (ownGroup || selectedGrid == null)
+                        continue;
+
+                    long entityId = selectedGrid.EntityId;
                     if (_seenThisFrame.Contains(entityId)) continue;
                     _seenThisFrame.Add(entityId);
 
-                    var   pos  = grid.WorldMatrix.Translation;
+                    var pos = selectedGrid.WorldMatrix.Translation;
                     float dist = (float)Vector3D.Distance(pos, shipPos);
 
                     ContactRecord rec;
@@ -387,12 +262,13 @@ namespace Graph.Apps.Radar
                         _contacts[entityId] = rec;
                     }
 
-                    AdvanceHistory(rec, pos, dist);
-                    rec.Name          = grid.DisplayName ?? string.Empty;
-                    rec.Relationship  = GetGridRelationship(grid, localIdentity, myFaction);
+                    rec.Name = selectedGrid.DisplayName ?? string.Empty;
+                    rec.Relationship = GetGridRelationship(selectedGrid, ownGridOwnerId);
+                    rec.IconTexture = GetFactionIconForOwner(GetPrimaryGridOwner(selectedGrid));
                     rec.WorldPosition = pos;
-                    rec.IsTargeted    = false;
-                    rec.MissedFrames  = 0;
+                    rec.IsTargeted = groupHasLockedTarget;
+                    rec.TargetLockPercent = groupHasLockedTarget ? normalizedLockPercent : 0f;
+                    rec.MissedFrames = 0;
                 }
             }
             catch (Exception ex)
@@ -401,96 +277,245 @@ namespace Graph.Apps.Radar
             }
         }
 
-        MyRelationsBetweenPlayerAndBlock GetGridRelationship(IMyCubeGrid grid, long localIdentity, IMyFaction myFaction)
+        double GetGridVolumeScore(IMyCubeGrid grid)
+        {
+            var aabb = grid.WorldAABB;
+            var size = aabb.Max - aabb.Min;
+            return size.X * size.Y * size.Z;
+        }
+
+        long GetPrimaryGridOwner(IMyCubeGrid grid)
         {
             var owners = grid.BigOwners;
-            if (owners == null || owners.Count == 0)
-                return MyRelationsBetweenPlayerAndBlock.NoOwnership;
+            return owners != null && owners.Count > 0 ? owners[0] : 0;
+        }
 
-            long ownerId = owners[0];
-            if (ownerId == localIdentity)
-                return MyRelationsBetweenPlayerAndBlock.Owner;
+        long GetLockedTargetGridId(out long targetEntityId, out float targetLockPercent)
+        {
+            targetEntityId = 0;
+            targetLockPercent = 0f;
 
-            if (myFaction != null && myFaction.Members.ContainsKey(ownerId))
-                return MyRelationsBetweenPlayerAndBlock.FactionShare;
+            long lockedEntityId;
+            float lockedPercent;
+            long lockedGridId = 0;
 
-            var ownerFaction = MyAPIGateway.Session.Factions.TryGetPlayerFaction(ownerId);
-            if (ownerFaction == null || myFaction == null)
+            var player = MyAPIGateway.Session?.LocalHumanPlayer;
+            RefreshCachedCharacterTargetLocking(player);
+
+            lockedGridId = GetLockedTargetGridIdFromTargetLockingComponent(_cachedCharacterTargetLocking,
+                out lockedEntityId,
+                out lockedPercent);
+            if (lockedEntityId != 0)
+            {
+                targetEntityId = lockedEntityId;
+                targetLockPercent = lockedPercent;
+            }
+
+            if (lockedGridId != 0)
+                return lockedGridId;
+
+            var playerCharacter = player?.Character;
+            lockedGridId = GetLockedTargetGridIdFromEntity(playerCharacter, out lockedEntityId, out lockedPercent);
+            if (lockedEntityId != 0)
+            {
+                targetEntityId = lockedEntityId;
+                targetLockPercent = lockedPercent;
+            }
+
+            if (lockedGridId != 0)
+                return lockedGridId;
+
+            var controlledEntity = player?.Controller?.ControlledEntity?.Entity;
+            lockedGridId = GetLockedTargetGridIdFromEntity(controlledEntity, out lockedEntityId, out lockedPercent);
+            if (lockedEntityId != 0)
+            {
+                targetEntityId = lockedEntityId;
+                targetLockPercent = lockedPercent;
+            }
+
+            if (lockedGridId != 0)
+                return lockedGridId;
+
+            var cameraEntity = MyAPIGateway.Session?.CameraController?.Entity;
+            lockedGridId = GetLockedTargetGridIdFromEntity(cameraEntity, out lockedEntityId, out lockedPercent);
+            if (lockedEntityId != 0 && targetEntityId == 0)
+            {
+                targetEntityId = lockedEntityId;
+                targetLockPercent = lockedPercent;
+            }
+
+            if (lockedGridId != 0)
+                return lockedGridId;
+
+            var cockpit = Block as IMyCockpit;
+            lockedGridId = GetLockedTargetGridIdFromEntity(cockpit, out lockedEntityId, out lockedPercent);
+            if (lockedEntityId != 0)
+            {
+                targetEntityId = lockedEntityId;
+                targetLockPercent = lockedPercent;
+            }
+
+            if (lockedGridId != 0)
+                return lockedGridId;
+
+            var myGrid = Block.CubeGrid as Sandbox.Game.Entities.MyCubeGrid;
+            var mainCockpit = myGrid?.MainCockpit as IMyCockpit;
+            lockedGridId = GetLockedTargetGridIdFromEntity(mainCockpit, out lockedEntityId, out lockedPercent);
+            if (lockedEntityId != 0 && targetEntityId == 0)
+            {
+                targetEntityId = lockedEntityId;
+                targetLockPercent = lockedPercent;
+            }
+
+            if (lockedGridId != 0)
+                return lockedGridId;
+
+            lockedGridId = GetLockedTargetGridIdFromEntity(myGrid, out lockedEntityId, out lockedPercent);
+            if (lockedEntityId != 0 && targetEntityId == 0)
+            {
+                targetEntityId = lockedEntityId;
+                targetLockPercent = lockedPercent;
+            }
+
+            return lockedGridId;
+        }
+
+        void RefreshCachedCharacterTargetLocking(IMyPlayer player)
+        {
+            var characterEntity = player?.Character as VRage.ModAPI.IMyEntity;
+            var currentCharacterId = characterEntity?.EntityId ?? 0;
+            if (currentCharacterId == _cachedCharacterId)
+                return;
+
+            _cachedCharacterId = currentCharacterId;
+            _cachedCharacterTargetLocking = characterEntity?.Components?
+                .Get<Sandbox.Game.EntityComponents.MyTargetLockingComponent>();
+        }
+
+        static long GetLockedTargetGridIdFromEntity(IMyEntity entity, out long targetEntityId,
+            out float targetLockPercent)
+        {
+            targetEntityId = 0;
+            targetLockPercent = 0f;
+            if (entity == null || entity.Components == null)
+                return 0;
+
+            var targetLockingBlock =
+                entity.Components.Get<Sandbox.Game.EntityComponents.MyTargetLockingBlockComponent>();
+            if (targetLockingBlock != null)
+            {
+                var blockTargetEntity = targetLockingBlock.TargetEntity;
+                if (blockTargetEntity != null)
+                {
+                    targetEntityId = blockTargetEntity.EntityId;
+                    targetLockPercent = targetLockingBlock.LockingProgressPercent;
+                    var blockTargetGrid = blockTargetEntity as IMyCubeGrid;
+                    if (blockTargetGrid != null)
+                        return blockTargetGrid.EntityId;
+                }
+            }
+
+            var targetLocking = entity.Components.Get<Sandbox.Game.EntityComponents.MyTargetLockingComponent>();
+            if (targetLocking == null)
+                return 0;
+
+
+            var targetEntity = targetLocking.TargetEntity;
+            if (targetEntity == null)
+                return 0;
+
+            targetEntityId = targetEntity.EntityId;
+            targetLockPercent = targetLocking.LockingProgressPercent;
+            var targetGrid = targetEntity as IMyCubeGrid;
+            return targetGrid?.EntityId ?? 0;
+        }
+
+        static long GetLockedTargetGridIdFromTargetLockingComponent(
+            Sandbox.Game.EntityComponents.MyTargetLockingComponent targetLocking,
+            out long targetEntityId,
+            out float targetLockPercent)
+        {
+            targetEntityId = 0;
+            targetLockPercent = 0f;
+            if (targetLocking == null)
+                return 0;
+
+            var targetEntity = targetLocking.TargetEntity;
+            if (targetEntity == null)
+                return 0;
+
+            targetEntityId = targetEntity.EntityId;
+            targetLockPercent = targetLocking.LockingProgressPercent;
+            var targetGrid = targetEntity as IMyCubeGrid;
+            return targetGrid?.EntityId ?? 0;
+        }
+
+        static float NormalizeLockPercent(float rawPercent)
+        {
+            if (rawPercent > 1f)
+                rawPercent *= 0.01f;
+            return MathHelper.Clamp(rawPercent, 0f, 1f);
+        }
+
+        static string ResolveGridName(long gridEntityId)
+        {
+            if (gridEntityId == 0)
+                return string.Empty;
+
+            IMyEntity entity;
+            if (!MyAPIGateway.Entities.TryGetEntityById(gridEntityId, out entity))
+                return string.Empty;
+
+            var grid = entity as IMyCubeGrid;
+            return grid?.DisplayName ?? string.Empty;
+        }
+
+        MyRelationsBetweenPlayerAndBlock GetGridRelationship(IMyCubeGrid grid, long ownGridOwnerId)
+        {
+            long ownerId = GetPrimaryGridOwner(grid);
+            if (ownerId == 0)
                 return MyRelationsBetweenPlayerAndBlock.Neutral;
 
-            var relation = MyAPIGateway.Session.Factions.GetRelationBetweenFactions(
-                myFaction.FactionId, ownerFaction.FactionId);
-            if (relation == MyRelationsBetweenFactions.Enemies)
+            if (ownGridOwnerId != 0 && ownerId == ownGridOwnerId)
+                return MyRelationsBetweenPlayerAndBlock.FactionShare; // Allied
+
+            if (ownGridOwnerId == 0)
+                return MyRelationsBetweenPlayerAndBlock.Neutral;
+
+            var relation = Sandbox.Game.Entities.MyIDModule.GetRelationPlayerPlayer(ownGridOwnerId, ownerId);
+            var relationName = relation.ToString();
+            if (relationName == "Enemies")
                 return MyRelationsBetweenPlayerAndBlock.Enemies;
+            if (relationName == "Allies" || relationName == "Friends")
+                return MyRelationsBetweenPlayerAndBlock.FactionShare;
 
             return MyRelationsBetweenPlayerAndBlock.Neutral;
         }
 
-        static float SensorMaxRange(InGameSensor s)
+        string GetFactionIconForOwner(long ownerId)
         {
-            return Math.Max(s.LeftExtend, Math.Max(s.RightExtend,
-                   Math.Max(s.FrontExtend, Math.Max(s.BackExtend,
-                   Math.Max(s.TopExtend, s.BottomExtend)))));
-        }
+            if (ownerId == 0)
+                return null;
 
-        void UpdateContact(DetectedInfo info, bool isTargeted)
-        {
-            var gridMatrix  = ((IMyEntity)Block.CubeGrid).WorldMatrix;
-            float currentDist = (float)Vector3D.Distance(info.Position, gridMatrix.Translation);
+            var faction = MyAPIGateway.Session?.Factions?.TryGetPlayerFaction(ownerId);
+            if (faction == null)
+                return null;
 
-            ContactRecord rec;
-            if (!_contacts.TryGetValue(info.EntityId, out rec))
+            var icon = faction.FactionIcon?.ToString();
+            if (string.IsNullOrEmpty(icon))
+                return null;
+
+            string cachedIcon;
+            if (!_factionIconCache.TryGetValue(faction.FactionId, out cachedIcon) ||
+                !string.Equals(cachedIcon, icon, StringComparison.Ordinal))
             {
-                rec = new ContactRecord { EntityId = info.EntityId };
-                _contacts[info.EntityId] = rec;
+                _factionIconCache[faction.FactionId] = icon;
+                cachedIcon = icon;
             }
 
-            AdvanceHistory(rec, info.Position, currentDist);
-
-            rec.Name          = info.Name ?? string.Empty;
-            rec.Relationship  = info.Relationship;
-            rec.WorldPosition = info.Position;
-            rec.IsTargeted    = isTargeted;
-            rec.MissedFrames  = 0;
+            return cachedIcon;
         }
 
-        void AdvanceHistory(ContactRecord rec, Vector3D currentPos, float currentDist)
-        {
-            if (!rec.HasHistory)
-            {
-                rec.HasHistory      = true;
-                rec.HistoryPosition = currentPos;
-                rec.HistoryDistance = currentDist;
-                rec.HistoryAge      = 0;
-                rec.Behavior        = ContactBehavior.Unknown;
-                return;
-            }
-
-            rec.HistoryAge++;
-            if (rec.HistoryAge < HISTORY_INTERVAL)
-                return;
-
-            // Enough time has passed — classify behaviour using 2-second delta
-            float elapsed    = HISTORY_INTERVAL * (10f / 60f); // seconds (Update10 ≈ 166 ms)
-            float distDelta  = rec.HistoryDistance - currentDist; // positive = approaching
-            float approachRate = distDelta / elapsed;
-
-            float movementMag = (float)Vector3D.Distance(currentPos, rec.HistoryPosition);
-
-            if (movementMag < 5f)
-                rec.Behavior = ContactBehavior.Stationary;
-            else if (Math.Abs(approachRate) >= APPROACH_MS)
-                rec.Behavior = approachRate > 0f ? ContactBehavior.Approaching : ContactBehavior.MovingAway;
-            else
-                rec.Behavior = ContactBehavior.Lateral;
-
-            rec.ApproachRate    = approachRate;
-            rec.HistoryPosition = currentPos;
-            rec.HistoryDistance = currentDist;
-            rec.HistoryAge      = 0;
-        }
-
-        // ------------------------------------------------------------------ housekeeping
 
         void PurgeStaleContacts()
         {
@@ -503,296 +528,658 @@ namespace Graph.Apps.Radar
                 _contacts.Remove(_toRemove[i]);
         }
 
-        // ------------------------------------------------------------------ rendering
 
         void RenderRadar(List<MySprite> sprites)
         {
-            var fg        = ForegroundColor;        // texto  — all structural lines, text, circles
-            var bg        = BackgroundColor;        // radar interior fill
-            var errColor  = Config.ErrorColor;      // erro   — enemy contacts
-            var warnColor = Config.WarningColor;    // warning — neutral contacts
-            var frdColor  = Config.HeaderColor;     // titulo — friendly contacts
+            var lineColor = ForegroundColor;
+            var backColor = BackgroundColor;
+            var warnColor = Config.WarningColor;
+            var errColor = Config.ErrorColor;
+            var allyColor = Config.HeaderColor;
+            var planeColor = new Color(ForegroundColor, 0.12f);
 
-            // Available area starts BELOW the title bar (CaretY is set by DrawTitle)
-            float margin      = RADAR_MARGIN_PX * Scale;
-            float areaTop     = CaretY + margin;
-            float areaBottom  = ViewBox.Bottom - margin;
-            float areaLeft    = ViewBox.X + margin;
-            float areaRight   = ViewBox.Right - margin;
-            float areaW       = areaRight - areaLeft;
-            float areaH       = areaBottom - areaTop;
+            UpdateProjectionAngle();
 
-            float radarRadius = Math.Min(areaW, areaH) / 2f;
-            var   center      = new Vector2(areaLeft + areaW / 2f, areaTop + areaH / 2f);
+            float minScale = Math.Min(Scale, 1f);
+            float margin = RADAR_MARGIN_PX * minScale;
+            float areaTop = CaretY + margin;
+            float radarFooterClearance = FooterHeight * FOOTER_RADAR_CLEARANCE_FACTOR;
+            float areaBottom = ViewBox.Bottom - radarFooterClearance - margin;
+            float areaHeight = areaBottom - areaTop;
+            float areaWidth = ViewBox.Width - margin * 2f;
+            if (areaWidth <= 0f || areaHeight <= 0f) return;
 
-            if (radarRadius <= 0f) return;
+            Vector2 viewportCropped = new Vector2(
+                areaWidth,
+                areaHeight - (RANGE_TEXT_SIZE * SIZE_TO_PX + _borderPadding.Y) * minScale);
+            if (viewportCropped.X <= 0f || viewportCropped.Y <= 0f) return;
 
-            // ── 1. Radar background circle ──────────────────────────────────
-            sprites.Add(FilledCircle(center, radarRadius, bg));
+            float sideLength;
+            if (viewportCropped.X * _radarProjectionCos < viewportCropped.Y)
+                sideLength = viewportCropped.X;
+            else
+                sideLength = viewportCropped.Y / _radarProjectionCos;
+            sideLength *= RADAR_SIZE_SCALE;
 
-            // ── 2. Dynamic outer ring (current max detectable range) ─────────
-            DrawRing(sprites, center, radarRadius, RING_STROKE_PX * Scale, fg, bg);
+            Vector2 radarCenterPos = new Vector2(ViewBox.Center.X, areaTop + viewportCropped.Y * 0.5f);
+            var radarPlaneSize = new Vector2(sideLength, sideLength * _radarProjectionCos);
 
-            // ── 3. Fixed rings 800 / 1400 / 2000 m (outer → inner) ──────────
-            float[] fixedMeters = { RING_3_M, RING_2_M, RING_1_M };
-            for (int r = 0; r < fixedMeters.Length; r++)
-            {
-                float m = fixedMeters[r];
-                if (m >= _maxRange) continue;
-                float ringR = (m / _maxRange) * radarRadius;
-                DrawRing(sprites, center, ringR, RING_STROKE_PX * Scale, fg, bg);
-            }
+            DrawRadarPlaneBackground(sprites, radarCenterPos, radarPlaneSize, minScale, lineColor, backColor,
+                planeColor);
 
-            // ── 4. Radial lines ──────────────────────────────────────────────
-            float lineLen = radarRadius * 2f;
-            var   dimFg   = new Color(fg, 0.35f);
-
-            DrawLine(sprites, center, lineLen, LINE_STROKE_PX * Scale, fg, 0f);
-            DrawLine(sprites, center, lineLen, LINE_STROKE_PX * Scale, fg, MathHelper.PiOver2);
-            DrawLine(sprites, center, lineLen, DIAG_STROKE_PX * Scale, dimFg,  MathHelper.Pi / 4f);
-            DrawLine(sprites, center, lineLen, DIAG_STROKE_PX * Scale, dimFg, -MathHelper.Pi / 4f);
-
-            // ── 5. Sweep line (above grid, below contacts) ───────────────────
-            float sweepRad = _sweepAngleDeg * (float)(Math.PI / 180.0);
-            DrawSweepLine(sprites, center, radarRadius, sweepRad);
-
-            // ── 5b. Center dot ────────────────────────────────────────────────
-            sprites.Add(FilledCircle(center, 3f * Scale, fg));
-
-            // ── 6. Contacts ──────────────────────────────────────────────────
             BuildSortedContacts();
-            var gridMatrix = ((IMyEntity)Block.CubeGrid).WorldMatrix;
-            int shown = Math.Min(_sortedContacts.Count, MAX_CONTACTS);
+            BuildTargetLayers(errColor, warnColor, allyColor, _debugLockedTargetPercent);
+            for (int i = 0; i < _targetsBelowPlane.Count; i++)
+                DrawTargetIcon(sprites, radarCenterPos, radarPlaneSize, _targetsBelowPlane[i], minScale, backColor);
 
+            DrawRadarPlane(sprites, radarCenterPos, radarPlaneSize, minScale, lineColor);
+
+            for (int i = 0; i < _targetsAbovePlane.Count; i++)
+                DrawTargetIcon(sprites, radarCenterPos, radarPlaneSize, _targetsAbovePlane[i], minScale, backColor);
+
+            if (_debugLockedTargetEntityId != 0)
+            {
+                var debugText = "TARGET: " + (string.IsNullOrWhiteSpace(_debugLockedTargetName)
+                                               ? "Unknown"
+                                               : _debugLockedTargetName)
+                                           + " (" + (_debugLockedTargetPercent * 100f).ToString("F0") + "%)";
+                float debugScale = 0.5f * minScale;
+                float debugOffsetY =
+                    Surface.MeasureStringInPixels(new StringBuilder(debugText), "White", debugScale).Y * 0.5f;
+                var debugColor = _debugLockedTargetPercent >= 0.99f ? Config.ErrorColor : Config.WarningColor;
+                sprites.Add(new MySprite(
+                    SpriteType.TEXT,
+                    debugText,
+                    radarCenterPos + new Vector2(0f, radarPlaneSize.Y * 0.5f + 12f * minScale + debugOffsetY),
+                    null,
+                    new Color(debugColor, 0.85f),
+                    "White",
+                    TextAlignment.CENTER,
+                    debugScale));
+            }
+        }
+
+        void UpdateProjectionAngle()
+        {
+            float rads = MathHelper.ToRadians(PROJECTION_ANGLE_DEG);
+            _radarProjectionCos = (float)Math.Cos(rads);
+            _radarProjectionSin = (float)Math.Sin(rads);
+        }
+
+        void BuildTargetLayers(Color errColor, Color warnColor, Color allyColor, float debugLockedTargetPercent)
+        {
+            _targetsBelowPlane.Clear();
+            _targetsAbovePlane.Clear();
+
+            var gridMatrix = ((IMyEntity)Block).WorldMatrix;
+            int shown = Math.Min(_sortedContacts.Count, MAX_CONTACTS);
+            bool hasLockedTarget = false;
             for (int i = 0; i < shown; i++)
             {
-                var contact = _sortedContacts[i];
-                bool isGps  = contact.EntityId < 0;
+                TargetInfo info;
+                if (!TryBuildTargetInfo(_sortedContacts[i], gridMatrix, errColor, warnColor, allyColor, out info))
+                    continue;
 
-                // Compute normalised radar-plane coords once; reused for position, clamp, and sweep.
-                float normX, normZ;
-                ProjectToNorm(contact.WorldPosition, gridMatrix, out normX, out normZ);
+                if (info.TargetLock)
+                    hasLockedTarget = true;
 
-                Vector2 screenPos;
-                if (isGps)
-                {
-                    // GPS contacts: always show, clamped to radar edge when out of range.
-                    float mag = (float)Math.Sqrt(normX * normX + normZ * normZ);
-                    float cx = normX, cz = normZ;
-                    if (mag > 1f) { cx /= mag; cz /= mag; }
-                    screenPos = new Vector2(center.X + cx * radarRadius, center.Y + cz * radarRadius);
-                }
-                else
-                {
-                    // Entity contacts: skip if outside max range.
-                    if (normX * normX + normZ * normZ > 1f) continue;
-                    screenPos = new Vector2(center.X + normX * radarRadius, center.Y + normZ * radarRadius);
-                }
-
-                float dist   = (float)Vector3D.Distance(contact.WorldPosition, gridMatrix.Translation);
-                bool isClose = !isGps && dist < _maxRange * CLOSE_RATIO;
-                float dotR   = (contact.IsTargeted || isClose)
-                    ? CONTACT_BIG_PX * Scale / 2f
-                    : CONTACT_SIZE_PX * Scale / 2f;
-
-                // Update sweep-highlight alpha before drawing the dot.
-                UpdateContactSweepState(contact, normX, normZ, _sweepAngleDeg);
-
-                Color baseColor = ContactColor(contact, errColor, warnColor, frdColor);
-                sprites.Add(FilledCircle(screenPos, dotR, new Color(baseColor, contact.SweepAlpha / 255f)));
+                if (info.AbovePlane) _targetsAbovePlane.Add(info);
+                else _targetsBelowPlane.Add(info);
             }
 
-            // ── 7. Direction markers — fixed, never rotate ───────────────────
-            float mOff   = radarRadius + 10f * Scale;
-            float mScale = MARKER_FONT * Scale;
-            float halfH  = 7f * Scale;
-
-            AddLabel(sprites, "N", new Vector2(center.X,          center.Y - mOff),              fg, mScale);
-            AddLabel(sprites, "S", new Vector2(center.X,          center.Y + mOff - halfH * 2f), fg, mScale);
-            AddLabel(sprites, "L", new Vector2(center.X + mOff,   center.Y - halfH),             fg, mScale);
-            AddLabel(sprites, "O", new Vector2(center.X - mOff,   center.Y - halfH),             fg, mScale);
-
-            // ── 8. Info + diagnostic — bottom-left corner ────────────────────
-            float infoScale  = INFO_FONT * Scale;
-            float lineH      = 13f * Scale;
-            float bx         = ViewBox.X + 4f * Scale;           // left edge
-            float by         = ViewBox.Bottom - lineH * 3f - 4f * Scale; // three lines from bottom
-            var   diagColor  = new Color(fg, 0.55f);
-
-            AddLabelLeft(sprites, "RANGE "   + FormatMeters(_maxRange), new Vector2(bx, by),             fg,       infoScale);
-            AddLabelLeft(sprites, "TARGETS " + _contacts.Count,         new Vector2(bx, by + lineH),     fg,       infoScale);
-            AddLabelLeft(sprites,
-                "S:" + _diagSensorsWorking + "/" + _diagSensors +
-                " T:" + _diagTurretsTargeting + "/" + _diagTurrets +
-                " ANT:" + _antennas.Count +
-                " GPS:" + _diagGps +
-                " ENT:" + _diagEntities +
-                " RAW:" + _diagRawDetections +
-                " CTX:" + _contacts.Count,
-                new Vector2(bx, by + lineH * 2f), diagColor, infoScale * 0.85f);
-        }
-
-        // ------------------------------------------------------------------ draw primitives
-
-        // Draws a one-sided sweep beam (center → edge) plus a fading afterglow trail.
-        // angleRad: 0 = East, increases clockwise in screen space (Y-down).
-        void DrawSweepLine(List<MySprite> sprites, Vector2 center, float radarRadius, float angleRad)
-        {
-            var   sweepColor = new Color(0, 230, 80);
-            float stroke     = SWEEP_LINE_STROKE_PX * Scale;
-            float halfLen    = radarRadius / 2f;
-            float stepRad    = SWEEP_AFTERGLOW_STEP_DEG * (float)(Math.PI / 180.0);
-
-            // Afterglow trail — farthest first so closer segments render on top
-            for (int i = SWEEP_AFTERGLOW_COUNT; i >= 1; i--)
+            var colorMultiplier = 1 - 0.5f * _debugLockedTargetPercent;
+            
+            if (hasLockedTarget)
             {
-                float t          = (float)(i - 1) / Math.Max(1, SWEEP_AFTERGLOW_COUNT - 1); // 0 = closest, 1 = farthest
-                float alpha      = 0.40f - t * (0.40f - 0.06f);
-                float trailAngle = angleRad - i * stepRad;
-                float dx = (float)Math.Cos(trailAngle) * halfLen;
-                float dy = (float)Math.Sin(trailAngle) * halfLen;
-                var   trailColor = new Color(sweepColor.R, sweepColor.G, sweepColor.B, (int)(255 * alpha));
-                DrawLine(sprites, new Vector2(center.X + dx, center.Y + dy), radarRadius, stroke, trailColor, trailAngle);
+                for (int i = 0; i < _targetsBelowPlane.Count; i++)
+                {
+                    var info = _targetsBelowPlane[i];
+                    if (!info.TargetLock)
+                    {
+                        info.IconColor = info.IconColor.MulSaturation(colorMultiplier).MulValue(colorMultiplier);
+                        info.ElevationColor = info.ElevationColor.MulSaturation(colorMultiplier).MulValue(colorMultiplier);
+                        _targetsBelowPlane[i] = info;
+                    }
+                }
+
+                for (int i = 0; i < _targetsAbovePlane.Count; i++)
+                {
+                    var info = _targetsAbovePlane[i];
+                    if (!info.TargetLock)
+                    {
+                        info.IconColor = info.IconColor.MulSaturation(0.5f).MulValue(0.5f);
+                        info.ElevationColor = info.ElevationColor.MulSaturation(0.5f).MulValue(0.5f);
+                        _targetsAbovePlane[i] = info;
+                    }
+                }
             }
 
-            // Primary sweep line
-            float pdx = (float)Math.Cos(angleRad) * halfLen;
-            float pdy = (float)Math.Sin(angleRad) * halfLen;
-            var   primaryColor = new Color(sweepColor.R, sweepColor.G, sweepColor.B, (int)(255 * SWEEP_LINE_ALPHA));
-            DrawLine(sprites, new Vector2(center.X + pdx, center.Y + pdy), radarRadius, stroke, primaryColor, angleRad);
-
-            // Glow dot at center
-            sprites.Add(FilledCircle(center, 4f * Scale, new Color(sweepColor.R, sweepColor.G, sweepColor.B, 100)));
+            _targetsBelowPlane.Sort((a, b) => a.Position.Y.CompareTo(b.Position.Y));
+            _targetsAbovePlane.Sort((a, b) => a.Position.Y.CompareTo(b.Position.Y));
         }
 
-        void DrawRing(List<MySprite> sprites, Vector2 center, float radius, float stroke,
-                      Color strokeColor, Color bgColor)
+        bool TryBuildTargetInfo(ContactRecord contact, MatrixD gridMatrix, Color errColor, Color warnColor,
+            Color allyColor,
+            out TargetInfo targetInfo)
         {
-            if (radius <= 0f) return;
-            sprites.Add(FilledCircle(center, radius + stroke, strokeColor)); // outer filled
-            float inner = radius - stroke;
-            if (inner > 0f)
-                sprites.Add(FilledCircle(center, inner, bgColor));           // inner erase
-        }
+            var transformedDirection =
+                Vector3D.TransformNormal(contact.WorldPosition - gridMatrix.Translation, MatrixD.Transpose(gridMatrix));
+            var position = new Vector3((float)transformedDirection.X, (float)transformedDirection.Z,
+                (float)transformedDirection.Y);
 
-        static void DrawLine(List<MySprite> sprites, Vector2 center, float length, float stroke,
-                             Color color, float angleRad)
-        {
-            sprites.Add(new MySprite
+            bool inRange = position.X * position.X + position.Y * position.Y < _maxRange * _maxRange;
+            bool isGps = contact.EntityId < 0;
+            bool above = position.Z >= 0f;
+            float angle = 0f;
+            Action<List<MySprite>, Vector2, Color, float, float> drawFunction;
+
+            if (inRange)
             {
-                Type            = SpriteType.TEXTURE,
-                Data            = "SquareSimple",
-                Position        = center,
-                Size            = new Vector2(length, stroke),
-                Color           = color,
-                Alignment       = TextAlignment.CENTER,
-                RotationOrScale = angleRad
-            });
-        }
-
-        static MySprite FilledCircle(Vector2 center, float radius, Color color)
-        {
-            return new MySprite
+                position /= _maxRange;
+                drawFunction = ContactDrawFunction(contact);
+            }
+            else
             {
-                Type      = SpriteType.TEXTURE,
-                Data      = "Circle",
-                Position  = center,
-                Size      = new Vector2(radius * 2f),
-                Color     = color,
-                Alignment = TextAlignment.CENTER
+                Vector3 directionFlat = position;
+                directionFlat.Z = 0f;
+                if (directionFlat.LengthSquared() < 1e-6f)
+                {
+                    targetInfo = default(TargetInfo);
+                    return false;
+                }
+
+                float angleOffset = position.Z > 0f ? MathHelper.Pi : 0f;
+                position = Vector3.Normalize(directionFlat);
+                angle = angleOffset + MathHelper.PiOver2;
+                drawFunction = DrawOutOfRangeIcon;
+            }
+
+            Color iconColor = ContactColor(contact, errColor, warnColor, allyColor);
+            targetInfo = new TargetInfo
+            {
+                Position = position,
+                IconColor = iconColor,
+                IconTexture = contact.IconTexture,
+                ElevationColor = new Color(iconColor, 0.7f),
+                TargetLock = contact.IsTargeted,
+                TargetLockPercent = contact.TargetLockPercent,
+                AbovePlane = above,
+                Rotation = angle,
+                DrawFunction = drawFunction
             };
+            return true;
         }
 
-        static void AddLabel(List<MySprite> sprites, string text, Vector2 pos, Color color, float scale)
+        void DrawRadarPlaneBackground(List<MySprite> sprites, Vector2 centerPos, Vector2 radarPlaneSize, float scale,
+            Color lineColor, Color backColor, Color planeColor)
         {
+            float lineWidth = RADAR_RANGE_LINE_WIDTH * scale;
+            AddTexture(sprites, "Circle", centerPos, radarPlaneSize, lineColor);
+            AddTexture(sprites, "Circle", centerPos, radarPlaneSize - lineWidth * Vector2.One, backColor);
+
+            DrawRangeRing(sprites, centerPos, radarPlaneSize, RING_3_M, lineWidth, lineColor, backColor);
+            DrawRangeRing(sprites, centerPos, radarPlaneSize, RING_2_M, lineWidth, lineColor, backColor);
+            DrawRangeRing(sprites, centerPos, radarPlaneSize, RING_1_M, lineWidth, lineColor, backColor);
+
+            AddTexture(sprites, "Circle", centerPos, radarPlaneSize, planeColor);
+        }
+
+        void DrawRangeRing(List<MySprite> sprites, Vector2 centerPos, Vector2 radarPlaneSize, float ringDistance,
+            float lineWidth, Color lineColor, Color backColor)
+        {
+            if (_maxRange <= 0f || ringDistance <= 0f)
+                return;
+
+            float ratio = ringDistance / _maxRange;
+            if (ratio <= 0f || ratio >= 1f)
+                return;
+
+            Vector2 ringSize = radarPlaneSize * ratio;
+            if (ringSize.X <= lineWidth || ringSize.Y <= lineWidth)
+                return;
+
+            AddTexture(sprites, "Circle", centerPos, ringSize, new Color(lineColor, 0.65f));
+            AddTexture(sprites, "Circle", centerPos, ringSize - lineWidth * Vector2.One, backColor);
+        }
+
+        void DrawRadarPlane(List<MySprite> sprites, Vector2 radarScreenCenter, Vector2 radarPlaneSize, float scale,
+            Color lineColor)
+        {
+            var iconSize = _shipIconSize * scale;
+            AddTexture(sprites, "Triangle", radarScreenCenter + new Vector2(0f, -0.2f * iconSize.Y), iconSize,
+                lineColor);
+
+            float lineWidth = QUADRANT_LINE_WIDTH * scale;
+            Color quadrantLineColor = new Color(lineColor, 0.5f);
+            Vector2 halfHorizontal = new Vector2(radarPlaneSize.X * 0.5f, 0f);
+            Vector2 halfVertical = new Vector2(0f, radarPlaneSize.Y * 0.5f);
+            Vector2 horizontalInner = halfHorizontal * (1f - QUADRANT_LINE_COVERAGE_PER_SIDE);
+            Vector2 verticalInner = halfVertical * (1f - QUADRANT_LINE_COVERAGE_PER_SIDE);
+            DrawLine(sprites, radarScreenCenter - halfHorizontal, radarScreenCenter - horizontalInner, lineWidth,
+                quadrantLineColor);
+            DrawLine(sprites, radarScreenCenter + horizontalInner, radarScreenCenter + halfHorizontal, lineWidth,
+                quadrantLineColor);
+            DrawLine(sprites, radarScreenCenter - halfVertical, radarScreenCenter - verticalInner, lineWidth,
+                quadrantLineColor);
+            DrawLine(sprites, radarScreenCenter + verticalInner, radarScreenCenter + halfVertical, lineWidth,
+                quadrantLineColor);
+
+            float angleTextSize = QUADRANT_LABEL_TEXT_SIZE * scale;
+            float labelMargin = QUADRANT_LABEL_MARGIN_PX * scale;
+            Color angleColor = new Color(ForegroundColor, 0.72f);
+            float angleLabelHalfHeight =
+                Surface.MeasureStringInPixels(new StringBuilder("180"), "Debug", angleTextSize).Y * 0.5f;
+            Vector2 angleLabelOffset = new Vector2(0f, -angleLabelHalfHeight);
+            float sideLabelInwardOffset = labelMargin * 0.5f;
+            sprites.Add(new MySprite(
+                SpriteType.TEXT,
+                "0º",
+                radarScreenCenter - halfVertical - new Vector2(0f, labelMargin) + angleLabelOffset,
+                null,
+                angleColor,
+                "White",
+                TextAlignment.CENTER,
+                angleTextSize));
+            sprites.Add(new MySprite(
+                SpriteType.TEXT,
+                "90º",
+                radarScreenCenter + halfHorizontal + new Vector2(labelMargin - sideLabelInwardOffset, 0f) +
+                angleLabelOffset,
+                null,
+                angleColor,
+                "White",
+                TextAlignment.LEFT,
+                angleTextSize));
+            sprites.Add(new MySprite(
+                SpriteType.TEXT,
+                "180º",
+                radarScreenCenter + halfVertical + new Vector2(0f, labelMargin) + angleLabelOffset,
+                null,
+                angleColor,
+                "White",
+                TextAlignment.CENTER,
+                angleTextSize));
+            sprites.Add(new MySprite(
+                SpriteType.TEXT,
+                "270º",
+                radarScreenCenter - halfHorizontal - new Vector2(labelMargin - sideLabelInwardOffset, 0f) +
+                angleLabelOffset,
+                null,
+                angleColor,
+                "White",
+                TextAlignment.RIGHT,
+                angleTextSize));
+        }
+
+        void DrawTargetIcon(List<MySprite> sprites, Vector2 screenCenter, Vector2 radarPlaneSize, TargetInfo targetInfo,
+            float scale, Color backColor)
+        {
+            Vector3 targetPosPixels = targetInfo.Position * new Vector3(1f, _radarProjectionCos, _radarProjectionSin) *
+                                      radarPlaneSize.X * 0.5f;
+            var targetPosPlane = new Vector2(targetPosPixels.X, targetPosPixels.Y);
+            Vector2 iconPos = targetPosPlane - targetPosPixels.Z * Vector2.UnitY;
+
+            RoundVector2(ref iconPos);
+            RoundVector2(ref targetPosPlane);
+
+            float elevationLineWidth = Math.Max(1f, TGT_ELEVATION_LINE_WIDTH * scale);
+            var elevationSprite = new MySprite(SpriteType.TEXTURE, "SquareSimple",
+                screenCenter + (iconPos + targetPosPlane) * 0.5f,
+                new Vector2(elevationLineWidth, targetPosPixels.Z),
+                ScaleColorAlpha(targetInfo.ElevationColor, 1f));
+            RoundVector2(ref elevationSprite.Position);
+            RoundVector2(ref elevationSprite.Size);
+
+            Vector2 iconDrawPos = screenCenter + iconPos;
+            RoundVector2(ref iconDrawPos);
+
+            float shadowThickness = 2f * (float)Math.Max(1f, Math.Round(scale * 4f));
+            float shadowScale = scale * (_tgtIconSize.X + shadowThickness) / _tgtIconSize.X;
+
+            Vector2 iconSize = _tgtIconSize * scale;
+            iconSize.Y *= _radarProjectionCos;
+            var projectedIconSprite = new MySprite(SpriteType.TEXTURE, "Circle",
+                screenCenter + targetPosPlane, iconSize, ScaleColorAlpha(targetInfo.ElevationColor, 1f));
+            RoundVector2(ref projectedIconSprite.Position);
+
+            bool showProjectedElevation = Math.Abs(iconPos.Y - targetPosPlane.Y) > iconSize.Y;
+            if (targetInfo.AbovePlane)
+            {
+                if (showProjectedElevation)
+                {
+                    sprites.Add(projectedIconSprite);
+                    sprites.Add(elevationSprite);
+                }
+
+                DrawContactIcon(sprites, iconDrawPos, targetInfo, shadowScale, 0f);
+            }
+            else
+            {
+                if (showProjectedElevation) sprites.Add(elevationSprite);
+                DrawContactIcon(sprites, iconDrawPos, targetInfo, shadowScale, 0f);
+                if (showProjectedElevation) sprites.Add(projectedIconSprite);
+            }
+
+            if (targetInfo.TargetLock)
+            {
+                float lockOffsetPx = (1f - MathHelper.Clamp(targetInfo.TargetLockPercent, 0f, 1f)) *
+                                     LOCK_ANIM_DISTANCE * scale;
+                Vector2 targetBoxSize = (_tgtIconSize + 20f) * scale + new Vector2(lockOffsetPx * 2f);
+                if (targetInfo.TargetLockPercent >= 0.999f)
+                    DrawRotatedSquareOutline(sprites, iconDrawPos, (_tgtIconSize.X + 8f) * scale, 2f * scale,
+                        targetInfo.IconColor, MathHelper.PiOver4);
+                DrawBoxCorners(sprites, targetBoxSize, iconDrawPos, 12f * scale, 4f * scale, targetInfo.IconColor);
+            }
+        }
+
+
+        static void DrawLine(List<MySprite> sprites, Vector2 point1, Vector2 point2, float width, Color color)
+        {
+            Vector2 position = 0.5f * (point1 + point2);
+            Vector2 diff = point1 - point2;
+            float length = diff.Length();
+            if (length > 0f) diff /= length;
+            var size = new Vector2(length, width);
+            float angle = (float)Math.Acos(Vector2.Dot(diff, Vector2.UnitX));
+            angle *= Math.Sign(Vector2.Dot(diff, Vector2.UnitY));
+            sprites.Add(new MySprite(SpriteType.TEXTURE, "SquareSimple", position, size, color, null,
+                TextAlignment.CENTER, angle));
+        }
+
+        static void DrawRotatedSquareOutline(List<MySprite> sprites, Vector2 center, float size, float thickness,
+            Color color, float rotation)
+        {
+            float half = size * 0.5f;
+            var p1 = RotateVector(new Vector2(-half, -half), rotation) + center;
+            var p2 = RotateVector(new Vector2(half, -half), rotation) + center;
+            var p3 = RotateVector(new Vector2(half, half), rotation) + center;
+            var p4 = RotateVector(new Vector2(-half, half), rotation) + center;
+
+            DrawLine(sprites, p1, p2, thickness, color);
+            DrawLine(sprites, p2, p3, thickness, color);
+            DrawLine(sprites, p3, p4, thickness, color);
+            DrawLine(sprites, p4, p1, thickness, color);
+        }
+
+        static Vector2 RotateVector(Vector2 v, float radians)
+        {
+            float c = (float)Math.Cos(radians);
+            float s = (float)Math.Sin(radians);
+            return new Vector2(v.X * c - v.Y * s, v.X * s + v.Y * c);
+        }
+
+        static void DrawBoxCorners(List<MySprite> sprites, Vector2 boxSize, Vector2 centerPos, float lineLength,
+            float lineWidth, Color color)
+        {
+            var horizontalSize = new Vector2(lineLength, lineWidth);
+            var verticalSize = new Vector2(lineWidth, lineLength);
+            Vector2 horizontalOffset = 0.5f * horizontalSize;
+            Vector2 verticalOffset = 0.5f * verticalSize;
+            Vector2 boxHalfSize = 0.5f * boxSize;
+            Vector2 boxTopLeft = centerPos - boxHalfSize;
+            Vector2 boxBottomRight = centerPos + boxHalfSize;
+            Vector2 boxTopRight = centerPos + new Vector2(boxHalfSize.X, -boxHalfSize.Y);
+            Vector2 boxBottomLeft = centerPos + new Vector2(-boxHalfSize.X, boxHalfSize.Y);
+
+            AddTexture(sprites, "SquareSimple", boxTopLeft + horizontalOffset, horizontalSize, color);
+            AddTexture(sprites, "SquareSimple", boxTopLeft + verticalOffset, verticalSize, color);
+            AddTexture(sprites, "SquareSimple", boxTopRight + new Vector2(-horizontalOffset.X, horizontalOffset.Y),
+                horizontalSize, color);
+            AddTexture(sprites, "SquareSimple", boxTopRight + new Vector2(-verticalOffset.X, verticalOffset.Y),
+                verticalSize, color);
+            AddTexture(sprites, "SquareSimple", boxBottomLeft + new Vector2(horizontalOffset.X, -horizontalOffset.Y),
+                horizontalSize, color);
+            AddTexture(sprites, "SquareSimple", boxBottomLeft + new Vector2(verticalOffset.X, -verticalOffset.Y),
+                verticalSize, color);
+            AddTexture(sprites, "SquareSimple", boxBottomRight - horizontalOffset, horizontalSize, color);
+            AddTexture(sprites, "SquareSimple", boxBottomRight - verticalOffset, verticalSize, color);
+        }
+
+        static void AddTexture(List<MySprite> sprites, string texture, Vector2 position, Vector2 size, Color color,
+            float rotation = 0f)
+        {
+            sprites.Add(new MySprite(SpriteType.TEXTURE, texture, position, size, color, null, TextAlignment.CENTER,
+                rotation));
+        }
+
+        static void AddSpriteWithShadow(List<MySprite> sprites, MySprite sprite, float offset)
+        {
+            sprites.Add(sprite.Shadow(offset));
+            sprites.Add(sprite);
+        }
+
+        void DrawContactIcon(List<MySprite> sprites, Vector2 position, TargetInfo targetInfo, float scale,
+            float rotation)
+        {
+            if (!string.IsNullOrEmpty(targetInfo.IconTexture))
+            {
+                AddSpriteWithShadow(sprites, new MySprite(
+                    SpriteType.TEXTURE,
+                    targetInfo.IconTexture,
+                    position,
+                    new Vector2(DOT_SIZE * 1.5f) * scale,
+                    targetInfo.IconColor,
+                    null,
+                    TextAlignment.CENTER,
+                    rotation), scale);
+                return;
+            }
+
+            targetInfo.DrawFunction(sprites, position, targetInfo.IconColor, scale, rotation);
+        }
+
+        static Color ScaleColorAlpha(Color color, float scale)
+        {
+            if (scale > 0.999f) return color;
+            color.A = (byte)Math.Round(color.A * scale);
+            return color;
+        }
+
+        static void DrawSquare(List<MySprite> frame, Vector2 centerPos, Color color, float scale,
+            float rotation)
+        {
+            AddSpriteWithShadow(frame,
+                new MySprite(SpriteType.TEXTURE, "SquareSimple", centerPos, new Vector2(DOT_SIZE) * scale, color, null,
+                    TextAlignment.CENTER, rotation), scale);
+        }
+
+        static void DrawCircle(List<MySprite> frame, Vector2 centerPos, Color color, float scale,
+            float rotation)
+        {
+            AddSpriteWithShadow(frame,
+                new MySprite(SpriteType.TEXTURE, "Circle", centerPos, new Vector2(DOT_SIZE) * scale, color, null,
+                    TextAlignment.CENTER, rotation), scale);
+        }
+
+        static void DrawOutOfRangeIcon(List<MySprite> frame, Vector2 centerPos, Color color,
+            float scale,
+            float rotation)
+        {
+            float sin = (float)Math.Sin(rotation);
+            float cos = (float)Math.Cos(rotation);
+            scale *= 0.075f;
+
+            AddTexture(frame, "SquareSimple",
+                new Vector2(cos * 61f - sin * -12f, sin * 61f + cos * -12f) * scale + centerPos,
+                new Vector2(180f, 350f) * scale, color.MulValue(0.2f), -0.7854f + rotation);
+            AddTexture(frame, "SquareSimple",
+                new Vector2(cos * -61f - sin * -12f, sin * -61f + cos * -12f) * scale + centerPos,
+                new Vector2(180f, 350f) * scale, color.MulValue(0.2f), 0.7854f + rotation);
+            AddTexture(frame, "SquareSimple",
+                new Vector2(cos * 61f - sin * -12f, sin * 61f + cos * -12f) * scale + centerPos,
+                new Vector2(80f, 250f) * scale, color, -0.7854f + rotation);
+            AddTexture(frame, "SquareSimple",
+                new Vector2(cos * -61f - sin * -12f, sin * -61f + cos * -12f) * scale + centerPos,
+                new Vector2(80f, 250f) * scale, color, 0.7854f + rotation);
+        }
+
+        static void DrawTriangle(List<MySprite> frame, Vector2 centerPos, Color color, float scale,
+            float rotation)
+        {
+            Vector2 iconSize = new Vector2(DOT_SIZE) * scale;
+            Vector2 shadowSize = iconSize * 1.2f;
+
+            AddTexture(frame, "Triangle", centerPos, shadowSize, color.MulValue(0.2f), rotation);
+            AddTexture(frame, "Triangle", centerPos + new Vector2(0, iconSize.Y * .05f), iconSize, color, rotation);
+        }
+
+        static void RoundVector2(ref Vector2 vec)
+        {
+            vec.X = (float)Math.Round(vec.X);
+            vec.Y = (float)Math.Round(vec.Y);
+        }
+
+        static void RoundVector2(ref Vector2? vec)
+        {
+            if (!vec.HasValue) return;
+            var value = vec.Value;
+            value.X = (float)Math.Round(value.X);
+            value.Y = (float)Math.Round(value.Y);
+            vec = value;
+        }
+
+        protected override void DrawFooter(List<MySprite> sprites)
+        {
+            if (FooterHeight <= 0f)
+                return;
+
+            BuildSortedContacts();
+            if (_sortedContacts.Count == 0)
+                return;
+
+            float margin = ViewBox.Width * Margin;
+            float left = ViewBox.X + margin;
+            float right = ViewBox.Right - margin;
+            float width = Math.Max(1f, right - left);
+            float top = ViewBox.Bottom - FooterHeight;
+            float pad = 6f * Scale;
+            float rowHeight = FOOTER_ROW_HEIGHT_PX * Scale;
+            float headerHeight = FOOTER_HEADER_HEIGHT_PX * Scale;
+            float colWidth = FOOTER_COL_WIDTH_PX * Scale;
+            int cols = Math.Max(1, (int)Math.Floor(width / Math.Max(1f, colWidth)));
+            int visibleEntries = FOOTER_MAX_ROWS * cols;
+            int maxEntries = Math.Min(_sortedContacts.Count, visibleEntries);
+            int startIndex = 0;
+            if (_sortedContacts.Count > visibleEntries)
+                startIndex = GetScrollStep(FOOTER_SCROLL_STEP_SECONDS) % _sortedContacts.Count;
+
             sprites.Add(new MySprite
             {
-                Type            = SpriteType.TEXT,
-                Data            = text,
-                Position        = pos,
-                Color           = color,
-                Alignment       = TextAlignment.CENTER,
-                FontId          = "White",
-                RotationOrScale = scale
+                Type = SpriteType.TEXTURE,
+                Data = "SquareSimple",
+                Position = new Vector2(left + width * 0.5f, top + FooterHeight * 0.5f),
+                Size = new Vector2(width, FooterHeight),
+                Color = new Color(BackgroundColor, 0.78f),
+                Alignment = TextAlignment.CENTER
             });
-        }
 
-        static void AddLabelLeft(List<MySprite> sprites, string text, Vector2 pos, Color color, float scale)
-        {
             sprites.Add(new MySprite
             {
-                Type            = SpriteType.TEXT,
-                Data            = text,
-                Position        = pos,
-                Color           = color,
-                Alignment       = TextAlignment.LEFT,
-                FontId          = "White",
-                RotationOrScale = scale
+                Type = SpriteType.TEXT,
+                Data = "DETECTED ENTITIES",
+                Position = new Vector2(left + pad, top + 1f * Scale),
+                Color = new Color(ForegroundColor, 0.75f),
+                Alignment = TextAlignment.LEFT,
+                FontId = "White",
+                RotationOrScale = 0.55f * Scale
             });
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXT,
+                Data = MyTexts.GetString("BlockPropertyTitle_OreDetectorRange") + ": " + FormatingHelper.DistanceToString(_maxRange),
+                Position = new Vector2(left + width - pad, top + 1f * Scale),
+                Color = new Color(ForegroundColor, 0.75f),
+                Alignment = TextAlignment.RIGHT,
+                FontId = "White",
+                RotationOrScale = 0.55f * Scale
+            });
+
+            var shipPos = ((IMyEntity)Block).WorldMatrix.Translation;
+            var errColor = Config.ErrorColor;
+            var warnColor = Config.WarningColor;
+            var allyColor = Config.HeaderColor;
+            float contentTop = top + headerHeight + pad;
+            float drawColWidth = width / cols;
+
+            for (int i = 0; i < maxEntries; i++)
+            {
+                ContactRecord contact = _sortedContacts[(startIndex + i) % _sortedContacts.Count];
+                int col = i / FOOTER_MAX_ROWS;
+                int row = i % FOOTER_MAX_ROWS;
+
+                float x = left + col * drawColWidth + pad;
+                float y = contentTop + row * rowHeight;
+                Color iconColor = ContactColor(contact, errColor, warnColor, allyColor);
+                float iconSize = 9f * Scale;
+
+                sprites.Add(new MySprite
+                {
+                    Type = SpriteType.TEXTURE,
+                    Data = FooterIconTexture(contact),
+                    Position = new Vector2(x + iconSize * 0.5f, y + iconSize * 0.5f),
+                    Size = new Vector2(iconSize, iconSize),
+                    Color = iconColor,
+                    Alignment = TextAlignment.CENTER
+                });
+
+                string dist = FormatingHelper.DistanceToString((float)Vector3D.Distance(contact.WorldPosition, shipPos));
+                float distanceScale = 0.48f * Scale;
+                float distanceWidth = Surface.MeasureStringInPixels(new StringBuilder(dist), "White", distanceScale).X;
+                float colRight = left + (col + 1) * drawColWidth - pad;
+
+                sprites.Add(new MySprite
+                {
+                    Type = SpriteType.TEXT,
+                    Data = dist,
+                    Position = new Vector2(colRight, y),
+                    Color = new Color(ForegroundColor, 0.75f),
+                    Alignment = TextAlignment.RIGHT,
+                    FontId = "White",
+                    RotationOrScale = distanceScale
+                });
+
+                _footerTextBuilder.Clear();
+                if (contact.IsTargeted)
+                    _footerTextBuilder.Append("[L] ");
+                _footerTextBuilder.Append(string.IsNullOrWhiteSpace(contact.Name) ? "Unknown" : contact.Name);
+                float nameAvailable = Math.Max(0f, colRight - (x + iconSize + 6f * Scale) - distanceWidth - 8f * Scale);
+                var labelText = _footerTextBuilder;
+                TrimText(ref labelText, nameAvailable, 0.5f);
+
+                sprites.Add(new MySprite
+                {
+                    Type = SpriteType.TEXT,
+                    Data = labelText.ToString(),
+                    Position = new Vector2(x + iconSize + 6f * Scale, y),
+                    Color = ForegroundColor,
+                    Alignment = TextAlignment.LEFT,
+                    FontId = "White",
+                    RotationOrScale = 0.5f * Scale
+                });
+            }
         }
 
-        // ------------------------------------------------------------------ sweep state
-
-        // Updates contact.SweepAlpha based on its normalised radar position and the current sweep angle.
-        // normX / normZ are the already-computed ProjectToNorm outputs for this contact.
-        void UpdateContactSweepState(ContactRecord contact, float normX, float normZ, float sweepAngleDeg)
+        void UpdateFooterHeight()
         {
-            // Convert the contact's radar-plane angle to degrees (screen: +X right, +Z down → atan2(normZ, normX))
-            float contactAngleDeg = (float)(Math.Atan2(normZ, normX) * (180.0 / Math.PI));
-            if (contactAngleDeg < 0f) contactAngleDeg += 360f;
+            int entries = Math.Min(MAX_CONTACTS, _contacts.Count);
+            if (entries <= 0)
+            {
+                FooterHeight = 0f;
+                return;
+            }
 
-            float delta = sweepAngleDeg - contactAngleDeg;
-            // Wrap delta into [0, 360) so we measure how far behind the sweep the contact is
-            delta = delta % 360f;
-            if (delta < 0f) delta += 360f;
-
-            // Fade over a 90-degree trailing arc; contacts ahead of the sweep start fresh
-            const float FADE_ARC = 90f;
-            float alpha = delta < FADE_ARC ? (1f - delta / FADE_ARC) : 0f;
-            contact.SweepAlpha = (byte)(alpha * 255f);
+            float margin = ViewBox.Width * Margin;
+            float width = Math.Max(1f, ViewBox.Width - margin * 2f);
+            float colWidth = FOOTER_COL_WIDTH_PX * Scale;
+            int cols = Math.Max(1, (int)Math.Floor(width / Math.Max(1f, colWidth)));
+            int rows = (int)Math.Ceiling(Math.Min(entries, FOOTER_MAX_ROWS * cols) / (float)cols);
+            FooterHeight = (FOOTER_HEADER_HEIGHT_PX + FOOTER_ROW_HEIGHT_PX * rows + 12f) * Scale;
         }
-
-        // ------------------------------------------------------------------ coordinate transform
-
-        // Returns null if outside max range (entity contacts — clipped).
-        Vector2? ToRadarScreen(Vector3D worldPos, Vector2 radarCenter, float radarRadius, MatrixD gridMatrix)
-        {
-            float normX, normZ;
-            ProjectToNorm(worldPos, gridMatrix, out normX, out normZ);
-            if (normX * normX + normZ * normZ > 1f) return null;
-            return new Vector2(
-                radarCenter.X + normX * radarRadius,
-                radarCenter.Y + normZ * radarRadius);
-        }
-
-        // Always returns a position — clamps to radar edge for GPS contacts beyond range.
-        Vector2 ToRadarScreenClamped(Vector3D worldPos, Vector2 radarCenter, float radarRadius, MatrixD gridMatrix)
-        {
-            float normX, normZ;
-            ProjectToNorm(worldPos, gridMatrix, out normX, out normZ);
-            float mag = (float)Math.Sqrt(normX * normX + normZ * normZ);
-            if (mag > 1f) { normX /= mag; normZ /= mag; }
-            return new Vector2(
-                radarCenter.X + normX * radarRadius,
-                radarCenter.Y + normZ * radarRadius);
-        }
-
-        void ProjectToNorm(Vector3D worldPos, MatrixD gridMatrix, out float normX, out float normZ)
-        {
-            var delta    = worldPos - gridMatrix.Translation;
-            var localPos = Vector3D.TransformNormal(delta, MatrixD.Transpose(gridMatrix));
-            // +X = ship-right → radar right
-            // −Z = ship-forward → radar up (screen Y decreases)
-            normX = (float)(localPos.X / _maxRange);
-            normZ = (float)(localPos.Z / _maxRange);
-        }
-
-        // ------------------------------------------------------------------ contact sort
 
         void BuildSortedContacts()
         {
             _sortedContacts.Clear();
-            var shipPos = ((IMyEntity)Block.CubeGrid).WorldMatrix.Translation;
+            var shipPos = ((IMyEntity)Block).WorldMatrix.Translation;
 
             // Entity contacts: only those within detection range
             foreach (var kv in _contacts)
@@ -803,31 +1190,17 @@ namespace Graph.Apps.Radar
                 _sortedContacts.Add(c);
             }
 
-            // GPS contacts: always included regardless of range (shown clamped at edge)
-            foreach (var kv in _gpsContacts)
-                _sortedContacts.Add(kv.Value);
-
             // Targeted contacts first, then closest-first
             _sortedContacts.Sort((a, b) =>
             {
                 if (a.IsTargeted != b.IsTargeted)
                     return a.IsTargeted ? -1 : 1;
-                var pos = ((IMyEntity)Block.CubeGrid).WorldMatrix.Translation;
+                var pos = ((IMyEntity)Block).WorldMatrix.Translation;
                 float da = (float)Vector3D.Distance(a.WorldPosition, pos);
                 float db = (float)Vector3D.Distance(b.WorldPosition, pos);
                 return da.CompareTo(db);
             });
         }
-
-        // ------------------------------------------------------------------ type filter
-
-        static bool IsGridContact(Sandbox.ModAPI.Ingame.MyDetectedEntityType type)
-        {
-            return type == Sandbox.ModAPI.Ingame.MyDetectedEntityType.LargeGrid
-                || type == Sandbox.ModAPI.Ingame.MyDetectedEntityType.SmallGrid;
-        }
-
-        // ------------------------------------------------------------------ colour mapping
 
         static Color ContactColor(ContactRecord c, Color errColor, Color warnColor, Color frdColor)
         {
@@ -843,13 +1216,35 @@ namespace Graph.Apps.Radar
             }
         }
 
-        // ------------------------------------------------------------------ utility
-
-        static string FormatMeters(float meters)
+        static Action<List<MySprite>, Vector2, Color, float, float> ContactDrawFunction(ContactRecord contact)
         {
-            if (meters >= 1000f)
-                return string.Format("{0:F1}km", meters / 1000f);
-            return string.Format("{0:F0}m", meters);
+            switch (contact.Relationship)
+            {
+                case MyRelationsBetweenPlayerAndBlock.Owner:
+                case MyRelationsBetweenPlayerAndBlock.FactionShare:
+                    return DrawSquare;
+                case MyRelationsBetweenPlayerAndBlock.Enemies:
+                    return DrawCircle;
+                default:
+                    return DrawTriangle;
+            }
+        }
+
+        static string FooterIconTexture(ContactRecord contact)
+        {
+            if (!string.IsNullOrEmpty(contact.IconTexture))
+                return contact.IconTexture;
+
+            switch (contact.Relationship)
+            {
+                case MyRelationsBetweenPlayerAndBlock.Owner:
+                case MyRelationsBetweenPlayerAndBlock.FactionShare:
+                    return "SquareSimple";
+                case MyRelationsBetweenPlayerAndBlock.Enemies:
+                    return "Circle";
+                default:
+                    return "Triangle";
+            }
         }
     }
 }

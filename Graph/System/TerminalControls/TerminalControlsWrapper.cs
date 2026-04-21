@@ -5,6 +5,7 @@ using Graph.Apps.Diagnostic;
 using Graph.Apps.Inventory;
 using Graph.Apps.Percentage;
 using Graph.Apps.Power;
+using Graph.Apps.Radar;
 using Graph.Apps.Refinery;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
@@ -41,7 +42,8 @@ namespace Graph.System.TerminalControls
                 CargoFilledSurfaceScript.ID,
                 AntennaSurfaceScript.ID,
                 IntegrityMonitorSurfaceScript.ID,
-                TopEnergyConsumptionSurfaceScript.ID
+                TopEnergyConsumptionSurfaceScript.ID,
+                RadarSurfaceScript.ID
             };
 
         /// <summary>
