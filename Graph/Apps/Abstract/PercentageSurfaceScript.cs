@@ -385,7 +385,7 @@ namespace Graph.Apps.Abstract
             });
         }
 
-        protected int GetMaxColsFromSurface()
+        protected virtual int GetMaxColsFromSurface()
         {
             var max = ViewBox.Width - ViewBox.X;
             var perCol = MINIMUM_COL_WIDTH * Scale;
