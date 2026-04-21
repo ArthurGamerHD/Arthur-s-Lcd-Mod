@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(dotnet build *)"
+      "Bash(dotnet build *)",
+      "Read(//c/program files \\(x86\\)/steam/SteamApps/common/SpaceEngineers/Bin64/**)",
+      "Bash(dotnet-script)",
+      "Bash(powershell *)",
+      "Bash(git *)",
+      "Bash(xargs ls *)"
     ]
   }
 }

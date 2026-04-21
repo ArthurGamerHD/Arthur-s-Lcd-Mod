@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <data name="LCDMod_Radar" xml:space="preserve">
+    <value>Тактический Радар</value>
+  </data>
+  <data name="LCDMod_TopEnergy" xml:space="preserve">
+    <value>Топ Потребления Энергии</value>
+  </data>
+</root>

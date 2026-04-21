@@ -52,7 +52,7 @@ namespace Graph.Apps.Radar
     public class RadarSurfaceScript : SurfaceScriptBase
     {
         public const string ID    = "LCDMod_Radar";
-        public const string TITLE = "Radar Tático";
+        public const string TITLE = "LCDMod_Radar";
 
         protected override string DefaultTitle => TITLE;
 

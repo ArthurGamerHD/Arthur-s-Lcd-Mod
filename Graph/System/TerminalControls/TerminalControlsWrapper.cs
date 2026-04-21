@@ -40,7 +40,8 @@ namespace Graph.System.TerminalControls
                 ProjectorLcdSurfaceScript.ID,
                 CargoFilledSurfaceScript.ID,
                 AntennaSurfaceScript.ID,
-                IntegrityMonitorSurfaceScript.ID
+                IntegrityMonitorSurfaceScript.ID,
+                TopEnergyConsumptionSurfaceScript.ID
             };
 
         /// <summary>
