@@ -13,6 +13,7 @@ using Graph.System.TerminalControls.Filter;
 using Graph.System.TerminalControls.Filter.Buttons;
 using Graph.System.TerminalControls.Filter.Listbox;
 using Graph.System.TerminalControls.Generic;
+using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
@@ -22,14 +23,14 @@ using VRage.Game.Components;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.Utils;
+using VRageMath;
 
 namespace Graph.System
 {
     [MySessionComponentDescriptor(MyUpdateOrder.BeforeSimulation | MyUpdateOrder.AfterSimulation)]
     public class LcdModSessionComponent : MySessionComponentBase
     {
-        readonly Dictionary<long, MyTuple<IMyCubeGrid, GridLogic>> _grids =
-            new Dictionary<long, MyTuple<IMyCubeGrid, GridLogic>>();
+        readonly Dictionary<long, MyTuple<IMyCubeGrid, GridLogic>> _grids = new Dictionary<long, MyTuple<IMyCubeGrid, GridLogic>>();
 
         int _updateTick;
         MyLanguagesEnum? _loadedLanguage;
@@ -44,6 +45,9 @@ namespace Graph.System
         {
             if (MyAPIGateway.Utilities.IsDedicated && MyAPIGateway.Session.IsServer)
                 return;
+
+            var group = CmdManager.GetOrCreateGroup("/lcdMod", new CmdGroupInitializer(4));
+            group.TryAdd("FactionColor", FactionHelper.SetColor);
 
             DebuggerHelper.Break();
             MyAPIGateway.Entities.OnEntityAdd += EntityAdded;
@@ -288,6 +292,21 @@ namespace Graph.System
                         foreach (var app in ConfigManager.GetAppsForBlock(block)) 
                             app.RequestRedraw();
 
+                        break;
+                    }
+                    case PackageCode.EditFaction:
+                    {
+                        var packet = args.UnWrap<PacketEditFaction>();
+                        var sender = MyAPIGateway.Players.TryGetIdentityId(args.SenderId);
+                        var faction = MyAPIGateway.Session.Factions.TryGetPlayerFaction(sender);
+
+                        if (faction == null || packet.FactionId != faction.FactionId || !(faction.IsLeader(sender) || faction.IsFounder(sender)))
+                        {
+                            MyVisualScriptLogicProvider.SendChatMessageColored("Unable to edit faction", Color.Red, "Error", sender);
+                            return;
+                        }
+                        
+                        FactionHelper.EditFaction(packet);
                         break;
                     }
                     default:

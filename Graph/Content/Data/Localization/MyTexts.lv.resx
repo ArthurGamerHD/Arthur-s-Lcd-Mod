@@ -42,4 +42,22 @@
   <data name="LCDMod_PowerFilled" xml:space="preserve">
     <value>Jauda piepildīta %</value>
   </data>
+  <data name="LCDMod_FactionColor_Usage" xml:space="preserve">
+    <value>Lietošana: /lcdmod factioncolor &lt;r g b | #rrggbb | #rgb | hsv h s v&gt;</value>
+  </data>
+  <data name="LCDMod_FactionColor_HsvFormat" xml:space="preserve">
+    <value>HSV formāts: hsv &lt;h&gt; &lt;s&gt; &lt;v&gt; (decimālskaitļi)</value>
+  </data>
+  <data name="LCDMod_FactionColor_HsvRange" xml:space="preserve">
+    <value>HSV vērtībām jābūt [0..1]. Tonis pieņem arī [0..360].</value>
+  </data>
+  <data name="LCDMod_FactionColor_Invalid" xml:space="preserve">
+    <value>Nederīga krāsa. Lieto: 255 0 0 | #ff0000 | #f00 | hsv 0 1 1</value>
+  </data>
+  <data name="LCDMod_FactionColor_NoFaction" xml:space="preserve">
+    <value>Vietējam spēlētājam frakcija nav atrasta.</value>
+  </data>
+  <data name="LCDMod_FactionColor_Updated" xml:space="preserve">
+    <value>Frakcijas ikonas krāsa atjaunināta.</value>
+  </data>
 </root>

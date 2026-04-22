@@ -142,8 +142,8 @@ namespace Graph.System.Config
                 var provider =
                     MyAPIGateway.Utilities.SerializeFromBinary<ScreenProviderConfig>(Convert.FromBase64String(value));
 
-                if (provider.ParentGrid != block.CubeGrid.EntityId)
-                    provider.ParentGrid = block.CubeGrid.EntityId;
+                if (provider.Parent != block.CubeGrid.EntityId)
+                    provider.SetParent(block.CubeGrid.EntityId);
 
                 foreach (var providerScreen in provider.Screens) 
                     providerScreen.ParentBlock = (IMyTerminalBlock)block;

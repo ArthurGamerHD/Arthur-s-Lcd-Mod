@@ -1,9 +1,56 @@
+using System;
+using System.Globalization;
+using Sandbox.Game.Gui;
+using VRage.Game;
 using VRageMath;
 
 namespace Graph.Extensions
 {
     public static class ColorExtensions
     {
+        public static bool TryParseHexColor(string value, out Color color)
+        {
+            color = Color.White;
+            if (string.IsNullOrWhiteSpace(value))
+                return false;
+
+            var hex = value.Trim();
+            if (hex[0] == '#')
+                hex = hex.Substring(1);
+
+            if (hex.Length == 3)
+                hex = string.Concat(hex[0], hex[0], hex[1], hex[1], hex[2], hex[2]);
+            else if (hex.Length != 6)
+                return false;
+
+            byte r;
+            byte g;
+            byte b;
+            if (!byte.TryParse(hex.Substring(0, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out r) ||
+                !byte.TryParse(hex.Substring(2, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out g) ||
+                !byte.TryParse(hex.Substring(4, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out b))
+                return false;
+
+            color = new Color(r, g, b);
+            return true;
+        }
+
+        public static Vector3 ToFactionColor(this Color color) =>
+            MyColorPickerConstants.HSVToHSVOffset(color.ColorToHSV());
+
+        public static bool TryParseHexFactionColor(string value, out Vector3 factionColor)
+        {
+            Color parsed;
+            if (TryParseHexColor(value, out parsed))
+            {
+                factionColor = parsed.ToFactionColor();
+                return true;
+            }
+
+            factionColor = Vector3.Zero;
+            return false;
+        }
+
         public static string ToHex(this Color color)
         {
             return $"#{color.R:X2}{color.G:X2}{color.B:X2}";

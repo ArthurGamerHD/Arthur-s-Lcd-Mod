@@ -42,4 +42,22 @@
   <data name="LCDMod_PowerFilled" xml:space="preserve">
     <value>Energie naplněna %</value>
   </data>
+  <data name="LCDMod_FactionColor_Usage" xml:space="preserve">
+    <value>Použití: /lcdmod factioncolor &lt;r g b | #rrggbb | #rgb | hsv h s v&gt;</value>
+  </data>
+  <data name="LCDMod_FactionColor_HsvFormat" xml:space="preserve">
+    <value>Formát HSV: hsv &lt;h&gt; &lt;s&gt; &lt;v&gt; (desetinná čísla)</value>
+  </data>
+  <data name="LCDMod_FactionColor_HsvRange" xml:space="preserve">
+    <value>Hodnoty HSV musí být v [0..1]. Odstín také podporuje [0..360].</value>
+  </data>
+  <data name="LCDMod_FactionColor_Invalid" xml:space="preserve">
+    <value>Neplatná barva. Použijte: 255 0 0 | #ff0000 | #f00 | hsv 0 1 1</value>
+  </data>
+  <data name="LCDMod_FactionColor_NoFaction" xml:space="preserve">
+    <value>Pro místního hráče nebyla nalezena žádná frakce.</value>
+  </data>
+  <data name="LCDMod_FactionColor_Updated" xml:space="preserve">
+    <value>Barva ikony frakce byla aktualizována.</value>
+  </data>
 </root>

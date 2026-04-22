@@ -42,4 +42,22 @@
   <data name="LCDMod_PowerFilled" xml:space="preserve">
     <value>Moc napełniona %</value>
   </data>
+  <data name="LCDMod_FactionColor_Usage" xml:space="preserve">
+    <value>Użycie: /lcdmod factioncolor &lt;r g b | #rrggbb | #rgb | hsv h s v&gt;</value>
+  </data>
+  <data name="LCDMod_FactionColor_HsvFormat" xml:space="preserve">
+    <value>Format HSV: hsv &lt;h&gt; &lt;s&gt; &lt;v&gt; (liczby dziesiętne)</value>
+  </data>
+  <data name="LCDMod_FactionColor_HsvRange" xml:space="preserve">
+    <value>Wartości HSV muszą mieścić się w [0..1]. Odcień akceptuje także [0..360].</value>
+  </data>
+  <data name="LCDMod_FactionColor_Invalid" xml:space="preserve">
+    <value>Nieprawidłowy kolor. Użyj: 255 0 0 | #ff0000 | #f00 | hsv 0 1 1</value>
+  </data>
+  <data name="LCDMod_FactionColor_NoFaction" xml:space="preserve">
+    <value>Nie znaleziono frakcji dla lokalnego gracza.</value>
+  </data>
+  <data name="LCDMod_FactionColor_Updated" xml:space="preserve">
+    <value>Kolor ikony frakcji został zaktualizowany.</value>
+  </data>
 </root>

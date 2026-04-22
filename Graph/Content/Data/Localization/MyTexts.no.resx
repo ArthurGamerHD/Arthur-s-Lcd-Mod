@@ -42,4 +42,22 @@
   <data name="LCDMod_PowerFilled" xml:space="preserve">
     <value>Strøm fylt %</value>
   </data>
+  <data name="LCDMod_FactionColor_Usage" xml:space="preserve">
+    <value>Bruk: /lcdmod factioncolor &lt;r g b | #rrggbb | #rgb | hsv h s v&gt;</value>
+  </data>
+  <data name="LCDMod_FactionColor_HsvFormat" xml:space="preserve">
+    <value>HSV-format: hsv &lt;h&gt; &lt;s&gt; &lt;v&gt; (desimaltall)</value>
+  </data>
+  <data name="LCDMod_FactionColor_HsvRange" xml:space="preserve">
+    <value>HSV-verdier må være i [0..1]. Fargetone godtar også [0..360].</value>
+  </data>
+  <data name="LCDMod_FactionColor_Invalid" xml:space="preserve">
+    <value>Ugyldig farge. Bruk: 255 0 0 | #ff0000 | #f00 | hsv 0 1 1</value>
+  </data>
+  <data name="LCDMod_FactionColor_NoFaction" xml:space="preserve">
+    <value>Fant ingen fraksjon for lokal spiller.</value>
+  </data>
+  <data name="LCDMod_FactionColor_Updated" xml:space="preserve">
+    <value>Fargen på fraksjonsikonet er oppdatert.</value>
+  </data>
 </root>

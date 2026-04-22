@@ -9,8 +9,11 @@ namespace Graph.System.Config
     [ProtoContract]
     public class ScreenProviderConfig
     {
+        public static Version CurrentVersion => new Version(0, 1);
+        
         public ScreenProviderConfig() 
         {
+            //Required by Protobuf
         }
 
         public ScreenProviderConfig(int surfaceCount, IMyTerminalBlock parent)
@@ -25,23 +28,7 @@ namespace Graph.System.Config
 
         [ProtoMember(1)] public List<ScreenConfig> Screens { get; set; }
 
-
-        [ProtoMember(2)] long Parent { get; set; }
-
-        public long ParentGrid
-        {
-            get
-            {
-                return Parent;
-            }
-            set
-            {
-                Parent = value;
-                
-                // todo: Some Extra logic is Required to properly migrate blocks ids when creating Blueprints
-                Screens?.ForEach(s => s.SelectedBlocks = Array.Empty<long>()); // fail-safe deleting outdated ID's
-            }
-        }
+        [ProtoMember(2)] public long Parent { get; set; }
 
         public void CopyFrom(ScreenProviderConfig other)
         {
@@ -56,6 +43,14 @@ namespace Graph.System.Config
 
             for (var index = 0; index < Screens.Count; index++)
                 Screens[index].CopyFrom(other.Screens[index]);
+        }
+
+        public void SetParent(long value)
+        {
+            Parent = value;
+
+            // todo: Some Extra logic is Required to properly migrate blocks ids when creating Blueprints
+            Screens?.ForEach(s => s.SelectedBlocks = Array.Empty<long>()); // fail-safe deleting outdated ID's
         }
     }
 }

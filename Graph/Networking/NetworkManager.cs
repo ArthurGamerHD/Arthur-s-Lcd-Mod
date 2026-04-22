@@ -137,6 +137,7 @@ namespace Graph.Networking
     public enum PackageCode
     {
         SyncConfig = 1,
+        EditFaction = 2,
     }
 
     public class ReceivedPacketEventArgs : EventArgs

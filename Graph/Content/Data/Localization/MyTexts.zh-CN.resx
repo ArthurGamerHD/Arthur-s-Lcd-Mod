@@ -45,4 +45,22 @@
   <data name="LCDMod_PowerFilled" xml:space="preserve">
     <value>电力填充 %</value>
   </data>
+  <data name="LCDMod_FactionColor_Usage" xml:space="preserve">
+    <value>用法: /lcdmod factioncolor &lt;r g b | #rrggbb | #rgb | hsv h s v&gt;</value>
+  </data>
+  <data name="LCDMod_FactionColor_HsvFormat" xml:space="preserve">
+    <value>HSV 格式: hsv &lt;h&gt; &lt;s&gt; &lt;v&gt;（小数）</value>
+  </data>
+  <data name="LCDMod_FactionColor_HsvRange" xml:space="preserve">
+    <value>HSV 值必须在 [0..1] 范围内。色相也接受 [0..360]。</value>
+  </data>
+  <data name="LCDMod_FactionColor_Invalid" xml:space="preserve">
+    <value>无效颜色。请使用: 255 0 0 | #ff0000 | #f00 | hsv 0 1 1</value>
+  </data>
+  <data name="LCDMod_FactionColor_NoFaction" xml:space="preserve">
+    <value>未找到本地玩家所属派系。</value>
+  </data>
+  <data name="LCDMod_FactionColor_Updated" xml:space="preserve">
+    <value>派系图标颜色已更新。</value>
+  </data>
 </root>
