@@ -12,4 +12,34 @@
   <data name="LCDMod_TopEnergy" xml:space="preserve">
     <value>Hoogste Energieverbruik</value>
   </data>
+  <data name="LCDMod_Damaged" xml:space="preserve">
+    <value>Beschadigd</value>
+  </data>
+  <data name="LCDMod_Axis_X_Positive" xml:space="preserve">
+    <value>Positieve X</value>
+  </data>
+  <data name="LCDMod_Axis_X_Negative" xml:space="preserve">
+    <value>Negatieve X</value>
+  </data>
+  <data name="LCDMod_Axis_Y_Positive" xml:space="preserve">
+    <value>Positieve Y</value>
+  </data>
+  <data name="LCDMod_Axis_Y_Negative" xml:space="preserve">
+    <value>Negatieve Y</value>
+  </data>
+  <data name="LCDMod_Axis_Z_Positive" xml:space="preserve">
+    <value>Positieve Z</value>
+  </data>
+  <data name="LCDMod_Axis_Z_Negative" xml:space="preserve">
+    <value>Negatieve Z</value>
+  </data>
+  <data name="LCDMod_Empty" xml:space="preserve">
+    <value>Leeg</value>
+  </data>
+  <data name="LCDMod_GasFilled" xml:space="preserve">
+    <value>Gas Gevuld %</value>
+  </data>
+  <data name="LCDMod_PowerFilled" xml:space="preserve">
+    <value>Vermogen Gevuld %</value>
+  </data>
 </root>

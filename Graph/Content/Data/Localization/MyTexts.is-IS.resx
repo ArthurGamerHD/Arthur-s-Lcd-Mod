@@ -12,4 +12,34 @@
   <data name="LCDMod_TopEnergy" xml:space="preserve">
     <value>Mest Orkunotkun</value>
   </data>
+  <data name="LCDMod_Damaged" xml:space="preserve">
+    <value>Skemmd</value>
+  </data>
+  <data name="LCDMod_Axis_X_Positive" xml:space="preserve">
+    <value>Jákvætt X</value>
+  </data>
+  <data name="LCDMod_Axis_X_Negative" xml:space="preserve">
+    <value>Neikvætt X</value>
+  </data>
+  <data name="LCDMod_Axis_Y_Positive" xml:space="preserve">
+    <value>Jákvætt Y</value>
+  </data>
+  <data name="LCDMod_Axis_Y_Negative" xml:space="preserve">
+    <value>Neikvætt Y</value>
+  </data>
+  <data name="LCDMod_Axis_Z_Positive" xml:space="preserve">
+    <value>Jákvætt Z</value>
+  </data>
+  <data name="LCDMod_Axis_Z_Negative" xml:space="preserve">
+    <value>Neikvætt Z</value>
+  </data>
+  <data name="LCDMod_Empty" xml:space="preserve">
+    <value>Tómt</value>
+  </data>
+  <data name="LCDMod_GasFilled" xml:space="preserve">
+    <value>Gas fyllt %</value>
+  </data>
+  <data name="LCDMod_PowerFilled" xml:space="preserve">
+    <value>Orka fyllt %</value>
+  </data>
 </root>

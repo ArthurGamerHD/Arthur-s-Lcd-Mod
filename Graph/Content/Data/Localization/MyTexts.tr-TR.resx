@@ -12,4 +12,34 @@
   <data name="LCDMod_TopEnergy" xml:space="preserve">
     <value>En Yüksek Enerji Tüketimi</value>
   </data>
+  <data name="LCDMod_Damaged" xml:space="preserve">
+    <value>Hasarlı</value>
+  </data>
+  <data name="LCDMod_Axis_X_Positive" xml:space="preserve">
+    <value>Pozitif X</value>
+  </data>
+  <data name="LCDMod_Axis_X_Negative" xml:space="preserve">
+    <value>Negatif X</value>
+  </data>
+  <data name="LCDMod_Axis_Y_Positive" xml:space="preserve">
+    <value>Pozitif Y</value>
+  </data>
+  <data name="LCDMod_Axis_Y_Negative" xml:space="preserve">
+    <value>Negatif Y</value>
+  </data>
+  <data name="LCDMod_Axis_Z_Positive" xml:space="preserve">
+    <value>Pozitif Z</value>
+  </data>
+  <data name="LCDMod_Axis_Z_Negative" xml:space="preserve">
+    <value>Negatif Z</value>
+  </data>
+  <data name="LCDMod_Empty" xml:space="preserve">
+    <value>Boş</value>
+  </data>
+  <data name="LCDMod_GasFilled" xml:space="preserve">
+    <value>Gaz Dolu %</value>
+  </data>
+  <data name="LCDMod_PowerFilled" xml:space="preserve">
+    <value>Güç Dolu %</value>
+  </data>
 </root>

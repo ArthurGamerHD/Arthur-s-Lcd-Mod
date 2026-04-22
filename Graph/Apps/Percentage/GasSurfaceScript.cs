@@ -28,7 +28,7 @@ namespace Graph.Apps.Percentage
         IUsesTerminalControl<SliderScale>
     {
         public const string ID = "GasGraph";
-        public const string TITLE = "RadialMenuGroupTitle_GasLogistics";
+        public const string TITLE = "LCDMod_GasFilled";
 
         readonly Dictionary<string, string> _gasDisplayNameCache = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 

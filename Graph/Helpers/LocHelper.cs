@@ -6,23 +6,9 @@ namespace Graph.Helpers
 {
     public class LocHelper
     {
-        public static string Empty => $"- {MyTexts.GetString("BlockPropertyProperties_WaterLevel_Empty")} -";
+        public static string Empty => GetLoc("LCDMod_Empty");
 
-        public static string Damaged
-        {
-            get
-            {
-                var s = MyTexts.Get(MyStringId.GetOrCompute("Damaged")).ToString();
-                return char.ToUpper(s[0], CultureInfo.CurrentCulture) + s.Substring(1);
-            }
-        }
 
-        public static string GetLoc(string key)
-        {
-            if (key == "Damaged")
-                return Damaged;
-            
-            return MyTexts.Get(MyStringId.GetOrCompute(key)).ToString();
-        }
+        public static string GetLoc(string key) => MyTexts.Get(MyStringId.GetOrCompute(key)).ToString();
     }
 }

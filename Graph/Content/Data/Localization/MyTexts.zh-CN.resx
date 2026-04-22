@@ -15,4 +15,34 @@
   <data name="LCDMod_EnergyDashboard" xml:space="preserve">
     <value>能源仪表板</value>
   </data>
+  <data name="LCDMod_Damaged" xml:space="preserve">
+    <value>已损坏</value>
+  </data>
+  <data name="LCDMod_Axis_X_Positive" xml:space="preserve">
+    <value>正X轴</value>
+  </data>
+  <data name="LCDMod_Axis_X_Negative" xml:space="preserve">
+    <value>负X轴</value>
+  </data>
+  <data name="LCDMod_Axis_Y_Positive" xml:space="preserve">
+    <value>正Y轴</value>
+  </data>
+  <data name="LCDMod_Axis_Y_Negative" xml:space="preserve">
+    <value>负Y轴</value>
+  </data>
+  <data name="LCDMod_Axis_Z_Positive" xml:space="preserve">
+    <value>正Z轴</value>
+  </data>
+  <data name="LCDMod_Axis_Z_Negative" xml:space="preserve">
+    <value>负Z轴</value>
+  </data>
+  <data name="LCDMod_Empty" xml:space="preserve">
+    <value>空</value>
+  </data>
+  <data name="LCDMod_GasFilled" xml:space="preserve">
+    <value>气体填充 %</value>
+  </data>
+  <data name="LCDMod_PowerFilled" xml:space="preserve">
+    <value>电力填充 %</value>
+  </data>
 </root>

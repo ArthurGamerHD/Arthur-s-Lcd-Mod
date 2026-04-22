@@ -33,4 +33,34 @@
   <data name="LCDMod_GW_5m" xml:space="preserve">
     <value>5 minutes</value>
   </data>
+  <data name="LCDMod_Damaged" xml:space="preserve">
+    <value>Damaged</value>
+  </data>
+  <data name="LCDMod_Axis_X_Positive" xml:space="preserve">
+    <value>Positive X</value>
+  </data>
+  <data name="LCDMod_Axis_X_Negative" xml:space="preserve">
+    <value>Negative X</value>
+  </data>
+  <data name="LCDMod_Axis_Y_Positive" xml:space="preserve">
+    <value>Positive Y</value>
+  </data>
+  <data name="LCDMod_Axis_Y_Negative" xml:space="preserve">
+    <value>Negative Y</value>
+  </data>
+  <data name="LCDMod_Axis_Z_Positive" xml:space="preserve">
+    <value>Positive Z</value>
+  </data>
+  <data name="LCDMod_Axis_Z_Negative" xml:space="preserve">
+    <value>Negative Z</value>
+  </data>
+  <data name="LCDMod_Empty" xml:space="preserve">
+    <value>Empty</value>
+  </data>
+  <data name="LCDMod_GasFilled" xml:space="preserve">
+    <value>Gas Filled %</value>
+  </data>
+  <data name="LCDMod_PowerFilled" xml:space="preserve">
+    <value>Power Filled %</value>
+  </data>
 </root>

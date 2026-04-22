@@ -36,38 +36,38 @@ namespace Graph.System.TerminalControls.Generic
                 obj.Add(new MyTerminalControlComboBoxItem
                 {
                     Key = 0,
-                    Value = MyStringId.GetOrCompute("X+")
+                    Value = MyStringId.GetOrCompute("LCDMod_Axis_X_Positive")
                 });
 
                 obj.Add(new MyTerminalControlComboBoxItem
                 {
                     Key = 1,
-                    Value = MyStringId.GetOrCompute("X-")
+                    Value = MyStringId.GetOrCompute("LCDMod_Axis_X_Negative")
                 });
 
 
                 obj.Add(new MyTerminalControlComboBoxItem
                 {
                     Key = 2,
-                    Value = MyStringId.GetOrCompute("Y+")
+                    Value = MyStringId.GetOrCompute("LCDMod_Axis_Y_Positive")
                 });
 
                 obj.Add(new MyTerminalControlComboBoxItem
                 {
                     Key = 3,
-                    Value = MyStringId.GetOrCompute("Y-")
+                    Value = MyStringId.GetOrCompute("LCDMod_Axis_Y_Negative")
                 });
 
                 obj.Add(new MyTerminalControlComboBoxItem
                 {
                     Key = 4,
-                    Value = MyStringId.GetOrCompute("Z+")
+                    Value = MyStringId.GetOrCompute("LCDMod_Axis_Z_Positive")
                 });
 
                 obj.Add(new MyTerminalControlComboBoxItem
                 {
                     Key = 5,
-                    Value = MyStringId.GetOrCompute("Z-")
+                    Value = MyStringId.GetOrCompute("LCDMod_Axis_Z_Negative")
                 });
                 return;
             }

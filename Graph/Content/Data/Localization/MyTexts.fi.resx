@@ -12,4 +12,34 @@
   <data name="LCDMod_TopEnergy" xml:space="preserve">
     <value>Suurin Energiankulutus</value>
   </data>
+  <data name="LCDMod_Damaged" xml:space="preserve">
+    <value>Vaurioitunut</value>
+  </data>
+  <data name="LCDMod_Axis_X_Positive" xml:space="preserve">
+    <value>Positiivinen X</value>
+  </data>
+  <data name="LCDMod_Axis_X_Negative" xml:space="preserve">
+    <value>Negatiivinen X</value>
+  </data>
+  <data name="LCDMod_Axis_Y_Positive" xml:space="preserve">
+    <value>Positiivinen Y</value>
+  </data>
+  <data name="LCDMod_Axis_Y_Negative" xml:space="preserve">
+    <value>Negatiivinen Y</value>
+  </data>
+  <data name="LCDMod_Axis_Z_Positive" xml:space="preserve">
+    <value>Positiivinen Z</value>
+  </data>
+  <data name="LCDMod_Axis_Z_Negative" xml:space="preserve">
+    <value>Negatiivinen Z</value>
+  </data>
+  <data name="LCDMod_Empty" xml:space="preserve">
+    <value>Tyhjä</value>
+  </data>
+  <data name="LCDMod_GasFilled" xml:space="preserve">
+    <value>Kaasu täynnä %</value>
+  </data>
+  <data name="LCDMod_PowerFilled" xml:space="preserve">
+    <value>Virta täynnä %</value>
+  </data>
 </root>

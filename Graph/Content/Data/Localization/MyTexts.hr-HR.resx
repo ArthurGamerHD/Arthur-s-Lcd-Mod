@@ -12,4 +12,34 @@
   <data name="LCDMod_TopEnergy" xml:space="preserve">
     <value>Najveća Potrošnja Energije</value>
   </data>
+  <data name="LCDMod_Damaged" xml:space="preserve">
+    <value>Oštećeno</value>
+  </data>
+  <data name="LCDMod_Axis_X_Positive" xml:space="preserve">
+    <value>Pozitivni X</value>
+  </data>
+  <data name="LCDMod_Axis_X_Negative" xml:space="preserve">
+    <value>Negativni X</value>
+  </data>
+  <data name="LCDMod_Axis_Y_Positive" xml:space="preserve">
+    <value>Pozitivni Y</value>
+  </data>
+  <data name="LCDMod_Axis_Y_Negative" xml:space="preserve">
+    <value>Negativni Y</value>
+  </data>
+  <data name="LCDMod_Axis_Z_Positive" xml:space="preserve">
+    <value>Pozitivni Z</value>
+  </data>
+  <data name="LCDMod_Axis_Z_Negative" xml:space="preserve">
+    <value>Negativni Z</value>
+  </data>
+  <data name="LCDMod_Empty" xml:space="preserve">
+    <value>Prazno</value>
+  </data>
+  <data name="LCDMod_GasFilled" xml:space="preserve">
+    <value>Plin napunjen %</value>
+  </data>
+  <data name="LCDMod_PowerFilled" xml:space="preserve">
+    <value>Snaga napunjena %</value>
+  </data>
 </root>

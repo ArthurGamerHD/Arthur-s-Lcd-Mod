@@ -12,4 +12,34 @@
   <data name="LCDMod_TopEnergy" xml:space="preserve">
     <value>最大エネルギー消費</value>
   </data>
+  <data name="LCDMod_Damaged" xml:space="preserve">
+    <value>損傷</value>
+  </data>
+  <data name="LCDMod_Axis_X_Positive" xml:space="preserve">
+    <value>正のX</value>
+  </data>
+  <data name="LCDMod_Axis_X_Negative" xml:space="preserve">
+    <value>負のX</value>
+  </data>
+  <data name="LCDMod_Axis_Y_Positive" xml:space="preserve">
+    <value>正のY</value>
+  </data>
+  <data name="LCDMod_Axis_Y_Negative" xml:space="preserve">
+    <value>負のY</value>
+  </data>
+  <data name="LCDMod_Axis_Z_Positive" xml:space="preserve">
+    <value>正のZ</value>
+  </data>
+  <data name="LCDMod_Axis_Z_Negative" xml:space="preserve">
+    <value>負のZ</value>
+  </data>
+  <data name="LCDMod_Empty" xml:space="preserve">
+    <value>空</value>
+  </data>
+  <data name="LCDMod_GasFilled" xml:space="preserve">
+    <value>ガス充填率 %</value>
+  </data>
+  <data name="LCDMod_PowerFilled" xml:space="preserve">
+    <value>電力充填率 %</value>
+  </data>
 </root>

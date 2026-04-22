@@ -12,4 +12,34 @@
   <data name="LCDMod_TopEnergy" xml:space="preserve">
     <value>Топ Споживання Енергії</value>
   </data>
+  <data name="LCDMod_Damaged" xml:space="preserve">
+    <value>Пошкоджено</value>
+  </data>
+  <data name="LCDMod_Axis_X_Positive" xml:space="preserve">
+    <value>Додатний X</value>
+  </data>
+  <data name="LCDMod_Axis_X_Negative" xml:space="preserve">
+    <value>Від'ємний X</value>
+  </data>
+  <data name="LCDMod_Axis_Y_Positive" xml:space="preserve">
+    <value>Додатний Y</value>
+  </data>
+  <data name="LCDMod_Axis_Y_Negative" xml:space="preserve">
+    <value>Від'ємний Y</value>
+  </data>
+  <data name="LCDMod_Axis_Z_Positive" xml:space="preserve">
+    <value>Додатний Z</value>
+  </data>
+  <data name="LCDMod_Axis_Z_Negative" xml:space="preserve">
+    <value>Від'ємний Z</value>
+  </data>
+  <data name="LCDMod_Empty" xml:space="preserve">
+    <value>Порожньо</value>
+  </data>
+  <data name="LCDMod_GasFilled" xml:space="preserve">
+    <value>Газ заповнено %</value>
+  </data>
+  <data name="LCDMod_PowerFilled" xml:space="preserve">
+    <value>Енергію заповнено %</value>
+  </data>
 </root>

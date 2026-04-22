@@ -26,7 +26,7 @@ namespace Graph.Apps.Power
         IUsesTerminalControl<CheckboxHideEmpty>
     {
         public const string ID    = "BatteryGraph";
-        public const string TITLE = "DisplayName_BlockGroup_Batteries";
+        public const string TITLE = "LCDMod_PowerFilled";
 
         protected override string DefaultTitle => TITLE;
 
