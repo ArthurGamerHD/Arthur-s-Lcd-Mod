@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Graph", "Graph\Graph.csproj", "{F1DBB535-3C48-4F7F-80D7-F642CCF46A0B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LcdModCodeGenerator", "LcdModCodeGenerator\LcdModCodeGenerator.csproj", "{9B85F0B8-4B83-40A6-B347-96FCC4D5041E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -12,5 +14,9 @@ Global
 		{F1DBB535-3C48-4F7F-80D7-F642CCF46A0B}.Debug|x64.Build.0 = Debug|x64
 		{F1DBB535-3C48-4F7F-80D7-F642CCF46A0B}.Release|x64.ActiveCfg = Release|x64
 		{F1DBB535-3C48-4F7F-80D7-F642CCF46A0B}.Release|x64.Build.0 = Release|x64
+		{9B85F0B8-4B83-40A6-B347-96FCC4D5041E}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{9B85F0B8-4B83-40A6-B347-96FCC4D5041E}.Debug|x64.Build.0 = Debug|Any CPU
+		{9B85F0B8-4B83-40A6-B347-96FCC4D5041E}.Release|x64.ActiveCfg = Release|Any CPU
+		{9B85F0B8-4B83-40A6-B347-96FCC4D5041E}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

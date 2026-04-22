@@ -5,11 +5,12 @@ using ProtoBuf;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRageMath;
+using Generated;
 
 namespace Graph.System.Config
 {
     [ProtoContract]
-    public class ScreenConfig
+    public partial class ScreenConfig : IClonableContract<ScreenConfig>
     {
         bool _customizedColors;
         public const float MAX_SCALE = 10f;
@@ -91,8 +92,6 @@ namespace Graph.System.Config
         [ProtoMember(15)] public Color WarningColor { get; set; } = new Color(224, 160, 16);
         [ProtoMember(16)] public float Rotation { get; set; }
 
-        [ProtoMember(18)] public int GraphWindowIndex { get; set; } = 2;
-
         [ProtoMember(17)]
         public bool CustomizedColors
         {
@@ -109,6 +108,8 @@ namespace Graph.System.Config
             }
         }
 
+        [ProtoMember(18)] public int GraphWindowIndex { get; set; } = 2;
+
         public SortMethod SortMethod
         {
             get { return (SortMethod)SortInternal; }
@@ -121,26 +122,5 @@ namespace Graph.System.Config
             set { DisplayInternal = (int)value; }
         }
 
-
-        public void CopyFrom(ScreenConfig newValue)
-        {
-            HeaderColor = newValue.HeaderColor;
-            SelectedBlocks = newValue.SelectedBlocks;
-            SelectedGroups = newValue.SelectedGroups;
-            TitleVisible = newValue.TitleVisible;
-            SelectedDefinition = newValue.SelectedDefinition;
-            SelectedCategories = newValue.SelectedCategories;
-            InternalScale = newValue.InternalScale;
-            ReferenceBlock = newValue.ReferenceBlock;
-            DrawLines = newValue.DrawLines;
-            SortInternal = newValue.SortInternal;
-            DisplayInternal = newValue.DisplayInternal;
-            HideEmpty = newValue.HideEmpty;
-            ErrorColor = newValue.ErrorColor;
-            WarningColor = newValue.WarningColor;
-            Rotation = newValue.Rotation;
-            CustomizedColors = newValue.CustomizedColors;
-            GraphWindowIndex = newValue.GraphWindowIndex;
-        }
     }
 }
