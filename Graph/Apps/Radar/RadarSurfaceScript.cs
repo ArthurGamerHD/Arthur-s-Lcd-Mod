@@ -573,13 +573,12 @@ namespace Graph.Apps.Radar
 
             DrawRadarPlaneBackground(sprites, radarCenterPos, radarPlaneSize, minScale, lineColor, backColor,
                 planeColor);
+            DrawRadarPlane(sprites, radarCenterPos, radarPlaneSize, minScale, lineColor);
 
             BuildSortedContacts();
             BuildTargetLayers(errColor, warnColor, allyColor, _debugLockedTargetPercent);
             for (int i = 0; i < _targetsBelowPlane.Count; i++)
                 DrawTargetIcon(sprites, radarCenterPos, radarPlaneSize, _targetsBelowPlane[i], minScale, backColor);
-
-            DrawRadarPlane(sprites, radarCenterPos, radarPlaneSize, minScale, lineColor);
 
             for (int i = 0; i < _targetsAbovePlane.Count; i++)
                 DrawTargetIcon(sprites, radarCenterPos, radarPlaneSize, _targetsAbovePlane[i], minScale, backColor);
@@ -818,8 +817,7 @@ namespace Graph.Apps.Radar
                 angleTextSize));
         }
 
-        void DrawTargetIcon(List<MySprite> sprites, Vector2 screenCenter, Vector2 radarPlaneSize, TargetInfo targetInfo,
-            float scale, Color backColor)
+        void DrawTargetIcon(List<MySprite> sprites, Vector2 screenCenter, Vector2 radarPlaneSize, TargetInfo targetInfo, float scale, Color backColor)
         {
             Vector3 targetPosPixels = targetInfo.Position * new Vector3(1f, _radarProjectionCos, _radarProjectionSin) *
                                       radarPlaneSize.X * 0.5f;
@@ -832,7 +830,7 @@ namespace Graph.Apps.Radar
             float elevationLineWidth = Math.Max(1f, TGT_ELEVATION_LINE_WIDTH * scale);
             var elevationSprite = new MySprite(SpriteType.TEXTURE, "SquareSimple",
                 screenCenter + (iconPos + targetPosPlane) * 0.5f,
-                new Vector2(elevationLineWidth, targetPosPixels.Z),
+                new Vector2(elevationLineWidth, Math.Abs(targetPosPixels.Z)),
                 ScaleColorAlpha(targetInfo.ElevationColor, 1f));
             RoundVector2(ref elevationSprite.Position);
             RoundVector2(ref elevationSprite.Size);
