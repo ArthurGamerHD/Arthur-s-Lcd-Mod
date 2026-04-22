@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Graph.Apps.Abstract;
 using Graph.Helpers;
@@ -31,7 +32,7 @@ namespace Graph.System
             new Dictionary<long, MyTuple<IMyCubeGrid, GridLogic>>();
 
         int _updateTick;
-        MyLanguagesEnum _language;
+        MyLanguagesEnum? _loadedLanguage;
         public static event Action OnLanguageChanged;
 
         public static string LastSelected;
@@ -101,13 +102,7 @@ namespace Graph.System
         void OnGuiControlRemoved(object obj)
         {
             if (obj.ToString().EndsWith("ScreenOptionsSpace"))
-            {
-                if (_language == MyAPIGateway.Session.Config.Language) 
-                    return;
-
-                _language = MyAPIGateway.Session.Config.Language;
-                OnLanguageChanged?.Invoke();
-            }
+                LoadLocalization();
         }
 
         void EntityAdded(IMyEntity ent)
@@ -177,7 +172,7 @@ namespace Graph.System
                 if (MyAPIGateway.Utilities.IsDedicated && MyAPIGateway.Session.IsServer)
                     return;
 
-                _language = MyAPIGateway.Session.Config.Language;
+                LoadLocalization();
                 MyAPIGateway.TerminalControls.CustomControlGetter += CustomControlGetter;
                 MyAPIGateway.Gui.GuiControlRemoved += OnGuiControlRemoved;
 
@@ -220,6 +215,41 @@ namespace Graph.System
             {
                 ErrorHandlerHelper.LogError(e, this);
             }
+        }
+
+        void LoadLocalization()
+        {
+            var path = Path.Combine(ModContext.ModPathData, "Localization");
+            var supportedLanguages = new HashSet<MyLanguagesEnum>();
+            MyTexts.LoadSupportedLanguages(path, supportedLanguages);
+
+            var configuredLanguage = MyAPIGateway.Session.Config.Language;
+            var currentLanguage = supportedLanguages.Contains(configuredLanguage)
+                ? configuredLanguage
+                : MyLanguagesEnum.English;
+
+            if (_loadedLanguage.HasValue && _loadedLanguage.Value == currentLanguage)
+                return;
+
+            _loadedLanguage = currentLanguage;
+
+            var languageDescription = MyTexts.Languages
+                .Where(x => x.Key == currentLanguage)
+                .Select(x => x.Value)
+                .FirstOrDefault();
+
+            if (languageDescription == null)
+                return;
+
+            var cultureName = string.IsNullOrWhiteSpace(languageDescription.CultureName)
+                ? null
+                : languageDescription.CultureName;
+            var subcultureName = string.IsNullOrWhiteSpace(languageDescription.SubcultureName)
+                ? null
+                : languageDescription.SubcultureName;
+
+            MyTexts.LoadTexts(path, cultureName, subcultureName);
+            OnLanguageChanged?.Invoke();
         }
 
         void OnReceivedPacket(ReceivedPacketEventArgs args)
