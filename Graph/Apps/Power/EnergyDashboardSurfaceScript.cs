@@ -1,8 +1,12 @@
 using System;
 using System.Collections.Generic;
+using Generated;
 using Graph.Apps.Abstract;
 using Graph.Helpers;
 using Graph.System;
+using Graph.System.TerminalControls.Color;
+using Graph.System.TerminalControls.Generic;
+using Graph.System.TerminalControls.Groups;
 using Sandbox.Game.EntityComponents;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
@@ -18,7 +22,11 @@ using IMyCubeGrid = VRage.Game.ModAPI.IMyCubeGrid;
 namespace Graph.Apps.Power
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public class EnergyDashboardSurfaceScript : SurfaceScriptBase
+    public partial class EnergyDashboardSurfaceScript : SurfaceScriptBase,
+        IUsesTerminalControlGroup<ColorsTerminalControlGroup>,
+        IUsesTerminalControl<SwitchToggleHeader>,
+        IUsesTerminalControl<SliderScale>,
+        IUsesTerminalControl<ComboboxGraphWindow>
     {
         public const string ID    = "LCDMod_EnergyDashboard";
         public const string TITLE = "LCDMod_EnergyDashboard";

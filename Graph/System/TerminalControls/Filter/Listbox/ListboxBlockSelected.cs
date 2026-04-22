@@ -11,7 +11,7 @@ using VRage.Utils;
 
 namespace Graph.System.TerminalControls.Filter.Listbox
 {
-    public sealed class ListboxBlockSelected : TerminalControlsListbox
+    public sealed partial class ListboxBlockSelected : TerminalControlsListbox
     {
         public ListboxBlockSelected()
         {

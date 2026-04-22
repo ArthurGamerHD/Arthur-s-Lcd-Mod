@@ -7,7 +7,7 @@ using VRage.Utils;
 
 namespace Graph.System.TerminalControls.Filter.Listbox
 {
-    public abstract class TerminalControlsListbox : TerminalControlFilter
+    public abstract partial class TerminalControlsListbox : TerminalControlFilter
     {
         public override IMyTerminalControl TerminalControl => _terminalControl;
         IMyTerminalControl _terminalControl;

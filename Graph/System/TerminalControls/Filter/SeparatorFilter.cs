@@ -2,7 +2,7 @@ using Sandbox.ModAPI.Interfaces.Terminal;
 
 namespace Graph.System.TerminalControls.Filter
 {
-    public class SeparatorFilter : TerminalControlFilter
+    public partial class SeparatorFilter : TerminalControlFilter
     {
         public override IMyTerminalControl TerminalControl { get; }
         

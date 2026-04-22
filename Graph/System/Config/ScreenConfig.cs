@@ -88,8 +88,8 @@ namespace Graph.System.Config
 
         [ProtoMember(13)] public bool HideEmpty { get; set; } = true;
 
-        [ProtoMember(14)] public Color ErrorColor { get; set; } = new Color(96, 32, 32);
-        [ProtoMember(15)] public Color WarningColor { get; set; } = new Color(224, 160, 16);
+        [ProtoMember(14)] public Color ErrorColor { get; set; }
+        [ProtoMember(15)] public Color WarningColor { get; set; }
         [ProtoMember(16)] public float Rotation { get; set; }
 
         [ProtoMember(17)]

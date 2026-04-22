@@ -2,10 +2,18 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Generated;
 using Graph.Apps.Abstract;
 using Graph.Helpers;
 using Graph.Panels;
 using Graph.System;
+using Graph.System.TerminalControls.Blueprint;
+using Graph.System.TerminalControls.Color;
+using Graph.System.TerminalControls.Filter;
+using Graph.System.TerminalControls.Filter.Buttons;
+using Graph.System.TerminalControls.Filter.Listbox;
+using Graph.System.TerminalControls.Generic;
+using Graph.System.TerminalControls.Groups;
 using Sandbox.Definitions;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
@@ -19,7 +27,13 @@ using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
 namespace Graph.Apps.Inventory
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public class ProjectorLcdSurfaceScript : ItemsSurfaceScriptBase
+    public partial class ProjectorLcdSurfaceScript : ItemsSurfaceScriptBase,
+        IUsesTerminalControlGroup<BaseTerminalControlGroup>,
+        IUsesTerminalControl<SwitchToggleLines>,
+        IUsesTerminalControl<ListboxProjectorSelection>,
+        IUsesTerminalControl<SeparatorFilter>,
+        IUsesTerminalControl<LabelSeparator>,
+        IUsesTerminalControlGroup<BlocksFilterTerminalControlGroup>
     {
         public const string ID = "ProjectorCharts";
         public const string TITLE = "DisplayName_Block_Projector";

@@ -9,10 +9,8 @@ using VRage.Utils;
 
 namespace Graph.System.TerminalControls.Generic
 {
-    public sealed class ComboboxSorting : TerminalControlsWrapper
+    public sealed partial class ComboboxSorting : TerminalControlsWrapper
     {
-        protected override string[] VisibleForScripts { get; } = { InventoryLcdSurfaceScript.ID, RefineryQueueSurfaceScript.ID };
-
         public override IMyTerminalControl TerminalControl { get; }
 
         public ComboboxSorting()

@@ -6,7 +6,7 @@ using VRage.Utils;
 
 namespace Graph.System.TerminalControls.Generic
 {
-    public sealed class SliderScale : TerminalControlsWrapper
+    public sealed partial class SliderScale : TerminalControlsWrapper
     {
         public override IMyTerminalControl TerminalControl { get; }
 

@@ -5,7 +5,7 @@ using Sandbox.ModAPI;
 
 namespace Graph.System.TerminalControls.Filter.Buttons
 {
-    public sealed class ButtonBlockRemoveFromSelection : TerminalControlFilterButton
+    public sealed partial class ButtonBlockRemoveFromSelection : TerminalControlFilterButton
     {
         public ButtonBlockRemoveFromSelection(TerminalControlsListbox sourceList,
             TerminalControlsListbox targetList) : base(sourceList,  targetList)

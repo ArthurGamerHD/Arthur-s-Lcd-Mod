@@ -1,4 +1,8 @@
+using Generated;
 using Graph.Apps.Abstract;
+using Graph.System.TerminalControls.Color;
+using Graph.System.TerminalControls.Generic;
+using Graph.System.TerminalControls.Groups;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using SpaceEngineers.Game.ModAPI;
@@ -8,7 +12,10 @@ using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
 namespace Graph.Apps.Power
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public class RenewablePowerSurfaceScript : PowerSurfaceScriptBase
+    public partial class RenewablePowerSurfaceScript : PowerSurfaceScriptBase,
+        IUsesTerminalControlGroup<BaseTerminalControlGroup>,
+        IUsesTerminalControl<SwitchToggleLines>,
+        IUsesTerminalControl<CheckboxHideEmpty>
     {
         public const string ID = "RenewableGraph";
         public const string TITLE = "DisplayName_BlockGroup_EnergyRenewableGroup";

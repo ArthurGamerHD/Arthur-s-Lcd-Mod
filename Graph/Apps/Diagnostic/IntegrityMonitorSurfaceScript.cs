@@ -2,9 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Generated;
 using Graph.Apps.Abstract;
 using Graph.Extensions;
 using Graph.Helpers;
+using Graph.System.TerminalControls.Blueprint;
+using Graph.System.TerminalControls.Color;
+using Graph.System.TerminalControls.Generic;
+using Graph.System.TerminalControls.Groups;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using SpaceEngineers.Game.ModAPI;
@@ -17,7 +22,10 @@ using IMyLargeTurretBase = Sandbox.ModAPI.Ingame.IMyLargeTurretBase;
 namespace Graph.Apps.Diagnostic
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public class IntegrityMonitorSurfaceScript : SurfaceScriptBase
+    public partial class IntegrityMonitorSurfaceScript : SurfaceScriptBase,
+        IUsesTerminalControlGroup<BaseTerminalControlGroup>,
+        IUsesTerminalControl<SliderRotation>,
+        IUsesTerminalControl<ListboxProjectorSelection>
     {
         const int MAP_BUILD_BATCH_SIZE = 256;
 

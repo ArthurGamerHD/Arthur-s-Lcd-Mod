@@ -6,10 +6,8 @@ using VRage.Game;
 
 namespace Graph.System.TerminalControls.Filter.Buttons
 {
-    public sealed class ButtonItemRemoveFromSelection : TerminalControlFilterButton
+    public sealed partial class ButtonItemRemoveFromSelection : TerminalControlFilterButton
     {
-        protected override string[] VisibleForScripts => InventoryOnlyVisibility;
-        
         public ButtonItemRemoveFromSelection(TerminalControlsListbox sourceList, TerminalControlsListbox targetList) :
             base(sourceList, targetList)
         {

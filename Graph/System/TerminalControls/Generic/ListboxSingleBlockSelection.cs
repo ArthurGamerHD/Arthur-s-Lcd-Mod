@@ -9,7 +9,7 @@ using VRage.Utils;
 
 namespace Graph.System.TerminalControls.Generic
 {
-    public class ListboxSingleBlockSelection<T> : TerminalControlsWrapper where T : class, IMyTerminalBlock
+    public partial class ListboxSingleBlockSelection<T> : TerminalControlsWrapper where T : class, IMyTerminalBlock
     {
         public override IMyTerminalControl TerminalControl => _terminalControl;
         IMyTerminalControl _terminalControl;

@@ -5,7 +5,7 @@ using VRage.Utils;
 
 namespace Graph.System.TerminalControls.Filter.Buttons
 {
-    public abstract class TerminalControlFilterButton : TerminalControlFilter
+    public abstract partial class TerminalControlFilterButton : TerminalControlFilter
     {
         protected readonly TerminalControlsListbox SourceList;
         protected readonly TerminalControlsListbox TargetList;

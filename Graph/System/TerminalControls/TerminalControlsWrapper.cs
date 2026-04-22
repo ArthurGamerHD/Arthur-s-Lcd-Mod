@@ -1,12 +1,5 @@
 using System;
-using Graph.Apps;
-using Graph.Apps.Antenna;
-using Graph.Apps.Diagnostic;
-using Graph.Apps.Inventory;
-using Graph.Apps.Percentage;
-using Graph.Apps.Power;
-using Graph.Apps.Radar;
-using Graph.Apps.Refinery;
+using Generated;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
@@ -18,35 +11,12 @@ namespace Graph.System.TerminalControls
     ///     Wrapper around <see cref="IMyTerminalControl" />, contains meta-information about the controls,
     ///     the intended script to have it, and its required methods
     /// </summary>
-    public abstract class TerminalControlsWrapper
+    public abstract partial class TerminalControlsWrapper : IVisibleTerminalControl
     {
         /// <summary>
         ///     Controls to be displayed on the Terminal
         /// </summary>
         public abstract IMyTerminalControl TerminalControl { get; }
-
-
-        /// <summary>
-        ///     List of which scripts should be selected for this control be visible
-        /// </summary>
-        protected virtual string[] VisibleForScripts { get; } =
-            {
-                InventoryLcdSurfaceScript.ID,
-                RefineryQueueSurfaceScript.ID,
-                ThrustSurfaceScript.ID,
-                RenewablePowerSurfaceScript.ID,
-                GeneratorsSurfaceScript.ID,
-                BatterySurfaceScript.ID,
-                GasSurfaceScript.ID,
-                ProjectorLcdSurfaceScript.ID,
-                CargoFilledSurfaceScript.ID,
-                AntennaSurfaceScript.ID,
-                IntegrityMonitorSurfaceScript.ID,
-                TopEnergyConsumptionSurfaceScript.ID,
-                RadarSurfaceScript.ID,
-                EnergyDashboardSurfaceScript.ID
-
-            };
 
         /// <summary>
         ///     Prefix for ID of every control
@@ -73,7 +43,12 @@ namespace Graph.System.TerminalControls
         {
             var sf = ((IMyTextSurfaceProvider)block).GetSurface(GetThisSurfaceIndex(block));
             return !string.IsNullOrEmpty(sf?.Script) && sf.ContentType == ContentType.SCRIPT &&
-                   VisibleForScripts.Contains(sf.Script);
+                   VisibleForScript(sf.Script);
+        }
+
+        public virtual bool VisibleForScript(string script)
+        {
+            return false;
         }
 
 

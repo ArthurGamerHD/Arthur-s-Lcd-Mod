@@ -6,7 +6,7 @@ using VRage.Utils;
 
 namespace Graph.System.TerminalControls.Generic
 {
-    public class SwitchToggleHeader : TerminalControlsWrapper
+    public partial class SwitchToggleHeader : TerminalControlsWrapper
     {
         public override IMyTerminalControl TerminalControl { get; }
 

@@ -13,21 +13,8 @@ using VRage.Utils;
 
 namespace Graph.System.TerminalControls.Generic
 {
-    public sealed class ComboboxDisplayMode : TerminalControlsWrapper
+    public sealed partial class ComboboxDisplayMode : TerminalControlsWrapper
     {
-        protected override string[] VisibleForScripts { get; } =
-        {
-            InventoryLcdSurfaceScript.ID,
-            RefineryQueueSurfaceScript.ID,
-            ProjectorLcdSurfaceScript.ID,
-            RenewablePowerSurfaceScript.ID,
-            GeneratorsSurfaceScript.ID,
-            BatterySurfaceScript.ID,
-            CargoFilledSurfaceScript.ID,
-            AntennaSurfaceScript.ID,
-            IntegrityMonitorSurfaceScript.ID
-        };
-
         public override IMyTerminalControl TerminalControl { get; }
 
         public ComboboxDisplayMode()

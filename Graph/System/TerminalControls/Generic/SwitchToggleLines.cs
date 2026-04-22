@@ -10,19 +10,8 @@ using VRage.Utils;
 
 namespace Graph.System.TerminalControls.Generic
 {
-    public class SwitchToggleLines : TerminalControlsWrapper
+    public partial class SwitchToggleLines : TerminalControlsWrapper
     {
-        protected override string[] VisibleForScripts { get; } =
-        {
-            InventoryLcdSurfaceScript.ID,
-            RefineryQueueSurfaceScript.ID,
-            ProjectorLcdSurfaceScript.ID,
-            RenewablePowerSurfaceScript.ID,
-            GeneratorsSurfaceScript.ID,
-            CargoFilledSurfaceScript.ID,
-            AntennaSurfaceScript.ID
-        };
-
         public override IMyTerminalControl TerminalControl { get; }
 
         public SwitchToggleLines()

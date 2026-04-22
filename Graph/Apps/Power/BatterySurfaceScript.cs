@@ -1,10 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Generated;
 using Graph.Apps.Abstract;
 using Graph.Helpers;
 using Graph.System;
 using Graph.System.Config;
+using Graph.System.TerminalControls.Color;
+using Graph.System.TerminalControls.Generic;
+using Graph.System.TerminalControls.Groups;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using SpaceEngineers.Game.ModAPI;
@@ -17,7 +21,9 @@ using VRageMath;
 namespace Graph.Apps.Power
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public class BatterySurfaceScript : SurfaceScriptBase
+    public partial class BatterySurfaceScript : SurfaceScriptBase,
+        IUsesTerminalControlGroup<BaseTerminalControlGroup>,
+        IUsesTerminalControl<CheckboxHideEmpty>
     {
         public const string ID    = "BatteryGraph";
         public const string TITLE = "DisplayName_BlockGroup_Batteries";

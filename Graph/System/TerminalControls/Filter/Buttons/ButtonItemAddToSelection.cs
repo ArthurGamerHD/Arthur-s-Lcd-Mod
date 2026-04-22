@@ -6,10 +6,8 @@ using VRage.Game;
 
 namespace Graph.System.TerminalControls.Filter.Buttons
 {
-    public sealed class ButtonItemAddToSelection : TerminalControlFilterButton
+    public sealed partial class ButtonItemAddToSelection : TerminalControlFilterButton
     {
-        protected override string[] VisibleForScripts => InventoryOnlyVisibility;
-        
         public ButtonItemAddToSelection(TerminalControlsListbox sourceList,
             TerminalControlsListbox targetList) : base(sourceList, targetList)
         {

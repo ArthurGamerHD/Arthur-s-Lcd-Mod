@@ -16,7 +16,7 @@ using IMyBlockGroup = Sandbox.ModAPI.Ingame.IMyBlockGroup;
 
 namespace Graph.System.TerminalControls.Filter.Listbox
 {
-    public sealed class ListboxBlockCandidates : TerminalControlsListbox
+    public sealed partial class ListboxBlockCandidates : TerminalControlsListbox
     {
         readonly List<IMyCubeGrid> _grids = new List<IMyCubeGrid>();
         readonly List<IMySlimBlock> _blocks = new List<IMySlimBlock>();

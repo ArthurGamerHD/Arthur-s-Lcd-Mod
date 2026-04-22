@@ -5,7 +5,7 @@ using Sandbox.ModAPI;
 
 namespace Graph.System.TerminalControls.Filter.Buttons
 {
-    public sealed class ButtonBlockAddToSelection : TerminalControlFilterButton
+    public sealed partial class ButtonBlockAddToSelection : TerminalControlFilterButton
     {
         public ButtonBlockAddToSelection(TerminalControlsListbox sourceList,
             TerminalControlsListbox targetList) : base(sourceList, targetList)

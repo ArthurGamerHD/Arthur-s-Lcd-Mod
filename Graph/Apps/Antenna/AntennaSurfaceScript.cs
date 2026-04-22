@@ -2,11 +2,18 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Generated;
 using Graph.Apps.Abstract;
 using Graph.Helpers;
 using Graph.Panels;
 using Graph.System;
 using Graph.System.Antenna;
+using Graph.System.TerminalControls.Color;
+using Graph.System.TerminalControls.Filter;
+using Graph.System.TerminalControls.Filter.Buttons;
+using Graph.System.TerminalControls.Filter.Listbox;
+using Graph.System.TerminalControls.Generic;
+using Graph.System.TerminalControls.Groups;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
@@ -18,7 +25,12 @@ using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
 namespace Graph.Apps.Antenna
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public class AntennaSurfaceScript : SurfaceScriptBase
+    public partial class AntennaSurfaceScript : SurfaceScriptBase,
+        IUsesTerminalControlGroup<BaseTerminalControlGroup>,
+        IUsesTerminalControl<SwitchToggleLines>,
+        IUsesTerminalControl<SeparatorFilter>,
+        IUsesTerminalControl<LabelSeparator>,
+        IUsesTerminalControlGroup<BlocksFilterTerminalControlGroup>
     {
         const float LINE = 22f;
         const float MINIMUM_COL_WIDTH = 400f;

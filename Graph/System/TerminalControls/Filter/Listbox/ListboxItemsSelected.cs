@@ -9,10 +9,8 @@ using VRage.ModAPI;
 
 namespace Graph.System.TerminalControls.Filter.Listbox
 {
-    public sealed class ListboxItemsSelected : TerminalControlsListbox
+    public sealed partial class ListboxItemsSelected : TerminalControlsListbox
     {
-        protected override string[] VisibleForScripts => InventoryOnlyVisibility;
-        
         public ListboxItemsSelected()
         {
             CreateListbox("SelectedItems", "BlockPropertyTitle_ConveyorSorterFilterItemsList");

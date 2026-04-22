@@ -7,13 +7,8 @@ using VRage.Utils;
 
 namespace Graph.System.TerminalControls.Generic
 {
-    public sealed class SliderRotation : TerminalControlsWrapper
+    public sealed partial class SliderRotation : TerminalControlsWrapper
     {
-        protected override string[] VisibleForScripts => new string[]
-        {
-            IntegrityMonitorSurfaceScript.ID
-        };
-
         public override IMyTerminalControl TerminalControl { get; }
 
         public SliderRotation()

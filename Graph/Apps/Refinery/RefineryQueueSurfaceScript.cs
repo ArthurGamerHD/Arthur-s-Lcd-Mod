@@ -1,8 +1,15 @@
 using System;
 using System.Collections.Generic;
+using Generated;
 using Graph.Apps.Abstract;
 using Graph.Helpers;
 using Graph.System;
+using Graph.System.TerminalControls.Color;
+using Graph.System.TerminalControls.Filter;
+using Graph.System.TerminalControls.Filter.Buttons;
+using Graph.System.TerminalControls.Filter.Listbox;
+using Graph.System.TerminalControls.Generic;
+using Graph.System.TerminalControls.Groups;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using VRage;
@@ -14,7 +21,14 @@ using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
 namespace Graph.Apps.Refinery
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public class RefineryQueueSurfaceScript : ItemsSurfaceScriptBase
+    public partial class RefineryQueueSurfaceScript : ItemsSurfaceScriptBase,
+        IUsesTerminalControlGroup<BaseTerminalControlGroup>,
+        IUsesTerminalControl<SwitchToggleLines>,
+        IUsesTerminalControl<CheckboxHideEmpty>,
+        IUsesTerminalControl<SeparatorFilter>,
+        IUsesTerminalControl<LabelSeparator>,
+        IUsesTerminalControlGroup<BlocksFilterTerminalControlGroup>,
+        IUsesTerminalControl<ComboboxSorting>
     {
         public const string ID    = "RefineryQueue";
         public const string TITLE = "DisplayName_BlockGroup_InputOutputGroup";

@@ -1,6 +1,13 @@
 using System;
 using System.Collections.Generic;
+using Generated;
 using Graph.Apps.Abstract;
+using Graph.System.TerminalControls.Color;
+using Graph.System.TerminalControls.Filter;
+using Graph.System.TerminalControls.Filter.Buttons;
+using Graph.System.TerminalControls.Filter.Listbox;
+using Graph.System.TerminalControls.Generic;
+using Graph.System.TerminalControls.Groups;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using VRage.Game.ModAPI;
@@ -12,7 +19,12 @@ using IMySlimBlock = VRage.Game.ModAPI.IMySlimBlock;
 namespace Graph.Apps.Percentage
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public class CargoFilledSurfaceScript : PercentageSurfaceScript<CargoFilledSurfaceScript.Entry>
+    public partial class CargoFilledSurfaceScript : PercentageSurfaceScript<CargoFilledSurfaceScript.Entry>,
+        IUsesTerminalControlGroup<BaseTerminalControlGroup>,
+        IUsesTerminalControl<SwitchToggleLines>,
+        IUsesTerminalControl<SeparatorFilter>,
+        IUsesTerminalControl<LabelSeparator>,
+        IUsesTerminalControlGroup<BlocksFilterTerminalControlGroup>
     {
         public const string ID = "ContainerCharts";
         public const string TITLE = "DisplayName_CargoFilledEntityComponent";

@@ -8,7 +8,7 @@ namespace Graph.System.TerminalControls.Color
     /// <summary>
     /// Color picker for Error for many Scripts using <see cref="ScreenConfig"/> 
     /// </summary>
-    public sealed class ColorPickerError : TerminalControlsWrapper
+    public sealed partial class ColorPickerError : TerminalControlsWrapper
     {
         public override IMyTerminalControl TerminalControl { get; }
 

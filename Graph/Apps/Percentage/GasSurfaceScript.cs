@@ -1,7 +1,11 @@
 using System;
 using System.Collections.Generic;
+using Generated;
 using Graph.Apps.Abstract;
 using Graph.Helpers;
+using Graph.System.TerminalControls.Color;
+using Graph.System.TerminalControls.Generic;
+using Graph.System.TerminalControls.Groups;
 using Sandbox.Definitions;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
@@ -18,7 +22,10 @@ using IMyTerminalBlock = Sandbox.ModAPI.IMyTerminalBlock;
 namespace Graph.Apps.Percentage
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public class GasSurfaceScript : PercentageSurfaceScript<GasSurfaceScript.Entry>
+    public partial class GasSurfaceScript : PercentageSurfaceScript<GasSurfaceScript.Entry>,
+        IUsesTerminalControlGroup<ColorsTerminalControlGroup>,
+        IUsesTerminalControl<SwitchToggleHeader>,
+        IUsesTerminalControl<SliderScale>
     {
         public const string ID = "GasGraph";
         public const string TITLE = "RadialMenuGroupTitle_GasLogistics";

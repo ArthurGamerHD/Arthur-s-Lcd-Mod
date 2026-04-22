@@ -1,5 +1,9 @@
 using System;
+using Generated;
 using Graph.Apps.Abstract;
+using Graph.System.TerminalControls.Color;
+using Graph.System.TerminalControls.Generic;
+using Graph.System.TerminalControls.Groups;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using SpaceEngineers.Game.ModAPI;
@@ -9,7 +13,10 @@ using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
 namespace Graph.Apps.Power
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public class GeneratorsSurfaceScript : PowerSurfaceScriptBase
+    public partial class GeneratorsSurfaceScript : PowerSurfaceScriptBase,
+        IUsesTerminalControlGroup<BaseTerminalControlGroup>,
+        IUsesTerminalControl<SwitchToggleLines>,
+        IUsesTerminalControl<CheckboxHideEmpty>
     {
         public const string ID = "GeneratorsGraph";
         public const string TITLE = "RadialMenuGroupTitle_Power";

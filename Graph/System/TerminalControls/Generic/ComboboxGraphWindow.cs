@@ -8,13 +8,8 @@ using VRage.Utils;
 
 namespace Graph.System.TerminalControls.Generic
 {
-    public sealed class ComboboxGraphWindow : TerminalControlsWrapper
+    public sealed partial class ComboboxGraphWindow : TerminalControlsWrapper
     {
-        protected override string[] VisibleForScripts { get; } =
-        {
-            EnergyDashboardSurfaceScript.ID
-        };
-
         public override IMyTerminalControl TerminalControl { get; }
 
         public ComboboxGraphWindow()

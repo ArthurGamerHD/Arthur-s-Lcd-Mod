@@ -3,7 +3,7 @@ using VRage.Utils;
 
 namespace Graph.System.TerminalControls.Filter
 {
-    public sealed class LabelSeparator : TerminalControlFilter
+    public sealed partial class LabelSeparator : TerminalControlFilter
     {
         public override IMyTerminalControl TerminalControl { get; }
 

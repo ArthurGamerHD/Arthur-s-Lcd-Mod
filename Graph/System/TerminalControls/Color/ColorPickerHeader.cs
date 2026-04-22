@@ -8,7 +8,7 @@ namespace Graph.System.TerminalControls.Color
     /// <summary>
     /// Color picker for Header for many Scripts using <see cref="ScreenConfig"/> 
     /// </summary>
-    public sealed class ColorPickerAccent : TerminalControlsWrapper
+    public sealed partial class ColorPickerAccent : TerminalControlsWrapper
     {
         public override IMyTerminalControl TerminalControl { get; }
 

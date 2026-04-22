@@ -1,12 +1,14 @@
+using Generated;
 using Graph.System.Config;
+using Graph.System.TerminalControls.Color;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage;
 using VRage.Utils;
 
-namespace Graph.System.TerminalControls.Generic
+namespace Graph.System.TerminalControls.Color
 {
-    public class SwitchToggleColors : TerminalControlsWrapper
+    public partial class SwitchToggleColors : TerminalControlsWrapper
     {
         public override IMyTerminalControl TerminalControl { get; }
         

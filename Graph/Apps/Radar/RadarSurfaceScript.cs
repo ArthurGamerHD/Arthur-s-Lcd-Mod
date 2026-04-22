@@ -1,9 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Generated;
 using Graph.Apps.Abstract;
 using Graph.Extensions;
 using Graph.Helpers;
+using Graph.System.TerminalControls.Color;
+using Graph.System.TerminalControls.Generic;
+using Graph.System.TerminalControls.Groups;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using VRage;
@@ -32,7 +36,10 @@ namespace Graph.Apps.Radar
     }
 
     [MyTextSurfaceScript(ID, TITLE)]
-    public class RadarSurfaceScript : SurfaceScriptBase
+    public partial class RadarSurfaceScript : SurfaceScriptBase,
+        IUsesTerminalControlGroup<ColorsTerminalControlGroup>,
+        IUsesTerminalControl<SwitchToggleHeader>,
+        IUsesTerminalControl<SliderScale>
     {
         public const string ID = "LCDMod_Radar";
         public const string TITLE = "LCDMod_Radar";

@@ -1,7 +1,11 @@
 using System;
 using System.Collections.Generic;
+using Generated;
 using Graph.Apps.Abstract;
 using Graph.Helpers;
+using Graph.System.TerminalControls.Color;
+using Graph.System.TerminalControls.Generic;
+using Graph.System.TerminalControls.Groups;
 using Sandbox.Game.EntityComponents;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
@@ -17,7 +21,10 @@ using IMySlimBlock = VRage.Game.ModAPI.IMySlimBlock;
 namespace Graph.Apps.Percentage
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public class TopEnergyConsumptionSurfaceScript : PercentageSurfaceScript<TopEnergyConsumptionSurfaceScript.Entry>
+    public partial class TopEnergyConsumptionSurfaceScript : PercentageSurfaceScript<TopEnergyConsumptionSurfaceScript.Entry>,
+        IUsesTerminalControlGroup<ColorsTerminalControlGroup>,
+        IUsesTerminalControl<SwitchToggleHeader>,
+        IUsesTerminalControl<SliderScale>
     {
         public const string ID    = "LCDMod_TopEnergy";
         public const string TITLE = "LCDMod_TopEnergy";

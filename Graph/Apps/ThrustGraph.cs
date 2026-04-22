@@ -1,20 +1,26 @@
 using System;
 using System.Collections.Generic;
+using Generated;
 using Graph.Apps.Abstract;
 using Graph.Helpers;
 using Graph.Panels;
+using Graph.System.TerminalControls.Color;
+using Graph.System.TerminalControls.Generic;
+using Graph.System.TerminalControls.Groups;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
 using VRage.Utils;
 using VRageMath;
-using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
 
 namespace Graph.Apps
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public class ThrustSurfaceScript : SurfaceScriptBase
+    public partial class ThrustSurfaceScript : SurfaceScriptBase,
+        IUsesTerminalControlGroup<ColorsTerminalControlGroup>,
+        IUsesTerminalControl<SwitchToggleHeader>,
+        IUsesTerminalControl<SliderScale>
     {
         public const string ID    = "LCDMod_Thrust";
         public const string TITLE = "HelpScreen_JoystickThrust";
