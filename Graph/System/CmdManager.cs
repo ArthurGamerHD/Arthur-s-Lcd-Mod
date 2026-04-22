@@ -161,8 +161,9 @@ namespace Graph
 
 			_commandGroups = new List<CommandGroup>();
 			_commands = new Dictionary<string, Command>();
-			// Regex parses arguments separated by whitespace, commas, or semicolons, handling quoted strings.
-			_cmdParser = new Regex(@"((\s*?[\s,;|]\s*?)((\w+)|("".+"")))+");
+			// Regex parses arguments separated by whitespace/comma/semicolon/pipe, handling quoted strings.
+			// Unquoted tokens accept any non-separator/non-quote chars (e.g. #ff0).
+			_cmdParser = new Regex(@"((\s*?[\s,;|]\s*?)(([^,\s;|\""]+)|("".+"")))+");
 			//RichHudCore.LateMessageEntered += MessageHandler;
 			
 		}
@@ -298,10 +299,6 @@ namespace Graph
 							command.InvokeCommand(args);
 							success = true;
 						}
-						else
-							//ExceptionHandler.SendChatMessage($"Error: {cmdName} command requires at least {command.ArgsRequired} argument(s).");
-							MyAPIGateway.Utilities.ShowMessage("LuckBox", $"{cmdName} command requires at least {command.ArgsRequired} argument(s).");
-
 					}
 				}
 
