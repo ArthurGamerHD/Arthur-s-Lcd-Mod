@@ -21,9 +21,7 @@ using VRageMath;
 namespace Graph.Apps.Power
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public partial class BatterySurfaceScript : SurfaceScriptBase,
-        IUsesTerminalControlGroup<BaseTerminalControlGroup>,
-        IUsesTerminalControl<CheckboxHideEmpty>
+    public partial class BatterySurfaceScript : SurfaceScriptBase
     {
         public const string ID = "BatteryGraph";
         public const string TITLE = "LCDMod_PowerFilled";
@@ -193,12 +191,12 @@ namespace Graph.Apps.Power
 
         protected override void DrawTitle(List<MySprite> sprites)
         {
-            var margin = ViewBox.Size.X * Margin;
+            var margin = 0f;
             float headerScale = LayoutScale;
             float titleBarHeight = TITLE_BAR_HEIGHT_BASE * headerScale;
             var position = ViewBox.Position;
             position.X += margin;
-            position.Y += (ViewBox.Size.Y * Margin) / 2;
+            position.Y += 0f;
 
             CaretY = position.Y;
 
@@ -252,7 +250,7 @@ namespace Graph.Apps.Power
         {
             FooterHeight = TITLE_BAR_HEIGHT_BASE * LayoutScale;
             float footerTop = ViewBox.Bottom - FooterHeight;
-            float margin = ViewBox.Size.X * Margin;
+            float margin = 0f;
             Color fg = Surface.ScriptForegroundColor;
             Color accent = Config.HeaderColor;
 
@@ -320,11 +318,11 @@ namespace Graph.Apps.Power
         {
             float minW = BATTERY_SLOT_W * Scale;
             float minH = BATTERY_SLOT_H * Scale;
-            float availW = ViewBox.Width - ViewBox.Width * Margin * 2f;
+            float availW = ViewBox.Width;
             float availH = ViewBox.Height - (CaretY - ViewBox.Y) - FooterHeight;
 
-            float xLeft = ViewBox.X + ViewBox.Width * Margin;
-            float xRight = ViewBox.X + ViewBox.Width - ViewBox.Width * Margin;
+            float xLeft = ViewBox.X;
+            float xRight = ViewBox.X + ViewBox.Width;
 
             int count = _visible.Count;
             // Columns: limited by how many fit at minimum size; capped at battery count

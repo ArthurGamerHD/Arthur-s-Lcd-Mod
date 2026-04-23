@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using Graph.Helpers;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
@@ -150,7 +151,7 @@ namespace Graph.Panels
             Sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
-                Data = Title + value.ToString("P0", CultureInfo.CurrentUICulture),
+                Data = Title + FormatingHelper.PercentageToString(value),
                 Position = Origo - new Vector2(Size.X - 4, Size.Y + (titleSize.Y / 2) + 16),
                 Color = color,
                 Alignment = TextAlignment.LEFT,

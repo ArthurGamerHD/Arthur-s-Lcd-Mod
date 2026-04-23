@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Generated;
 using Graph.Extensions;
 using Graph.Helpers;
 using Graph.Panels;
 using Graph.System;
+using Graph.System.TerminalControls.Generic;
 using Sandbox.ModAPI;
 using VRage;
 using VRage.Game.GUI.TextPanel;
@@ -16,7 +18,7 @@ using IMyCubeGrid = VRage.Game.ModAPI.IMyCubeGrid;
 
 namespace Graph.Apps.Abstract
 {
-    public abstract class PowerSurfaceScriptBase : SurfaceScriptBase
+    public abstract class PowerSurfaceScriptBase : SurfaceScriptBase, IContainsTerminalControl<ComboboxDisplayMode>
     {
         protected const float LINE = 22f;
         protected const float MINIMUM_COL_WIDTH = 400f;
@@ -327,7 +329,7 @@ namespace Graph.Apps.Abstract
             int start = startRow;
             int showCount = Math.Min(maxVisible, entries.Count - start);
 
-            float margin = ViewBox.Width * Margin;
+            float margin = 0f;
             float contentStart = ViewBox.X + margin;
             float contentEnd = ViewBox.Width + ViewBox.X - margin;
             if (shouldScroll)
@@ -395,7 +397,7 @@ namespace Graph.Apps.Abstract
             int start = startRow * maxCols;
             int showCount = Math.Min(maxVisible, entries.Count - start);
 
-            float margin = ViewBox.Width * Margin;
+            float margin = 0f;
             float contentStart = ViewBox.X + margin;
             float contentEnd = ViewBox.Width + ViewBox.X - margin;
             if (shouldScroll)

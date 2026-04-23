@@ -20,11 +20,11 @@ namespace Graph.Apps.Percentage
 {
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class CargoFilledSurfaceScript : PercentageSurfaceScript<CargoFilledSurfaceScript.Entry>,
-        IUsesTerminalControlGroup<BaseTerminalControlGroup>,
         IUsesTerminalControl<SwitchToggleLines>,
         IUsesTerminalControl<SeparatorFilter>,
         IUsesTerminalControl<LabelSeparator>,
-        IUsesTerminalControlGroup<BlocksFilterTerminalControlGroup>
+        IUsesTerminalControlGroup<BlocksFilterTerminalControlGroup>,
+        IContainsTerminalControl<ComboboxDisplayMode>
     {
         public const string ID = "ContainerCharts";
         public const string TITLE = "DisplayName_CargoFilledEntityComponent";

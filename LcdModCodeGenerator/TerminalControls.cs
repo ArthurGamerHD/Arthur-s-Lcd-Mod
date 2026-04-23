@@ -11,6 +11,14 @@ namespace LcdModCodeGenerator;
 [Generator]
 public sealed class TerminalControls : IIncrementalGenerator
 {
+    static readonly DiagnosticDescriptor RedundantTerminalInterfaceRule = new DiagnosticDescriptor(
+        id: "LCDMOD001",
+        title: "Redundant terminal control interface",
+        messageFormat: "Type '{0}' redundantly implements '{1}' because it is already included by terminal control group '{2}'",
+        category: "LcdModCodeGenerator",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         context.RegisterPostInitializationOutput(postInitializationContext =>
@@ -30,6 +38,16 @@ public sealed class TerminalControls : IIncrementalGenerator
             {
                 var compilation = input.Left;
                 var symbols = input.Right;
+                var diagnosed = new HashSet<string>(StringComparer.Ordinal);
+                foreach (var symbol in symbols.OfType<INamedTypeSymbol>())
+                {
+                    var symbolKey = ToDisplayName(symbol);
+                    if (!diagnosed.Add(symbolKey))
+                        continue;
+
+                    ReportRedundantInterfaces(sourceProductionContext, symbol);
+                }
+
                 var map = BuildControlToScriptMap(compilation, symbols);
                 foreach (var entry in map)
                 {
@@ -165,6 +183,133 @@ public sealed class TerminalControls : IIncrementalGenerator
             foreach (var nestedControl in ExpandGroupControls(nestedGroup, visitedGroups))
                 yield return nestedControl;
         }
+    }
+
+    static void ReportRedundantInterfaces(SourceProductionContext context, INamedTypeSymbol symbol)
+    {
+        var activeGroups = new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default);
+        foreach (var implementedInterface in symbol.AllInterfaces)
+        {
+            if (!IsGeneratedGenericInterface(implementedInterface, "IUsesTerminalControlGroup"))
+                continue;
+
+            var groupType = implementedInterface.TypeArguments[0] as INamedTypeSymbol;
+            if (!ReferenceEquals(groupType, null))
+                activeGroups.Add(groupType);
+        }
+
+        if (activeGroups.Count == 0)
+            return;
+
+        var controlsIncludedByGroup = new Dictionary<INamedTypeSymbol, INamedTypeSymbol>(SymbolEqualityComparer.Default);
+        var nestedGroupsIncludedByGroup =
+            new Dictionary<INamedTypeSymbol, INamedTypeSymbol>(SymbolEqualityComparer.Default);
+        foreach (var groupType in activeGroups)
+        {
+            var controls = new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default);
+            var groups = new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default);
+            ExpandGroupMembers(groupType, new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default), controls, groups);
+
+            foreach (var control in controls)
+            {
+                if (!controlsIncludedByGroup.ContainsKey(control))
+                    controlsIncludedByGroup[control] = groupType;
+            }
+
+            foreach (var nestedGroup in groups)
+            {
+                if (SymbolEqualityComparer.Default.Equals(nestedGroup, groupType))
+                    continue;
+
+                if (!nestedGroupsIncludedByGroup.ContainsKey(nestedGroup))
+                    nestedGroupsIncludedByGroup[nestedGroup] = groupType;
+            }
+        }
+
+        foreach (var implementedInterface in symbol.Interfaces)
+        {
+            if (implementedInterface.Arity != 1 || implementedInterface.TypeArguments.Length != 1)
+                continue;
+            if (implementedInterface.ContainingNamespace?.ToDisplayString() != "Generated")
+                continue;
+
+            var interfaceName = implementedInterface.Name;
+            var typeArgument = implementedInterface.TypeArguments[0] as INamedTypeSymbol;
+            if (ReferenceEquals(typeArgument, null))
+                continue;
+
+            INamedTypeSymbol ownerGroup;
+            if ((interfaceName == "IUsesTerminalControl" || interfaceName == "IContainsTerminalControl") &&
+                controlsIncludedByGroup.TryGetValue(typeArgument, out ownerGroup))
+            {
+                ReportRedundantInterfaceDiagnostic(context, symbol, implementedInterface, ownerGroup);
+                continue;
+            }
+
+            if ((interfaceName == "IUsesTerminalControlGroup" || interfaceName == "IContainsTerminalControlGroup") &&
+                nestedGroupsIncludedByGroup.TryGetValue(typeArgument, out ownerGroup))
+            {
+                ReportRedundantInterfaceDiagnostic(context, symbol, implementedInterface, ownerGroup);
+            }
+        }
+    }
+
+    static void ExpandGroupMembers(
+        INamedTypeSymbol groupType,
+        HashSet<INamedTypeSymbol> visitedGroups,
+        HashSet<INamedTypeSymbol> controls,
+        HashSet<INamedTypeSymbol> groups)
+    {
+        if (!visitedGroups.Add(groupType))
+            return;
+
+        groups.Add(groupType);
+        foreach (var implementedInterface in groupType.AllInterfaces)
+        {
+            if (implementedInterface.Arity != 1 || implementedInterface.ContainingNamespace?.ToDisplayString() != "Generated")
+                continue;
+
+            if (implementedInterface.Name == "IContainsTerminalControl")
+            {
+                var controlType = implementedInterface.TypeArguments[0] as INamedTypeSymbol;
+                if (!ReferenceEquals(controlType, null))
+                    controls.Add(controlType);
+
+                continue;
+            }
+
+            if (implementedInterface.Name != "IContainsTerminalControlGroup")
+                continue;
+
+            var nestedGroup = implementedInterface.TypeArguments[0] as INamedTypeSymbol;
+            if (ReferenceEquals(nestedGroup, null))
+                continue;
+
+            ExpandGroupMembers(nestedGroup, visitedGroups, controls, groups);
+        }
+    }
+
+    static void ReportRedundantInterfaceDiagnostic(
+        SourceProductionContext context,
+        INamedTypeSymbol classSymbol,
+        INamedTypeSymbol redundantInterface,
+        INamedTypeSymbol ownerGroup)
+    {
+        var location = classSymbol.Locations.FirstOrDefault();
+        var diagnostic = Diagnostic.Create(
+            RedundantTerminalInterfaceRule,
+            location,
+            ToDisplayName(classSymbol),
+            ToDisplayName(redundantInterface),
+            ToDisplayName(ownerGroup));
+        context.ReportDiagnostic(diagnostic);
+    }
+
+    static bool IsGeneratedGenericInterface(INamedTypeSymbol interfaceSymbol, string expectedName)
+    {
+        return interfaceSymbol.Arity == 1 &&
+               interfaceSymbol.Name == expectedName &&
+               interfaceSymbol.ContainingNamespace?.ToDisplayString() == "Generated";
     }
 
     static string BuildControlSource(INamedTypeSymbol controlType, SortedSet<string> scripts)

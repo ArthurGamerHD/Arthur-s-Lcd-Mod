@@ -13,10 +13,7 @@ using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
 namespace Graph.Apps.Power
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public partial class GeneratorsSurfaceScript : PowerSurfaceScriptBase,
-        IUsesTerminalControlGroup<BaseTerminalControlGroup>,
-        IUsesTerminalControl<SwitchToggleLines>,
-        IUsesTerminalControl<CheckboxHideEmpty>
+    public partial class GeneratorsSurfaceScript : PowerSurfaceScriptBase
     {
         public const string ID = "GeneratorsGraph";
         public const string TITLE = "RadialMenuGroupTitle_Power";

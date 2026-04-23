@@ -17,14 +17,14 @@ namespace Graph.Apps.Inventory
 {
     [MyTextSurfaceScript(ID, "Inventory")]
     public partial class InventoryLcdSurfaceScript : ItemsSurfaceScriptBase,
-        IUsesTerminalControlGroup<BaseTerminalControlGroup>,
         IUsesTerminalControl<SwitchToggleLines>,
         IUsesTerminalControl<CheckboxHideEmpty>,
         IUsesTerminalControl<SeparatorFilter>,
         IUsesTerminalControl<LabelSeparator>,
         IUsesTerminalControlGroup<BlocksFilterTerminalControlGroup>,
         IUsesTerminalControlGroup<ItemsFilterTerminalControlGroup>,
-        IUsesTerminalControl<ComboboxSorting>
+        IUsesTerminalControl<ComboboxSorting>,
+        IContainsTerminalControl<ComboboxDisplayMode>
     {
         public const string ID = "InventoryCharts";
         public const string NAME = "Inventory";

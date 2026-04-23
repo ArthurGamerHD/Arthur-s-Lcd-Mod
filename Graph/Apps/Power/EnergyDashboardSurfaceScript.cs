@@ -23,9 +23,6 @@ namespace Graph.Apps.Power
 {
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class EnergyDashboardSurfaceScript : SurfaceScriptBase,
-        IUsesTerminalControlGroup<ColorsTerminalControlGroup>,
-        IUsesTerminalControl<SwitchToggleHeader>,
-        IUsesTerminalControl<SliderScale>,
         IUsesTerminalControl<ComboboxGraphWindow>
     {
         public const string ID = "LCDMod_EnergyDashboard";
@@ -310,7 +307,7 @@ namespace Graph.Apps.Power
 
         void DrawDashboard(List<MySprite> sprites)
         {
-            float margin = ViewBox.Width * Margin;
+            float margin = 0f;
             float xLeft = ViewBox.X + margin;
             float xRight = ViewBox.Right - margin;
             float contentW = xRight - xLeft;

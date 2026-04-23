@@ -120,7 +120,7 @@ namespace Graph.Apps.Abstract
 
         void DrawRow(List<MySprite> frame, TEntry entry, bool showScrollBar)
         {
-            var margin = ViewBox.Size.X * Margin;
+            var margin = 0f;
             Vector2 position = ViewBox.Position;
             position.X += margin;
             position.Y = CaretY;
@@ -265,7 +265,7 @@ namespace Graph.Apps.Abstract
             int start = startRow * maxCols;
             int showCount = Math.Min(maxVisible, entries.Count - start);
 
-            float margin = ViewBox.Width * Margin;
+            float margin = 0f;
             float contentStart = ViewBox.X + margin;
             float contentEnd = ViewBox.Width + ViewBox.X - margin;
             if (shouldScroll)

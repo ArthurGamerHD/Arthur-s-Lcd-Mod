@@ -21,11 +21,7 @@ using IMySlimBlock = VRage.Game.ModAPI.IMySlimBlock;
 namespace Graph.Apps.Percentage
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public partial class TopEnergyConsumptionSurfaceScript :
-        PercentageSurfaceScript<TopEnergyConsumptionSurfaceScript.Entry>,
-        IUsesTerminalControlGroup<ColorsTerminalControlGroup>,
-        IUsesTerminalControl<SwitchToggleHeader>,
-        IUsesTerminalControl<SliderScale>
+    public partial class TopEnergyConsumptionSurfaceScript : PercentageSurfaceScript<TopEnergyConsumptionSurfaceScript.Entry>
     {
         public const string ID = "LCDMod_TopEnergy";
         public const string TITLE = "LCDMod_TopEnergy";

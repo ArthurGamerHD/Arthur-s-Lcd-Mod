@@ -22,10 +22,7 @@ using IMyTerminalBlock = Sandbox.ModAPI.IMyTerminalBlock;
 namespace Graph.Apps.Percentage
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public partial class GasSurfaceScript : PercentageSurfaceScript<GasSurfaceScript.Entry>,
-        IUsesTerminalControlGroup<ColorsTerminalControlGroup>,
-        IUsesTerminalControl<SwitchToggleHeader>,
-        IUsesTerminalControl<SliderScale>
+    public partial class GasSurfaceScript : PercentageSurfaceScript<GasSurfaceScript.Entry>
     {
         public const string ID = "GasGraph";
         public const string TITLE = "LCDMod_GasFilled";

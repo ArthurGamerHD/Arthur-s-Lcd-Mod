@@ -26,11 +26,11 @@ namespace Graph.Apps.Antenna
 {
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class AntennaSurfaceScript : SurfaceScriptBase,
-        IUsesTerminalControlGroup<BaseTerminalControlGroup>,
         IUsesTerminalControl<SwitchToggleLines>,
         IUsesTerminalControl<SeparatorFilter>,
         IUsesTerminalControl<LabelSeparator>,
-        IUsesTerminalControlGroup<BlocksFilterTerminalControlGroup>
+        IUsesTerminalControlGroup<BlocksFilterTerminalControlGroup>,
+        IContainsTerminalControl<ComboboxDisplayMode>
     {
         const float LINE = 22f;
         const float MINIMUM_COL_WIDTH = 400f;
@@ -151,7 +151,7 @@ namespace Graph.Apps.Antenna
             int start = startRow;
             int showCount = Math.Min(maxVisible, entries.Count - start);
 
-            float margin = ViewBox.Width * Margin;
+            float margin = ViewBox.Width;
             float contentStart = ViewBox.X + margin;
             float contentEnd = ViewBox.Width + ViewBox.X - margin;
             if (shouldScroll)
@@ -217,7 +217,7 @@ namespace Graph.Apps.Antenna
             int start = startRow * maxCols;
             int showCount = Math.Min(maxVisible, entries.Count - start);
 
-            float margin = ViewBox.Width * Margin;
+            float margin = 0f;
             float contentStart = ViewBox.X + margin;
             float contentEnd = ViewBox.Width + ViewBox.X - margin;
             if (shouldScroll)

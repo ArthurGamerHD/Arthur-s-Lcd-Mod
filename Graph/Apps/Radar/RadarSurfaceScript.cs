@@ -36,11 +36,7 @@ namespace Graph.Apps.Radar
     }
 
     [MyTextSurfaceScript(ID, TITLE)]
-    public partial class RadarSurfaceScript : SurfaceScriptBase,
-        IUsesTerminalControlGroup<ColorsTerminalControlGroup>,
-        IUsesTerminalControl<SwitchToggleHeader>,
-        IUsesTerminalControl<SliderFontSize>,
-        IUsesTerminalControl<SliderScale>
+    public partial class RadarSurfaceScript : SurfaceScriptBase
     {
         public const string ID = "LCDMod_Radar";
         public const string TITLE = "LCDMod_Radar";
@@ -567,7 +563,7 @@ namespace Graph.Apps.Radar
             float cappedLayoutScale;
             GetRadarCappedScales(out cappedScale, out cappedLayoutScale);
             float margin = RADAR_MARGIN_PX * cappedScale;
-            float titleTopPadding = (ViewBox.Size.Y * Margin) * 0.5f;
+            float titleTopPadding = 0f;
             float titleClamp = TitleVisible ? TITLE_BAR_HEIGHT_BASE * cappedLayoutScale : 0f;
             float footerClamp = _radarFooterClampHeight;
             float areaTop = ViewBox.Y + titleTopPadding + titleClamp + margin;
@@ -1070,7 +1066,7 @@ namespace Graph.Apps.Radar
             if (_sortedContacts.Count == 0)
                 return;
 
-            float margin = ViewBox.Width * Margin;
+            float margin = 0f;
             float left = ViewBox.X + margin;
             float right = ViewBox.Right - margin;
             float width = Math.Max(1f, right - left);
@@ -1201,7 +1197,7 @@ namespace Graph.Apps.Radar
             if (entries <= 0)
                 return 0f;
 
-            float margin = ViewBox.Width * Margin;
+            float margin = 0f;
             float width = Math.Max(1f, ViewBox.Width - margin * 2f);
             float colWidth = FOOTER_COL_WIDTH_PX * scale;
             int cols = Math.Max(1, (int)Math.Floor(width / Math.Max(1f, colWidth)));

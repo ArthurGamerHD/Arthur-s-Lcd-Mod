@@ -22,7 +22,6 @@ namespace Graph.Apps.Refinery
 {
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class RefineryQueueSurfaceScript : ItemsSurfaceScriptBase,
-        IUsesTerminalControlGroup<BaseTerminalControlGroup>,
         IUsesTerminalControl<SwitchToggleLines>,
         IUsesTerminalControl<CheckboxHideEmpty>,
         IUsesTerminalControl<SeparatorFilter>,
@@ -115,7 +114,7 @@ namespace Graph.Apps.Refinery
             bool shouldScroll = totalEntries > maxRows;
             int startIndex = 0;
 
-            float margin = ViewBox.Size.X * Margin;
+            float margin = 0f;
             float xLeft = ViewBox.X + margin;
             float xRight = ViewBox.X + ViewBox.Width - margin;
 
@@ -187,7 +186,7 @@ namespace Graph.Apps.Refinery
             float gridCellH = 3 * LINE_HEIGHT * Scale;
             float headerH = LINE_HEIGHT * Scale;
             float availableH = ViewBox.Height - (CaretY - ViewBox.Y) - FooterHeight;
-            float margin = ViewBox.Size.X * Margin;
+            float margin = 0f;
             float xLeft = ViewBox.X + margin;
             float xRight = ViewBox.X + ViewBox.Width - margin;
             int maxCols = GetMaxGridCols();

@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using Generated;
 using Graph.Extensions;
 using Graph.Helpers;
 using Graph.Panels;
 using Graph.System;
 using Graph.System.Config;
+using Graph.System.TerminalControls.Groups;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using VRage;
@@ -22,7 +24,7 @@ using IMyTextSurfaceProvider = Sandbox.ModAPI.Ingame.IMyTextSurfaceProvider;
 
 namespace Graph.Apps.Abstract
 {
-    public abstract class SurfaceScriptBase : MyTSSCommon
+    public abstract class SurfaceScriptBase : MyTSSCommon, IUsesTerminalControlGroup<BaseTerminalControlGroup>
     {
         static readonly Dictionary<string, Vector2> FontSizeCache = new Dictionary<string, Vector2>();
         static readonly StringBuilder StringBuilderBuffer = new StringBuilder();
@@ -32,7 +34,6 @@ namespace Graph.Apps.Abstract
         readonly List<MySprite> _backgroundGrids = new List<MySprite>();
         Color _backgroundColor;
         Color _foregroundColor;
-
 
         public IMyFaction Faction { get; protected set; }
         protected string Icon { get; set; }
@@ -50,8 +51,6 @@ namespace Graph.Apps.Abstract
 
         protected float CaretY;
         protected float FooterHeight;
-
-        protected float Margin = 0.02f;
 
         protected const float TITLE_BAR_HEIGHT_BASE = 40f;
 
@@ -257,12 +256,11 @@ namespace Graph.Apps.Abstract
         /// <param name="frame"></param>
         protected virtual void DrawTitle(List<MySprite> frame)
         {
-            var margin = ViewBox.Size.X * Margin;
+            const float margin = 0f;
             float headerScale = LayoutScale;
             float titleBarHeight = TITLE_BAR_HEIGHT_BASE * headerScale;
             Vector2 position = ViewBox.Position;
             position.X += margin;
-            position.Y += (ViewBox.Size.Y * Margin) / 2;
 
             CaretY = position.Y;
 

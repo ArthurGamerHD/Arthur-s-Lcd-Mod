@@ -28,12 +28,12 @@ namespace Graph.Apps.Inventory
 {
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class ProjectorLcdSurfaceScript : ItemsSurfaceScriptBase,
-        IUsesTerminalControlGroup<BaseTerminalControlGroup>,
         IUsesTerminalControl<SwitchToggleLines>,
         IUsesTerminalControl<ListboxProjectorSelection>,
         IUsesTerminalControl<SeparatorFilter>,
         IUsesTerminalControl<LabelSeparator>,
-        IUsesTerminalControlGroup<BlocksFilterTerminalControlGroup>
+        IUsesTerminalControlGroup<BlocksFilterTerminalControlGroup>,
+        IContainsTerminalControl<ComboboxDisplayMode>
     {
         public const string ID = "ProjectorCharts";
         public const string TITLE = "DisplayName_Block_Projector";
@@ -101,13 +101,13 @@ namespace Graph.Apps.Inventory
 
         protected override void DrawTitle(List<MySprite> frame)
         {
-            var margin = ViewBox.Size.X * Margin;
+            var margin = 0f;
             float headerScale = LayoutScale;
             float titleBarHeight = TITLE_BAR_HEIGHT_BASE * headerScale;
 
             Vector2 position = ViewBox.Position;
             position.X += margin;
-            position.Y += (ViewBox.Size.Y * Margin) / 2;
+            position.Y += 0f;
 
             CaretY = position.Y;
 
@@ -345,7 +345,7 @@ namespace Graph.Apps.Inventory
                 AddToSpriteCache(item.Key, sprite);
             }
 
-            var margin = ViewBox.Size.X * Margin;
+            var margin = 0f;
             Vector2 position = ViewBox.Position;
             position.X += margin;
             position.Y = CaretY;
@@ -569,7 +569,7 @@ namespace Graph.Apps.Inventory
 
         Vector2 GetFooterPieCenter()
         {
-            var margin = ViewBox.Size.X * Margin;
+            var margin = 0f;
             var headerIconCenterX = ViewBox.Position.X + margin + 20f * Scale;
             float footerHeight = 25f * 2f * LayoutScale;
             var footerPieCenterY = ViewBox.Bottom - footerHeight * 0.5f;

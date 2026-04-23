@@ -303,7 +303,7 @@ namespace Graph.Apps.Abstract
 
             int start = startRow * maxCols;
             int showCount = Math.Min(maxVisible, items.Count - start);
-            var margin = ViewBox.Size.X * Margin;
+            var margin = 0f;
             var contentStart = ViewBox.X + margin;
             var contentEnd = ViewBox.Width + ViewBox.X - margin;
             if (shouldScroll)
@@ -395,7 +395,7 @@ namespace Graph.Apps.Abstract
                 AddToSpriteCache(item.Key, sprite);
             }
 
-            var margin = ViewBox.Size.X * Margin;
+            var margin = 0f;
             var xStart = ViewBox.X + margin;
             var xEnd = ViewBox.Width + ViewBox.X - margin;
             Vector2 position = ViewBox.Position;
@@ -656,13 +656,13 @@ namespace Graph.Apps.Abstract
 
         protected override void DrawTitle(List<MySprite> frame)
         {
-            var margin = ViewBox.Size.X * Margin;
+            var margin = 0f;
             float headerScale = LayoutScale;
             float titleBarHeight = TITLE_BAR_HEIGHT_BASE * headerScale;
 
             Vector2 position = ViewBox.Position;
             position.X += margin;
-            position.Y += (ViewBox.Size.Y * Margin) / 2;
+            position.Y += 0f;
 
             CaretY = position.Y;
 

@@ -12,10 +12,7 @@ using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
 namespace Graph.Apps.Power
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public partial class RenewablePowerSurfaceScript : PowerSurfaceScriptBase,
-        IUsesTerminalControlGroup<BaseTerminalControlGroup>,
-        IUsesTerminalControl<SwitchToggleLines>,
-        IUsesTerminalControl<CheckboxHideEmpty>
+    public partial class RenewablePowerSurfaceScript : PowerSurfaceScriptBase
     {
         public const string ID = "RenewableGraph";
         public const string TITLE = "DisplayName_BlockGroup_EnergyRenewableGroup";

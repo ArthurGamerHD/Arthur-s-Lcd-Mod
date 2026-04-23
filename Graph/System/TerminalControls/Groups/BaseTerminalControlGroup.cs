@@ -7,8 +7,8 @@ namespace Graph.System.TerminalControls.Groups
         IContainsTerminalControlGroup<ColorsTerminalControlGroup>,
         IContainsTerminalControl<SwitchToggleHeader>,
         IContainsTerminalControl<SliderFontSize>,
-        IContainsTerminalControl<SliderScale>,
-        IContainsTerminalControl<ComboboxDisplayMode>
+        IContainsTerminalControl<SliderPadding>,
+        IContainsTerminalControl<SliderScale>
 
     {
     }

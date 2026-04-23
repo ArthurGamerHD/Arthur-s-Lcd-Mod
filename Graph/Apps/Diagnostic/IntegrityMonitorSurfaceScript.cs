@@ -23,7 +23,6 @@ namespace Graph.Apps.Diagnostic
 {
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class IntegrityMonitorSurfaceScript : SurfaceScriptBase,
-        IUsesTerminalControlGroup<BaseTerminalControlGroup>,
         IUsesTerminalControl<SliderRotation>,
         IUsesTerminalControl<ListboxProjectorSelection>
     {
@@ -349,7 +348,7 @@ namespace Graph.Apps.Diagnostic
                 return;
             }
 
-            float margin = ViewBox.Width * Margin;
+            float margin = 0f;
             float contentStart = ViewBox.X + margin;
             float contentEnd = ViewBox.X + ViewBox.Width - margin;
             float contentTop = CaretY;
@@ -451,7 +450,7 @@ namespace Graph.Apps.Diagnostic
             if (!_legendHasMissing && _legendUsedKinds.Count == 0)
                 return;
 
-            float margin = ViewBox.Width * Margin;
+            float margin = 0f;
             float contentStart = ViewBox.X + margin;
             float contentEnd = ViewBox.X + ViewBox.Width - margin;
             float contentWidth = Math.Max(1f, contentEnd - contentStart);

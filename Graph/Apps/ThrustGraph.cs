@@ -17,12 +17,7 @@ using IMyCockpit = Sandbox.ModAPI.IMyCockpit;
 namespace Graph.Apps
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public partial class ThrustSurfaceScript : SurfaceScriptBase,
-        IUsesTerminalControlGroup<BaseTerminalControlGroup>,
-        IUsesTerminalControlGroup<ColorsTerminalControlGroup>,
-        IUsesTerminalControl<SwitchToggleHeader>,
-        IUsesTerminalControl<SliderFontSize>,
-        IUsesTerminalControl<SliderScale>
+    public partial class ThrustSurfaceScript : SurfaceScriptBase
     {
         public const string ID = "LCDMod_Thrust";
         public const string TITLE = "HelpScreen_JoystickThrust";
@@ -299,7 +294,7 @@ namespace Graph.Apps
         void DrawBottomLegend(List<MySprite> sprites, double[] maxThrust)
         {
             float legendHeight = LEGEND_HEIGHT_BASE * LayoutScale;
-            float margin = ViewBox.Width * Margin;
+            float margin = 0f;
             float left = ViewBox.X + margin;
             float right = ViewBox.Right - margin;
             float width = Math.Max(1f, right - left);
@@ -325,18 +320,18 @@ namespace Graph.Apps
                 Alignment = TextAlignment.CENTER
             });
 
-            DrawLegendCell(sprites, left + 0f * colW, top + 0f * rowH, colW, rowH, padX, forward,
+            DrawLegendCell(sprites, left, top, colW, rowH, padX, forward,
                 maxThrust[DIR_FORWARD], Color.Blue, ForegroundColor, textScale);
-            DrawLegendCell(sprites, left + 1f * colW, top + 0f * rowH, colW, rowH, padX, leftLabel, maxThrust[DIR_LEFT],
+            DrawLegendCell(sprites, left + colW, top, colW, rowH, padX, leftLabel, maxThrust[DIR_LEFT],
                 Color.Red, ForegroundColor, textScale);
-            DrawLegendCell(sprites, left + 2f * colW, top + 0f * rowH, colW, rowH, padX, up, maxThrust[DIR_UP],
+            DrawLegendCell(sprites, left + 2f * colW, top, colW, rowH, padX, up, maxThrust[DIR_UP],
                 Color.Green, ForegroundColor, textScale);
 
-            DrawLegendCell(sprites, left + 0f * colW, top + 1f * rowH, colW, rowH, padX, backward,
+            DrawLegendCell(sprites, left, top + rowH, colW, rowH, padX, backward,
                 maxThrust[DIR_BACKWARD], Color.Blue, ForegroundColor, textScale);
-            DrawLegendCell(sprites, left + 1f * colW, top + 1f * rowH, colW, rowH, padX, rightLabel,
+            DrawLegendCell(sprites, left + colW, top + rowH, colW, rowH, padX, rightLabel,
                 maxThrust[DIR_RIGHT], Color.Red, ForegroundColor, textScale);
-            DrawLegendCell(sprites, left + 2f * colW, top + 1f * rowH, colW, rowH, padX, down, maxThrust[DIR_DOWN],
+            DrawLegendCell(sprites, left + 2f * colW, top + rowH, colW, rowH, padX, down, maxThrust[DIR_DOWN],
                 Color.Green, ForegroundColor, textScale);
         }
 
