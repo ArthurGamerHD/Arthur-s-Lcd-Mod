@@ -62,6 +62,7 @@ namespace Graph.Apps.Inventory
 
         float _requiredX;
         float _availableX;
+        bool _projectorDataInitialized;
 
         const float PIE_RADIUS = 40;
 
@@ -73,6 +74,7 @@ namespace Graph.Apps.Inventory
         protected override void LayoutChanged()
         {
             base.LayoutChanged();
+            _projectorDataInitialized = false;
 
             _customTitle = _projector?.CustomName;
 
@@ -182,8 +184,6 @@ namespace Graph.Apps.Inventory
 
         protected override void DrawFooter(List<MySprite> frame)
         {
-            EnsureData();
-
             if (_projector?.CustomName != _customTitle)
                 LayoutChanged();
 
@@ -310,6 +310,21 @@ namespace Graph.Apps.Inventory
                 Config.HeaderColor,
                 true,
                 false);
+        }
+
+        public override void DrawItems()
+        {
+            EnsureData();
+
+            if (!_projectorDataInitialized && Config != null && Config.ReferenceBlock != 0 && _projector == null)
+            {
+                _projectorDataInitialized = true;
+                DrawLoadingScreen(Config.Scale);
+                return;
+            }
+
+            _projectorDataInitialized = true;
+            base.DrawItems();
         }
 
         protected override List<KeyValuePair<MyItemType, double>> ReadItems(IMyTerminalBlock lcd)

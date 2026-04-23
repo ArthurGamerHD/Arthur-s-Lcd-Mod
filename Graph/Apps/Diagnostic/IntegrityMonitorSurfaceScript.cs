@@ -214,7 +214,7 @@ namespace Graph.Apps.Diagnostic
                         var sprites = new List<MySprite>();
                         AddBackground(sprites);
                         DrawTitle(sprites);
-                        DrawNotReady(sprites, Config.Scale);
+                        DrawLoadingFrame(sprites, Config.Scale);
                         DrawFooter(sprites);
                         frame.AddRange(sprites);
                     }
@@ -600,59 +600,6 @@ namespace Graph.Apps.Diagnostic
                 RotationOrScale = textScale
             });
         }
-
-        void DrawNotReady(List<MySprite> sprites, float scale = 1f)
-        {
-            float contentTop = CaretY;
-            float contentBottom = ViewBox.Bottom - FooterHeight;
-            float contentHeight = Math.Max(0f, contentBottom - contentTop);
-            if (contentHeight <= 0f)
-                return;
-
-            var center = new Vector2(ViewBox.Center.X, contentTop + contentHeight * 0.45f);
-            float wheelScale = Math.Max(0.05f, scale);
-            float outerSize = Math.Min(ViewBox.Width, contentHeight) * 0.28f * wheelScale;
-            float innerSize = outerSize * 0.6f;
-
-            var session = MyAPIGateway.Session;
-            double seconds = session != null ? session.GameplayFrameCounter / 60.0 : 0.0;
-            float outerRotation = (float)(seconds * 2.4);
-            float innerRotation = -outerRotation;
-
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = "Screen_LoadingBar",
-                Position = center,
-                Size = new Vector2(outerSize),
-                Color = Surface.ScriptForegroundColor,
-                Alignment = TextAlignment.CENTER,
-                RotationOrScale = outerRotation
-            });
-
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = "Screen_LoadingBar",
-                Position = center,
-                Size = new Vector2(innerSize),
-                Color = Surface.ScriptForegroundColor,
-                Alignment = TextAlignment.CENTER,
-                RotationOrScale = innerRotation
-            });
-
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXT,
-                Data = LocHelper.GetLoc("LoadingPleaseWait"),
-                Position = new Vector2(center.X, center.Y + outerSize * 0.9f),
-                Color = Surface.ScriptForegroundColor,
-                Alignment = TextAlignment.CENTER,
-                FontId = "White",
-                RotationOrScale = Scale * FontScale
-            });
-        }
-
 
         static Vector2 RotateAround(Vector2 point, Vector2 origin, float rotation)
         {

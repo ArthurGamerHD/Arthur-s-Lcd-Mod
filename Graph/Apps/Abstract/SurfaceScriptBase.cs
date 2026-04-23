@@ -91,6 +91,7 @@ namespace Graph.Apps.Abstract
         bool _dirty;
 
         public ScreenProviderConfig ProviderConfig;
+        protected bool IsScreenReadyToRender { get; private set; }
 
         protected SurfaceScriptBase(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block,
             size)
@@ -213,10 +214,12 @@ namespace Graph.Apps.Abstract
         public override void Run()
         {
             base.Run();
+            IsScreenReadyToRender = false;
 
             if (Config == null)
             {
                 GetSettings((IMyTextSurface)Surface, (IMyCubeBlock)Block);
+                DrawLoadingScreen(1f, false);
                 return;
             }
 
@@ -230,6 +233,14 @@ namespace Graph.Apps.Abstract
 
             if (GridLogic == null)
                 LcdModSessionComponent.Components.TryGetValue(Block.CubeGrid.EntityId, out GridLogic);
+
+            if (GridLogic == null)
+            {
+                DrawLoadingScreen(Config.Scale);
+                return;
+            }
+
+            IsScreenReadyToRender = true;
         }
 
         void GetSettings(IMyTextSurface surface, IMyCubeBlock block)
@@ -552,6 +563,71 @@ namespace Graph.Apps.Abstract
             Scale = GetAutoScaleUniform();
             UpdateViewBox();
             _backgroundGrids.Clear();
+        }
+
+        protected void DrawLoadingScreen(float scale = 1f, bool drawTitle = true)
+        {
+            using (var frame = Surface.DrawFrame())
+            {
+                var sprites = new List<MySprite>();
+                AddBackground(sprites);
+                if (drawTitle && Config != null)
+                    DrawTitle(sprites);
+                DrawLoadingFrame(sprites, scale);
+                frame.AddRange(sprites);
+            }
+        }
+
+        protected virtual void DrawLoadingFrame(List<MySprite> sprites, float scale = 1f)
+        {
+            float contentTop = CaretY;
+            float contentBottom = ViewBox.Bottom - FooterHeight;
+            float contentHeight = Math.Max(0f, contentBottom - contentTop);
+            if (contentHeight <= 0f)
+                return;
+
+            var center = new Vector2(ViewBox.Center.X, contentTop + contentHeight * 0.45f);
+            float wheelScale = Math.Max(0.05f, scale);
+            float outerSize = Math.Min(ViewBox.Width, contentHeight) * 0.28f * wheelScale;
+            float innerSize = outerSize * 0.6f;
+
+            var session = MyAPIGateway.Session;
+            double seconds = session != null ? session.GameplayFrameCounter / 60.0 : 0.0;
+            float outerRotation = (float)(seconds * 2.4);
+            float innerRotation = -outerRotation;
+
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE,
+                Data = "Screen_LoadingBar",
+                Position = center,
+                Size = new Vector2(outerSize),
+                Color = Surface.ScriptForegroundColor,
+                Alignment = TextAlignment.CENTER,
+                RotationOrScale = outerRotation
+            });
+
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE,
+                Data = "Screen_LoadingBar",
+                Position = center,
+                Size = new Vector2(innerSize),
+                Color = Surface.ScriptForegroundColor,
+                Alignment = TextAlignment.CENTER,
+                RotationOrScale = innerRotation
+            });
+
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXT,
+                Data = LocHelper.GetLoc("LoadingPleaseWait"),
+                Position = new Vector2(center.X, center.Y + outerSize * 0.9f),
+                Color = Surface.ScriptForegroundColor,
+                Alignment = TextAlignment.CENTER,
+                FontId = "White",
+                RotationOrScale = Scale * FontScale
+            });
         }
 
         protected string GetCachedTitleText(float availableWidth, float fontSize = 1.3f, bool localizeTitle = false)

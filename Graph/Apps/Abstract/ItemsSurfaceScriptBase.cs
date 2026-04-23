@@ -89,6 +89,8 @@ namespace Graph.Apps.Abstract
         protected const int SCROLLER_WIDTH = 8;
         protected const int SCROLL_DELAY = 12;
         long _clock;
+        bool _hasDrawnAtLeastOnce;
+        bool _needsImmediateDraw;
         protected string PreviousType = "";
 
         protected ItemsSurfaceScriptBase(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface,
@@ -166,8 +168,11 @@ namespace Graph.Apps.Abstract
         {
             base.Run();
 
+            if (!IsScreenReadyToRender)
+                return;
+
             _clock++;
-            if (_clock % SCROLL_DELAY != 0 && !Dirty)
+            if (_hasDrawnAtLeastOnce && _clock % SCROLL_DELAY != 0 && !Dirty && !_needsImmediateDraw)
                 return;
 
             if (Config == null)
@@ -176,6 +181,8 @@ namespace Graph.Apps.Abstract
             try
             {
                 DrawItems();
+                _hasDrawnAtLeastOnce = true;
+                _needsImmediateDraw = false;
             }
             catch (Exception e)
             {
@@ -188,6 +195,7 @@ namespace Graph.Apps.Abstract
             base.LayoutChanged();
             LocKeysCache.Clear();
             LocalizedTitleCache = string.Empty;
+            _needsImmediateDraw = true;
         }
 
         public virtual void DrawItems()
