@@ -465,7 +465,7 @@ namespace Graph.Apps.Inventory
 
             Vector2 size = GetSizeInPixel(localizedName, "White", 1, Surface);
             float minProportion = Math.Min(nameRect.Width / size.X, nameRect.Height / size.Y);
-            float fontSize = minProportion / Math.Max(0.0001f, FontScale);
+            float fontSize = minProportion;
             float renderedHeight = size.Y * fontSize * FontScale;
             Vector2 pos = nameRect.Center;
             pos.Y -= renderedHeight * 0.5f;
@@ -486,7 +486,7 @@ namespace Graph.Apps.Inventory
                       FormatingHelper.FormatItemQty(GetNeededQty(item.Key));
             size = GetSizeInPixel(qty, "White", 1, Surface);
             minProportion = Math.Min(numberRect.Width / size.X, numberRect.Height / size.Y);
-            fontSize = minProportion / Math.Max(0.0001f, FontScale);
+            fontSize = minProportion;
             renderedHeight = size.Y * fontSize * FontScale;
             pos = numberRect.Center;
             pos.Y -= renderedHeight * 0.5f;
