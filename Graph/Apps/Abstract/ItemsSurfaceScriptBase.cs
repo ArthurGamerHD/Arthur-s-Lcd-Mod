@@ -2,21 +2,25 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Generated;
 using Graph.Helpers;
 using Graph.System;
+using Graph.System.TerminalControls.Generic;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
 using VRage;
 using VRage.Game;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
+using VRage.ModAPI;
 using VRage.Utils;
 using VRageMath;
 using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
 
 namespace Graph.Apps.Abstract
 {
-    public abstract class ItemsSurfaceScriptBase : SurfaceScriptBase
+    public abstract class ItemsSurfaceScriptBase : SurfaceScriptBase, IMultiDisplayMode,
+        IUsesTerminalControl<ComboboxDisplayMode>
     {
         public static Dictionary<MyItemType, string> SpriteCache =
             new Dictionary<MyItemType, string>();
@@ -26,6 +30,11 @@ namespace Graph.Apps.Abstract
         readonly Dictionary<MyItemType, double> _itemsCache = new Dictionary<MyItemType, double>();
 
         public abstract Dictionary<MyItemType, double> ItemSource { get; }
+
+        public List<MyTerminalControlComboBoxItem> GetDisplayModes()
+        {
+            return DisplayModes.GridAndLegacy;
+        }
 
         const int SPRITE_CACHE_MAX_SIZE = 256;
 

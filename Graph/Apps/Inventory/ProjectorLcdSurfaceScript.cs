@@ -32,8 +32,7 @@ namespace Graph.Apps.Inventory
         IUsesTerminalControl<ListboxProjectorSelection>,
         IUsesTerminalControl<SeparatorFilter>,
         IUsesTerminalControl<LabelSeparator>,
-        IUsesTerminalControlGroup<BlocksFilterTerminalControlGroup>,
-        IContainsTerminalControl<ComboboxDisplayMode>
+        IUsesTerminalControlGroup<BlocksFilterTerminalControlGroup>
     {
         public const string ID = "ProjectorCharts";
         public const string TITLE = "DisplayName_Block_Projector";

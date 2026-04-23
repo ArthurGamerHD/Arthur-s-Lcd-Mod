@@ -23,8 +23,7 @@ namespace Graph.Apps.Inventory
         IUsesTerminalControl<LabelSeparator>,
         IUsesTerminalControlGroup<BlocksFilterTerminalControlGroup>,
         IUsesTerminalControlGroup<ItemsFilterTerminalControlGroup>,
-        IUsesTerminalControl<ComboboxSorting>,
-        IContainsTerminalControl<ComboboxDisplayMode>
+        IUsesTerminalControl<ComboboxSorting>
     {
         public const string ID = "InventoryCharts";
         public const string NAME = "Inventory";

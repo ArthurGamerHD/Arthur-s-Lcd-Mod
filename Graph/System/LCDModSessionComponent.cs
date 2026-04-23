@@ -37,6 +37,7 @@ namespace Graph.System
         public static event Action OnLanguageChanged;
 
         public static string LastSelected;
+        public static IMyTerminalBlock LastSelectedBlock;
         
         public static Dictionary<long, GridLogic> Components = new Dictionary<long, GridLogic>();
         public static List<TerminalControlsWrapper> Controls = new List<TerminalControlsWrapper>();
@@ -346,6 +347,7 @@ namespace Graph.System
             if (provider == null)
                 return;
 
+            LastSelectedBlock = block;
             LastSelected = provider.GetSurface(GetThisSurfaceIndex(block))?.Script ?? string.Empty;
             
             if (provider is IMyTextPanel)

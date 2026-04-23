@@ -11,6 +11,7 @@ using Sandbox.ModAPI;
 using VRage;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
+using VRage.ModAPI;
 using VRage.Utils;
 using VRageMath;
 using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
@@ -18,7 +19,8 @@ using IMyCubeGrid = VRage.Game.ModAPI.IMyCubeGrid;
 
 namespace Graph.Apps.Abstract
 {
-    public abstract class PowerSurfaceScriptBase : SurfaceScriptBase, IContainsTerminalControl<ComboboxDisplayMode>
+    public abstract class PowerSurfaceScriptBase : SurfaceScriptBase, IMultiDisplayMode,
+        IUsesTerminalControl<ComboboxDisplayMode>
     {
         protected const float LINE = 22f;
         protected const float MINIMUM_COL_WIDTH = 400f;
@@ -100,6 +102,11 @@ namespace Graph.Apps.Abstract
         protected PowerSurfaceScriptBase(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface,
             block, size)
         {
+        }
+
+        public List<MyTerminalControlComboBoxItem> GetDisplayModes()
+        {
+            return DisplayModes.GridAndLegacy;
         }
 
         protected override void LayoutChanged()

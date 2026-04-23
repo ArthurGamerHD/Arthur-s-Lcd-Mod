@@ -2,18 +2,22 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using Generated;
 using Graph.Extensions;
 using Graph.Helpers;
 using Graph.Panels;
 using Graph.System;
+using Graph.System.TerminalControls.Generic;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
+using VRage.ModAPI;
 using VRageMath;
 
 namespace Graph.Apps.Abstract
 {
-    public abstract class PercentageSurfaceScript<TEntry> : SurfaceScriptBase
+    public abstract class PercentageSurfaceScript<TEntry> : SurfaceScriptBase, IMultiDisplayMode,
+        IUsesTerminalControl<ComboboxDisplayMode>
     {
         protected const int SCROLLER_WIDTH = 8;
         protected const int LINE_HEIGHT = 40;
@@ -28,6 +32,8 @@ namespace Graph.Apps.Abstract
             block, size)
         {
         }
+
+        public List<MyTerminalControlComboBoxItem> GetDisplayModes() => DisplayModes.GridAndLegacy;
 
         public override void Run()
         {

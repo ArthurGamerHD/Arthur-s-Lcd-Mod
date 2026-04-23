@@ -6,6 +6,7 @@ using Generated;
 using Graph.Apps.Abstract;
 using Graph.Extensions;
 using Graph.Helpers;
+using Graph.System;
 using Graph.System.TerminalControls.Blueprint;
 using Graph.System.TerminalControls.Color;
 using Graph.System.TerminalControls.Generic;
@@ -15,6 +16,8 @@ using Sandbox.ModAPI;
 using SpaceEngineers.Game.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
+using VRage.ModAPI;
+using VRage.Utils;
 using VRageMath;
 using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
 using IMyLargeTurretBase = Sandbox.ModAPI.Ingame.IMyLargeTurretBase;
@@ -24,8 +27,44 @@ namespace Graph.Apps.Diagnostic
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class IntegrityMonitorSurfaceScript : SurfaceScriptBase,
         IUsesTerminalControl<SliderRotation>,
-        IUsesTerminalControl<ListboxProjectorSelection>
+        IUsesTerminalControl<ListboxProjectorSelection>,
+        IUsesTerminalControl<ComboboxDisplayMode>,
+        IMultiDisplayMode
     {
+        readonly List<MyTerminalControlComboBoxItem> _integrityAxes = new List<MyTerminalControlComboBoxItem>
+        {
+            new MyTerminalControlComboBoxItem
+            {
+                Key = 0,
+                Value = MyStringId.GetOrCompute("LCDMod_Axis_X_Positive")
+            },
+            new MyTerminalControlComboBoxItem
+            {
+                Key = 1,
+                Value = MyStringId.GetOrCompute("LCDMod_Axis_X_Negative")
+            },
+            new MyTerminalControlComboBoxItem
+            {
+                Key = 2,
+                Value = MyStringId.GetOrCompute("LCDMod_Axis_Y_Positive")
+            },
+            new MyTerminalControlComboBoxItem
+            {
+                Key = 3,
+                Value = MyStringId.GetOrCompute("LCDMod_Axis_Y_Negative")
+            },
+            new MyTerminalControlComboBoxItem
+            {
+                Key = 4,
+                Value = MyStringId.GetOrCompute("LCDMod_Axis_Z_Positive")
+            },
+            new MyTerminalControlComboBoxItem
+            {
+                Key = 5,
+                Value = MyStringId.GetOrCompute("LCDMod_Axis_Z_Negative")
+            }
+        };
+        
         const int MAP_BUILD_BATCH_SIZE = 256;
 
         static readonly Dictionary<GridPairKey, CachedGridMapEntry> GridMapCache =
@@ -35,6 +74,8 @@ namespace Graph.Apps.Diagnostic
         public const string TITLE = "BroadcastStatus_IsPreviewGrid";
 
         protected override string DefaultTitle => _customTitle ?? TITLE;
+
+        public List<MyTerminalControlComboBoxItem> GetDisplayModes() => _integrityAxes;
 
         string _customTitle;
         readonly HashSet<CellKind> _legendUsedKinds = new HashSet<CellKind>();

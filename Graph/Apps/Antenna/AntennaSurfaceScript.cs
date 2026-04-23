@@ -17,6 +17,7 @@ using Graph.System.TerminalControls.Groups;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
+using VRage.ModAPI;
 using VRageMath;
 using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
 using IMyCubeGrid = VRage.Game.ModAPI.IMyCubeGrid;
@@ -30,7 +31,8 @@ namespace Graph.Apps.Antenna
         IUsesTerminalControl<SeparatorFilter>,
         IUsesTerminalControl<LabelSeparator>,
         IUsesTerminalControlGroup<BlocksFilterTerminalControlGroup>,
-        IContainsTerminalControl<ComboboxDisplayMode>
+        IUsesTerminalControl<ComboboxDisplayMode>,
+        IMultiDisplayMode
     {
         const float LINE = 22f;
         const float MINIMUM_COL_WIDTH = 400f;
@@ -47,6 +49,11 @@ namespace Graph.Apps.Antenna
         public const string TITLE = "Antenna";
 
         protected override string DefaultTitle => TITLE;
+
+        public List<MyTerminalControlComboBoxItem> GetDisplayModes()
+        {
+            return DisplayModes.GridAndLegacy;
+        }
 
         public AntennaSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
             : base(surface, block, size)

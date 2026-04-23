@@ -23,8 +23,7 @@ namespace Graph.Apps.Percentage
         IUsesTerminalControl<SwitchToggleLines>,
         IUsesTerminalControl<SeparatorFilter>,
         IUsesTerminalControl<LabelSeparator>,
-        IUsesTerminalControlGroup<BlocksFilterTerminalControlGroup>,
-        IContainsTerminalControl<ComboboxDisplayMode>
+        IUsesTerminalControlGroup<BlocksFilterTerminalControlGroup>
     {
         public const string ID = "ContainerCharts";
         public const string TITLE = "DisplayName_CargoFilledEntityComponent";
