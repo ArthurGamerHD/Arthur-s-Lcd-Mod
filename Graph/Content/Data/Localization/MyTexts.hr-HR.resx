@@ -9,6 +9,9 @@
   <data name="LCDMod_Radar" xml:space="preserve">
     <value>Taktički Radar</value>
   </data>
+  <data name="LCDMod_Radar_DetectedEntities" xml:space="preserve">
+    <value>Otkriveni entiteti:</value>
+  </data>
   <data name="LCDMod_TopEnergy" xml:space="preserve">
     <value>Najveća Potrošnja Energije</value>
   </data>

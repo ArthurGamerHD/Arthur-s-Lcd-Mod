@@ -456,10 +456,12 @@ namespace Graph.Apps.Diagnostic
             float contentEnd = ViewBox.X + ViewBox.Width - margin;
             float contentWidth = Math.Max(1f, contentEnd - contentStart);
 
-            float squareSize = 12f * Scale;
-            float rowHeight = 18f * Scale;
+            float legendTextScale = 0.75f * Scale * FontScale;
+            float legendScale = legendTextScale / 0.75f;
+            float squareSize = 12f * legendScale;
+            float rowHeight = Math.Max(18f * Scale, squareSize + 6f * legendScale);
             float colWidth = 150f * Scale;
-            float pad = 6f * Scale;
+            float pad = 6f * legendScale;
 
             int totalEntries = (_legendHasMissing ? 1 : 0) +
                                (_legendUsedKinds.Contains(CellKind.None) ? 1 : 0) +
@@ -467,6 +469,17 @@ namespace Graph.Apps.Diagnostic
             int cols = Math.Max(1, (int)Math.Floor(contentWidth / Math.Max(1f, colWidth)));
             int rows = (int)Math.Ceiling(totalEntries / (float)cols);
             float legendHeight = rows * rowHeight + pad * 2f;
+            float legendTop = ViewBox.Bottom - legendHeight;
+
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE,
+                Data = "SquareSimple",
+                Position = new Vector2(contentStart + contentWidth * 0.5f, legendTop + legendHeight * 0.5f),
+                Size = new Vector2(contentWidth, legendHeight),
+                Color = new Color(BackgroundColor.MulValue(0.8f), 0.5f),
+                Alignment = TextAlignment.CENTER
+            });
 
             float x = contentStart + pad;
             float y = ViewBox.Bottom - legendHeight + pad;
@@ -517,10 +530,10 @@ namespace Graph.Apps.Diagnostic
         void AddLegendRow(List<MySprite> sprites, float x, float y, float colWidth, float squareSize, Color color,
             string caption)
         {
-            ;
             float textScale = 0.75f * Scale * FontScale;
-            float labelX = x + squareSize + 6f * Scale;
-            float availableTextWidth = Math.Max(0f, colWidth - (labelX - x) - 4f * Scale);
+            float layoutScale = textScale / 0.75f;
+            float labelX = x + squareSize + 6f * layoutScale;
+            float availableTextWidth = Math.Max(0f, colWidth - (labelX - x) - 4f * layoutScale);
             var captionSb = new StringBuilder(caption ?? string.Empty);
             TrimText(ref captionSb, availableTextWidth, 0.75f);
             string trimmedCaption = captionSb.ToString();

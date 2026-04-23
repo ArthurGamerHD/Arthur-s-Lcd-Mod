@@ -9,6 +9,9 @@
   <data name="LCDMod_Radar" xml:space="preserve">
     <value>战术雷达</value>
   </data>
+  <data name="LCDMod_Radar_DetectedEntities" xml:space="preserve">
+    <value>已探测实体：</value>
+  </data>
   <data name="LCDMod_TopEnergy" xml:space="preserve">
     <value>最大能耗</value>
   </data>

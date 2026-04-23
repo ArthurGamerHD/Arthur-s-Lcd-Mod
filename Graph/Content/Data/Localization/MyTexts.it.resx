@@ -9,6 +9,9 @@
   <data name="LCDMod_Radar" xml:space="preserve">
     <value>Radar Tattico</value>
   </data>
+  <data name="LCDMod_Radar_DetectedEntities" xml:space="preserve">
+    <value>Entità rilevate:</value>
+  </data>
   <data name="LCDMod_TopEnergy" xml:space="preserve">
     <value>Massimo Consumo di Energia</value>
   </data>

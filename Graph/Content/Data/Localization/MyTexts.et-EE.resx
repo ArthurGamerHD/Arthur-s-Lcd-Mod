@@ -9,6 +9,9 @@
   <data name="LCDMod_Radar" xml:space="preserve">
     <value>Taktikaline Radar</value>
   </data>
+  <data name="LCDMod_Radar_DetectedEntities" xml:space="preserve">
+    <value>Tuvastatud üksused:</value>
+  </data>
   <data name="LCDMod_TopEnergy" xml:space="preserve">
     <value>Suurim Energiatarve</value>
   </data>

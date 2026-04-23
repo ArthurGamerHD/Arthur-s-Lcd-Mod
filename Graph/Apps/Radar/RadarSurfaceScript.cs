@@ -102,10 +102,13 @@ namespace Graph.Apps.Radar
         readonly List<TargetInfo> _targetsBelowPlane = new List<TargetInfo>();
         readonly List<TargetInfo> _targetsAbovePlane = new List<TargetInfo>();
         readonly StringBuilder _footerTextBuilder = new StringBuilder();
+        readonly List<MySprite> _backgroundSprites = new List<MySprite>();
+        readonly List<MySprite> _foregroundSprites = new List<MySprite>();
         long _cachedCharacterId;
         Sandbox.Game.EntityComponents.MyTargetLockingComponent _cachedCharacterTargetLocking;
         float _radarProjectionCos;
         float _radarProjectionSin;
+        float _radarFooterClampHeight;
 
         struct TargetInfo
         {
@@ -135,15 +138,26 @@ namespace Graph.Apps.Radar
 
             CollectContacts();
             PurgeStaleContacts();
-            UpdateFooterHeight();
+            BuildSortedContacts();
+            UpdateFooterHeights();
 
             using (var frame = Surface.DrawFrame())
             {
-                var sprites = new List<MySprite>();
-                DrawTitle(sprites); // sets CaretY; respects Config.TitleVisible
-                RenderRadar(sprites);
-                DrawFooter(sprites);
-                frame.AddRange(sprites);
+                try
+                {
+                    AddBackground(_backgroundSprites);
+                    DrawTitle(_foregroundSprites); // sets CaretY; respects Config.TitleVisible
+                    DrawFooter(_foregroundSprites); // pre-render footer layout before radar sizing
+                    RenderRadar(_backgroundSprites);
+
+                    frame.AddRange(_backgroundSprites);
+                    frame.AddRange(_foregroundSprites);
+                }
+                finally
+                {
+                    _backgroundSprites.Clear();
+                    _foregroundSprites.Clear();
+                }
             }
         }
 
@@ -548,18 +562,23 @@ namespace Graph.Apps.Radar
 
             UpdateProjectionAngle();
 
-            float minScale = Math.Min(Scale, 1f);
-            float margin = RADAR_MARGIN_PX * minScale;
-            float areaTop = CaretY + margin;
-            float radarFooterClearance = FooterHeight * FOOTER_RADAR_CLEARANCE_FACTOR;
-            float areaBottom = ViewBox.Bottom - radarFooterClearance - margin;
+            float radarScale = Scale;
+            float cappedScale;
+            float cappedLayoutScale;
+            GetRadarCappedScales(out cappedScale, out cappedLayoutScale);
+            float margin = RADAR_MARGIN_PX * cappedScale;
+            float titleTopPadding = (ViewBox.Size.Y * Margin) * 0.5f;
+            float titleClamp = TitleVisible ? TITLE_BAR_HEIGHT_BASE * cappedLayoutScale : 0f;
+            float footerClamp = _radarFooterClampHeight;
+            float areaTop = ViewBox.Y + titleTopPadding + titleClamp + margin;
+            float areaBottom = ViewBox.Bottom - footerClamp - margin;
             float areaHeight = areaBottom - areaTop;
             float areaWidth = ViewBox.Width - margin * 2f;
             if (areaWidth <= 0f || areaHeight <= 0f) return;
 
             Vector2 viewportCropped = new Vector2(
                 areaWidth,
-                areaHeight - (RANGE_TEXT_SIZE * SIZE_TO_PX + _borderPadding.Y) * minScale);
+                areaHeight - (RANGE_TEXT_SIZE * SIZE_TO_PX + _borderPadding.Y) * cappedScale);
             if (viewportCropped.X <= 0f || viewportCropped.Y <= 0f) return;
 
             float sideLength;
@@ -567,22 +586,20 @@ namespace Graph.Apps.Radar
                 sideLength = viewportCropped.X;
             else
                 sideLength = viewportCropped.Y / _radarProjectionCos;
-            sideLength *= RADAR_SIZE_SCALE;
 
             Vector2 radarCenterPos = new Vector2(ViewBox.Center.X, areaTop + viewportCropped.Y * 0.5f);
-            var radarPlaneSize = new Vector2(sideLength, sideLength * _radarProjectionCos);
+            var radarPlaneSize = new Vector2(sideLength, sideLength * _radarProjectionCos) * Config.Scale;
 
-            DrawRadarPlaneBackground(sprites, radarCenterPos, radarPlaneSize, minScale, lineColor, backColor,
+            DrawRadarPlaneBackground(sprites, radarCenterPos, radarPlaneSize, radarScale, lineColor, backColor,
                 planeColor);
-            DrawRadarPlane(sprites, radarCenterPos, radarPlaneSize, minScale, lineColor);
+            DrawRadarPlane(sprites, radarCenterPos, radarPlaneSize, radarScale, lineColor);
 
-            BuildSortedContacts();
             BuildTargetLayers(errColor, warnColor, allyColor, _debugLockedTargetPercent);
             for (int i = 0; i < _targetsBelowPlane.Count; i++)
-                DrawTargetIcon(sprites, radarCenterPos, radarPlaneSize, _targetsBelowPlane[i], minScale, backColor);
+                DrawTargetIcon(sprites, radarCenterPos, radarPlaneSize, _targetsBelowPlane[i], radarScale, backColor);
 
             for (int i = 0; i < _targetsAbovePlane.Count; i++)
-                DrawTargetIcon(sprites, radarCenterPos, radarPlaneSize, _targetsAbovePlane[i], minScale, backColor);
+                DrawTargetIcon(sprites, radarCenterPos, radarPlaneSize, _targetsAbovePlane[i], radarScale, backColor);
 
             if (_debugLockedTargetEntityId != 0)
             {
@@ -590,14 +607,14 @@ namespace Graph.Apps.Radar
                                                ? "Unknown"
                                                : _debugLockedTargetName)
                                            + " (" + (_debugLockedTargetPercent * 100f).ToString("F0") + "%)";
-                float debugScale = 0.5f * minScale * FontScale;
+                float debugScale = 0.5f * radarScale * FontScale;
                 float debugOffsetY =
                     Surface.MeasureStringInPixels(new StringBuilder(debugText), "White", debugScale).Y * 0.5f;
                 var debugColor = _debugLockedTargetPercent >= 0.99f ? Config.ErrorColor : Config.WarningColor;
                 sprites.Add(new MySprite(
                     SpriteType.TEXT,
                     debugText,
-                    radarCenterPos + new Vector2(0f, radarPlaneSize.Y * 0.5f + 12f * minScale + debugOffsetY),
+                    radarCenterPos + new Vector2(0f, radarPlaneSize.Y * 0.5f + 12f * radarScale + debugOffsetY),
                     null,
                     new Color(debugColor, 0.85f),
                     "White",
@@ -1050,8 +1067,6 @@ namespace Graph.Apps.Radar
         {
             if (FooterHeight <= 0f)
                 return;
-
-            BuildSortedContacts();
             if (_sortedContacts.Count == 0)
                 return;
 
@@ -1078,14 +1093,14 @@ namespace Graph.Apps.Radar
                 Data = "SquareSimple",
                 Position = new Vector2(left + width * 0.5f, top + FooterHeight * 0.5f),
                 Size = new Vector2(width, FooterHeight),
-                Color = new Color(BackgroundColor, 0.78f),
+                Color = new Color(BackgroundColor.MulValue(0.8f), 0.5f),
                 Alignment = TextAlignment.CENTER
             });
 
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
-                Data = "DETECTED ENTITIES",
+                Data = LocHelper.GetLoc("LCDMod_Radar_DetectedEntities"),
                 Position = new Vector2(left + pad, top + 1f * Scale),
                 Color = new Color(ForegroundColor, 0.75f),
                 Alignment = TextAlignment.LEFT,
@@ -1120,13 +1135,13 @@ namespace Graph.Apps.Radar
                 float x = left + col * drawColWidth + pad;
                 float y = contentTop + row * rowHeight;
                 Color iconColor = ContactColor(contact, errColor, warnColor, allyColor);
-                float iconSize = 9f * footerScale;
+                float iconSize = 12f * footerScale;
 
                 sprites.Add(new MySprite
                 {
                     Type = SpriteType.TEXTURE,
                     Data = FooterIconTexture(contact),
-                    Position = new Vector2(x + iconSize * 0.5f, y + iconSize * 0.5f),
+                    Position = new Vector2(x + iconSize * 0.5f, y + iconSize * 0.75f),
                     Size = new Vector2(iconSize, iconSize),
                     Color = iconColor,
                     Alignment = TextAlignment.CENTER
@@ -1170,21 +1185,37 @@ namespace Graph.Apps.Radar
             }
         }
 
-        void UpdateFooterHeight()
+        void UpdateFooterHeights()
         {
-            int entries = Math.Min(MAX_CONTACTS, _contacts.Count);
+            int entries = _sortedContacts.Count;
+            FooterHeight = CalculateFooterHeight(entries, Scale, LayoutScale);
+            float cappedScale;
+            float cappedLayoutScale;
+            GetRadarCappedScales(out cappedScale, out cappedLayoutScale);
+            _radarFooterClampHeight = CalculateFooterHeight(entries, cappedScale, cappedLayoutScale);
+        }
+
+        float CalculateFooterHeight(int entries, float scale, float layoutScale)
+        {
+            entries = Math.Min(MAX_CONTACTS, entries);
             if (entries <= 0)
-            {
-                FooterHeight = 0f;
-                return;
-            }
+                return 0f;
 
             float margin = ViewBox.Width * Margin;
             float width = Math.Max(1f, ViewBox.Width - margin * 2f);
-            float colWidth = FOOTER_COL_WIDTH_PX * Scale;
+            float colWidth = FOOTER_COL_WIDTH_PX * scale;
             int cols = Math.Max(1, (int)Math.Floor(width / Math.Max(1f, colWidth)));
             int rows = (int)Math.Ceiling(Math.Min(entries, FOOTER_MAX_ROWS * cols) / (float)cols);
-            FooterHeight = (FOOTER_HEADER_HEIGHT_PX + FOOTER_ROW_HEIGHT_PX * rows + 12f) * LayoutScale;
+            return (FOOTER_HEADER_HEIGHT_PX + FOOTER_ROW_HEIGHT_PX * rows + 12f) * layoutScale;
+        }
+
+        void GetRadarCappedScales(out float cappedScale, out float cappedLayoutScale)
+        {
+            float configScale = Math.Max(Config.Scale, 0.0001f);
+            float autoScale = Scale / configScale;
+            float cappedUserScale = Math.Min(configScale, 1f);
+            cappedScale = autoScale * cappedUserScale;
+            cappedLayoutScale = cappedScale * FontScale;
         }
 
         void BuildSortedContacts()

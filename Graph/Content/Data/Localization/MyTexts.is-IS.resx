@@ -9,6 +9,9 @@
   <data name="LCDMod_Radar" xml:space="preserve">
     <value>Tæknileg Ratsjá</value>
   </data>
+  <data name="LCDMod_Radar_DetectedEntities" xml:space="preserve">
+    <value>Greindar einingar:</value>
+  </data>
   <data name="LCDMod_TopEnergy" xml:space="preserve">
     <value>Mest Orkunotkun</value>
   </data>

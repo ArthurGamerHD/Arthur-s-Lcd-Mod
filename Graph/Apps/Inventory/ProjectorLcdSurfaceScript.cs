@@ -210,17 +210,21 @@ namespace Graph.Apps.Inventory
 
             int built = Math.Max(_totalBlocks - _remainingBlocks, 0);
             float footerScale = LayoutScale;
+            float textScale = Scale * 0.9f * FontScale;
+            float legendScale = textScale / 0.9f;
 
             FooterHeight = 25f * 2f * footerScale;
-            pos.X += 25f * 2f * footerScale;
+            // Keep text start aligned with footer legend/text scale (pie size remains unchanged).
+            pos.X += 25f * 2f * legendScale;
 
             pos.Y = ViewBox.Bottom - FooterHeight;
 
-            var legendSize = new Vector2(8f, 8f) * footerScale;
+            var legendSize = new Vector2(8f, 8f) * legendScale;
+            float legendTextSpacing = 4f * legendScale;
 
             var blocksString = MyTexts.GetString("TerminalTab_Info_Blocks");
 
-            pos.X += legendSize.X;
+            pos.X += legendSize.X + legendTextSpacing;
 
             var lineSpacer = 25f * footerScale;
 
@@ -236,7 +240,7 @@ namespace Graph.Apps.Inventory
                 Type = SpriteType.TEXT,
                 Data = sb.ToString(),
                 Position = pos,
-                RotationOrScale = Scale * 0.9f * FontScale,
+                RotationOrScale = textScale,
                 Color = Surface.ScriptForegroundColor,
                 Alignment = TextAlignment.LEFT,
                 FontId = "White"
@@ -259,13 +263,13 @@ namespace Graph.Apps.Inventory
                 Type = SpriteType.TEXT,
                 Data = sb.ToString(),
                 Position = pos,
-                RotationOrScale = Scale * 0.9f * FontScale,
+                RotationOrScale = textScale,
                 Color = Surface.ScriptForegroundColor,
                 Alignment = TextAlignment.LEFT,
                 FontId = "White"
             });
 
-            pos.X -= legendSize.X;
+            pos.X -= legendSize.X + legendTextSpacing;
 
             pos.Y -= lineSpacer - (legendSize.Y + legendSize.Y / 2);
 
@@ -291,6 +295,7 @@ namespace Graph.Apps.Inventory
                 Alignment = TextAlignment.CENTER,
             });
 
+            _pieBlueprint.SetMargin(ToScreenMargin(GetFooterPieCenter()), new Vector2(PIE_RADIUS * Scale));
             frame.AddRange(_pieBlueprint.GetSprites(componentsPct, blocksPct, Config.HeaderColor, true));
         }
 
@@ -566,7 +571,8 @@ namespace Graph.Apps.Inventory
         {
             var margin = ViewBox.Size.X * Margin;
             var headerIconCenterX = ViewBox.Position.X + margin + 20f * Scale;
-            var footerPieCenterY = ViewBox.Bottom + (-5f * Scale);
+            float footerHeight = 25f * 2f * LayoutScale;
+            var footerPieCenterY = ViewBox.Bottom - footerHeight * 0.5f;
             return new Vector2(headerIconCenterX, footerPieCenterY);
         }
 

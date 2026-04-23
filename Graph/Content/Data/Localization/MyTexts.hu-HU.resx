@@ -9,6 +9,9 @@
   <data name="LCDMod_Radar" xml:space="preserve">
     <value>Taktikai Radar</value>
   </data>
+  <data name="LCDMod_Radar_DetectedEntities" xml:space="preserve">
+    <value>Észlelt entitások:</value>
+  </data>
   <data name="LCDMod_TopEnergy" xml:space="preserve">
     <value>Legmagasabb Energiafogyasztás</value>
   </data>

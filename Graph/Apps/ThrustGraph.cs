@@ -321,7 +321,7 @@ namespace Graph.Apps
                 Data = "SquareSimple",
                 Position = new Vector2(left + width * 0.5f, top + legendHeight * 0.5f),
                 Size = new Vector2(width, legendHeight),
-                Color = new Color(BackgroundColor, 0.78f),
+                Color = new Color(BackgroundColor.MulValue(0.8f), 0.5f),
                 Alignment = TextAlignment.CENTER
             });
 

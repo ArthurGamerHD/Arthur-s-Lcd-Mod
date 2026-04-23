@@ -90,4 +90,7 @@
   <data name="LCDMod_Thrust_GravityLoad" xml:space="preserve">
     <value>Gravity load</value>
   </data>
+  <data name="LCDMod_Radar_DetectedEntities" xml:space="preserve">
+    <value>Detected Entities:</value>
+  </data>
 </root>

@@ -9,6 +9,9 @@
   <data name="LCDMod_Radar" xml:space="preserve">
     <value>戦術レーダー</value>
   </data>
+  <data name="LCDMod_Radar_DetectedEntities" xml:space="preserve">
+    <value>検出されたエンティティ:</value>
+  </data>
   <data name="LCDMod_TopEnergy" xml:space="preserve">
     <value>最大エネルギー消費</value>
   </data>
