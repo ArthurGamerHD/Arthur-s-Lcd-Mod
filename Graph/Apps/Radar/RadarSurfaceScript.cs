@@ -39,6 +39,7 @@ namespace Graph.Apps.Radar
     public partial class RadarSurfaceScript : SurfaceScriptBase,
         IUsesTerminalControlGroup<ColorsTerminalControlGroup>,
         IUsesTerminalControl<SwitchToggleHeader>,
+        IUsesTerminalControl<SliderFontSize>,
         IUsesTerminalControl<SliderScale>
     {
         public const string ID = "LCDMod_Radar";
@@ -589,7 +590,7 @@ namespace Graph.Apps.Radar
                                                ? "Unknown"
                                                : _debugLockedTargetName)
                                            + " (" + (_debugLockedTargetPercent * 100f).ToString("F0") + "%)";
-                float debugScale = 0.5f * minScale;
+                float debugScale = 0.5f * minScale * FontScale;
                 float debugOffsetY =
                     Surface.MeasureStringInPixels(new StringBuilder(debugText), "White", debugScale).Y * 0.5f;
                 var debugColor = _debugLockedTargetPercent >= 0.99f ? Config.ErrorColor : Config.WarningColor;
@@ -634,7 +635,7 @@ namespace Graph.Apps.Radar
             }
 
             var colorMultiplier = 1 - 0.5f * _debugLockedTargetPercent;
-            
+
             if (hasLockedTarget)
             {
                 for (int i = 0; i < _targetsBelowPlane.Count; i++)
@@ -643,7 +644,8 @@ namespace Graph.Apps.Radar
                     if (!info.TargetLock)
                     {
                         info.IconColor = info.IconColor.MulSaturation(colorMultiplier).MulValue(colorMultiplier);
-                        info.ElevationColor = info.ElevationColor.MulSaturation(colorMultiplier).MulValue(colorMultiplier);
+                        info.ElevationColor =
+                            info.ElevationColor.MulSaturation(colorMultiplier).MulValue(colorMultiplier);
                         _targetsBelowPlane[i] = info;
                     }
                 }
@@ -770,7 +772,7 @@ namespace Graph.Apps.Radar
             DrawLine(sprites, radarScreenCenter + verticalInner, radarScreenCenter + halfVertical, lineWidth,
                 quadrantLineColor);
 
-            float angleTextSize = QUADRANT_LABEL_TEXT_SIZE * scale;
+            float angleTextSize = QUADRANT_LABEL_TEXT_SIZE * scale * FontScale;
             float labelMargin = QUADRANT_LABEL_MARGIN_PX * scale;
             Color angleColor = new Color(ForegroundColor, 0.72f);
             float angleLabelHalfHeight =
@@ -817,7 +819,8 @@ namespace Graph.Apps.Radar
                 angleTextSize));
         }
 
-        void DrawTargetIcon(List<MySprite> sprites, Vector2 screenCenter, Vector2 radarPlaneSize, TargetInfo targetInfo, float scale, Color backColor)
+        void DrawTargetIcon(List<MySprite> sprites, Vector2 screenCenter, Vector2 radarPlaneSize, TargetInfo targetInfo,
+            float scale, Color backColor)
         {
             Vector3 targetPosPixels = targetInfo.Position * new Vector3(1f, _radarProjectionCos, _radarProjectionSin) *
                                       radarPlaneSize.X * 0.5f;
@@ -1057,9 +1060,10 @@ namespace Graph.Apps.Radar
             float right = ViewBox.Right - margin;
             float width = Math.Max(1f, right - left);
             float top = ViewBox.Bottom - FooterHeight;
-            float pad = 6f * Scale;
-            float rowHeight = FOOTER_ROW_HEIGHT_PX * Scale;
-            float headerHeight = FOOTER_HEADER_HEIGHT_PX * Scale;
+            float footerScale = LayoutScale;
+            float pad = 6f * footerScale;
+            float rowHeight = FOOTER_ROW_HEIGHT_PX * footerScale;
+            float headerHeight = FOOTER_HEADER_HEIGHT_PX * footerScale;
             float colWidth = FOOTER_COL_WIDTH_PX * Scale;
             int cols = Math.Max(1, (int)Math.Floor(width / Math.Max(1f, colWidth)));
             int visibleEntries = FOOTER_MAX_ROWS * cols;
@@ -1086,17 +1090,18 @@ namespace Graph.Apps.Radar
                 Color = new Color(ForegroundColor, 0.75f),
                 Alignment = TextAlignment.LEFT,
                 FontId = "White",
-                RotationOrScale = 0.55f * Scale
+                RotationOrScale = 0.55f * Scale * FontScale
             });
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
-                Data = MyTexts.GetString("BlockPropertyTitle_OreDetectorRange") + ": " + FormatingHelper.DistanceToString(_maxRange),
+                Data = MyTexts.GetString("BlockPropertyTitle_OreDetectorRange") + ": " +
+                       FormatingHelper.DistanceToString(_maxRange),
                 Position = new Vector2(left + width - pad, top + 1f * Scale),
                 Color = new Color(ForegroundColor, 0.75f),
                 Alignment = TextAlignment.RIGHT,
                 FontId = "White",
-                RotationOrScale = 0.55f * Scale
+                RotationOrScale = 0.55f * Scale * FontScale
             });
 
             var shipPos = ((IMyEntity)Block).WorldMatrix.Translation;
@@ -1115,7 +1120,7 @@ namespace Graph.Apps.Radar
                 float x = left + col * drawColWidth + pad;
                 float y = contentTop + row * rowHeight;
                 Color iconColor = ContactColor(contact, errColor, warnColor, allyColor);
-                float iconSize = 9f * Scale;
+                float iconSize = 9f * footerScale;
 
                 sprites.Add(new MySprite
                 {
@@ -1127,8 +1132,9 @@ namespace Graph.Apps.Radar
                     Alignment = TextAlignment.CENTER
                 });
 
-                string dist = FormatingHelper.DistanceToString((float)Vector3D.Distance(contact.WorldPosition, shipPos));
-                float distanceScale = 0.48f * Scale;
+                string dist =
+                    FormatingHelper.DistanceToString((float)Vector3D.Distance(contact.WorldPosition, shipPos));
+                float distanceScale = 0.48f * Scale * FontScale;
                 float distanceWidth = Surface.MeasureStringInPixels(new StringBuilder(dist), "White", distanceScale).X;
                 float colRight = left + (col + 1) * drawColWidth - pad;
 
@@ -1159,7 +1165,7 @@ namespace Graph.Apps.Radar
                     Color = ForegroundColor,
                     Alignment = TextAlignment.LEFT,
                     FontId = "White",
-                    RotationOrScale = 0.5f * Scale
+                    RotationOrScale = 0.5f * Scale * FontScale
                 });
             }
         }
@@ -1178,7 +1184,7 @@ namespace Graph.Apps.Radar
             float colWidth = FOOTER_COL_WIDTH_PX * Scale;
             int cols = Math.Max(1, (int)Math.Floor(width / Math.Max(1f, colWidth)));
             int rows = (int)Math.Ceiling(Math.Min(entries, FOOTER_MAX_ROWS * cols) / (float)cols);
-            FooterHeight = (FOOTER_HEADER_HEIGHT_PX + FOOTER_ROW_HEIGHT_PX * rows + 12f) * Scale;
+            FooterHeight = (FOOTER_HEADER_HEIGHT_PX + FOOTER_ROW_HEIGHT_PX * rows + 12f) * LayoutScale;
         }
 
         void BuildSortedContacts()

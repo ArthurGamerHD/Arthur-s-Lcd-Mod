@@ -30,7 +30,7 @@ namespace Graph.Apps.Refinery
         IUsesTerminalControlGroup<BlocksFilterTerminalControlGroup>,
         IUsesTerminalControl<ComboboxSorting>
     {
-        public const string ID    = "RefineryQueue";
+        public const string ID = "RefineryQueue";
         public const string TITLE = "DisplayName_BlockGroup_InputOutputGroup";
 
         protected override string DefaultTitle => TITLE;
@@ -41,13 +41,18 @@ namespace Graph.Apps.Refinery
                 : new Dictionary<MyItemType, double>();
 
 
-        enum EntryKind { Header, Item, Empty }
+        enum EntryKind
+        {
+            Header,
+            Item,
+            Empty
+        }
 
         struct VirtualEntry
         {
             public EntryKind Kind;
-            public string    Label;                        
-            public KeyValuePair<MyItemType, double> Item;  
+            public string Label;
+            public KeyValuePair<MyItemType, double> Item;
         }
 
 
@@ -103,32 +108,33 @@ namespace Graph.Apps.Refinery
                 return;
             }
 
-            float rowHeight    = LINE_HEIGHT * Scale;
-            float availableH   = ViewBox.Height - (CaretY - ViewBox.Y) - FooterHeight;
-            int   maxRows      = Math.Max(1, (int)Math.Floor(availableH / rowHeight));
-            int   totalEntries = virtualList.Count;
-            bool  shouldScroll = totalEntries > maxRows;
-            int   startIndex   = 0;
+            float rowHeight = LINE_HEIGHT * Scale;
+            float availableH = ViewBox.Height - (CaretY - ViewBox.Y) - FooterHeight;
+            int maxRows = Math.Max(1, (int)Math.Floor(availableH / rowHeight));
+            int totalEntries = virtualList.Count;
+            bool shouldScroll = totalEntries > maxRows;
+            int startIndex = 0;
 
             float margin = ViewBox.Size.X * Margin;
-            float xLeft  = ViewBox.X + margin;
+            float xLeft = ViewBox.X + margin;
             float xRight = ViewBox.X + ViewBox.Width - margin;
 
             if (shouldScroll)
             {
                 int totalSteps = Math.Max(1, totalEntries - maxRows);
-                int step       = GetScrollStep(SCROLL_DELAY / 6);
-                startIndex     = step % (totalSteps + 1);
+                int step = GetScrollStep(SCROLL_DELAY / 6);
+                startIndex = step % (totalSteps + 1);
 
-                float viewportHeight  = maxRows * rowHeight - (SCROLLER_WIDTH * 2 * Scale);
+                float viewportHeight = maxRows * rowHeight - (SCROLLER_WIDTH * 2 * Scale);
                 float scrollBarHeight = (float)maxRows / totalEntries * viewportHeight;
 
                 float totalScrollable = totalEntries - maxRows;
-                float scrollFraction  = totalScrollable > 0f
-                                       ? startIndex / totalScrollable : 0f;
+                float scrollFraction = totalScrollable > 0f
+                    ? startIndex / totalScrollable
+                    : 0f;
 
                 float scrollBarTravel = viewportHeight - scrollBarHeight;
-                float scrollBarY      = scrollFraction * scrollBarTravel;
+                float scrollBarY = scrollFraction * scrollBarTravel;
                 float scrollBarCenter = scrollBarY + scrollBarHeight / 2f;
 
                 float initialY = CaretY + SCROLLER_WIDTH * Scale;
@@ -171,20 +177,20 @@ namespace Graph.Apps.Refinery
         struct GridViewRow
         {
             public EntryKind Kind;
-            public string    Label;
+            public string Label;
             public List<KeyValuePair<MyItemType, double>> Items;
-            public float     Height;
+            public float Height;
         }
 
         void DrawGridMode(List<MySprite> sprites)
         {
-            float gridCellH  = 3 * LINE_HEIGHT * Scale;
-            float headerH    = LINE_HEIGHT * Scale;
+            float gridCellH = 3 * LINE_HEIGHT * Scale;
+            float headerH = LINE_HEIGHT * Scale;
             float availableH = ViewBox.Height - (CaretY - ViewBox.Y) - FooterHeight;
-            float margin     = ViewBox.Size.X * Margin;
-            float xLeft      = ViewBox.X + margin;
-            float xRight     = ViewBox.X + ViewBox.Width - margin;
-            int   maxCols    = GetMaxGridCols();
+            float margin = ViewBox.Size.X * Margin;
+            float xLeft = ViewBox.X + margin;
+            float xRight = ViewBox.X + ViewBox.Width - margin;
+            int maxCols = GetMaxGridCols();
 
             List<GridViewRow> rows = BuildGridRows(maxCols, gridCellH, headerH);
 
@@ -199,8 +205,8 @@ namespace Graph.Apps.Refinery
                 return;
             }
 
-            float testH      = 0f;
-            int   maxVisible = 0;
+            float testH = 0f;
+            int maxVisible = 0;
             for (int i = 0; i < rows.Count; i++)
             {
                 if (testH + rows[i].Height > availableH) break;
@@ -209,22 +215,22 @@ namespace Graph.Apps.Refinery
             }
 
             bool shouldScroll = maxVisible < rows.Count;
-            int  startIndex   = 0;
+            int startIndex = 0;
 
             if (shouldScroll)
             {
                 xRight -= SCROLLER_WIDTH * Scale;
 
                 int totalSteps = Math.Max(1, rows.Count - maxVisible);
-                int step       = GetScrollStep(SCROLL_DELAY / 6);
-                startIndex     = step % (totalSteps + 1);
+                int step = GetScrollStep(SCROLL_DELAY / 6);
+                startIndex = step % (totalSteps + 1);
 
-                float viewportH       = availableH - (SCROLLER_WIDTH * 2 * Scale);
+                float viewportH = availableH - (SCROLLER_WIDTH * 2 * Scale);
                 float scrollBarHeight = (float)maxVisible / rows.Count * viewportH;
-                float scrollFraction  = (float)startIndex / totalSteps;
+                float scrollFraction = (float)startIndex / totalSteps;
                 float scrollBarTravel = viewportH - scrollBarHeight;
                 float scrollBarCenter = scrollFraction * scrollBarTravel + scrollBarHeight / 2f;
-                float initialY        = CaretY + SCROLLER_WIDTH * Scale;
+                float initialY = CaretY + SCROLLER_WIDTH * Scale;
                 DrawScrollBar(sprites, Scale, initialY, viewportH, scrollBarCenter, scrollBarHeight);
             }
 
@@ -249,10 +255,11 @@ namespace Graph.Apps.Refinery
                         float colWidth = (xRight - xLeft) / maxCols;
                         for (int c = 0; c < row.Items.Count; c++)
                         {
-                            float cx  = xLeft + c * colWidth;
+                            float cx = xLeft + c * colWidth;
                             float cx2 = (c == maxCols - 1) ? xRight : cx + colWidth;
                             DrawGridCell(sprites, row.Items[c], cx, cx2, c == row.Items.Count - 1);
                         }
+
                         break;
                 }
             }
@@ -263,10 +270,12 @@ namespace Graph.Apps.Refinery
             var rows = new List<GridViewRow>();
 
             var referenceBlock = Block as IMyTerminalBlock;
-            List<KeyValuePair<MyItemType, double>> ores   = SortSection(GridLogic.GetRefineryItems(0, Config, referenceBlock));
-            List<KeyValuePair<MyItemType, double>> ingots = SortSection(GridLogic.GetRefineryItems(1, Config, referenceBlock));
+            List<KeyValuePair<MyItemType, double>> ores =
+                SortSection(GridLogic.GetRefineryItems(0, Config, referenceBlock));
+            List<KeyValuePair<MyItemType, double>> ingots =
+                SortSection(GridLogic.GetRefineryItems(1, Config, referenceBlock));
 
-            string oreLabel   = MyTexts.GetString("BlockPropertyProperties_CurrentInput");
+            string oreLabel = MyTexts.GetString("BlockPropertyProperties_CurrentInput");
             string ingotLabel = MyTexts.GetString("BlockPropertyProperties_CurrentOutput");
 
             rows.Add(new GridViewRow { Kind = EntryKind.Header, Label = oreLabel, Height = headerH });
@@ -306,7 +315,7 @@ namespace Graph.Apps.Refinery
 
         int GetMaxGridCols()
         {
-            float max    = ViewBox.Width - ViewBox.X;
+            float max = ViewBox.Width - ViewBox.X;
             float perCol = MINIMUM_COL_WIDTH * Scale;
             return Math.Max(1, (int)Math.Round(max / perCol - .5, MidpointRounding.AwayFromZero));
         }
@@ -317,10 +326,10 @@ namespace Graph.Apps.Refinery
             List<VirtualEntry> list = new List<VirtualEntry>();
 
             var referenceBlock = Block as IMyTerminalBlock;
-            Dictionary<MyItemType, double> ores   = GridLogic.GetRefineryItems(0, Config, referenceBlock);
+            Dictionary<MyItemType, double> ores = GridLogic.GetRefineryItems(0, Config, referenceBlock);
             Dictionary<MyItemType, double> ingots = GridLogic.GetRefineryItems(1, Config, referenceBlock);
 
-            string oreLabel   = MyTexts.GetString("BlockPropertyProperties_CurrentInput");
+            string oreLabel = MyTexts.GetString("BlockPropertyProperties_CurrentInput");
             string ingotLabel = MyTexts.GetString("BlockPropertyProperties_CurrentOutput");
 
             list.Add(new VirtualEntry { Kind = EntryKind.Header, Label = oreLabel });
@@ -368,23 +377,23 @@ namespace Graph.Apps.Refinery
         {
             frame.Add(new MySprite
             {
-                Type      = SpriteType.TEXTURE,
-                Data      = "SquareSimple",
-                Position  = new Vector2((xLeft + xRight) / 2f, CaretY),
-                Size      = new Vector2(xRight - xLeft, 2f),
-                Color     = Config.HeaderColor,
+                Type = SpriteType.TEXTURE,
+                Data = "SquareSimple",
+                Position = new Vector2((xLeft + xRight) / 2f, CaretY),
+                Size = new Vector2(xRight - xLeft, 2f),
+                Color = Config.HeaderColor,
                 Alignment = TextAlignment.CENTER
             });
 
             AddHeaderSprite(frame, new MySprite
             {
-                Type            = SpriteType.TEXT,
-                Data            = label,
-                Position        = new Vector2(xLeft, CaretY),
-                RotationOrScale = Scale * 1.0f,
-                Color           = Config.HeaderColor,
-                Alignment       = TextAlignment.LEFT,
-                FontId          = "White"
+                Type = SpriteType.TEXT,
+                Data = label,
+                Position = new Vector2(xLeft, CaretY),
+                RotationOrScale = Scale * 1.0f * FontScale,
+                Color = Config.HeaderColor,
+                Alignment = TextAlignment.LEFT,
+                FontId = "White"
             });
 
             CaretY += LINE_HEIGHT * Scale;
@@ -394,13 +403,13 @@ namespace Graph.Apps.Refinery
         {
             frame.Add(new MySprite
             {
-                Type            = SpriteType.TEXT,
-                Data            = LocHelper.Empty,
-                Position        = new Vector2((xLeft + xRight) / 2f, CaretY),
-                RotationOrScale = Scale,
-                Color           = Surface.ScriptForegroundColor,
-                Alignment       = TextAlignment.CENTER,
-                FontId          = "White"
+                Type = SpriteType.TEXT,
+                Data = LocHelper.Empty,
+                Position = new Vector2((xLeft + xRight) / 2f, CaretY),
+                RotationOrScale = Scale * FontScale,
+                Color = Surface.ScriptForegroundColor,
+                Alignment = TextAlignment.CENTER,
+                FontId = "White"
             });
 
             CaretY += LINE_HEIGHT * Scale;

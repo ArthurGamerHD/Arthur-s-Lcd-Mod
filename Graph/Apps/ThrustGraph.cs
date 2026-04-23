@@ -4,7 +4,6 @@ using Generated;
 using Graph.Apps.Abstract;
 using Graph.Extensions;
 using Graph.Helpers;
-using Graph.System.TerminalControls.Color;
 using Graph.System.TerminalControls.Generic;
 using Graph.System.TerminalControls.Groups;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
@@ -19,11 +18,13 @@ namespace Graph.Apps
 {
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class ThrustSurfaceScript : SurfaceScriptBase,
+        IUsesTerminalControlGroup<BaseTerminalControlGroup>,
         IUsesTerminalControlGroup<ColorsTerminalControlGroup>,
         IUsesTerminalControl<SwitchToggleHeader>,
+        IUsesTerminalControl<SliderFontSize>,
         IUsesTerminalControl<SliderScale>
     {
-        public const string ID    = "LCDMod_Thrust";
+        public const string ID = "LCDMod_Thrust";
         public const string TITLE = "HelpScreen_JoystickThrust";
         const float AXIS_THICKNESS = 6f;
         const float ARROW_SIZE_MULTIPLIER = 3f;
@@ -40,7 +41,7 @@ namespace Graph.Apps
         const int DIR_RIGHT = 3;
         const int DIR_UP = 4;
         const int DIR_DOWN = 5;
-        
+
         protected override string DefaultTitle => TITLE;
 
         public ThrustSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
@@ -70,9 +71,9 @@ namespace Graph.Apps
                     {
                         var thr = slims[i].FatBlock as IMyThrust;
                         if (thr == null) continue;
-                        if (!thr.Enabled) continue;      // turned off
+                        if (!thr.Enabled) continue; // turned off
                         if (!thr.IsFunctional) continue; // damaged below functional line
-                        if (!thr.IsWorking) continue;    // no fuel/power or otherwise unable to provide thrust
+                        if (!thr.IsWorking) continue; // no fuel/power or otherwise unable to provide thrust
 
                         var pushDir = Base6Directions.GetOppositeDirection(thr.Orientation.Forward);
                         int idx = DirIndex(pushDir);
@@ -81,7 +82,7 @@ namespace Graph.Apps
                         double max = 0d;
                         double cur = 0d;
                         max = thr.MaxEffectiveThrust;
-                        cur = thr.CurrentThrust; 
+                        cur = thr.CurrentThrust;
 
                         maxThrust[idx] += max;
                         curThrust[idx] += cur;
@@ -106,7 +107,7 @@ namespace Graph.Apps
                 if (maxThrust[i] <= 0d) continue;
                 fills[i] = MathHelper.Clamp((float)(curThrust[i] / maxThrust[i]), 0f, 1f);
             }
-            
+
             using (var frame = Surface.DrawFrame())
             {
                 var sprites = new List<MySprite>();
@@ -125,7 +126,7 @@ namespace Graph.Apps
         void DrawIsometricAxes(List<MySprite> sprites, float[] fills, Vector3D? gravityVector, float gravityLoad)
         {
             float contentTop = CaretY;
-            float legendHeight = LEGEND_HEIGHT_BASE * Scale;
+            float legendHeight = LEGEND_HEIGHT_BASE * LayoutScale;
             float contentBottom = ViewBox.Bottom - legendHeight;
             float contentHeight = contentBottom - contentTop;
             if (contentHeight <= 0f) return;
@@ -145,19 +146,27 @@ namespace Graph.Apps
             var blockUp = Block.Orientation.Up;
             var blockDown = Base6Directions.GetOppositeDirection(blockUp);
 
-            DrawAxesPass(sprites, origin, axisLength, thickness, arrowSize, new Vector2(0f, -1f), Color.Green, BASE_OPACITY);
-            DrawAxesPass(sprites, origin, axisLength, thickness, arrowSize, new Vector2(0f, 1f), Color.Green, BASE_OPACITY);
+            DrawAxesPass(sprites, origin, axisLength, thickness, arrowSize, new Vector2(0f, -1f), Color.Green,
+                BASE_OPACITY);
+            DrawAxesPass(sprites, origin, axisLength, thickness, arrowSize, new Vector2(0f, 1f), Color.Green,
+                BASE_OPACITY);
             DrawAxesPass(sprites, origin, axisLength, thickness, arrowSize, zDir, Color.Blue, BASE_OPACITY);
             DrawAxesPass(sprites, origin, axisLength, thickness, arrowSize, -zDir, Color.Blue, BASE_OPACITY);
             DrawAxesPass(sprites, origin, axisLength, thickness, arrowSize, xDir, Color.Red, BASE_OPACITY);
             DrawAxesPass(sprites, origin, axisLength, thickness, arrowSize, -xDir, Color.Red, BASE_OPACITY);
 
-            DrawAxesPass(sprites, origin, axisLength * FillForDirection(fills, blockUp), thickness, arrowSize, new Vector2(0f, -1f), Color.Green, 1f);
-            DrawAxesPass(sprites, origin, axisLength * FillForDirection(fills, blockDown), thickness, arrowSize, new Vector2(0f, 1f), Color.Green, 1f);
-            DrawAxesPass(sprites, origin, axisLength * FillForDirection(fills, blockForward), thickness, arrowSize, zDir, Color.Blue, 1f);
-            DrawAxesPass(sprites, origin, axisLength * FillForDirection(fills, blockBackward), thickness, arrowSize, -zDir, Color.Blue, 1f);
-            DrawAxesPass(sprites, origin, axisLength * FillForDirection(fills, blockRight), thickness, arrowSize, xDir, Color.Red, 1f);
-            DrawAxesPass(sprites, origin, axisLength * FillForDirection(fills, blockLeft), thickness, arrowSize, -xDir, Color.Red, 1f);
+            DrawAxesPass(sprites, origin, axisLength * FillForDirection(fills, blockUp), thickness, arrowSize,
+                new Vector2(0f, -1f), Color.Green, 1f);
+            DrawAxesPass(sprites, origin, axisLength * FillForDirection(fills, blockDown), thickness, arrowSize,
+                new Vector2(0f, 1f), Color.Green, 1f);
+            DrawAxesPass(sprites, origin, axisLength * FillForDirection(fills, blockForward), thickness, arrowSize,
+                zDir, Color.Blue, 1f);
+            DrawAxesPass(sprites, origin, axisLength * FillForDirection(fills, blockBackward), thickness, arrowSize,
+                -zDir, Color.Blue, 1f);
+            DrawAxesPass(sprites, origin, axisLength * FillForDirection(fills, blockRight), thickness, arrowSize, xDir,
+                Color.Red, 1f);
+            DrawAxesPass(sprites, origin, axisLength * FillForDirection(fills, blockLeft), thickness, arrowSize, -xDir,
+                Color.Red, 1f);
 
             if (gravityVector.HasValue)
             {
@@ -227,7 +236,9 @@ namespace Graph.Apps
                 bool visibleThisTick = (GetTimeStep(GRAVITY_ERROR_FLASH_SECONDS) % 2) == 0;
                 if (!visibleThisTick) return;
 
-                DrawMessage(sprites,  string.Format(LocHelper.GetLoc("LCDMod_Critical"), LocHelper.GetLoc("LCDMod_Thrust_GravityLoad")), "Warning",
+                DrawMessage(sprites,
+                    string.Format(LocHelper.GetLoc("LCDMod_Critical"), LocHelper.GetLoc("LCDMod_Thrust_GravityLoad")),
+                    "Warning",
                     BoostAlertColor(Config.ErrorColor),
                     0.7f * Config.Scale);
                 return;
@@ -235,7 +246,9 @@ namespace Graph.Apps
 
             if (gravityLoad >= GRAVITY_LOAD_WARN_THRESHOLD)
             {
-                DrawMessage(sprites, string.Format(LocHelper.GetLoc("LCDMod_Warning"), LocHelper.GetLoc("LCDMod_Thrust_GravityLoad")), "Warning",
+                DrawMessage(sprites,
+                    string.Format(LocHelper.GetLoc("LCDMod_Warning"), LocHelper.GetLoc("LCDMod_Thrust_GravityLoad")),
+                    "Warning",
                     BoostAlertColor(Config.WarningColor),
                     0.7f * Config.Scale);
             }
@@ -285,7 +298,7 @@ namespace Graph.Apps
 
         void DrawBottomLegend(List<MySprite> sprites, double[] maxThrust)
         {
-            float legendHeight = LEGEND_HEIGHT_BASE * Scale;
+            float legendHeight = LEGEND_HEIGHT_BASE * LayoutScale;
             float margin = ViewBox.Width * Margin;
             float left = ViewBox.X + margin;
             float right = ViewBox.Right - margin;
@@ -294,7 +307,7 @@ namespace Graph.Apps
             float padX = 6f * Scale;
             float rowH = legendHeight * 0.5f;
             float colW = width / 3f;
-            float textScale = 0.46f * Scale;
+            float textScale = 0.46f * Scale * FontScale;
             string forward = LocHelper.GetLoc("Thrust_Forward");
             string backward = LocHelper.GetLoc("Thrust_Back");
             string leftLabel = LocHelper.GetLoc("Thrust_Left");
@@ -312,13 +325,19 @@ namespace Graph.Apps
                 Alignment = TextAlignment.CENTER
             });
 
-            DrawLegendCell(sprites, left + 0f * colW, top + 0f * rowH, colW, rowH, padX, forward, maxThrust[DIR_FORWARD], Color.Blue, ForegroundColor, textScale);
-            DrawLegendCell(sprites, left + 1f * colW, top + 0f * rowH, colW, rowH, padX, leftLabel, maxThrust[DIR_LEFT], Color.Red, ForegroundColor, textScale);
-            DrawLegendCell(sprites, left + 2f * colW, top + 0f * rowH, colW, rowH, padX, up, maxThrust[DIR_UP], Color.Green, ForegroundColor, textScale);
+            DrawLegendCell(sprites, left + 0f * colW, top + 0f * rowH, colW, rowH, padX, forward,
+                maxThrust[DIR_FORWARD], Color.Blue, ForegroundColor, textScale);
+            DrawLegendCell(sprites, left + 1f * colW, top + 0f * rowH, colW, rowH, padX, leftLabel, maxThrust[DIR_LEFT],
+                Color.Red, ForegroundColor, textScale);
+            DrawLegendCell(sprites, left + 2f * colW, top + 0f * rowH, colW, rowH, padX, up, maxThrust[DIR_UP],
+                Color.Green, ForegroundColor, textScale);
 
-            DrawLegendCell(sprites, left + 0f * colW, top + 1f * rowH, colW, rowH, padX, backward, maxThrust[DIR_BACKWARD], Color.Blue, ForegroundColor, textScale);
-            DrawLegendCell(sprites, left + 1f * colW, top + 1f * rowH, colW, rowH, padX, rightLabel, maxThrust[DIR_RIGHT], Color.Red, ForegroundColor, textScale);
-            DrawLegendCell(sprites, left + 2f * colW, top + 1f * rowH, colW, rowH, padX, down, maxThrust[DIR_DOWN], Color.Green, ForegroundColor, textScale);
+            DrawLegendCell(sprites, left + 0f * colW, top + 1f * rowH, colW, rowH, padX, backward,
+                maxThrust[DIR_BACKWARD], Color.Blue, ForegroundColor, textScale);
+            DrawLegendCell(sprites, left + 1f * colW, top + 1f * rowH, colW, rowH, padX, rightLabel,
+                maxThrust[DIR_RIGHT], Color.Red, ForegroundColor, textScale);
+            DrawLegendCell(sprites, left + 2f * colW, top + 1f * rowH, colW, rowH, padX, down, maxThrust[DIR_DOWN],
+                Color.Green, ForegroundColor, textScale);
         }
 
         static void DrawLegendCell(List<MySprite> sprites, float x, float y, float w, float h, float padX,

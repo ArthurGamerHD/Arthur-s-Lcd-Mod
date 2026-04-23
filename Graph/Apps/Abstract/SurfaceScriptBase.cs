@@ -28,17 +28,17 @@ namespace Graph.Apps.Abstract
         static readonly StringBuilder StringBuilderBuffer = new StringBuilder();
 
         public static List<SurfaceScriptBase> Instances = new List<SurfaceScriptBase>();
-        
+
         readonly List<MySprite> _backgroundGrids = new List<MySprite>();
         Color _backgroundColor;
         Color _foregroundColor;
-        
+
 
         public IMyFaction Faction { get; protected set; }
         protected string Icon { get; set; }
 
         public Vector2 TextureSize => Surface.TextureSize;
-        
+
         protected virtual SortMethod SortMethod => Config.SortMethod;
 
         /// <summary>
@@ -55,9 +55,8 @@ namespace Graph.Apps.Abstract
 
         protected const float TITLE_BAR_HEIGHT_BASE = 40f;
 
-
         protected string LocalizedTitleCache = string.Empty;
-        
+
 
         public virtual string Title
         {
@@ -73,8 +72,11 @@ namespace Graph.Apps.Abstract
         protected virtual string DefaultTitle => "|";
 
         protected float Scale = 1;
+        protected float FontScale => _userFontScale <= 0f ? 1f : _userFontScale;
+        protected float LayoutScale => Scale * FontScale;
 
         float _userScale;
+        float _userFontScale;
         float _userPadding;
         string _cachedTitleSource;
         string _cachedTitleText;
@@ -91,13 +93,14 @@ namespace Graph.Apps.Abstract
 
         public ScreenProviderConfig ProviderConfig;
 
-        protected SurfaceScriptBase(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)
+        protected SurfaceScriptBase(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block,
+            size)
         {
             Instances.Add(this);
             UpdateViewBox();
             UpdateFaction(FactionHelper.GetOwnerFaction(Block as IMyTerminalBlock));
             DrawSplash();
-            
+
             LcdModSessionComponent.OnLanguageChanged += LayoutChanged;
         }
 
@@ -125,7 +128,7 @@ namespace Graph.Apps.Abstract
                 new Vector2(ViewBox.Center.X, ViewBox.Center.Y - offset / 2),
                 new Vector2(Math.Min(ViewBox.Width, ViewBox.Height) / 1.5f), FactionHelper.GetIconColor(Faction)));
             frame.Add(new MySprite(SpriteType.TEXT, Title, new Vector2(ViewBox.Center.X, ViewBox.Center.Y + offset),
-                null, FactionHelper.GetIconColor(Faction), "White", rotation: 1.6f));
+                null, FactionHelper.GetIconColor(Faction), "White", rotation: 1.6f * FontScale));
             frame.Dispose();
         }
 
@@ -142,7 +145,7 @@ namespace Graph.Apps.Abstract
                 frame.AddRange(sprites);
             }
         }
-        
+
         protected void Empty()
         {
             using (var frame = Surface.DrawFrame())
@@ -211,7 +214,7 @@ namespace Graph.Apps.Abstract
         public override void Run()
         {
             base.Run();
-            
+
             if (Config == null)
             {
                 GetSettings((IMyTextSurface)Surface, (IMyCubeBlock)Block);
@@ -220,14 +223,14 @@ namespace Graph.Apps.Abstract
 
             if (Math.Abs(_userPadding - Surface.TextPadding) > .01f ||
                 Math.Abs(_userScale - Config.Scale) > .001f ||
-                BackgroundColor != _backgroundColor || 
-                ForegroundColor != _foregroundColor || 
+                Math.Abs(_userFontScale - Surface.FontSize) > .001f ||
+                BackgroundColor != _backgroundColor ||
+                ForegroundColor != _foregroundColor ||
                 TitleVisible != Config.TitleVisible)
                 LayoutChanged();
 
             if (GridLogic == null)
                 LcdModSessionComponent.Components.TryGetValue(Block.CubeGrid.EntityId, out GridLogic);
-
         }
 
         void GetSettings(IMyTextSurface surface, IMyCubeBlock block)
@@ -255,6 +258,8 @@ namespace Graph.Apps.Abstract
         protected virtual void DrawTitle(List<MySprite> frame)
         {
             var margin = ViewBox.Size.X * Margin;
+            float headerScale = LayoutScale;
+            float titleBarHeight = TITLE_BAR_HEIGHT_BASE * headerScale;
             Vector2 position = ViewBox.Position;
             position.X += margin;
             position.Y += (ViewBox.Size.Y * Margin) / 2;
@@ -268,8 +273,8 @@ namespace Graph.Apps.Abstract
             {
                 Type = SpriteType.TEXTURE,
                 Data = Icon,
-                Position = position + new Vector2(20) * Scale,
-                Size = new Vector2(40 * Scale),
+                Position = position + new Vector2(20f) * headerScale,
+                Size = new Vector2(40f * headerScale),
                 Color = Config.HeaderColor,
                 Alignment = TextAlignment.CENTER
             });
@@ -277,7 +282,7 @@ namespace Graph.Apps.Abstract
 
             frame.Add(MySprite.CreateClipRect(new Rectangle((int)position.X, (int)position.Y,
                 (int)(ViewBox.Width - position.X + ViewBox.X),
-                (int)(position.Y + 35 * Scale))));
+                (int)(position.Y + 35f * headerScale))));
 
             var availableWidth = ViewBox.Width - position.X + ViewBox.X;
             var titleText = GetCachedTitleText(availableWidth, 1.3f, true);
@@ -287,7 +292,7 @@ namespace Graph.Apps.Abstract
                 Type = SpriteType.TEXT,
                 Data = titleText,
                 Position = position,
-                RotationOrScale = Scale * 1.3f,
+                RotationOrScale = Scale * 1.3f * FontScale,
                 Color = Config.HeaderColor,
                 Alignment = TextAlignment.LEFT,
                 FontId = "White"
@@ -295,7 +300,7 @@ namespace Graph.Apps.Abstract
 
             frame.Add(MySprite.CreateClearClipRect());
 
-            CaretY += TITLE_BAR_HEIGHT_BASE * Scale;
+            CaretY += titleBarHeight;
         }
 
         protected virtual void DrawFooter(List<MySprite> frame)
@@ -315,7 +320,7 @@ namespace Graph.Apps.Abstract
                 Position = p,
                 Color = surf.ScriptForegroundColor,
                 Alignment = alignment,
-                RotationOrScale = scale
+                RotationOrScale = scale * surf.FontSize
             };
         }
 
@@ -370,8 +375,9 @@ namespace Graph.Apps.Abstract
             var nameRect = new RectangleF(contentLeft, bottomRowTop, contentWidth, bottomRowHeight);
             return new MyTuple<RectangleF, RectangleF, RectangleF>(iconRect, numberRect, nameRect);
         }
-        
-        protected virtual void DrawMessage(List<MySprite> sprites, string message, string icon, Color color, float scale = 1f)
+
+        protected virtual void DrawMessage(List<MySprite> sprites, string message, string icon, Color color,
+            float scale = 1f)
         {
             float contentTop = CaretY;
             float contentBottom = ViewBox.Bottom - FooterHeight;
@@ -400,7 +406,7 @@ namespace Graph.Apps.Abstract
                 Color = color,
                 Alignment = TextAlignment.CENTER,
                 FontId = "White",
-                RotationOrScale = 1f * Scale
+                RotationOrScale = 1f * Scale * FontScale
             };
 
             sprites.Add(iconSprite.Shadow(2 * Scale));
@@ -419,7 +425,7 @@ namespace Graph.Apps.Abstract
             var rt = yStart + cellPadding / 2;
             var rb = yStart + cellHeight - cellPadding / 2;
 
-            var backgroundColor = item.Value == 0 ? Config.ErrorColor: Config.HeaderColor;
+            var backgroundColor = item.Value == 0 ? Config.ErrorColor : Config.HeaderColor;
             var a = backgroundColor.MulValue(0.2f);
             var cellRect = new RectangleF(rl, rt, rr - rl, rb - rt);
             var dropShadow = new RectangleF(cellRect.Position + 2, cellRect.Size);
@@ -468,7 +474,7 @@ namespace Graph.Apps.Abstract
 
         protected void TrimText(ref StringBuilder sb, float availableWidth, float fontSize = 1)
         {
-            Vector2 textSize = Surface.MeasureStringInPixels(sb, "White", fontSize * Scale);
+            Vector2 textSize = Surface.MeasureStringInPixels(sb, "White", fontSize * Scale * FontScale);
 
             if (textSize.X > availableWidth)
             {
@@ -478,7 +484,7 @@ namespace Graph.Apps.Abstract
                 {
                     sb.Length = i;
                     sb.Append(ellipsis);
-                    textSize = Surface.MeasureStringInPixels(sb, "White", fontSize * Scale);
+                    textSize = Surface.MeasureStringInPixels(sb, "White", fontSize * Scale * FontScale);
 
                     if (textSize.X <= availableWidth)
                         break;
@@ -507,7 +513,8 @@ namespace Graph.Apps.Abstract
             return new MySprite
             {
                 Type = SpriteType.TEXT, Data = s, Position = p,
-                Color = Surface.ScriptForegroundColor, Alignment = TextAlignment.LEFT, RotationOrScale = scale
+                Color = Surface.ScriptForegroundColor, Alignment = TextAlignment.LEFT,
+                RotationOrScale = scale * FontScale
             };
         }
 
@@ -516,7 +523,8 @@ namespace Graph.Apps.Abstract
             return new MySprite
             {
                 Type = SpriteType.TEXT, Data = s, Position = p,
-                Color = Surface.ScriptForegroundColor, Alignment = TextAlignment.CENTER, RotationOrScale = scale
+                Color = Surface.ScriptForegroundColor, Alignment = TextAlignment.CENTER,
+                RotationOrScale = scale * FontScale
             };
         }
 
@@ -537,6 +545,7 @@ namespace Graph.Apps.Abstract
         {
             _userPadding = Surface.TextPadding;
             _userScale = Config.Scale;
+            _userFontScale = Surface.FontSize;
             _backgroundColor = BackgroundColor;
             _foregroundColor = ForegroundColor;
             LocalizedTitleCache = string.Empty;

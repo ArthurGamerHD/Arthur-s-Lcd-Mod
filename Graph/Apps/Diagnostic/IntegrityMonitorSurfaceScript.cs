@@ -518,11 +518,11 @@ namespace Graph.Apps.Diagnostic
             string caption)
         {
             ;
-            float textScale = 0.75f * Scale;
+            float textScale = 0.75f * Scale * FontScale;
             float labelX = x + squareSize + 6f * Scale;
             float availableTextWidth = Math.Max(0f, colWidth - (labelX - x) - 4f * Scale);
             var captionSb = new StringBuilder(caption ?? string.Empty);
-            TrimText(ref captionSb, availableTextWidth, textScale / Scale);
+            TrimText(ref captionSb, availableTextWidth, 0.75f);
             string trimmedCaption = captionSb.ToString();
             float textHeight = GetSizeInPixel(trimmedCaption, "White", textScale, Surface).Y;
 
@@ -596,11 +596,11 @@ namespace Graph.Apps.Diagnostic
                 Color = Surface.ScriptForegroundColor,
                 Alignment = TextAlignment.CENTER,
                 FontId = "White",
-                RotationOrScale = Scale
+                RotationOrScale = Scale * FontScale
             });
         }
 
-        
+
         static Vector2 RotateAround(Vector2 point, Vector2 origin, float rotation)
         {
             if (Math.Abs(rotation) < 0.0001f)

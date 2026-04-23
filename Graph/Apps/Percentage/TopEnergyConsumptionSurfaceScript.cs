@@ -21,12 +21,13 @@ using IMySlimBlock = VRage.Game.ModAPI.IMySlimBlock;
 namespace Graph.Apps.Percentage
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public partial class TopEnergyConsumptionSurfaceScript : PercentageSurfaceScript<TopEnergyConsumptionSurfaceScript.Entry>,
+    public partial class TopEnergyConsumptionSurfaceScript :
+        PercentageSurfaceScript<TopEnergyConsumptionSurfaceScript.Entry>,
         IUsesTerminalControlGroup<ColorsTerminalControlGroup>,
         IUsesTerminalControl<SwitchToggleHeader>,
         IUsesTerminalControl<SliderScale>
     {
-        public const string ID    = "LCDMod_TopEnergy";
+        public const string ID = "LCDMod_TopEnergy";
         public const string TITLE = "LCDMod_TopEnergy";
 
         // Electricity resource type ID used by the SE resource distribution system
@@ -37,7 +38,9 @@ namespace Graph.Apps.Percentage
         double _maxWatts;
 
         public TopEnergyConsumptionSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
-            : base(surface, block, size) { }
+            : base(surface, block, size)
+        {
+        }
 
         protected override string DefaultTitle => TITLE;
 
@@ -106,11 +109,18 @@ namespace Graph.Apps.Percentage
             {
                 MyAPIGateway.GridGroups.GetGroup(rootGrid, GridLinkTypeEnum.Logical, grids);
             }
-            catch { }
+            catch
+            {
+            }
 
             var hasRoot = false;
             for (var i = 0; i < grids.Count; i++)
-                if (grids[i] == rootGrid) { hasRoot = true; break; }
+                if (grids[i] == rootGrid)
+                {
+                    hasRoot = true;
+                    break;
+                }
+
             if (!hasRoot) grids.Insert(0, rootGrid);
 
             var slims = new List<IMySlimBlock>();
@@ -132,11 +142,25 @@ namespace Graph.Apps.Percentage
                     if (fat is IMyBatteryBlock) continue;
 
                     MyResourceSinkComponent sink = null;
-                    try { fat.Components.TryGet(out sink); } catch { }
+                    try
+                    {
+                        fat.Components.TryGet(out sink);
+                    }
+                    catch
+                    {
+                    }
+
                     if (sink == null) continue;
 
                     double watts = 0;
-                    try { watts = sink.CurrentInputByType(ElectricityId) * 1000000.0; } catch { }
+                    try
+                    {
+                        watts = sink.CurrentInputByType(ElectricityId) * 1000000.0;
+                    }
+                    catch
+                    {
+                    }
+
                     if (watts <= 0) continue;
 
                     string name;
@@ -147,7 +171,10 @@ namespace Graph.Apps.Percentage
                         if (string.IsNullOrEmpty(name)) name = fat.BlockDefinition.SubtypeName;
                         if (string.IsNullOrEmpty(name)) name = "Block";
                     }
-                    catch { name = "Block"; }
+                    catch
+                    {
+                        name = "Block";
+                    }
 
                     entries.Add(new Entry { Name = name, CurrentWatts = watts });
                 }
@@ -158,7 +185,7 @@ namespace Graph.Apps.Percentage
         {
             public string Name;
             public double CurrentWatts;
-            public float  Ratio;
+            public float Ratio;
         }
     }
 }

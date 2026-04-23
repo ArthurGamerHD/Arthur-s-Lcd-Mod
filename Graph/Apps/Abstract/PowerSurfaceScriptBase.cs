@@ -95,8 +95,10 @@ namespace Graph.Apps.Abstract
 
         protected abstract PowerEntryDefinition[] EntryDefinitions { get; }
 
-        protected PowerSurfaceScriptBase(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)
-        { }
+        protected PowerSurfaceScriptBase(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface,
+            block, size)
+        {
+        }
 
         protected override void LayoutChanged()
         {
@@ -167,7 +169,7 @@ namespace Graph.Apps.Abstract
 
             _entryOrder = new string[definitions.Length];
             _entriesOrdered = new PowerEntry[definitions.Length];
-            
+
             _entriesByKey.Clear();
             _totalsByKey.Clear();
             _piePanelsByKey.Clear();
@@ -353,7 +355,8 @@ namespace Graph.Apps.Abstract
                 int idx = start + gridIdx;
                 int row = gridIdx;
                 float yStart = CaretY + row * rowHeight;
-                DrawGridPowerCell(sprites, entries[idx], contentStart, contentEnd, yStart, rowHeight, maxLabel, currentLabel,
+                DrawGridPowerCell(sprites, entries[idx], contentStart, contentEnd, yStart, rowHeight, maxLabel,
+                    currentLabel,
                     true);
             }
         }
@@ -464,7 +467,7 @@ namespace Graph.Apps.Abstract
 
             if (!drawAsLines)
             {
-                var backgroundColor = entry.Current <= 0 ? Config.ErrorColor: Config.HeaderColor;
+                var backgroundColor = entry.Current <= 0 ? Config.ErrorColor : Config.HeaderColor;
                 var hsv = backgroundColor.ColorToHSV();
                 hsv.Z *= 0.2f;
 
@@ -481,7 +484,7 @@ namespace Graph.Apps.Abstract
             var iconRect = slots.Item1;
             var numberRect = slots.Item2;
             var nameRect = slots.Item3;
-            var foreground = entry.Current <= 0 && drawAsLines ? Config.ErrorColor: Surface.ScriptForegroundColor;
+            var foreground = entry.Current <= 0 && drawAsLines ? Config.ErrorColor : Surface.ScriptForegroundColor;
 
             DrawCellPie(sprites, iconRect, entry.Key, entry.Usage);
 
@@ -499,7 +502,7 @@ namespace Graph.Apps.Abstract
                 foreground,
                 "White",
                 TextAlignment.RIGHT,
-                1.1f * Scale
+                1.1f * Scale * FontScale
             ));
 
             var info = new StringBuilder();
@@ -520,7 +523,7 @@ namespace Graph.Apps.Abstract
                 foreground,
                 "White",
                 TextAlignment.RIGHT,
-                .9f * Scale
+                .9f * Scale * FontScale
             ));
         }
 
@@ -551,7 +554,8 @@ namespace Graph.Apps.Abstract
 
         PiePanelState CreatePiePanelState()
         {
-            return new PiePanelState(new PieChartPanel(string.Empty, (IMyTextSurface)Surface, Vector2.Zero, Vector2.One, false));
+            return new PiePanelState(new PieChartPanel(string.Empty, (IMyTextSurface)Surface, Vector2.Zero, Vector2.One,
+                false));
         }
 
         void RebuildPiePanels()

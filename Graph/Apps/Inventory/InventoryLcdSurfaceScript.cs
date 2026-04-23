@@ -28,12 +28,14 @@ namespace Graph.Apps.Inventory
     {
         public const string ID = "InventoryCharts";
         public const string NAME = "Inventory";
-        
-        public override Dictionary<MyItemType, double> ItemSource => Config == null ? null : GridLogic?.GetItems(Config, Block as IMyTerminalBlock);
+
+        public override Dictionary<MyItemType, double> ItemSource =>
+            Config == null ? null : GridLogic?.GetItems(Config, Block as IMyTerminalBlock);
 
         protected override string DefaultTitle => NAME;
 
-        public InventoryLcdSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)
+        public InventoryLcdSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface,
+            block, size)
         {
         }
     }

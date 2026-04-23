@@ -46,7 +46,7 @@ namespace Graph.Apps.Power
                 entryKey = "battery";
                 return true;
             }
-            
+
             if (producer is IMySolarPanel)
             {
                 entryKey = "solar";
@@ -71,7 +71,7 @@ namespace Graph.Apps.Power
                 entryKey = "engine";
                 return true;
             }
-            
+
             entryKey = null;
             return false;
         }

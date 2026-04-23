@@ -24,7 +24,7 @@ namespace Graph.System.TerminalControls
         protected virtual string IdPrefix { get; } = "Space_Engineers_LCD_MOD_";
 
         /// <summary>
-        ///     Gets the current selected surface from <see cref="block" />'s terminal
+        ///     Gets the current selected surface index from <see cref="block" />'s terminal
         /// </summary>
         /// <param name="block"></param>
         /// <returns></returns>
@@ -32,6 +32,17 @@ namespace Graph.System.TerminalControls
         {
             var multiTextPanel = block.Components.Get<MyMultiTextPanelComponent>();
             return multiTextPanel?.SelectedPanelIndex ?? 0;
+        }
+        
+        /// <summary>
+        ///     Gets the current selected surface from <see cref="block" />'s terminal
+        /// </summary>
+        /// <param name="block"></param>
+        /// <returns></returns>
+        public IMyTextSurface GetThisSurface(IMyTerminalBlock block)
+        {
+            var index = GetThisSurfaceIndex(block);
+            return (IMyTextSurface)((IMyTextSurfaceProvider)block).GetSurface(index);
         }
 
         /// <summary>

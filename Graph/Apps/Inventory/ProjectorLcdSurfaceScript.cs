@@ -56,13 +56,13 @@ namespace Graph.Apps.Inventory
 
         int _totalComponents;
         int _missingComponents;
-        
+
         string _required = "Req";
         string _available = "Ava";
 
         float _requiredX;
         float _availableX;
-        
+
         const float PIE_RADIUS = 40;
         readonly PieDualChartPanel _pieBlueprint;
 
@@ -87,13 +87,14 @@ namespace Graph.Apps.Inventory
 
             _customTitle = _projector?.CustomName;
 
-            var raA = MyTexts.Get(MyStringId.GetOrCompute("ScreenTerminalProduction_RequiredAndAvailable")).ToString().Split('/');
+            var raA = MyTexts.Get(MyStringId.GetOrCompute("ScreenTerminalProduction_RequiredAndAvailable")).ToString()
+                .Split('/');
             if (raA.Length == 2)
             {
                 _required = raA.First().Trim();
                 _available = raA.Last().Trim();
             }
-            
+
             _requiredX = Surface.MeasureStringInPixels(new StringBuilder(_required), "White", 1).X;
             _availableX = Surface.MeasureStringInPixels(new StringBuilder(_available), "White", 1).X;
         }
@@ -101,6 +102,8 @@ namespace Graph.Apps.Inventory
         protected override void DrawTitle(List<MySprite> frame)
         {
             var margin = ViewBox.Size.X * Margin;
+            float headerScale = LayoutScale;
+            float titleBarHeight = TITLE_BAR_HEIGHT_BASE * headerScale;
 
             Vector2 position = ViewBox.Position;
             position.X += margin;
@@ -115,8 +118,8 @@ namespace Graph.Apps.Inventory
             {
                 Type = SpriteType.TEXTURE,
                 Data = Icon,
-                Position = position + new Vector2(20) * Scale,
-                Size = new Vector2(40 * Scale),
+                Position = position + new Vector2(20f) * headerScale,
+                Size = new Vector2(40f * headerScale),
                 Color = Config.HeaderColor,
                 Alignment = TextAlignment.CENTER
             });
@@ -126,8 +129,9 @@ namespace Graph.Apps.Inventory
             var headerSeparatorPadding = 10f * Scale;
 
             var availableSize = new Rectangle((int)position.X, (int)position.Y,
-                (int)(ViewBox.Width - position.X + (ViewBox.X) - (2 * margin) - (2 * numberWidth) - (2 * headerSeparatorPadding)),
-                (int)(position.Y + TITLE_HEIGHT * Scale));
+                (int)(ViewBox.Width - position.X + (ViewBox.X) - (2 * margin) - (2 * numberWidth) -
+                      (2 * headerSeparatorPadding)),
+                (int)(position.Y + TITLE_HEIGHT * headerScale));
             frame.Add(MySprite.CreateClipRect(availableSize));
 
 
@@ -138,7 +142,7 @@ namespace Graph.Apps.Inventory
                 Type = SpriteType.TEXT,
                 Data = displayName,
                 Position = position,
-                RotationOrScale = Scale * 1.3f,
+                RotationOrScale = Scale * 1.3f * FontScale,
                 Color = Config.HeaderColor,
                 Alignment = TextAlignment.LEFT,
                 FontId = "White"
@@ -155,7 +159,7 @@ namespace Graph.Apps.Inventory
                 Type = SpriteType.TEXT,
                 Data = _required,
                 Position = position,
-                RotationOrScale = Scale * 1.3f,
+                RotationOrScale = Scale * 1.3f * FontScale,
                 Color = Config.HeaderColor,
                 Alignment = TextAlignment.RIGHT,
                 FontId = "White"
@@ -166,7 +170,7 @@ namespace Graph.Apps.Inventory
                 Type = SpriteType.TEXT,
                 Data = "/",
                 Position = new Vector2(separatorX, position.Y),
-                RotationOrScale = Scale * 1.3f,
+                RotationOrScale = Scale * 1.3f * FontScale,
                 Color = Config.HeaderColor,
                 Alignment = TextAlignment.LEFT,
                 FontId = "White"
@@ -178,13 +182,13 @@ namespace Graph.Apps.Inventory
                 Type = SpriteType.TEXT,
                 Data = _available,
                 Position = position,
-                RotationOrScale = Scale * 1.3f,
+                RotationOrScale = Scale * 1.3f * FontScale,
                 Color = Config.HeaderColor,
                 Alignment = TextAlignment.RIGHT,
                 FontId = "White"
             });
 
-            CaretY += TITLE_BAR_HEIGHT_BASE * Scale;
+            CaretY += titleBarHeight;
         }
 
         protected override void DrawFooter(List<MySprite> frame)
@@ -205,19 +209,20 @@ namespace Graph.Apps.Inventory
             pos.X += margin;
 
             int built = Math.Max(_totalBlocks - _remainingBlocks, 0);
+            float footerScale = LayoutScale;
 
-            FooterHeight = 25f * 2 * Scale;
-            pos.X += 25f * 2 * Scale;
+            FooterHeight = 25f * 2f * footerScale;
+            pos.X += 25f * 2f * footerScale;
 
             pos.Y = ViewBox.Bottom - FooterHeight;
 
-            var legendSize = new Vector2(8, 8) * Scale;
+            var legendSize = new Vector2(8f, 8f) * footerScale;
 
             var blocksString = MyTexts.GetString("TerminalTab_Info_Blocks");
 
             pos.X += legendSize.X;
 
-            var lineSpacer = 25f * Scale;
+            var lineSpacer = 25f * footerScale;
 
             var blocksPct = built / (float)_totalBlocks;
             var componentsPct = 1 - (float)_missingComponents / _totalComponents;
@@ -231,7 +236,7 @@ namespace Graph.Apps.Inventory
                 Type = SpriteType.TEXT,
                 Data = sb.ToString(),
                 Position = pos,
-                RotationOrScale = Scale * 0.9f,
+                RotationOrScale = Scale * 0.9f * FontScale,
                 Color = Surface.ScriptForegroundColor,
                 Alignment = TextAlignment.LEFT,
                 FontId = "White"
@@ -254,7 +259,7 @@ namespace Graph.Apps.Inventory
                 Type = SpriteType.TEXT,
                 Data = sb.ToString(),
                 Position = pos,
-                RotationOrScale = Scale * 0.9f,
+                RotationOrScale = Scale * 0.9f * FontScale,
                 Color = Surface.ScriptForegroundColor,
                 Alignment = TextAlignment.LEFT,
                 FontId = "White"
@@ -393,7 +398,7 @@ namespace Graph.Apps.Inventory
                 Type = SpriteType.TEXT,
                 Data = localizedName,
                 Position = position,
-                RotationOrScale = Scale,
+                RotationOrScale = Scale * FontScale,
                 Color = rowColor,
                 Alignment = TextAlignment.LEFT,
                 FontId = "White"
@@ -404,9 +409,9 @@ namespace Graph.Apps.Inventory
             frame.Add(new MySprite()
             {
                 Type = SpriteType.TEXT,
-                Data =  FormatingHelper.FormatItemQty(GetNeededQty(item.Key)),
+                Data = FormatingHelper.FormatItemQty(GetNeededQty(item.Key)),
                 Position = position,
-                RotationOrScale = Scale,
+                RotationOrScale = Scale * FontScale,
                 Color = rowColor,
                 Alignment = TextAlignment.RIGHT,
                 FontId = "White"
@@ -415,9 +420,9 @@ namespace Graph.Apps.Inventory
             frame.Add(new MySprite()
             {
                 Type = SpriteType.TEXT,
-                Data =  FormatingHelper.FormatItemQty(GetAvailableQty(item.Key, item.Value)),
+                Data = FormatingHelper.FormatItemQty(GetAvailableQty(item.Key, item.Value)),
                 Position = position,
-                RotationOrScale = Scale,
+                RotationOrScale = Scale * FontScale,
                 Color = rowColor,
                 Alignment = TextAlignment.RIGHT,
                 FontId = "White"
@@ -460,8 +465,8 @@ namespace Graph.Apps.Inventory
 
             Vector2 size = GetSizeInPixel(localizedName, "White", 1, Surface);
             float minProportion = Math.Min(nameRect.Width / size.X, nameRect.Height / size.Y);
-            float fontSize = minProportion;
-            float renderedHeight = size.Y * fontSize;
+            float fontSize = minProportion / Math.Max(0.0001f, FontScale);
+            float renderedHeight = size.Y * fontSize * FontScale;
             Vector2 pos = nameRect.Center;
             pos.Y -= renderedHeight * 0.5f;
             pos.X = nameRect.Right;
@@ -474,14 +479,15 @@ namespace Graph.Apps.Inventory
                 color,
                 "White",
                 TextAlignment.RIGHT,
-                fontSize * .95f
+                fontSize * .95f * FontScale
             ));
 
-            var qty =  FormatingHelper.FormatItemQty(GetAvailableQty(item.Key, item.Value)) + "/" +  FormatingHelper.FormatItemQty(GetNeededQty(item.Key));
+            var qty = FormatingHelper.FormatItemQty(GetAvailableQty(item.Key, item.Value)) + "/" +
+                      FormatingHelper.FormatItemQty(GetNeededQty(item.Key));
             size = GetSizeInPixel(qty, "White", 1, Surface);
             minProportion = Math.Min(numberRect.Width / size.X, numberRect.Height / size.Y);
-            fontSize = minProportion;
-            renderedHeight = size.Y * fontSize;
+            fontSize = minProportion / Math.Max(0.0001f, FontScale);
+            renderedHeight = size.Y * fontSize * FontScale;
             pos = numberRect.Center;
             pos.Y -= renderedHeight * 0.5f;
             pos.X = numberRect.Right;
@@ -494,7 +500,7 @@ namespace Graph.Apps.Inventory
                 color,
                 "White",
                 TextAlignment.RIGHT,
-                fontSize * .95f
+                fontSize * .95f * FontScale
             ));
         }
 
@@ -547,7 +553,7 @@ namespace Graph.Apps.Inventory
 
         float GetQuantityColumnWidth()
         {
-            var labelWidth = Math.Max(_requiredX, _availableX) * Scale * 1.3f + (8f * Scale);
+            var labelWidth = Math.Max(_requiredX, _availableX) * Scale * 1.3f * FontScale + (8f * Scale);
             return Math.Max(100f * Scale, labelWidth);
         }
 
@@ -662,9 +668,9 @@ namespace Graph.Apps.Inventory
                 return;
             }
 
-            if(projector != null && projector.EntityId == Config.ReferenceBlock)
+            if (projector != null && projector.EntityId == Config.ReferenceBlock)
                 return;
-            
+
             var entity = MyAPIGateway.Entities.GetEntityById(Config.ReferenceBlock) as IMyProjector;
             projector = entity?.CubeGrid.IsInSameLogicalGroupAs(grid) ?? false ? entity : null;
         }

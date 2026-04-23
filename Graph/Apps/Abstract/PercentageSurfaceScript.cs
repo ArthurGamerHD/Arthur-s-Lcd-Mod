@@ -23,7 +23,8 @@ namespace Graph.Apps.Abstract
         int _barPanelCursor;
         Color _scriptForegroundColor;
 
-        protected PercentageSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)
+        protected PercentageSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface,
+            block, size)
         {
         }
 
@@ -168,7 +169,7 @@ namespace Graph.Apps.Abstract
                 Type = SpriteType.TEXT,
                 Data = GetEntryName(entry),
                 Position = position,
-                RotationOrScale = Scale,
+                RotationOrScale = Scale * FontScale,
                 Color = Surface.ScriptForegroundColor,
                 Alignment = TextAlignment.LEFT,
                 FontId = "White"
@@ -187,7 +188,7 @@ namespace Graph.Apps.Abstract
                 Type = SpriteType.TEXT,
                 Data = GetListPercentageText(pct),
                 Position = position,
-                RotationOrScale = Scale,
+                RotationOrScale = Scale * FontScale,
                 Color = Surface.ScriptForegroundColor,
                 Alignment = TextAlignment.RIGHT,
                 FontId = "White"
@@ -339,7 +340,8 @@ namespace Graph.Apps.Abstract
 
             var nameHeight = Math.Max(0f, cellView.Height * .45f);
             var nameRect = new RectangleF(cellView.X, cellView.Y, cellView.Width, nameHeight);
-            var bottomRect = new RectangleF(cellView.X, nameRect.Bottom, cellView.Width, Math.Max(0f, cellView.Bottom - nameRect.Bottom));
+            var bottomRect = new RectangleF(cellView.X, nameRect.Bottom, cellView.Width,
+                Math.Max(0f, cellView.Bottom - nameRect.Bottom));
 
             var name = new StringBuilder(GetEntryName(entry) ?? string.Empty);
             TrimText(ref name, nameRect.Width);
@@ -350,14 +352,15 @@ namespace Graph.Apps.Abstract
                 Type = SpriteType.TEXT,
                 Data = name.ToString(),
                 Position = namePos,
-                RotationOrScale = .9f * Scale,
+                RotationOrScale = .9f * Scale * FontScale,
                 Color = Surface.ScriptForegroundColor,
                 Alignment = TextAlignment.LEFT,
                 FontId = "White"
             });
 
             var barWidth = bottomRect.Width * (2f / 3f);
-            var textRect = new RectangleF(bottomRect.X + barWidth, bottomRect.Y, bottomRect.Width - barWidth, bottomRect.Height);
+            var textRect = new RectangleF(bottomRect.X + barWidth, bottomRect.Y, bottomRect.Width - barWidth,
+                bottomRect.Height);
             var barRect = new RectangleF(bottomRect.X, bottomRect.Y, barWidth, bottomRect.Height);
 
             var barInnerPaddingX = 2f * Scale;
@@ -378,7 +381,7 @@ namespace Graph.Apps.Abstract
                 Type = SpriteType.TEXT,
                 Data = pctText,
                 Position = pctPos,
-                RotationOrScale = .95f * Scale,
+                RotationOrScale = .95f * Scale * FontScale,
                 Color = Surface.ScriptForegroundColor,
                 Alignment = TextAlignment.RIGHT,
                 FontId = "White"

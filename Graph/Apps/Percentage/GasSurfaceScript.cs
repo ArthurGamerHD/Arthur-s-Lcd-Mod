@@ -30,7 +30,8 @@ namespace Graph.Apps.Percentage
         public const string ID = "GasGraph";
         public const string TITLE = "LCDMod_GasFilled";
 
-        readonly Dictionary<string, string> _gasDisplayNameCache = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        readonly Dictionary<string, string> _gasDisplayNameCache =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         public GasSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)
         {

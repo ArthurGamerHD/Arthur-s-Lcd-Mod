@@ -6,8 +6,10 @@ namespace Graph.System.TerminalControls.Groups
     public abstract class BaseTerminalControlGroup : ITerminalControlGroup,
         IContainsTerminalControlGroup<ColorsTerminalControlGroup>,
         IContainsTerminalControl<SwitchToggleHeader>,
+        IContainsTerminalControl<SliderFontSize>,
         IContainsTerminalControl<SliderScale>,
         IContainsTerminalControl<ComboboxDisplayMode>
+
     {
     }
 }

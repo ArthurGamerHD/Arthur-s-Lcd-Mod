@@ -20,13 +20,13 @@ namespace Graph.Apps.Abstract
     {
         public static Dictionary<MyItemType, string> SpriteCache =
             new Dictionary<MyItemType, string>();
-        
+
         static readonly Dictionary<MyDefinitionId, MyItemType> TypeCache = new Dictionary<MyDefinitionId, MyItemType>();
 
         readonly Dictionary<MyItemType, double> _itemsCache = new Dictionary<MyItemType, double>();
-        
+
         public abstract Dictionary<MyItemType, double> ItemSource { get; }
-        
+
         const int SPRITE_CACHE_MAX_SIZE = 256;
 
         protected static void AddToSpriteCache(MyItemType key, string sprite)
@@ -78,15 +78,16 @@ namespace Graph.Apps.Abstract
         protected const int LINE_HEIGHT = 30;
         protected const int MINIMUM_COL_WIDTH = 220;
         protected const int SCROLLER_WIDTH = 8;
-        protected const int SCROLL_DELAY = 12; 
+        protected const int SCROLL_DELAY = 12;
         long _clock;
         protected string PreviousType = "";
 
-        protected ItemsSurfaceScriptBase(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)
+        protected ItemsSurfaceScriptBase(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface,
+            block, size)
         {
         }
-        
-        
+
+
         protected virtual List<KeyValuePair<MyItemType, double>> ReadItems(IMyTerminalBlock lcd)
         {
             if (Config.HideEmpty || Config.SelectedItems.Any())
@@ -158,7 +159,7 @@ namespace Graph.Apps.Abstract
 
             _clock++;
             if (_clock % SCROLL_DELAY != 0 && !Dirty)
-                return; 
+                return;
 
             if (Config == null)
                 return;
@@ -191,10 +192,10 @@ namespace Graph.Apps.Abstract
                     EmptyWithFilters();
                 else
                     Empty();
-                
+
                 return;
             }
-            
+
             using (var frame = Surface.DrawFrame())
             {
                 var sprites = new List<MySprite>();
@@ -202,7 +203,7 @@ namespace Graph.Apps.Abstract
                 AddBackground(sprites);
                 DrawTitle(sprites);
                 DrawFooter(sprites);
-                
+
                 switch (Config.DisplayMode)
                 {
                     case DisplayMode.Legacy:
@@ -260,13 +261,13 @@ namespace Graph.Apps.Abstract
             for (int visIdx = start; visIdx < start + showCount; visIdx++)
                 DrawRow(sprites, items[visIdx], shouldScroll);
         }
-        
+
         void DrawGrid(List<MySprite> sprites, List<KeyValuePair<MyItemType, double>> items)
         {
             var rowHeight = 3f * LINE_HEIGHT * Scale;
             var viewportAvailableHeight = ViewBox.Height - (CaretY - ViewBox.Y) - FooterHeight;
             int maxRows = Math.Max(1, (int)Math.Floor(viewportAvailableHeight / rowHeight));
-            int maxCols = Math.Max(1,GetMaxColsFromSurface());
+            int maxCols = Math.Max(1, GetMaxColsFromSurface());
 
             int maxVisible = maxRows * maxCols;
             bool shouldScroll = items.Count > maxVisible;
@@ -376,7 +377,7 @@ namespace Graph.Apps.Abstract
             string sprite;
             string localizedName;
 
-            var foreground = item.Value == 0 ? Config.ErrorColor: Surface.ScriptForegroundColor;
+            var foreground = item.Value == 0 ? Config.ErrorColor : Surface.ScriptForegroundColor;
 
             if (!SpriteCache.TryGetValue(item.Key, out sprite))
             {
@@ -425,7 +426,7 @@ namespace Graph.Apps.Abstract
                 Position = position + new Vector2(20f, 15) * Scale,
                 Size = new Vector2(LINE_HEIGHT * Scale),
                 Alignment = TextAlignment.CENTER,
-                Color = item.Value == 0 ? new Color(96, 32,32) : Color.White
+                Color = item.Value == 0 ? new Color(96, 32, 32) : Color.White
             });
             position.X += (xEnd - xStart) / 8f;
 
@@ -451,7 +452,7 @@ namespace Graph.Apps.Abstract
                 Type = SpriteType.TEXT,
                 Data = localizedName,
                 Position = position,
-                RotationOrScale = Scale,
+                RotationOrScale = Scale * FontScale,
                 Color = foreground,
                 Alignment = TextAlignment.LEFT,
                 FontId = "White"
@@ -463,9 +464,9 @@ namespace Graph.Apps.Abstract
             frame.Add(new MySprite()
             {
                 Type = SpriteType.TEXT,
-                Data =  FormatingHelper.FormatItemQty(item.Value),
+                Data = FormatingHelper.FormatItemQty(item.Value),
                 Position = position,
-                RotationOrScale = Scale,
+                RotationOrScale = Scale * FontScale,
                 Color = foreground,
                 Alignment = TextAlignment.RIGHT,
                 FontId = "White"
@@ -507,7 +508,7 @@ namespace Graph.Apps.Abstract
             {
                 DrawCellBackground(frame, item, xStart, xEnd, position.Y, gridCellHeight, cellPadding);
             }
-            else if(item.Value == 0)
+            else if (item.Value == 0)
             {
                 foreground = new Color(96, 32, 32);
             }
@@ -521,7 +522,7 @@ namespace Graph.Apps.Abstract
         }
 
 
-        protected virtual void DrawCellContent(List<MySprite> frame, KeyValuePair<MyItemType, double> item, 
+        protected virtual void DrawCellContent(List<MySprite> frame, KeyValuePair<MyItemType, double> item,
             string sprite, Color foreground, MyTuple<RectangleF, RectangleF, RectangleF> slots)
         {
             string localizedName;
@@ -536,7 +537,7 @@ namespace Graph.Apps.Abstract
                 Position = new Vector2(iconRect.X, iconRect.Y + iconRect.Height / 2f),
                 Size = new Vector2(iconRect.Width),
                 Alignment = TextAlignment.LEFT,
-                Color = item.Value == 0 ? Config.ErrorColor: Color.White
+                Color = item.Value == 0 ? Config.ErrorColor : Color.White
             });
 
             if (!LocKeysCache.TryGetValue(item.Key, out localizedName))
@@ -552,8 +553,8 @@ namespace Graph.Apps.Abstract
 
             Vector2 size = GetSizeInPixel(localizedName, "White", 1, Surface);
             float minProportion = Math.Min(nameRect.Width / size.X, nameRect.Height / size.Y);
-            float fontSize = minProportion;
-            float renderedHeight = size.Y * fontSize;
+            float fontSize = minProportion / Math.Max(0.0001f, FontScale);
+            float renderedHeight = size.Y * fontSize * FontScale;
             Vector2 pos = nameRect.Center;
             pos.Y -= renderedHeight * 0.5f;
             pos.X = nameRect.Right;
@@ -566,14 +567,14 @@ namespace Graph.Apps.Abstract
                 foreground,
                 "White",
                 TextAlignment.RIGHT,
-                fontSize * .95f
+                fontSize * .95f * FontScale
             ));
 
             var qty = FormatingHelper.FormatItemQty(item.Value);
             size = GetSizeInPixel(qty, "White", 1, Surface);
             minProportion = Math.Min(numberRect.Width / size.X, numberRect.Height / size.Y);
-            fontSize = minProportion;
-            renderedHeight = size.Y * fontSize;
+            fontSize = minProportion / Math.Max(0.0001f, FontScale);
+            renderedHeight = size.Y * fontSize * FontScale;
             pos = numberRect.Center;
             pos.Y -= renderedHeight * 0.5f;
             pos.X = numberRect.Right;
@@ -586,7 +587,7 @@ namespace Graph.Apps.Abstract
                 foreground,
                 "White",
                 TextAlignment.RIGHT,
-                fontSize * .95f
+                fontSize * .95f * FontScale
             ));
         }
 
@@ -656,6 +657,8 @@ namespace Graph.Apps.Abstract
         protected override void DrawTitle(List<MySprite> frame)
         {
             var margin = ViewBox.Size.X * Margin;
+            float headerScale = LayoutScale;
+            float titleBarHeight = TITLE_BAR_HEIGHT_BASE * headerScale;
 
             Vector2 position = ViewBox.Position;
             position.X += margin;
@@ -663,26 +666,26 @@ namespace Graph.Apps.Abstract
 
             CaretY = position.Y;
 
-            if(!TitleVisible)
+            if (!TitleVisible)
                 return;
-            
+
             AddHeaderSprite(frame, new MySprite()
             {
                 Type = SpriteType.TEXTURE,
                 Data = Icon,
-                Position = position + new Vector2(20) * Scale,
-                Size = new Vector2(40 * Scale),
+                Position = position + new Vector2(20f) * headerScale,
+                Size = new Vector2(40f * headerScale),
                 Color = Config.HeaderColor,
                 Alignment = TextAlignment.CENTER
             });
             position.X += ViewBox.Width / 8f;
 
             var stockText = MyTexts.Get(MyStringId.GetOrCompute("BlockPropertyTitle_Stockpile"));
-            var endSize = Surface.MeasureStringInPixels(stockText, "White", Scale * 1.3f);
+            var endSize = Surface.MeasureStringInPixels(stockText, "White", Scale * 1.3f * FontScale);
 
             var availableSize = new Rectangle((int)position.X, (int)position.Y,
                 (int)(ViewBox.Width - position.X + (ViewBox.X) - endSize.X - (2 * margin)),
-                (int)(position.Y + TITLE_HEIGHT * Scale));
+                (int)(position.Y + TITLE_HEIGHT * headerScale));
             frame.Add(MySprite.CreateClipRect(availableSize));
 
 
@@ -693,7 +696,7 @@ namespace Graph.Apps.Abstract
                 Type = SpriteType.TEXT,
                 Data = displayName,
                 Position = position,
-                RotationOrScale = Scale * 1.3f,
+                RotationOrScale = Scale * 1.3f * FontScale,
                 Color = Config.HeaderColor,
                 Alignment = TextAlignment.LEFT,
                 FontId = "White"
@@ -707,17 +710,17 @@ namespace Graph.Apps.Abstract
                 Type = SpriteType.TEXT,
                 Data = stockText.ToString(),
                 Position = position,
-                RotationOrScale = Scale * 1.3f,
+                RotationOrScale = Scale * 1.3f * FontScale,
                 Color = Config.HeaderColor,
                 Alignment = TextAlignment.RIGHT,
                 FontId = "White"
             });
 
-            CaretY += TITLE_BAR_HEIGHT_BASE * Scale;
+            CaretY += titleBarHeight;
         }
     }
-    
-    
+
+
     sealed class ItemTypeComparer : IComparer<MyItemType>
     {
         public static readonly ItemTypeComparer Instance = new ItemTypeComparer();
@@ -737,5 +740,4 @@ namespace Graph.Apps.Abstract
 
         public int Compare(double a, double b) => b.CompareTo(a);
     }
-
 }

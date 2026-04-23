@@ -74,7 +74,7 @@ namespace Graph.Apps.Antenna
 
             if (!_collectors.Any())
                 BuildCollectors();
-            
+
             BuildEntries((IMyCubeGrid)Block?.CubeGrid, _entries);
 
             if (_entries.Count == 0)
@@ -82,8 +82,8 @@ namespace Graph.Apps.Antenna
                 Empty();
                 return;
             }
-                
-            
+
+
             using (var frame = Surface.DrawFrame())
             {
                 var sprites = new List<MySprite>();
@@ -100,7 +100,7 @@ namespace Graph.Apps.Antenna
                         DrawDefaultView(sprites, _entries);
                         break;
                 }
-                
+
 
                 frame.AddRange(sprites);
             }
@@ -299,7 +299,7 @@ namespace Graph.Apps.Antenna
             var numberRect = slots.Item2;
             var nameRect = slots.Item3;
             var foreground = drawAsLines ? entry.StatusColor : Surface.ScriptForegroundColor;
-            
+
             var iconSize = new Vector2(iconRect.Width, iconRect.Height);
             var centeringOffsetY = 0f;
 
@@ -314,6 +314,7 @@ namespace Graph.Apps.Antenna
                 var normalizedCenterOffset = sourceCenterOffset / LASER_ICON_SOURCE_SIZE;
                 centeringOffsetY = -(iconSize.Y * normalizedCenterOffset);
             }
+
             var scaledIconRightOverhang = Math.Max(0f, (iconSize.X - iconSize.X) * 0.5f);
 
             if (scaledIconRightOverhang > 0f)
@@ -359,7 +360,7 @@ namespace Graph.Apps.Antenna
                 foreground,
                 "White",
                 TextAlignment.RIGHT,
-                1.1f * Scale
+                1.1f * Scale * FontScale
             ));
 
             var info = new StringBuilder();
@@ -386,7 +387,7 @@ namespace Graph.Apps.Antenna
                 foreground,
                 "White",
                 TextAlignment.RIGHT,
-                .9f * Scale
+                .9f * Scale * FontScale
             ));
         }
 
@@ -451,6 +452,5 @@ namespace Graph.Apps.Antenna
                 Alignment = TextAlignment.CENTER
             });
         }
-
     }
 }

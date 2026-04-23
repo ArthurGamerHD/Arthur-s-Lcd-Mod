@@ -25,7 +25,7 @@ namespace Graph.Apps.Power
         IUsesTerminalControlGroup<BaseTerminalControlGroup>,
         IUsesTerminalControl<CheckboxHideEmpty>
     {
-        public const string ID    = "BatteryGraph";
+        public const string ID = "BatteryGraph";
         public const string TITLE = "LCDMod_PowerFilled";
 
         protected override string DefaultTitle => TITLE;
@@ -34,40 +34,42 @@ namespace Graph.Apps.Power
         const float BATTERY_SLOT_H = 140f;
         const float MAX_BATTERY_SLOT_W = 120f;
         const float MAX_BATTERY_SLOT_H = 140f;
-        const float POWER_TEXT_H   = 16f;
-        const float SCROLLER_W     = 8f;
-        const int   SCROLL_TICK    = 12;
+        const float POWER_TEXT_H = 16f;
+        const float SCROLLER_W = 8f;
+        const int SCROLL_TICK = 12;
 
-        const float WARN_THRESHOLD  = 0.35f;
+        const float WARN_THRESHOLD = 0.35f;
         const float ERROR_THRESHOLD = 0.15f;
 
         readonly List<IMyBatteryBlock> _batteries = new List<IMyBatteryBlock>();
-        readonly List<IMyBatteryBlock> _visible   = new List<IMyBatteryBlock>();
+        readonly List<IMyBatteryBlock> _visible = new List<IMyBatteryBlock>();
 
         string _labelCharging;
         string _labelDischarging;
-        bool   _labelsReady;
+        bool _labelsReady;
 
         // Aggregate charge state shown in the title (set each frame by CollectBatteries)
         string _aggregateStatus = string.Empty;
 
         // Footer aggregate values (set each frame by CollectBatteries)
-        float  _avgCharge   = 0f;
-        string _timeLabel   = "--:--";
-        bool   _isCharging  = false;
+        float _avgCharge = 0f;
+        string _timeLabel = "--:--";
+        bool _isCharging = false;
 
         // -----------------------------------------------------------------------
         // Lifecycle
         // -----------------------------------------------------------------------
 
         public BatterySurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
-            : base(surface, block, size) { }
+            : base(surface, block, size)
+        {
+        }
 
         protected override void LayoutChanged()
         {
             base.LayoutChanged();
-            _labelsReady  = false;
-            FooterHeight  = TITLE_BAR_HEIGHT_BASE * Scale;
+            _labelsReady = false;
+            FooterHeight = TITLE_BAR_HEIGHT_BASE * LayoutScale;
         }
 
         public override void Run()
@@ -77,9 +79,9 @@ namespace Graph.Apps.Power
 
             if (!_labelsReady)
             {
-                _labelCharging    = MyTexts.GetString("HudEnergyGroupCharging");
+                _labelCharging = MyTexts.GetString("HudEnergyGroupCharging");
                 _labelDischarging = MyTexts.GetString("BlockActionTitle_Discharge");
-                _labelsReady      = true;
+                _labelsReady = true;
             }
 
             CollectBatteries();
@@ -114,7 +116,7 @@ namespace Graph.Apps.Power
                 if (!Config.HideEmpty || b.MaxStoredPower > 0f)
                 {
                     _visible.Add(b);
-                    totalIn  += b.CurrentInput;
+                    totalIn += b.CurrentInput;
                     totalOut += b.CurrentOutput;
                 }
             }
@@ -132,19 +134,20 @@ namespace Graph.Apps.Power
             {
                 float sumRatio = 0f;
                 float totalStored = 0f;
-                float totalMax    = 0f;
-                float totalNetIn  = 0f;
+                float totalMax = 0f;
+                float totalNetIn = 0f;
                 float totalNetOut = 0f;
                 for (int i = 0; i < _visible.Count; i++)
                 {
                     var b = _visible[i];
-                    sumRatio    += GetRatio(b);
+                    sumRatio += GetRatio(b);
                     totalStored += b.CurrentStoredPower;
-                    totalMax    += b.MaxStoredPower;
-                    totalNetIn  += b.CurrentInput;
+                    totalMax += b.MaxStoredPower;
+                    totalNetIn += b.CurrentInput;
                     totalNetOut += b.CurrentOutput;
                 }
-                _avgCharge  = sumRatio / _visible.Count;
+
+                _avgCharge = sumRatio / _visible.Count;
                 _isCharging = totalNetIn > totalNetOut + eps;
 
                 float netRate = Math.Abs(totalNetIn - totalNetOut); // MW
@@ -166,9 +169,9 @@ namespace Graph.Apps.Power
             }
             else
             {
-                _avgCharge  = 0f;
+                _avgCharge = 0f;
                 _isCharging = false;
-                _timeLabel  = "--:--";
+                _timeLabel = "--:--";
             }
         }
 
@@ -190,7 +193,9 @@ namespace Graph.Apps.Power
 
         protected override void DrawTitle(List<MySprite> sprites)
         {
-            var margin   = ViewBox.Size.X * Margin;
+            var margin = ViewBox.Size.X * Margin;
+            float headerScale = LayoutScale;
+            float titleBarHeight = TITLE_BAR_HEIGHT_BASE * headerScale;
             var position = ViewBox.Position;
             position.X += margin;
             position.Y += (ViewBox.Size.Y * Margin) / 2;
@@ -202,11 +207,11 @@ namespace Graph.Apps.Power
 
             AddHeaderSprite(sprites, new MySprite
             {
-                Type      = SpriteType.TEXTURE,
-                Data      = Icon,
-                Position  = position + new Vector2(20) * Scale,
-                Size      = new Vector2(40 * Scale),
-                Color     = Config.HeaderColor,
+                Type = SpriteType.TEXTURE,
+                Data = Icon,
+                Position = position + new Vector2(20f) * headerScale,
+                Size = new Vector2(40f * headerScale),
+                Color = Config.HeaderColor,
                 Alignment = TextAlignment.CENTER
             });
             position.X += ViewBox.Width / 8f;
@@ -214,7 +219,7 @@ namespace Graph.Apps.Power
             sprites.Add(MySprite.CreateClipRect(new Rectangle(
                 (int)position.X, (int)position.Y,
                 (int)(ViewBox.Width - position.X + ViewBox.X),
-                (int)(position.Y + 35 * Scale))));
+                (int)(position.Y + 35f * headerScale))));
 
             string baseTitle = MyTexts.GetString(DefaultTitle);
             string fullTitle = string.IsNullOrEmpty(_aggregateStatus)
@@ -226,17 +231,17 @@ namespace Graph.Apps.Power
 
             AddHeaderSprite(sprites, new MySprite
             {
-                Type            = SpriteType.TEXT,
-                Data            = sb.ToString(),
-                Position        = position,
-                RotationOrScale = Scale * 1.3f,
-                Color           = Config.HeaderColor,
-                Alignment       = TextAlignment.LEFT,
-                FontId          = "White"
+                Type = SpriteType.TEXT,
+                Data = sb.ToString(),
+                Position = position,
+                RotationOrScale = Scale * 1.3f * FontScale,
+                Color = Config.HeaderColor,
+                Alignment = TextAlignment.LEFT,
+                FontId = "White"
             });
 
             sprites.Add(MySprite.CreateClearClipRect());
-            CaretY += TITLE_BAR_HEIGHT_BASE * Scale;
+            CaretY += titleBarHeight;
         }
 
         // -----------------------------------------------------------------------
@@ -245,21 +250,21 @@ namespace Graph.Apps.Power
 
         protected override void DrawFooter(List<MySprite> sprites)
         {
-            FooterHeight = TITLE_BAR_HEIGHT_BASE * Scale;
+            FooterHeight = TITLE_BAR_HEIGHT_BASE * LayoutScale;
             float footerTop = ViewBox.Bottom - FooterHeight;
-            float margin    = ViewBox.Size.X * Margin;
-            Color fg        = Surface.ScriptForegroundColor;
-            Color accent    = Config.HeaderColor;
+            float margin = ViewBox.Size.X * Margin;
+            Color fg = Surface.ScriptForegroundColor;
+            Color accent = Config.HeaderColor;
 
             // Separator line — 1px tall, full content width
             var sepColor = new Color(fg.R, fg.G, fg.B, 160);
             sprites.Add(new MySprite
             {
-                Type      = SpriteType.TEXTURE,
-                Data      = "SquareSimple",
-                Position  = new Vector2(ViewBox.Center.X, footerTop),
-                Size      = new Vector2(ViewBox.Width - margin * 2f, Math.Max(1f, Scale)),
-                Color     = sepColor,
+                Type = SpriteType.TEXTURE,
+                Data = "SquareSimple",
+                Position = new Vector2(ViewBox.Center.X, footerTop),
+                Size = new Vector2(ViewBox.Width - margin * 2f, Math.Max(1f, Scale)),
+                Color = sepColor,
                 Alignment = TextAlignment.CENTER
             });
 
@@ -267,43 +272,43 @@ namespace Graph.Apps.Power
             float bandCY = footerTop + FooterHeight / 2f;
 
             // --- Left side: battery icon + "Avg: 75%" ---
-            float iconSize   = FooterHeight * 0.55f;
-            float iconLeft   = ViewBox.X + margin;
-            var   iconCenter = new Vector2(iconLeft + iconSize / 2f, bandCY);
+            float iconSize = FooterHeight * 0.55f;
+            float iconLeft = ViewBox.X + margin;
+            var iconCenter = new Vector2(iconLeft + iconSize / 2f, bandCY);
 
             Color iconColor = GetBatteryIconColor(_avgCharge);
             DrawBatteryGeometry(sprites, iconCenter, iconSize * 0.55f, iconSize, _avgCharge, iconColor, fg);
 
-            string avgText   = "Avg: " + FormatingHelper.PercentageToString(_avgCharge);
-            float  textLeft  = iconLeft + iconSize + margin * 0.5f;
-            float  textScale = Scale * 0.75f;
+            string avgText = "Avg: " + FormatingHelper.PercentageToString(_avgCharge);
+            float textLeft = iconLeft + iconSize + margin * 0.5f;
+            float textScale = Scale * 0.75f * FontScale;
 
             sprites.Add(new MySprite
             {
-                Type            = SpriteType.TEXT,
-                Data            = avgText,
-                Position        = new Vector2(textLeft, bandCY - GetSizeInPixel(avgText, "White", textScale, Surface).Y / 2f),
+                Type = SpriteType.TEXT,
+                Data = avgText,
+                Position = new Vector2(textLeft, bandCY - GetSizeInPixel(avgText, "White", textScale, Surface).Y / 2f),
                 RotationOrScale = textScale,
-                Color           = fg,
-                Alignment       = TextAlignment.LEFT,
-                FontId          = "White"
+                Color = fg,
+                Alignment = TextAlignment.LEFT,
+                FontId = "White"
             });
 
             // --- Right side: direction arrow + time label ---
             // Arrow: "+" when charging, "-" when discharging; use a small accent-colored glyph
-            string arrow     = _isCharging ? "+" : "-";
+            string arrow = _isCharging ? "+" : "-";
             string rightText = arrow + " " + _timeLabel;
-            float  rightX    = ViewBox.Right - margin;
+            float rightX = ViewBox.Right - margin;
 
             AddHeaderSprite(sprites, new MySprite
             {
-                Type            = SpriteType.TEXT,
-                Data            = rightText,
-                Position        = new Vector2(rightX, bandCY - GetSizeInPixel(rightText, "White", textScale, Surface).Y / 2f),
+                Type = SpriteType.TEXT,
+                Data = rightText,
+                Position = new Vector2(rightX, bandCY - GetSizeInPixel(rightText, "White", textScale, Surface).Y / 2f),
                 RotationOrScale = textScale,
-                Color           = accent,
-                Alignment       = TextAlignment.RIGHT,
-                FontId          = "White"
+                Color = accent,
+                Alignment = TextAlignment.RIGHT,
+                FontId = "White"
             });
         }
 
@@ -313,45 +318,45 @@ namespace Graph.Apps.Power
 
         void DrawBatteries(List<MySprite> sprites)
         {
-            float minW   = BATTERY_SLOT_W * Scale;
-            float minH   = BATTERY_SLOT_H * Scale;
+            float minW = BATTERY_SLOT_W * Scale;
+            float minH = BATTERY_SLOT_H * Scale;
             float availW = ViewBox.Width - ViewBox.Width * Margin * 2f;
             float availH = ViewBox.Height - (CaretY - ViewBox.Y) - FooterHeight;
 
-            float xLeft  = ViewBox.X + ViewBox.Width * Margin;
+            float xLeft = ViewBox.X + ViewBox.Width * Margin;
             float xRight = ViewBox.X + ViewBox.Width - ViewBox.Width * Margin;
 
-            int count    = _visible.Count;
+            int count = _visible.Count;
             // Columns: limited by how many fit at minimum size; capped at battery count
-            int cols     = Math.Min(count, Math.Max(1, (int)Math.Floor(availW / minW)));
-            int maxRows  = Math.Max(1, (int)Math.Floor(availH / minH));
+            int cols = Math.Min(count, Math.Max(1, (int)Math.Floor(availW / minW)));
+            int maxRows = Math.Max(1, (int)Math.Floor(availH / minH));
             int totalRows = (int)Math.Ceiling(count / (float)cols);
 
-            bool scroll   = totalRows > maxRows;
-            int  startRow = 0;
+            bool scroll = totalRows > maxRows;
+            int startRow = 0;
 
             if (scroll)
             {
                 int steps = Math.Max(1, totalRows - maxRows);
-                int step  = GetScrollStep(SCROLL_TICK / 6);
-                startRow  = step % (steps + 1);
+                int step = GetScrollStep(SCROLL_TICK / 6);
+                startRow = step % (steps + 1);
 
-                float vpH  = availH - SCROLLER_W * 2 * Scale;
+                float vpH = availH - SCROLLER_W * 2 * Scale;
                 float barH = (float)maxRows / totalRows * vpH;
                 float frac = (float)startRow / steps;
                 float barY = frac * (vpH - barH);
                 DrawScrollBar(sprites, Scale, CaretY + SCROLLER_W * Scale, vpH, barY + barH / 2f, barH);
 
                 xRight -= SCROLLER_W * Scale;
-                availW  = xRight - xLeft;
-                cols    = Math.Min(count, Math.Max(1, (int)Math.Floor(availW / minW)));
+                availW = xRight - xLeft;
+                cols = Math.Min(count, Math.Max(1, (int)Math.Floor(availW / minW)));
                 totalRows = (int)Math.Ceiling(count / (float)cols);
             }
 
             // Flex: divide available space equally among cols and visible rows
-            int   rows   = scroll ? maxRows : Math.Min(maxRows, totalRows);
-            float slotW  = availW / cols;
-            float slotH  = availH / rows;
+            int rows = scroll ? maxRows : Math.Min(maxRows, totalRows);
+            float slotW = availW / cols;
+            float slotH = availH / rows;
 
             // Clamp slot size so a small battery count does not stretch slots
             // across the entire viewport (e.g. a single battery filling the screen).
@@ -361,40 +366,40 @@ namespace Graph.Apps.Power
             slotH = Math.Min(slotH, maxSlotH);
 
             // When the grid is narrower/shorter than the available area, center it.
-            float gridW      = cols * slotW;
-            float gridH      = rows * slotH;
-            float gridLeft   = xLeft  + (availW - gridW) / 2f;
-            float gridTop    = CaretY + (availH - gridH) / 2f;
+            float gridW = cols * slotW;
+            float gridH = rows * slotH;
+            float gridLeft = xLeft + (availW - gridW) / 2f;
+            float gridTop = CaretY + (availH - gridH) / 2f;
 
             int startIdx = startRow * cols;
-            int show     = Math.Min(rows * cols, count - startIdx);
+            int show = Math.Min(rows * cols, count - startIdx);
 
             for (int i = 0; i < show; i++)
             {
-                int   col    = i % cols;
-                int   row    = i / cols;
+                int col = i % cols;
+                int row = i / cols;
                 float xStart = gridLeft + col * slotW;
-                float yStart = gridTop  + row * slotH;
+                float yStart = gridTop + row * slotH;
                 DrawBatterySlot(sprites, _visible[startIdx + i], xStart, yStart, slotW, slotH);
             }
         }
 
         void DrawBatterySlot(List<MySprite> sprites, IMyBatteryBlock bat,
-                             float xStart, float yStart, float slotW, float slotH)
+            float xStart, float yStart, float slotW, float slotH)
         {
-            float ratio       = GetRatio(bat);
-            Color fillColor   = GetBatteryIconColor(ratio);
+            float ratio = GetRatio(bat);
+            Color fillColor = GetBatteryIconColor(ratio);
             Color borderColor = Surface.ScriptForegroundColor;
-            Color textColor   = Surface.ScriptForegroundColor;
+            Color textColor = Surface.ScriptForegroundColor;
 
             // Padding: 12% horizontal each side, 10% vertical top+bottom
-            float hPad       = slotW * 0.12f;
-            float vPad       = slotH * 0.10f;
+            float hPad = slotW * 0.12f;
+            float vPad = slotH * 0.10f;
             float powerTextH = POWER_TEXT_H * Scale;
-            float innerH     = slotH - vPad * 2f;
-            float iconAreaH  = innerH - powerTextH;
-            float centerX    = xStart + slotW / 2f;
-            float centerY    = yStart + vPad + iconAreaH / 2f;
+            float innerH = slotH - vPad * 2f;
+            float iconAreaH = innerH - powerTextH;
+            float centerX = xStart + slotW / 2f;
+            float centerY = yStart + vPad + iconAreaH / 2f;
 
             float bodyH = iconAreaH * 0.90f;
             float bodyW = Math.Min(bodyH * 0.60f, slotW - hPad * 2f);
@@ -403,34 +408,34 @@ namespace Graph.Apps.Power
                 bodyW, bodyH, ratio, fillColor, borderColor);
 
             // Percentage centered on icon
-            string  pctText  = FormatingHelper.PercentageToString(ratio);
-            Vector2 pctRef   = GetSizeInPixel(pctText, "White", 1f, Surface);
-            float   pctScale = pctRef.X > 0f
-                ? Math.Min(bodyW * 0.78f / pctRef.X, bodyH * 0.38f / pctRef.Y)
-                : Scale * 0.55f;
+            string pctText = FormatingHelper.PercentageToString(ratio);
+            Vector2 pctRef = GetSizeInPixel(pctText, "White", 1f, Surface);
+            float pctScale = pctRef.X > 0f
+                ? Math.Min(bodyW * 0.78f / pctRef.X, bodyH * 0.38f / pctRef.Y) * FontScale
+                : Scale * 0.55f * FontScale;
             sprites.Add(new MySprite
             {
-                Type            = SpriteType.TEXT,
-                Data            = pctText,
-                Position        = new Vector2(centerX, centerY - pctRef.Y * pctScale / 2f),
+                Type = SpriteType.TEXT,
+                Data = pctText,
+                Position = new Vector2(centerX, centerY - pctRef.Y * pctScale / 2f),
                 RotationOrScale = pctScale,
-                Color           = textColor,
-                Alignment       = TextAlignment.CENTER,
-                FontId          = "White"
+                Color = textColor,
+                Alignment = TextAlignment.CENTER,
+                FontId = "White"
             });
 
             // Saída atual — vertically centered in the power text band
             double outputWatts = bat.CurrentOutput * 1000000.0;
-            string powerText   = outputWatts > 1.0 ? FormatingHelper.WattsToString(outputWatts) : "-";
+            string powerText = outputWatts > 1.0 ? FormatingHelper.WattsToString(outputWatts) : "-";
             sprites.Add(new MySprite
             {
-                Type            = SpriteType.TEXT,
-                Data            = powerText,
-                Position        = new Vector2(centerX, yStart + vPad + iconAreaH + powerTextH * 0.10f),
-                RotationOrScale = Scale * 0.70f,
-                Color           = textColor,
-                Alignment       = TextAlignment.CENTER,
-                FontId          = "White"
+                Type = SpriteType.TEXT,
+                Data = powerText,
+                Position = new Vector2(centerX, yStart + vPad + iconAreaH + powerTextH * 0.10f),
+                RotationOrScale = Scale * 0.70f * FontScale,
+                Color = textColor,
+                Alignment = TextAlignment.CENTER,
+                FontId = "White"
             });
         }
 
@@ -440,8 +445,8 @@ namespace Graph.Apps.Power
         // -----------------------------------------------------------------------
 
         static void DrawBatteryGeometry(List<MySprite> sprites, Vector2 center,
-                                        float bodyW, float bodyH, float ratio,
-                                        Color fillColor, Color borderColor)
+            float bodyW, float bodyH, float ratio,
+            Color fillColor, Color borderColor)
         {
             var emptyBg = new Color(borderColor.R, borderColor.G, borderColor.B, 40);
             const float border = 3f;
@@ -449,11 +454,11 @@ namespace Graph.Apps.Power
             // Background (empty body)
             sprites.Add(new MySprite
             {
-                Type      = SpriteType.TEXTURE,
-                Data      = "SquareSimple",
-                Position  = center,
-                Size      = new Vector2(bodyW, bodyH),
-                Color     = emptyBg,
+                Type = SpriteType.TEXTURE,
+                Data = "SquareSimple",
+                Position = center,
+                Size = new Vector2(bodyW, bodyH),
+                Color = emptyBg,
                 Alignment = TextAlignment.CENTER
             });
 
@@ -461,15 +466,15 @@ namespace Graph.Apps.Power
             if (ratio > 0.005f)
             {
                 float innerH = bodyH - border * 2f;
-                float fillH  = innerH * ratio;
+                float fillH = innerH * ratio;
                 float fillCY = center.Y + innerH / 2f - fillH / 2f;
                 sprites.Add(new MySprite
                 {
-                    Type      = SpriteType.TEXTURE,
-                    Data      = "SquareSimple",
-                    Position  = new Vector2(center.X, fillCY),
-                    Size      = new Vector2(bodyW - border * 2f, fillH),
-                    Color     = fillColor,
+                    Type = SpriteType.TEXTURE,
+                    Data = "SquareSimple",
+                    Position = new Vector2(center.X, fillCY),
+                    Size = new Vector2(bodyW - border * 2f, fillH),
+                    Color = fillColor,
                     Alignment = TextAlignment.CENTER
                 });
             }
@@ -477,31 +482,43 @@ namespace Graph.Apps.Power
             // Top terminal nub
             sprites.Add(new MySprite
             {
-                Type      = SpriteType.TEXTURE,
-                Data      = "SquareSimple",
-                Position  = new Vector2(center.X, center.Y - bodyH / 2f - bodyH * 0.07f),
-                Size      = new Vector2(bodyW * 0.35f, bodyH * 0.10f),
-                Color     = borderColor,
+                Type = SpriteType.TEXTURE,
+                Data = "SquareSimple",
+                Position = new Vector2(center.X, center.Y - bodyH / 2f - bodyH * 0.07f),
+                Size = new Vector2(bodyW * 0.35f, bodyH * 0.10f),
+                Color = borderColor,
                 Alignment = TextAlignment.CENTER
             });
 
             // Border lines — top, bottom, left, right
-            float bw    = Math.Max(1f, border * 0.8f);
+            float bw = Math.Max(1f, border * 0.8f);
             float halfW = bodyW / 2f;
             float halfH = bodyH / 2f;
 
-            sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple",
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE, Data = "SquareSimple",
                 Position = new Vector2(center.X, center.Y - halfH),
-                Size = new Vector2(bodyW, bw), Color = borderColor, Alignment = TextAlignment.CENTER });
-            sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple",
+                Size = new Vector2(bodyW, bw), Color = borderColor, Alignment = TextAlignment.CENTER
+            });
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE, Data = "SquareSimple",
                 Position = new Vector2(center.X, center.Y + halfH),
-                Size = new Vector2(bodyW, bw), Color = borderColor, Alignment = TextAlignment.CENTER });
-            sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple",
+                Size = new Vector2(bodyW, bw), Color = borderColor, Alignment = TextAlignment.CENTER
+            });
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE, Data = "SquareSimple",
                 Position = new Vector2(center.X - halfW, center.Y),
-                Size = new Vector2(bw, bodyH), Color = borderColor, Alignment = TextAlignment.CENTER });
-            sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple",
+                Size = new Vector2(bw, bodyH), Color = borderColor, Alignment = TextAlignment.CENTER
+            });
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE, Data = "SquareSimple",
                 Position = new Vector2(center.X + halfW, center.Y),
-                Size = new Vector2(bw, bodyH), Color = borderColor, Alignment = TextAlignment.CENTER });
+                Size = new Vector2(bw, bodyH), Color = borderColor, Alignment = TextAlignment.CENTER
+            });
         }
 
         // -----------------------------------------------------------------------
@@ -509,16 +526,16 @@ namespace Graph.Apps.Power
         // -----------------------------------------------------------------------
 
         void DrawScrollBar(List<MySprite> sprites, float scale, float initialY,
-                           float viewportH, float barCenter, float barH)
+            float viewportH, float barCenter, float barH)
         {
             float cx = ViewBox.X + ViewBox.Width - (SCROLLER_W / 2f) * scale;
-            int   bw = (int)(SCROLLER_W * scale);
+            int bw = (int)(SCROLLER_W * scale);
 
             var trackCtr = new Vector2(cx, (float)Math.Round(initialY + viewportH / 2f, MidpointRounding.ToEven));
             DrawCapsule(sprites, trackCtr, bw, viewportH,
                 new Color(Surface.ScriptForegroundColor.R,
-                          Surface.ScriptForegroundColor.G,
-                          Surface.ScriptForegroundColor.B, 127));
+                    Surface.ScriptForegroundColor.G,
+                    Surface.ScriptForegroundColor.B, 127));
 
             var thumbCtr = new Vector2(cx, (float)Math.Round(initialY + barCenter, MidpointRounding.ToEven));
             DrawCapsule(sprites, thumbCtr, bw, barH,
@@ -563,7 +580,7 @@ namespace Graph.Apps.Power
         Color GetBatteryIconColor(float ratio)
         {
             if (ratio < ERROR_THRESHOLD) return Config.ErrorColor;
-            if (ratio < WARN_THRESHOLD)  return Config.WarningColor;
+            if (ratio < WARN_THRESHOLD) return Config.WarningColor;
             return Config.HeaderColor;
         }
     }
