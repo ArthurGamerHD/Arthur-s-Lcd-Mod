@@ -71,22 +71,8 @@ namespace Graph.Apps.Abstract
             public int Count;
         }
 
-        class PiePanelState
-        {
-            public readonly PieChartPanel Panel;
-            public bool HasLayout;
-            public Vector2 Margin;
-            public Vector2 Size;
-
-            public PiePanelState(PieChartPanel panel)
-            {
-                Panel = panel;
-            }
-        }
-
         readonly Dictionary<string, PowerEntry> _entriesByKey = new Dictionary<string, PowerEntry>();
         readonly Dictionary<string, PowerTotals> _totalsByKey = new Dictionary<string, PowerTotals>();
-        readonly Dictionary<string, PiePanelState> _piePanelsByKey = new Dictionary<string, PiePanelState>();
         string[] _entryOrder;
         PowerEntry[] _entriesOrdered;
         readonly List<PowerEntry> _visibleEntries = new List<PowerEntry>();
@@ -113,7 +99,6 @@ namespace Graph.Apps.Abstract
         {
             base.LayoutChanged();
             _ascentColor = Config.HeaderColor.DeriveAscentColor();
-            RebuildPiePanels();
 
             RefreshEntryLabels();
             _maxLabelCache = string.Empty;
@@ -181,7 +166,6 @@ namespace Graph.Apps.Abstract
 
             _entriesByKey.Clear();
             _totalsByKey.Clear();
-            _piePanelsByKey.Clear();
 
             for (int i = 0; i < definitions.Length; i++)
             {
@@ -189,7 +173,6 @@ namespace Graph.Apps.Abstract
                 _entryOrder[i] = definition.Key;
                 _entriesByKey[definition.Key] = new PowerEntry(definition.Key, ResolveDisplayName(definition));
                 _totalsByKey[definition.Key] = new PowerTotals();
-                _piePanelsByKey[definition.Key] = CreatePiePanelState();
             }
 
             _usagePrefix = MyTexts.Get(MyStringId.GetOrCompute("HudInfoNamePowerUsage")) + " ";
@@ -495,7 +478,7 @@ namespace Graph.Apps.Abstract
             var nameRect = slots.Item3;
             var foreground = entry.Current <= 0 && drawAsLines ? Config.ErrorColor : Surface.ScriptForegroundColor;
 
-            DrawCellPie(sprites, iconRect, entry.Key, entry.Usage);
+            DrawCellPie(sprites, iconRect, entry.Usage);
 
             var titleSb = new StringBuilder(entry.Name);
             TrimText(ref titleSb, numberRect.Width);
@@ -536,47 +519,22 @@ namespace Graph.Apps.Abstract
             ));
         }
 
-        void DrawCellPie(List<MySprite> sprites, RectangleF iconRect, string entryKey, float usage)
+        void DrawCellPie(List<MySprite> sprites, RectangleF iconRect, float usage)
         {
             var pieSize = new Vector2(iconRect.Width, iconRect.Height);
             var pieOrigo = new Vector2(iconRect.X + iconRect.Width / 2f, iconRect.Y + iconRect.Height / 2f);
-            var piePanelOrigo = new Vector2(pieOrigo.X, pieOrigo.Y + pieSize.Y * 0.5f);
-            var margin = ToScreenMargin(piePanelOrigo);
+            var margin = ToScreenMargin(pieOrigo);
 
-            PiePanelState panelState;
-            if (!_piePanelsByKey.TryGetValue(entryKey, out panelState))
-            {
-                panelState = CreatePiePanelState();
-                _piePanelsByKey[entryKey] = panelState;
-            }
-
-            if (!panelState.HasLayout || panelState.Margin != margin || panelState.Size != pieSize)
-            {
-                panelState.Panel.SetMargin(margin, pieSize);
-                panelState.Margin = margin;
-                panelState.Size = pieSize;
-                panelState.HasLayout = true;
-            }
-
-            sprites.AddRange(panelState.Panel.GetSprites(usage, _ascentColor, true));
-        }
-
-        PiePanelState CreatePiePanelState()
-        {
-            return new PiePanelState(new PieChartPanel(string.Empty, (IMyTextSurface)Surface, Vector2.Zero, Vector2.One,
-                false));
-        }
-
-        void RebuildPiePanels()
-        {
-            if (_entryOrder == null)
-                return;
-
-            for (int i = 0; i < _entryOrder.Length; i++)
-            {
-                var key = _entryOrder[i];
-                _piePanelsByKey[key] = CreatePiePanelState();
-            }
+            PieChartPanel.CreateSprites(
+                sprites,
+                string.Empty,
+                (IMyTextSurface)Surface,
+                margin,
+                pieSize,
+                usage,
+                _ascentColor,
+                true,
+                false);
         }
 
         void DrawScrollBar(List<MySprite> frame, float scale, float initialY, float viewportHeight,

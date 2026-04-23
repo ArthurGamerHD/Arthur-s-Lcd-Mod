@@ -109,8 +109,8 @@ namespace Graph.Apps.Power
             {
                 Type = SpriteType.TEXTURE,
                 Data = "SquareSimple",
-                Position = new Vector2(footerLeft + footerWidth * 0.5f, footerTop + FooterHeight * 0.5f),
-                Size = new Vector2(footerWidth, FooterHeight),
+                Position = new Vector2(ViewBox.X + ViewBox.Width * 0.5f, footerTop + FooterHeight * 0.5f),
+                Size = new Vector2(ViewBox.Width, FooterHeight),
                 Color = new Color(BackgroundColor.MulValue(0.8f), 0.5f),
                 Alignment = TextAlignment.CENTER
             });

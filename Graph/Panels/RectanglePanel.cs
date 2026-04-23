@@ -5,7 +5,7 @@ using VRageMath;
 
 namespace Graph.Panels
 {
-    public class RectanglePanel
+    public static class RectanglePanel
     {
         public static List<MySprite> SpritesBuffer = new List<MySprite>(16);
 
@@ -84,6 +84,19 @@ namespace Graph.Panels
             // Right
             edge.Position = center + new Vector2(half.X - r, 0);
             SpritesBuffer.Add(edge);
+
+#if LAYOUT_DEBUG
+            // debug draw
+            SpritesBuffer.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE,
+                Data = "SquareHollow",
+                Position = center,
+                Size = fullSize,
+                Color = Color.Red,
+                Alignment = TextAlignment.CENTER
+            });
+#endif
 
             return SpritesBuffer.ToArray();
         }

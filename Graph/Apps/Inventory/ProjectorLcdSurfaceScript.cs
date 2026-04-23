@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using Generated;
 using Graph.Apps.Abstract;
+using Graph.Extensions;
 using Graph.Helpers;
 using Graph.Panels;
 using Graph.System;
@@ -63,26 +64,15 @@ namespace Graph.Apps.Inventory
         float _availableX;
 
         const float PIE_RADIUS = 40;
-        readonly PieDualChartPanel _pieBlueprint;
 
         public ProjectorLcdSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
             : base(surface, block, size)
         {
-            _pieBlueprint = new PieDualChartPanel(
-                "",
-                (IMyTextSurface)Surface,
-                ToScreenMargin(GetFooterPieCenter()),
-                new Vector2(PIE_RADIUS * Scale),
-                false
-            );
         }
 
         protected override void LayoutChanged()
         {
             base.LayoutChanged();
-            _pieBlueprint.SetMargin(
-                ToScreenMargin(GetFooterPieCenter()),
-                new Vector2(PIE_RADIUS * Scale));
 
             _customTitle = _projector?.CustomName;
 
@@ -203,36 +193,51 @@ namespace Graph.Apps.Inventory
             if (_totalBlocks == 0 || _totalComponents == 0)
                 return;
 
-            var margin = ViewBox.Size.X * 0.02f;
+            var margin = GetFooterMarginX();
+            var footerLeft = ViewBox.X + margin;
+            var footerRight = ViewBox.Right - margin;
+            var footerWidth = Math.Max(1f, footerRight - footerLeft);
             var pos = ViewBox.Position;
-            pos.X += margin;
+            var footerPaddingX = GetFooterPaddingX();
+            var footerContentLeft = footerLeft + footerPaddingX;
+            var footerContentRight = footerRight - footerPaddingX;
+            pos.X = footerContentLeft;
 
             int built = Math.Max(_totalBlocks - _remainingBlocks, 0);
-            float footerScale = LayoutScale;
             float textScale = Scale * 0.9f * FontScale;
-            float legendScale = textScale / 0.9f;
+            var lineSpacer = GetFooterLineSpacer();
+            var legendSize = GetFooterLegendSize();
+            var pieSize = GetFooterPieSize();
 
-            FooterHeight = 25f * 2f * footerScale;
-            // Keep text start aligned with footer legend/text scale (pie size remains unchanged).
-            pos.X += 25f * 2f * legendScale;
+            FooterHeight = GetFooterHeight();
+            pos.X += pieSize.X;
 
-            pos.Y = ViewBox.Bottom - FooterHeight;
+            var footerTop = ViewBox.Bottom - FooterHeight;
+            pos.Y = GetFooterContentTop();
 
-            var legendSize = new Vector2(8f, 8f) * legendScale;
-            float legendTextSpacing = 4f * legendScale;
+            frame.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE,
+                Data = "SquareSimple",
+                Position = new Vector2(ViewBox.X + ViewBox.Width * 0.5f, footerTop + FooterHeight * 0.5f),
+                Size = new Vector2(ViewBox.Width, FooterHeight),
+                Color = new Color(BackgroundColor.MulValue(0.8f), 0.5f),
+                Alignment = TextAlignment.CENTER
+            });
+
+            float legendTextSpacing = GetFooterLegendTextSpacing();
+            float pieToTextGap = 10f * Scale;
 
             var blocksString = MyTexts.GetString("TerminalTab_Info_Blocks");
 
-            pos.X += legendSize.X + legendTextSpacing;
-
-            var lineSpacer = 25f * footerScale;
+            pos.X += legendSize.X + legendTextSpacing + pieToTextGap;
 
             var blocksPct = built / (float)_totalBlocks;
             var componentsPct = 1 - (float)_missingComponents / _totalComponents;
 
             StringBuilder sb = new StringBuilder($"{blocksString}{blocksPct:P2}  ({built}/{_totalBlocks} )");
 
-            TrimText(ref sb, ViewBox.Width - pos.X - ViewBox.X, 0.9f);
+            TrimText(ref sb, footerContentRight - pos.X, 0.9f);
 
             frame.Add(new MySprite
             {
@@ -255,7 +260,7 @@ namespace Graph.Apps.Inventory
                 $"/{FormatingHelper.FormatItemQty(_totalComponents)})");
 
 
-            TrimText(ref sb, ViewBox.Width - pos.X - ViewBox.X, 0.9f);
+            TrimText(ref sb, footerContentRight - pos.X, 0.9f);
 
             frame.Add(new MySprite
             {
@@ -294,8 +299,17 @@ namespace Graph.Apps.Inventory
                 Alignment = TextAlignment.CENTER,
             });
 
-            _pieBlueprint.SetMargin(ToScreenMargin(GetFooterPieCenter()), new Vector2(PIE_RADIUS * Scale));
-            frame.AddRange(_pieBlueprint.GetSprites(componentsPct, blocksPct, Config.HeaderColor, true));
+            PieDualChartPanel.CreateSprites(
+                frame,
+                "",
+                (IMyTextSurface)Surface,
+                ToScreenMargin(GetFooterPieCenter()),
+                pieSize,
+                componentsPct,
+                blocksPct,
+                Config.HeaderColor,
+                true,
+                false);
         }
 
         protected override List<KeyValuePair<MyItemType, double>> ReadItems(IMyTerminalBlock lcd)
@@ -568,11 +582,63 @@ namespace Graph.Apps.Inventory
 
         Vector2 GetFooterPieCenter()
         {
-            var margin = 0f;
-            var headerIconCenterX = ViewBox.Position.X + margin + 20f * Scale;
-            float footerHeight = 25f * 2f * LayoutScale;
-            var footerPieCenterY = ViewBox.Bottom - footerHeight * 0.5f;
-            return new Vector2(headerIconCenterX, footerPieCenterY);
+            var footerLeft = ViewBox.X + GetFooterMarginX();
+            var pieCenterX = footerLeft + GetFooterPieSize().X * 0.5f;
+            var footerHeight = GetFooterHeight();
+            var footerTop = ViewBox.Bottom - footerHeight;
+            var pieCenterY = footerTop + footerHeight * 0.5f;
+            return new Vector2(pieCenterX, pieCenterY);
+        }
+
+        float GetFooterMarginX()
+        {
+            return ViewBox.Size.X * 0.02f;
+        }
+
+        float GetFooterPaddingX()
+        {
+            return GetFooterLegendSize().X + GetFooterLegendTextSpacing();
+        }
+
+        float GetFooterPaddingY()
+        {
+            return GetFooterLegendSize().Y;
+        }
+
+        Vector2 GetFooterPieSize()
+        {
+            return new Vector2(PIE_RADIUS * Scale);
+        }
+
+        Vector2 GetFooterLegendSize()
+        {
+            return new Vector2(8f, 8f) * Scale * FontScale;
+        }
+
+        float GetFooterLegendTextSpacing()
+        {
+            return GetFooterLegendSize().X * 0.5f;
+        }
+
+        float GetFooterLineSpacer()
+        {
+            return 25f * LayoutScale;
+        }
+
+        float GetFooterTextHeight()
+        {
+            return 25f * 2f * LayoutScale;
+        }
+
+        float GetFooterContentTop()
+        {
+            return ViewBox.Bottom - GetFooterHeight() + GetFooterPaddingY();
+        }
+
+        float GetFooterHeight()
+        {
+            var pieSize = GetFooterPieSize();
+            return Math.Max(GetFooterTextHeight(), pieSize.Y) + GetFooterPaddingY() * 2f;
         }
 
         void EnsureData()
