@@ -126,6 +126,10 @@ namespace Graph.Apps.Percentage
                     if (typeIdStr.IndexOf("CargoContainer", StringComparison.OrdinalIgnoreCase) < 0)
                         continue;
 
+                    if (Config != null && Config.SelectedBlocks.Length > 0 &&
+                        Array.IndexOf(Config.SelectedBlocks, fat.EntityId) < 0)
+                        continue;
+
                     if (!fat.HasInventory) continue;
 
                     double localUsed = 0, localCap = 0;

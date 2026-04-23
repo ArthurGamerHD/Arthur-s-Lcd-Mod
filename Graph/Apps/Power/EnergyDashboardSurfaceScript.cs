@@ -291,8 +291,7 @@ namespace Graph.Apps.Power
             float interval = windowSeconds / GRAPH_POINTS;
             if (now - _lastSampleTime < interval) return;
 
-            double totalProd = _solar.CurrentW + _wind.CurrentW + _reactor.CurrentW
-                               + _engine.CurrentW + _batteryProd.CurrentW;
+            double totalProd = _solar.CurrentW + _wind.CurrentW + _reactor.CurrentW + _engine.CurrentW;
 
             _samples[_sampleHead] = new Sample
             {
