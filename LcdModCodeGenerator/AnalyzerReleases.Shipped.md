@@ -5,6 +5,6 @@
 
 ### New Rules
 
-| Rule ID   | Category            | Severity | Notes                                                              |
-|-----------|---------------------|----------|--------------------------------------------------------------------|
-| LCDMOD001 | LcdModCodeGenerator | Warning  | App implements interface containing the same control more than one |
+| Rule ID   | Category            | Severity | Notes                                                               |
+|-----------|---------------------|----------|---------------------------------------------------------------------|
+| LCDMOD001 | LcdModCodeGenerator | Warning  | App implements interface containing the same control more than once |
