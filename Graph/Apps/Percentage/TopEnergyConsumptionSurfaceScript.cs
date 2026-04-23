@@ -129,8 +129,9 @@ namespace Graph.Apps.Percentage
                     var fat = slims[i].FatBlock as IMyTerminalBlock;
                     if (fat == null) continue;
 
-                    // Batteries excluded: they are power producers/storage, not consumers in this ranking
-                    if (fat is IMyBatteryBlock) continue;
+                    // Power producers excluded (batteries, reactors, solar, wind, hydrogen engines):
+                    // they have a small internal electricity sink that would wrongly rank them as consumers.
+                    if (fat is IMyPowerProducer) continue;
 
                     MyResourceSinkComponent sink = null;
                     try

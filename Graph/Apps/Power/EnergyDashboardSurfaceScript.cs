@@ -182,6 +182,10 @@ namespace Graph.Apps.Power
 
             for (int i = 0; i < _terminals.Count; i++)
             {
+                // Skip power producers (batteries, reactors, solar, wind, hydrogen engines):
+                // their internal electricity sink would double-count as consumption.
+                if (_terminals[i] is IMyPowerProducer) continue;
+
                 MyResourceSinkComponent sink = null;
                 try
                 {
