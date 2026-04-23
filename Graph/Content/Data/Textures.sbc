@@ -19,6 +19,24 @@
             <SpritePath>Textures/Sprites/SignalModeOff.dds</SpritePath>
             <Selectable>false</Selectable>
         </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Custom Jump Drive Sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="JumpDrive"/>
+            <SpritePath>Textures/Sprites/JumpDrive.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Custom Battery Sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="Battery"/>
+            <SpritePath>Textures/Sprites/Battery.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Custom Battery Wide Sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="BatteryWide"/>
+            <SpritePath>Textures/Sprites/BatteryWide.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
         
         <LCDTextureDefinition> <!-- Remap of Vanilla Broadcasting sprite -->
             <Id Type="LCDTextureDefinition" Subtype="BroadcastingOn"/>

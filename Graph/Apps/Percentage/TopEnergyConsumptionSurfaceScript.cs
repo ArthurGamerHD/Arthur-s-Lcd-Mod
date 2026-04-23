@@ -78,12 +78,7 @@ namespace Graph.Apps.Percentage
         protected override float GetEntryPercentage(Entry entry) => entry.Ratio;
 
         // Right-side label shows actual wattage rather than a relative percentage
-        protected override string GetListPercentageText(float pct)
-        {
-            return FormatingHelper.WattsToString(pct * _maxWatts);
-        }
-
-        protected override string GetGridPercentageText(float pct)
+        protected override string GetNumber(float pct)
         {
             return FormatingHelper.WattsToString(pct * _maxWatts);
         }

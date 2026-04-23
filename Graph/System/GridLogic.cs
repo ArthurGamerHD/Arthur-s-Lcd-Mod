@@ -30,6 +30,7 @@ namespace Graph.System
         List<IMyRadioAntenna> _radio = new List<IMyRadioAntenna>();
         List<IMyBeacon> _beacons = new List<IMyBeacon>();
         List<IMyBatteryBlock> _batteries = new List<IMyBatteryBlock>();
+        List<IMyJumpDrive> _jumpDrives = new List<IMyJumpDrive>();
 
         IMyGridTerminalSystem GridTerminalSystem => MyAPIGateway.TerminalActionsHelper.GetTerminalSystemForGrid(Grid);
 
@@ -85,6 +86,7 @@ namespace Graph.System
                 _radio.Clear();
                 _beacons.Clear();
                 _batteries.Clear();
+                _jumpDrives.Clear();
             }
             catch (Exception e)
             {
@@ -238,6 +240,10 @@ namespace Graph.System
                 if(battery != null)
                     _batteries.Add(battery);
 
+                var jumpDrive = block as IMyJumpDrive;
+                if (jumpDrive != null)
+                    _jumpDrives.Add(jumpDrive);
+
                 return block.HasInventory && block.InventoryCount != 0 ;
             }).Select(a => a).ToList();
 
@@ -266,6 +272,12 @@ namespace Graph.System
         {
             RefreshIfNeeded();
             return _batteries;
+        }
+
+        public List<IMyJumpDrive> GetJumpDrives()
+        {
+            RefreshIfNeeded();
+            return _jumpDrives;
         }
 
         /// <summary>

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using Graph.Extensions;
+using Graph.Helpers;
 using Graph.Panels;
 using Graph.System;
 using Sandbox.ModAPI;
@@ -98,14 +99,9 @@ namespace Graph.Apps.Abstract
             return null;
         }
 
-        protected virtual string GetListPercentageText(float pct)
+        protected virtual string GetNumber(float pct)
         {
-            return pct.ToString("P", CultureInfo.CurrentUICulture);
-        }
-
-        protected virtual string GetGridPercentageText(float pct)
-        {
-            return pct.ToString("P0", CultureInfo.CurrentUICulture);
+            return FormatingHelper.PercentageToString(pct);
         }
 
         protected virtual Color GetEntryBarFillColor()
@@ -186,7 +182,7 @@ namespace Graph.Apps.Abstract
             var percentage = new MySprite
             {
                 Type = SpriteType.TEXT,
-                Data = GetListPercentageText(pct),
+                Data = GetNumber(pct),
                 Position = position,
                 RotationOrScale = Scale * FontScale,
                 Color = Surface.ScriptForegroundColor,
@@ -374,7 +370,7 @@ namespace Graph.Apps.Abstract
                 BackgroundColor.DeriveAscentColor());
             frame.AddRange(barPanel.GetSprites(pct, GetEntryUsageColor(pct)));
 
-            var pctText = GetGridPercentageText(pct);
+            var pctText = GetNumber(pct);
             var pctPos = new Vector2(textRect.Right - (2f * Scale), textRect.Y + 2f * Scale);
             frame.Add(new MySprite
             {

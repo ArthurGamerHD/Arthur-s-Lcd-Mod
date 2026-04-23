@@ -107,6 +107,6 @@ namespace Graph.Helpers
         }
 
 
-        public static string PercentageToString(float f) => f.ToString("P0", Culture);
+        public static string PercentageToString(float f) => f.ToString("P0", Culture).Replace(" ", string.Empty);
     }
 }
