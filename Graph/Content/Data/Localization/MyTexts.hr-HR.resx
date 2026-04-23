@@ -60,4 +60,14 @@
   <data name="LCDMod_FactionColor_Updated" xml:space="preserve">
     <value>Boja ikone frakcije je ažurirana.</value>
   </data>
+  <data name="LCDMod_Thrust_GravityLoad" xml:space="preserve">
+    <value>Gravitacijsko opterećenje</value>
+  </data>
+
+  <data name="LCDMod_Warning" xml:space="preserve">
+    <value>Upozorenje: {0}</value>
+  </data>
+  <data name="LCDMod_Critical" xml:space="preserve">
+    <value>Kritično: {0}</value>
+  </data>
 </root>

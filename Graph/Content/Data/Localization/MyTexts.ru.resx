@@ -60,4 +60,14 @@
   <data name="LCDMod_FactionColor_Updated" xml:space="preserve">
     <value>Цвет значка фракции обновлен.</value>
   </data>
+  <data name="LCDMod_Thrust_GravityLoad" xml:space="preserve">
+    <value>Гравитационная нагрузка</value>
+  </data>
+
+  <data name="LCDMod_Warning" xml:space="preserve">
+    <value>Предупреждение: {0}</value>
+  </data>
+  <data name="LCDMod_Critical" xml:space="preserve">
+    <value>Критично: {0}</value>
+  </data>
 </root>

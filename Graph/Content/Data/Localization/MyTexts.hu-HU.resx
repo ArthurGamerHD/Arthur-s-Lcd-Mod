@@ -60,4 +60,14 @@
   <data name="LCDMod_FactionColor_Updated" xml:space="preserve">
     <value>A frakció ikonszíne frissítve.</value>
   </data>
+  <data name="LCDMod_Thrust_GravityLoad" xml:space="preserve">
+    <value>Gravitációs terhelés</value>
+  </data>
+
+  <data name="LCDMod_Warning" xml:space="preserve">
+    <value>Figyelmeztetés: {0}</value>
+  </data>
+  <data name="LCDMod_Critical" xml:space="preserve">
+    <value>Kritikus: {0}</value>
+  </data>
 </root>

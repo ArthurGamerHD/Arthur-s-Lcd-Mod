@@ -60,4 +60,14 @@
   <data name="LCDMod_FactionColor_Updated" xml:space="preserve">
     <value>Fraktionsikonens färg har uppdaterats.</value>
   </data>
+  <data name="LCDMod_Thrust_GravityLoad" xml:space="preserve">
+    <value>Gravitationsbelastning</value>
+  </data>
+
+  <data name="LCDMod_Warning" xml:space="preserve">
+    <value>Varning: {0}</value>
+  </data>
+  <data name="LCDMod_Critical" xml:space="preserve">
+    <value>Kritiskt: {0}</value>
+  </data>
 </root>

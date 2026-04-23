@@ -60,4 +60,14 @@
   <data name="LCDMod_FactionColor_Updated" xml:space="preserve">
     <value>Kolor ikony frakcji został zaktualizowany.</value>
   </data>
+  <data name="LCDMod_Thrust_GravityLoad" xml:space="preserve">
+    <value>Obciążenie grawitacyjne</value>
+  </data>
+
+  <data name="LCDMod_Warning" xml:space="preserve">
+    <value>Ostrzeżenie: {0}</value>
+  </data>
+  <data name="LCDMod_Critical" xml:space="preserve">
+    <value>Krytyczne: {0}</value>
+  </data>
 </root>

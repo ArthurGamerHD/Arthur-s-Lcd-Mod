@@ -81,4 +81,13 @@
   <data name="LCDMod_FactionColor_Updated" xml:space="preserve">
     <value>Faction icon color updated.</value>
   </data>
+  <data name="LCDMod_Warning" xml:space="preserve">
+    <value>Warning: {0}</value>
+  </data>
+  <data name="LCDMod_Critical" xml:space="preserve">
+    <value>Critical: {0}</value>
+  </data>
+  <data name="LCDMod_Thrust_GravityLoad" xml:space="preserve">
+    <value>Gravity load</value>
+  </data>
 </root>

@@ -60,4 +60,14 @@
   <data name="LCDMod_FactionColor_Updated" xml:space="preserve">
     <value>Fraktionssymbolfarbe wurde aktualisiert.</value>
   </data>
+  <data name="LCDMod_Thrust_GravityLoad" xml:space="preserve">
+    <value>Gravitationslast</value>
+  </data>
+
+  <data name="LCDMod_Warning" xml:space="preserve">
+    <value>Warnung: {0}</value>
+  </data>
+  <data name="LCDMod_Critical" xml:space="preserve">
+    <value>Kritisch: {0}</value>
+  </data>
 </root>

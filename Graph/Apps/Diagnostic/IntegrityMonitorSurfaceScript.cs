@@ -64,8 +64,6 @@ namespace Graph.Apps.Diagnostic
 
         IMyProjector _projector;
 
-        int tick = 0;
-
         public IntegrityMonitorSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface,
             block, size)
         {
@@ -104,40 +102,35 @@ namespace Graph.Apps.Diagnostic
                 && Config.ReferenceBlock != 0
                 && _depthCache != null)
             {
-                if (tick % 3 == 0)
+                int blinkStep = GetTimeStep(0.5f);
+                bool showWarning = (blinkStep % 2) == 1;
+
+                using (var frame = Surface.DrawFrame())
                 {
-                    using (var frame = Surface.DrawFrame())
+                    var sprites = new List<MySprite>();
+                    AddBackground(sprites);
+                    if (!_frameBuffer.Any())
                     {
-                        var sprites = new List<MySprite>();
-                        AddBackground(sprites);
-                        if (!_frameBuffer.Any())
-                        {
-                            DrawDepthMap(_frameBuffer, (DepthMap2D)_depthCache, _view,
-                                MathHelper.ToRadians(Config.Rotation), Config.Scale);
-                            DrawFooter(_frameBuffer);
-                        }
-
-                        sprites.AddRange(_frameBuffer);
-
-                        DrawTitle(sprites);
-
-                        if (tick == 3)
-                            DrawMessage(sprites,
-                                string.Format(
-                                    LocHelper.GetLoc(_projector != null && !_projector.IsFunctional
-                                        ? "SignalConnectivity_State_NotOperational"
-                                        : "SignalConnectivity_State_NoLaserLink"),
-                                    LocHelper.GetLoc("DisplayName_Block_Projector")), "Warning",
-                                Config.ErrorColor.MulValue(2).MulSaturation(2),
-                                Config.Scale);
-
-                        frame.AddRange(sprites);
+                        DrawDepthMap(_frameBuffer, (DepthMap2D)_depthCache, _view,
+                            MathHelper.ToRadians(Config.Rotation), Config.Scale);
+                        DrawFooter(_frameBuffer);
                     }
-                }
 
-                tick++;
-                if (tick == 6)
-                    tick = 0;
+                    sprites.AddRange(_frameBuffer);
+                    DrawTitle(sprites);
+
+                    if (showWarning)
+                        DrawMessage(sprites,
+                            string.Format(
+                                LocHelper.GetLoc(_projector != null && !_projector.IsFunctional
+                                    ? "SignalConnectivity_State_NotOperational"
+                                    : "SignalConnectivity_State_NoLaserLink"),
+                                LocHelper.GetLoc("DisplayName_Block_Projector")), "Warning",
+                            Config.ErrorColor.MulValue(2).MulSaturation(2),
+                            Config.Scale);
+
+                    frame.AddRange(sprites);
+                }
 
                 return;
             }
@@ -568,7 +561,8 @@ namespace Graph.Apps.Diagnostic
             float outerSize = Math.Min(ViewBox.Width, contentHeight) * 0.28f * wheelScale;
             float innerSize = outerSize * 0.6f;
 
-            double seconds = MyAPIGateway.Session.ElapsedPlayTime.TotalSeconds;
+            var session = MyAPIGateway.Session;
+            double seconds = session != null ? session.GameplayFrameCounter / 60.0 : 0.0;
             float outerRotation = (float)(seconds * 2.4);
             float innerRotation = -outerRotation;
 

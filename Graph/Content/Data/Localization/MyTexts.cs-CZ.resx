@@ -60,4 +60,14 @@
   <data name="LCDMod_FactionColor_Updated" xml:space="preserve">
     <value>Barva ikony frakce byla aktualizována.</value>
   </data>
+  <data name="LCDMod_Thrust_GravityLoad" xml:space="preserve">
+    <value>Gravitační zatížení</value>
+  </data>
+
+  <data name="LCDMod_Warning" xml:space="preserve">
+    <value>Varování: {0}</value>
+  </data>
+  <data name="LCDMod_Critical" xml:space="preserve">
+    <value>Kritické: {0}</value>
+  </data>
 </root>

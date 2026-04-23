@@ -63,4 +63,14 @@
   <data name="LCDMod_FactionColor_Updated" xml:space="preserve">
     <value>派系图标颜色已更新。</value>
   </data>
+  <data name="LCDMod_Thrust_GravityLoad" xml:space="preserve">
+    <value>重力负载</value>
+  </data>
+
+  <data name="LCDMod_Warning" xml:space="preserve">
+    <value>警告：{0}</value>
+  </data>
+  <data name="LCDMod_Critical" xml:space="preserve">
+    <value>严重：{0}</value>
+  </data>
 </root>

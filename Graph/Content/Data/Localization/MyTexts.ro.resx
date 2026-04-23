@@ -60,4 +60,14 @@
   <data name="LCDMod_FactionColor_Updated" xml:space="preserve">
     <value>Culoarea pictogramei facțiunii a fost actualizată.</value>
   </data>
+  <data name="LCDMod_Thrust_GravityLoad" xml:space="preserve">
+    <value>Sarcină gravitațională</value>
+  </data>
+
+  <data name="LCDMod_Warning" xml:space="preserve">
+    <value>Avertizare: {0}</value>
+  </data>
+  <data name="LCDMod_Critical" xml:space="preserve">
+    <value>Critic: {0}</value>
+  </data>
 </root>

@@ -60,4 +60,14 @@
   <data name="LCDMod_FactionColor_Updated" xml:space="preserve">
     <value>Kleur van factiepictogram bijgewerkt.</value>
   </data>
+  <data name="LCDMod_Thrust_GravityLoad" xml:space="preserve">
+    <value>Zwaartekrachtbelasting</value>
+  </data>
+
+  <data name="LCDMod_Warning" xml:space="preserve">
+    <value>Waarschuwing: {0}</value>
+  </data>
+  <data name="LCDMod_Critical" xml:space="preserve">
+    <value>Kritiek: {0}</value>
+  </data>
 </root>

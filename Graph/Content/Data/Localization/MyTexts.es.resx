@@ -60,4 +60,14 @@
   <data name="LCDMod_FactionColor_Updated" xml:space="preserve">
     <value>Se actualizó el color del ícono de la facción.</value>
   </data>
+  <data name="LCDMod_Thrust_GravityLoad" xml:space="preserve">
+    <value>Carga gravitatoria</value>
+  </data>
+
+  <data name="LCDMod_Warning" xml:space="preserve">
+    <value>Advertencia: {0}</value>
+  </data>
+  <data name="LCDMod_Critical" xml:space="preserve">
+    <value>Crítico: {0}</value>
+  </data>
 </root>

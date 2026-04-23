@@ -60,4 +60,14 @@
   <data name="LCDMod_FactionColor_Updated" xml:space="preserve">
     <value>Litur fylkingartákns uppfærður.</value>
   </data>
+  <data name="LCDMod_Thrust_GravityLoad" xml:space="preserve">
+    <value>Þyngdarálag</value>
+  </data>
+
+  <data name="LCDMod_Warning" xml:space="preserve">
+    <value>Viðvörun: {0}</value>
+  </data>
+  <data name="LCDMod_Critical" xml:space="preserve">
+    <value>Alvarlegt: {0}</value>
+  </data>
 </root>

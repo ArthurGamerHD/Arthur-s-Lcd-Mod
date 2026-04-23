@@ -321,17 +321,25 @@ namespace Graph.Apps.Abstract
 
         protected static int GetScrollStep(int secondsPerStep)
         {
+            return GetTimeStep(secondsPerStep);
+        }
+
+        protected static int GetTimeStep(float secondsPerStep)
+        {
             try
             {
                 var sess = MyAPIGateway.Session;
                 if (sess == null) return 0;
-                if (secondsPerStep <= 0) secondsPerStep = 1;
-                double sec = sess.ElapsedPlayTime.TotalSeconds;
-                return (int)(sec / secondsPerStep);
+                if (secondsPerStep <= 0f) secondsPerStep = 1f / 60f;
+
+                // SE runs at 60 game ticks per second.
+                int ticksPerStep = Math.Max(1, (int)Math.Round(secondsPerStep * 60f));
+                long frameCounter = sess.GameplayFrameCounter;
+                return (int)(frameCounter / ticksPerStep);
             }
             catch (Exception ex)
             {
-                MyLog.Default.WriteLine($"[LCDMod] GetScrollStep error: {ex.Message}");
+                MyLog.Default.WriteLine($"[LCDMod] GetTimeStep error: {ex.Message}");
                 return 0;
             }
         }

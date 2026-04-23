@@ -60,4 +60,14 @@
   <data name="LCDMod_FactionColor_Updated" xml:space="preserve">
     <value>Frakcijas ikonas krāsa atjaunināta.</value>
   </data>
+  <data name="LCDMod_Thrust_GravityLoad" xml:space="preserve">
+    <value>Gravitācijas slodze</value>
+  </data>
+
+  <data name="LCDMod_Warning" xml:space="preserve">
+    <value>Brīdinājums: {0}</value>
+  </data>
+  <data name="LCDMod_Critical" xml:space="preserve">
+    <value>Kritiski: {0}</value>
+  </data>
 </root>

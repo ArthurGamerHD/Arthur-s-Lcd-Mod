@@ -60,4 +60,14 @@
   <data name="LCDMod_FactionColor_Updated" xml:space="preserve">
     <value>Fraktsiooni ikooni värv on uuendatud.</value>
   </data>
+  <data name="LCDMod_Thrust_GravityLoad" xml:space="preserve">
+    <value>Gravitatsioonikoormus</value>
+  </data>
+
+  <data name="LCDMod_Warning" xml:space="preserve">
+    <value>Hoiatus: {0}</value>
+  </data>
+  <data name="LCDMod_Critical" xml:space="preserve">
+    <value>Kriitiline: {0}</value>
+  </data>
 </root>
