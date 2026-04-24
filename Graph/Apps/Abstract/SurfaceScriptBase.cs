@@ -235,6 +235,11 @@ namespace Graph.Apps.Abstract
                 LcdModSessionComponent.Components.TryGetValue(Block.CubeGrid.EntityId, out GridLogic);
 
             if (GridLogic == null)
+                GridLogic = LcdModSessionComponent.GetOrCreateGridLogic(Block?.CubeGrid as IMyCubeGrid);
+            else
+                GridLogic.MarkRequested();
+
+            if (GridLogic == null)
             {
                 DrawLoadingScreen(Config.Scale);
                 return;

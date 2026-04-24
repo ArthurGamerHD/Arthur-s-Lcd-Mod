@@ -19,18 +19,44 @@ namespace Graph.System
     /// </summary>
     public class GridLogic
     {
-        const int DELAY = 120; 
+        const int DELAY = 120;
+        const int REQUEST_TTL_TICKS = 120;
+        const int TARGET_REFRESH_TICKS = 119;
+        const int REFRESH_BATCH_SIZE = 128;
         long _clock;
+        int _ticksSinceRequested = int.MaxValue;
 
         public readonly IMyCubeGrid Grid;
         List<IMySlimBlock> _blocks = new List<IMySlimBlock>();
         List<IMyTerminalBlock> _invBlocks = new List<IMyTerminalBlock>();
+        List<IMySlimBlock> _nextBlocks = new List<IMySlimBlock>();
+        List<IMyTerminalBlock> _nextInvBlocks = new List<IMyTerminalBlock>();
         
         List<IMyLaserAntenna> _lasers = new List<IMyLaserAntenna>();
         List<IMyRadioAntenna> _radio = new List<IMyRadioAntenna>();
         List<IMyBeacon> _beacons = new List<IMyBeacon>();
         List<IMyBatteryBlock> _batteries = new List<IMyBatteryBlock>();
         List<IMyJumpDrive> _jumpDrives = new List<IMyJumpDrive>();
+        List<IMyLaserAntenna> _nextLasers = new List<IMyLaserAntenna>();
+        List<IMyRadioAntenna> _nextRadio = new List<IMyRadioAntenna>();
+        List<IMyBeacon> _nextBeacons = new List<IMyBeacon>();
+        List<IMyBatteryBlock> _nextBatteries = new List<IMyBatteryBlock>();
+        List<IMyJumpDrive> _nextJumpDrives = new List<IMyJumpDrive>();
+        IEnumerator<bool> _refreshUpdater;
+        bool _refreshQueued;
+        int _currentRefreshBatchSize = REFRESH_BATCH_SIZE;
+        int _nextRefreshBatchSize = REFRESH_BATCH_SIZE;
+        int _currentRefreshIterations;
+        int _currentRefreshProcessed;
+        int _lastRefreshIterations;
+        int _lastRefreshProcessed;
+
+        public int LastRefreshIterations => _lastRefreshIterations;
+        public int LastRefreshProcessed => _lastRefreshProcessed;
+        public int EstimatedNextRefreshBatchSize => _nextRefreshBatchSize;
+        public int CurrentRefreshBatchSize => _currentRefreshBatchSize;
+        public bool IsRefreshRunning => _refreshUpdater != null;
+        public bool IsSleeping => _ticksSinceRequested > REQUEST_TTL_TICKS;
 
         IMyGridTerminalSystem GridTerminalSystem => MyAPIGateway.TerminalActionsHelper.GetTerminalSystemForGrid(Grid);
 
@@ -65,33 +91,118 @@ namespace Graph.System
             // Initial Randomization so not every single grid ticks on the same time
         }
 
+        public void MarkRequested()
+        {
+            _ticksSinceRequested = 0;
+        }
+
         /// <summary>
         /// Update Grid component after specific <see cref="DELAY"/>, Called every tick
         /// </summary>
         public void Update()
         {
+            if (_ticksSinceRequested < int.MaxValue)
+                _ticksSinceRequested++;
+
+            if (_ticksSinceRequested > REQUEST_TTL_TICKS)
+            {
+                if (_refreshUpdater != null)
+                {
+                    _refreshUpdater.Dispose();
+                    _refreshUpdater = null;
+                    _refreshQueued = false;
+                }
+                return;
+            }
+
             _clock++;
-            if (_clock % DELAY != 0)
-                return; // skip update by {DELAY} ticks
 
             try
             {
-                _blocks.Clear();
-                _compCache.Clear();
-                _invBlocks.Clear();
-                _queryCache.Clear();
-                _refineryInputQueryCache.Clear();
-                _refineryOutputQueryCache.Clear();
-                _lasers.Clear();
-                _radio.Clear();
-                _beacons.Clear();
-                _batteries.Clear();
-                _jumpDrives.Clear();
+                // Schedule a refresh cycle periodically, but keep current data until the new snapshot is ready.
+                if (_clock % DELAY == 0)
+                {
+                    InvalidateItemCaches();
+                    StartRefresh(force: true);
+                }
+
+                AdvanceRefreshUpdater();
             }
             catch (Exception e)
             {
                 ErrorHandlerHelper.LogError(e, this);
             }
+        }
+
+        void InvalidateItemCaches()
+        {
+            _compCache.Clear();
+            _queryCache.Clear();
+            _refineryInputQueryCache.Clear();
+            _refineryOutputQueryCache.Clear();
+        }
+
+        void StartRefresh(bool force = false)
+        {
+            if (_refreshUpdater != null)
+            {
+                if (force)
+                    _refreshQueued = true;
+                return;
+            }
+
+            if (!force && _blocks.Count > 0)
+                return;
+
+            _currentRefreshBatchSize = Math.Max(1, _nextRefreshBatchSize);
+            _currentRefreshIterations = 0;
+            _currentRefreshProcessed = 0;
+            _refreshUpdater = RefreshInventoriesCoroutine().GetEnumerator();
+            _refreshQueued = false;
+        }
+
+        void AdvanceRefreshUpdater()
+        {
+            if (_refreshUpdater == null)
+                return;
+
+            bool hasMore;
+            try
+            {
+                _currentRefreshIterations++;
+                hasMore = _refreshUpdater.MoveNext();
+            }
+            catch (Exception e)
+            {
+                ErrorHandlerHelper.LogError(e, this);
+                _refreshUpdater.Dispose();
+                _refreshUpdater = null;
+                _refreshQueued = false;
+                return;
+            }
+
+            if (hasMore)
+                return;
+
+            _refreshUpdater.Dispose();
+            _refreshUpdater = null;
+            FinalizeRefreshEstimate();
+
+            if (_refreshQueued)
+                StartRefresh(force: true);
+        }
+
+        void FinalizeRefreshEstimate()
+        {
+            _lastRefreshIterations = _currentRefreshIterations;
+            _lastRefreshProcessed = _currentRefreshProcessed;
+
+            if (_lastRefreshProcessed <= 0)
+                return;
+
+            // Estimate batch size so the next refresh tends to complete in about TARGET_REFRESH_TICKS updates.
+            _nextRefreshBatchSize = Math.Max(1,
+                (int)Math.Ceiling(_lastRefreshProcessed / (double)TARGET_REFRESH_TICKS));
         }
 
         /// <summary>
@@ -213,40 +324,103 @@ namespace Graph.System
 
         public void RefreshIfNeeded()
         {
-            if(_blocks.Any())
-                return;
-            
-            Grid.GetBlocks(_blocks, a => a.FatBlock is IMyTerminalBlock);
-            
-            
-            _invBlocks = _blocks
-                .Where(slim => slim.FatBlock is IMyTerminalBlock)
-                .Select(slim => (IMyTerminalBlock)slim.FatBlock)
-                .Where(block =>
+            StartRefresh();
+        }
+
+        IEnumerable<bool> RefreshInventoriesCoroutine()
+        {
+            var nextBlocks = _nextBlocks;
+            var nextInvBlocks = _nextInvBlocks;
+            var nextLasers = _nextLasers;
+            var nextRadio = _nextRadio;
+            var nextBeacons = _nextBeacons;
+            var nextBatteries = _nextBatteries;
+            var nextJumpDrives = _nextJumpDrives;
+
+            nextBlocks.Clear();
+            nextInvBlocks.Clear();
+            nextLasers.Clear();
+            nextRadio.Clear();
+            nextBeacons.Clear();
+            nextBatteries.Clear();
+            nextJumpDrives.Clear();
+
+            Grid.GetBlocks(nextBlocks, a => a.FatBlock is IMyTerminalBlock);
+
+            int processed = 0;
+            for (int i = 0; i < nextBlocks.Count; i++)
             {
+                var block = nextBlocks[i].FatBlock as IMyTerminalBlock;
+                if (block == null)
+                    continue;
+
                 var antenna = block as IMyRadioAntenna;
-                if(antenna != null)
-                    _radio.Add(antenna);
+                if (antenna != null)
+                    nextRadio.Add(antenna);
 
                 var beacon = block as IMyBeacon;
-                if(beacon != null)
-                    _beacons.Add(beacon);
+                if (beacon != null)
+                    nextBeacons.Add(beacon);
 
-                var lase = block as IMyLaserAntenna;
-                if(lase != null)
-                    _lasers.Add(lase);
+                var laser = block as IMyLaserAntenna;
+                if (laser != null)
+                    nextLasers.Add(laser);
 
                 var battery = block as IMyBatteryBlock;
-                if(battery != null)
-                    _batteries.Add(battery);
+                if (battery != null)
+                    nextBatteries.Add(battery);
 
                 var jumpDrive = block as IMyJumpDrive;
                 if (jumpDrive != null)
-                    _jumpDrives.Add(jumpDrive);
+                    nextJumpDrives.Add(jumpDrive);
 
-                return block.HasInventory && block.InventoryCount != 0 ;
-            }).Select(a => a).ToList();
+                if (block.HasInventory && block.InventoryCount != 0)
+                    nextInvBlocks.Add(block);
 
+                processed++;
+                _currentRefreshProcessed++;
+                if (processed >= _currentRefreshBatchSize)
+                {
+                    processed = 0;
+                    yield return true;
+                }
+            }
+
+            // Atomically swap the visible snapshot once fully built.
+            var oldBlocks = _blocks;
+            _blocks = nextBlocks;
+            _nextBlocks = oldBlocks;
+            _nextBlocks.Clear();
+
+            var oldInvBlocks = _invBlocks;
+            _invBlocks = nextInvBlocks;
+            _nextInvBlocks = oldInvBlocks;
+            _nextInvBlocks.Clear();
+
+            var oldLasers = _lasers;
+            _lasers = nextLasers;
+            _nextLasers = oldLasers;
+            _nextLasers.Clear();
+
+            var oldRadio = _radio;
+            _radio = nextRadio;
+            _nextRadio = oldRadio;
+            _nextRadio.Clear();
+
+            var oldBeacons = _beacons;
+            _beacons = nextBeacons;
+            _nextBeacons = oldBeacons;
+            _nextBeacons.Clear();
+
+            var oldBatteries = _batteries;
+            _batteries = nextBatteries;
+            _nextBatteries = oldBatteries;
+            _nextBatteries.Clear();
+
+            var oldJumpDrives = _jumpDrives;
+            _jumpDrives = nextJumpDrives;
+            _nextJumpDrives = oldJumpDrives;
+            _nextJumpDrives.Clear();
         }
         
 

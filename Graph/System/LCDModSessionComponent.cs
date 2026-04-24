@@ -30,11 +30,13 @@ namespace Graph.System
     [MySessionComponentDescriptor(MyUpdateOrder.BeforeSimulation | MyUpdateOrder.AfterSimulation)]
     public class LcdModSessionComponent : MySessionComponentBase
     {
+        static LcdModSessionComponent _instance;
         readonly Dictionary<long, MyTuple<IMyCubeGrid, GridLogic>> _grids = new Dictionary<long, MyTuple<IMyCubeGrid, GridLogic>>();
-
         int _updateTick;
         MyLanguagesEnum? _loadedLanguage;
         public static event Action OnLanguageChanged;
+        public static event Action OnAfterSimulationUpdate;
+        public static SessionDebugSnapshot DebugSnapshot = SessionDebugSnapshot.Empty;
 
         public static string LastSelected;
         public static IMyTerminalBlock LastSelectedBlock;
@@ -42,10 +44,40 @@ namespace Graph.System
         public static Dictionary<long, GridLogic> Components = new Dictionary<long, GridLogic>();
         public static List<TerminalControlsWrapper> Controls = new List<TerminalControlsWrapper>();
 
+        public static GridLogic GetOrCreateGridLogic(IMyCubeGrid grid)
+        {
+            if (grid == null || Components == null)
+                return null;
+
+            GridLogic logic;
+            if (Components.TryGetValue(grid.EntityId, out logic))
+            {
+                logic.MarkRequested();
+                return logic;
+            }
+
+            logic = new GridLogic(grid);
+            logic.MarkRequested();
+            Components[grid.EntityId] = logic;
+
+            var session = _instance;
+            if (session != null && !session._grids.ContainsKey(grid.EntityId))
+            {
+                session._grids[grid.EntityId] = new MyTuple<IMyCubeGrid, GridLogic>(grid, logic);
+                grid.OnMarkForClose += session.GridMarkedForClose;
+            }
+
+            return logic;
+        }
+
         public override void LoadData()
         {
             if (MyAPIGateway.Utilities.IsDedicated && MyAPIGateway.Session.IsServer)
                 return;
+
+            _instance = this;
+            if (Components == null)
+                Components = new Dictionary<long, GridLogic>();
 
             var group = CmdManager.GetOrCreateGroup("/lcdMod", new CmdGroupInitializer(4));
             group.TryAdd("FactionColor", FactionHelper.SetColor);
@@ -94,10 +126,13 @@ namespace Graph.System
             _grids.Clear();
             Components.Clear();
             Components = null;
+            _instance = null;
+            DebugSnapshot = SessionDebugSnapshot.Empty;
 
             ItemsSurfaceScriptBase.SpriteCache?.Clear();
             ItemsSurfaceScriptBase.SpriteCache = null;
             OnLanguageChanged = null;
+            OnAfterSimulationUpdate = null;
 
             ListBoxItemHelper.PerTypeCache.Clear();
 
@@ -115,13 +150,8 @@ namespace Graph.System
             try
             {
                 var grid = ent as IMyCubeGrid;
-                if (grid == null || _grids.ContainsKey(grid.EntityId))
+                if (grid == null)
                     return;
-
-                var logic = new GridLogic(grid);
-                _grids[grid.EntityId] = new MyTuple<IMyCubeGrid, GridLogic>(grid, logic);
-                Components[grid.EntityId] = logic;
-                grid.OnMarkForClose += GridMarkedForClose;
             }
             catch (Exception e)
             {
@@ -147,12 +177,9 @@ namespace Graph.System
             if (MyAPIGateway.Utilities.IsDedicated && MyAPIGateway.Session.IsServer)
                 return;
 
-            _updateTick++;
-            if (_updateTick % 6 != 0)
-                return;
-
             try
             {
+                _updateTick++;
                 foreach (var grid in _grids.Values)
                 {
                     if (grid.Item1.MarkedForClose)
@@ -160,11 +187,67 @@ namespace Graph.System
 
                     grid.Item2.Update();
                 }
+
+                UpdateDebugSnapshot();
             }
             catch (Exception e)
             {
                 ErrorHandlerHelper.LogError(e, this);
             }
+        }
+
+        public override void UpdateAfterSimulation()
+        {
+            if (MyAPIGateway.Utilities.IsDedicated && MyAPIGateway.Session.IsServer)
+                return;
+
+            try
+            {
+                OnAfterSimulationUpdate?.Invoke();
+            }
+            catch (Exception e)
+            {
+                ErrorHandlerHelper.LogError(e, this);
+            }
+        }
+
+        void UpdateDebugSnapshot()
+        {
+            int trackedGrids = _grids.Count;
+            int trackedLogic = Components != null ? Components.Count : 0;
+            int refreshing = 0;
+            int totalLastIterations = 0;
+            int totalLastProcessed = 0;
+            int totalNextBatch = 0;
+            int logicCount = 0;
+
+            if (Components != null)
+            {
+                foreach (var pair in Components)
+                {
+                    var logic = pair.Value;
+                    if (logic == null)
+                        continue;
+
+                    logicCount++;
+                    if (logic.IsRefreshRunning)
+                        refreshing++;
+
+                    totalLastIterations += logic.LastRefreshIterations;
+                    totalLastProcessed += logic.LastRefreshProcessed;
+                    totalNextBatch += logic.EstimatedNextRefreshBatchSize;
+                }
+            }
+
+            int averageNextBatch = logicCount > 0 ? (int)Math.Round(totalNextBatch / (double)logicCount) : 0;
+            DebugSnapshot = new SessionDebugSnapshot(
+                _updateTick,
+                trackedGrids,
+                trackedLogic,
+                refreshing,
+                totalLastIterations,
+                totalLastProcessed,
+                averageNextBatch);
         }
 
         public override void BeforeStart()
@@ -370,6 +453,37 @@ namespace Graph.System
         {
             var multiTextPanel = block.Components.Get<MyMultiTextPanelComponent>();
             return multiTextPanel?.SelectedPanelIndex ?? 0;
+        }
+    }
+
+    public struct SessionDebugSnapshot
+    {
+        public static readonly SessionDebugSnapshot Empty = new SessionDebugSnapshot(0, 0, 0, 0, 0, 0, 0);
+
+        public readonly int UpdateTick;
+        public readonly int TrackedGrids;
+        public readonly int TrackedGridLogic;
+        public readonly int RefreshInProgress;
+        public readonly int TotalLastRefreshIterations;
+        public readonly int TotalLastRefreshProcessed;
+        public readonly int AverageNextBatchSize;
+
+        public SessionDebugSnapshot(
+            int updateTick,
+            int trackedGrids,
+            int trackedGridLogic,
+            int refreshInProgress,
+            int totalLastRefreshIterations,
+            int totalLastRefreshProcessed,
+            int averageNextBatchSize)
+        {
+            UpdateTick = updateTick;
+            TrackedGrids = trackedGrids;
+            TrackedGridLogic = trackedGridLogic;
+            RefreshInProgress = refreshInProgress;
+            TotalLastRefreshIterations = totalLastRefreshIterations;
+            TotalLastRefreshProcessed = totalLastRefreshProcessed;
+            AverageNextBatchSize = averageNextBatchSize;
         }
     }
 }
