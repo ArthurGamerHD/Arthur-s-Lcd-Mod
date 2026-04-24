@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Graph.Helpers;
@@ -329,53 +330,45 @@ namespace Graph.System
 
         IEnumerable<bool> RefreshInventoriesCoroutine()
         {
-            var nextBlocks = _nextBlocks;
-            var nextInvBlocks = _nextInvBlocks;
-            var nextLasers = _nextLasers;
-            var nextRadio = _nextRadio;
-            var nextBeacons = _nextBeacons;
-            var nextBatteries = _nextBatteries;
-            var nextJumpDrives = _nextJumpDrives;
+            _nextBlocks.Clear();
+            _nextInvBlocks.Clear();
+            _nextLasers.Clear();
+            _nextRadio.Clear();
+            _nextBeacons.Clear();
+            _nextBatteries.Clear();
+            _nextJumpDrives.Clear();
 
-            nextBlocks.Clear();
-            nextInvBlocks.Clear();
-            nextLasers.Clear();
-            nextRadio.Clear();
-            nextBeacons.Clear();
-            nextBatteries.Clear();
-            nextJumpDrives.Clear();
-
-            Grid.GetBlocks(nextBlocks, a => a.FatBlock is IMyTerminalBlock);
+            Grid.GetBlocks(_nextBlocks, a => a.FatBlock is IMyTerminalBlock);
 
             int processed = 0;
-            for (int i = 0; i < nextBlocks.Count; i++)
+            for (int i = 0; i < _nextBlocks.Count; i++)
             {
-                var block = nextBlocks[i].FatBlock as IMyTerminalBlock;
+                var block = _nextBlocks[i].FatBlock as IMyTerminalBlock;
                 if (block == null)
                     continue;
 
                 var antenna = block as IMyRadioAntenna;
                 if (antenna != null)
-                    nextRadio.Add(antenna);
+                    _nextRadio.Add(antenna);
 
                 var beacon = block as IMyBeacon;
                 if (beacon != null)
-                    nextBeacons.Add(beacon);
+                    _nextBeacons.Add(beacon);
 
                 var laser = block as IMyLaserAntenna;
                 if (laser != null)
-                    nextLasers.Add(laser);
+                    _nextLasers.Add(laser);
 
                 var battery = block as IMyBatteryBlock;
                 if (battery != null)
-                    nextBatteries.Add(battery);
+                    _nextBatteries.Add(battery);
 
                 var jumpDrive = block as IMyJumpDrive;
                 if (jumpDrive != null)
-                    nextJumpDrives.Add(jumpDrive);
+                    _nextJumpDrives.Add(jumpDrive);
 
                 if (block.HasInventory && block.InventoryCount != 0)
-                    nextInvBlocks.Add(block);
+                    _nextInvBlocks.Add(block);
 
                 processed++;
                 _currentRefreshProcessed++;
@@ -387,42 +380,14 @@ namespace Graph.System
             }
 
             // Atomically swap the visible snapshot once fully built.
-            var oldBlocks = _blocks;
-            _blocks = nextBlocks;
-            _nextBlocks = oldBlocks;
-            _nextBlocks.Clear();
-
-            var oldInvBlocks = _invBlocks;
-            _invBlocks = nextInvBlocks;
-            _nextInvBlocks = oldInvBlocks;
-            _nextInvBlocks.Clear();
-
-            var oldLasers = _lasers;
-            _lasers = nextLasers;
-            _nextLasers = oldLasers;
-            _nextLasers.Clear();
-
-            var oldRadio = _radio;
-            _radio = nextRadio;
-            _nextRadio = oldRadio;
-            _nextRadio.Clear();
-
-            var oldBeacons = _beacons;
-            _beacons = nextBeacons;
-            _nextBeacons = oldBeacons;
-            _nextBeacons.Clear();
-
-            var oldBatteries = _batteries;
-            _batteries = nextBatteries;
-            _nextBatteries = oldBatteries;
-            _nextBatteries.Clear();
-
-            var oldJumpDrives = _jumpDrives;
-            _jumpDrives = nextJumpDrives;
-            _nextJumpDrives = oldJumpDrives;
-            _nextJumpDrives.Clear();
+            SwapBuffer(ref _blocks, ref _nextBlocks);
+            SwapBuffer(ref _invBlocks, ref _nextInvBlocks);
+            SwapBuffer(ref _beacons, ref _nextBeacons);
+            SwapBuffer(ref _batteries, ref _nextBatteries);
+            SwapBuffer(ref _jumpDrives, ref _nextJumpDrives);
+            SwapBuffer(ref _lasers, ref _nextLasers);
+            SwapBuffer(ref _radio, ref _nextRadio);
         }
-        
 
         public List<IMyLaserAntenna> GetLaserAntennae()
         {
@@ -540,6 +505,14 @@ namespace Graph.System
                 ErrorHandlerHelper.LogError(e, this);
                 return new Dictionary<MyItemType, double>();
             }
+        }
+
+        static void SwapBuffer<T>(ref T active, ref T next) where T : class, IList
+        {
+            var old = active;
+            active = next;
+            next = old;
+            next?.Clear();
         }
     }
 }
