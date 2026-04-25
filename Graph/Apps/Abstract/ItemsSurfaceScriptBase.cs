@@ -19,8 +19,7 @@ using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
 
 namespace Graph.Apps.Abstract
 {
-    public abstract class ItemsSurfaceScriptBase : SurfaceScriptBase, IMultiDisplayMode,
-        IUsesTerminalControl<ComboboxDisplayMode>
+    public abstract class ItemsSurfaceScriptBase : SurfaceScriptBase, IMultiDisplayMode
     {
         public static Dictionary<MyItemType, string> SpriteCache =
             new Dictionary<MyItemType, string>();
