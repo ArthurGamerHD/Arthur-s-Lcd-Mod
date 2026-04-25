@@ -93,4 +93,7 @@
   <data name="LCDMod_Radar_DetectedEntities" xml:space="preserve">
     <value>Detected Entities:</value>
   </data>
+  <data name="LCDMod_StarMapSurface" xml:space="preserve">
+    <value>Star chart</value>
+  </data>
 </root>

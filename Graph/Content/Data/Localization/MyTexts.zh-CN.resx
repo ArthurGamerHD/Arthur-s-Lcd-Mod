@@ -76,4 +76,7 @@
   <data name="LCDMod_Critical" xml:space="preserve">
     <value>严重：{0}</value>
   </data>
+  <data name="LCDMod_StarMapSurface" xml:space="preserve">
+    <value>星图</value>
+  </data>
 </root>

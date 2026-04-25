@@ -109,6 +109,7 @@ namespace Graph.System.Config
         }
 
         [ProtoMember(18)] public int GraphWindowIndex { get; set; } = 2;
+        [ProtoMember(19)] public float FoV { get; set; } = 70;
 
         public SortMethod SortMethod
         {
@@ -121,6 +122,5 @@ namespace Graph.System.Config
             get { return (DisplayMode)DisplayInternal; }
             set { DisplayInternal = (int)value; }
         }
-
     }
 }

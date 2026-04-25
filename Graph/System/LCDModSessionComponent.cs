@@ -125,6 +125,7 @@ namespace Graph.System
             MyAPIGateway.Entities.OnEntityAdd -= EntityAdded;
             _grids.Clear();
             Components.Clear();
+            PlanetHelper.Clear();
             Components = null;
             _instance = null;
             DebugSnapshot = SessionDebugSnapshot.Empty;
@@ -150,8 +151,10 @@ namespace Graph.System
             try
             {
                 var grid = ent as IMyCubeGrid;
-                if (grid == null)
+                if (grid != null)
                     return;
+
+                PlanetHelper.OnEntityAdded(ent);
             }
             catch (Exception e)
             {
@@ -260,6 +263,7 @@ namespace Graph.System
                 if (MyAPIGateway.Utilities.IsDedicated && MyAPIGateway.Session.IsServer)
                     return;
 
+                PlanetHelper.RefreshPlanets();
                 LoadLocalization();
                 MyAPIGateway.TerminalControls.CustomControlGetter += CustomControlGetter;
                 MyAPIGateway.Gui.GuiControlRemoved += OnGuiControlRemoved;
@@ -269,6 +273,7 @@ namespace Graph.System
 
                 Controls.Add(new SliderFontSize());
                 Controls.Add(new SliderPadding());
+                Controls.Add(new SliderFov());
                 
                 Controls.Add(new SwitchToggleColors());
                 Controls.Add(new ColorPickerAccent());

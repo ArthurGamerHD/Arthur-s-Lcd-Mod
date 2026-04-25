@@ -73,4 +73,7 @@
   <data name="LCDMod_Critical" xml:space="preserve">
     <value>Crítico: {0}</value>
   </data>
+  <data name="LCDMod_StarMapSurface" xml:space="preserve">
+    <value>Mapa estelar</value>
+  </data>
 </root>

@@ -72,4 +72,7 @@
   <data name="LCDMod_Thrust_GravityLoad" xml:space="preserve">
     <value>Càrrega gravitatòria</value>
   </data>
+  <data name="LCDMod_StarMapSurface" xml:space="preserve">
+    <value>Mapa estel·lar</value>
+  </data>
 </root>
