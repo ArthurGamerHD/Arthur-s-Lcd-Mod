@@ -35,7 +35,7 @@ namespace Graph.Apps.Power
         const int SCROLL_TICK = 12;
 
         const float ICON_TEXTURE_SIZE = 192f;
-        const float CENTER_ICON_SIZE_RATIO = 0.6f;
+        const float CENTER_ICON_SIZE_RATIO = 0.65f;
 
         readonly List<PowerCollector> _collectors = new List<PowerCollector>();
         readonly List<PowerEntry> _entries = new List<PowerEntry>();
@@ -298,7 +298,7 @@ namespace Graph.Apps.Power
                     Position = centerIconPosition,
                     Size = new Vector2(centerIconSize),
                     RotationOrScale = centerIconRotation,
-                    Color = iconColor.MulValue(.66f),
+                    Color = iconColor,
                     Alignment = TextAlignment.CENTER
                 });
             }

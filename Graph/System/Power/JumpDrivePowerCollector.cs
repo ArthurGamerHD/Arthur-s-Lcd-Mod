@@ -22,7 +22,7 @@ namespace Graph.System.Power
             21f,
             32f,
             10f,
-            "Textures\\FactionLogo\\Others\\OtherIcon_22.dds",
+            "JumpDriveCore",
             true);
         static readonly MyDefinitionId ElectricityId =
             new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");

@@ -26,6 +26,12 @@
             <Selectable>false</Selectable>
         </LCDTextureDefinition>
 
+        <LCDTextureDefinition> <!-- Custom Jump Drive Core Sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="JumpDriveCore"/>
+            <SpritePath>Textures/Sprites/JumpDriveCore.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
         <LCDTextureDefinition> <!-- Custom Battery Sprite -->
             <Id Type="LCDTextureDefinition" Subtype="Battery"/>
             <SpritePath>Textures/Sprites/Battery.dds</SpritePath>
