@@ -12,12 +12,16 @@ using Sandbox.ModAPI;
 using VRage;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
+using VRage.ModAPI;
 using VRageMath;
 
 namespace Graph.Apps
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public partial class StarMapSurfaceScript : SurfaceScriptBase, IUsesTerminalControl<SliderFov>
+    public partial class StarMapSurfaceScript : SurfaceScriptBase,
+        IUsesTerminalControl<SliderFov>,
+        IUsesTerminalControl<ComboboxDisplayMode>,
+        IMultiDisplayMode
     {
         float _fov;
         double _halfFovY;
@@ -44,6 +48,14 @@ namespace Graph.Apps
             public float MaxWindSpeed;
         }
 
+        struct StaticRingProjection
+        {
+            public Vector2 Center;
+            public Vector2 Size;
+            public bool IsMoonRing;
+            public float SortHeight;
+        }
+
         public const string ID = "LCDMod_StarMapSurface";
         public const string TITLE = "LCDMod_StarMapSurface";
         const float SHADE_MUL = 0.75f;
@@ -58,12 +70,39 @@ namespace Graph.Apps
         const float SIDE_INFO_TEXT_SCALE = 0.53f;
         const float SIDE_INFO_MARGIN_PX = 14f;
         const float SIDE_INFO_Y_OFFSET_PX = 6f;
+        const float STATIC_PLANET_SCALE = 4f;
+        const float STATIC_PLANET_BODY_RADIUS_PX = 10f;
+        const float STATIC_MOON_BODY_RADIUS_PX = 5f;
+        const float STATIC_ORBIT_OUTWARD_FROM_PLANET = 0.1f;
+        const float STATIC_ORBIT_LINE_WIDTH_PX = 6f;
+        const double STATIC_ORBIT_MIN_RING_METERS = 100000d;
+        const double STATIC_PARENT_ORBIT_MAX_METERS = 300000d;
+        const float STATIC_ORBIT_Y_SQUASH = 0.55f;
+        static readonly List<MyTerminalControlComboBoxItem> StarMapDisplayModes =
+            new List<MyTerminalControlComboBoxItem>
+            {
+                new MyTerminalControlComboBoxItem
+                {
+                    Key = (long)DisplayMode.Grid,
+                    Value = VRage.Utils.MyStringId.GetOrCompute("Dynamic")
+                },
+                new MyTerminalControlComboBoxItem
+                {
+                    Key = (long)DisplayMode.Legacy,
+                    Value = VRage.Utils.MyStringId.GetOrCompute("Static")
+                }
+            };
 
         protected override string DefaultTitle => TITLE;
 
         public StarMapSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
             : base(surface, block, size)
         {
+        }
+
+        public List<MyTerminalControlComboBoxItem> GetDisplayModes()
+        {
+            return StarMapDisplayModes;
         }
 
         protected override void LayoutChanged()
@@ -86,12 +125,18 @@ namespace Graph.Apps
             using (var frame = Surface.DrawFrame())
             {
                 var baseSprites = new List<MySprite>();
+                var ringSprites = new List<MySprite>();
+                var planetSprites = new List<MySprite>();
                 var overlaySprites = new List<MySprite>();
+                bool staticMode = Config != null && Config.DisplayMode == DisplayMode.Legacy;
                 AddBackground(baseSprites);
-                DrawPlanetMap(baseSprites, overlaySprites);
-                DrawFovHud(baseSprites, _fov);
+                DrawPlanetMap(planetSprites, ringSprites, overlaySprites);
+                if (!staticMode)
+                    DrawFovHud(overlaySprites, _fov);
                 DrawTitle(overlaySprites);
                 frame.AddRange(baseSprites);
+                frame.AddRange(ringSprites);
+                frame.AddRange(planetSprites);
                 frame.AddRange(overlaySprites);
             }
         }
@@ -131,17 +176,33 @@ namespace Graph.Apps
             });
         }
 
-        void DrawPlanetMap(List<MySprite> planetSprites, List<MySprite> overlaySprites)
+        void DrawPlanetMap(List<MySprite> planetSprites, List<MySprite> ringSprites, List<MySprite> overlaySprites)
         {
             var planets = PlanetHelper.PlanetsById;
-            if (planets == null || planets.Count == 0 || Block == null)
+            if (planets == null || planets.Count == 0)
                 return;
 
-            MatrixD world = Block.WorldMatrix;
-            Vector3D camPos = world.Translation;
-            Vector3D camRight = world.Right;
-            Vector3D camUp = world.Up;
-            Vector3D camForward = world.Forward;
+            Vector3D camPos;
+            Vector3D camRight;
+            Vector3D camUp;
+            Vector3D camForward;
+            bool staticMode = Config != null && Config.DisplayMode == DisplayMode.Legacy;
+            if (staticMode)
+            {
+                DrawStaticOrbitMap(ringSprites, planetSprites, planets);
+                return;
+            }
+            else
+            {
+                if (Block == null)
+                    return;
+
+                MatrixD world = Block.WorldMatrix;
+                camPos = world.Translation;
+                camRight = world.Right;
+                camUp = world.Up;
+                camForward = world.Forward;
+            }
             long gravityPlanetId = GetCurrentGravityPlanetId(camPos, planets);
             float gravityVisibility = GetGravityVisibility(camPos);
 
@@ -183,6 +244,8 @@ namespace Graph.Apps
 
                 double angularRadius = Math.Asin(Math.Min(1d, planetRadiusMeters / distance));
                 float markerRadius = (float)(angularRadius / _halfFovY * (ViewBox.Height * 0.5f));
+                if (staticMode)
+                    markerRadius *= STATIC_PLANET_SCALE;
                 float visibility = planet.EntityId == gravityPlanetId ? gravityVisibility : 1f;
                 if (visibility <= 0.001f)
                     continue;
@@ -222,7 +285,7 @@ namespace Graph.Apps
                     AngularRadius = angularRadius,
                     ScreenPos = screenPos,
                     MarkerRadius = markerRadius,
-                    ShouldDisplayInfo = touchesCenter,
+                    ShouldDisplayInfo = !staticMode && touchesCenter,
                     RadiusKm = (float)(planet.AverageRadius / 1000d),
                     SurfaceGravityG = (float)surfaceGravity,
                     HasAtmosphere = planet.HasAtmosphere,
@@ -260,6 +323,396 @@ namespace Graph.Apps
                 DrawPlanet(planetSprites, planet);
                 DrawPlanetLabels(overlaySprites, planet);
             }
+        }
+
+        void DrawStaticOrbitMap(List<MySprite> ringSprites, List<MySprite> planetSprites, Dictionary<long, MyPlanet> planets)
+        {
+            if (planets == null || planets.Count == 0)
+                return;
+
+            var validPlanets = new List<MyPlanet>(planets.Count);
+            var positions = new List<Vector3D>(planets.Count);
+            var radii = new List<double>(planets.Count);
+            var projectedPlanets = new List<PlanetProjection>(planets.Count);
+            var parentIndex = new List<int>(planets.Count);
+            var orbitDistances = new List<double>(planets.Count);
+            var orbitPlanarDistances = new List<double>(planets.Count);
+            var orbitAngles = new List<double>(planets.Count);
+            var screenPos = new List<Vector2>(planets.Count);
+            var ringProjections = new List<StaticRingProjection>(planets.Count);
+            double maxOrbitWithRadius = 1d;
+
+            foreach (var kv in planets)
+            {
+                var planet = kv.Value;
+                if (planet == null || planet.MarkedForClose)
+                    continue;
+
+                double radius = planet.AverageRadius;
+                if (radius <= 0d)
+                    continue;
+
+                Vector3D pos = planet.WorldMatrix.Translation;
+                validPlanets.Add(planet);
+                positions.Add(pos);
+                radii.Add(radius);
+                parentIndex.Add(-1);
+                double orbitMeters = pos.Length();
+                double orbitPlanarMeters = Math.Sqrt(pos.X * pos.X + pos.Z * pos.Z);
+                double orbitAngle = Math.Atan2(pos.Z, pos.X);
+                orbitDistances.Add(orbitMeters);
+                orbitPlanarDistances.Add(orbitPlanarMeters);
+                orbitAngles.Add(orbitAngle);
+                screenPos.Add(Vector2.Zero);
+                if (orbitMeters + radius > maxOrbitWithRadius)
+                    maxOrbitWithRadius = orbitMeters + radius;
+
+                string name;
+                if (!PlanetHelper.PlanetNamesById.TryGetValue(planet.EntityId, out name))
+                    name = planet.Name;
+                string generatorName;
+                PlanetHelper.PlanetGeneratorNamesById.TryGetValue(planet.EntityId, out generatorName);
+                var textureKey = string.IsNullOrWhiteSpace(generatorName) ? name : generatorName;
+                var generator = planet.Generator;
+                var atmosphere = generator != null ? generator.Atmosphere : null;
+                string averageTemperature = generator != null
+                    ? generator.DefaultSurfaceTemperature.ToString()
+                    : "Unknown";
+                double surfaceGravity = generator != null ? generator.SurfaceGravity : 0d;
+                double gravityFalloff = generator != null ? generator.GravityFalloffPower : 0d;
+                double gravityLimitRadius = 0d;
+                if (planet.MaximumRadius > 0d && surfaceGravity > 0d && gravityFalloff > 0d)
+                    gravityLimitRadius = planet.MaximumRadius * Math.Pow(surfaceGravity / 0.05d, 1d / gravityFalloff);
+
+                projectedPlanets.Add(new PlanetProjection
+                {
+                    Name = string.IsNullOrWhiteSpace(name) ? "Unknown Planet" : name,
+                    Texture = PlanetHelper.ResolvePlanetTexture(textureKey),
+                    Direction = Vector3D.Zero,
+                    Distance = orbitMeters,
+                    Visibility = 1f,
+                    AngularRadius = 0d,
+                    ScreenPos = Vector2.Zero,
+                    MarkerRadius = 0f,
+                    ShouldDisplayInfo = false,
+                    RadiusKm = (float)(radius / 1000d),
+                    SurfaceGravityG = (float)surfaceGravity,
+                    HasAtmosphere = planet.HasAtmosphere,
+                    GravityRangeKm = (float)(Math.Max(0d, gravityLimitRadius - planet.AverageRadius) / 1000d),
+                    AverageTemperature = averageTemperature,
+                    Breathable = atmosphere != null && atmosphere.Breathable,
+                    MaxWindSpeed = atmosphere != null ? atmosphere.MaxWindSpeed : 0f
+                });
+            }
+
+            if (projectedPlanets.Count == 0)
+                return;
+
+            // Smaller planets close to larger ones orbit those larger planets in static map.
+            for (int i = 0; i < projectedPlanets.Count; i++)
+            {
+                double childRadius = radii[i];
+                int bestParent = -1;
+                double bestDist = double.MaxValue;
+                for (int j = 0; j < projectedPlanets.Count; j++)
+                {
+                    if (i == j)
+                        continue;
+                    if (radii[j] <= childRadius)
+                        continue;
+
+                    double d = Vector3D.Distance(positions[i], positions[j]);
+                    if (d <= STATIC_PARENT_ORBIT_MAX_METERS && d < bestDist)
+                    {
+                        bestDist = d;
+                        bestParent = j;
+                    }
+                }
+
+                parentIndex[i] = bestParent;
+                if (bestParent >= 0)
+                {
+                    Vector3D rel = positions[i] - positions[bestParent];
+                    orbitDistances[i] = rel.Length();
+                    orbitPlanarDistances[i] = Math.Sqrt(rel.X * rel.X + rel.Z * rel.Z);
+                    orbitAngles[i] = Math.Atan2(rel.Z, rel.X);
+                }
+            }
+
+            float maxOrbitPxByWidth = ViewBox.Width * 0.45f;
+            float maxOrbitPxByHeight = (ViewBox.Height * 0.45f) / Math.Max(0.1f, STATIC_ORBIT_Y_SQUASH);
+            float maxOrbitPx = Math.Min(maxOrbitPxByWidth, maxOrbitPxByHeight);
+            if (maxOrbitPx <= 1f)
+                return;
+
+            double worldToPx = maxOrbitPx / maxOrbitWithRadius;
+            var ringColor = ApplyAlpha(ForegroundColor, 0.15f);
+            var center = ViewBox.Center;
+            var computeOrder = new List<int>(projectedPlanets.Count);
+            for (int i = 0; i < projectedPlanets.Count; i++)
+                computeOrder.Add(i);
+            computeOrder.Sort((a, b) => radii[b].CompareTo(radii[a])); // parents (larger) first
+
+            for (int order = 0; order < computeOrder.Count; order++)
+            {
+                int i = computeOrder[order];
+                double orbitMeters = orbitDistances[i];
+                double orbitPlanarMeters = orbitPlanarDistances[i];
+                float orbitRadiusX = (float)(orbitMeters * worldToPx);
+                float orbitRadiusY = (float)(orbitPlanarMeters * worldToPx * STATIC_ORBIT_Y_SQUASH);
+                if (parentIndex[i] >= 0)
+                {
+                    orbitRadiusX *= STATIC_PLANET_SCALE;
+                    orbitRadiusY *= STATIC_PLANET_SCALE;
+                }
+                var proj = projectedPlanets[i];
+                bool isMoon = parentIndex[i] >= 0;
+                float markerRadius = (isMoon ? STATIC_MOON_BODY_RADIUS_PX : STATIC_PLANET_BODY_RADIUS_PX) * Scale;
+                float orbitLinePad = markerRadius * STATIC_ORBIT_OUTWARD_FROM_PLANET;
+                float ringRadiusX = orbitRadiusX + orbitLinePad;
+                float ringRadiusY = orbitRadiusY + orbitLinePad;
+                Vector2 ringCenter = parentIndex[i] >= 0 ? screenPos[parentIndex[i]] : center;
+
+                if (orbitMeters >= STATIC_ORBIT_MIN_RING_METERS && ringRadiusX >= 2f)
+                {
+                    ringProjections.Add(new StaticRingProjection
+                    {
+                        Center = ringCenter,
+                        Size = new Vector2(ringRadiusX * 2f, ringRadiusY * 2f),
+                        IsMoonRing = isMoon,
+                        SortHeight = ringRadiusY
+                    });
+                }
+                double angle = orbitAngles[i];
+                var pScreen = new Vector2(
+                    ringCenter.X + (float)Math.Cos(angle) * orbitRadiusX,
+                    ringCenter.Y + (float)Math.Sin(angle) * orbitRadiusY);
+                proj.ScreenPos = pScreen;
+                screenPos[i] = pScreen;
+                proj.MarkerRadius = markerRadius;
+                projectedPlanets[i] = proj;
+            }
+
+            ringProjections.Sort((a, b) =>
+            {
+                if (a.IsMoonRing != b.IsMoonRing)
+                    return a.IsMoonRing ? 1 : -1; // main rings first, moon rings after
+
+                return b.SortHeight.CompareTo(a.SortHeight); // taller rings first inside each group
+            });
+            float ringLineWidth = Math.Max(1f, STATIC_ORBIT_LINE_WIDTH_PX * Scale);
+            for (int i = 0; i < ringProjections.Count; i++)
+                DrawEllipseRing(ringSprites, ringProjections[i].Center, ringProjections[i].Size, ringLineWidth,
+                    ringColor, BackgroundColor);
+
+            projectedPlanets.Sort((a, b) => a.MarkerRadius.CompareTo(b.MarkerRadius));
+            for (int i = 0; i < projectedPlanets.Count; i++)
+                DrawPlanet(planetSprites, projectedPlanets[i]);
+        }
+
+        void DrawEllipseRing(List<MySprite> sprites, Vector2 centerPos, Vector2 ellipseSize, float lineWidth, Color lineColor, Color backColor)
+        {
+            if (ellipseSize.X <= 0f || ellipseSize.Y <= 0f || lineWidth <= 0f)
+                return;
+
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE,
+                Data = "Circle",
+                Position = centerPos,
+                Size = ellipseSize,
+                Color = lineColor,
+                Alignment = TextAlignment.CENTER
+            });
+
+            Vector2 innerSize = ellipseSize - lineWidth * Vector2.One;
+            if (innerSize.X <= 0f || innerSize.Y <= 0f)
+                return;
+
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE,
+                Data = "Circle",
+                Position = centerPos,
+                Size = innerSize,
+                Color = backColor,
+                Alignment = TextAlignment.CENTER
+            });
+        }
+
+        bool TryGetStaticCamera(Dictionary<long, MyPlanet> planets, out Vector3D camPos, out Vector3D camRight, out Vector3D camUp, out Vector3D camForward)
+        {
+            camRight = Vector3D.Right;
+            camUp = Vector3D.Up;
+            camForward = Vector3D.Backward;
+            camPos = Vector3D.Zero;
+
+            if (planets == null || planets.Count == 0)
+                return false;
+
+            var centers = new List<Vector3D>(planets.Count);
+            var radii = new List<double>(planets.Count);
+            Vector3D center = Vector3D.Zero;
+            foreach (var kv in planets)
+            {
+                var p = kv.Value;
+                if (p == null || p.MarkedForClose || p.AverageRadius <= 0d)
+                    continue;
+
+                var c = p.WorldMatrix.Translation;
+                centers.Add(c);
+                radii.Add(p.AverageRadius);
+                center += c;
+            }
+
+            if (centers.Count == 0)
+                return false;
+
+            center /= centers.Count;
+
+            // Build covariance matrix around centroid.
+            double xx = 0d;
+            double xy = 0d;
+            double xz = 0d;
+            double yy = 0d;
+            double yz = 0d;
+            double zz = 0d;
+            for (int i = 0; i < centers.Count; i++)
+            {
+                var d = centers[i] - center;
+                xx += d.X * d.X;
+                xy += d.X * d.Y;
+                xz += d.X * d.Z;
+                yy += d.Y * d.Y;
+                yz += d.Y * d.Z;
+                zz += d.Z * d.Z;
+            }
+
+            // Symmetric covariance matrix:
+            // [xx xy xz]
+            // [xy yy yz]
+            // [xz yz zz]
+            // Find major axes by power iteration + deflation, then normal = cross(major1, major2).
+            Vector3D major1 = Vector3D.Normalize(new Vector3D(1d, 0d, 0d));
+            for (int it = 0; it < 12; it++)
+            {
+                Vector3D next = new Vector3D(
+                    xx * major1.X + xy * major1.Y + xz * major1.Z,
+                    xy * major1.X + yy * major1.Y + yz * major1.Z,
+                    xz * major1.X + yz * major1.Y + zz * major1.Z);
+                if (next.LengthSquared() <= 1e-10)
+                    break;
+                major1 = Vector3D.Normalize(next);
+            }
+
+            double lambda1 =
+                major1.X * (xx * major1.X + xy * major1.Y + xz * major1.Z) +
+                major1.Y * (xy * major1.X + yy * major1.Y + yz * major1.Z) +
+                major1.Z * (xz * major1.X + yz * major1.Y + zz * major1.Z);
+
+            double bxx = xx - lambda1 * major1.X * major1.X;
+            double bxy = xy - lambda1 * major1.X * major1.Y;
+            double bxz = xz - lambda1 * major1.X * major1.Z;
+            double byy = yy - lambda1 * major1.Y * major1.Y;
+            double byz = yz - lambda1 * major1.Y * major1.Z;
+            double bzz = zz - lambda1 * major1.Z * major1.Z;
+
+            Vector3D major2 = Vector3D.Normalize(new Vector3D(0d, 1d, 0d));
+            if (Math.Abs(Vector3D.Dot(major2, major1)) > 0.9)
+                major2 = Vector3D.Normalize(new Vector3D(0d, 0d, 1d));
+
+            for (int it = 0; it < 12; it++)
+            {
+                Vector3D next = new Vector3D(
+                    bxx * major2.X + bxy * major2.Y + bxz * major2.Z,
+                    bxy * major2.X + byy * major2.Y + byz * major2.Z,
+                    bxz * major2.X + byz * major2.Y + bzz * major2.Z);
+
+                // Keep orthogonal to first axis.
+                next -= major1 * Vector3D.Dot(next, major1);
+                if (next.LengthSquared() <= 1e-10)
+                    break;
+                major2 = Vector3D.Normalize(next);
+            }
+
+            Vector3D normal = Vector3D.Cross(major1, major2);
+            if (normal.LengthSquared() <= 1e-8)
+                normal = Vector3D.Up;
+            else
+                normal = Vector3D.Normalize(normal);
+
+            double aspect = ViewBox.Width / Math.Max(1f, ViewBox.Height);
+            double halfFovYAt1x = MathHelper.ToRadians(MAP_VERTICAL_FOV_DEFAULT_DEG) * 0.5;
+            double halfFovXAt1x = Math.Atan(Math.Tan(halfFovYAt1x) * aspect);
+            double tanX = Math.Tan(halfFovXAt1x);
+            double tanY = Math.Tan(halfFovYAt1x);
+            if (tanX <= 1e-6 || tanY <= 1e-6)
+                return false;
+
+            // Evaluate both normal directions (up/down) and pick the tighter fit.
+            double distPlus;
+            double distMinus;
+            if (!TryComputeStaticDistance(center, centers, radii, normal, tanX, tanY, out distPlus))
+                return false;
+            if (!TryComputeStaticDistance(center, centers, radii, -normal, tanX, tanY, out distMinus))
+                return false;
+
+            Vector3D viewDir = distPlus <= distMinus ? normal : -normal;
+            double cameraDistance = Math.Min(distPlus, distMinus);
+            if (cameraDistance < 1d)
+                cameraDistance = 1d;
+
+            camPos = center - viewDir * cameraDistance;
+            camForward = Vector3D.Normalize(center - camPos);
+
+            Vector3D worldUp = Vector3D.Up;
+            camRight = Vector3D.Cross(worldUp, camForward);
+            if (camRight.LengthSquared() < 1e-8)
+                camRight = Vector3D.Cross(Vector3D.Right, camForward);
+            if (camRight.LengthSquared() < 1e-8)
+                camRight = Vector3D.Right;
+            else
+                camRight = Vector3D.Normalize(camRight);
+            camUp = Vector3D.Normalize(Vector3D.Cross(camForward, camRight));
+            return true;
+        }
+
+        bool TryComputeStaticDistance(Vector3D center, List<Vector3D> centers, List<double> radii, Vector3D viewDir, double tanX, double tanY, out double distance)
+        {
+            distance = 0d;
+            if (centers == null || centers.Count == 0)
+                return false;
+
+            // Build camera basis for this direction.
+            Vector3D worldUp = Vector3D.Up;
+            Vector3D right = Vector3D.Cross(worldUp, viewDir);
+            if (right.LengthSquared() < 1e-8)
+                right = Vector3D.Cross(Vector3D.Right, viewDir);
+            if (right.LengthSquared() < 1e-8)
+                return false;
+            right = Vector3D.Normalize(right);
+            Vector3D up = Vector3D.Normalize(Vector3D.Cross(viewDir, right));
+
+            double required = 0d;
+            for (int i = 0; i < centers.Count; i++)
+            {
+                Vector3D rel = centers[i] - center;
+                double r = radii[i];
+
+                double localX = Math.Abs(Vector3D.Dot(rel, right));
+                double localY = Math.Abs(Vector3D.Dot(rel, up));
+                double localZ = Vector3D.Dot(rel, viewDir);
+
+                double needX = (localX + r) / tanX - localZ;
+                double needY = (localY + r) / tanY - localZ;
+                double needNear = MAP_NEAR_CLIP_METERS + r - localZ;
+                double need = Math.Max(needNear, Math.Max(needX, needY));
+                if (need > required)
+                    required = need;
+            }
+
+            distance = required * 1.2d;
+            return true;
         }
 
         float GetGravityVisibility(Vector3D camPos)
