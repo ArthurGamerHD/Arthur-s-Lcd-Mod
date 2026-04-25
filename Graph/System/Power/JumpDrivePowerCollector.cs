@@ -15,7 +15,15 @@ namespace Graph.System.Power
     {
         const float FullThreshold = 0.999f;
         const float Eps = 0.001f;
-        static readonly FillableTexture Texture = new FillableTexture("JumpDrive", 1f, 21f, 21f, 32f, 10f);
+        static readonly FillableTexture Texture = new FillableTexture(
+            "JumpDrive",
+            1f,
+            21f,
+            21f,
+            32f,
+            10f,
+            "Textures\\FactionLogo\\Others\\OtherIcon_22.dds",
+            true);
         static readonly MyDefinitionId ElectricityId =
             new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
 
@@ -61,6 +69,7 @@ namespace Graph.System.Power
             var jumpDrives = grid.GetJumpDrives();
             int fullCount = 0;
             int notFullCount = 0;
+            BeginCenterIconSpinFrame();
 
             for (int i = 0; i < jumpDrives.Count; i++)
             {
@@ -76,7 +85,10 @@ namespace Graph.System.Power
             }
 
             if (_visible.Count == 0)
+            {
+                EndCenterIconSpinFrame();
                 return;
+            }
 
             float sumRatio = 0f;
             bool showFirstReady = fullCount == 0;
@@ -87,17 +99,13 @@ namespace Graph.System.Power
             {
                 var jumpDrive = _visible[i];
                 float ratio = GetRatio(jumpDrive);
+                bool isFull = ratio >= FullThreshold;
                 sumRatio += ratio;
-                entries.Add(new PowerEntry(
-                    Texture,
-                    ratio,
-                    FormatingHelper.PercentageToString(ratio),
-                    FormatStoredPowerText(jumpDrive.CurrentStoredPower),
-                    GetJumpDriveIconColor(ratio)));
-
+                bool isChargingThisDrive = false;
                 float hours;
                 if (ratio < FullThreshold && TryGetTimeToFull(jumpDrive, out hours))
                 {
+                    isChargingThisDrive = true;
                     hasChargingTime = true;
                     if (showFirstReady)
                     {
@@ -108,7 +116,23 @@ namespace Graph.System.Power
                         timeToFullHours = hours;
                     }
                 }
+
+                float centerRotation = GetCenterIconRotation(
+                    jumpDrive.EntityId,
+                    isChargingThisDrive || isFull,
+                    ratio,
+                    isFull ? 0.25f : -1f);
+
+                entries.Add(new PowerEntry(
+                    jumpDrive.EntityId,
+                    Texture,
+                    ratio,
+                    FormatingHelper.PercentageToString(ratio),
+                    GetJumpDriveIconColor(ratio),
+                    true,
+                    centerRotation));
             }
+            EndCenterIconSpinFrame();
 
             _averageCharge = sumRatio / _visible.Count;
 

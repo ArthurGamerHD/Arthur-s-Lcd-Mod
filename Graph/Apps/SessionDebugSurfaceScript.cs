@@ -11,6 +11,7 @@ using Sandbox.ModAPI.Interfaces;
 using SpaceEngineers.Game.EntityComponents.Blocks;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
+using VRage.Game.ObjectBuilders.ComponentSystem;
 using VRage.Utils;
 using VRageMath;
 

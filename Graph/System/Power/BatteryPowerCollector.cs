@@ -11,7 +11,7 @@ namespace Graph.System.Power
     internal sealed class BatteryPowerCollector : PowerCollector
     {
         const float FullThreshold = 0.995f;
-        static readonly FillableTexture Texture = new FillableTexture("Battery", 1f, 55f, 55f, 32f, 10f);
+        static readonly FillableTexture Texture = new FillableTexture("Battery", 1f, 55f, 55f, 32f, 10f, "IconEnergy");
 
         readonly List<IMyBatteryBlock> _visible = new List<IMyBatteryBlock>();
 
@@ -75,6 +75,7 @@ namespace Graph.System.Power
             }
 
             const float eps = 0.001f;
+            bool isActivelyCharging = totalIn > totalOut + eps;
             if (_visible.Count > 0 && fullCount == _visible.Count)
             {
                 _statusKind = PowerStatusKind.Full;
@@ -114,11 +115,13 @@ namespace Graph.System.Power
                 totalMax += battery.MaxStoredPower;
 
                 entries.Add(new PowerEntry(
+                    battery.EntityId,
                     Texture,
                     ratio,
                     FormatingHelper.PercentageToString(ratio),
-                    FormatStoredPowerText(battery.CurrentStoredPower),
-                    GetBatteryIconColor(ratio)));
+                    GetBatteryIconColor(ratio),
+                    isActivelyCharging,
+                    0f));
             }
 
             _averageCharge = sumRatio / _visible.Count;
