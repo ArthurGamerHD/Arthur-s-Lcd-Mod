@@ -38,18 +38,21 @@ namespace Graph.Apps.Radar
         // detector's emitter face. Replaces the earlier cone, which spread too wide
         // at long range and missed on-axis veins. Total cross-section is
         // 2*BOX_HALF_EXTENT_M on each side (so 70m × 70m by default), depth is BOX_LENGTH_M.
-        private const float BOX_HALF_EXTENT_M = 35f;
+        private const float BOX_HALF_EXTENT_M = 55f;
         private const float BOX_LENGTH_M = 2000f;
-        private const float BOX_AXIS_STEP_M = 25f; // along-axis spacing between sample slices
+        private const float BOX_AXIS_STEP_M = 30f; // along-axis spacing between sample slices
         private const float BOX_INNER_RING_M = 15f; // lateral radius of the inner ring of cross-section samples
-        private const float BOX_OUTER_RING_M = 32f; // lateral radius of the outer ring (kept slightly inside the half-extent)
+
+        private const float
+            BOX_OUTER_RING_M = 32f; // lateral radius of the outer ring (kept slightly inside the half-extent)
+
         // Each SamplePoint reads a (2*NEIGHBOURHOOD_RADIUS+1)³ voxel neighborhood in
         // one ReadRange call, so a single API read covers a (2*R+1)m cube instead of 1 m.
-        private const int NEIGHBOURHOOD_RADIUS = 2; // 5×5×5 = 125 voxels per read
+        private const int NEIGHBOURHOOD_RADIUS = 4; // 9×9×9 = 729 voxels per read (≈9 m sample window)
         private const float STATIONARY_HOLD_SEC = 10f;
         private const double VEL_LIN_THRESH_SQ = 0.04; // (~0.2 m/s)^2
         private const double VEL_ANG_THRESH_SQ = 0.0004; // (~0.02 rad/s)^2
-        private const int MAX_VOXEL_READS_PER_TICK = 16; // throttle voxel reads inside Run()
+        private const int MAX_VOXEL_READS_PER_TICK = 32; // throttle voxel reads inside Run()
         private const float SIGNAL_FULL_AT_HITS = 6f; // weighted hit count that maps to signal=1.0
 
         private const int MAX_HITS_EARLY_EXIT = 12; // stop scanning once we are clearly above the cap
@@ -356,15 +359,16 @@ namespace Graph.Apps.Radar
             _scanOriginWorld = matrix.Translation;
 
             // Build the box axis from the slider value [-100, +100].
-            //   slider 0   → axis aims at the detector's Forward axis (the emitter face).
+            //   slider 0   → axis aims at the detector's local Up axis (the dish/emitter
+            //                face on a vanilla SE ore detector points along its Up).
             //   slider >0  → axis tilts toward an absolute SKY direction
             //   slider <0  → axis tilts toward an absolute GROUND direction
             // Where SKY/GROUND come from (in priority order):
             //   1. The selected cockpit / control seat (its Up = sky, -Up = ground)
             //   2. Planet gravity at the detector position (anti-gravity = sky)
-            //   3. None (positive/negative still tilts toward detector.Up
+            //   3. None (positive/negative still tilts toward detector.Forward
             //      so the slider remains useful in deep space without a cockpit).
-            var defaultAxis = matrix.Forward;
+            var defaultAxis = matrix.Up;
             var bias = MathHelper.Clamp(Config != null ? Config.OreScannerConeBias : 0f, -100f, 100f);
 
             if (Math.Abs(bias) < 0.5f)
@@ -380,8 +384,8 @@ namespace Graph.Apps.Radar
                     // Absolute reference: positive bias points to sky, negative to ground.
                     anchor = bias > 0f ? sky : -sky;
                 else
-                    // No reference frame: tilt around the detector's local Up axis.
-                    anchor = bias > 0f ? matrix.Up : -matrix.Up;
+                    // No reference frame: tilt around the detector's local Forward axis.
+                    anchor = bias > 0f ? matrix.Forward : -matrix.Forward;
                 var t = Math.Abs(bias) / 100f;
                 _scanAxisWorld = Vector3D.Normalize(Vector3D.Lerp(defaultAxis, anchor, t));
             }
@@ -389,7 +393,7 @@ namespace Graph.Apps.Radar
             // Build orthonormal lateral basis for the box cross-section
             var right = matrix.Right;
             if (Math.Abs(Vector3D.Dot(right, _scanAxisWorld)) > 0.95)
-                right = matrix.Up;
+                right = matrix.Forward;
             _scanRightWorld = Vector3D.Normalize(Vector3D.Cross(_scanAxisWorld, right));
             _scanUpWorld = Vector3D.Normalize(Vector3D.Cross(_scanRightWorld, _scanAxisWorld));
 
@@ -406,7 +410,7 @@ namespace Graph.Apps.Radar
             {
                 var centre = _scanOriginWorld + _scanAxisWorld * (_scanRangeM * 0.5);
                 var halfDiag = Math.Sqrt(BOX_HALF_EXTENT_M * BOX_HALF_EXTENT_M * 2.0
-                                          + (_scanRangeM * 0.5) * (_scanRangeM * 0.5));
+                                         + _scanRangeM * 0.5 * (_scanRangeM * 0.5));
                 _scanFilterSphere = new BoundingSphereD(centre, halfDiag + 64.0);
                 if (MyAPIGateway.Session != null && MyAPIGateway.Session.VoxelMaps != null)
                     MyAPIGateway.Session.VoxelMaps.GetInstances(_voxelMaps, _voxelFilter);
@@ -473,7 +477,7 @@ namespace Graph.Apps.Radar
         }
 
         /// <summary>
-        ///     Reads a (2*NEIGHBOURHOOD_RADIUS+1)³ voxel cube around <paramref name="worldPos"/> in a single
+        ///     Reads a (2*NEIGHBOURHOOD_RADIUS+1)³ voxel cube around <paramref name="worldPos" /> in a single
         ///     ReadRange call. With 1m voxels this is a (2R+1) m sample window per step, large enough that an
         ///     ore vein crossing the box is reliably caught even when BOX_AXIS_STEP_M leaves a gap larger
         ///     than the vein's diameter.
@@ -501,7 +505,7 @@ namespace Graph.Apps.Radar
                 if (min.X > max.X || min.Y > max.Y || min.Z > max.Z) continue;
 
                 var bufferSize = max - min + Vector3I.One;
-                int totalVoxels = bufferSize.X * bufferSize.Y * bufferSize.Z;
+                var totalVoxels = bufferSize.X * bufferSize.Y * bufferSize.Z;
 
                 try
                 {
@@ -516,10 +520,8 @@ namespace Graph.Apps.Radar
 
                 var hitsInBlock = 0;
                 for (var i = 0; i < totalVoxels; i++)
-                {
                     if (IsValidOre(_voxelBuffer.Material(i)))
                         hitsInBlock++;
-                }
 
                 if (hitsInBlock > 0)
                 {
