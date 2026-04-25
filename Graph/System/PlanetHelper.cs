@@ -40,7 +40,7 @@ namespace Graph.System
                 {
                     "Alien",
                     new PlanetTextureStyle
-                        { BaseColor = new Color(140, 255, 60), PolarCapColor = null, EquatorColor = Color.Wheat }
+                        { BaseColor = new Color(140, 255, 60), PolarCapColor = Color.Cyan, EquatorColor = Color.Wheat }
                 },
                 {
                     "Europa",
@@ -63,11 +63,6 @@ namespace Graph.System
                         { BaseColor = new Color(214, 182, 120), PolarCapColor = null, EquatorColor = null }
                 },
                 {
-                    "Earth Like",
-                    new PlanetTextureStyle
-                        { BaseColor = new Color(86, 168, 92), PolarCapColor = Color.White, EquatorColor = Color.Wheat }
-                },
-                {
                     "EarthLike",
                     new PlanetTextureStyle
                         { BaseColor = new Color(86, 168, 92), PolarCapColor = Color.White, EquatorColor = Color.Wheat }
@@ -81,6 +76,7 @@ namespace Graph.System
 
         public static readonly Dictionary<long, MyPlanet> PlanetsById = new Dictionary<long, MyPlanet>();
         public static readonly Dictionary<long, string> PlanetNamesById = new Dictionary<long, string>();
+        public static readonly Dictionary<long, string> PlanetGeneratorNamesById = new Dictionary<long, string>();
 
         static readonly HashSet<IMyEntity> PlanetEntities = new HashSet<IMyEntity>();
 
@@ -94,6 +90,7 @@ namespace Graph.System
         {
             PlanetsById.Clear();
             PlanetNamesById.Clear();
+            PlanetGeneratorNamesById.Clear();
             PlanetEntities.Clear();
 
             if (MyAPIGateway.Entities == null)
@@ -108,6 +105,7 @@ namespace Graph.System
 
                 PlanetsById[planet.EntityId] = planet;
                 PlanetNamesById[planet.EntityId] = planet.Name ?? string.Empty;
+                PlanetGeneratorNamesById[planet.EntityId] = GetPlanetGeneratorName(planet);
             }
         }
 
@@ -115,7 +113,21 @@ namespace Graph.System
         {
             PlanetsById.Clear();
             PlanetNamesById.Clear();
+            PlanetGeneratorNamesById.Clear();
             PlanetEntities.Clear();
+        }
+
+        public static string GetPlanetGeneratorName(MyPlanet planet)
+        {
+            if (planet == null)
+                return string.Empty;
+
+            var generator = planet.Generator;
+            if (generator == null)
+                return string.Empty;
+
+            var subtype = generator.Id.SubtypeName;
+            return string.IsNullOrWhiteSpace(subtype) ? string.Empty : subtype;
         }
 
         public static PlanetTextureStyle ResolvePlanetTexture(string planetName)
@@ -193,5 +205,6 @@ namespace Graph.System
                 (byte)MathHelper.Clamp((int)(g * 255f), 0, 255),
                 (byte)MathHelper.Clamp((int)(b * 255f), 0, 255));
         }
+
     }
 }

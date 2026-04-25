@@ -35,6 +35,13 @@ namespace Graph.Apps
             public Vector2 ScreenPos;
             public float MarkerRadius;
             public bool ShouldDisplayInfo;
+            public float RadiusKm;
+            public float SurfaceGravityG;
+            public bool HasAtmosphere;
+            public float GravityRangeKm;
+            public string AverageTemperature;
+            public bool Breathable;
+            public float MaxWindSpeed;
         }
 
         public const string ID = "LCDMod_StarMapSurface";
@@ -48,6 +55,9 @@ namespace Graph.Apps
         const float MAP_NEAR_CLIP_METERS = 10f;
         const float PLANET_SHADING_MIN_DIAMETER_PX = 10f;
         const float GRAVITY_FADE_MAX_MULTIPLIER = 0.1f;
+        const float SIDE_INFO_TEXT_SCALE = 0.53f;
+        const float SIDE_INFO_MARGIN_PX = 14f;
+        const float SIDE_INFO_Y_OFFSET_PX = 6f;
 
         protected override string DefaultTitle => TITLE;
 
@@ -97,7 +107,10 @@ namespace Graph.Apps
         void DrawFovHud(List<MySprite> sprites, float fovDeg)
         {
             const float textScale = 0.55f;
-            string text = "FOV: " + fovDeg.ToString("0.#", FormatingHelper.Culture) + "º";
+            double baseHalfFov = MathHelper.ToRadians(MAP_VERTICAL_FOV_DEFAULT_DEG) * 0.5;
+            double currentHalfFov = MathHelper.ToRadians(Math.Max(0.1f, fovDeg)) * 0.5;
+            double magnification = Math.Tan(baseHalfFov) / Math.Tan(currentHalfFov);
+            string text = "MAG: " + magnification.ToString("0.##", FormatingHelper.Culture) + "x";
             var textSize = GetSizeInPixel(text, "White", textScale, Surface);
             const float margin = 8f;
             var pos = new Vector2(
@@ -186,17 +199,37 @@ namespace Graph.Apps
                 string name;
                 if (!PlanetHelper.PlanetNamesById.TryGetValue(planet.EntityId, out name))
                     name = planet.Name;
+                string generatorName;
+                PlanetHelper.PlanetGeneratorNamesById.TryGetValue(planet.EntityId, out generatorName);
+                var textureKey = string.IsNullOrWhiteSpace(generatorName) ? name : generatorName;
+                var generator = planet.Generator;
+                var atmosphere = generator != null ? generator.Atmosphere : null;
+                string averageTemperature = generator != null
+                    ? generator.DefaultSurfaceTemperature.ToString()
+                    : "Unknown";
+                double surfaceGravity = generator != null ? generator.SurfaceGravity : 0d;
+                double gravityFalloff = generator != null ? generator.GravityFalloffPower : 0d;
+                double gravityLimitRadius = 0d;
+                if (planet.MaximumRadius > 0d && surfaceGravity > 0d && gravityFalloff > 0d)
+                    gravityLimitRadius = planet.MaximumRadius * Math.Pow(surfaceGravity / 0.05d, 1d / gravityFalloff);
                 projectedPlanets.Add(new PlanetProjection
                 {
                     Name = string.IsNullOrWhiteSpace(name) ? "Unknown Planet" : name,
-                    Texture = PlanetHelper.ResolvePlanetTexture(name),
+                    Texture = PlanetHelper.ResolvePlanetTexture(textureKey),
                     Direction = delta / distance,
                     Distance = distance,
                     Visibility = visibility,
                     AngularRadius = angularRadius,
                     ScreenPos = screenPos,
                     MarkerRadius = markerRadius,
-                    ShouldDisplayInfo = touchesCenter
+                    ShouldDisplayInfo = touchesCenter,
+                    RadiusKm = (float)(planet.AverageRadius / 1000d),
+                    SurfaceGravityG = (float)surfaceGravity,
+                    HasAtmosphere = planet.HasAtmosphere,
+                    GravityRangeKm = (float)(Math.Max(0d, gravityLimitRadius - planet.AverageRadius) / 1000d),
+                    AverageTemperature = averageTemperature,
+                    Breathable = atmosphere != null && atmosphere.Breathable,
+                    MaxWindSpeed = atmosphere != null ? atmosphere.MaxWindSpeed : 0f
                 });
             }
 
@@ -278,7 +311,7 @@ namespace Graph.Apps
             float configuredFov = Config != null ? Config.FoV : MAP_VERTICAL_FOV_DEFAULT_DEG;
             return MathHelper.Clamp(
                 configuredFov > 0f ? configuredFov : MAP_VERTICAL_FOV_DEFAULT_DEG,
-                1f, 120f);
+                0.1f, 120f);
         }
 
         static Color ApplyAlpha(Color color, float alpha)
@@ -291,7 +324,7 @@ namespace Graph.Apps
             if (planet.Visibility <= 0.001f)
                 return;
 
-            const float nameScale = 0.65f;
+            float nameScale = 0.65f * Scale * FontScale;
             var nameSize = GetSizeInPixel(planet.Name, "White", nameScale, Surface);
             float nameOffset = planet.MarkerRadius + 12f + nameSize.Y;
             
@@ -322,7 +355,7 @@ namespace Graph.Apps
 
 
 
-            const float distanceScale = 0.6f;
+            float distanceScale = 0.6f * Scale * FontScale;
             float distanceOffset = planet.MarkerRadius + 10f;
             string distanceText = FormatingHelper.DistanceToString((float)planet.Distance);
             var distanceSize = GetSizeInPixel(distanceText, "White", distanceScale, Surface);
@@ -346,6 +379,194 @@ namespace Graph.Apps
                 Alignment = TextAlignment.CENTER,
                 RotationOrScale = distanceScale
             });
+
+            DrawPlanetSideInfo(sprites, planet, labelColor, namePos, nameSize, distancePos, distanceSize);
+        }
+
+        void DrawPlanetSideInfo(List<MySprite> sprites, PlanetProjection planet, Color labelColor, Vector2 namePos, Vector2 nameSize, Vector2 distancePos, Vector2 distanceSize)
+        {
+            float sideInfoScale = SIDE_INFO_TEXT_SCALE * Scale * FontScale;
+            float sideInfoYOffset = SIDE_INFO_Y_OFFSET_PX * Scale * FontScale;
+            var lines = new List<string>(7)
+            {
+                "G Range: " + planet.GravityRangeKm.ToString("0.#", FormatingHelper.Culture) + " km",
+                "Radius: " + planet.RadiusKm.ToString("0.#", FormatingHelper.Culture) + " km",
+                "Atmo: " + (planet.HasAtmosphere ? "Yes" : "No"),
+                "G: " + planet.SurfaceGravityG.ToString("0.##", FormatingHelper.Culture) + " g",
+                "O2: " + (planet.Breathable ? "Yes" : "No"),
+                "Temp: " + planet.AverageTemperature,
+                "Wind: " + planet.MaxWindSpeed.ToString("0.##", FormatingHelper.Culture) + " m/s"
+            };
+
+            int count = lines.Count;
+            var lineSizes = new Vector2[count];
+            float maxLineWidth = 0f;
+            float maxLineHeight = 0f;
+            for (int i = 0; i < count; i++)
+            {
+                lineSizes[i] = GetSizeInPixel(lines[i], "White", sideInfoScale, Surface);
+                if (lineSizes[i].X > maxLineWidth)
+                    maxLineWidth = lineSizes[i].X;
+                if (lineSizes[i].Y > maxLineHeight)
+                    maxLineHeight = lineSizes[i].Y;
+            }
+
+            bool placeOnRight = planet.ScreenPos.X <= ViewBox.Center.X;
+            float lineStep = GetSizeInPixel("Ag", "White", sideInfoScale, Surface).Y + 2f;
+            float requiredHeight = (count - 1) * lineStep + maxLineHeight;
+            float availableHeight = planet.MarkerRadius * 2f;
+            float availableWidth = planet.MarkerRadius * 2f;
+            bool useFallback = availableHeight < requiredHeight || availableWidth < maxLineWidth;
+            float nameLeft = namePos.X - nameSize.X * 0.5f;
+            float nameRight = namePos.X + nameSize.X * 0.5f;
+            float nameTop = namePos.Y - nameSize.Y * 0.5f;
+            float nameBottom = namePos.Y + nameSize.Y * 0.5f;
+            float distLeft = distancePos.X - distanceSize.X * 0.5f;
+            float distRight = distancePos.X + distanceSize.X * 0.5f;
+            float distTop = distancePos.Y - distanceSize.Y * 0.5f;
+            float distBottom = distancePos.Y + distanceSize.Y * 0.5f;
+
+            Func<float, float, float, float, bool> overlapsDetails = (left, right, top, lineHeight) =>
+            {
+                float bottom = top + lineHeight;
+                bool overlapsName = right >= nameLeft && left <= nameRight && bottom >= nameTop && top <= nameBottom;
+                bool overlapsDistance = right >= distLeft && left <= distRight && bottom >= distTop && top <= distBottom;
+                return overlapsName || overlapsDistance;
+            };
+
+            Func<float, Vector2, float> computeAdjustedX = (yEdge, lineSize) =>
+            {
+                float dy = yEdge - planet.ScreenPos.Y;
+                float inside = planet.MarkerRadius * planet.MarkerRadius - dy * dy;
+                float edgeOffset = inside > 0f ? (float)Math.Sqrt(inside) : 0f;
+                float x = placeOnRight
+                    ? planet.ScreenPos.X + edgeOffset + SIDE_INFO_MARGIN_PX
+                    : planet.ScreenPos.X - edgeOffset - SIDE_INFO_MARGIN_PX;
+
+                if (placeOnRight)
+                    x = MathHelper.Clamp(x, ViewBox.X + 2f, ViewBox.Right - lineSize.X - 2f);
+                else
+                    x = MathHelper.Clamp(x, ViewBox.X + lineSize.X + 2f, ViewBox.Right - 2f);
+
+                float y = MathHelper.Clamp(yEdge - sideInfoYOffset,
+                    ViewBox.Y + lineSize.Y * 0.5f,
+                    ViewBox.Bottom - lineSize.Y * 0.5f);
+                float top = y - lineSize.Y * 0.5f;
+                float left = placeOnRight ? x : x - lineSize.X;
+                float right = placeOnRight ? x + lineSize.X : x;
+                if (overlapsDetails(left, right, top, lineSize.Y))
+                {
+                    float push = SIDE_INFO_MARGIN_PX + 6f;
+                    if (placeOnRight)
+                    {
+                        float avoidRight = Math.Max(nameRight, distRight) + push;
+                        x = Math.Max(x, avoidRight);
+                        x = MathHelper.Clamp(x, ViewBox.X + 2f, ViewBox.Right - lineSize.X - 2f);
+                    }
+                    else
+                    {
+                        float avoidLeft = Math.Min(nameLeft, distLeft) - push;
+                        x = Math.Min(x, avoidLeft);
+                        x = MathHelper.Clamp(x, ViewBox.X + lineSize.X + 2f, ViewBox.Right - 2f);
+                    }
+                }
+
+                return x;
+            };
+
+            if (!useFallback)
+            {
+                float startYPreview = planet.ScreenPos.Y - ((count - 1) * lineStep * 0.5f);
+
+                for (int i = 0; i < count; i++)
+                {
+                    float yEdge = MathHelper.Clamp(startYPreview + i * lineStep - lineSizes[i].Y * 0.5f,
+                        ViewBox.Y + lineSizes[i].Y * 0.5f,
+                        ViewBox.Bottom - lineSizes[i].Y * 0.5f);
+                    float x = computeAdjustedX(yEdge, lineSizes[i]);
+
+                    float y = MathHelper.Clamp(yEdge - sideInfoYOffset,
+                        ViewBox.Y + lineSizes[i].Y * 0.5f,
+                        ViewBox.Bottom - lineSizes[i].Y * 0.5f);
+
+                    float left = placeOnRight ? x : x - lineSizes[i].X;
+                    float right = placeOnRight ? x + lineSizes[i].X : x;
+                    float top = y - lineSizes[i].Y * 0.5f;
+                    if (overlapsDetails(left, right, top, lineSizes[i].Y))
+                    {
+                        useFallback = true;
+                        break;
+                    }
+                }
+            }
+
+            if (useFallback)
+            {
+                float xPlanetSide = placeOnRight
+                    ? planet.ScreenPos.X + planet.MarkerRadius + SIDE_INFO_MARGIN_PX
+                    : planet.ScreenPos.X - planet.MarkerRadius - SIDE_INFO_MARGIN_PX;
+                float xRangeSide = placeOnRight
+                    ? distancePos.X + distanceSize.X * 0.5f + SIDE_INFO_MARGIN_PX
+                    : distancePos.X - distanceSize.X * 0.5f - SIDE_INFO_MARGIN_PX;
+                float xBase = placeOnRight
+                    ? Math.Max(xPlanetSide, xRangeSide)
+                    : Math.Min(xPlanetSide, xRangeSide);
+                if (placeOnRight)
+                    xBase = MathHelper.Clamp(xBase, ViewBox.X + 2f, ViewBox.Right - maxLineWidth - 2f);
+                else
+                    xBase = MathHelper.Clamp(xBase, ViewBox.X + maxLineWidth + 2f, ViewBox.Right - 2f);
+
+                float startYBelowName = namePos.Y + nameSize.Y + lineStep;
+                float startYFallback = MathHelper.Clamp(startYBelowName,
+                    ViewBox.Y + maxLineHeight * 0.5f,
+                    ViewBox.Bottom - requiredHeight);
+
+                var fallbackAlignment = placeOnRight ? TextAlignment.LEFT : TextAlignment.RIGHT;
+                for (int i = 0; i < count; i++)
+                {
+                    float y = MathHelper.Clamp(startYFallback + i * lineStep - sideInfoYOffset,
+                        ViewBox.Y + lineSizes[i].Y * 0.5f,
+                        ViewBox.Bottom - lineSizes[i].Y * 0.5f);
+                    sprites.Add(new MySprite
+                    {
+                        Type = SpriteType.TEXT,
+                        Data = lines[i],
+                        Position = new Vector2(xBase, y),
+                        Color = labelColor,
+                        FontId = "White",
+                        Alignment = fallbackAlignment,
+                        RotationOrScale = sideInfoScale
+                    });
+                }
+
+                return;
+            }
+
+            float startY = planet.ScreenPos.Y - ((count - 1) * lineStep * 0.5f);
+            var alignment = placeOnRight ? TextAlignment.LEFT : TextAlignment.RIGHT;
+
+            for (int i = 0; i < count; i++)
+            {
+                float yEdge = MathHelper.Clamp(startY + i * lineStep - lineSizes[i].Y * 0.5f,
+                    ViewBox.Y + lineSizes[i].Y * 0.5f,
+                    ViewBox.Bottom - lineSizes[i].Y * 0.5f);
+                float x = computeAdjustedX(yEdge, lineSizes[i]);
+
+                float y = MathHelper.Clamp(yEdge - sideInfoYOffset,
+                    ViewBox.Y + lineSizes[i].Y * 0.5f,
+                    ViewBox.Bottom - lineSizes[i].Y * 0.5f);
+
+                sprites.Add(new MySprite
+                {
+                    Type = SpriteType.TEXT,
+                    Data = lines[i],
+                    Position = new Vector2(x, y),
+                    Color = labelColor,
+                    FontId = "White",
+                    Alignment = alignment,
+                    RotationOrScale = sideInfoScale
+                });
+            }
         }
 
         static bool IsFullyOccludedBy(PlanetProjection front, PlanetProjection back)
