@@ -97,4 +97,43 @@
   <data name="LCDMod_StarMapSurface" xml:space="preserve">
     <value>Mapa Estelar</value>
   </data>
+  <data name="LCDMod_OreScannerRadar" xml:space="preserve">
+    <value>Radar detector de minério</value>
+  </data>
+  <data name="LCDMod_OreScanner_Moving" xml:space="preserve">
+    <value>EM MOVIMENTO — scanner offline</value>
+  </data>
+  <data name="LCDMod_OreScanner_Charging" xml:space="preserve">
+    <value>CARREGANDO {0}s</value>
+  </data>
+  <data name="LCDMod_OreScanner_Scanning" xml:space="preserve">
+    <value>ESCANEANDO {0}% — varredura do cone</value>
+  </data>
+  <data name="LCDMod_OreScanner_Clear" xml:space="preserve">
+    <value>LIMPO — sem minério</value>
+  </data>
+  <data name="LCDMod_OreScanner_Signal" xml:space="preserve">
+    <value>SINAL {0}%</value>
+  </data>
+  <data name="LCDMod_OreScanner_Range" xml:space="preserve">
+    <value>Alcance: {0}</value>
+  </data>
+  <data name="LCDMod_OreScanner_NoDetector" xml:space="preserve">
+    <value>SEM DETECTOR DE MINÉRIO NA GRID</value>
+  </data>
+  <data name="LCDMod_OreScanner_MultipleDetectors" xml:space="preserve">
+    <value>MÚLTIPLOS DETECTORES — deixe apenas um</value>
+  </data>
+  <data name="LCDMod_OreScanner_ConeAngle" xml:space="preserve">
+    <value>Inclinação do sinal</value>
+  </data>
+  <data name="LCDMod_OreScanner_TiltLabel" xml:space="preserve">
+    <value>Inclinação do sinal:   {0}</value>
+  </data>
+  <data name="LCDMod_OreScanner_Reference" xml:space="preserve">
+    <value>Cockpit / assento de referência</value>
+  </data>
+  <data name="LCDMod_OreScanner_Reference_None" xml:space="preserve">
+    <value>(usar gravidade)</value>
+  </data>
 </root>

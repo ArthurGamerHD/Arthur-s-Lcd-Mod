@@ -76,4 +76,64 @@
   <data name="LCDMod_StarMapSurface" xml:space="preserve">
     <value>Mappa stellare</value>
   </data>
+  <data name="LCDMod_EnergyDashboard" xml:space="preserve">
+    <value>Cruscotto energia</value>
+  </data>
+  <data name="LCDMod_GraphWindow" xml:space="preserve">
+    <value>Finestra temporale del grafico</value>
+  </data>
+  <data name="LCDMod_GW_1s" xml:space="preserve">
+    <value>1 secondo</value>
+  </data>
+  <data name="LCDMod_GW_5s" xml:space="preserve">
+    <value>5 secondi</value>
+  </data>
+  <data name="LCDMod_GW_30s" xml:space="preserve">
+    <value>30 secondi</value>
+  </data>
+  <data name="LCDMod_GW_1m" xml:space="preserve">
+    <value>1 minuto</value>
+  </data>
+  <data name="LCDMod_GW_5m" xml:space="preserve">
+    <value>5 minuti</value>
+  </data>
+  <data name="LCDMod_OreScannerRadar" xml:space="preserve">
+    <value>Radar rilevatore di minerali</value>
+  </data>
+  <data name="LCDMod_OreScanner_Moving" xml:space="preserve">
+    <value>IN MOVIMENTO — scanner offline</value>
+  </data>
+  <data name="LCDMod_OreScanner_Charging" xml:space="preserve">
+    <value>RICARICA {0}s</value>
+  </data>
+  <data name="LCDMod_OreScanner_Scanning" xml:space="preserve">
+    <value>SCANSIONE {0}% — scansione del cono</value>
+  </data>
+  <data name="LCDMod_OreScanner_Clear" xml:space="preserve">
+    <value>LIBERO — nessun minerale</value>
+  </data>
+  <data name="LCDMod_OreScanner_Signal" xml:space="preserve">
+    <value>SEGNALE {0}%</value>
+  </data>
+  <data name="LCDMod_OreScanner_Range" xml:space="preserve">
+    <value>Portata: {0}</value>
+  </data>
+  <data name="LCDMod_OreScanner_NoDetector" xml:space="preserve">
+    <value>NESSUN RILEVATORE DI MINERALI SULLA GRID</value>
+  </data>
+  <data name="LCDMod_OreScanner_MultipleDetectors" xml:space="preserve">
+    <value>RILEVATORI MULTIPLI — lasciane uno solo</value>
+  </data>
+  <data name="LCDMod_OreScanner_ConeAngle" xml:space="preserve">
+    <value>Inclinazione del segnale</value>
+  </data>
+  <data name="LCDMod_OreScanner_TiltLabel" xml:space="preserve">
+    <value>Inclinazione del segnale:   {0}</value>
+  </data>
+  <data name="LCDMod_OreScanner_Reference" xml:space="preserve">
+    <value>Cabina / sedile di riferimento</value>
+  </data>
+  <data name="LCDMod_OreScanner_Reference_None" xml:space="preserve">
+    <value>(usa gravità)</value>
+  </data>
 </root>

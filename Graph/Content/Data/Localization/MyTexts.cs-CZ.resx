@@ -7,71 +7,130 @@
     <value>2.0</value>
   </resheader>
   <data name="LCDMod_Radar" xml:space="preserve">
-    <value>Taktický Radar</value>
+    <value>Taktický radar</value>
   </data>
   <data name="LCDMod_Radar_DetectedEntities" xml:space="preserve">
     <value>Detekované entity:</value>
   </data>
   <data name="LCDMod_TopEnergy" xml:space="preserve">
-    <value>Nejvyšší Spotřeba Energie</value>
+    <value>Nejvyšší spotřeba energie</value>
+  </data>
+  <data name="LCDMod_EnergyDashboard" xml:space="preserve">
+    <value>Energetický panel</value>
+  </data>
+  <data name="LCDMod_GraphWindow" xml:space="preserve">
+    <value>Časové okno grafu</value>
+  </data>
+  <data name="LCDMod_GW_1s" xml:space="preserve">
+    <value>1 sekunda</value>
+  </data>
+  <data name="LCDMod_GW_5s" xml:space="preserve">
+    <value>5 sekund</value>
+  </data>
+  <data name="LCDMod_GW_30s" xml:space="preserve">
+    <value>30 sekund</value>
+  </data>
+  <data name="LCDMod_GW_1m" xml:space="preserve">
+    <value>1 minuta</value>
+  </data>
+  <data name="LCDMod_GW_5m" xml:space="preserve">
+    <value>5 minut</value>
+  </data>
+  <data name="LCDMod_OreScannerRadar" xml:space="preserve">
+    <value>Radar skeneru rud</value>
+  </data>
+  <data name="LCDMod_OreScanner_Moving" xml:space="preserve">
+    <value>POHYB — skener vypnutý</value>
+  </data>
+  <data name="LCDMod_OreScanner_Charging" xml:space="preserve">
+    <value>NABÍJENÍ {0}s</value>
+  </data>
+  <data name="LCDMod_OreScanner_Scanning" xml:space="preserve">
+    <value>SKENOVÁNÍ {0}% — průchod kuželu</value>
+  </data>
+  <data name="LCDMod_OreScanner_Clear" xml:space="preserve">
+    <value>ČISTO — žádná ruda</value>
+  </data>
+  <data name="LCDMod_OreScanner_Signal" xml:space="preserve">
+    <value>SIGNÁL {0}%</value>
+  </data>
+  <data name="LCDMod_OreScanner_Range" xml:space="preserve">
+    <value>Dosah: {0}</value>
+  </data>
+  <data name="LCDMod_OreScanner_NoDetector" xml:space="preserve">
+    <value>NA GRIDU NENÍ DETEKTOR RUD</value>
+  </data>
+  <data name="LCDMod_OreScanner_MultipleDetectors" xml:space="preserve">
+    <value>MULTIPLE ORE DETECTORS — leave only one</value>
+  </data>
+  <data name="LCDMod_OreScanner_ConeAngle" xml:space="preserve">
+    <value>Signal tilt</value>
+  </data>
+  <data name="LCDMod_OreScanner_TiltLabel" xml:space="preserve">
+    <value>Signal tilt:   {0}</value>
+  </data>
+  <data name="LCDMod_OreScanner_Reference" xml:space="preserve">
+    <value>Reference cockpit / control seat</value>
+  </data>
+  <data name="LCDMod_OreScanner_Reference_None" xml:space="preserve">
+    <value>(use gravity)</value>
   </data>
   <data name="LCDMod_Damaged" xml:space="preserve">
-    <value>Poškozeno</value>
+    <value>Damaged</value>
   </data>
   <data name="LCDMod_Axis_X_Positive" xml:space="preserve">
-    <value>Kladné X</value>
+    <value>Positive X</value>
   </data>
   <data name="LCDMod_Axis_X_Negative" xml:space="preserve">
-    <value>Záporné X</value>
+    <value>Negative X</value>
   </data>
   <data name="LCDMod_Axis_Y_Positive" xml:space="preserve">
-    <value>Kladné Y</value>
+    <value>Positive Y</value>
   </data>
   <data name="LCDMod_Axis_Y_Negative" xml:space="preserve">
-    <value>Záporné Y</value>
+    <value>Negative Y</value>
   </data>
   <data name="LCDMod_Axis_Z_Positive" xml:space="preserve">
-    <value>Kladné Z</value>
+    <value>Positive Z</value>
   </data>
   <data name="LCDMod_Axis_Z_Negative" xml:space="preserve">
-    <value>Záporné Z</value>
+    <value>Negative Z</value>
   </data>
   <data name="LCDMod_Empty" xml:space="preserve">
-    <value>Prázdné</value>
+    <value>Empty</value>
   </data>
   <data name="LCDMod_GasFilled" xml:space="preserve">
-    <value>Plyn naplněn %</value>
+    <value>Gas Filled %</value>
   </data>
   <data name="LCDMod_PowerFilled" xml:space="preserve">
-    <value>Energie naplněna %</value>
+    <value>Power Filled %</value>
   </data>
   <data name="LCDMod_FactionColor_Usage" xml:space="preserve">
-    <value>Použití: /lcdmod factioncolor &lt;r g b | #rrggbb | #rgb | hsv h s v&gt;</value>
+    <value>Usage: /lcdmod factioncolor &lt;r g b | #rrggbb | #rgb | hsv h s v&gt;</value>
   </data>
   <data name="LCDMod_FactionColor_HsvFormat" xml:space="preserve">
-    <value>Formát HSV: hsv &lt;h&gt; &lt;s&gt; &lt;v&gt; (desetinná čísla)</value>
+    <value>HSV format: hsv &lt;h&gt; &lt;s&gt; &lt;v&gt; (floats)</value>
   </data>
   <data name="LCDMod_FactionColor_HsvRange" xml:space="preserve">
-    <value>Hodnoty HSV musí být v [0..1]. Odstín také podporuje [0..360].</value>
+    <value>HSV values must be in [0..1]. Hue also accepts [0..360].</value>
   </data>
   <data name="LCDMod_FactionColor_Invalid" xml:space="preserve">
-    <value>Neplatná barva. Použijte: 255 0 0 | #ff0000 | #f00 | hsv 0 1 1</value>
+    <value>Invalid color. Use: 255 0 0 | #ff0000 | #f00 | hsv 0 1 1</value>
   </data>
   <data name="LCDMod_FactionColor_NoFaction" xml:space="preserve">
-    <value>Pro místního hráče nebyla nalezena žádná frakce.</value>
+    <value>No faction found for local player.</value>
   </data>
   <data name="LCDMod_FactionColor_Updated" xml:space="preserve">
-    <value>Barva ikony frakce byla aktualizována.</value>
+    <value>Faction icon color updated.</value>
   </data>
-  <data name="LCDMod_Thrust_GravityLoad" xml:space="preserve">
-    <value>Gravitační zatížení</value>
-  </data>
-
   <data name="LCDMod_Warning" xml:space="preserve">
-    <value>Varování: {0}</value>
+    <value>Warning: {0}</value>
   </data>
   <data name="LCDMod_Critical" xml:space="preserve">
-    <value>Kritické: {0}</value>
+    <value>Critical: {0}</value>
+  </data>
+  <data name="LCDMod_Thrust_GravityLoad" xml:space="preserve">
+    <value>Gravity load</value>
   </data>
   <data name="LCDMod_StarMapSurface" xml:space="preserve">
     <value>Hvězdná mapa</value>

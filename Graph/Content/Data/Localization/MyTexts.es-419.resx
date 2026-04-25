@@ -13,65 +13,124 @@
     <value>Entidades detectadas:</value>
   </data>
   <data name="LCDMod_TopEnergy" xml:space="preserve">
-    <value>Mayor Consumo de Energía</value>
+    <value>Mayor consumo de energía</value>
+  </data>
+  <data name="LCDMod_EnergyDashboard" xml:space="preserve">
+    <value>Panel de Energía</value>
+  </data>
+  <data name="LCDMod_GraphWindow" xml:space="preserve">
+    <value>Ventana de tiempo del gráfico</value>
+  </data>
+  <data name="LCDMod_GW_1s" xml:space="preserve">
+    <value>1 segundo</value>
+  </data>
+  <data name="LCDMod_GW_5s" xml:space="preserve">
+    <value>5 segundos</value>
+  </data>
+  <data name="LCDMod_GW_30s" xml:space="preserve">
+    <value>30 segundos</value>
+  </data>
+  <data name="LCDMod_GW_1m" xml:space="preserve">
+    <value>1 minuto</value>
+  </data>
+  <data name="LCDMod_GW_5m" xml:space="preserve">
+    <value>5 minutos</value>
+  </data>
+  <data name="LCDMod_OreScannerRadar" xml:space="preserve">
+    <value>Radar Detector de Mineral</value>
+  </data>
+  <data name="LCDMod_OreScanner_Moving" xml:space="preserve">
+    <value>EN MOVIMIENTO — escáner desconectado</value>
+  </data>
+  <data name="LCDMod_OreScanner_Charging" xml:space="preserve">
+    <value>CARGANDO {0}s</value>
+  </data>
+  <data name="LCDMod_OreScanner_Scanning" xml:space="preserve">
+    <value>ESCANEANDO {0}% — barrido del cono</value>
+  </data>
+  <data name="LCDMod_OreScanner_Clear" xml:space="preserve">
+    <value>DESPEJADO — sin mineral</value>
+  </data>
+  <data name="LCDMod_OreScanner_Signal" xml:space="preserve">
+    <value>SEÑAL {0}%</value>
+  </data>
+  <data name="LCDMod_OreScanner_Range" xml:space="preserve">
+    <value>Alcance: {0}</value>
+  </data>
+  <data name="LCDMod_OreScanner_NoDetector" xml:space="preserve">
+    <value>SIN DETECTOR DE MINERAL EN LA GRID</value>
+  </data>
+  <data name="LCDMod_OreScanner_MultipleDetectors" xml:space="preserve">
+    <value>VARIOS DETECTORES — deja sólo uno</value>
+  </data>
+  <data name="LCDMod_OreScanner_ConeAngle" xml:space="preserve">
+    <value>Inclinación de la señal</value>
+  </data>
+  <data name="LCDMod_OreScanner_TiltLabel" xml:space="preserve">
+    <value>Inclinación de la señal:   {0}</value>
+  </data>
+  <data name="LCDMod_OreScanner_Reference" xml:space="preserve">
+    <value>Cabina / asiento de referencia</value>
+  </data>
+  <data name="LCDMod_OreScanner_Reference_None" xml:space="preserve">
+    <value>(usar gravedad)</value>
   </data>
   <data name="LCDMod_Damaged" xml:space="preserve">
     <value>Dañado</value>
   </data>
   <data name="LCDMod_Axis_X_Positive" xml:space="preserve">
-    <value>Positivo X</value>
+    <value>Positive X</value>
   </data>
   <data name="LCDMod_Axis_X_Negative" xml:space="preserve">
-    <value>Negativo X</value>
+    <value>Negative X</value>
   </data>
   <data name="LCDMod_Axis_Y_Positive" xml:space="preserve">
-    <value>Positivo Y</value>
+    <value>Positive Y</value>
   </data>
   <data name="LCDMod_Axis_Y_Negative" xml:space="preserve">
-    <value>Negativo Y</value>
+    <value>Negative Y</value>
   </data>
   <data name="LCDMod_Axis_Z_Positive" xml:space="preserve">
-    <value>Positivo Z</value>
+    <value>Positive Z</value>
   </data>
   <data name="LCDMod_Axis_Z_Negative" xml:space="preserve">
-    <value>Negativo Z</value>
+    <value>Negative Z</value>
   </data>
   <data name="LCDMod_Empty" xml:space="preserve">
     <value>Vacío</value>
   </data>
   <data name="LCDMod_GasFilled" xml:space="preserve">
-    <value>Gas Llenado %</value>
+    <value>Gas Filled %</value>
   </data>
   <data name="LCDMod_PowerFilled" xml:space="preserve">
-    <value>Energía Llenada %</value>
+    <value>Power Filled %</value>
   </data>
   <data name="LCDMod_FactionColor_Usage" xml:space="preserve">
-    <value>Uso: /lcdmod factioncolor &lt;r g b | #rrggbb | #rgb | hsv h s v&gt;</value>
+    <value>Usage: /lcdmod factioncolor &lt;r g b | #rrggbb | #rgb | hsv h s v&gt;</value>
   </data>
   <data name="LCDMod_FactionColor_HsvFormat" xml:space="preserve">
-    <value>Formato HSV: hsv &lt;h&gt; &lt;s&gt; &lt;v&gt; (números decimales)</value>
+    <value>HSV format: hsv &lt;h&gt; &lt;s&gt; &lt;v&gt; (floats)</value>
   </data>
   <data name="LCDMod_FactionColor_HsvRange" xml:space="preserve">
-    <value>Los valores HSV deben estar en [0..1]. El matiz también acepta [0..360].</value>
+    <value>HSV values must be in [0..1]. Hue also accepts [0..360].</value>
   </data>
   <data name="LCDMod_FactionColor_Invalid" xml:space="preserve">
-    <value>Color inválido. Usa: 255 0 0 | #ff0000 | #f00 | hsv 0 1 1</value>
+    <value>Invalid color. Use: 255 0 0 | #ff0000 | #f00 | hsv 0 1 1</value>
   </data>
   <data name="LCDMod_FactionColor_NoFaction" xml:space="preserve">
-    <value>No se encontró ninguna facción para el jugador local.</value>
+    <value>No faction found for local player.</value>
   </data>
   <data name="LCDMod_FactionColor_Updated" xml:space="preserve">
-    <value>Se actualizó el color del ícono de la facción.</value>
+    <value>Faction icon color updated.</value>
   </data>
-  <data name="LCDMod_Thrust_GravityLoad" xml:space="preserve">
-    <value>Carga gravitatoria</value>
-  </data>
-
   <data name="LCDMod_Warning" xml:space="preserve">
-    <value>Advertencia: {0}</value>
+    <value>Warning: {0}</value>
   </data>
   <data name="LCDMod_Critical" xml:space="preserve">
-    <value>Crítico: {0}</value>
+    <value>Critical: {0}</value>
+  </data>
+  <data name="LCDMod_Thrust_GravityLoad" xml:space="preserve">
+    <value>Gravity load</value>
   </data>
   <data name="LCDMod_StarMapSurface" xml:space="preserve">
     <value>Mapa estelar</value>

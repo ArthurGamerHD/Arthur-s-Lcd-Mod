@@ -20,6 +20,125 @@
             <Selectable>false</Selectable>
         </LCDTextureDefinition>
 
+        <LCDTextureDefinition> <!-- Ore scanner: no signal -->
+            <Id Type="LCDTextureDefinition" Subtype="WifiOff"/>
+            <SpritePath>Textures/Sprites/WifiOff.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Ore scanner: searching/charging frame 1 -->
+            <Id Type="LCDTextureDefinition" Subtype="WifiSearching_01"/>
+            <SpritePath>Textures/Sprites/WifiSearching_01.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Ore scanner: searching/charging frame 2 -->
+            <Id Type="LCDTextureDefinition" Subtype="WifiSearching_02"/>
+            <SpritePath>Textures/Sprites/WifiSearching_02.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Ore scanner: searching/charging frame 3 -->
+            <Id Type="LCDTextureDefinition" Subtype="WifiSearching_03"/>
+            <SpritePath>Textures/Sprites/WifiSearching_03.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Ore scanner: searching/charging frame 4 (complete) -->
+            <Id Type="LCDTextureDefinition" Subtype="WifiSearching_04"/>
+            <SpritePath>Textures/Sprites/WifiSearching_04.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Ore scanner: signal-distance ruler -->
+            <Id Type="LCDTextureDefinition" Subtype="SignalDistance_Ruler"/>
+            <SpritePath>Textures/Sprites/SignalDistance_Ruler.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Ore scanner: detector sweep frame 1 -->
+            <Id Type="LCDTextureDefinition" Subtype="DetectorScan_01"/>
+            <SpritePath>Textures/Sprites/DetectorScan_01.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+        <LCDTextureDefinition> <!-- Ore scanner: detector sweep frame 2 -->
+            <Id Type="LCDTextureDefinition" Subtype="DetectorScan_02"/>
+            <SpritePath>Textures/Sprites/DetectorScan_02.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+        <LCDTextureDefinition> <!-- Ore scanner: detector sweep frame 3 -->
+            <Id Type="LCDTextureDefinition" Subtype="DetectorScan_03"/>
+            <SpritePath>Textures/Sprites/DetectorScan_03.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+        <LCDTextureDefinition> <!-- Ore scanner: detector sweep frame 4 -->
+            <Id Type="LCDTextureDefinition" Subtype="DetectorScan_04"/>
+            <SpritePath>Textures/Sprites/DetectorScan_04.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+        <LCDTextureDefinition> <!-- Ore scanner: detector sweep frame 5 -->
+            <Id Type="LCDTextureDefinition" Subtype="DetectorScan_05"/>
+            <SpritePath>Textures/Sprites/DetectorScan_05.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+        <LCDTextureDefinition> <!-- Ore scanner: detector sweep frame 6 -->
+            <Id Type="LCDTextureDefinition" Subtype="DetectorScan_06"/>
+            <SpritePath>Textures/Sprites/DetectorScan_06.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+        <LCDTextureDefinition> <!-- Ore scanner: detector sweep frame 7 -->
+            <Id Type="LCDTextureDefinition" Subtype="DetectorScan_07"/>
+            <SpritePath>Textures/Sprites/DetectorScan_07.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+        <LCDTextureDefinition> <!-- Ore scanner: detector sweep frame 8 -->
+            <Id Type="LCDTextureDefinition" Subtype="DetectorScan_08"/>
+            <SpritePath>Textures/Sprites/DetectorScan_08.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Ore scanner: no detector frame 1 -->
+            <Id Type="LCDTextureDefinition" Subtype="NoDetector_01"/>
+            <SpritePath>Textures/Sprites/NoDetector_01.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+        <LCDTextureDefinition> <!-- Ore scanner: no detector frame 2 -->
+            <Id Type="LCDTextureDefinition" Subtype="NoDetector_02"/>
+            <SpritePath>Textures/Sprites/NoDetector_02.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+        <LCDTextureDefinition> <!-- Ore scanner: no detector frame 3 -->
+            <Id Type="LCDTextureDefinition" Subtype="NoDetector_03"/>
+            <SpritePath>Textures/Sprites/NoDetector_03.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+        <LCDTextureDefinition> <!-- Ore scanner: no detector frame 4 -->
+            <Id Type="LCDTextureDefinition" Subtype="NoDetector_04"/>
+            <SpritePath>Textures/Sprites/NoDetector_04.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Ore scanner: multiple detectors frame 1 -->
+            <Id Type="LCDTextureDefinition" Subtype="MultipleDetectors_01"/>
+            <SpritePath>Textures/Sprites/MultipleDetectors_01.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+        <LCDTextureDefinition> <!-- Ore scanner: multiple detectors frame 2 -->
+            <Id Type="LCDTextureDefinition" Subtype="MultipleDetectors_02"/>
+            <SpritePath>Textures/Sprites/MultipleDetectors_02.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+        <LCDTextureDefinition> <!-- Ore scanner: multiple detectors frame 3 -->
+            <Id Type="LCDTextureDefinition" Subtype="MultipleDetectors_03"/>
+            <SpritePath>Textures/Sprites/MultipleDetectors_03.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+        <LCDTextureDefinition> <!-- Ore scanner: multiple detectors frame 4 -->
+            <Id Type="LCDTextureDefinition" Subtype="MultipleDetectors_04"/>
+            <SpritePath>Textures/Sprites/MultipleDetectors_04.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
         <LCDTextureDefinition> <!-- Custom Jump Drive Sprite -->
             <Id Type="LCDTextureDefinition" Subtype="JumpDrive"/>
             <SpritePath>Textures/Sprites/JumpDrive.dds</SpritePath>

@@ -76,4 +76,64 @@
   <data name="LCDMod_StarMapSurface" xml:space="preserve">
     <value>Sternenkarte</value>
   </data>
+  <data name="LCDMod_EnergyDashboard" xml:space="preserve">
+    <value>Energie-Dashboard</value>
+  </data>
+  <data name="LCDMod_GraphWindow" xml:space="preserve">
+    <value>Diagramm-Zeitfenster</value>
+  </data>
+  <data name="LCDMod_GW_1s" xml:space="preserve">
+    <value>1 Sekunde</value>
+  </data>
+  <data name="LCDMod_GW_5s" xml:space="preserve">
+    <value>5 Sekunden</value>
+  </data>
+  <data name="LCDMod_GW_30s" xml:space="preserve">
+    <value>30 Sekunden</value>
+  </data>
+  <data name="LCDMod_GW_1m" xml:space="preserve">
+    <value>1 Minute</value>
+  </data>
+  <data name="LCDMod_GW_5m" xml:space="preserve">
+    <value>5 Minuten</value>
+  </data>
+  <data name="LCDMod_OreScannerRadar" xml:space="preserve">
+    <value>Erz-Scanner-Radar</value>
+  </data>
+  <data name="LCDMod_OreScanner_Moving" xml:space="preserve">
+    <value>IN BEWEGUNG — Scanner offline</value>
+  </data>
+  <data name="LCDMod_OreScanner_Charging" xml:space="preserve">
+    <value>LADEN {0}s</value>
+  </data>
+  <data name="LCDMod_OreScanner_Scanning" xml:space="preserve">
+    <value>SCAN {0}% — Kegelabtastung</value>
+  </data>
+  <data name="LCDMod_OreScanner_Clear" xml:space="preserve">
+    <value>FREI — kein Erz</value>
+  </data>
+  <data name="LCDMod_OreScanner_Signal" xml:space="preserve">
+    <value>SIGNAL {0}%</value>
+  </data>
+  <data name="LCDMod_OreScanner_Range" xml:space="preserve">
+    <value>Reichweite: {0}</value>
+  </data>
+  <data name="LCDMod_OreScanner_NoDetector" xml:space="preserve">
+    <value>KEIN ERZDETEKTOR AUF DEM GRID</value>
+  </data>
+  <data name="LCDMod_OreScanner_MultipleDetectors" xml:space="preserve">
+    <value>MEHRERE ERZDETEKTOREN — nur einen behalten</value>
+  </data>
+  <data name="LCDMod_OreScanner_ConeAngle" xml:space="preserve">
+    <value>Signalneigung</value>
+  </data>
+  <data name="LCDMod_OreScanner_TiltLabel" xml:space="preserve">
+    <value>Signalneigung:   {0}</value>
+  </data>
+  <data name="LCDMod_OreScanner_Reference" xml:space="preserve">
+    <value>Referenz-Cockpit / Steuersitz</value>
+  </data>
+  <data name="LCDMod_OreScanner_Reference_None" xml:space="preserve">
+    <value>(Schwerkraft verwenden)</value>
+  </data>
 </root>

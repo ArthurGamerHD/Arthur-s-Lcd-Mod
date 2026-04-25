@@ -8,10 +8,8 @@ using Sandbox.Game.Entities;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces;
-using SpaceEngineers.Game.EntityComponents.Blocks;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
-using VRage.Game.ObjectBuilders.ComponentSystem;
 using VRage.Utils;
 using VRageMath;
 
@@ -22,16 +20,16 @@ namespace Graph.Apps
     {
         public const string ID = "SessionDebug";
         public const string TITLE = "LCDMod Session Debug";
-        const string DEBUG_FONT = "Monospace";
-        const float LINE_SCALE = 0.62f;
-        static readonly Color RunningColor = new Color(80, 220, 120);
-        static readonly Color IdleColor = new Color(230, 90, 90);
-        static readonly Color SleepingColor = new Color(235, 210, 60);
+        private const string DEBUG_FONT = "Monospace";
+        private const float LINE_SCALE = 0.62f;
+        private static readonly Color RunningColor = new Color(80, 220, 120);
+        private static readonly Color IdleColor = new Color(230, 90, 90);
+        private static readonly Color SleepingColor = new Color(235, 210, 60);
 
-        List<MySprite> _sprites = new List<MySprite>();
-        Func<int> _surfaceIndex = () => 0;
+        private ITerminalProperty<float> _screenRotationTerminalProperty;
 
-        public override ScriptUpdate NeedsUpdate => ScriptUpdate.Update10;
+        private readonly List<MySprite> _sprites = new List<MySprite>();
+        private Func<int> _surfaceIndex = () => 0;
 
         public SessionDebugSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
             : base(surface, block, size)
@@ -40,20 +38,22 @@ namespace Graph.Apps
             LcdModSessionComponent.OnAfterSimulationUpdate += HandleAfterSimulationUpdate;
         }
 
+        public override ScriptUpdate NeedsUpdate => ScriptUpdate.Update10;
+
         public override void Dispose()
         {
             LcdModSessionComponent.OnAfterSimulationUpdate -= HandleAfterSimulationUpdate;
             base.Dispose();
         }
 
-        void HandleAfterSimulationUpdate()
+        private void HandleAfterSimulationUpdate()
         {
             if (Surface == null)
                 return;
 
-            MyCubeBlock ent = (MyCubeBlock)Block;
+            var ent = (MyCubeBlock)Block;
             var renderComp = (MyRenderComponentScreenAreas)ent.Render;
-            Vector2I textureSize = (Vector2I)Surface.TextureSize;
+            var textureSize = (Vector2I)Surface.TextureSize;
             Vector2 aspectRatio;
 
             var surfaceSize = Surface.SurfaceSize;
@@ -70,9 +70,8 @@ namespace Graph.Apps
             var start = viewBox.Position + new Vector2(8f, 8f);
 
             _sprites.Clear();
-            
-            for (int i = 0; i < lines.Count; i++)
-            {
+
+            for (var i = 0; i < lines.Count; i++)
                 _sprites.Add(new MySprite
                 {
                     Type = SpriteType.TEXT,
@@ -83,69 +82,64 @@ namespace Graph.Apps
                     Alignment = TextAlignment.LEFT,
                     RotationOrScale = LINE_SCALE
                 });
-            }
 
-            renderComp.RenderSpritesToTexture(_surfaceIndex(), _sprites, textureSize, aspectRatio, Surface.ScriptBackgroundColor, Surface.BackgroundAlpha);
+            renderComp.RenderSpritesToTexture(_surfaceIndex(), _sprites, textureSize, aspectRatio,
+                Surface.ScriptBackgroundColor, Surface.BackgroundAlpha);
         }
 
-        void ResolveSurfaceIndex()
+        private void ResolveSurfaceIndex()
         {
             if (Block is IMyTextPanel)
             {
                 foreach (var myComponentBase in Block.Components)
-                {
                     if (myComponentBase is IMyLcdSurfaceComponent)
                     {
                         var surface = myComponentBase as IMyLcdSurfaceComponent;
                         _surfaceIndex = () => surface.SelectedRotationIndex;
                         return;
                     }
-                }
 
                 return;
             }
 
 
             var surfaceProvider = Block as IMyTextSurfaceProvider;
-            if(surfaceProvider == null)
+            if (surfaceProvider == null)
                 return;
 
-            for (int i = 0; i < surfaceProvider.SurfaceCount; i++)
-            {
+            for (var i = 0; i < surfaceProvider.SurfaceCount; i++)
                 if (surfaceProvider.GetSurface(i) == Surface)
                 {
                     var index = i;
                     _surfaceIndex = () => index;
                     return;
                 }
-            }
 
             MyLog.Default.Log(MyLogSeverity.Error, "Failed to find surface for {0}, defaulting to surface 0", Block);
         }
 
-        ITerminalProperty<float> _screenRotationTerminalProperty;
-        
-        int GetRotationIndex(IMyTerminalBlock block)
+        private int GetRotationIndex(IMyTerminalBlock block)
         {
-            _screenRotationTerminalProperty = _screenRotationTerminalProperty ?? block.GetProperty("Rotate") as ITerminalProperty<float>;
+            _screenRotationTerminalProperty = _screenRotationTerminalProperty ??
+                                              block.GetProperty("Rotate") as ITerminalProperty<float>;
             if (_screenRotationTerminalProperty == null)
                 return 0;
 
             var deg = _screenRotationTerminalProperty.GetValue(block); // 0, 90, 180, 270
             var idx = (int)Math.Round(deg / 90f);
-            return ((idx % 4) + 4) % 4;
+            return (idx % 4 + 4) % 4;
         }
 
-        RectangleF GetViewBox()
+        private RectangleF GetViewBox()
         {
             var sizeOffset = (Surface.TextureSize - Surface.SurfaceSize) / 2f;
-            var padding = (Surface.TextPadding / 100f) * Surface.SurfaceSize;
+            var padding = Surface.TextPadding / 100f * Surface.SurfaceSize;
             sizeOffset += padding / 2f;
             return new RectangleF(sizeOffset.X, sizeOffset.Y, Surface.SurfaceSize.X - padding.X,
                 Surface.SurfaceSize.Y - padding.Y);
         }
 
-        List<DebugLine> BuildDebugLines(SessionDebugSnapshot snapshot)
+        private List<DebugLine> BuildDebugLines(SessionDebugSnapshot snapshot)
         {
             var lines = new List<DebugLine>(32);
             lines.Add(new DebugLine($"LCDMod Session Debug - {GetHashCode()}", Color.White));
@@ -168,7 +162,7 @@ namespace Graph.Apps
                 return lines;
             }
 
-            int shown = 0;
+            var shown = 0;
             foreach (var pair in components
                          .Where(p => p.Value != null && p.Value.Grid != null)
                          .OrderByDescending(p => p.Value.LastRefreshIterations)
@@ -192,7 +186,7 @@ namespace Graph.Apps
                              + Fixed4(logic.LastRefreshProcessed) + " "
                              + Fixed4(logic.CurrentRefreshBatchSize) + " "
                              + Fixed4(logic.EstimatedNextRefreshBatchSize),
-                    logic.IsSleeping ? SleepingColor : (logic.IsRefreshRunning ? RunningColor : IdleColor)));
+                    logic.IsSleeping ? SleepingColor : logic.IsRefreshRunning ? RunningColor : IdleColor));
 
                 shown++;
             }
@@ -200,7 +194,7 @@ namespace Graph.Apps
             return lines;
         }
 
-        static string ClampToWidth(string value, int width)
+        private static string ClampToWidth(string value, int width)
         {
             if (string.IsNullOrEmpty(value))
                 return new string(' ', width);
@@ -209,12 +203,12 @@ namespace Graph.Apps
             return value.PadRight(width);
         }
 
-        static string Fixed4(int value)
+        private static string Fixed4(int value)
         {
             return ClampToWidth(value.ToString(), 4);
         }
 
-        struct DebugLine
+        private struct DebugLine
         {
             public readonly string Text;
             public readonly Color Color;
