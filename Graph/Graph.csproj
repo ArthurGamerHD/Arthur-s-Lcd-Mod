@@ -38,4 +38,47 @@
                         OutputItemType="Analyzer"
                         ReferenceOutputAssembly="false" />
     </ItemGroup>
+
+
+    <PropertyGroup>
+        <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+        <CompilerGeneratedFilesOutputPath>$(MSBuildProjectDirectory)\Generated</CompilerGeneratedFilesOutputPath>
+        <GeneratedObjDir>$(BaseIntermediateOutputPath)Generated</GeneratedObjDir>
+        <MdkGeneratedRootPrefix>__MdkGenerated_</MdkGeneratedRootPrefix>
+    </PropertyGroup>
+
+    <Target Name="CleanupStaleMdkGeneratedRootFiles" BeforeTargets="CoreCompile">
+        <ItemGroup>
+            <_StaleMdkGeneratedRootFiles Include="$(MSBuildProjectDirectory)\$(MdkGeneratedRootPrefix)*.cs" />
+        </ItemGroup>
+        <Delete Files="@(_StaleMdkGeneratedRootFiles)" />
+    </Target>
+
+    <Target Name="PrepareGeneratedSourcesForMdkPack" BeforeTargets="MdkPack">
+        <ItemGroup>
+            <_GeneratedFilesForMdk Include="$(CompilerGeneratedFilesOutputPath)\**\*.cs" />
+            <_GeneratedFilesForMdkRoot Include="@(_GeneratedFilesForMdk)" />
+        </ItemGroup>
+
+        <Copy SourceFiles="@(_GeneratedFilesForMdkRoot)"
+              DestinationFiles="@(_GeneratedFilesForMdkRoot->'$(MSBuildProjectDirectory)\$(MdkGeneratedRootPrefix)%(Filename)%(Extension)')"
+              SkipUnchangedFiles="true" />
+    </Target>
+
+    <Target Name="CleanupGeneratedSources" AfterTargets="MdkPack;MdkDidNotPack">
+        <ItemGroup>
+            <_GeneratedFiles Include="$(CompilerGeneratedFilesOutputPath)\**\*.*" />
+            <_MdkGeneratedRootFiles Include="$(MSBuildProjectDirectory)\$(MdkGeneratedRootPrefix)*.cs" />
+        </ItemGroup>
+
+        <RemoveDir Directories="$(GeneratedObjDir)" />
+        <MakeDir Directories="$(GeneratedObjDir)" />
+
+        <Copy SourceFiles="@(_GeneratedFiles)"
+              DestinationFiles="@(_GeneratedFiles->'$(GeneratedObjDir)\%(RecursiveDir)%(Filename)%(Extension)')"
+              SkipUnchangedFiles="true" />
+
+        <RemoveDir Directories="$(CompilerGeneratedFilesOutputPath)" />
+        <Delete Files="@(_MdkGeneratedRootFiles)" />
+    </Target>
 </Project>
