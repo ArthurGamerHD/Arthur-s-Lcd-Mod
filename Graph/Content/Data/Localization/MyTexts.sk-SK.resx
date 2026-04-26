@@ -135,4 +135,31 @@
   <data name="LCDMod_StarMapSurface" xml:space="preserve">
     <value>Hviezdna mapa</value>
   </data>
+  <data name="LCDMod_NotAvailable" xml:space="preserve">
+    <value>N/D</value>
+  </data>
+  <data name="LCDMod_StarMap_Info_Gravity" xml:space="preserve">
+    <value>Gravitácia: {0}</value>
+  </data>
+  <data name="LCDMod_StarMap_Info_Radius" xml:space="preserve">
+    <value>Polomer: {0}</value>
+  </data>
+  <data name="LCDMod_StarMap_Info_RadiusShort" xml:space="preserve">
+    <value>R: {0}</value>
+  </data>
+  <data name="LCDMod_StarMap_Info_Atmosphere_Short" xml:space="preserve">
+    <value>Atmo: {0}</value>
+  </data>
+  <data name="LCDMod_StarMap_Info_O2" xml:space="preserve">
+    <value>O2: {0}</value>
+  </data>
+  <data name="LCDMod_StarMap_Info_Temperature" xml:space="preserve">
+    <value>Teplota: {0}</value>
+  </data>
+  <data name="LCDMod_StarMap_Info_Wind" xml:space="preserve">
+    <value>Vietor: {0}</value>
+  </data>
+  <data name="LCDMod_StarMap_Label_Temperature" xml:space="preserve">
+    <value>Teplota</value>
+  </data>
 </root>

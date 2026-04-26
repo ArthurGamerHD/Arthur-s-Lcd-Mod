@@ -1,0 +1,15 @@
+using VRageMath;
+
+namespace Graph.Apps.Utility
+{
+    /// <summary>
+    /// Receives gaze coordinates that should be consumed and mapped on the next render frame.
+    /// </summary>
+    public interface IEyeTracking
+    {
+        Sandbox.ModAPI.Ingame.IMyTextSurface Surface { get; }
+        VRage.Game.ModAPI.Ingame.IMyCubeBlock Block { get; }
+        
+        void LookAt(Vector2 onScreenCoordinates);
+    }
+}

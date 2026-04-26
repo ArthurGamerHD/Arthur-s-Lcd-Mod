@@ -135,4 +135,31 @@
   <data name="LCDMod_StarMapSurface" xml:space="preserve">
     <value>Csillagtérkép</value>
   </data>
+  <data name="LCDMod_NotAvailable" xml:space="preserve">
+    <value>N/A</value>
+  </data>
+  <data name="LCDMod_StarMap_Info_Gravity" xml:space="preserve">
+    <value>Gravitáció: {0}</value>
+  </data>
+  <data name="LCDMod_StarMap_Info_Radius" xml:space="preserve">
+    <value>Sugár: {0}</value>
+  </data>
+  <data name="LCDMod_StarMap_Info_RadiusShort" xml:space="preserve">
+    <value>R: {0}</value>
+  </data>
+  <data name="LCDMod_StarMap_Info_Atmosphere_Short" xml:space="preserve">
+    <value>Atmo: {0}</value>
+  </data>
+  <data name="LCDMod_StarMap_Info_O2" xml:space="preserve">
+    <value>O2: {0}</value>
+  </data>
+  <data name="LCDMod_StarMap_Info_Temperature" xml:space="preserve">
+    <value>Hőmérséklet: {0}</value>
+  </data>
+  <data name="LCDMod_StarMap_Info_Wind" xml:space="preserve">
+    <value>Szél: {0}</value>
+  </data>
+  <data name="LCDMod_StarMap_Label_Temperature" xml:space="preserve">
+    <value>Hőmérséklet</value>
+  </data>
 </root>

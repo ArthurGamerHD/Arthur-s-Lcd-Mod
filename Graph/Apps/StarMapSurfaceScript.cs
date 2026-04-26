@@ -2,14 +2,17 @@ using System;
 using System.Collections.Generic;
 using Generated;
 using Graph.Apps.Abstract;
+using Graph.Apps.Utility;
 using Graph.Extensions;
 using Graph.Helpers;
+using Graph.Panels;
 using Graph.System;
 using Graph.System.TerminalControls.Generic;
 using Sandbox.Game.Entities;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using VRage;
+using VRage.Game;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
@@ -20,13 +23,16 @@ namespace Graph.Apps
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class StarMapSurfaceScript : SurfaceScriptBase,
         IUsesTerminalControl<SliderFov>,
-        IUsesTerminalControl<ComboboxDisplayMode>,
+        IEyeTracking,
         IMultiDisplayMode
     {
         float _fov;
         double _halfFovY;
         float _lastKnownConfigFov = float.NaN;
         IMyGravityProviderSystem _gravityProvider;
+        readonly EyeTrackingFrameState _eyeTracking = new EyeTrackingFrameState();
+        Vector2 _lastEyeContactPoint;
+        bool _hasLastEyeContactPoint;
 
         struct PlanetProjection
         {
@@ -39,12 +45,12 @@ namespace Graph.Apps
             public Vector2 ScreenPos;
             public float MarkerRadius;
             public bool ShouldDisplayInfo;
-            public float RadiusKm;
+            public float Radius;
             public float SurfaceGravityG;
-            public bool HasAtmosphere;
-            public float GravityRangeKm;
-            public string AverageTemperature;
-            public bool Breathable;
+            public float GravityRange;
+            public float AtmosphereDensity;
+            public float OxygenDensity;
+            public MyTemperatureLevel? AverageTemperature;
             public float MaxWindSpeed;
         }
 
@@ -129,11 +135,19 @@ namespace Graph.Apps
                 var planetSprites = new List<MySprite>();
                 var overlaySprites = new List<MySprite>();
                 bool staticMode = Config != null && Config.DisplayMode == DisplayMode.Legacy;
+                Vector2 lookedAt;
+                if (_eyeTracking.TryConsumeMapped(ViewBox, out lookedAt))
+                {
+                    _lastEyeContactPoint = lookedAt;
+                    _hasLastEyeContactPoint = true;
+                }
+
                 AddBackground(baseSprites);
                 DrawPlanetMap(planetSprites, ringSprites, overlaySprites);
                 if (!staticMode)
                     DrawFovHud(overlaySprites, _fov);
                 DrawTitle(overlaySprites);
+
                 frame.AddRange(baseSprites);
                 frame.AddRange(ringSprites);
                 frame.AddRange(planetSprites);
@@ -189,7 +203,7 @@ namespace Graph.Apps
             bool staticMode = Config != null && Config.DisplayMode == DisplayMode.Legacy;
             if (staticMode)
             {
-                DrawStaticOrbitMap(ringSprites, planetSprites, planets);
+                DrawStaticOrbitMap(ringSprites, planetSprites, overlaySprites, planets);
                 return;
             }
             else
@@ -244,8 +258,6 @@ namespace Graph.Apps
 
                 double angularRadius = Math.Asin(Math.Min(1d, planetRadiusMeters / distance));
                 float markerRadius = (float)(angularRadius / _halfFovY * (ViewBox.Height * 0.5f));
-                if (staticMode)
-                    markerRadius *= STATIC_PLANET_SCALE;
                 float visibility = planet.EntityId == gravityPlanetId ? gravityVisibility : 1f;
                 if (visibility <= 0.001f)
                     continue;
@@ -267,9 +279,9 @@ namespace Graph.Apps
                 var textureKey = string.IsNullOrWhiteSpace(generatorName) ? name : generatorName;
                 var generator = planet.Generator;
                 var atmosphere = generator != null ? generator.Atmosphere : null;
-                string averageTemperature = generator != null
-                    ? generator.DefaultSurfaceTemperature.ToString()
-                    : "Unknown";
+                MyTemperatureLevel? averageTemperature = generator != null
+                    ? (MyTemperatureLevel?)generator.DefaultSurfaceTemperature
+                    : null;
                 double surfaceGravity = generator != null ? generator.SurfaceGravity : 0d;
                 double gravityFalloff = generator != null ? generator.GravityFalloffPower : 0d;
                 double gravityLimitRadius = 0d;
@@ -285,13 +297,13 @@ namespace Graph.Apps
                     AngularRadius = angularRadius,
                     ScreenPos = screenPos,
                     MarkerRadius = markerRadius,
-                    ShouldDisplayInfo = !staticMode && touchesCenter,
-                    RadiusKm = (float)(planet.AverageRadius / 1000d),
+                    ShouldDisplayInfo = touchesCenter,
+                    Radius = planet.AverageRadius,
                     SurfaceGravityG = (float)surfaceGravity,
-                    HasAtmosphere = planet.HasAtmosphere,
-                    GravityRangeKm = (float)(Math.Max(0d, gravityLimitRadius - planet.AverageRadius) / 1000d),
+                    GravityRange = (float)(Math.Max(0d, gravityLimitRadius - planet.AverageRadius)),
+                    AtmosphereDensity = planet.HasAtmosphere && atmosphere != null ? atmosphere.Density : 0f,
+                    OxygenDensity = planet.HasAtmosphere && atmosphere != null ? atmosphere.OxygenDensity : 0f,
                     AverageTemperature = averageTemperature,
-                    Breathable = atmosphere != null && atmosphere.Breathable,
                     MaxWindSpeed = atmosphere != null ? atmosphere.MaxWindSpeed : 0f
                 });
             }
@@ -325,7 +337,11 @@ namespace Graph.Apps
             }
         }
 
-        void DrawStaticOrbitMap(List<MySprite> ringSprites, List<MySprite> planetSprites, Dictionary<long, MyPlanet> planets)
+        void DrawStaticOrbitMap(
+            List<MySprite> ringSprites,
+            List<MySprite> planetSprites,
+            List<MySprite> overlaySprites,
+            Dictionary<long, MyPlanet> planets)
         {
             if (planets == null || planets.Count == 0)
                 return;
@@ -342,6 +358,8 @@ namespace Graph.Apps
             var ringProjections = new List<StaticRingProjection>(planets.Count);
             double maxOrbitWithRadius = 1d;
 
+            var referencePos = Block != null ? Block.GetPosition() : Vector3D.Zero;
+
             foreach (var kv in planets)
             {
                 var planet = kv.Value;
@@ -353,6 +371,7 @@ namespace Graph.Apps
                     continue;
 
                 Vector3D pos = planet.WorldMatrix.Translation;
+                double distanceToBlock = Block != null ? Vector3D.Distance(pos, referencePos) : pos.Length();
                 validPlanets.Add(planet);
                 positions.Add(pos);
                 radii.Add(radius);
@@ -375,9 +394,9 @@ namespace Graph.Apps
                 var textureKey = string.IsNullOrWhiteSpace(generatorName) ? name : generatorName;
                 var generator = planet.Generator;
                 var atmosphere = generator != null ? generator.Atmosphere : null;
-                string averageTemperature = generator != null
-                    ? generator.DefaultSurfaceTemperature.ToString()
-                    : "Unknown";
+                MyTemperatureLevel? averageTemperature = generator != null
+                    ? (MyTemperatureLevel?)generator.DefaultSurfaceTemperature
+                    : null;
                 double surfaceGravity = generator != null ? generator.SurfaceGravity : 0d;
                 double gravityFalloff = generator != null ? generator.GravityFalloffPower : 0d;
                 double gravityLimitRadius = 0d;
@@ -389,18 +408,18 @@ namespace Graph.Apps
                     Name = string.IsNullOrWhiteSpace(name) ? "Unknown Planet" : name,
                     Texture = PlanetHelper.ResolvePlanetTexture(textureKey),
                     Direction = Vector3D.Zero,
-                    Distance = orbitMeters,
+                    Distance = distanceToBlock,
                     Visibility = 1f,
                     AngularRadius = 0d,
                     ScreenPos = Vector2.Zero,
                     MarkerRadius = 0f,
                     ShouldDisplayInfo = false,
-                    RadiusKm = (float)(radius / 1000d),
+                    Radius = (float)(radius / 1000d),
                     SurfaceGravityG = (float)surfaceGravity,
-                    HasAtmosphere = planet.HasAtmosphere,
-                    GravityRangeKm = (float)(Math.Max(0d, gravityLimitRadius - planet.AverageRadius) / 1000d),
+                    GravityRange = (float)(Math.Max(0d, gravityLimitRadius - planet.AverageRadius) / 1000d),
+                    AtmosphereDensity = planet.HasAtmosphere && atmosphere != null ? atmosphere.Density : 0f,
+                    OxygenDensity = planet.HasAtmosphere && atmosphere != null ? atmosphere.OxygenDensity : 0f,
                     AverageTemperature = averageTemperature,
-                    Breathable = atmosphere != null && atmosphere.Breathable,
                     MaxWindSpeed = atmosphere != null ? atmosphere.MaxWindSpeed : 0f
                 });
             }
@@ -508,6 +527,125 @@ namespace Graph.Apps
             projectedPlanets.Sort((a, b) => a.MarkerRadius.CompareTo(b.MarkerRadius));
             for (int i = 0; i < projectedPlanets.Count; i++)
                 DrawPlanet(planetSprites, projectedPlanets[i]);
+
+            if (!_hasLastEyeContactPoint)
+                return;
+
+            var focusPoint = _lastEyeContactPoint;
+            _hasLastEyeContactPoint = false;
+            _lastEyeContactPoint = Vector2.Zero;
+            int selectedIndex = -1;
+            float selectedDistance = float.MaxValue;
+            for (int i = 0; i < projectedPlanets.Count; i++)
+            {
+                var planet = projectedPlanets[i];
+                float d = Vector2.Distance(planet.ScreenPos, focusPoint);
+                if (planet.MarkerRadius < d - 2f * Scale)
+                    continue;
+                if (d < selectedDistance)
+                {
+                    selectedDistance = d;
+                    selectedIndex = i;
+                }
+            }
+
+            if (selectedIndex >= 0)
+            {
+                var selected = projectedPlanets[selectedIndex];
+                selected.ShouldDisplayInfo = true;
+                DrawStaticPlanetCards(overlaySprites, selected);
+            }
+        }
+
+        void DrawStaticPlanetCards(List<MySprite> sprites, PlanetProjection planet)
+        {
+            const float paddingX = 10f;
+            const float paddingY = 6f;
+            const float sectionGap = 6f;
+            float nameScale = 0.72f * Scale * FontScale;
+            float infoScale = 0.52f * Scale * FontScale;
+            float distanceScale = 0.62f * Scale * FontScale;
+            var labelColor = ApplyAlpha(ForegroundColor, planet.Visibility);
+            var panelColor = Config.HeaderColor;
+
+            string distanceText = FormatingHelper.DistanceToString((float)planet.Distance);
+            var infoLines = BuildPlanetInfoLines(planet, true);
+
+            var nameSize = GetSizeInPixel(planet.Name, "White", nameScale, Surface);
+            var distSize = GetSizeInPixel(distanceText, "White", distanceScale, Surface);
+            float infoLineHeight = GetSizeInPixel("Ag", "White", infoScale, Surface).Y + 2f;
+            var infoLineSizes = new Vector2[infoLines.Count];
+            float maxInfoWidth = 0f;
+            for (int i = 0; i < infoLines.Count; i++)
+            {
+                infoLineSizes[i] = GetSizeInPixel(infoLines[i], "White", infoScale, Surface);
+                if (infoLineSizes[i].X > maxInfoWidth)
+                    maxInfoWidth = infoLineSizes[i].X;
+            }
+
+            float contentWidth = Math.Max(nameSize.X, Math.Max(maxInfoWidth, distSize.X));
+            float cardWidth = Math.Max(130f, contentWidth + 2f * paddingX);
+            float contentHeight = nameSize.Y + sectionGap + infoLines.Count * infoLineHeight + sectionGap + distSize.Y;
+            float cardHeight = Math.Max(60f, contentHeight + 2f * paddingY);
+
+            bool placeOnRight = planet.ScreenPos.X <= ViewBox.Center.X;
+            float anchorX = placeOnRight
+                ? planet.ScreenPos.X + planet.MarkerRadius + 16f
+                : planet.ScreenPos.X - planet.MarkerRadius - 16f - cardWidth;
+            float startX = MathHelper.Clamp(anchorX, ViewBox.X + 4f, ViewBox.Right - cardWidth - 4f);
+            float startY = MathHelper.Clamp(
+                planet.ScreenPos.Y - cardHeight * 0.5f,
+                ViewBox.Y + 4f,
+                ViewBox.Bottom - cardHeight - 4f);
+
+            var cardRect = new RectangleF(startX, startY, cardWidth, cardHeight);
+            var shadowRect = new RectangleF(cardRect.Position + 2f, cardRect.Size);
+            var shadowColor = panelColor.MulValue(0.2f);
+            RectanglePanel.CreateSpritesFromRect(shadowRect, sprites, shadowColor, 0.2f);
+            RectanglePanel.CreateSpritesFromRect(cardRect, sprites, panelColor, 0.2f);
+
+            float currentY = cardRect.Y + paddingY;
+            float centerX = cardRect.Center.X;
+            float leftX = cardRect.X + paddingX;
+
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXT,
+                Data = planet.Name,
+                Position = new Vector2(centerX, currentY - nameSize.Y * 0.25f * nameScale),
+                Color = labelColor,
+                FontId = "White",
+                Alignment = TextAlignment.CENTER,
+                RotationOrScale = nameScale
+            });
+            currentY += nameSize.Y + sectionGap;
+
+            for (int i = 0; i < infoLines.Count; i++)
+            {
+                sprites.Add(new MySprite
+                {
+                    Type = SpriteType.TEXT,
+                    Data = infoLines[i],
+                    Position = new Vector2(leftX, currentY - infoLineSizes[i].Y * 0.25f * infoScale),
+                    Color = labelColor,
+                    FontId = "White",
+                    Alignment = TextAlignment.LEFT,
+                    RotationOrScale = infoScale
+                });
+                currentY += infoLineHeight;
+            }
+            currentY += sectionGap;
+
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXT,
+                Data = distanceText,
+                Position = new Vector2(centerX, currentY - distSize.Y * 0.25f * distanceScale),
+                Color = labelColor,
+                FontId = "White",
+                Alignment = TextAlignment.CENTER,
+                RotationOrScale = distanceScale
+            });
         }
 
         void DrawEllipseRing(List<MySprite> sprites, Vector2 centerPos, Vector2 ellipseSize, float lineWidth, Color lineColor, Color backColor)
@@ -840,16 +978,7 @@ namespace Graph.Apps
         {
             float sideInfoScale = SIDE_INFO_TEXT_SCALE * Scale * FontScale;
             float sideInfoYOffset = SIDE_INFO_Y_OFFSET_PX * Scale * FontScale;
-            var lines = new List<string>(7)
-            {
-                "G Range: " + planet.GravityRangeKm.ToString("0.#", FormatingHelper.Culture) + " km",
-                "Radius: " + planet.RadiusKm.ToString("0.#", FormatingHelper.Culture) + " km",
-                "Atmo: " + (planet.HasAtmosphere ? "Yes" : "No"),
-                "G: " + planet.SurfaceGravityG.ToString("0.##", FormatingHelper.Culture) + " g",
-                "O2: " + (planet.Breathable ? "Yes" : "No"),
-                "Temp: " + planet.AverageTemperature,
-                "Wind: " + planet.MaxWindSpeed.ToString("0.##", FormatingHelper.Culture) + " m/s"
-            };
+            var lines = BuildPlanetInfoLines(planet, false);
 
             int count = lines.Count;
             var lineSizes = new Vector2[count];
@@ -1020,6 +1149,31 @@ namespace Graph.Apps
                     RotationOrScale = sideInfoScale
                 });
             }
+        }
+
+        List<string> BuildPlanetInfoLines(PlanetProjection planet, bool compactRadiusLabel)
+        {
+            string radiusKey = compactRadiusLabel
+                ? "LCDMod_StarMap_Info_RadiusShort"
+                : "LCDMod_StarMap_Info_Radius";
+
+            return new List<string>(7)
+            {
+                string.Format(FormatingHelper.Culture, LocHelper.GetLoc(radiusKey),
+                    FormatingHelper.DistanceToString(planet.Radius)),
+                string.Format(FormatingHelper.Culture, LocHelper.GetLoc("LCDMod_StarMap_Info_Gravity"),
+                    FormatingHelper.GravityToString(planet.SurfaceGravityG)),
+                LocHelper.GetLoc("BlockPropertyTitle_OreDetectorRange") + ": " +
+                    FormatingHelper.DistanceToString(planet.GravityRange),
+                string.Format(FormatingHelper.Culture, LocHelper.GetLoc("LCDMod_StarMap_Info_Atmosphere_Short"),
+                    FormatingHelper.PercentageToString(planet.AtmosphereDensity)),
+                string.Format(FormatingHelper.Culture, LocHelper.GetLoc("LCDMod_StarMap_Info_O2"),
+                    FormatingHelper.PercentageToString(planet.OxygenDensity)),
+                string.Format(FormatingHelper.Culture, LocHelper.GetLoc("LCDMod_StarMap_Info_Temperature"),
+                    FormatingHelper.TemperatureToString(planet.AverageTemperature)),
+                string.Format(FormatingHelper.Culture, LocHelper.GetLoc("LCDMod_StarMap_Info_Wind"),
+                    FormatingHelper.WindToString(planet.MaxWindSpeed))
+            };
         }
 
         static bool IsFullyOccludedBy(PlanetProjection front, PlanetProjection back)
@@ -1253,6 +1407,11 @@ namespace Graph.Apps
                 Alignment = TextAlignment.CENTER
             });
             sprites.Add(MySprite.CreateClearClipRect());
+        }
+        
+        public void LookAt(Vector2 onScreenCoordinates)
+        {
+            _eyeTracking.Receive(onScreenCoordinates);
         }
     }
 }

@@ -135,4 +135,31 @@
   <data name="LCDMod_StarMapSurface" xml:space="preserve">
     <value>Hartă stelară</value>
   </data>
+  <data name="LCDMod_NotAvailable" xml:space="preserve">
+    <value>N/D</value>
+  </data>
+  <data name="LCDMod_StarMap_Info_Gravity" xml:space="preserve">
+    <value>Gravitație: {0}</value>
+  </data>
+  <data name="LCDMod_StarMap_Info_Radius" xml:space="preserve">
+    <value>Rază: {0}</value>
+  </data>
+  <data name="LCDMod_StarMap_Info_RadiusShort" xml:space="preserve">
+    <value>R: {0}</value>
+  </data>
+  <data name="LCDMod_StarMap_Info_Atmosphere_Short" xml:space="preserve">
+    <value>Atmo: {0}</value>
+  </data>
+  <data name="LCDMod_StarMap_Info_O2" xml:space="preserve">
+    <value>O2: {0}</value>
+  </data>
+  <data name="LCDMod_StarMap_Info_Temperature" xml:space="preserve">
+    <value>Temperatură: {0}</value>
+  </data>
+  <data name="LCDMod_StarMap_Info_Wind" xml:space="preserve">
+    <value>Vânt: {0}</value>
+  </data>
+  <data name="LCDMod_StarMap_Label_Temperature" xml:space="preserve">
+    <value>Temperatură</value>
+  </data>
 </root>

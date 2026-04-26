@@ -197,6 +197,26 @@ namespace Graph.Apps
                 shown++;
             }
 
+            lines.Add(new DebugLine(string.Empty, Color.White));
+            lines.Add(new DebugLine("Modules:", Color.White));
+            lines.Add(new DebugLine("Name                   cnt  act", Color.White));
+            var moduleLines = snapshot.ModuleLines;
+            if (moduleLines == null || moduleLines.Length == 0)
+            {
+                lines.Add(new DebugLine("  (none)", Color.White));
+                return lines;
+            }
+
+            for (int i = 0; i < moduleLines.Length; i++)
+            {
+                string moduleName;
+                int count;
+                int active;
+                ParseModuleLine(moduleLines[i], out moduleName, out count, out active);
+                moduleName = ClampToWidth(moduleName, 22);
+                lines.Add(new DebugLine(moduleName + " " + Fixed4(count) + " " + Fixed4(active), Color.White));
+            }
+
             return lines;
         }
 

@@ -135,4 +135,31 @@
   <data name="LCDMod_StarMapSurface" xml:space="preserve">
     <value>Tähekaart</value>
   </data>
+  <data name="LCDMod_NotAvailable" xml:space="preserve">
+    <value>N/A</value>
+  </data>
+  <data name="LCDMod_StarMap_Info_Gravity" xml:space="preserve">
+    <value>Gravitatsioon: {0}</value>
+  </data>
+  <data name="LCDMod_StarMap_Info_Radius" xml:space="preserve">
+    <value>Raadius: {0}</value>
+  </data>
+  <data name="LCDMod_StarMap_Info_RadiusShort" xml:space="preserve">
+    <value>R: {0}</value>
+  </data>
+  <data name="LCDMod_StarMap_Info_Atmosphere_Short" xml:space="preserve">
+    <value>Atmo: {0}</value>
+  </data>
+  <data name="LCDMod_StarMap_Info_O2" xml:space="preserve">
+    <value>O2: {0}</value>
+  </data>
+  <data name="LCDMod_StarMap_Info_Temperature" xml:space="preserve">
+    <value>Temperatuur: {0}</value>
+  </data>
+  <data name="LCDMod_StarMap_Info_Wind" xml:space="preserve">
+    <value>Tuul: {0}</value>
+  </data>
+  <data name="LCDMod_StarMap_Label_Temperature" xml:space="preserve">
+    <value>Temperatuur</value>
+  </data>
 </root>

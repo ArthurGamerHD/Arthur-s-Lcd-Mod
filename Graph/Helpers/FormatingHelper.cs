@@ -1,5 +1,7 @@
 using System;
 using System.Globalization;
+using VRage.Game;
+using VRageMath;
 
 namespace Graph.Helpers
 {
@@ -40,22 +42,25 @@ namespace Graph.Helpers
             return sign + (abs * 100d).ToString("0.##", Culture) + " cm";
         }
         
-        public static string LitersToString(double liters)
+        public static string GravityToString(double gravityG)
         {
-            var a = Math.Abs(liters);
-            var sign = liters < 0 ? "-" : "";
-            if (a >= 1000000.0) return sign + (a / 1000000.0).ToString("0.##", Culture) + " ML";
-            if (a >= 1000.0) return sign + (a / 1000.0).ToString("0.##", Culture) + " kL";
-            return sign + a.ToString("0.#", Culture) + " L";
+            double metersPerSecondSquared = gravityG * 9.81d;
+            return gravityG.ToString("0.##", Culture) + " g (" +
+                   metersPerSecondSquared.ToString("0.##", Culture) + " m/s²)";
         }
 
-        public static string LittersPerSecondToString(double lps)
+        public static string WindToString(double metersPerSecond)
         {
-            var a = Math.Abs(lps);
-            var sign = lps < 0 ? "-" : "";
-            if (a >= 1000000.0) return sign + (a / 1000000.0).ToString("0.##", Culture) + " ML/s";
-            if (a >= 1000.0) return sign + (a / 1000.0).ToString("0.##", Culture) + " kL/s";
-            return sign + a.ToString("0.#", Culture) + " L/s";
+            var a = Math.Abs(metersPerSecond);
+            var sign = metersPerSecond < 0 ? "-" : "";
+            return sign + a.ToString("0.##", Culture);
+        }
+
+        public static string TemperatureToString(MyTemperatureLevel? level)
+        {
+            if (!level.HasValue)
+                return LocHelper.GetLoc("LCDMod_NotAvailable");
+            return LocHelper.GetLoc("Temperature" + level.Value);
         }
         
         
