@@ -6,7 +6,16 @@
       "Bash(dotnet-script)",
       "Bash(powershell *)",
       "Bash(git *)",
-      "Bash(xargs ls *)"
+      "Bash(xargs ls *)",
+      "Bash(export LC_ALL=C.UTF-8)",
+      "Bash(sort grep *)",
+      "Read(//mnt/c/programming/**)",
+      "Bash(python3 /tmp/gen_resx.py)",
+      "Bash(cp /tmp/gen_resx.py ./gen_resx.py)",
+      "Bash(/c/Python314/python.exe ./gen_resx.py)",
+      "Bash(/c/Python314/python.exe *)",
+      "Bash(rm -rf C:/Users/maike/AppData/Roaming/SpaceEngineers/Mods/Graph)",
+      "Bash(rm -rf Graph/Generated Graph/__MdkGenerated_*.cs Graph/obj Graph/bin)"
     ]
   }
 }

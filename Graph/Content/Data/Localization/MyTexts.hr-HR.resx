@@ -7,71 +7,130 @@
     <value>2.0</value>
   </resheader>
   <data name="LCDMod_Radar" xml:space="preserve">
-    <value>Taktički Radar</value>
+    <value>Taktički radar</value>
   </data>
   <data name="LCDMod_Radar_DetectedEntities" xml:space="preserve">
-    <value>Otkriveni entiteti:</value>
+    <value>Detektirane jedinice:</value>
   </data>
   <data name="LCDMod_TopEnergy" xml:space="preserve">
-    <value>Najveća Potrošnja Energije</value>
+    <value>Najveća potrošnja energije</value>
+  </data>
+  <data name="LCDMod_EnergyDashboard" xml:space="preserve">
+    <value>Energetska ploča</value>
+  </data>
+  <data name="LCDMod_GraphWindow" xml:space="preserve">
+    <value>Vremenski prozor grafa</value>
+  </data>
+  <data name="LCDMod_GW_1s" xml:space="preserve">
+    <value>1 sekunda</value>
+  </data>
+  <data name="LCDMod_GW_5s" xml:space="preserve">
+    <value>5 sekundi</value>
+  </data>
+  <data name="LCDMod_GW_30s" xml:space="preserve">
+    <value>30 sekundi</value>
+  </data>
+  <data name="LCDMod_GW_1m" xml:space="preserve">
+    <value>1 minuta</value>
+  </data>
+  <data name="LCDMod_GW_5m" xml:space="preserve">
+    <value>5 minuta</value>
+  </data>
+  <data name="LCDMod_OreScannerRadar" xml:space="preserve">
+    <value>Radar skenera ruda</value>
+  </data>
+  <data name="LCDMod_OreScanner_Moving" xml:space="preserve">
+    <value>U POKRETU — skener isključen</value>
+  </data>
+  <data name="LCDMod_OreScanner_Charging" xml:space="preserve">
+    <value>PUNJENJE {0}s</value>
+  </data>
+  <data name="LCDMod_OreScanner_Scanning" xml:space="preserve">
+    <value>SKENIRANJE {0}% — pretraga stošca</value>
+  </data>
+  <data name="LCDMod_OreScanner_Clear" xml:space="preserve">
+    <value>ČISTO — bez rude</value>
+  </data>
+  <data name="LCDMod_OreScanner_Signal" xml:space="preserve">
+    <value>SIGNAL {0}%</value>
+  </data>
+  <data name="LCDMod_OreScanner_Range" xml:space="preserve">
+    <value>Domet: {0}</value>
+  </data>
+  <data name="LCDMod_OreScanner_NoDetector" xml:space="preserve">
+    <value>NEMA DETEKTORA RUDE NA GRIDU</value>
+  </data>
+  <data name="LCDMod_OreScanner_MultipleDetectors" xml:space="preserve">
+    <value>MULTIPLE ORE DETECTORS — leave only one</value>
+  </data>
+  <data name="LCDMod_OreScanner_ConeAngle" xml:space="preserve">
+    <value>Signal tilt</value>
+  </data>
+  <data name="LCDMod_OreScanner_TiltLabel" xml:space="preserve">
+    <value>Signal tilt:   {0}</value>
+  </data>
+  <data name="LCDMod_OreScanner_Reference" xml:space="preserve">
+    <value>Reference cockpit / control seat</value>
+  </data>
+  <data name="LCDMod_OreScanner_Reference_None" xml:space="preserve">
+    <value>(use gravity)</value>
   </data>
   <data name="LCDMod_Damaged" xml:space="preserve">
-    <value>Oštećeno</value>
+    <value>Damaged</value>
   </data>
   <data name="LCDMod_Axis_X_Positive" xml:space="preserve">
-    <value>Pozitivni X</value>
+    <value>Positive X</value>
   </data>
   <data name="LCDMod_Axis_X_Negative" xml:space="preserve">
-    <value>Negativni X</value>
+    <value>Negative X</value>
   </data>
   <data name="LCDMod_Axis_Y_Positive" xml:space="preserve">
-    <value>Pozitivni Y</value>
+    <value>Positive Y</value>
   </data>
   <data name="LCDMod_Axis_Y_Negative" xml:space="preserve">
-    <value>Negativni Y</value>
+    <value>Negative Y</value>
   </data>
   <data name="LCDMod_Axis_Z_Positive" xml:space="preserve">
-    <value>Pozitivni Z</value>
+    <value>Positive Z</value>
   </data>
   <data name="LCDMod_Axis_Z_Negative" xml:space="preserve">
-    <value>Negativni Z</value>
+    <value>Negative Z</value>
   </data>
   <data name="LCDMod_Empty" xml:space="preserve">
-    <value>Prazno</value>
+    <value>Empty</value>
   </data>
   <data name="LCDMod_GasFilled" xml:space="preserve">
-    <value>Plin napunjen %</value>
+    <value>Gas Filled %</value>
   </data>
   <data name="LCDMod_PowerFilled" xml:space="preserve">
-    <value>Snaga napunjena %</value>
+    <value>Power Filled %</value>
   </data>
   <data name="LCDMod_FactionColor_Usage" xml:space="preserve">
-    <value>Upotreba: /lcdmod factioncolor &lt;r g b | #rrggbb | #rgb | hsv h s v&gt;</value>
+    <value>Usage: /lcdmod factioncolor &lt;r g b | #rrggbb | #rgb | hsv h s v&gt;</value>
   </data>
   <data name="LCDMod_FactionColor_HsvFormat" xml:space="preserve">
-    <value>HSV format: hsv &lt;h&gt; &lt;s&gt; &lt;v&gt; (decimalni brojevi)</value>
+    <value>HSV format: hsv &lt;h&gt; &lt;s&gt; &lt;v&gt; (floats)</value>
   </data>
   <data name="LCDMod_FactionColor_HsvRange" xml:space="preserve">
-    <value>HSV vrijednosti moraju biti u [0..1]. Nijansa također prihvaća [0..360].</value>
+    <value>HSV values must be in [0..1]. Hue also accepts [0..360].</value>
   </data>
   <data name="LCDMod_FactionColor_Invalid" xml:space="preserve">
-    <value>Neispravna boja. Koristi: 255 0 0 | #ff0000 | #f00 | hsv 0 1 1</value>
+    <value>Invalid color. Use: 255 0 0 | #ff0000 | #f00 | hsv 0 1 1</value>
   </data>
   <data name="LCDMod_FactionColor_NoFaction" xml:space="preserve">
-    <value>Nije pronađena frakcija za lokalnog igrača.</value>
+    <value>No faction found for local player.</value>
   </data>
   <data name="LCDMod_FactionColor_Updated" xml:space="preserve">
-    <value>Boja ikone frakcije je ažurirana.</value>
+    <value>Faction icon color updated.</value>
   </data>
-  <data name="LCDMod_Thrust_GravityLoad" xml:space="preserve">
-    <value>Gravitacijsko opterećenje</value>
-  </data>
-
   <data name="LCDMod_Warning" xml:space="preserve">
-    <value>Upozorenje: {0}</value>
+    <value>Warning: {0}</value>
   </data>
   <data name="LCDMod_Critical" xml:space="preserve">
-    <value>Kritično: {0}</value>
+    <value>Critical: {0}</value>
+  </data>
+  <data name="LCDMod_Thrust_GravityLoad" xml:space="preserve">
+    <value>Gravity load</value>
   </data>
   <data name="LCDMod_StarMapSurface" xml:space="preserve">
     <value>Zvjezdana karta</value>

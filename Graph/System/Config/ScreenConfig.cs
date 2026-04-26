@@ -111,6 +111,15 @@ namespace Graph.System.Config
         [ProtoMember(18)] public int GraphWindowIndex { get; set; } = 2;
         [ProtoMember(19)] public float FoV { get; set; } = 70;
 
+        // Ore scanner cone angle bias. Slider range [-100, 100], default 0.
+        // 0 → 15° default; -100 → narrow (~5°); +100 → wide (~45°).
+        [ProtoMember(21)] public float OreScannerConeBias { get; set; } = 0f;
+
+        // EntityId of the cockpit / control seat used by the ore scanner as
+        // its "what is up / down" reference. 0 means "use gravity (or detector
+        // axis as last resort)".
+        [ProtoMember(20)] public long OreScannerReferenceId { get; set; }
+
         public SortMethod SortMethod
         {
             get { return (SortMethod)SortInternal; }

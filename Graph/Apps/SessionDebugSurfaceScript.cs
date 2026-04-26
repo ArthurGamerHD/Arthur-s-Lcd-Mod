@@ -158,27 +158,6 @@ namespace Graph.Apps
             lines.Add(new DebugLine("Last Processed Sum: " + Fixed4(snapshot.TotalLastRefreshProcessed), Color.White));
             lines.Add(new DebugLine("Avg Next Batch: " + Fixed4(snapshot.AverageNextBatchSize), Color.White));
             lines.Add(new DebugLine(string.Empty, Color.White));
-            lines.Add(new DebugLine("Modules:", Color.White));
-            lines.Add(new DebugLine("Name                   cnt  act", Color.White));
-            if (snapshot.ModuleLines == null || snapshot.ModuleLines.Length == 0)
-            {
-                lines.Add(new DebugLine("  (none)", Color.White));
-            }
-            else
-            {
-                for (int i = 0; i < snapshot.ModuleLines.Length; i++)
-                {
-                    var moduleName = snapshot.ModuleLines[i];
-                    var count = 0;
-                    var active = 0;
-                    ParseModuleLine(snapshot.ModuleLines[i], out moduleName, out count, out active);
-                    lines.Add(new DebugLine(
-                        ClampToWidth(moduleName, 22) + " " + Fixed4(count) + " " + Fixed4(active),
-                        Color.White));
-                }
-            }
-
-            lines.Add(new DebugLine(string.Empty, Color.White));
             lines.Add(new DebugLine("Per Grid:", Color.White));
             lines.Add(new DebugLine("Name                   ite  prc  bat  nxt", Color.White));
 

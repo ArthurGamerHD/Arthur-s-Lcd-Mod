@@ -31,7 +31,6 @@ namespace Graph.System.TerminalControls.Color
         void Setter(IMyTerminalBlock block, bool value)
         {
             var screen = GetThisSurfaceIndex(block);
-            var surface = (block as IMyTextSurfaceProvider)?.GetSurface(0);
             var config = ConfigManager.GetConfigForScreen(block, screen);
 
             if (config == null)
@@ -39,14 +38,15 @@ namespace Graph.System.TerminalControls.Color
 
             config.CustomizedColors = value;
 
-            if(surface != null)
+            ConfigManager.Sync(block);
+
+            var surface = (block as IMyTextSurfaceProvider)?.GetSurface(screen);
+            if (surface != null)
             {
                 var script = surface.Script;
                 surface.Script = "None";
                 surface.Script = script;
             }
-
-            ConfigManager.Sync(block);
         }
 
         bool Getter(IMyTerminalBlock myTerminalBlock)
