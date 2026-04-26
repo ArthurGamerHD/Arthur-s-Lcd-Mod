@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Generated;
 using Graph.Apps.Abstract;
 using Graph.Helpers;
 using Graph.Networking;
@@ -28,7 +29,7 @@ using VRageMath;
 namespace Graph.System
 {
     [MySessionComponentDescriptor(MyUpdateOrder.BeforeSimulation | MyUpdateOrder.AfterSimulation)]
-    public class LcdModSessionComponent : MySessionComponentBase
+    public partial class LcdModSessionComponent : MySessionComponentBase, IModuleManager
     {
         static LcdModSessionComponent _instance;
         readonly Dictionary<long, MyTuple<IMyCubeGrid, GridLogic>> _grids = new Dictionary<long, MyTuple<IMyCubeGrid, GridLogic>>();
@@ -78,6 +79,7 @@ namespace Graph.System
             _instance = this;
             if (Components == null)
                 Components = new Dictionary<long, GridLogic>();
+            RegisterModules();
 
             var group = CmdManager.GetOrCreateGroup("/lcdMod", new CmdGroupInitializer(4));
             group.TryAdd("FactionColor", FactionHelper.SetColor);
@@ -125,6 +127,7 @@ namespace Graph.System
             MyAPIGateway.Entities.OnEntityAdd -= EntityAdded;
             _grids.Clear();
             Components.Clear();
+            ClearModules();
             PlanetHelper.Clear();
             Components = null;
             _instance = null;
@@ -191,6 +194,7 @@ namespace Graph.System
                     grid.Item2.Update();
                 }
 
+                UpdateModules();
                 UpdateDebugSnapshot();
             }
             catch (Exception e)
@@ -203,9 +207,10 @@ namespace Graph.System
         {
             if (MyAPIGateway.Utilities.IsDedicated && MyAPIGateway.Session.IsServer)
                 return;
-
+            
             try
             {
+                PostUpdateModules();
                 OnAfterSimulationUpdate?.Invoke();
             }
             catch (Exception e)
@@ -243,6 +248,7 @@ namespace Graph.System
             }
 
             int averageNextBatch = logicCount > 0 ? (int)Math.Round(totalNextBatch / (double)logicCount) : 0;
+            var moduleLines = GetModuleDebugLines().ToArray();
             DebugSnapshot = new SessionDebugSnapshot(
                 _updateTick,
                 trackedGrids,
@@ -250,7 +256,8 @@ namespace Graph.System
                 refreshing,
                 totalLastIterations,
                 totalLastProcessed,
-                averageNextBatch);
+                averageNextBatch,
+                moduleLines);
         }
 
         public override void BeforeStart()
@@ -463,7 +470,7 @@ namespace Graph.System
 
     public struct SessionDebugSnapshot
     {
-        public static readonly SessionDebugSnapshot Empty = new SessionDebugSnapshot(0, 0, 0, 0, 0, 0, 0);
+        public static readonly SessionDebugSnapshot Empty = new SessionDebugSnapshot(0, 0, 0, 0, 0, 0, 0, new string[0]);
 
         public readonly int UpdateTick;
         public readonly int TrackedGrids;
@@ -472,6 +479,7 @@ namespace Graph.System
         public readonly int TotalLastRefreshIterations;
         public readonly int TotalLastRefreshProcessed;
         public readonly int AverageNextBatchSize;
+        public readonly string[] ModuleLines;
 
         public SessionDebugSnapshot(
             int updateTick,
@@ -480,7 +488,8 @@ namespace Graph.System
             int refreshInProgress,
             int totalLastRefreshIterations,
             int totalLastRefreshProcessed,
-            int averageNextBatchSize)
+            int averageNextBatchSize,
+            string[] moduleLines)
         {
             UpdateTick = updateTick;
             TrackedGrids = trackedGrids;
@@ -489,6 +498,7 @@ namespace Graph.System
             TotalLastRefreshIterations = totalLastRefreshIterations;
             TotalLastRefreshProcessed = totalLastRefreshProcessed;
             AverageNextBatchSize = averageNextBatchSize;
+            ModuleLines = moduleLines ?? new string[0];
         }
     }
 }

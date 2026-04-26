@@ -158,6 +158,27 @@ namespace Graph.Apps
             lines.Add(new DebugLine("Last Processed Sum: " + Fixed4(snapshot.TotalLastRefreshProcessed), Color.White));
             lines.Add(new DebugLine("Avg Next Batch: " + Fixed4(snapshot.AverageNextBatchSize), Color.White));
             lines.Add(new DebugLine(string.Empty, Color.White));
+            lines.Add(new DebugLine("Modules:", Color.White));
+            lines.Add(new DebugLine("Name                   cnt  act", Color.White));
+            if (snapshot.ModuleLines == null || snapshot.ModuleLines.Length == 0)
+            {
+                lines.Add(new DebugLine("  (none)", Color.White));
+            }
+            else
+            {
+                for (int i = 0; i < snapshot.ModuleLines.Length; i++)
+                {
+                    var moduleName = snapshot.ModuleLines[i];
+                    var count = 0;
+                    var active = 0;
+                    ParseModuleLine(snapshot.ModuleLines[i], out moduleName, out count, out active);
+                    lines.Add(new DebugLine(
+                        ClampToWidth(moduleName, 22) + " " + Fixed4(count) + " " + Fixed4(active),
+                        Color.White));
+                }
+            }
+
+            lines.Add(new DebugLine(string.Empty, Color.White));
             lines.Add(new DebugLine("Per Grid:", Color.White));
             lines.Add(new DebugLine("Name                   ite  prc  bat  nxt", Color.White));
 
@@ -212,6 +233,35 @@ namespace Graph.Apps
         static string Fixed4(int value)
         {
             return ClampToWidth(value.ToString(), 4);
+        }
+
+        static void ParseModuleLine(string line, out string moduleName, out int count, out int active)
+        {
+            moduleName = string.Empty;
+            count = 0;
+            active = 0;
+
+            if (string.IsNullOrEmpty(line))
+                return;
+
+            var parts = line.Split(':');
+            if (parts.Length == 0)
+                return;
+
+            moduleName = parts[0].Trim();
+            if (parts.Length > 1)
+            {
+                int parsedCount;
+                if (int.TryParse(parts[1].Trim(), out parsedCount))
+                    count = parsedCount;
+            }
+
+            if (parts.Length > 2)
+            {
+                int parsedActive;
+                if (int.TryParse(parts[2].Trim(), out parsedActive))
+                    active = parsedActive;
+            }
         }
 
         struct DebugLine

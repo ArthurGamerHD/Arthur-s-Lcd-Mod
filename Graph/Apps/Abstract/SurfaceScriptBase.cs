@@ -10,6 +10,7 @@ using Graph.Panels;
 using Graph.System;
 using Graph.System.Config;
 using Graph.System.TerminalControls.Groups;
+using Graph.Apps.Utility;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using VRage;
@@ -29,7 +30,7 @@ namespace Graph.Apps.Abstract
         static readonly Dictionary<string, Vector2> FontSizeCache = new Dictionary<string, Vector2>();
         static readonly StringBuilder StringBuilderBuffer = new StringBuilder();
 
-        public static List<SurfaceScriptBase> Instances = new List<SurfaceScriptBase>();
+        public static SurfaceCollection Instances = new SurfaceCollection();
 
         readonly List<MySprite> _backgroundGrids = new List<MySprite>();
         Color _backgroundColor;
@@ -89,6 +90,7 @@ namespace Graph.Apps.Abstract
 
         public bool Dirty => _dirty;
         bool _dirty;
+        bool _disposed;
 
         public ScreenProviderConfig ProviderConfig;
         protected bool IsScreenReadyToRender { get; private set; }
@@ -97,6 +99,8 @@ namespace Graph.Apps.Abstract
             size)
         {
             Instances.Add(this);
+            if (Block != null)
+                ((IMyEntity)Block).OnMarkForClose += HandleBlockMarkedForClose;
             UpdateViewBox();
             UpdateFaction(FactionHelper.GetOwnerFaction(Block as IMyTerminalBlock));
             DrawSplash();
@@ -170,6 +174,20 @@ namespace Graph.Apps.Abstract
 
         public override void Dispose()
         {
+            if (_disposed)
+                return;
+            _disposed = true;
+
+            try
+            {
+                if (Block != null)
+                    ((IMyEntity)Block).OnMarkForClose -= HandleBlockMarkedForClose;
+            }
+            catch (Exception e)
+            {
+                ErrorHandlerHelper.LogError(e, this);
+            }
+
             try
             {
                 if (Block != null && ProviderConfig != null)
@@ -180,9 +198,16 @@ namespace Graph.Apps.Abstract
                 ErrorHandlerHelper.LogError(e, this);
             }
 
+            // Ensure module hooks are detached even if the instance list is already out of sync.
+            LcdModSessionComponent.UnhookSurfaceModules(this);
             Instances.Remove(this);
             LcdModSessionComponent.OnLanguageChanged -= LayoutChanged;
             base.Dispose();
+        }
+
+        void HandleBlockMarkedForClose(IMyEntity entity)
+        {
+            Dispose();
         }
 
         const float SERVER_EXTRA_PADDING = 4f;
