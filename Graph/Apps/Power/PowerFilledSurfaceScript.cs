@@ -98,7 +98,7 @@ namespace Graph.Apps.Power
             float rowHeight = TITLE_BAR_HEIGHT_BASE * LayoutScale;
             FooterHeight = rowHeight * rows;
             float footerTop = ViewBox.Bottom - FooterHeight;
-            float margin = 6f * Scale;
+            float margin = 0f;
             float footerLeft = ViewBox.X + margin;
             float footerWidth = Math.Max(1f, ViewBox.Width - margin * 2f);
             float footerPad = 6f * Scale;

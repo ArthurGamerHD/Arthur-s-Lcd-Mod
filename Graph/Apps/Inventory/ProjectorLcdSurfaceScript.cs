@@ -192,15 +192,12 @@ namespace Graph.Apps.Inventory
 
             if (_totalBlocks == 0 || _totalComponents == 0)
                 return;
-
-            var margin = GetFooterMarginX();
-            var footerLeft = ViewBox.X + margin;
-            var footerRight = ViewBox.Right - margin;
-            var footerWidth = Math.Max(1f, footerRight - footerLeft);
+            
             var pos = ViewBox.Position;
             var footerPaddingX = GetFooterPaddingX();
-            var footerContentLeft = footerLeft + footerPaddingX;
-            var footerContentRight = footerRight - footerPaddingX;
+            var footerInnerPaddingX = GetFooterInnerPaddingX();
+            var footerContentLeft = ViewBox.X + footerPaddingX + footerInnerPaddingX;
+            var footerContentRight = ViewBox.Right - footerPaddingX - footerInnerPaddingX;
             pos.X = footerContentLeft;
 
             int built = Math.Max(_totalBlocks - _remainingBlocks, 0);
@@ -597,22 +594,22 @@ namespace Graph.Apps.Inventory
 
         Vector2 GetFooterPieCenter()
         {
-            var footerLeft = ViewBox.X + GetFooterMarginX();
-            var pieCenterX = footerLeft + GetFooterPieSize().X * 0.5f;
+            var footerLeft = ViewBox.X;
+            var pieCenterX = footerLeft + GetFooterInnerPaddingX() + GetFooterPieSize().X * 0.5f;
             var footerHeight = GetFooterHeight();
             var footerTop = ViewBox.Bottom - footerHeight;
             var pieCenterY = footerTop + footerHeight * 0.5f;
             return new Vector2(pieCenterX, pieCenterY);
         }
 
-        float GetFooterMarginX()
-        {
-            return ViewBox.Size.X * 0.02f;
-        }
-
         float GetFooterPaddingX()
         {
             return GetFooterLegendSize().X + GetFooterLegendTextSpacing();
+        }
+
+        float GetFooterInnerPaddingX()
+        {
+            return 6f * Scale;
         }
 
         float GetFooterPaddingY()

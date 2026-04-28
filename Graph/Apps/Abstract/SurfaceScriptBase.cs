@@ -251,8 +251,6 @@ namespace Graph.Apps.Abstract
             Dispose();
         }
 
-        const float SERVER_EXTRA_PADDING = 4f;
-
         protected void UpdateViewBox()
         {
             var sizeOffset = (Surface.TextureSize - Surface.SurfaceSize) / 2;
@@ -261,20 +259,8 @@ namespace Graph.Apps.Abstract
 
             var padding = (Surface.TextPadding / 100) * Surface.SurfaceSize;
             sizeOffset += padding / 2;
-
-            if (MyAPIGateway.Session != null && MyAPIGateway.Session.IsServer)
-            {
-                sizeOffset += new Vector2(SERVER_EXTRA_PADDING, SERVER_EXTRA_PADDING);
-                ViewBox = new RectangleF(
-                    sizeOffset.X, sizeOffset.Y,
-                    Surface.SurfaceSize.X - padding.X - SERVER_EXTRA_PADDING * 2,
-                    Surface.SurfaceSize.Y - padding.Y - SERVER_EXTRA_PADDING * 2);
-            }
-            else
-            {
-                ViewBox = new RectangleF(sizeOffset.X, sizeOffset.Y, Surface.SurfaceSize.X - padding.X,
-                    Surface.SurfaceSize.Y - padding.Y);
-            }
+            ViewBox = new RectangleF(sizeOffset.X, sizeOffset.Y, Surface.SurfaceSize.X - padding.X,
+                Surface.SurfaceSize.Y - padding.Y);
         }
 
         public override void Run()

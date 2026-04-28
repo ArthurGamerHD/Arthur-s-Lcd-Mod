@@ -67,14 +67,12 @@ namespace Graph.Apps.Radar
         const float TGT_ELEVATION_LINE_WIDTH = 4f;
         const float RADAR_RANGE_LINE_WIDTH = 8f;
         const float QUADRANT_LINE_WIDTH = 4f;
-        const float RADAR_SIZE_SCALE = 0.95f;
         const float QUADRANT_LINE_COVERAGE_PER_SIDE = .8f;
         const float PROJECTION_ANGLE_DEG = 55f;
         const int FOOTER_MAX_ROWS = 4;
         const float FOOTER_ROW_HEIGHT_PX = 18f;
         const float FOOTER_HEADER_HEIGHT_PX = 14f;
         const float FOOTER_COL_WIDTH_PX = 230f;
-        const float FOOTER_RADAR_CLEARANCE_FACTOR = 0.35f;
         const int FOOTER_SCROLL_STEP_SECONDS = 2;
 
 
@@ -1073,11 +1071,11 @@ namespace Graph.Apps.Radar
             float top = ViewBox.Bottom - FooterHeight;
             float footerScale = LayoutScale;
             float pad = 6f * footerScale;
-            float rowHeight = FOOTER_ROW_HEIGHT_PX * footerScale;
             float headerHeight = FOOTER_HEADER_HEIGHT_PX * footerScale;
             float colWidth = FOOTER_COL_WIDTH_PX * Scale;
             int cols = Math.Max(1, (int)Math.Floor(width / Math.Max(1f, colWidth)));
-            int visibleEntries = FOOTER_MAX_ROWS * cols;
+            int rowsPerCol = Math.Min(FOOTER_MAX_ROWS, Math.Max(1, (int)Math.Ceiling(_sortedContacts.Count / (float)cols)));
+            int visibleEntries = rowsPerCol * cols;
             int maxEntries = Math.Min(_sortedContacts.Count, visibleEntries);
             int startIndex = 0;
             if (_sortedContacts.Count > visibleEntries)
@@ -1092,6 +1090,12 @@ namespace Graph.Apps.Radar
                 Color = new Color(BackgroundColor.MulValue(0.8f), 0.5f),
                 Alignment = TextAlignment.CENTER
             });
+
+            sprites.Add(MySprite.CreateClipRect(new Rectangle(
+                (int)Math.Floor(left),
+                (int)Math.Floor(top),
+                (int)Math.Ceiling(width),
+                (int)Math.Ceiling(FooterHeight))));
 
             sprites.Add(new MySprite
             {
@@ -1120,13 +1124,15 @@ namespace Graph.Apps.Radar
             var warnColor = Config.WarningColor;
             var allyColor = Config.HeaderColor;
             float contentTop = top + headerHeight + pad;
+            float contentBottom = top + FooterHeight - pad;
+            float rowHeight = Math.Max(1f, (contentBottom - contentTop) / Math.Max(1, rowsPerCol));
             float drawColWidth = width / cols;
 
             for (int i = 0; i < maxEntries; i++)
             {
                 ContactRecord contact = _sortedContacts[(startIndex + i) % _sortedContacts.Count];
-                int col = i / FOOTER_MAX_ROWS;
-                int row = i % FOOTER_MAX_ROWS;
+                int col = i / rowsPerCol;
+                int row = i % rowsPerCol;
 
                 float x = left + col * drawColWidth + pad;
                 float y = contentTop + row * rowHeight;
@@ -1179,6 +1185,8 @@ namespace Graph.Apps.Radar
                     RotationOrScale = 0.5f * Scale * FontScale
                 });
             }
+
+            sprites.Add(MySprite.CreateClearClipRect());
         }
 
         void UpdateFooterHeights()
