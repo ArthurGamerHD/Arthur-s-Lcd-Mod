@@ -67,22 +67,7 @@ namespace Graph.System.Config
 
         public static void Save(IMyEntity storageEntity, ScreenProviderConfig providerConfig)
         {
-            try
-            {
-                if (storageEntity.Storage == null)
-                    storageEntity.Storage = new MyModStorageComponent();
-
-                var base64 = Convert.ToBase64String(MyAPIGateway.Utilities.SerializeToBinary(providerConfig));
-
-                if (string.IsNullOrEmpty(base64))
-                    throw new Exception("Invalid storage config");
-
-                storageEntity.Storage[Constants.StorageGuid] = base64;
-            }
-            catch (Exception e)
-            {
-                ErrorHandlerHelper.LogError(e, typeof(ConfigManager));
-            }
+            ScreenProviderConfigStorage.Save(storageEntity, providerConfig);
         }
 
         public static void Sync(IMyEntity storageEntity, ScreenProviderConfig providerConfig)
@@ -144,14 +129,9 @@ namespace Graph.System.Config
 
         public static ScreenProviderConfig TryLoad(IMyCubeBlock block)
         {
-            if (block.Storage == null)
-                return null;
-
-            string value;
-            if (block.Storage.TryGetValue(Constants.StorageGuid, out value) && !string.IsNullOrEmpty(value))
+            var provider = ScreenProviderConfigStorage.TryLoad(block);
+            if (provider != null)
             {
-                var data = Convert.FromBase64String(value);
-                var provider = MyAPIGateway.Utilities.SerializeFromBinary<ScreenProviderConfig>(data);
                 var terminalBlock = (IMyTerminalBlock)block;
 
                 if (provider.Parent != block.CubeGrid.EntityId)
@@ -159,10 +139,9 @@ namespace Graph.System.Config
                 else
                     provider.BindRuntimeParent(terminalBlock);
                 
-                return provider;
             }
 
-            return null;
+            return provider;
         }
 
         public static void CreateSettings(IMyCubeBlock block, int index, ConfigKind requestedConfigKind, out ScreenProviderConfig provider, out ScreenConfigGeneral screen)
