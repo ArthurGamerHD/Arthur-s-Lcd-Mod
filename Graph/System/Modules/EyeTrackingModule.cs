@@ -68,6 +68,7 @@ namespace Graph.System.Modules
                 if (TryProjectCameraCenter(
                         dummyWorldMatrix,
                         screen.Surface,
+                        screen.RotationOrSurfaceIndex,
                         cameraPos,
                         cameraForward,
                         out lookAtCoordinates))
@@ -124,6 +125,7 @@ namespace Graph.System.Modules
         static bool TryProjectCameraCenter(
             MatrixD dummyWorldMatrix,
             Sandbox.ModAPI.Ingame.IMyTextSurface surface,
+            int rotationOrSurfaceIndex,
             Vector3D rayOrigin,
             Vector3D rayDirection,
             out Vector2 lookAtCoordinates)
@@ -147,6 +149,7 @@ namespace Graph.System.Modules
 
             var localX = hitLocal.X;
             var localY = hitLocal.Y;
+            RotateLocalQuarterTurns(ref localX, ref localY, rotationOrSurfaceIndex);
 
             const double localHalfExtent = 0.5d;
             if (localX < -localHalfExtent || localX > localHalfExtent ||
@@ -163,6 +166,33 @@ namespace Graph.System.Modules
                 offset.X + (float)(u * surface.SurfaceSize.X),
                 offset.Y + (float)(v * surface.SurfaceSize.Y));
             return true;
+        }
+
+        static void RotateLocalQuarterTurns(ref double x, ref double y, int quarterTurns)
+        {
+            var turns = ((quarterTurns % 4) + 4) % 4;
+            if (turns == 0)
+                return;
+
+            var ox = x;
+            var oy = y;
+
+            // Rotate hit coordinates with the LCD quarter-turn so UV/bounds align with the rotated chart orientation.
+            switch (turns)
+            {
+                case 1:
+                    x = -oy;
+                    y = ox;
+                    break;
+                case 2:
+                    x = -ox;
+                    y = -oy;
+                    break;
+                default:
+                    x = oy;
+                    y = -ox;
+                    break;
+            }
         }
 
         static Vector2 GetSurfaceCenterRaw(Sandbox.ModAPI.Ingame.IMyTextSurface surface)

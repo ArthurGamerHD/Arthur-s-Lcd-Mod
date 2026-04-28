@@ -7,6 +7,7 @@ namespace Graph.Helpers
 {
     internal static class FormatingHelper
     {
+        public const char ELLIPSIS = '…';
         public static CultureInfo Culture => CultureInfo.CurrentUICulture;
         
         public static string FormatItemQty(double input)
@@ -113,5 +114,16 @@ namespace Graph.Helpers
 
 
         public static string PercentageToString(float f) => f.ToString("P0", Culture).Replace(" ", string.Empty);
+
+        public static string TrimName(string value, int lenght = 8)
+        {
+            if (string.IsNullOrEmpty(value))
+                return string.Empty;
+
+            if (value.Length <= lenght + 2 || lenght < 5)
+                return value.Length <= lenght - 1 ? value : value.Substring(0, lenght - 1) + ELLIPSIS;
+
+            return value.Substring(0, lenght - 4) + ELLIPSIS + value.Substring(value.Length - 3, 3);
+        }
     }
 }

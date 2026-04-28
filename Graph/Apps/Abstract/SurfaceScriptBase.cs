@@ -13,6 +13,8 @@ using Graph.System.TerminalControls.Groups;
 using Graph.Apps.Utility;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
+using Sandbox.ModAPI.Interfaces;
+using SpaceEngineers.Game.EntityComponents.Blocks;
 using VRage;
 using VRage.Game;
 using VRage.Game.GUI.TextPanel;
@@ -49,6 +51,7 @@ namespace Graph.Apps.Abstract
         public RectangleF ViewBox { get; protected set; }
 
         protected GridLogic GridLogic;
+        int _rotationOrSurfaceIndex;
 
         protected float CaretY;
         protected float FooterHeight;
@@ -101,11 +104,49 @@ namespace Graph.Apps.Abstract
             Instances.Add(this);
             if (Block != null)
                 ((IMyEntity)Block).OnMarkForClose += HandleBlockMarkedForClose;
+            ResolveRotationOrSurfaceIndex();
             UpdateViewBox();
             UpdateFaction(FactionHelper.GetOwnerFaction(Block as IMyTerminalBlock));
             DrawSplash();
 
             LcdModSessionComponent.OnLanguageChanged += LayoutChanged;
+        }
+
+        public int RotationOrSurfaceIndex => _rotationOrSurfaceIndex;
+
+        protected void ResolveRotationOrSurfaceIndex()
+        {
+            if (Block is IMyTextPanel)
+            {
+                foreach (var component in Block.Components)
+                {
+                    var lcdSurfaceComponent = component as IMyLcdSurfaceComponent;
+                    if (lcdSurfaceComponent == null)
+                        continue;
+
+                    _rotationOrSurfaceIndex = lcdSurfaceComponent.SelectedRotationIndex;
+                    return;
+                }
+
+                _rotationOrSurfaceIndex = 0;
+                return;
+            }
+
+            var surfaceProvider = Block as IMyTextSurfaceProvider;
+            if (surfaceProvider == null)
+                return;
+
+            for (int i = 0; i < surfaceProvider.SurfaceCount; i++)
+            {
+                if (surfaceProvider.GetSurface(i) != Surface)
+                    continue;
+
+                _rotationOrSurfaceIndex = i;
+                return;
+            }
+
+            MyLog.Default.Log(MyLogSeverity.Error, "Failed to find surface for {0}, defaulting to surface 0", Block);
+            _rotationOrSurfaceIndex = 0;
         }
 
 
@@ -517,18 +558,15 @@ namespace Graph.Apps.Abstract
 
             if (textSize.X > availableWidth)
             {
-                const string ellipsis = "...";
-
-                for (int i = sb.Length - 1; i > 0; i--)
+                var source = sb.ToString();
+                for (int i = source.Length - 1; i > 0; i--)
                 {
-                    sb.Length = i;
-                    sb.Append(ellipsis);
+                    sb.Clear();
+                    sb.Append(FormatingHelper.TrimName(source, i));
                     textSize = Surface.MeasureStringInPixels(sb, "White", fontSize * Scale * FontScale);
 
                     if (textSize.X <= availableWidth)
                         break;
-
-                    sb.Length = i;
                 }
             }
         }
@@ -592,6 +630,7 @@ namespace Graph.Apps.Abstract
             InvalidateTitleCache();
             Scale = GetAutoScaleUniform();
             UpdateViewBox();
+            ResolveRotationOrSurfaceIndex();
             _backgroundGrids.Clear();
         }
 

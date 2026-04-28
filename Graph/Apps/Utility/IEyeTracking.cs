@@ -10,6 +10,8 @@ namespace Graph.Apps.Utility
         Sandbox.ModAPI.Ingame.IMyTextSurface Surface { get; }
         VRage.Game.ModAPI.Ingame.IMyCubeBlock Block { get; }
         
+        int RotationOrSurfaceIndex { get; }
+        
         void LookAt(Vector2 onScreenCoordinates);
     }
 }

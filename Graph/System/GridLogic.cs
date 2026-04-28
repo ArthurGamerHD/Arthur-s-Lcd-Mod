@@ -9,6 +9,7 @@ using SpaceEngineers.Game.ModAPI;
 using VRage.Game;
 using VRage.Game.ModAPI;
 using VRage.Game.ModAPI.Ingame;
+using VRageMath;
 using IMyCubeGrid = VRage.Game.ModAPI.IMyCubeGrid;
 using IMySlimBlock = VRage.Game.ModAPI.IMySlimBlock;
 using IngameItem = VRage.Game.ModAPI.Ingame.MyInventoryItem;
@@ -80,6 +81,17 @@ namespace Graph.System
 
         readonly Dictionary<SearchQueryToken, Dictionary<MyItemType, double>> _refineryInputQueryCache  = new Dictionary<SearchQueryToken, Dictionary<MyItemType, double>>();
         readonly Dictionary<SearchQueryToken, Dictionary<MyItemType, double>> _refineryOutputQueryCache = new Dictionary<SearchQueryToken, Dictionary<MyItemType, double>>();
+        readonly Dictionary<long, Vector3D> _jumpPointByPlanetCache = new Dictionary<long, Vector3D>();
+        readonly Dictionary<long, JumpPointGpsEntry> _jumpPointGpsEntries = new Dictionary<long, JumpPointGpsEntry>();
+        long _jumpPointCacheFrame = -1;
+        const long JUMP_POINT_GPS_TTL_FRAMES = 60L * 60L; // 60s at 60 FPS
+
+        struct JumpPointGpsEntry
+        {
+            public IMyGps Gps;
+            public long LastRequestedFrame;
+            public long LastPublishedFrame;
+        }
 
         /// <summary>
         /// Logic attached to <see cref="grid"/>
@@ -120,6 +132,8 @@ namespace Graph.System
 
             try
             {
+                CleanupJumpPointGps();
+
                 // Schedule a refresh cycle periodically, but keep current data until the new snapshot is ready.
                 if (_clock % DELAY == 0)
                 {
@@ -417,6 +431,155 @@ namespace Graph.System
         {
             RefreshIfNeeded();
             return _jumpDrives;
+        }
+
+        public bool TryGetPlanetJumpPoint(
+            long planetId,
+            string planetName,
+            Vector3D planetCenter,
+            double planetRadiusMeters,
+            double gravityRangeMeters,
+            out Vector3D jumpPoint)
+        {
+            jumpPoint = Vector3D.Zero;
+            if (Grid == null)
+                return false;
+
+            var jumpDrives = GetJumpDrives();
+            if (jumpDrives == null || jumpDrives.Count == 0)
+                return false;
+
+            long frame = MyAPIGateway.Session != null ? MyAPIGateway.Session.GameplayFrameCounter : -1;
+            if (_jumpPointCacheFrame != frame)
+            {
+                _jumpPointByPlanetCache.Clear();
+                _jumpPointCacheFrame = frame;
+            }
+
+            JumpPointGpsEntry gpsEntry;
+            if (!_jumpPointGpsEntries.TryGetValue(planetId, out gpsEntry))
+                gpsEntry = new JumpPointGpsEntry();
+            gpsEntry.LastRequestedFrame = frame;
+            _jumpPointGpsEntries[planetId] = gpsEntry;
+
+            if (_jumpPointByPlanetCache.TryGetValue(planetId, out jumpPoint))
+                return true;
+
+            var gridPos = Grid.GetPosition();
+            var dir = gridPos - planetCenter;
+            if (dir.LengthSquared() <= 1e-6)
+                dir = Vector3D.Forward;
+            else
+                dir.Normalize();
+
+            var offsetMeters = Math.Max(0d, planetRadiusMeters + gravityRangeMeters + 10d);
+            jumpPoint = planetCenter + dir * offsetMeters;
+            _jumpPointByPlanetCache[planetId] = jumpPoint;
+            PublishJumpPointGps(planetId, planetName, jumpPoint, frame);
+            return true;
+        }
+
+        void PublishJumpPointGps(long planetId, string planetName, Vector3D jumpPoint, long frame)
+        {
+            if (frame < 0 || MyAPIGateway.Session == null || MyAPIGateway.Session.Player == null || MyAPIGateway.Session.GPS == null)
+                return;
+
+            JumpPointGpsEntry entry;
+            if (!_jumpPointGpsEntries.TryGetValue(planetId, out entry))
+                return;
+
+            if (frame - entry.LastPublishedFrame < 60)
+                return;
+
+            var identityId = MyAPIGateway.Session.Player.IdentityId;
+            var gps = entry.Gps;
+            if (gps == null)
+            {
+                var gpsName = BuildJumpPointGpsName(planetName);
+                gps = MyAPIGateway.Session.GPS.Create(gpsName, string.Empty, jumpPoint, true, false);
+                if (gps == null)
+                    return;
+                MyAPIGateway.Session.GPS.AddGps(identityId, gps);
+                entry.Gps = gps;
+            }
+            else
+            {
+                gps.Coords = jumpPoint;
+                MyAPIGateway.Session.GPS.ModifyGps(identityId, gps);
+            }
+
+            entry.LastPublishedFrame = frame;
+            _jumpPointGpsEntries[planetId] = entry;
+        }
+
+        void CleanupJumpPointGps()
+        {
+            if (MyAPIGateway.Session == null || MyAPIGateway.Session.Player == null || MyAPIGateway.Session.GPS == null || _jumpPointGpsEntries.Count == 0)
+                return;
+
+            long frame = MyAPIGateway.Session.GameplayFrameCounter;
+            var expired = new List<long>();
+            foreach (var pair in _jumpPointGpsEntries)
+            {
+                if (frame - pair.Value.LastRequestedFrame >= JUMP_POINT_GPS_TTL_FRAMES)
+                    expired.Add(pair.Key);
+            }
+
+            if (expired.Count == 0)
+                return;
+
+            long identityId = MyAPIGateway.Session.Player.IdentityId;
+            for (int i = 0; i < expired.Count; i++)
+            {
+                long planetId = expired[i];
+                JumpPointGpsEntry entry;
+                if (!_jumpPointGpsEntries.TryGetValue(planetId, out entry))
+                    continue;
+
+                if (entry.Gps != null)
+                    MyAPIGateway.Session.GPS.RemoveGps(identityId, entry.Gps);
+                _jumpPointGpsEntries.Remove(planetId);
+                _jumpPointByPlanetCache.Remove(planetId);
+            }
+        }
+
+        string BuildJumpPointGpsName(string planetName)
+        {
+            var gridToken = GetGridNameToken();
+            var planetToken = string.IsNullOrWhiteSpace(planetName)
+                ? "Unknown"
+                : FormatingHelper.TrimName(SanitizeGpsNameToken(planetName));
+            return "JumpPoint_" + gridToken + "_" + planetToken;
+        }
+
+        string GetGridNameToken()
+        {
+            var gridName = Grid != null ? Grid.CustomName : null;
+            if (string.IsNullOrWhiteSpace(gridName))
+                return "Unknown";
+
+            var token = FormatingHelper.TrimName(SanitizeGpsNameToken(gridName));
+            if (token.Length == 0)
+                token = "Unknown";
+            return token;
+        }
+
+        static string SanitizeGpsNameToken(string raw)
+        {
+            if (string.IsNullOrEmpty(raw))
+                return string.Empty;
+
+            var chars = new List<char>(raw.Length);
+            for (int i = 0; i < raw.Length; i++)
+            {
+                var c = raw[i];
+                if (char.IsLetterOrDigit(c) || c == '_' || c == '-')
+                    chars.Add(c);
+                else if (char.IsWhiteSpace(c))
+                    chars.Add('_');
+            }
+
+            return new string(chars.ToArray());
         }
 
         /// <summary>

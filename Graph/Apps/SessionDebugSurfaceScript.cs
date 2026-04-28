@@ -1,24 +1,21 @@
-using System;
+#if DEBUG
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Graph.Apps.Abstract;
 using Graph.System;
 using Sandbox.Game.Components;
 using Sandbox.Game.Entities;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
-using Sandbox.ModAPI.Interfaces;
-using SpaceEngineers.Game.EntityComponents.Blocks;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
-using VRage.Game.ObjectBuilders.ComponentSystem;
-using VRage.Utils;
 using VRageMath;
 
 namespace Graph.Apps
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public class SessionDebugSurfaceScript : MyTSSCommon
+    public class SessionDebugSurfaceScript : SurfaceScriptBase
     {
         public const string ID = "SessionDebug";
         public const string TITLE = "LCDMod Session Debug";
@@ -29,14 +26,11 @@ namespace Graph.Apps
         static readonly Color SleepingColor = new Color(235, 210, 60);
 
         List<MySprite> _sprites = new List<MySprite>();
-        Func<int> _surfaceIndex = () => 0;
-
         public override ScriptUpdate NeedsUpdate => ScriptUpdate.Update10;
 
         public SessionDebugSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
             : base(surface, block, size)
         {
-            ResolveSurfaceIndex();
             LcdModSessionComponent.OnAfterSimulationUpdate += HandleAfterSimulationUpdate;
         }
 
@@ -85,55 +79,7 @@ namespace Graph.Apps
                 });
             }
 
-            renderComp.RenderSpritesToTexture(_surfaceIndex(), _sprites, textureSize, aspectRatio, Surface.ScriptBackgroundColor, Surface.BackgroundAlpha);
-        }
-
-        void ResolveSurfaceIndex()
-        {
-            if (Block is IMyTextPanel)
-            {
-                foreach (var myComponentBase in Block.Components)
-                {
-                    if (myComponentBase is IMyLcdSurfaceComponent)
-                    {
-                        var surface = myComponentBase as IMyLcdSurfaceComponent;
-                        _surfaceIndex = () => surface.SelectedRotationIndex;
-                        return;
-                    }
-                }
-
-                return;
-            }
-
-
-            var surfaceProvider = Block as IMyTextSurfaceProvider;
-            if(surfaceProvider == null)
-                return;
-
-            for (int i = 0; i < surfaceProvider.SurfaceCount; i++)
-            {
-                if (surfaceProvider.GetSurface(i) == Surface)
-                {
-                    var index = i;
-                    _surfaceIndex = () => index;
-                    return;
-                }
-            }
-
-            MyLog.Default.Log(MyLogSeverity.Error, "Failed to find surface for {0}, defaulting to surface 0", Block);
-        }
-
-        ITerminalProperty<float> _screenRotationTerminalProperty;
-        
-        int GetRotationIndex(IMyTerminalBlock block)
-        {
-            _screenRotationTerminalProperty = _screenRotationTerminalProperty ?? block.GetProperty("Rotate") as ITerminalProperty<float>;
-            if (_screenRotationTerminalProperty == null)
-                return 0;
-
-            var deg = _screenRotationTerminalProperty.GetValue(block); // 0, 90, 180, 270
-            var idx = (int)Math.Round(deg / 90f);
-            return ((idx % 4) + 4) % 4;
+            renderComp.RenderSpritesToTexture(RotationOrSurfaceIndex, _sprites, textureSize, aspectRatio, Surface.ScriptBackgroundColor, Surface.BackgroundAlpha);
         }
 
         RectangleF GetViewBox()
@@ -276,3 +222,4 @@ namespace Graph.Apps
         }
     }
 }
+#endif

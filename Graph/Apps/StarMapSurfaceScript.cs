@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Generated;
 using Graph.Apps.Abstract;
 using Graph.Apps.Utility;
@@ -33,11 +34,24 @@ namespace Graph.Apps
         readonly EyeTrackingFrameState _eyeTracking = new EyeTrackingFrameState();
         Vector2 _lastEyeContactPoint;
         bool _hasLastEyeContactPoint;
+        long _jumpPointRunCounter;
+        const double JUMP_POINT_RUNS_PER_SECOND = 6d; // ScriptUpdate.Update10 at 60 FPS
+        struct JumpPointThrottleState
+        {
+            public long StartRun;
+            public long DurationRuns;
+            public long LastRequestRun;
+        }
+
+        readonly Dictionary<long, JumpPointThrottleState> _jumpPointThrottleByPlanet =
+            new Dictionary<long, JumpPointThrottleState>();
 
         struct PlanetProjection
         {
+            public long PlanetId;
             public string Name;
             public PlanetHelper.PlanetTextureStyle Texture;
+            public Vector3D WorldPosition;
             public Vector3D Direction;
             public double Distance;
             public float Visibility;
@@ -124,6 +138,7 @@ namespace Graph.Apps
             base.Run();
             if (Config == null)
                 return;
+            _jumpPointRunCounter++;
 
             if (float.IsNaN(_lastKnownConfigFov) || Math.Abs(_lastKnownConfigFov - Config.FoV) > 0.001f)
                 LayoutChanged();
@@ -143,10 +158,17 @@ namespace Graph.Apps
                 }
 
                 AddBackground(baseSprites);
-                DrawPlanetMap(planetSprites, ringSprites, overlaySprites);
-                if (!staticMode)
-                    DrawFovHud(overlaySprites, _fov);
                 DrawTitle(overlaySprites);
+                var hasPlanets = DrawPlanetMap(planetSprites, ringSprites, overlaySprites);
+                if (hasPlanets)
+                {
+                    if (!staticMode)
+                        DrawFovHud(overlaySprites, _fov);
+                }
+                else
+                {
+                    DrawMessage(overlaySprites, LocHelper.Empty, "Warning", Config.WarningColor, Config.Scale);
+                }
 
                 frame.AddRange(baseSprites);
                 frame.AddRange(ringSprites);
@@ -190,11 +212,12 @@ namespace Graph.Apps
             });
         }
 
-        void DrawPlanetMap(List<MySprite> planetSprites, List<MySprite> ringSprites, List<MySprite> overlaySprites)
+        bool DrawPlanetMap(List<MySprite> planetSprites, List<MySprite> ringSprites, List<MySprite> overlaySprites)
         {
             var planets = PlanetHelper.PlanetsById;
             if (planets == null || planets.Count == 0)
-                return;
+                return false;
+            bool hasDetectedPlanets = false;
 
             Vector3D camPos;
             Vector3D camRight;
@@ -203,13 +226,12 @@ namespace Graph.Apps
             bool staticMode = Config != null && Config.DisplayMode == DisplayMode.Legacy;
             if (staticMode)
             {
-                DrawStaticOrbitMap(ringSprites, planetSprites, overlaySprites, planets);
-                return;
+                return DrawStaticOrbitMap(ringSprites, planetSprites, overlaySprites, planets);
             }
             else
             {
                 if (Block == null)
-                    return;
+                    return false;
 
                 MatrixD world = Block.WorldMatrix;
                 camPos = world.Translation;
@@ -221,7 +243,7 @@ namespace Graph.Apps
             float gravityVisibility = GetGravityVisibility(camPos);
 
             if (_halfFovY < 1e-6)
-                return;
+                return false;
 
             double aspect = ViewBox.Width / Math.Max(1f, ViewBox.Height);
             double halfFovX = Math.Atan(Math.Tan(_halfFovY) * aspect);
@@ -255,6 +277,7 @@ namespace Graph.Apps
                 double planetRadiusMeters = planet.AverageRadius;
                 if (planetRadiusMeters <= 0d)
                     continue;
+                hasDetectedPlanets = true;
 
                 double angularRadius = Math.Asin(Math.Min(1d, planetRadiusMeters / distance));
                 float markerRadius = (float)(angularRadius / _halfFovY * (ViewBox.Height * 0.5f));
@@ -289,8 +312,10 @@ namespace Graph.Apps
                     gravityLimitRadius = planet.MaximumRadius * Math.Pow(surfaceGravity / 0.05d, 1d / gravityFalloff);
                 projectedPlanets.Add(new PlanetProjection
                 {
+                    PlanetId = planet.EntityId,
                     Name = string.IsNullOrWhiteSpace(name) ? "Unknown Planet" : name,
                     Texture = PlanetHelper.ResolvePlanetTexture(textureKey),
+                    WorldPosition = planet.WorldMatrix.Translation,
                     Direction = delta / distance,
                     Distance = distance,
                     Visibility = visibility,
@@ -335,16 +360,19 @@ namespace Graph.Apps
                 DrawPlanet(planetSprites, planet);
                 DrawPlanetLabels(overlaySprites, planet);
             }
+
+            return hasDetectedPlanets;
         }
 
-        void DrawStaticOrbitMap(
+        bool DrawStaticOrbitMap(
             List<MySprite> ringSprites,
             List<MySprite> planetSprites,
             List<MySprite> overlaySprites,
             Dictionary<long, MyPlanet> planets)
         {
             if (planets == null || planets.Count == 0)
-                return;
+                return false;
+            bool hasDetectedPlanets = false;
 
             var validPlanets = new List<MyPlanet>(planets.Count);
             var positions = new List<Vector3D>(planets.Count);
@@ -369,6 +397,7 @@ namespace Graph.Apps
                 double radius = planet.AverageRadius;
                 if (radius <= 0d)
                     continue;
+                hasDetectedPlanets = true;
 
                 Vector3D pos = planet.WorldMatrix.Translation;
                 double distanceToBlock = Block != null ? Vector3D.Distance(pos, referencePos) : pos.Length();
@@ -405,8 +434,10 @@ namespace Graph.Apps
 
                 projectedPlanets.Add(new PlanetProjection
                 {
+                    PlanetId = planet.EntityId,
                     Name = string.IsNullOrWhiteSpace(name) ? "Unknown Planet" : name,
                     Texture = PlanetHelper.ResolvePlanetTexture(textureKey),
+                    WorldPosition = pos,
                     Direction = Vector3D.Zero,
                     Distance = distanceToBlock,
                     Visibility = 1f,
@@ -424,8 +455,8 @@ namespace Graph.Apps
                 });
             }
 
-            if (projectedPlanets.Count == 0)
-                return;
+            if (!hasDetectedPlanets)
+                return false;
 
             // Smaller planets close to larger ones orbit those larger planets in static map.
             for (int i = 0; i < projectedPlanets.Count; i++)
@@ -462,7 +493,7 @@ namespace Graph.Apps
             float maxOrbitPxByHeight = (ViewBox.Height * 0.45f) / Math.Max(0.1f, STATIC_ORBIT_Y_SQUASH);
             float maxOrbitPx = Math.Min(maxOrbitPxByWidth, maxOrbitPxByHeight);
             if (maxOrbitPx <= 1f)
-                return;
+                return false;
 
             double worldToPx = maxOrbitPx / maxOrbitWithRadius;
             var ringColor = ApplyAlpha(ForegroundColor, 0.15f);
@@ -529,7 +560,7 @@ namespace Graph.Apps
                 DrawPlanet(planetSprites, projectedPlanets[i]);
 
             if (!_hasLastEyeContactPoint)
-                return;
+                return true;
 
             var focusPoint = _lastEyeContactPoint;
             _hasLastEyeContactPoint = false;
@@ -555,6 +586,8 @@ namespace Graph.Apps
                 selected.ShouldDisplayInfo = true;
                 DrawStaticPlanetCards(overlaySprites, selected);
             }
+
+            return hasDetectedPlanets;
         }
 
         void DrawStaticPlanetCards(List<MySprite> sprites, PlanetProjection planet)
@@ -569,7 +602,7 @@ namespace Graph.Apps
             var panelColor = Config.HeaderColor;
 
             string distanceText = FormatingHelper.DistanceToString((float)planet.Distance);
-            var infoLines = BuildPlanetInfoLines(planet, true);
+            var infoLines = BuildPlanetInfoLines(planet, false);
 
             var nameSize = GetSizeInPixel(planet.Name, "White", nameScale, Surface);
             var distSize = GetSizeInPixel(distanceText, "White", distanceScale, Surface);
@@ -1157,7 +1190,7 @@ namespace Graph.Apps
                 ? "LCDMod_StarMap_Info_RadiusShort"
                 : "LCDMod_StarMap_Info_Radius";
 
-            return new List<string>(7)
+            var lines = new List<string>(9)
             {
                 string.Format(FormatingHelper.Culture, LocHelper.GetLoc(radiusKey),
                     FormatingHelper.DistanceToString(planet.Radius)),
@@ -1174,6 +1207,83 @@ namespace Graph.Apps
                 string.Format(FormatingHelper.Culture, LocHelper.GetLoc("LCDMod_StarMap_Info_Wind"),
                     FormatingHelper.WindToString(planet.MaxWindSpeed))
             };
+
+            lines.Add("Position: " + FormatWorldVector(planet.WorldPosition));
+
+            if (!compactRadiusLabel && GridLogic != null)
+            {
+                int etaSeconds;
+                if (IsJumpPointUiThrottled(planet.PlanetId, planet.Distance, _jumpPointRunCounter, out etaSeconds))
+                {
+                    lines.Add(string.Format(FormatingHelper.Culture, "Calculating... (eta {0} sec)", etaSeconds));
+                }
+                else
+                {
+                    Vector3D jumpPoint;
+                    if (GridLogic.TryGetPlanetJumpPoint(
+                            planet.PlanetId,
+                            planet.Name,
+                            planet.WorldPosition,
+                            planet.Radius,
+                            planet.GravityRange,
+                            out jumpPoint))
+                    {
+                        lines.Add("Jump: " + FormatWorldVector(jumpPoint));
+                    }
+                }
+            }
+
+            return lines;
+        }
+
+        static string FormatWorldVector(Vector3D value)
+        {
+            return string.Format(FormatingHelper.Culture, "({0:0}, {1:0}, {2:0})", value.X, value.Y, value.Z);
+        }
+
+        bool IsJumpPointUiThrottled(long planetId, double distanceMeters, long currentRun, out int etaSeconds)
+        {
+            etaSeconds = 0;
+            JumpPointThrottleState state;
+            if (!_jumpPointThrottleByPlanet.TryGetValue(planetId, out state))
+            {
+                var totalSeconds = Math.Max(1d, 3d + (distanceMeters / 1000000d));
+                state = new JumpPointThrottleState
+                {
+                    StartRun = currentRun,
+                    DurationRuns = (long)Math.Ceiling(totalSeconds * JUMP_POINT_RUNS_PER_SECOND),
+                    LastRequestRun = currentRun
+                };
+                _jumpPointThrottleByPlanet[planetId] = state;
+                etaSeconds = (int)Math.Ceiling(state.DurationRuns / JUMP_POINT_RUNS_PER_SECOND);
+                return true;
+            }
+
+            // Focus was broken (looked away): restart throttle window on next focus.
+            if (currentRun - state.LastRequestRun > 1)
+            {
+                var totalSeconds = Math.Max(1d, 3d + (distanceMeters / 1000000d));
+                state.StartRun = currentRun;
+                state.DurationRuns = (long)Math.Ceiling(totalSeconds * JUMP_POINT_RUNS_PER_SECOND);
+                state.LastRequestRun = currentRun;
+                _jumpPointThrottleByPlanet[planetId] = state;
+                etaSeconds = (int)Math.Ceiling(state.DurationRuns / JUMP_POINT_RUNS_PER_SECOND);
+                return true;
+            }
+
+            long elapsedRuns = currentRun - state.StartRun;
+            long remainingRuns = state.DurationRuns - elapsedRuns;
+            if (remainingRuns <= 0)
+            {
+                state.LastRequestRun = currentRun;
+                _jumpPointThrottleByPlanet[planetId] = state;
+                return false;
+            }
+
+            state.LastRequestRun = currentRun;
+            _jumpPointThrottleByPlanet[planetId] = state;
+            etaSeconds = Math.Max(1, (int)Math.Ceiling(remainingRuns / JUMP_POINT_RUNS_PER_SECOND));
+            return true;
         }
 
         static bool IsFullyOccludedBy(PlanetProjection front, PlanetProjection back)
