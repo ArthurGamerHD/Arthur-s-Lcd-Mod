@@ -55,7 +55,7 @@ namespace Graph.System.Antenna
 
         string GetStatusIcon(IMyLaserAntenna laserAntenna)
         {
-            if (laserAntenna == null || !laserAntenna.Enabled || (ScreenConfig.SelectedBlocks.Any() && !ScreenConfig.SelectedBlocks.Contains(laserAntenna.EntityId)))
+            if (laserAntenna == null || !laserAntenna.Enabled || (ScreenConfigGeneral.SelectedBlocks.Any() && !ScreenConfigGeneral.SelectedBlocks.Contains(laserAntenna.EntityId)))
                 return "GridPower";
 
             if (!laserAntenna.IsFunctional)

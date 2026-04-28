@@ -1,12 +1,15 @@
 using Graph.System.Config;
+using Graph.System.Config.Models;
+using Graph.System.Config.Models.Apps;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
+using ScreenConfigColorable = Graph.System.Config.Models.ScreenConfigColorable;
 
 namespace Graph.System.TerminalControls.Color
 {
     /// <summary>
-    /// Color picker for Error for many Scripts using <see cref="ScreenConfig"/> 
+    /// Color picker for Error for many Scripts using <see cref="ScreenConfigGeneral"/> 
     /// </summary>
     public sealed partial class ColorPickerWarning : TerminalControlsWrapper
     {
@@ -21,17 +24,17 @@ namespace Graph.System.TerminalControls.Color
             colorPicker.Title = MyStringId.GetOrCompute("ContractScreen_Aministration_CreatinResultCaption_Error");
             TerminalControl = colorPicker;
         }
-        
+
         public override bool Visible(IMyTerminalBlock block)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block);
+            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigColorable;
             return (config?.CustomizedColors ?? false) && base.Visible(block);
         }
 
         void Setter(IMyTerminalBlock block, VRageMath.Color color)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block);
-            if(config == null)
+            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigColorable;
+            if (config == null)
                 return;
             config.WarningColor = color;
             ConfigManager.Sync(block);
@@ -39,11 +42,8 @@ namespace Graph.System.TerminalControls.Color
 
         VRageMath.Color Getter(IMyTerminalBlock block)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block);
-            if (config?.WarningColor != null)
-                return config.WarningColor;
-            
-            return VRageMath.Color.White;
+            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigColorable;
+            return config == null ? VRageMath.Color.White : config.WarningColor;
         }
     }
 }

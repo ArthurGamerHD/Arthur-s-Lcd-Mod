@@ -1,5 +1,5 @@
 using Graph.System;
-using Graph.System.Config;
+using Graph.System.Config.Models.Apps;
 using Sandbox.ModAPI;
 using System;
 using System.Collections.Generic;
@@ -25,16 +25,16 @@ namespace Graph.System.Power
             public float Velocity;
         }
 
-        protected readonly ScreenConfig ScreenConfig;
+        protected readonly ScreenConfigPower ScreenConfigPower;
 
-        protected PowerCollector(ScreenConfig screenConfig)
+        protected PowerCollector(ScreenConfigPower screenConfig)
         {
-            ScreenConfig = screenConfig;
+            ScreenConfigPower = screenConfig;
         }
 
         public abstract void Collect(GridLogic grid, List<PowerEntry> entries);
 
-        protected bool HideEmpty => ScreenConfig == null || ScreenConfig.HideEmpty;
+        protected bool HideEmpty => ScreenConfigPower == null || ScreenConfigPower.HideEmpty;
 
         public abstract string FooterPrefix { get; }
         public abstract FillableTexture FillableTexture { get; }

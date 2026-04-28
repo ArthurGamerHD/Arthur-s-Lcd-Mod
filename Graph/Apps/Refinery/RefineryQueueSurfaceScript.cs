@@ -4,6 +4,7 @@ using Generated;
 using Graph.Apps.Abstract;
 using Graph.Helpers;
 using Graph.System;
+using Graph.System.Config.Models.Apps;
 using Graph.System.TerminalControls.Color;
 using Graph.System.TerminalControls.Filter;
 using Graph.System.TerminalControls.Filter.Buttons;
@@ -35,8 +36,8 @@ namespace Graph.Apps.Refinery
         protected override string DefaultTitle => TITLE;
 
         public override Dictionary<MyItemType, double> ItemSource =>
-            GridLogic != null && Config != null
-                ? GridLogic.GetRefineryItems(0, Config, Block as IMyTerminalBlock)
+            GridLogic != null && AppConfig != null
+                ? GridLogic.GetRefineryItems(0, AppConfig, Block as IMyTerminalBlock)
                 : new Dictionary<MyItemType, double>();
 
 
@@ -82,7 +83,7 @@ namespace Graph.Apps.Refinery
                     return;
                 }
 
-                if (Config != null && Config.DisplayMode == DisplayMode.Grid)
+                if (AppConfig != null && AppConfig.DisplayMode == DisplayMode.Grid)
                     DrawGridMode(sprites);
                 else
                     DrawListMode(sprites);
@@ -270,9 +271,9 @@ namespace Graph.Apps.Refinery
 
             var referenceBlock = Block as IMyTerminalBlock;
             List<KeyValuePair<MyItemType, double>> ores =
-                SortSection(GridLogic.GetRefineryItems(0, Config, referenceBlock));
+                SortSection(GridLogic.GetRefineryItems(0, AppConfig, referenceBlock));
             List<KeyValuePair<MyItemType, double>> ingots =
-                SortSection(GridLogic.GetRefineryItems(1, Config, referenceBlock));
+                SortSection(GridLogic.GetRefineryItems(1, AppConfig, referenceBlock));
 
             string oreLabel = MyTexts.GetString("BlockPropertyProperties_CurrentInput");
             string ingotLabel = MyTexts.GetString("BlockPropertyProperties_CurrentOutput");
@@ -325,8 +326,8 @@ namespace Graph.Apps.Refinery
             List<VirtualEntry> list = new List<VirtualEntry>();
 
             var referenceBlock = Block as IMyTerminalBlock;
-            Dictionary<MyItemType, double> ores = GridLogic.GetRefineryItems(0, Config, referenceBlock);
-            Dictionary<MyItemType, double> ingots = GridLogic.GetRefineryItems(1, Config, referenceBlock);
+            Dictionary<MyItemType, double> ores = GridLogic.GetRefineryItems(0, AppConfig, referenceBlock);
+            Dictionary<MyItemType, double> ingots = GridLogic.GetRefineryItems(1, AppConfig, referenceBlock);
 
             string oreLabel = MyTexts.GetString("BlockPropertyProperties_CurrentInput");
             string ingotLabel = MyTexts.GetString("BlockPropertyProperties_CurrentOutput");
@@ -364,7 +365,7 @@ namespace Graph.Apps.Refinery
             foreach (KeyValuePair<MyItemType, double> kv in source)
                 list.Add(kv);
 
-            if (Config != null && Config.SortMethod == SortMethod.Type)
+            if (AppConfig != null && AppConfig.SortMethod == SortMethod.Type)
                 list.Sort((a, b) => ItemTypeComparer.Instance.Compare(a.Key, b.Key));
             else
                 list.Sort((a, b) => b.Value.CompareTo(a.Value));
@@ -380,7 +381,7 @@ namespace Graph.Apps.Refinery
                 Data = "SquareSimple",
                 Position = new Vector2((xLeft + xRight) / 2f, CaretY),
                 Size = new Vector2(xRight - xLeft, 2f),
-                Color = Config.HeaderColor,
+                Color = AppConfig.HeaderColor,
                 Alignment = TextAlignment.CENTER
             });
 
@@ -390,7 +391,7 @@ namespace Graph.Apps.Refinery
                 Data = label,
                 Position = new Vector2(xLeft, CaretY),
                 RotationOrScale = Scale * 1.0f * FontScale,
-                Color = Config.HeaderColor,
+                Color = AppConfig.HeaderColor,
                 Alignment = TextAlignment.LEFT,
                 FontId = "White"
             });

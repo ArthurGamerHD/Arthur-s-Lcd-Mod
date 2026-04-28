@@ -1,8 +1,10 @@
 using System.Text;
 using Graph.System.Config;
+using Graph.System.Config.Models.Apps;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
+using ScreenConfigGeneral = Graph.System.Config.Models.ScreenConfigGeneral;
 
 namespace Graph.System.TerminalControls.Generic
 {
@@ -16,7 +18,7 @@ namespace Graph.System.TerminalControls.Generic
             slider.Getter = Getter;
             slider.Setter = Setter;
             slider.Visible = Visible;
-            slider.SetLimits(ScreenConfig.MIN_SCALE, ScreenConfig.MAX_SCALE);
+            slider.SetLimits(ScreenConfigGeneral.MIN_SCALE, ScreenConfigGeneral.MAX_SCALE);
             slider.Writer = Writer;
             slider.Title = MyStringId.GetOrCompute("BlockPropertyTitle_Scale");
 

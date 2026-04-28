@@ -4,6 +4,7 @@ using Generated;
 using Graph.Apps.Abstract;
 using Graph.Helpers;
 using Graph.System;
+using Graph.System.Config.Models.Apps;
 using Graph.System.TerminalControls.Color;
 using Graph.System.TerminalControls.Generic;
 using Graph.System.TerminalControls.Groups;
@@ -25,6 +26,7 @@ namespace Graph.Apps.Power
     public partial class EnergyDashboardSurfaceScript : SurfaceScriptBase,
         IUsesTerminalControl<ComboboxGraphWindow>
     {
+        protected override ConfigKind ConfigKind => ConfigKind.Power;
         public const string ID = "LCDMod_EnergyDashboard";
         public const string TITLE = "LCDMod_EnergyDashboard";
 
@@ -88,7 +90,7 @@ namespace Graph.Apps.Power
         public override void Run()
         {
             base.Run();
-            if (Config == null) return;
+            if (AppConfig == null) return;
 
             Scale = GetAutoScaleUniform();
             UpdateViewBox();
@@ -260,8 +262,8 @@ namespace Graph.Apps.Power
 
         float GetWindowSeconds()
         {
-            if (Config == null) return 30f;
-            int idx = Math.Max(0, Math.Min(Config.GraphWindowIndex, WindowOptions.Length - 1));
+            if (AppConfig == null) return 30f;
+            int idx = Math.Max(0, Math.Min(AppConfig.GraphWindowIndex, WindowOptions.Length - 1));
             return WindowOptions[idx];
         }
 
@@ -376,7 +378,7 @@ namespace Graph.Apps.Power
             float y, float bigBarH, float rowH)
         {
             Color fg = Surface.ScriptForegroundColor;
-            Color accent = Config.HeaderColor;
+            Color accent = AppConfig.HeaderColor;
             float ts = Scale * 0.72f * FontScale;
 
             string consumeLabel = "Consumo atual: " + FormatingHelper.WattsToString(_totalConsumptionW);
@@ -454,7 +456,7 @@ namespace Graph.Apps.Power
             float y, float rowH)
         {
             Color fg = Surface.ScriptForegroundColor;
-            Color accent = Config.HeaderColor;
+            Color accent = AppConfig.HeaderColor;
             float labelW = contentW * 0.24f;
             float barW = contentW * 0.54f;
             float numW = contentW - labelW - barW;
@@ -562,8 +564,8 @@ namespace Graph.Apps.Power
             float y, float height, bool isProduction)
         {
             Color fg = Surface.ScriptForegroundColor;
-            Color accent = Config.HeaderColor;
-            Color warn = Config.WarningColor;
+            Color accent = AppConfig.HeaderColor;
+            Color warn = AppConfig.WarningColor;
             Color lineColor = isProduction ? accent : warn;
             float ts = Scale * 0.62f * FontScale;
 
@@ -907,16 +909,16 @@ namespace Graph.Apps.Power
 
         Color GetLoadColor(float ratio)
         {
-            if (ratio >= 0.90f) return Config.ErrorColor;
-            if (ratio >= 0.70f) return Config.WarningColor;
-            return Config.HeaderColor;
+            if (ratio >= 0.90f) return AppConfig.ErrorColor;
+            if (ratio >= 0.70f) return AppConfig.WarningColor;
+            return AppConfig.HeaderColor;
         }
 
         Color GetBatteryIconColor(float ratio)
         {
-            if (ratio < 0.15f) return Config.ErrorColor;
-            if (ratio < 0.35f) return Config.WarningColor;
-            return Config.HeaderColor;
+            if (ratio < 0.15f) return AppConfig.ErrorColor;
+            if (ratio < 0.35f) return AppConfig.WarningColor;
+            return AppConfig.HeaderColor;
         }
 
         static string FormatTimeHours(float hours)

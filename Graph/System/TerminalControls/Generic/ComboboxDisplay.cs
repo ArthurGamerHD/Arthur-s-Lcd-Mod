@@ -1,10 +1,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using Graph.System.Config;
+using Graph.System.Config.Models.Apps;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.ModAPI;
 using VRage.Utils;
+using ScreenConfigColorable = Graph.System.Config.Models.ScreenConfigColorable;
 
 namespace Graph.System.TerminalControls.Generic
 {
@@ -46,7 +48,7 @@ namespace Graph.System.TerminalControls.Generic
 
         void Setter(IMyTerminalBlock block, long l)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block);
+            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigColorable;
             if (config == null)
                 return;
 
@@ -56,7 +58,7 @@ namespace Graph.System.TerminalControls.Generic
 
         long Getter(IMyTerminalBlock block)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block);
+            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigColorable;
             if (config == null)
                 return 0;
 

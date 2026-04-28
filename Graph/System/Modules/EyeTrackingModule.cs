@@ -323,7 +323,7 @@ namespace Graph.System.Modules
         static bool TryResolveSurfaceIndex(IEyeTracking screen, out int index)
         {
             index = -1;
-            var providerModApi = screen.Block as Sandbox.ModAPI.IMyTextSurfaceProvider;
+            var providerModApi = screen.Block as IMyTextSurfaceProvider;
             if (providerModApi != null)
             {
                 for (int i = 0; i < providerModApi.SurfaceCount; i++)

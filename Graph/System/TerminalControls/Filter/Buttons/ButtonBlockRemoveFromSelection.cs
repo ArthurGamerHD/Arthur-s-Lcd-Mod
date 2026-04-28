@@ -1,5 +1,6 @@
 using System.Linq;
 using Graph.System.Config;
+using Graph.System.Config.Models.Apps;
 using Graph.System.TerminalControls.Filter.Listbox;
 using Sandbox.ModAPI;
 
@@ -24,7 +25,7 @@ namespace Graph.System.TerminalControls.Filter.Buttons
             if (settings == null || settings.Screens.Count <= index)
                 return;
 
-            var config = settings.Screens[index];
+            var config = settings.Screens[index] as ScreenConfigWithBlocks;
             RemoveGroups(config);
             RemoveItems(config);
             SourceList.TerminalControl.UpdateVisual();
@@ -32,7 +33,7 @@ namespace Graph.System.TerminalControls.Filter.Buttons
             ConfigManager.Sync(block, settings);
         }
 
-        void RemoveGroups(ScreenConfig config)
+        void RemoveGroups(ScreenConfigWithBlocks config)
         {
             var groups = TargetList.Selection
                 .Where(a => a.UserData is string)
@@ -42,7 +43,7 @@ namespace Graph.System.TerminalControls.Filter.Buttons
                 config.SelectedGroups = config.SelectedGroups.Where(a => !groups.Contains(a)).ToArray();
         }
 
-        void RemoveItems(ScreenConfig config)
+        void RemoveItems(ScreenConfigWithBlocks config)
         {
             var ids = TargetList.Selection
                 .Where(a => a.UserData is long)

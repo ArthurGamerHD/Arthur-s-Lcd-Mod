@@ -273,7 +273,7 @@ namespace Graph
 			public CommandGroup(string prefix)
 			{
 				_commands = new List<Command>();
-				this.Prefix = prefix;
+				Prefix = prefix;
 			}
 
 			public bool TryRunCommand(string message)

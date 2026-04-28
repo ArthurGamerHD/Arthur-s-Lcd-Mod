@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Sandbox.Game.EntityComponents;
 using Graph.Helpers;
-using Graph.System.Config;
+using Graph.System.Config.Models.Apps;
 using Sandbox.ModAPI;
 using SpaceEngineers.Game.ModAPI;
 using VRage.Game;
@@ -36,7 +36,7 @@ namespace Graph.System.Power
         PowerStatusKind _statusKind = PowerStatusKind.None;
         Color _statusColor = Color.White;
 
-        public JumpDrivePowerCollector(ScreenConfig screenConfig) : base(screenConfig)
+        public JumpDrivePowerCollector(ScreenConfigPower screenConfig) : base(screenConfig)
         {
         }
 
@@ -59,7 +59,7 @@ namespace Graph.System.Power
             _averageCharge = 0f;
             _statusText = string.Empty;
             _rightSideText = string.Empty;
-            _rightSideColor = ScreenConfig.HeaderColor;
+            _rightSideColor = ScreenConfigPower.HeaderColor;
             _statusKind = PowerStatusKind.None;
             _statusColor = Color.White;
 
@@ -140,42 +140,42 @@ namespace Graph.System.Power
             {
                 _statusKind = PowerStatusKind.Ready;
                 _statusText = ReadyLabel;
-                _statusColor = ScreenConfig.HeaderColor;
+                _statusColor = ScreenConfigPower.HeaderColor;
             }
             else if (fullCount == 0)
             {
                 _statusKind = PowerStatusKind.NotReady;
                 _statusText = NotReadyLabel;
-                _statusColor = ScreenConfig.ErrorColor;
+                _statusColor = ScreenConfigPower.ErrorColor;
             }
             else
             {
                 _statusKind = PowerStatusKind.Charging;
                 _statusText = ChargingLabel;
-                _statusColor = ScreenConfig.WarningColor;
+                _statusColor = ScreenConfigPower.WarningColor;
             }
 
             if (notFullCount == 0)
             {
-                SetRightSideText("00:00", ScreenConfig.HeaderColor);
+                SetRightSideText("00:00", ScreenConfigPower.HeaderColor);
             }
             else if (hasChargingTime)
             {
-                Color timeColor = fullCount == 0 ? ScreenConfig.ErrorColor : ScreenConfig.WarningColor;
+                Color timeColor = fullCount == 0 ? ScreenConfigPower.ErrorColor : ScreenConfigPower.WarningColor;
                 SetRightSideText(FormatTimeHours(timeToFullHours), timeColor);
             }
             else
             {
-                Color timeColor = fullCount == 0 ? ScreenConfig.ErrorColor : ScreenConfig.WarningColor;
+                Color timeColor = fullCount == 0 ? ScreenConfigPower.ErrorColor : ScreenConfigPower.WarningColor;
                 SetRightSideText("--:--", timeColor);
             }
         }
 
         Color GetJumpDriveIconColor(float ratio)
         {
-            if (ratio < 0.15f) return ScreenConfig.ErrorColor;
-            if (ratio < FullThreshold) return ScreenConfig.WarningColor;
-            return ScreenConfig.HeaderColor;
+            if (ratio < 0.15f) return ScreenConfigPower.ErrorColor;
+            if (ratio < FullThreshold) return ScreenConfigPower.WarningColor;
+            return ScreenConfigPower.HeaderColor;
         }
 
         static float GetRatio(IMyJumpDrive jumpDrive)

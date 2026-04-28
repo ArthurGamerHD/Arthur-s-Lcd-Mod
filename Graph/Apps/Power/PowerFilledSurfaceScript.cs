@@ -5,7 +5,7 @@ using Graph.Apps.Abstract;
 using Graph.Extensions;
 using Graph.Helpers;
 using Graph.System;
-using Graph.System.Config;
+using Graph.System.Config.Models.Apps;
 using Graph.System.Power;
 using Graph.System.TerminalControls.Color;
 using Graph.System.TerminalControls.Generic;
@@ -24,6 +24,7 @@ namespace Graph.Apps.Power
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class PowerFilledSurfaceScript : SurfaceScriptBase
     {
+        protected override ConfigKind ConfigKind => ConfigKind.Power;
         public const string ID = "BatteryGraph";
         public const string TITLE = "LCDMod_PowerFilled";
 
@@ -57,7 +58,7 @@ namespace Graph.Apps.Power
         public override void Run()
         {
             base.Run();
-            if (Config == null) return;
+            if (AppConfig == null) return;
             
             if (_collectors.Count == 0)
                 BuildCollectors();
@@ -72,7 +73,7 @@ namespace Graph.Apps.Power
                 DrawFooter(sprites);
 
                 if (!HasVisibleItems())
-                    DrawMessage(sprites, LocHelper.Empty, "Warning", Config.WarningColor, Config.Scale);
+                    DrawMessage(sprites, LocHelper.Empty, "Warning", AppConfig.WarningColor, AppConfig.Scale);
                 else
                     DrawBatteries(sprites);
 
@@ -318,7 +319,7 @@ namespace Graph.Apps.Power
 
             var thumbCtr = new Vector2(cx, (float)Math.Round(initialY + barCenter, MidpointRounding.ToEven));
             DrawCapsule(sprites, thumbCtr, bw, barH,
-                new Color(Config.HeaderColor.R, Config.HeaderColor.G, Config.HeaderColor.B, 250));
+                new Color(AppConfig.HeaderColor.R, AppConfig.HeaderColor.G, AppConfig.HeaderColor.B, 250));
         }
 
         static void DrawCapsule(List<MySprite> sprites, Vector2 center, int width, float height, Color color)
@@ -356,14 +357,14 @@ namespace Graph.Apps.Power
             var labelJumpReady = MyTexts.GetString("ScreenMedicals_RespawnShipReady");
             var labelFull = MyTexts.GetString("RadialMenuAction_Signal_Full");
             
-            _collectors.Add(new BatteryPowerCollector(Config)
+            _collectors.Add(new BatteryPowerCollector(AppConfig)
             {
                 ChargingLabel = labelCharging,
                 DischargingLabel = labelDischarging,
                 FullLabel = labelFull
             });
 
-            _collectors.Add(new JumpDrivePowerCollector(Config)
+            _collectors.Add(new JumpDrivePowerCollector(AppConfig)
             {
                 ChargingLabel = labelCharging,
                 ReadyLabel = labelJumpReady,

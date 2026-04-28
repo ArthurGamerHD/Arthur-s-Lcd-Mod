@@ -1,6 +1,7 @@
 using System.Text;
 using System;
 using Graph.System.Config;
+using Graph.System.Config.Models.Apps;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
@@ -37,7 +38,7 @@ namespace Graph.System.TerminalControls.Generic
 
         void Setter(IMyTerminalBlock block, float value)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block);
+            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigStarMap;
             if (config == null)
                 return;
 
@@ -48,7 +49,7 @@ namespace Graph.System.TerminalControls.Generic
 
         float Getter(IMyTerminalBlock block)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block);
+            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigStarMap;
             if (config == null)
                 return 1f;
 

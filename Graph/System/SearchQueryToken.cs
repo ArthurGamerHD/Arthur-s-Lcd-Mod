@@ -1,6 +1,6 @@
 using System;
 using System.Linq;
-using Graph.System.Config;
+using Graph.System.Config.Models.Apps;
 using VRage.Game;
 
 namespace Graph.System
@@ -22,16 +22,29 @@ namespace Graph.System
         readonly int _itemsHash;
         readonly int _categoriesHash;
 
-        SearchQueryToken(ScreenConfig config)
+        SearchQueryToken(ScreenConfigWithBlocks config)
         {
             _storages = config.SelectedBlocks;
             _groups = config.SelectedGroups;
-            _items = config.SelectedItems;
-            _categories = config.SelectedCategories;
+            var items = config as ScreenConfigWithItems;
+            if (items != null)
+            {
+                _items = items.SelectedItems;
+                _categories = items.SelectedCategories;
+                _itemsHash = ComputeArrayHash(_items);
+                _categoriesHash = ComputeArrayHash(_categories);
+            }
+            else
+            {
+                _items = new MyDefinitionId[] { };
+                _categories = new string[] { };
+                _itemsHash = 0;
+                _categoriesHash = 0;
+            }
+            
             _storagesHash = ComputeArrayHash(_storages);
             _groupsHash = ComputeArrayHash(_groups);
-            _itemsHash = ComputeArrayHash(_items);
-            _categoriesHash = ComputeArrayHash(_categories);
+
         }
 
         static int ComputeArrayHash<T>(T[] array)
@@ -86,12 +99,13 @@ namespace Graph.System
             }
         }
 
-        public static SearchQueryToken GetToken(ScreenConfig config)
+        public static SearchQueryToken GetToken(ScreenConfigWithBlocks config)
         {
+            var inv = config as ScreenConfigWithItems;
+            
             if (!config.SelectedBlocks.Any()
                 && !config.SelectedGroups.Any()
-                && !config.SelectedItems.Any()
-                && !config.SelectedCategories.Any())
+                && (inv == null || (!inv.SelectedItems.Any() && !inv.SelectedCategories.Any())))
                 return Empty;
 
             return new SearchQueryToken(config);

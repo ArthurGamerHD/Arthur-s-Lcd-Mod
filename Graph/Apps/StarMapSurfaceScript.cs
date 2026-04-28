@@ -8,6 +8,7 @@ using Graph.Extensions;
 using Graph.Helpers;
 using Graph.Panels;
 using Graph.System;
+using Graph.System.Config.Models.Apps;
 using Graph.System.TerminalControls.Generic;
 using Sandbox.Game.Entities;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
@@ -27,6 +28,7 @@ namespace Graph.Apps
         IEyeTracking,
         IMultiDisplayMode
     {
+        protected override ConfigKind ConfigKind => ConfigKind.StarMap;
         float _fov;
         double _halfFovY;
         float _lastKnownConfigFov = float.NaN;
@@ -130,17 +132,17 @@ namespace Graph.Apps
             base.LayoutChanged();
             _fov = GetEffectiveVerticalFovDeg();
             _halfFovY = MathHelper.ToRadians(_fov) * 0.5;
-            _lastKnownConfigFov = Config != null ? Config.FoV : MAP_VERTICAL_FOV_DEFAULT_DEG;
+            _lastKnownConfigFov = AppConfig != null ? AppConfig.FoV : MAP_VERTICAL_FOV_DEFAULT_DEG;
         }
 
         public override void Run()
         {
             base.Run();
-            if (Config == null)
+            if (AppConfig == null)
                 return;
             _jumpPointRunCounter++;
 
-            if (float.IsNaN(_lastKnownConfigFov) || Math.Abs(_lastKnownConfigFov - Config.FoV) > 0.001f)
+            if (float.IsNaN(_lastKnownConfigFov) || Math.Abs(_lastKnownConfigFov - AppConfig.FoV) > 0.001f)
                 LayoutChanged();
 
             using (var frame = Surface.DrawFrame())
@@ -149,7 +151,7 @@ namespace Graph.Apps
                 var ringSprites = new List<MySprite>();
                 var planetSprites = new List<MySprite>();
                 var overlaySprites = new List<MySprite>();
-                bool staticMode = Config != null && Config.DisplayMode == DisplayMode.Legacy;
+                bool staticMode = AppConfig != null && AppConfig.DisplayMode == DisplayMode.Legacy;
                 Vector2 lookedAt;
                 if (_eyeTracking.TryConsumeMapped(ViewBox, out lookedAt))
                 {
@@ -167,7 +169,7 @@ namespace Graph.Apps
                 }
                 else
                 {
-                    DrawMessage(overlaySprites, LocHelper.Empty, "Warning", Config.WarningColor, Config.Scale);
+                    DrawMessage(overlaySprites, LocHelper.Empty, "Warning", AppConfig.WarningColor, AppConfig.Scale);
                 }
 
                 frame.AddRange(baseSprites);
@@ -223,7 +225,7 @@ namespace Graph.Apps
             Vector3D camRight;
             Vector3D camUp;
             Vector3D camForward;
-            bool staticMode = Config != null && Config.DisplayMode == DisplayMode.Legacy;
+            bool staticMode = AppConfig != null && AppConfig.DisplayMode == DisplayMode.Legacy;
             if (staticMode)
             {
                 return DrawStaticOrbitMap(ringSprites, planetSprites, overlaySprites, planets);
@@ -599,7 +601,7 @@ namespace Graph.Apps
             float infoScale = 0.52f * Scale * FontScale;
             float distanceScale = 0.62f * Scale * FontScale;
             var labelColor = ApplyAlpha(ForegroundColor, planet.Visibility);
-            var panelColor = Config.HeaderColor;
+            var panelColor = AppConfig.HeaderColor;
 
             string distanceText = FormatingHelper.DistanceToString((float)planet.Distance);
             var infoLines = BuildPlanetInfoLines(planet, false);
@@ -932,7 +934,7 @@ namespace Graph.Apps
 
         float GetEffectiveVerticalFovDeg()
         {
-            float configuredFov = Config != null ? Config.FoV : MAP_VERTICAL_FOV_DEFAULT_DEG;
+            float configuredFov = AppConfig != null ? AppConfig.FoV : MAP_VERTICAL_FOV_DEFAULT_DEG;
             return MathHelper.Clamp(
                 configuredFov > 0f ? configuredFov : MAP_VERTICAL_FOV_DEFAULT_DEG,
                 0.1f, 120f);
@@ -1322,7 +1324,7 @@ namespace Graph.Apps
                     Data = "Circle",
                     Position = center,
                     Size = new Vector2(diameter + 10 * Scale),
-                    Color = ApplyAlpha(Config.HeaderColor, planet.Visibility),
+                    Color = ApplyAlpha(AppConfig.HeaderColor, planet.Visibility),
                     Alignment = TextAlignment.CENTER
                 });
             }

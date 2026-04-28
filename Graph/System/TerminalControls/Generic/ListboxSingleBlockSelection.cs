@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Graph.Helpers;
 using Graph.System.Config;
+using Graph.System.Config.Interfaces;
+using Graph.System.Config.Models.Apps;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.ModAPI;
@@ -30,7 +32,7 @@ namespace Graph.System.TerminalControls.Generic
 
         void Setter(IMyTerminalBlock block, List<MyTerminalControlListBoxItem> selection)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block);
+            var config = ConfigManager.GetConfigForCurrentScreen(block) as IConfigWithReferenceBlock;
             if(config == null)
                 return;
 
@@ -41,7 +43,7 @@ namespace Graph.System.TerminalControls.Generic
         void Getter(IMyTerminalBlock block, List<MyTerminalControlListBoxItem> blockList,
             List<MyTerminalControlListBoxItem> selected)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block);
+            var config = ConfigManager.GetConfigForCurrentScreen(block) as IConfigWithReferenceBlock;
             if(config == null)
                 return;
             

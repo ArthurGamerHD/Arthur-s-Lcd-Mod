@@ -1,5 +1,6 @@
 using System.Linq;
 using Graph.System.Config;
+using Graph.System.Config.Models.Apps;
 using Graph.System.TerminalControls.Filter.Listbox;
 using Sandbox.ModAPI;
 using VRage.Game;
@@ -26,7 +27,7 @@ namespace Graph.System.TerminalControls.Filter.Buttons
             if (settings == null || settings.Screens.Count <= index)
                 return;
 
-            var config = settings.Screens[index];
+            var config = settings.Screens[index] as ScreenConfigWithItems;
             RemoveGroups(config);
             RemoveBlocks(config);
             SourceList.TerminalControl.UpdateVisual();
@@ -34,7 +35,7 @@ namespace Graph.System.TerminalControls.Filter.Buttons
             ConfigManager.Sync(block, settings);
         }
 
-        void RemoveGroups(ScreenConfig config)
+        void RemoveGroups(ScreenConfigWithItems config)
         {
             var groups = TargetList.Selection
                 .Where(a => a.UserData is string)
@@ -44,7 +45,7 @@ namespace Graph.System.TerminalControls.Filter.Buttons
                 config.SelectedCategories = config.SelectedCategories.Where(a => !groups.Contains(a)).ToArray();
         }
 
-        void RemoveBlocks(ScreenConfig config)
+        void RemoveBlocks(ScreenConfigWithItems config)
         {
             var ids = TargetList.Selection
                 .Where(a => a.UserData is MyDefinitionId)

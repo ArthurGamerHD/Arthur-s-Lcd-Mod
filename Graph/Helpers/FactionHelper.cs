@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using Graph.Networking;
 using Graph.System.Config;
+using Graph.System.Config.Models.Apps;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.ModAPI;
@@ -103,7 +104,7 @@ namespace Graph.Helpers
                 return false;
             }
 
-            if (tokens.Length == 1 && Graph.Extensions.ColorExtensions.TryParseHexFactionColor(tokens[0], out factionColor))
+            if (tokens.Length == 1 && Extensions.ColorExtensions.TryParseHexFactionColor(tokens[0], out factionColor))
             {
                 error = null;
                 return true;
@@ -148,7 +149,7 @@ namespace Graph.Helpers
                     g >= 0 && g <= 255 &&
                     b >= 0 && b <= 255)
                 {
-                    factionColor = Graph.Extensions.ColorExtensions.ToFactionColor(new Color((byte)r, (byte)g, (byte)b));
+                    factionColor = Extensions.ColorExtensions.ToFactionColor(new Color((byte)r, (byte)g, (byte)b));
                     error = null;
                     return true;
                 }

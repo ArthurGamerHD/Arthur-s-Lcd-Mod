@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Graph.Apps.Inventory;
 using Graph.Apps.Refinery;
 using Graph.System.Config;
+using Graph.System.Config.Models.Apps;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.ModAPI;
@@ -42,7 +43,7 @@ namespace Graph.System.TerminalControls.Generic
 
         void Setter(IMyTerminalBlock block, long l)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block);
+            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigWithFilters;
             if (config == null)
                 return;
 
@@ -52,7 +53,7 @@ namespace Graph.System.TerminalControls.Generic
 
         long Getter(IMyTerminalBlock block)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block);
+            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigWithFilters;
             if (config == null)
                 return 1;
 

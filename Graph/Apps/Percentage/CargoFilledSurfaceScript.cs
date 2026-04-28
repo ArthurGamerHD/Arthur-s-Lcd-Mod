@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Generated;
 using Graph.Apps.Abstract;
+using Graph.System.Config.Models.Apps;
 using Graph.System.TerminalControls.Color;
 using Graph.System.TerminalControls.Filter;
 using Graph.System.TerminalControls.Filter.Buttons;
@@ -25,6 +26,8 @@ namespace Graph.Apps.Percentage
         IUsesTerminalControl<LabelSeparator>,
         IUsesTerminalControlGroup<BlocksFilterTerminalControlGroup>
     {
+        protected override ConfigKind ConfigKind => ConfigKind.WithBlocks;
+
         public const string ID = "ContainerCharts";
         public const string TITLE = "DisplayName_CargoFilledEntityComponent";
 
@@ -66,9 +69,9 @@ namespace Graph.Apps.Percentage
         protected override Color? GetEntryUsageColor(float pct)
         {
             if (pct >= .99f)
-                return Config.ErrorColor;
+                return AppConfig.ErrorColor;
             if (pct > .90f)
-                return Config.WarningColor;
+                return AppConfig.WarningColor;
             return null;
         }
 
@@ -126,8 +129,8 @@ namespace Graph.Apps.Percentage
                     if (typeIdStr.IndexOf("CargoContainer", StringComparison.OrdinalIgnoreCase) < 0)
                         continue;
 
-                    if (Config != null && Config.SelectedBlocks.Length > 0 &&
-                        Array.IndexOf(Config.SelectedBlocks, fat.EntityId) < 0)
+                    if (AppConfig != null && AppConfig.SelectedBlocks.Length > 0 &&
+                        Array.IndexOf(AppConfig.SelectedBlocks, fat.EntityId) < 0)
                         continue;
 
                     if (!fat.HasInventory) continue;

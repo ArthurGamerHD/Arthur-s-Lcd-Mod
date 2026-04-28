@@ -8,9 +8,11 @@ using Graph.Extensions;
 using Graph.Helpers;
 using Graph.Panels;
 using Graph.System;
-using Graph.System.Config;
+using Graph.System.Config.Models.Apps;
 using Graph.System.TerminalControls.Groups;
 using Graph.Apps.Utility;
+using Graph.System.Config;
+using Graph.System.Config.Models;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces;
@@ -24,6 +26,8 @@ using VRage.Utils;
 using VRageMath;
 using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
 using IMyTextSurfaceProvider = Sandbox.ModAPI.Ingame.IMyTextSurfaceProvider;
+using ScreenConfigColorable = Graph.System.Config.Models.ScreenConfigColorable;
+using ScreenConfigGeneral = Graph.System.Config.Models.ScreenConfigGeneral;
 
 namespace Graph.Apps.Abstract
 {
@@ -43,7 +47,7 @@ namespace Graph.Apps.Abstract
 
         public Vector2 TextureSize => Surface.TextureSize;
 
-        protected virtual SortMethod SortMethod => Config.SortMethod;
+        protected virtual SortMethod SortMethod => SortMethod.Amount;
 
         /// <summary>
         /// Relative area of the <see cref="Sandbox.ModAPI.IMyTextSurface.TextureSize"/> That is Visible
@@ -89,7 +93,9 @@ namespace Graph.Apps.Abstract
         public bool TitleVisible { get; private set; } = true;
         public override ScriptUpdate NeedsUpdate => ScriptUpdate.Update10;
 
-        public ScreenConfig Config { get; protected set; }
+        public ScreenConfigGeneral Config { get; protected set; }
+        public ScreenConfigColorable ColorableConfig => Config as ScreenConfigColorable;
+        protected abstract ConfigKind ConfigKind { get; }
 
         public bool Dirty => _dirty;
         bool _dirty;
@@ -185,7 +191,7 @@ namespace Graph.Apps.Abstract
                 AddBackground(sprites);
                 DrawTitle(sprites);
                 DrawMessage(sprites, LocHelper.GetLoc("ScreenBlueprintsRew_NoBlueprints"),
-                    "Warning", Config.WarningColor, Config.Scale);
+                    "Warning", ColorableConfig.WarningColor, Config.Scale);
                 DrawFooter(sprites);
                 frame.AddRange(sprites);
             }
@@ -199,7 +205,7 @@ namespace Graph.Apps.Abstract
                 AddBackground(sprites);
                 DrawTitle(sprites);
                 DrawMessage(sprites, LocHelper.Empty,
-                    "Warning", Config.WarningColor, Config.Scale);
+                    "Warning", ColorableConfig.WarningColor, Config.Scale);
                 DrawFooter(sprites);
                 frame.AddRange(sprites);
             }
@@ -211,6 +217,23 @@ namespace Graph.Apps.Abstract
             _dirty = true;
             Run();
             _dirty = false;
+        }
+
+        public void UseProviderConfig(ScreenProviderConfig providerConfig)
+        {
+            if (providerConfig == null)
+                return;
+
+            ProviderConfig = providerConfig;
+
+            if (Config == null)
+                return;
+
+            var index = Config.ScreenIndex;
+            if (index < 0 || providerConfig.Screens == null || index >= providerConfig.Screens.Count)
+                return;
+
+            Config = providerConfig.Screens[index];
         }
 
         public override void Dispose()
@@ -308,8 +331,8 @@ namespace Graph.Apps.Abstract
             {
                 if (surface.Equals(surfaceProvider.GetSurface(index)))
                 {
-                    ScreenConfig config;
-                    ConfigManager.LoadSettings(block, index, ref ProviderConfig, out config);
+                    ScreenConfigGeneral config;
+                    ConfigManager.LoadSettings(block, index, ConfigKind, ref ProviderConfig, out config);
                     Config = config;
                     return;
                 }
@@ -341,7 +364,7 @@ namespace Graph.Apps.Abstract
                 Data = Icon,
                 Position = position + new Vector2(20f) * headerScale,
                 Size = new Vector2(40f * headerScale),
-                Color = Config.HeaderColor,
+                Color = ColorableConfig.HeaderColor,
                 Alignment = TextAlignment.CENTER
             });
             position.X += ViewBox.Width / 8f;
@@ -359,7 +382,7 @@ namespace Graph.Apps.Abstract
                 Data = titleText,
                 Position = position,
                 RotationOrScale = Scale * 1.3f * FontScale,
-                Color = Config.HeaderColor,
+                Color = ColorableConfig.HeaderColor,
                 Alignment = TextAlignment.LEFT,
                 FontId = "White"
             });
@@ -491,7 +514,7 @@ namespace Graph.Apps.Abstract
             var rt = yStart + cellPadding / 2;
             var rb = yStart + cellHeight - cellPadding / 2;
 
-            var backgroundColor = item.Value == 0 ? Config.ErrorColor : Config.HeaderColor;
+            var backgroundColor = item.Value == 0 ? ColorableConfig.ErrorColor : ColorableConfig.HeaderColor;
             var a = backgroundColor.MulValue(0.2f);
             var cellRect = new RectangleF(rl, rt, rr - rl, rb - rt);
             var dropShadow = new RectangleF(cellRect.Position + 2, cellRect.Size);

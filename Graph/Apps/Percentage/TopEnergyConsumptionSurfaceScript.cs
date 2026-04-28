@@ -86,8 +86,8 @@ namespace Graph.Apps.Percentage
         // Top consumers flagged with warning/error colors to draw attention
         protected override Color? GetEntryUsageColor(float pct)
         {
-            if (pct >= 0.90f) return Config.ErrorColor;
-            if (pct >= 0.50f) return Config.WarningColor;
+            if (pct >= 0.90f) return AppConfig.ErrorColor;
+            if (pct >= 0.50f) return AppConfig.WarningColor;
             return null;
         }
 

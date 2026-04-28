@@ -8,6 +8,7 @@ using Graph.Extensions;
 using Graph.Helpers;
 using Graph.Panels;
 using Graph.System;
+using Graph.System.Config.Models.Apps;
 using Graph.System.TerminalControls.Blueprint;
 using Graph.System.TerminalControls.Color;
 using Graph.System.TerminalControls.Filter;
@@ -35,6 +36,7 @@ namespace Graph.Apps.Inventory
         IUsesTerminalControl<LabelSeparator>,
         IUsesTerminalControlGroup<BlocksFilterTerminalControlGroup>
     {
+        protected override ConfigKind ConfigKind => ConfigKind.Projector;
         public const string ID = "ProjectorCharts";
         public const string TITLE = "DisplayName_Block_Projector";
 
@@ -111,7 +113,7 @@ namespace Graph.Apps.Inventory
                 Data = Icon,
                 Position = position + new Vector2(20f) * headerScale,
                 Size = new Vector2(40f * headerScale),
-                Color = Config.HeaderColor,
+                Color = AppConfig.HeaderColor,
                 Alignment = TextAlignment.CENTER
             });
             position.X += ViewBox.Width / 8f;
@@ -134,7 +136,7 @@ namespace Graph.Apps.Inventory
                 Data = displayName,
                 Position = position,
                 RotationOrScale = Scale * 1.3f * FontScale,
-                Color = Config.HeaderColor,
+                Color = AppConfig.HeaderColor,
                 Alignment = TextAlignment.LEFT,
                 FontId = "White"
             });
@@ -151,7 +153,7 @@ namespace Graph.Apps.Inventory
                 Data = _required,
                 Position = position,
                 RotationOrScale = Scale * 1.3f * FontScale,
-                Color = Config.HeaderColor,
+                Color = AppConfig.HeaderColor,
                 Alignment = TextAlignment.RIGHT,
                 FontId = "White"
             });
@@ -162,7 +164,7 @@ namespace Graph.Apps.Inventory
                 Data = "/",
                 Position = new Vector2(separatorX, position.Y),
                 RotationOrScale = Scale * 1.3f * FontScale,
-                Color = Config.HeaderColor,
+                Color = AppConfig.HeaderColor,
                 Alignment = TextAlignment.LEFT,
                 FontId = "White"
             });
@@ -174,7 +176,7 @@ namespace Graph.Apps.Inventory
                 Data = _available,
                 Position = position,
                 RotationOrScale = Scale * 1.3f * FontScale,
-                Color = Config.HeaderColor,
+                Color = AppConfig.HeaderColor,
                 Alignment = TextAlignment.RIGHT,
                 FontId = "White"
             });
@@ -280,7 +282,7 @@ namespace Graph.Apps.Inventory
                 Data = "Circle",
                 Position = pos,
                 Size = legendSize,
-                Color = Config.HeaderColor,
+                Color = AppConfig.HeaderColor,
                 Alignment = TextAlignment.CENTER,
             });
 
@@ -304,7 +306,7 @@ namespace Graph.Apps.Inventory
                 pieSize,
                 componentsPct,
                 blocksPct,
-                Config.HeaderColor,
+                AppConfig.HeaderColor,
                 true,
                 false);
         }
@@ -313,10 +315,10 @@ namespace Graph.Apps.Inventory
         {
             EnsureData();
 
-            if (!_projectorDataInitialized && Config != null && Config.ReferenceBlock != 0 && _projector == null)
+            if (!_projectorDataInitialized && AppConfig != null && AppConfig.ReferenceBlock != 0 && _projector == null)
             {
                 _projectorDataInitialized = true;
-                DrawLoadingScreen(Config.Scale);
+                DrawLoadingScreen(AppConfig.Scale);
                 return;
             }
 
@@ -375,9 +377,9 @@ namespace Graph.Apps.Inventory
             position.X += margin;
             position.Y = CaretY;
 
-            bool drawSeparatorLine = Config.SortMethod == SortMethod.Type && PreviousType != item.Key.TypeId;
+            bool drawSeparatorLine = AppConfig.SortMethod == SortMethod.Type && PreviousType != item.Key.TypeId;
 
-            if (Config.DrawLines || drawSeparatorLine)
+            if (AppConfig.DrawLines || drawSeparatorLine)
             {
                 frame.Add(new MySprite()
                 {
@@ -385,7 +387,7 @@ namespace Graph.Apps.Inventory
                     Data = "Circle",
                     Position = new Vector2(ViewBox.Center.X, position.Y),
                     Size = new Vector2(ViewBox.Width - 2 * margin, 1),
-                    Color = drawSeparatorLine ? Config.HeaderColor : Surface.ScriptForegroundColor,
+                    Color = drawSeparatorLine ? AppConfig.HeaderColor : Surface.ScriptForegroundColor,
                     Alignment = TextAlignment.CENTER
                 });
             }
@@ -469,7 +471,7 @@ namespace Graph.Apps.Inventory
             var numberRect = slots.Item2;
             var nameRect = slots.Item3;
             var shortageColor = GetShortageColor(item.Key, item.Value);
-            var useAlertText = shortageColor.HasValue && Config.DrawLines;
+            var useAlertText = shortageColor.HasValue && AppConfig.DrawLines;
             var color = useAlertText ? shortageColor.Value : foreground;
 
             frame.Add(new MySprite
@@ -543,7 +545,7 @@ namespace Graph.Apps.Inventory
             var rb = yStart + cellHeight - cellPadding / 2;
 
             var shortageColor = GetShortageColor(item.Key, item.Value);
-            var backgroundColor = shortageColor ?? Config.HeaderColor;
+            var backgroundColor = shortageColor ?? AppConfig.HeaderColor;
             var a = backgroundColor.ColorToHSV();
             a.Z *= 0.2f;
             var cellRect = new RectangleF(rl, rt, rr - rl, rb - rt);
@@ -573,10 +575,10 @@ namespace Graph.Apps.Inventory
 
             var available = GetAvailableQty(itemType, missingQty);
             if (available <= 0)
-                return Config.ErrorColor;
+                return AppConfig.ErrorColor;
 
             if (available < needed)
-                return Config.WarningColor;
+                return AppConfig.WarningColor;
 
             return null;
         }
@@ -732,8 +734,8 @@ namespace Graph.Apps.Inventory
         {
             try
             {
-                var hasFilter = Config.SelectedBlocks.Length > 0 || Config.SelectedGroups.Length > 0;
-                return hasFilter ? GridLogic.GetItems(Config, referenceBlock, AllowedTypes) : GridLogic.Components;
+                var hasFilter = AppConfig.SelectedBlocks.Length > 0 || AppConfig.SelectedGroups.Length > 0;
+                return hasFilter ? GridLogic.GetItems(AppConfig, referenceBlock, AllowedTypes) : GridLogic.Components;
             }
             catch (Exception e)
             {
@@ -745,16 +747,16 @@ namespace Graph.Apps.Inventory
 
         void FindProjector(IMyCubeGrid grid, ref IMyProjector projector)
         {
-            if (Config.ReferenceBlock == 0)
+            if (AppConfig.ReferenceBlock == 0)
             {
                 projector = null;
                 return;
             }
 
-            if (projector != null && projector.EntityId == Config.ReferenceBlock)
+            if (projector != null && projector.EntityId == AppConfig.ReferenceBlock)
                 return;
 
-            var entity = MyAPIGateway.Entities.GetEntityById(Config.ReferenceBlock) as IMyProjector;
+            var entity = MyAPIGateway.Entities.GetEntityById(AppConfig.ReferenceBlock) as IMyProjector;
             projector = entity?.CubeGrid.IsInSameLogicalGroupAs(grid) ?? false ? entity : null;
         }
     }

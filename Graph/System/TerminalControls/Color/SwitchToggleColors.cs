@@ -1,10 +1,12 @@
 using Generated;
 using Graph.System.Config;
+using Graph.System.Config.Models.Apps;
 using Graph.System.TerminalControls.Color;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage;
 using VRage.Utils;
+using ScreenConfigColorable = Graph.System.Config.Models.ScreenConfigColorable;
 
 namespace Graph.System.TerminalControls.Color
 {
@@ -31,7 +33,7 @@ namespace Graph.System.TerminalControls.Color
         void Setter(IMyTerminalBlock block, bool value)
         {
             var screen = GetThisSurfaceIndex(block);
-            var config = ConfigManager.GetConfigForScreen(block, screen);
+            var config = ConfigManager.GetConfigForScreen(block, screen) as ScreenConfigColorable;
 
             if (config == null)
                 return;
@@ -51,7 +53,7 @@ namespace Graph.System.TerminalControls.Color
 
         bool Getter(IMyTerminalBlock myTerminalBlock)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(myTerminalBlock);
+            var config = ConfigManager.GetConfigForCurrentScreen(myTerminalBlock) as ScreenConfigColorable;
             return config != null && config.CustomizedColors;
         }
     }

@@ -1,7 +1,7 @@
-#if DEBUG
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Generated;
 using Graph.Apps.Abstract;
 using Graph.System;
 using Sandbox.Game.Components;
@@ -14,9 +14,13 @@ using VRageMath;
 
 namespace Graph.Apps
 {
+#if DEBUG
     [MyTextSurfaceScript(ID, TITLE)]
-    public class SessionDebugSurfaceScript : SurfaceScriptBase
+#endif
+    public partial class SessionDebugSurfaceScript : SurfaceScriptBase
     {
+        protected override ConfigKind ConfigKind => ConfigKind.Colorable;
+
         public const string ID = "SessionDebug";
         public const string TITLE = "LCDMod Session Debug";
         const string DEBUG_FONT = "Monospace";
@@ -222,4 +226,3 @@ namespace Graph.Apps
         }
     }
 }
-#endif

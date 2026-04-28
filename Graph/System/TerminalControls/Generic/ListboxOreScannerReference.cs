@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Graph.Helpers;
 using Graph.System.Config;
+using Graph.System.Config.Models;
+using Graph.System.Config.Models.Apps;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.ModAPI;
@@ -13,7 +15,7 @@ namespace Graph.System.TerminalControls.Generic
     /// Single-select listbox of cockpits / control seats / RCs / fighter cockpits
     /// on the LCD's grid. Used by the ore-scanner script as its "what is up/down"
     /// orientation reference. Stores the chosen block's EntityId in
-    /// <see cref="ScreenConfig.OreScannerReferenceId"/>; 0 = "no reference".
+    /// <see cref="ScreenConfigGeneral.OreScannerReferenceId"/>; 0 = "no reference".
     /// </summary>
     public sealed partial class ListboxOreScannerReference : TerminalControlsWrapper
     {

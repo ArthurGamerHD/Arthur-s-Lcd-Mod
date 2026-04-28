@@ -7,6 +7,7 @@ using Graph.Apps.Percentage;
 using Graph.Apps.Refinery;
 using Graph.Helpers;
 using Graph.System.Config;
+using Graph.System.Config.Models.Apps;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.ModAPI;
@@ -30,7 +31,7 @@ namespace Graph.System.TerminalControls.Filter.Listbox
         protected override void Getter(IMyTerminalBlock b, List<MyTerminalControlListBoxItem> blockList,
             List<MyTerminalControlListBoxItem> selected)
         {
-            var screenSettings = ConfigManager.GetConfigForCurrentScreen(b);
+            var screenSettings = ConfigManager.GetConfigForCurrentScreen(b) as ScreenConfigWithBlocks;
 
             if (screenSettings == null)
                 return;
@@ -82,7 +83,7 @@ namespace Graph.System.TerminalControls.Filter.Listbox
             base.Getter(b, blockList, selected);
         }
 
-        bool IsValidBlock(IMySlimBlock block, IMyTerminalBlock referenceBlock, ScreenConfig config, string script)
+        bool IsValidBlock(IMySlimBlock block, IMyTerminalBlock referenceBlock, ScreenConfigWithBlocks config, string script)
         {
             var fat = block?.FatBlock;
 

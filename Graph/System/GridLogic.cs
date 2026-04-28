@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Graph.Helpers;
-using Graph.System.Config;
+using Graph.System.Config.Models.Apps;
 using Sandbox.ModAPI;
 using SpaceEngineers.Game.ModAPI;
 using VRage.Game;
@@ -281,7 +281,7 @@ namespace Graph.System
         }
 
 
-        public Dictionary<MyItemType, double> GetItems(ScreenConfig config, IMyTerminalBlock referenceBlock, string[] types = null)
+        public Dictionary<MyItemType, double> GetItems(ScreenConfigWithItems config, IMyTerminalBlock referenceBlock, string[] types = null)
         {
             try
             {
@@ -589,7 +589,7 @@ namespace Graph.System
         /// <param name="config">Screen config used to filter selected blocks/groups.</param>
         /// <param name="referenceBlock">LCD block used for ownership/grid-group checks.</param>
         /// <returns>Item type/amount dictionary for the requested slot; empty if no refineries found.</returns>
-        public Dictionary<MyItemType, double> GetRefineryItems(int inventoryIndex, ScreenConfig config, IMyTerminalBlock referenceBlock)
+        public Dictionary<MyItemType, double> GetRefineryItems(int inventoryIndex, ScreenConfigWithBlocks config, IMyTerminalBlock referenceBlock)
         {
             if (inventoryIndex != 0 && inventoryIndex != 1)
                 return new Dictionary<MyItemType, double>();

@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Generated;
 using Graph.Apps.Abstract;
 using Graph.Helpers;
 using Graph.Networking;
+using Graph.System.Config.Models;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 using VRage.Game.ModAPI;
@@ -17,7 +19,11 @@ namespace Graph.System.Config
     /// </summary>
     public static class ConfigManager
     {
+        static readonly IConfigGenerator ConfigGenerator = new ConfigGenerator();
         public static NetworkManager NetworkManager;
+
+        public static ScreenConfigGeneral GenerateConfig(int configId) =>
+            ConfigGenerator.GenerateConfig((ConfigKind)configId) as ScreenConfigGeneral;
 
         public static void Init()
         {
@@ -81,6 +87,9 @@ namespace Graph.System.Config
 
         public static void Sync(IMyEntity storageEntity, ScreenProviderConfig providerConfig)
         {
+            foreach (var app in GetAppsForBlock(storageEntity as IMyTerminalBlock))
+                app.UseProviderConfig(providerConfig);
+
             foreach (var app in GetAppsForBlock(storageEntity as IMyTerminalBlock)) 
                 app.RequestRedraw();
 
@@ -97,15 +106,16 @@ namespace Graph.System.Config
         public static void Sync(IMyTerminalBlock storageEntity) =>
             Sync(storageEntity, GetConfigForBlock(storageEntity));
 
-        public static void LoadSettings(IMyCubeBlock block, int index, ref ScreenProviderConfig provider,
-            out ScreenConfig screen)
+        public static void LoadSettings(IMyCubeBlock block, int index, ConfigKind requestedConfigKind, ref ScreenProviderConfig provider,
+            out ScreenConfigGeneral screen)
         {
             try
             {
                 provider = GetConfigForBlock((IMyTerminalBlock)block);
                 if (provider != null && provider.Screens.Count > index)
                 {
-                    screen = provider.Screens[index];
+                    screen = EnsureScreenConfigType(provider, index, requestedConfigKind);
+                    provider.BindRuntimeParent((IMyTerminalBlock)block);
                     return;
                 }
 
@@ -117,17 +127,18 @@ namespace Graph.System.Config
                 provider = TryLoad(block);
                 if (provider != null)
                 {
-                    screen = provider.Screens[index];
+                    screen = EnsureScreenConfigType(provider, index, requestedConfigKind);
+                    provider.BindRuntimeParent((IMyTerminalBlock)block);
                     return;
                 }
 
-                CreateSettings(block, index, out provider, out screen);
+                CreateSettings(block, index, requestedConfigKind, out provider, out screen);
             }
             catch (Exception e)
             {
                 MyAPIGateway.Utilities.ShowNotification($"Fail to Load Settings for block {block.DisplayNameText}\n{e.Message}");
                 ErrorHandlerHelper.LogError(e, typeof(ConfigManager));
-                CreateSettings(block, index, out provider, out screen);
+                CreateSettings(block, index, requestedConfigKind, out provider, out screen);
             }
         }
 
@@ -139,14 +150,14 @@ namespace Graph.System.Config
             string value;
             if (block.Storage.TryGetValue(Constants.StorageGuid, out value) && !string.IsNullOrEmpty(value))
             {
-                var provider =
-                    MyAPIGateway.Utilities.SerializeFromBinary<ScreenProviderConfig>(Convert.FromBase64String(value));
+                var data = Convert.FromBase64String(value);
+                var provider = MyAPIGateway.Utilities.SerializeFromBinary<ScreenProviderConfig>(data);
+                var terminalBlock = (IMyTerminalBlock)block;
 
                 if (provider.Parent != block.CubeGrid.EntityId)
-                    provider.SetParent(block.CubeGrid.EntityId);
-
-                foreach (var providerScreen in provider.Screens) 
-                    providerScreen.ParentBlock = (IMyTerminalBlock)block;
+                    provider.SetParent(block);
+                else
+                    provider.BindRuntimeParent(terminalBlock);
                 
                 return provider;
             }
@@ -154,11 +165,13 @@ namespace Graph.System.Config
             return null;
         }
 
-        public static void CreateSettings(IMyCubeBlock block, int index, out ScreenProviderConfig provider, out ScreenConfig screen)
+        public static void CreateSettings(IMyCubeBlock block, int index, ConfigKind requestedConfigKind, out ScreenProviderConfig provider, out ScreenConfigGeneral screen)
         {
             provider = CreateSettings(block);
+            screen = EnsureScreenConfigType(provider, index, requestedConfigKind);
+            provider.BindRuntimeParent(block as IMyTerminalBlock);
+            (screen as ScreenConfigColorable)?.ResetDefaultColors();
             Save(block, provider);
-            screen = provider.Screens[index];
         }
 
         public static ScreenProviderConfig CreateSettings(IMyCubeBlock block) => new ScreenProviderConfig(block is IMyTextPanel ? 1 : ((IMyTextSurfaceProvider)block).SurfaceCount, block as IMyTerminalBlock);
@@ -169,7 +182,7 @@ namespace Graph.System.Config
         public static ScreenProviderConfig GetConfigForBlock(IMyTerminalBlock block) =>
             GetAppsForBlock(block).FirstOrDefault()?.ProviderConfig;
 
-        public static ScreenConfig GetConfigForScreen(IMyTerminalBlock block, int index)
+        public static ScreenConfigGeneral GetConfigForScreen(IMyTerminalBlock block, int index)
         {
             var settings = GetConfigForBlock(block);
 
@@ -181,8 +194,30 @@ namespace Graph.System.Config
             return settings.Screens[index];
         }
 
-        public static ScreenConfig GetConfigForCurrentScreen(IMyTerminalBlock block) =>
+        public static ScreenConfigGeneral GetConfigForCurrentScreen(IMyTerminalBlock block) =>
             GetConfigForScreen(block, GetThisSurfaceIndex(block));
+
+        static ScreenConfigGeneral EnsureScreenConfigType(ScreenProviderConfig provider, int index, ConfigKind requestedConfigKind)
+        {
+            var current = provider.Screens[index];
+            var requested = ConfigGenerator.GenerateConfig(requestedConfigKind) as ScreenConfigGeneral;
+
+            if (requested == null)
+                return current;
+
+            if (current == null)
+            {
+                provider.Screens[index] = requested;
+                return requested;
+            }
+
+            if (current.GetType() == requested.GetType())
+                return current;
+
+            requested.Clone(current);
+            provider.Screens[index] = requested;
+            return requested;
+        }
 
         public static int GetThisSurfaceIndex(IMyTerminalBlock block)
         {

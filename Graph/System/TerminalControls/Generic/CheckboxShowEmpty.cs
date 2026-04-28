@@ -2,6 +2,7 @@ using Graph.Apps.Inventory;
 using Graph.Apps.Power;
 using Graph.Apps.Refinery;
 using Graph.System.Config;
+using Graph.System.Config.Models.Apps;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
@@ -28,17 +29,27 @@ namespace Graph.System.TerminalControls.Generic
         void Setter(IMyTerminalBlock block, bool value)
         {
             var config = ConfigManager.GetConfigForCurrentScreen(block);
-            if (config == null)
+            var withFilters = config as ScreenConfigWithFilters;
+            var power = config as ScreenConfigPower;
+            if (withFilters == null && power == null)
                 return;
 
-            config.HideEmpty = value;
+            if (withFilters != null)
+                withFilters.HideEmpty = value;
+            if (power != null)
+                power.HideEmpty = value;
             ConfigManager.Sync(block);
         }
 
         bool Getter(IMyTerminalBlock myTerminalBlock)
         {
             var config = ConfigManager.GetConfigForCurrentScreen(myTerminalBlock);
-            return config != null && config.HideEmpty;
+            var withFilters = config as ScreenConfigWithFilters;
+            if (withFilters != null)
+                return withFilters.HideEmpty;
+
+            var power = config as ScreenConfigPower;
+            return power != null && power.HideEmpty;
         }
     }
 }

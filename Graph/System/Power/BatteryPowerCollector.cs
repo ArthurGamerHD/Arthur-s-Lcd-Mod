@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Graph.Helpers;
-using Graph.System.Config;
+using Graph.System.Config.Models.Apps;
 using Sandbox.ModAPI;
 using SpaceEngineers.Game.ModAPI;
 using VRageMath;
@@ -24,7 +24,7 @@ namespace Graph.System.Power
         string _timeLabel = "--:--";
         bool _isCharging;
 
-        public BatteryPowerCollector(ScreenConfig screenConfig) : base(screenConfig)
+        public BatteryPowerCollector(ScreenConfigPower screenConfig) : base(screenConfig)
         {
         }
 
@@ -47,7 +47,7 @@ namespace Graph.System.Power
             _averageCharge = 0f;
             _statusText = string.Empty;
             _rightSideText = string.Empty;
-            _rightSideColor = ScreenConfig.HeaderColor;
+            _rightSideColor = ScreenConfigPower.HeaderColor;
             _statusKind = PowerStatusKind.None;
             _statusColor = Color.White;
             _timeLabel = "--:--";
@@ -79,25 +79,25 @@ namespace Graph.System.Power
             if (_visible.Count > 0 && fullCount == _visible.Count)
             {
                 _statusKind = PowerStatusKind.Full;
-                _statusColor = ScreenConfig.HeaderColor;
+                _statusColor = ScreenConfigPower.HeaderColor;
                 _isCharging = true;
             }
             else if (totalIn > totalOut + eps)
             {
                 _statusKind = PowerStatusKind.Charging;
-                _statusColor = ScreenConfig.WarningColor;
+                _statusColor = ScreenConfigPower.WarningColor;
                 _isCharging = true;
             }
             else if (totalOut > totalIn + eps)
             {
                 _statusKind = PowerStatusKind.Discharging;
-                _statusColor = ScreenConfig.ErrorColor;
+                _statusColor = ScreenConfigPower.ErrorColor;
                 _isCharging = false;
             }
             else
             {
                 _statusKind = PowerStatusKind.None;
-                _statusColor = ScreenConfig.HeaderColor;
+                _statusColor = ScreenConfigPower.HeaderColor;
             }
 
             if (_visible.Count == 0)
@@ -131,18 +131,18 @@ namespace Graph.System.Power
             if (netRate < eps)
             {
                 _timeLabel = "--:--";
-                SetRightSideText(_timeLabel, ScreenConfig.HeaderColor);
+                SetRightSideText(_timeLabel, ScreenConfigPower.HeaderColor);
             }
             else if (_isCharging)
             {
                 _timeLabel = _statusKind == PowerStatusKind.Full ? "00:00" : FormatTimeHours((totalMax - totalStored) / netRate);
-                SetRightSideText("+ " + _timeLabel, ScreenConfig.HeaderColor);
+                SetRightSideText("+ " + _timeLabel, ScreenConfigPower.HeaderColor);
             }
             else
             {
                 float hours = totalStored / netRate;
                 _timeLabel = FormatTimeHours(hours);
-                Color timeColor = hours <= 5f / 60f ? ScreenConfig.ErrorColor : ScreenConfig.WarningColor;
+                Color timeColor = hours <= 5f / 60f ? ScreenConfigPower.ErrorColor : ScreenConfigPower.WarningColor;
                 SetRightSideText("- " + _timeLabel, timeColor);
             }
         }
@@ -155,9 +155,9 @@ namespace Graph.System.Power
 
         Color GetBatteryIconColor(float ratio)
         {
-            if (ratio < 0.15f) return ScreenConfig.ErrorColor;
-            if (ratio < 0.35f) return ScreenConfig.WarningColor;
-            return ScreenConfig.HeaderColor;
+            if (ratio < 0.15f) return ScreenConfigPower.ErrorColor;
+            if (ratio < 0.35f) return ScreenConfigPower.WarningColor;
+            return ScreenConfigPower.HeaderColor;
         }
 
         string GetStatusText()

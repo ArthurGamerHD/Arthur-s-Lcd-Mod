@@ -7,18 +7,21 @@ using Graph.Extensions;
 using Graph.Helpers;
 using Graph.Panels;
 using Graph.System;
+using Graph.System.Config.Models.Apps;
 using Graph.System.TerminalControls.Generic;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRageMath;
+using ScreenConfigColorable = Graph.System.Config.Models.ScreenConfigColorable;
 
 namespace Graph.Apps.Abstract
 {
-    public abstract class PercentageSurfaceScript<TEntry> : SurfaceScriptBase, IMultiDisplayMode,
+    public abstract partial class PercentageSurfaceScript<TEntry> : SurfaceScriptBase, IMultiDisplayMode,
         IUsesTerminalControl<ComboboxDisplayMode>
     {
+        protected override ConfigKind ConfigKind => ConfigKind.Colorable;
         protected const int SCROLLER_WIDTH = 8;
         protected const int LINE_HEIGHT = 40;
         protected const int MINIMUM_COL_WIDTH = 220;
@@ -36,7 +39,7 @@ namespace Graph.Apps.Abstract
         public override void Run()
         {
             base.Run();
-            if (Config == null) return;
+            if (AppConfig == null) return;
 
             if (_scriptForegroundColor != Surface.ScriptForegroundColor)
                 LayoutChanged();
@@ -58,7 +61,7 @@ namespace Graph.Apps.Abstract
                 AddBackground(sprites);
                 DrawTitle(sprites);
 
-                switch (Config.DisplayMode)
+                switch (AppConfig.DisplayMode)
                 {
                     case DisplayMode.Grid:
                         DrawGrid(sprites, entries);
@@ -108,7 +111,7 @@ namespace Graph.Apps.Abstract
 
         protected virtual Color GetEntryBarFillColor()
         {
-            return Config.HeaderColor;
+            return AppConfig.HeaderColor;
         }
 
         protected virtual Color GetEntryBarBackgroundColor()
@@ -125,7 +128,7 @@ namespace Graph.Apps.Abstract
 
             var pct = MathHelper.Clamp(GetEntryPercentage(entry), 0f, 1f);
 
-            if (Config.DrawLines)
+            if (AppConfig.DrawLines)
             {
                 frame.Add(new MySprite
                 {
@@ -273,9 +276,9 @@ namespace Graph.Apps.Abstract
             float columnWidth = (contentEnd - contentStart) / maxCols;
             float gridHeight = maxRows * rowHeight;
 
-            if (Config.DrawLines)
+            if (AppConfig.DrawLines)
             {
-                var lineColor = Config.HeaderColor;
+                var lineColor =  AppConfig.HeaderColor;
                 for (int row = 0; row <= maxRows; row++)
                 {
                     var y = CaretY + row * rowHeight;
@@ -323,9 +326,9 @@ namespace Graph.Apps.Abstract
             var pct = MathHelper.Clamp(GetEntryPercentage(entry), 0f, 1f);
             var cellView = GetCellViewBox(xStart, xEnd, yStart, rowHeight, cellPadding);
 
-            if (!Config.DrawLines)
+            if (!AppConfig.DrawLines)
             {
-                var backgroundColor = Config.HeaderColor;
+                var backgroundColor =  AppConfig.HeaderColor;
                 var hsv = backgroundColor.ColorToHSV();
                 hsv.Z *= 0.2f;
                 var cellRect = new RectangleF(
@@ -371,7 +374,7 @@ namespace Graph.Apps.Abstract
                 new Vector2(
                     Math.Max(1f, barRect.Width - 2f * barInnerPaddingX),
                     Math.Max(1f, barRect.Height - 2f * barInnerPaddingY)),
-                Config.HeaderColor.DeriveAscentColor(),
+                 AppConfig.HeaderColor.DeriveAscentColor(),
                 BackgroundColor.DeriveAscentColor(),
                 pct,
                 GetEntryUsageColor(pct));
@@ -412,7 +415,7 @@ namespace Graph.Apps.Abstract
             var thumbCenter = new Vector2(barXCenter,
                 (float)Math.Round(initialY + scrollBarCenter, MidpointRounding.ToEven));
             DrawCapsule(frame, thumbCenter, barWidth, scrollBarHeight,
-                new Color(Config.HeaderColor.R, Config.HeaderColor.G, Config.HeaderColor.B, 250));
+                new Color(AppConfig.HeaderColor.R,  AppConfig.HeaderColor.G,  AppConfig.HeaderColor.B, 250));
         }
 
         void DrawCapsule(List<MySprite> frame, Vector2 center, int width, float height, Color color)

@@ -5,6 +5,7 @@ using Generated;
 using Graph.Apps.Abstract;
 using Graph.Extensions;
 using Graph.Helpers;
+using Graph.System.Config.Models.Apps;
 using Graph.System.TerminalControls.Color;
 using Graph.System.TerminalControls.Generic;
 using Graph.System.TerminalControls.Groups;
@@ -38,6 +39,7 @@ namespace Graph.Apps.Radar
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class RadarSurfaceScript : SurfaceScriptBase
     {
+        protected override ConfigKind ConfigKind => ConfigKind.Radar;
         public const string ID = "LCDMod_Radar";
         public const string TITLE = "LCDMod_Radar";
 
@@ -127,7 +129,7 @@ namespace Graph.Apps.Radar
         public override void Run()
         {
             base.Run();
-            if (Config == null)
+            if (AppConfig == null)
                 return;
 
             CollectContacts();
@@ -140,7 +142,7 @@ namespace Graph.Apps.Radar
                 try
                 {
                     AddBackground(_backgroundSprites);
-                    DrawTitle(_foregroundSprites); // sets CaretY; respects Config.TitleVisible
+                    DrawTitle(_foregroundSprites); // sets CaretY; respects AppConfig.TitleVisible
                     DrawFooter(_foregroundSprites); // pre-render footer layout before radar sizing
                     RenderRadar(_backgroundSprites);
 
@@ -398,7 +400,7 @@ namespace Graph.Apps.Radar
 
         void RefreshCachedCharacterTargetLocking(IMyPlayer player)
         {
-            var characterEntity = player?.Character as VRage.ModAPI.IMyEntity;
+            var characterEntity = player?.Character as IMyEntity;
             var currentCharacterId = characterEntity?.EntityId ?? 0;
             if (currentCharacterId == _cachedCharacterId)
                 return;
@@ -549,9 +551,9 @@ namespace Graph.Apps.Radar
         {
             var lineColor = ForegroundColor;
             var backColor = BackgroundColor;
-            var warnColor = Config.WarningColor;
-            var errColor = Config.ErrorColor;
-            var allyColor = Config.HeaderColor;
+            var warnColor = AppConfig.WarningColor;
+            var errColor = AppConfig.ErrorColor;
+            var allyColor = AppConfig.HeaderColor;
             var planeColor = new Color(ForegroundColor, 0.12f);
 
             UpdateProjectionAngle();
@@ -582,7 +584,7 @@ namespace Graph.Apps.Radar
                 sideLength = viewportCropped.Y / _radarProjectionCos;
 
             Vector2 radarCenterPos = new Vector2(ViewBox.Center.X, areaTop + viewportCropped.Y * 0.5f);
-            var radarPlaneSize = new Vector2(sideLength, sideLength * _radarProjectionCos) * Config.Scale;
+            var radarPlaneSize = new Vector2(sideLength, sideLength * _radarProjectionCos) * AppConfig.Scale;
 
             DrawRadarPlaneBackground(sprites, radarCenterPos, radarPlaneSize, radarScale, lineColor, backColor,
                 planeColor);
@@ -604,7 +606,7 @@ namespace Graph.Apps.Radar
                 float debugScale = 0.5f * radarScale * FontScale;
                 float debugOffsetY =
                     Surface.MeasureStringInPixels(new StringBuilder(debugText), "White", debugScale).Y * 0.5f;
-                var debugColor = _debugLockedTargetPercent >= 0.99f ? Config.ErrorColor : Config.WarningColor;
+                var debugColor = _debugLockedTargetPercent >= 0.99f ? AppConfig.ErrorColor : AppConfig.WarningColor;
                 sprites.Add(new MySprite(
                     SpriteType.TEXT,
                     debugText,
@@ -1120,9 +1122,9 @@ namespace Graph.Apps.Radar
             });
 
             var shipPos = ((IMyEntity)Block).WorldMatrix.Translation;
-            var errColor = Config.ErrorColor;
-            var warnColor = Config.WarningColor;
-            var allyColor = Config.HeaderColor;
+            var errColor = AppConfig.ErrorColor;
+            var warnColor = AppConfig.WarningColor;
+            var allyColor = AppConfig.HeaderColor;
             float contentTop = top + headerHeight + pad;
             float contentBottom = top + FooterHeight - pad;
             float rowHeight = Math.Max(1f, (contentBottom - contentTop) / Math.Max(1, rowsPerCol));
@@ -1215,7 +1217,7 @@ namespace Graph.Apps.Radar
 
         void GetRadarCappedScales(out float cappedScale, out float cappedLayoutScale)
         {
-            float configScale = Math.Max(Config.Scale, 0.0001f);
+            float configScale = Math.Max(AppConfig.Scale, 0.0001f);
             float autoScale = Scale / configScale;
             float cappedUserScale = Math.Min(configScale, 1f);
             cappedScale = autoScale * cappedUserScale;

@@ -4,6 +4,7 @@ using System.Text;
 using Generated;
 using Graph.Apps.Abstract;
 using Graph.Helpers;
+using Graph.System.Config.Models.Apps;
 using Graph.System.TerminalControls.Generic;
 using Sandbox.Definitions;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
@@ -24,10 +25,11 @@ namespace Graph.Apps.Radar
     ///     Independent from <see cref="RadarSurfaceScript" />; both can be selected per surface.
     /// </summary>
     [MyTextSurfaceScript(ID, TITLE)]
-    public class OreScannerRadarSurfaceScript : SurfaceScriptBase,
+    public partial class OreScannerRadarSurfaceScript : SurfaceScriptBase,
         IUsesTerminalControl<SliderOreScannerConeAngle>,
         IUsesTerminalControl<ListboxOreScannerReference>
     {
+        protected override ConfigKind ConfigKind => ConfigKind.OreScanner;
         public const string ID = "LCDMod_OreScannerRadar";
         public const string TITLE = "LCDMod_OreScannerRadar";
 
@@ -136,7 +138,7 @@ namespace Graph.Apps.Radar
         public override void Run()
         {
             base.Run();
-            if (Config == null)
+            if (AppConfig == null)
                 return;
 
             try
@@ -186,8 +188,8 @@ namespace Graph.Apps.Radar
 
             // Slider OR reference-cockpit change → invalidate the cached signal
             // and restart the 5-second charging window with the new direction.
-            var currentBias = Config != null ? Config.OreScannerConeBias : 0f;
-            var currentRef = Config != null ? Config.OreScannerReferenceId : 0L;
+            var currentBias = AppConfig?.OreScannerConeBias ?? 0f;
+            var currentRef = AppConfig?.OreScannerReferenceId ?? 0L;
             var sliderChanged = !float.IsNaN(_lastBiasSeen) && Math.Abs(currentBias - _lastBiasSeen) > 0.5f;
             var refChanged = _lastReferenceSeen != -1L && currentRef != _lastReferenceSeen;
             if (sliderChanged || refChanged)
@@ -369,7 +371,7 @@ namespace Graph.Apps.Radar
             //   3. None (positive/negative still tilts toward detector.Forward
             //      so the slider remains useful in deep space without a cockpit).
             var defaultAxis = matrix.Up;
-            var bias = MathHelper.Clamp(Config != null ? Config.OreScannerConeBias : 0f, -100f, 100f);
+            var bias = MathHelper.Clamp(AppConfig?.OreScannerConeBias ?? 0f, -100f, 100f);
 
             if (Math.Abs(bias) < 0.5f)
             {
@@ -590,7 +592,7 @@ namespace Graph.Apps.Radar
             // 1. Cockpit / control seat reference, if selected and on the same grid.
             try
             {
-                var id = Config != null ? Config.OreScannerReferenceId : 0L;
+                var id = AppConfig?.OreScannerReferenceId ?? 0L;
                 if (id != 0L)
                 {
                     IMyEntity ent;
@@ -694,7 +696,7 @@ namespace Graph.Apps.Radar
                     // 1.2 s full cycle — natural "searching" rhythm.
                     // Used while the grid is settling AND while the voxel
                     // scan is running.
-                    DrawAnimatedSprite(sprites, "WifiSearching_0", 4, 18, center, size, Config.HeaderColor);
+                    DrawAnimatedSprite(sprites, "WifiSearching_0", 4, 18, center, size, AppConfig.HeaderColor);
                     return;
 
                 case ScannerState.CompletedWithSignal:
@@ -727,7 +729,7 @@ namespace Graph.Apps.Radar
         {
             var litRings = MathHelper.Clamp((int)Math.Ceiling(_signalStrength * 4f), 0, 4);
 
-            var ringOn = Config.HeaderColor; // painted as signal grows
+            var ringOn = AppConfig.HeaderColor; // painted as signal grows
             var ringOff = new Color(ForegroundColor, 0.20f); // ghost ring; doesn't compete with lit rings
 
             var thickness = Math.Max(2f, size * 0.05f);
@@ -748,7 +750,7 @@ namespace Graph.Apps.Radar
             var frame = (int)(GameplayFrame() / FRAMES_PER_STEP % 8);
             var sweepSprite = "DetectorScan_0" + (frame + 1);
             sprites.Add(new MySprite(SpriteType.TEXTURE, sweepSprite, center,
-                new Vector2(size), Config.HeaderColor));
+                new Vector2(size), AppConfig.HeaderColor));
         }
 
         // Footer router: text rows for in-progress states, icon row for the final result.
@@ -779,13 +781,13 @@ namespace Graph.Apps.Radar
             // Left: complete WiFi icon + signal %
             var leftIcon = leftCell + new Vector2(-iconSize * 0.5f, 0f);
             var leftValue = leftCell + new Vector2(+iconSize * 0.5f + labelGap, 0f);
-            DrawSpriteCentered(sprites, "WifiSearching_04", leftIcon, iconSize, Config.HeaderColor);
+            DrawSpriteCentered(sprites, "WifiSearching_04", leftIcon, iconSize, AppConfig.HeaderColor);
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
                 Data = (int)Math.Round(_signalStrength * 100f) + "%",
                 Position = new Vector2(leftValue.X, leftValue.Y - 12f * LayoutScale),
-                Color = Config.HeaderColor,
+                Color = AppConfig.HeaderColor,
                 Alignment = TextAlignment.LEFT,
                 FontId = "White",
                 RotationOrScale = fontScale
@@ -794,13 +796,13 @@ namespace Graph.Apps.Radar
             // Right: ruler icon + scan distance
             var rightIcon = rightCell + new Vector2(-iconSize * 0.5f, 0f);
             var rightValue = rightCell + new Vector2(+iconSize * 0.5f + labelGap, 0f);
-            DrawSpriteCentered(sprites, "SignalDistance_Ruler", rightIcon, iconSize, Config.HeaderColor);
+            DrawSpriteCentered(sprites, "SignalDistance_Ruler", rightIcon, iconSize, AppConfig.HeaderColor);
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
                 Data = FormatingHelper.DistanceToString(_cachedScanRange),
                 Position = new Vector2(rightValue.X, rightValue.Y - 12f * LayoutScale),
-                Color = Config.HeaderColor,
+                Color = AppConfig.HeaderColor,
                 Alignment = TextAlignment.LEFT,
                 FontId = "White",
                 RotationOrScale = fontScale
@@ -833,7 +835,7 @@ namespace Graph.Apps.Radar
         // Triangle apex flips with the sign so it always points where the cone points.
         private void DrawTiltIndicator(List<MySprite> sprites, float areaTop, float areaBottom)
         {
-            var bias = MathHelper.Clamp(Config != null ? Config.OreScannerConeBias : 0f, -100f, 100f);
+            var bias = MathHelper.Clamp(AppConfig?.OreScannerConeBias ?? 0f, -100f, 100f);
 
             var trackHeight = (areaBottom - areaTop) * 0.55f;
             var trackY = (areaTop + areaBottom) * 0.5f;
@@ -864,8 +866,8 @@ namespace Graph.Apps.Radar
                 Math.Abs(bias) < 0.5f
                     ? new Color(ForegroundColor, 0.9f)
                     : _state == ScannerState.CompletedWithSignal
-                        ? Config.HeaderColor
-                        : Config.WarningColor;
+                        ? AppConfig.HeaderColor
+                        : AppConfig.WarningColor;
 
             // SE Triangle sprite already points up; rotate 180° to point down for negative tilt.
             var rot = bias >= 0f ? 0f : MathHelper.Pi;
@@ -920,14 +922,14 @@ namespace Graph.Apps.Radar
             {
                 case ScannerState.NoDetector:
                 case ScannerState.MultipleDetectors:
-                    return Config.ErrorColor;
+                    return AppConfig.ErrorColor;
                 case ScannerState.Idle:
                     return new Color(ForegroundColor, 0.55f);
                 case ScannerState.Charging:
                 case ScannerState.Scanning:
-                    return Config.WarningColor;
+                    return AppConfig.WarningColor;
                 case ScannerState.CompletedWithSignal:
-                    return Config.ErrorColor;
+                    return AppConfig.ErrorColor;
                 default:
                     return new Color(ForegroundColor, 0.85f);
             }

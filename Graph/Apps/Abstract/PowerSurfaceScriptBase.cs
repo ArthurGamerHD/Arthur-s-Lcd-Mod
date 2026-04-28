@@ -6,6 +6,7 @@ using Graph.Extensions;
 using Graph.Helpers;
 using Graph.Panels;
 using Graph.System;
+using Graph.System.Config.Models.Apps;
 using Graph.System.TerminalControls.Generic;
 using Sandbox.ModAPI;
 using VRage;
@@ -19,9 +20,9 @@ using IMyCubeGrid = VRage.Game.ModAPI.IMyCubeGrid;
 
 namespace Graph.Apps.Abstract
 {
-    public abstract class PowerSurfaceScriptBase : SurfaceScriptBase, IMultiDisplayMode,
-        IUsesTerminalControl<ComboboxDisplayMode>
+    public abstract partial class PowerSurfaceScriptBase : SurfaceScriptBase, IMultiDisplayMode, IUsesTerminalControl<ComboboxDisplayMode>
     {
+        protected override ConfigKind ConfigKind => ConfigKind.Power;
         protected const float LINE = 22f;
         protected const float MINIMUM_COL_WIDTH = 400f;
         protected const float SCROLLER_WIDTH = 8f;
@@ -98,7 +99,7 @@ namespace Graph.Apps.Abstract
         protected override void LayoutChanged()
         {
             base.LayoutChanged();
-            _ascentColor = Config.HeaderColor.DeriveAscentColor();
+            _ascentColor = AppConfig.HeaderColor.DeriveAscentColor();
 
             RefreshEntryLabels();
             _maxLabelCache = string.Empty;
@@ -109,7 +110,7 @@ namespace Graph.Apps.Abstract
         {
             base.Run();
 
-            if (Config == null)
+            if (AppConfig == null)
                 return;
 
             using (var frame = Surface.DrawFrame())
@@ -129,7 +130,7 @@ namespace Graph.Apps.Abstract
                     _currentLabelCache = MyTexts.Get(MyStringId.GetOrCompute("BlockPropertyProperties_CurrentOutput"))
                         .ToString();
 
-                switch (Config.DisplayMode)
+                switch (AppConfig.DisplayMode)
                 {
                     case DisplayMode.Grid:
                         DrawGridLike(
@@ -138,9 +139,9 @@ namespace Graph.Apps.Abstract
                             _maxLabelCache,
                             _currentLabelCache,
                             false,
-                            Config.DrawLines,
-                            Config.DrawLines,
-                            Config.DrawLines);
+                            AppConfig.DrawLines,
+                            AppConfig.DrawLines,
+                            AppConfig.DrawLines);
                         break;
                     default:
                         DrawDefaultView(
@@ -231,7 +232,7 @@ namespace Graph.Apps.Abstract
         void BuildVisibleEntries()
         {
             _visibleEntries.Clear();
-            var hideEmpty = Config == null || Config.HideEmpty;
+            var hideEmpty = AppConfig == null || AppConfig.HideEmpty;
             for (int i = 0; i < _entriesOrdered.Length; i++)
             {
                 if (!hideEmpty || _entriesOrdered[i].DetectedBlocks > 0)
@@ -325,7 +326,7 @@ namespace Graph.Apps.Abstract
             if (shouldScroll)
                 contentEnd -= SCROLLER_WIDTH * Scale;
 
-            if (Config.DrawLines)
+            if (AppConfig.DrawLines)
             {
                 for (int row = 0; row <= maxRows; row++)
                 {
@@ -397,7 +398,7 @@ namespace Graph.Apps.Abstract
 
             if (drawLineSprites)
             {
-                var lineColor = new Color(Config.HeaderColor.R, Config.HeaderColor.G, Config.HeaderColor.B);
+                var lineColor = new Color(AppConfig.HeaderColor.R, AppConfig.HeaderColor.G, AppConfig.HeaderColor.B);
                 for (int row = 0; row <= maxRows; row++)
                 {
                     var y = CaretY + row * rowHeight;
@@ -459,7 +460,7 @@ namespace Graph.Apps.Abstract
 
             if (!drawAsLines)
             {
-                var backgroundColor = entry.Current <= 0 ? Config.ErrorColor : Config.HeaderColor;
+                var backgroundColor = entry.Current <= 0 ? AppConfig.ErrorColor : AppConfig.HeaderColor;
                 var hsv = backgroundColor.ColorToHSV();
                 hsv.Z *= 0.2f;
 
@@ -476,7 +477,7 @@ namespace Graph.Apps.Abstract
             var iconRect = slots.Item1;
             var numberRect = slots.Item2;
             var nameRect = slots.Item3;
-            var foreground = entry.Current <= 0 && drawAsLines ? Config.ErrorColor : Surface.ScriptForegroundColor;
+            var foreground = entry.Current <= 0 && drawAsLines ? AppConfig.ErrorColor : Surface.ScriptForegroundColor;
 
             DrawCellPie(sprites, iconRect, entry.Usage);
 
@@ -552,7 +553,7 @@ namespace Graph.Apps.Abstract
             var thumbCenter = new Vector2(barXCenter,
                 (float)Math.Round(initialY + scrollBarCenter, MidpointRounding.ToEven));
             DrawCapsule(frame, thumbCenter, barWidth, scrollBarHeight,
-                new Color(Config.HeaderColor.R, Config.HeaderColor.G, Config.HeaderColor.B, 250));
+                new Color(AppConfig.HeaderColor.R, AppConfig.HeaderColor.G, AppConfig.HeaderColor.B, 250));
         }
 
         void DrawCapsule(List<MySprite> frame, Vector2 center, int width, float height, Color color)

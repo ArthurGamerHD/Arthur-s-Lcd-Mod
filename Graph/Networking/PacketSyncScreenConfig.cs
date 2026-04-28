@@ -1,4 +1,5 @@
-using Graph.System.Config;
+using Graph.System.Config.Models;
+using Graph.System.Config.Models.Apps;
 using ProtoBuf;
 
 namespace Graph.Networking

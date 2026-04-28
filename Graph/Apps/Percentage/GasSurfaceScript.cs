@@ -136,9 +136,9 @@ namespace Graph.Apps.Percentage
         protected override Color? GetEntryUsageColor(float pct)
         {
             if (pct <= .10f)
-                return Config.ErrorColor;
+                return AppConfig.ErrorColor;
             if (pct <= .25f)
-                return Config.WarningColor;
+                return AppConfig.WarningColor;
             return null;
         }
 

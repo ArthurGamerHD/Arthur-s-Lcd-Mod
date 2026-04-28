@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Graph.Apps.Power;
 using Graph.System.Config;
+using Graph.System.Config.Models.Apps;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.ModAPI;
@@ -34,13 +35,13 @@ namespace Graph.System.TerminalControls.Generic
 
         long Getter(IMyTerminalBlock block)
         {
-            var cfg = ConfigManager.GetConfigForCurrentScreen(block);
+            var cfg = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigPower;
             return cfg?.GraphWindowIndex ?? 2;
         }
 
         void Setter(IMyTerminalBlock block, long value)
         {
-            var cfg = ConfigManager.GetConfigForCurrentScreen(block);
+            var cfg = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigPower;
             if (cfg == null) return;
             cfg.GraphWindowIndex = (int)value;
             ConfigManager.Sync(block);

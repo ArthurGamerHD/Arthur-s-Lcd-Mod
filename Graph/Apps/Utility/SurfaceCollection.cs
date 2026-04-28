@@ -19,13 +19,13 @@ namespace Graph.Apps.Utility
         public void Add(SurfaceScriptBase item)
         {
             _items.Add(item);
-            Graph.System.LcdModSessionComponent.HookSurfaceModules(item);
+            System.LcdModSessionComponent.HookSurfaceModules(item);
             Added?.Invoke(item);
         }
 
         public bool Remove(SurfaceScriptBase item)
         {
-            Graph.System.LcdModSessionComponent.UnhookSurfaceModules(item);
+            System.LcdModSessionComponent.UnhookSurfaceModules(item);
             var removed = _items.Remove(item);
             if (removed)
                 Removed?.Invoke(item);
@@ -36,7 +36,7 @@ namespace Graph.Apps.Utility
         public void Clear()
         {
             for (int i = 0; i < _items.Count; i++)
-                Graph.System.LcdModSessionComponent.UnhookSurfaceModules(_items[i]);
+                System.LcdModSessionComponent.UnhookSurfaceModules(_items[i]);
 
             _items.Clear();
         }

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Graph.Apps.Antenna;
 using Graph.Helpers;
-using Graph.System.Config;
+using Graph.System.Config.Models.Apps;
 using Sandbox.ModAPI;
 using VRageMath;
 
@@ -12,16 +12,17 @@ namespace Graph.System.Antenna
     {
         protected readonly Color ForegroundColor;
         protected readonly Color WarningColor;
-        protected readonly ScreenConfig ScreenConfig;
+        protected readonly ScreenConfigWithBlocks ScreenConfigGeneral;
         readonly Dictionary<string, string> _locCache = new Dictionary<string, string>();
         
         public abstract void Collect(GridLogic grid, List<AntennaEntry> entries);
 
         protected AntennaCollector(AntennaSurfaceScript antennaSurfaceScript)
         {
+            var appConfig = (ScreenConfigWithBlocks)antennaSurfaceScript.Config;
             ForegroundColor = antennaSurfaceScript.ForegroundColor;
-            WarningColor = antennaSurfaceScript.Config.WarningColor;
-            ScreenConfig = antennaSurfaceScript.Config;
+            WarningColor = appConfig.WarningColor;
+            ScreenConfigGeneral = appConfig;
         }
         
         protected string GetLocCached(string key)
@@ -36,6 +37,6 @@ namespace Graph.System.Antenna
         }
         
         
-        protected bool IsValid(IMyTerminalBlock block) => block != null && !block.Closed && (!ScreenConfig.SelectedBlocks.Any() || ScreenConfig.SelectedBlocks.Contains(block.EntityId));
+        protected bool IsValid(IMyTerminalBlock block) => block != null && !block.Closed && (!ScreenConfigGeneral.SelectedBlocks.Any() || ScreenConfigGeneral.SelectedBlocks.Contains(block.EntityId));
     }
 }

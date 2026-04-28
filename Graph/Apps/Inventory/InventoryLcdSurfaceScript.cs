@@ -29,7 +29,7 @@ namespace Graph.Apps.Inventory
         public const string NAME = "Inventory";
 
         public override Dictionary<MyItemType, double> ItemSource =>
-            Config == null ? null : GridLogic?.GetItems(Config, Block as IMyTerminalBlock);
+            AppConfig == null ? null : GridLogic?.GetItems(AppConfig, Block as IMyTerminalBlock);
 
         protected override string DefaultTitle => NAME;
 

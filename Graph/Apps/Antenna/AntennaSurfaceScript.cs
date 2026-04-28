@@ -7,6 +7,7 @@ using Graph.Apps.Abstract;
 using Graph.Helpers;
 using Graph.Panels;
 using Graph.System;
+using Graph.System.Config.Models.Apps;
 using Graph.System.Antenna;
 using Graph.System.TerminalControls.Color;
 using Graph.System.TerminalControls.Filter;
@@ -34,6 +35,7 @@ namespace Graph.Apps.Antenna
         IUsesTerminalControl<ComboboxDisplayMode>,
         IMultiDisplayMode
     {
+        protected override ConfigKind ConfigKind => ConfigKind.WithBlocks;
         const float LINE = 22f;
         const float MINIMUM_COL_WIDTH = 400f;
         const float SCROLLER_WIDTH = 8f;
@@ -76,7 +78,7 @@ namespace Graph.Apps.Antenna
         public override void Run()
         {
             base.Run();
-            if (Config == null)
+            if (AppConfig == null)
                 return;
 
             if (!_collectors.Any())
@@ -98,10 +100,10 @@ namespace Graph.Apps.Antenna
                 DrawTitle(sprites);
                 DrawFooter(sprites);
 
-                switch (Config.DisplayMode)
+                switch (AppConfig.DisplayMode)
                 {
                     case DisplayMode.Grid:
-                        DrawGridLike(sprites, _entries, false, Config.DrawLines, Config.DrawLines, Config.DrawLines);
+                        DrawGridLike(sprites, _entries, false, AppConfig.DrawLines, AppConfig.DrawLines, AppConfig.DrawLines);
                         break;
                     default:
                         DrawDefaultView(sprites, _entries);
@@ -164,7 +166,7 @@ namespace Graph.Apps.Antenna
             if (shouldScroll)
                 contentEnd -= SCROLLER_WIDTH * Scale;
 
-            if (Config.DrawLines)
+            if (AppConfig.DrawLines)
             {
                 for (int row = 0; row <= maxRows; row++)
                 {
@@ -234,7 +236,7 @@ namespace Graph.Apps.Antenna
 
             if (drawLineSprites)
             {
-                var lineColor = new Color(Config.HeaderColor.R, Config.HeaderColor.G, Config.HeaderColor.B);
+                var lineColor = new Color(AppConfig.HeaderColor.R, AppConfig.HeaderColor.G, AppConfig.HeaderColor.B);
                 for (int row = 0; row <= maxRows; row++)
                 {
                     var y = CaretY + row * rowHeight;
@@ -288,7 +290,7 @@ namespace Graph.Apps.Antenna
 
             if (!drawAsLines)
             {
-                var backgroundColor = !entry.IsFunctional ? Config.ErrorColor : Config.HeaderColor;
+                var backgroundColor = !entry.IsFunctional ? AppConfig.ErrorColor : AppConfig.HeaderColor;
                 var hsv = backgroundColor.ColorToHSV();
                 hsv.Z *= 0.2f;
 
@@ -420,7 +422,7 @@ namespace Graph.Apps.Antenna
             var thumbCenter = new Vector2(barXCenter,
                 (float)Math.Round(initialY + scrollBarCenter, MidpointRounding.ToEven));
             DrawCapsule(frame, thumbCenter, barWidth, scrollBarHeight,
-                new Color(Config.HeaderColor.R, Config.HeaderColor.G, Config.HeaderColor.B, 250));
+                new Color(AppConfig.HeaderColor.R, AppConfig.HeaderColor.G, AppConfig.HeaderColor.B, 250));
         }
 
         void DrawCapsule(List<MySprite> frame, Vector2 center, int width, float height, Color color)

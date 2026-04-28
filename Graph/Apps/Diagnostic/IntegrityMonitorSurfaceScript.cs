@@ -7,6 +7,7 @@ using Graph.Apps.Abstract;
 using Graph.Extensions;
 using Graph.Helpers;
 using Graph.System;
+using Graph.System.Config.Models.Apps;
 using Graph.System.TerminalControls.Blueprint;
 using Graph.System.TerminalControls.Color;
 using Graph.System.TerminalControls.Generic;
@@ -31,6 +32,7 @@ namespace Graph.Apps.Diagnostic
         IUsesTerminalControl<ComboboxDisplayMode>,
         IMultiDisplayMode
     {
+        protected override ConfigKind ConfigKind => ConfigKind.Diagnostic;
         readonly List<MyTerminalControlComboBoxItem> _integrityAxes = new List<MyTerminalControlComboBoxItem>
         {
             new MyTerminalControlComboBoxItem
@@ -125,10 +127,10 @@ namespace Graph.Apps.Diagnostic
             _legendHasMissing = false;
             _legendHasDamaged = false;
 
-            if (Config == null)
+            if (AppConfig == null)
                 return;
 
-            if (Config.ReferenceBlock == 0)
+            if (AppConfig.ReferenceBlock == 0)
             {
                 EmptyWithFilters();
                 return;
@@ -139,7 +141,7 @@ namespace Graph.Apps.Diagnostic
             FindProjector(grid, ref _projector);
 
             if ((_projector == null || !_projector.IsFunctional || _projector.Closed)
-                && Config.ReferenceBlock != 0
+                && AppConfig.ReferenceBlock != 0
                 && _depthCache != null)
             {
                 int blinkStep = GetTimeStep(0.5f);
@@ -152,7 +154,7 @@ namespace Graph.Apps.Diagnostic
                     if (!_frameBuffer.Any())
                     {
                         DrawDepthMap(_frameBuffer, (DepthMap2D)_depthCache, _view,
-                            MathHelper.ToRadians(Config.Rotation), Config.Scale);
+                            MathHelper.ToRadians(AppConfig.Rotation), AppConfig.Scale);
                         DrawFooter(_frameBuffer);
                     }
 
@@ -166,8 +168,8 @@ namespace Graph.Apps.Diagnostic
                                     ? "SignalConnectivity_State_NotOperational"
                                     : "SignalConnectivity_State_NoLaserLink"),
                                 LocHelper.GetLoc("DisplayName_Block_Projector")), "Warning",
-                            Config.ErrorColor.MulValue(2).MulSaturation(2),
-                            Config.Scale);
+                            AppConfig.ErrorColor.MulValue(2).MulSaturation(2),
+                            AppConfig.Scale);
 
                     frame.AddRange(sprites);
                 }
@@ -186,7 +188,7 @@ namespace Graph.Apps.Diagnostic
                     DrawTitle(sprites);
                     DrawMessage(sprites,
                         (_projector.CustomName ?? string.Empty) + " " + LocHelper.GetLoc("AssemblerState_Disabled"),
-                        "GridPower", Config.WarningColor, Config.Scale);
+                        "GridPower", AppConfig.WarningColor, AppConfig.Scale);
                     DrawFooter(sprites);
                     frame.AddRange(sprites);
                 }
@@ -214,7 +216,7 @@ namespace Graph.Apps.Diagnostic
                         var sprites = new List<MySprite>();
                         AddBackground(sprites);
                         DrawTitle(sprites);
-                        DrawLoadingFrame(sprites, Config.Scale);
+                        DrawLoadingFrame(sprites, AppConfig.Scale);
                         DrawFooter(sprites);
                         frame.AddRange(sprites);
                     }
@@ -227,12 +229,12 @@ namespace Graph.Apps.Diagnostic
 
                 CachedVersion = map3D.LastUpdate;
 
-                _view = (View)Config.DisplayInternal;
+                _view = (View)AppConfig.DisplayInternal;
                 var depth = BuildDepthMap(map3D.Cells, map3D.DamagedCells, map3D.MissingCells, map3D.CellTypes, _view);
                 _depthCache = depth;
 
                 _frameBuffer.Clear();
-                DrawDepthMap(_frameBuffer, depth, _view, MathHelper.ToRadians(Config.Rotation), Config.Scale);
+                DrawDepthMap(_frameBuffer, depth, _view, MathHelper.ToRadians(AppConfig.Rotation), AppConfig.Scale);
                 DrawFooter(_frameBuffer);
 
                 using (var frame = Surface.DrawFrame())
@@ -253,7 +255,7 @@ namespace Graph.Apps.Diagnostic
                     AddBackground(sprites);
                     DrawTitle(sprites);
                     DrawMessage(sprites, LocHelper.GetLoc("ScreenDebugOfficial_ErrorLogCaption") + "\n" + e.Message,
-                        "Warning", Config.ErrorColor, Config.Scale);
+                        "Warning", AppConfig.ErrorColor, AppConfig.Scale);
                     DrawFooter(sprites);
                     frame.AddRange(sprites);
                 }
@@ -1000,16 +1002,16 @@ namespace Graph.Apps.Diagnostic
 
         void FindProjector(IMyCubeGrid grid, ref IMyProjector projector)
         {
-            if (Config.ReferenceBlock == 0)
+            if (AppConfig.ReferenceBlock == 0)
             {
                 projector = null;
                 return;
             }
 
-            if (projector != null && projector.EntityId == Config.ReferenceBlock)
+            if (projector != null && projector.EntityId == AppConfig.ReferenceBlock)
                 return;
 
-            var entity = MyAPIGateway.Entities.GetEntityById(Config.ReferenceBlock) as IMyProjector;
+            var entity = MyAPIGateway.Entities.GetEntityById(AppConfig.ReferenceBlock) as IMyProjector;
             projector = entity?.CubeGrid.IsInSameLogicalGroupAs(grid) ?? false ? entity : null;
         }
 

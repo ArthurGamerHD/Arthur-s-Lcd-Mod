@@ -7,6 +7,8 @@ using Graph.Apps.Abstract;
 using Graph.Helpers;
 using Graph.Networking;
 using Graph.System.Config;
+using Graph.System.Config.Models;
+using Graph.System.Config.Models.Apps;
 using Graph.System.TerminalControls;
 using Graph.System.TerminalControls.Blueprint;
 using Graph.System.TerminalControls.Color;
@@ -388,7 +390,11 @@ namespace Graph.System
                             return;
 
                         settings.CopyFrom(packet.Config);
+                        settings.BindRuntimeParent(block);
                         ConfigManager.Save(block, settings);
+
+                        foreach (var app in ConfigManager.GetAppsForBlock(block))
+                            app.UseProviderConfig(settings);
 
                         foreach (var app in ConfigManager.GetAppsForBlock(block)) 
                             app.RequestRedraw();

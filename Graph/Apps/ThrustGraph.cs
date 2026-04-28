@@ -4,6 +4,7 @@ using Generated;
 using Graph.Apps.Abstract;
 using Graph.Extensions;
 using Graph.Helpers;
+using Graph.System.Config.Models.Apps;
 using Graph.System.TerminalControls.Generic;
 using Graph.System.TerminalControls.Groups;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
@@ -13,12 +14,14 @@ using VRage.Game.ModAPI;
 using VRage.Utils;
 using VRageMath;
 using IMyCockpit = Sandbox.ModAPI.IMyCockpit;
+using ScreenConfigColorable = Graph.System.Config.Models.ScreenConfigColorable;
 
 namespace Graph.Apps
 {
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class ThrustSurfaceScript : SurfaceScriptBase
     {
+        protected override ConfigKind ConfigKind => ConfigKind.Colorable;
         public const string ID = "LCDMod_Thrust";
         public const string TITLE = "HelpScreen_JoystickThrust";
         const float AXIS_THICKNESS = 6f;
@@ -48,7 +51,7 @@ namespace Graph.Apps
         {
             base.Run();
 
-            if (Config == null) return;
+            if (AppConfig == null) return;
 
             var maxThrust = new double[6];
             var curThrust = new double[6];
@@ -183,9 +186,9 @@ namespace Graph.Apps
                         float gravityStrength = (float)Math.Sqrt(gLenSq);
                         float normalizedStrength = MathHelper.Clamp(gravityStrength / GRAVITY_NORMALIZE_MPS2, 0f, 1f);
                         Color gravityColor = gravityLoad >= GRAVITY_LOAD_CRITICAL_THRESHOLD
-                            ? BoostAlertColor(Config.ErrorColor)
+                            ? BoostAlertColor(AppConfig.ErrorColor)
                             : gravityLoad >= GRAVITY_LOAD_WARN_THRESHOLD
-                                ? BoostAlertColor(Config.WarningColor)
+                                ? BoostAlertColor(AppConfig.WarningColor)
                                 : ForegroundColor;
                         DrawAxisRay(sprites, origin, projected,
                             axisLength * GRAVITY_ARROW_LENGTH_FACTOR * normalizedStrength,
@@ -234,8 +237,8 @@ namespace Graph.Apps
                 DrawMessage(sprites,
                     string.Format(LocHelper.GetLoc("LCDMod_Critical"), LocHelper.GetLoc("LCDMod_Thrust_GravityLoad")),
                     "Warning",
-                    BoostAlertColor(Config.ErrorColor),
-                    0.7f * Config.Scale);
+                    BoostAlertColor(AppConfig.ErrorColor),
+                    0.7f * AppConfig.Scale);
                 return;
             }
 
@@ -244,8 +247,8 @@ namespace Graph.Apps
                 DrawMessage(sprites,
                     string.Format(LocHelper.GetLoc("LCDMod_Warning"), LocHelper.GetLoc("LCDMod_Thrust_GravityLoad")),
                     "Warning",
-                    BoostAlertColor(Config.WarningColor),
-                    0.7f * Config.Scale);
+                    BoostAlertColor(AppConfig.WarningColor),
+                    0.7f * AppConfig.Scale);
             }
         }
 

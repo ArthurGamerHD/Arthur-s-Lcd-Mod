@@ -4,6 +4,7 @@ using Graph.Apps.Percentage;
 using Graph.Apps.Power;
 using Graph.Apps.Refinery;
 using Graph.System.Config;
+using Graph.System.Config.Models.Apps;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;

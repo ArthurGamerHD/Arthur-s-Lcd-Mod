@@ -5,6 +5,7 @@ using System.Text;
 using Generated;
 using Graph.Helpers;
 using Graph.System;
+using Graph.System.Config.Models.Apps;
 using Graph.System.TerminalControls.Generic;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
@@ -19,8 +20,11 @@ using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
 
 namespace Graph.Apps.Abstract
 {
-    public abstract class ItemsSurfaceScriptBase : SurfaceScriptBase, IMultiDisplayMode
+    public abstract partial class ItemsSurfaceScriptBase : SurfaceScriptBase, IMultiDisplayMode
     {
+        protected override ConfigKind ConfigKind => ConfigKind.WithItems;
+        protected override SortMethod SortMethod => AppConfig.SortMethod;
+
         public static Dictionary<MyItemType, string> SpriteCache =
             new Dictionary<MyItemType, string>();
 
@@ -55,17 +59,17 @@ namespace Graph.Apps.Abstract
         {
             get
             {
-                if (_selectedCategories != Config?.SelectedCategories)
+                if (_selectedCategories != AppConfig?.SelectedCategories)
                     LocalizedTitleCache = string.Empty;
 
                 if (!string.IsNullOrEmpty(LocalizedTitleCache))
                     return LocalizedTitleCache;
 
-                if (Config?.SelectedCategories != null)
+                if (AppConfig?.SelectedCategories != null)
                 {
-                    _selectedCategories = Config.SelectedCategories;
+                    _selectedCategories = AppConfig.SelectedCategories;
                     var sb = new StringBuilder();
-                    foreach (var item in Config.SelectedCategories)
+                    foreach (var item in AppConfig.SelectedCategories)
                         sb.Append(ItemCategoryHelper.GetGroupDisplayName(item) + ", ");
 
                     if (sb.Length != 0)
@@ -100,7 +104,7 @@ namespace Graph.Apps.Abstract
 
         protected virtual List<KeyValuePair<MyItemType, double>> ReadItems(IMyTerminalBlock lcd)
         {
-            if (Config.HideEmpty || Config.SelectedItems.Any())
+            if (AppConfig.HideEmpty || AppConfig.SelectedItems.Any())
                 _itemsCache.Clear();
 
             if (lcd == null || ItemSource == null)
@@ -114,9 +118,9 @@ namespace Graph.Apps.Abstract
             }
 
 
-            if (!Config.HideEmpty)
+            if (!AppConfig.HideEmpty)
             {
-                foreach (var configSelectedItem in Config.SelectedItems)
+                foreach (var configSelectedItem in AppConfig.SelectedItems)
                 {
                     MyItemType type;
                     if (!TypeCache.TryGetValue(configSelectedItem, out type))
@@ -174,7 +178,7 @@ namespace Graph.Apps.Abstract
             if (_hasDrawnAtLeastOnce && _clock % SCROLL_DELAY != 0 && !Dirty && !_needsImmediateDraw)
                 return;
 
-            if (Config == null)
+            if (AppConfig == null)
                 return;
 
             try
@@ -203,8 +207,8 @@ namespace Graph.Apps.Abstract
 
             if (items.Count == 0)
             {
-                if (Config.SelectedCategories.Any() || Config.SelectedBlocks.Any() || Config.SelectedItems.Any() ||
-                    Config.SelectedGroups.Any() || Config.SelectedDefinition.Any() || Config.ReferenceBlock != 0)
+                if (AppConfig.SelectedCategories.Any() || AppConfig.SelectedBlocks.Any() || AppConfig.SelectedItems.Any() ||
+                    AppConfig.SelectedGroups.Any() || AppConfig.SelectedDefinition.Any() )
                     EmptyWithFilters();
                 else
                     Empty();
@@ -220,7 +224,7 @@ namespace Graph.Apps.Abstract
                 DrawTitle(sprites);
                 DrawFooter(sprites);
 
-                switch (Config.DisplayMode)
+                switch (AppConfig.DisplayMode)
                 {
                     case DisplayMode.Legacy:
                         DrawList(sprites, items);
@@ -327,9 +331,9 @@ namespace Graph.Apps.Abstract
             var columnWidth = (contentEnd - contentStart) / maxCols;
             var gridHeight = maxRows * rowHeight;
 
-            if (Config.DrawLines)
+            if (AppConfig.DrawLines)
             {
-                var lineColor = Config.HeaderColor;
+                var lineColor = AppConfig.HeaderColor;
 
                 for (int row = 0; row <= maxRows; row++)
                 {
@@ -393,7 +397,7 @@ namespace Graph.Apps.Abstract
             string sprite;
             string localizedName;
 
-            var foreground = item.Value == 0 ? Config.ErrorColor : Surface.ScriptForegroundColor;
+            var foreground = item.Value == 0 ? AppConfig.ErrorColor : Surface.ScriptForegroundColor;
 
             if (!SpriteCache.TryGetValue(item.Key, out sprite))
             {
@@ -418,9 +422,9 @@ namespace Graph.Apps.Abstract
             position.X = xStart;
             position.Y = CaretY;
 
-            bool drawSeparatorLine = Config.SortMethod == SortMethod.Type && PreviousType != item.Key.TypeId;
+            bool drawSeparatorLine = AppConfig.SortMethod == SortMethod.Type && PreviousType != item.Key.TypeId;
 
-            if (Config.DrawLines || drawSeparatorLine)
+            if (AppConfig.DrawLines || drawSeparatorLine)
             {
                 frame.Add(new MySprite()
                 {
@@ -428,7 +432,7 @@ namespace Graph.Apps.Abstract
                     Data = "Circle",
                     Position = new Vector2((xStart + xEnd) / 2f, position.Y),
                     Size = new Vector2(xEnd - xStart, 1),
-                    Color = drawSeparatorLine ? Config.HeaderColor : Surface.ScriptForegroundColor,
+                    Color = drawSeparatorLine ? AppConfig.HeaderColor : Surface.ScriptForegroundColor,
                     Alignment = TextAlignment.CENTER
                 });
             }
@@ -520,7 +524,7 @@ namespace Graph.Apps.Abstract
             position.Y = CaretY;
             var cellViewBox = GetCellViewBox(xStart, xEnd, position.Y, gridCellHeight, cellPadding);
 
-            if (!Config.DrawLines)
+            if (!AppConfig.DrawLines)
             {
                 DrawCellBackground(frame, item, xStart, xEnd, position.Y, gridCellHeight, cellPadding);
             }
@@ -553,7 +557,7 @@ namespace Graph.Apps.Abstract
                 Position = new Vector2(iconRect.X, iconRect.Y + iconRect.Height / 2f),
                 Size = new Vector2(iconRect.Width),
                 Alignment = TextAlignment.LEFT,
-                Color = item.Value == 0 ? Config.ErrorColor : Color.White
+                Color = item.Value == 0 ? AppConfig.ErrorColor : Color.White
             });
 
             if (!LocKeysCache.TryGetValue(item.Key, out localizedName))
@@ -622,7 +626,7 @@ namespace Graph.Apps.Abstract
             var thumbCenter = new Vector2(barXCenter,
                 (float)Math.Round(initialY + scrollBarCenter, MidpointRounding.ToEven));
             DrawCapsule(frame, thumbCenter, barWidth, scrollBarHeight,
-                new Color(Config.HeaderColor.R, Config.HeaderColor.G, Config.HeaderColor.B, 250));
+                new Color(AppConfig.HeaderColor.R, AppConfig.HeaderColor.G, AppConfig.HeaderColor.B, 250));
         }
 
 
@@ -691,7 +695,7 @@ namespace Graph.Apps.Abstract
                 Data = Icon,
                 Position = position + new Vector2(20f) * headerScale,
                 Size = new Vector2(40f * headerScale),
-                Color = Config.HeaderColor,
+                Color = AppConfig.HeaderColor,
                 Alignment = TextAlignment.CENTER
             });
             position.X += ViewBox.Width / 8f;
@@ -713,7 +717,7 @@ namespace Graph.Apps.Abstract
                 Data = displayName,
                 Position = position,
                 RotationOrScale = Scale * 1.3f * FontScale,
-                Color = Config.HeaderColor,
+                Color = AppConfig.HeaderColor,
                 Alignment = TextAlignment.LEFT,
                 FontId = "White"
             });
@@ -727,7 +731,7 @@ namespace Graph.Apps.Abstract
                 Data = stockText.ToString(),
                 Position = position,
                 RotationOrScale = Scale * 1.3f * FontScale,
-                Color = Config.HeaderColor,
+                Color = AppConfig.HeaderColor,
                 Alignment = TextAlignment.RIGHT,
                 FontId = "White"
             });

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Graph.Helpers;
 using Graph.System.Config;
+using Graph.System.Config.Models.Apps;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
 using VRage.ModAPI;
@@ -19,7 +20,7 @@ namespace Graph.System.TerminalControls.Filter.Listbox
         protected override void Getter(IMyTerminalBlock b, List<MyTerminalControlListBoxItem> itemList,
             List<MyTerminalControlListBoxItem> selected)
         {
-            var screenSettings = ConfigManager.GetConfigForCurrentScreen(b);
+            var screenSettings = ConfigManager.GetConfigForCurrentScreen(b) as ScreenConfigWithItems;
 
             if (screenSettings == null)
                 return;
