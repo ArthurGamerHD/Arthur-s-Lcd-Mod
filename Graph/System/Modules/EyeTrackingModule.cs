@@ -23,12 +23,15 @@ namespace Graph.System.Modules
         
         public void Hook(IEyeTracking instance)
         {
-            modules.Add(instance);
-            _dummyCache.Remove(instance);
+            if (instance != null) 
+                modules.Add(instance);
         }
 
         public void Unhook(IEyeTracking instance)
         {
+            if (instance == null) 
+                return;
+            
             modules.Remove(instance);
             _dummyCache.Remove(instance);
         }
