@@ -32,6 +32,7 @@ namespace Graph.Apps
         const long TARGET_SEARCH_DELAY_TICKS = 100L;
         const int ANGLE_TICK_COUNT = 9;
         const float ANGLE_TICK_DEGREES = 5f;
+        const float VELOCITY_SCALE = 0.65f;
         const float MAX_VECTOR_ANGLE_DEGREES = ANGLE_TICK_COUNT * ANGLE_TICK_DEGREES;
         const float MAX_TARGET_ANGLE_DEGREES = MAX_VECTOR_ANGLE_DEGREES;
         const float MAX_VELOCITY_VECTOR_METERS_PER_SECOND = 10f;
@@ -349,7 +350,6 @@ namespace Graph.Apps
 
         void DrawAlignment(Vector3D positionOffset, Vector3D rotationOffset, Vector3D velocityOffset)
         {
-            var accent = AppConfig.HeaderColor;
             var foreground = Surface.ScriptForegroundColor;
             var statusColor = GetStatusColor();
 
@@ -357,30 +357,30 @@ namespace Graph.Apps
             DrawRollIndicator(_sprites, _layout.Square, statusColor, (float)rotationOffset.Z);
 
             var positionVector = new Vector2(
-                MathHelper.Clamp((float)positionOffset.X * 0.025f, -0.36f, 0.36f),
-                MathHelper.Clamp(-(float)positionOffset.Y * 0.025f, -0.36f, 0.36f));
+                MathHelper.Clamp(-(float)positionOffset.X * 0.025f, -0.36f, 0.36f),
+                MathHelper.Clamp((float)positionOffset.Y * 0.025f, -0.36f, 0.36f));
             AddTexture(_sprites, "AH_VelocityVector", NormalizedToSquare(_layout.Square, positionVector.X, positionVector.Y),
                 new Vector2(_layout.MarkerSize), AppConfig.WarningColor, 0f);
 
             var velocityVector = new Vector2(
-                MathHelper.Clamp((float)velocityOffset.X / MAX_VELOCITY_VECTOR_METERS_PER_SECOND, -1f, 1f) * 0.36f,
-                MathHelper.Clamp(-(float)velocityOffset.Y / MAX_VELOCITY_VECTOR_METERS_PER_SECOND, -1f, 1f) * 0.36f);
+                MathHelper.Clamp(-(float)velocityOffset.X / MAX_VELOCITY_VECTOR_METERS_PER_SECOND, -1f, 1f) * 0.36f,
+                MathHelper.Clamp((float)velocityOffset.Y / MAX_VELOCITY_VECTOR_METERS_PER_SECOND, -1f, 1f) * 0.36f);
 
-            var velocityScale = 0.65f;
+
             var velocityOpacity = MathHelper.Clamp((float)velocityOffset.Length(), 0f, 1f);
 
             AddTexture(_sprites, "AH_VelocityVector", NormalizedToSquare(_layout.Square, velocityVector.X, velocityVector.Y),
-                new Vector2(_layout.MarkerSize * velocityScale), statusColor.Alpha(velocityOpacity), 0);
+                new Vector2(_layout.MarkerSize * VELOCITY_SCALE), statusColor.Alpha(velocityOpacity), 0);
 
-            AddText(_sprites, string.Format("{0:0.0}°", rotationOffset.X), NormalizedToSquare(_layout.Square, 0.39f, -0.02f),
+            AddText(_sprites, $"{rotationOffset.X:0.0}°", NormalizedToSquare(_layout.Square, 0.39f, -0.02f),
                 _layout.Font, foreground, TextAlignment.LEFT);
 
-            var yawValue = string.Format("{0:0.0}°", rotationOffset.Y);
+            var yawValue = $"{rotationOffset.Y:0.0}°";
 
             AddText(_sprites, yawValue, new Vector2(_layout.Square.Center.X, _layout.BottomY), _layout.Font,
                 foreground, TextAlignment.CENTER);
 
-            AddText(_sprites, string.Format("{0:0.0}°", rotationOffset.Z),
+            AddText(_sprites, $"{rotationOffset.Z:0.0}°",
                 new Vector2(_layout.RollArcLeftX, _layout.PitchLineTop), _layout.Font, foreground,
                 TextAlignment.RIGHT);
 
@@ -453,10 +453,10 @@ namespace Graph.Apps
 
             var labels = new[]
             {
-                $"X {positionOffset.X:0.00}m",
-                $"Y {positionOffset.Y:0.00}m",
-                $"Z {positionOffset.Z:0.00}m",
-                $"D {-(Math.Abs(positionOffset.X) + Math.Abs(positionOffset.Y) + Math.Abs(positionOffset.Z)):0.##}m",
+                $"L/R {positionOffset.X:0.00}m",
+                $"F/B {positionOffset.Y:0.00}m",
+                $"U/D {positionOffset.Z:0.00}m",
+                $"TCD {-(Math.Abs(positionOffset.X) + Math.Abs(positionOffset.Y) + Math.Abs(positionOffset.Z)):0.##}m",
                 $"DST {dockingAxisDistance:0.00}m",
                 $"CDST {closingDistance:0.00}m/s",
                 $"CVEL {closingVelocity:0.00}m/s",
