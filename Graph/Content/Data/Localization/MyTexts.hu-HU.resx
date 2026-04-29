@@ -135,6 +135,15 @@
   <data name="LCDMod_StarMapSurface" xml:space="preserve">
     <value>Csillagtérkép</value>
   </data>
+  <data name="LCDMod_DockingAlignment" xml:space="preserve">
+    <value>Dokkolási igazítás</value>
+  </data>
+  <data name="LCDMod_DockingAlignment_SelectReference" xml:space="preserve">
+    <value>Válassz egy {0} vagy {1} blokkot</value>
+  </data>
+  <data name="LCDMod_DockingAlignment_NoTarget" xml:space="preserve">
+    <value>Nem észlelhető dokkolási célpont</value>
+  </data>
   <data name="LCDMod_NotAvailable" xml:space="preserve">
     <value>N/A</value>
   </data>

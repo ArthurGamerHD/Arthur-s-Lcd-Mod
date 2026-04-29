@@ -135,6 +135,15 @@
   <data name="LCDMod_OreScanner_Reference_None" xml:space="preserve">
     <value>(use gravity)</value>
   </data>
+  <data name="LCDMod_DockingAlignment" xml:space="preserve">
+    <value>Docking alignment</value>
+  </data>
+  <data name="LCDMod_DockingAlignment_SelectReference" xml:space="preserve">
+    <value>Select a {0} or {1}</value>
+  </data>
+  <data name="LCDMod_DockingAlignment_NoTarget" xml:space="preserve">
+    <value>No docking target detected</value>
+  </data>
   <data name="LCDMod_NotAvailable" xml:space="preserve">
     <value>N/A</value>
   </data>

@@ -136,6 +136,15 @@
     <value>星図</value>
   </data>
 
+  <data name="LCDMod_DockingAlignment" xml:space="preserve">
+    <value>ドッキング位置合わせ</value>
+  </data>
+  <data name="LCDMod_DockingAlignment_SelectReference" xml:space="preserve">
+    <value>{0} または {1} を選択</value>
+  </data>
+  <data name="LCDMod_DockingAlignment_NoTarget" xml:space="preserve">
+    <value>ドッキング目標が検出されません</value>
+  </data>
   <data name="LCDMod_NotAvailable" xml:space="preserve">
     <value>該当なし</value>
   </data>

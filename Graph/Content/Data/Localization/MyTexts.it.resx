@@ -136,6 +136,15 @@
   <data name="LCDMod_OreScanner_Reference_None" xml:space="preserve">
     <value>(usa gravità)</value>
   </data>
+  <data name="LCDMod_DockingAlignment" xml:space="preserve">
+    <value>Allineamento di attracco</value>
+  </data>
+  <data name="LCDMod_DockingAlignment_SelectReference" xml:space="preserve">
+    <value>Seleziona un {0} o un {1}</value>
+  </data>
+  <data name="LCDMod_DockingAlignment_NoTarget" xml:space="preserve">
+    <value>Nessun bersaglio di attracco rilevato</value>
+  </data>
   <data name="LCDMod_NotAvailable" xml:space="preserve">
     <value>N/D</value>
   </data>

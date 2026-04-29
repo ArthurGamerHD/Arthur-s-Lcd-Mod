@@ -12,6 +12,7 @@ namespace Graph.System.Config.Models
     [ProtoInclude(107, typeof(ScreenConfigPower))]
     [ProtoInclude(108, typeof(ScreenConfigStarMap))]
     [ProtoInclude(110, typeof(ScreenConfigDiagnostic))]
+    [ProtoInclude(111, typeof(ScreenConfigDocking))]
     public partial class ScreenConfigColorable : ScreenConfigGeneral
     {
         

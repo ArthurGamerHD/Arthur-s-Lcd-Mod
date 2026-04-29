@@ -80,6 +80,7 @@ namespace Graph.System
                 Controls.Add(new ComboboxGraphWindow());
                 Controls.Add(new SliderOreScannerConeAngle());
                 Controls.Add(new ListboxOreScannerReference());
+                Controls.Add(new ListboxReferenceBlockSelection());
                 Controls.Add(new SwitchToggleLines());
 
                 Controls.Add(new ListboxProjectorSelection());

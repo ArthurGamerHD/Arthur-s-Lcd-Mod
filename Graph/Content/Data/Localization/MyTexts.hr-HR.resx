@@ -135,6 +135,15 @@
   <data name="LCDMod_StarMapSurface" xml:space="preserve">
     <value>Zvjezdana karta</value>
   </data>
+  <data name="LCDMod_DockingAlignment" xml:space="preserve">
+    <value>Poravnanje pristajanja</value>
+  </data>
+  <data name="LCDMod_DockingAlignment_SelectReference" xml:space="preserve">
+    <value>Odaberite {0} ili {1}</value>
+  </data>
+  <data name="LCDMod_DockingAlignment_NoTarget" xml:space="preserve">
+    <value>Nije otkriven cilj pristajanja</value>
+  </data>
   <data name="LCDMod_NotAvailable" xml:space="preserve">
     <value>N/D</value>
   </data>

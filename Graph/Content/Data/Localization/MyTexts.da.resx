@@ -136,6 +136,15 @@
     <value>Stjernekort</value>
   </data>
 
+  <data name="LCDMod_DockingAlignment" xml:space="preserve">
+    <value>Dockingjustering</value>
+  </data>
+  <data name="LCDMod_DockingAlignment_SelectReference" xml:space="preserve">
+    <value>Vælg en {0} eller en {1}</value>
+  </data>
+  <data name="LCDMod_DockingAlignment_NoTarget" xml:space="preserve">
+    <value>Intet dockingmål registreret</value>
+  </data>
   <data name="LCDMod_NotAvailable" xml:space="preserve">
     <value>N/A</value>
   </data>

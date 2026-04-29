@@ -135,6 +135,15 @@
   <data name="LCDMod_StarMapSurface" xml:space="preserve">
     <value>Hvězdná mapa</value>
   </data>
+  <data name="LCDMod_DockingAlignment" xml:space="preserve">
+    <value>Zarovnání dokování</value>
+  </data>
+  <data name="LCDMod_DockingAlignment_SelectReference" xml:space="preserve">
+    <value>Vyberte {0} nebo {1}</value>
+  </data>
+  <data name="LCDMod_DockingAlignment_NoTarget" xml:space="preserve">
+    <value>Nebyl zjištěn žádný cíl dokování</value>
+  </data>
   <data name="LCDMod_NotAvailable" xml:space="preserve">
     <value>N/D</value>
   </data>

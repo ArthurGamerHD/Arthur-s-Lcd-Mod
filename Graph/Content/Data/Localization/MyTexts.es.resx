@@ -136,6 +136,15 @@
   <data name="LCDMod_OreScanner_Reference_None" xml:space="preserve">
     <value>(usar gravedad)</value>
   </data>
+  <data name="LCDMod_DockingAlignment" xml:space="preserve">
+    <value>Alineación de acoplamiento</value>
+  </data>
+  <data name="LCDMod_DockingAlignment_SelectReference" xml:space="preserve">
+    <value>Selecciona un {0} o un {1}</value>
+  </data>
+  <data name="LCDMod_DockingAlignment_NoTarget" xml:space="preserve">
+    <value>No se detectó ningún objetivo de acoplamiento</value>
+  </data>
   <data name="LCDMod_NotAvailable" xml:space="preserve">
     <value>N/D</value>
   </data>
