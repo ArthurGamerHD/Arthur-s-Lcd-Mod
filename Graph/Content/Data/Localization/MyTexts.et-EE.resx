@@ -144,6 +144,15 @@
   <data name="LCDMod_DockingAlignment_NoTarget" xml:space="preserve">
     <value>Dokkimissihtmärki ei tuvastatud</value>
   </data>
+  <data name="LCDMod_DockingAlignment_DisplayMode_Default" xml:space="preserve">
+    <value>Vaikimisi</value>
+  </data>
+  <data name="LCDMod_DockingAlignment_DisplayMode_LcdReference" xml:space="preserve">
+    <value>LCD viide</value>
+  </data>
+  <data name="LCDMod_DockingAlignment_DisplayMode_ControllerReference" xml:space="preserve">
+    <value>Kontrolleri viide</value>
+  </data>
   <data name="LCDMod_NotAvailable" xml:space="preserve">
     <value>N/A</value>
   </data>

@@ -145,6 +145,15 @@
   <data name="LCDMod_DockingAlignment_NoTarget" xml:space="preserve">
     <value>Nessun bersaglio di attracco rilevato</value>
   </data>
+  <data name="LCDMod_DockingAlignment_DisplayMode_Default" xml:space="preserve">
+    <value>Predefinito</value>
+  </data>
+  <data name="LCDMod_DockingAlignment_DisplayMode_LcdReference" xml:space="preserve">
+    <value>Riferimento LCD</value>
+  </data>
+  <data name="LCDMod_DockingAlignment_DisplayMode_ControllerReference" xml:space="preserve">
+    <value>Riferimento controller</value>
+  </data>
   <data name="LCDMod_NotAvailable" xml:space="preserve">
     <value>N/D</value>
   </data>

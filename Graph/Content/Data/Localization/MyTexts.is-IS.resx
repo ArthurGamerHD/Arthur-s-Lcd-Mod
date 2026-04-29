@@ -151,6 +151,15 @@
   <data name="LCDMod_NotAvailable" xml:space="preserve">
     <value>Ekki tiltækt</value>
   </data>
+  <data name="LCDMod_DockingAlignment_DisplayMode_Default" xml:space="preserve">
+    <value>Sjálfgefið</value>
+  </data>
+  <data name="LCDMod_DockingAlignment_DisplayMode_LcdReference" xml:space="preserve">
+    <value>LCD-viðmið</value>
+  </data>
+  <data name="LCDMod_DockingAlignment_DisplayMode_ControllerReference" xml:space="preserve">
+    <value>Stjórntækisviðmið</value>
+  </data>
   <data name="LCDMod_StarMap_Info_Gravity" xml:space="preserve">
     <value>Þyngdarafl: {0}</value>
   </data>

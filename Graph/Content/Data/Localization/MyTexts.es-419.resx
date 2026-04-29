@@ -144,6 +144,15 @@
   <data name="LCDMod_DockingAlignment_NoTarget" xml:space="preserve">
     <value>No se detectó ningún objetivo de acoplamiento</value>
   </data>
+  <data name="LCDMod_DockingAlignment_DisplayMode_Default" xml:space="preserve">
+    <value>Predeterminado</value>
+  </data>
+  <data name="LCDMod_DockingAlignment_DisplayMode_LcdReference" xml:space="preserve">
+    <value>Referencia de LCD</value>
+  </data>
+  <data name="LCDMod_DockingAlignment_DisplayMode_ControllerReference" xml:space="preserve">
+    <value>Referencia del controlador</value>
+  </data>
   <data name="LCDMod_NotAvailable" xml:space="preserve">
     <value>N/D</value>
   </data>

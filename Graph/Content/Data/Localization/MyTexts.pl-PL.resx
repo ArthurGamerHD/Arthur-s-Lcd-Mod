@@ -144,6 +144,15 @@
   <data name="LCDMod_DockingAlignment_NoTarget" xml:space="preserve">
     <value>Nie wykryto celu dokowania</value>
   </data>
+  <data name="LCDMod_DockingAlignment_DisplayMode_Default" xml:space="preserve">
+    <value>Domyślny</value>
+  </data>
+  <data name="LCDMod_DockingAlignment_DisplayMode_LcdReference" xml:space="preserve">
+    <value>Odniesienie LCD</value>
+  </data>
+  <data name="LCDMod_DockingAlignment_DisplayMode_ControllerReference" xml:space="preserve">
+    <value>Odniesienie kontrolera</value>
+  </data>
   <data name="LCDMod_NotAvailable" xml:space="preserve">
     <value>N/D</value>
   </data>

@@ -7,6 +7,8 @@ using Graph.Apps.Abstract;
 using Graph.Extensions;
 using Graph.Helpers;
 using Graph.System;
+using Graph.System.TerminalControls.Generic;
+using Sandbox.Definitions;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using SpaceEngineers.Game.ModAPI;
@@ -22,7 +24,9 @@ using MyShipConnectorStatus = Sandbox.ModAPI.Ingame.MyShipConnectorStatus;
 namespace Graph.Apps
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public partial class DockingAlignment : SurfaceScriptBase, IReferenceBlockSelection
+    public partial class DockingAlignment : SurfaceScriptBase,
+        IReferenceBlockSelection,
+        IMultiDisplayMode
     {
         public const string ID = "DockingAlignment";
         public const string TITLE = "LCDMod_DockingAlignment";
@@ -33,9 +37,33 @@ namespace Graph.Apps
         const int ANGLE_TICK_COUNT = 9;
         const float ANGLE_TICK_DEGREES = 5f;
         const float VELOCITY_SCALE = 0.65f;
+        const float REFERENCE_MARKER_SCALE = 0.5f;
+        const float VECTOR_TEXTURE_SCALE_RANGE = 20f;
+        const float MIN_VECTOR_TEXTURE_SCALE = 0f;
+        const float MAX_VECTOR_TEXTURE_SCALE = 2f;
         const float MAX_VECTOR_ANGLE_DEGREES = ANGLE_TICK_COUNT * ANGLE_TICK_DEGREES;
         const float MAX_TARGET_ANGLE_DEGREES = MAX_VECTOR_ANGLE_DEGREES;
         const float MAX_VELOCITY_VECTOR_METERS_PER_SECOND = 10f;
+
+        static readonly List<MyTerminalControlComboBoxItem> DockingDisplayModes =
+            new List<MyTerminalControlComboBoxItem>
+            {
+                new MyTerminalControlComboBoxItem
+                {
+                    Key = (long)DockingDisplayMode.Default,
+                    Value = MyStringId.GetOrCompute("LCDMod_DockingAlignment_DisplayMode_Default")
+                },
+                new MyTerminalControlComboBoxItem
+                {
+                    Key = (long)DockingDisplayMode.LcdReference,
+                    Value = MyStringId.GetOrCompute("LCDMod_DockingAlignment_DisplayMode_LcdReference")
+                },
+                new MyTerminalControlComboBoxItem
+                {
+                    Key = (long)DockingDisplayMode.ControllerReference,
+                    Value = MyStringId.GetOrCompute("LCDMod_DockingAlignment_DisplayMode_ControllerReference")
+                }
+            };
 
         readonly List<IMyCubeGrid> _mechanicalGroup = new List<IMyCubeGrid>();
         readonly List<IMyEntity> _entityBuffer = new List<IMyEntity>();
@@ -56,8 +84,10 @@ namespace Graph.Apps
         string _rollLabel;
         string _selectReferenceMessage;
         string _noTargetMessage;
+        string _noCockpitMessage;
         double _lastDockingAxisDistance = double.NaN;
         long _lastDockingAxisDistanceFrame = -1L;
+
 
         public DockingAlignment(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)
         {
@@ -67,6 +97,11 @@ namespace Graph.Apps
         protected override ConfigKind ConfigKind => ConfigKind.Docking;
 
         protected override string DefaultTitle => TITLE;
+
+        public List<MyTerminalControlComboBoxItem> GetDisplayModes()
+        {
+            return DockingDisplayModes;
+        }
 
         public bool IsReferenceBlockCandidate(IMyTerminalBlock block)
         {
@@ -88,6 +123,7 @@ namespace Graph.Apps
                 LocHelper.GetLoc("DisplayName_Block_Connector"),
                 LocHelper.GetLoc("DisplayName_Block_MergeBlock"));
             _noTargetMessage = LocHelper.GetLoc("LCDMod_DockingAlignment_NoTarget");
+            _noCockpitMessage = LocHelper.GetLoc("TssTargetingInfo_NoMainCockpit");
         }
 
         public override void Run()
@@ -105,7 +141,7 @@ namespace Graph.Apps
             if (_referenceBlock == null)
             {
                 DrawMessage(_sprites, _selectReferenceMessage, "Warning", AppConfig.WarningColor,
-                    AppConfig.Scale);
+                    AppConfig.Scale); 
                 Flush();
                 return;
             }
@@ -139,8 +175,11 @@ namespace Graph.Apps
             }
 
             GetVelocityOffset(_referenceBlock, _targetBlock, out velocityOffset);
+            var dockingAxisDistance = GetDockingAxisOffset(_referenceBlock, positionOffset);
+            var closingVelocity = GetDockingAxisOffset(_referenceBlock, velocityOffset);
+            RemapOffsetsToDisplayReference(ref positionOffset, ref rotationOffset, ref velocityOffset);
 
-            DrawAlignment(positionOffset, rotationOffset, velocityOffset);
+            DrawAlignment(positionOffset, rotationOffset, velocityOffset, dockingAxisDistance, closingVelocity);
             Flush();
         }
 
@@ -237,7 +276,9 @@ namespace Graph.Apps
             targetRotation.Translation = Vector3D.Zero;
 
             var inverseReferenceRotation = MatrixD.Transpose(referenceRotation);
-            positionOffset = Vector3D.Transform(target.GetPosition() - reference.GetPosition(), inverseReferenceRotation);
+            positionOffset = Vector3D.Transform(
+                GetBlockForwardEdgePosition(target) - GetBlockForwardEdgePosition(reference),
+                inverseReferenceRotation);
 
             targetRotation *= MatrixD.CreateFromAxisAngle(targetRotation.Up, Math.PI);
 
@@ -257,6 +298,61 @@ namespace Graph.Apps
                 MathHelper.ToDegrees(relativeRadians.Z));
         }
 
+        static Vector3D GetBlockForwardEdgePosition(IMyTerminalBlock block)
+        {
+            var localConnectionDirection = GetLocalConnectionDirection(block);
+            var connectionDirection = Base6Directions.GetDirection(localConnectionDirection);
+            var gridConnectionDirection = block.Orientation.TransformDirection(connectionDirection);
+            var forward = Base6Directions.GetIntVector(gridConnectionDirection);
+            var blockSize = block.Max - block.Min + Vector3I.One;
+            var forwardCellSize =
+                Math.Abs(blockSize.X * forward.X) +
+                Math.Abs(blockSize.Y * forward.Y) +
+                Math.Abs(blockSize.Z * forward.Z);
+            var forwardOffset = forwardCellSize * block.CubeGrid.GridSize * 0.5d;
+            var worldForward = GetWorldDirection(block.WorldMatrix, localConnectionDirection);
+
+            return block.GetPosition() + worldForward * forwardOffset;
+        }
+
+        static Vector3I GetLocalConnectionDirection(IMyTerminalBlock block)
+        {
+            var connectorDefinition =
+                MyDefinitionManager.Static.GetCubeBlockDefinition(block.BlockDefinition) as MyShipConnectorDefinition;
+            if (connectorDefinition != null && connectorDefinition.ConnectDirection != Vector3.Zero)
+                return ToAxisVector(connectorDefinition.ConnectDirection);
+
+            return Base6Directions.GetIntVector(Base6Directions.Direction.Forward);
+        }
+
+        static Vector3I ToAxisVector(Vector3 direction)
+        {
+            var absX = Math.Abs(direction.X);
+            var absY = Math.Abs(direction.Y);
+            var absZ = Math.Abs(direction.Z);
+
+            if (absX >= absY && absX >= absZ)
+                return new Vector3I(Math.Sign(direction.X), 0, 0);
+
+            if (absY >= absX && absY >= absZ)
+                return new Vector3I(0, Math.Sign(direction.Y), 0);
+
+            return new Vector3I(0, 0, Math.Sign(direction.Z));
+        }
+
+        static Vector3D GetWorldDirection(MatrixD worldMatrix, Vector3I localDirection)
+        {
+            var direction =
+                worldMatrix.Right * localDirection.X +
+                worldMatrix.Up * localDirection.Y +
+                worldMatrix.Backward * localDirection.Z;
+
+            if (direction.LengthSquared() <= 0d)
+                return worldMatrix.Forward;
+
+            return Vector3D.Normalize(direction);
+        }
+
         static void GetVelocityOffset(IMyTerminalBlock reference, IMyTerminalBlock target, out Vector3D velocityOffset)
         {
             var referenceRotation = reference.WorldMatrix;
@@ -266,6 +362,99 @@ namespace Graph.Apps
             velocityOffset = Vector3D.TransformNormal(
                 target.CubeGrid.LinearVelocity - reference.CubeGrid.LinearVelocity,
                 inverseReferenceRotation);
+        }
+
+        static double GetDockingAxisOffset(IMyTerminalBlock reference, Vector3D offset)
+        {
+            var connectionDirection = GetLocalConnectionDirection(reference);
+            var axis = new Vector3D(connectionDirection.X, connectionDirection.Y, connectionDirection.Z);
+            if (axis.LengthSquared() <= 0d)
+                axis = new Vector3D(0d, 0d, -1d);
+
+            axis.Normalize();
+
+            return -Vector3D.Dot(offset, axis);
+        }
+
+        void RemapOffsetsToDisplayReference(ref Vector3D positionOffset, ref Vector3D rotationOffset,
+            ref Vector3D velocityOffset)
+        {
+            MatrixD displayRotation;
+            if (!TryGetDisplayReferenceRotation(out displayRotation))
+                return;
+
+            var referenceRotation = _referenceBlock.WorldMatrix;
+            referenceRotation.Translation = Vector3D.Zero;
+            displayRotation.Translation = Vector3D.Zero;
+
+            var inverseDisplayRotation = MatrixD.Transpose(displayRotation);
+            var positionWorld = Vector3D.TransformNormal(positionOffset, referenceRotation);
+            var rotationWorld = Vector3D.TransformNormal(rotationOffset, referenceRotation);
+            var velocityWorld = Vector3D.TransformNormal(velocityOffset, referenceRotation);
+
+            positionOffset = Vector3D.TransformNormal(positionWorld, inverseDisplayRotation);
+            rotationOffset = Vector3D.TransformNormal(rotationWorld, inverseDisplayRotation);
+            velocityOffset = Vector3D.TransformNormal(velocityWorld, inverseDisplayRotation);
+        }
+
+        bool TryGetDisplayReferenceRotation(out MatrixD displayRotation)
+        {
+            displayRotation = MatrixD.Identity;
+            switch ((DockingDisplayMode)AppConfig.DisplayInternal)
+            {
+                case DockingDisplayMode.LcdReference:
+                    displayRotation = Block.WorldMatrix;
+                    displayRotation.Translation = Vector3D.Zero;
+                    return true;
+                case DockingDisplayMode.ControllerReference:
+                    var controller = ResolveShipController();
+
+
+
+
+                    if (controller == null)
+                    {
+                        DrawMessage(_sprites, _noCockpitMessage, "Warning", AppConfig.WarningColor,
+                            AppConfig.Scale);
+                        
+                        return false;
+                    }
+ 
+                    
+                    displayRotation = controller.WorldMatrix;
+                    displayRotation.Translation = Vector3D.Zero;
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        IMyShipController ResolveShipController()
+        {
+            var myGrid = Block.CubeGrid as Sandbox.Game.Entities.MyCubeGrid;
+            var controlledController = ResolveCurrentControlledShipController(myGrid);
+            if (controlledController != null)
+                return controlledController;
+
+            var mainCockpit = myGrid?.MainCockpit as IMyShipController;
+            if (mainCockpit != null)
+                return mainCockpit;
+
+            return null;
+        }
+
+        static IMyShipController ResolveCurrentControlledShipController(Sandbox.Game.Entities.MyCubeGrid grid)
+        {
+            if (grid == null)
+                return null;
+
+            if (grid.MainCockpit != null)
+                return (IMyShipController)grid.MainCockpit;
+            
+            if (grid.MainRemoteControl != null)
+                return (IMyShipController)grid.MainRemoteControl;
+
+            return null;
         }
 
         void EnsureStaticSprites()
@@ -286,6 +475,8 @@ namespace Graph.Apps
 
             DrawAlignmentTicks(_staticSprites, _layout.Square, mutedAccent);
             DrawRollArcTicks(_staticSprites, _layout.Square, mutedAccent);
+            AddTexture(_staticSprites, "CircleHollow", _layout.Square.Center,
+                new Vector2(_layout.MarkerSize * REFERENCE_MARKER_SCALE), mutedAccent, 0f);
 
             AddText(_staticSprites, _pitchLabel, NormalizedToSquare(_layout.Square, 0.35f, -0.06f),
                 _layout.Font * 0.65f, accent, TextAlignment.RIGHT);
@@ -348,7 +539,8 @@ namespace Graph.Apps
             };
         }
 
-        void DrawAlignment(Vector3D positionOffset, Vector3D rotationOffset, Vector3D velocityOffset)
+        void DrawAlignment(Vector3D positionOffset, Vector3D rotationOffset, Vector3D velocityOffset,
+            double dockingAxisDistance, double closingVelocity)
         {
             var foreground = Surface.ScriptForegroundColor;
             var statusColor = GetStatusColor();
@@ -360,7 +552,7 @@ namespace Graph.Apps
                 MathHelper.Clamp(-(float)positionOffset.X * 0.025f, -0.36f, 0.36f),
                 MathHelper.Clamp((float)positionOffset.Y * 0.025f, -0.36f, 0.36f));
             AddTexture(_sprites, "AH_VelocityVector", NormalizedToSquare(_layout.Square, positionVector.X, positionVector.Y),
-                new Vector2(_layout.MarkerSize), AppConfig.WarningColor, 0f);
+                new Vector2(_layout.MarkerSize * GetVectorTextureScale(positionOffset.Z)), AppConfig.ErrorColor, 0f);
 
             var velocityVector = new Vector2(
                 MathHelper.Clamp(-(float)velocityOffset.X / MAX_VELOCITY_VECTOR_METERS_PER_SECOND, -1f, 1f) * 0.36f,
@@ -370,7 +562,8 @@ namespace Graph.Apps
             var velocityOpacity = MathHelper.Clamp((float)velocityOffset.Length(), 0f, 1f);
 
             AddTexture(_sprites, "AH_VelocityVector", NormalizedToSquare(_layout.Square, velocityVector.X, velocityVector.Y),
-                new Vector2(_layout.MarkerSize * VELOCITY_SCALE), statusColor.Alpha(velocityOpacity), 0);
+                new Vector2(_layout.MarkerSize * VELOCITY_SCALE * GetVectorTextureScale(velocityOffset.Z)),
+                statusColor.Alpha(velocityOpacity), 0);
 
             AddText(_sprites, $"{rotationOffset.X:0.0}°", NormalizedToSquare(_layout.Square, 0.39f, -0.02f),
                 _layout.Font, foreground, TextAlignment.LEFT);
@@ -386,7 +579,8 @@ namespace Graph.Apps
 
             DrawReferenceNames(_layout.FooterHeight, _layout.ReferenceTextMargin, foreground, _layout.Font * 0.75f,
                 yawValue, _layout.Font);
-            DrawPositionFooter(positionOffset, velocityOffset, rotationOffset, _layout.FooterHeight, foreground);
+            DrawPositionFooter(positionOffset, rotationOffset, dockingAxisDistance, closingVelocity, _layout.FooterHeight,
+                foreground);
         }
 
         void DrawReferenceNames(float footerHeight, float referenceTextMargin, Color foreground, float font,
@@ -438,26 +632,23 @@ namespace Graph.Apps
             return cached;
         }
 
-        void DrawPositionFooter(Vector3D positionOffset, Vector3D velocityOffset, Vector3D rotationOffset,
-            float footerHeight, Color valueColor)
+        void DrawPositionFooter(Vector3D positionOffset, Vector3D rotationOffset, double dockingAxisDistance,
+            double closingVelocity, float footerHeight, Color valueColor)
         {
             var footerTop = ViewBox.Bottom - FooterHeight - footerHeight;
             var row1Y = footerTop + footerHeight * 0.36f;
             var row2Y = footerTop + footerHeight * 0.78f;
             var footerTextScale = Math.Max(0.36f, 0.52f * Scale) * FontScale;
             var footerTextOffsetY = GetSizeInPixel("A", "White", footerTextScale, Surface).Y * 0.5f;
-            var distance = FormatingHelper.DistanceToString((float)positionOffset.Length());
-            var dockingAxisDistance = positionOffset.Z;
             var closingDistance = GetClosingDistanceRate(dockingAxisDistance);
-            var closingVelocity = velocityOffset.Z;
 
             var labels = new[]
             {
-                $"L/R {positionOffset.X:0.00}m",
-                $"F/B {positionOffset.Y:0.00}m",
-                $"U/D {positionOffset.Z:0.00}m",
-                $"TCD {-(Math.Abs(positionOffset.X) + Math.Abs(positionOffset.Y) + Math.Abs(positionOffset.Z)):0.##}m",
-                $"DST {dockingAxisDistance:0.00}m",
+                $"L/R {-positionOffset.X:0.00}m",
+                $"F/B {positionOffset.Z:0.00}m",
+                $"U/D {-positionOffset.Y:0.00}m",
+                $"DST {positionOffset.Length():0.##}m",
+                $"ADST {dockingAxisDistance:0.00}m",
                 $"CDST {closingDistance:0.00}m/s",
                 $"CVEL {closingVelocity:0.00}m/s",
                 $"R° {rotationOffset.Z:0.0}°"
@@ -489,6 +680,12 @@ namespace Graph.Apps
             _lastDockingAxisDistance = dockingAxisDistance;
             _lastDockingAxisDistanceFrame = frame;
             return result;
+        }
+
+        static float GetVectorTextureScale(double value)
+        {
+            return MathHelper.Clamp(1f + (float)value / VECTOR_TEXTURE_SCALE_RANGE, MIN_VECTOR_TEXTURE_SCALE,
+                MAX_VECTOR_TEXTURE_SCALE);
         }
 
         void DrawRollArcTicks(List<MySprite> sprites, RectangleF square, Color color)
@@ -655,6 +852,13 @@ namespace Graph.Apps
             public float PitchLineTop;
             public float RollArcTopY;
             public float RollArcLeftX;
+        }
+
+        enum DockingDisplayMode
+        {
+            Default = 0,
+            LcdReference = 1,
+            ControllerReference = 2
         }
 
     }

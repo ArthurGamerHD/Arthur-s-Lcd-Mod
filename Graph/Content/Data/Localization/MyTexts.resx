@@ -144,6 +144,15 @@
   <data name="LCDMod_DockingAlignment_NoTarget" xml:space="preserve">
     <value>No docking target detected</value>
   </data>
+  <data name="LCDMod_DockingAlignment_DisplayMode_Default" xml:space="preserve">
+    <value>Default</value>
+  </data>
+  <data name="LCDMod_DockingAlignment_DisplayMode_LcdReference" xml:space="preserve">
+    <value>LCD reference</value>
+  </data>
+  <data name="LCDMod_DockingAlignment_DisplayMode_ControllerReference" xml:space="preserve">
+    <value>Controller reference</value>
+  </data>
   <data name="LCDMod_NotAvailable" xml:space="preserve">
     <value>N/A</value>
   </data>
