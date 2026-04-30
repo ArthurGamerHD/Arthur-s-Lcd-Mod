@@ -11,9 +11,13 @@ namespace Graph.System.Power
     internal sealed class BatteryPowerCollector : PowerCollector
     {
         const float FullThreshold = 0.995f;
+        const float ChargeTrendEpsilonMwh = 0.000001f;
         static readonly FillableTexture Texture = new FillableTexture("Battery", 1f, 55f, 55f, 32f, 10f, "IconEnergy");
 
         readonly List<IMyBatteryBlock> _visible = new List<IMyBatteryBlock>();
+        readonly Dictionary<long, float> _lastStoredPowerByBattery = new Dictionary<long, float>();
+        readonly HashSet<long> _seenBatteryIds = new HashSet<long>();
+        readonly List<long> _staleBatteryIds = new List<long>();
 
         float _averageCharge;
         string _statusText = string.Empty;
@@ -40,6 +44,7 @@ namespace Graph.System.Power
         public override bool HasVisibleItems => _visible.Count > 0;
         public override string RightSideText => _rightSideText;
         public override Color RightSideColor => _rightSideColor;
+        public override bool DrawCenterIcon => StatusKind <= PowerStatusKind.Charging;
 
         public override void Collect(GridLogic grid, List<PowerEntry> entries)
         {
@@ -57,38 +62,105 @@ namespace Graph.System.Power
                 return;
 
             var batteries = grid.GetBatteries();
+            const float eps = 0.001f;
             float totalIn = 0f;
             float totalOut = 0f;
+            float totalStoredDelta = 0f;
+            float sumRatio = 0f;
+            float totalStored = 0f;
+            float totalMax = 0f;
             int fullCount = 0;
+            int batteriesIncreasing = 0;
+            int batteriesDecreasing = 0;
+            int batteriesRecharging = 0;
+            _seenBatteryIds.Clear();
 
             for (int i = 0; i < batteries.Count; i++)
             {
                 var battery = batteries[i];
+                _seenBatteryIds.Add(battery.EntityId);
                 if (!HideEmpty || battery.MaxStoredPower > 0f)
                 {
                     _visible.Add(battery);
                     totalIn += battery.CurrentInput;
                     totalOut += battery.CurrentOutput;
-                    if (GetRatio(battery) > FullThreshold)
+                    totalStored += battery.CurrentStoredPower;
+                    totalMax += battery.MaxStoredPower;
+
+                    var isRecharging = battery.ChargeMode == Sandbox.ModAPI.Ingame.ChargeMode.Recharge;
+                    if (isRecharging)
+                        batteriesRecharging++;
+
+                    var drawChargingIcon = isRecharging;
+                    float previousStored;
+                    
+                    if (_lastStoredPowerByBattery.TryGetValue(battery.EntityId, out previousStored))
+                    {
+                        var storedDelta = battery.CurrentStoredPower - previousStored;
+                        if (storedDelta > ChargeTrendEpsilonMwh)
+                        {
+                            totalStoredDelta += storedDelta;
+                            batteriesIncreasing++;
+                            drawChargingIcon = true;
+                        }
+                        else if (storedDelta < -ChargeTrendEpsilonMwh)
+                        {
+                            totalStoredDelta += storedDelta;
+                            batteriesDecreasing++;
+                            drawChargingIcon = isRecharging;
+                        }
+                    }
+
+                    var ratio = GetRatio(battery);
+                    sumRatio += ratio;
+                    bool full = ratio >= 1;
+                    
+                    if (full)
                         fullCount++;
+
+                    entries.Add(new PowerEntry(
+                        battery.EntityId,
+                        Texture,
+                        ratio,
+                        FormatingHelper.PercentageToString(ratio),
+                        GetBatteryIconColor(ratio),
+                        drawChargingIcon || full));
                 }
+
+                _lastStoredPowerByBattery[battery.EntityId] = battery.CurrentStoredPower;
             }
 
-            const float eps = 0.001f;
+            RemoveStaleBatteryChargeSamples();
+
             bool isActivelyCharging = totalIn > totalOut + eps;
+            bool hasRechargingBattery = batteriesRecharging > 0;
+            bool isTrendingCharging = batteriesIncreasing > 0 && totalStoredDelta > ChargeTrendEpsilonMwh;
+            bool isTrendingDischarging = batteriesDecreasing > 0 && totalStoredDelta < -ChargeTrendEpsilonMwh;
             if (_visible.Count > 0 && fullCount == _visible.Count)
             {
                 _statusKind = PowerStatusKind.Full;
                 _statusColor = ScreenConfigPower.HeaderColor;
                 _isCharging = true;
             }
-            else if (totalIn > totalOut + eps)
+            else if (hasRechargingBattery || totalIn > totalOut + eps)
+            {
+                _statusKind = PowerStatusKind.Charging;
+                _statusColor = ScreenConfigPower.WarningColor;
+                _isCharging = true;
+            }
+            else if (isTrendingCharging)
             {
                 _statusKind = PowerStatusKind.Charging;
                 _statusColor = ScreenConfigPower.WarningColor;
                 _isCharging = true;
             }
             else if (totalOut > totalIn + eps)
+            {
+                _statusKind = PowerStatusKind.Discharging;
+                _statusColor = ScreenConfigPower.ErrorColor;
+                _isCharging = false;
+            }
+            else if (isTrendingDischarging)
             {
                 _statusKind = PowerStatusKind.Discharging;
                 _statusColor = ScreenConfigPower.ErrorColor;
@@ -102,27 +174,6 @@ namespace Graph.System.Power
 
             if (_visible.Count == 0)
                 return;
-
-            float sumRatio = 0f;
-            float totalStored = 0f;
-            float totalMax = 0f;
-            for (int i = 0; i < _visible.Count; i++)
-            {
-                var battery = _visible[i];
-                float ratio = GetRatio(battery);
-                sumRatio += ratio;
-                totalStored += battery.CurrentStoredPower;
-                totalMax += battery.MaxStoredPower;
-
-                entries.Add(new PowerEntry(
-                    battery.EntityId,
-                    Texture,
-                    ratio,
-                    FormatingHelper.PercentageToString(ratio),
-                    GetBatteryIconColor(ratio),
-                    isActivelyCharging,
-                    0f));
-            }
 
             _averageCharge = sumRatio / _visible.Count;
             _statusText = GetStatusText();
@@ -150,7 +201,26 @@ namespace Graph.System.Power
         static float GetRatio(IMyBatteryBlock battery)
         {
             if (battery.MaxStoredPower <= 0f) return 0f;
-            return Math.Max(0f, Math.Min(1f, battery.CurrentStoredPower / battery.MaxStoredPower));
+            var ratio = Math.Max(0f, Math.Min(1f, battery.CurrentStoredPower / battery.MaxStoredPower));
+            if (ratio > FullThreshold)
+                return 1;
+            return ratio;
+        }
+
+        void RemoveStaleBatteryChargeSamples()
+        {
+            if (_lastStoredPowerByBattery.Count == _seenBatteryIds.Count)
+                return;
+
+            _staleBatteryIds.Clear();
+            foreach (var batteryId in _lastStoredPowerByBattery.Keys)
+            {
+                if (!_seenBatteryIds.Contains(batteryId))
+                    _staleBatteryIds.Add(batteryId);
+            }
+
+            for (int i = 0; i < _staleBatteryIds.Count; i++)
+                _lastStoredPowerByBattery.Remove(_staleBatteryIds[i]);
         }
 
         Color GetBatteryIconColor(float ratio)

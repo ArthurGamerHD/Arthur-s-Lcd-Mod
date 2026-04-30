@@ -51,6 +51,8 @@ namespace Graph.System.Power
         public virtual string RightSideText => string.Empty;
         public virtual Color RightSideColor => StatusColor;
         public virtual bool HasRightSideText => !string.IsNullOrEmpty(RightSideText);
+        public virtual float CenterIconScale => 1f;
+        public virtual bool DrawCenterIcon => true;
 
         protected void BeginCenterIconSpinFrame()
         {

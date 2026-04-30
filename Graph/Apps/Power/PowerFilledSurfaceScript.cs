@@ -36,7 +36,6 @@ namespace Graph.Apps.Power
         const int SCROLL_TICK = 12;
 
         const float ICON_TEXTURE_SIZE = 192f;
-        const float CENTER_ICON_SIZE_RATIO = 0.65f;
 
         readonly List<PowerCollector> _collectors = new List<PowerCollector>();
         readonly List<PowerEntry> _entries = new List<PowerEntry>();
@@ -132,11 +131,8 @@ namespace Graph.Apps.Power
                 rowIndex++;
             }
         }
-
-        // -----------------------------------------------------------------------
-        // Battery grid — fills available area, Scale controls slot size
-        // -----------------------------------------------------------------------
-
+        
+        // Battery grid fills available area, Scale controls slot size
         void DrawBatteries(List<MySprite> sprites)
         {
             var slots = _entries;
@@ -209,16 +205,13 @@ namespace Graph.Apps.Power
             float centerX = xStart + width / 2f;
             float centerY = yStart + iconSize / 2f;
 
-            DrawFillableTexture(
+            DrawPowerEntry(
                 sprites,
                 slot.FillableTexture,
                 new Vector2(centerX, centerY),
                 iconSize,
-                slot.Ratio,
-                slot.FillColor,
-                ForegroundColor,
-                slot.DrawCenterIcon,
-                slot.CenterIconRotation);
+                slot,
+                ForegroundColor);
 
             sprites.Add(new MySprite
             {
@@ -232,6 +225,24 @@ namespace Graph.Apps.Power
             });
         }
         
+        void DrawPowerEntry(
+            List<MySprite> sprites,
+            FillableTexture texture,
+            Vector2 center,
+            float iconSize,
+            PowerEntry entry,
+            Color iconColor) => 
+            DrawFillableTexture(sprites, 
+                texture, 
+                center,
+                iconSize,
+                entry.Ratio,
+                entry.FillColor,
+                iconColor,
+                entry.DrawCenterIcon, 
+                entry.CenterIconRotation,
+                entry.CenterIconScale);
+        
         void DrawFillableTexture(
             List<MySprite> sprites,
             FillableTexture texture,
@@ -241,7 +252,8 @@ namespace Graph.Apps.Power
             Color fillColor,
             Color iconColor,
             bool drawCenterIcon = true,
-            float centerIconRotation = 0f)
+            float centerIconRotation = 0f,
+            float centerIconScale = 1f)
         {
             ratio = MathHelper.Clamp(ratio, 0f, 1f);
 
@@ -286,8 +298,8 @@ namespace Graph.Apps.Power
             if (drawCenterIcon && !string.IsNullOrEmpty(texture.CenterIconTexture))
             {
                 float innerMin = Math.Min(innerW, innerH);
-                float fallbackSize = iconSize * CENTER_ICON_SIZE_RATIO;
-                float centerIconSize = innerMin > 0f ? innerMin * CENTER_ICON_SIZE_RATIO : fallbackSize;
+                float fallbackSize = iconSize * centerIconScale;
+                float centerIconSize = innerMin > 0f ? innerMin * centerIconScale : fallbackSize;
                 Vector2 centerIconPosition = innerMin > 0f
                     ? new Vector2((innerLeft + innerRight) / 2f, (innerTop + innerBottom) / 2f)
                     : center;
@@ -402,10 +414,6 @@ namespace Graph.Apps.Power
             var iconCenter = new Vector2(iconLeft + iconSize / 2f, bandCY);
             float displayedRatio = (float)Math.Round(collector.AverageCharge * 100f, MidpointRounding.AwayFromZero) / 100f;
             bool drawCenterIcon = false;
-            if (collector is JumpDrivePowerCollector)
-                drawCenterIcon = true;
-            else if (collector is BatteryPowerCollector)
-                drawCenterIcon = collector.StatusKind == PowerStatusKind.Charging;
 
             DrawFillableTexture(
                 sprites,
@@ -415,8 +423,9 @@ namespace Graph.Apps.Power
                 displayedRatio,
                 collector.StatusColor,
                 fg,
-                drawCenterIcon,
-                0f);
+                collector.DrawCenterIcon,
+                0,
+                collector.CenterIconScale);
 
             string avgText = FormatingHelper.PercentageToString(displayedRatio) + " " + collector.FooterPrefix;
             float textLeft = iconLeft + iconSize + textLeftPad;

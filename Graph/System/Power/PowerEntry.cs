@@ -11,6 +11,8 @@ namespace Graph.System.Power
         public Color FillColor { get; }
         public bool DrawCenterIcon { get; }
         public float CenterIconRotation { get; }
+        
+        public float CenterIconScale { get; }
 
         public PowerEntry(
             long entryId,
@@ -19,7 +21,8 @@ namespace Graph.System.Power
             string percentText,
             Color fillColor,
             bool drawCenterIcon = true,
-            float centerIconRotation = 0f)
+            float centerIconRotation = 0f,
+            float centerIconScale = 1f)
         {
             EntryId = entryId;
             FillableTexture = fillableTexture;
@@ -28,6 +31,7 @@ namespace Graph.System.Power
             FillColor = fillColor;
             DrawCenterIcon = drawCenterIcon;
             CenterIconRotation = centerIconRotation;
+            CenterIconScale = centerIconScale;
         }
     }
 }

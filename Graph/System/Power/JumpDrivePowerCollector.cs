@@ -52,6 +52,7 @@ namespace Graph.System.Power
         public override bool HasVisibleItems => _visible.Count > 0;
         public override string RightSideText => _rightSideText;
         public override Color RightSideColor => _rightSideColor;
+        public override float CenterIconScale => 0.65f;
 
         public override void Collect(GridLogic grid, List<PowerEntry> entries)
         {
@@ -130,7 +131,8 @@ namespace Graph.System.Power
                     FormatingHelper.PercentageToString(ratio),
                     GetJumpDriveIconColor(ratio),
                     true,
-                    centerRotation));
+                    centerRotation, 
+                    CenterIconScale));
             }
             EndCenterIconSpinFrame();
 
