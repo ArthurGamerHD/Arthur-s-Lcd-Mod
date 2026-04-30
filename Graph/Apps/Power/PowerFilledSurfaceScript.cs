@@ -413,7 +413,6 @@ namespace Graph.Apps.Power
             float iconSize = rowHeight * 0.55f;
             var iconCenter = new Vector2(iconLeft + iconSize / 2f, bandCY);
             float displayedRatio = (float)Math.Round(collector.AverageCharge * 100f, MidpointRounding.AwayFromZero) / 100f;
-            bool drawCenterIcon = false;
 
             DrawFillableTexture(
                 sprites,
