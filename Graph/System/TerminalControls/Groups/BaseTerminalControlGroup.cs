@@ -1,5 +1,7 @@
 using Generated;
 using Graph.System.TerminalControls.Generic;
+using SliderFontSize = Graph.System.TerminalControls.Scale.SliderFontSize;
+using SliderScale = Graph.System.TerminalControls.Scale.SliderScale;
 
 namespace Graph.System.TerminalControls.Groups
 {

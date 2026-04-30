@@ -14,6 +14,7 @@ using Graph.System.TerminalControls.Filter;
 using Graph.System.TerminalControls.Filter.Buttons;
 using Graph.System.TerminalControls.Filter.Listbox;
 using Graph.System.TerminalControls.Generic;
+using Graph.System.TerminalControls.Scale;
 using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
@@ -24,6 +25,8 @@ using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.Utils;
 using VRageMath;
+using SliderFontSize = Graph.System.TerminalControls.Scale.SliderFontSize;
+using SliderScale = Graph.System.TerminalControls.Scale.SliderScale;
 
 namespace Graph.System
 {
@@ -74,6 +77,7 @@ namespace Graph.System
 
                 Controls.Add(new SwitchToggleHeader());
                 Controls.Add(new SliderScale());
+                Controls.Add(new SliderCursorScale());
                 Controls.Add(new SliderRotation());
 
                 Controls.Add(new ComboboxDisplayMode());

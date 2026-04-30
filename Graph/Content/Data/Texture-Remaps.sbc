@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <LCDTextures>
+        <LCDTextureDefinition> <!-- Remap of Vanilla Broadcasting sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="BroadcastingOn"/>
+            <SpritePath>Textures/GUI/Icons/HUD 2017/GridBroadcastingOn.png</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+        
+        <LCDTextureDefinition> <!-- Remap of Vanilla Broadcasting Off sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="BroadcastingOff"/>
+            <SpritePath>Textures/GUI/Icons/HUD 2017/GridBroadcastingOff.png</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+        
+        <LCDTextureDefinition> <!-- Remap of Vanilla Antenna sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="RadioAntenna"/>
+            <SpritePath>Textures/GUI/Icons/HUD 2017/SignalMode.png</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+        
+        <LCDTextureDefinition> <!-- Remap of Vanilla Power sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="GridPower"/>
+            <SpritePath>Textures/GUI/Icons/HUD 2017/GridPowerOnCenter.png</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+        
+        <LCDTextureDefinition> <!-- Remap of Vanilla "Search" sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="Search"/>
+            <SpritePath>Textures/GUI/Icons/HUD 2017/F1Icon.png</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+        
+        <LCDTextureDefinition> <!-- Remap of Vanilla Rotation Plane sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="RotationPlane"/>
+            <SpritePath>Textures/GUI/Icons/HUD 2017/RotationPlane.png</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+        
+        <LCDTextureDefinition> <!-- Remap of Vanilla Disconnected sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="Disconnected"/>
+            <SpritePath>Textures/GUI/Icons/HUD 2017/ToggleConnectors.png</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+        
+        <LCDTextureDefinition> <!-- Remap of Vanilla Cursor sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="CursorDefault"/>
+            <SpritePath>Textures/GUI/MouseCursor.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Remap of Vanilla Cursor sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="CursorArrow"/>
+            <SpritePath>Textures/GUI/MouseCursor.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Remap of Vanilla Cursor Hand sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="CursorHand"/>
+            <SpritePath>Textures/Sprites/UncompressedMouseCursorHand.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Remap of Vanilla Cross sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="CursorCross"/>
+            <SpritePath>Textures/GUI/Controls/button_close_symbol_highlight.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+        
+        <LCDTextureDefinition> <!-- Remap of Vanilla Loading sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="CursorWait"/>
+            <SpritePath>Textures/GUI/Screens/screen_loading_wheel.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Remap of Vanilla Help Icon sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="CursorHelp"/>
+            <SpritePath>Textures/GUI/Controls/button_info_symbol_highlight.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+    </LCDTextures>
+</Definitions>

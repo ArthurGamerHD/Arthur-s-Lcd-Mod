@@ -13,11 +13,14 @@ using Graph.System.TerminalControls.Groups;
 using Graph.Apps.Utility;
 using Graph.System.Config;
 using Graph.System.Config.Models;
+using Sandbox.Game.Components;
+using Sandbox.Game.Entities;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces;
 using SpaceEngineers.Game.EntityComponents.Blocks;
 using VRage;
+using VRage.Collections;
 using VRage.Game;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
@@ -44,6 +47,9 @@ namespace Graph.Apps.Abstract
 
         public IMyFaction Faction { get; protected set; }
         protected string Icon { get; set; }
+        public new readonly IMyCubeBlock Block;
+        
+        long _lastFrame;
 
         public Vector2 TextureSize => Surface.TextureSize;
 
@@ -107,7 +113,15 @@ namespace Graph.Apps.Abstract
         protected SurfaceScriptBase(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block,
             size)
         {
+            Block = (IMyCubeBlock)base.Block;
+            _textureSize = (Vector2I)Surface.TextureSize;
+            var surfaceSize = Surface.SurfaceSize;
+            _renderComp = (MyRenderComponentScreenAreas)Block.Render;
+            
+            _aspectRatio = surfaceSize.X > surfaceSize.Y ? new Vector2(1f, 1f * surfaceSize.Y / surfaceSize.X) : new Vector2(1f * surfaceSize.X / surfaceSize.Y, 1f);
+            
             Instances.Add(this);
+
             if (Block != null)
                 ((IMyEntity)Block).OnMarkForClose += HandleBlockMarkedForClose;
             ResolveRotationOrSurfaceIndex();
@@ -118,29 +132,38 @@ namespace Graph.Apps.Abstract
             LcdModSessionComponent.OnLanguageChanged += LayoutChanged;
         }
 
-        public int RotationOrSurfaceIndex => _rotationOrSurfaceIndex;
-
-        protected void ResolveRotationOrSurfaceIndex()
+        public int RotationOrSurfaceIndex
         {
+            get
+            {
+                ResolveRotationOrSurfaceIndex();
+                return _rotationOrSurfaceIndex;
+            }
+        }
+        public IMyLcdSurfaceComponent _lcdSurfaceComponent;
+        protected bool ResolveRotationOrSurfaceIndex()
+        {
+            var previous = _rotationOrSurfaceIndex;
+
             if (Block is IMyTextPanel)
             {
                 foreach (var component in Block.Components)
                 {
-                    var lcdSurfaceComponent = component as IMyLcdSurfaceComponent;
-                    if (lcdSurfaceComponent == null)
+                    _lcdSurfaceComponent = component as IMyLcdSurfaceComponent;
+                    if (_lcdSurfaceComponent == null)
                         continue;
 
-                    _rotationOrSurfaceIndex = lcdSurfaceComponent.SelectedRotationIndex;
-                    return;
+                    _rotationOrSurfaceIndex = _lcdSurfaceComponent.SelectedRotationIndex;
+                    return previous != _rotationOrSurfaceIndex;
                 }
 
                 _rotationOrSurfaceIndex = 0;
-                return;
+                return previous != _rotationOrSurfaceIndex;
             }
 
             var surfaceProvider = Block as IMyTextSurfaceProvider;
             if (surfaceProvider == null)
-                return;
+                return false;
 
             for (int i = 0; i < surfaceProvider.SurfaceCount; i++)
             {
@@ -148,11 +171,12 @@ namespace Graph.Apps.Abstract
                     continue;
 
                 _rotationOrSurfaceIndex = i;
-                return;
+                return previous != _rotationOrSurfaceIndex;
             }
 
             MyLog.Default.Log(MyLogSeverity.Error, "Failed to find surface for {0}, defaulting to surface 0", Block);
             _rotationOrSurfaceIndex = 0;
+            return previous != _rotationOrSurfaceIndex;
         }
 
 
@@ -297,6 +321,8 @@ namespace Graph.Apps.Abstract
                 DrawLoadingScreen(1f, false);
                 return;
             }
+
+            ResolveRotationOrSurfaceIndex();
 
             if (Math.Abs(_userPadding - Surface.TextPadding) > .01f ||
                 Math.Abs(_userScale - Config.Scale) > .001f ||
@@ -768,6 +794,24 @@ namespace Graph.Apps.Abstract
             Faction = faction;
             Icon = FactionHelper.GetIcon(faction);
             FactionHelper.GetIcon(faction);
+        }
+        
+        readonly Vector2I _textureSize;
+        readonly Vector2 _aspectRatio;
+        readonly MyRenderComponentScreenAreas _renderComp;
+        
+        /// <summary>
+        /// Calling this break the regular rendering of the Text surface, ensure ALL render call is routed here if the app needs to use it
+        /// </summary>
+        /// <param name="sprites">Sprites to be rendered</param>
+        public void RenderSprites(Func<ListReader<MySprite>> sprites)
+        {
+            var currentFrame = MyAPIGateway.Session.GameplayFrameCounter;
+            if (currentFrame == _lastFrame)
+                return;
+            _lastFrame = currentFrame;
+
+            _renderComp.RenderSpritesToTexture(RotationOrSurfaceIndex, sprites(), _textureSize, _aspectRatio, Surface.ScriptBackgroundColor, Surface.BackgroundAlpha);
         }
     }
 }

@@ -8,6 +8,7 @@ using Sandbox.Game.Components;
 using Sandbox.Game.Entities;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
+using VRage.Collections;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
 using VRageMath;
@@ -49,18 +50,11 @@ namespace Graph.Apps
             if (Surface == null)
                 return;
 
-            MyCubeBlock ent = (MyCubeBlock)Block;
-            var renderComp = (MyRenderComponentScreenAreas)ent.Render;
-            Vector2I textureSize = (Vector2I)Surface.TextureSize;
-            Vector2 aspectRatio;
+            RenderSprites(DrawApp);
+        }
 
-            var surfaceSize = Surface.SurfaceSize;
-            if (surfaceSize.X > surfaceSize.Y)
-                aspectRatio = new Vector2(1f, 1f * surfaceSize.Y / surfaceSize.X);
-            else
-                aspectRatio = new Vector2(1f * surfaceSize.X / surfaceSize.Y, 1f);
-
-
+        ListReader<MySprite> DrawApp()
+        {
             var viewBox = GetViewBox();
             var snapshot = LcdModSessionComponent.DebugSnapshot;
             var lines = BuildDebugLines(snapshot);
@@ -82,8 +76,7 @@ namespace Graph.Apps
                     RotationOrScale = LINE_SCALE
                 });
             }
-
-            renderComp.RenderSpritesToTexture(RotationOrSurfaceIndex, _sprites, textureSize, aspectRatio, Surface.ScriptBackgroundColor, Surface.BackgroundAlpha);
+            return _sprites;
         }
 
         RectangleF GetViewBox()

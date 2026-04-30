@@ -6,6 +6,7 @@ using Generated;
 using Graph.Apps.Abstract;
 using Graph.Helpers;
 using Graph.Networking;
+using Graph.System.ScreenAreas;
 using Graph.System.Config;
 using Graph.System.Config.Models;
 using Graph.System.Config.Models.Apps;
@@ -22,6 +23,7 @@ using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage;
+using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
@@ -122,6 +124,9 @@ namespace Graph.System
         public override void UpdateAfterSimulation()
         {
             Client?.UpdateAfterSimulation();
+#if DEBUG
+            ScreenAreaGeometry.DebugDraw();
+#endif
         }
 
         public override void BeforeStart()

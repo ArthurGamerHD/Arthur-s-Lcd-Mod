@@ -1,11 +1,10 @@
 using System.Text;
-using Graph.System.Config.Models.Apps;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
 using ScreenConfigGeneral = Graph.System.Config.Models.ScreenConfigGeneral;
 
-namespace Graph.System.TerminalControls.Generic
+namespace Graph.System.TerminalControls.Scale
 {
     public sealed partial class SliderFontSize : TerminalControlsWrapper
     {

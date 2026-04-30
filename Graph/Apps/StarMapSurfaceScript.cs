@@ -14,6 +14,7 @@ using Sandbox.Game.Entities;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using VRage;
+using VRage.Collections;
 using VRage.Game;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
@@ -37,6 +38,13 @@ namespace Graph.Apps
         Vector2 _lastEyeContactPoint;
         bool _hasLastEyeContactPoint;
         long _jumpPointRunCounter;
+
+        readonly List<MySprite> _baseSprites = new List<MySprite>();
+        readonly List<MySprite> _ringSprites = new List<MySprite>();
+        readonly List<MySprite> _planetSprites = new List<MySprite>();
+        readonly List<MySprite> _overlaySprites = new List<MySprite>();
+        readonly List<MySprite> _sprites = new List<MySprite>();
+
         const double JUMP_POINT_RUNS_PER_SECOND = 6d; // ScriptUpdate.Update10 at 60 FPS
         struct JumpPointThrottleState
         {
@@ -145,38 +153,43 @@ namespace Graph.Apps
             if (float.IsNaN(_lastKnownConfigFov) || Math.Abs(_lastKnownConfigFov - AppConfig.FoV) > 0.001f)
                 LayoutChanged();
 
-            using (var frame = Surface.DrawFrame())
+            RenderSprites(GetSprites);
+        }
+        
+        ListReader<MySprite> GetSprites()
+        {
+            _baseSprites.Clear();
+            _ringSprites.Clear();
+            _planetSprites.Clear();
+            _overlaySprites.Clear();
+            
+            bool staticMode = AppConfig != null && AppConfig.DisplayMode == DisplayMode.Legacy;
+            Vector2 lookedAt;
+            if (_eyeTracking.TryConsumeMapped(ViewBox, out lookedAt))
             {
-                var baseSprites = new List<MySprite>();
-                var ringSprites = new List<MySprite>();
-                var planetSprites = new List<MySprite>();
-                var overlaySprites = new List<MySprite>();
-                bool staticMode = AppConfig != null && AppConfig.DisplayMode == DisplayMode.Legacy;
-                Vector2 lookedAt;
-                if (_eyeTracking.TryConsumeMapped(ViewBox, out lookedAt))
-                {
-                    _lastEyeContactPoint = lookedAt;
-                    _hasLastEyeContactPoint = true;
-                }
-
-                AddBackground(baseSprites);
-                DrawTitle(overlaySprites);
-                var hasPlanets = DrawPlanetMap(planetSprites, ringSprites, overlaySprites);
-                if (hasPlanets)
-                {
-                    if (!staticMode)
-                        DrawFovHud(overlaySprites, _fov);
-                }
-                else
-                {
-                    DrawMessage(overlaySprites, LocHelper.Empty, "Warning", AppConfig.WarningColor, AppConfig.Scale);
-                }
-
-                frame.AddRange(baseSprites);
-                frame.AddRange(ringSprites);
-                frame.AddRange(planetSprites);
-                frame.AddRange(overlaySprites);
+                _lastEyeContactPoint = lookedAt;
+                _hasLastEyeContactPoint = true;
             }
+
+            AddBackground(_baseSprites);
+            DrawTitle(_overlaySprites);
+            var hasPlanets = DrawPlanetMap(_planetSprites, _ringSprites, _overlaySprites);
+            if (hasPlanets)
+            {
+                if (!staticMode)
+                    DrawFovHud(_overlaySprites, _fov);
+            }
+            else
+            {
+                DrawMessage(_overlaySprites, LocHelper.Empty, "Warning", AppConfig.WarningColor, AppConfig.Scale);
+            }
+
+            _sprites.Clear();
+            _sprites.AddRange(_baseSprites);
+            _sprites.AddRange(_ringSprites);
+            _sprites.AddRange(_planetSprites);
+            _sprites.AddRange(_overlaySprites);
+            return _sprites;
         }
 
         IMyGravityProviderSystem GetGravityProvider()
@@ -588,8 +601,11 @@ namespace Graph.Apps
                 selected.ShouldDisplayInfo = true;
                 DrawStaticPlanetCards(overlaySprites, selected);
             }
+            
+            
+            overlaySprites.Add(new MySprite(SpriteType.TEXTURE, selectedIndex >= 0 ? "CursorHand" : "CursorDefault", focusPoint, new Vector2(32) * Config.CursorScale, Color.White));
 
-            return hasDetectedPlanets;
+            return true;
         }
 
         void DrawStaticPlanetCards(List<MySprite> sprites, PlanetProjection planet)
@@ -815,10 +831,10 @@ namespace Graph.Apps
                 normal = Vector3D.Normalize(normal);
 
             double aspect = ViewBox.Width / Math.Max(1f, ViewBox.Height);
-            double halfFovYAt1x = MathHelper.ToRadians(MAP_VERTICAL_FOV_DEFAULT_DEG) * 0.5;
-            double halfFovXAt1x = Math.Atan(Math.Tan(halfFovYAt1x) * aspect);
-            double tanX = Math.Tan(halfFovXAt1x);
-            double tanY = Math.Tan(halfFovYAt1x);
+            double halfFovYAt1X = MathHelper.ToRadians(MAP_VERTICAL_FOV_DEFAULT_DEG) * 0.5;
+            double halfFovXAt1X = Math.Atan(Math.Tan(halfFovYAt1X) * aspect);
+            double tanX = Math.Tan(halfFovXAt1X);
+            double tanY = Math.Tan(halfFovYAt1X);
             if (tanX <= 1e-6 || tanY <= 1e-6)
                 return false;
 
@@ -1524,6 +1540,7 @@ namespace Graph.Apps
         public void LookAt(Vector2 onScreenCoordinates)
         {
             _eyeTracking.Receive(onScreenCoordinates);
+            RenderSprites(GetSprites);
         }
     }
 }
