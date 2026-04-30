@@ -84,12 +84,11 @@ namespace Graph.System
         readonly Dictionary<long, Vector3D> _jumpPointByPlanetCache = new Dictionary<long, Vector3D>();
         readonly Dictionary<long, JumpPointGpsEntry> _jumpPointGpsEntries = new Dictionary<long, JumpPointGpsEntry>();
         long _jumpPointCacheFrame = -1;
-        const long JUMP_POINT_GPS_TTL_FRAMES = 60L * 60L; // 60s at 60 FPS
+        static readonly TimeSpan JUMP_POINT_GPS_TTL = TimeSpan.FromSeconds(60);
 
         struct JumpPointGpsEntry
         {
             public IMyGps Gps;
-            public long LastRequestedFrame;
             public long LastPublishedFrame;
         }
 
@@ -132,8 +131,6 @@ namespace Graph.System
 
             try
             {
-                CleanupJumpPointGps();
-
                 // Schedule a refresh cycle periodically, but keep current data until the new snapshot is ready.
                 if (_clock % DELAY == 0)
                 {
@@ -459,7 +456,6 @@ namespace Graph.System
             JumpPointGpsEntry gpsEntry;
             if (!_jumpPointGpsEntries.TryGetValue(planetId, out gpsEntry))
                 gpsEntry = new JumpPointGpsEntry();
-            gpsEntry.LastRequestedFrame = frame;
             _jumpPointGpsEntries[planetId] = gpsEntry;
 
             if (_jumpPointByPlanetCache.TryGetValue(planetId, out jumpPoint))
@@ -481,7 +477,7 @@ namespace Graph.System
 
         void PublishJumpPointGps(long planetId, string planetName, Vector3D jumpPoint, long frame)
         {
-            if (frame < 0 || MyAPIGateway.Session == null || MyAPIGateway.Session.Player == null || MyAPIGateway.Session.GPS == null)
+            if (frame < 0 || MyAPIGateway.Session == null || MyAPIGateway.Session.GPS == null)
                 return;
 
             JumpPointGpsEntry entry;
@@ -491,56 +487,26 @@ namespace Graph.System
             if (frame - entry.LastPublishedFrame < 60)
                 return;
 
-            var identityId = MyAPIGateway.Session.Player.IdentityId;
             var gps = entry.Gps;
-            if (gps == null)
+            var discardAt = MyAPIGateway.Session.ElapsedPlayTime + JUMP_POINT_GPS_TTL;
+            if (gps == null || (gps.DiscardAt.HasValue && gps.DiscardAt.Value <= MyAPIGateway.Session.ElapsedPlayTime))
             {
                 var gpsName = BuildJumpPointGpsName(planetName);
-                gps = MyAPIGateway.Session.GPS.Create(gpsName, string.Empty, jumpPoint, true, false);
+                gps = MyAPIGateway.Session.GPS.Create(gpsName, string.Empty, jumpPoint, true, true);
                 if (gps == null)
                     return;
-                MyAPIGateway.Session.GPS.AddGps(identityId, gps);
+                gps.DiscardAt = discardAt;
+                MyAPIGateway.Session.GPS.AddLocalGps(gps);
                 entry.Gps = gps;
             }
             else
             {
                 gps.Coords = jumpPoint;
-                MyAPIGateway.Session.GPS.ModifyGps(identityId, gps);
+                gps.DiscardAt = discardAt;
             }
 
             entry.LastPublishedFrame = frame;
             _jumpPointGpsEntries[planetId] = entry;
-        }
-
-        void CleanupJumpPointGps()
-        {
-            if (MyAPIGateway.Session == null || MyAPIGateway.Session.Player == null || MyAPIGateway.Session.GPS == null || _jumpPointGpsEntries.Count == 0)
-                return;
-
-            long frame = MyAPIGateway.Session.GameplayFrameCounter;
-            var expired = new List<long>();
-            foreach (var pair in _jumpPointGpsEntries)
-            {
-                if (frame - pair.Value.LastRequestedFrame >= JUMP_POINT_GPS_TTL_FRAMES)
-                    expired.Add(pair.Key);
-            }
-
-            if (expired.Count == 0)
-                return;
-
-            long identityId = MyAPIGateway.Session.Player.IdentityId;
-            for (int i = 0; i < expired.Count; i++)
-            {
-                long planetId = expired[i];
-                JumpPointGpsEntry entry;
-                if (!_jumpPointGpsEntries.TryGetValue(planetId, out entry))
-                    continue;
-
-                if (entry.Gps != null)
-                    MyAPIGateway.Session.GPS.RemoveGps(identityId, entry.Gps);
-                _jumpPointGpsEntries.Remove(planetId);
-                _jumpPointByPlanetCache.Remove(planetId);
-            }
         }
 
         string BuildJumpPointGpsName(string planetName)
