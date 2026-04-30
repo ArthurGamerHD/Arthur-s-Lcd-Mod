@@ -61,15 +61,21 @@
             <Selectable>false</Selectable>
         </LCDTextureDefinition>
 
+        <LCDTextureDefinition> <!-- Remap of Vanilla No Entry sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="CursorNo"/>
+            <SpritePath>Textures/Sprites/NoEntry.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+        
         <LCDTextureDefinition> <!-- Remap of Vanilla Cross sprite -->
             <Id Type="LCDTextureDefinition" Subtype="CursorCross"/>
-            <SpritePath>Textures/GUI/Controls/button_close_symbol_highlight.dds</SpritePath>
+            <SpritePath>Textures/Sprites/Cross.dds</SpritePath>
             <Selectable>false</Selectable>
         </LCDTextureDefinition>
         
         <LCDTextureDefinition> <!-- Remap of Vanilla Loading sprite -->
-            <Id Type="LCDTextureDefinition" Subtype="CursorWait"/>
-            <SpritePath>Textures/GUI/Screens/screen_loading_wheel.dds</SpritePath>
+            <Id Type="LCDTextureDefinition" Subtype="CursorWaitCursor"/>
+            <SpritePath>Textures/GUI/Icons/HUD 2017/RadialMenu.png</SpritePath>
             <Selectable>false</Selectable>
         </LCDTextureDefinition>
 

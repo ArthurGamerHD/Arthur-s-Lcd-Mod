@@ -53,7 +53,7 @@ namespace Graph.Apps
             RenderSprites(DrawApp);
         }
 
-        ListReader<MySprite> DrawApp()
+        List<MySprite> DrawApp()
         {
             var viewBox = GetViewBox();
             var snapshot = LcdModSessionComponent.DebugSnapshot;

@@ -4,13 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using Generated;
+using Graph.Apps.Utility;
 using Graph.Extensions;
 using Graph.Helpers;
 using Graph.Panels;
 using Graph.System;
 using Graph.System.Config.Models.Apps;
 using Graph.System.TerminalControls.Groups;
-using Graph.Apps.Utility;
 using Graph.System.Config;
 using Graph.System.Config.Models;
 using Sandbox.Game.Components;
@@ -804,14 +804,21 @@ namespace Graph.Apps.Abstract
         /// Calling this break the regular rendering of the Text surface, ensure ALL render call is routed here if the app needs to use it
         /// </summary>
         /// <param name="sprites">Sprites to be rendered</param>
-        public void RenderSprites(Func<ListReader<MySprite>> sprites)
+        public void RenderSprites(Func<List<MySprite>> sprites)
         {
             var currentFrame = MyAPIGateway.Session.GameplayFrameCounter;
             if (currentFrame == _lastFrame)
                 return;
             _lastFrame = currentFrame;
 
-            _renderComp.RenderSpritesToTexture(RotationOrSurfaceIndex, sprites(), _textureSize, _aspectRatio, Surface.ScriptBackgroundColor, Surface.BackgroundAlpha);
+            var spriteList = RenderFrame(sprites);
+            
+            _renderComp.RenderSpritesToTexture(RotationOrSurfaceIndex, spriteList, _textureSize, _aspectRatio, Surface.ScriptBackgroundColor, Surface.BackgroundAlpha);
+        }
+
+        protected virtual List<MySprite> RenderFrame(Func<List<MySprite>> sprites)
+        {
+            return sprites();
         }
     }
 }
