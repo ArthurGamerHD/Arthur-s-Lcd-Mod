@@ -47,6 +47,16 @@ namespace Graph.System.Modules
 
         public void Update()
         {
+            if (!(MyAPIGateway.Session.LocalHumanPlayer.Character.ControllerInfo.IsLocallyHumanControlled() ||
+                  MyAPIGateway.Input.IsAnyAltKeyPressed()))
+            {
+                if (_useInputBlocked)
+                    LcdModSessionComponent.SetLocalPlayerUseInputBlocked(blocked: _useInputBlocked = false);
+
+                return;
+            }
+               
+            
             Vector3D cameraPos;
             Vector3D cameraForward;
             if (!TryGetCameraRay(out cameraPos, out cameraForward))
