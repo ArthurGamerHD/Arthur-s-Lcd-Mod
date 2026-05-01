@@ -1260,7 +1260,7 @@ namespace Graph.Apps
                             (value, sender) =>
                             {
                                 var gps = MyAPIGateway.Session.GPS.Create("JumpPoint_" + planet.Name, string.Empty,
-                                    planet.WorldPosition, true, true);
+                                    jumpPoint, true, true);
                                 gps.GPSColor = planet.Texture.BaseColor;
                                 MyAPIGateway.Session.GPS.AddLocalGps(gps);
 
