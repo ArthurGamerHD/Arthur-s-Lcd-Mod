@@ -195,23 +195,27 @@ namespace Graph.System.ScreenAreas
             cached = new CachedScreenArea();
             Cache[cacheKey] = cached;
 
-            var lodPath = ToLod1ContentPath(assetName);
-            if (string.IsNullOrWhiteSpace(lodPath))
+            var modelPath = ToModelPath(assetName);
+            
+            if (string.IsNullOrWhiteSpace(modelPath))
             {
-                cached.LoadError = "could not normalize asset name to _LOD1.mwm content path";
+                cached.LoadError = "could not normalize asset name to content path";
                 LogHelper.LogOnce("path:invalid:" + cacheKey,
                     "invalid model path for " + cacheKey + ", asset=" + assetName);
                 return false;
             }
+            
+            var lodPath = ModelToLod1Path(modelPath);
+            
+            LogHelper.LogOnce("path:" + cacheKey, "normalized asset to path: " + assetName + " -> " + modelPath);
 
-            LogHelper.LogOnce("path:" + cacheKey, "normalized asset to LOD1 path: " + assetName + " -> " + lodPath);
-
-            using (var reader = OpenMwm(lodPath))
+            using (var reader = string.IsNullOrWhiteSpace(lodPath) ? null : OpenMwm(lodPath) ?? OpenMwm(modelPath))
             {
                 if (reader == null)
                 {
-                    cached.LoadError = "LOD1 file not found in mod location or game content: " + lodPath;
+                    cached.LoadError = "Mwm file not found in mod location or game content: " + assetName + ", " + lodPath;
                     LogHelper.LogOnce("file:missing:" + cacheKey, cached.LoadError);
+                    
                     return false;
                 }
 
@@ -242,13 +246,18 @@ namespace Graph.System.ScreenAreas
         static BinaryReader OpenMwm(string contentPath)
         {
             var utilities = MyAPIGateway.Utilities;
-            if (utilities == null || string.IsNullOrWhiteSpace(contentPath))
+            if (string.IsNullOrWhiteSpace(contentPath))
                 return null;
+            
+            if(contentPath.Contains("KOLT"))
+                LogHelper.LogOnce("file:game:" + contentPath, $"MWM from mod content: {contentPath} found: {MyAPIGateway.Session.Mods.Where(mod => utilities.FileExistsInModLocation(contentPath, mod)).FirstOrDefault()} ");
 
-            foreach (var mod in MyAPIGateway.Session.Mods.Where(mod =>
-                         utilities.FileExistsInModLocation(contentPath, mod)))
+            foreach (var mod in MyAPIGateway.Session.Mods.Where(mod => utilities.FileExistsInModLocation(contentPath, mod)))
             {
                 LogHelper.LogOnce("file:mod:" + contentPath, "opening MWM from mod location: " + contentPath);
+                
+                
+                
                 return utilities.ReadBinaryFileInModLocation(contentPath, mod);
             }
 
@@ -261,17 +270,37 @@ namespace Graph.System.ScreenAreas
             return null;
         }
 
-        static string ToLod1ContentPath(string assetName)
+        static string ToModelPath(string assetName)
         {
             var path = assetName.Replace('\\', '/');
+           
             const string contentMarker = "/Content/";
+            
             var contentIndex = path.IndexOf(contentMarker, StringComparison.OrdinalIgnoreCase);
             if (contentIndex >= 0)
                 path = path.Substring(contentIndex + contentMarker.Length);
 
             while (path.StartsWith("/", StringComparison.Ordinal))
                 path = path.Substring(1);
+            
+            if (path.StartsWith("244850/", StringComparison.OrdinalIgnoreCase))
+            {
+                path = path.Substring("244850/".Length);
+                path = path.Substring(path.IndexOf("/", StringComparison.Ordinal) + 1); // skip mod id;
+            }
 
+            if (!path.EndsWith(".mwm", StringComparison.OrdinalIgnoreCase))
+                return null;
+
+            var extensionIndex = path.LastIndexOf(".mwm", StringComparison.OrdinalIgnoreCase);
+            if (extensionIndex < 0)
+                return null;
+
+            return path.Substring(0, extensionIndex) + path.Substring(extensionIndex);
+        }
+
+        static string ModelToLod1Path(string path)
+        {
             if (!path.EndsWith(".mwm", StringComparison.OrdinalIgnoreCase))
                 return null;
             if (path.EndsWith("_LOD1.mwm", StringComparison.OrdinalIgnoreCase))
@@ -283,6 +312,8 @@ namespace Graph.System.ScreenAreas
 
             return path.Substring(0, extensionIndex) + "_LOD1" + path.Substring(extensionIndex);
         }
+        
+        static string ToLod1ContentPath(string assetName) => ModelToLod1Path(ToModelPath(assetName));
 
 
         static bool TryGetScreenUvIntersection(
