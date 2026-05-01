@@ -436,7 +436,8 @@ namespace Graph.System
             Vector3D planetCenter,
             double planetRadiusMeters,
             double gravityRangeMeters,
-            out Vector3D jumpPoint)
+            out Vector3D jumpPoint,
+            bool publish = true)
         {
             jumpPoint = Vector3D.Zero;
             if (Grid == null)
@@ -471,7 +472,9 @@ namespace Graph.System
             var offsetMeters = Math.Max(0d, planetRadiusMeters + gravityRangeMeters + 10d);
             jumpPoint = planetCenter + dir * offsetMeters;
             _jumpPointByPlanetCache[planetId] = jumpPoint;
-            PublishJumpPointGps(planetId, planetName, jumpPoint, frame);
+            
+            if(publish)
+                PublishJumpPointGps(planetId, planetName, jumpPoint, frame);
             return true;
         }
 

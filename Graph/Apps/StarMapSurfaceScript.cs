@@ -1,19 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using Generated;
 using Graph.Apps.Abstract;
 using Graph.Apps.Utility;
 using Graph.Extensions;
 using Graph.Helpers;
 using Graph.System;
-using Graph.System.Config.Models.Apps;
 using Graph.System.TerminalControls.Generic;
 using Sandbox.Game.Entities;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
-using VRage;
 using VRage.Game;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
@@ -43,6 +40,7 @@ namespace Graph.Apps
         readonly List<MySprite> _sprites = new List<MySprite>();
 
         const double JUMP_POINT_RUNS_PER_SECOND = 6d; // ScriptUpdate.Update10 at 60 FPS
+        const double JUMP_POINT_DISTANCE_PER_SECOND = 1000000d; // Distance jump drive "calculates" per second
 
         struct JumpPointThrottleState
         {
@@ -51,8 +49,7 @@ namespace Graph.Apps
             public long LastRequestRun;
         }
 
-        readonly Dictionary<long, JumpPointThrottleState> _jumpPointThrottleByPlanet =
-            new Dictionary<long, JumpPointThrottleState>();
+        readonly Dictionary<long, JumpPointThrottleState> _jumpPointThrottleByPlanet = new Dictionary<long, JumpPointThrottleState>();
 
         bool _busy;
 
@@ -110,7 +107,7 @@ namespace Graph.Apps
         const double STATIC_PARENT_ORBIT_MAX_METERS = 300000d;
         const float STATIC_ORBIT_Y_SQUASH = 0.55f;
 
-        static readonly List<MyTerminalControlComboBoxItem> StarMapDisplayModes =
+        static readonly List<MyTerminalControlComboBoxItem> StarMapDisplayModes = 
             new List<MyTerminalControlComboBoxItem>
             {
                 new MyTerminalControlComboBoxItem
@@ -148,7 +145,7 @@ namespace Graph.Apps
             base.LayoutChanged();
             _fov = GetEffectiveVerticalFovDeg();
             _halfFovY = MathHelper.ToRadians(_fov) * 0.5;
-            _lastKnownConfigFov = AppConfig != null ? AppConfig.FoV : MAP_VERTICAL_FOV_DEFAULT_DEG;
+            _lastKnownConfigFov = AppConfig?.FoV ?? MAP_VERTICAL_FOV_DEFAULT_DEG;
 
             CursorType = GetDefaultCursorType();
         }
@@ -183,7 +180,7 @@ namespace Graph.Apps
             _busy = false;
             CursorType = GetDefaultCursorType();
 
-            bool staticMode = AppConfig != null && AppConfig.DisplayMode == DisplayMode.Legacy;
+            bool staticMode = AppConfig.DisplayMode == DisplayMode.Legacy;
             Vector2 lookedAt;
             if (_eyeTracking.TryConsumeMapped(ViewBox, out lookedAt))
                 CursorPosition = lookedAt;
@@ -265,17 +262,15 @@ namespace Graph.Apps
             {
                 return DrawStaticOrbitMap(ringSprites, planetSprites, overlaySprites, planets);
             }
-            else
-            {
-                if (Block == null)
-                    return false;
 
-                MatrixD world = Block.WorldMatrix;
-                camPos = world.Translation;
-                camRight = world.Right;
-                camUp = world.Up;
-                camForward = world.Forward;
-            }
+            if (Block == null)
+                return false;
+
+            MatrixD world = Block.WorldMatrix;
+            camPos = world.Translation;
+            camRight = world.Right;
+            camUp = world.Up;
+            camForward = world.Forward;
 
             long gravityPlanetId = GetCurrentGravityPlanetId(camPos, planets);
             float gravityVisibility = GetGravityVisibility(camPos);
@@ -339,12 +334,10 @@ namespace Graph.Apps
                 PlanetHelper.PlanetGeneratorNamesById.TryGetValue(planet.EntityId, out generatorName);
                 var textureKey = string.IsNullOrWhiteSpace(generatorName) ? name : generatorName;
                 var generator = planet.Generator;
-                var atmosphere = generator != null ? generator.Atmosphere : null;
-                MyTemperatureLevel? averageTemperature = generator != null
-                    ? (MyTemperatureLevel?)generator.DefaultSurfaceTemperature
-                    : null;
-                double surfaceGravity = generator != null ? generator.SurfaceGravity : 0d;
-                double gravityFalloff = generator != null ? generator.GravityFalloffPower : 0d;
+                var atmosphere = generator?.Atmosphere;
+                MyTemperatureLevel? averageTemperature = generator?.DefaultSurfaceTemperature;
+                double surfaceGravity = generator?.SurfaceGravity ?? 0d;
+                double gravityFalloff = generator?.GravityFalloffPower ?? 0d;
                 double gravityLimitRadius = 0d;
                 if (planet.MaximumRadius > 0d && surfaceGravity > 0d && gravityFalloff > 0d)
                     gravityLimitRadius = planet.MaximumRadius * Math.Pow(surfaceGravity / 0.05d, 1d / gravityFalloff);
@@ -367,7 +360,7 @@ namespace Graph.Apps
                     AtmosphereDensity = planet.HasAtmosphere && atmosphere != null ? atmosphere.Density : 0f,
                     OxygenDensity = planet.HasAtmosphere && atmosphere != null ? atmosphere.OxygenDensity : 0f,
                     AverageTemperature = averageTemperature,
-                    MaxWindSpeed = atmosphere != null ? atmosphere.MaxWindSpeed : 0f
+                    MaxWindSpeed = atmosphere?.MaxWindSpeed ?? 0f
                 });
             }
 
@@ -411,8 +404,7 @@ namespace Graph.Apps
             if (planets == null || planets.Count == 0)
                 return false;
             bool hasDetectedPlanets = false;
-
-            var validPlanets = new List<MyPlanet>(planets.Count);
+            
             var positions = new List<Vector3D>(planets.Count);
             var radii = new List<double>(planets.Count);
             var projectedPlanets = new List<PlanetProjection>(planets.Count);
@@ -424,7 +416,7 @@ namespace Graph.Apps
             var ringProjections = new List<StaticRingProjection>(planets.Count);
             double maxOrbitWithRadius = 1d;
 
-            var referencePos = Block != null ? Block.GetPosition() : Vector3D.Zero;
+            var referencePos = Block?.GetPosition() ?? Vector3D.Zero;
 
             foreach (var kv in planets)
             {
@@ -439,7 +431,6 @@ namespace Graph.Apps
 
                 Vector3D pos = planet.WorldMatrix.Translation;
                 double distanceToBlock = Block != null ? Vector3D.Distance(pos, referencePos) : pos.Length();
-                validPlanets.Add(planet);
                 positions.Add(pos);
                 radii.Add(radius);
                 parentIndex.Add(-1);
@@ -460,12 +451,10 @@ namespace Graph.Apps
                 PlanetHelper.PlanetGeneratorNamesById.TryGetValue(planet.EntityId, out generatorName);
                 var textureKey = string.IsNullOrWhiteSpace(generatorName) ? name : generatorName;
                 var generator = planet.Generator;
-                var atmosphere = generator != null ? generator.Atmosphere : null;
-                MyTemperatureLevel? averageTemperature = generator != null
-                    ? (MyTemperatureLevel?)generator.DefaultSurfaceTemperature
-                    : null;
-                double surfaceGravity = generator != null ? generator.SurfaceGravity : 0d;
-                double gravityFalloff = generator != null ? generator.GravityFalloffPower : 0d;
+                var atmosphere = generator?.Atmosphere;
+                MyTemperatureLevel? averageTemperature = generator?.DefaultSurfaceTemperature;
+                double surfaceGravity = generator?.SurfaceGravity ?? 0d;
+                double gravityFalloff = generator?.GravityFalloffPower ?? 0d;
                 double gravityLimitRadius = 0d;
                 if (planet.MaximumRadius > 0d && surfaceGravity > 0d && gravityFalloff > 0d)
                     gravityLimitRadius = planet.MaximumRadius * Math.Pow(surfaceGravity / 0.05d, 1d / gravityFalloff);
@@ -489,7 +478,7 @@ namespace Graph.Apps
                     AtmosphereDensity = planet.HasAtmosphere && atmosphere != null ? atmosphere.Density : 0f,
                     OxygenDensity = planet.HasAtmosphere && atmosphere != null ? atmosphere.OxygenDensity : 0f,
                     AverageTemperature = averageTemperature,
-                    MaxWindSpeed = atmosphere != null ? atmosphere.MaxWindSpeed : 0f
+                    MaxWindSpeed = atmosphere?.MaxWindSpeed ?? 0f
                 });
             }
 
@@ -712,183 +701,6 @@ namespace Graph.Apps
             });
         }
 
-        bool TryGetStaticCamera(Dictionary<long, MyPlanet> planets, out Vector3D camPos, out Vector3D camRight,
-            out Vector3D camUp, out Vector3D camForward)
-        {
-            camRight = Vector3D.Right;
-            camUp = Vector3D.Up;
-            camForward = Vector3D.Backward;
-            camPos = Vector3D.Zero;
-
-            if (planets == null || planets.Count == 0)
-                return false;
-
-            var centers = new List<Vector3D>(planets.Count);
-            var radii = new List<double>(planets.Count);
-            Vector3D center = Vector3D.Zero;
-            foreach (var kv in planets)
-            {
-                var p = kv.Value;
-                if (p == null || p.MarkedForClose || p.AverageRadius <= 0d)
-                    continue;
-
-                var c = p.WorldMatrix.Translation;
-                centers.Add(c);
-                radii.Add(p.AverageRadius);
-                center += c;
-            }
-
-            if (centers.Count == 0)
-                return false;
-
-            center /= centers.Count;
-
-            // Build covariance matrix around centroid.
-            double xx = 0d;
-            double xy = 0d;
-            double xz = 0d;
-            double yy = 0d;
-            double yz = 0d;
-            double zz = 0d;
-            for (int i = 0; i < centers.Count; i++)
-            {
-                var d = centers[i] - center;
-                xx += d.X * d.X;
-                xy += d.X * d.Y;
-                xz += d.X * d.Z;
-                yy += d.Y * d.Y;
-                yz += d.Y * d.Z;
-                zz += d.Z * d.Z;
-            }
-
-            // Symmetric covariance matrix:
-            // [xx xy xz]
-            // [xy yy yz]
-            // [xz yz zz]
-            // Find major axes by power iteration + deflation, then normal = cross(major1, major2).
-            Vector3D major1 = Vector3D.Normalize(new Vector3D(1d, 0d, 0d));
-            for (int it = 0; it < 12; it++)
-            {
-                Vector3D next = new Vector3D(
-                    xx * major1.X + xy * major1.Y + xz * major1.Z,
-                    xy * major1.X + yy * major1.Y + yz * major1.Z,
-                    xz * major1.X + yz * major1.Y + zz * major1.Z);
-                if (next.LengthSquared() <= 1e-10)
-                    break;
-                major1 = Vector3D.Normalize(next);
-            }
-
-            double lambda1 =
-                major1.X * (xx * major1.X + xy * major1.Y + xz * major1.Z) +
-                major1.Y * (xy * major1.X + yy * major1.Y + yz * major1.Z) +
-                major1.Z * (xz * major1.X + yz * major1.Y + zz * major1.Z);
-
-            double bxx = xx - lambda1 * major1.X * major1.X;
-            double bxy = xy - lambda1 * major1.X * major1.Y;
-            double bxz = xz - lambda1 * major1.X * major1.Z;
-            double byy = yy - lambda1 * major1.Y * major1.Y;
-            double byz = yz - lambda1 * major1.Y * major1.Z;
-            double bzz = zz - lambda1 * major1.Z * major1.Z;
-
-            Vector3D major2 = Vector3D.Normalize(new Vector3D(0d, 1d, 0d));
-            if (Math.Abs(Vector3D.Dot(major2, major1)) > 0.9)
-                major2 = Vector3D.Normalize(new Vector3D(0d, 0d, 1d));
-
-            for (int it = 0; it < 12; it++)
-            {
-                Vector3D next = new Vector3D(
-                    bxx * major2.X + bxy * major2.Y + bxz * major2.Z,
-                    bxy * major2.X + byy * major2.Y + byz * major2.Z,
-                    bxz * major2.X + byz * major2.Y + bzz * major2.Z);
-
-                // Keep orthogonal to first axis.
-                next -= major1 * Vector3D.Dot(next, major1);
-                if (next.LengthSquared() <= 1e-10)
-                    break;
-                major2 = Vector3D.Normalize(next);
-            }
-
-            Vector3D normal = Vector3D.Cross(major1, major2);
-            if (normal.LengthSquared() <= 1e-8)
-                normal = Vector3D.Up;
-            else
-                normal = Vector3D.Normalize(normal);
-
-            double aspect = ViewBox.Width / Math.Max(1f, ViewBox.Height);
-            double halfFovYAt1X = MathHelper.ToRadians(MAP_VERTICAL_FOV_DEFAULT_DEG) * 0.5;
-            double halfFovXAt1X = Math.Atan(Math.Tan(halfFovYAt1X) * aspect);
-            double tanX = Math.Tan(halfFovXAt1X);
-            double tanY = Math.Tan(halfFovYAt1X);
-            if (tanX <= 1e-6 || tanY <= 1e-6)
-                return false;
-
-            // Evaluate both normal directions (up/down) and pick the tighter fit.
-            double distPlus;
-            double distMinus;
-            if (!TryComputeStaticDistance(center, centers, radii, normal, tanX, tanY, out distPlus))
-                return false;
-            if (!TryComputeStaticDistance(center, centers, radii, -normal, tanX, tanY, out distMinus))
-                return false;
-
-            Vector3D viewDir = distPlus <= distMinus ? normal : -normal;
-            double cameraDistance = Math.Min(distPlus, distMinus);
-            if (cameraDistance < 1d)
-                cameraDistance = 1d;
-
-            camPos = center - viewDir * cameraDistance;
-            camForward = Vector3D.Normalize(center - camPos);
-
-            Vector3D worldUp = Vector3D.Up;
-            camRight = Vector3D.Cross(worldUp, camForward);
-            if (camRight.LengthSquared() < 1e-8)
-                camRight = Vector3D.Cross(Vector3D.Right, camForward);
-            if (camRight.LengthSquared() < 1e-8)
-                camRight = Vector3D.Right;
-            else
-                camRight = Vector3D.Normalize(camRight);
-            camUp = Vector3D.Normalize(Vector3D.Cross(camForward, camRight));
-            return true;
-        }
-
-        bool TryComputeStaticDistance(Vector3D center, List<Vector3D> centers, List<double> radii, Vector3D viewDir,
-            double tanX, double tanY, out double distance)
-        {
-            distance = 0d;
-            if (centers == null || centers.Count == 0)
-                return false;
-
-            // Build camera basis for this direction.
-            Vector3D worldUp = Vector3D.Up;
-            Vector3D right = Vector3D.Cross(worldUp, viewDir);
-            if (right.LengthSquared() < 1e-8)
-                right = Vector3D.Cross(Vector3D.Right, viewDir);
-            if (right.LengthSquared() < 1e-8)
-                return false;
-            right = Vector3D.Normalize(right);
-            Vector3D up = Vector3D.Normalize(Vector3D.Cross(viewDir, right));
-
-            double required = 0d;
-            for (int i = 0; i < centers.Count; i++)
-            {
-                Vector3D rel = centers[i] - center;
-                double r = radii[i];
-
-                double localX = Math.Abs(Vector3D.Dot(rel, right));
-                double localY = Math.Abs(Vector3D.Dot(rel, up));
-                double localZ = Vector3D.Dot(rel, viewDir);
-
-                double needX = (localX + r) / tanX - localZ;
-                double needY = (localY + r) / tanY - localZ;
-                double needNear = MAP_NEAR_CLIP_METERS + r - localZ;
-                double need = Math.Max(needNear, Math.Max(needX, needY));
-                if (need > required)
-                    required = need;
-            }
-
-            distance = required * 1.2d;
-            return true;
-        }
-
         float GetGravityVisibility(Vector3D camPos)
         {
             var gravityProvider = GetGravityProvider();
@@ -935,7 +747,7 @@ namespace Graph.Apps
 
         float GetEffectiveVerticalFovDeg()
         {
-            float configuredFov = AppConfig != null ? AppConfig.FoV : MAP_VERTICAL_FOV_DEFAULT_DEG;
+            float configuredFov = AppConfig?.FoV ?? MAP_VERTICAL_FOV_DEFAULT_DEG;
             return MathHelper.Clamp(
                 configuredFov > 0f ? configuredFov : MAP_VERTICAL_FOV_DEFAULT_DEG,
                 0.1f, 120f);
@@ -1216,16 +1028,9 @@ namespace Graph.Apps
             };
 
             lines.Add(new ClickableText(
-                "Position: " + FormatWorldVector(planet.WorldPosition),
+                "Position: " + FormatingHelper.FormatVector(planet.WorldPosition),
                 planet.WorldPosition,
-                (value, sender) =>
-                {
-                    var gps = MyAPIGateway.Session.GPS.Create(planet.Name, string.Empty, planet.WorldPosition, true,
-                        true);
-                    gps.GPSColor = planet.Texture.BaseColor;
-                    MyAPIGateway.Session.GPS.AddLocalGps(gps);
-                    SendGpsToChat(planet.Name, planet.WorldPosition, planet.Texture.BaseColor);
-                })
+                (value, sender) => { ClickOnGps(planet.Name, planet.WorldPosition, planet.Texture.BaseColor); })
             {
                 ClickSound = AudioHelper.HudGps3
             });
@@ -1252,22 +1057,15 @@ namespace Graph.Apps
                             planet.WorldPosition,
                             planet.Radius,
                             planet.GravityRange,
-                            out jumpPoint))
+                            out jumpPoint,
+                            false))
                     {
                         lines.Add(new ClickableText(
-                            "Jump: " + FormatWorldVector(jumpPoint),
+                            "Jump: " + FormatingHelper.FormatVector(jumpPoint),
                             jumpPoint,
                             (value, sender) =>
                             {
-                                var gps = MyAPIGateway.Session.GPS.Create("JumpPoint_" + planet.Name, string.Empty,
-                                    jumpPoint, true, true);
-                                gps.GPSColor = planet.Texture.BaseColor;
-                                MyAPIGateway.Session.GPS.AddLocalGps(gps);
-
-                                SendGpsToChat(
-                                    "JumpPoint_" + planet.Name,
-                                    jumpPoint,
-                                    planet.Texture.BaseColor);
+                                ClickOnGps("JumpPoint_" + planet.Name, jumpPoint, planet.Texture.BaseColor);
                             })
                         {
                             ClickSound = AudioHelper.HudGps3
@@ -1283,9 +1081,12 @@ namespace Graph.Apps
             return lines;
         }
 
-        static string FormatWorldVector(Vector3D value)
+        void ClickOnGps(string planetName, Vector3D position, Color color)
         {
-            return string.Format(FormatingHelper.Culture, "({0:0}, {1:0}, {2:0})", value.X, value.Y, value.Z);
+            var gps = MyAPIGateway.Session.GPS.Create(planetName, string.Empty, position, true, true);
+            gps.GPSColor = color;
+            MyAPIGateway.Session.GPS.AddLocalGps(gps);
+            SendGpsToChat(planetName, position, color);
         }
 
         void SendGpsToChat(string name, Vector3D position, Color color)
@@ -1317,7 +1118,7 @@ namespace Graph.Apps
             JumpPointThrottleState state;
             if (!_jumpPointThrottleByPlanet.TryGetValue(planetId, out state))
             {
-                var totalSeconds = Math.Max(1d, 3d + (distanceMeters / 1000000d));
+                var totalSeconds = Math.Max(1d, distanceMeters / JUMP_POINT_DISTANCE_PER_SECOND);
                 state = new JumpPointThrottleState
                 {
                     StartRun = currentRun,
@@ -1332,7 +1133,7 @@ namespace Graph.Apps
             // Focus was broken (looked away): restart throttle window on next focus.
             if (currentRun - state.LastRequestRun > JUMP_POINT_RUNS_PER_SECOND)
             {
-                var totalSeconds = Math.Max(1d, 3d + (distanceMeters / 1000000d));
+                var totalSeconds = Math.Max(1d, distanceMeters / JUMP_POINT_DISTANCE_PER_SECOND);
                 state.StartRun = currentRun;
                 state.DurationRuns = (long)Math.Ceiling(totalSeconds * JUMP_POINT_RUNS_PER_SECOND);
                 state.LastRequestRun = currentRun;

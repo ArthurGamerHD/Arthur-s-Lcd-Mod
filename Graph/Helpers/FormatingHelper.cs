@@ -125,5 +125,7 @@ namespace Graph.Helpers
 
             return value.Substring(0, lenght - 4) + ELLIPSIS + value.Substring(value.Length - 3, 3);
         }
+
+        public static string FormatVector(Vector3D value, string format = "0.#") => string.Format(Culture, string.Format("{{0:{0}}}, {{1:{0}}}, {{2:{0}}}", format), value.X, value.Y, value.Z);
     }
 }
