@@ -43,6 +43,7 @@ namespace Graph.Apps
         readonly List<MySprite> _sprites = new List<MySprite>();
 
         const double JUMP_POINT_RUNS_PER_SECOND = 6d; // ScriptUpdate.Update10 at 60 FPS
+
         struct JumpPointThrottleState
         {
             public long StartRun;
@@ -89,10 +90,10 @@ namespace Graph.Apps
         public const string ID = "LCDMod_StarMapSurface";
         public const string TITLE = "LCDMod_StarMapSurface";
         const float SHADE_MUL = 0.75f;
-        const float OVERLAY_GROW_RATIO = 0.05f;   // relative to diameter
+        const float OVERLAY_GROW_RATIO = 0.05f; // relative to diameter
         const float OVERLAY_OFFSET_RATIO = 0.25f; // relative to radius
-        const float POLAR_CAP_RATIO = 0.06f;      // top/bottom % of diameter
-        const float EQUATOR_BAND_RATIO = 0.18f;   // % of diameter
+        const float POLAR_CAP_RATIO = 0.06f; // top/bottom % of diameter
+        const float EQUATOR_BAND_RATIO = 0.18f; // % of diameter
         const float MAP_VERTICAL_FOV_DEFAULT_DEG = 70f;
         const float MAP_NEAR_CLIP_METERS = 10f;
         const float PLANET_SHADING_MIN_DIAMETER_PX = 10f;
@@ -108,6 +109,7 @@ namespace Graph.Apps
         const double STATIC_ORBIT_MIN_RING_METERS = 100000d;
         const double STATIC_PARENT_ORBIT_MAX_METERS = 300000d;
         const float STATIC_ORBIT_Y_SQUASH = 0.55f;
+
         static readonly List<MyTerminalControlComboBoxItem> StarMapDisplayModes =
             new List<MyTerminalControlComboBoxItem>
             {
@@ -170,7 +172,7 @@ namespace Graph.Apps
 
             RenderSprites(GetSprites);
         }
-        
+
         List<MySprite> GetSprites()
         {
             _baseSprites.Clear();
@@ -180,7 +182,7 @@ namespace Graph.Apps
             _interactiveEntries.Clear();
             _busy = false;
             CursorType = GetDefaultCursorType();
-            
+
             bool staticMode = AppConfig != null && AppConfig.DisplayMode == DisplayMode.Legacy;
             Vector2 lookedAt;
             if (_eyeTracking.TryConsumeMapped(ViewBox, out lookedAt))
@@ -274,6 +276,7 @@ namespace Graph.Apps
                 camUp = world.Up;
                 camForward = world.Forward;
             }
+
             long gravityPlanetId = GetCurrentGravityPlanetId(camPos, planets);
             float gravityVisibility = GetGravityVisibility(camPos);
 
@@ -550,6 +553,7 @@ namespace Graph.Apps
                     orbitRadiusX *= STATIC_PLANET_SCALE;
                     orbitRadiusY *= STATIC_PLANET_SCALE;
                 }
+
                 var proj = projectedPlanets[i];
                 bool isMoon = parentIndex[i] >= 0;
                 float markerRadius = (isMoon ? STATIC_MOON_BODY_RADIUS_PX : STATIC_PLANET_BODY_RADIUS_PX) * Scale;
@@ -568,6 +572,7 @@ namespace Graph.Apps
                         SortHeight = ringRadiusY
                     });
                 }
+
                 double angle = orbitAngles[i];
                 var pScreen = new Vector2(
                     ringCenter.X + (float)Math.Cos(angle) * orbitRadiusX,
@@ -663,10 +668,10 @@ namespace Graph.Apps
                 CursorType = selectedByPlanet
                     ? CursorType.Hand
                     : CursorInsideClickableTooltipContent
-                    ? CursorType.Hand
-                    : _busy && pointerInsideTooltip
-                    ? CursorType.AppStarting
-                    : CursorType.Default;
+                        ? CursorType.Hand
+                        : _busy && pointerInsideTooltip
+                            ? CursorType.AppStarting
+                            : CursorType.Default;
             }
             else
             {
@@ -676,7 +681,8 @@ namespace Graph.Apps
             return true;
         }
 
-        void DrawEllipseRing(List<MySprite> sprites, Vector2 centerPos, Vector2 ellipseSize, float lineWidth, Color lineColor, Color backColor)
+        void DrawEllipseRing(List<MySprite> sprites, Vector2 centerPos, Vector2 ellipseSize, float lineWidth,
+            Color lineColor, Color backColor)
         {
             if (ellipseSize.X <= 0f || ellipseSize.Y <= 0f || lineWidth <= 0f)
                 return;
@@ -706,7 +712,8 @@ namespace Graph.Apps
             });
         }
 
-        bool TryGetStaticCamera(Dictionary<long, MyPlanet> planets, out Vector3D camPos, out Vector3D camRight, out Vector3D camUp, out Vector3D camForward)
+        bool TryGetStaticCamera(Dictionary<long, MyPlanet> planets, out Vector3D camPos, out Vector3D camRight,
+            out Vector3D camUp, out Vector3D camForward)
         {
             camRight = Vector3D.Right;
             camUp = Vector3D.Up;
@@ -843,7 +850,8 @@ namespace Graph.Apps
             return true;
         }
 
-        bool TryComputeStaticDistance(Vector3D center, List<Vector3D> centers, List<double> radii, Vector3D viewDir, double tanX, double tanY, out double distance)
+        bool TryComputeStaticDistance(Vector3D center, List<Vector3D> centers, List<double> radii, Vector3D viewDir,
+            double tanX, double tanY, out double distance)
         {
             distance = 0d;
             if (centers == null || centers.Count == 0)
@@ -946,7 +954,7 @@ namespace Graph.Apps
             float nameScale = 0.65f * Scale * FontScale;
             var nameSize = GetSizeInPixel(planet.Name, "White", nameScale, Surface);
             float nameOffset = planet.MarkerRadius + 12f + nameSize.Y;
-            
+
             if (!planet.ShouldDisplayInfo)
                 return;
 
@@ -960,7 +968,7 @@ namespace Graph.Apps
                 namePos.Y,
                 ViewBox.Y + nameSize.Y * 0.5f,
                 ViewBox.Bottom - nameSize.Y * 0.5f);
-            
+
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
@@ -971,7 +979,6 @@ namespace Graph.Apps
                 Alignment = TextAlignment.CENTER,
                 RotationOrScale = nameScale
             });
-
 
 
             float distanceScale = 0.6f * Scale * FontScale;
@@ -1002,7 +1009,8 @@ namespace Graph.Apps
             DrawPlanetSideInfo(sprites, planet, labelColor, namePos, nameSize, distancePos, distanceSize);
         }
 
-        void DrawPlanetSideInfo(List<MySprite> sprites, PlanetProjection planet, Color labelColor, Vector2 namePos, Vector2 nameSize, Vector2 distancePos, Vector2 distanceSize)
+        void DrawPlanetSideInfo(List<MySprite> sprites, PlanetProjection planet, Color labelColor, Vector2 namePos,
+            Vector2 nameSize, Vector2 distancePos, Vector2 distanceSize)
         {
             float sideInfoScale = SIDE_INFO_TEXT_SCALE * Scale * FontScale;
             float sideInfoYOffset = SIDE_INFO_Y_OFFSET_PX * Scale * FontScale;
@@ -1043,7 +1051,8 @@ namespace Graph.Apps
             {
                 float bottom = top + lineHeight;
                 bool overlapsName = right >= nameLeft && left <= nameRight && bottom >= nameTop && top <= nameBottom;
-                bool overlapsDistance = right >= distLeft && left <= distRight && bottom >= distTop && top <= distBottom;
+                bool overlapsDistance =
+                    right >= distLeft && left <= distRight && bottom >= distTop && top <= distBottom;
                 return overlapsName || overlapsDistance;
             };
 
@@ -1195,7 +1204,7 @@ namespace Graph.Apps
                 string.Format(FormatingHelper.Culture, LocHelper.GetLoc("LCDMod_StarMap_Info_Gravity"),
                     FormatingHelper.GravityToString(planet.SurfaceGravityG)),
                 LocHelper.GetLoc("BlockPropertyTitle_OreDetectorRange") + ": " +
-                    FormatingHelper.DistanceToString(planet.GravityRange),
+                FormatingHelper.DistanceToString(planet.GravityRange),
                 string.Format(FormatingHelper.Culture, LocHelper.GetLoc("LCDMod_StarMap_Info_Atmosphere_Short"),
                     FormatingHelper.PercentageToString(planet.AtmosphereDensity)),
                 string.Format(FormatingHelper.Culture, LocHelper.GetLoc("LCDMod_StarMap_Info_O2"),
@@ -1211,11 +1220,15 @@ namespace Graph.Apps
                 planet.WorldPosition,
                 (value, sender) =>
                 {
-                    var gps = MyAPIGateway.Session.GPS.Create(planet.Name, string.Empty, planet.WorldPosition, true, true);
+                    var gps = MyAPIGateway.Session.GPS.Create(planet.Name, string.Empty, planet.WorldPosition, true,
+                        true);
                     gps.GPSColor = planet.Texture.BaseColor;
                     MyAPIGateway.Session.GPS.AddLocalGps(gps);
                     SendGpsToChat(planet.Name, planet.WorldPosition, planet.Texture.BaseColor);
-                }));
+                })
+            {
+                ClickSound = AudioHelper.HudGps3
+            });
 
             if (!compactRadiusLabel && GridLogic != null)
             {
@@ -1246,15 +1259,19 @@ namespace Graph.Apps
                             jumpPoint,
                             (value, sender) =>
                             {
-                                var gps = MyAPIGateway.Session.GPS.Create("JumpPoint_" + planet.Name, string.Empty, planet.WorldPosition, true, true);
+                                var gps = MyAPIGateway.Session.GPS.Create("JumpPoint_" + planet.Name, string.Empty,
+                                    planet.WorldPosition, true, true);
                                 gps.GPSColor = planet.Texture.BaseColor;
                                 MyAPIGateway.Session.GPS.AddLocalGps(gps);
-                                
+
                                 SendGpsToChat(
                                     "JumpPoint_" + planet.Name,
                                     jumpPoint,
                                     planet.Texture.BaseColor);
-                            }));
+                            })
+                        {
+                            ClickSound = AudioHelper.HudGps3
+                        });
                     }
                     else
                     {
@@ -1362,7 +1379,7 @@ namespace Graph.Apps
             var texture = planet.Texture;
             var entry = new InteractiveCircleEntry(center, radius, CursorType.Hand, planet.PlanetId);
             _interactiveEntries.Add(entry);
-            
+
             var baseColor = ApplyAlpha(texture.BaseColor, planet.Visibility);
             float diameter = radius * 2f;
             float overlayDiameter = diameter * (1f + OVERLAY_GROW_RATIO);
@@ -1381,7 +1398,7 @@ namespace Graph.Apps
                     Alignment = TextAlignment.CENTER
                 });
             }
-            
+
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXTURE,
@@ -1425,7 +1442,6 @@ namespace Graph.Apps
 
             if (rightRight > rightLeft)
             {
-
                 if (baseColor.A != 255)
                 {
                     var rightClip = new Rectangle(rightLeft, clipY, rightRight - rightLeft, clipBottom - clipY);
@@ -1442,7 +1458,7 @@ namespace Graph.Apps
                         Size = new Vector2(diameter),
                         Color = shadeColor,
                         Alignment = TextAlignment.CENTER
-                    }); 
+                    });
                 }
 
 
@@ -1455,12 +1471,12 @@ namespace Graph.Apps
                     Color = baseColor,
                     Alignment = TextAlignment.CENTER
                 });
-                
+
                 if (baseColor.A != 255)
                     sprites.Add(MySprite.CreateClearClipRect());
             }
 
-            
+
             if (shadowRight > shadowLeft)
             {
                 var leftClip = new Rectangle(shadowLeft, clipY, shadowRight - shadowLeft, clipBottom - clipY);
@@ -1487,7 +1503,7 @@ namespace Graph.Apps
                 });
                 sprites.Add(MySprite.CreateClearClipRect());
             }
-            
+
             int litLeft = clipX;
             int litRight = clipRight;
             if (texture.PolarCapColor.HasValue)
@@ -1501,7 +1517,8 @@ namespace Graph.Apps
             return entry;
         }
 
-        void DrawPolarCaps(List<MySprite> sprites, Vector2 center, float radius, int litLeft, int litRight, Color capColor)
+        void DrawPolarCaps(List<MySprite> sprites, Vector2 center, float radius, int litLeft, int litRight,
+            Color capColor)
         {
             float diameter = radius * 2f;
             float capHeight = diameter * POLAR_CAP_RATIO;
@@ -1548,7 +1565,8 @@ namespace Graph.Apps
             }
         }
 
-        void DrawEquator(List<MySprite> sprites, Vector2 center, float radius, int litLeft, int litRight, Color equatorColor)
+        void DrawEquator(List<MySprite> sprites, Vector2 center, float radius, int litLeft, int litRight,
+            Color equatorColor)
         {
             float diameter = radius * 2f;
             float equatorHeight = diameter * EQUATOR_BAND_RATIO;
@@ -1574,7 +1592,7 @@ namespace Graph.Apps
             });
             sprites.Add(MySprite.CreateClearClipRect());
         }
-        
+
         protected override void OnLookAt(Vector2 onScreenCoordinates)
         {
             _eyeTracking.Receive(onScreenCoordinates);

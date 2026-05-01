@@ -2,7 +2,9 @@ using Generated;
 using Graph.System.TerminalControls.Scale;
 using System;
 using System.Collections.Generic;
+using Graph.Helpers;
 using Sandbox.Game;
+using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRageMath;
 
@@ -20,6 +22,8 @@ namespace Graph.Apps.Utility
         }
 
         public string Text { get; private set; }
+
+        public MySoundPair ClickSound { get; set; } = AudioHelper.HudClick;
 
         public object DataContext { get; private set; }
 
@@ -45,16 +49,15 @@ namespace Graph.Apps.Utility
         public Action<object, object> OnClick { get; private set; }
 
         public abstract RectangleF Bounds { get; }
+        public MySoundPair ClickSound { get; set; } = AudioHelper.HudClick;
+        public MySoundPair ClickFailSound { get; set; } = AudioHelper.HudUnable;
 
         public abstract bool Hit(Vector2 point);
 
-        public void Click(object sender)
+        public bool Click(object sender)
         {
-            if (OnClick != null)
-            {
-                MyVisualScriptLogicProvider.PlayHudSoundLocal(playerId: MyAPIGateway.Session.LocalHumanPlayer.Identity.IdentityId);
-            }
             OnClick?.Invoke(DataContext ?? this, sender);
+            return OnClick != null;
         }
     }
 
@@ -112,7 +115,7 @@ namespace Graph.Apps.Utility
     /// <summary>
     /// Receives gaze coordinates that should be consumed and mapped on the next render frame.
     /// </summary>
-    public interface IEyeTracking : IUsesTerminalControl<SliderCursorScale>
+    public interface IEyeTracking : ISoundCapable, IUsesTerminalControl<SliderCursorScale>
     {
         Sandbox.ModAPI.Ingame.IMyTextSurface Surface { get; }
         VRage.Game.ModAPI.Ingame.IMyCubeBlock Block { get; }

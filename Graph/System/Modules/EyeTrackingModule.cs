@@ -5,6 +5,8 @@ using Graph.Apps.Abstract;
 using Graph.Apps.Utility;
 using Graph.Helpers;
 using Graph.System.ScreenAreas;
+using Sandbox.Game;
+using Sandbox.Game.GUI;
 using Sandbox.ModAPI;
 using VRage.Input;
 using VRageMath;
@@ -25,18 +27,18 @@ namespace Graph.System.Modules
         object _pressedClickableDataContext;
         bool _primaryWasPressed;
         bool _useInputBlocked;
-        
+
         public void Hook(IEyeTracking instance)
         {
-            if (instance != null) 
+            if (instance != null)
                 modules.Add(instance);
         }
 
         public void Unhook(IEyeTracking instance)
         {
-            if (instance == null) 
+            if (instance == null)
                 return;
-            
+
             modules.Remove(instance);
         }
 
@@ -49,7 +51,7 @@ namespace Graph.System.Modules
             Vector3D cameraForward;
             if (!TryGetCameraRay(out cameraPos, out cameraForward))
             {
-                UpdateClickState(null);
+                UpdateClickState(null, null);
                 _lastActiveNearbyCount = 0;
                 return;
             }
@@ -57,6 +59,7 @@ namespace Graph.System.Modules
             var nearbyCount = 0;
             var resolvedCount = 0;
             InteractiveEntry hoveredClickable = null;
+            IEyeTracking EyeTrackingEntity = null;
             double hoveredDistanceSq = double.MaxValue;
             foreach (var screen in modules)
             {
@@ -87,33 +90,33 @@ namespace Graph.System.Modules
                         {
                             hoveredDistanceSq = distanceSq;
                             hoveredClickable = clickable;
+                            EyeTrackingEntity = screen;
                         }
                     }
                 }
             }
-            UpdateClickState(hoveredClickable);
+
+            UpdateClickState(hoveredClickable, EyeTrackingEntity);
             _lastNearbyCount = nearbyCount;
             _lastActiveNearbyCount = resolvedCount;
-        } 
+        }
 
         public void PostUpdate()
         {
-            
         }
 
-        void UpdateClickState(InteractiveEntry hoveredClickable)
+        void UpdateClickState(InteractiveEntry hoveredClickable, IEyeTracking eyeTrackingEntity)
         {
             _hoveredClickable = hoveredClickable;
-            bool shouldBlockUse = hoveredClickable != null && MyAPIGateway.Gui != null && !MyAPIGateway.Gui.IsCursorVisible;
+            bool shouldBlockUse = hoveredClickable != null;
+
             if (_useInputBlocked != shouldBlockUse)
             {
-                LcdModSessionComponent.SetLocalPlayerUseInputBlocked(shouldBlockUse);
+                LcdModSessionComponent.SetLocalPlayerUseInputBlocked(blocked: shouldBlockUse);
                 _useInputBlocked = shouldBlockUse;
             }
 
-            bool primaryPressed = shouldBlockUse && MyAPIGateway.Input != null &&
-                                  (MyAPIGateway.Input.IsLeftMousePressed() ||
-                                   MyAPIGateway.Input.IsJoystickButtonPressed(MyJoystickButtonsEnum.J06));
+            bool primaryPressed = shouldBlockUse && MyAPIGateway.Input != null && HoldingClick;
 
             if (primaryPressed && !_primaryWasPressed)
             {
@@ -123,20 +126,19 @@ namespace Graph.System.Modules
 
             if (!primaryPressed && _primaryWasPressed)
             {
-                var hoveredDataContext = hoveredClickable != null
-                    ? hoveredClickable.DataContext ?? hoveredClickable
-                    : null;
-                if (_pressedClickable != null &&
-                    hoveredClickable != null &&
-                    Equals(_pressedClickableDataContext, hoveredDataContext))
+                var hoveredDataContext = hoveredClickable != null ? hoveredClickable.DataContext ?? hoveredClickable : null;
+                if (_pressedClickable != null && hoveredClickable != null &&
+                    Equals(objA: _pressedClickableDataContext, objB: hoveredDataContext))
                 {
                     try
                     {
-                        hoveredClickable.Click(this);
+                        var click = hoveredClickable.Click(sender: eyeTrackingEntity);
+                        eyeTrackingEntity.PlaySounds(click ? hoveredClickable.ClickSound : hoveredClickable.ClickFailSound);
                     }
                     catch (Exception e)
                     {
-                        ErrorHandlerHelper.LogError(e, this);
+                        eyeTrackingEntity.PlaySounds(hoveredClickable.ClickFailSound);
+                        ErrorHandlerHelper.LogError(error: e, source: this);
                     }
                 }
 
@@ -152,6 +154,8 @@ namespace Graph.System.Modules
 
             _primaryWasPressed = primaryPressed;
         }
+
+        public bool HoldingClick => MyAPIGateway.Input.IsLeftMousePressed() || MyAPIGateway.Input.IsJoystickButtonPressed(button: MyJoystickButtonsEnum.J06);
 
         static bool TryGetHoveredClickable(IEyeTracking screen, out InteractiveEntry clickable)
         {

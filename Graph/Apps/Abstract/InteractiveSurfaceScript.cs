@@ -3,7 +3,11 @@ using System.Collections.Generic;
 using Graph.Apps.Utility;
 using Graph.Extensions;
 using Graph.Panels;
+using Sandbox.Game;
+using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
+using SpaceEngineers.Game.Entities.Blocks;
+using VRage.Game.Entity;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
 using VRageMath;
@@ -19,7 +23,7 @@ namespace Graph.Apps.Abstract
         bool _hasTooltipBounds;
         bool _cursorInsideClickableTooltipContent;
         long _lastVisualContactFrame = long.MinValue;
-
+        
         protected InteractiveSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
             : base(surface, block, size)
         {
@@ -33,9 +37,7 @@ namespace Graph.Apps.Abstract
 
         public void LookAt(Vector2 onScreenCoordinates)
         {
-            _lastVisualContactFrame = MyAPIGateway.Session != null
-                ? MyAPIGateway.Session.GameplayFrameCounter
-                : 0L;
+            _lastVisualContactFrame = MyAPIGateway.Session.GameplayFrameCounter;
             OnLookAt(onScreenCoordinates);
         }
 
@@ -52,16 +54,7 @@ namespace Graph.Apps.Abstract
 
         protected bool CursorInsideClickableTooltipContent => _cursorInsideClickableTooltipContent;
 
-        protected bool HasRecentVisualContact
-        {
-            get
-            {
-                long currentFrame = MyAPIGateway.Session != null
-                    ? MyAPIGateway.Session.GameplayFrameCounter
-                    : _lastVisualContactFrame;
-                return currentFrame - _lastVisualContactFrame <= CURSOR_VISUAL_CONTACT_TIMEOUT_FRAMES;
-            }
-        }
+        protected bool HasRecentVisualContact => MyAPIGateway.Session.GameplayFrameCounter - _lastVisualContactFrame <= CURSOR_VISUAL_CONTACT_TIMEOUT_FRAMES;
 
         protected bool IsActiveTooltipParent(object parentObject)
         {
@@ -89,9 +82,11 @@ namespace Graph.Apps.Abstract
 
             _cursorInsideClickableTooltipContent = false;
 
-            const float paddingX = 10f;
-            const float paddingY = 6f;
-            const float sectionGap = 6f;
+            const float spacing = 6f;
+            Vector2 padding = new Vector2(8f, 4f) * Scale;
+            var offset = 16f * Scale;
+
+
             float titleScale = 0.72f * Scale * FontScale;
             float lineScale = 0.52f * Scale * FontScale;
             float footerScale = 0.62f * Scale * FontScale;
@@ -120,22 +115,19 @@ namespace Graph.Apps.Abstract
             }
 
             float contentWidth = Math.Max(titleSize.X, Math.Max(maxLineWidth, footerSize.X));
-            float cardWidth = Math.Max(130f, contentWidth + 2f * paddingX);
-            float contentHeight = titleSize.Y + sectionGap + tooltipLines.Count * lineStep;
+            float cardWidth = Math.Max(130f, contentWidth + 2f * padding.X);
+            float contentHeight = titleSize.Y + spacing + tooltipLines.Count * lineStep;
             if (!string.IsNullOrEmpty(tooltipFooter))
-                contentHeight += sectionGap + footerSize.Y;
-            float cardHeight = Math.Max(60f, contentHeight + 2f * paddingY);
+                contentHeight += spacing + footerSize.Y;
+            float cardHeight = Math.Max(60f, contentHeight + 2f * padding.Y);
 
             var parentBounds = parentEntry.Bounds;
             bool placeOnRight = parentBounds.Center.X <= ViewBox.Center.X;
             float anchorX = placeOnRight
-                ? parentBounds.Right + 16f
-                : parentBounds.X - 16f - cardWidth;
-            float startX = MathHelper.Clamp(anchorX, ViewBox.X + 4f, ViewBox.Right - cardWidth - 4f);
-            float startY = MathHelper.Clamp(
-                parentBounds.Center.Y - cardHeight * 0.5f,
-                ViewBox.Y + 4f,
-                ViewBox.Bottom - cardHeight - 4f);
+                ? parentBounds.Right + (offset * Scale)
+                : parentBounds.X - (offset * Scale) - cardWidth;
+            float startX = MathHelper.Clamp(anchorX, ViewBox.X + padding.X, ViewBox.Right - cardWidth - padding.X);
+            float startY = MathHelper.Clamp(parentBounds.Center.Y - cardHeight * 0.5f, ViewBox.Y + padding.Y, ViewBox.Bottom - cardHeight - padding.Y);
 
             var cardRect = new RectangleF(startX, startY, cardWidth, cardHeight);
             var shadowRect = new RectangleF(cardRect.Position + 2f, cardRect.Size);
@@ -154,21 +146,23 @@ namespace Graph.Apps.Abstract
                 parentBounds.Height);
             _hasTooltipBounds = true;
 
-            float currentY = cardRect.Y + paddingY;
+            float currentY = cardRect.Y + padding.Y;
             float centerX = cardRect.Center.X;
-            float leftX = cardRect.X + paddingX;
+            float leftX = cardRect.X + padding.X;
 
-            sprites.Add(new MySprite
+            var titleSprite = new MySprite
             {
                 Type = SpriteType.TEXT,
                 Data = title,
-                Position = new Vector2(centerX, currentY - titleSize.Y * 0.25f * titleScale),
+                Position = new Vector2(centerX, currentY),
                 Color = textColor,
                 FontId = "White",
                 Alignment = TextAlignment.CENTER,
                 RotationOrScale = titleScale
-            });
-            currentY += titleSize.Y + sectionGap;
+            };
+            sprites.Add(titleSprite.Shadow(2 * titleScale, shadowColor));
+            sprites.Add(titleSprite);
+            currentY += titleSize.Y + spacing;
 
             for (int i = 0; i < tooltipLines.Count; i++)
             {
@@ -188,32 +182,36 @@ namespace Graph.Apps.Abstract
                         lineBounds,
                         null,
                         clickable.DataContext ?? clickable,
-                        clickable.OnClick));
+                        clickable.OnClick)
+                    {
+                        ClickSound = clickable.ClickSound
+                    });
                     if (clickableHovered)
                         _cursorInsideClickableTooltipContent = true;
                 }
 
+                var position = new Vector2(leftX, currentY - lineSizes[i].Y * 0.25f * lineScale);
                 sprites.Add(new MySprite
                 {
                     Type = SpriteType.TEXT,
                     Data = lineTexts[i],
-                    Position = new Vector2(leftX, currentY - lineSizes[i].Y * 0.25f * lineScale),
+                    Position = position,
                     Color = lineColor,
                     FontId = "White",
                     Alignment = TextAlignment.LEFT,
                     RotationOrScale = lineScale
                 });
-                
+
                 if (clickable != null)
                 {
                     sprites.Add(new MySprite
                     {
                         Type = SpriteType.TEXTURE,
                         Data = "SquareSimple",
-                        Position = new Vector2(leftX + lineSizes[i].X * 0.5f, currentY + lineSizes[i].Y * 0.9f),
+                        Position = new Vector2(position.X, position.Y + lineSizes[i].Y),
                         Size = new Vector2(Math.Max(1f, lineSizes[i].X), Math.Max(1f, Scale)),
                         Color = new Color(lineColor, .3f),
-                        Alignment = TextAlignment.CENTER
+                        Alignment = TextAlignment.LEFT
                     });
                 }
 
@@ -222,17 +220,21 @@ namespace Graph.Apps.Abstract
 
             if (!string.IsNullOrEmpty(tooltipFooter))
             {
-                currentY += sectionGap;
-                sprites.Add(new MySprite
+                currentY += spacing;
+
+                var footerSprite = new MySprite
                 {
                     Type = SpriteType.TEXT,
                     Data = tooltipFooter,
-                    Position = new Vector2(centerX, currentY - footerSize.Y * 0.25f * footerScale),
+                    Position = new Vector2(centerX, currentY),
                     Color = textColor,
                     FontId = "White",
                     Alignment = TextAlignment.CENTER,
                     RotationOrScale = footerScale
-                });
+                };
+
+                sprites.Add(footerSprite.Shadow(2 * footerScale, shadowColor));
+                sprites.Add(footerSprite);
             }
 
             return cardRect.Contains(CursorPosition);
@@ -253,6 +255,36 @@ namespace Graph.Apps.Abstract
                 Config != null ? Config.CursorScale : 1f);
 
             return spriteList;
+        }
+        
+        
+        public MyEntity3DSoundEmitter SoundEmitter { get; set; }
+        
+        public void PlaySounds(MySoundPair sound, bool playIn2D = false)
+        {
+            if (SoundEmitter == null)
+            {           
+                SoundEmitter = new MyEntity3DSoundEmitter((MyEntity)Block, dopplerScaler: 0.0f)
+                {
+                    Force3D = true,
+                    VolumeMultiplier = 1,
+                    CustomVolume = 1.5f,
+                    CustomMaxDistance = 30
+                };
+                SoundEmitter.EmitterMethods[(int)MyEntity3DSoundEmitter.MethodsEnum.CanHear].ClearImmediate();
+                //SoundEmitter.EmitterMethods[(int)MyEntity3DSoundEmitter.MethodsEnum.ShouldPlay2D].ClearImmediate();
+                //SoundEmitter.EmitterMethods[(int)MyEntity3DSoundEmitter.MethodsEnum.CueType].ClearImmediate();
+                SoundEmitter.EmitterMethods[(int)MyEntity3DSoundEmitter.MethodsEnum.ImplicitEffect].ClearImmediate();
+            }
+
+            SoundEmitter.PlaySound(sound, force2D: playIn2D);
+        }
+
+        public override void Dispose()
+        {
+            SoundEmitter?.Cleanup();
+            SoundEmitter = null;
+            base.Dispose();
         }
     }
 }
