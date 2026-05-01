@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Generated;
 using Graph.Apps.Abstract;
@@ -1205,7 +1206,16 @@ namespace Graph.Apps
                     FormatingHelper.WindToString(planet.MaxWindSpeed))
             };
 
-            lines.Add(new ClickableText("Position: " + FormatWorldVector(planet.WorldPosition), planet.WorldPosition));
+            lines.Add(new ClickableText(
+                "Position: " + FormatWorldVector(planet.WorldPosition),
+                planet.WorldPosition,
+                (value, sender) =>
+                {
+                    var gps = MyAPIGateway.Session.GPS.Create(planet.Name, string.Empty, planet.WorldPosition, true, true);
+                    gps.GPSColor = planet.Texture.BaseColor;
+                    MyAPIGateway.Session.GPS.AddLocalGps(gps);
+                    SendGpsToChat(planet.Name, planet.WorldPosition, planet.Texture.BaseColor);
+                }));
 
             if (!compactRadiusLabel && GridLogic != null)
             {
@@ -1231,7 +1241,20 @@ namespace Graph.Apps
                             planet.GravityRange,
                             out jumpPoint))
                     {
-                        lines.Add(new ClickableText("Jump: " + FormatWorldVector(jumpPoint), jumpPoint));
+                        lines.Add(new ClickableText(
+                            "Jump: " + FormatWorldVector(jumpPoint),
+                            jumpPoint,
+                            (value, sender) =>
+                            {
+                                var gps = MyAPIGateway.Session.GPS.Create("JumpPoint_" + planet.Name, string.Empty, planet.WorldPosition, true, true);
+                                gps.GPSColor = planet.Texture.BaseColor;
+                                MyAPIGateway.Session.GPS.AddLocalGps(gps);
+                                
+                                SendGpsToChat(
+                                    "JumpPoint_" + planet.Name,
+                                    jumpPoint,
+                                    planet.Texture.BaseColor);
+                            }));
                     }
                     else
                     {
@@ -1246,6 +1269,29 @@ namespace Graph.Apps
         static string FormatWorldVector(Vector3D value)
         {
             return string.Format(FormatingHelper.Culture, "({0:0}, {1:0}, {2:0})", value.X, value.Y, value.Z);
+        }
+
+        void SendGpsToChat(string name, Vector3D position, Color color)
+        {
+            if (MyAPIGateway.Utilities == null)
+                return;
+
+            string gps = string.Format(
+                CultureInfo.InvariantCulture,
+                "GPS:{0}:{1:0.###}:{2:0.###}:{3:0.###}:{4}:",
+                SanitizeGpsName(name),
+                position.X,
+                position.Y,
+                position.Z,
+                color.ToAHex());
+            MyAPIGateway.Utilities.ShowMessage(Title, gps);
+        }
+
+        static string SanitizeGpsName(string name)
+        {
+            return string.IsNullOrWhiteSpace(name)
+                ? "Unknown"
+                : name.Replace(":", "_");
         }
 
         bool IsJumpPointUiThrottled(long planetId, double distanceMeters, long currentRun, out int etaSeconds)

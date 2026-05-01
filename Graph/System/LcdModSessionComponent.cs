@@ -159,6 +159,9 @@ namespace Graph.System
                     case PackageCode.EditFaction:
                         Server?.HandleEditFaction(args);
                         break;
+                    case PackageCode.PlayerInputBlacklist:
+                        HandlePlayerInputBlacklist(args);
+                        break;
                     default:
                     {
                         MyLog.Default.Log(MyLogSeverity.Error, $"{nameof(Graph)}: Unexpected Packet Code Received");

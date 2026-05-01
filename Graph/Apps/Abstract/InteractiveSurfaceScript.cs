@@ -186,8 +186,9 @@ namespace Graph.Apps.Abstract
                 {
                     InteractiveEntries.Add(new InteractiveRectangleEntry(
                         lineBounds,
-                        CursorType.Hand,
-                        clickable.DataContext ?? clickable));
+                        null,
+                        clickable.DataContext ?? clickable,
+                        clickable.OnClick));
                     if (clickableHovered)
                         _cursorInsideClickableTooltipContent = true;
                 }

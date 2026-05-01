@@ -138,6 +138,7 @@ namespace Graph.Networking
     {
         SyncConfig = 1,
         EditFaction = 2,
+        PlayerInputBlacklist = 3,
     }
 
     public class ReceivedPacketEventArgs : EventArgs

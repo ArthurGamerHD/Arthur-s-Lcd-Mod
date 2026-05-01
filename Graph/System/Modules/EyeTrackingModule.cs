@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using Generated;
 using Graph.Apps.Abstract;
 using Graph.Apps.Utility;
+using Graph.Helpers;
 using Graph.System.ScreenAreas;
 using Sandbox.ModAPI;
+using VRage.Input;
 using VRageMath;
 
 
@@ -18,6 +20,11 @@ namespace Graph.System.Modules
         HashSet<IEyeTracking> modules = new HashSet<IEyeTracking>();
         int _lastActiveNearbyCount;
         int _lastNearbyCount;
+        InteractiveEntry _hoveredClickable;
+        InteractiveEntry _pressedClickable;
+        object _pressedClickableDataContext;
+        bool _primaryWasPressed;
+        bool _useInputBlocked;
         
         public void Hook(IEyeTracking instance)
         {
@@ -42,12 +49,15 @@ namespace Graph.System.Modules
             Vector3D cameraForward;
             if (!TryGetCameraRay(out cameraPos, out cameraForward))
             {
+                UpdateClickState(null);
                 _lastActiveNearbyCount = 0;
                 return;
             }
 
             var nearbyCount = 0;
             var resolvedCount = 0;
+            InteractiveEntry hoveredClickable = null;
+            double hoveredDistanceSq = double.MaxValue;
             foreach (var screen in modules)
             {
                 var surfaceScript = screen as SurfaceScriptBase;
@@ -68,8 +78,20 @@ namespace Graph.System.Modules
                 {
                     screen.LookAt(lookAtCoordinates);
                     resolvedCount++;
+
+                    InteractiveEntry clickable;
+                    if (TryGetHoveredClickable(screen, out clickable))
+                    {
+                        var distanceSq = Vector3D.DistanceSquared(blockPos, cameraPos);
+                        if (distanceSq < hoveredDistanceSq)
+                        {
+                            hoveredDistanceSq = distanceSq;
+                            hoveredClickable = clickable;
+                        }
+                    }
                 }
             }
+            UpdateClickState(hoveredClickable);
             _lastNearbyCount = nearbyCount;
             _lastActiveNearbyCount = resolvedCount;
         } 
@@ -77,6 +99,85 @@ namespace Graph.System.Modules
         public void PostUpdate()
         {
             
+        }
+
+        void UpdateClickState(InteractiveEntry hoveredClickable)
+        {
+            _hoveredClickable = hoveredClickable;
+            bool shouldBlockUse = hoveredClickable != null && MyAPIGateway.Gui != null && !MyAPIGateway.Gui.IsCursorVisible;
+            if (_useInputBlocked != shouldBlockUse)
+            {
+                LcdModSessionComponent.SetLocalPlayerUseInputBlocked(shouldBlockUse);
+                _useInputBlocked = shouldBlockUse;
+            }
+
+            bool primaryPressed = shouldBlockUse && MyAPIGateway.Input != null &&
+                                  (MyAPIGateway.Input.IsLeftMousePressed() ||
+                                   MyAPIGateway.Input.IsJoystickButtonPressed(MyJoystickButtonsEnum.J06));
+
+            if (primaryPressed && !_primaryWasPressed)
+            {
+                _pressedClickable = hoveredClickable;
+                _pressedClickableDataContext = hoveredClickable.DataContext ?? hoveredClickable;
+            }
+
+            if (!primaryPressed && _primaryWasPressed)
+            {
+                var hoveredDataContext = hoveredClickable != null
+                    ? hoveredClickable.DataContext ?? hoveredClickable
+                    : null;
+                if (_pressedClickable != null &&
+                    hoveredClickable != null &&
+                    Equals(_pressedClickableDataContext, hoveredDataContext))
+                {
+                    try
+                    {
+                        hoveredClickable.Click(this);
+                    }
+                    catch (Exception e)
+                    {
+                        ErrorHandlerHelper.LogError(e, this);
+                    }
+                }
+
+                _pressedClickable = null;
+                _pressedClickableDataContext = null;
+            }
+
+            if (!shouldBlockUse)
+            {
+                _pressedClickable = null;
+                _pressedClickableDataContext = null;
+            }
+
+            _primaryWasPressed = primaryPressed;
+        }
+
+        static bool TryGetHoveredClickable(IEyeTracking screen, out InteractiveEntry clickable)
+        {
+            clickable = null;
+            var entries = screen.InteractiveEntries;
+            if (entries == null || entries.Count == 0)
+                return false;
+
+            var position = screen.CursorPosition;
+            if (float.IsNaN(position.X) || float.IsNaN(position.Y))
+                return false;
+
+            for (int i = entries.Count - 1; i >= 0; i--)
+            {
+                var entry = entries[i];
+                if (entry == null || !entry.Hit(position))
+                    continue;
+
+                if (entry.OnClick == null)
+                    continue;
+
+                clickable = entry;
+                return true;
+            }
+
+            return false;
         }
 
         static bool TryGetCameraRay(out Vector3D origin, out Vector3D direction)
