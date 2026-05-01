@@ -115,11 +115,11 @@ namespace Graph.Apps.Abstract
             }
 
             float contentWidth = Math.Max(titleSize.X, Math.Max(maxLineWidth, footerSize.X));
-            float cardWidth = Math.Max(130f, contentWidth + 2f * padding.X);
+            float cardWidth = Math.Max(20f*Scale, contentWidth + 2f * padding.X);
             float contentHeight = titleSize.Y + spacing + tooltipLines.Count * lineStep;
             if (!string.IsNullOrEmpty(tooltipFooter))
                 contentHeight += spacing + footerSize.Y;
-            float cardHeight = Math.Max(60f, contentHeight + 2f * padding.Y);
+            float cardHeight = Math.Max(20f*Scale, contentHeight + 2f * padding.Y);
 
             var parentBounds = parentEntry.Bounds;
             bool placeOnRight = parentBounds.Center.X <= ViewBox.Center.X;
