@@ -82,49 +82,59 @@ namespace Graph.System.ScreenAreas
         static bool TryGetScreenAreaGeometry(SurfaceScriptBase screen, out MinimalMwmScreenAreaGeometry geometry)
         {
             geometry = null;
-            if (screen == null || screen.Block == null)
-                return false;
 
-            var blockEntity = screen.Block as IMyEntity;
-            if (blockEntity == null || blockEntity.Model == null)
+            try
             {
-                LogHelper.LogOnce("skip:no-model:" + screen.Block.EntityId,
-                    "block has no loaded model: " + screen.Description());
+                if (screen == null || screen.Block == null)
+                    return false;
 
+                var blockEntity = screen.Block as IMyEntity;
+                if (blockEntity == null || blockEntity.Model == null)
+                {
+                    LogHelper.LogOnce("skip:no-model:" + screen.Block.EntityId,
+                        "block has no loaded model: " + screen.Description());
+                    return false;
+                }
+
+                var assetName = blockEntity.Model.AssetName;
+
+                if (string.IsNullOrWhiteSpace(assetName))
+                {
+                    LogHelper.LogOnce("skip:no-asset:" + screen.Block.EntityId,
+                        "block model has empty AssetName: " + screen.Description());
+                    return false;
+                }
+
+                var materials = ResolveMaterialCandidates(screen);
+                if (materials.Count == 0)
+                {
+                    LogHelper.LogOnce("skip:no-materials:" + screen.Block.EntityId,
+                        "no material candidates: " + screen.Description());
+                    return false;
+                }
+
+                LogHelper.LogOnce(
+                    "try:" + screen.Block.EntityId + ":" + screen.RotationOrSurfaceIndex + ":" + assetName,
+                    "trying " + screen.Description() + ", asset=" + assetName + ", materials=" +
+                    string.Join(", ", materials.ToArray()));
+
+                for (int i = 0; i < materials.Count; i++)
+                {
+                    if (TryGetScreenAreaGeometry(assetName, materials[i], out geometry))
+                        return true;
+                }
+
+                LogHelper.LogOnce(
+                    "skip:no-match:" + screen.Block.EntityId + ":" + screen.RotationOrSurfaceIndex + ":" + assetName,
+                    "no matching screen geometry for " + screen.Description() +
+                    ", asset=" + assetName + ", materials=" + string.Join(", ", materials.ToArray()));
                 return false;
             }
-
-            var assetName = blockEntity.Model.AssetName;
-            if (string.IsNullOrWhiteSpace(assetName))
+            catch (Exception e)
             {
-                LogHelper.LogOnce("skip:no-asset:" + screen.Block.EntityId,
-                    "block model has empty AssetName: " + screen.Description());
-                return false;
+                ErrorHandlerHelper.LogError(e, nameof(ScreenAreaGeometry));
             }
 
-            var materials = ResolveMaterialCandidates(screen);
-            if (materials.Count == 0)
-            {
-                LogHelper.LogOnce("skip:no-materials:" + screen.Block.EntityId,
-                    "no material candidates: " + screen.Description());
-                return false;
-            }
-
-            LogHelper.LogOnce(
-                "try:" + screen.Block.EntityId + ":" + screen.RotationOrSurfaceIndex + ":" + assetName,
-                "trying " + screen.Description() + ", asset=" + assetName + ", materials=" +
-                string.Join(", ", materials.ToArray()));
-
-            for (int i = 0; i < materials.Count; i++)
-            {
-                if (TryGetScreenAreaGeometry(assetName, materials[i], out geometry))
-                    return true;
-            }
-
-            LogHelper.LogOnce(
-                "skip:no-match:" + screen.Block.EntityId + ":" + screen.RotationOrSurfaceIndex + ":" + assetName,
-                "no matching screen geometry for " + screen.Description() +
-                ", asset=" + assetName + ", materials=" + string.Join(", ", materials.ToArray()));
             return false;
         }
 
@@ -196,7 +206,7 @@ namespace Graph.System.ScreenAreas
             Cache[cacheKey] = cached;
 
             var modelPath = ToModelPath(assetName);
-            
+
             if (string.IsNullOrWhiteSpace(modelPath))
             {
                 cached.LoadError = "could not normalize asset name to content path";
@@ -204,18 +214,45 @@ namespace Graph.System.ScreenAreas
                     "invalid model path for " + cacheKey + ", asset=" + assetName);
                 return false;
             }
-            
-            var lodPath = ModelToLod1Path(modelPath);
-            
-            LogHelper.LogOnce("path:" + cacheKey, "normalized asset to path: " + assetName + " -> " + modelPath);
 
-            using (var reader = string.IsNullOrWhiteSpace(lodPath) ? null : OpenMwm(lodPath) ?? OpenMwm(modelPath))
+#if DEBUG
+            LogHelper.LogOnce("path:" + cacheKey, "normalized asset to path: " + assetName + " -> " + modelPath);
+#endif  
+            string lodPath = modelPath;
+
+            try
+            {
+                using (var model = OpenMwm(modelPath))
+                {
+                    List<string> loDs;
+                    if (MinimalMwmReader.TryReadLodPaths(model, out loDs))
+                    {
+#if DEBUG
+                        foreach (var lod in loDs)
+                            LogHelper.LogOnce("path:lod:" + lod, $"Found lod {lod}");
+#endif            
+                        lodPath = ToModelPath(loDs[0] + ".mwm");
+                        LogHelper.LogOnce("using:lod:" + lodPath, $"Using {lodPath} for {modelPath}");
+                    }
+                    else
+                    {
+                        LogHelper.LogOnce("lod:missing:" + modelPath, $"No lod found for {modelPath}");
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                LogHelper.LogOnce("lod:error:" + modelPath, $"ERROR when trying to load LoDs for {modelPath}: {e}");
+            }
+
+            using (var reader = OpenMwm(lodPath) ?? OpenMwm(modelPath))
             {
                 if (reader == null)
                 {
-                    cached.LoadError = "Mwm file not found in mod location or game content: " + assetName + ", " + lodPath;
+                    cached.LoadError = "Mwm file not found in mod location or game content: " + assetName + ", " +
+                                       lodPath;
                     LogHelper.LogOnce("file:missing:" + cacheKey, cached.LoadError);
-                    
+
                     return false;
                 }
 
@@ -248,16 +285,17 @@ namespace Graph.System.ScreenAreas
             var utilities = MyAPIGateway.Utilities;
             if (string.IsNullOrWhiteSpace(contentPath))
                 return null;
-            
-            if(contentPath.Contains("KOLT"))
-                LogHelper.LogOnce("file:game:" + contentPath, $"MWM from mod content: {contentPath} found: {MyAPIGateway.Session.Mods.Where(mod => utilities.FileExistsInModLocation(contentPath, mod)).FirstOrDefault()} ");
 
-            foreach (var mod in MyAPIGateway.Session.Mods.Where(mod => utilities.FileExistsInModLocation(contentPath, mod)))
+            if (contentPath.Contains("KOLT"))
+                LogHelper.LogOnce("file:game:" + contentPath,
+                    $"MWM from mod content: {contentPath} found: {MyAPIGateway.Session.Mods.Where(mod => utilities.FileExistsInModLocation(contentPath, mod)).FirstOrDefault()} ");
+
+            foreach (var mod in MyAPIGateway.Session.Mods.Where(mod =>
+                         utilities.FileExistsInModLocation(contentPath, mod)))
             {
                 LogHelper.LogOnce("file:mod:" + contentPath, "opening MWM from mod location: " + contentPath);
-                
-                
-                
+
+
                 return utilities.ReadBinaryFileInModLocation(contentPath, mod);
             }
 
@@ -273,16 +311,17 @@ namespace Graph.System.ScreenAreas
         static string ToModelPath(string assetName)
         {
             var path = assetName.Replace('\\', '/');
-           
+
             const string contentMarker = "/Content/";
-            
+
             var contentIndex = path.IndexOf(contentMarker, StringComparison.OrdinalIgnoreCase);
             if (contentIndex >= 0)
                 path = path.Substring(contentIndex + contentMarker.Length);
 
             while (path.StartsWith("/", StringComparison.Ordinal))
                 path = path.Substring(1);
-            
+
+            // most likely a mod, so remove the SpaceEngineersId/WorkshopId/ prefix
             if (path.StartsWith("244850/", StringComparison.OrdinalIgnoreCase))
             {
                 path = path.Substring("244850/".Length);
@@ -298,23 +337,6 @@ namespace Graph.System.ScreenAreas
 
             return path.Substring(0, extensionIndex) + path.Substring(extensionIndex);
         }
-
-        static string ModelToLod1Path(string path)
-        {
-            if (!path.EndsWith(".mwm", StringComparison.OrdinalIgnoreCase))
-                return null;
-            if (path.EndsWith("_LOD1.mwm", StringComparison.OrdinalIgnoreCase))
-                return path;
-
-            var extensionIndex = path.LastIndexOf(".mwm", StringComparison.OrdinalIgnoreCase);
-            if (extensionIndex < 0)
-                return null;
-
-            return path.Substring(0, extensionIndex) + "_LOD1" + path.Substring(extensionIndex);
-        }
-        
-        static string ToLod1ContentPath(string assetName) => ModelToLod1Path(ToModelPath(assetName));
-
 
         static bool TryGetScreenUvIntersection(
             IMyModel blockModel,

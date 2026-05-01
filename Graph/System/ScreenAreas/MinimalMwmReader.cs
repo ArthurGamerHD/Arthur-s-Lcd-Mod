@@ -9,8 +9,21 @@ namespace Graph.System.ScreenAreas
     {
         public readonly Dictionary<string, MinimalMwmScreenAreaGeometry> AreasByMaterial =
             new Dictionary<string, MinimalMwmScreenAreaGeometry>(StringComparer.OrdinalIgnoreCase);
+
+        public readonly List<MinimalMwmLod> Lods = new List<MinimalMwmLod>();
         
         public int Version;
+    }
+
+    public sealed class MinimalMwmLod
+    {
+        public float Distance;
+        public string Path;
+
+        public override string ToString()
+        {
+            return string.IsNullOrEmpty(Path) ? base.ToString() : Path;
+        }
     }
 
     public sealed class MinimalMwmScreenAreaGeometry
@@ -24,7 +37,9 @@ namespace Graph.System.ScreenAreas
         Vector2 _uvMin;
         Vector2 _uvMax;
 
+#if DEBUG
         public readonly List<MinimalMwmTriangle> Triangles = new List<MinimalMwmTriangle>();
+#endif
         public readonly List<int> TriangleIndices = new List<int>();
         public readonly List<MinimalMwmUvTriangle> UvTriangles = new List<MinimalMwmUvTriangle>();
         public readonly Dictionary<int, Vector2> UvByVertexIndex = new Dictionary<int, Vector2>();
@@ -81,7 +96,9 @@ namespace Graph.System.ScreenAreas
                 var b = vertices[i1];
                 var c = vertices[i2];
 
+#if DEBUG
                 Triangles.Add(new MinimalMwmTriangle(a, b, c));
+#endif
                 if (uvs != null && i0 < uvs.Length && i1 < uvs.Length && i2 < uvs.Length)
                 {
                     var uvA = uvs[i0];
@@ -202,6 +219,36 @@ namespace Graph.System.ScreenAreas
             return TryRead(reader, null, out model);
         }
 
+        public static bool TryReadLods(BinaryReader reader, out List<MinimalMwmLod> lods)
+        {
+            lods = null;
+
+            MinimalMwmModel model;
+            if (!TryRead(reader, out model) || model == null || model.Lods.Count == 0)
+                return false;
+
+            lods = new List<MinimalMwmLod>(model.Lods);
+            return true;
+        }
+
+        public static bool TryReadLodPaths(BinaryReader reader, out List<string> lodPaths)
+        {
+            lodPaths = null;
+
+            List<MinimalMwmLod> lods;
+            if (!TryReadLods(reader, out lods))
+                return false;
+
+            lodPaths = new List<string>(lods.Count);
+            for (int i = 0; i < lods.Count; i++)
+            {
+                if (lods[i] != null && !string.IsNullOrWhiteSpace(lods[i].Path))
+                    lodPaths.Add(lods[i].Path);
+            }
+
+            return lodPaths.Count > 0;
+        }
+
         static bool TryRead(BinaryReader reader, string targetMaterial, out MinimalMwmModel model)
         {
             model = null;
@@ -221,6 +268,10 @@ namespace Graph.System.ScreenAreas
                     return false;
 
                 var tags = ReadIndexDictionary(reader);
+
+                int lodsOffset;
+                if (tags.TryGetValue("LODs", out lodsOffset))
+                    TryReadLodsTag(reader, lodsOffset, result.Lods);
                 
                 int verticesOffset;
                 int meshPartsOffset;
@@ -228,11 +279,17 @@ namespace Graph.System.ScreenAreas
                 int patternScaleOffset;
                 if (!tags.TryGetValue("Vertices", out verticesOffset) ||
                     !tags.TryGetValue("MeshParts", out meshPartsOffset))
-                    return false;
+                {
+                    model = result;
+                    return result.Lods.Count > 0;
+                }
 
                 Vector3[] vertices;
                 if (!TryReadVerticesTag(reader, verticesOffset, out vertices))
-                    return false;
+                {
+                    model = result;
+                    return result.Lods.Count > 0;
+                }
 
                 Vector2[] uvs = null;
                 if (tags.TryGetValue("TexCoords0", out texCoordsOffset))
@@ -338,6 +395,48 @@ namespace Graph.System.ScreenAreas
             }
 
             return true;
+        }
+
+        static bool TryReadLodsTag(BinaryReader reader, int offset, List<MinimalMwmLod> lods)
+        {
+            if (lods == null || !SeekTag(reader, offset, "LODs"))
+                return false;
+
+            var count = reader.ReadInt32();
+            if (count < 0)
+                return false;
+
+            for (int i = 0; i < count; i++)
+            {
+                var distance = reader.ReadSingle();
+                var path = reader.ReadString();
+                SkipOptionalNullTerminator(reader);
+
+                if (!string.IsNullOrWhiteSpace(path))
+                {
+                    lods.Add(new MinimalMwmLod
+                    {
+                        Distance = distance,
+                        Path = path
+                    });
+                }
+            }
+
+            return true;
+        }
+
+        static void SkipOptionalNullTerminator(BinaryReader reader)
+        {
+            if (reader == null || reader.BaseStream == null || !reader.BaseStream.CanSeek)
+                return;
+
+            var stream = reader.BaseStream;
+            if (stream.Position >= stream.Length)
+                return;
+
+            var position = stream.Position;
+            if (reader.ReadByte() != 0)
+                stream.Position = position;
         }
 
         static bool TryReadPatternScaleTag(BinaryReader reader, int offset, out float patternScale)
