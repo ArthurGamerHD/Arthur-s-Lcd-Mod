@@ -21,9 +21,12 @@ namespace Graph.Apps.Abstract
         RectangleF _tooltipRect;
         RectangleF _tooltipKeepOpenRect;
         bool _hasTooltipBounds;
-        bool _cursorInsideClickableTooltipContent;
+        //bool _cursorInsideClickableTooltipContent;
         long _lastVisualContactFrame = long.MinValue;
-        
+
+        readonly List<MySprite> _tooltipLayerSprites = new List<MySprite>();
+        readonly List<InteractiveEntry> _tooltipLayerEntries = new List<InteractiveEntry>();
+
         protected InteractiveSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
             : base(surface, block, size)
         {
@@ -31,7 +34,8 @@ namespace Graph.Apps.Abstract
 
         public abstract Vector2 CursorPosition { get; protected set; }
 
-        public abstract List<InteractiveEntry> InteractiveEntries { get; }
+        public virtual ICollection<InteractiveEntry> InteractiveEntries => InteractiveList;
+        public virtual List<InteractiveEntry> InteractiveList { get; } = new List<InteractiveEntry>();
 
         public abstract CursorType CursorType { get; protected set; }
 
@@ -41,110 +45,422 @@ namespace Graph.Apps.Abstract
             OnLookAt(onScreenCoordinates);
         }
 
+        InteractiveEntry _activeTooltipParentEntry;
+        InteractiveEntry _manualTooltipParentEntry;
+        object _manualTooltipParentObject;
+        InteractiveRectangleEntry _tooltipCardEntry;
+
+        readonly Dictionary<ITooltipLine, TooltipLineInteractiveEntry> _tooltipLineEntryByLine =
+            new Dictionary<ITooltipLine, TooltipLineInteractiveEntry>();
+
+        readonly HashSet<ITooltipLine> _tooltipLinesUsedThisFrame =
+            new HashSet<ITooltipLine>();
+
         protected abstract void OnLookAt(Vector2 onScreenCoordinates);
-
-        protected object ActiveTooltipParentObject => _activeTooltipParentObject;
-
-        protected bool HasTooltipBounds => _hasTooltipBounds;
 
         protected bool CursorInsideTooltip => _hasTooltipBounds && _tooltipRect.Contains(CursorPosition);
 
         protected bool CursorInsideTooltipKeepOpenArea =>
             _hasTooltipBounds && _tooltipKeepOpenRect.Contains(CursorPosition);
-
-        protected bool CursorInsideClickableTooltipContent => _cursorInsideClickableTooltipContent;
-
-        protected bool HasRecentVisualContact => MyAPIGateway.Session.GameplayFrameCounter - _lastVisualContactFrame <= CURSOR_VISUAL_CONTACT_TIMEOUT_FRAMES;
-
-        protected bool IsActiveTooltipParent(object parentObject)
-        {
-            return Equals(_activeTooltipParentObject, parentObject);
-        }
+        
+        protected bool HasRecentVisualContact => MyAPIGateway.Session.GameplayFrameCounter - _lastVisualContactFrame <=
+                                                 CURSOR_VISUAL_CONTACT_TIMEOUT_FRAMES;
 
         protected void ClearTooltip()
         {
-            _activeTooltipParentObject = null;
-            _hasTooltipBounds = false;
-            _cursorInsideClickableTooltipContent = false;
-            _tooltipRect = default(RectangleF);
-            _tooltipKeepOpenRect = default(RectangleF);
+            HideAttachedTooltip();
         }
 
-        protected bool DrawTooltip(
-            List<MySprite> sprites,
-            InteractiveEntry parentEntry,
-            string title,
-            List<object> lines,
-            string footer)
+        protected void ClearAllTooltips()
         {
-            if (parentEntry == null)
+            HideAttachedTooltip();
+        }
+
+        void HideAttachedTooltip()
+        {
+            if (_tooltipCardEntry != null)
+                _tooltipCardEntry.SetVisible(false);
+
+            foreach (var kv in _tooltipLineEntryByLine)
+            {
+                if (kv.Value != null)
+                    kv.Value.SetVisible(false);
+            }
+
+            _hasTooltipBounds = false;
+            //_cursorInsideClickableTooltipContent = false;
+            _tooltipRect = default(RectangleF);
+            _tooltipKeepOpenRect = default(RectangleF);
+
+            _tooltipLayerSprites.Clear();
+            _tooltipLayerEntries.Clear();
+            _tooltipLinesUsedThisFrame.Clear();
+
+            // Keep tooltip entries permanently attached to their parent entry.
+            // Invisible entries are non-interactive because InteractiveEntry.Hit(),
+            // InteractiveEntry.Click(), CanClick, and ResolveTopHitEntry() are visibility-gated.
+        }
+
+
+        void ClearManualTooltipState()
+        {
+            _manualTooltipParentEntry = null;
+            _manualTooltipParentObject = null;
+        }
+
+        static bool TooltipButtonMatches(TooltipActivationMode mode, bool rightClick)
+        {
+            if (mode == TooltipActivationMode.Click)
+                return !rightClick;
+
+            if (mode == TooltipActivationMode.RightClick)
+                return rightClick;
+
+            return false;
+        }
+
+        InteractiveEntry FindVisibleTooltipEntryByContext(object dataContext)
+        {
+            for (int i = InteractiveList.Count - 1; i >= 0; i--)
+            {
+                var entry = InteractiveList[i];
+                if (entry != null &&
+                    entry.Visible &&
+                    entry.Tooltip != null &&
+                    Equals(entry.DataContext, dataContext))
+                {
+                    return entry;
+                }
+            }
+
+            return null;
+        }
+
+        InteractiveEntry ResolveManualTooltipParent()
+        {
+            if (_manualTooltipParentEntry != null &&
+                _manualTooltipParentEntry.Visible &&
+                _manualTooltipParentEntry.Tooltip != null)
+            {
+                return _manualTooltipParentEntry;
+            }
+
+            if (_manualTooltipParentObject != null)
+            {
+                var entry = FindVisibleTooltipEntryByContext(_manualTooltipParentObject);
+                if (entry != null)
+                {
+                    _manualTooltipParentEntry = entry;
+                    return entry;
+                }
+            }
+
+            ClearManualTooltipState();
+            return null;
+        }
+
+        InteractiveEntry FindTooltipHitTarget()
+        {
+            var position = CursorPosition;
+            if (float.IsNaN(position.X) || float.IsNaN(position.Y) || !HasRecentVisualContact)
+                return null;
+
+            for (int i = InteractiveList.Count - 1; i >= 0; i--)
+            {
+                var entry = InteractiveList[i];
+                if (entry == null || !entry.Visible || entry.Tooltip == null)
+                    continue;
+
+                if (entry.Hit(position))
+                    return entry;
+            }
+
+            return null;
+        }
+
+        public bool HasTooltipInputAtCursor(bool rightClick)
+        {
+            var target = FindTooltipHitTarget();
+            if (target != null && target.Tooltip != null &&
+                (TooltipButtonMatches(target.Tooltip.OpenMode, rightClick) ||
+                 TooltipButtonMatches(target.Tooltip.CloseMode, rightClick)))
+            {
+                return true;
+            }
+
+            var active = ResolveManualTooltipParent() ?? _activeTooltipParentEntry;
+            if (active != null && active.Visible && active.Tooltip != null && _hasTooltipBounds &&
+                TooltipButtonMatches(active.Tooltip.CloseMode, rightClick) &&
+                (CursorInsideTooltip || CursorInsideTooltipKeepOpenArea || active.Hit(CursorPosition)))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool TryHandleTooltipActivationClick(bool rightClick)
+        {
+            InteractiveEntry tooltipParent;
+            return TryHandleTooltipActivationClick(rightClick, out tooltipParent);
+        }
+
+        public bool TryHandleTooltipActivationClick(bool rightClick, out InteractiveEntry tooltipParent)
+        {
+            tooltipParent = null;
+
+            var position = CursorPosition;
+            if (float.IsNaN(position.X) || float.IsNaN(position.Y) || !HasRecentVisualContact)
                 return false;
 
-            _cursorInsideClickableTooltipContent = false;
+            var active = ResolveManualTooltipParent() ?? _activeTooltipParentEntry;
+            if (active != null && active.Visible && active.Tooltip != null && _hasTooltipBounds &&
+                TooltipButtonMatches(active.Tooltip.CloseMode, rightClick) &&
+                (CursorInsideTooltip || CursorInsideTooltipKeepOpenArea || active.Hit(position)))
+            {
+                tooltipParent = active;
+                HideAttachedTooltip();
+                ClearManualTooltipState();
+                return true;
+            }
 
-            const float spacing = 6f;
-            Vector2 padding = new Vector2(8f, 4f) * Scale;
-            var offset = 16f * Scale;
+            var target = FindTooltipHitTarget();
+            if (target == null || target.Tooltip == null)
+                return false;
 
+            if (!TooltipButtonMatches(target.Tooltip.OpenMode, rightClick))
+                return false;
 
-            float titleScale = 0.72f * Scale * FontScale;
-            float lineScale = 0.52f * Scale * FontScale;
-            float footerScale = 0.62f * Scale * FontScale;
+            if (_activeTooltipParentEntry != null && !ReferenceEquals(_activeTooltipParentEntry, target))
+                HideAttachedTooltip();
+
+            _manualTooltipParentEntry = target;
+            _manualTooltipParentObject = target.DataContext;
+            tooltipParent = target;
+            return true;
+        }
+
+        InteractiveEntry FindTooltipTarget()
+        {
+            var manualParent = ResolveManualTooltipParent();
+            if (manualParent != null)
+            {
+                var manualTooltip = manualParent.Tooltip;
+                if (manualTooltip != null && manualTooltip.CloseMode != TooltipActivationMode.Auto)
+                    return manualParent;
+
+                var positionForManual = CursorPosition;
+                if (!float.IsNaN(positionForManual.X) && !float.IsNaN(positionForManual.Y) && HasRecentVisualContact &&
+                    (manualParent.Hit(positionForManual) || CursorInsideTooltip || CursorInsideTooltipKeepOpenArea))
+                {
+                    return manualParent;
+                }
+
+                ClearManualTooltipState();
+                HideAttachedTooltip();
+            }
+
+            if (_hasTooltipBounds && _activeTooltipParentEntry != null &&
+                _activeTooltipParentEntry.Visible &&
+                _activeTooltipParentEntry.Tooltip != null &&
+                _activeTooltipParentEntry.Tooltip.CloseMode != TooltipActivationMode.Auto)
+            {
+                return _activeTooltipParentEntry;
+            }
+
+            var position = CursorPosition;
+            if (float.IsNaN(position.X) || float.IsNaN(position.Y) || !HasRecentVisualContact)
+                return null;
+
+            if (_hasTooltipBounds && (CursorInsideTooltip || CursorInsideTooltipKeepOpenArea))
+            {
+                var activeParent = _activeTooltipParentObject;
+                for (int i = InteractiveList.Count - 1; i >= 0; i--)
+                {
+                    var entry = InteractiveList[i];
+                    if (entry != null &&
+                        entry.Visible &&
+                        entry.Tooltip != null &&
+                        entry.Tooltip.OpenMode == TooltipActivationMode.Auto &&
+                        Equals(entry.DataContext, activeParent))
+                    {
+                        return entry;
+                    }
+                }
+            }
+
+            for (int i = InteractiveList.Count - 1; i >= 0; i--)
+            {
+                var entry = InteractiveList[i];
+                if (entry == null || !entry.Visible || entry.Tooltip == null)
+                    continue;
+
+                if (entry.Tooltip.OpenMode != TooltipActivationMode.Auto)
+                    continue;
+
+                if (entry.Hit(position))
+                    return entry;
+            }
+
+            return null;
+        }
+
+        void RenderAttachedTooltip(List<MySprite> sprites)
+        {
+            //_cursorInsideClickableTooltipContent = false;
+
+            var parentEntry = FindTooltipTarget();
+            if (parentEntry == null || parentEntry.Tooltip == null)
+            {
+                HideAttachedTooltip();
+                return;
+            }
+
+            if (_activeTooltipParentEntry != null && !ReferenceEquals(_activeTooltipParentEntry, parentEntry))
+                HideAttachedTooltip();
+
+            var tooltip = parentEntry.Tooltip;
+            var tooltipLines = tooltip.Lines ?? new List<ITooltipLine>();
+            var tooltipTitle = tooltip.GetTitle();
+            var tooltipFooter = tooltip.GetFooter();
+            var cursor = tooltip.GetCursor();
             var textColor = ForegroundColor;
             var panelColor = ColorableConfig != null ? ColorableConfig.HeaderColor : BackgroundColor;
-            var tooltipLines = lines ?? new List<object>();
-            var tooltipFooter = footer ?? string.Empty;
 
-            var titleSize = GetSizeInPixel(title ?? string.Empty, "White", titleScale, Surface);
-            var footerSize = string.IsNullOrEmpty(tooltipFooter)
-                ? Vector2.Zero
-                : GetSizeInPixel(tooltipFooter, "White", footerScale, Surface);
-            float lineStep = GetSizeInPixel("Ag", "White", lineScale, Surface).Y + 2f;
-            var lineSizes = new Vector2[tooltipLines.Count];
-            var lineTexts = new string[tooltipLines.Count];
-            var clickables = new ClickableText[tooltipLines.Count];
+            int lineCount = tooltipLines.Count;
+            float lineScale = 0.52f * Scale * FontScale;
+
+            var lineTexts = new string[lineCount];
+            var clickables = new bool[lineCount];
+            var lineCursors = new CursorType?[lineCount];
+            var lineSizes = new Vector2[lineCount];
+
             float maxLineWidth = 0f;
-            for (int i = 0; i < tooltipLines.Count; i++)
+
+            for (int i = 0; i < lineCount; i++)
             {
-                var clickable = tooltipLines[i] as ClickableText;
-                clickables[i] = clickable;
-                lineTexts[i] = tooltipLines[i] != null ? tooltipLines[i].ToString() : string.Empty;
+                var line = tooltipLines[i];
+
+                lineTexts[i] = line != null ? line.GetText() : string.Empty;
+                clickables[i] = line != null && line.IsClickable;
+                lineCursors[i] = line?.GetCursor();
                 lineSizes[i] = GetSizeInPixel(lineTexts[i], "White", lineScale, Surface);
+
                 if (lineSizes[i].X > maxLineWidth)
                     maxLineWidth = lineSizes[i].X;
             }
 
+            RedrawTooltipLayer(
+                parentEntry,
+                tooltipTitle,
+                tooltipLines,
+                tooltipFooter,
+                cursor,
+                lineTexts,
+                clickables,
+                lineCursors,
+                lineSizes,
+                maxLineWidth,
+                textColor,
+                panelColor);
+
+            _activeTooltipParentEntry = parentEntry;
+            _activeTooltipParentObject = parentEntry.DataContext;
+            _hasTooltipBounds = true;
+
+            sprites.AddRange(_tooltipLayerSprites);
+            
+            parentEntry.AddChildren(_tooltipLayerEntries);
+
+        }
+
+        void RedrawTooltipLayer(InteractiveEntry parentEntry,
+            string title,
+            List<ITooltipLine> tooltipLines,
+            string footer,
+            CursorType cursor,
+            string[] lineTexts,
+            bool[] clickables,
+            CursorType?[] lineCursors,
+            Vector2[] lineSizes,
+            float maxLineWidth,
+            Color textColor,
+            Color panelColor)
+        {
+            _tooltipLayerSprites.Clear();
+            _tooltipLayerEntries.Clear();
+            _tooltipLinesUsedThisFrame.Clear();
+
+            const float spacing = 6f;
+            Vector2 padding = new Vector2(8f, 4f) * Scale;
+            float offset = 16f * Scale;
+
+            float titleScale = 0.72f * Scale * FontScale;
+            float lineScale = 0.52f * Scale * FontScale;
+            float footerScale = 0.62f * Scale * FontScale;
+
+            var titleSize = GetSizeInPixel(title, "White", titleScale, Surface);
+            var footerSize = string.IsNullOrEmpty(footer)
+                ? Vector2.Zero
+                : GetSizeInPixel(footer, "White", footerScale, Surface);
+
+            float lineStep = GetSizeInPixel("Ag", "White", lineScale, Surface).Y + 2f;
+
             float contentWidth = Math.Max(titleSize.X, Math.Max(maxLineWidth, footerSize.X));
-            float cardWidth = Math.Max(20f*Scale, contentWidth + 2f * padding.X);
+            float cardWidth = Math.Max(20f * Scale, contentWidth + 2f * padding.X);
+
             float contentHeight = titleSize.Y + spacing + tooltipLines.Count * lineStep;
-            if (!string.IsNullOrEmpty(tooltipFooter))
+            if (!string.IsNullOrEmpty(footer))
                 contentHeight += spacing + footerSize.Y;
-            float cardHeight = Math.Max(20f*Scale, contentHeight + 2f * padding.Y);
+
+            float cardHeight = Math.Max(20f * Scale, contentHeight + 2f * padding.Y);
 
             var parentBounds = parentEntry.Bounds;
+
             bool placeOnRight = parentBounds.Center.X <= ViewBox.Center.X;
             float anchorX = placeOnRight
-                ? parentBounds.Right + (offset * Scale)
-                : parentBounds.X - (offset * Scale) - cardWidth;
-            float startX = MathHelper.Clamp(anchorX, ViewBox.X + padding.X, ViewBox.Right - cardWidth - padding.X);
-            float startY = MathHelper.Clamp(parentBounds.Center.Y - cardHeight * 0.5f, ViewBox.Y + padding.Y, ViewBox.Bottom - cardHeight - padding.Y);
+                ? parentBounds.Right + offset
+                : parentBounds.X - offset - cardWidth;
+
+            float startX = MathHelper.Clamp(
+                anchorX,
+                ViewBox.X + padding.X,
+                ViewBox.Right - cardWidth - padding.X);
+
+            float startY = MathHelper.Clamp(
+                parentBounds.Center.Y - cardHeight * 0.5f,
+                ViewBox.Y + padding.Y,
+                ViewBox.Bottom - cardHeight - padding.Y);
 
             var cardRect = new RectangleF(startX, startY, cardWidth, cardHeight);
             var shadowRect = new RectangleF(cardRect.Position + 2f, cardRect.Size);
             var shadowColor = panelColor.MulValue(0.2f);
-            RectanglePanel.CreateSpritesFromRect(shadowRect, sprites, shadowColor, 0.2f);
-            RectanglePanel.CreateSpritesFromRect(cardRect, sprites, panelColor, 0.2f);
-            InteractiveEntries.Add(new InteractiveRectangleEntry(cardRect, CursorType.Default,
-                parentEntry.DataContext));
 
-            _activeTooltipParentObject = parentEntry.DataContext;
             _tooltipRect = cardRect;
             _tooltipKeepOpenRect = new RectangleF(
                 Math.Min(parentBounds.X, cardRect.X),
                 parentBounds.Y,
                 Math.Max(parentBounds.Right, cardRect.Right) - Math.Min(parentBounds.X, cardRect.X),
                 parentBounds.Height);
-            _hasTooltipBounds = true;
+
+            RectanglePanel.CreateSpritesFromRect(shadowRect, _tooltipLayerSprites, shadowColor, 0.2f);
+            RectanglePanel.CreateSpritesFromRect(cardRect, _tooltipLayerSprites, panelColor, 0.2f);
+
+            if (_tooltipCardEntry == null || !Equals(_tooltipCardEntry.DataContext, parentEntry.DataContext))
+            {
+                _tooltipCardEntry = new InteractiveRectangleEntry(
+                    cardRect,
+                    cursor,
+                    parentEntry.DataContext);
+            }
+            else
+            {
+                _tooltipCardEntry.SetRect(cardRect);
+                _tooltipCardEntry.SetCursor(cursor);
+            }
+
+            _tooltipCardEntry.SetVisible(true);
+            _tooltipLayerEntries.Add(_tooltipCardEntry);
 
             float currentY = cardRect.Y + padding.Y;
             float centerX = cardRect.Center.X;
@@ -160,38 +476,63 @@ namespace Graph.Apps.Abstract
                 Alignment = TextAlignment.CENTER,
                 RotationOrScale = titleScale
             };
-            sprites.Add(titleSprite.Shadow(2 * titleScale, shadowColor));
-            sprites.Add(titleSprite);
+
+            _tooltipLayerSprites.Add(titleSprite.Shadow(2 * titleScale, shadowColor));
+            _tooltipLayerSprites.Add(titleSprite);
+
             currentY += titleSize.Y + spacing;
 
             for (int i = 0; i < tooltipLines.Count; i++)
             {
-                var clickable = clickables[i];
+                var line = tooltipLines[i];
+
+                var textPosition = new Vector2(
+                    leftX,
+                    currentY - lineSizes[i].Y * 0.25f * lineScale);
+
                 var lineBounds = new RectangleF(
                     leftX,
-                    currentY - lineSizes[i].Y * 0.5f,
+                    textPosition.Y,
                     Math.Max(lineSizes[i].X, 1f),
-                    lineStep);
-                bool clickableHovered = clickable != null && lineBounds.Contains(CursorPosition);
-                var lineColor = clickableHovered
+                    Math.Max(lineSizes[i].Y, lineStep));
+
+                bool hasLineCursor = lineCursors[i].HasValue;
+                bool hasLineEntry = line != null && (clickables[i] || hasLineCursor);
+
+                bool lineHovered = hasLineEntry && lineBounds.Contains(CursorPosition);
+                var lineColor = lineHovered
                     ? panelColor.DeriveTextAscentColor()
                     : textColor;
-                if (clickable != null)
+
+                if (hasLineEntry)
                 {
-                    InteractiveEntries.Add(new InteractiveRectangleEntry(
-                        lineBounds,
-                        null,
-                        clickable.DataContext ?? clickable,
-                        clickable.OnClick)
+                    TooltipLineInteractiveEntry lineEntry;
+                    var resolvedCursor = lineCursors[i] ?? (clickables[i] ? CursorType.Hand : CursorType.Default);
+
+                    if (!_tooltipLineEntryByLine.TryGetValue(line, out lineEntry) || lineEntry == null)
                     {
-                        ClickSound = clickable.ClickSound
-                    });
-                    if (clickableHovered)
-                        _cursorInsideClickableTooltipContent = true;
+                        lineEntry = new TooltipLineInteractiveEntry(lineBounds, line, resolvedCursor);
+                        _tooltipLineEntryByLine[line] = lineEntry;
+                    }
+                    else
+                    {
+                        lineEntry.SetRect(lineBounds);
+                        lineEntry.SetCursor(resolvedCursor);
+                    }
+
+                    lineEntry.SetVisible(true);
+                    lineEntry.ClickSound = line.GetClickSound();
+
+                    _tooltipLinesUsedThisFrame.Add(line);
+                    _tooltipLayerEntries.Add(lineEntry);
+
+                    //if (clickables[i] && lineHovered)
+                        //_cursorInsideClickableTooltipContent = true;
                 }
 
                 var position = new Vector2(leftX, currentY - lineSizes[i].Y * 0.25f * lineScale);
-                sprites.Add(new MySprite
+
+                _tooltipLayerSprites.Add(new MySprite
                 {
                     Type = SpriteType.TEXT,
                     Data = lineTexts[i],
@@ -202,9 +543,9 @@ namespace Graph.Apps.Abstract
                     RotationOrScale = lineScale
                 });
 
-                if (clickable != null)
+                if (clickables[i])
                 {
-                    sprites.Add(new MySprite
+                    _tooltipLayerSprites.Add(new MySprite
                     {
                         Type = SpriteType.TEXTURE,
                         Data = "SquareSimple",
@@ -218,14 +559,14 @@ namespace Graph.Apps.Abstract
                 currentY += lineStep;
             }
 
-            if (!string.IsNullOrEmpty(tooltipFooter))
+            if (!string.IsNullOrEmpty(footer))
             {
                 currentY += spacing;
 
                 var footerSprite = new MySprite
                 {
                     Type = SpriteType.TEXT,
-                    Data = tooltipFooter,
+                    Data = footer,
                     Position = new Vector2(centerX, currentY),
                     Color = textColor,
                     FontId = "White",
@@ -233,16 +574,99 @@ namespace Graph.Apps.Abstract
                     RotationOrScale = footerScale
                 };
 
-                sprites.Add(footerSprite.Shadow(2 * footerScale, shadowColor));
-                sprites.Add(footerSprite);
+                _tooltipLayerSprites.Add(footerSprite.Shadow(2 * footerScale, shadowColor));
+                _tooltipLayerSprites.Add(footerSprite);
             }
 
-            return cardRect.Contains(CursorPosition);
+            PruneUnusedTooltipLineEntries();
+        }
+
+        void PruneUnusedTooltipLineEntries()
+        {
+            if (_tooltipLineEntryByLine.Count == 0)
+                return;
+
+            var remove = new List<ITooltipLine>();
+
+            foreach (var kv in _tooltipLineEntryByLine)
+            {
+                if (!_tooltipLinesUsedThisFrame.Contains(kv.Key))
+                {
+                    if (kv.Value != null)
+                        kv.Value.SetVisible(false);
+
+                    remove.Add(kv.Key);
+                }
+            }
+
+            for (int i = 0; i < remove.Count; i++)
+                _tooltipLineEntryByLine.Remove(remove[i]);
+        }
+
+
+        public bool IsInsideContainer(InteractiveEntry entry, Vector2 position)
+        {
+            if (entry == null || !entry.Visible || entry.Children == null || entry.Children.Count == 0)
+                return false;
+
+            return entry.Hit(position) || _hasTooltipBounds && ReferenceEquals(entry, _activeTooltipParentEntry);
+        }
+
+        void UpdateCursorFromTopHit()
+        {
+            var position = CursorPosition;
+            if (float.IsNaN(position.X) || float.IsNaN(position.Y) || !HasRecentVisualContact)
+                return;
+
+            for (int i = InteractiveList.Count - 1; i >= 0; i--)
+            {
+                var entry = ResolveTopHitEntry(InteractiveList[i], position);
+                if (entry == null)
+                    continue;
+
+                CursorType = entry.Cursor;
+                return;
+            }
+        }
+
+        InteractiveEntry ResolveTopHitEntry(InteractiveEntry entry, Vector2 position)
+        {
+            if (entry == null || !entry.Visible)
+                return null;
+
+            bool selfHit = entry.Hit(position);
+
+            // Tooltip child entries are allowed to resolve only through the currently
+            // active tooltip parent. This prevents old parents that still reference
+            // shared/reused tooltip children from producing ghost hitboxes or cursor styles.
+            bool mayCheckChildren =
+                entry.Children != null &&
+                entry.Children.Count > 0 &&
+                (selfHit || (_hasTooltipBounds && ReferenceEquals(entry, _activeTooltipParentEntry)));
+
+            if (mayCheckChildren)
+            {
+                for (int i = entry.Children.Count - 1; i >= 0; i--)
+                {
+                    var childHit = ResolveTopHitEntry(entry.Children[i], position);
+                    if (childHit != null)
+                        return childHit;
+                }
+            }
+
+            return selfHit ? entry : null;
         }
 
         protected override List<MySprite> RenderFrame(Func<List<MySprite>> sprites)
         {
             var spriteList = base.RenderFrame(sprites);
+
+            RenderAttachedTooltip(spriteList);
+            UpdateCursorFromTopHit();
+
+            if (Config?.CursorScale == 0 || CursorType == CursorType.None)
+                return spriteList;
+
             var cursor = CursorType;
             var position = CursorPosition;
             if (float.IsNaN(position.X) || float.IsNaN(position.Y) || !HasRecentVisualContact)
@@ -252,18 +676,18 @@ namespace Graph.Apps.Abstract
                 cursor,
                 position,
                 new Vector2(32), // hardcoded size
-                Config != null ? Config.CursorScale : 1f);
+                Config?.CursorScale ?? 1f);
 
             return spriteList;
         }
-        
-        
+
+
         public MyEntity3DSoundEmitter SoundEmitter { get; set; }
-        
+
         public void PlaySounds(MySoundPair sound, bool playIn2D = false)
         {
             if (SoundEmitter == null)
-            {           
+            {
                 SoundEmitter = new MyEntity3DSoundEmitter((MyEntity)Block, dopplerScaler: 0.0f)
                 {
                     Force3D = true,

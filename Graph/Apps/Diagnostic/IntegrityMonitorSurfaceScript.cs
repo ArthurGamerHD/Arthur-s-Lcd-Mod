@@ -1184,9 +1184,6 @@ namespace Graph.Apps.Diagnostic
         public Color? Color;
         public RenderQuadNode[] Children;
 
-        public bool IsLeaf
-        {
-            get { return Children == null || Children.Length == 0; }
-        }
+        public bool IsLeaf => Children == null || Children.Length == 0;
     }
 }

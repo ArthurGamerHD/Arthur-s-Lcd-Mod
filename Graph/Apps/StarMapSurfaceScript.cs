@@ -30,7 +30,7 @@ namespace Graph.Apps
         float _lastKnownConfigFov = float.NaN;
         IMyGravityProviderSystem _gravityProvider;
         readonly EyeTrackingFrameState _eyeTracking = new EyeTrackingFrameState();
-        readonly List<InteractiveEntry> _interactiveEntries = new List<InteractiveEntry>();
+
         long _jumpPointRunCounter;
 
         readonly List<MySprite> _baseSprites = new List<MySprite>();
@@ -38,6 +38,15 @@ namespace Graph.Apps
         readonly List<MySprite> _planetSprites = new List<MySprite>();
         readonly List<MySprite> _overlaySprites = new List<MySprite>();
         readonly List<MySprite> _sprites = new List<MySprite>();
+
+        // Static/legacy map cache. These sprites and hit targets only change when the
+        // surface layout changes, so they are built once and reused across Run() calls.
+        bool _staticOrbitCacheValid;
+        readonly List<MySprite> _cachedStaticBaseSprites = new List<MySprite>();
+        readonly List<MySprite> _cachedStaticTitleSprites = new List<MySprite>();
+        readonly List<MySprite> _cachedStaticRingSprites = new List<MySprite>();
+        readonly List<MySprite> _cachedStaticPlanetSprites = new List<MySprite>();
+        readonly List<InteractiveEntry> _cachedStaticInteractiveEntries = new List<InteractiveEntry>();
 
         const double JUMP_POINT_RUNS_PER_SECOND = 6d; // ScriptUpdate.Update10 at 60 FPS
         const double JUMP_POINT_DISTANCE_PER_SECOND = 1000000d; // Distance jump drive "calculates" per second
@@ -49,9 +58,10 @@ namespace Graph.Apps
             public long LastRequestRun;
         }
 
-        readonly Dictionary<long, JumpPointThrottleState> _jumpPointThrottleByPlanet = new Dictionary<long, JumpPointThrottleState>();
+        readonly Dictionary<long, JumpPointThrottleState> _jumpPointThrottleByPlanet =
+            new Dictionary<long, JumpPointThrottleState>();
 
-        bool _busy;
+        bool _busy = true;
 
         struct PlanetProjection
         {
@@ -73,6 +83,8 @@ namespace Graph.Apps
             public float OxygenDensity;
             public MyTemperatureLevel? AverageTemperature;
             public float MaxWindSpeed;
+            public List<ITooltipLine> CachedInfoLines;
+            public List<ITooltipLine> CachedCompactInfoLines;
             public InteractiveEntry InteractiveEntry;
         }
 
@@ -107,7 +119,7 @@ namespace Graph.Apps
         const double STATIC_PARENT_ORBIT_MAX_METERS = 300000d;
         const float STATIC_ORBIT_Y_SQUASH = 0.55f;
 
-        static readonly List<MyTerminalControlComboBoxItem> StarMapDisplayModes = 
+        static readonly List<MyTerminalControlComboBoxItem> StarMapDisplayModes =
             new List<MyTerminalControlComboBoxItem>
             {
                 new MyTerminalControlComboBoxItem
@@ -131,8 +143,6 @@ namespace Graph.Apps
 
         public override Vector2 CursorPosition { get; protected set; } = new Vector2(float.NaN, float.NaN);
 
-        public override List<InteractiveEntry> InteractiveEntries => _interactiveEntries;
-
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
 
         public List<MyTerminalControlComboBoxItem> GetDisplayModes()
@@ -146,6 +156,7 @@ namespace Graph.Apps
             _fov = GetEffectiveVerticalFovDeg();
             _halfFovY = MathHelper.ToRadians(_fov) * 0.5;
             _lastKnownConfigFov = AppConfig?.FoV ?? MAP_VERTICAL_FOV_DEFAULT_DEG;
+            InvalidateStaticOrbitCache();
 
             CursorType = GetDefaultCursorType();
         }
@@ -155,6 +166,16 @@ namespace Graph.Apps
             return AppConfig != null && AppConfig.DisplayMode == DisplayMode.Legacy
                 ? CursorType.Default
                 : CursorType.None;
+        }
+
+        void InvalidateStaticOrbitCache()
+        {
+            _staticOrbitCacheValid = false;
+            _cachedStaticBaseSprites.Clear();
+            _cachedStaticTitleSprites.Clear();
+            _cachedStaticRingSprites.Clear();
+            _cachedStaticPlanetSprites.Clear();
+            _cachedStaticInteractiveEntries.Clear();
         }
 
         public override void Run()
@@ -176,8 +197,7 @@ namespace Graph.Apps
             _ringSprites.Clear();
             _planetSprites.Clear();
             _overlaySprites.Clear();
-            _interactiveEntries.Clear();
-            _busy = false;
+            InteractiveList.Clear();
             CursorType = GetDefaultCursorType();
 
             bool staticMode = AppConfig.DisplayMode == DisplayMode.Legacy;
@@ -190,8 +210,24 @@ namespace Graph.Apps
                 ClearTooltip();
             }
 
-            AddBackground(_baseSprites);
-            DrawTitle(_overlaySprites);
+            if (staticMode && _staticOrbitCacheValid)
+            {
+                _baseSprites.AddRange(_cachedStaticBaseSprites);
+                _overlaySprites.AddRange(_cachedStaticTitleSprites);
+            }
+            else
+            {
+                AddBackground(_baseSprites);
+                DrawTitle(_overlaySprites);
+                if (staticMode)
+                {
+                    _cachedStaticBaseSprites.Clear();
+                    _cachedStaticBaseSprites.AddRange(_baseSprites);
+                    _cachedStaticTitleSprites.Clear();
+                    _cachedStaticTitleSprites.AddRange(_overlaySprites);
+                }
+            }
+
             var hasPlanets = DrawPlanetMap(_planetSprites, _ringSprites, _overlaySprites);
             if (hasPlanets)
             {
@@ -253,24 +289,18 @@ namespace Graph.Apps
                 return false;
             bool hasDetectedPlanets = false;
 
-            Vector3D camPos;
-            Vector3D camRight;
-            Vector3D camUp;
-            Vector3D camForward;
             bool staticMode = AppConfig != null && AppConfig.DisplayMode == DisplayMode.Legacy;
             if (staticMode)
-            {
                 return DrawStaticOrbitMap(ringSprites, planetSprites, overlaySprites, planets);
-            }
 
             if (Block == null)
                 return false;
 
             MatrixD world = Block.WorldMatrix;
-            camPos = world.Translation;
-            camRight = world.Right;
-            camUp = world.Up;
-            camForward = world.Forward;
+            var camPos = world.Translation;
+            var camRight = world.Right;
+            var camUp = world.Up;
+            var camForward = world.Forward;
 
             long gravityPlanetId = GetCurrentGravityPlanetId(camPos, planets);
             float gravityVisibility = GetGravityVisibility(camPos);
@@ -341,7 +371,7 @@ namespace Graph.Apps
                 double gravityLimitRadius = 0d;
                 if (planet.MaximumRadius > 0d && surfaceGravity > 0d && gravityFalloff > 0d)
                     gravityLimitRadius = planet.MaximumRadius * Math.Pow(surfaceGravity / 0.05d, 1d / gravityFalloff);
-                projectedPlanets.Add(new PlanetProjection
+                var projection = new PlanetProjection
                 {
                     PlanetId = planet.EntityId,
                     Name = string.IsNullOrWhiteSpace(name) ? "Unknown Planet" : name,
@@ -361,20 +391,21 @@ namespace Graph.Apps
                     OxygenDensity = planet.HasAtmosphere && atmosphere != null ? atmosphere.OxygenDensity : 0f,
                     AverageTemperature = averageTemperature,
                     MaxWindSpeed = atmosphere?.MaxWindSpeed ?? 0f
-                });
+                };
+                CachePlanetInfoLines(ref projection);
+                projectedPlanets.Add(projection);
             }
 
             projectedPlanets.Sort((a, b) => a.Distance.CompareTo(b.Distance)); // near -> far
             var visiblePlanets = new List<PlanetProjection>(projectedPlanets.Count);
 
-            for (int i = 0; i < projectedPlanets.Count; i++)
+            foreach (var candidate in projectedPlanets)
             {
-                var candidate = projectedPlanets[i];
                 bool occluded = false;
 
-                for (int j = 0; j < visiblePlanets.Count; j++)
+                foreach (var planet in visiblePlanets)
                 {
-                    if (IsFullyOccludedBy(visiblePlanets[j], candidate))
+                    if (IsFullyOccludedBy(planet, candidate))
                     {
                         occluded = true;
                         break;
@@ -403,8 +434,17 @@ namespace Graph.Apps
         {
             if (planets == null || planets.Count == 0)
                 return false;
+
+            if (_staticOrbitCacheValid)
+            {
+                ringSprites.AddRange(_cachedStaticRingSprites);
+                planetSprites.AddRange(_cachedStaticPlanetSprites);
+                InteractiveList.AddRange(_cachedStaticInteractiveEntries);
+                return true;
+            }
+
             bool hasDetectedPlanets = false;
-            
+
             var positions = new List<Vector3D>(planets.Count);
             var radii = new List<double>(planets.Count);
             var projectedPlanets = new List<PlanetProjection>(planets.Count);
@@ -459,7 +499,7 @@ namespace Graph.Apps
                 if (planet.MaximumRadius > 0d && surfaceGravity > 0d && gravityFalloff > 0d)
                     gravityLimitRadius = planet.MaximumRadius * Math.Pow(surfaceGravity / 0.05d, 1d / gravityFalloff);
 
-                projectedPlanets.Add(new PlanetProjection
+                var projection = new PlanetProjection
                 {
                     PlanetId = planet.EntityId,
                     Name = string.IsNullOrWhiteSpace(name) ? "Unknown Planet" : name,
@@ -479,7 +519,9 @@ namespace Graph.Apps
                     OxygenDensity = planet.HasAtmosphere && atmosphere != null ? atmosphere.OxygenDensity : 0f,
                     AverageTemperature = averageTemperature,
                     MaxWindSpeed = atmosphere?.MaxWindSpeed ?? 0f
-                });
+                };
+                CachePlanetInfoLines(ref projection);
+                projectedPlanets.Add(projection);
             }
 
             if (!hasDetectedPlanets)
@@ -530,9 +572,8 @@ namespace Graph.Apps
                 computeOrder.Add(i);
             computeOrder.Sort((a, b) => radii[b].CompareTo(radii[a])); // parents (larger) first
 
-            for (int order = 0; order < computeOrder.Count; order++)
+            foreach (var i in computeOrder)
             {
-                int i = computeOrder[order];
                 double orbitMeters = orbitDistances[i];
                 double orbitPlanarMeters = orbitPlanarDistances[i];
                 float orbitRadiusX = (float)(orbitMeters * worldToPx);
@@ -592,81 +633,13 @@ namespace Graph.Apps
                 projectedPlanets[i] = planet;
             }
 
-            if (float.IsNaN(CursorPosition.X) || float.IsNaN(CursorPosition.Y))
-                return true;
-
-            var focusPoint = CursorPosition;
-            int selectedIndex = -1;
-            float selectedDistance = float.MaxValue;
-            bool selectedByPlanet = false;
-            bool insideKeepOpenArea = CursorInsideTooltipKeepOpenArea;
-
-            if (CursorInsideTooltip)
-            {
-                for (int i = 0; i < projectedPlanets.Count; i++)
-                {
-                    if (!IsActiveTooltipParent(projectedPlanets[i].PlanetId))
-                        continue;
-
-                    selectedIndex = i;
-                    break;
-                }
-            }
-
-            if (selectedIndex < 0 && insideKeepOpenArea)
-            {
-                for (int i = 0; i < projectedPlanets.Count; i++)
-                {
-                    var planet = projectedPlanets[i];
-                    if (!IsActiveTooltipParent(planet.PlanetId))
-                        continue;
-
-                    selectedIndex = i;
-                    selectedByPlanet = planet.InteractiveEntry != null && planet.InteractiveEntry.Hit(focusPoint);
-                    break;
-                }
-            }
-
-            if (selectedIndex < 0)
-            {
-                for (int i = 0; i < projectedPlanets.Count; i++)
-                {
-                    var planet = projectedPlanets[i];
-                    if (planet.InteractiveEntry == null || !planet.InteractiveEntry.Hit(focusPoint))
-                        continue;
-                    float d = Vector2.Distance(planet.ScreenPos, focusPoint);
-                    if (d < selectedDistance)
-                    {
-                        selectedDistance = d;
-                        selectedIndex = i;
-                        selectedByPlanet = true;
-                    }
-                }
-            }
-
-            if (selectedIndex >= 0)
-            {
-                var selected = projectedPlanets[selectedIndex];
-                selected.ShouldDisplayInfo = true;
-                bool pointerInsideTooltip = DrawTooltip(
-                    overlaySprites,
-                    selected.InteractiveEntry,
-                    selected.Name,
-                    BuildPlanetInfoLines(selected, false),
-                    FormatingHelper.DistanceToString((float)selected.Distance));
-                CursorType = selectedByPlanet
-                    ? CursorType.Hand
-                    : CursorInsideClickableTooltipContent
-                        ? CursorType.Hand
-                        : _busy && pointerInsideTooltip
-                            ? CursorType.AppStarting
-                            : CursorType.Default;
-            }
-            else
-            {
-                ClearTooltip();
-            }
-
+            _cachedStaticRingSprites.Clear();
+            _cachedStaticRingSprites.AddRange(ringSprites);
+            _cachedStaticPlanetSprites.Clear();
+            _cachedStaticPlanetSprites.AddRange(planetSprites);
+            _cachedStaticInteractiveEntries.Clear();
+            _cachedStaticInteractiveEntries.AddRange(InteractiveList);
+            _staticOrbitCacheValid = true;
             return true;
         }
 
@@ -877,10 +850,9 @@ namespace Graph.Apps
                     ? planet.ScreenPos.X + edgeOffset + SIDE_INFO_MARGIN_PX
                     : planet.ScreenPos.X - edgeOffset - SIDE_INFO_MARGIN_PX;
 
-                if (placeOnRight)
-                    x = MathHelper.Clamp(x, ViewBox.X + 2f, ViewBox.Right - lineSize.X - 2f);
-                else
-                    x = MathHelper.Clamp(x, ViewBox.X + lineSize.X + 2f, ViewBox.Right - 2f);
+                x = placeOnRight
+                    ? MathHelper.Clamp(x, ViewBox.X + 2f, ViewBox.Right - lineSize.X - 2f)
+                    : MathHelper.Clamp(x, ViewBox.X + lineSize.X + 2f, ViewBox.Right - 2f);
 
                 float y = MathHelper.Clamp(yEdge - sideInfoYOffset,
                     ViewBox.Y + lineSize.Y * 0.5f,
@@ -945,10 +917,9 @@ namespace Graph.Apps
                 float xBase = placeOnRight
                     ? Math.Max(xPlanetSide, xRangeSide)
                     : Math.Min(xPlanetSide, xRangeSide);
-                if (placeOnRight)
-                    xBase = MathHelper.Clamp(xBase, ViewBox.X + 2f, ViewBox.Right - maxLineWidth - 2f);
-                else
-                    xBase = MathHelper.Clamp(xBase, ViewBox.X + maxLineWidth + 2f, ViewBox.Right - 2f);
+                xBase = placeOnRight
+                    ? MathHelper.Clamp(xBase, ViewBox.X + 2f, ViewBox.Right - maxLineWidth - 2f)
+                    : MathHelper.Clamp(xBase, ViewBox.X + maxLineWidth + 2f, ViewBox.Right - 2f);
 
                 float startYBelowName = namePos.Y + nameSize.Y + lineStep;
                 float startYFallback = MathHelper.Clamp(startYBelowName,
@@ -1003,82 +974,142 @@ namespace Graph.Apps
             }
         }
 
-        List<object> BuildPlanetInfoLines(PlanetProjection planet, bool compactRadiusLabel)
+        void CachePlanetInfoLines(ref PlanetProjection planet)
+        {
+            planet.CachedInfoLines = BuildCachedPlanetInfoLines(planet, false);
+            planet.CachedCompactInfoLines = BuildCachedPlanetInfoLines(planet, true);
+        }
+
+        List<ITooltipLine> BuildPlanetInfoLines(PlanetProjection planet, bool compactRadiusLabel)
+        {
+            var cachedLines = compactRadiusLabel ? planet.CachedCompactInfoLines : planet.CachedInfoLines;
+            return cachedLines ?? BuildCachedPlanetInfoLines(planet, compactRadiusLabel);
+        }
+
+        List<ITooltipLine> BuildCachedPlanetInfoLines(PlanetProjection planet, bool compactRadiusLabel)
         {
             string radiusKey = compactRadiusLabel
                 ? "LCDMod_StarMap_Info_RadiusShort"
                 : "LCDMod_StarMap_Info_Radius";
 
-            var lines = new List<object>(9)
+            var lines = new List<ITooltipLine>(compactRadiusLabel ? 8 : 9)
             {
-                string.Format(FormatingHelper.Culture, LocHelper.GetLoc(radiusKey),
-                    FormatingHelper.DistanceToString(planet.Radius)),
-                string.Format(FormatingHelper.Culture, LocHelper.GetLoc("LCDMod_StarMap_Info_Gravity"),
-                    FormatingHelper.GravityToString(planet.SurfaceGravityG)),
-                LocHelper.GetLoc("BlockPropertyTitle_OreDetectorRange") + ": " +
-                FormatingHelper.DistanceToString(planet.GravityRange),
-                string.Format(FormatingHelper.Culture, LocHelper.GetLoc("LCDMod_StarMap_Info_Atmosphere_Short"),
-                    FormatingHelper.PercentageToString(planet.AtmosphereDensity)),
-                string.Format(FormatingHelper.Culture, LocHelper.GetLoc("LCDMod_StarMap_Info_O2"),
-                    FormatingHelper.PercentageToString(planet.OxygenDensity)),
-                string.Format(FormatingHelper.Culture, LocHelper.GetLoc("LCDMod_StarMap_Info_Temperature"),
-                    FormatingHelper.TemperatureToString(planet.AverageTemperature)),
-                string.Format(FormatingHelper.Culture, LocHelper.GetLoc("LCDMod_StarMap_Info_Wind"),
-                    FormatingHelper.WindToString(planet.MaxWindSpeed))
+                new StaticTooltipLine(string.Format(FormatingHelper.Culture, LocHelper.GetLoc(radiusKey),
+                    FormatingHelper.DistanceToString(planet.Radius))),
+                new StaticTooltipLine(string.Format(FormatingHelper.Culture,
+                    LocHelper.GetLoc("LCDMod_StarMap_Info_Gravity"),
+                    FormatingHelper.GravityToString(planet.SurfaceGravityG))),
+                new StaticTooltipLine(LocHelper.GetLoc("BlockPropertyTitle_OreDetectorRange") + ": " +
+                                      FormatingHelper.DistanceToString(planet.GravityRange)),
+                new StaticTooltipLine(string.Format(FormatingHelper.Culture,
+                    LocHelper.GetLoc("LCDMod_StarMap_Info_Atmosphere_Short"),
+                    FormatingHelper.PercentageToString(planet.AtmosphereDensity))),
+                new StaticTooltipLine(string.Format(FormatingHelper.Culture, LocHelper.GetLoc("LCDMod_StarMap_Info_O2"),
+                    FormatingHelper.PercentageToString(planet.OxygenDensity))),
+                new StaticTooltipLine(string.Format(FormatingHelper.Culture,
+                    LocHelper.GetLoc("LCDMod_StarMap_Info_Temperature"),
+                    FormatingHelper.TemperatureToString(planet.AverageTemperature))),
+                new StaticTooltipLine(string.Format(FormatingHelper.Culture,
+                    LocHelper.GetLoc("LCDMod_StarMap_Info_Wind"),
+                    FormatingHelper.WindToString(planet.MaxWindSpeed))),
+                new ClickableTooltipLine("Position: " + FormatingHelper.FormatVector(planet.WorldPosition),
+                    planet.WorldPosition,
+                    (value, sender) => { ClickOnGps(planet.Name, planet.WorldPosition, planet.Texture.BaseColor); })
+                {
+                    ClickSound = AudioHelper.HudGps3
+                }
             };
 
-            lines.Add(new ClickableText(
-                "Position: " + FormatingHelper.FormatVector(planet.WorldPosition),
-                planet.WorldPosition,
-                (value, sender) => { ClickOnGps(planet.Name, planet.WorldPosition, planet.Texture.BaseColor); })
-            {
-                ClickSound = AudioHelper.HudGps3
-            });
-
-            if (!compactRadiusLabel && GridLogic != null)
-            {
-                int etaSeconds;
-                var jumpDrives = GridLogic.GetJumpDrives();
-                if (jumpDrives == null || jumpDrives.Count == 0)
-                {
-                    lines.Add("Jump: unavailable");
-                }
-                else if (IsJumpPointUiThrottled(planet.PlanetId, planet.Distance, _jumpPointRunCounter, out etaSeconds))
-                {
-                    lines.Add(string.Format(FormatingHelper.Culture, "Calculating... (eta {0} sec)", etaSeconds));
-                    _busy = true;
-                }
-                else
-                {
-                    Vector3D jumpPoint;
-                    if (GridLogic.TryGetPlanetJumpPoint(
-                            planet.PlanetId,
-                            planet.Name,
-                            planet.WorldPosition,
-                            planet.Radius,
-                            planet.GravityRange,
-                            out jumpPoint,
-                            false))
-                    {
-                        lines.Add(new ClickableText(
-                            "Jump: " + FormatingHelper.FormatVector(jumpPoint),
-                            jumpPoint,
-                            (value, sender) =>
-                            {
-                                ClickOnGps("JumpPoint_" + planet.Name, jumpPoint, planet.Texture.BaseColor);
-                            })
-                        {
-                            ClickSound = AudioHelper.HudGps3
-                        });
-                    }
-                    else
-                    {
-                        lines.Add("Jump: unavailable");
-                    }
-                }
-            }
+            if (!compactRadiusLabel)
+                lines.Add(GetJumpTooltipLine(planet));
 
             return lines;
+        }
+
+        DynamicTooltipLine GetJumpTooltipLine(PlanetProjection planet)
+        {
+            Vector3D jumpPoint = Vector3D.Zero;
+            string jumpText = "Jump: unavailable";
+            bool jumpClickable = false;
+            long lastRun = long.MinValue;
+
+            Action refresh = () =>
+            {
+                if (lastRun == _jumpPointRunCounter)
+                    return;
+
+                lastRun = _jumpPointRunCounter;
+                jumpClickable = TryBuildJumpInfoLine(planet, out jumpText, out jumpPoint);
+            };
+
+            return new DynamicTooltipLine(
+                getText: () =>
+                {
+                    refresh();
+                    return jumpText;
+                },
+                isClickable: () =>
+                {
+                    refresh();
+                    return jumpClickable;
+                },
+                getDataContext: () =>
+                {
+                    refresh();
+                    return jumpClickable ? (object)jumpPoint : null;
+                },
+                getOnClick: () =>
+                {
+                    refresh();
+
+                    if (!jumpClickable)
+                        return null;
+
+                    return (value, sender) =>
+                    {
+                        ClickOnGps("JumpPoint_" + planet.Name, jumpPoint, planet.Texture.BaseColor);
+                    };
+                },
+                getCursor: () =>
+                {
+                    refresh();
+                    return _busy ? CursorType.WaitCursor : jumpClickable ? CursorType.Hand : CursorType.Default;
+                },
+                getClickSound: () => AudioHelper.HudGps3);
+        }
+
+        bool TryBuildJumpInfoLine(PlanetProjection planet, out string text, out Vector3D jumpPoint)
+        {
+            jumpPoint = Vector3D.Zero;
+            int etaSeconds;
+            var jumpDrives = GridLogic != null ? GridLogic.GetJumpDrives() : null;
+            if (jumpDrives == null || jumpDrives.Count == 0)
+            {
+                text = "Jump: unavailable";
+                return false;
+            }
+
+            if (IsJumpPointUiThrottled(planet.PlanetId, planet.Distance, _jumpPointRunCounter, out etaSeconds))
+            {
+                text = string.Format(FormatingHelper.Culture, "Calculating... (eta {0} sec)", etaSeconds);
+                return false;
+            }
+
+            if (GridLogic.TryGetPlanetJumpPoint(
+                    planet.PlanetId,
+                    planet.Name,
+                    planet.WorldPosition,
+                    planet.Radius,
+                    planet.GravityRange,
+                    out jumpPoint,
+                    false))
+            {
+                text = "Jump: " + FormatingHelper.FormatVector(jumpPoint);
+                return true;
+            }
+
+            text = "Jump: unavailable";
+            return false;
         }
 
         void ClickOnGps(string planetName, Vector3D position, Color color)
@@ -1114,6 +1145,8 @@ namespace Graph.Apps
 
         bool IsJumpPointUiThrottled(long planetId, double distanceMeters, long currentRun, out int etaSeconds)
         {
+            _busy = true;
+            
             etaSeconds = 0;
             JumpPointThrottleState state;
             if (!_jumpPointThrottleByPlanet.TryGetValue(planetId, out state))
@@ -1148,6 +1181,7 @@ namespace Graph.Apps
             {
                 state.LastRequestRun = currentRun;
                 _jumpPointThrottleByPlanet[planetId] = state;
+                _busy = false;
                 return false;
             }
 
@@ -1179,7 +1213,12 @@ namespace Graph.Apps
             var radius = planet.MarkerRadius;
             var texture = planet.Texture;
             var entry = new InteractiveCircleEntry(center, radius, CursorType.Hand, planet.PlanetId);
-            _interactiveEntries.Add(entry);
+            entry.SetTooltip(new InteractiveTooltip(
+                () => planet.Name,
+                BuildPlanetInfoLines(planet, false),
+                () => FormatingHelper.DistanceToString((float)planet.Distance),
+                GetCursor, TooltipActivationMode.Click, TooltipActivationMode.Click));
+            InteractiveList.Add(entry);
 
             var baseColor = ApplyAlpha(texture.BaseColor, planet.Visibility);
             float diameter = radius * 2f;
@@ -1317,6 +1356,8 @@ namespace Graph.Apps
                     ApplyAlpha(texture.EquatorColor.Value, planet.Visibility));
             return entry;
         }
+
+        CursorType? GetCursor() => _busy ? CursorType.AppStarting : CursorType.Default;
 
         void DrawPolarCaps(List<MySprite> sprites, Vector2 center, float radius, int litLeft, int litRight,
             Color capColor)
