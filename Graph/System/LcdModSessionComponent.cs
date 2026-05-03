@@ -40,7 +40,9 @@ namespace Graph.System
         int _updateTick;
         MyLanguagesEnum? _loadedLanguage;
         LcdModClientComponent Client;
-        LcdModServerComponent Server;
+        LcdModServerComponent Server; 
+
+        public static event Action OnSave;
         public static event Action OnLanguageChanged;
         public static event Action OnAfterSimulationUpdate;
         public static SessionDebugSnapshot DebugSnapshot = SessionDebugSnapshot.Empty;
@@ -74,6 +76,13 @@ namespace Graph.System
             }
 
             return logic;
+        }
+
+        public override void SaveData()
+        {
+            base.SaveData();
+            OnSave?.Invoke();
+            ConfigManager.SaveAll();
         }
 
         public override void LoadData()

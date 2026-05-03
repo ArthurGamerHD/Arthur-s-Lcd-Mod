@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Text;
 using VRage.Game;
 using VRageMath;
 
@@ -7,8 +9,24 @@ namespace Graph.Helpers
 {
     internal static class FormatingHelper
     {
+        static readonly Dictionary<string, Vector2> FontSizeCache = new Dictionary<string, Vector2>();
+        static readonly StringBuilder StringBuilderBuffer = new StringBuilder();
+        
         public const char ELLIPSIS = '…';
         public static CultureInfo Culture => CultureInfo.CurrentUICulture;
+        
+        public static Vector2 GetSizeInPixel(string text, string font, float fontSize,
+            Sandbox.ModAPI.Ingame.IMyTextSurface surface)
+        {
+            Vector2 size;
+            var key = text + font + fontSize;
+            if (FontSizeCache.TryGetValue(key, out size)) return size;
+            StringBuilderBuffer.Clear();
+            StringBuilderBuffer.Append(text);
+            size = surface.MeasureStringInPixels(StringBuilderBuffer, font, fontSize);
+            FontSizeCache[key] = size;
+            return size;
+        }
         
         public static string FormatItemQty(double input)
         {

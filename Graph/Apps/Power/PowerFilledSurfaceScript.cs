@@ -196,7 +196,7 @@ namespace Graph.Apps.Power
         void DrawPowerSlot(List<MySprite> sprites, PowerEntry slot, float xStart, float yStart, float width, float height)
         {
             float labelGap = Math.Max(1f, Scale * 2f);
-            Vector2 pctRef = GetSizeInPixel(slot.PercentText, "White", 1f, Surface);
+            Vector2 pctRef = FormatingHelper.GetSizeInPixel(slot.PercentText, "White", 1f, Surface);
             float pctScale = Math.Min(
                 (width * 0.6f) / Math.Max(1f, pctRef.X),
                 (height * 0.22f) / Math.Max(1f, pctRef.Y)) * Math.Min(FontScale, 1f);
@@ -432,7 +432,7 @@ namespace Graph.Apps.Power
             {
                 Type = SpriteType.TEXT,
                 Data = avgText,
-                Position = new Vector2(textLeft, bandCY - GetSizeInPixel(avgText, "White", textScale, Surface).Y / 2f),
+                Position = new Vector2(textLeft, bandCY - FormatingHelper.GetSizeInPixel(avgText, "White", textScale, Surface).Y / 2f),
                 RotationOrScale = textScale,
                 Color = fg,
                 Alignment = TextAlignment.LEFT,
@@ -446,7 +446,7 @@ namespace Graph.Apps.Power
                 {
                     Type = SpriteType.TEXT,
                     Data = statusText,
-                    Position = new Vector2(ViewBox.Center.X, bandCY - GetSizeInPixel(statusText, "White", textScale, Surface).Y / 2f),
+                    Position = new Vector2(ViewBox.Center.X, bandCY - FormatingHelper.GetSizeInPixel(statusText, "White", textScale, Surface).Y / 2f),
                     RotationOrScale = textScale,
                     Color = collector.StatusColor,
                     Alignment = TextAlignment.CENTER,
@@ -458,7 +458,7 @@ namespace Graph.Apps.Power
             {
                 float rightX = contentRight;
                 string rightText = collector.RightSideText;
-                Vector2 size = GetSizeInPixel(rightText, "White", textScale, Surface);
+                Vector2 size = FormatingHelper.GetSizeInPixel(rightText, "White", textScale, Surface);
                 AddHeaderSprite(sprites, new MySprite
                 {
                     Type = SpriteType.TEXT,

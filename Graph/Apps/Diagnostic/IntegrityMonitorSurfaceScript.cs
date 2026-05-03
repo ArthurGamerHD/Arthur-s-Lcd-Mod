@@ -579,7 +579,7 @@ namespace Graph.Apps.Diagnostic
             var captionSb = new StringBuilder(caption ?? string.Empty);
             TrimText(ref captionSb, availableTextWidth, 0.75f);
             string trimmedCaption = captionSb.ToString();
-            float textHeight = GetSizeInPixel(trimmedCaption, "White", textScale, Surface).Y;
+            float textHeight = FormatingHelper.GetSizeInPixel(trimmedCaption, "White", textScale, Surface).Y;
 
             sprites.Add(new MySprite
             {

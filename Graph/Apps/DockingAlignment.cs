@@ -586,7 +586,7 @@ namespace Graph.Apps
         void DrawReferenceNames(float footerHeight, float referenceTextMargin, Color foreground, float font,
             string yawValue, float yawFont)
         {
-            var textOffsetY = GetSizeInPixel("A", "White", font, Surface).Y * 0.5f;
+            var textOffsetY = FormatingHelper.GetSizeInPixel("A", "White", font, Surface).Y * 0.5f;
             var y = ViewBox.Bottom - FooterHeight - footerHeight - referenceTextMargin - 8f * LayoutScale - textOffsetY;
             var targetGridName = FormatingHelper.TrimName(_targetBlock.CubeGrid?.CustomName, 8);
             var labels = new[]
@@ -598,7 +598,7 @@ namespace Graph.Apps
 
             var columnWidth = ViewBox.Width * 0.5f;
             var margin = 8f * LayoutScale;
-            var yawReservedWidth = GetSizeInPixel(yawValue, "White", yawFont, Surface).X + margin * 2f;
+            var yawReservedWidth = FormatingHelper.GetSizeInPixel(yawValue, "White", yawFont, Surface).X + margin * 2f;
             var centerLeft = ViewBox.Center.X - yawReservedWidth * 0.5f;
             var centerRight = ViewBox.Center.X + yawReservedWidth * 0.5f;
             for (int i = 0; i < labels.Length; i++)
@@ -639,7 +639,7 @@ namespace Graph.Apps
             var row1Y = footerTop + footerHeight * 0.36f;
             var row2Y = footerTop + footerHeight * 0.78f;
             var footerTextScale = Math.Max(0.36f, 0.52f * Scale) * FontScale;
-            var footerTextOffsetY = GetSizeInPixel("A", "White", footerTextScale, Surface).Y * 0.5f;
+            var footerTextOffsetY = FormatingHelper.GetSizeInPixel("A", "White", footerTextScale, Surface).Y * 0.5f;
             var closingDistance = GetClosingDistanceRate(dockingAxisDistance);
 
             var labels = new[]

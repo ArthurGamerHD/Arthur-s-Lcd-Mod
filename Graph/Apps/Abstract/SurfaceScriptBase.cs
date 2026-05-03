@@ -36,9 +36,6 @@ namespace Graph.Apps.Abstract
 {
     public abstract class SurfaceScriptBase : MyTSSCommon, IUsesTerminalControlGroup<BaseTerminalControlGroup>
     {
-        static readonly Dictionary<string, Vector2> FontSizeCache = new Dictionary<string, Vector2>();
-        static readonly StringBuilder StringBuilderBuffer = new StringBuilder();
-
         public static SurfaceCollection Instances = new SurfaceCollection();
 
         readonly List<MySprite> _backgroundGrids = new List<MySprite>();
@@ -58,7 +55,7 @@ namespace Graph.Apps.Abstract
         /// <summary>
         /// Relative area of the <see cref="Sandbox.ModAPI.IMyTextSurface.TextureSize"/> That is Visible
         /// </summary>
-        public RectangleF ViewBox { get; protected set; }
+        public virtual RectangleF ViewBox { get; protected set; }
 
         protected GridLogic GridLogic;
         int _rotationOrSurfaceIndex;
@@ -90,7 +87,7 @@ namespace Graph.Apps.Abstract
 
         float _userScale;
         float _userFontScale;
-        float _userPadding;
+        protected float _userPadding;
         string _cachedTitleSource;
         string _cachedTitleText;
         float _cachedTitleAvailableWidth = -1f;
@@ -122,10 +119,8 @@ namespace Graph.Apps.Abstract
             
             Instances.Add(this);
 
-            if (Block != null)
-                ((IMyEntity)Block).OnMarkForClose += HandleBlockMarkedForClose;
+            if (Block != null) ((IMyEntity)Block).OnMarkForClose += HandleBlockMarkedForClose;
             ResolveRotationOrSurfaceIndex();
-            UpdateViewBox();
             UpdateFaction(FactionHelper.GetOwnerFaction(Block as IMyTerminalBlock));
             DrawSplash();
 
@@ -177,20 +172,6 @@ namespace Graph.Apps.Abstract
             MyLog.Default.Log(MyLogSeverity.Error, "Failed to find surface for {0}, defaulting to surface 0", Block);
             _rotationOrSurfaceIndex = 0;
             return previous != _rotationOrSurfaceIndex;
-        }
-
-
-        public static Vector2 GetSizeInPixel(string text, string font, float fontSize,
-            Sandbox.ModAPI.Ingame.IMyTextSurface surface)
-        {
-            Vector2 size;
-            var key = text + font + fontSize;
-            if (FontSizeCache.TryGetValue(key, out size)) return size;
-            StringBuilderBuffer.Clear();
-            StringBuilderBuffer.Append(text);
-            size = surface.MeasureStringInPixels(StringBuilderBuffer, font, fontSize);
-            FontSizeCache[key] = size;
-            return size;
         }
 
         void DrawSplash()
@@ -298,7 +279,7 @@ namespace Graph.Apps.Abstract
             Dispose();
         }
 
-        protected void UpdateViewBox()
+        protected virtual void UpdateViewBox()
         {
             var sizeOffset = (Surface.TextureSize - Surface.SurfaceSize) / 2;
 
@@ -313,6 +294,10 @@ namespace Graph.Apps.Abstract
         public override void Run()
         {
             base.Run();
+            
+            if(ViewBox.Size == Vector2.Zero)
+                UpdateViewBox();
+
             IsScreenReadyToRender = false;
 
             if (Config == null)

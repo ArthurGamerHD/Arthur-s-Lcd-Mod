@@ -16,7 +16,7 @@ namespace Graph.Helpers
             Log(message);
         }
         
-        static void Log(string message)
+        public static void Log(string message)
         {
             MyLog.Default.WriteLine("[LCDMod] " + message);
         }

@@ -141,8 +141,6 @@ namespace Graph.Apps
         {
         }
 
-        public override Vector2 CursorPosition { get; protected set; } = new Vector2(float.NaN, float.NaN);
-
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
 
         public List<MyTerminalControlComboBoxItem> GetDisplayModes()
@@ -201,14 +199,6 @@ namespace Graph.Apps
             CursorType = GetDefaultCursorType();
 
             bool staticMode = AppConfig.DisplayMode == DisplayMode.Legacy;
-            Vector2 lookedAt;
-            if (_eyeTracking.TryConsumeMapped(ViewBox, out lookedAt))
-                CursorPosition = lookedAt;
-            else if (!HasRecentVisualContact)
-            {
-                CursorPosition = new Vector2(float.NaN, float.NaN);
-                ClearTooltip();
-            }
 
             if (staticMode && _staticOrbitCacheValid)
             {
@@ -262,7 +252,7 @@ namespace Graph.Apps
             double currentHalfFov = MathHelper.ToRadians(Math.Max(0.1f, fovDeg)) * 0.5;
             double magnification = Math.Tan(baseHalfFov) / Math.Tan(currentHalfFov);
             string text = "MAG: " + magnification.ToString("0.##", FormatingHelper.Culture) + "x";
-            var textSize = GetSizeInPixel(text, "White", textScale, Surface);
+            var textSize = FormatingHelper.GetSizeInPixel(text, "White", textScale, Surface);
             const float margin = 8f;
             var pos = new Vector2(
                 MathHelper.Clamp(ViewBox.Right - margin - textSize.X * 0.5f, ViewBox.X + textSize.X * 0.5f,
@@ -737,7 +727,7 @@ namespace Graph.Apps
                 return;
 
             float nameScale = 0.65f * Scale * FontScale;
-            var nameSize = GetSizeInPixel(planet.Name, "White", nameScale, Surface);
+            var nameSize = FormatingHelper.GetSizeInPixel(planet.Name, "White", nameScale, Surface);
             float nameOffset = planet.MarkerRadius + 12f + nameSize.Y;
 
             if (!planet.ShouldDisplayInfo)
@@ -769,7 +759,7 @@ namespace Graph.Apps
             float distanceScale = 0.6f * Scale * FontScale;
             float distanceOffset = planet.MarkerRadius + 10f;
             string distanceText = FormatingHelper.DistanceToString((float)planet.Distance);
-            var distanceSize = GetSizeInPixel(distanceText, "White", distanceScale, Surface);
+            var distanceSize = FormatingHelper.GetSizeInPixel(distanceText, "White", distanceScale, Surface);
             var distancePos = planet.ScreenPos + new Vector2(0f, distanceOffset);
             distancePos.X = MathHelper.Clamp(
                 distancePos.X,
@@ -810,7 +800,7 @@ namespace Graph.Apps
             float maxLineHeight = 0f;
             for (int i = 0; i < count; i++)
             {
-                lineSizes[i] = GetSizeInPixel(lineTexts[i], "White", sideInfoScale, Surface);
+                lineSizes[i] = FormatingHelper.GetSizeInPixel(lineTexts[i], "White", sideInfoScale, Surface);
                 if (lineSizes[i].X > maxLineWidth)
                     maxLineWidth = lineSizes[i].X;
                 if (lineSizes[i].Y > maxLineHeight)
@@ -818,7 +808,7 @@ namespace Graph.Apps
             }
 
             bool placeOnRight = planet.ScreenPos.X <= ViewBox.Center.X;
-            float lineStep = GetSizeInPixel("Ag", "White", sideInfoScale, Surface).Y + 2f;
+            float lineStep = FormatingHelper.GetSizeInPixel("Ag", "White", sideInfoScale, Surface).Y + 2f;
             float requiredHeight = (count - 1) * lineStep + maxLineHeight;
             float availableHeight = planet.MarkerRadius * 2f;
             float availableWidth = planet.MarkerRadius * 2f;

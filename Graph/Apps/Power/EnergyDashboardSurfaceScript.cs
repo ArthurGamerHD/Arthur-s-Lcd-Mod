@@ -504,7 +504,7 @@ namespace Graph.Apps.Power
             float barXLeft = xLeft + labelW;
 
             // Source label (left column)
-            Vector2 labelSz = GetSizeInPixel(label, "White", ts, Surface);
+            Vector2 labelSz = FormatingHelper.GetSizeInPixel(label, "White", ts, Surface);
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT, Data = label,
@@ -535,7 +535,7 @@ namespace Graph.Apps.Power
 
             // Current production — centred inside the bar
             string curText = FormatingHelper.WattsToString(cat.CurrentW);
-            Vector2 curSz = GetSizeInPixel(curText, "White", tsBar, Surface);
+            Vector2 curSz = FormatingHelper.GetSizeInPixel(curText, "White", tsBar, Surface);
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT, Data = curText,
@@ -546,7 +546,7 @@ namespace Graph.Apps.Power
 
             // Max capacity — outside, right of bar (dimmed)
             string maxText = FormatingHelper.WattsToString(cat.MaxW);
-            Vector2 maxSz = GetSizeInPixel(maxText, "White", ts, Surface);
+            Vector2 maxSz = FormatingHelper.GetSizeInPixel(maxText, "White", ts, Surface);
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT, Data = maxText,
@@ -570,7 +570,7 @@ namespace Graph.Apps.Power
             float ts = Scale * 0.62f * FontScale;
 
             string label = isProduction ? "Produção de energia" : "Consumo de energia";
-            float labelH = GetSizeInPixel(label, "White", ts, Surface).Y;
+            float labelH = FormatingHelper.GetSizeInPixel(label, "White", ts, Surface).Y;
 
             // ── scan samples to find max value ──
             float nowTime = GetCurrentTime();
@@ -600,7 +600,7 @@ namespace Graph.Apps.Power
 
             // ── axis column width based on widest label ──
             string topLabel = FormatAxisWatts(axisMax);
-            float axisW = GetSizeInPixel(topLabel, "White", ts, Surface).X + 4f * Scale;
+            float axisW = FormatingHelper.GetSizeInPixel(topLabel, "White", ts, Surface).X + 4f * Scale;
 
             float plotXLeft = xLeft + axisW;
             float plotW = Math.Max(1f, contentW - axisW);
@@ -629,7 +629,7 @@ namespace Graph.Apps.Power
             // ── Y-axis labels + horizontal grid lines ──
             Color axisColor = new Color(fg.R, fg.G, fg.B, 170);
             Color gridColor = new Color(fg.R, fg.G, fg.B, 18);
-            float labelHHalf = GetSizeInPixel("0", "White", ts, Surface).Y / 2f;
+            float labelHHalf = FormatingHelper.GetSizeInPixel("0", "White", ts, Surface).Y / 2f;
 
             for (int si = 0; si <= numSteps; si++)
             {
@@ -783,7 +783,7 @@ namespace Graph.Apps.Power
             // State + time (right-aligned, two lines)
             string stateWord = _isCharging ? "Carregando" : "Descarregando";
             string stateText = stateWord + " — " + _timeLabel;
-            Vector2 stSz = GetSizeInPixel(stateText, "White", ts, Surface);
+            Vector2 stSz = FormatingHelper.GetSizeInPixel(stateText, "White", ts, Surface);
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT, Data = stateText,
@@ -794,7 +794,7 @@ namespace Graph.Apps.Power
 
             int batCount = _batteries.Count;
             string countText = batCount + (batCount == 1 ? " bateria" : " baterias");
-            Vector2 cSz = GetSizeInPixel(countText, "White", tsSmall, Surface);
+            Vector2 cSz = FormatingHelper.GetSizeInPixel(countText, "White", tsSmall, Surface);
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT, Data = countText,
@@ -880,7 +880,7 @@ namespace Graph.Apps.Power
 
             // Percentage text centred inside body
             string pct = FormatingHelper.PercentageToString(ratio);
-            Vector2 pctSz = GetSizeInPixel(pct, "White", textScale, surf);
+            Vector2 pctSz = FormatingHelper.GetSizeInPixel(pct, "White", textScale, surf);
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT, Data = pct,

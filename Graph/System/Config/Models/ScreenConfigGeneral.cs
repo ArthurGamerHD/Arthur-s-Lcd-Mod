@@ -1,4 +1,5 @@
 using Generated;
+using Graph.Apps.Games.Chess;
 using ProtoBuf;
 using Sandbox.ModAPI;
 using VRageMath;
@@ -48,5 +49,8 @@ namespace Graph.System.Config.Models
         }
         
         [ProtoMember(12)] public int DisplayInternal { get; set; }
+        
+        [ProtoMember(99)]
+        public byte[] CustomData { get; set; }
     }
 }

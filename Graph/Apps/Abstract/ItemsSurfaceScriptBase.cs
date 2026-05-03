@@ -571,7 +571,7 @@ namespace Graph.Apps.Abstract
                 LocKeysCache[item.Key] = sb.ToString();
             }
 
-            Vector2 size = GetSizeInPixel(localizedName, "White", 1, Surface);
+            Vector2 size = FormatingHelper.GetSizeInPixel(localizedName, "White", 1, Surface);
             float minProportion = Math.Min(nameRect.Width / size.X, nameRect.Height / size.Y);
             float fontSize = minProportion;
             float renderedHeight = size.Y * fontSize * FontScale;
@@ -591,7 +591,7 @@ namespace Graph.Apps.Abstract
             ));
 
             var qty = FormatingHelper.FormatItemQty(item.Value);
-            size = GetSizeInPixel(qty, "White", 1, Surface);
+            size = FormatingHelper.GetSizeInPixel(qty, "White", 1, Surface);
             minProportion = Math.Min(numberRect.Width / size.X, numberRect.Height / size.Y);
             fontSize = minProportion;
             renderedHeight = size.Y * fontSize * FontScale;

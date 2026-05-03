@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Generated;
 using Graph.Apps.Utility;
 using Graph.Extensions;
+using Graph.Helpers;
 using Graph.Panels;
 using Graph.System.Config.Models;
+using Graph.System.Controls;
 using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
@@ -18,14 +21,13 @@ namespace Graph.Apps.Abstract
 {
     public abstract partial class InteractiveSurfaceScript : SurfaceScriptBase, IEyeTracking
     {
-        const long CURSOR_VISUAL_CONTACT_TIMEOUT_FRAMES = 20;
+        const long CURSOR_VISUAL_CONTACT_TIMEOUT_FRAMES = 6;
         object _activeTooltipParentObject;
         RectangleF _tooltipRect;
         RectangleF _tooltipKeepOpenRect;
         bool _hasTooltipBounds;
-        //bool _cursorInsideClickableTooltipContent;
         long _lastVisualContactFrame = long.MinValue;
-        
+
         protected override ConfigKind ConfigKind => ConfigKind.Interactive;
 
         readonly List<MySprite> _tooltipLayerSprites = new List<MySprite>();
@@ -36,16 +38,72 @@ namespace Graph.Apps.Abstract
         {
         }
 
-        public abstract Vector2 CursorPosition { get; protected set; }
+        public Vector2 CursorPosition { get; protected set; }
 
-        public virtual ICollection<InteractiveEntry> InteractiveEntries => InteractiveList;
+        RectangleF _baseViewBox;
+
+        readonly List<InteractiveEntry> _interactiveEntriesWithOverlay = new List<InteractiveEntry>();
+
+        public ICollection<InteractiveEntry> InteractiveEntries
+        {
+            get
+            {
+                _interactiveEntriesWithOverlay.Clear();
+
+                if (_messageBox != null)
+                {
+                    if (_messageBox.Dismissed)
+                    {
+                        _messageBox = null;
+                    }
+                    else
+                    {
+                        _messageBox.AddInteractiveEntries(_interactiveEntriesWithOverlay);
+                        return _interactiveEntriesWithOverlay;
+                    }
+                }
+
+                _interactiveEntriesWithOverlay.AddRange(InteractiveList);
+                _globalMenu?.AddInteractiveEntries(_interactiveEntriesWithOverlay);
+                return _interactiveEntriesWithOverlay;
+            }
+        }
+
         public virtual List<InteractiveEntry> InteractiveList { get; } = new List<InteractiveEntry>();
+
+        protected override void UpdateViewBox()
+        {
+            var sizeOffset = (Surface.TextureSize - Surface.SurfaceSize) / 2;
+            _userPadding = Surface.TextPadding;
+
+            var padding = (Surface.TextPadding / 100f) * Surface.SurfaceSize;
+            sizeOffset += padding / 2f;
+
+            _baseViewBox = new RectangleF(
+                sizeOffset.X,
+                sizeOffset.Y,
+                Surface.SurfaceSize.X - padding.X,
+                Surface.SurfaceSize.Y - padding.Y);
+
+            ViewBox = _baseViewBox;
+
+            if (_globalMenu == null || !_globalMenu.Visible)
+                return;
+
+            float reservedHeight = _globalMenu.GetReservedHeight(this, Scale, FontScale, Surface);
+            ViewBox = new RectangleF(
+                _baseViewBox.X,
+                _baseViewBox.Y + reservedHeight,
+                _baseViewBox.Width,
+                Math.Max(0f, _baseViewBox.Height - reservedHeight));
+        }
 
         public abstract CursorType CursorType { get; protected set; }
 
         public void LookAt(Vector2 onScreenCoordinates)
         {
             _lastVisualContactFrame = MyAPIGateway.Session.GameplayFrameCounter;
+            CursorPosition = onScreenCoordinates;
             OnLookAt(onScreenCoordinates);
         }
 
@@ -60,13 +118,16 @@ namespace Graph.Apps.Abstract
         readonly HashSet<ITooltipLine> _tooltipLinesUsedThisFrame =
             new HashSet<ITooltipLine>();
 
+        MessageBox _messageBox;
+        GlobalMenu _globalMenu;
+
         protected abstract void OnLookAt(Vector2 onScreenCoordinates);
 
         protected bool CursorInsideTooltip => _hasTooltipBounds && _tooltipRect.Contains(CursorPosition);
 
         protected bool CursorInsideTooltipKeepOpenArea =>
             _hasTooltipBounds && _tooltipKeepOpenRect.Contains(CursorPosition);
-        
+
         protected bool HasRecentVisualContact => MyAPIGateway.Session.GameplayFrameCounter - _lastVisualContactFrame <=
                                                  CURSOR_VISUAL_CONTACT_TIMEOUT_FRAMES;
 
@@ -78,6 +139,16 @@ namespace Graph.Apps.Abstract
         protected void ClearAllTooltips()
         {
             HideAttachedTooltip();
+        }
+
+        public override void Run()
+        {
+            base.Run();
+            if (!HasRecentVisualContact)
+            {
+                CursorPosition = new Vector2(float.NaN, float.NaN);
+                ClearTooltip();
+            }
         }
 
         void HideAttachedTooltip()
@@ -348,7 +419,7 @@ namespace Graph.Apps.Abstract
                 lineTexts[i] = line != null ? line.GetText() : string.Empty;
                 clickables[i] = line != null && line.IsClickable;
                 lineCursors[i] = line?.GetCursor();
-                lineSizes[i] = GetSizeInPixel(lineTexts[i], "White", lineScale, Surface);
+                lineSizes[i] = FormatingHelper.GetSizeInPixel(lineTexts[i], "White", lineScale, Surface);
 
                 if (lineSizes[i].X > maxLineWidth)
                     maxLineWidth = lineSizes[i].X;
@@ -373,9 +444,8 @@ namespace Graph.Apps.Abstract
             _hasTooltipBounds = true;
 
             sprites.AddRange(_tooltipLayerSprites);
-            
-            parentEntry.AddChildren(_tooltipLayerEntries);
 
+            parentEntry.AddChildren(_tooltipLayerEntries);
         }
 
         void RedrawTooltipLayer(InteractiveEntry parentEntry,
@@ -403,12 +473,12 @@ namespace Graph.Apps.Abstract
             float lineScale = 0.52f * Scale * FontScale;
             float footerScale = 0.62f * Scale * FontScale;
 
-            var titleSize = GetSizeInPixel(title, "White", titleScale, Surface);
+            var titleSize = FormatingHelper.GetSizeInPixel(title, "White", titleScale, Surface);
             var footerSize = string.IsNullOrEmpty(footer)
                 ? Vector2.Zero
-                : GetSizeInPixel(footer, "White", footerScale, Surface);
+                : FormatingHelper.GetSizeInPixel(footer, "White", footerScale, Surface);
 
-            float lineStep = GetSizeInPixel("Ag", "White", lineScale, Surface).Y + 2f;
+            float lineStep = FormatingHelper.GetSizeInPixel("Ag", "White", lineScale, Surface).Y + 2f;
 
             float contentWidth = Math.Max(titleSize.X, Math.Max(maxLineWidth, footerSize.X));
             float cardWidth = Math.Max(20f * Scale, contentWidth + 2f * padding.X);
@@ -531,7 +601,7 @@ namespace Graph.Apps.Abstract
                     _tooltipLayerEntries.Add(lineEntry);
 
                     //if (clickables[i] && lineHovered)
-                        //_cursorInsideClickableTooltipContent = true;
+                    //_cursorInsideClickableTooltipContent = true;
                 }
 
                 var position = new Vector2(leftX, currentY - lineSizes[i].Y * 0.25f * lineScale);
@@ -608,6 +678,32 @@ namespace Graph.Apps.Abstract
         }
 
 
+        public void SetGlobalMenu(List<GlobalMenuEntry> entries)
+        {
+            if (_globalMenu != null)
+                _globalMenu.HideEntries();
+
+            _globalMenu = entries == null || entries.Count == 0 ? null : new GlobalMenu(entries);
+
+            UpdateViewBox();
+        }
+
+        public void SetGlobalMenu(params GlobalMenuEntry[] entries) =>
+            SetGlobalMenu(entries != null ? new List<GlobalMenuEntry>(entries) : null);
+
+        public void ShowMessageBox(
+            string title,
+            string content,
+            string button1,
+            string button2,
+            Action<object, object> button1Callback,
+            Action<object, object> button2Callback = null,
+            string icon = null)
+        {
+            _messageBox = new MessageBox();
+            _messageBox.Show(title, content, button1, button2, button1Callback, button2Callback, icon);
+        }
+
         public bool IsInsideContainer(InteractiveEntry entry, Vector2 position)
         {
             if (entry == null || !entry.Visible || entry.Children == null || entry.Children.Count == 0)
@@ -622,15 +718,21 @@ namespace Graph.Apps.Abstract
             if (float.IsNaN(position.X) || float.IsNaN(position.Y) || !HasRecentVisualContact)
                 return;
 
-            for (int i = InteractiveList.Count - 1; i >= 0; i--)
+            var entries = InteractiveEntries as IList<InteractiveEntry>;
+            if (entries == null)
+                return;
+
+            for (int i = entries.Count - 1; i >= 0; i--)
             {
-                var entry = ResolveTopHitEntry(InteractiveList[i], position);
+                var entry = ResolveTopHitEntry(entries[i], position);
                 if (entry == null)
                     continue;
 
                 CursorType = entry.Cursor;
                 return;
             }
+
+            CursorType = CursorType.Default;
         }
 
         InteractiveEntry ResolveTopHitEntry(InteractiveEntry entry, Vector2 position)
@@ -663,12 +765,36 @@ namespace Graph.Apps.Abstract
 
         protected override List<MySprite> RenderFrame(Func<List<MySprite>> sprites)
         {
-            var spriteList = base.RenderFrame(sprites);
+            var baseViewBox = _baseViewBox;
 
+            var spriteList = base.RenderFrame(sprites);
             RenderAttachedTooltip(spriteList);
+
+            _globalMenu?.Render(
+                this,
+                spriteList,
+                baseViewBox,
+                Scale,
+                FontScale,
+                Surface,
+                ForegroundColor,
+                ColorableConfig?.HeaderColor ?? BackgroundColor,
+                CursorPosition);
+
+            _messageBox?.Render(
+                this,
+                spriteList,
+                baseViewBox,
+                Scale,
+                FontScale,
+                Surface,
+                ForegroundColor,
+                BackgroundColor,
+                ColorableConfig?.HeaderColor ?? BackgroundColor,
+                CursorPosition);
+
             UpdateCursorFromTopHit();
-            
-            
+
             if (AppConfig?.CursorScale == 0 || CursorType == CursorType.None)
                 return spriteList;
 
@@ -688,7 +814,7 @@ namespace Graph.Apps.Abstract
 
 
         public MyEntity3DSoundEmitter SoundEmitter { get; set; }
-        public bool RequiresAlt => AppConfig.RequiresAlt;
+        public bool RequiresAlt => AppConfig?.RequiresAlt ?? true;
 
         public void PlaySounds(MySoundPair sound, bool playIn2D = false)
         {

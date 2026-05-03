@@ -78,12 +78,6 @@ namespace Graph.System.Config
             foreach (var app in GetAppsForBlock(storageEntity as IMyTerminalBlock)) 
                 app.RequestRedraw();
 
-            if (MyAPIGateway.Session != null && MyAPIGateway.Session.IsServer)
-            {
-                Save(storageEntity, providerConfig);
-                return;
-            }
-
             NetworkManager.TransmitToServer(new NetworkPackageSyncScreenConfig(storageEntity.EntityId, providerConfig));
             Save(storageEntity, providerConfig);
         }
