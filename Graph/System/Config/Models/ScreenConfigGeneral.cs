@@ -41,9 +41,6 @@ namespace Graph.System.Config.Models
         [ProtoMember(20)] public long OreScannerReferenceId { get; set; }
         [ProtoMember(21)] public float OreScannerConeBias { get; set; } = 0f;
         
-        [ProtoMember(22)] public float CursorScale { get; set; } = 1f;
-
-        
         public DisplayMode DisplayMode
         {
             get { return (DisplayMode)DisplayInternal; }

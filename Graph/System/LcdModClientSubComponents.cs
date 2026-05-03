@@ -25,8 +25,10 @@ using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.Utils;
 using VRageMath;
+using SliderCursorScale = Graph.System.TerminalControls.Interactive.SliderCursorScale;
 using SliderFontSize = Graph.System.TerminalControls.Scale.SliderFontSize;
 using SliderScale = Graph.System.TerminalControls.Scale.SliderScale;
+using SwitchToggleAlt = Graph.System.TerminalControls.Interactive.SwitchToggleAlt;
 
 namespace Graph.System
 {
@@ -78,6 +80,7 @@ namespace Graph.System
                 Controls.Add(new SwitchToggleHeader());
                 Controls.Add(new SliderScale());
                 Controls.Add(new SliderCursorScale());
+                Controls.Add(new SwitchToggleAlt());
                 Controls.Add(new SliderRotation());
 
                 Controls.Add(new ComboboxDisplayMode());

@@ -3,7 +3,7 @@ using ProtoBuf;
 namespace Graph.System.Config.Models.Apps
 {
     [ProtoContract]
-    public partial class ScreenConfigStarMap : ScreenConfigColorable
+    public partial class ScreenConfigStarMap : ScreenConfigInteractive
     {
         [ProtoMember(19)] public float FoV { get; set; } = 70;
 

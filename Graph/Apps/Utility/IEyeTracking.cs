@@ -7,13 +7,17 @@ using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRageMath;
+using SliderCursorScale = Graph.System.TerminalControls.Interactive.SliderCursorScale;
+using SwitchToggleAlt = Graph.System.TerminalControls.Interactive.SwitchToggleAlt;
 
 namespace Graph.Apps.Utility
 {
     /// <summary>
     /// Receives gaze coordinates that should be consumed and mapped on the next render frame.
     /// </summary>
-    public interface IEyeTracking : ISoundCapable, IUsesTerminalControl<SliderCursorScale>
+    public interface IEyeTracking : ISoundCapable,
+        IUsesTerminalControl<SliderCursorScale>,
+        IUsesTerminalControl<SwitchToggleAlt>
     {
         Sandbox.ModAPI.Ingame.IMyTextSurface Surface { get; }
         VRage.Game.ModAPI.Ingame.IMyCubeBlock Block { get; }

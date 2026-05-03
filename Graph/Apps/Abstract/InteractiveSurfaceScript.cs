@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using Generated;
 using Graph.Apps.Utility;
 using Graph.Extensions;
 using Graph.Panels;
+using Graph.System.Config.Models;
 using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
@@ -14,7 +16,7 @@ using VRageMath;
 
 namespace Graph.Apps.Abstract
 {
-    public abstract class InteractiveSurfaceScript : SurfaceScriptBase, IEyeTracking
+    public abstract partial class InteractiveSurfaceScript : SurfaceScriptBase, IEyeTracking
     {
         const long CURSOR_VISUAL_CONTACT_TIMEOUT_FRAMES = 20;
         object _activeTooltipParentObject;
@@ -23,6 +25,8 @@ namespace Graph.Apps.Abstract
         bool _hasTooltipBounds;
         //bool _cursorInsideClickableTooltipContent;
         long _lastVisualContactFrame = long.MinValue;
+        
+        protected override ConfigKind ConfigKind => ConfigKind.Interactive;
 
         readonly List<MySprite> _tooltipLayerSprites = new List<MySprite>();
         readonly List<InteractiveEntry> _tooltipLayerEntries = new List<InteractiveEntry>();
@@ -663,8 +667,9 @@ namespace Graph.Apps.Abstract
 
             RenderAttachedTooltip(spriteList);
             UpdateCursorFromTopHit();
-
-            if (Config?.CursorScale == 0 || CursorType == CursorType.None)
+            
+            
+            if (AppConfig?.CursorScale == 0 || CursorType == CursorType.None)
                 return spriteList;
 
             var cursor = CursorType;
@@ -676,13 +681,14 @@ namespace Graph.Apps.Abstract
                 cursor,
                 position,
                 new Vector2(32), // hardcoded size
-                Config?.CursorScale ?? 1f);
+                AppConfig?.CursorScale ?? 1f);
 
             return spriteList;
         }
 
 
         public MyEntity3DSoundEmitter SoundEmitter { get; set; }
+        public bool RequiresAlt => AppConfig.RequiresAlt;
 
         public void PlaySounds(MySoundPair sound, bool playIn2D = false)
         {

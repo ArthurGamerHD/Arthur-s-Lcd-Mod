@@ -5,10 +5,14 @@ using Generated;
 using Graph.Apps.Abstract;
 using Graph.Apps.Utility;
 using Graph.Helpers;
+using Graph.System.Config.Models;
 using Graph.System.ScreenAreas;
+using Sandbox.Definitions;
 using Sandbox.Game;
+using Sandbox.Game.Entities;
 using Sandbox.Game.GUI;
 using Sandbox.ModAPI;
+using VRage.Game.ModAPI;
 using VRage.Input;
 using VRageMath;
 
@@ -49,8 +53,12 @@ namespace Graph.System.Modules
 
         public void Update()
         {
-            if (!(MyAPIGateway.Session.LocalHumanPlayer.Character.ControllerInfo.IsLocallyHumanControlled() ||
-                  MyAPIGateway.Input.IsAnyAltKeyPressed()))
+            var player = MyAPIGateway.Session?.LocalHumanPlayer;
+
+            var entity = player?.Controller?.ControlledEntity?.Entity as IMyShipController as MyCubeBlock;
+            
+            
+            if (!MyAPIGateway.Input.IsAnyAltKeyPressed() && ((entity?.BlockDefinition as MyCockpitDefinition)?.EnableShipControl ?? false))
             {
                 if (_useInputBlocked)
                     LcdModSessionComponent.SetLocalPlayerUseInputBlocked(blocked: _useInputBlocked = false);
@@ -79,8 +87,11 @@ namespace Graph.System.Modules
 
             foreach (var screen in modules)
             {
-                var surfaceScript = screen as SurfaceScriptBase;
+                var surfaceScript = screen as InteractiveSurfaceScript;
                 if (surfaceScript == null || screen.Block == null)
+                    continue;
+                
+                if(surfaceScript.RequiresAlt && !MyAPIGateway.Input.IsAnyAltKeyPressed())
                     continue;
 
                 var blockPos = screen.Block.WorldMatrix.Translation;

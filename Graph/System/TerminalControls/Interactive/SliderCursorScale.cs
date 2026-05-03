@@ -1,11 +1,12 @@
 using System.Text;
 using Graph.System.Config;
+using Graph.System.Config.Models;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
 using ScreenConfigGeneral = Graph.System.Config.Models.ScreenConfigGeneral;
 
-namespace Graph.System.TerminalControls.Scale
+namespace Graph.System.TerminalControls.Interactive
 {
     public sealed partial class SliderCursorScale : TerminalControlsWrapper
     {
@@ -13,7 +14,7 @@ namespace Graph.System.TerminalControls.Scale
 
         public SliderCursorScale()
         {
-            var slider = CreateControl<IMyTerminalControlSlider>("CursorScaleSlider");
+            var slider = CreateControl<IMyTerminalControlSlider>("LCDMod_CursorScaleSlider");
             slider.Getter = Getter;
             slider.Setter = Setter;
             slider.Visible = Visible;
@@ -31,7 +32,7 @@ namespace Graph.System.TerminalControls.Scale
 
         void Setter(IMyTerminalBlock block, float value)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block);
+            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigInteractive;
             if (config == null)
                 return;
 
@@ -41,7 +42,7 @@ namespace Graph.System.TerminalControls.Scale
 
         float Getter(IMyTerminalBlock block)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block);
+            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigInteractive;
             if (config == null)
                 return 1;
 
