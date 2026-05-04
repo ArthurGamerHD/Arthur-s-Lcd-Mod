@@ -289,7 +289,7 @@ namespace Graph.System.Controls
         {
             var hover = rect.Contains(cursorPosition);
             var buttonColor = hover
-                ? panelColor.DeriveAscentColor()
+                ? panelColor.DeriveAccentColor()
                 : panelColor.MulValue(0.85f);
 
             RectanglePanel.CreateSpritesFromRect(rect, sprites, buttonColor, 0.5f);

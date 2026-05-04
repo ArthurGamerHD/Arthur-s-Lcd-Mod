@@ -620,7 +620,7 @@ namespace Graph.Apps.Abstract
 
                 bool lineHovered = hasLineEntry && lineBounds.Contains(CursorPosition);
                 var lineColor = lineHovered
-                    ? panelColor.DeriveTextAscentColor()
+                    ? panelColor.DeriveTextAccentColor()
                     : textColor;
 
                 if (hasLineEntry)

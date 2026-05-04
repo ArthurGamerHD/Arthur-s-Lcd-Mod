@@ -116,7 +116,7 @@ namespace Graph.Apps.Abstract
 
         protected virtual Color GetEntryBarBackgroundColor()
         {
-            return BackgroundColor.DeriveAscentColor();
+            return BackgroundColor.DeriveAccentColor();
         }
 
         void DrawRow(List<MySprite> frame, TEntry entry, bool showScrollBar)
@@ -368,14 +368,15 @@ namespace Graph.Apps.Abstract
 
             var barInnerPaddingX = 2f * Scale;
             var barInnerPaddingY = bottomRect.Height * 0.2f;
+            var fillColor = AppConfig.HeaderColor.DeriveAccentColor(.4f, 0.5);
             BarPanel.CreateSprites(
                 frame,
                 new Vector2(barRect.X + barInnerPaddingX, barRect.Y + barInnerPaddingY + (2f * Scale)),
                 new Vector2(
                     Math.Max(1f, barRect.Width - 2f * barInnerPaddingX),
                     Math.Max(1f, barRect.Height - 2f * barInnerPaddingY)),
-                 AppConfig.HeaderColor.DeriveAscentColor(),
-                BackgroundColor.DeriveAscentColor(),
+                 fillColor,
+                 fillColor.DeriveAccentColor(.6f, 0.7),
                 pct,
                 GetEntryUsageColor(pct));
 
