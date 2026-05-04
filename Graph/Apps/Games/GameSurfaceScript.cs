@@ -74,8 +74,10 @@ namespace Graph.Apps.Games
             _currentGame?.Tick();
             
             if (_currentGame != null)
-                RenderSprites(_currentGame.Render);
+                RenderSprites();
         }
+
+        protected override List<MySprite> GetSprites() => _currentGame?.Render() ??  new List<MySprite>();
 
         public void InitGame(GameEnum gameEnum)
         {
@@ -115,13 +117,6 @@ namespace Graph.Apps.Games
             }
 
             _currentGame?.Load();
-        }
-
-        protected override void OnLookAt(Vector2 onScreenCoordinates)
-        {
-            //_currentGame?.Click(onScreenCoordinates);
-            if (_currentGame != null)
-                RenderSprites(_currentGame.Render);
         }
 
         public List<MyTerminalControlComboBoxItem> GetDisplayModes() => GameList;

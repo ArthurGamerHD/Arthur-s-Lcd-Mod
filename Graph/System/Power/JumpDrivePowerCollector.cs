@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
+using Graph.Apps.Utility;
 using Sandbox.Game.EntityComponents;
 using Graph.Helpers;
 using Graph.System.Config.Models.Apps;
+using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using SpaceEngineers.Game.ModAPI;
 using VRage.Game;
+using VRage.Game.ModAPI;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRageMath;
 
@@ -132,7 +135,10 @@ namespace Graph.System.Power
                     GetJumpDriveIconColor(ratio),
                     true,
                     centerRotation, 
-                    CenterIconScale));
+                    CenterIconScale,
+                    BlockIconHelper.GetOrAddTextureForBlock(((MyCubeBlock)jumpDrive).BlockDefinition),
+                    jumpDrive,
+                    () => BuildJumpDriveDetails(jumpDrive)));
             }
             EndCenterIconSpinFrame();
 
@@ -164,7 +170,7 @@ namespace Graph.System.Power
             else if (hasChargingTime)
             {
                 Color timeColor = fullCount == 0 ? ScreenConfigPower.ErrorColor : ScreenConfigPower.WarningColor;
-                SetRightSideText(FormatTimeHours(timeToFullHours), timeColor);
+                SetRightSideText(FormatingHelper.FormatTimeHours(timeToFullHours), timeColor);
             }
             else
             {
@@ -178,6 +184,32 @@ namespace Graph.System.Power
             if (ratio < 0.15f) return ScreenConfigPower.ErrorColor;
             if (ratio < FullThreshold) return ScreenConfigPower.WarningColor;
             return ScreenConfigPower.HeaderColor;
+        }
+
+        static IList<ITooltipLine> BuildJumpDriveDetails(IMyJumpDrive jumpDrive)
+        {
+            var lines = new List<ITooltipLine>();
+            if (jumpDrive == null)
+                return lines;
+
+            float ratio = GetRatio(jumpDrive);
+            lines.Add(new StaticTooltipLine("Charge: " + FormatingHelper.PercentageToString(ratio)));
+            lines.Add(new StaticTooltipLine("Stored: " + FormatMegawattHours(jumpDrive.CurrentStoredPower) + " / " + FormatMegawattHours(jumpDrive.MaxStoredPower)));
+
+            float hours;
+            if (ratio >= FullThreshold)
+                lines.Add(new StaticTooltipLine("Ready"));
+            else if (TryGetTimeToFull(jumpDrive, out hours))
+                lines.Add(new StaticTooltipLine("Ready in: " + FormatingHelper.FormatTimeHours(hours)));
+            else
+                lines.Add(new StaticTooltipLine("Ready in: --:--"));
+
+            return lines;
+        }
+
+        static string FormatMegawattHours(float value)
+        {
+            return value.ToString("0.##", FormatingHelper.Culture) + " MWh";
         }
 
         static float GetRatio(IMyJumpDrive jumpDrive)

@@ -3,6 +3,7 @@ using Graph.System.Config.Models.Apps;
 using Sandbox.ModAPI;
 using System;
 using System.Collections.Generic;
+using Graph.Helpers;
 using VRageMath;
 
 namespace Graph.System.Power
@@ -60,7 +61,8 @@ namespace Graph.System.Power
             _activeSpinEntryIds.Clear();
         }
 
-        protected float GetCenterIconRotation(long entryId, bool spinCenterIcon, float ratio, float spinRatioOverride = -1f)
+        protected float GetCenterIconRotation(long entryId, bool spinCenterIcon, float ratio,
+            float spinRatioOverride = -1f)
         {
             if (entryId == 0)
                 return 0f;
@@ -122,16 +124,6 @@ namespace Graph.System.Power
             }
 
             _lastSpinFrameCounter = frameCounter;
-        }
-
-        protected static string FormatTimeHours(float hours)
-        {
-            if (hours < 0f) return "--:--";
-            if (hours > 99.99f) return ">99h";
-            int totalSeconds = Math.Max(0, (int)(hours * 3600f));
-            int minutes = totalSeconds / 60;
-            int seconds = totalSeconds % 60;
-            return minutes.ToString("00") + ":" + seconds.ToString("00");
         }
     }
 }

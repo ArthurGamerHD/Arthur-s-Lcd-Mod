@@ -186,10 +186,10 @@ namespace Graph.Apps
             if (float.IsNaN(_lastKnownConfigFov) || Math.Abs(_lastKnownConfigFov - AppConfig.FoV) > 0.001f)
                 LayoutChanged();
 
-            RenderSprites(GetSprites);
+            RenderSprites();
         }
 
-        List<MySprite> GetSprites()
+        protected override List<MySprite> GetSprites()
         {
             _baseSprites.Clear();
             _ringSprites.Clear();
@@ -1428,7 +1428,7 @@ namespace Graph.Apps
         protected override void OnLookAt(Vector2 onScreenCoordinates)
         {
             _eyeTracking.Receive(onScreenCoordinates);
-            RenderSprites(GetSprites);
+            base.OnLookAt(onScreenCoordinates);
         }
     }
 }

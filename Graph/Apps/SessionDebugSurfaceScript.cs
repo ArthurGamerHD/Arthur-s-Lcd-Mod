@@ -50,10 +50,10 @@ namespace Graph.Apps
             if (Surface == null)
                 return;
 
-            RenderSprites(DrawApp);
+            RenderSprites();
         }
 
-        List<MySprite> DrawApp()
+        protected override List<MySprite> GetSprites()
         {
             var viewBox = GetViewBox();
             var snapshot = LcdModSessionComponent.DebugSnapshot;

@@ -11,10 +11,10 @@ namespace Graph.Helpers
     {
         static readonly Dictionary<string, Vector2> FontSizeCache = new Dictionary<string, Vector2>();
         static readonly StringBuilder StringBuilderBuffer = new StringBuilder();
-        
+
         public const char ELLIPSIS = '…';
         public static CultureInfo Culture => CultureInfo.CurrentUICulture;
-        
+
         public static Vector2 GetSizeInPixel(string text, string font, float fontSize,
             Sandbox.ModAPI.Ingame.IMyTextSurface surface)
         {
@@ -27,7 +27,7 @@ namespace Graph.Helpers
             FontSizeCache[key] = size;
             return size;
         }
-        
+
         public static string FormatItemQty(double input)
         {
             if (input >= 1000000000)
@@ -40,7 +40,7 @@ namespace Graph.Helpers
 
             return input.ToString("0.##", Culture);
         }
-        
+
         public static string DistanceToString(float meters)
         {
             var distance = (double)meters;
@@ -60,7 +60,7 @@ namespace Graph.Helpers
 
             return sign + (abs * 100d).ToString("0.##", Culture) + " cm";
         }
-        
+
         public static string GravityToString(double gravityG)
         {
             double metersPerSecondSquared = gravityG * 9.81d;
@@ -81,8 +81,13 @@ namespace Graph.Helpers
                 return LocHelper.GetLoc("LCDMod_NotAvailable");
             return LocHelper.GetLoc("Temperature" + level.Value);
         }
-        
-        
+
+        const float MW_TO_W_CONSTANT = 1000000.0f;
+
+        public static string MegaWattsToString(float mw) => WattsToString(mw * MW_TO_W_CONSTANT);
+
+        public static string MegaWattHoursToString(float mwh) => WattHoursToString(mwh * MW_TO_W_CONSTANT);
+
         public static string WattsToString(double watts)
         {
             double a = Math.Abs(watts);
@@ -104,6 +109,30 @@ namespace Graph.Helpers
             if (a >= 1e-6) return sign + (a / 1e-6).ToString("0.##", Culture) + " uW";
             if (a >= 1e-9) return sign + (a / 1e-9).ToString("0.##", Culture) + " nW";
             if (a >= 1e-12) return sign + (a / 1e-12).ToString("0.##", Culture) + " pW";
+            return sign + a.ToString("0.##", Culture) + " W";
+        }
+
+        public static string WattHoursToString(float wattsHour)
+        {
+            double a = Math.Abs(wattsHour);
+            string sign = wattsHour < 0 ? "-" : "";
+
+            if (a < 1e-12)
+                return "0 W";
+
+            if (a >= 1e24) return sign + (a / 1e24).ToString("0.##", Culture) + " YWh";
+            if (a >= 1e21) return sign + (a / 1e21).ToString("0.##", Culture) + " ZWh";
+            if (a >= 1e18) return sign + (a / 1e18).ToString("0.##", Culture) + " EWh";
+            if (a >= 1e15) return sign + (a / 1e15).ToString("0.##", Culture) + " PWh";
+            if (a >= 1e12) return sign + (a / 1e12).ToString("0.##", Culture) + " TWh";
+            if (a >= 1e9) return sign + (a / 1e9).ToString("0.##", Culture) + " GWh";
+            if (a >= 1e6) return sign + (a / 1e6).ToString("0.##", Culture) + " MWh";
+            if (a >= 1e3) return sign + (a / 1e3).ToString("0.##", Culture) + " kWh";
+            if (a >= 1.0) return sign + a.ToString("0.##", Culture) + " Wh";
+            if (a >= 1e-3) return sign + (a / 1e-3).ToString("0.##", Culture) + " mWh";
+            if (a >= 1e-6) return sign + (a / 1e-6).ToString("0.##", Culture) + " uWh";
+            if (a >= 1e-9) return sign + (a / 1e-9).ToString("0.##", Culture) + " nWh";
+            if (a >= 1e-12) return sign + (a / 1e-12).ToString("0.##", Culture) + " pWh";
             return sign + a.ToString("0.##", Culture) + " W";
         }
 
@@ -130,7 +159,6 @@ namespace Graph.Helpers
             return sign + a.ToString("0.##", Culture) + " N";
         }
 
-
         public static string PercentageToString(float f) => f.ToString("P0", Culture).Replace(" ", string.Empty);
 
         public static string TrimName(string value, int lenght = 8)
@@ -144,6 +172,22 @@ namespace Graph.Helpers
             return value.Substring(0, lenght - 4) + ELLIPSIS + value.Substring(value.Length - 3, 3);
         }
 
-        public static string FormatVector(Vector3D value, string format = "0.#") => string.Format(Culture, string.Format("{{0:{0}}}, {{1:{0}}}, {{2:{0}}}", format), value.X, value.Y, value.Z);
+        public static string FormatVector(Vector3D value, string format = "0.#") => string.Format(Culture,
+            string.Format("{{0:{0}}}, {{1:{0}}}, {{2:{0}}}", format), value.X, value.Y, value.Z);
+
+        public static string FormatTimeHours(float hours)
+        {
+            if (float.IsNaN(hours)) hours = 0f;
+            var ts = TimeSpan.FromHours(hours);
+
+            if (ts.TotalDays > 365)
+                return LocHelper.GetLoc("Unit_years");
+            if ((int)ts.TotalHours >= 48)
+                return
+                    $"{ts.TotalDays:0} {LocHelper.GetLoc("Unit_days")} {ts.Hours:D2}:{ts.Minutes:D2}:{ts.Seconds:D2}";
+            if ((int)ts.TotalMinutes > 60)
+                return $"{ts.Hours:D2}:{ts.Minutes:D2}:{ts.Seconds:D2}";
+            return ts.TotalSeconds > 60 ? $"{ts.Minutes:D2}:{ts.Seconds:D2}" : $"{ts.Seconds}s";
+        }
     }
 }

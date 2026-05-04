@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Generated;
 using Graph.Apps.Abstract;
+using Graph.Apps.Utility;
 using Graph.Extensions;
 using Graph.Helpers;
 using Graph.System;
@@ -22,9 +23,10 @@ using VRageMath;
 namespace Graph.Apps.Power
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public partial class PowerFilledSurfaceScript : SurfaceScriptBase
+    public partial class PowerFilledSurfaceScript : InteractiveSurfaceScript
     {
         protected override ConfigKind ConfigKind => ConfigKind.Power;
+        public override CursorType CursorType { get; protected set; } = CursorType.Default;
         public const string ID = "BatteryGraph";
         public const string TITLE = "LCDMod_PowerFilled";
 
@@ -39,6 +41,9 @@ namespace Graph.Apps.Power
 
         readonly List<PowerCollector> _collectors = new List<PowerCollector>();
         readonly List<PowerEntry> _entries = new List<PowerEntry>();
+        readonly List<MySprite> _sprites = new List<MySprite>();
+        readonly Dictionary<long, PowerEntry> _entryById = new Dictionary<long, PowerEntry>();
+        readonly Dictionary<long, InteractiveRectangleEntry> _entryHitboxById = new Dictionary<long, InteractiveRectangleEntry>();
 
         public PowerFilledSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
             : base(surface, block, size)
@@ -50,6 +55,8 @@ namespace Graph.Apps.Power
             base.LayoutChanged();
             _collectors.Clear();
             _entries.Clear();
+            _entryById.Clear();
+            ClearPowerEntryHitboxes();
             FooterHeight = TITLE_BAR_HEIGHT_BASE * LayoutScale;
 
         }
@@ -63,21 +70,24 @@ namespace Graph.Apps.Power
                 BuildCollectors();
 
             CollectPower();
+            
+            RenderSprites();
+        }
 
-            using (var frame = Surface.DrawFrame())
-            {
-                var sprites = new List<MySprite>();
-                AddBackground(sprites);
-                DrawTitle(sprites);
-                DrawFooter(sprites);
 
-                if (!HasVisibleItems())
-                    DrawMessage(sprites, LocHelper.Empty, "Warning", AppConfig.WarningColor, AppConfig.Scale);
-                else
-                    DrawBatteries(sprites);
+        protected override List<MySprite> GetSprites()
+        {
+            _sprites.Clear();
+            BeginPowerEntryHitboxFrame();
+            AddBackground(_sprites);
+            DrawTitle(_sprites);
+            DrawFooter(_sprites);
 
-                frame.AddRange(sprites);
-            }
+            if (!HasVisibleItems())
+                DrawMessage(_sprites, LocHelper.Empty, "Warning", AppConfig.WarningColor, AppConfig.Scale);
+            else
+                DrawBatteries(_sprites);
+            return _sprites;
         }
         
         protected override void DrawFooter(List<MySprite> sprites)
@@ -223,6 +233,8 @@ namespace Graph.Apps.Power
                 Alignment = TextAlignment.CENTER,
                 FontId = "White"
             });
+
+            RegisterPowerEntryHitbox(slot, new RectangleF(xStart, yStart, width, height));
         }
         
         void DrawPowerEntry(
@@ -390,9 +402,102 @@ namespace Graph.Apps.Power
                 return;
 
             _entries.Clear();
+            _entryById.Clear();
 
             foreach (var collector in _collectors) 
                 collector.Collect(GridLogic, _entries);
+
+            for (int i = 0; i < _entries.Count; i++)
+            {
+                var entry = _entries[i];
+                if (entry != null)
+                    _entryById[entry.EntryId] = entry;
+            }
+        }
+
+        void BeginPowerEntryHitboxFrame()
+        {
+            InteractiveList.Clear();
+
+            foreach (var kv in _entryHitboxById)
+            {
+                if (kv.Value != null)
+                    kv.Value.SetVisible(false);
+            }
+        }
+
+        void ClearPowerEntryHitboxes()
+        {
+            foreach (var kv in _entryHitboxById)
+            {
+                if (kv.Value != null)
+                    kv.Value.SetVisible(false);
+            }
+
+            _entryHitboxById.Clear();
+            InteractiveList.Clear();
+        }
+
+        void RegisterPowerEntryHitbox(PowerEntry entry, RectangleF bounds)
+        {
+            if (entry == null)
+                return;
+
+            InteractiveRectangleEntry hitbox;
+            if (!_entryHitboxById.TryGetValue(entry.EntryId, out hitbox) || hitbox == null)
+            {
+                hitbox = new InteractiveRectangleEntry(
+                    bounds,
+                    Graph.CursorType.Hand,
+                    entry.EntryId,
+                    null,
+                    BuildPowerEntryTooltip(entry.EntryId))
+                {
+                    ClickSound = AudioHelper.HudClick
+                };
+                _entryHitboxById[entry.EntryId] = hitbox;
+            }
+            else
+            {
+                hitbox.SetRect(bounds);
+                hitbox.SetCursor(Graph.CursorType.Hand);
+                hitbox.SetTooltip(BuildPowerEntryTooltip(entry.EntryId));
+            }
+
+            hitbox.SetVisible(true);
+            InteractiveList.Add(hitbox);
+        }
+
+        InteractiveTooltip BuildPowerEntryTooltip(long entryId)
+        {
+            return new InteractiveTooltip(
+                delegate
+                {
+                    var entry = GetPowerEntry(entryId);
+                    if (entry != null && entry.Entity != null && !string.IsNullOrEmpty(entry.Entity.CustomName))
+                        return entry.Entity.CustomName;
+                    return entry != null ? entry.PercentText : string.Empty;
+                },
+                delegate
+                {
+                    var entry = GetPowerEntry(entryId);
+                    return entry != null ? entry.GetDetails() : new List<ITooltipLine>();
+                },
+                null,
+                null,
+                TooltipActivationMode.Click,
+                TooltipActivationMode.Click,
+                delegate
+                {
+                    var entry = GetPowerEntry(entryId);
+                    return entry != null ? entry.Icon : string.Empty;
+                });
+        }
+
+        PowerEntry GetPowerEntry(long entryId)
+        {
+            PowerEntry entry;
+            return _entryById.TryGetValue(entryId, out entry) ? entry : null;
         }
 
         bool HasVisibleItems()

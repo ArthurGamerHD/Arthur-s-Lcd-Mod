@@ -159,8 +159,11 @@ namespace Graph.Apps.Utility
     public sealed class InteractiveTooltip
     {
         readonly Func<string> _titleGetter;
+        readonly Func<IList<ITooltipLine>> _linesGetter;
+        readonly List<ITooltipLine> _staticLines;
         readonly Func<string> _footerGetter;
         readonly Func<CursorType?> _getCursor;
+        readonly Func<string> _iconTextureGetter;
 
         public InteractiveTooltip(
             Func<string> titleGetter,
@@ -168,14 +171,36 @@ namespace Graph.Apps.Utility
             Func<string> footerGetter = null,
             Func<CursorType?> getCursor = null,
             TooltipActivationMode openMode = TooltipActivationMode.Auto,
-            TooltipActivationMode closeMode = TooltipActivationMode.Auto)
+            TooltipActivationMode closeMode = TooltipActivationMode.Auto,
+            Func<string> iconGetter = null)
+            : this(
+                titleGetter,
+                lines != null ? (Func<IList<ITooltipLine>>)(() => lines) : null,
+                footerGetter,
+                getCursor,
+                openMode,
+                closeMode,
+                iconGetter)
+        {
+        }
+
+        public InteractiveTooltip(
+            Func<string> titleGetter,
+            Func<IList<ITooltipLine>> linesGetter,
+            Func<string> footerGetter = null,
+            Func<CursorType?> getCursor = null,
+            TooltipActivationMode openMode = TooltipActivationMode.Auto,
+            TooltipActivationMode closeMode = TooltipActivationMode.Auto,
+            Func<string> iconGetter = null)
         {
             _titleGetter = titleGetter;
+            _linesGetter = linesGetter;
+            _staticLines = null;
             _footerGetter = footerGetter;
             _getCursor = getCursor;
+            _iconTextureGetter = iconGetter;
             OpenMode = openMode;
             CloseMode = closeMode;
-            Lines = lines != null ? new List<ITooltipLine>(lines) : new List<ITooltipLine>();
         }
 
         public InteractiveTooltip(
@@ -183,18 +208,30 @@ namespace Graph.Apps.Utility
             IList<ITooltipLine> lines,
             string footer = null,
             TooltipActivationMode openMode = TooltipActivationMode.Auto,
-            TooltipActivationMode closeMode = TooltipActivationMode.Auto)
-            : this(
-                () => title ?? string.Empty,
-                lines,
-                footer != null ? (Func<string>)(() => footer) : null,
-                null,
-                openMode,
-                closeMode)
+            TooltipActivationMode closeMode = TooltipActivationMode.Auto,
+            string iconTexture = null)
         {
+            _titleGetter = () => title ?? string.Empty;
+            _staticLines = lines != null ? new List<ITooltipLine>(lines) : new List<ITooltipLine>();
+            _linesGetter = null;
+            _footerGetter = footer != null ? (Func<string>)(() => footer) : null;
+            _getCursor = null;
+            _iconTextureGetter = iconTexture != null ? (Func<string>)(() => iconTexture) : null;
+            OpenMode = openMode;
+            CloseMode = closeMode;
         }
 
-        public List<ITooltipLine> Lines { get; private set; }
+        public List<ITooltipLine> Lines
+        {
+            get
+            {
+                if (_linesGetter == null)
+                    return _staticLines != null ? new List<ITooltipLine>(_staticLines) : new List<ITooltipLine>();
+
+                var lines = _linesGetter();
+                return lines != null ? new List<ITooltipLine>(lines) : new List<ITooltipLine>();
+            }
+        }
 
         public TooltipActivationMode OpenMode { get; private set; }
 
@@ -213,6 +250,11 @@ namespace Graph.Apps.Utility
         public string GetFooter()
         {
             return _footerGetter != null ? (_footerGetter() ?? string.Empty) : string.Empty;
+        }
+
+        public string GetIconTexture()
+        {
+            return _iconTextureGetter != null ? (_iconTextureGetter() ?? string.Empty) : string.Empty;
         }
     }
 

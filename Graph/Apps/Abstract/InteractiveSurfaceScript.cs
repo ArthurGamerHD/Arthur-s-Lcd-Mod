@@ -105,6 +105,7 @@ namespace Graph.Apps.Abstract
             _lastVisualContactFrame = MyAPIGateway.Session.GameplayFrameCounter;
             CursorPosition = onScreenCoordinates;
             OnLookAt(onScreenCoordinates);
+            RenderSprites();
         }
 
         InteractiveEntry _activeTooltipParentEntry;
@@ -121,7 +122,9 @@ namespace Graph.Apps.Abstract
         MessageBox _messageBox;
         GlobalMenu _globalMenu;
 
-        protected abstract void OnLookAt(Vector2 onScreenCoordinates);
+        protected virtual void OnLookAt(Vector2 onScreenCoordinates)
+        {
+        }
 
         protected bool CursorInsideTooltip => _hasTooltipBounds && _tooltipRect.Contains(CursorPosition);
 
@@ -398,6 +401,7 @@ namespace Graph.Apps.Abstract
             var tooltipLines = tooltip.Lines ?? new List<ITooltipLine>();
             var tooltipTitle = tooltip.GetTitle();
             var tooltipFooter = tooltip.GetFooter();
+            var tooltipIconTexture = tooltip.GetIconTexture();
             var cursor = tooltip.GetCursor();
             var textColor = ForegroundColor;
             var panelColor = ColorableConfig != null ? ColorableConfig.HeaderColor : BackgroundColor;
@@ -430,6 +434,7 @@ namespace Graph.Apps.Abstract
                 tooltipTitle,
                 tooltipLines,
                 tooltipFooter,
+                tooltipIconTexture,
                 cursor,
                 lineTexts,
                 clickables,
@@ -452,6 +457,7 @@ namespace Graph.Apps.Abstract
             string title,
             List<ITooltipLine> tooltipLines,
             string footer,
+            string iconTexture,
             CursorType cursor,
             string[] lineTexts,
             bool[] clickables,
@@ -480,13 +486,26 @@ namespace Graph.Apps.Abstract
 
             float lineStep = FormatingHelper.GetSizeInPixel("Ag", "White", lineScale, Surface).Y + 2f;
 
-            float contentWidth = Math.Max(titleSize.X, Math.Max(maxLineWidth, footerSize.X));
-            float cardWidth = Math.Max(20f * Scale, contentWidth + 2f * padding.X);
+            bool hasIcon = !string.IsNullOrEmpty(iconTexture);
 
-            float contentHeight = titleSize.Y + spacing + tooltipLines.Count * lineStep;
+            float linesHeight = tooltipLines.Count * lineStep;
+            float titleFooterWidth = Math.Max(titleSize.X, footerSize.X);
+
+            float iconSize = hasIcon
+                ? Math.Max(24f * Scale, Math.Min(52f * Scale, Math.Max(linesHeight, 24f * Scale)))
+                : 0f;
+
+            float iconGap = hasIcon ? 8f * Scale : 0f;
+
+            // Body is only icon + lines. Title/footer are centered over the whole card.
+            float bodyWidth = maxLineWidth + iconSize + iconGap;
+            float contentWidth = Math.Max(titleFooterWidth, bodyWidth);
+
+            float contentHeight = titleSize.Y + spacing + Math.Max(linesHeight, iconSize);
             if (!string.IsNullOrEmpty(footer))
                 contentHeight += spacing + footerSize.Y;
 
+            float cardWidth = Math.Max(20f * Scale, contentWidth + 2f * padding.X);
             float cardHeight = Math.Max(20f * Scale, contentHeight + 2f * padding.Y);
 
             var parentBounds = parentEntry.Bounds;
@@ -537,14 +556,19 @@ namespace Graph.Apps.Abstract
             _tooltipLayerEntries.Add(_tooltipCardEntry);
 
             float currentY = cardRect.Y + padding.Y;
-            float centerX = cardRect.Center.X;
-            float leftX = cardRect.X + padding.X;
+
+            float contentLeftX = cardRect.X + padding.X;
+            float contentCenterX = contentLeftX + contentWidth * 0.5f;
+
+            float bodyLeftX = contentLeftX + Math.Max(0f, (contentWidth - bodyWidth) * 0.5f);
+            float iconLeftX = bodyLeftX;
+            float leftX = bodyLeftX + iconSize + iconGap;
 
             var titleSprite = new MySprite
             {
                 Type = SpriteType.TEXT,
                 Data = title,
-                Position = new Vector2(centerX, currentY),
+                Position = new Vector2(contentCenterX, currentY),
                 Color = textColor,
                 FontId = "White",
                 Alignment = TextAlignment.CENTER,
@@ -555,6 +579,27 @@ namespace Graph.Apps.Abstract
             _tooltipLayerSprites.Add(titleSprite);
 
             currentY += titleSize.Y + spacing;
+
+            float bodyTopY = currentY;
+            float bodyHeight = Math.Max(linesHeight, iconSize);
+
+            if (hasIcon)
+            {
+                _tooltipLayerSprites.Add(new MySprite
+                {
+                    Type = SpriteType.TEXTURE,
+                    Data = iconTexture,
+                    Position = new Vector2(
+                        iconLeftX + iconSize * 0.5f,
+                        bodyTopY + bodyHeight * 0.5f),
+                    Size = new Vector2(iconSize),
+                    Color = textColor,
+                    Alignment = TextAlignment.CENTER
+                });
+            }
+
+            // Vertically center the lines against the icon/body area.
+            currentY = bodyTopY + Math.Max(0f, (bodyHeight - linesHeight) * 0.5f);
 
             for (int i = 0; i < tooltipLines.Count; i++)
             {
@@ -599,9 +644,6 @@ namespace Graph.Apps.Abstract
 
                     _tooltipLinesUsedThisFrame.Add(line);
                     _tooltipLayerEntries.Add(lineEntry);
-
-                    //if (clickables[i] && lineHovered)
-                    //_cursorInsideClickableTooltipContent = true;
                 }
 
                 var position = new Vector2(leftX, currentY - lineSizes[i].Y * 0.25f * lineScale);
@@ -633,6 +675,8 @@ namespace Graph.Apps.Abstract
                 currentY += lineStep;
             }
 
+            currentY = bodyTopY + bodyHeight;
+
             if (!string.IsNullOrEmpty(footer))
             {
                 currentY += spacing;
@@ -641,7 +685,7 @@ namespace Graph.Apps.Abstract
                 {
                     Type = SpriteType.TEXT,
                     Data = footer,
-                    Position = new Vector2(centerX, currentY),
+                    Position = new Vector2(contentCenterX, currentY),
                     Color = textColor,
                     FontId = "White",
                     Alignment = TextAlignment.CENTER,

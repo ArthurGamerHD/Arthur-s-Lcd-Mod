@@ -789,16 +789,21 @@ namespace Graph.Apps.Abstract
         /// Calling this break the regular rendering of the Text surface, ensure ALL render call is routed here if the app needs to use it
         /// </summary>
         /// <param name="sprites">Sprites to be rendered</param>
-        public void RenderSprites(Func<List<MySprite>> sprites)
+        public void RenderSprites()
         {
             var currentFrame = MyAPIGateway.Session.GameplayFrameCounter;
             if (currentFrame == _lastFrame)
                 return;
             _lastFrame = currentFrame;
 
-            var spriteList = RenderFrame(sprites);
+            var spriteList = RenderFrame(GetSprites);
             
             _renderComp.RenderSpritesToTexture(RotationOrSurfaceIndex, spriteList, _textureSize, _aspectRatio, Surface.ScriptBackgroundColor, Surface.BackgroundAlpha);
+        }
+
+        protected virtual List<MySprite> GetSprites()
+        {
+            throw new Exception("The method or operation is not implemented.");
         }
 
         protected virtual List<MySprite> RenderFrame(Func<List<MySprite>> sprites)
