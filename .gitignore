@@ -2,4 +2,4 @@
 /*/bin
 .idea
 *.DotSettings.user
-*.mdk.local.ini
+*.local.ini
