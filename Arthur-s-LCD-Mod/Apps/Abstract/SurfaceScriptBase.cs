@@ -216,7 +216,7 @@ namespace Graph.Apps.Abstract
             }
         }
 
-        public void RequestRedraw()
+        public virtual void RequestRedraw()
         {
             LayoutChanged();
             _dirty = true;

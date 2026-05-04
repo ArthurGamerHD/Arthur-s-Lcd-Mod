@@ -14,6 +14,8 @@ using Sandbox.Game.GUI;
 using Sandbox.ModAPI;
 using VRage.Game.ModAPI;
 using VRage.Input;
+using VRage.ModAPI;
+using VRage.Utils;
 using VRageMath;
 
 
@@ -34,6 +36,8 @@ namespace Graph.System.Modules
         bool _primaryWasPressed;
         bool _secondaryWasPressed;
         bool _useInputBlocked;
+
+        readonly IMyControl _moveCameraControl = MyAPIGateway.Input.GetGameControl(MyStringId.GetOrCompute("LOOKAROUND"));
 
         public void Hook(IEyeTracking instance)
         {
@@ -65,7 +69,7 @@ namespace Graph.System.Modules
             var entity = player?.Controller?.ControlledEntity?.Entity as IMyShipController as MyCubeBlock;
 
 
-            if (MyAPIGateway.Gui.IsCursorVisible || (!MyAPIGateway.Input.IsAnyAltKeyPressed() &&
+            if (MyAPIGateway.Gui.IsCursorVisible || (!_moveCameraControl.IsPressed() &&
                                                      ((entity?.BlockDefinition as MyCockpitDefinition)
                                                          ?.EnableShipControl ?? false)))
             {
@@ -100,7 +104,7 @@ namespace Graph.System.Modules
                 if (surfaceScript == null || screen.Block == null)
                     continue;
 
-                if (surfaceScript.RequiresAlt && !MyAPIGateway.Input.IsAnyAltKeyPressed())
+                if (surfaceScript.RequiresAlt && !_moveCameraControl.IsPressed())
                     continue;
 
                 var blockPos = screen.Block.WorldMatrix.Translation;

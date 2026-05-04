@@ -44,7 +44,7 @@ namespace Graph.System.Config
             try
             {
                 foreach (var screen in SurfaceScriptBase.Instances)
-                    Save((IMyEntity)screen.Block, screen.ProviderConfig);
+                    Save(screen.Block, screen.ProviderConfig);
             }
             catch (Exception e)
             {

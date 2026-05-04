@@ -273,7 +273,7 @@ namespace Graph.Apps.Games.Chess
 
         bool CanCastleKingSide(Point king, PieceColor color)
         {
-            var flag = color == PieceColor.White ? Castling.WhiteRookRight : Castling.BlackRookRight;
+            var flag = color == PieceColor.White ? Castling.WhiteRookRight : Castling.BlackRookLeft;
 
             if ((_availableCastling & flag) == 0)
                 return false;
@@ -298,7 +298,7 @@ namespace Graph.Apps.Games.Chess
 
         bool CanCastleQueenSide(Point king, PieceColor color)
         {
-            var flag = color == PieceColor.White ? Castling.WhiteRookLeft : Castling.BlackRookLeft;
+            var flag = color == PieceColor.White ? Castling.WhiteRookLeft : Castling.BlackRookRight;
 
             if ((_availableCastling & flag) == 0)
                 return false;

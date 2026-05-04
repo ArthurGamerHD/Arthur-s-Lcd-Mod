@@ -115,7 +115,13 @@ namespace Graph.Apps.Games
                 _currentGame = null;
                 old.Save();
             }
+            
+            _currentGame?.Load();
+        }
 
+        public override void RequestRedraw()
+        {
+            base.RequestRedraw();
             _currentGame?.Load();
         }
 

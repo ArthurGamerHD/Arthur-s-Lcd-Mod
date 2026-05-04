@@ -13,6 +13,12 @@ namespace Graph.System.Config
         {
             try
             {
+                if (providerConfig == null || storageEntity == null)
+                {
+                    LogHelper.Log("WARNING: Save call with invalid block");
+                    return;
+                }
+
                 if (storageEntity.Storage == null)
                     storageEntity.Storage = new MyModStorageComponent();
 

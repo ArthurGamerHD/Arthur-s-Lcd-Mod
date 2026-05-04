@@ -177,7 +177,9 @@ namespace Graph.Helpers
 
         public static string FormatTimeHours(float hours)
         {
-            if (float.IsNaN(hours)) hours = 0f;
+            if (float.IsNaN(hours) || float.IsInfinity(hours))
+                hours = 0f;
+
             var ts = TimeSpan.FromHours(hours);
 
             if (ts.TotalDays > 365)

@@ -348,7 +348,6 @@ namespace Graph.Apps.Games.Chess
             _script = script;
             ReloadProgram();
             SetBot(_selectedBot);
-            
         }
 
         void BuildGlobalMenu()
@@ -449,14 +448,12 @@ namespace Graph.Apps.Games.Chess
         void ReloadProgram()
         {
             Load();
-            BakeBoardVisual();BakeBoardVisual();
+            BakeBoardVisual();
             PopulateHistory();
 
             for (int x = 0; x < _boardSide; x++)
             for (int y = 0; y < _boardSide; y++)
                 _availableMoves[new Point(x, y)] = new List<Point>();
-
-            _coroutine = GeneratePathFind();
         }
 
         ChessGameConfig BuildConfig()
@@ -483,7 +480,7 @@ namespace Graph.Apps.Games.Chess
         public void Save()
         {
             _script.Config.CustomData = MyAPIGateway.Utilities.SerializeToBinary(BuildConfig());
-            ConfigManager.Sync((IMyTerminalBlock)_script.Block);
+            ConfigManager.Sync((IMyTerminalBlock)_script.Block, _script.ProviderConfig);
         }
 
         ChessGameConfig LoadConfig()
@@ -527,10 +524,12 @@ namespace Graph.Apps.Games.Chess
                     for (var index = 0; index < history.Length; index += 2)
                         _history.Add(new MyTuple<Point, Point>(history[index].ToPoint(), history[index + 1].ToPoint()));
                 }
+
+                _shoudRecalculateMoves = true;
             }
             catch (Exception e)
             {
-                ErrorHandlerHelper.LogError(e, nameof(ChessGame));
+                LogHelper.Log(e.ToString());
                 NewGame();
                 Save();
             }
@@ -691,6 +690,7 @@ namespace Graph.Apps.Games.Chess
 
         List<MySprite> _sprites = new List<MySprite>();
         ChessBotSelection _selectedBot = 0;
+        bool _shoudRecalculateMoves;
 
         public List<MySprite> Render()
         {
@@ -714,6 +714,13 @@ namespace Graph.Apps.Games.Chess
 
         void HandleCoroutine()
         {
+            if (_shoudRecalculateMoves)
+            {
+                _coroutine?.Dispose();
+                _coroutine = GeneratePathFind();
+                _shoudRecalculateMoves = false;
+            }
+            
             if (_coroutine == null)
                 return;
 

@@ -65,6 +65,7 @@ namespace Graph.Apps.Games.Chess
                 _chessGame.ExecuteMove(_origin, _target, _chessGame.Board, SpecialMoves.Promotion);
             }
 
+            _chessGame.Save();
             Dispose();
         }
 

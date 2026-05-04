@@ -250,7 +250,7 @@ namespace Graph.Apps.Games.Minesweeper
         public void Save()
         {
             _script.Config.CustomData = MyAPIGateway.Utilities.SerializeToBinary(BuildConfig());
-            ConfigManager.Sync((IMyTerminalBlock)_script.Block);
+            ConfigManager.Sync((IMyTerminalBlock)_script.Block, _script.ProviderConfig);
         }
 
         MinesweeperGameConfig LoadConfig()
@@ -295,7 +295,7 @@ namespace Graph.Apps.Games.Minesweeper
             }
             catch (Exception e)
             {
-                ErrorHandlerHelper.LogError(e, nameof(MinesweeperGame));
+                LogHelper.Log(e.ToString());
                 _difficulty = MinesweeperDifficulty.Easy;
                 NewGame();
                 Save();

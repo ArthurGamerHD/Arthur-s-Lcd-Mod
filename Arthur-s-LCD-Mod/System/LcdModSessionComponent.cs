@@ -80,7 +80,9 @@ namespace Graph.System
 
         public override void SaveData()
         {
-            base.SaveData();
+            if(MyAPIGateway.Session.IsServer)
+                return;
+
             OnSave?.Invoke();
             ConfigManager.SaveAll();
         }
@@ -160,9 +162,9 @@ namespace Graph.System
                 switch (args.Code)
                 {
                     case PackageCode.SyncConfig:
-                        if (args.IsFromServer)
+                        if (!MyAPIGateway.Utilities.IsDedicated)
                             Client?.HandleSyncConfig(args);
-                        else
+                        if (!args.IsFromServer)
                             Server?.HandleSyncConfig(args);
                         break;
                     case PackageCode.EditFaction:

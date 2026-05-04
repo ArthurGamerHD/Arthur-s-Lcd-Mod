@@ -170,7 +170,7 @@ namespace Graph.System
                 if (block == null)
                     return;
 
-                var settings = SurfaceScriptBase.Instances.FirstOrDefault(a => a.Block.Equals(block))?.ProviderConfig;
+                var settings = SurfaceScriptBase.Instances.FirstOrDefault(a => a.Block.EntityId.Equals(block.EntityId))?.ProviderConfig;
                 if (settings == null)
                     return;
 

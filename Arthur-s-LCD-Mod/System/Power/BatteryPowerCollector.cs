@@ -5,20 +5,23 @@ using Graph.Helpers;
 using Graph.System.Config.Models.Apps;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
+using Sandbox.ModAPI.Ingame;
 using SpaceEngineers.Game.ModAPI;
 using VRageMath;
+using IMyBatteryBlock = Sandbox.ModAPI.IMyBatteryBlock;
 
 namespace Graph.System.Power
 {
     internal sealed class BatteryPowerCollector : PowerCollector
     {
-        const float FullThreshold = 0.995f;
-        const float ChargeTrendEpsilonMwh = 0.000001f;
+        const float FULL_THRESHOLD = 0.995f;
+        const float CHARGE_TREND_EPSILON_MWH = 0.000001f;
         static readonly FillableTexture Texture = new FillableTexture("Battery", 1f, 55f, 55f, 32f, 10f, "IconEnergy");
 
         readonly List<IMyBatteryBlock> _visible = new List<IMyBatteryBlock>();
-        readonly HashSet<long> _seenBatteryIds = new HashSet<long>();
-        readonly List<long> _staleBatteryIds = new List<long>();
+
+        Dictionary<long, PowerEntry> _activeEntriesBuffer = new Dictionary<long, PowerEntry>();
+        Dictionary<long, PowerEntry> _standbyEntriesBuffer = new Dictionary<long, PowerEntry>();
 
         float _averageCharge;
         string _statusText = string.Empty;
@@ -59,8 +62,13 @@ namespace Graph.System.Power
             _timeLabel = "--:--";
             _isCharging = false;
 
+            _standbyEntriesBuffer.Clear();
+
             if (grid == null)
+            {
+                _activeEntriesBuffer.Clear();
                 return;
+            }
 
             var batteries = grid.GetBatteries();
             const float eps = 0.001f;
@@ -74,12 +82,10 @@ namespace Graph.System.Power
             int batteriesIncreasing = 0;
             int batteriesDecreasing = 0;
             int batteriesRecharging = 0;
-            _seenBatteryIds.Clear();
 
             for (int i = 0; i < batteries.Count; i++)
             {
                 var battery = batteries[i];
-                _seenBatteryIds.Add(battery.EntityId);
                 if (!HideEmpty || battery.MaxStoredPower > 0f)
                 {
                     _visible.Add(battery);
@@ -95,13 +101,13 @@ namespace Graph.System.Power
                     var drawChargingIcon = isRecharging;
                     
                     var storedDelta = battery.CurrentInput - battery.CurrentOutput;
-                    if (storedDelta > ChargeTrendEpsilonMwh)
+                    if (storedDelta > CHARGE_TREND_EPSILON_MWH)
                     {
                         totalStoredDelta += storedDelta;
                         batteriesIncreasing++;
                         drawChargingIcon = true;
                     }
-                    else if (storedDelta < -ChargeTrendEpsilonMwh)
+                    else if (storedDelta < -CHARGE_TREND_EPSILON_MWH)
                     {
                         totalStoredDelta += storedDelta;
                         batteriesDecreasing++;
@@ -115,22 +121,22 @@ namespace Graph.System.Power
                     if (full)
                         fullCount++;
 
-                    entries.Add(new PowerEntry(
-                        battery.EntityId,
-                        Texture,
+                    var entry = GetOrUpdateBatteryEntry(
+                        battery,
                         ratio,
                         FormatingHelper.PercentageToString(ratio),
                         GetBatteryIconColor(ratio),
-                        drawChargingIcon || full,
-                        blockIcon: BlockIconHelper.GetOrAddTextureForBlock(((MyCubeBlock)battery).BlockDefinition),
-                        entity: battery,
-                        getDetails: () => BuildBatteryDetails(battery)));
+                        drawChargingIcon || full);
+
+                    entries.Add(entry);
                 }
             }
             
+            SwapEntryBuffers();
+
             bool hasRechargingBattery = batteriesRecharging > 0;
-            bool isTrendingCharging = batteriesIncreasing > 0 && totalStoredDelta > ChargeTrendEpsilonMwh;
-            bool isTrendingDischarging = batteriesDecreasing > 0 && totalStoredDelta < -ChargeTrendEpsilonMwh;
+            bool isTrendingCharging = batteriesIncreasing > 0 && totalStoredDelta > CHARGE_TREND_EPSILON_MWH;
+            bool isTrendingDischarging = batteriesDecreasing > 0 && totalStoredDelta < -CHARGE_TREND_EPSILON_MWH;
             if (_visible.Count > 0 && fullCount == _visible.Count)
             {
                 _statusKind = PowerStatusKind.Full;
@@ -193,11 +199,63 @@ namespace Graph.System.Power
             }
         }
 
+        PowerEntry GetOrUpdateBatteryEntry(
+            IMyBatteryBlock battery,
+            float ratio,
+            string percentText,
+            Color fillColor,
+            bool drawCenterIcon)
+        {
+            var entryId = battery.EntityId;
+            var capturedBattery = battery;
+            var blockIcon = BlockIconHelper.GetOrAddTextureForBlock(((MyCubeBlock)battery).BlockDefinition);
+
+            PowerEntry entry;
+            if (!_activeEntriesBuffer.TryGetValue(entryId, out entry) || entry == null)
+            {
+                var detail = BuildBatteryDetails(capturedBattery);
+                entry = new PowerEntry(
+                    entryId,
+                    Texture,
+                    ratio,
+                    percentText,
+                    fillColor,
+                    drawCenterIcon,
+                    blockIcon: blockIcon,
+                    entity: capturedBattery,
+                    getDetails: () => detail);
+            }
+            else
+            {
+                entry.Update(
+                    entryId,
+                    Texture,
+                    ratio,
+                    percentText,
+                    fillColor,
+                    drawCenterIcon,
+                    blockIcon: blockIcon,
+                    entity: capturedBattery,
+                    getDetails: () => BuildBatteryDetails(capturedBattery));
+            }
+
+            _standbyEntriesBuffer[entryId] = entry;
+            return entry;
+        }
+
+        void SwapEntryBuffers()
+        {
+            var tmp = _activeEntriesBuffer;
+            _activeEntriesBuffer = _standbyEntriesBuffer;
+            _standbyEntriesBuffer = tmp;
+            _standbyEntriesBuffer.Clear();
+        }
+
         static float GetRatio(IMyBatteryBlock battery)
         {
             if (battery.MaxStoredPower <= 0f) return 0f;
             var ratio = Math.Max(0f, Math.Min(1f, battery.CurrentStoredPower / battery.MaxStoredPower));
-            if (ratio > FullThreshold)
+            if (ratio > FULL_THRESHOLD)
                 return 1;
             return ratio;
         }
@@ -209,6 +267,8 @@ namespace Graph.System.Power
             return ScreenConfigPower.HeaderColor;
         }
 
+        static readonly Dictionary<long, DynamicTooltipLine> ToggleModeCache = new Dictionary<long, DynamicTooltipLine>();
+        
         static IList<ITooltipLine> BuildBatteryDetails(IMyBatteryBlock battery)
         {
             var lines = new List<ITooltipLine>();
@@ -221,7 +281,20 @@ namespace Graph.System.Power
             lines.Add(new StaticTooltipLine(LocHelper.GetLoc("BlockPropertyProperties_CurrentInput") + FormatingHelper.MegaWattsToString((battery.CurrentInput - battery.CurrentOutput)) 
                                                       // display I/O if is both charging and discharging at the same time
                                                       + (battery.CurrentInput  != 0 && battery.CurrentOutput != 0 ?  $" (+{FormatingHelper.MegaWattsToString(battery.CurrentInput)},-{FormatingHelper.MegaWattsToString(battery.CurrentOutput)})" : "")));
-            lines.Add(new StaticTooltipLine(LocHelper.GetLoc("BlockPropertyTitle_ChargeMode")+": " + battery.ChargeMode));
+            DynamicTooltipLine toggleMode;
+            if (!ToggleModeCache.TryGetValue(battery.EntityId, out toggleMode))
+            {
+                toggleMode = new DynamicTooltipLine(
+                    () => LocHelper.GetLoc("BlockPropertyTitle_ChargeMode") + ": " + battery.ChargeMode,
+                    () => true,
+                    () => battery,
+                    () => (o, o1) => CycleBatteryMode(battery),
+                    () => CursorType.Hand,
+                    () => AudioHelper.HudClick);
+                ToggleModeCache[battery.EntityId] = toggleMode;
+            }
+
+            lines.Add(toggleMode);
             
             float netRate = battery.CurrentInput - battery.CurrentOutput;
 
@@ -239,6 +312,22 @@ namespace Graph.System.Power
             }
 
             return lines;
+        }
+
+        static void CycleBatteryMode(IMyBatteryBlock battery)
+        {
+            switch (battery.ChargeMode)
+            {
+                case ChargeMode.Discharge:
+                    battery.ChargeMode = ChargeMode.Auto;
+                    return;
+                case ChargeMode.Recharge:
+                    battery.ChargeMode = ChargeMode.Discharge;
+                    return;
+                default:
+                    battery.ChargeMode = ChargeMode.Recharge;
+                    break;
+            }
         }
 
         string GetStatusText()
