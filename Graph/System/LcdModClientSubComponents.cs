@@ -5,26 +5,18 @@ using System.Linq;
 using Graph.Apps.Abstract;
 using Graph.Helpers;
 using Graph.Networking;
-using Graph.System.Config;
-using Graph.System.Config.Models;
-using Graph.System.TerminalControls;
 using Graph.System.TerminalControls.Blueprint;
 using Graph.System.TerminalControls.Color;
 using Graph.System.TerminalControls.Filter;
 using Graph.System.TerminalControls.Filter.Buttons;
 using Graph.System.TerminalControls.Filter.Listbox;
 using Graph.System.TerminalControls.Generic;
-using Graph.System.TerminalControls.Scale;
-using Sandbox.Game;
 using Sandbox.Game.Entities;
-using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
-using VRage.Utils;
-using VRageMath;
 using SliderCursorScale = Graph.System.TerminalControls.Interactive.SliderCursorScale;
 using SliderFontSize = Graph.System.TerminalControls.Scale.SliderFontSize;
 using SliderScale = Graph.System.TerminalControls.Scale.SliderScale;
@@ -49,6 +41,7 @@ namespace Graph.System
 
                 var group = CmdManager.GetOrCreateGroup("/lcdMod", new CmdGroupInitializer(4));
                 group.TryAdd("FactionColor", FactionHelper.SetColor);
+                group.TryAdd("PreloadTextures", _ => BlockIconHelper.PreloadAllTextures());
 
                 DebuggerHelper.Break();
                 MyAPIGateway.Entities.OnEntityAdd += EntityAdded;
