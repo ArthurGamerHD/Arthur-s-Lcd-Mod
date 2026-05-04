@@ -58,7 +58,7 @@ namespace Graph.System.Modules
             var entity = player?.Controller?.ControlledEntity?.Entity as IMyShipController as MyCubeBlock;
             
             
-            if (!MyAPIGateway.Input.IsAnyAltKeyPressed() && ((entity?.BlockDefinition as MyCockpitDefinition)?.EnableShipControl ?? false))
+            if (MyAPIGateway.Gui.IsCursorVisible || (!MyAPIGateway.Input.IsAnyAltKeyPressed() && ((entity?.BlockDefinition as MyCockpitDefinition)?.EnableShipControl ?? false)))
             {
                 if (_useInputBlocked)
                     LcdModSessionComponent.SetLocalPlayerUseInputBlocked(blocked: _useInputBlocked = false);
