@@ -24,7 +24,8 @@ namespace Graph.System.Modules
         const double MAX_TRACKING_DISTANCE_METERS = 20d;
         const double MAX_TRACKING_DISTANCE_SQ = MAX_TRACKING_DISTANCE_METERS * MAX_TRACKING_DISTANCE_METERS;
 
-        HashSet<IEyeTracking> modules = new HashSet<IEyeTracking>();
+        readonly HashSet<IEyeTracking> _modules = new HashSet<IEyeTracking>();
+        readonly List<IEyeTracking> _pendingModules = new List<IEyeTracking>();
         int _lastActiveNearbyCount;
         int _lastNearbyCount;
         InteractiveEntry _hoveredClickable;
@@ -37,22 +38,28 @@ namespace Graph.System.Modules
         public void Hook(IEyeTracking instance)
         {
             if (instance != null)
-                modules.Add(instance);
+                _pendingModules.Add(instance);
         }
+        
 
         public void Unhook(IEyeTracking instance)
         {
             if (instance == null)
                 return;
 
-            modules.Remove(instance);
+            _modules.Remove(instance);
         }
 
-        public int Count => modules.Count;
+        public int Count => _modules.Count;
         public int ActiveCount => _lastActiveNearbyCount;
 
         public void Update()
         {
+            foreach (var module in _pendingModules) 
+                _modules.Add(module);
+
+            _pendingModules.Clear();
+            
             var player = MyAPIGateway.Session?.LocalHumanPlayer;
 
             var entity = player?.Controller?.ControlledEntity?.Entity as IMyShipController as MyCubeBlock;
@@ -87,7 +94,7 @@ namespace Graph.System.Modules
             double hoveredDistanceSq = double.MaxValue;
             double tooltipDistanceSq = double.MaxValue;
 
-            foreach (var screen in modules)
+            foreach (var screen in _modules)
             {
                 var surfaceScript = screen as InteractiveSurfaceScript;
                 if (surfaceScript == null || screen.Block == null)
