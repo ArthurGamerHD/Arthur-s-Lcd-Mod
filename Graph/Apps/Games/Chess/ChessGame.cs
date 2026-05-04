@@ -6,9 +6,9 @@ using System.Text;
 using ChessChallenge.API;
 using Graph.Apps.Abstract;
 using Graph.Apps.Games.Chess.Enum;
-using Graph.Apps.Games.Chess.Extensions;
 using Graph.Apps.Games.Chess.TinyChessChallenge.Bots;
 using Graph.Apps.Utility;
+using Graph.Extensions;
 using Graph.Helpers;
 using Graph.System.Config;
 using Graph.System.Controls;
@@ -19,7 +19,6 @@ using VRage;
 using VRage.Game;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
-using PieceType = Graph.Apps.Games.Chess.Enum.PieceType;
 
 namespace Graph.Apps.Games.Chess
 {
@@ -32,22 +31,10 @@ namespace Graph.Apps.Games.Chess
         long _playingAsBlackPlayerId;
         int _sessionId;
 
-        const string TEXTURE_ATLAS =
-            "ጦ耀耀耀耀ᾀ耀耀櫠耀耆⫘耀耆⭘耀耀歠耀耀櫠耀耆⫘耀耚⫖耀耞畾耀耀浠耀耆⭘耀耆⫘耀z⪶怀ƪ⪬堀ƪ⪪㠀ڪ⪪⸀ڪ⪪⸀߾翾縀ጦ耀耀耀xᾞ怀Ʈ櫺㠀Ʈ櫺堀ƪ櫪堀ƪ⪬堀z翮怀耞㕞耀耚⭖耀耚⫖耀耚⪶耀j⪬怀j⪬怀j⪬怀~翾怀Ǫ⪪砀ڴ啔⸀ݔ啔嘀߾翾縀ጦ耀怀耀耆㠀耀耆⿠耀耚⪸耀j檮耀n檬怀ƪ⪪堀ڪ⴪嘀ڪ㼪嘀᫔憪嘀᫞ܬ嘀ߠᲬ嘀耀檴嘀耆⫔堀~翾怀Ǫ⪪砀ڴ啔⸀ݔ啔嘀߾翾縀ጦ耀؀耀耀ᮀ耀耀歠耀耀ᮀ耀耀殀耀耆⸘耀耚㙮耀j塪怀j妪怀j庪怀j⪬怀耚⪶耀耚⫖耀耆⭘耀~翾怀Ǫ⪪砀ڴ啔⸀ݔ啔嘀߾翾縀ጦ耞懾耀j㦪怀j妬怀j妬怀耚恮耀ᾚ秮ᾀ櫺㾮櫠櫺㾮歠櫺⺮浠Ế⺾㞀Ʈ⪼堀j⪴怀j⫔怀耚⫖耀~翾怀Ǫ⪪砀ڴ啔⸀ݔ啔嘀߾翾縀ጦ耀؀耀耀ᮀ耀耀歠耀Ǹᮆ砀ڮᮚ⸀᪪櫪⮀檪⪪⫠櫺⪮歠殆⪸᭠殀櫠᭠᫠櫠殀᪾櫾ⶀڪ⪪㘀ƪ⪪堀~翾怀Ǫ⪪砀ڴ啔⸀ݔ啔嘀߾翾縀";
-
-        readonly Dictionary<ActionResult, string> _actionsLoc = new Dictionary<ActionResult, string>()
-        {
-            { ActionResult.Success, "Moved Successfully" },
-            { ActionResult.Check, "CHECK!" },
-            { ActionResult.Selected, "Selected Successfully!" },
-            { ActionResult.FailToParse, "Invalid Input" },
-            { ActionResult.EmptySelection, "Cell is Empty" },
-            { ActionResult.Unselected, "Selection Cleared" },
-        };
-
-        RectangleF ViewBox;
-
-        RectangleF _boardViewBox;
+        public Sandbox.ModAPI.Ingame.IMyTextSurface Surface => _script.Surface;
+        
+        RectangleF _viewBox;
+        public RectangleF BoardViewBox;
 
         readonly Color[] _boardColors =
         {
@@ -131,7 +118,7 @@ namespace Graph.Apps.Games.Chess
             }
         }
 
-        string GetTextureFromId(byte textureId)
+        public string GetTextureFromId(byte textureId)
         {
             var textureIndex = (byte)(textureId & 0xEF);
             if (textureIndex == 0)
@@ -177,15 +164,15 @@ namespace Graph.Apps.Games.Chess
             {
                 var grid = GetGridCell(index);
 
-                var cell = _board[index];
+                var cell = Board[index];
                 if (cell == 0)
                     continue;
 
                 var data = GetTextureFromId(cell);
 
                 frame.Add(new MySprite(SpriteType.TEXT, data,
-                    new Vector2(grid.Center.X, grid.Position.Y + _padding),
-                    fontId: "Monospace", rotation: _scale));
+                    new Vector2(grid.Center.X, grid.Position.Y + Padding),
+                    fontId: "Monospace", rotation: Scale));
             }
         }
 
@@ -196,55 +183,54 @@ namespace Graph.Apps.Games.Chess
             if (_history.Any())
             {
                 var last = _history.Last();
-                frame.Add(DrawRectangle(GetGridCell(PointToIndex(last.Item1)), color));
-                frame.Add(DrawRectangle(GetGridCell(PointToIndex(last.Item2)), color));
+                frame.Add(GetGridCell(PointToIndex(last.Item1)).ToSprite(color));
+                frame.Add(GetGridCell(PointToIndex(last.Item2)).ToSprite(color));
             }
 
             if (SelectedTile != null)
             {
-                frame.Add(DrawRectangle(GetGridCell(PointToIndex(SelectedTile.Value)), color));
+                frame.Add(GetGridCell(PointToIndex(SelectedTile.Value)).ToSprite(color));
             }
 
             if (_selectedTile != null && _availableMoves[_selectedTile.Value] != null)
             {
                 foreach (var move in _availableMoves[_selectedTile.Value])
                 {
-                    color = _showDangers && IsPositionInDanger(move, _selectedColor, _board)
+                    color = _showDangers && IsPositionInDanger(move, _selectedColor, Board)
                         ? _boardColors[4]
                         : _boardColors[3];
                     var gridCell = GetGridCell(move.X + move.Y * _boardSide);
                     frame.Add(GetCell(move) != 0
-                        ? DrawCircleHollow(gridCell, _boardColors[3])
-                        : DrawCircle(gridCell, color));
+                        ? gridCell.ToCircleHollow(_boardColors[3])
+                        : gridCell.ToCircle(color));
                 }
             }
 
             if (_checkPosition != null)
             {
                 color = _boardColors[4];
-                frame.Add(DrawRectangle(GetGridCell(_checkPosition.Value.X + _checkPosition.Value.Y * _boardSide),
-                    color));
+                frame.Add(GetGridCell(_checkPosition.Value.X + _checkPosition.Value.Y * _boardSide).ToSprite(color));
             }
         }
 
         void BakeBoardVisual()
         {
-            ViewBox = _script.ViewBox;
+            _viewBox = _script.ViewBox;
             
-            var gridSize = Math.Min(ViewBox.Width, ViewBox.Height) * .95f;
+            var gridSize = Math.Min(_viewBox.Width, _viewBox.Height) * .95f;
 
-            _boardViewBox = new RectangleF((ViewBox.Center.X - gridSize / 2) , (ViewBox.Center.Y - gridSize / 2) , gridSize,
+            BoardViewBox = new RectangleF((_viewBox.Center.X - gridSize / 2) , (_viewBox.Center.Y - gridSize / 2) , gridSize,
                 gridSize);
 
-            _boardSide = (int)Math.Sqrt(_board.Length);
+            _boardSide = (int)Math.Sqrt(Board.Length);
 
-            _gridCells = GetGridCells(_boardViewBox, _boardSide);
+            _gridCells = GetGridCells(BoardViewBox, _boardSide);
 
             float cellSize = _gridCells[0].Width;
             var sb = new StringBuilder(GetTextureFromId(0x01));
             Vector2 measuredSize = _panel.MeasureStringInPixels(sb, "Monospace", 1);
-            _scale = cellSize * .8f / measuredSize.X;
-            _padding = cellSize * .1f;
+            Scale = cellSize * .8f / measuredSize.X;
+            Padding = cellSize * .1f;
 
             _boardVisualCache.Clear();
 
@@ -256,7 +242,7 @@ namespace Graph.Apps.Games.Chess
                 if (index % 8 == 0)
                     row++;
 
-                _boardVisualCache.Add(DrawRectangle(gridCell, _boardColors[(index + row) % 2]));
+                _boardVisualCache.Add(gridCell.ToSprite(_boardColors[(index + row) % 2]));
             }
 
             var step = _playingAsBlack ? 1 : -1;
@@ -266,8 +252,8 @@ namespace Graph.Apps.Games.Chess
             for (var index = 0; index < _gridCells.Length; index += _boardSide)
             {
                 _boardVisualCache.Add(new MySprite(SpriteType.TEXT, row.ToString(),
-                    _gridCells[index].Position + new Vector2(_padding, 0), null,
-                    _boardColors[(row + colorOffset) % 2], rotation: _scale * 8));
+                    _gridCells[index].Position + new Vector2(Padding, 0), null,
+                    _boardColors[(row + colorOffset) % 2], rotation: Scale * 8));
                 row += step;
             }
 
@@ -276,40 +262,13 @@ namespace Graph.Apps.Games.Chess
             for (var index = _boardSide * (_boardSide - 1); index < _gridCells.Length; index++)
             {
                 _boardVisualCache.Add(new MySprite(SpriteType.TEXT, column.ToString(),
-                    new Vector2(_gridCells[index].Right - _padding, _gridCells[index].Bottom - 3 * _padding) -
-                    _padding / 2, null,
-                    _boardColors[(column + colorOffset) % 2], rotation: _scale * 8));
+                    new Vector2(_gridCells[index].Right - Padding, _gridCells[index].Bottom - 3 * Padding) -
+                    Padding / 2, null,
+                    _boardColors[(column + colorOffset) % 2], rotation: Scale * 8));
                 column -= (char)step;
             }
         }
 
-        static MySprite DrawRectangle(RectangleF grid, Color color, float scale = 1f)
-        {
-            var sprite = MySprite.CreateSprite("SquareSimple", grid.Center, grid.Size * scale);
-            sprite.Color = color;
-            return sprite;
-        }
-
-        static MySprite DrawCircle(RectangleF grid, Color color, float scale = .3f)
-        {
-            var sprite = MySprite.CreateSprite("Circle", grid.Center, grid.Size * scale);
-            sprite.Color = color;
-            return sprite;
-        }
-
-        static MySprite DrawCircleHollow(RectangleF grid, Color color, float scale = .75f)
-        {
-            var sprite = MySprite.CreateSprite("CircleHollow", grid.Center, grid.Size * scale);
-            sprite.Color = color;
-            return sprite;
-        }
-
-        static MySprite DrawCross(RectangleF grid, Color color, float scale = .5f)
-        {
-            var sprite = MySprite.CreateSprite("Cross", grid.Center, grid.Size * scale);
-            sprite.Color = color;
-            return sprite;
-        }
 
         static RectangleF[] GetGridCells(RectangleF frame, int gridSize)
         {
@@ -338,7 +297,7 @@ namespace Graph.Apps.Games.Chess
 
         void RenderBoard(List<MySprite> frame) => frame.AddRange(_boardVisualCache);
 
-        readonly byte[] _board = new byte[64];
+        public readonly byte[] Board = new byte[64];
 
         readonly List<MyTuple<Point, Point>> _history = new List<MyTuple<Point, Point>>();
 
@@ -351,8 +310,8 @@ namespace Graph.Apps.Games.Chess
 
         string _historyText = string.Empty;
 
-        float _scale;
-        float _padding;
+        public float Scale;
+        public float Padding;
 
         int _boardSide;
 
@@ -368,18 +327,18 @@ namespace Graph.Apps.Games.Chess
                 if (value == null)
                 {
                     _selectedColor = PieceColor.None;
-                    _selectedPieceType = PieceType.Empty;
+                    _selectedPieceType = PieceType.None;
                 }
                 else
                 {
-                    var cell = _board[PointToIndex(value.Value)];
+                    var cell = Board[PointToIndex(value.Value)];
                     _selectedColor = GetColor(cell);
                     _selectedPieceType = (PieceType)(cell & 0xEF);
                 }
             }
         }
 
-        PieceType _selectedPieceType = PieceType.Empty;
+        PieceType _selectedPieceType = PieceType.None;
 
         PieceColor _selectedColor = PieceColor.None;
 
@@ -403,6 +362,8 @@ namespace Graph.Apps.Games.Chess
                     new GlobalMenuEntry(_showDangers ? "Hide Dangerous Tiles" : "Show Dangerous Tiles", (ctx, sender) => SwitchDanger()),
                     new GlobalMenuEntry("Difficulty", new List<GlobalMenuEntry>
                     {
+                        new GlobalMenuEntry("None" + (_selectedBot == ChessBotSelection.None ? " (selected)" : ""),
+                            (ctx, sender) => { SetBot(ChessBotSelection.None); }),
                         new GlobalMenuEntry("Easy - WhateverBot" + (_selectedBot == ChessBotSelection.WhateverBot ? " (selected)" : ""),
                             (ctx, sender) => { SetBot(ChessBotSelection.WhateverBot); }),
                         new GlobalMenuEntry("Medium - Squeedo" + (_selectedBot == ChessBotSelection.Squeedo ? " (selected)" : ""),
@@ -468,18 +429,20 @@ namespace Graph.Apps.Games.Chess
             switch (difficulty)
             {
                 case ChessBotSelection.WhateverBot:
-                    bot = new Bot_153();
-                    break;
-                case ChessBotSelection.Boychesser:
-                    bot = new Bot_614();
+                    bot = new Bot153();
                     break;
                 case ChessBotSelection.Squeedo:
+                    bot = new Bot253();
+                    break;
+                case ChessBotSelection.Boychesser:
+                    bot = new Bot614();
+                    break;
                 default:
-                    bot = new Bot_253();
+                    bot = null;
                     break;
             }
             _selectedBot = difficulty;
-            api = new ChessBotApi(this, bot);
+            _api = bot == null ? null : new ChessBotApi(this, bot);
             BuildGlobalMenu();
         }
 
@@ -504,7 +467,7 @@ namespace Graph.Apps.Games.Chess
 
             return new ChessGameConfig
             {
-                Board = _board,
+                Board = Board,
                 Move = _currentMove,
                 Castling = (int)_availableCastling,
                 History = history.ToString(),
@@ -541,7 +504,7 @@ namespace Graph.Apps.Games.Chess
                     throw new Exception("Missing chess config.");
 
                 for (int i = 0; i < config.Board.Length; i++)
-                    _board[i] = config.Board[i];
+                    Board[i] = config.Board[i];
 
                 _currentMove = config.Move;
                 _availableCastling = (Castling)config.Castling;
@@ -584,7 +547,7 @@ namespace Graph.Apps.Games.Chess
 
         const int BOT_THINK_TIME_MS = 1000;
 
-        ChessBotApi api;
+        ChessBotApi _api;
         IEnumerator<bool> _botThinkCoroutine;
         bool _botThinkRunning;
         bool _botThinkFinished;
@@ -594,8 +557,8 @@ namespace Graph.Apps.Games.Chess
         public void Tick()
         {
             HandleCoroutine();
-            HandleBotThinkCoroutine();
-            //EchoGameStatus();
+            if(_api != null)
+                HandleBotThinkCoroutine();
         }
 
         void HandleBotThinkCoroutine()
@@ -626,7 +589,7 @@ namespace Graph.Apps.Games.Chess
 
         bool ShouldStartBotThink()
         {
-            if (api == null)
+            if (_api == null)
                 return false;
 
             if (_botThinkRunning || _botThinkCoroutine != null)
@@ -635,7 +598,7 @@ namespace Graph.Apps.Games.Chess
             if (_coroutine != null)
                 return false;
 
-            if (_controlOverlay != null)
+            if (_overlayOverlay != null)
                 return false;
 
             if (SelectedTile != null)
@@ -665,14 +628,14 @@ namespace Graph.Apps.Games.Chess
 
             // Build the API board snapshot on the main/game thread.
             // The parallel worker must not read live ChessGame fields directly.
-            api.PrepareBoard();
+            _api.PrepareBoard();
 
             MyAPIGateway.Parallel.Start(
                 () =>
                 {
                     try
                     {
-                        _botThinkMove = api.ThinkPrepared(BOT_THINK_TIME_MS);
+                        _botThinkMove = _api.ThinkPrepared(BOT_THINK_TIME_MS);
                     }
                     catch (Exception e)
                     {
@@ -697,8 +660,8 @@ namespace Graph.Apps.Games.Chess
                 if (IsBotMoveForCurrentSide(_botThinkMove))
                 {
                     MakeChallengeMove(_botThinkMove);
-                    if (api != null && api.Board != null)
-                        api.Board.LoadFromGame();
+                    if (_api != null && _api.Board != null)
+                        _api.Board.LoadFromGame();
                     SelectedTile = null;
                 }
                 else
@@ -733,17 +696,17 @@ namespace Graph.Apps.Games.Chess
         {
             _sprites.Clear();
             
-            if(ViewBox != _script.ViewBox)
+            if(_viewBox != _script.ViewBox)
                 BakeBoardVisual();
             
             RenderBoard(_sprites);
             RenderBoardOverlays(_sprites);
             RenderPieces(_sprites);
 
-            if (_controlOverlay?.Disposed ?? false)
-                _controlOverlay = null;
+            if (_overlayOverlay?.Disposed ?? false)
+                _overlayOverlay = null;
 
-            _controlOverlay?.Render(_sprites);
+            _overlayOverlay?.Render(_sprites);
 
             RebuildInteractiveEntries();
             return _sprites;
@@ -784,14 +747,14 @@ namespace Graph.Apps.Games.Chess
             if (_botThinkRunning || _botThinkCoroutine != null)
                 return;
 
-            if (_controlOverlay == null)
+            if (_overlayOverlay == null)
                 return;
 
-            for (int index = 0; index < _controlOverlay.Boxes.Count; index++)
+            for (int index = 0; index < _overlayOverlay.Boxes.Count; index++)
             {
                 int capturedIndex = index;
                 Interactive.Add(new InteractiveRectangleEntry(
-                    _controlOverlay.Boxes[index],
+                    _overlayOverlay.Boxes[index],
                     CursorType.Hand,
                     capturedIndex,
                     (value, sender) => ClickControlBox((int)value)));
@@ -893,17 +856,17 @@ namespace Graph.Apps.Games.Chess
 
         void ClickControlBox(int index)
         {
-            if (_controlOverlay == null)
+            if (_overlayOverlay == null)
                 return;
 
-            if (index >= 0 && index < _controlOverlay.Boxes.Count)
-                _controlOverlay.ClickBox(index);
+            if (index >= 0 && index < _overlayOverlay.Boxes.Count)
+                _overlayOverlay.ClickBox(index);
 
-            if (_controlOverlay != null && !_controlOverlay.Disposed)
-                _controlOverlay.Dispose();
+            if (_overlayOverlay != null && !_overlayOverlay.Disposed)
+                _overlayOverlay.Dispose();
 
-            if (_controlOverlay != null && _controlOverlay.Disposed)
-                _controlOverlay = null;
+            if (_overlayOverlay != null && _overlayOverlay.Disposed)
+                _overlayOverlay = null;
         }
 
         void ClickBoardCell(int index)
@@ -914,7 +877,7 @@ namespace Graph.Apps.Games.Chess
                 return;
             }
             
-            if (_controlOverlay != null || _gridCells == null || index < 0 || index >= _gridCells.Length)
+            if (_overlayOverlay != null || _gridCells == null || index < 0 || index >= _gridCells.Length)
                 return;
 
             if (_coroutine != null || _botThinkRunning || _botThinkCoroutine != null)
@@ -934,12 +897,5 @@ namespace Graph.Apps.Games.Chess
         {
             _script.ShowMessageBox("Game Over!", "Play again?", "New Game", "Dismiss", (o, o1) => NewGame());
         }
-    }
-
-    internal enum ChessBotSelection
-    {
-        WhateverBot,
-        Squeedo,
-        Boychesser
     }
 }

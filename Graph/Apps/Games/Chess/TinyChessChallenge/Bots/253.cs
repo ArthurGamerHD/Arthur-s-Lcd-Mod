@@ -33,18 +33,18 @@ using ChessChallenge.API;
 namespace Graph.Apps.Games.Chess.TinyChessChallenge.Bots
 {
     //Squeedo
-    public class Bot_253 : IChessBot
+    public class Bot253 : IChessBot
     {
-        bool isEndgame;
+        bool _isEndgame;
 
         public Move Think(Board board, Timer timer)
         {
             Move[] legalMoves = board.GetLegalMoves();
             float[] scores = new float[legalMoves.Length];
             int color = board.IsWhiteToMove ? 1 : -1;
-            if (!isEndgame)
+            if (!_isEndgame)
             {
-                isEndgame = evaluate(board, true) <= 20;
+                _isEndgame = Evaluate(board, true) <= 20;
             }
 
             //First move as white always e4 or d4 (else it plays nonsense at shallow depth)
@@ -56,7 +56,7 @@ namespace Graph.Apps.Games.Chess.TinyChessChallenge.Bots
                 for (int i = 0; i < legalMoves.Length; i++)
                 {
                     board.MakeMove(legalMoves[i]);
-                    float score = search(board, depth, -10001.0f, 10001.0f, -1 * color, timer);
+                    float score = Search(board, depth, -10001.0f, 10001.0f, -1 * color, timer);
                     board.UndoMove(legalMoves[i]);
 
                     if (color * score == 10000.0f) return legalMoves[i];
@@ -76,7 +76,7 @@ namespace Graph.Apps.Games.Chess.TinyChessChallenge.Bots
         /*
          * Evaluates the position on the given board using a simple heuristic based on piece positioning, material value and mobility
          */
-        private float evaluate(Board board, bool onlyCountAllPieces = false)
+        private float Evaluate(Board board, bool onlyCountAllPieces = false)
         {
             float score = 0;
             PieceList[] allLists = board.GetAllPieceLists();
@@ -109,19 +109,19 @@ namespace Graph.Apps.Games.Chess.TinyChessChallenge.Bots
                     //Pawns (the more forward the better)
                     score += 0.03f * (i == 0 ? p.Square.Rank - 1 : (i == 6 ? p.Square.Rank - 6 : 0));
                     //Knights and endgame kings (the more central the better)
-                    score += 0.08f * ((i == 1 || i == 5 && isEndgame)
+                    score += 0.08f * ((i == 1 || i == 5 && _isEndgame)
                         ? 5 - Math.Abs(p.Square.Rank - 3.5f) - Math.Abs(p.Square.File - 3.5f)
-                        : ((i == 7 || i == 11 && isEndgame)
+                        : ((i == 7 || i == 11 && _isEndgame)
                             ? Math.Abs(p.Square.Rank - 3.5f) + Math.Abs(p.Square.File - 3.5f) - 5
                             : 0));
                     //Bishops (penalty for undeveloped bishops, except in the endgame)
-                    score += 0.06f * ((!isEndgame && i == 2 && p.Square.Rank == 0)
+                    score += 0.06f * ((!_isEndgame && i == 2 && p.Square.Rank == 0)
                         ? -1
-                        : ((!isEndgame && i == 8 && p.Square.Rank == 7) ? 1 : 0));
+                        : ((!_isEndgame && i == 8 && p.Square.Rank == 7) ? 1 : 0));
                     //Rooks (the more forward the better, except in the endgame)
-                    score += 0.1f * ((!isEndgame && i == 3)
+                    score += 0.1f * ((!_isEndgame && i == 3)
                         ? p.Square.Rank / 7.0f
-                        : ((!isEndgame && i == 9) ? (p.Square.Rank - 7) / 7.0f : 0));
+                        : ((!_isEndgame && i == 9) ? (p.Square.Rank - 7) / 7.0f : 0));
                     //Kings (this should encourage castling in the early game)
                     score += 0.35f * ((i == 5 && board.PlyCount < 30 && (p.Square.Index == 6 || p.Square.Index == 2))
                         ? 1
@@ -146,7 +146,7 @@ namespace Graph.Apps.Games.Chess.TinyChessChallenge.Bots
         /*
          * Iteratively searches the game tree up to a given depth using minimax with pruning
          */
-        private float search(Board board, int depth, float alpha, float beta, int color, Timer timer)
+        private float Search(Board board, int depth, float alpha, float beta, int color, Timer timer)
         {
             Move[] legalMoves = board.GetLegalMoves();
 
@@ -171,7 +171,7 @@ namespace Graph.Apps.Games.Chess.TinyChessChallenge.Bots
             }
             else if (depth == 0)
             {
-                return evaluate(board);
+                return Evaluate(board);
             }
 
             float highestEval = -1 * color * 10001.0f;
@@ -181,7 +181,7 @@ namespace Graph.Apps.Games.Chess.TinyChessChallenge.Bots
                 Move m = legalMoves[i];
 
                 board.MakeMove(m);
-                float newEval = search(board, depth - 1, alpha, beta, -1 * color, timer);
+                float newEval = Search(board, depth - 1, alpha, beta, -1 * color, timer);
                 board.UndoMove(m);
 
                 if (newEval == float.MaxValue) return float.MaxValue;

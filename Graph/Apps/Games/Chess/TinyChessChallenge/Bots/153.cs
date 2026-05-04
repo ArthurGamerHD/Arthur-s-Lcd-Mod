@@ -47,19 +47,19 @@ namespace Graph.Apps.Games.Chess.TinyChessChallenge.Bots
     // as well as defending against checkmate (it can still see checkmate in one move).
     // The bot will sometimes prioritise moving a piece out of danger over taking
     // the piece that is putting it in danger.
-    public class Bot_153 : IChessBot
+    public class Bot153 : IChessBot
     {
         // Piece values: null, pawn, knight, bishop, rook, queen, king
-        private int[] pieceValues = { 0, 1, 3, 3, 5, 9, 10 };
+        private int[] _pieceValues = { 0, 1, 3, 3, 5, 9, 10 };
 
         private delegate bool IsMoveTypeDelegate(Board board);
 
         // Defining variables outside of function so I don't have to pass
         // them into functions (lowering token count)
-        private Board myBoard;
-        private Move myMove;
-        private Square mySquare;
-        private bool isWhiteToMove;
+        private Board _myBoard;
+        private Move _myMove;
+        private Square _mySquare;
+        private bool _isWhiteToMove;
 
         // I switched to hard coding the score values in to lower the token count
         //int startingScore = 0;
@@ -80,69 +80,69 @@ namespace Graph.Apps.Games.Chess.TinyChessChallenge.Bots
 
         public Move Think(Board board, Timer timer)
         {
-            myBoard = board;
-            var moves = myBoard.GetLegalMoves();
+            _myBoard = board;
+            var moves = _myBoard.GetLegalMoves();
             List<int> moveScores = new List<int>(),
                 bestCapturesMoveIndexes = new List<int>(),
                 posOfPiecesInDanger = new List<int>();
 
-            isWhiteToMove = myBoard.IsWhiteToMove;
-            ulong myPieceBitBoard = myBoard.WhitePiecesBitboard;
-            if (!isWhiteToMove)
-                myPieceBitBoard = myBoard.BlackPiecesBitboard;
+            _isWhiteToMove = _myBoard.IsWhiteToMove;
+            ulong myPieceBitBoard = _myBoard.WhitePiecesBitboard;
+            if (!_isWhiteToMove)
+                myPieceBitBoard = _myBoard.BlackPiecesBitboard;
 
             int bestCapturesValue = -20;
 
             // Determine which pieces (if any) are in danger
             for (int i = 0; i < 64; i++)
             {
-                mySquare = new Square(i);
-                if (BitboardHelper.SquareIsSet(myPieceBitBoard, mySquare)
-                    && !PieceIsSafe(myBoard.GetPiece(mySquare).PieceType))
+                _mySquare = new Square(i);
+                if (BitboardHelper.SquareIsSet(myPieceBitBoard, _mySquare)
+                    && !PieceIsSafe(_myBoard.GetPiece(_mySquare).PieceType))
                     posOfPiecesInDanger.Add(i);
             }
 
             // Determine the score of each move
             for (int i = 0; i < moves.Length; i++)
             {
-                myMove = moves[i];
-                Square myStartSquare = myMove.StartSquare,
-                    myTargetSquare = myMove.TargetSquare;
-                PieceType myMovePieceType = myMove.MovePieceType;
-                int myMovePieceValue = pieceValues[(int)myMovePieceType],
+                _myMove = moves[i];
+                Square myStartSquare = _myMove.StartSquare,
+                    myTargetSquare = _myMove.TargetSquare;
+                PieceType myMovePieceType = _myMove.MovePieceType;
+                int myMovePieceValue = _pieceValues[(int)myMovePieceType],
                     myMoveScore = 0, // startingScore
                     myStartSquareFile = myStartSquare.File,
                     myStartSquareRank = myStartSquare.Rank;
 
                 // Pushing centre pawns if they haven't moved yet
                 if (myMovePieceType == PieceType.Pawn
-                    && ((myStartSquareRank == 1 && isWhiteToMove) || (myStartSquareRank == 6 && !isWhiteToMove))
+                    && ((myStartSquareRank == 1 && _isWhiteToMove) || (myStartSquareRank == 6 && !_isWhiteToMove))
                     && (myStartSquareFile == 3 || myStartSquareFile == 4))
                     myMoveScore += 3; // pushingCentrePawnsScore
                 if (myMovePieceType == PieceType.Knight || myMovePieceType == PieceType.Bishop)
                 {
                     // Developing pieces
-                    if ((myStartSquareRank == 0 && isWhiteToMove)
-                        || (myStartSquareRank == 7 && !isWhiteToMove))
+                    if ((myStartSquareRank == 0 && _isWhiteToMove)
+                        || (myStartSquareRank == 7 && !_isWhiteToMove))
                         myMoveScore += 3; // developingPiecesScore
                     // Advancing pieces
-                    else if ((myTargetSquare.Rank > myStartSquareRank && isWhiteToMove)
-                             || (myTargetSquare.Rank < myStartSquareRank && !isWhiteToMove))
+                    else if ((myTargetSquare.Rank > myStartSquareRank && _isWhiteToMove)
+                             || (myTargetSquare.Rank < myStartSquareRank && !_isWhiteToMove))
                         myMoveScore += 2; // advancingPiecesScore
                 }
 
                 // Castling
-                if (myMove.IsCastles)
+                if (_myMove.IsCastles)
                     myMoveScore += 4; // castlingScore
                 // Capturing pieces that gives the highest value lead
                 // (capture most valuable piece with least valuable attacker)
-                if (myMove.IsCapture)
+                if (_myMove.IsCapture)
                 {
-                    int capturePieceValue = pieceValues[(int)myBoard.GetPiece(myTargetSquare).PieceType],
+                    int capturePieceValue = _pieceValues[(int)_myBoard.GetPiece(myTargetSquare).PieceType],
                         captureValue = capturePieceValue - myMovePieceValue;
-                    mySquare = myTargetSquare;
+                    _mySquare = myTargetSquare;
                     // If capture piece is undefended
-                    if (CalculateSquareAttackerValues(!isWhiteToMove).Count == 0)
+                    if (CalculateSquareAttackerValues(!_isWhiteToMove).Count == 0)
                         captureValue = capturePieceValue;
                     if (captureValue == bestCapturesValue)
                         bestCapturesMoveIndexes.Add(i);
@@ -156,16 +156,16 @@ namespace Graph.Apps.Games.Chess.TinyChessChallenge.Bots
                     // Removing danger by taking a piece
                     for (int j = 0; j < posOfPiecesInDanger.Count; j++)
                     {
-                        mySquare = new Square(posOfPiecesInDanger[j]);
-                        myBoard.MakeMove(myMove);
-                        if (PieceIsSafe(myMovePieceType) && !(mySquare == myStartSquare))
+                        _mySquare = new Square(posOfPiecesInDanger[j]);
+                        _myBoard.MakeMove(_myMove);
+                        if (PieceIsSafe(myMovePieceType) && !(_mySquare == myStartSquare))
                             myMoveScore += 2 * myMovePieceValue; // capturingAttackerScore
-                        myBoard.UndoMove(myMove);
+                        _myBoard.UndoMove(_myMove);
                     }
                 }
 
                 // Promoting to queen
-                if (myMove.IsPromotion && myMove.PromotionPieceType == PieceType.Queen)
+                if (_myMove.IsPromotion && _myMove.PromotionPieceType == PieceType.Queen)
                     myMoveScore += 4; // promotingToQueenScore
                 // Check
                 if (MoveIsOfType(myBoard => myBoard.IsInCheck()))
@@ -184,24 +184,24 @@ namespace Graph.Apps.Games.Chess.TinyChessChallenge.Bots
                 }
 
                 // Reduce score of move if it leads to checkmate in one move
-                myBoard.MakeMove(myMove);
-                var opponentMoves = myBoard.GetLegalMoves();
+                _myBoard.MakeMove(_myMove);
+                var opponentMoves = _myBoard.GetLegalMoves();
                 // It would be better to pass the move into the variable
                 // instead of using temp but that requires more tokens
-                Move temp = myMove;
+                Move temp = _myMove;
                 for (int j = 0; j < opponentMoves.Length; j++)
                 {
-                    myMove = opponentMoves[j];
+                    _myMove = opponentMoves[j];
                     if (MoveIsOfType(myBoard => myBoard.IsInCheckmate()))
                         myMoveScore += -1000; // LoseScore
                 }
 
-                myMove = temp;
+                _myMove = temp;
                 // Reduce score of move if it is unsafe
                 // Get new bitboard since a piece has moved
-                myPieceBitBoard = myBoard.WhitePiecesBitboard;
-                if (!isWhiteToMove)
-                    myPieceBitBoard = myBoard.BlackPiecesBitboard;
+                myPieceBitBoard = _myBoard.WhitePiecesBitboard;
+                if (!_isWhiteToMove)
+                    myPieceBitBoard = _myBoard.BlackPiecesBitboard;
                 for (int j = 0; j < 64; j++)
                 {
                     // Determine if j is the position of a piece in danger
@@ -214,17 +214,17 @@ namespace Graph.Apps.Games.Chess.TinyChessChallenge.Bots
                             isInPosOfPieceInDanger = true;
                     }
 
-                    mySquare = new Square(j);
-                    PieceType currentPieceType = myBoard.GetPiece(mySquare).PieceType;
-                    if (BitboardHelper.SquareIsSet(myPieceBitBoard, mySquare)
+                    _mySquare = new Square(j);
+                    PieceType currentPieceType = _myBoard.GetPiece(_mySquare).PieceType;
+                    if (BitboardHelper.SquareIsSet(myPieceBitBoard, _mySquare)
                         && !PieceIsSafe(currentPieceType))
                     {
                         // If move puts moving piece in danger
                         // and not (capturing a piece and the value of the captured piece is equal
                         // or greater than of the caputuring piece), it is unsafe
-                        if (mySquare == myTargetSquare)
+                        if (_mySquare == myTargetSquare)
                         {
-                            if (!(myMove.IsCapture && pieceValues[(int)myMove.CapturePieceType] >= myMovePieceValue))
+                            if (!(_myMove.IsCapture && _pieceValues[(int)_myMove.CapturePieceType] >= myMovePieceValue))
                                 myMoveScore += -3 * myMovePieceValue; // unsafeMoveForThisPieceScore
                         }
                         // If move puts another piece in danger
@@ -235,7 +235,7 @@ namespace Graph.Apps.Games.Chess.TinyChessChallenge.Bots
                     }
                 }
 
-                myBoard.UndoMove(myMove);
+                _myBoard.UndoMove(_myMove);
 
                 moveScores.Add(myMoveScore);
             }
@@ -272,9 +272,9 @@ namespace Graph.Apps.Games.Chess.TinyChessChallenge.Bots
         // Test if move is of type (e.g. isDraw)
         private bool MoveIsOfType(IsMoveTypeDelegate isMoveType)
         {
-            myBoard.MakeMove(myMove);
-            bool isType = isMoveType(myBoard);
-            myBoard.UndoMove(myMove);
+            _myBoard.MakeMove(_myMove);
+            bool isType = isMoveType(_myBoard);
+            _myBoard.UndoMove(_myMove);
             return isType;
         }
 
@@ -282,12 +282,12 @@ namespace Graph.Apps.Games.Chess.TinyChessChallenge.Bots
         private bool PieceIsSafe(PieceType pieceType)
         {
             // Get all attackers and all defenders of the square
-            List<int> attackerValues = CalculateSquareAttackerValues(!isWhiteToMove),
-                defenderValues = CalculateSquareAttackerValues(isWhiteToMove);
+            List<int> attackerValues = CalculateSquareAttackerValues(!_isWhiteToMove),
+                defenderValues = CalculateSquareAttackerValues(_isWhiteToMove);
 
             // If there is an attacker weaker that the piece,
             // the piece isn't safe
-            if (attackerValues.Count > 0 && attackerValues[0] < pieceValues[(int)pieceType])
+            if (attackerValues.Count > 0 && attackerValues[0] < _pieceValues[(int)pieceType])
                 return false;
 
             // Go through both lists to find first attacker with
@@ -319,24 +319,24 @@ namespace Graph.Apps.Games.Chess.TinyChessChallenge.Bots
             ulong[] attackingPieces =
             {
                 0,
-                BitboardHelper.GetPawnAttacks(mySquare, !isWhite),
-                BitboardHelper.GetKnightAttacks(mySquare),
-                BitboardHelper.GetSliderAttacks(PieceType.Bishop, mySquare, myBoard),
-                BitboardHelper.GetSliderAttacks(PieceType.Rook, mySquare, myBoard),
-                BitboardHelper.GetSliderAttacks(PieceType.Queen, mySquare, myBoard),
-                BitboardHelper.GetKingAttacks(mySquare)
+                BitboardHelper.GetPawnAttacks(_mySquare, !isWhite),
+                BitboardHelper.GetKnightAttacks(_mySquare),
+                BitboardHelper.GetSliderAttacks(PieceType.Bishop, _mySquare, _myBoard),
+                BitboardHelper.GetSliderAttacks(PieceType.Rook, _mySquare, _myBoard),
+                BitboardHelper.GetSliderAttacks(PieceType.Queen, _mySquare, _myBoard),
+                BitboardHelper.GetKingAttacks(_mySquare)
             };
 
             for (int i = 0; i < 64; i++)
             {
                 Square currentSquare = new Square(i);
-                if (myBoard.GetPiece(currentSquare).IsWhite == isWhite)
+                if (_myBoard.GetPiece(currentSquare).IsWhite == isWhite)
                 {
                     for (int j = 1; j < attackingPieces.Length; j++)
                     {
                         if (BitboardHelper.SquareIsSet(attackingPieces[j], currentSquare)
-                            && myBoard.GetPiece(currentSquare).PieceType == (PieceType)j)
-                            attackers.Add(pieceValues[j]);
+                            && _myBoard.GetPiece(currentSquare).PieceType == (PieceType)j)
+                            attackers.Add(_pieceValues[j]);
                     }
                 }
             }

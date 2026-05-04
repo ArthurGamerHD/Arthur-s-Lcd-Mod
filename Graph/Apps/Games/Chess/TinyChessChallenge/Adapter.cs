@@ -12,21 +12,23 @@ namespace Graph.Apps.Games.Chess
 {
     public partial class ChessGame
     {
-        public bool IsChallengeWhiteToMove
+        internal enum ChessBotSelection
         {
-            get { return (PieceColor)(_currentMove % 2) == PieceColor.White; }
+            None,
+            WhateverBot,
+            Squeedo,
+            Boychesser,
         }
+        
+        public bool IsChallengeWhiteToMove => (PieceColor)(_currentMove % 2) == PieceColor.White;
 
-        public int ChallengePlyCount
-        {
-            get { return _currentMove; }
-        }
+        public int ChallengePlyCount => _currentMove;
 
-        public ChessChallenge.API.Move[] GetChallengeLegalMoves(bool capturesOnly = false)
+        public Move[] GetChallengeLegalMoves(bool capturesOnly = false)
         {
             EnsureChallengeMoveGenerationFinished();
 
-            var result = new List<ChessChallenge.API.Move>();
+            var result = new List<Move>();
 
             foreach (var pair in _availableMoves)
             {
@@ -42,23 +44,23 @@ namespace Graph.Apps.Games.Chess
                     var targetCell = GetCell(target) ?? 0;
                     var captureType = targetCell != 0
                         ? ToChallengePieceType(GetPieceType(targetCell))
-                        : ChessChallenge.API.PieceType.None;
+                        : PieceType.None;
 
-                    if (capturesOnly && captureType == ChessChallenge.API.PieceType.None)
+                    if (capturesOnly && captureType == PieceType.None)
                         continue;
 
                     var promotionType = GetChallengePromotionType(origin, target, fromCell);
 
-                    result.Add(new ChessChallenge.API.Move(
+                    result.Add(new Move(
                         ToChallengeSquare(origin),
                         ToChallengeSquare(target),
                         movePieceType,
                         captureType,
                         promotionType,
-                        isEnPassant: movePieceType == ChessChallenge.API.PieceType.Pawn &&
+                        isEnPassant: movePieceType == PieceType.Pawn &&
                                      origin.X != target.X &&
                                      targetCell == 0,
-                        isCastles: movePieceType == ChessChallenge.API.PieceType.King &&
+                        isCastles: movePieceType == PieceType.King &&
                                    Math.Abs(origin.X - target.X) == 2));
                 }
             }
@@ -66,7 +68,7 @@ namespace Graph.Apps.Games.Chess
             return result.ToArray();
         }
 
-        public void MakeChallengeMove(ChessChallenge.API.Move move)
+        public void MakeChallengeMove(Move move)
         {
             if (move.IsNull)
                 return;
@@ -95,34 +97,34 @@ namespace Graph.Apps.Games.Chess
             if (move.IsPromotion && GetCell(origin) != null)
             {
                 var originIndex = PointToIndex(origin);
-                _board[originIndex] &= 0xF0;
-                _board[originIndex] |= ToGamePromotionPieceValue(move.PromotionPieceType);
+                Board[originIndex] &= 0xF0;
+                Board[originIndex] |= ToGamePromotionPieceValue(move.PromotionPieceType);
             }
 
-            if (TryMove(origin, target, _board) == ActionResult.Success)
+            if (TryMove(origin, target, Board) == ActionResult.Success)
                 Save();
         }
 
-        public ChessChallenge.API.Piece GetChallengePiece(ChessChallenge.API.Square square)
+        public Piece GetChallengePiece(Square square)
         {
             var point = ToGamePoint(square);
             var cell = GetCell(point) ?? 0;
 
             if (cell == 0)
-                return new ChessChallenge.API.Piece(ChessChallenge.API.PieceType.None, false, square);
+                return new Piece(PieceType.None, false, square);
 
-            return new ChessChallenge.API.Piece(
+            return new Piece(
                 ToChallengePieceType(GetPieceType(cell)),
                 GetColor(cell) == PieceColor.White,
                 square);
         }
 
-        public ChessChallenge.API.Square GetChallengeKingSquare(bool white)
+        public Square GetChallengeKingSquare(bool white)
         {
             var color = white ? PieceColor.White : PieceColor.Black;
             var king = FindKing(color);
 
-            return king.HasValue ? ToChallengeSquare(king.Value) : new ChessChallenge.API.Square(0);
+            return king.HasValue ? ToChallengeSquare(king.Value) : new Square(0);
         }
 
         public bool IsChallengeInCheck(bool white)
@@ -130,14 +132,14 @@ namespace Graph.Apps.Games.Chess
             var color = white ? PieceColor.White : PieceColor.Black;
             var king = FindKing(color);
 
-            return king.HasValue && IsPositionInDanger(king.Value, color, _board);
+            return king.HasValue && IsPositionInDanger(king.Value, color, Board);
         }
 
-        public bool IsChallengeSquareAttackedByOpponent(ChessChallenge.API.Square square)
+        public bool IsChallengeSquareAttackedByOpponent(Square square)
         {
             var point = ToGamePoint(square);
             var opponent = IsChallengeWhiteToMove ? PieceColor.Black : PieceColor.White;
-            return IsPositionInDanger(point, opponent, _board);
+            return IsPositionInDanger(point, opponent, Board);
         }
 
         public bool HasChallengeKingsideCastleRight(bool white)
@@ -157,9 +159,9 @@ namespace Graph.Apps.Games.Chess
             ulong result = 0UL;
             var color = white ? PieceColor.White : PieceColor.Black;
 
-            for (int i = 0; i < _board.Length; i++)
+            for (int i = 0; i < Board.Length; i++)
             {
-                var cell = _board[i];
+                var cell = Board[i];
                 if (cell != 0 && GetColor(cell) == color)
                     result |= 1UL << ToChallengeSquare(IndexToPoint(i)).Index;
             }
@@ -173,9 +175,9 @@ namespace Graph.Apps.Games.Chess
             {
                 ulong hash = 1469598103934665603UL;
 
-                for (int i = 0; i < _board.Length; i++)
+                for (int i = 0; i < Board.Length; i++)
                 {
-                    hash ^= _board[i];
+                    hash ^= Board[i];
                     hash *= 1099511628211UL;
                 }
 
@@ -189,20 +191,20 @@ namespace Graph.Apps.Games.Chess
             }
         }
 
-        public ChessChallenge.API.Move[] GetChallengeMoveHistory()
+        public Move[] GetChallengeMoveHistory()
         {
-            var result = new List<ChessChallenge.API.Move>(_history.Count);
+            var result = new List<Move>(_history.Count);
 
             foreach (var pair in _history)
             {
                 var fromCell = GetCell(pair.Item1) ?? 0;
                 var targetCell = GetCell(pair.Item2) ?? 0;
 
-                result.Add(new ChessChallenge.API.Move(
+                result.Add(new Move(
                     ToChallengeSquare(pair.Item1),
                     ToChallengeSquare(pair.Item2),
-                    fromCell != 0 ? ToChallengePieceType(GetPieceType(fromCell)) : ChessChallenge.API.PieceType.None,
-                    targetCell != 0 ? ToChallengePieceType(GetPieceType(targetCell)) : ChessChallenge.API.PieceType.None));
+                    fromCell != 0 ? ToChallengePieceType(GetPieceType(fromCell)) : PieceType.None,
+                    targetCell != 0 ? ToChallengePieceType(GetPieceType(targetCell)) : PieceType.None));
             }
 
             return result.ToArray();
@@ -255,65 +257,65 @@ namespace Graph.Apps.Games.Chess
                 HandleCoroutine();
         }
 
-        static ChessChallenge.API.PieceType ToChallengePieceType(Graph.Apps.Games.Chess.Enum.PieceType type)
+        static PieceType ToChallengePieceType(PieceType type)
         {
             switch (type)
             {
-                case Graph.Apps.Games.Chess.Enum.PieceType.Pawn:
-                    return ChessChallenge.API.PieceType.Pawn;
-                case Graph.Apps.Games.Chess.Enum.PieceType.Rook:
-                    return ChessChallenge.API.PieceType.Rook;
-                case Graph.Apps.Games.Chess.Enum.PieceType.Knight:
-                    return ChessChallenge.API.PieceType.Knight;
-                case Graph.Apps.Games.Chess.Enum.PieceType.Bishop:
-                    return ChessChallenge.API.PieceType.Bishop;
-                case Graph.Apps.Games.Chess.Enum.PieceType.Queen:
-                    return ChessChallenge.API.PieceType.Queen;
-                case Graph.Apps.Games.Chess.Enum.PieceType.King:
-                    return ChessChallenge.API.PieceType.King;
+                case PieceType.Pawn:
+                    return PieceType.Pawn;
+                case PieceType.Rook:
+                    return PieceType.Rook;
+                case PieceType.Knight:
+                    return PieceType.Knight;
+                case PieceType.Bishop:
+                    return PieceType.Bishop;
+                case PieceType.Queen:
+                    return PieceType.Queen;
+                case PieceType.King:
+                    return PieceType.King;
                 default:
-                    return ChessChallenge.API.PieceType.None;
+                    return PieceType.None;
             }
         }
 
-        static byte ToGamePromotionPieceValue(ChessChallenge.API.PieceType type)
+        static byte ToGamePromotionPieceValue(PieceType type)
         {
             switch (type)
             {
-                case ChessChallenge.API.PieceType.Rook:
+                case PieceType.Rook:
                     return 0x02;
-                case ChessChallenge.API.PieceType.Knight:
+                case PieceType.Knight:
                     return 0x03;
-                case ChessChallenge.API.PieceType.Bishop:
+                case PieceType.Bishop:
                     return 0x04;
-                case ChessChallenge.API.PieceType.Queen:
+                case PieceType.Queen:
                     return 0x05;
                 default:
                     return 0x05;
             }
         }
 
-        ChessChallenge.API.PieceType GetChallengePromotionType(Point origin, Point target, byte fromCell)
+        PieceType GetChallengePromotionType(Point origin, Point target, byte fromCell)
         {
-            if (GetPieceType(fromCell) != Graph.Apps.Games.Chess.Enum.PieceType.Pawn)
-                return ChessChallenge.API.PieceType.None;
+            if (GetPieceType(fromCell) != PieceType.Pawn)
+                return PieceType.None;
 
             var color = GetColor(fromCell);
             bool reachesPromotionRank =
                 (target.Y == 0 && color == PieceColor.White) ||
                 (target.Y == _boardSide - 1 && color == PieceColor.Black);
 
-            return reachesPromotionRank ? ChessChallenge.API.PieceType.Queen : ChessChallenge.API.PieceType.None;
+            return reachesPromotionRank ? PieceType.Queen : PieceType.None;
         }
 
-        Point ToGamePoint(ChessChallenge.API.Square square)
+        Point ToGamePoint(Square square)
         {
             return new Point(square.File, _boardSide - square.Rank - 1);
         }
 
-        ChessChallenge.API.Square ToChallengeSquare(Point point)
+        Square ToChallengeSquare(Point point)
         {
-            return new ChessChallenge.API.Square(point.X, _boardSide - point.Y - 1);
+            return new Square(point.X, _boardSide - point.Y - 1);
         }
 
         Point IndexToPoint(int index)
@@ -326,22 +328,22 @@ namespace Graph.Apps.Games.Chess
             char c;
             switch (GetPieceType(cell))
             {
-                case Graph.Apps.Games.Chess.Enum.PieceType.Pawn:
+                case PieceType.Pawn:
                     c = 'p';
                     break;
-                case Graph.Apps.Games.Chess.Enum.PieceType.Rook:
+                case PieceType.Rook:
                     c = 'r';
                     break;
-                case Graph.Apps.Games.Chess.Enum.PieceType.Knight:
+                case PieceType.Knight:
                     c = 'n';
                     break;
-                case Graph.Apps.Games.Chess.Enum.PieceType.Bishop:
+                case PieceType.Bishop:
                     c = 'b';
                     break;
-                case Graph.Apps.Games.Chess.Enum.PieceType.Queen:
+                case PieceType.Queen:
                     c = 'q';
                     break;
-                case Graph.Apps.Games.Chess.Enum.PieceType.King:
+                case PieceType.King:
                     c = 'k';
                     break;
                 default:

@@ -35,12 +35,12 @@ using static System.Math;
 namespace Graph.Apps.Games.Chess.TinyChessChallenge.Bots
 {
     // Boychesser
-    public class Bot_614 : IChessBot
+    public class Bot614 : IChessBot
     {
-        const int BoundUpper = 0;
-        const int BoundLower = 2147483647;
+        const int BOUND_UPPER = 0;
+        const int BOUND_LOWER = 2147483647;
 
-        struct TTEntry
+        struct TtEntry
         {
             public ulong Hash;
             public ushort MoveRaw;
@@ -48,7 +48,7 @@ namespace Graph.Apps.Games.Chess.TinyChessChallenge.Bots
             public int Depth;
             public int Bound;
 
-            public TTEntry(ulong hash, ushort moveRaw, int score, int depth, int bound)
+            public TtEntry(ulong hash, ushort moveRaw, int score, int depth, int bound)
             {
                 Hash = hash;
                 MoveRaw = moveRaw;
@@ -58,17 +58,17 @@ namespace Graph.Apps.Games.Chess.TinyChessChallenge.Bots
             }
         }
 
-        public int maxSearchTime, searchingDepth, lastScore;
+        public int MaxSearchTime, SearchingDepth, LastScore;
 
-        Timer timer;
-        Board board;
+        Timer _timer;
+        Board _board;
 
-        Move searchBestMove, rootBestMove;
+        Move _searchBestMove, _rootBestMove;
 
-        readonly TTEntry[] transpositionTable = new TTEntry[0x800000];
-        readonly int[,,] history = new int[2, 7, 64];
+        readonly TtEntry[] _transpositionTable = new TtEntry[0x800000];
+        readonly int[,,] _history = new int[2, 7, 64];
 
-        readonly ulong[] packedData =
+        readonly ulong[] _packedData =
         {
             0x0000000000000000, 0x2328170f2d2a1401, 0x1f1f221929211507, 0x18202a1c2d261507,
             0x252e3022373a230f, 0x585b47456d65321c, 0x8d986f66a5a85f50, 0x0002000300070005,
@@ -90,56 +90,56 @@ namespace Graph.Apps.Games.Chess.TinyChessChallenge.Bots
 
         int EvalWeight(int item)
         {
-            return (int)(packedData[item >> 1] >> (item * 32));
+            return (int)(_packedData[item >> 1] >> (item * 32));
         }
 
         public Move Think(Board boardOrig, Timer timerOrig)
         {
-            board = boardOrig;
-            timer = timerOrig;
+            _board = boardOrig;
+            _timer = timerOrig;
 
-            Move[] legalMoves = board.GetLegalMoves();
+            Move[] legalMoves = _board.GetLegalMoves();
             if (legalMoves.Length > 0)
-                rootBestMove = legalMoves[0];
+                _rootBestMove = legalMoves[0];
 
-            maxSearchTime = timer.MillisecondsRemaining / 4;
-            searchingDepth = 1;
+            MaxSearchTime = _timer.MillisecondsRemaining / 4;
+            SearchingDepth = 1;
             do
             {
                 try
                 {
-                    if (Abs(lastScore - Negamax(lastScore - 20, lastScore + 20, searchingDepth)) >= 20)
-                        Negamax(-32000, 32000, searchingDepth);
-                    rootBestMove = searchBestMove;
+                    if (Abs(LastScore - Negamax(LastScore - 20, LastScore + 20, SearchingDepth)) >= 20)
+                        Negamax(-32000, 32000, SearchingDepth);
+                    _rootBestMove = _searchBestMove;
                 }
                 catch
                 {
                     break;
                 }
-            } while (++searchingDepth <= 200 && timer.MillisecondsElapsedThisTurn < maxSearchTime / 10);
+            } while (++SearchingDepth <= 200 && _timer.MillisecondsElapsedThisTurn < MaxSearchTime / 10);
 
-            return rootBestMove;
+            return _rootBestMove;
         }
 
         public int Negamax(int alpha, int beta, int depth)
         {
-            if (timer.MillisecondsElapsedThisTurn >= maxSearchTime && searchingDepth > 1)
+            if (_timer.MillisecondsElapsedThisTurn >= MaxSearchTime && SearchingDepth > 1)
                 throw new Exception();
 
-            int ttIndex = (int)(board.ZobristKey & 0x7FFFFFUL);
-            TTEntry tt = transpositionTable[ttIndex];
+            int ttIndex = (int)(_board.ZobristKey & 0x7FFFFFUL);
+            TtEntry tt = _transpositionTable[ttIndex];
             ulong ttHash = tt.Hash;
             ushort ttMoveRaw = tt.MoveRaw;
             int score = tt.Score;
             int ttDepth = tt.Depth;
             int ttBound = tt.Bound;
 
-            bool ttHit = ttHash == board.ZobristKey;
+            bool ttHit = ttHash == _board.ZobristKey;
             bool nonPv = alpha + 1 == beta;
             bool inQSearch = depth <= 0;
 
             int eval = 0x000b000a;
-            int bestScore = board.PlyCount - 30000;
+            int bestScore = _board.PlyCount - 30000;
             int oldAlpha = alpha;
             int moveCount = 0;
             int quietsToCheck = (0x17285100 >> (depth * 6)) & 63;
@@ -147,18 +147,18 @@ namespace Graph.Apps.Games.Chess.TinyChessChallenge.Bots
 
             if (ttHit)
             {
-                bool canUseTT = false;
+                bool canUseTt = false;
                 if (ttDepth >= depth)
                 {
-                    if (ttBound == BoundLower)
-                        canUseTT = score >= beta;
-                    else if (ttBound == BoundUpper)
-                        canUseTT = score <= alpha;
+                    if (ttBound == BOUND_LOWER)
+                        canUseTt = score >= beta;
+                    else if (ttBound == BOUND_UPPER)
+                        canUseTt = score <= alpha;
                     else
-                        canUseTT = nonPv || inQSearch;
+                        canUseTt = nonPv || inQSearch;
                 }
 
-                if (canUseTT)
+                if (canUseTt)
                     return score;
             }
             else if (depth > 3)
@@ -166,27 +166,27 @@ namespace Graph.Apps.Games.Chess.TinyChessChallenge.Bots
                 depth--;
             }
 
-            eval = ttHit && !inQSearch ? score : Eval(board.AllPiecesBitboard, ref eval, ref tmp) / 24;
+            eval = ttHit && !inQSearch ? score : Eval(_board.AllPiecesBitboard, ref eval, ref tmp) / 24;
 
             if (inQSearch)
             {
                 alpha = Max(alpha, bestScore = eval);
             }
-            else if (nonPv && eval >= beta && board.TrySkipTurn())
+            else if (nonPv && eval >= beta && _board.TrySkipTurn())
             {
                 bestScore = depth <= 4
                     ? eval - 58 * depth
                     : -Negamax(-beta, -alpha, (depth * 100 + beta - eval) / 186 - 1);
-                board.UndoSkipTurn();
+                _board.UndoSkipTurn();
             }
 
             if (bestScore >= beta)
                 return bestScore;
 
-            if (board.IsInStalemate())
+            if (_board.IsInStalemate())
                 return 0;
 
-            Move[] moves = board.GetLegalMoves(inQSearch);
+            Move[] moves = _board.GetLegalMoves(inQSearch);
             int[] scores = new int[moves.Length];
             tmp = 0;
             foreach (Move move in moves)
@@ -204,12 +204,12 @@ namespace Graph.Apps.Games.Chess.TinyChessChallenge.Bots
                     alpha)
                     break;
 
-                board.MakeMove(move);
-                int nextDepth = board.IsInCheck() ? depth : depth - 1;
+                _board.MakeMove(move);
+                int nextDepth = _board.IsInCheck() ? depth : depth - 1;
                 int reduction = (depth - nextDepth) *
                                 Max((moveCount * 93 + depth * 144) / 1000 + scores[moveCount] / 172, 0);
 
-                if (board.IsRepeatedPosition())
+                if (_board.IsRepeatedPosition())
                 {
                     score = 0;
                 }
@@ -223,7 +223,7 @@ namespace Graph.Apps.Games.Chess.TinyChessChallenge.Bots
                         score = -Negamax(-beta, -alpha, nextDepth);
                 }
 
-                board.UndoMove(move);
+                _board.UndoMove(move);
 
                 if (score > bestScore)
                 {
@@ -264,15 +264,15 @@ namespace Graph.Apps.Games.Chess.TinyChessChallenge.Bots
                 moveCount++;
             }
 
-            transpositionTable[ttIndex] = new TTEntry(
-                board.ZobristKey,
+            _transpositionTable[ttIndex] = new TtEntry(
+                _board.ZobristKey,
                 alpha > oldAlpha ? bestMove.RawValue : ttMoveRaw,
                 ClampScore(bestScore, -20000, 20000),
                 Max(depth, 0),
-                bestScore >= beta ? BoundLower : alpha - oldAlpha);
+                bestScore >= beta ? BOUND_LOWER : alpha - oldAlpha);
 
-            searchBestMove = bestMove;
-            lastScore = bestScore;
+            _searchBestMove = bestMove;
+            LastScore = bestScore;
             return bestScore;
         }
 
@@ -280,27 +280,27 @@ namespace Graph.Apps.Games.Chess.TinyChessChallenge.Bots
         {
             while (pieces != 0UL)
             {
-                int sqIndex = ClearAndGetIndexOfLSB(ref pieces);
-                Piece piece = board.GetPiece(new Square(sqIndex));
+                int sqIndex = ClearAndGetIndexOfLsb(ref pieces);
+                Piece piece = _board.GetPiece(new Square(sqIndex));
                 bool pieceIsWhite = piece.IsWhite;
                 int pieceType = (int)piece.PieceType;
 
-                pieceType -= (((sqIndex & 7) ^ board.GetKingSquare(pieceIsWhite).File) >> 1) >> pieceType;
+                pieceType -= (((sqIndex & 7) ^ _board.GetKingSquare(pieceIsWhite).File) >> 1) >> pieceType;
 
                 int packedIndex = (((pieceType * 64 + sqIndex) >> 3) ^ (pieceIsWhite ? 0 : 7));
                 int shift = (0x01455410 >> (sqIndex * 4)) * 8;
 
                 int value = EvalWeight(112 + pieceType)
-                            + (int)((packedData[packedIndex] >> shift) & 0xFF00FFUL)
+                            + (int)((_packedData[packedIndex] >> shift) & 0xFF00FFUL)
                             + EvalWeight(11 + pieceType) * GetNumberOfSetBits(
-                                GetSliderAttacks((PieceType)Min(5, pieceType), new Square(sqIndex), board))
+                                GetSliderAttacks((PieceType)Min(5, pieceType), new Square(sqIndex), _board))
                             + EvalWeight(118 + pieceType) * GetNumberOfSetBits(
                                 (pieceIsWhite
                                     ? 0x0101010101010100UL << sqIndex
                                     : 0x0080808080808080UL >> (63 - sqIndex))
-                                & board.GetPieceBitboard(PieceType.Pawn, pieceIsWhite));
+                                & _board.GetPieceBitboard(PieceType.Pawn, pieceIsWhite));
 
-                eval += pieceIsWhite == board.IsWhiteToMove ? value : -value;
+                eval += pieceIsWhite == _board.IsWhiteToMove ? value : -value;
                 tmp += (0x0421100 >> (pieceType * 4)) & 0xF;
             }
 
@@ -309,12 +309,12 @@ namespace Graph.Apps.Games.Chess.TinyChessChallenge.Bots
 
         int GetHistoryValue(Move move)
         {
-            return history[board.PlyCount & 1, (int)move.MovePieceType, move.TargetSquare.Index];
+            return _history[_board.PlyCount & 1, (int)move.MovePieceType, move.TargetSquare.Index];
         }
 
         void SetHistoryValue(Move move, int value)
         {
-            history[board.PlyCount & 1, (int)move.MovePieceType, move.TargetSquare.Index] = value;
+            _history[_board.PlyCount & 1, (int)move.MovePieceType, move.TargetSquare.Index] = value;
         }
 
         static int ClampScore(int value, int min, int max)

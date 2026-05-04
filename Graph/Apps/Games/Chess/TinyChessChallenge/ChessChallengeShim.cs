@@ -32,6 +32,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using Graph.Apps.Games.Chess;
+using Graph.Apps.Games.Chess.Enum;
 
 // ReSharper disable once CheckNamespace
 namespace ChessChallenge.API
@@ -50,9 +51,9 @@ namespace ChessChallenge.API
         public ChessBotApi(ChessGame game, IChessBot bot)
         {
             if (game == null)
-                throw new ArgumentNullException("game");
+                throw new ArgumentNullException(nameof(game));
             if (bot == null)
-                throw new ArgumentNullException("bot");
+                throw new ArgumentNullException(nameof(bot));
 
             _game = game;
             _bot = bot;
@@ -118,24 +119,18 @@ namespace ChessChallenge.API
             return true;
         }
 
-        public Board Board
-        {
-            get { return _board; }
-        }
+        public Board Board => _board;
 
-        public IChessBot Bot
-        {
-            get { return _bot; }
-        }
+        public IChessBot Bot => _bot;
     }
 
     public sealed class Board
     {
-        const int BoardSize = 64;
+        const int BOARD_SIZE = 64;
 
         readonly ChessGame _game;
-        readonly PieceType[] _pieces = new PieceType[BoardSize];
-        readonly bool[] _whitePieces = new bool[BoardSize];
+        readonly PieceType[] _pieces = new PieceType[BOARD_SIZE];
+        readonly bool[] _whitePieces = new bool[BOARD_SIZE];
         readonly List<Move> _gameMoveHistory = new List<Move>();
         readonly List<ulong> _repetitionHistory = new List<ulong>();
         readonly Stack<BoardState> _stateStack = new Stack<BoardState>();
@@ -169,7 +164,7 @@ namespace ChessChallenge.API
         public Board(ChessGame game)
         {
             if (game == null)
-                throw new ArgumentNullException("game");
+                throw new ArgumentNullException(nameof(game));
 
             _game = game;
             LoadFromGame();
@@ -178,7 +173,7 @@ namespace ChessChallenge.API
 
         public void LoadFromGame()
         {
-            for (int i = 0; i < BoardSize; i++)
+            for (int i = 0; i < BOARD_SIZE; i++)
             {
                 var square = new Square(i);
                 var piece = _game.GetChallengePiece(square);
@@ -230,7 +225,7 @@ namespace ChessChallenge.API
 
         void GeneratePseudoLegalMoves(List<Move> moves, bool capturesOnly)
         {
-            for (int i = 0; i < BoardSize; i++)
+            for (int i = 0; i < BOARD_SIZE; i++)
             {
                 if (_pieces[i] == PieceType.None || _whitePieces[i] != _whiteToMove)
                     continue;
@@ -626,8 +621,8 @@ namespace ChessChallenge.API
 
         void RestoreState(BoardState state)
         {
-            Array.Copy(state.Pieces, _pieces, BoardSize);
-            Array.Copy(state.WhitePieces, _whitePieces, BoardSize);
+            Array.Copy(state.Pieces, _pieces, BOARD_SIZE);
+            Array.Copy(state.WhitePieces, _whitePieces, BOARD_SIZE);
             _whiteToMove = state.WhiteToMove;
             _whiteCastleKingSide = state.WhiteCastleKingSide;
             _whiteCastleQueenSide = state.WhiteCastleQueenSide;
@@ -657,7 +652,7 @@ namespace ChessChallenge.API
 
         int FindKingSquare(bool white)
         {
-            for (int i = 0; i < BoardSize; i++)
+            for (int i = 0; i < BOARD_SIZE; i++)
             {
                 if (_pieces[i] == PieceType.King && _whitePieces[i] == white)
                     return i;
@@ -776,7 +771,7 @@ namespace ChessChallenge.API
             int whiteMinor = 0;
             int blackMinor = 0;
 
-            for (int i = 0; i < BoardSize; i++)
+            for (int i = 0; i < BOARD_SIZE; i++)
             {
                 switch (_pieces[i])
                 {
@@ -945,7 +940,7 @@ namespace ChessChallenge.API
         {
             ulong bitboard = 0UL;
 
-            for (int i = 0; i < BoardSize; i++)
+            for (int i = 0; i < BOARD_SIZE; i++)
             {
                 if (_pieces[i] == pieceType && _whitePieces[i] == white)
                     bitboard |= 1UL << i;
@@ -954,21 +949,15 @@ namespace ChessChallenge.API
             return bitboard;
         }
 
-        public ulong WhitePiecesBitboard
-        {
-            get { return GetColorBitboard(true); }
-        }
+        public ulong WhitePiecesBitboard => GetColorBitboard(true);
 
-        public ulong BlackPiecesBitboard
-        {
-            get { return GetColorBitboard(false); }
-        }
+        public ulong BlackPiecesBitboard => GetColorBitboard(false);
 
         ulong GetColorBitboard(bool white)
         {
             ulong bitboard = 0UL;
 
-            for (int i = 0; i < BoardSize; i++)
+            for (int i = 0; i < BOARD_SIZE; i++)
             {
                 if (_pieces[i] != PieceType.None && _whitePieces[i] == white)
                     bitboard |= 1UL << i;
@@ -977,25 +966,13 @@ namespace ChessChallenge.API
             return bitboard;
         }
 
-        public ulong AllPiecesBitboard
-        {
-            get { return WhitePiecesBitboard | BlackPiecesBitboard; }
-        }
+        public ulong AllPiecesBitboard => WhitePiecesBitboard | BlackPiecesBitboard;
 
-        public bool IsWhiteToMove
-        {
-            get { return _whiteToMove; }
-        }
+        public bool IsWhiteToMove => _whiteToMove;
 
-        public int PlyCount
-        {
-            get { return _plyCount; }
-        }
+        public int PlyCount => _plyCount;
 
-        public int FiftyMoveCounter
-        {
-            get { return _fiftyMoveCounter; }
-        }
+        public int FiftyMoveCounter => _fiftyMoveCounter;
 
         public ulong ZobristKey
         {
@@ -1005,7 +982,7 @@ namespace ChessChallenge.API
                 {
                     ulong hash = 1469598103934665603UL;
 
-                    for (int i = 0; i < BoardSize; i++)
+                    for (int i = 0; i < BOARD_SIZE; i++)
                     {
                         hash ^= (ulong)((int)_pieces[i] + 1);
                         hash *= 1099511628211UL;
@@ -1031,20 +1008,11 @@ namespace ChessChallenge.API
             }
         }
 
-        public ulong[] GameRepetitionHistory
-        {
-            get { return _repetitionHistory.ToArray(); }
-        }
+        public ulong[] GameRepetitionHistory => _repetitionHistory.ToArray();
 
-        public string GameStartFenString
-        {
-            get { return _gameStartFenString; }
-        }
+        public string GameStartFenString => _gameStartFenString;
 
-        public Move[] GameMoveHistory
-        {
-            get { return _gameMoveHistory.ToArray(); }
-        }
+        public Move[] GameMoveHistory => _gameMoveHistory.ToArray();
 
         public string CreateDiagram(bool blackAtTop = true, bool includeFen = true, bool includeZobristKey = true, Square? highlightedSquare = null)
         {
@@ -1101,14 +1069,14 @@ namespace ChessChallenge.API
             return CreateDiagram();
         }
 
-        public static Board CreateBoardFromFEN(string fen)
+        public static Board CreateBoardFromFen(string fen)
         {
             throw new NotSupportedException("CreateBoardFromFEN is not supported by this ChessGame shim.");
         }
 
         static bool IsValidSquare(int square)
         {
-            return square >= 0 && square < BoardSize;
+            return square >= 0 && square < BOARD_SIZE;
         }
 
         static int FileOf(int square)
@@ -1162,7 +1130,7 @@ namespace ChessChallenge.API
             return ((bitboard >> square.Index) & 1UL) != 0UL;
         }
 
-        public static int ClearAndGetIndexOfLSB(ref ulong bitboard)
+        public static int ClearAndGetIndexOfLsb(ref ulong bitboard)
         {
             if (bitboard == 0UL)
                 return -1;
@@ -1358,38 +1326,21 @@ namespace ChessChallenge.API
         readonly bool _isEnPassant;
         readonly bool _isCastles;
 
-        public bool IsCapture
-        {
-            get { return CapturePieceType != PieceType.None; }
-        }
+        public bool IsCapture => CapturePieceType != PieceType.None;
 
-        public bool IsEnPassant
-        {
-            get { return _isEnPassant; }
-        }
+        public bool IsEnPassant => _isEnPassant;
 
-        public bool IsPromotion
-        {
-            get { return PromotionPieceType != PieceType.None; }
-        }
+        public bool IsPromotion => PromotionPieceType != PieceType.None;
 
-        public bool IsCastles
-        {
-            get { return _isCastles; }
-        }
+        public bool IsCastles => _isCastles;
 
-        public bool IsNull
-        {
-            get
-            {
-                return _isNull ||
-                       (StartSquare.Index == 0 &&
-                        TargetSquare.Index == 0 &&
-                        MovePieceType == PieceType.None &&
-                        CapturePieceType == PieceType.None &&
-                        PromotionPieceType == PieceType.None);
-            }
-        }
+        public bool IsNull =>
+            _isNull ||
+            (StartSquare.Index == 0 &&
+             TargetSquare.Index == 0 &&
+             MovePieceType == PieceType.None &&
+             CapturePieceType == PieceType.None &&
+             PromotionPieceType == PieceType.None);
 
         public ushort RawValue
         {
@@ -1531,13 +1482,13 @@ namespace ChessChallenge.API
         public readonly PieceType PieceType;
         public readonly Square Square;
 
-        public bool IsNull { get { return PieceType == PieceType.None; } }
-        public bool IsRook { get { return PieceType == PieceType.Rook; } }
-        public bool IsKnight { get { return PieceType == PieceType.Knight; } }
-        public bool IsBishop { get { return PieceType == PieceType.Bishop; } }
-        public bool IsQueen { get { return PieceType == PieceType.Queen; } }
-        public bool IsKing { get { return PieceType == PieceType.King; } }
-        public bool IsPawn { get { return PieceType == PieceType.Pawn; } }
+        public bool IsNull => PieceType == PieceType.None;
+        public bool IsRook => PieceType == PieceType.Rook;
+        public bool IsKnight => PieceType == PieceType.Knight;
+        public bool IsBishop => PieceType == PieceType.Bishop;
+        public bool IsQueen => PieceType == PieceType.Queen;
+        public bool IsKing => PieceType == PieceType.King;
+        public bool IsPawn => PieceType == PieceType.Pawn;
 
         public Piece(PieceType pieceType, bool isWhite, Square square)
         {
@@ -1585,10 +1536,7 @@ namespace ChessChallenge.API
         readonly Board _board;
         readonly List<Square> _squares = new List<Square>();
 
-        public int Count
-        {
-            get { return _squares.Count; }
-        }
+        public int Count => _squares.Count;
 
         public readonly bool IsWhitePieceList;
         public readonly PieceType TypeOfPieceInList;
@@ -1618,10 +1566,7 @@ namespace ChessChallenge.API
             return this[index];
         }
 
-        public Piece this[int index]
-        {
-            get { return _board.GetPiece(_squares[index]); }
-        }
+        public Piece this[int index] => _board.GetPiece(_squares[index]);
 
         public IEnumerator<Piece> GetEnumerator()
         {
@@ -1637,22 +1582,13 @@ namespace ChessChallenge.API
 
     public struct Square : IEquatable<Square>
     {
-        public int File
-        {
-            get { return Index & 7; }
-        }
+        public int File => Index & 7;
 
-        public int Rank
-        {
-            get { return Index >> 3; }
-        }
+        public int Rank => Index >> 3;
 
         public readonly int Index;
 
-        public string Name
-        {
-            get { return string.Concat((char)('a' + File), (char)('1' + Rank)); }
-        }
+        public string Name => string.Concat((char)('a' + File), (char)('1' + Rank));
 
         public Square(string name)
         {
@@ -1702,30 +1638,13 @@ namespace ChessChallenge.API
         }
     }
 
-    public enum PieceType
-    {
-        None,
-        Pawn,
-        Knight,
-        Bishop,
-        Rook,
-        Queen,
-        King
-    }
-
     public sealed class Timer
     {
         public readonly int GameStartTimeMilliseconds;
         public readonly int IncrementMilliseconds;
-        public int MillisecondsElapsedThisTurn
-        {
-            get { return (int)_sw.ElapsedMilliseconds; }
-        }
+        public int MillisecondsElapsedThisTurn => (int)_sw.ElapsedMilliseconds;
 
-        public int MillisecondsRemaining
-        {
-            get { return Math.Max(0, _millisRemainingAtStartOfTurn - MillisecondsElapsedThisTurn); }
-        }
+        public int MillisecondsRemaining => Math.Max(0, _millisRemainingAtStartOfTurn - MillisecondsElapsedThisTurn);
 
         public readonly int OpponentMillisecondsRemaining;
 
@@ -1745,14 +1664,6 @@ namespace ChessChallenge.API
             GameStartTimeMilliseconds = startingMs;
             IncrementMilliseconds = incrementMs;
             _sw = Stopwatch.StartNew();
-        }
-
-        public override string ToString()
-        {
-            return "Game start time: " + GameStartTimeMilliseconds + " ms.\\n" +
-                   "Turn elapsed time: " + MillisecondsElapsedThisTurn + " ms. " +
-                   "My time remaining: " + MillisecondsRemaining + " Opponent time remaining: " +
-                   OpponentMillisecondsRemaining + " ms.";
         }
     }
 }

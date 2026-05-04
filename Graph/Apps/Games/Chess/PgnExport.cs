@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using ChessChallenge.API;
 using Graph.Apps.Games.Chess.Enum;
 using VRage;
 using VRageMath;
@@ -23,7 +24,7 @@ namespace Graph.Apps.Games.Chess
 
             var replay = BuildPgnReplayState();
             var result = GetPgnResult();
-            var currentFen = BuildPgnFen(_board, _currentMove, _availableCastling, replay.EnPassantTarget, replay.HalfmoveClock);
+            var currentFen = BuildPgnFen(Board, _currentMove, _availableCastling, replay.EnPassantTarget, replay.HalfmoveClock);
             var moveText = BuildPgnMoveText(replay.Moves, result, currentFen, replay.ReplayWasClean);
 
             var utc = DateTime.UtcNow;
@@ -62,7 +63,7 @@ namespace Graph.Apps.Games.Chess
 
                 if (!IsPgnPointOnBoard(origin) || !IsPgnPointOnBoard(target))
                 {
-                    state.Moves.Add(ToPgnCoordinateMove(origin, target, PieceType.Empty));
+                    state.Moves.Add(ToPgnCoordinateMove(origin, target, PieceType.None));
                     state.ReplayWasClean = false;
                     continue;
                 }
@@ -73,7 +74,7 @@ namespace Graph.Apps.Games.Chess
 
                 if (movingCell == 0)
                 {
-                    state.Moves.Add(ToPgnCoordinateMove(origin, target, PieceType.Empty));
+                    state.Moves.Add(ToPgnCoordinateMove(origin, target, PieceType.None));
                     state.ReplayWasClean = false;
                     continue;
                 }
@@ -83,7 +84,7 @@ namespace Graph.Apps.Games.Chess
                 var specialMove = GetPgnSpecialMove(board, origin, target, movingType);
                 var promotionType = specialMove == SpecialMoves.Promotion
                     ? InferPgnPromotionType(i, target, movingColor)
-                    : PieceType.Empty;
+                    : PieceType.None;
 
                 bool isCapture = IsPgnCapture(board, origin, target, specialMove);
                 state.Moves.Add(BuildPgnSan(board, origin, target, movingType, movingColor, specialMove, promotionType));
@@ -169,7 +170,7 @@ namespace Graph.Apps.Games.Chess
 
                 sb.Append(ToChessMove(target));
 
-                if (promotionType != PieceType.Empty && promotionType != PieceType.Pawn)
+                if (promotionType != PieceType.None && promotionType != PieceType.Pawn)
                 {
                     sb.Append('=');
                     sb.Append(GetPgnPieceLetter(promotionType));
@@ -204,7 +205,7 @@ namespace Graph.Apps.Games.Chess
                 if (cell == 0 || GetColor(cell) != movingColor || GetPieceType(cell) != movingType)
                     continue;
 
-                if (!CanPgnPieceLegallyMove(board, otherOrigin, target, movingType, movingColor, PieceType.Empty))
+                if (!CanPgnPieceLegallyMove(board, otherOrigin, target, movingType, movingColor, PieceType.None))
                     continue;
 
                 hasAmbiguousPiece = true;
@@ -381,7 +382,7 @@ namespace Graph.Apps.Games.Chess
                 board[PointToIndex(new Point(rookPos.X + (distance - 1) * -direction, origin.Y))] = rook;
             }
 
-            if (specialMove == SpecialMoves.Promotion && promotionType != PieceType.Empty)
+            if (specialMove == SpecialMoves.Promotion && promotionType != PieceType.None)
             {
                 movingCell = (byte)(movingCell & 0xF0);
                 movingCell |= ToPgnPieceValue(promotionType);
@@ -469,7 +470,7 @@ namespace Graph.Apps.Games.Chess
             var sideToMove = (PieceColor)(_currentMove % 2);
             var king = FindKing(sideToMove);
 
-            if (king.HasValue && IsPositionInDanger(king.Value, sideToMove, _board))
+            if (king.HasValue && IsPositionInDanger(king.Value, sideToMove, Board))
                 return sideToMove == PieceColor.White ? "0-1" : "1-0";
 
             return "1/2-1/2";
@@ -589,7 +590,7 @@ namespace Graph.Apps.Games.Chess
             sb.Append(ToChessMove(origin));
             sb.Append(ToChessMove(target));
 
-            if (promotionType != PieceType.Empty && promotionType != PieceType.Pawn)
+            if (promotionType != PieceType.None && promotionType != PieceType.Pawn)
             {
                 sb.Append('=');
                 sb.Append(GetPgnPieceLetter(promotionType));

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using ChessChallenge.API;
 using Graph.Apps.Games.Chess.Enum;
 using VRageMath;
 
@@ -38,7 +39,7 @@ namespace Graph.Apps.Games.Chess
             if(kingPosition == null)
                 yield break; // something went wrong, this board should not be without a king
 
-            _checkPosition = IsPositionInDanger(kingPosition.Value, currentColor, _board) ? kingPosition.Value : (Point?)null;
+            _checkPosition = IsPositionInDanger(kingPosition.Value, currentColor, Board) ? kingPosition.Value : (Point?)null;
 
             int index = 0;
             foreach (var pair in _availableMoves)
@@ -97,14 +98,14 @@ namespace Graph.Apps.Games.Chess
             if (IsGameOver)
             {
 
-                _controlOverlay = new GameOverHandler(this);
+                _overlayOverlay = new GameOverOverlay(this);
                 GameOverMessage();
             }
         }
 
         bool IsMoveValid(Point origin, Point destination, Point king, PieceColor color, PieceType type)
         {
-            _board.CopyTo(_simulatedBoard, 0);
+            Board.CopyTo(_simulatedBoard, 0);
             
             Move(origin, destination, _simulatedBoard, GetSpecialMove(origin, destination, _simulatedBoard, type));
 
@@ -114,14 +115,14 @@ namespace Graph.Apps.Games.Chess
             return !IsPositionInDanger(king, color, _simulatedBoard);
         }
 
-        Point? FindKing(PieceColor color)
+        public Point? FindKing(PieceColor color)
         {
             var pattern = color == PieceColor.Black ? 0x06 : 0x16;
             
             for (var x = 0; x < _boardSide; x++)
             for (var y = 0; y < _boardSide; y++)
             {
-                var piece = _board[x + y * _boardSide];
+                var piece = Board[x + y * _boardSide];
                 if (piece == pattern)
                 {
                     return new Point(x, y);
@@ -277,7 +278,7 @@ namespace Graph.Apps.Games.Chess
             if ((_availableCastling & flag) == 0)
                 return false;
 
-            if (IsPositionInDanger(king, color, _board))
+            if (IsPositionInDanger(king, color, Board))
                 return false;
 
             var step1 = new Point(king.X + 1, king.Y);
@@ -286,10 +287,10 @@ namespace Graph.Apps.Games.Chess
             if (GetCell(step1) != 0 || GetCell(step2) != 0)
                 return false;
 
-            if (IsPositionInDanger(step1, color, _board))
+            if (IsPositionInDanger(step1, color, Board))
                 return false;
 
-            if (IsPositionInDanger(step2, color, _board))
+            if (IsPositionInDanger(step2, color, Board))
                 return false;
 
             return true;
@@ -302,7 +303,7 @@ namespace Graph.Apps.Games.Chess
             if ((_availableCastling & flag) == 0)
                 return false;
 
-            if (IsPositionInDanger(king, color, _board))
+            if (IsPositionInDanger(king, color, Board))
                 return false;
 
             var step1 = new Point(king.X - 1, king.Y);
@@ -312,16 +313,16 @@ namespace Graph.Apps.Games.Chess
             if (GetCell(step1) != 0 || GetCell(step2) != 0 || GetCell(betweenRook) != 0)
                 return false;
 
-            if (IsPositionInDanger(step1, color, _board))
+            if (IsPositionInDanger(step1, color, Board))
                 return false;
 
-            if (IsPositionInDanger(step2, color, _board))
+            if (IsPositionInDanger(step2, color, Board))
                 return false;
 
             return true;
         }
 
-        bool IsPositionInDanger(Point pos, PieceColor color, byte[] board)
+        public bool IsPositionInDanger(Point pos, PieceColor color, byte[] board)
         {
             if (IsPositionInDangerFromPaw(pos, color, board) ||
                 IsPositionInDangerFromRook(pos, color, board) ||

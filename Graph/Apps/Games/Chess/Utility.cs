@@ -1,4 +1,5 @@
-﻿using Graph.Apps.Games.Chess.Enum;
+﻿using ChessChallenge.API;
+using Graph.Apps.Games.Chess.Enum;
 using Sandbox.ModAPI.Ingame;
 using VRageMath;
 
@@ -9,13 +10,13 @@ namespace Graph.Apps.Games.Chess
         static PieceType GetPieceType(byte? cell)
         {
             if (cell == null)
-                return PieceType.Empty;
+                return PieceType.None;
             return (PieceType)(cell.Value & 0xEF);
         }
 
         public int PointToIndex(Point point) => point.X + point.Y * _boardSide;
 
-        RectangleF GetGridCell(int index) =>
+        public RectangleF GetGridCell(int index) =>
             _playingAsBlack ? _gridCells[_gridCells.Length - index - 1] : _gridCells[index];
 
 
@@ -31,7 +32,7 @@ namespace Graph.Apps.Games.Chess
         byte? GetCell(Point origin)
         {
             if (origin.X >= 0 && origin.X < _boardSide && origin.Y >= 0 && origin.Y < _boardSide)
-                return _board[PointToIndex(origin)];
+                return Board[PointToIndex(origin)];
             return null;
         }
 

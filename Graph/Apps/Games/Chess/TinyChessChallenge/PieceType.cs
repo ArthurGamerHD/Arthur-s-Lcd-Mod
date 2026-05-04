@@ -1,8 +1,8 @@
-﻿namespace Graph.Apps.Games.Chess.Enum
+﻿namespace ChessChallenge.API
 {
     public enum PieceType
     {
-        Empty = 0,
+        None = 0,
         Pawn = 1,
         Rook = 2,
         Knight = 3,

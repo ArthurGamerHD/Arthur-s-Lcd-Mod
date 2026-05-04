@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using ChessChallenge.API;
 using Graph.Apps.Games.Chess.Enum;
 using Sandbox.ModAPI.Ingame;
 using VRage;
@@ -9,37 +10,37 @@ namespace Graph.Apps.Games.Chess
 {
     public partial class ChessGame
     {
-        Control _controlOverlay;
+        Overlay _overlayOverlay;
         Castling _availableCastling = Castling.Full;
 
         void NewGame()
         {
             for (int i = 16; i < 48; i++)
-                _board[i] = 0;
+                Board[i] = 0;
 
             // Black
-            _board[0] = 0x02;
-            _board[1] = 0x03;
-            _board[2] = 0x04;
-            _board[3] = 0x05;
-            _board[4] = 0x06;
-            _board[5] = 0x04;
-            _board[6] = 0x03;
-            _board[7] = 0x02;
+            Board[0] = 0x02;
+            Board[1] = 0x03;
+            Board[2] = 0x04;
+            Board[3] = 0x05;
+            Board[4] = 0x06;
+            Board[5] = 0x04;
+            Board[6] = 0x03;
+            Board[7] = 0x02;
             for (int i = 8; i < 16; i++)
-                _board[i] = 0x01;
+                Board[i] = 0x01;
 
             // White
-            _board[56] = 0x12;
-            _board[57] = 0x13;
-            _board[58] = 0x14;
-            _board[59] = 0x15;
-            _board[60] = 0x16;
-            _board[61] = 0x14;
-            _board[62] = 0x13;
-            _board[63] = 0x12;
+            Board[56] = 0x12;
+            Board[57] = 0x13;
+            Board[58] = 0x14;
+            Board[59] = 0x15;
+            Board[60] = 0x16;
+            Board[61] = 0x14;
+            Board[62] = 0x13;
+            Board[63] = 0x12;
             for (int i = 48; i < 56; i++)
-                _board[i] = 0x11;
+                Board[i] = 0x11;
 
             _history.Clear();
             _historyText = string.Empty;
@@ -52,7 +53,7 @@ namespace Graph.Apps.Games.Chess
 
             _coroutine?.Dispose();
             _coroutine = GeneratePathFind();
-            _controlOverlay = null;
+            _overlayOverlay = null;
         }
 
         ActionResult TryExecuteActionAt(Point point)
@@ -69,13 +70,13 @@ namespace Graph.Apps.Games.Chess
                 return ActionResult.Unselected;
             }
 
-            return TryMove(SelectedTile.Value, point, _board);
+            return TryMove(SelectedTile.Value, point, Board);
         }
 
         Point? TrySelect(Point selection)
         {
             var originIndex = PointToIndex(selection);
-            var cellData = _board[originIndex];
+            var cellData = Board[originIndex];
             if (cellData == 0)
                 return null;
 
@@ -105,14 +106,14 @@ namespace Graph.Apps.Games.Chess
             var color = GetColor(cellToMove);
             if (type == PieceType.Pawn && ((target.Y == 0 && color == PieceColor.White) ||
                                                           (target.Y == 7 && color == PieceColor.Black)))
-                _controlOverlay = new PromotionHandler(target, origin, this);
+                _overlayOverlay = new PromotionOverlay(target, origin, this);
             else
                 ExecuteMove(origin, target, board, specialMove);
 
             return ActionResult.Success;
         }
 
-        void ExecuteMove(Point origin, Point target, byte[] board, SpecialMoves specialMove = SpecialMoves.None)
+        public void ExecuteMove(Point origin, Point target, byte[] board, SpecialMoves specialMove = SpecialMoves.None)
         {
             Move(origin, target, board, specialMove);
             

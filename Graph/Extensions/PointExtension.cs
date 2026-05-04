@@ -1,7 +1,7 @@
 using System;
 using VRageMath;
 
-namespace Graph.Apps.Games.Chess.Extensions
+namespace Graph.Extensions
 {
     public static class PointExtensions
     {
