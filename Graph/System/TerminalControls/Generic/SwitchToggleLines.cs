@@ -2,7 +2,6 @@ using Graph.Apps.Antenna;
 using Graph.Apps.Inventory;
 using Graph.Apps.Percentage;
 using Graph.Apps.Power;
-using Graph.Apps.Refinery;
 using Graph.System.Config;
 using Graph.System.Config.Models.Apps;
 using Sandbox.ModAPI;

@@ -4,7 +4,6 @@ using System.Linq;
 using Graph.Apps.Antenna;
 using Graph.Apps.Inventory;
 using Graph.Apps.Percentage;
-using Graph.Apps.Refinery;
 using Graph.Helpers;
 using Graph.System.Config;
 using Graph.System.Config.Models.Apps;
@@ -98,9 +97,6 @@ namespace Graph.System.TerminalControls.Filter.Listbox
                 case ProjectorLcdSurfaceScript.ID:
                 case CargoFilledSurfaceScript.ID:
                     return fat.HasInventory; 
-
-                case RefineryQueueSurfaceScript.ID:
-                    return fat is IMyRefinery || fat is IMyAssembler; 
 
                 case AntennaSurfaceScript.ID:
                     return fat is IMyLaserAntenna || fat is IMyRadioAntenna || fat is IMyBeacon; 
