@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using EmptyKeys.UserInterface.Generated;
 using Graph.Apps.Abstract;
 using Graph.Apps.Games.Chess;
+using Graph.Apps.Games.Minesweeper;
 using Graph.Apps.Utility;
 using Graph.System;
 using Sandbox.Engine.Platform;
@@ -40,12 +41,12 @@ namespace Graph.Apps.Games
                 {
                     Key = (long)GameEnum.Game2048,
                     Value = VRage.Utils.MyStringId.GetOrCompute("2048")
-                },
+                }*/,
                 new MyTerminalControlComboBoxItem
                 {
                 Key = (long)GameEnum.Minesweeper,
                 Value = VRage.Utils.MyStringId.GetOrCompute("Minesweeper")
-                }*/
+                }
             };
 
         IGame _currentGame;
@@ -78,11 +79,20 @@ namespace Graph.Apps.Games
 
         public void InitGame(GameEnum gameEnum)
         {
-            if (gameEnum == GameEnum.Chess)
+            switch (gameEnum)
             {
-                var chess = new ChessGame(Surface as Sandbox.ModAPI.IMyTextSurface, this);
-                _currentGame = chess;
+                case GameEnum.Chess:
+                {
+                    _currentGame = new ChessGame(Surface as Sandbox.ModAPI.IMyTextSurface, this);
+                    break;
+                }
+                case GameEnum.Minesweeper:
+                {
+                    _currentGame = new MinesweeperGame(Surface as Sandbox.ModAPI.IMyTextSurface, this);
+                    break;
+                }
             }
+
             if(_currentGame != null)
                 LcdModSessionComponent.OnSave += _currentGame.Save;
         }

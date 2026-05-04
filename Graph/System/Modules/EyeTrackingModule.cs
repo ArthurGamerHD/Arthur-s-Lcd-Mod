@@ -56,9 +56,11 @@ namespace Graph.System.Modules
             var player = MyAPIGateway.Session?.LocalHumanPlayer;
 
             var entity = player?.Controller?.ControlledEntity?.Entity as IMyShipController as MyCubeBlock;
-            
-            
-            if (MyAPIGateway.Gui.IsCursorVisible || (!MyAPIGateway.Input.IsAnyAltKeyPressed() && ((entity?.BlockDefinition as MyCockpitDefinition)?.EnableShipControl ?? false)))
+
+
+            if (MyAPIGateway.Gui.IsCursorVisible || (!MyAPIGateway.Input.IsAnyAltKeyPressed() &&
+                                                     ((entity?.BlockDefinition as MyCockpitDefinition)
+                                                         ?.EnableShipControl ?? false)))
             {
                 if (_useInputBlocked)
                     LcdModSessionComponent.SetLocalPlayerUseInputBlocked(blocked: _useInputBlocked = false);
@@ -90,8 +92,8 @@ namespace Graph.System.Modules
                 var surfaceScript = screen as InteractiveSurfaceScript;
                 if (surfaceScript == null || screen.Block == null)
                     continue;
-                
-                if(surfaceScript.RequiresAlt && !MyAPIGateway.Input.IsAnyAltKeyPressed())
+
+                if (surfaceScript.RequiresAlt && !MyAPIGateway.Input.IsAnyAltKeyPressed())
                     continue;
 
                 var blockPos = screen.Block.WorldMatrix.Translation;
@@ -168,28 +170,28 @@ namespace Graph.System.Modules
                 _useInputBlocked = shouldBlockUse;
             }
 
-            if (primaryPressed && !_primaryWasPressed)
+            if ((primaryPressed && !_primaryWasPressed) || (secondaryPressed && !_secondaryWasPressed))
             {
                 _pressedClickable = hoveredClickable;
-                _pressedClickableDataContext =
-                    hoveredClickable != null ? hoveredClickable.DataContext ?? hoveredClickable : null;
+                _pressedClickableDataContext = hoveredClickable != null ? hoveredClickable.DataContext ?? hoveredClickable : null;
             }
 
-            if (!primaryPressed && _primaryWasPressed)
+            if ((!primaryPressed && _primaryWasPressed) || (!secondaryPressed && _secondaryWasPressed))
             {
-                InteractiveEntry tooltipParent;
-
-                var hoveredDataContext =
-                    hoveredClickable != null ? hoveredClickable.DataContext ?? hoveredClickable : null;
-
+                var hoveredDataContext = hoveredClickable != null ? hoveredClickable.DataContext ?? hoveredClickable : null;
 
                 try
                 {
-                    var click = (_pressedClickable != null && hoveredClickable != null &&
-                                 Equals(objA: _pressedClickableDataContext, objB: hoveredDataContext)) &&
-                                hoveredClickable.Click(sender: eyeTrackingEntity); // handle click first
+                    var click = _pressedClickable != null && hoveredClickable != null &&
+                                Equals(objA: _pressedClickableDataContext, objB: hoveredDataContext) &&
+                                (_primaryWasPressed
+                                    ? hoveredClickable.Click(eyeTrackingEntity)
+                                    : hoveredClickable.SecondaryClick(eyeTrackingEntity))
+                        ; // handle click first
 
-                    click = click || TryHandleTooltipActivation(eyeTrackingEntity, rightClick: false,
+                    InteractiveEntry tooltipParent;
+                    click = click || TryHandleTooltipActivation(eyeTrackingEntity,
+                        rightClick: !_primaryWasPressed && _secondaryWasPressed,
                         tooltipParent: out tooltipParent); // then handle tooltip if needed
 
                     if (eyeTrackingEntity != null)
@@ -207,19 +209,8 @@ namespace Graph.System.Modules
                     ErrorHandlerHelper.LogError(error: e, source: this);
                 }
 
-
                 _pressedClickable = null;
                 _pressedClickableDataContext = null;
-            }
-
-            if (!secondaryPressed && _secondaryWasPressed)
-            {
-                InteractiveEntry tooltipParent;
-                if (TryHandleTooltipActivation(eyeTrackingEntity, rightClick: true, tooltipParent: out tooltipParent) &&
-                    eyeTrackingEntity != null && tooltipParent != null)
-                {
-                    eyeTrackingEntity.PlaySounds(tooltipParent.ClickSound);
-                }
             }
 
             if (!shouldBlockUse)
@@ -244,10 +235,10 @@ namespace Graph.System.Modules
                    interactiveSurface.TryHandleTooltipActivationClick(rightClick, out tooltipParent);
         }
 
-        public bool HoldingClick => MyAPIGateway.Input.IsLeftMousePressed() ||
+        public static bool HoldingClick => MyAPIGateway.Input.IsLeftMousePressed() ||
                                     MyAPIGateway.Input.IsJoystickButtonPressed(button: MyJoystickButtonsEnum.J06);
 
-        public bool HoldingRightClick => MyAPIGateway.Input.IsRightMousePressed();
+        public static bool HoldingRightClick => MyAPIGateway.Input.IsRightMousePressed();
 
         static bool TryGetHoveredClickable(IEyeTracking screen, out InteractiveEntry clickable)
         {

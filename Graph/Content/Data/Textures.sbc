@@ -42,5 +42,11 @@
             <SpritePath>Textures/Sprites/BatteryWide.dds</SpritePath>
             <Selectable>false</Selectable>
         </LCDTextureDefinition>
+        
+        <LCDTextureDefinition> <!-- Custom Flag Sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="Flag"/>
+            <SpritePath>Textures/Sprites/flag.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
     </LCDTextures>
 </Definitions>

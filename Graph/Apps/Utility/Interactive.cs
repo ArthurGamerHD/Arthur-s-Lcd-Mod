@@ -273,6 +273,7 @@ namespace Graph.Apps.Utility
         public object DataContext { get; private set; }
 
         public Action<object, object> OnClick { get; private set; }
+        public Action<object, object> OnSecondaryClick { get; set; }
 
         public InteractiveTooltip Tooltip { get; private set; }
 
@@ -293,12 +294,16 @@ namespace Graph.Apps.Utility
 
         protected abstract bool HitCore(Vector2 point);
 
-        public virtual bool Click(object sender)
+        public virtual bool Click(object sender)=> HandleClick(sender, OnClick);
+        
+        public virtual bool SecondaryClick(object sender) => HandleClick(sender, OnSecondaryClick);
+
+        internal bool HandleClick(object sender, Action<object, object> handler)
         {
-            if (!Visible || OnClick == null)
+            if (!Visible || handler == null)
                 return false;
 
-            OnClick(DataContext ?? this, sender);
+            handler(DataContext ?? this, sender);
             return true;
         }
     }
@@ -378,6 +383,7 @@ namespace Graph.Apps.Utility
         }
 
         public override RectangleF Bounds => Rect;
+        public object RightClick { get; set; }
 
         protected override bool HitCore(Vector2 point)
         {
