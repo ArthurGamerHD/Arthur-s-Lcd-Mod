@@ -99,7 +99,7 @@ namespace Graph.Apps.Abstract
         protected override void LayoutChanged()
         {
             base.LayoutChanged();
-            _ascentColor = AppConfig.HeaderColor.DeriveAscentColor();
+            _ascentColor = AppConfig.HeaderColor.DeriveAccentColor();
 
             RefreshEntryLabels();
             _maxLabelCache = string.Empty;

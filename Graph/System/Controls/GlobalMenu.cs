@@ -201,7 +201,7 @@ namespace Graph.System.Controls
             bool root)
         {
             bool hover = rect.Contains(cursorPosition);
-            var fillColor = hover ? panelColor.DeriveAscentColor() : panelColor;
+            var fillColor = hover ? panelColor.DeriveAccentColor() : panelColor;
             RectanglePanel.CreateSpritesFromRect(rect, _sprites, fillColor, 0.5f);
 
             string text = GetText(entry);

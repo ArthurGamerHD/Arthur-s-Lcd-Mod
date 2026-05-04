@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using Sandbox.Game.Gui;
 using VRage.Game;
@@ -109,7 +110,7 @@ namespace Graph.Extensions
         /// Derives a same-hue color with maximum contrast against the base color.
         /// Best for text, icons, outlines, and readability.
         /// </summary>
-        public static Color DeriveTextAscentColor(this Color @base)
+        public static Color DeriveTextAccentColor(this Color @base)
         {
             Oklch oklch = @base.ToOklch();
 
@@ -122,21 +123,130 @@ namespace Graph.Extensions
             return lightContrast >= darkContrast ? light : dark;
         }
 
-        /// <summary>
-        /// Softer same-hue contrast color.
-        /// Better for decorative accents where near-black or near-white is too harsh.
-        /// </summary>
-        public static Color DeriveAscentColor(this Color @base)
+        
+        public static Color DeriveAccentColor(
+            this Color @base,
+            float lightness = 1f,
+            double minContrast = 3.0)
         {
+            lightness = MathHelper.Clamp(lightness, 0f, 1f);
+
             Oklch oklch = @base.ToOklch();
 
-            Color dark = FromOklchInGamut(0.18, oklch.C, oklch.H);
-            Color light = FromOklchInGamut(0.88, oklch.C, oklch.H);
+            double baseL = MathHelper.Clamp(oklch.L, 0, 1);
 
-            double darkContrast = ContrastRatio(@base, dark);
-            double lightContrast = ContrastRatio(@base, light);
+            // Keep your original steering behavior:
+            // 0.0 -> darkest
+            // 0.5 -> original/base lightness
+            // 1.0 -> brightest
+            double preferredL = lightness < 0.5f
+                ? MathHelper.Lerp(0, baseL, lightness * 2)
+                : MathHelper.Lerp(baseL, 1, (lightness - 0.5f) * 2);
 
-            return lightContrast >= darkContrast ? light : dark;
+            preferredL = MathHelper.Clamp(preferredL, 0, 1);
+
+            Color preferred = FromOklchInGamut(preferredL, oklch.C, oklch.H);
+
+            if (ContrastRatio(preferred, @base) >= minContrast)
+                return preferred;
+
+            // Respect the user's requested direction.
+            // If lightness is exactly neutral, choose the side opposite the base.
+            bool preferLighter =
+                lightness > 0.5f || baseL < lightness;
+
+            Color result;
+            if (TryFindContrastingAccent(
+                    @base,
+                    oklch,
+                    preferredL,
+                    preferLighter,
+                    minContrast,
+                    out result))
+            {
+                return result;
+            }
+
+            // Fallback: if the requested direction cannot produce enough contrast,
+            // try the opposite direction.
+            if (TryFindContrastingAccent(
+                    @base,
+                    oklch,
+                    preferredL,
+                    !preferLighter,
+                    minContrast,
+                    out result))
+            {
+                return result;
+            }
+
+            // Last resort: return the preferred color even if contrast is insufficient.
+            return preferred;
+        }
+        
+        private static bool TryFindContrastingAccent(
+            Color background,
+            Oklch oklch,
+            double preferredL,
+            bool lighter,
+            double minContrast,
+            out Color result)
+        {
+            double extremeL = lighter ? 1.0 : 0.0;
+
+            Color extreme = FromOklchInGamut(extremeL, oklch.C, oklch.H);
+
+            if (ContrastRatio(extreme, background) < minContrast)
+            {
+                result = extreme;
+                return false;
+            }
+
+            double low;
+            double high;
+
+            if (lighter)
+            {
+                low = preferredL;
+                high = 1.0;
+            }
+            else
+            {
+                low = 0.0;
+                high = preferredL;
+            }
+
+            result = extreme;
+
+            for (int i = 0; i < 24; i++)
+            {
+                double mid = (low + high) / 2.0;
+
+                Color candidate = FromOklchInGamut(mid, oklch.C, oklch.H);
+
+                bool passes = ContrastRatio(candidate, background) >= minContrast;
+
+                if (passes)
+                {
+                    result = candidate;
+
+                    // Move closer to the user's preferred value.
+                    if (lighter)
+                        high = mid;
+                    else
+                        low = mid;
+                }
+                else
+                {
+                    // Move farther away from the base/preferred color.
+                    if (lighter)
+                        low = mid;
+                    else
+                        high = mid;
+                }
+            }
+
+            return true;
         }
 
         public static double ContrastRatio(Color a, Color b)
