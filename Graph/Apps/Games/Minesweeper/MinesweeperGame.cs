@@ -45,7 +45,7 @@ namespace Graph.Apps.Games.Minesweeper
         readonly HashSet<int> _unknownCells = new HashSet<int>();
         readonly object _statusButtonContext = new object();
         readonly Random _emoteRandom = new Random();
-        
+
         readonly Color[] _tileColors =
         {
             new Color(000, 000, 000), // Bomb
@@ -288,8 +288,6 @@ namespace Graph.Apps.Games.Minesweeper
                 DeserializeHistory(config.History);
                 DeserializeUnknownCells(config.UnknownCells);
                 _difficulty = InferDifficulty(_width, _height, _mineCount);
-                _elapsedSeconds = 0;
-                _timerStartedFrame = GetCurrentGameplayFrame();
                 _lastTileOpenFrame = _timerStartedFrame;
                 _timerRunning = _state == MinesweeperState.Playing;
                 _suspiciousLooksLeft = true;
@@ -468,7 +466,7 @@ namespace Graph.Apps.Games.Minesweeper
             DrawTileFrame(frame, _statusButtonRect, border, false, _tileFaceHidden);
 
             var iconRect = Inset(_statusButtonRect, border * 1.35f);
-            
+
             frame.Add(new MySprite
             {
                 Type = SpriteType.TEXTURE,
@@ -478,26 +476,44 @@ namespace Graph.Apps.Games.Minesweeper
                 Color = Color.Black,
                 Alignment = TextAlignment.CENTER
             });
-            
+
             frame.Add(new MySprite
             {
                 Type = SpriteType.TEXTURE,
                 Data = GetStatusEmoteTexture(),
                 Position = iconRect.Center,
-                Size = iconRect.Size*.95f,
+                Size = iconRect.Size * .95f,
                 Color = _emoteYellow,
                 Alignment = TextAlignment.CENTER
             });
+            if (_state == MinesweeperState.Won)
+            {
+                frame.Add(new MySprite
+                {
+                    Type = SpriteType.TEXT,
+                    Data = "\n" +
+                           "\n" +
+                           "\n" +
+                           "\n" +
+                           "\n" +
+                           "",
+                    Position = new Vector2(iconRect.Center.X, iconRect.Center.Y - iconRect.Size.Y * 0.18f),
+                    Color = Color.Black,
+                    Alignment = TextAlignment.CENTER,
+                    FontId = "Monospace",
+                    RotationOrScale = .055f * _displayTextScale
+                });
+            }
         }
 
         string GetStatusEmoteTexture()
         {
+            if (_state == MinesweeperState.Won)
+                return "LCD_Emote_Wink";
             if (_state == MinesweeperState.Lost)
                 return "LCD_Emote_Dead";
             if (EyeTrackingModule.HoldingClick)
                 return "LCD_Emote_Shocked";
-            if (_state == MinesweeperState.Won)
-                return "LCD_Emote_Wink";
             if (IsSuspiciousEmoteActive())
                 return _suspiciousLooksLeft ? "LCD_Emote_Suspicious_Left" : "LCD_Emote_Suspicious_Right";
             if (IsIdleNeutral())
@@ -901,7 +917,7 @@ namespace Graph.Apps.Games.Minesweeper
             int minesToPlace = Math.Min(_mineCount, maxMines);
             _mineCount = minesToPlace;
 
-            var random = new Random(_seed == 0 ? unchecked((int)DateTime.UtcNow.Ticks) : _seed);
+            var random = new Random(_seed == 0 ? _seed = unchecked((int)DateTime.UtcNow.Ticks) : _seed);
             int placed = 0;
             int guard = 0;
             while (placed < minesToPlace && guard < _cells.Length * 100)
