@@ -216,4 +216,55 @@
   <data name="LcdMod_ShowDangerousTiles" xml:space="preserve">
     <value>Rādīt apdraudētos lauciņus</value>
   </data>
+<data name="LcdMod_Radius" xml:space="preserve">
+    <value>Rādiuss: {0}</value>
+  </data>
+  <data name="LcdMod_Radius_Short" xml:space="preserve">
+    <value>R: {0}</value>
+  </data>
+  <data name="LcdMod_Gravity" xml:space="preserve">
+    <value>Gravitācija: {0}</value>
+  </data>
+  <data name="LcdMod_Gravity_Short" xml:space="preserve">
+    <value>G: {0}</value>
+  </data>
+  <data name="LcdMod_Range" xml:space="preserve">
+    <value>Gravitācijas diapazons: {0}</value>
+  </data>
+  <data name="LcdMod_Range_Short" xml:space="preserve">
+    <value>GD: {0}</value>
+  </data>
+  <data name="LcdMod_Atmosphere" xml:space="preserve">
+    <value>Atmosfēra: {0}</value>
+  </data>
+  <data name="LcdMod_O2" xml:space="preserve">
+    <value>Skābeklis: {0}</value>
+  </data>
+  <data name="LcdMod_O2_Short" xml:space="preserve">
+    <value>O2: {0}</value>
+  </data>
+  <data name="LcdMod_Temperature" xml:space="preserve">
+    <value>Temperatūra: {0}</value>
+  </data>
+  <data name="LcdMod_Temperature_Short" xml:space="preserve">
+    <value>Temp.: {0}</value>
+  </data>
+  <data name="LcdMod_Wind" xml:space="preserve">
+    <value>Vējš: {0}</value>
+  </data>
+  <data name="LcdMod_Wind_Short" xml:space="preserve">
+    <value>Vējš: {0}</value>
+  </data>
+  <data name="LcdMod_Position" xml:space="preserve">
+    <value>Pozīcija: {0}</value>
+  </data>
+  <data name="LcdMod_Position_Short" xml:space="preserve">
+    <value>Poz.: {0}</value>
+  </data>
+  <data name="LcdMod_Jump" xml:space="preserve">
+    <value>Lēciena koordināta: {0}</value>
+  </data>
+  <data name="LcdMod_Jump_Short" xml:space="preserve">
+    <value>Lēciens: {0}</value>
+  </data>
 </root>

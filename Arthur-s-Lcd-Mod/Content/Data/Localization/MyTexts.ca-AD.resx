@@ -217,4 +217,55 @@
   <data name="LcdMod_ShowDangerousTiles" xml:space="preserve">
     <value>Mostra les caselles amenaçades</value>
   </data>
+<data name="LcdMod_Radius" xml:space="preserve">
+    <value>Radi: {0}</value>
+  </data>
+  <data name="LcdMod_Radius_Short" xml:space="preserve">
+    <value>R: {0}</value>
+  </data>
+  <data name="LcdMod_Gravity" xml:space="preserve">
+    <value>Gravetat: {0}</value>
+  </data>
+  <data name="LcdMod_Gravity_Short" xml:space="preserve">
+    <value>G: {0}</value>
+  </data>
+  <data name="LcdMod_Range" xml:space="preserve">
+    <value>Abast de gravetat: {0}</value>
+  </data>
+  <data name="LcdMod_Range_Short" xml:space="preserve">
+    <value>AG: {0}</value>
+  </data>
+  <data name="LcdMod_Atmosphere" xml:space="preserve">
+    <value>Atmosfera: {0}</value>
+  </data>
+  <data name="LcdMod_O2" xml:space="preserve">
+    <value>Oxigen: {0}</value>
+  </data>
+  <data name="LcdMod_O2_Short" xml:space="preserve">
+    <value>O2: {0}</value>
+  </data>
+  <data name="LcdMod_Temperature" xml:space="preserve">
+    <value>Temperatura: {0}</value>
+  </data>
+  <data name="LcdMod_Temperature_Short" xml:space="preserve">
+    <value>Temp.: {0}</value>
+  </data>
+  <data name="LcdMod_Wind" xml:space="preserve">
+    <value>Vent: {0}</value>
+  </data>
+  <data name="LcdMod_Wind_Short" xml:space="preserve">
+    <value>Vent: {0}</value>
+  </data>
+  <data name="LcdMod_Position" xml:space="preserve">
+    <value>Posició: {0}</value>
+  </data>
+  <data name="LcdMod_Position_Short" xml:space="preserve">
+    <value>Pos.: {0}</value>
+  </data>
+  <data name="LcdMod_Jump" xml:space="preserve">
+    <value>Coordenada de salt: {0}</value>
+  </data>
+  <data name="LcdMod_Jump_Short" xml:space="preserve">
+    <value>Salt: {0}</value>
+  </data>
 </root>

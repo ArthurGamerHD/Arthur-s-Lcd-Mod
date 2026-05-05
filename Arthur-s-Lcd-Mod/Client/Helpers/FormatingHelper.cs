@@ -68,11 +68,11 @@ namespace LcdMod.Client.Helpers
                    metersPerSecondSquared.ToString("0.##", Culture) + " m/s²)";
         }
 
-        public static string WindToString(double metersPerSecond)
+        public static string WindToString(double wind)
         {
-            var a = Math.Abs(metersPerSecond);
-            var sign = metersPerSecond < 0 ? "-" : "";
-            return sign + a.ToString("0.##", Culture);
+            var a = Math.Abs(wind);
+            var sign = wind < 0 ? "-" : "";
+            return sign + a.ToString("0.##", Culture) + "km/h";
         }
 
         public static string TemperatureToString(MyTemperatureLevel? level)
@@ -174,6 +174,28 @@ namespace LcdMod.Client.Helpers
 
         public static string FormatVector(Vector3D value, string format = "0.#") => string.Format(Culture,
             string.Format("{{0:{0}}}, {{1:{0}}}, {{2:{0}}}", format), value.X, value.Y, value.Z);
+
+        public static string FormatBearing(MatrixD reference, Vector3D target)
+        {
+            var delta = target - reference.Translation;
+            double distance = delta.Length();
+            if (distance <= 2.5)
+                return "0º | 0º | 0 m";
+
+            double localX = Vector3D.Dot(delta, reference.Right);
+            double localY = Vector3D.Dot(delta, reference.Up);
+            double localZ = Vector3D.Dot(delta, reference.Forward);
+            double horizontal = Math.Sqrt(localX * localX + localZ * localZ);
+            double azimuth = MathHelper.ToDegrees(Math.Atan2(localX, localZ));
+            if (azimuth < 0d)
+                azimuth += 360d;
+
+            double mark = MathHelper.ToDegrees(Math.Atan2(localY, horizontal));
+
+            return azimuth.ToString("0", Culture) + "º | " +
+                   mark.ToString("0", Culture) + "º | " +
+                   DistanceToString((float)distance);
+        }
 
         public static string FormatTimeHours(float hours)
         {

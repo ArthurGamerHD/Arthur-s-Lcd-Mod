@@ -217,4 +217,55 @@
   <data name="LcdMod_ShowDangerousTiles" xml:space="preserve">
     <value>Vis truede felter</value>
   </data>
+<data name="LcdMod_Radius" xml:space="preserve">
+    <value>Radius: {0}</value>
+  </data>
+  <data name="LcdMod_Radius_Short" xml:space="preserve">
+    <value>R: {0}</value>
+  </data>
+  <data name="LcdMod_Gravity" xml:space="preserve">
+    <value>Tyngdekraft: {0}</value>
+  </data>
+  <data name="LcdMod_Gravity_Short" xml:space="preserve">
+    <value>G: {0}</value>
+  </data>
+  <data name="LcdMod_Range" xml:space="preserve">
+    <value>Gravitationsrækkevidde: {0}</value>
+  </data>
+  <data name="LcdMod_Range_Short" xml:space="preserve">
+    <value>GR: {0}</value>
+  </data>
+  <data name="LcdMod_Atmosphere" xml:space="preserve">
+    <value>Atmosfære: {0}</value>
+  </data>
+  <data name="LcdMod_O2" xml:space="preserve">
+    <value>Ilt: {0}</value>
+  </data>
+  <data name="LcdMod_O2_Short" xml:space="preserve">
+    <value>O2: {0}</value>
+  </data>
+  <data name="LcdMod_Temperature" xml:space="preserve">
+    <value>Temperatur: {0}</value>
+  </data>
+  <data name="LcdMod_Temperature_Short" xml:space="preserve">
+    <value>Temp.: {0}</value>
+  </data>
+  <data name="LcdMod_Wind" xml:space="preserve">
+    <value>Vind: {0}</value>
+  </data>
+  <data name="LcdMod_Wind_Short" xml:space="preserve">
+    <value>Vind: {0}</value>
+  </data>
+  <data name="LcdMod_Position" xml:space="preserve">
+    <value>Position: {0}</value>
+  </data>
+  <data name="LcdMod_Position_Short" xml:space="preserve">
+    <value>Pos.: {0}</value>
+  </data>
+  <data name="LcdMod_Jump" xml:space="preserve">
+    <value>Hopkoordinat: {0}</value>
+  </data>
+  <data name="LcdMod_Jump_Short" xml:space="preserve">
+    <value>Hop: {0}</value>
+  </data>
 </root>

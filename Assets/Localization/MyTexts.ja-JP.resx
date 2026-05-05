@@ -217,4 +217,55 @@
   <data name="LcdMod_ShowDangerousTiles" xml:space="preserve">
     <value>狙われているマスを表示</value>
   </data>
+<data name="LcdMod_Radius" xml:space="preserve">
+    <value>半径: {0}</value>
+  </data>
+  <data name="LcdMod_Radius_Short" xml:space="preserve">
+    <value>R: {0}</value>
+  </data>
+  <data name="LcdMod_Gravity" xml:space="preserve">
+    <value>重力: {0}</value>
+  </data>
+  <data name="LcdMod_Gravity_Short" xml:space="preserve">
+    <value>G: {0}</value>
+  </data>
+  <data name="LcdMod_Range" xml:space="preserve">
+    <value>重力範囲: {0}</value>
+  </data>
+  <data name="LcdMod_Range_Short" xml:space="preserve">
+    <value>GR: {0}</value>
+  </data>
+  <data name="LcdMod_Atmosphere" xml:space="preserve">
+    <value>大気: {0}</value>
+  </data>
+  <data name="LcdMod_O2" xml:space="preserve">
+    <value>酸素: {0}</value>
+  </data>
+  <data name="LcdMod_O2_Short" xml:space="preserve">
+    <value>O2: {0}</value>
+  </data>
+  <data name="LcdMod_Temperature" xml:space="preserve">
+    <value>温度: {0}</value>
+  </data>
+  <data name="LcdMod_Temperature_Short" xml:space="preserve">
+    <value>温度: {0}</value>
+  </data>
+  <data name="LcdMod_Wind" xml:space="preserve">
+    <value>風: {0}</value>
+  </data>
+  <data name="LcdMod_Wind_Short" xml:space="preserve">
+    <value>風: {0}</value>
+  </data>
+  <data name="LcdMod_Position" xml:space="preserve">
+    <value>位置: {0}</value>
+  </data>
+  <data name="LcdMod_Position_Short" xml:space="preserve">
+    <value>位置: {0}</value>
+  </data>
+  <data name="LcdMod_Jump" xml:space="preserve">
+    <value>ジャンプ座標: {0}</value>
+  </data>
+  <data name="LcdMod_Jump_Short" xml:space="preserve">
+    <value>ジャンプ: {0}</value>
+  </data>
 </root>

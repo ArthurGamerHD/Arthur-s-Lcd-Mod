@@ -86,10 +86,12 @@ namespace LcdMod.Client.Modules.EyeTracking
             InteractiveEntry hoveredClickable = null;
             IEyeTracking eyeTrackingEntity = null;
             IEyeTracking tooltipInputEntity = null;
+            IEyeTracking lookingScreen = null;
             bool tooltipBlocksPrimary = false;
             bool tooltipBlocksSecondary = false;
             double hoveredDistanceSq = double.MaxValue;
             double tooltipDistanceSq = double.MaxValue;
+            double lookingDistanceSq = double.MaxValue;
 
             foreach (var screen in _modules)
             {
@@ -115,6 +117,11 @@ namespace LcdMod.Client.Modules.EyeTracking
                     resolvedCount++;
 
                     var distanceSq = Vector3D.DistanceSquared(blockPos, cameraPos);
+                    if (distanceSq < lookingDistanceSq)
+                    {
+                        lookingDistanceSq = distanceSq;
+                        lookingScreen = screen;
+                    }
 
                     var interactiveSurface = screen as InteractiveSurfaceScript;
                     if (distanceSq < tooltipDistanceSq)
@@ -146,6 +153,7 @@ namespace LcdMod.Client.Modules.EyeTracking
             if (tooltipInputEntity != null && tooltipDistanceSq < hoveredDistanceSq)
                 eyeTrackingEntity = tooltipInputEntity;
 
+            UpdateScrollState(lookingScreen);
             UpdateClickState(hoveredClickable, eyeTrackingEntity, tooltipBlocksPrimary, tooltipBlocksSecondary);
             _lastActiveNearbyCount = resolvedCount;
         }
@@ -221,6 +229,16 @@ namespace LcdMod.Client.Modules.EyeTracking
 
             _primaryWasPressed = primaryPressed;
             _secondaryWasPressed = secondaryPressed;
+        }
+
+        static void UpdateScrollState(IEyeTracking lookingScreen)
+        {
+            if (lookingScreen == null || MyAPIGateway.Input == null)
+                return;
+
+            var delta = MyAPIGateway.Input.DeltaMouseScrollWheelValue();
+            if (delta != 0)
+                lookingScreen.MouseScroll(delta);
         }
 
         static bool TryHandleTooltipActivation(

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using Generated;
 using LcdMod.Client.Extensions;
+using LcdMod.Client.Config;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.TerminalControls;
@@ -29,6 +30,7 @@ namespace LcdMod.Client.Apps
         float _fov;
         double _halfFovY;
         float _lastKnownConfigFov = float.NaN;
+        bool _syncConfigNextRun;
         IMyGravityProviderSystem _gravityProvider;
         readonly EyeTrackingFrameState _eyeTracking = new EyeTrackingFrameState();
 
@@ -61,6 +63,7 @@ namespace LcdMod.Client.Apps
 
         readonly Dictionary<long, JumpPointThrottleState> _jumpPointThrottleByPlanet =
             new Dictionary<long, JumpPointThrottleState>();
+        readonly Dictionary<string, string> _propertyLabelCache = new Dictionary<string, string>();
 
         bool _busy = true;
 
@@ -155,8 +158,45 @@ namespace LcdMod.Client.Apps
             _halfFovY = MathHelper.ToRadians(_fov) * 0.5;
             _lastKnownConfigFov = AppConfig?.FoV ?? MAP_VERTICAL_FOV_DEFAULT_DEG;
             InvalidateStaticOrbitCache();
+            RebuildPropertyLabelCache();
 
             CursorType = GetDefaultCursorType();
+        }
+
+        void RebuildPropertyLabelCache()
+        {
+            _propertyLabelCache.Clear();
+            CachePropertyLabel("Radius");
+            CachePropertyLabel("Gravity");
+            CachePropertyLabel("Range");
+            CachePropertyLabel("Atmosphere");
+            CachePropertyLabel("O2");
+            CachePropertyLabel("Temperature");
+            CachePropertyLabel("Wind");
+            CachePropertyLabel("Position");
+            CachePropertyLabel("Jump");
+        }
+
+        void CachePropertyLabel(string name)
+        {
+            _propertyLabelCache[name] = LocHelper.GetLoc(BuildPropertyLocKey(name));
+        }
+
+        string BuildPropertyLocKey(string name)
+        {
+            return "LcdMod_" + name + (AppConfig != null && AppConfig.DisplayMode == 0 ? "_Short" : string.Empty);
+        }
+
+        string FormatPropertyLine(string name, object value)
+        {
+            string format;
+            if (!_propertyLabelCache.TryGetValue(name, out format))
+            {
+                format = LocHelper.GetLoc(BuildPropertyLocKey(name));
+                _propertyLabelCache[name] = format;
+            }
+
+            return string.Format(FormatingHelper.Culture, format, value);
         }
 
         CursorType GetDefaultCursorType()
@@ -182,6 +222,13 @@ namespace LcdMod.Client.Apps
             if (AppConfig == null)
                 return;
             _jumpPointRunCounter++;
+
+            if (_syncConfigNextRun)
+            {
+                _syncConfigNextRun = false;
+                if (Block != null && ProviderConfig != null)
+                    ConfigManager.Sync(Block, ProviderConfig);
+            }
 
             if (float.IsNaN(_lastKnownConfigFov) || Math.Abs(_lastKnownConfigFov - AppConfig.FoV) > 0.001f)
                 LayoutChanged();
@@ -791,7 +838,7 @@ namespace LcdMod.Client.Apps
             var lines = BuildPlanetInfoLines(planet, false);
             var lineTexts = new string[lines.Count];
             for (int i = 0; i < lines.Count; i++)
-                lineTexts[i] = lines[i] != null ? lines[i].ToString() : string.Empty;
+                lineTexts[i] = lines[i] != null ? lines[i].GetText() : string.Empty;
 
             int count = lines.Count;
             var lineSizes = new Vector2[count];
@@ -921,16 +968,15 @@ namespace LcdMod.Client.Apps
                     float y = MathHelper.Clamp(startYFallback + i * lineStep - sideInfoYOffset,
                         ViewBox.Y + lineSizes[i].Y * 0.5f,
                         ViewBox.Bottom - lineSizes[i].Y * 0.5f);
-                    sprites.Add(new MySprite
-                    {
-                        Type = SpriteType.TEXT,
-                        Data = lineTexts[i],
-                        Position = new Vector2(xBase, y),
-                        Color = labelColor,
-                        FontId = "White",
-                        Alignment = fallbackAlignment,
-                        RotationOrScale = sideInfoScale
-                    });
+                    DrawPlanetSideInfoLine(
+                        sprites,
+                        lines[i],
+                        lineTexts[i],
+                        new Vector2(xBase, y),
+                        lineSizes[i],
+                        labelColor,
+                        fallbackAlignment,
+                        sideInfoScale);
                 }
 
                 return;
@@ -950,17 +996,77 @@ namespace LcdMod.Client.Apps
                     ViewBox.Y + lineSizes[i].Y * 0.5f,
                     ViewBox.Bottom - lineSizes[i].Y * 0.5f);
 
-                sprites.Add(new MySprite
-                {
-                    Type = SpriteType.TEXT,
-                    Data = lineTexts[i],
-                    Position = new Vector2(x, y),
-                    Color = labelColor,
-                    FontId = "White",
-                    Alignment = alignment,
-                    RotationOrScale = sideInfoScale
-                });
+                DrawPlanetSideInfoLine(
+                    sprites,
+                    lines[i],
+                    lineTexts[i],
+                    new Vector2(x, y),
+                    lineSizes[i],
+                    labelColor,
+                    alignment,
+                    sideInfoScale);
             }
+        }
+
+        void DrawPlanetSideInfoLine(
+            List<MySprite> sprites,
+            ITooltipLine line,
+            string text,
+            Vector2 position,
+            Vector2 size,
+            Color labelColor,
+            TextAlignment alignment,
+            float textScale)
+        {
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXT,
+                Data = text,
+                Position = position,
+                Color = labelColor,
+                FontId = "White",
+                Alignment = alignment,
+                RotationOrScale = textScale
+            });
+
+            if (line == null)
+                return;
+
+            var cursor = line.GetCursor();
+            bool hasEntry = line.IsClickable || cursor.HasValue;
+            if (!hasEntry)
+                return;
+
+            var rect = GetTextBounds(position, size, alignment);
+            var entry = new InteractiveRectangleEntry(
+                rect,
+                cursor ?? (line.IsClickable ? CursorType.Hand : CursorType.Default),
+                line.GetDataContext(),
+                line.GetOnClick());
+            entry.ClickSound = line.GetClickSound();
+            InteractiveList.Add(entry);
+        }
+
+        static RectangleF GetTextBounds(Vector2 position, Vector2 size, TextAlignment alignment)
+        {
+            float width = Math.Max(1f, size.X);
+            float height = Math.Max(1f, size.Y);
+            float x;
+
+            switch (alignment)
+            {
+                case TextAlignment.CENTER:
+                    x = position.X - width * 0.5f;
+                    break;
+                case TextAlignment.RIGHT:
+                    x = position.X - width;
+                    break;
+                default:
+                    x = position.X;
+                    break;
+            }
+
+            return new RectangleF(x, position.Y, width, height);
         }
 
         void CachePlanetInfoLines(ref PlanetProjection planet)
@@ -977,31 +1083,17 @@ namespace LcdMod.Client.Apps
 
         List<ITooltipLine> BuildCachedPlanetInfoLines(PlanetProjection planet, bool compactRadiusLabel)
         {
-            string radiusKey = compactRadiusLabel
-                ? "LcdMod_StarMap_Info_RadiusShort"
-                : "LcdMod_StarMap_Info_Radius";
-
-            var lines = new List<ITooltipLine>(compactRadiusLabel ? 8 : 9)
+            var lines = new List<ITooltipLine>(9)
             {
-                new StaticTooltipLine(string.Format(FormatingHelper.Culture, LocHelper.GetLoc(radiusKey),
-                    FormatingHelper.DistanceToString(planet.Radius))),
-                new StaticTooltipLine(string.Format(FormatingHelper.Culture,
-                    LocHelper.GetLoc("LcdMod_StarMap_Info_Gravity"),
-                    FormatingHelper.GravityToString(planet.SurfaceGravityG))),
-                new StaticTooltipLine(LocHelper.GetLoc("BlockPropertyTitle_OreDetectorRange") + ": " +
-                                      FormatingHelper.DistanceToString(planet.GravityRange)),
-                new StaticTooltipLine(string.Format(FormatingHelper.Culture,
-                    LocHelper.GetLoc("LcdMod_StarMap_Info_Atmosphere_Short"),
-                    FormatingHelper.PercentageToString(planet.AtmosphereDensity))),
-                new StaticTooltipLine(string.Format(FormatingHelper.Culture, LocHelper.GetLoc("LcdMod_StarMap_Info_O2"),
-                    FormatingHelper.PercentageToString(planet.OxygenDensity))),
-                new StaticTooltipLine(string.Format(FormatingHelper.Culture,
-                    LocHelper.GetLoc("LcdMod_StarMap_Info_Temperature"),
-                    FormatingHelper.TemperatureToString(planet.AverageTemperature))),
-                new StaticTooltipLine(string.Format(FormatingHelper.Culture,
-                    LocHelper.GetLoc("LcdMod_StarMap_Info_Wind"),
-                    FormatingHelper.WindToString(planet.MaxWindSpeed))),
-                new ClickableTooltipLine("Position: " + FormatingHelper.FormatVector(planet.WorldPosition),
+                new StaticTooltipLine(FormatPropertyLine("Radius", FormatingHelper.DistanceToString(planet.Radius))),
+                new StaticTooltipLine(FormatPropertyLine("Gravity", FormatingHelper.GravityToString(planet.SurfaceGravityG))),
+                new StaticTooltipLine(FormatPropertyLine("Range", FormatingHelper.DistanceToString(planet.GravityRange))),
+                new StaticTooltipLine(FormatPropertyLine("Atmosphere", FormatingHelper.PercentageToString(planet.AtmosphereDensity))),
+                new StaticTooltipLine(FormatPropertyLine("O2", FormatingHelper.PercentageToString(planet.OxygenDensity))),
+                new StaticTooltipLine(FormatPropertyLine("Temperature", FormatingHelper.TemperatureToString(planet.AverageTemperature))),
+                new StaticTooltipLine(FormatPropertyLine("Wind", FormatingHelper.WindToString(planet.MaxWindSpeed))),
+                GetJumpTooltipLine(planet),
+                new ClickableTooltipLine(FormatPropertyLine("Position", FormatingHelper.FormatBearing(Matrix.Identity, planet.WorldPosition)),
                     planet.WorldPosition,
                     (value, sender) => { ClickOnGps(planet.Name, planet.WorldPosition, planet.Texture.BaseColor); })
                 {
@@ -1009,16 +1101,13 @@ namespace LcdMod.Client.Apps
                 }
             };
 
-            if (!compactRadiusLabel)
-                lines.Add(GetJumpTooltipLine(planet));
-
             return lines;
         }
 
         DynamicTooltipLine GetJumpTooltipLine(PlanetProjection planet)
         {
             Vector3D jumpPoint = Vector3D.Zero;
-            string jumpText = "Jump: unavailable";
+            string jumpText = FormatPropertyLine("Jump", LocHelper.GetLoc("LcdMod_NotAvailable"));
             bool jumpClickable = false;
             long lastRun = long.MinValue;
 
@@ -1074,13 +1163,14 @@ namespace LcdMod.Client.Apps
             var jumpDrives = GridLogic != null ? GridLogic.GetJumpDrives() : null;
             if (jumpDrives == null || jumpDrives.Count == 0)
             {
-                text = "Jump: unavailable";
+                text = FormatPropertyLine("Jump", LocHelper.GetLoc("LcdMod_NotAvailable"));
                 return false;
             }
 
             if (IsJumpPointUiThrottled(planet.PlanetId, planet.Distance, _jumpPointRunCounter, out etaSeconds))
             {
-                text = string.Format(FormatingHelper.Culture, "Calculating... (eta {0} sec)", etaSeconds);
+                text = FormatPropertyLine("Jump",
+                    string.Format(FormatingHelper.Culture, "Calculating... (eta {0} sec)", etaSeconds));
                 return false;
             }
 
@@ -1091,14 +1181,19 @@ namespace LcdMod.Client.Apps
                     planet.Radius,
                     planet.GravityRange,
                     out jumpPoint,
-                    false))
+                    AppConfig.DisplayMode == 0))
             {
-                text = "Jump: " + FormatingHelper.FormatVector(jumpPoint);
+                text = FormatPropertyLine("Jump", FormatingHelper.FormatBearing(GetReferenceMatrix(), jumpPoint));
                 return true;
             }
 
-            text = "Jump: unavailable";
+            text = FormatPropertyLine("Jump", LocHelper.GetLoc("LcdMod_NotAvailable"));
             return false;
+        }
+
+        MatrixD GetReferenceMatrix()
+        {
+            return Block != null ? Block.WorldMatrix : MatrixD.Identity;
         }
 
         void ClickOnGps(string planetName, Vector3D position, Color color)
@@ -1425,6 +1520,24 @@ namespace LcdMod.Client.Apps
         {
             _eyeTracking.Receive(onScreenCoordinates);
             base.OnLookAt(onScreenCoordinates);
+        }
+
+        protected override void OnMouseScroll(int delta)
+        {
+            if (AppConfig == null || delta == 0)
+                return;
+
+            float magnification = SliderFov.FovToMagnification(AppConfig.FoV);
+            float step = delta > 0 ? 1.1f : 1f / 1.1f;
+            float nextMagnification = magnification * step;
+            float nextFov = SliderFov.MagnificationToFov(nextMagnification);
+
+            if (Math.Abs(AppConfig.FoV - nextFov) <= 0.001f)
+                return;
+
+            AppConfig.FoV = nextFov;
+            _lastKnownConfigFov = float.NaN;
+            _syncConfigNextRun = true;
         }
     }
 }

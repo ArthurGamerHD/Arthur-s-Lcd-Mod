@@ -216,4 +216,55 @@
   <data name="LcdMod_ShowDangerousTiles" xml:space="preserve">
     <value>Afișează pătratele amenințate</value>
   </data>
+<data name="LcdMod_Radius" xml:space="preserve">
+    <value>Rază: {0}</value>
+  </data>
+  <data name="LcdMod_Radius_Short" xml:space="preserve">
+    <value>R: {0}</value>
+  </data>
+  <data name="LcdMod_Gravity" xml:space="preserve">
+    <value>Gravitație: {0}</value>
+  </data>
+  <data name="LcdMod_Gravity_Short" xml:space="preserve">
+    <value>G: {0}</value>
+  </data>
+  <data name="LcdMod_Range" xml:space="preserve">
+    <value>Rază gravitațională: {0}</value>
+  </data>
+  <data name="LcdMod_Range_Short" xml:space="preserve">
+    <value>RG: {0}</value>
+  </data>
+  <data name="LcdMod_Atmosphere" xml:space="preserve">
+    <value>Atmosferă: {0}</value>
+  </data>
+  <data name="LcdMod_O2" xml:space="preserve">
+    <value>Oxigen: {0}</value>
+  </data>
+  <data name="LcdMod_O2_Short" xml:space="preserve">
+    <value>O2: {0}</value>
+  </data>
+  <data name="LcdMod_Temperature" xml:space="preserve">
+    <value>Temperatură: {0}</value>
+  </data>
+  <data name="LcdMod_Temperature_Short" xml:space="preserve">
+    <value>Temp.: {0}</value>
+  </data>
+  <data name="LcdMod_Wind" xml:space="preserve">
+    <value>Vânt: {0}</value>
+  </data>
+  <data name="LcdMod_Wind_Short" xml:space="preserve">
+    <value>Vânt: {0}</value>
+  </data>
+  <data name="LcdMod_Position" xml:space="preserve">
+    <value>Poziție: {0}</value>
+  </data>
+  <data name="LcdMod_Position_Short" xml:space="preserve">
+    <value>Poz.: {0}</value>
+  </data>
+  <data name="LcdMod_Jump" xml:space="preserve">
+    <value>Coordonată de salt: {0}</value>
+  </data>
+  <data name="LcdMod_Jump_Short" xml:space="preserve">
+    <value>Salt: {0}</value>
+  </data>
 </root>

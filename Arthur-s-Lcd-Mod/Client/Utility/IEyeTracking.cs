@@ -26,5 +26,7 @@ namespace LcdMod.Client.Utility
         CursorType CursorType { get; }
         
         void LookAt(Vector2 onScreenCoordinates);
+
+        void MouseScroll(int delta);
     }
 }

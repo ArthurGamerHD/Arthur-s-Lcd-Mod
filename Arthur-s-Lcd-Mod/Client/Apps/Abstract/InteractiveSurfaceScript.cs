@@ -99,6 +99,11 @@ namespace LcdMod.Client.Apps.Abstract
             RenderSprites();
         }
 
+        public void MouseScroll(int delta)
+        {
+            OnMouseScroll(delta);
+        }
+
         InteractiveEntry _activeTooltipParentEntry;
         InteractiveEntry _manualTooltipParentEntry;
         object _manualTooltipParentObject;
@@ -107,6 +112,10 @@ namespace LcdMod.Client.Apps.Abstract
         GlobalMenu _globalMenu;
 
         protected virtual void OnLookAt(Vector2 onScreenCoordinates)
+        {
+        }
+
+        protected virtual void OnMouseScroll(int delta)
         {
         }
 

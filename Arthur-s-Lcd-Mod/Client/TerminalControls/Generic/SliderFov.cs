@@ -57,7 +57,7 @@ namespace LcdMod.Client.TerminalControls.Generic
             return FovToMagnification(config.FoV);
         }
 
-        static float MagnificationToFov(float magnification)
+        public static float MagnificationToFov(float magnification)
         {
             double baseHalfFov = MathHelper.ToRadians(BASE_FOV_DEG) * 0.5;
             double halfFov = Math.Atan(Math.Tan(baseHalfFov) / Math.Max(0.0001f, magnification));
@@ -65,7 +65,7 @@ namespace LcdMod.Client.TerminalControls.Generic
             return MathHelper.Clamp(fov, MIN_FOV_DEG, MAX_FOV_DEG);
         }
 
-        static float FovToMagnification(float fovDeg)
+        public static float FovToMagnification(float fovDeg)
         {
             double baseHalfFov = MathHelper.ToRadians(BASE_FOV_DEG) * 0.5;
             double currentHalfFov = MathHelper.ToRadians(MathHelper.Clamp(fovDeg, MIN_FOV_DEG, MAX_FOV_DEG)) * 0.5;
