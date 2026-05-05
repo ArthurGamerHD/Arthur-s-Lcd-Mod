@@ -267,4 +267,13 @@
   <data name="LcdMod_Jump_Short" xml:space="preserve">
     <value>Стрибок: {0}</value>
   </data>
+<data name="LcdMod_AlwaysActive" xml:space="preserve">
+    <value>Завжди активно</value>
+  </data>
+  <data name="LcdMod_AlwaysActive_Tooltip" xml:space="preserve">
+    <value>Постійно вмикає відстеження погляду на екрані. Якщо вимкнено, потрібна клавіша «Озирнутися».</value>
+  </data>
+  <data name="LcdMod_CursorScale" xml:space="preserve">
+    <value>Масштаб курсора</value>
+  </data>
 </root>

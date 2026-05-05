@@ -271,4 +271,13 @@
   <data name="LcdMod_Jump_Short" xml:space="preserve">
     <value>Stökk: {0}</value>
   </data>
+<data name="LcdMod_AlwaysActive" xml:space="preserve">
+    <value>Alltaf virkt</value>
+  </data>
+  <data name="LcdMod_AlwaysActive_Tooltip" xml:space="preserve">
+    <value>Stillir augnrakningu skjásins þannig að hún sé alltaf kveikt. Þegar hún er óvirk þarf Líta í kringum sig-lykilinn.</value>
+  </data>
+  <data name="LcdMod_CursorScale" xml:space="preserve">
+    <value>Skölun bendils</value>
+  </data>
 </root>

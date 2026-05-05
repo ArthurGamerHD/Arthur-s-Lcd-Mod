@@ -267,4 +267,13 @@
   <data name="LcdMod_Jump_Short" xml:space="preserve">
     <value>Hopp: {0}</value>
   </data>
+<data name="LcdMod_AlwaysActive" xml:space="preserve">
+    <value>Alltid aktiv</value>
+  </data>
+  <data name="LcdMod_AlwaysActive_Tooltip" xml:space="preserve">
+    <value>Ställer in skärmens ögonspårning på att alltid vara på. När den är inaktiverad krävs Titta runt-tangenten.</value>
+  </data>
+  <data name="LcdMod_CursorScale" xml:space="preserve">
+    <value>Markörskala</value>
+  </data>
 </root>

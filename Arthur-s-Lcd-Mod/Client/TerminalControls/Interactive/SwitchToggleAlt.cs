@@ -18,7 +18,8 @@ namespace LcdMod.Client.TerminalControls.Interactive
             slider.Getter = Getter;
             slider.Setter = Setter;
             slider.Visible = Visible;
-            slider.Title = MyStringId.GetOrCompute("LcdMod_RequiresAlt");
+            slider.Title = MyStringId.GetOrCompute("LcdMod_AlwaysActive");
+            slider.Tooltip = MyStringId.GetOrCompute("LcdMod_AlwaysActive_Tooltip");
 
             slider.OnText = MyStringId.GetOrCompute("HudInfoOn");
             slider.OffText = MyStringId.GetOrCompute("HudInfoOff");
@@ -44,7 +45,7 @@ namespace LcdMod.Client.TerminalControls.Interactive
             if (config == null)
                 return;
 
-            config.RequiresAlt = value;
+            config.RequiresAlt = !value;
 
             ConfigManager.Sync(block);
         }
@@ -52,7 +53,7 @@ namespace LcdMod.Client.TerminalControls.Interactive
         bool Getter(IMyTerminalBlock myTerminalBlock)
         {
             var config = ConfigManager.GetConfigForCurrentScreen(myTerminalBlock) as ScreenConfigInteractive;
-            return config == null || config.RequiresAlt;
+            return config != null && !config.RequiresAlt;
         }
     }
 }

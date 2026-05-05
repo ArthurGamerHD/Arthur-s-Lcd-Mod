@@ -267,4 +267,13 @@
   <data name="LcdMod_Jump_Short" xml:space="preserve">
     <value>Skok: {0}</value>
   </data>
+<data name="LcdMod_AlwaysActive" xml:space="preserve">
+    <value>Uvijek aktivno</value>
+  </data>
+  <data name="LcdMod_AlwaysActive_Tooltip" xml:space="preserve">
+    <value>Postavlja praćenje pogleda na zaslonu kao uvijek uključeno. Kada je onemogućeno, potrebna je tipka Pogledaj oko sebe.</value>
+  </data>
+  <data name="LcdMod_CursorScale" xml:space="preserve">
+    <value>Skaliranje kursora</value>
+  </data>
 </root>

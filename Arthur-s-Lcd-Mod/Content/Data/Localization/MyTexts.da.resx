@@ -268,4 +268,13 @@
   <data name="LcdMod_Jump_Short" xml:space="preserve">
     <value>Hop: {0}</value>
   </data>
+<data name="LcdMod_AlwaysActive" xml:space="preserve">
+    <value>Altid aktiv</value>
+  </data>
+  <data name="LcdMod_AlwaysActive_Tooltip" xml:space="preserve">
+    <value>Indstiller skærmens øjensporing til altid at være slået til. Når det er deaktiveret, kræves Kig rundt-tasten.</value>
+  </data>
+  <data name="LcdMod_CursorScale" xml:space="preserve">
+    <value>Markørskalering</value>
+  </data>
 </root>

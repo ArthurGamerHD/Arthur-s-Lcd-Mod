@@ -267,4 +267,13 @@
   <data name="LcdMod_Jump_Short" xml:space="preserve">
     <value>Ugrás: {0}</value>
   </data>
+<data name="LcdMod_AlwaysActive" xml:space="preserve">
+    <value>Mindig aktív</value>
+  </data>
+  <data name="LcdMod_AlwaysActive_Tooltip" xml:space="preserve">
+    <value>A képernyő szemkövetését mindig bekapcsolva tartja. Kikapcsolt állapotban a Körülnézés gomb szükséges.</value>
+  </data>
+  <data name="LcdMod_CursorScale" xml:space="preserve">
+    <value>Kurzor méretezése</value>
+  </data>
 </root>

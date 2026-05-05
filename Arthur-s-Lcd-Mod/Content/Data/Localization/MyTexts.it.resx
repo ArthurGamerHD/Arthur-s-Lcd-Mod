@@ -268,4 +268,13 @@
   <data name="LcdMod_Jump_Short" xml:space="preserve">
     <value>Salto: {0}</value>
   </data>
+<data name="LcdMod_AlwaysActive" xml:space="preserve">
+    <value>Sempre attivo</value>
+  </data>
+  <data name="LcdMod_AlwaysActive_Tooltip" xml:space="preserve">
+    <value>Imposta il tracciamento dello sguardo dello schermo come sempre attivo. Quando è disabilitato, è richiesto il tasto Guardati intorno.</value>
+  </data>
+  <data name="LcdMod_CursorScale" xml:space="preserve">
+    <value>Scala del cursore</value>
+  </data>
 </root>

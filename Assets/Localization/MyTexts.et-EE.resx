@@ -267,4 +267,13 @@
   <data name="LcdMod_Jump_Short" xml:space="preserve">
     <value>Hüpe: {0}</value>
   </data>
+<data name="LcdMod_AlwaysActive" xml:space="preserve">
+    <value>Alati aktiivne</value>
+  </data>
+  <data name="LcdMod_AlwaysActive_Tooltip" xml:space="preserve">
+    <value>Seab ekraani pilgujälgimise alati sisselülitatuks. Kui see on keelatud, on vaja klahvi Vaata ringi.</value>
+  </data>
+  <data name="LcdMod_CursorScale" xml:space="preserve">
+    <value>Kursori skaala</value>
+  </data>
 </root>

@@ -268,4 +268,13 @@
   <data name="LcdMod_Jump_Short" xml:space="preserve">
     <value>Salt: {0}</value>
   </data>
+<data name="LcdMod_AlwaysActive" xml:space="preserve">
+    <value>Sempre actiu</value>
+  </data>
+  <data name="LcdMod_AlwaysActive_Tooltip" xml:space="preserve">
+    <value>Mantén el seguiment ocular de la pantalla sempre activat. Quan està desactivat, cal la tecla Mira al voltant.</value>
+  </data>
+  <data name="LcdMod_CursorScale" xml:space="preserve">
+    <value>Escala del cursor</value>
+  </data>
 </root>

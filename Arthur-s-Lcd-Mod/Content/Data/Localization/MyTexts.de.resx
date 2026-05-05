@@ -268,4 +268,13 @@
   <data name="LcdMod_Jump_Short" xml:space="preserve">
     <value>Sprung: {0}</value>
   </data>
+<data name="LcdMod_AlwaysActive" xml:space="preserve">
+    <value>Immer aktiv</value>
+  </data>
+  <data name="LcdMod_AlwaysActive_Tooltip" xml:space="preserve">
+    <value>Setzt die Blickverfolgung des Bildschirms auf immer eingeschaltet. Wenn deaktiviert, ist die Umschauen-Taste erforderlich.</value>
+  </data>
+  <data name="LcdMod_CursorScale" xml:space="preserve">
+    <value>Cursor-Skalierung</value>
+  </data>
 </root>

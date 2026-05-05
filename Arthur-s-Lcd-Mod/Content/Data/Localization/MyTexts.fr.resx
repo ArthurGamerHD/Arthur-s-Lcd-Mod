@@ -268,4 +268,13 @@
   <data name="LcdMod_Jump_Short" xml:space="preserve">
     <value>Saut: {0}</value>
   </data>
+<data name="LcdMod_AlwaysActive" xml:space="preserve">
+    <value>Toujours actif</value>
+  </data>
+  <data name="LcdMod_AlwaysActive_Tooltip" xml:space="preserve">
+    <value>Active en permanence le suivi du regard de l’écran. Lorsqu’il est désactivé, la touche Regarder autour est requise.</value>
+  </data>
+  <data name="LcdMod_CursorScale" xml:space="preserve">
+    <value>Échelle du curseur</value>
+  </data>
 </root>

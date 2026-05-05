@@ -267,4 +267,13 @@
   <data name="LcdMod_Jump_Short" xml:space="preserve">
     <value>Skok: {0}</value>
   </data>
+<data name="LcdMod_AlwaysActive" xml:space="preserve">
+    <value>Vždy aktívne</value>
+  </data>
+  <data name="LcdMod_AlwaysActive_Tooltip" xml:space="preserve">
+    <value>Nastaví sledovanie pohľadu na obrazovke ako stále zapnuté. Keď je vypnuté, vyžaduje sa kláves Rozhliadnuť sa.</value>
+  </data>
+  <data name="LcdMod_CursorScale" xml:space="preserve">
+    <value>Mierka kurzora</value>
+  </data>
 </root>

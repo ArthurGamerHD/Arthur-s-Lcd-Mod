@@ -267,4 +267,13 @@
   <data name="LcdMod_Jump_Short" xml:space="preserve">
     <value>Lēciens: {0}</value>
   </data>
+<data name="LcdMod_AlwaysActive" xml:space="preserve">
+    <value>Vienmēr aktīvs</value>
+  </data>
+  <data name="LcdMod_AlwaysActive_Tooltip" xml:space="preserve">
+    <value>Iestata ekrāna acu izsekošanu vienmēr ieslēgtu. Kad tā ir atspējota, ir nepieciešams taustiņš Skatīties apkārt.</value>
+  </data>
+  <data name="LcdMod_CursorScale" xml:space="preserve">
+    <value>Kursora mērogs</value>
+  </data>
 </root>

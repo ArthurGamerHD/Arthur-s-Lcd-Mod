@@ -267,4 +267,13 @@
   <data name="LcdMod_Jump_Short" xml:space="preserve">
     <value>Hyppy: {0}</value>
   </data>
+<data name="LcdMod_AlwaysActive" xml:space="preserve">
+    <value>Aina aktiivinen</value>
+  </data>
+  <data name="LcdMod_AlwaysActive_Tooltip" xml:space="preserve">
+    <value>Asettaa näytön katseenseurannan olemaan aina käytössä. Kun se on poistettu käytöstä, Katso ympärille -näppäin vaaditaan.</value>
+  </data>
+  <data name="LcdMod_CursorScale" xml:space="preserve">
+    <value>Kohdistimen skaala</value>
+  </data>
 </root>

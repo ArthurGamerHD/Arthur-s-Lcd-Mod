@@ -267,4 +267,13 @@
   <data name="LcdMod_Jump_Short" xml:space="preserve">
     <value>跃迁: {0}</value>
   </data>
+<data name="LcdMod_AlwaysActive" xml:space="preserve">
+    <value>始终启用</value>
+  </data>
+  <data name="LcdMod_AlwaysActive_Tooltip" xml:space="preserve">
+    <value>将屏幕视线跟踪设为始终开启。禁用时，需要使用“环顾”按键。</value>
+  </data>
+  <data name="LcdMod_CursorScale" xml:space="preserve">
+    <value>光标缩放</value>
+  </data>
 </root>

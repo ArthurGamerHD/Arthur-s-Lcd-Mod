@@ -267,4 +267,13 @@
   <data name="LcdMod_Jump_Short" xml:space="preserve">
     <value>Atlama: {0}</value>
   </data>
+<data name="LcdMod_AlwaysActive" xml:space="preserve">
+    <value>Her zaman aktif</value>
+  </data>
+  <data name="LcdMod_AlwaysActive_Tooltip" xml:space="preserve">
+    <value>Ekran göz takibini her zaman açık olarak ayarlar. Devre dışıyken Etrafa Bak tuşu gerekir.</value>
+  </data>
+  <data name="LcdMod_CursorScale" xml:space="preserve">
+    <value>İmleç ölçeği</value>
+  </data>
 </root>

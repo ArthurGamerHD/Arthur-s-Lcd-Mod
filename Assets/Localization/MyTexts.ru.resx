@@ -267,4 +267,13 @@
   <data name="LcdMod_Jump_Short" xml:space="preserve">
     <value>Прыжок: {0}</value>
   </data>
+<data name="LcdMod_AlwaysActive" xml:space="preserve">
+    <value>Всегда активно</value>
+  </data>
+  <data name="LcdMod_AlwaysActive_Tooltip" xml:space="preserve">
+    <value>Включает отслеживание взгляда на экране постоянно. Если отключено, требуется клавиша «Осмотреться».</value>
+  </data>
+  <data name="LcdMod_CursorScale" xml:space="preserve">
+    <value>Масштаб курсора</value>
+  </data>
 </root>
