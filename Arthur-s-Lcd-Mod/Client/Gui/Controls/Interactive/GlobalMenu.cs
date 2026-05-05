@@ -68,6 +68,21 @@ namespace LcdMod.Client.Gui.Controls.Interactive
             }
         }
 
+        public bool Hit(Vector2 point)
+        {
+            if (!Visible)
+                return false;
+
+            for (int i = 0; i < _interactiveEntries.Count; i++)
+            {
+                var entry = _interactiveEntries[i];
+                if (entry != null && entry.Hit(point))
+                    return true;
+            }
+
+            return false;
+        }
+
         public float GetReservedHeight(
             InteractiveSurfaceScript owner,
             float scale,

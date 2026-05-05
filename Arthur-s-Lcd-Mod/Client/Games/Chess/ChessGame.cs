@@ -221,7 +221,7 @@ namespace LcdMod.Client.Games.Chess
         {
             _viewBox = _script.ViewBox;
 
-            var gridSize = Math.Min(_viewBox.Width, _viewBox.Height) * .95f;
+            var gridSize = Math.Min(_viewBox.Width, _viewBox.Height);
 
             BoardViewBox = new RectangleF((_viewBox.Center.X - gridSize / 2), (_viewBox.Center.Y - gridSize / 2),
                 gridSize,
@@ -752,6 +752,9 @@ namespace LcdMod.Client.Games.Chess
 
             for (int index = 0; index < _gridCells.Length; index++)
             {
+                if (!IsBoardCellInteractive(index))
+                    continue;
+
                 int capturedIndex = index;
                 Interactive.Add(new InteractiveRectangleEntry(
                     _gridCells[index],
@@ -778,6 +781,35 @@ namespace LcdMod.Client.Games.Chess
                     capturedIndex,
                     (value, sender) => ClickControlBox((int)value)));
             }
+        }
+
+        bool IsBoardCellInteractive(int index)
+        {
+            if (_coroutine != null || _botThinkRunning || _botThinkCoroutine != null)
+                return false;
+
+            if (_gridCells == null || index < 0 || index >= _gridCells.Length || IsGameOver)
+                return false;
+
+            var point = BoardPointFromGridIndex(index);
+            var cell = GetCell(point) ?? 0;
+            var currentColor = (PieceColor)(_currentMove % 2);
+
+            if (SelectedTile != null)
+            {
+                if (SelectedTile.Value.Equals(point))
+                    return true;
+
+                List<Point> selectedMoves;
+                if (_availableMoves.TryGetValue(SelectedTile.Value, out selectedMoves) &&
+                    selectedMoves != null &&
+                    selectedMoves.Any(move => move.X == point.X && move.Y == point.Y))
+                {
+                    return true;
+                }
+            }
+
+            return cell != 0;
         }
 
         CursorType GetBoardCellCursor(int index)

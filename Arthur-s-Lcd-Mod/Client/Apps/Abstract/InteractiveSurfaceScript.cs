@@ -16,10 +16,13 @@ namespace LcdMod.Client.Apps.Abstract
     public abstract partial class InteractiveSurfaceScript : SurfaceScriptBase, IEyeTracking
     {
         const long CURSOR_VISUAL_CONTACT_TIMEOUT_FRAMES = 6;
+        const long HIDDEN_GLOBAL_MENU_TIMEOUT_FRAMES = 180;
         object _activeTooltipParentObject;
         RectangleF _tooltipRect;
         RectangleF _tooltipKeepOpenRect;
         bool _hasTooltipBounds;
+        bool _showHiddenGlobalMenu;
+        long _hiddenGlobalMenuVisibleUntilFrame = long.MinValue;
         long _lastVisualContactFrame = long.MinValue;
 
         protected override ConfigKind ConfigKind => ConfigKind.Interactive;
@@ -27,11 +30,13 @@ namespace LcdMod.Client.Apps.Abstract
         protected InteractiveSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
             : base(surface, block, size)
         {
+            _hiddenGlobalMenuEntry = new HiddenGlobalMenuEntry(this);
         }
 
         public Vector2 CursorPosition { get; protected set; } = new Vector2(float.NaN, float.NaN);
 
         RectangleF _baseViewBox;
+        readonly HiddenGlobalMenuEntry _hiddenGlobalMenuEntry;
 
         readonly List<InteractiveEntry> _interactiveEntriesWithOverlay = new List<InteractiveEntry>();
 
@@ -55,7 +60,17 @@ namespace LcdMod.Client.Apps.Abstract
                 }
 
                 _interactiveEntriesWithOverlay.AddRange(InteractiveList);
-                _globalMenu?.AddInteractiveEntries(_interactiveEntriesWithOverlay);
+                if (ShouldRenderGlobalMenu())
+                {
+                    _globalMenu?.AddInteractiveEntries(_interactiveEntriesWithOverlay);
+                }
+                else if (CanOpenHiddenGlobalMenu())
+                {
+                    _hiddenGlobalMenuEntry.SetRect(_baseViewBox);
+                    _hiddenGlobalMenuEntry.SetVisible(true);
+                    _interactiveEntriesWithOverlay.Insert(0, _hiddenGlobalMenuEntry);
+                }
+
                 return _interactiveEntriesWithOverlay;
             }
         }
@@ -78,10 +93,12 @@ namespace LcdMod.Client.Apps.Abstract
 
             ViewBox = _baseViewBox;
 
-            if (_globalMenu == null || !_globalMenu.Visible)
+            if (!ShouldRenderGlobalMenu())
                 return;
 
             float reservedHeight = _globalMenu.GetReservedHeight(this, Scale, FontScale, Surface);
+            reservedHeight += Math.Min(16 * Scale, Surface.SurfaceSize.Y * Surface.TextPadding / 100);
+            
             ViewBox = new RectangleF(
                 _baseViewBox.X,
                 _baseViewBox.Y + reservedHeight,
@@ -152,6 +169,8 @@ namespace LcdMod.Client.Apps.Abstract
                 CursorPosition = new Vector2(float.NaN, float.NaN);
                 ClearTooltip();
             }
+
+            UpdateHiddenGlobalMenuLifetime();
         }
 
         void HideAttachedTooltip()
@@ -418,12 +437,137 @@ namespace LcdMod.Client.Apps.Abstract
             if (_globalMenu != null)
                 _globalMenu.HideEntries();
 
+            _hiddenGlobalMenuEntry.SetVisible(false);
+            CloseHiddenGlobalMenu();
             _globalMenu = entries == null || entries.Count == 0 ? null : new GlobalMenu(entries);
 
             UpdateViewBox();
         }
 
         public virtual void SetGlobalMenu(params GlobalMenuEntry[] entries) => SetGlobalMenu(entries != null ? new List<GlobalMenuEntry>(entries) : null);
+
+        protected override void DrawTitle(List<MySprite> frame)
+        {
+            if (!ShouldRenderGlobalMenu())
+            {
+                _globalMenu?.HideEntries();
+                _hiddenGlobalMenuEntry.SetVisible(CanOpenHiddenGlobalMenu());
+                base.DrawTitle(frame);
+                return;
+            }
+
+            if (_globalMenu == null || !_globalMenu.Visible)
+            {
+                base.DrawTitle(frame);
+                return;
+            }
+
+            CaretY = ViewBox.Y;
+            _globalMenu.Render(
+                this,
+                frame,
+                _baseViewBox,
+                Scale,
+                FontScale,
+                Surface,
+                ForegroundColor,
+                ColorableConfig?.HeaderColor ?? BackgroundColor,
+                CursorPosition);
+        }
+
+        bool ShouldRenderGlobalMenu()
+        {
+            return (TitleVisible || _showHiddenGlobalMenu) && _globalMenu != null && _globalMenu.Visible;
+        }
+
+        bool CanOpenHiddenGlobalMenu()
+        {
+            return !TitleVisible && _globalMenu != null && _globalMenu.Visible;
+        }
+
+        void OpenHiddenGlobalMenu()
+        {
+            if (!CanOpenHiddenGlobalMenu())
+                return;
+
+            _showHiddenGlobalMenu = true;
+            RefreshHiddenGlobalMenuLifetime();
+            UpdateViewBox();
+            RenderSprites();
+        }
+
+        void RefreshHiddenGlobalMenuLifetime()
+        {
+            var session = MyAPIGateway.Session;
+            if (session == null)
+                return;
+
+            _hiddenGlobalMenuVisibleUntilFrame = session.GameplayFrameCounter + HIDDEN_GLOBAL_MENU_TIMEOUT_FRAMES;
+        }
+
+        void UpdateHiddenGlobalMenuLifetime()
+        {
+            if (!_showHiddenGlobalMenu)
+                return;
+
+            if (!CanOpenHiddenGlobalMenu())
+            {
+                CloseHiddenGlobalMenu();
+                UpdateViewBox();
+                return;
+            }
+
+            var session = MyAPIGateway.Session;
+            if (session == null || !HasRecentVisualContact)
+            {
+                CloseHiddenGlobalMenu();
+                UpdateViewBox();
+                return;
+            }
+
+            if (_globalMenu != null && _globalMenu.Hit(CursorPosition))
+            {
+                RefreshHiddenGlobalMenuLifetime();
+                return;
+            }
+
+            if (session.GameplayFrameCounter <= _hiddenGlobalMenuVisibleUntilFrame)
+                return;
+
+            CloseHiddenGlobalMenu();
+            UpdateViewBox();
+        }
+
+        void CloseHiddenGlobalMenu()
+        {
+            _showHiddenGlobalMenu = false;
+            _hiddenGlobalMenuVisibleUntilFrame = long.MinValue;
+        }
+
+        sealed class HiddenGlobalMenuEntry : InteractiveRectangleEntry
+        {
+            readonly InteractiveSurfaceScript _owner;
+
+            public HiddenGlobalMenuEntry(InteractiveSurfaceScript owner)
+                : base(default(RectangleF), CursorType.Default, owner)
+            {
+                _owner = owner;
+                OnSecondaryClick = OnRightClick;
+                SetVisible(false);
+            }
+
+            public override bool CanClick => Visible;
+
+            public override bool Click(object sender)
+            {
+                return true;
+            }
+
+            void OnRightClick(object dataContext, object sender)
+            {
+                _owner.OpenHiddenGlobalMenu();
+            }
+        }
 
         public void ShowMessageBox(
             string title,
@@ -499,26 +643,13 @@ namespace LcdMod.Client.Apps.Abstract
 
         protected override List<MySprite> RenderFrame(Func<List<MySprite>> sprites)
         {
-            var baseViewBox = _baseViewBox;
-
             var spriteList = base.RenderFrame(sprites);
             RenderAttachedTooltip(spriteList);
-
-            _globalMenu?.Render(
-                this,
-                spriteList,
-                baseViewBox,
-                Scale,
-                FontScale,
-                Surface,
-                ForegroundColor,
-                ColorableConfig?.HeaderColor ?? BackgroundColor,
-                CursorPosition);
 
             _messageBox?.Render(
                 this,
                 spriteList,
-                baseViewBox,
+                _baseViewBox,
                 Scale,
                 FontScale,
                 Surface,

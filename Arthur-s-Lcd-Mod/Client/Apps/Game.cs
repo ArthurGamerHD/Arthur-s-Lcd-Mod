@@ -103,7 +103,12 @@ namespace LcdMod.Client.Apps
                 RenderSprites();
         }
 
-        protected override List<MySprite> GetSprites() => _currentGame?.Render() ??  new List<MySprite>();
+        protected override List<MySprite> GetSprites()
+        {
+            var sprites = _currentGame?.Render() ?? new List<MySprite>();
+            DrawTitle(sprites);
+            return sprites;
+        }
 
         public void InitGame(GameEnum gameEnum)
         {

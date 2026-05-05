@@ -340,13 +340,12 @@ namespace LcdMod.Client.Games.Minesweeper
                 AllocateBoard();
 
             float viewBoxAreaBasis = (float)Math.Sqrt(Math.Max(1f, _viewBox.Width * _viewBox.Height));
-            float padding = Math.Max(3f, viewBoxAreaBasis * 0.015f);
             _boardFrameThickness = GetScaledBorder(viewBoxAreaBasis, BOARD_FRAME_RATIO);
             float outerFrameContentMargin = GetScaledBorder(viewBoxAreaBasis, OUTER_FRAME_CONTENT_MARGIN_RATIO);
             float totalFrameInset = _boardFrameThickness + outerFrameContentMargin;
 
-            float availableOuterWidth = Math.Max(1f, _viewBox.Width - padding * 2f);
-            float availableOuterHeight = Math.Max(1f, _viewBox.Height - padding * 2f);
+            float availableOuterWidth = Math.Max(1f, _viewBox.Width);
+            float availableOuterHeight = Math.Max(1f, _viewBox.Height);
             float availableContentWidth = Math.Max(1f, availableOuterWidth - totalFrameInset * 2f);
             float availableContentHeight = Math.Max(1f, availableOuterHeight - totalFrameInset * 2f);
 
@@ -371,7 +370,7 @@ namespace LcdMod.Client.Games.Minesweeper
 
             _boardOuterRect = new RectangleF(
                 _viewBox.Center.X - assemblyOuterWidth * 0.5f,
-                _viewBox.Y + padding + (availableOuterHeight - assemblyOuterHeight) * 0.5f,
+                _viewBox.Y + (availableOuterHeight - assemblyOuterHeight) * 0.5f,
                 assemblyOuterWidth,
                 assemblyOuterHeight);
 
@@ -780,10 +779,15 @@ namespace LcdMod.Client.Games.Minesweeper
 
             for (int i = 0; i < _gridCells.Length; i++)
             {
+                var cell = _cells[i];
+                
+                if(_state == MinesweeperState.Playing && IsSet(cell, REVEALED))
+                    continue;
+                
                 int capturedIndex = i;
                 Interactive.Add(new InteractiveRectangleEntry(
                     _gridCells[i],
-                    GetCellCursor(i),
+                    GetCellCursor(),
                     capturedIndex,
                     delegate(object value, object sender) { ClickCell((int)value, _flagMode); })
                 {
@@ -793,20 +797,8 @@ namespace LcdMod.Client.Games.Minesweeper
             }
         }
 
-        CursorType GetCellCursor(int index)
-        {
-            if (_state != MinesweeperState.Playing)
-                return CursorType.Cross;
 
-            if (index < 0 || _cells == null || index >= _cells.Length)
-                return CursorType.Default;
-
-            var cell = _cells[index];
-            if (IsSet(cell, REVEALED))
-                return CursorType.Default;
-
-            return CursorType.Hand;
-        }
+        CursorType GetCellCursor() => _state != MinesweeperState.Playing ? CursorType.Cross : CursorType.Hand;
 
         MySoundPair GetCellClickSound(int index)
         {
