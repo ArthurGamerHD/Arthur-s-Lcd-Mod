@@ -29,7 +29,7 @@ namespace LcdMod.Client.Apps.Abstract
         {
         }
 
-        public Vector2 CursorPosition { get; protected set; }
+        public Vector2 CursorPosition { get; protected set; } = new Vector2(float.NaN, float.NaN);
 
         RectangleF _baseViewBox;
 
@@ -124,8 +124,15 @@ namespace LcdMod.Client.Apps.Abstract
         protected bool CursorInsideTooltipKeepOpenArea =>
             _hasTooltipBounds && _tooltipKeepOpenRect.Contains(CursorPosition);
 
-        protected bool HasRecentVisualContact => MyAPIGateway.Session.GameplayFrameCounter - _lastVisualContactFrame <=
-                                                 CURSOR_VISUAL_CONTACT_TIMEOUT_FRAMES;
+        protected bool HasRecentVisualContact
+        {
+            get
+            {
+                return _lastVisualContactFrame != long.MinValue &&
+                       MyAPIGateway.Session.GameplayFrameCounter - _lastVisualContactFrame <=
+                       CURSOR_VISUAL_CONTACT_TIMEOUT_FRAMES;
+            }
+        }
 
         protected void ClearTooltip()
         {

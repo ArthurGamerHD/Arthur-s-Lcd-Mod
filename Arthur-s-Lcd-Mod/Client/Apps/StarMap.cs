@@ -392,8 +392,6 @@ namespace LcdMod.Client.Apps
                     screenPos.Y - markerRadius > ViewBox.Bottom)
                     continue;
 
-                float centerDistance = Vector2.Distance(screenPos, ViewBox.Center);
-                bool touchesCenter = markerRadius >= centerDistance - 2 * Scale;
                 string name;
                 if (!PlanetHelper.PlanetNamesById.TryGetValue(planet.EntityId, out name))
                     name = planet.Name;
@@ -420,7 +418,7 @@ namespace LcdMod.Client.Apps
                     AngularRadius = angularRadius,
                     ScreenPos = screenPos,
                     MarkerRadius = markerRadius,
-                    ShouldDisplayInfo = touchesCenter,
+                    ShouldDisplayInfo = false,
                     Radius = planet.AverageRadius,
                     SurfaceGravityG = (float)surfaceGravity,
                     GravityRange = (float)(Math.Max(0d, gravityLimitRadius - planet.AverageRadius)),
@@ -453,6 +451,8 @@ namespace LcdMod.Client.Apps
                     visiblePlanets.Add(candidate);
             }
 
+            SelectDynamicPlanetForInfo(visiblePlanets);
+
             for (int i = visiblePlanets.Count - 1; i >= 0; i--) // far -> near draw order
             {
                 var planet = visiblePlanets[i];
@@ -461,6 +461,47 @@ namespace LcdMod.Client.Apps
             }
 
             return hasDetectedPlanets;
+        }
+
+        void SelectDynamicPlanetForInfo(List<PlanetProjection> visiblePlanets)
+        {
+            if (visiblePlanets == null || visiblePlanets.Count == 0)
+                return;
+
+            var target = GetDynamicInfoTargetPosition();
+            if (float.IsNaN(target.X) || float.IsNaN(target.Y))
+                return;
+
+            int selectedIndex = -1;
+            for (int i = 0; i < visiblePlanets.Count; i++) // near -> far, matching top draw priority
+            {
+                var planet = visiblePlanets[i];
+                float radius = Math.Max(planet.MarkerRadius, 2f * Scale);
+                if (Vector2.DistanceSquared(planet.ScreenPos, target) > radius * radius)
+                    continue;
+
+                selectedIndex = i;
+                break;
+            }
+
+            if (selectedIndex < 0)
+                return;
+
+            var selected = visiblePlanets[selectedIndex];
+            selected.ShouldDisplayInfo = true;
+            visiblePlanets[selectedIndex] = selected;
+        }
+
+        Vector2 GetDynamicInfoTargetPosition()
+        {
+            if (HasRecentVisualContact &&
+                !float.IsNaN(CursorPosition.X) &&
+                !float.IsNaN(CursorPosition.Y))
+            {
+                return CursorPosition;
+            }
+
+            return ViewBox.Center;
         }
 
         bool DrawStaticOrbitMap(
