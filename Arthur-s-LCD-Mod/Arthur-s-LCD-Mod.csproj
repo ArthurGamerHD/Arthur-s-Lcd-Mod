@@ -16,7 +16,7 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Mal.Mdk2.References" Version="2.2.8" />
+        <PackageReference Include="Mal.Mdk2.References" Version="2.2.8"/>
     </ItemGroup>
     <ItemGroup>
         <AdditionalFiles Include="Content\*\**\*">
@@ -29,13 +29,31 @@
         <AdditionalFiles Remove="Content\Other content folders"/>
         <AdditionalFiles Remove="Content\Data\SBC files can go here"/>
         <None Remove="thumb.png"/>
+
+        <!-- why keen? why chinese language is not up to spec? ...  -->
+        <AdditionalFiles Remove="Content\Data\Localization\MyTexts.zh.resx"/>
     </ItemGroup>
+
+    <Target Name="MapzhTozhCN" BeforeTargets="PostBuildEvent">
+        <Copy SourceFiles="$(MSBuildProjectDirectory)\Content\Data\Localization\MyTexts.zh.resx"
+              DestinationFiles="$(MSBuildProjectDirectory)\Content\Data\Localization\MyTexts.zh-CN.resx"
+              SkipUnchangedFiles="true"/>
+    </Target>
+    
     <ItemGroup>
-      <Folder Include="Content\Textures\" />
+        <ProjectReference Include="..\LcdModCodeGenerator\LcdModCodeGenerator.csproj"
+                          OutputItemType="Analyzer"
+                          ReferenceOutputAssembly="false"/>
     </ItemGroup>
+    
     <ItemGroup>
-      <ProjectReference Include="..\LcdModCodeGenerator\LcdModCodeGenerator.csproj"
-                        OutputItemType="Analyzer"
-                        ReferenceOutputAssembly="false" />
+      <EmbeddedResource Update="Content\Data\Localization\MyTexts.zh.resx">
+        <DependentUpon>MyTexts.resx</DependentUpon>
+      </EmbeddedResource>
     </ItemGroup>
+
+
+    <Target Name="RemoveZhCnResxAlias" AfterTargets="PostBuildEvent">
+        <Delete Files="$(MSBuildProjectDirectory)\Content\Data\Localization\MyTexts.zh-CN.resx" />
+    </Target>
 </Project>
