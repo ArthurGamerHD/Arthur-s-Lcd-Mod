@@ -6,12 +6,15 @@ using Graph.Apps.Games.Chess;
 using Graph.Apps.Games.Minesweeper;
 using Graph.Apps.Utility;
 using Graph.System;
+using Graph.System.Config;
+using Graph.System.Controls;
 using Sandbox.Engine.Platform;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
+using VRage.Utils;
 using VRageMath;
 
 namespace Graph.Apps.Games
@@ -35,7 +38,7 @@ namespace Graph.Apps.Games
                 new MyTerminalControlComboBoxItem
                 {
                     Key = (long)GameEnum.Chess,
-                    Value = VRage.Utils.MyStringId.GetOrCompute("Chess")
+                    Value = MyStringId.GetOrCompute("LCDMod_Chess")
                 }/*,
                 new MyTerminalControlComboBoxItem
                 {
@@ -45,7 +48,7 @@ namespace Graph.Apps.Games
                 new MyTerminalControlComboBoxItem
                 {
                 Key = (long)GameEnum.Minesweeper,
-                Value = VRage.Utils.MyStringId.GetOrCompute("Minesweeper")
+                Value = MyStringId.GetOrCompute("LCDMod_Minesweeper")
                 }
             };
 
@@ -55,11 +58,31 @@ namespace Graph.Apps.Games
 
         public override List<InteractiveEntry> InteractiveList => _currentGame != null ? _currentGame.Interactive : _emptyInteractiveList;
 
+        GlobalMenuEntry _rootMenu;
+        
         public GameSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)
         {
-
-            
+            var subEntries = new List<GlobalMenuEntry>(GameList.Count);
+            foreach (var entry in GameList) subEntries.Add(new GlobalMenuEntry(entry.Value.ToString(), (a,b) => SetGame(entry.Key)));
+            _rootMenu = new GlobalMenuEntry(TITLE, subEntries);
         }
+
+        public override void SetGlobalMenu(params GlobalMenuEntry[] entries)
+        {
+            var newEntries = new List<GlobalMenuEntry>(entries.Length + 1) { _rootMenu };
+            foreach (var globalMenuEntry in entries)
+                newEntries.Add(globalMenuEntry);
+            
+            base.SetGlobalMenu(newEntries);
+        }
+
+        void SetGame(long entryValue)
+        {
+            AppConfig.DisplayInternal = (int)entryValue;
+            Sync();
+        }
+
+        public void Sync() => ConfigManager.Sync(Block, ProviderConfig);
 
         public override void Run()
         {

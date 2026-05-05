@@ -24,6 +24,8 @@ namespace Graph.Apps.Games.Chess
 {
     public partial class ChessGame : IGame
     {
+        const string CUSTOM_DATA_KEY = "Chess";
+
         bool _playingAsBlack;
         bool _showDangers = true;
 
@@ -32,7 +34,7 @@ namespace Graph.Apps.Games.Chess
         int _sessionId;
 
         public Sandbox.ModAPI.Ingame.IMyTextSurface Surface => _script.Surface;
-        
+
         RectangleF _viewBox;
         public RectangleF BoardViewBox;
 
@@ -216,10 +218,11 @@ namespace Graph.Apps.Games.Chess
         void BakeBoardVisual()
         {
             _viewBox = _script.ViewBox;
-            
+
             var gridSize = Math.Min(_viewBox.Width, _viewBox.Height) * .95f;
 
-            BoardViewBox = new RectangleF((_viewBox.Center.X - gridSize / 2) , (_viewBox.Center.Y - gridSize / 2) , gridSize,
+            BoardViewBox = new RectangleF((_viewBox.Center.X - gridSize / 2), (_viewBox.Center.Y - gridSize / 2),
+                gridSize,
                 gridSize);
 
             _boardSide = (int)Math.Sqrt(Board.Length);
@@ -352,28 +355,36 @@ namespace Graph.Apps.Games.Chess
 
         void BuildGlobalMenu()
         {
+            var selected = LocHelper.GetLoc("LCDMod_Selected");
+            
+
             _script.SetGlobalMenu(
-                new GlobalMenuEntry("Game", new List<GlobalMenuEntry>
+                new GlobalMenuEntry("LCDMod_Chess", new List<GlobalMenuEntry>
                 {
-                    new GlobalMenuEntry("New Game", (ctx, sender) => NewGame()),
-                    new GlobalMenuEntry("Export", (ctx, sender) => ExportPgnData()),
-                    new GlobalMenuEntry(_playingAsBlack ? "Play as White" : "Play as Black", (ctx, sender) => SwitchSide()),
-                    new GlobalMenuEntry(_showDangers ? "Hide Dangerous Tiles" : "Show Dangerous Tiles", (ctx, sender) => SwitchDanger()),
+                    new GlobalMenuEntry("LCDMod_NewGame", (ctx, sender) => NewGame()),
+                    new GlobalMenuEntry("LCDMod_Export", (ctx, sender) => ExportPgnData()),
+                    new GlobalMenuEntry(_playingAsBlack ? "LCDMod_PlayAsWhite" : "LCDMod_PlayAsBlack",
+                        (ctx, sender) => SwitchSide()),
+                    new GlobalMenuEntry(_showDangers ? "LCDMod_HideDangerousTiles" : "LCDMod_ShowDangerousTiles",
+                        (ctx, sender) => SwitchDanger()),
                     new GlobalMenuEntry("Difficulty", new List<GlobalMenuEntry>
                     {
-                        new GlobalMenuEntry("None" + (_selectedBot == ChessBotSelection.None ? " (selected)" : ""),
+                        new GlobalMenuEntry(
+                            LocHelper.GetLoc("BlockComboBoxValue_TextPanelShowTextNone") + (_selectedBot == ChessBotSelection.None ? selected : ""),
                             (ctx, sender) => { SetBot(ChessBotSelection.None); }),
-                        new GlobalMenuEntry("Easy - WhateverBot" + (_selectedBot == ChessBotSelection.WhateverBot ? " (selected)" : ""),
+                        new GlobalMenuEntry(
+                            LocHelper.GetLoc("DifficultyEasy") + " - WhateverBot " +
+                            (_selectedBot == ChessBotSelection.WhateverBot ? selected : ""),
                             (ctx, sender) => { SetBot(ChessBotSelection.WhateverBot); }),
-                        new GlobalMenuEntry("Medium - Squeedo" + (_selectedBot == ChessBotSelection.Squeedo ? " (selected)" : ""),
-                            (ctx, sender) => { SetBot(ChessBotSelection.Squeedo);}),
-                        new GlobalMenuEntry("Hard - Boychesser" + (_selectedBot == ChessBotSelection.Boychesser ? " (selected)" : ""),
-                            (ctx, sender) => { SetBot(ChessBotSelection.Boychesser);}),
+                        new GlobalMenuEntry(
+                            LocHelper.GetLoc("DifficultyNormal") + " - Squeedo " +
+                            (_selectedBot == ChessBotSelection.Squeedo ? selected : ""),
+                            (ctx, sender) => { SetBot(ChessBotSelection.Squeedo); }),
+                        new GlobalMenuEntry(
+                            LocHelper.GetLoc("DifficultyHard") + " - Boychesser " +
+                            (_selectedBot == ChessBotSelection.Boychesser ? selected : ""),
+                            (ctx, sender) => { SetBot(ChessBotSelection.Boychesser); }),
                     })
-                }),
-                new GlobalMenuEntry("Help", new List<GlobalMenuEntry>
-                {
-                    new GlobalMenuEntry("About", (ctx, sender) => { }),
                 })
             );
         }
@@ -385,28 +396,32 @@ namespace Graph.Apps.Games.Chess
                 var data = Export();
                 var name = DateTime.UtcNow.ToString("yyyy-MM-dd-HH-mm-ss") + "-Chess-pgn-export.txt";
                 using (var writer = MyAPIGateway.Utilities.WriteFileInLocalStorage(name, typeof(ChessGame)))
-                {                
+                {
                     writer.Write(data);
                     writer.Flush();
                     writer.Close();
                 }
 
-                string path = Path.Combine(MyAPIGateway.Utilities.GamePaths.UserDataPath,"Storage", MyAPIGateway.Utilities.GamePaths.ModScopeName, name);
+                string path = Path.Combine(MyAPIGateway.Utilities.GamePaths.UserDataPath, "Storage",
+                    MyAPIGateway.Utilities.GamePaths.ModScopeName, name);
 
-                if (path.Contains("steamuser")) // running on Proton *most likely* so format the path as if the game was running on Linux
+                if (path.Contains(
+                        "steamuser")) // running on Proton *most likely* so format the path as if the game was running on Linux
                 {
-                    var basePath = MyAPIGateway.Utilities.GamePaths.ContentPath.Replace("\\common\\SpaceEngineers\\Content", "");
-                    path = Path.Combine(basePath,"compatdata","244850","pfx","drive_c", path.Substring(3)).Replace("\\", "/").Substring(2);
+                    var basePath =
+                        MyAPIGateway.Utilities.GamePaths.ContentPath.Replace("\\common\\SpaceEngineers\\Content", "");
+                    path = Path.Combine(basePath, "compatdata", "244850", "pfx", "drive_c", path.Substring(3))
+                        .Replace("\\", "/").Substring(2);
                 }
 
                 MyAPIGateway.Utilities.ShowMessage($"Pgn exported to", path);
             }
             catch (Exception e)
             {
-                MyAPIGateway.Utilities.ShowNotification("Something when wrong while exporting PGN", font:MyFontEnum.Red);
+                MyAPIGateway.Utilities.ShowNotification("Something when wrong while exporting PGN",
+                    font: MyFontEnum.Red);
                 ErrorHandlerHelper.LogError(e, typeof(ChessGame));
             }
-
         }
 
         void SwitchSide()
@@ -414,8 +429,8 @@ namespace Graph.Apps.Games.Chess
             _playingAsBlack = !_playingAsBlack;
             NewGame();
             BuildGlobalMenu();
-        } 
-        
+        }
+
         void SwitchDanger()
         {
             _showDangers = !_showDangers;
@@ -440,6 +455,7 @@ namespace Graph.Apps.Games.Chess
                     bot = null;
                     break;
             }
+
             _selectedBot = difficulty;
             _api = bot == null ? null : new ChessBotApi(this, bot);
             BuildGlobalMenu();
@@ -479,13 +495,13 @@ namespace Graph.Apps.Games.Chess
 
         public void Save()
         {
-            _script.Config.CustomData = MyAPIGateway.Utilities.SerializeToBinary(BuildConfig());
+            _script.Config.SetCustomData(CUSTOM_DATA_KEY, MyAPIGateway.Utilities.SerializeToBinary(BuildConfig()));
             ConfigManager.Sync((IMyTerminalBlock)_script.Block, _script.ProviderConfig);
         }
 
         ChessGameConfig LoadConfig()
         {
-            var data = _script.Config.CustomData;
+            var data = _script.Config.GetCustomData(CUSTOM_DATA_KEY);
             if (data == null || data.Length == 0)
                 throw new Exception("Missing chess config.");
 
@@ -556,7 +572,7 @@ namespace Graph.Apps.Games.Chess
         public void Tick()
         {
             HandleCoroutine();
-            if(_api != null)
+            if (_api != null)
                 HandleBotThinkCoroutine();
         }
 
@@ -695,10 +711,10 @@ namespace Graph.Apps.Games.Chess
         public List<MySprite> Render()
         {
             _sprites.Clear();
-            
-            if(_viewBox != _script.ViewBox)
+
+            if (_viewBox != _script.ViewBox)
                 BakeBoardVisual();
-            
+
             RenderBoard(_sprites);
             RenderBoardOverlays(_sprites);
             RenderPieces(_sprites);
@@ -720,7 +736,7 @@ namespace Graph.Apps.Games.Chess
                 _coroutine = GeneratePathFind();
                 _shoudRecalculateMoves = false;
             }
-            
+
             if (_coroutine == null)
                 return;
 
@@ -883,7 +899,7 @@ namespace Graph.Apps.Games.Chess
                 GameOverMessage();
                 return;
             }
-            
+
             if (_overlayOverlay != null || _gridCells == null || index < 0 || index >= _gridCells.Length)
                 return;
 

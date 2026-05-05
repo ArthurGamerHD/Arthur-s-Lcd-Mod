@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Generated;
 using Graph.Apps.Games.Chess;
 using ProtoBuf;
@@ -49,8 +50,24 @@ namespace Graph.System.Config.Models
         }
         
         [ProtoMember(12)] public int DisplayInternal { get; set; }
-        
+
         [ProtoMember(99)]
-        public byte[] CustomData { get; set; }
+        public Dictionary<string, byte[]> CustomData { get; set; } = new Dictionary<string, byte[]>();
+
+        public byte[] GetCustomData(string key)
+        {
+            byte[] data;
+            if (CustomData != null && CustomData.TryGetValue(key, out data))
+                return data;
+            return null;
+        }
+
+        public void SetCustomData(string key, byte[] data)
+        {
+            if (CustomData == null)
+                CustomData = new Dictionary<string, byte[]>();
+
+            CustomData[key] = data;
+        }
     }
 }

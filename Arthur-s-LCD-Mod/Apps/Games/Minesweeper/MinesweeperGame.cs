@@ -36,6 +36,7 @@ namespace Graph.Apps.Games.Minesweeper
         const string EXPLODED_BOMB_TEXTURE = "Textures\\FactionLogo\\Others\\OtherIcon_23.dds";
         const string UNKNOWN_TEXTURE = "CursorHelp";
         const string FLAG_TEXTURE = "Flag";
+        const string CUSTOM_DATA_KEY = "Minesweeper";
 
         readonly IMyTextSurface _panel;
         readonly InteractiveSurfaceScript _script;
@@ -116,19 +117,19 @@ namespace Graph.Apps.Games.Minesweeper
             ReloadProgram();
 
             _script.SetGlobalMenu(
-                new GlobalMenuEntry("Game", new List<GlobalMenuEntry>
+                new GlobalMenuEntry("LCDMod_Minesweeper", new List<GlobalMenuEntry>
                 {
-                    new GlobalMenuEntry("New Game", delegate
+                    new GlobalMenuEntry("LCDMod_NewGame", delegate
                     {
                         NewGame();
                         Save();
                     }),
-                    new GlobalMenuEntry("Flag Mode", delegate { ToggleFlagMode(); }),
+                    new GlobalMenuEntry("LCDMod_FlagMode", delegate { ToggleFlagMode(); }),
                     new GlobalMenuEntry("Difficulty", new List<GlobalMenuEntry>
                     {
-                        new GlobalMenuEntry("Easy 9x9", delegate { SetDifficulty(MinesweeperDifficulty.Easy); }),
-                        new GlobalMenuEntry("Medium 16x16", delegate { SetDifficulty(MinesweeperDifficulty.Medium); }),
-                        new GlobalMenuEntry("Hard 30x16", delegate { SetDifficulty(MinesweeperDifficulty.Hard); })
+                        new GlobalMenuEntry(LocHelper.GetLoc("DifficultyEasy") +"9x9", delegate { SetDifficulty(MinesweeperDifficulty.Easy); }),
+                        new GlobalMenuEntry(LocHelper.GetLoc("DifficultyNormal") +"16x16", delegate { SetDifficulty(MinesweeperDifficulty.Medium); }),
+                        new GlobalMenuEntry(LocHelper.GetLoc("DifficultyHard") +"30x16", delegate { SetDifficulty(MinesweeperDifficulty.Hard); })
                     })
                 })
             );
@@ -233,7 +234,10 @@ namespace Graph.Apps.Games.Minesweeper
                 History = SerializeHistory(),
                 FlagMode = _flagMode,
                 MinesPlaced = _minesPlaced,
-                UnknownCells = SerializeUnknownCells()
+                UnknownCells = SerializeUnknownCells(),
+                ElapsedSeconds = _elapsedSeconds,
+                TimerStartedFrame = _timerStartedFrame,
+                TimerRunning = _timerRunning
             };
         }
 
@@ -249,13 +253,13 @@ namespace Graph.Apps.Games.Minesweeper
 
         public void Save()
         {
-            _script.Config.CustomData = MyAPIGateway.Utilities.SerializeToBinary(BuildConfig());
+            _script.Config.SetCustomData(CUSTOM_DATA_KEY, MyAPIGateway.Utilities.SerializeToBinary(BuildConfig()));
             ConfigManager.Sync((IMyTerminalBlock)_script.Block, _script.ProviderConfig);
         }
 
         MinesweeperGameConfig LoadConfig()
         {
-            var data = _script.Config.CustomData;
+            var data = _script.Config.GetCustomData(CUSTOM_DATA_KEY);
             if (data == null || data.Length == 0)
                 throw new Exception("Missing minesweeper config.");
 
@@ -288,8 +292,13 @@ namespace Graph.Apps.Games.Minesweeper
                 DeserializeHistory(config.History);
                 DeserializeUnknownCells(config.UnknownCells);
                 _difficulty = InferDifficulty(_width, _height, _mineCount);
+                _elapsedSeconds = Math.Max(0, Math.Min(MAX_TIMER_SECONDS, config.ElapsedSeconds));
+                _timerStartedFrame = config.TimerStartedFrame;
+                if (_timerStartedFrame <= 0L && config.TimerRunning)
+                    _timerStartedFrame = GetCurrentGameplayFrame();
                 _lastTileOpenFrame = _timerStartedFrame;
-                _timerRunning = _state == MinesweeperState.Playing;
+                bool hasTimerSync = config.TimerRunning || config.TimerStartedFrame > 0L || config.ElapsedSeconds > 0;
+                _timerRunning = _state == MinesweeperState.Playing && (!hasTimerSync || config.TimerRunning);
                 _suspiciousLooksLeft = true;
                 _suspiciousTicksUntilSwitch = 0;
             }

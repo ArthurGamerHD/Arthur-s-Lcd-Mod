@@ -732,7 +732,7 @@ namespace Graph.Apps.Abstract
             UpdateViewBox();
         }
 
-        public void SetGlobalMenu(params GlobalMenuEntry[] entries) =>
+        public virtual void SetGlobalMenu(params GlobalMenuEntry[] entries) =>
             SetGlobalMenu(entries != null ? new List<GlobalMenuEntry>(entries) : null);
 
         public void ShowMessageBox(

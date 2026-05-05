@@ -40,5 +40,14 @@ namespace Graph.Apps.Games.Minesweeper
 
         [ProtoMember(12)]
         public string UnknownCells { get; set; }
+
+        [ProtoMember(13)]
+        public int ElapsedSeconds { get; set; }
+
+        [ProtoMember(14)]
+        public long TimerStartedFrame { get; set; }
+
+        [ProtoMember(15)]
+        public bool TimerRunning { get; set; }
     }
 }
