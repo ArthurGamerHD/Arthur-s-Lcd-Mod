@@ -7,7 +7,7 @@
 
 Rule ID | Category | Severity | Notes
 --------|----------|----------|--------------------
-LCDMOD001 | LcdModCodeGenerator | Warning | App implements interface containing the same control more than once
+LcdMOD001 | LcdModCodeGenerator | Warning | App implements interface containing the same control more than once
 
 ## Release 0.2
 
@@ -15,5 +15,5 @@ LCDMOD001 | LcdModCodeGenerator | Warning | App implements interface containing 
 
 Rule ID | Category | Severity | Notes
 --------|----------|----------|--------------------
-LCDMOD002 | LcdModCodeGenerator | Warning | Duplicate screen config Id detected across IScreenConfig implementations
-LCDMOD003 | LcdModCodeGenerator | Warning | Surface script uses Config where generated AppConfig is available
+LcdMOD002 | LcdModCodeGenerator | Warning | Duplicate screen config Id detected across IScreenConfig implementations
+LcdMOD003 | LcdModCodeGenerator | Warning | Surface script uses Config where generated AppConfig is available

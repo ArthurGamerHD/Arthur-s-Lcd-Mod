@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Arthur-s-LCD-Mod", "Arthur-s-LCD-Mod\Arthur-s-LCD-Mod.csproj", "{F1DBB535-3C48-4F7F-80D7-F642CCF46A0B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Arthur-s-Lcd-Mod", "Arthur-s-Lcd-Mod\Arthur-s-Lcd-Mod.csproj", "{F1DBB535-3C48-4F7F-80D7-F642CCF46A0B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LcdModCodeGenerator", "LcdModCodeGenerator\LcdModCodeGenerator.csproj", "{9B85F0B8-4B83-40A6-B347-96FCC4D5041E}"
 EndProject

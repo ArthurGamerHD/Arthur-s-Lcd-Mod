@@ -1,6 +1,6 @@
 # AI Translation Instruction
 
-When creating or updating localization text (`LCDMod_*` keys), always update **all supported locale files** in:
+When creating or updating localization text (`LcdMod_*` keys), always update **all supported locale files** in:
 
 - `Graph/Content/Data/Localization/MyTexts.resx`
 - `Graph/Content/Data/Localization/MyTexts.<locale>.resx` (every locale present in this folder)

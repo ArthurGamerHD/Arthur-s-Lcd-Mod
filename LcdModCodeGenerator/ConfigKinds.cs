@@ -1,8 +1,8 @@
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace LcdModCodeGenerator;
 
@@ -10,7 +10,7 @@ namespace LcdModCodeGenerator;
 public sealed class ConfigKinds : IIncrementalGenerator
 {
     static readonly DiagnosticDescriptor DuplicateIdWarning = new(
-        id: "LCDMOD002",
+        id: "LcdMOD002",
         title: "Duplicate config Id",
         messageFormat: "config Id '{0}' is used by multiple classes: {1}",
         category: "LcdModCodeGenerator",
@@ -18,7 +18,7 @@ public sealed class ConfigKinds : IIncrementalGenerator
         isEnabledByDefault: true);
 
     static readonly DiagnosticDescriptor UseAppConfigWarning = new(
-        id: "LCDMOD003",
+        id: "LcdMOD003",
         title: "Use AppConfig",
         messageFormat: "Use the resolved AppConfig instead of Config in '{0}'",
         category: "LcdModCodeGenerator",
@@ -136,7 +136,7 @@ namespace Generated
         if (entries == null || entries.Count == 0)
             return null;
 
-        var surfaceScriptBase = compilation.GetTypeByMetadataName("Graph.Apps.Abstract.SurfaceScriptBase");
+        var surfaceScriptBase = compilation.GetTypeByMetadataName("LcdMod.Client.Apps.Abstract.SurfaceScriptBase");
         if (surfaceScriptBase == null)
             return null;
 
@@ -183,7 +183,7 @@ namespace Generated
         if (appConfigs == null || appConfigs.Count == 0)
             return;
 
-        var surfaceScriptBase = compilation.GetTypeByMetadataName("Graph.Apps.Abstract.SurfaceScriptBase");
+        var surfaceScriptBase = compilation.GetTypeByMetadataName("LcdMod.Client.Apps.Abstract.SurfaceScriptBase");
         var configProperty = surfaceScriptBase?.GetMembers("Config").OfType<IPropertySymbol>().FirstOrDefault();
         if (configProperty == null)
             return;
