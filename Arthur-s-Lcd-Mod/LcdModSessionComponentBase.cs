@@ -153,6 +153,7 @@ namespace LcdMod
                 ConfigManager.Init();
                 ConfigManager.NetworkManager.OnReceivedPacket += OnReceivedPacket;
 
+                Server?.BeforeStart();
                 Client?.BeforeStart();
             }
             catch (Exception e)

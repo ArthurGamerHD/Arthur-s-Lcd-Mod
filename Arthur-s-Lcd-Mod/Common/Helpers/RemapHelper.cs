@@ -83,13 +83,19 @@ namespace LcdMod.Common.Helpers
 
         public static void RemapGrid(IMyCubeGrid grid)
         {
+            RemapGrid(grid, null);
+        }
+
+        public static void RemapGrid(IMyCubeGrid grid, Dictionary<long, long> remap)
+        {
             try
             {
                 if (grid == null || grid.MarkedForClose)
                     return;
 
                 var blocks = new List<IMySlimBlock>();
-                var remap = new Dictionary<long, long>();
+                if (remap == null)
+                    remap = new Dictionary<long, long>();
 
                 grid.GetBlocks(blocks);
 
