@@ -1092,13 +1092,13 @@ namespace LcdMod.Client.Apps
                 new StaticTooltipLine(FormatPropertyLine("O2", FormatingHelper.PercentageToString(planet.OxygenDensity))),
                 new StaticTooltipLine(FormatPropertyLine("Temperature", FormatingHelper.TemperatureToString(planet.AverageTemperature))),
                 new StaticTooltipLine(FormatPropertyLine("Wind", FormatingHelper.WindToString(planet.MaxWindSpeed))),
-                GetJumpTooltipLine(planet),
                 new ClickableTooltipLine(FormatPropertyLine("Position", FormatingHelper.FormatBearing(Matrix.Identity, planet.WorldPosition)),
                     planet.WorldPosition,
                     (value, sender) => { ClickOnGps(planet.Name, planet.WorldPosition, planet.Texture.BaseColor); })
                 {
                     ClickSound = AudioHelper.HudGps3
-                }
+                },
+                GetJumpTooltipLine(planet)
             };
 
             return lines;
