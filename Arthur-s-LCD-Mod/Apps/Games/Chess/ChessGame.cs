@@ -174,7 +174,7 @@ namespace Graph.Apps.Games.Chess
 
                 frame.Add(new MySprite(SpriteType.TEXT, data,
                     new Vector2(grid.Center.X, grid.Position.Y + Padding),
-                    fontId: "Monospace", rotation: Scale));
+                    fontId: "LCDMod_Monospace", rotation: Scale));
             }
         }
 
@@ -231,7 +231,7 @@ namespace Graph.Apps.Games.Chess
 
             float cellSize = _gridCells[0].Width;
             var sb = new StringBuilder(GetTextureFromId(0x01));
-            Vector2 measuredSize = _panel.MeasureStringInPixels(sb, "Monospace", 1);
+            Vector2 measuredSize = _panel.MeasureStringInPixels(sb, "LCDMod_Monospace", 1);
             Scale = cellSize * .8f / measuredSize.X;
             Padding = cellSize * .1f;
 
@@ -356,8 +356,6 @@ namespace Graph.Apps.Games.Chess
         void BuildGlobalMenu()
         {
             var selected = LocHelper.GetLoc("LCDMod_Selected");
-            
-
             _script.SetGlobalMenu(
                 new GlobalMenuEntry("LCDMod_Chess", new List<GlobalMenuEntry>
                 {
@@ -550,6 +548,8 @@ namespace Graph.Apps.Games.Chess
                 Save();
             }
         }
+
+        public void LayoutChanged() => BuildGlobalMenu();
 
         void PopulateHistory()
         {

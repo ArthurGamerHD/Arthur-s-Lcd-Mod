@@ -186,12 +186,6 @@ namespace Graph.System
             }
         }
 
-        public int GetThisSurfaceIndex(IMyTerminalBlock block)
-        {
-            var multiTextPanel = block.Components.Get<MyMultiTextPanelComponent>();
-            return multiTextPanel?.SelectedPanelIndex ?? 0;
-        }
-
         static bool IsDedicatedServer =>
             MyAPIGateway.Utilities.IsDedicated && MyAPIGateway.Session.IsServer;
 

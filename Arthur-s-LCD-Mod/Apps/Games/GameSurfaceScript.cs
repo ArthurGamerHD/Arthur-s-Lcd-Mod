@@ -62,6 +62,11 @@ namespace Graph.Apps.Games
         
         public GameSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)
         {
+            BuildGlobalMenu();
+        }
+
+        void BuildGlobalMenu()
+        {
             var subEntries = new List<GlobalMenuEntry>(GameList.Count);
             foreach (var entry in GameList) subEntries.Add(new GlobalMenuEntry(entry.Value.ToString(), (a,b) => SetGame(entry.Key)));
             _rootMenu = new GlobalMenuEntry(TITLE, subEntries);
@@ -127,6 +132,7 @@ namespace Graph.Apps.Games
         protected override void LayoutChanged()
         {
             base.LayoutChanged();
+            BuildGlobalMenu();
             
             if(_currentGame == null)
                 return;
@@ -137,6 +143,10 @@ namespace Graph.Apps.Games
                 LcdModSessionComponent.OnSave -= old.Save;
                 _currentGame = null;
                 old.Save();
+            }
+            else
+            {
+                _currentGame.LayoutChanged();
             }
             
             _currentGame?.Load();
@@ -159,5 +169,6 @@ namespace Graph.Apps.Games
         List<MySprite> Render();
         void Save();
         void Load();
+        void LayoutChanged();
     }
 }

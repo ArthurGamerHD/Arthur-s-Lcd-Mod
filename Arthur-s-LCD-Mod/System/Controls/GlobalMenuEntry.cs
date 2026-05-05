@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Graph.Helpers;
 
 namespace Graph.System.Controls
 {
@@ -20,14 +21,14 @@ namespace Graph.System.Controls
         public GlobalMenuEntry(string menuItem, Action<object, object> onClick = null)
             : this()
         {
-            MenuItem = menuItem;
+            MenuItem = LocHelper.GetLoc(menuItem);
             OnClick = onClick;
         }
 
         public GlobalMenuEntry(string menuItem, List<GlobalMenuEntry> children)
             : this()
         {
-            MenuItem = menuItem;
+            MenuItem = LocHelper.GetLoc(menuItem);;
             Children = children;
         }
 

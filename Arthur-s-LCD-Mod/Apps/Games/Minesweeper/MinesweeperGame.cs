@@ -116,6 +116,11 @@ namespace Graph.Apps.Games.Minesweeper
 
             ReloadProgram();
 
+            BuildGlobalMenu();
+        }
+
+        void BuildGlobalMenu()
+        {
             _script.SetGlobalMenu(
                 new GlobalMenuEntry("LCDMod_Minesweeper", new List<GlobalMenuEntry>
                 {
@@ -127,9 +132,12 @@ namespace Graph.Apps.Games.Minesweeper
                     new GlobalMenuEntry("LCDMod_FlagMode", delegate { ToggleFlagMode(); }),
                     new GlobalMenuEntry("Difficulty", new List<GlobalMenuEntry>
                     {
-                        new GlobalMenuEntry(LocHelper.GetLoc("DifficultyEasy") +"9x9", delegate { SetDifficulty(MinesweeperDifficulty.Easy); }),
-                        new GlobalMenuEntry(LocHelper.GetLoc("DifficultyNormal") +"16x16", delegate { SetDifficulty(MinesweeperDifficulty.Medium); }),
-                        new GlobalMenuEntry(LocHelper.GetLoc("DifficultyHard") +"30x16", delegate { SetDifficulty(MinesweeperDifficulty.Hard); })
+                        new GlobalMenuEntry(LocHelper.GetLoc("DifficultyEasy") + " - 9x9 10",
+                            delegate { SetDifficulty(MinesweeperDifficulty.Easy); }),
+                        new GlobalMenuEntry(LocHelper.GetLoc("DifficultyNormal") + " - 16x16 40",
+                            delegate { SetDifficulty(MinesweeperDifficulty.Medium); }),
+                        new GlobalMenuEntry(LocHelper.GetLoc("DifficultyHard") + " - 30x16 99",
+                            delegate { SetDifficulty(MinesweeperDifficulty.Hard); })
                     })
                 })
             );
@@ -311,6 +319,8 @@ namespace Graph.Apps.Games.Minesweeper
             }
         }
 
+        public void LayoutChanged() => BuildGlobalMenu();
+
         MinesweeperDifficulty InferDifficulty(int width, int height, int mineCount)
         {
             if (width == 30 && height == 16 && mineCount == 99)
@@ -382,10 +392,10 @@ namespace Graph.Apps.Games.Minesweeper
 
             LayoutHeaderControls();
 
-            var cellMeasure = _panel.MeasureStringInPixels(new StringBuilder("8"), "Monospace", 1f);
+            var cellMeasure = _panel.MeasureStringInPixels(new StringBuilder("8"), "LCDMod_Monospace", 1f);
             _cellTextScale = cellSize * 0.7f / cellMeasure.Y;
 
-            var displayMeasure = _panel.MeasureStringInPixels(new StringBuilder("888"), "Monospace", 1f);
+            var displayMeasure = _panel.MeasureStringInPixels(new StringBuilder("888"), "LCDMod_Monospace", 1f);
             float displayScaleX = displayMeasure.X <= 0 ? 0.6f : _bombDisplayRect.Width * 0.82f / displayMeasure.X;
             float displayScaleY = displayMeasure.Y <= 0 ? 0.6f : _bombDisplayRect.Height * 0.62f / displayMeasure.Y;
             _displayTextScale = Math.Max(0.35f, Math.Min(displayScaleX, displayScaleY));
@@ -456,14 +466,14 @@ namespace Graph.Apps.Games.Minesweeper
             DrawTileFrame(frame, rect, border, true, _displayBackground);
 
             string text = FormatThreeDigits(value);
-            Vector2 size = _panel.MeasureStringInPixels(new StringBuilder(text), "Monospace", _displayTextScale);
+            Vector2 size = _panel.MeasureStringInPixels(new StringBuilder(text), "LCDMod_Monospace", _displayTextScale);
             frame.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
                 Data = text,
                 Position = new Vector2(rect.Center.X, rect.Center.Y - size.Y * 0.5f),
                 Color = _displayRed,
-                FontId = "Monospace",
+                FontId = "LCDMod_Monospace",
                 Alignment = TextAlignment.CENTER,
                 RotationOrScale = _displayTextScale
             });
@@ -509,7 +519,7 @@ namespace Graph.Apps.Games.Minesweeper
                     Position = new Vector2(iconRect.Center.X, iconRect.Center.Y - iconRect.Size.Y * 0.18f),
                     Color = Color.Black,
                     Alignment = TextAlignment.CENTER,
-                    FontId = "Monospace",
+                    FontId = "LCDMod_Monospace",
                     RotationOrScale = .055f * _displayTextScale
                 });
             }
@@ -587,14 +597,14 @@ namespace Graph.Apps.Games.Minesweeper
 
         void DrawCenteredText(List<MySprite> frame, string text, RectangleF rect, Color color)
         {
-            Vector2 size = _panel.MeasureStringInPixels(new StringBuilder(text), "Monospace", _cellTextScale);
+            Vector2 size = _panel.MeasureStringInPixels(new StringBuilder(text), "LCDMod_Monospace", _cellTextScale);
             frame.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
                 Data = text,
                 Position = new Vector2(rect.Center.X, rect.Center.Y - size.Y * 0.5f),
                 Color = color,
-                FontId = "Monospace",
+                FontId = "LCDMod_Monospace",
                 Alignment = TextAlignment.CENTER,
                 RotationOrScale = _cellTextScale
             });
