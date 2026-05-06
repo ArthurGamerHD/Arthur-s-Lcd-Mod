@@ -4,7 +4,10 @@ using LcdMod.Client.Grid;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Utility;
 using Sandbox.Game.Entities;
+using Sandbox.ModAPI;
 using Sandbox.ModAPI.Ingame;
+using VRage.Game;
+using VRage.Game.ModAPI;
 using VRageMath;
 using IMyBatteryBlock = Sandbox.ModAPI.IMyBatteryBlock;
 using ScreenConfigPower = LcdMod.Common.Config.Models.Apps.ScreenConfigPower;
@@ -288,7 +291,7 @@ namespace LcdMod.Client.Gui.Models.Power
                     () => true,
                     () => battery,
                     () => (o, o1) => CycleBatteryMode(battery),
-                    () => CursorType.Hand,
+                    () => battery.HasLocalPlayerAccess() ? CursorType.Hand : CursorType.No,
                     () => AudioHelper.HudClick);
                 ToggleModeCache[battery.EntityId] = toggleMode;
             }
@@ -315,6 +318,9 @@ namespace LcdMod.Client.Gui.Models.Power
 
         static void CycleBatteryMode(IMyBatteryBlock battery)
         {
+            if(!battery.HasLocalPlayerAccess())
+                return;
+
             switch (battery.ChargeMode)
             {
                 case ChargeMode.Discharge:
