@@ -15,7 +15,7 @@ namespace LcdMod.Client.Games.Chess
     /// </summary>
     public sealed class ChessMoveRecord
     {
-        const string Header = "LCMCHESSHISTORY1";
+        const string HEADER = "LCMCHESSHISTORY1";
 
         public int Ply;
         public PieceColor MovingColor;
@@ -34,7 +34,7 @@ namespace LcdMod.Client.Games.Chess
         public static string SerializeList(List<ChessMoveRecord> records)
         {
             var sb = new StringBuilder();
-            sb.AppendLine(Header);
+            sb.AppendLine(HEADER);
 
             if (records == null)
                 return sb.ToString();
@@ -54,7 +54,7 @@ namespace LcdMod.Client.Games.Chess
             var normalized = data.Replace("\r\n", "\n").Replace('\r', '\n');
             var lines = normalized.Split(new[] { '\n' }, StringSplitOptions.None);
 
-            if (lines.Length == 0 || lines[0] != Header)
+            if (lines.Length == 0 || lines[0] != HEADER)
                 throw new FormatException("Chess history is not in the PGN-like v1 format.");
 
             for (int i = 1; i < lines.Length; i++)

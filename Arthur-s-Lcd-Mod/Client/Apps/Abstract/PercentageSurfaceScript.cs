@@ -33,9 +33,8 @@ namespace LcdMod.Client.Apps.Abstract
 
         public List<MyTerminalControlComboBoxItem> GetDisplayModes() => DisplayModes.GridAndLegacy;
 
-        public override void Run()
+        public override void SafeRun()
         {
-            base.Run();
             if (AppConfig == null) return;
 
             if (_scriptForegroundColor != Surface.ScriptForegroundColor)

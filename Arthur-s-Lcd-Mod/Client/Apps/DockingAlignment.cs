@@ -129,9 +129,8 @@ namespace LcdMod.Client.Apps
             _noCockpitMessage = LocHelper.GetLoc("TssTargetingInfo_NoMainCockpit");
         }
 
-        public override void Run()
+        public override void SafeRun()
         {
-            base.Run();
             if (!IsScreenReadyToRender || AppConfig == null)
                 return;
 

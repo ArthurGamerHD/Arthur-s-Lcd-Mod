@@ -41,8 +41,9 @@ namespace LcdMod.Client.Apps.Abstract
         public IMyFaction Faction { get; protected set; }
         protected string Icon { get; set; }
         public new readonly IMyCubeBlock Block;
-        
-        long _lastFrame;
+
+        protected long WaitForFrame;
+        protected long LastRenderFrame;
 
         public Vector2 TextureSize => Surface.TextureSize;
 
@@ -77,7 +78,7 @@ namespace LcdMod.Client.Apps.Abstract
 
         protected virtual string DefaultTitle => "|";
 
-        protected float Scale = 1;
+        public float Scale = 1;
         protected float FontScale => _userFontScale <= 0f ? 1f : _userFontScale;
         protected float LayoutScale => Scale * FontScale;
 
@@ -106,13 +107,16 @@ namespace LcdMod.Client.Apps.Abstract
         protected SurfaceScriptBase(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block,
             size)
         {
+            WaitForFrame = MyAPIGateway.Session.GameplayFrameCounter + 6 * 5; // minimum of 5 frames splash screen 
             Block = (IMyCubeBlock)base.Block;
             _textureSize = (Vector2I)Surface.TextureSize;
             var surfaceSize = Surface.SurfaceSize;
             _renderComp = (MyRenderComponentScreenAreas)Block.Render;
-            
-            _aspectRatio = surfaceSize.X > surfaceSize.Y ? new Vector2(1f, 1f * surfaceSize.Y / surfaceSize.X) : new Vector2(1f * surfaceSize.X / surfaceSize.Y, 1f);
-            
+
+            _aspectRatio = surfaceSize.X > surfaceSize.Y
+                ? new Vector2(1f, 1f * surfaceSize.Y / surfaceSize.X)
+                : new Vector2(1f * surfaceSize.X / surfaceSize.Y, 1f);
+
             Instances.Add(this);
 
             if (Block != null) Block.OnMarkForClose += HandleBlockMarkedForClose;
@@ -131,7 +135,9 @@ namespace LcdMod.Client.Apps.Abstract
                 return _rotationOrSurfaceIndex;
             }
         }
+
         public IMyLcdSurfaceComponent _lcdSurfaceComponent;
+
         protected bool ResolveRotationOrSurfaceIndex()
         {
             var previous = _rotationOrSurfaceIndex;
@@ -289,9 +295,12 @@ namespace LcdMod.Client.Apps.Abstract
 
         public override void Run()
         {
-            base.Run();
+            if (MyAPIGateway.Session.GameplayFrameCounter < WaitForFrame || _disposed)
+                return;
             
-            if(ViewBox.Size == Vector2.Zero)
+            base.Run();
+
+            if (ViewBox.Size == Vector2.Zero)
                 UpdateViewBox();
 
             IsScreenReadyToRender = false;
@@ -299,7 +308,7 @@ namespace LcdMod.Client.Apps.Abstract
             if (Config == null)
             {
                 GetSettings((IMyTextSurface)Surface, Block);
-                DrawLoadingScreen(1f, false);
+                DrawSplash();
                 return;
             }
 
@@ -328,6 +337,33 @@ namespace LcdMod.Client.Apps.Abstract
             }
 
             IsScreenReadyToRender = true;
+
+            try
+            {
+                SafeRun();
+            }
+            catch (Exception e)
+            {
+                OnException(e);
+            }
+        }
+
+        public void OnException(Exception e)
+        {
+            try
+            {
+                var bSoD = BSoD.ShowBSoD(this, e);
+            
+                _renderComp.RenderSpritesToTexture(RotationOrSurfaceIndex, bSoD.Frame, _textureSize, _aspectRatio,
+                    Surface.ScriptBackgroundColor, Surface.BackgroundAlpha);
+            }
+            catch (Exception e2)
+            {
+                ErrorHandlerHelper.LogError(e, this);
+                ErrorHandlerHelper.LogError(e2, this);
+            }
+
+            WaitForFrame = MyAPIGateway.Session.GameplayFrameCounter + 600;
         }
 
         void GetSettings(IMyTextSurface surface, IMyCubeBlock block)
@@ -528,7 +564,7 @@ namespace LcdMod.Client.Apps.Abstract
             RectanglePanel.CreateSpritesFromRect(dropShadow, frame, a, .2f);
             RectanglePanel.CreateSpritesFromRect(cellRect, frame, backgroundColor, .2f);
         }
-        
+
         protected static void ParseFilter(IMyTerminalBlock lcd, out string mode, out string token)
         {
             mode = null;
@@ -760,7 +796,7 @@ namespace LcdMod.Client.Apps.Abstract
             Icon = FactionHelper.GetIcon(faction);
             FactionHelper.GetIcon(faction);
         }
-        
+
         readonly Vector2I _textureSize;
         readonly Vector2 _aspectRatio;
         readonly MyRenderComponentScreenAreas _renderComp;
@@ -771,13 +807,21 @@ namespace LcdMod.Client.Apps.Abstract
         public void RenderSprites()
         {
             var currentFrame = MyAPIGateway.Session.GameplayFrameCounter;
-            if (currentFrame == _lastFrame)
-                return;
-            _lastFrame = currentFrame;
-
-            var spriteList = RenderFrame(GetSprites);
             
-            _renderComp.RenderSpritesToTexture(RotationOrSurfaceIndex, spriteList, _textureSize, _aspectRatio, Surface.ScriptBackgroundColor, Surface.BackgroundAlpha);
+            if (LastRenderFrame == currentFrame || WaitForFrame > currentFrame || _disposed)
+                return;
+            try
+            {
+                var spriteList = RenderFrame(GetSprites);
+                _renderComp.RenderSpritesToTexture(RotationOrSurfaceIndex, spriteList, _textureSize, _aspectRatio,
+                    Surface.ScriptBackgroundColor, Surface.BackgroundAlpha);
+                
+                LastRenderFrame = currentFrame;
+            }
+            catch (Exception e)
+            {
+                OnException(e);
+            }
         }
 
         protected virtual List<MySprite> GetSprites()
@@ -789,5 +833,7 @@ namespace LcdMod.Client.Apps.Abstract
         {
             return sprites();
         }
+
+        public abstract void SafeRun();
     }
 }

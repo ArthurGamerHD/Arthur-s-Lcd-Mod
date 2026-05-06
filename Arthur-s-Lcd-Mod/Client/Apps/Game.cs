@@ -92,9 +92,8 @@ namespace LcdMod.Client.Apps
 
         public void Sync() => ConfigManager.Sync(Block, ProviderConfig);
 
-        public override void Run()
+        public override void SafeRun()
         {
-            base.Run();
             
             if(AppConfig == null)
                 return;

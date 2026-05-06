@@ -103,9 +103,8 @@ namespace LcdMod.Client.Apps.Abstract
             _currentLabelCache = string.Empty;
         }
 
-        public override void Run()
+        public override void SafeRun()
         {
-            base.Run();
 
             if (AppConfig == null)
                 return;

@@ -16,7 +16,6 @@ using LcdMod.Client.Utility;
 using LcdMod.Common.Helpers;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
-using VRage;
 using VRage.Game;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
@@ -50,7 +49,6 @@ namespace LcdMod.Client.Games.Chess
         };
 
         readonly Dictionary<byte, string> _textureCache = new Dictionary<byte, string>();
-        readonly List<MySprite> _boardVisualCache = new List<MySprite>();
 
         public List<InteractiveEntry> Interactive { get; } = new List<InteractiveEntry>();
         public GameSurfaceScript.GameEnum Id => GameSurfaceScript.GameEnum.Chess;
@@ -162,61 +160,6 @@ namespace LcdMod.Client.Games.Chess
             return data;
         }
 
-        void RenderPieces(List<MySprite> frame)
-        {
-            for (var index = 0; index < _gridCells.Length; index++)
-            {
-                var grid = GetGridCell(index);
-
-                var cell = Board[index];
-                if (cell == 0)
-                    continue;
-
-                var data = GetTextureFromId(cell);
-
-                frame.Add(new MySprite(SpriteType.TEXT, data,
-                    new Vector2(grid.Center.X, grid.Position.Y + Padding),
-                    fontId: "LcdMod_Monospace", rotation: Scale));
-            }
-        }
-
-        void RenderBoardOverlays(List<MySprite> frame)
-        {
-            var color = _boardColors[2];
-
-            if (_history.Any())
-            {
-                var last = _history.Last();
-                frame.Add(GetGridCell(PointToIndex(last.Origin)).ToSprite(color));
-                frame.Add(GetGridCell(PointToIndex(last.Target)).ToSprite(color));
-            }
-
-            if (SelectedTile != null)
-            {
-                frame.Add(GetGridCell(PointToIndex(SelectedTile.Value)).ToSprite(color));
-            }
-
-            if (_selectedTile != null && _availableMoves[_selectedTile.Value] != null)
-            {
-                foreach (var move in _availableMoves[_selectedTile.Value])
-                {
-                    color = _showDangers && IsPositionInDanger(move, _selectedColor, Board)
-                        ? _boardColors[4]
-                        : _boardColors[3];
-                    var gridCell = GetGridCell(move.X + move.Y * _boardSide);
-                    frame.Add(GetCell(move) != 0
-                        ? gridCell.ToCircleHollow(_boardColors[3])
-                        : gridCell.ToCircle(color));
-                }
-            }
-
-            if (_checkPosition != null)
-            {
-                color = _boardColors[4];
-                frame.Add(GetGridCell(_checkPosition.Value.X + _checkPosition.Value.Y * _boardSide).ToSprite(color));
-            }
-        }
-
         void BakeBoardVisual()
         {
             _viewBox = _script.ViewBox;
@@ -238,8 +181,6 @@ namespace LcdMod.Client.Games.Chess
             Vector2 measuredSize = _panel.MeasureStringInPixels(sb, "LcdMod_Monospace", 1);
             Scale = cellSize * .8f / measuredSize.X;
             Padding = cellSize * .1f;
-
-            _boardVisualCache.Clear();
         }
 
 
@@ -267,8 +208,6 @@ namespace LcdMod.Client.Games.Chess
 
             return rectangles;
         }
-
-        void RenderBoard(List<MySprite> frame) => frame.AddRange(_boardVisualCache);
 
         void RenderBoardCell(List<MySprite> frame, int index)
         {
@@ -781,8 +720,6 @@ namespace LcdMod.Client.Games.Chess
             if (_viewBox != _script.ViewBox)
                 RebuildLayout();
 
-            RenderBoard(_sprites);
-
             if (_overlayOverlay?.Disposed ?? false)
                 _overlayOverlay = null;
 
@@ -864,6 +801,9 @@ namespace LcdMod.Client.Games.Chess
 
             for (int index = _overlayOverlay.Boxes.Count; index < _overlayControlEntries.Count; index++)
                 _overlayControlEntries[index].SetVisible(false);
+
+            if(_overlayOverlay.InteractiveRectangleEntry != null)
+                Interactive.Add(_overlayOverlay.InteractiveRectangleEntry);
         }
 
         void EnsureBoardCellEntries()
@@ -926,7 +866,6 @@ namespace LcdMod.Client.Games.Chess
 
             var point = BoardPointFromGridIndex(index);
             var cell = GetCell(point) ?? 0;
-            var currentColor = (PieceColor)(_currentMove % 2);
 
             if (SelectedTile != null)
             {
@@ -1072,7 +1011,7 @@ namespace LcdMod.Client.Games.Chess
 
         public bool IsGameOver => !_availableMoves.Any(a => a.Value.Any());
 
-        void GameOverMessage()
+        public void GameOverMessage()
         {
             _script.ShowMessageBox("Game Over!", "Play again?", "New Game", "Dismiss", (o, o1) => NewGame());
         }

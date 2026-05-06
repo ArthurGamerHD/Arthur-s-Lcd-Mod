@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using Generated;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Config;
@@ -31,6 +30,7 @@ namespace LcdMod.Client.Apps
         float _fov;
         double _halfFovY;
         float _lastKnownConfigFov = float.NaN;
+        long _lastFovChangedFrame = long.MinValue;
         bool _syncConfigNextRun;
         IMyGravityProviderSystem _gravityProvider;
         readonly EyeTrackingFrameState _eyeTracking = new EyeTrackingFrameState();
@@ -38,8 +38,9 @@ namespace LcdMod.Client.Apps
         long _jumpPointRunCounter;
 
         readonly List<MySprite> _baseSprites = new List<MySprite>();
+        readonly List<MySprite> _groundSprites = new List<MySprite>();
+        readonly List<MySprite> _groundOcclusionSprites = new List<MySprite>();
         readonly List<MySprite> _ringSprites = new List<MySprite>();
-        readonly List<MySprite> _planetSprites = new List<MySprite>();
         readonly List<MySprite> _overlaySprites = new List<MySprite>();
         readonly List<MySprite> _sprites = new List<MySprite>();
 
@@ -56,8 +57,13 @@ namespace LcdMod.Client.Apps
         MatrixD _cachedDynamicWorldMatrix;
         RectangleF _cachedDynamicViewBox;
         Vector2 _cachedDynamicCursorPosition;
+        Vector3D _cachedDynamicLinearVelocity;
         bool _cachedDynamicHasRecentVisualContact;
+        bool _cachedDynamicSuppressOverlays;
         int _cachedDynamicPlanetCount;
+        readonly List<MySprite> _cachedDynamicGroundSprites = new List<MySprite>();
+        readonly List<MySprite> _cachedDynamicGroundOcclusionSprites = new List<MySprite>();
+        readonly List<MySprite> _cachedDynamicRingSprites = new List<MySprite>();
         readonly List<MySprite> _cachedOverlaySprites = new List<MySprite>();
 
         const double JUMP_POINT_RUNS_PER_SECOND = 6d; // ScriptUpdate.Update10 at 60 FPS
@@ -78,6 +84,13 @@ namespace LcdMod.Client.Apps
 
         bool _busy = true;
         long _selectedInfoPlanetId;
+        bool _suppressDynamicOverlays;
+        int _artificialHorizonLastRadarAlt;
+        int _artificialHorizonVerticalSpeed;
+        long _artificialHorizonLastRadarAltFrame = long.MinValue;
+        long _artificialHorizonLastRadarAltPlanetId;
+        bool _artificialHorizonShowAltWarning;
+        long _artificialHorizonAltWarningShownAt;
 
         struct PlanetProjection
         {
@@ -118,10 +131,26 @@ namespace LcdMod.Client.Apps
         const float OVERLAY_OFFSET_RATIO = 0.25f; // relative to radius
         const float POLAR_CAP_RATIO = 0.06f; // top/bottom % of diameter
         const float EQUATOR_BAND_RATIO = 0.18f; // % of diameter
+        const float SURFACE_GROUND_COLOR_TRANSITION_DEG = 2f; // soft transition between base/equator/polar surface colors
         const float MAP_VERTICAL_FOV_DEFAULT_DEG = 70f;
+        const long MAGNIFICATION_HUD_VISIBLE_FRAMES = 300L;
         const float MAP_NEAR_CLIP_METERS = 10f;
         const float PLANET_SHADING_MIN_DIAMETER_PX = 10f;
-        const float GRAVITY_FADE_MAX_MULTIPLIER = 0.1f;
+        const float ARTIFICIAL_HORIZON_LINE_WIDTH_PX = 5f;
+        const float ARTIFICIAL_HORIZON_ANGLE_STEP_RAD = 0.087266445f; // 5 degrees
+        const float ARTIFICIAL_HORIZON_LADDER_TEXT_SCALE_MULTIPLIER = 0.7f;
+        const int ARTIFICIAL_HORIZON_ALTITUDE_WARNING_RUN_THRESHOLD = 24;
+        const long ARTIFICIAL_HORIZON_ALTITUDE_DELTA_SAMPLE_FRAMES = 60L;
+        const float ARTIFICIAL_HORIZON_VELOCITY_DOT_THRESHOLD = -0.1f;
+        const float ARTIFICIAL_HORIZON_HUD_SCALING = 1200f;
+        const float SURFACE_GROUND_SCALE_BOOST_START_RATIO = 0.8f; // normalized current gravity / planet surface gravity
+        const float SURFACE_GROUND_SPACE_PLANET_FADE_START_RATIO = 0.5f; // start fading normal planet marker before terrain expansion begins
+        const float SURFACE_GROUND_SPACE_PLANET_FADE_END_RATIO = 0.8f; // finish fading the normal marker before scale boost starts
+        const float SURFACE_GROUND_GEOMETRY_TRANSITION_START_RATIO = 0.5f; // start easing projected ground disk toward surface placement
+        const float SURFACE_GROUND_GEOMETRY_TRANSITION_END_RATIO = 0.9f; // finish settling terrain before rectangle blending begins
+        const float SURFACE_GROUND_RECTANGLE_TRANSITION_START_RATIO = 0.9f; // start blending the surface circle toward rectangle terrain
+        const float SURFACE_GROUND_RECTANGLE_TRANSITION_END_RATIO = 1f; // finish closing the circle-to-horizon gap at full surface gravity
+        const float SURFACE_GROUND_MAX_SCALE_BOOST = 10f;
         const float SIDE_INFO_TEXT_SCALE = 0.53f;
         const float SIDE_INFO_MARGIN_PX = 14f;
         const float SIDE_INFO_Y_OFFSET_PX = 6f;
@@ -221,6 +250,7 @@ namespace LcdMod.Client.Apps
                 : CursorType.None;
         }
 
+
         void InvalidateStaticOrbitCache()
         {
             _staticOrbitCacheValid = false;
@@ -233,13 +263,15 @@ namespace LcdMod.Client.Apps
         void InvalidateDynamicMapCache()
         {
             _dynamicMapCacheValid = false;
+            _cachedDynamicGroundSprites.Clear();
+            _cachedDynamicGroundOcclusionSprites.Clear();
+            _cachedDynamicRingSprites.Clear();
             _cachedOverlaySprites.Clear();
             _cachedInteractiveEntries.Clear();
         }
-
-        public override void Run()
+        
+        public override void SafeRun()
         {
-            base.Run();
             if (AppConfig == null)
                 return;
             _jumpPointRunCounter++;
@@ -251,8 +283,14 @@ namespace LcdMod.Client.Apps
                     ConfigManager.Sync(Block, ProviderConfig);
             }
 
-            if (float.IsNaN(_lastKnownConfigFov) || Math.Abs(_lastKnownConfigFov - AppConfig.FoV) > 0.001f)
+            bool hadKnownFov = !float.IsNaN(_lastKnownConfigFov);
+            if (!hadKnownFov || Math.Abs(_lastKnownConfigFov - AppConfig.FoV) > 0.001f)
+            {
+                if (hadKnownFov)
+                    _lastFovChangedFrame = GetCurrentGameFrame();
+
                 LayoutChanged();
+            }
 
             RenderSprites();
         }
@@ -260,36 +298,48 @@ namespace LcdMod.Client.Apps
         protected override List<MySprite> GetSprites()
         {
             _baseSprites.Clear();
+            _groundSprites.Clear();
+            _groundOcclusionSprites.Clear();
             _ringSprites.Clear();
-            _planetSprites.Clear();
             _overlaySprites.Clear();
             InteractiveList.Clear();
             CursorType = GetDefaultCursorType();
+            _suppressDynamicOverlays = false;
 
             bool staticMode = AppConfig.DisplayMode == (int)DisplayMode.Legacy;
+            bool hasPlanets;
 
             if (staticMode && _staticOrbitCacheValid)
             {
                 _baseSprites.AddRange(_cachedStaticBaseSprites);
                 _overlaySprites.AddRange(_cachedStaticTitleSprites);
+
+                hasPlanets = DrawPlanetMap(_groundSprites, _groundOcclusionSprites, _ringSprites, _overlaySprites);
             }
-            else
+            else if (staticMode)
             {
                 AddBackground(_baseSprites);
                 DrawTitle(_overlaySprites);
-                if (staticMode)
-                {
-                    _cachedStaticBaseSprites.Clear();
-                    _cachedStaticBaseSprites.AddRange(_baseSprites);
-                    _cachedStaticTitleSprites.Clear();
-                    _cachedStaticTitleSprites.AddRange(_overlaySprites);
-                }
+
+                _cachedStaticBaseSprites.Clear();
+                _cachedStaticBaseSprites.AddRange(_baseSprites);
+                _cachedStaticTitleSprites.Clear();
+                _cachedStaticTitleSprites.AddRange(_overlaySprites);
+
+                hasPlanets = DrawPlanetMap(_groundSprites, _groundOcclusionSprites, _ringSprites, _overlaySprites);
+            }
+            else
+            {
+                hasPlanets = DrawPlanetMap(_groundSprites, _groundOcclusionSprites, _ringSprites, _overlaySprites);
+                
+                _baseSprites.AddRange(_groundSprites);
+                AddBackground(_baseSprites);
+                DrawTitle(_overlaySprites);
             }
 
-            var hasPlanets = DrawPlanetMap(_planetSprites, _ringSprites, _overlaySprites);
             if (hasPlanets)
             {
-                if (!staticMode)
+                if (!staticMode && ShouldDrawFovHud())
                     DrawFovHud(_overlaySprites, _fov);
             }
             else
@@ -300,8 +350,9 @@ namespace LcdMod.Client.Apps
             _sprites.Clear();
             _sprites.AddRange(_baseSprites);
             _sprites.AddRange(_ringSprites);
-            _sprites.AddRange(_planetSprites);
             RenderInteractiveEntryVisuals(_sprites);
+
+            _sprites.AddRange(_groundOcclusionSprites);
             _sprites.AddRange(_overlaySprites);
             return _sprites;
         }
@@ -313,6 +364,21 @@ namespace LcdMod.Client.Apps
                     .GetComponentByInterfaceType<IMyGravityProviderSystem>();
             return _gravityProvider;
         }
+
+        bool ShouldDrawFovHud()
+        {
+            long frame = GetCurrentGameFrame();
+            return _lastFovChangedFrame != long.MinValue &&
+                   frame >= _lastFovChangedFrame &&
+                   frame - _lastFovChangedFrame <= MAGNIFICATION_HUD_VISIBLE_FRAMES;
+        }
+
+        static long GetCurrentGameFrame()
+        {
+            return MyAPIGateway.Session != null ? MyAPIGateway.Session.GameplayFrameCounter : 0L;
+        }
+
+        void QueueArtificialHorizonRenderNextFrame() => LcdModClientComponent.RunNextFrame.Add(RenderSprites);
 
         void DrawFovHud(List<MySprite> sprites, float fovDeg)
         {
@@ -341,7 +407,11 @@ namespace LcdMod.Client.Apps
             });
         }
 
-        bool DrawPlanetMap(List<MySprite> planetSprites, List<MySprite> ringSprites, List<MySprite> overlaySprites)
+        bool DrawPlanetMap(
+            List<MySprite> groundSprites,
+            List<MySprite> groundOcclusionSprites,
+            List<MySprite> ringSprites,
+            List<MySprite> overlaySprites)
         {
             var planets = PlanetHelper.PlanetsById;
             if (planets == null || planets.Count == 0)
@@ -350,14 +420,17 @@ namespace LcdMod.Client.Apps
 
             bool staticMode = AppConfig != null && AppConfig.DisplayMode == (int)DisplayMode.Legacy;
             if (staticMode)
-                return DrawStaticOrbitMap(ringSprites, planetSprites, planets);
+                return DrawStaticOrbitMap(ringSprites, planets);
 
             if (Block == null)
                 return false;
 
             MatrixD world = Block.WorldMatrix;
+            int groundStartIndex = groundSprites.Count;
+            int groundOcclusionStartIndex = groundOcclusionSprites.Count;
+            int ringStartIndex = ringSprites.Count;
             int overlayStartIndex = overlaySprites.Count;
-            if (TryUseDynamicMapCache(overlaySprites, planets.Count, world))
+            if (TryUseDynamicMapCache(groundSprites, groundOcclusionSprites, ringSprites, overlaySprites, planets.Count, world))
                 return true;
 
             var camPos = world.Translation;
@@ -366,13 +439,32 @@ namespace LcdMod.Client.Apps
             var camForward = world.Forward;
 
             long gravityPlanetId = GetCurrentGravityPlanetId(camPos, planets);
-            float gravityVisibility = GetGravityVisibility(camPos);
+            float naturalGravityMultiplier = GetNaturalGravityMultiplier(camPos);
+            float surfaceGravityRatio = GetSurfaceGravityRatio(
+                gravityPlanetId,
+                planets,
+                naturalGravityMultiplier);
+            float spacePlanetFade = GetSurfaceGroundSpacePlanetFade(surfaceGravityRatio);
+            if (naturalGravityMultiplier > 0.005f)
+                QueueArtificialHorizonRenderNextFrame();
 
             if (_halfFovY < 1e-6)
                 return false;
 
             double aspect = ViewBox.Width / Math.Max(1f, ViewBox.Height);
             double halfFovX = Math.Atan(Math.Tan(_halfFovY) * aspect);
+            bool gravityPlanetRenderedAsGround = DrawDynamicArtificialHorizon(
+                groundSprites,
+                groundOcclusionSprites,
+                overlaySprites,
+                world,
+                camPos,
+                halfFovX,
+                gravityPlanetId,
+                naturalGravityMultiplier,
+                planets);
+            if (gravityPlanetRenderedAsGround)
+                hasDetectedPlanets = true;
             var projectedPlanets = new List<PlanetProjection>(planets.Count);
 
             foreach (var kv in planets)
@@ -380,6 +472,15 @@ namespace LcdMod.Client.Apps
                 var planet = kv.Value;
                 if (planet == null || planet.MarkedForClose)
                     continue;
+
+                // Fade the current gravity planet marker out before the terrain disk starts
+                // visibly expanding. The terrain disk itself is drawn as background at full opacity.
+                if (gravityPlanetRenderedAsGround &&
+                    planet.EntityId == gravityPlanetId &&
+                    spacePlanetFade >= 0.999f)
+                {
+                    continue;
+                }
 
                 Vector3D delta = planet.WorldMatrix.Translation - camPos;
                 double depth = Vector3D.Dot(delta, camForward);
@@ -407,15 +508,20 @@ namespace LcdMod.Client.Apps
 
                 double angularRadius = Math.Asin(Math.Min(1d, planetRadiusMeters / distance));
                 float markerRadius = (float)(angularRadius / _halfFovY * (ViewBox.Height * 0.5f));
-                float visibility = planet.EntityId == gravityPlanetId ? gravityVisibility : 1f;
+                float visibility = planet.EntityId == gravityPlanetId
+                    ? 1f - spacePlanetFade
+                    : 1f;
                 if (visibility <= 0.001f)
                     continue;
 
-                // Keep drawing while any part of the planet disk overlaps the viewport.
-                if (screenPos.X + markerRadius < ViewBox.X ||
-                    screenPos.X - markerRadius > ViewBox.Right ||
-                    screenPos.Y + markerRadius < ViewBox.Y ||
-                    screenPos.Y - markerRadius > ViewBox.Bottom)
+                // Keep drawing while any part of the planet disk overlaps the LCD texture.
+                // Terrain occlusion is generated across the whole texture, so culling by
+                // ViewBox makes edge planets pop while the occlusion layer still reaches them.
+                RectangleF textureBounds = GetTextureBounds();
+                if (screenPos.X + markerRadius < textureBounds.X ||
+                    screenPos.X - markerRadius > textureBounds.Right ||
+                    screenPos.Y + markerRadius < textureBounds.Y ||
+                    screenPos.Y - markerRadius > textureBounds.Bottom)
                     continue;
 
                 string name;
@@ -477,7 +583,24 @@ namespace LcdMod.Client.Apps
                     visiblePlanets.Add(candidate);
             }
 
-            SelectDynamicPlanetForInfo(visiblePlanets);
+            _suppressDynamicOverlays = SelectDynamicPlanetForInfo(visiblePlanets);
+
+            if (naturalGravityMultiplier > 0.005f)
+            {
+                Vector3D artificialHorizonGravity;
+                if (TryGetArtificialHorizonGravityDirection(camPos, out artificialHorizonGravity))
+                    DrawArtificialHorizonPlanetOverlay(
+                        overlaySprites,
+                        artificialHorizonGravity,
+                        world,
+                        gravityPlanetId,
+                        planets,
+                        _suppressDynamicOverlays);
+            }
+            else
+            {
+                DrawArtificialHorizonSpaceOverlay(overlaySprites, world, _suppressDynamicOverlays);
+            }
 
             for (int i = visiblePlanets.Count - 1; i >= 0; i--) // far -> near draw order
             {
@@ -486,11 +609,24 @@ namespace LcdMod.Client.Apps
                 DrawPlanetLabels(overlaySprites, planet);
             }
 
-            CacheDynamicMap(overlaySprites, overlayStartIndex, planets.Count, world);
+            CacheDynamicMap(
+                groundSprites,
+                groundStartIndex,
+                groundOcclusionSprites,
+                groundOcclusionStartIndex,
+                ringSprites,
+                ringStartIndex,
+                overlaySprites,
+                overlayStartIndex,
+                planets.Count,
+                world);
             return hasDetectedPlanets;
         }
 
         bool TryUseDynamicMapCache(
+            List<MySprite> groundSprites,
+            List<MySprite> groundOcclusionSprites,
+            List<MySprite> ringSprites,
             List<MySprite> overlaySprites,
             int planetCount,
             MatrixD world)
@@ -502,17 +638,30 @@ namespace LcdMod.Client.Apps
                 !MatrixNearlyEquals(_cachedDynamicWorldMatrix, world) ||
                 !RectangleNearlyEquals(_cachedDynamicViewBox, ViewBox) ||
                 !VectorNearlyEquals(_cachedDynamicCursorPosition, CursorPosition) ||
-                _cachedDynamicHasRecentVisualContact != HasRecentVisualContact)
+                !VectorNearlyEquals(_cachedDynamicLinearVelocity, GetBlockLinearVelocity()) ||
+                _cachedDynamicHasRecentVisualContact != HasRecentVisualContact ||
+                GetNaturalGravityMultiplier(world.Translation) > 0.005f)
             {
                 return false;
             }
+
+            _suppressDynamicOverlays = _cachedDynamicSuppressOverlays;
             
+            groundSprites.AddRange(_cachedDynamicGroundSprites);
+            groundOcclusionSprites.AddRange(_cachedDynamicGroundOcclusionSprites);
+            ringSprites.AddRange(_cachedDynamicRingSprites);
             overlaySprites.AddRange(_cachedOverlaySprites);
             InteractiveList.AddRange(_cachedInteractiveEntries);
             return true;
         }
 
         void CacheDynamicMap(
+            List<MySprite> groundSprites,
+            int groundStartIndex,
+            List<MySprite> groundOcclusionSprites,
+            int groundOcclusionStartIndex,
+            List<MySprite> ringSprites,
+            int ringStartIndex,
             List<MySprite> overlaySprites,
             int overlayStartIndex,
             int planetCount,
@@ -522,9 +671,23 @@ namespace LcdMod.Client.Apps
             _cachedDynamicWorldMatrix = world;
             _cachedDynamicViewBox = ViewBox;
             _cachedDynamicCursorPosition = CursorPosition;
+            _cachedDynamicLinearVelocity = GetBlockLinearVelocity();
             _cachedDynamicHasRecentVisualContact = HasRecentVisualContact;
+            _cachedDynamicSuppressOverlays = _suppressDynamicOverlays;
             _cachedDynamicPlanetCount = planetCount;
             
+            _cachedDynamicGroundSprites.Clear();
+            for (int i = groundStartIndex; i < groundSprites.Count; i++)
+                _cachedDynamicGroundSprites.Add(groundSprites[i]);
+
+            _cachedDynamicGroundOcclusionSprites.Clear();
+            for (int i = groundOcclusionStartIndex; i < groundOcclusionSprites.Count; i++)
+                _cachedDynamicGroundOcclusionSprites.Add(groundOcclusionSprites[i]);
+
+            _cachedDynamicRingSprites.Clear();
+            for (int i = ringStartIndex; i < ringSprites.Count; i++)
+                _cachedDynamicRingSprites.Add(ringSprites[i]);
+
             _cachedOverlaySprites.Clear();
             for (int i = overlayStartIndex; i < overlaySprites.Count; i++)
                 _cachedOverlaySprites.Add(overlaySprites[i]);
@@ -533,14 +696,18 @@ namespace LcdMod.Client.Apps
             _dynamicMapCacheValid = true;
         }
 
-        void SelectDynamicPlanetForInfo(List<PlanetProjection> visiblePlanets)
+        bool SelectDynamicPlanetForInfo(List<PlanetProjection> visiblePlanets)
         {
             if (visiblePlanets == null || visiblePlanets.Count == 0)
-                return;
+            {
+                _selectedInfoPlanetId = 0;
+                _selectedInfoKeepAliveBounds.Clear();
+                return false;
+            }
 
             var target = GetDynamicInfoTargetPosition();
             if (float.IsNaN(target.X) || float.IsNaN(target.Y))
-                return;
+                return false;
 
             int selectedIndex = -1;
             for (int i = 0; i < visiblePlanets.Count; i++) // near -> far, matching top draw priority
@@ -554,7 +721,8 @@ namespace LcdMod.Client.Apps
                 break;
             }
 
-            if (selectedIndex < 0 && _selectedInfoPlanetId != 0 && IsInsideSelectedInfoKeepAliveBounds(target))
+            if (selectedIndex < 0 && UsesCursorDynamicInfoTarget() && _selectedInfoPlanetId != 0 &&
+                IsInsideSelectedInfoKeepAliveBounds(target))
             {
                 for (int i = 0; i < visiblePlanets.Count; i++)
                 {
@@ -570,14 +738,16 @@ namespace LcdMod.Client.Apps
             {
                 _selectedInfoPlanetId = 0;
                 _selectedInfoKeepAliveBounds.Clear();
-                return;
+                return false;
             }
 
             var selected = visiblePlanets[selectedIndex];
             selected.ShouldDisplayInfo = true;
             _selectedInfoPlanetId = selected.PlanetId;
             _selectedInfoBoundsThisFrame.Clear();
+            _selectedInfoKeepAliveBounds.Clear();
             visiblePlanets[selectedIndex] = selected;
+            return true;
         }
 
         bool IsInsideSelectedInfoKeepAliveBounds(Vector2 target)
@@ -593,14 +763,19 @@ namespace LcdMod.Client.Apps
 
         Vector2 GetDynamicInfoTargetPosition()
         {
-            if (HasRecentVisualContact &&
-                !float.IsNaN(CursorPosition.X) &&
-                !float.IsNaN(CursorPosition.Y))
+            if (UsesCursorDynamicInfoTarget())
             {
                 return CursorPosition;
             }
 
             return ViewBox.Center;
+        }
+
+        bool UsesCursorDynamicInfoTarget()
+        {
+            return HasRecentVisualContact &&
+                !float.IsNaN(CursorPosition.X) &&
+                !float.IsNaN(CursorPosition.Y);
         }
 
         static bool MatrixNearlyEquals(MatrixD a, MatrixD b)
@@ -627,6 +802,13 @@ namespace LcdMod.Client.Apps
             return NearlyEquals(a.X, b.X) && NearlyEquals(a.Y, b.Y);
         }
 
+        static bool VectorNearlyEquals(Vector3D a, Vector3D b)
+        {
+            return Math.Abs(a.X - b.X) <= 0.001d &&
+                   Math.Abs(a.Y - b.Y) <= 0.001d &&
+                   Math.Abs(a.Z - b.Z) <= 0.001d;
+        }
+
         static bool NearlyEquals(float a, float b)
         {
             if (float.IsNaN(a) || float.IsNaN(b))
@@ -635,9 +817,1272 @@ namespace LcdMod.Client.Apps
             return Math.Abs(a - b) <= 0.001f;
         }
 
+        Vector3D GetBlockLinearVelocity()
+        {
+            if (Block == null || Block.CubeGrid == null)
+                return Vector3D.Zero;
+
+            return Block.CubeGrid.LinearVelocity;
+        }
+
+        bool TryGetArtificialHorizonGravityDirection(Vector3D camPos, out Vector3D gravity)
+        {
+            gravity = Vector3D.Zero;
+
+            IMyNaturalGravityComponent gravityComponent;
+            if (!TryGetStrongestNaturalGravityComponent(camPos, out gravityComponent) || gravityComponent == null)
+                return false;
+
+            gravity = gravityComponent.Position - camPos;
+            return gravity.Normalize() > 1e-6;
+        }
+
+        bool DrawDynamicArtificialHorizon(
+            List<MySprite> groundSprites,
+            List<MySprite> groundOcclusionSprites,
+            List<MySprite> lineSprites,
+            MatrixD world,
+            Vector3D camPos,
+            double halfFovX,
+            long gravityPlanetId,
+            float naturalGravityMultiplier,
+            Dictionary<long, MyPlanet> planets)
+        {
+            IMyNaturalGravityComponent gravityComponent;
+            if (!TryGetStrongestNaturalGravityComponent(camPos, out gravityComponent) || gravityComponent == null)
+                return false;
+
+            Vector3D gravity = gravityComponent.Position - camPos;
+            if (gravity.Normalize() <= 1e-6)
+                return false;
+
+            float halfWidth = Math.Max(1f, ViewBox.Width * 0.5f);
+            float halfHeight = Math.Max(1f, ViewBox.Height * 0.5f);
+            float tanHalfFovX = (float)Math.Tan(halfFovX);
+            float tanHalfFovY = (float)Math.Tan(_halfFovY);
+
+            // Same source signal as the default artificial horizon: the natural gravity vector
+            // transformed into the display's local frame. Here it becomes the surface-side
+            // endpoint for the ground circle instead of a hard mode switch.
+            float gravityRight = (float)Vector3D.Dot(gravity, world.Right);
+            float gravityUp = (float)Vector3D.Dot(gravity, world.Up);
+            float gravityForward = (float)Vector3D.Dot(gravity, world.Forward);
+
+            var downNormal = new Vector2(
+                gravityRight * tanHalfFovX / halfWidth,
+                -gravityUp * tanHalfFovY / halfHeight);
+
+            float normalLengthSq = downNormal.LengthSquared();
+            Color planetColor = ForegroundColor;
+            bool hasGroundPlanet = gravityPlanetId != 0 &&
+                                   TryGetPlanetSurfaceColor(gravityPlanetId, planets, camPos, out planetColor);
+            bool drawGround = hasGroundPlanet;
+            var horizonColor = planetColor;
+            float surfaceGravityRatio = hasGroundPlanet
+                ? GetSurfaceGravityRatio(gravityPlanetId, planets, naturalGravityMultiplier)
+                : 0f;
+            float rectangleTransition = GetSurfaceGroundRectangleTransition(surfaceGravityRatio);
+            if (normalLengthSq <= 1e-8f)
+            {
+                bool groundDrawn = false;
+                if (gravityForward > 0f && drawGround)
+                {
+                    // With no stable horizon line, keep using the projected planet disk.
+                    // Do not force a viewport rectangle at or above surface gravity.
+                    groundDrawn = TryDrawProjectedGravityPlanetGroundCircle(
+                        groundSprites,
+                        world,
+                        camPos,
+                        halfFovX,
+                        gravityPlanetId,
+                        planets,
+                        horizonColor);
+                    if (groundDrawn)
+                        TryDrawProjectedGravityPlanetGroundCircle(
+                            groundOcclusionSprites,
+                            world,
+                            camPos,
+                            halfFovX,
+                            gravityPlanetId,
+                            planets,
+                            horizonColor);
+                }
+                return groundDrawn;
+            }
+
+            Func<Vector2, float> score = point =>
+                downNormal.X * (point.X - ViewBox.Center.X) +
+                downNormal.Y * (point.Y - ViewBox.Center.Y) +
+                gravityForward;
+
+            RectangleF textureBounds = GetTextureBounds();
+            var topLeft = new Vector2(textureBounds.X, textureBounds.Y);
+            var topRight = new Vector2(textureBounds.Right, textureBounds.Y);
+            var bottomLeft = new Vector2(textureBounds.X, textureBounds.Bottom);
+            var bottomRight = new Vector2(textureBounds.Right, textureBounds.Bottom);
+
+            bool tlDown = score(topLeft) > 0f;
+            bool trDown = score(topRight) > 0f;
+            bool blDown = score(bottomLeft) > 0f;
+            bool brDown = score(bottomRight) > 0f;
+            bool anyCornerGroundSide = tlDown || trDown || blDown || brDown;
+            bool allCornersGroundSide = tlDown && trDown && blDown && brDown;
+            bool horizonVisibleInView = anyCornerGroundSide && !allCornersGroundSide;
+
+            if (!anyCornerGroundSide)
+                return false;
+
+            var downDirection = downNormal / (float)Math.Sqrt(normalLengthSq);
+            var lineCenter = ViewBox.Center - downNormal * (gravityForward / normalLengthSq);
+            float diagonal = (float)Math.Sqrt(textureBounds.Width * textureBounds.Width + textureBounds.Height * textureBounds.Height);
+            float rotation = (float)Math.Atan2(-downDirection.X, downDirection.Y);
+            bool groundDrawnInView = false;
+            if (drawGround)
+            {
+                bool useSurfacePlaneFill = rectangleTransition >= 0.999f;
+                if (useSurfacePlaneFill)
+                {
+                    // At full surface gravity, the terrain is no longer drawn as a giant
+                    // circle. Fill only the ground side of the artificial horizon so the
+                    // top edge is the horizon line and nothing leaks into the sky side.
+                    DrawGroundHalfPlaneFill(groundSprites, score, horizonColor);
+                    DrawGroundHalfPlaneFill(groundOcclusionSprites, score, horizonColor, true);
+                    groundDrawnInView = true;
+                }
+                else
+                {
+                    groundDrawnInView = TryDrawEasedGravityPlanetGroundCircle(
+                        groundSprites,
+                        world,
+                        camPos,
+                        halfFovX,
+                        gravityPlanetId,
+                        naturalGravityMultiplier,
+                        planets,
+                        lineCenter,
+                        downDirection,
+                        rectangleTransition,
+                        horizonColor);
+
+                    if (groundDrawnInView)
+                        TryDrawEasedGravityPlanetGroundCircle(
+                            groundOcclusionSprites,
+                            world,
+                            camPos,
+                            halfFovX,
+                            gravityPlanetId,
+                            naturalGravityMultiplier,
+                            planets,
+                            lineCenter,
+                            downDirection,
+                            rectangleTransition,
+                            horizonColor);
+
+                    if (!groundDrawnInView && !horizonVisibleInView)
+                    {
+                        // Before full-surface mode, only use the scanline fill when the whole
+                        // viewport is already ground-side. When the horizon is visible, a failed
+                        // circle should leave the sky side untouched.
+                        DrawGroundHalfPlaneFill(groundSprites, score, horizonColor);
+                        DrawGroundHalfPlaneFill(groundOcclusionSprites, score, horizonColor, true);
+                        groundDrawnInView = true;
+                    }
+                }
+            }
+
+            if (allCornersGroundSide)
+                return groundDrawnInView;
+
+            DrawClippedRectangle(
+                lineSprites,
+                lineCenter,
+                new Vector2(diagonal * 4f, Math.Max(1f, ARTIFICIAL_HORIZON_LINE_WIDTH_PX * Scale)),
+                "SquareTapered",
+                ForegroundColor,
+                rotation);
+            return groundDrawnInView;
+        }
+
+        void DrawArtificialHorizonPlanetOverlay(
+            List<MySprite> sprites,
+            Vector3D gravityDirection,
+            MatrixD world,
+            long gravityPlanetId,
+            Dictionary<long, MyPlanet> planets,
+            bool essentialOnly)
+        {
+            if (sprites == null || Block == null || Block.CubeGrid == null)
+                return;
+
+            double gravityLength = gravityDirection.Normalize();
+            if (gravityLength <= 1e-6)
+                return;
+
+            Vector3D linearVelocity = Block.CubeGrid.LinearVelocity;
+            if (essentialOnly)
+            {
+                DrawArtificialHorizonVelocityVector(sprites, linearVelocity, world, Math.Max(0.1f, Scale));
+                return;
+            }
+
+            Vector3D horizonForward = Vector3D.Reject(world.Forward, gravityDirection);
+            if (horizonForward.Normalize() <= 1e-6)
+                return;
+
+            Vector3D gravityRoll = Vector3D.Normalize(Vector3D.Reject(gravityDirection, world.Forward));
+            if (double.IsNaN(gravityRoll.X) || double.IsNaN(gravityRoll.Y) || double.IsNaN(gravityRoll.Z))
+                gravityRoll = -world.Up;
+
+            double rollAngle = -(Math.Acos(MathHelper.Clamp((float)Vector3D.Dot(gravityRoll, world.Left), -1f, 1f)) -
+                                 Math.PI * 0.5d);
+            if (Vector3D.Dot(gravityDirection, world.Up) >= 0d)
+                rollAngle = Math.PI - rollAngle;
+
+            double pitchAngle = Math.Acos(MathHelper.Clamp((float)Vector3D.Dot(gravityDirection, world.Forward), -1f, 1f)) -
+                                Math.PI * 0.5d;
+            float hudScale = Math.Max(0.1f, Scale);
+            DrawArtificialHorizonLadder(sprites, gravityDirection, world, pitchAngle, horizonForward, rollAngle, hudScale);
+
+            int radarAltitude;
+            bool hasRadarAltitude = TryGetArtificialHorizonRadarAltitude(
+                world.Translation,
+                gravityPlanetId,
+                planets,
+                out radarAltitude);
+            if (hasRadarAltitude)
+            {
+                DrawArtificialHorizonAltitudeWarning(sprites, radarAltitude);
+                UpdateArtificialHorizonAltitudeSample(radarAltitude, gravityPlanetId);
+                DrawArtificialHorizonAltimeter(sprites, radarAltitude, hudScale);
+            }
+            else
+            {
+                ResetArtificialHorizonAltitudeSample();
+            }
+
+            if (hasRadarAltitude)
+                DrawArtificialHorizonPullUpWarning(sprites, linearVelocity, gravityDirection, radarAltitude, rollAngle, hudScale);
+            DrawArtificialHorizonSpeedIndicator(sprites, linearVelocity, hudScale);
+            DrawArtificialHorizonVelocityVector(sprites, linearVelocity, world, hudScale);
+            DrawArtificialHorizonBoreSight(sprites, hudScale);
+        }
+
+        void DrawArtificialHorizonSpaceOverlay(List<MySprite> sprites, MatrixD world, bool essentialOnly)
+        {
+            if (sprites == null || Block == null || Block.CubeGrid == null)
+                return;
+
+            float hudScale = Math.Max(0.1f, Scale);
+            Vector3D linearVelocity = Block.CubeGrid.LinearVelocity;
+            DrawArtificialHorizonVelocityVector(sprites, linearVelocity, world, hudScale);
+            if (essentialOnly)
+                return;
+
+            DrawArtificialHorizonSpeedIndicator(sprites, linearVelocity, hudScale);
+            DrawArtificialHorizonBoreSight(sprites, hudScale);
+        }
+
+        void DrawArtificialHorizonLadder(
+            List<MySprite> sprites,
+            Vector3D gravityDirection,
+            MatrixD world,
+            double pitchAngle,
+            Vector3D horizonForward,
+            double rollAngle,
+            float hudScale)
+        {
+            int centerStep = (int)Math.Round(pitchAngle / ARTIFICIAL_HORIZON_ANGLE_STEP_RAD);
+            var ladderStepSize = GetArtificialHorizonLadderStepSize(hudScale);
+            var ladderStepTextOffset = new Vector2(0f, ladderStepSize.Y * 0.5f);
+            float textScale = hudScale * FontScale * ARTIFICIAL_HORIZON_LADDER_TEXT_SCALE_MULTIPLIER;
+            MatrixD inverseWorld = MatrixD.Invert(world);
+
+            for (int index = centerStep - 5; index <= centerStep + 5; index++)
+            {
+                if (index == 0)
+                    continue;
+
+                MatrixD pitchWorld = MatrixD.CreateRotationX(index * ARTIFICIAL_HORIZON_ANGLE_STEP_RAD) *
+                                     MatrixD.CreateWorld(world.Translation, horizonForward, -gravityDirection);
+                Vector3D stepLocal = Vector3D.TransformNormal(
+                    Vector3D.Reject(pitchWorld.Forward, world.Forward),
+                    inverseWorld);
+                var stepPosition = ViewBox.Center + new Vector2((float)stepLocal.X, -(float)stepLocal.Y) *
+                    ARTIFICIAL_HORIZON_HUD_SCALING * hudScale;
+
+                sprites.Add(new MySprite
+                {
+                    Type = SpriteType.TEXTURE,
+                    Data = index * ARTIFICIAL_HORIZON_ANGLE_STEP_RAD < 0d
+                        ? "AH_GravityHudNegativeDegrees"
+                        : "AH_GravityHudPositiveDegrees",
+                    Position = stepPosition,
+                    Size = ladderStepSize,
+                    Color = ForegroundColor,
+                    Alignment = TextAlignment.CENTER,
+                    RotationOrScale = (float)rollAngle
+                });
+
+                int degrees = Math.Abs(index * 5);
+                string label = index > 18 ? (180 - index * 5).ToString(FormatingHelper.Culture) : degrees.ToString(FormatingHelper.Culture);
+                Vector2 labelOffset = RotateVector(new Vector2(-ladderStepSize.X * 0.55f, 0f), (float)rollAngle);
+                AddArtificialHorizonText(
+                    sprites,
+                    label,
+                    stepPosition + labelOffset - ladderStepTextOffset,
+                    textScale,
+                    TextAlignment.RIGHT);
+
+                labelOffset = RotateVector(new Vector2(ladderStepSize.X * 0.55f, 0f), (float)rollAngle);
+                AddArtificialHorizonText(
+                    sprites,
+                    label,
+                    stepPosition + labelOffset - ladderStepTextOffset,
+                    textScale,
+                    TextAlignment.LEFT);
+            }
+        }
+
+        bool TryGetArtificialHorizonRadarAltitude(
+            Vector3D position,
+            long gravityPlanetId,
+            Dictionary<long, MyPlanet> planets,
+            out int radarAltitude)
+        {
+            radarAltitude = 0;
+
+            if (gravityPlanetId == 0 || planets == null)
+                return false;
+
+            MyPlanet planet;
+            if (!planets.TryGetValue(gravityPlanetId, out planet) || planet == null || planet.MarkedForClose)
+                return false;
+
+            Vector3D surfacePoint = planet.GetClosestSurfacePointGlobal(position);
+            radarAltitude = Math.Max(0, (int)Math.Round(Vector3D.Distance(position, surfacePoint), 0));
+            return true;
+        }
+
+        void DrawArtificialHorizonAltitudeWarning(
+            List<MySprite> sprites,
+            int radarAltitude)
+        {
+            float warningAltitude = 100f;
+            var cubeGrid = Block.CubeGrid as MyCubeGrid;
+            if (cubeGrid != null)
+                warningAltitude += cubeGrid.PositionComp.LocalAABB.Height;
+
+            if (_artificialHorizonLastRadarAlt >= warningAltitude && radarAltitude < warningAltitude)
+            {
+                _artificialHorizonShowAltWarning = true;
+                _artificialHorizonAltWarningShownAt = _jumpPointRunCounter;
+            }
+
+            if (_jumpPointRunCounter - _artificialHorizonAltWarningShownAt > ARTIFICIAL_HORIZON_ALTITUDE_WARNING_RUN_THRESHOLD)
+                _artificialHorizonShowAltWarning = false;
+
+            if (!_artificialHorizonShowAltWarning)
+                return;
+
+            DrawMessage(
+                sprites,
+                LocHelper.GetLoc("DisplayName_TSS_ArtificialHorizon_AltitudeWarning"),
+                "Warning",
+                GetArtificialHorizonWarningColor(),
+                AppConfig != null ? AppConfig.Scale : Scale);
+        }
+
+        void DrawArtificialHorizonAltimeter(List<MySprite> sprites, int radarAltitude, float hudScale)
+        {
+            float textScale = hudScale;
+            var textBoxSize = GetArtificialHorizonTextBoxSize(textScale);
+            var textOffset = GetArtificialHorizonTextOffset(textScale);
+            var boxCenter = ViewBox.Center + (new Vector2(115f, 80f) * hudScale) +
+                            GetArtificialHorizonTextBoxSize(hudScale) * 0.5f;
+            AddArtificialHorizonTextBox(
+                sprites,
+                boxCenter,
+                textBoxSize,
+                radarAltitude.ToString(FormatingHelper.Culture),
+                textScale,
+                "AH_TextBox",
+                textOffset.X);
+
+            AddArtificialHorizonTextBox(
+                sprites,
+                boxCenter - new Vector2(0f, textBoxSize.Y),
+                textBoxSize,
+                _artificialHorizonVerticalSpeed.ToString(FormatingHelper.Culture),
+                textScale,
+                null,
+                textOffset.X);
+        }
+
+        void UpdateArtificialHorizonAltitudeSample(int radarAltitude, long gravityPlanetId)
+        {
+            long currentFrame = GetCurrentGameFrame();
+            if (_artificialHorizonLastRadarAltFrame == long.MinValue ||
+                _artificialHorizonLastRadarAltPlanetId != gravityPlanetId)
+            {
+                _artificialHorizonLastRadarAlt = radarAltitude;
+                _artificialHorizonLastRadarAltFrame = currentFrame;
+                _artificialHorizonLastRadarAltPlanetId = gravityPlanetId;
+                _artificialHorizonVerticalSpeed = 0;
+                return;
+            }
+
+            long frameDelta = currentFrame - _artificialHorizonLastRadarAltFrame;
+            if (frameDelta < 0L)
+            {
+                _artificialHorizonLastRadarAlt = radarAltitude;
+                _artificialHorizonLastRadarAltFrame = currentFrame;
+                _artificialHorizonLastRadarAltPlanetId = gravityPlanetId;
+                _artificialHorizonVerticalSpeed = 0;
+                return;
+            }
+
+            if (frameDelta < ARTIFICIAL_HORIZON_ALTITUDE_DELTA_SAMPLE_FRAMES)
+                return;
+
+            _artificialHorizonVerticalSpeed =
+                (int)Math.Round((radarAltitude - _artificialHorizonLastRadarAlt) * 60d / frameDelta);
+            _artificialHorizonLastRadarAlt = radarAltitude;
+            _artificialHorizonLastRadarAltFrame = currentFrame;
+            _artificialHorizonLastRadarAltPlanetId = gravityPlanetId;
+        }
+
+        void ResetArtificialHorizonAltitudeSample()
+        {
+            _artificialHorizonLastRadarAlt = 0;
+            _artificialHorizonVerticalSpeed = 0;
+            _artificialHorizonLastRadarAltFrame = long.MinValue;
+            _artificialHorizonLastRadarAltPlanetId = 0;
+        }
+
+        void DrawArtificialHorizonPullUpWarning(
+            List<MySprite> sprites,
+            Vector3D velocity,
+            Vector3D gravityDirection,
+            int radarAltitude,
+            double rollAngle,
+            float hudScale)
+        {
+            double descentSpeed = Vector3D.Dot(velocity, gravityDirection);
+            if (descentSpeed <= 0d)
+                return;
+
+            double warningAltitude = Math.Max(50d, descentSpeed * 3d);
+            if (radarAltitude > warningAltitude || _jumpPointRunCounter % 10 <= 2)
+                return;
+
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE,
+                Data = "AH_PullUp",
+                Position = ViewBox.Center,
+                Size = new Vector2(150f, 180f) * hudScale,
+                Color = GetArtificialHorizonErrorColor(),
+                Alignment = TextAlignment.CENTER,
+                RotationOrScale = (float)rollAngle
+            });
+        }
+
+        void DrawArtificialHorizonSpeedIndicator(List<MySprite> sprites, Vector3D velocity, float hudScale)
+        {
+            float textScale = hudScale;
+            var textBoxSize = GetArtificialHorizonTextBoxSize(textScale);
+            var textOffset = GetArtificialHorizonTextOffset(textScale);
+            var boxCenter = ViewBox.Center + (new Vector2(-205f, 80f) * hudScale) +
+                            GetArtificialHorizonTextBoxSize(hudScale) * 0.5f;
+            AddArtificialHorizonTextBox(
+                sprites,
+                boxCenter,
+                textBoxSize,
+                ((int)velocity.Length()).ToString(FormatingHelper.Culture),
+                textScale,
+                "AH_TextBox",
+                textOffset.X);
+        }
+
+        void DrawArtificialHorizonVelocityVector(
+            List<MySprite> sprites,
+            Vector3D velocity,
+            MatrixD world,
+            float hudScale)
+        {
+            if (Vector3D.Dot(velocity, world.Forward) < ARTIFICIAL_HORIZON_VELOCITY_DOT_THRESHOLD)
+                return;
+
+            double speedSq = velocity.LengthSquared();
+            Vector3D velocityDirection = velocity;
+            if (velocityDirection.Normalize() <= 1e-6)
+                velocityDirection = Vector3D.Zero;
+
+            Vector3D localVelocity = Vector3D.TransformNormal(
+                Vector3D.Reject(velocityDirection, world.Forward),
+                MatrixD.Invert(world));
+            var positionOffset = speedSq < 9d
+                ? Vector2.Zero
+                : new Vector2((float)localVelocity.X, -(float)localVelocity.Y) * ARTIFICIAL_HORIZON_HUD_SCALING * hudScale;
+
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE,
+                Data = "AH_VelocityVector",
+                Position = ViewBox.Center + positionOffset,
+                Size = new Vector2(50f, 50f) * hudScale,
+                Color = ForegroundColor,
+                Alignment = TextAlignment.CENTER
+            });
+        }
+
+        void DrawArtificialHorizonBoreSight(List<MySprite> sprites, float hudScale)
+        {
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE,
+                Data = "AH_BoreSight",
+                Position = ViewBox.Center + new Vector2(0f, 19f) * hudScale,
+                Size = new Vector2(50f, 50f) * hudScale,
+                Color = ForegroundColor,
+                Alignment = TextAlignment.CENTER,
+                RotationOrScale = -MathHelper.PiOver2
+            });
+        }
+
+        void AddArtificialHorizonTextBox(
+            List<MySprite> sprites,
+            Vector2 position,
+            Vector2 size,
+            string text,
+            float textScale,
+            string backgroundTexture,
+            float textOffset)
+        {
+            Vector2 rightCenter = position + new Vector2(size.X * 0.5f, 0f);
+            if (!string.IsNullOrEmpty(backgroundTexture))
+            {
+                sprites.Add(new MySprite
+                {
+                    Type = SpriteType.TEXTURE,
+                    Data = backgroundTexture,
+                    Position = rightCenter,
+                    Size = size,
+                    Color = ForegroundColor,
+                    Alignment = TextAlignment.RIGHT
+                });
+            }
+
+            AddArtificialHorizonText(
+                sprites,
+                text,
+                rightCenter + new Vector2(-textOffset, -size.Y * 0.5f),
+                textScale,
+                TextAlignment.RIGHT,
+                size);
+        }
+
+        void AddArtificialHorizonText(
+            List<MySprite> sprites,
+            string text,
+            Vector2 position,
+            float textScale,
+            TextAlignment alignment,
+            Vector2? size = null,
+            Color? color = null)
+        {
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXT,
+                Data = text,
+                Position = position,
+                Size = size,
+                Color = color ?? ForegroundColor,
+                FontId = "White",
+                Alignment = alignment,
+                RotationOrScale = textScale
+            });
+        }
+
+        Color GetArtificialHorizonWarningColor()
+        {
+            return AppConfig != null ? AppConfig.WarningColor : ForegroundColor;
+        }
+
+        Color GetArtificialHorizonErrorColor()
+        {
+            return (AppConfig != null ? AppConfig.ErrorColor : ForegroundColor)
+                .MulValue(2f)
+                .MulSaturation(2f);
+        }
+
+        static Vector2 GetArtificialHorizonTextBoxSize(float hudScale)
+        {
+            return new Vector2(89f, 32f) * hudScale;
+        }
+
+        static Vector2 GetArtificialHorizonTextOffset(float hudScale)
+        {
+            return new Vector2(5f, 0f) * hudScale;
+        }
+
+        static Vector2 GetArtificialHorizonLadderStepSize(float hudScale)
+        {
+            return new Vector2(150f, 31f) * hudScale;
+        }
+
+        static Vector2 RotateVector(Vector2 vector, float angle)
+        {
+            float cos = (float)Math.Cos(angle);
+            float sin = (float)Math.Sin(angle);
+            return new Vector2(vector.X * cos - vector.Y * sin, vector.X * sin + vector.Y * cos);
+        }
+
+        bool TryGetStrongestNaturalGravityComponent(Vector3D camPos, out IMyNaturalGravityComponent gravityComponent)
+        {
+            gravityComponent = null;
+
+            var gravityProvider = GetGravityProvider();
+            if (gravityProvider == null || !gravityProvider.IsPositionInNaturalGravity(camPos))
+                return false;
+
+            gravityProvider.GetStrongestNaturalGravityWell(camPos, out gravityComponent);
+            return gravityComponent != null;
+        }
+
+        bool TryGetPlanetSurfaceColor(long planetId, Dictionary<long, MyPlanet> planets, Vector3D camPos, out Color color)
+        {
+            color = ForegroundColor;
+
+            MyPlanet planet;
+            if (planets == null || !planets.TryGetValue(planetId, out planet) || planet == null || planet.MarkedForClose)
+                return false;
+
+            var texture = ResolvePlanetTexture(planet);
+            color = SamplePlanetSurfaceColor(texture, planet, camPos);
+            return true;
+        }
+
+        PlanetHelper.PlanetTextureStyle ResolvePlanetTexture(MyPlanet planet)
+        {
+            string name;
+            if (!PlanetHelper.PlanetNamesById.TryGetValue(planet.EntityId, out name))
+                name = planet.Name;
+
+            string generatorName;
+            PlanetHelper.PlanetGeneratorNamesById.TryGetValue(planet.EntityId, out generatorName);
+            var textureKey = string.IsNullOrWhiteSpace(generatorName) ? name : generatorName;
+            return PlanetHelper.ResolvePlanetTexture(textureKey);
+        }
+
+        static Color SamplePlanetSurfaceColor(PlanetHelper.PlanetTextureStyle texture, MyPlanet planet, Vector3D camPos)
+        {
+            Vector3D surfaceNormal = camPos - planet.WorldMatrix.Translation;
+            if (surfaceNormal.Normalize() <= 1e-6)
+                return texture.BaseColor;
+
+            Vector3D planetUp = planet.WorldMatrix.Up;
+            if (planetUp.Normalize() <= 1e-6)
+                return texture.BaseColor;
+
+            // Treat the camera's center-to-surface direction as a latitude sample on
+            // the same vertical axis used by the planet texture. 0 radians means the
+            // equator, PI/2 radians means either pole. The threshold centers mirror
+            // DrawEquator()/DrawPolarCaps(), but surface mode blends across a small
+            // angular window so the terrain color does not snap at band boundaries.
+            float verticalDot = MathHelper.Clamp((float)Vector3D.Dot(surfaceNormal, planetUp), -1f, 1f);
+            float verticalAngle = Math.Abs((float)Math.Asin(verticalDot));
+            float transitionAngle = MathHelper.ToRadians(SURFACE_GROUND_COLOR_TRANSITION_DEG);
+
+            float equatorBandAngle = (float)Math.Asin(MathHelper.Clamp(EQUATOR_BAND_RATIO, 0f, 1f));
+            float polarCapStart = MathHelper.Clamp(1f - POLAR_CAP_RATIO * 2f, 0f, 1f);
+            float polarCapStartAngle = (float)Math.Asin(polarCapStart);
+
+            Color color = texture.BaseColor;
+
+            if (texture.EquatorColor.HasValue)
+            {
+                // Full equator color through the equator band, then fade back to the
+                // regular/base color during the next ~5 degrees of latitude.
+                float equatorWeight = 1f - Easing.EaseInRange(
+                    equatorBandAngle,
+                    equatorBandAngle + transitionAngle,
+                    verticalAngle);
+                color = BlendColor(color, texture.EquatorColor.Value, equatorWeight);
+            }
+
+            if (texture.PolarCapColor.HasValue)
+            {
+                // Fade from regular/base color into polar color over the ~5 degrees
+                // before the cap starts, then stay fully polar toward the pole.
+                float polarWeight = Easing.EaseInRange(
+                    polarCapStartAngle - transitionAngle,
+                    polarCapStartAngle,
+                    verticalAngle);
+                color = BlendColor(color, texture.PolarCapColor.Value, polarWeight);
+            }
+
+            return color;
+        }
+
+        static Color BlendColor(Color from, Color to, float amount)
+        {
+            amount = Easing.Clamp01(amount);
+            if (amount <= 0f)
+                return from;
+            if (amount >= 1f)
+                return to;
+
+            return new Color(
+                (int)Math.Round(from.R + (to.R - from.R) * amount),
+                (int)Math.Round(from.G + (to.G - from.G) * amount),
+                (int)Math.Round(from.B + (to.B - from.B) * amount),
+                (int)Math.Round(from.A + (to.A - from.A) * amount));
+        }
+
+
+        bool TryDrawEasedGravityPlanetGroundCircle(
+            List<MySprite> sprites,
+            MatrixD world,
+            Vector3D camPos,
+            double halfFovX,
+            long gravityPlanetId,
+            float naturalGravityMultiplier,
+            Dictionary<long, MyPlanet> planets,
+            Vector2 horizonLineCenter,
+            Vector2 downDirection,
+            float rectangleTransition,
+            Color color)
+        {
+            Vector2 accurateCenter;
+            float accurateRadius;
+            double distanceMeters;
+            double radiusMeters;
+            if (!TryGetProjectedGravityPlanetGroundCircle(
+                    world,
+                    camPos,
+                    halfFovX,
+                    gravityPlanetId,
+                    planets,
+                    out accurateCenter,
+                    out accurateRadius,
+                    out distanceMeters,
+                    out radiusMeters))
+            {
+                return false;
+            }
+
+            if (accurateRadius <= 0f ||
+                float.IsNaN(accurateCenter.X) ||
+                float.IsNaN(accurateCenter.Y) ||
+                float.IsNaN(accurateRadius))
+            {
+                return false;
+            }
+
+            // Drive the geometry with its own 50% -> 90% normalized-gravity transition:
+            // at the start the terrain circle still matches the projected planet disk, and
+            // by the end it has settled into the surface/horizon-clamped placement. The
+            // terrain is background art, so opacity stays at 100%; only geometry eases.
+            float surfaceGravityRatio = GetSurfaceGravityRatio(
+                gravityPlanetId,
+                planets,
+                naturalGravityMultiplier);
+            float surfaceGeometryTransition = GetSurfaceGroundGeometryTransition(surfaceGravityRatio);
+
+            float scaleBoost = Easing.EaseInInterpolate(
+                1f,
+                SURFACE_GROUND_MAX_SCALE_BOOST,
+                SURFACE_GROUND_SCALE_BOOST_START_RATIO,
+                1f,
+                surfaceGravityRatio);
+            float radius = accurateRadius * scaleBoost;
+            Vector2 boostedCenter = MoveCircleCenterAwayFromHorizonForRadiusBoost(
+                accurateCenter,
+                accurateRadius,
+                radius,
+                downDirection);
+
+            Vector2 clampedCenter = ClampCircleCenterToHorizon(
+                boostedCenter,
+                radius,
+                horizonLineCenter,
+                downDirection);
+            clampedCenter = CloseCircleGapToHorizon(
+                clampedCenter,
+                radius,
+                horizonLineCenter,
+                downDirection,
+                rectangleTransition);
+            Vector2 center = Easing.EaseInInterpolate(boostedCenter, clampedCenter, surfaceGeometryTransition);
+
+            if (!DoesCircleOverlapTextureSurface(center, radius))
+                return false;
+
+            DrawClippedCircle(sprites, center, radius * 2f, color);
+            return true;
+        }
+
+        float GetSurfaceGravityRatio(
+            long gravityPlanetId,
+            Dictionary<long, MyPlanet> planets,
+            float naturalGravityMultiplier)
+        {
+            if (gravityPlanetId == 0 || planets == null || naturalGravityMultiplier <= 0f)
+                return 0f;
+
+            MyPlanet planet;
+            if (!planets.TryGetValue(gravityPlanetId, out planet) || planet == null || planet.MarkedForClose)
+                return 0f;
+
+            double surfaceGravity = planet.Generator?.SurfaceGravity ?? 0d;
+            if (surfaceGravity <= 1e-6d)
+                return 0f;
+
+            return MathHelper.Clamp((float)(naturalGravityMultiplier / surfaceGravity), 0f, 1f);
+        }
+
+        static float GetSurfaceGroundSpacePlanetFade(float surfaceGravityRatio)
+        {
+            return Easing.EaseInRange(
+                SURFACE_GROUND_SPACE_PLANET_FADE_START_RATIO,
+                SURFACE_GROUND_SPACE_PLANET_FADE_END_RATIO,
+                surfaceGravityRatio);
+        }
+
+        static float GetSurfaceGroundGeometryTransition(float surfaceGravityRatio)
+        {
+            return Easing.EaseInRange(
+                SURFACE_GROUND_GEOMETRY_TRANSITION_START_RATIO,
+                SURFACE_GROUND_GEOMETRY_TRANSITION_END_RATIO,
+                surfaceGravityRatio);
+        }
+
+        static float GetSurfaceGroundRectangleTransition(float surfaceGravityRatio)
+        {
+            return Easing.EaseInRange(
+                SURFACE_GROUND_RECTANGLE_TRANSITION_START_RATIO,
+                SURFACE_GROUND_RECTANGLE_TRANSITION_END_RATIO,
+                surfaceGravityRatio);
+        }
+
+        static Vector2 MoveCircleCenterAwayFromHorizonForRadiusBoost(
+            Vector2 center,
+            float originalRadius,
+            float boostedRadius,
+            Vector2 downDirection)
+        {
+            if (originalRadius <= 0f ||
+                boostedRadius <= originalRadius ||
+                float.IsNaN(center.X) ||
+                float.IsNaN(center.Y) ||
+                float.IsNaN(originalRadius) ||
+                float.IsNaN(boostedRadius) ||
+                float.IsNaN(downDirection.X) ||
+                float.IsNaN(downDirection.Y))
+            {
+                return center;
+            }
+
+            float downLengthSq = downDirection.LengthSquared();
+            if (downLengthSq <= 1e-8f)
+                return center;
+
+            if (Math.Abs(downLengthSq - 1f) > 0.001f)
+                downDirection /= (float)Math.Sqrt(downLengthSq);
+
+            // Scaling the circle would otherwise move the sky-facing edge toward the
+            // horizon. Move the center away by the exact radius delta so only the far
+            // side expands, visually flattening the surface instead of lifting it.
+            return center + downDirection * (boostedRadius - originalRadius);
+        }
+
+        static Vector2 CloseCircleGapToHorizon(
+            Vector2 center,
+            float radius,
+            Vector2 horizonLineCenter,
+            Vector2 downDirection,
+            float amount)
+        {
+            amount = Easing.Clamp01(amount);
+            if (amount <= 0f ||
+                radius <= 0f ||
+                float.IsNaN(center.X) ||
+                float.IsNaN(center.Y) ||
+                float.IsNaN(radius) ||
+                float.IsNaN(horizonLineCenter.X) ||
+                float.IsNaN(horizonLineCenter.Y) ||
+                float.IsNaN(downDirection.X) ||
+                float.IsNaN(downDirection.Y))
+            {
+                return center;
+            }
+
+            float downLengthSq = downDirection.LengthSquared();
+            if (downLengthSq <= 1e-8f)
+                return center;
+
+            if (Math.Abs(downLengthSq - 1f) > 0.001f)
+                downDirection /= (float)Math.Sqrt(downLengthSq);
+
+            // If the circle's sky-facing edge is below the horizon, there is a visible
+            // gap before rectangle mode takes over. Close that gap gradually over the
+            // 90% -> 100% surface-gravity transition so the final rectangle swap is seamless.
+            float signedDistance = Vector2.Dot(center - horizonLineCenter, downDirection);
+            float gapToHorizon = signedDistance - radius;
+            if (gapToHorizon <= 0f)
+                return center;
+
+            return center - downDirection * (gapToHorizon * amount);
+        }
+
+        static Vector2 ClampCircleCenterToHorizon(
+            Vector2 center,
+            float radius,
+            Vector2 horizonLineCenter,
+            Vector2 downDirection)
+        {
+            if (radius <= 0f ||
+                float.IsNaN(center.X) ||
+                float.IsNaN(center.Y) ||
+                float.IsNaN(radius) ||
+                float.IsNaN(horizonLineCenter.X) ||
+                float.IsNaN(horizonLineCenter.Y) ||
+                float.IsNaN(downDirection.X) ||
+                float.IsNaN(downDirection.Y))
+            {
+                return center;
+            }
+
+            float downLengthSq = downDirection.LengthSquared();
+            if (downLengthSq <= 1e-8f)
+                return center;
+
+            if (Math.Abs(downLengthSq - 1f) > 0.001f)
+                downDirection /= (float)Math.Sqrt(downLengthSq);
+
+            // Positive signed distance means the center is on the ground side of the
+            // horizon. If the nearest circle edge is above the horizon, shift the
+            // center along the down direction just enough that the edge sits on it.
+            float signedDistance = Vector2.Dot(center - horizonLineCenter, downDirection);
+            float neededDistance = radius;
+            if (signedDistance >= neededDistance)
+                return center;
+
+            return center + downDirection * (neededDistance - signedDistance);
+        }
+
+        bool TryDrawProjectedGravityPlanetGroundCircle(
+            List<MySprite> sprites,
+            MatrixD world,
+            Vector3D camPos,
+            double halfFovX,
+            long gravityPlanetId,
+            Dictionary<long, MyPlanet> planets,
+            Color color)
+        {
+            Vector2 center;
+            float radius;
+            double distanceMeters;
+            double radiusMeters;
+            if (!TryGetProjectedGravityPlanetGroundCircle(
+                    world,
+                    camPos,
+                    halfFovX,
+                    gravityPlanetId,
+                    planets,
+                    out center,
+                    out radius,
+                    out distanceMeters,
+                    out radiusMeters))
+            {
+                return false;
+            }
+
+            if (radius <= 0f ||
+                float.IsNaN(center.X) ||
+                float.IsNaN(center.Y) ||
+                float.IsNaN(radius) ||
+                !DoesCircleOverlapTextureSurface(center, radius))
+            {
+                return false;
+            }
+
+            DrawClippedCircle(sprites, center, radius * 2f, color);
+            return true;
+        }
+
+        bool DoesCircleOverlapTextureSurface(Vector2 center, float radius)
+        {
+            if (radius <= 0f || float.IsNaN(center.X) || float.IsNaN(center.Y) || float.IsNaN(radius))
+                return false;
+
+            RectangleF bounds = GetTextureBounds();
+            return center.X + radius >= bounds.X &&
+                   center.X - radius <= bounds.Right &&
+                   center.Y + radius >= bounds.Y &&
+                   center.Y - radius <= bounds.Bottom;
+        }
+
+        bool TryGetProjectedGravityPlanetGroundCircle(
+            MatrixD world,
+            Vector3D camPos,
+            double halfFovX,
+            long gravityPlanetId,
+            Dictionary<long, MyPlanet> planets,
+            out Vector2 screenCenter,
+            out float screenRadius,
+            out double distanceMeters,
+            out double radiusMeters)
+        {
+            screenCenter = Vector2.Zero;
+            screenRadius = 0f;
+            distanceMeters = 0d;
+            radiusMeters = 0d;
+
+            if (gravityPlanetId == 0 || planets == null || _halfFovY < 1e-6 || halfFovX <= 1e-6)
+                return false;
+
+            MyPlanet planet;
+            if (!planets.TryGetValue(gravityPlanetId, out planet) || planet == null || planet.MarkedForClose)
+                return false;
+
+            Vector3D delta = planet.WorldMatrix.Translation - camPos;
+            double distance = delta.Length();
+            radiusMeters = planet.AverageRadius > 0d ? planet.AverageRadius : planet.MaximumRadius;
+            distanceMeters = distance;
+            if (distance <= 1e-3 || radiusMeters <= 0d)
+                return false;
+
+            double depth = Vector3D.Dot(delta, world.Forward);
+            double localX = Vector3D.Dot(delta, world.Right);
+            double localY = Vector3D.Dot(delta, world.Up);
+
+            // Match the angular projection used by the dynamic planet markers, including
+            // off-screen centers. That keeps the ground disk aligned with the map FOV.
+            double azimuth = Math.Atan2(localX, depth);
+            double elevation = Math.Atan2(localY, depth);
+            double angularRadius = Math.Asin(Math.Min(1d, radiusMeters / distance));
+
+            screenCenter = new Vector2(
+                ViewBox.Center.X + (float)(azimuth / halfFovX * (ViewBox.Width * 0.5f)),
+                ViewBox.Center.Y - (float)(elevation / _halfFovY * (ViewBox.Height * 0.5f)));
+            screenRadius = (float)(angularRadius / _halfFovY * (ViewBox.Height * 0.5f));
+
+            return screenRadius > 0f;
+        }
+
+        static class Easing
+        {
+            public static float Clamp01(float value)
+            {
+                return MathHelper.Clamp(value, 0f, 1f);
+            }
+
+            public static float Normalize(float edge0, float edge1, float value)
+            {
+                if (Math.Abs(edge1 - edge0) <= 1e-6f)
+                    return value >= edge1 ? 1f : 0f;
+
+                return Clamp01((value - edge0) / (edge1 - edge0));
+            }
+
+            public static float EaseIn(float amount)
+            {
+                amount = Clamp01(amount);
+                return amount * amount;
+            }
+
+            public static float EaseInRange(float edge0, float edge1, float value)
+            {
+                return EaseIn(Normalize(edge0, edge1, value));
+            }
+
+            public static float EaseInInterpolate(float from, float to, float amount)
+            {
+                amount = EaseIn(amount);
+                return from + (to - from) * amount;
+            }
+
+            public static float EaseInInterpolate(float from, float to, float edge0, float edge1, float value)
+            {
+                return EaseInInterpolate(from, to, Normalize(edge0, edge1, value));
+            }
+
+            public static Vector2 EaseInInterpolate(Vector2 from, Vector2 to, float amount)
+            {
+                amount = EaseIn(amount);
+                return from + (to - from) * amount;
+            }
+        }
+
+        void DrawClippedCircle(List<MySprite> sprites, Vector2 center, float diameter, Color color)
+        {
+            if (color.A == 0 || diameter <= 0f || float.IsNaN(center.X) || float.IsNaN(center.Y) || float.IsNaN(diameter))
+                return;
+
+            sprites.Add(MySprite.CreateClipRect(GetTextureClipRect()));
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE,
+                Data = "Circle",
+                Position = center,
+                Size = new Vector2(diameter, diameter),
+                Color = color,
+                Alignment = TextAlignment.CENTER
+            });
+            RestoreTextureClip(sprites);
+        }
+
+        void DrawGroundHalfPlaneFill(
+            List<MySprite> sprites,
+            Func<Vector2, float> score,
+            Color color,
+            bool overlayBackground = false)
+        {
+            RectangleF bounds = GetTextureBounds();
+            if (color.A == 0 || score == null || bounds.Width <= 0f || bounds.Height <= 0f)
+                return;
+
+            float left = bounds.X;
+            float right = bounds.Right;
+            float top = bounds.Y;
+            float bottom = bounds.Bottom;
+            float width = bounds.Width;
+
+            // Draw the terrain as small, already-in-viewport rectangles instead of one
+            // oversized rotated sprite behind an SE clip rect. This avoids the LCD renderer
+            // dropping one side of the background/terrain when a clipped sprite has extreme
+            // coordinates or dimensions.
+            float rowHeight = Math.Max(2f, 3f * Scale);
+
+            for (float y = top; y < bottom; y += rowHeight)
+            {
+                float h = Math.Min(rowHeight, bottom - y);
+                if (h <= 0f)
+                    continue;
+
+                float sampleY = y + h * 0.5f;
+                var pLeft = new Vector2(left, sampleY);
+                var pRight = new Vector2(right, sampleY);
+                float sLeft = score(pLeft);
+                float sRight = score(pRight);
+                bool leftDown = sLeft > 0f;
+                bool rightDown = sRight > 0f;
+
+                float fillLeft;
+                float fillRight;
+
+                if (leftDown && rightDown)
+                {
+                    fillLeft = left;
+                    fillRight = right;
+                }
+                else if (!leftDown && !rightDown)
+                {
+                    continue;
+                }
+                else
+                {
+                    float denom = sRight - sLeft;
+                    if (Math.Abs(denom) <= 1e-6f)
+                        continue;
+
+                    float t = MathHelper.Clamp(-sLeft / denom, 0f, 1f);
+                    float xCross = left + t * width;
+
+                    if (leftDown)
+                    {
+                        fillLeft = left;
+                        fillRight = xCross;
+                    }
+                    else
+                    {
+                        fillLeft = xCross;
+                        fillRight = right;
+                    }
+                }
+
+                float w = fillRight - fillLeft;
+                if (w <= 0.5f)
+                    continue;
+
+                sprites.Add(new MySprite
+                {
+                    Type = SpriteType.TEXTURE,
+                    Data = "SquareSimple",
+                    Position = new Vector2(fillLeft + w * 0.5f, y + h * 0.5f),
+                    Size = new Vector2(w, h),
+                    Color = color,
+                    Alignment = TextAlignment.CENTER
+                });
+
+                if (!overlayBackground)
+                    continue;
+
+                var clip = new Rectangle(
+                    (int)Math.Floor(fillLeft),
+                    (int)Math.Floor(y),
+                    Math.Max(1, (int)Math.Ceiling(w)),
+                    Math.Max(1, (int)Math.Ceiling(h)));
+                sprites.Add(MySprite.CreateClipRect(clip));
+                AddBackground(sprites);
+                RestoreTextureClip(sprites);
+            }
+        }
+
+        void DrawClippedRectangle(
+            List<MySprite> sprites,
+            Vector2 center,
+            Vector2 size,
+            string texture,
+            Color color,
+            float rotation)
+        {
+            if (color.A == 0 || size.X <= 0f || size.Y <= 0f)
+                return;
+
+            sprites.Add(MySprite.CreateClipRect(GetTextureClipRect()));
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE,
+                Data = texture,
+                Position = center,
+                Size = size,
+                Color = color,
+                Alignment = TextAlignment.CENTER,
+                RotationOrScale = rotation
+            });
+            RestoreTextureClip(sprites);
+        }
+
+        Rectangle GetTextureClipRect()
+        {
+            RectangleF bounds = GetTextureBounds();
+            return new Rectangle(
+                (int)Math.Floor(bounds.X),
+                (int)Math.Floor(bounds.Y),
+                Math.Max(1, (int)Math.Ceiling(bounds.Width)),
+                Math.Max(1, (int)Math.Ceiling(bounds.Height)));
+        }
+
+        RectangleF GetTextureBounds()
+        {
+            Vector2 textureSize = Surface != null ? Surface.TextureSize : Vector2.Zero;
+            return new RectangleF(
+                0f,
+                0f,
+                Math.Max(1f, textureSize.X),
+                Math.Max(1f, textureSize.Y));
+        }
+
+        void RestoreTextureClip(List<MySprite> sprites)
+        {
+            sprites.Add(MySprite.CreateClearClipRect());
+        }
+
         bool DrawStaticOrbitMap(
             List<MySprite> ringSprites,
-            List<MySprite> planetSprites,
             Dictionary<long, MyPlanet> planets)
         {
             if (planets == null || planets.Count == 0)
@@ -841,6 +2286,7 @@ namespace LcdMod.Client.Apps
             }
 
             _dynamicMapCacheValid = false;
+            _cachedDynamicRingSprites.Clear();
             _cachedOverlaySprites.Clear();
             _cachedStaticRingSprites.Clear();
             _cachedStaticRingSprites.AddRange(ringSprites);
@@ -881,16 +2327,15 @@ namespace LcdMod.Client.Apps
             });
         }
 
-        float GetGravityVisibility(Vector3D camPos)
+        float GetNaturalGravityMultiplier(Vector3D camPos)
         {
             var gravityProvider = GetGravityProvider();
             if (gravityProvider == null)
-                return 1f;
+                return 0f;
 
             float naturalGravityMultiplier;
             gravityProvider.CalculateNaturalGravityInPoint(camPos, out naturalGravityMultiplier);
-            float t = MathHelper.Clamp(naturalGravityMultiplier / GRAVITY_FADE_MAX_MULTIPLIER, 0f, 1f);
-            return 1f - t;
+            return Math.Max(0f, naturalGravityMultiplier);
         }
 
         long GetCurrentGravityPlanetId(Vector3D camPos, Dictionary<long, MyPlanet> planets)
@@ -1252,6 +2697,13 @@ namespace LcdMod.Client.Apps
 
         void RegisterSelectedInfoPanelBounds(long planetId, RectangleF rect, bool hasBounds)
         {
+            if (!UsesCursorDynamicInfoTarget())
+            {
+                _selectedInfoBoundsThisFrame.Clear();
+                _selectedInfoKeepAliveBounds.Clear();
+                return;
+            }
+
             if (!hasBounds || planetId != _selectedInfoPlanetId)
                 return;
 
@@ -1405,7 +2857,10 @@ namespace LcdMod.Client.Apps
                 getCursor: () =>
                 {
                     refresh();
-                    return GridLogic.GetJumpDrives().Count == 0 ?  CursorType.Arrow : _busy ? CursorType.WaitCursor : CursorType.Hand;
+                    var jumpDrives = GridLogic != null ? GridLogic.GetJumpDrives() : null;
+                    return jumpDrives == null || jumpDrives.Count == 0
+                        ? CursorType.Arrow
+                        : _busy ? CursorType.WaitCursor : CursorType.Hand;
                 },
                 getClickSound: () => AudioHelper.HudGps3);
         }
@@ -1561,6 +3016,7 @@ namespace LcdMod.Client.Apps
             entry.CustomRender = delegate(InteractiveEntry renderEntry, InteractiveRenderContext context, List<MySprite> targetSprites)
             {
                 DrawPlanetVisual(targetSprites, planet, renderEntry, context);
+                RestoreTextureClip(targetSprites);
             };
             InteractiveList.Add(entry);
         }
@@ -1615,11 +3071,12 @@ namespace LcdMod.Client.Apps
             int targetRight = targetX + targetW;
             int targetBottom = targetY + targetH;
 
+            RectangleF textureBounds = GetTextureBounds();
             var viewBounds = new Rectangle(
-                (int)ViewBox.X,
-                (int)ViewBox.Y,
-                Math.Max(1, (int)ViewBox.Width),
-                Math.Max(1, (int)ViewBox.Height));
+                (int)Math.Floor(textureBounds.X),
+                (int)Math.Floor(textureBounds.Y),
+                Math.Max(1, (int)Math.Ceiling(textureBounds.Width)),
+                Math.Max(1, (int)Math.Ceiling(textureBounds.Height)));
 
             int clipX = Math.Max(viewBounds.X, targetX);
             int clipY = Math.Max(viewBounds.Y, targetY);
@@ -1633,6 +3090,7 @@ namespace LcdMod.Client.Apps
             int shadowRight = splitX;
             int rightLeft = splitX;
             int rightRight = clipRight;
+            bool hasLocalClip = false;
 
             if (rightRight > rightLeft)
             {
@@ -1640,6 +3098,7 @@ namespace LcdMod.Client.Apps
                 {
                     var rightClip = new Rectangle(rightLeft, clipY, rightRight - rightLeft, clipBottom - clipY);
                     sprites.Add(MySprite.CreateClipRect(rightClip));
+                    hasLocalClip = true;
 
                     // this is technically a "color correction" sprite,
                     // since when the alpha is != 0 the left side will have a shadow bellow the base pass,
@@ -1665,9 +3124,6 @@ namespace LcdMod.Client.Apps
                     Color = baseColor,
                     Alignment = TextAlignment.CENTER
                 });
-
-                if (baseColor.A != 255)
-                    sprites.Add(MySprite.CreateClearClipRect());
             }
 
 
@@ -1675,6 +3131,7 @@ namespace LcdMod.Client.Apps
             {
                 var leftClip = new Rectangle(shadowLeft, clipY, shadowRight - shadowLeft, clipBottom - clipY);
                 sprites.Add(MySprite.CreateClipRect(leftClip));
+                hasLocalClip = true;
 
                 sprites.Add(new MySprite
                 {
@@ -1695,24 +3152,25 @@ namespace LcdMod.Client.Apps
                     Color = baseColor,
                     Alignment = TextAlignment.CENTER
                 });
-                sprites.Add(MySprite.CreateClearClipRect());
             }
 
             int litLeft = clipX;
             int litRight = clipRight;
             if (texture.PolarCapColor.HasValue)
-                DrawPolarCaps(sprites, center, radius,
+                hasLocalClip |= DrawPolarCaps(sprites, center, radius,
                     litLeft, litRight,
                     ApplyAlpha(texture.PolarCapColor.Value, planet.Visibility));
             if (texture.EquatorColor.HasValue)
-                DrawEquator(sprites, center, radius,
+                hasLocalClip |= DrawEquator(sprites, center, radius,
                     litLeft, litRight,
                     ApplyAlpha(texture.EquatorColor.Value, planet.Visibility));
+            if (hasLocalClip)
+                RestoreTextureClip(sprites);
         }
 
         CursorType? GetCursor() => _busy ? CursorType.AppStarting : CursorType.Default;
 
-        void DrawPolarCaps(List<MySprite> sprites, Vector2 center, float radius, int litLeft, int litRight,
+        bool DrawPolarCaps(List<MySprite> sprites, Vector2 center, float radius, int litLeft, int litRight,
             Color capColor)
         {
             float diameter = radius * 2f;
@@ -1721,7 +3179,9 @@ namespace LcdMod.Client.Apps
             float planetTop = center.Y - radius;
             float planetBottom = center.Y + radius;
             if (litRight <= litLeft)
-                return;
+                return false;
+
+            bool hasLocalClip = false;
 
             int topY = Math.Max((int)ViewBox.Y, (int)Math.Floor(planetTop));
             int topBottom = Math.Min((int)ViewBox.Bottom, (int)Math.Ceiling(planetTop + capHeight));
@@ -1729,6 +3189,7 @@ namespace LcdMod.Client.Apps
             {
                 var topClip = new Rectangle(litLeft, topY, litRight - litLeft, topBottom - topY);
                 sprites.Add(MySprite.CreateClipRect(topClip));
+                hasLocalClip = true;
                 sprites.Add(new MySprite
                 {
                     Type = SpriteType.TEXTURE,
@@ -1738,7 +3199,6 @@ namespace LcdMod.Client.Apps
                     Color = capColor,
                     Alignment = TextAlignment.CENTER
                 });
-                sprites.Add(MySprite.CreateClearClipRect());
             }
 
             int bottomY = Math.Max((int)ViewBox.Y, (int)Math.Floor(planetBottom - capHeight));
@@ -1747,6 +3207,7 @@ namespace LcdMod.Client.Apps
             {
                 var bottomClip = new Rectangle(litLeft, bottomY, litRight - litLeft, bottomBottom - bottomY);
                 sprites.Add(MySprite.CreateClipRect(bottomClip));
+                hasLocalClip = true;
                 sprites.Add(new MySprite
                 {
                     Type = SpriteType.TEXTURE,
@@ -1756,23 +3217,24 @@ namespace LcdMod.Client.Apps
                     Color = capColor,
                     Alignment = TextAlignment.CENTER
                 });
-                sprites.Add(MySprite.CreateClearClipRect());
             }
+
+            return hasLocalClip;
         }
 
-        void DrawEquator(List<MySprite> sprites, Vector2 center, float radius, int litLeft, int litRight,
+        bool DrawEquator(List<MySprite> sprites, Vector2 center, float radius, int litLeft, int litRight,
             Color equatorColor)
         {
             float diameter = radius * 2f;
             float equatorHeight = diameter * EQUATOR_BAND_RATIO;
             float halfEquator = equatorHeight * 0.5f;
             if (litRight <= litLeft)
-                return;
+                return false;
 
             int bandTop = Math.Max((int)ViewBox.Y, (int)Math.Floor(center.Y - halfEquator));
             int bandBottom = Math.Min((int)ViewBox.Bottom, (int)Math.Ceiling(center.Y + halfEquator));
             if (bandBottom <= bandTop)
-                return;
+                return false;
 
             var bandClip = new Rectangle(litLeft, bandTop, litRight - litLeft, bandBottom - bandTop);
             sprites.Add(MySprite.CreateClipRect(bandClip));
@@ -1785,7 +3247,7 @@ namespace LcdMod.Client.Apps
                 Color = equatorColor,
                 Alignment = TextAlignment.CENTER
             });
-            sprites.Add(MySprite.CreateClearClipRect());
+            return true;
         }
 
         protected override void OnLookAt(Vector2 onScreenCoordinates)
@@ -1794,9 +3256,11 @@ namespace LcdMod.Client.Apps
             base.OnLookAt(onScreenCoordinates);
         }
 
-        protected override void OnMouseScroll(int delta)
+        protected override void OnMouseScroll(int delta, ref bool handled)
         {
-            if (AppConfig == null || delta == 0)
+            base.OnMouseScroll(delta, ref handled);
+            
+            if (AppConfig == null || delta == 0 || handled)
                 return;
 
             float magnification = SliderFov.FovToMagnification(AppConfig.FoV);
@@ -1808,6 +3272,7 @@ namespace LcdMod.Client.Apps
                 return;
 
             AppConfig.FoV = nextFov;
+            _lastFovChangedFrame = GetCurrentGameFrame();
             _lastKnownConfigFov = float.NaN;
             _syncConfigNextRun = true;
         }

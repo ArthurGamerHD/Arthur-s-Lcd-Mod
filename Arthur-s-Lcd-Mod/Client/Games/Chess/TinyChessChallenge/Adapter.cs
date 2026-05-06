@@ -356,19 +356,6 @@ namespace LcdMod.Client.Games.Chess
             replayBoard[targetIndex] = cellToMove;
         }
 
-        void UpdateReplayCastlingRights(ref Castling castling, Point origin)
-        {
-            if (origin.Y != 0 && origin.Y != _boardSide - 1)
-                return;
-
-            if (origin.X == 0)
-                castling &= origin.Y == 0 ? ~Castling.BlackRookRight : ~Castling.WhiteRookLeft;
-            else if (origin.X == _boardSide - 1)
-                castling &= origin.Y == 0 ? ~Castling.BlackRookLeft : ~Castling.WhiteRookRight;
-            else if (origin.X == 4)
-                castling &= origin.Y == 0 ? ~Castling.BlackKing : ~Castling.WhiteKing;
-        }
-
         ulong HashChallengePosition(byte[] board, bool whiteToMove, Castling castling, int enPassantSquareIndex)
         {
             unchecked

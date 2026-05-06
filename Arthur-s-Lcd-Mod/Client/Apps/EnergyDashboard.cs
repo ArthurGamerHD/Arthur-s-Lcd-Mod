@@ -83,9 +83,8 @@ namespace LcdMod.Client.Apps
         // Main loop
         // -----------------------------------------------------------------------
 
-        public override void Run()
+        public override void SafeRun()
         {
-            base.Run();
             if (AppConfig == null) return;
 
             Scale = GetAutoScaleUniform();

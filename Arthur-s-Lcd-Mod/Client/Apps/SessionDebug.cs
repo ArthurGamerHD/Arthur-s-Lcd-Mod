@@ -75,6 +75,10 @@ namespace LcdMod.Client.Apps
             return _sprites;
         }
 
+        public override void SafeRun()
+        {
+        }
+
         RectangleF GetViewBox()
         {
             var sizeOffset = (Surface.TextureSize - Surface.SurfaceSize) / 2f;

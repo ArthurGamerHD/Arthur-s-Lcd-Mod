@@ -115,9 +115,8 @@ namespace LcdMod.Client.Apps
             _customTitle = LocHelper.GetLoc("BroadcastStatus_IsPreviewGrid");
         }
 
-        public override void Run()
+        public override void SafeRun()
         {
-            base.Run();
             FooterHeight = 0f;
             _legendUsedKinds.Clear();
             _legendHasMissing = false;

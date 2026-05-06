@@ -19,7 +19,7 @@ using VRage.Utils;
 
 namespace LcdMod
 {
-    [MySessionComponentDescriptor(MyUpdateOrder.BeforeSimulation | MyUpdateOrder.AfterSimulation)]
+    [MySessionComponentDescriptor(MyUpdateOrder.BeforeSimulation | MyUpdateOrder.Simulation | MyUpdateOrder.AfterSimulation)]
     public partial class LcdModSessionComponent : MySessionComponentBase, IModuleManager
     {
         static LcdModSessionComponent _instance;
@@ -53,6 +53,8 @@ namespace LcdMod
             OnLanguageChanged = null;
             OnAfterSimulationUpdate = null;
         }
+
+        public override void Simulate() => Client?.Simulate();
 
         public static GridLogic GetOrCreateGridLogic(IMyCubeGrid grid)
         {

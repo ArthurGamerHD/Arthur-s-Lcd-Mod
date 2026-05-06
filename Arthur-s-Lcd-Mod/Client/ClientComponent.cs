@@ -31,6 +31,8 @@ namespace LcdMod.Client
     public sealed class LcdModClientComponent
     {
         public static readonly List<TerminalControlsWrapper> Controls = new List<TerminalControlsWrapper>();
+        public static readonly List<Action> RunNextFrame = new List<Action>();
+        static readonly List<Action> RunThisFrame = new List<Action>();
 
         readonly LcdModSessionComponent _session;
 
@@ -129,6 +131,8 @@ namespace LcdMod.Client
             LcdModSessionComponent.ClearClientEvents();
 
             ListBoxItemHelper.PerTypeCache.Clear();
+            RunNextFrame.Clear();
+            RunThisFrame.Clear();
         }
 
         public void UpdateBeforeSimulation()
@@ -153,6 +157,39 @@ namespace LcdMod.Client
             }
         }
 
+        static void RunNextFrameActions()
+        {
+            if (RunNextFrame.Count == 0)
+                return;
+
+            RunThisFrame.Clear();
+            RunThisFrame.AddRange(RunNextFrame);
+            RunNextFrame.Clear();
+
+            for (int i = 0; i < RunThisFrame.Count; i++)
+            {
+                var action = RunThisFrame[i];
+                if (action == null)
+                    continue;
+
+                try
+                {
+                    action();
+                }
+                catch (Exception e)
+                {
+                    ErrorHandlerHelper.LogError(e, nameof(RunNextFrameActions));
+                }
+            }
+
+            RunThisFrame.Clear();
+        }
+
+        public void Simulate()
+        {
+            RunNextFrameActions();
+        }
+        
         public void UpdateAfterSimulation()
         {
             try

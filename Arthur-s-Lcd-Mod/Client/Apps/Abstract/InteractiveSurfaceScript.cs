@@ -118,7 +118,8 @@ namespace LcdMod.Client.Apps.Abstract
 
         public void MouseScroll(int delta)
         {
-            OnMouseScroll(delta);
+            bool handled = false;
+            OnMouseScroll(delta, ref handled);
         }
 
         InteractiveEntry _activeTooltipParentEntry;
@@ -132,8 +133,16 @@ namespace LcdMod.Client.Apps.Abstract
         {
         }
 
-        protected virtual void OnMouseScroll(int delta)
+        protected virtual void OnMouseScroll(int delta, ref bool handled)
         {
+            if(!MyAPIGateway.Input.IsAnyShiftKeyPressed())
+                return;
+           
+            float font = Surface.FontSize;
+            float step = delta > 0 ? 1.1f : 1f / 1.1f;
+            float nextFont = font * step;
+            Surface.FontSize = (float)MathHelper.Clamp(nextFont, 0.1, 10);
+            handled = true;
         }
 
         protected bool CursorInsideTooltip => _hasTooltipBounds && _tooltipRect.Contains(CursorPosition);
@@ -161,9 +170,8 @@ namespace LcdMod.Client.Apps.Abstract
             HideAttachedTooltip();
         }
 
-        public override void Run()
+        public override void SafeRun()
         {
-            base.Run();
             if (!HasRecentVisualContact)
             {
                 CursorPosition = new Vector2(float.NaN, float.NaN);

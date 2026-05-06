@@ -166,10 +166,8 @@ namespace LcdMod.Client.Apps.Abstract
             }
         }
 
-        public override void Run()
+        public override void SafeRun()
         {
-            base.Run();
-
             if (!IsScreenReadyToRender)
                 return;
 

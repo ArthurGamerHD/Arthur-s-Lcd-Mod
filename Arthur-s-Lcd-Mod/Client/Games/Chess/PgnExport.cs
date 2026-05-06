@@ -482,37 +482,6 @@ namespace LcdMod.Client.Games.Chess
             return "-";
         }
 
-        byte[] BuildPgnInitialBoard()
-        {
-            var board = new byte[64];
-
-            board[0] = 0x02;
-            board[1] = 0x03;
-            board[2] = 0x04;
-            board[3] = 0x05;
-            board[4] = 0x06;
-            board[5] = 0x04;
-            board[6] = 0x03;
-            board[7] = 0x02;
-
-            for (int i = 8; i < 16; i++)
-                board[i] = 0x01;
-
-            board[56] = 0x12;
-            board[57] = 0x13;
-            board[58] = 0x14;
-            board[59] = 0x15;
-            board[60] = 0x16;
-            board[61] = 0x14;
-            board[62] = 0x13;
-            board[63] = 0x12;
-
-            for (int i = 48; i < 56; i++)
-                board[i] = 0x11;
-
-            return board;
-        }
-
         byte[] CopyPgnBoard(byte[] board)
         {
             var copy = new byte[board.Length];

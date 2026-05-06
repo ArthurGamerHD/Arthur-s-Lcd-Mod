@@ -69,9 +69,8 @@ namespace LcdMod.Client.Apps
             _collectors.Clear();
         }
 
-        public override void Run()
+        public override void SafeRun()
         {
-            base.Run();
             if (AppConfig == null)
                 return;
 

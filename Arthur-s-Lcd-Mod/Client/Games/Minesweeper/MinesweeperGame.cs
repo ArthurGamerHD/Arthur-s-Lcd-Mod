@@ -553,15 +553,6 @@ namespace LcdMod.Client.Games.Minesweeper
             frame.AddRange(_boardVisualCache);
         }
 
-        void RenderCells(List<MySprite> frame)
-        {
-            if (_cells == null || _gridCells == null)
-                return;
-
-            for (int i = 0; i < _cells.Length && i < _gridCells.Length; i++)
-                RenderCell(frame, i);
-        }
-
         void RenderCell(List<MySprite> frame, int index)
         {
             var cell = _cells[index];

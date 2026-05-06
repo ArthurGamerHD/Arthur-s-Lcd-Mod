@@ -31,14 +31,15 @@ namespace LcdMod.Client.Modules.EyeTracking
         bool _secondaryWasPressed;
         bool _useInputBlocked;
 
-        readonly IMyControl _moveCameraControl = MyAPIGateway.Input.GetGameControl(MyStringId.GetOrCompute("LOOKAROUND"));
+        readonly IMyControl _moveCameraControl =
+            MyAPIGateway.Input.GetGameControl(MyStringId.GetOrCompute("LOOKAROUND"));
 
         public void Hook(IEyeTracking instance)
         {
             if (instance != null)
                 _pendingModules.Add(instance);
         }
-        
+
 
         public void Unhook(IEyeTracking instance)
         {
@@ -53,11 +54,11 @@ namespace LcdMod.Client.Modules.EyeTracking
 
         public void Update()
         {
-            foreach (var module in _pendingModules) 
+            foreach (var module in _pendingModules)
                 _modules.Add(module);
 
             _pendingModules.Clear();
-            
+
             var player = MyAPIGateway.Session?.LocalHumanPlayer;
 
             var entity = player?.Controller?.ControlledEntity?.Entity as IMyShipController as MyCubeBlock;
@@ -81,7 +82,7 @@ namespace LcdMod.Client.Modules.EyeTracking
                 _lastActiveNearbyCount = 0;
                 return;
             }
-            
+
             var resolvedCount = 0;
             InteractiveEntry hoveredClickable = null;
             IEyeTracking eyeTrackingEntity = null;
@@ -126,14 +127,21 @@ namespace LcdMod.Client.Modules.EyeTracking
                     var interactiveSurface = screen as InteractiveSurfaceScript;
                     if (distanceSq < tooltipDistanceSq)
                     {
-                        bool blocksPrimary = interactiveSurface.HasTooltipInputAtCursor(false);
-                        bool blocksSecondary = interactiveSurface.HasTooltipInputAtCursor(true);
-                        if (blocksPrimary || blocksSecondary)
+                        try
                         {
-                            tooltipDistanceSq = distanceSq;
-                            tooltipInputEntity = screen;
-                            tooltipBlocksPrimary = blocksPrimary;
-                            tooltipBlocksSecondary = blocksSecondary;
+                            bool blocksPrimary = interactiveSurface.HasTooltipInputAtCursor(false);
+                            bool blocksSecondary = interactiveSurface.HasTooltipInputAtCursor(true);
+                            if (blocksPrimary || blocksSecondary)
+                            {
+                                tooltipDistanceSq = distanceSq;
+                                tooltipInputEntity = screen;
+                                tooltipBlocksPrimary = blocksPrimary;
+                                tooltipBlocksSecondary = blocksSecondary;
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            interactiveSurface.OnException(e);
                         }
                     }
 
@@ -153,8 +161,16 @@ namespace LcdMod.Client.Modules.EyeTracking
             if (tooltipInputEntity != null && tooltipDistanceSq < hoveredDistanceSq)
                 eyeTrackingEntity = tooltipInputEntity;
 
-            UpdateScrollState(lookingScreen);
-            UpdateClickState(hoveredClickable, eyeTrackingEntity, tooltipBlocksPrimary, tooltipBlocksSecondary);
+            try
+            {
+                UpdateScrollState(lookingScreen);
+                UpdateClickState(hoveredClickable, eyeTrackingEntity, tooltipBlocksPrimary, tooltipBlocksSecondary);
+            }
+            catch (Exception e)
+            {
+                (lookingScreen as InteractiveSurfaceScript)?.OnException(e);
+            }
+
             _lastActiveNearbyCount = resolvedCount;
         }
 
@@ -181,12 +197,14 @@ namespace LcdMod.Client.Modules.EyeTracking
             if ((primaryPressed && !_primaryWasPressed) || (secondaryPressed && !_secondaryWasPressed))
             {
                 _pressedClickable = hoveredClickable;
-                _pressedClickableDataContext = hoveredClickable != null ? hoveredClickable.DataContext ?? hoveredClickable : null;
+                _pressedClickableDataContext =
+                    hoveredClickable != null ? hoveredClickable.DataContext ?? hoveredClickable : null;
             }
 
             if ((!primaryPressed && _primaryWasPressed) || (!secondaryPressed && _secondaryWasPressed))
             {
-                var hoveredDataContext = hoveredClickable != null ? hoveredClickable.DataContext ?? hoveredClickable : null;
+                var hoveredDataContext =
+                    hoveredClickable != null ? hoveredClickable.DataContext ?? hoveredClickable : null;
 
                 try
                 {
@@ -254,7 +272,8 @@ namespace LcdMod.Client.Modules.EyeTracking
         }
 
         public static bool HoldingClick => MyAPIGateway.Input.IsLeftMousePressed() ||
-                                    MyAPIGateway.Input.IsJoystickButtonPressed(button: MyJoystickButtonsEnum.J06);
+                                           MyAPIGateway.Input.IsJoystickButtonPressed(
+                                               button: MyJoystickButtonsEnum.J06);
 
         public static bool HoldingRightClick => MyAPIGateway.Input.IsRightMousePressed();
 

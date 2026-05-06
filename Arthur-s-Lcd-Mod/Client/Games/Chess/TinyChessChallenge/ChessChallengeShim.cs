@@ -151,7 +151,6 @@ namespace ChessChallenge.API
             public int FiftyMoveCounter;
             public int PlyCount;
             public int MoveHistoryCount;
-            public int RepetitionHistoryCount;
             public ulong[] RepetitionHistory;
         }
 
@@ -622,7 +621,6 @@ namespace ChessChallenge.API
                 FiftyMoveCounter = _fiftyMoveCounter,
                 PlyCount = _plyCount,
                 MoveHistoryCount = _gameMoveHistory.Count,
-                RepetitionHistoryCount = _repetitionHistory.Count,
                 RepetitionHistory = _repetitionHistory.ToArray()
             };
         }
@@ -1372,40 +1370,40 @@ namespace ChessChallenge.API
             }
         }
 
-        const int NoFlag = 0;
-        const int EnPassantCaptureFlag = 1;
-        const int CastleFlag = 2;
-        const int PawnTwoUpFlag = 3;
-        const int PromoteToQueenFlag = 4;
-        const int PromoteToKnightFlag = 5;
-        const int PromoteToRookFlag = 6;
-        const int PromoteToBishopFlag = 7;
+        const int NO_FLAG = 0;
+        const int EN_PASSANT_CAPTURE_FLAG = 1;
+        const int CASTLE_FLAG = 2;
+        const int PAWN_TWO_UP_FLAG = 3;
+        const int PROMOTE_TO_QUEEN_FLAG = 4;
+        const int PROMOTE_TO_KNIGHT_FLAG = 5;
+        const int PROMOTE_TO_ROOK_FLAG = 6;
+        const int PROMOTE_TO_BISHOP_FLAG = 7;
 
         int MoveFlag
         {
             get
             {
                 if (_isEnPassant)
-                    return EnPassantCaptureFlag;
+                    return EN_PASSANT_CAPTURE_FLAG;
 
                 if (_isCastles)
-                    return CastleFlag;
+                    return CASTLE_FLAG;
 
                 if (MovePieceType == PieceType.Pawn && Math.Abs(TargetSquare.Index - StartSquare.Index) == 16)
-                    return PawnTwoUpFlag;
+                    return PAWN_TWO_UP_FLAG;
 
                 switch (PromotionPieceType)
                 {
                     case PieceType.Queen:
-                        return PromoteToQueenFlag;
+                        return PROMOTE_TO_QUEEN_FLAG;
                     case PieceType.Knight:
-                        return PromoteToKnightFlag;
+                        return PROMOTE_TO_KNIGHT_FLAG;
                     case PieceType.Rook:
-                        return PromoteToRookFlag;
+                        return PROMOTE_TO_ROOK_FLAG;
                     case PieceType.Bishop:
-                        return PromoteToBishopFlag;
+                        return PROMOTE_TO_BISHOP_FLAG;
                     default:
-                        return NoFlag;
+                        return NO_FLAG;
                 }
             }
         }

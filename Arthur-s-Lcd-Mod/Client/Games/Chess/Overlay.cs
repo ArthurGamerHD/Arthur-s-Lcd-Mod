@@ -4,7 +4,9 @@ using System.Linq;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Games.Chess.Enum;
 using LcdMod.Client.Games.Chess.TinyChessChallenge;
+using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
+using LcdMod.Client.Utility;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 
@@ -12,10 +14,10 @@ namespace LcdMod.Client.Games.Chess
 {
     public abstract class Overlay : IDisposable
     {
+        public InteractiveRectangleEntry InteractiveRectangleEntry;
+        
         public bool Disposed { get; protected set; }
         public readonly List<RectangleF> Boxes = new List<RectangleF>();
-
-        public abstract void Render(List<MySprite> frame);
 
         public virtual void RenderBox(List<MySprite> frame, int index)
         {
@@ -34,12 +36,15 @@ namespace LcdMod.Client.Games.Chess
         }
 
         public abstract void ClickBox(int index);
+
+        public virtual void Render(List<MySprite> sprites)
+        {
+        }
     }
 
     public sealed class PromotionOverlay : Overlay
     {
         readonly ChessGame _chessGame;
-        readonly List<MySprite> _sprites = new List<MySprite>();
 
         readonly Dictionary<char, byte> _promotions = new Dictionary<char, byte>()
         {
@@ -122,14 +127,11 @@ namespace LcdMod.Client.Games.Chess
             Boxes.Add(header);
         }
 
-        public override void Render(List<MySprite> frame) => frame.AddRange(_sprites);
-
         public override void LayoutChanged()
         {
             if (Disposed)
                 return;
-
-            _sprites.Clear();
+            
             Boxes.Clear();
             BakeControls();
         }
@@ -165,7 +167,6 @@ namespace LcdMod.Client.Games.Chess
                 return;
 
             Disposed = true;
-            _sprites.Clear();
             _promotions.Clear();
             base.Dispose();
         }
@@ -191,6 +192,15 @@ namespace LcdMod.Client.Games.Chess
         {
             _chessGame = chessGame;
             BakeControls();
+            
+            InteractiveRectangleEntry = new InteractiveRectangleEntry(
+                chessGame.BoardViewBox, 
+                CursorType.No, 
+                this, 
+                (o, o1) => chessGame.GameOverMessage())
+            {
+                CustomRender = (entry, context, sprites) => Render(sprites)
+            };
         }
 
         public override void ClickBox(int index)

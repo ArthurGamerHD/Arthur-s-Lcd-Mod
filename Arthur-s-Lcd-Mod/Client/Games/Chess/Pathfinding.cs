@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using LcdMod.Client.Games.Chess.Enum;
 using LcdMod.Client.Games.Chess.TinyChessChallenge;
+using LcdMod.Client.Gui;
+using LcdMod.Client.Utility;
 using VRageMath;
 
 namespace LcdMod.Client.Games.Chess
@@ -99,6 +101,7 @@ namespace LcdMod.Client.Games.Chess
             {
 
                 _overlayOverlay = new GameOverOverlay(this);
+                Interactive.Add(_overlayOverlay.InteractiveRectangleEntry);
                 GameOverMessage();
             }
         }

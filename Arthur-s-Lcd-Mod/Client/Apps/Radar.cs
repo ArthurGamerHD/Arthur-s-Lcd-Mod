@@ -121,9 +121,8 @@ namespace LcdMod.Client.Apps
         }
 
 
-        public override void Run()
+        public override void SafeRun()
         {
-            base.Run();
             if (AppConfig == null)
                 return;
 
