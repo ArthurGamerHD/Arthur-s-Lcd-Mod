@@ -644,6 +644,9 @@ namespace LcdMod.Client.Apps.Abstract
         protected override List<MySprite> RenderFrame(Func<List<MySprite>> sprites)
         {
             var spriteList = base.RenderFrame(sprites);
+            if (!RendersInteractiveEntriesInGetSprites)
+                RenderInteractiveEntryVisuals(spriteList);
+
             RenderAttachedTooltip(spriteList);
 
             _messageBox?.Render(
@@ -676,6 +679,57 @@ namespace LcdMod.Client.Apps.Abstract
 
             return spriteList;
         }
+
+        protected virtual bool RendersInteractiveEntriesInGetSprites
+        {
+            get { return false; }
+        }
+
+        protected void RenderInteractiveEntryVisuals(List<MySprite> sprites)
+        {
+            if (sprites == null || InteractiveList == null || InteractiveList.Count == 0)
+                return;
+
+            var context = new InteractiveRenderContext(
+                Surface,
+                Scale,
+                FontScale,
+                ForegroundColor,
+                ColorableConfig?.HeaderColor ?? BackgroundColor,
+                CursorPosition);
+
+            for (int i = 0; i < InteractiveList.Count; i++)
+            {
+                var entry = InteractiveList[i];
+                if (entry != null)
+                {
+                    entry.Render(context, sprites);
+#if DEBUG
+                    AddDebugInteractiveBounds(entry, sprites);
+#endif
+                }
+            }
+        }
+
+#if DEBUG
+        static void AddDebugInteractiveBounds(InteractiveEntry entry, List<MySprite> sprites)
+        {
+            var bounds = entry.Bounds;
+            if (bounds.Width <= 0f || bounds.Height <= 0f)
+                return;
+
+            var random = new Random(entry.GetHashCode());
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE,
+                Data = "SquareSimple",
+                Position = bounds.Center,
+                Size = bounds.Size,
+                Color = new Color(random.Next(256), random.Next(256), random.Next(256), 77),
+                Alignment = TextAlignment.CENTER
+            });
+        }
+#endif
 
 
         public MyEntity3DSoundEmitter SoundEmitter { get; set; }

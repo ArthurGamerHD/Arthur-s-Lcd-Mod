@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using Generated;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Config;
@@ -42,14 +43,22 @@ namespace LcdMod.Client.Apps
         readonly List<MySprite> _overlaySprites = new List<MySprite>();
         readonly List<MySprite> _sprites = new List<MySprite>();
 
-        // Static/legacy map cache. These sprites and hit targets only change when the
+        // for Static map. These sprites and hit targets only change when the
         // surface layout changes, so they are built once and reused across Run() calls.
+        // for Dynamic map. They change based on World Matrix or Cursor Movement
         bool _staticOrbitCacheValid;
         readonly List<MySprite> _cachedStaticBaseSprites = new List<MySprite>();
         readonly List<MySprite> _cachedStaticTitleSprites = new List<MySprite>();
         readonly List<MySprite> _cachedStaticRingSprites = new List<MySprite>();
-        readonly List<MySprite> _cachedStaticPlanetSprites = new List<MySprite>();
-        readonly List<InteractiveEntry> _cachedStaticInteractiveEntries = new List<InteractiveEntry>();
+        readonly List<InteractiveEntry> _cachedInteractiveEntries = new List<InteractiveEntry>();
+
+        bool _dynamicMapCacheValid;
+        MatrixD _cachedDynamicWorldMatrix;
+        RectangleF _cachedDynamicViewBox;
+        Vector2 _cachedDynamicCursorPosition;
+        bool _cachedDynamicHasRecentVisualContact;
+        int _cachedDynamicPlanetCount;
+        readonly List<MySprite> _cachedOverlaySprites = new List<MySprite>();
 
         const double JUMP_POINT_RUNS_PER_SECOND = 6d; // ScriptUpdate.Update10 at 60 FPS
         const double JUMP_POINT_DISTANCE_PER_SECOND = 1000000d; // Distance jump drive "calculates" per second
@@ -64,8 +73,11 @@ namespace LcdMod.Client.Apps
         readonly Dictionary<long, JumpPointThrottleState> _jumpPointThrottleByPlanet =
             new Dictionary<long, JumpPointThrottleState>();
         readonly Dictionary<string, string> _propertyLabelCache = new Dictionary<string, string>();
+        readonly List<RectangleF> _selectedInfoKeepAliveBounds = new List<RectangleF>();
+        readonly List<RectangleF> _selectedInfoBoundsThisFrame = new List<RectangleF>();
 
         bool _busy = true;
+        long _selectedInfoPlanetId;
 
         struct PlanetProjection
         {
@@ -146,6 +158,11 @@ namespace LcdMod.Client.Apps
 
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
 
+        protected override bool RendersInteractiveEntriesInGetSprites
+        {
+            get { return true; }
+        }
+
         public List<MyTerminalControlComboBoxItem> GetDisplayModes()
         {
             return StarMapDisplayModes;
@@ -158,6 +175,7 @@ namespace LcdMod.Client.Apps
             _halfFovY = MathHelper.ToRadians(_fov) * 0.5;
             _lastKnownConfigFov = AppConfig?.FoV ?? MAP_VERTICAL_FOV_DEFAULT_DEG;
             InvalidateStaticOrbitCache();
+            InvalidateDynamicMapCache();
             RebuildPropertyLabelCache();
 
             CursorType = GetDefaultCursorType();
@@ -182,10 +200,7 @@ namespace LcdMod.Client.Apps
             _propertyLabelCache[name] = LocHelper.GetLoc(BuildPropertyLocKey(name));
         }
 
-        string BuildPropertyLocKey(string name)
-        {
-            return "LcdMod_" + name + (AppConfig != null && AppConfig.DisplayMode == 0 ? "_Short" : string.Empty);
-        }
+        string BuildPropertyLocKey(string name) => "LcdMod_" + name + (AppConfig != null && AppConfig.DisplayMode == (int)DisplayMode.Grid ? "_Short" : string.Empty);
 
         string FormatPropertyLine(string name, object value)
         {
@@ -212,8 +227,14 @@ namespace LcdMod.Client.Apps
             _cachedStaticBaseSprites.Clear();
             _cachedStaticTitleSprites.Clear();
             _cachedStaticRingSprites.Clear();
-            _cachedStaticPlanetSprites.Clear();
-            _cachedStaticInteractiveEntries.Clear();
+            _cachedInteractiveEntries.Clear();
+        }
+
+        void InvalidateDynamicMapCache()
+        {
+            _dynamicMapCacheValid = false;
+            _cachedOverlaySprites.Clear();
+            _cachedInteractiveEntries.Clear();
         }
 
         public override void Run()
@@ -280,6 +301,7 @@ namespace LcdMod.Client.Apps
             _sprites.AddRange(_baseSprites);
             _sprites.AddRange(_ringSprites);
             _sprites.AddRange(_planetSprites);
+            RenderInteractiveEntryVisuals(_sprites);
             _sprites.AddRange(_overlaySprites);
             return _sprites;
         }
@@ -334,6 +356,10 @@ namespace LcdMod.Client.Apps
                 return false;
 
             MatrixD world = Block.WorldMatrix;
+            int overlayStartIndex = overlaySprites.Count;
+            if (TryUseDynamicMapCache(overlaySprites, planets.Count, world))
+                return true;
+
             var camPos = world.Translation;
             var camRight = world.Right;
             var camUp = world.Up;
@@ -456,11 +482,55 @@ namespace LcdMod.Client.Apps
             for (int i = visiblePlanets.Count - 1; i >= 0; i--) // far -> near draw order
             {
                 var planet = visiblePlanets[i];
-                DrawPlanet(planetSprites, planet);
+                DrawPlanet(planet);
                 DrawPlanetLabels(overlaySprites, planet);
             }
 
+            CacheDynamicMap(overlaySprites, overlayStartIndex, planets.Count, world);
             return hasDetectedPlanets;
+        }
+
+        bool TryUseDynamicMapCache(
+            List<MySprite> overlaySprites,
+            int planetCount,
+            MatrixD world)
+        {
+            if (!_dynamicMapCacheValid)
+                return false;
+
+            if (_cachedDynamicPlanetCount != planetCount ||
+                !MatrixNearlyEquals(_cachedDynamicWorldMatrix, world) ||
+                !RectangleNearlyEquals(_cachedDynamicViewBox, ViewBox) ||
+                !VectorNearlyEquals(_cachedDynamicCursorPosition, CursorPosition) ||
+                _cachedDynamicHasRecentVisualContact != HasRecentVisualContact)
+            {
+                return false;
+            }
+            
+            overlaySprites.AddRange(_cachedOverlaySprites);
+            InteractiveList.AddRange(_cachedInteractiveEntries);
+            return true;
+        }
+
+        void CacheDynamicMap(
+            List<MySprite> overlaySprites,
+            int overlayStartIndex,
+            int planetCount,
+            MatrixD world)
+        {
+            _staticOrbitCacheValid = false;
+            _cachedDynamicWorldMatrix = world;
+            _cachedDynamicViewBox = ViewBox;
+            _cachedDynamicCursorPosition = CursorPosition;
+            _cachedDynamicHasRecentVisualContact = HasRecentVisualContact;
+            _cachedDynamicPlanetCount = planetCount;
+            
+            _cachedOverlaySprites.Clear();
+            for (int i = overlayStartIndex; i < overlaySprites.Count; i++)
+                _cachedOverlaySprites.Add(overlaySprites[i]);
+            _cachedInteractiveEntries.Clear();
+            _cachedInteractiveEntries.AddRange(InteractiveList);
+            _dynamicMapCacheValid = true;
         }
 
         void SelectDynamicPlanetForInfo(List<PlanetProjection> visiblePlanets)
@@ -484,12 +554,41 @@ namespace LcdMod.Client.Apps
                 break;
             }
 
+            if (selectedIndex < 0 && _selectedInfoPlanetId != 0 && IsInsideSelectedInfoKeepAliveBounds(target))
+            {
+                for (int i = 0; i < visiblePlanets.Count; i++)
+                {
+                    if (visiblePlanets[i].PlanetId == _selectedInfoPlanetId)
+                    {
+                        selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+
             if (selectedIndex < 0)
+            {
+                _selectedInfoPlanetId = 0;
+                _selectedInfoKeepAliveBounds.Clear();
                 return;
+            }
 
             var selected = visiblePlanets[selectedIndex];
             selected.ShouldDisplayInfo = true;
+            _selectedInfoPlanetId = selected.PlanetId;
+            _selectedInfoBoundsThisFrame.Clear();
             visiblePlanets[selectedIndex] = selected;
+        }
+
+        bool IsInsideSelectedInfoKeepAliveBounds(Vector2 target)
+        {
+            for (int i = 0; i < _selectedInfoKeepAliveBounds.Count; i++)
+            {
+                if (_selectedInfoKeepAliveBounds[i].Contains(target))
+                    return true;
+            }
+
+            return false;
         }
 
         Vector2 GetDynamicInfoTargetPosition()
@@ -504,6 +603,38 @@ namespace LcdMod.Client.Apps
             return ViewBox.Center;
         }
 
+        static bool MatrixNearlyEquals(MatrixD a, MatrixD b)
+        {
+            const double positionTolerance = 0.001d;
+            const double axisTolerance = 0.000001d;
+
+            return Vector3D.DistanceSquared(a.Translation, b.Translation) <= positionTolerance * positionTolerance &&
+                   Vector3D.DistanceSquared(a.Right, b.Right) <= axisTolerance * axisTolerance &&
+                   Vector3D.DistanceSquared(a.Up, b.Up) <= axisTolerance * axisTolerance &&
+                   Vector3D.DistanceSquared(a.Forward, b.Forward) <= axisTolerance * axisTolerance;
+        }
+
+        static bool RectangleNearlyEquals(RectangleF a, RectangleF b)
+        {
+            return NearlyEquals(a.X, b.X) &&
+                   NearlyEquals(a.Y, b.Y) &&
+                   NearlyEquals(a.Width, b.Width) &&
+                   NearlyEquals(a.Height, b.Height);
+        }
+
+        static bool VectorNearlyEquals(Vector2 a, Vector2 b)
+        {
+            return NearlyEquals(a.X, b.X) && NearlyEquals(a.Y, b.Y);
+        }
+
+        static bool NearlyEquals(float a, float b)
+        {
+            if (float.IsNaN(a) || float.IsNaN(b))
+                return float.IsNaN(a) && float.IsNaN(b);
+
+            return Math.Abs(a - b) <= 0.001f;
+        }
+
         bool DrawStaticOrbitMap(
             List<MySprite> ringSprites,
             List<MySprite> planetSprites,
@@ -515,8 +646,7 @@ namespace LcdMod.Client.Apps
             if (_staticOrbitCacheValid)
             {
                 ringSprites.AddRange(_cachedStaticRingSprites);
-                planetSprites.AddRange(_cachedStaticPlanetSprites);
-                InteractiveList.AddRange(_cachedStaticInteractiveEntries);
+                InteractiveList.AddRange(_cachedInteractiveEntries);
                 return true;
             }
 
@@ -706,16 +836,16 @@ namespace LcdMod.Client.Apps
             for (int i = 0; i < projectedPlanets.Count; i++)
             {
                 var planet = projectedPlanets[i];
-                DrawPlanet(planetSprites, planet);
+                DrawPlanet(planet);
                 projectedPlanets[i] = planet;
             }
 
+            _dynamicMapCacheValid = false;
+            _cachedOverlaySprites.Clear();
             _cachedStaticRingSprites.Clear();
             _cachedStaticRingSprites.AddRange(ringSprites);
-            _cachedStaticPlanetSprites.Clear();
-            _cachedStaticPlanetSprites.AddRange(planetSprites);
-            _cachedStaticInteractiveEntries.Clear();
-            _cachedStaticInteractiveEntries.AddRange(InteractiveList);
+            _cachedInteractiveEntries.Clear();
+            _cachedInteractiveEntries.AddRange(InteractiveList);
             _staticOrbitCacheValid = true;
             return true;
         }
@@ -920,7 +1050,7 @@ namespace LcdMod.Client.Apps
 
             Func<float, Vector2, float> computeAdjustedX = (yEdge, lineSize) =>
             {
-                float dy = yEdge - planet.ScreenPos.Y;
+                float dy = yEdge - sideInfoYOffset - planet.ScreenPos.Y;
                 float inside = planet.MarkerRadius * planet.MarkerRadius - dy * dy;
                 float edgeOffset = inside > 0f ? (float)Math.Sqrt(inside) : 0f;
                 float x = placeOnRight
@@ -963,7 +1093,7 @@ namespace LcdMod.Client.Apps
 
                 for (int i = 0; i < count; i++)
                 {
-                    float yEdge = MathHelper.Clamp(startYPreview + i * lineStep - lineSizes[i].Y * 0.5f,
+                    float yEdge = MathHelper.Clamp(startYPreview + i * lineStep,
                         ViewBox.Y + lineSizes[i].Y * 0.5f,
                         ViewBox.Bottom - lineSizes[i].Y * 0.5f);
                     float x = computeAdjustedX(yEdge, lineSizes[i]);
@@ -1004,12 +1134,14 @@ namespace LcdMod.Client.Apps
                     ViewBox.Bottom - requiredHeight);
 
                 var fallbackAlignment = placeOnRight ? TextAlignment.LEFT : TextAlignment.RIGHT;
+                bool hasPanelBounds = false;
+                RectangleF panelBounds = default(RectangleF);
                 for (int i = 0; i < count; i++)
                 {
                     float y = MathHelper.Clamp(startYFallback + i * lineStep - sideInfoYOffset,
                         ViewBox.Y + lineSizes[i].Y * 0.5f,
                         ViewBox.Bottom - lineSizes[i].Y * 0.5f);
-                    DrawPlanetSideInfoLine(
+                    var lineBounds = DrawPlanetSideInfoLine(
                         sprites,
                         lines[i],
                         lineTexts[i],
@@ -1017,18 +1149,23 @@ namespace LcdMod.Client.Apps
                         lineSizes[i],
                         labelColor,
                         fallbackAlignment,
-                        sideInfoScale);
+                        sideInfoScale,
+                        planet.ScreenPos.X);
+                    IncludeBounds(ref panelBounds, ref hasPanelBounds, lineBounds);
                 }
 
+                RegisterSelectedInfoPanelBounds(planet.PlanetId, panelBounds, hasPanelBounds);
                 return;
             }
 
             float startY = planet.ScreenPos.Y - ((count - 1) * lineStep * 0.5f);
             var alignment = placeOnRight ? TextAlignment.LEFT : TextAlignment.RIGHT;
+            bool hasSidePanelBounds = false;
+            RectangleF sidePanelBounds = default(RectangleF);
 
             for (int i = 0; i < count; i++)
             {
-                float yEdge = MathHelper.Clamp(startY + i * lineStep - lineSizes[i].Y * 0.5f,
+                float yEdge = MathHelper.Clamp(startY + i * lineStep,
                     ViewBox.Y + lineSizes[i].Y * 0.5f,
                     ViewBox.Bottom - lineSizes[i].Y * 0.5f);
                 float x = computeAdjustedX(yEdge, lineSizes[i]);
@@ -1037,7 +1174,7 @@ namespace LcdMod.Client.Apps
                     ViewBox.Y + lineSizes[i].Y * 0.5f,
                     ViewBox.Bottom - lineSizes[i].Y * 0.5f);
 
-                DrawPlanetSideInfoLine(
+                var lineBounds = DrawPlanetSideInfoLine(
                     sprites,
                     lines[i],
                     lineTexts[i],
@@ -1045,11 +1182,15 @@ namespace LcdMod.Client.Apps
                     lineSizes[i],
                     labelColor,
                     alignment,
-                    sideInfoScale);
+                    sideInfoScale,
+                    planet.ScreenPos.X);
+                IncludeBounds(ref sidePanelBounds, ref hasSidePanelBounds, lineBounds);
             }
+
+            RegisterSelectedInfoPanelBounds(planet.PlanetId, sidePanelBounds, hasSidePanelBounds);
         }
 
-        void DrawPlanetSideInfoLine(
+        RectangleF DrawPlanetSideInfoLine(
             List<MySprite> sprites,
             ITooltipLine line,
             string text,
@@ -1057,35 +1198,98 @@ namespace LcdMod.Client.Apps
             Vector2 size,
             Color labelColor,
             TextAlignment alignment,
-            float textScale)
+            float textScale,
+            float planetCenterX)
         {
+            var textPosition = position - new Vector2(0f, size.Y * 0.25f);
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
                 Data = text,
-                Position = position,
+                Position = textPosition,
                 Color = labelColor,
                 FontId = "White",
                 Alignment = alignment,
                 RotationOrScale = textScale
             });
 
-            if (line == null)
-                return;
+            var textRect = GetTextBounds(textPosition, size, alignment);
+            var rect = ExtendTextBoundsToPlanetCenter(textRect, planetCenterX);
 
+            if (line == null)
+                return rect;
+            
             var cursor = line.GetCursor();
             bool hasEntry = line.IsClickable || cursor.HasValue;
             if (!hasEntry)
-                return;
+                return rect;
 
-            var rect = GetTextBounds(position, size, alignment);
             var entry = new InteractiveRectangleEntry(
                 rect,
                 cursor ?? (line.IsClickable ? CursorType.Hand : CursorType.Default),
                 line.GetDataContext(),
                 line.GetOnClick());
             entry.ClickSound = line.GetClickSound();
+            entry.CustomRender = delegate(InteractiveEntry renderEntry, InteractiveRenderContext context, List<MySprite> targetSprites)
+            {
+                if (line.IsClickable)
+                    DrawTextHitboxUnderline(textRect, labelColor, targetSprites, textScale);
+            };
             InteractiveList.Add(entry);
+            return rect;
+        }
+
+        static RectangleF ExtendTextBoundsToPlanetCenter(RectangleF rect, float planetCenterX)
+        {
+            if (rect.X >= planetCenterX)
+                return new RectangleF(planetCenterX, rect.Y, rect.Right - planetCenterX, rect.Height);
+
+            if (rect.Right <= planetCenterX)
+                return new RectangleF(rect.X, rect.Y, planetCenterX - rect.X, rect.Height);
+
+            return rect;
+        }
+
+        void RegisterSelectedInfoPanelBounds(long planetId, RectangleF rect, bool hasBounds)
+        {
+            if (!hasBounds || planetId != _selectedInfoPlanetId)
+                return;
+
+            _selectedInfoBoundsThisFrame.Clear();
+            _selectedInfoBoundsThisFrame.Add(ExpandRect(rect, 6f * Scale));
+            _selectedInfoKeepAliveBounds.Clear();
+            _selectedInfoKeepAliveBounds.AddRange(_selectedInfoBoundsThisFrame);
+        }
+
+        static void IncludeBounds(ref RectangleF panelBounds, ref bool hasPanelBounds, RectangleF lineBounds)
+        {
+            if (!hasPanelBounds)
+            {
+                panelBounds = lineBounds;
+                hasPanelBounds = true;
+                return;
+            }
+
+            float left = Math.Min(panelBounds.X, lineBounds.X);
+            float top = Math.Min(panelBounds.Y, lineBounds.Y);
+            float right = Math.Max(panelBounds.Right, lineBounds.Right);
+            float bottom = Math.Max(panelBounds.Bottom, lineBounds.Bottom);
+            panelBounds = new RectangleF(left, top, right - left, bottom - top);
+        }
+
+        static void DrawTextHitboxUnderline(RectangleF rect, Color color, List<MySprite> sprites, float textScale)
+        {
+            float thickness = Math.Max(1f, 1.5f * textScale);
+            float y = rect.Bottom + thickness - 3f * textScale;
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE,
+                Data = "SquareSimple",
+                Position = new Vector2(rect.Center.X, y),
+                Size = new Vector2(rect.Width, thickness),
+                Color = color,
+                Alignment = TextAlignment.CENTER
+            });
         }
 
         static RectangleF GetTextBounds(Vector2 position, Vector2 size, TextAlignment alignment)
@@ -1108,6 +1312,15 @@ namespace LcdMod.Client.Apps
             }
 
             return new RectangleF(x, position.Y, width, height);
+        }
+
+        static RectangleF ExpandRect(RectangleF rect, float margin)
+        {
+            return new RectangleF(
+                rect.X - margin,
+                rect.Y - margin,
+                rect.Width + margin * 2f,
+                rect.Height + margin * 2f);
         }
 
         void CachePlanetInfoLines(ref PlanetProjection planet)
@@ -1192,7 +1405,7 @@ namespace LcdMod.Client.Apps
                 getCursor: () =>
                 {
                     refresh();
-                    return _busy ? CursorType.WaitCursor : jumpClickable ? CursorType.Hand : CursorType.Default;
+                    return GridLogic.GetJumpDrives().Count == 0 ?  CursorType.Arrow : _busy ? CursorType.WaitCursor : CursorType.Hand;
                 },
                 getClickSound: () => AudioHelper.HudGps3);
         }
@@ -1332,18 +1545,36 @@ namespace LcdMod.Client.Apps
             return centerSeparation <= (frontEffectiveAngularRadius - back.AngularRadius);
         }
 
-        void DrawPlanet(List<MySprite> sprites, PlanetProjection planet)
+        void DrawPlanet(PlanetProjection planet)
         {
             var center = planet.ScreenPos;
             var radius = planet.MarkerRadius;
-            var texture = planet.Texture;
             var entry = new InteractiveCircleEntry(center, radius, CursorType.Hand, planet.PlanetId);
-            entry.SetTooltip(new InteractiveTooltip(
-                () => planet.Name,
-                BuildPlanetInfoLines(planet, false),
-                () => FormatingHelper.DistanceToString((float)planet.Distance),
-                GetCursor, TooltipActivationMode.Click, TooltipActivationMode.Click));
+            if (AppConfig != null && AppConfig.DisplayMode == (int)DisplayMode.Legacy)
+            {
+                entry.SetTooltip(new InteractiveTooltip(
+                    () => planet.Name,
+                    BuildPlanetInfoLines(planet, false),
+                    () => FormatingHelper.DistanceToString((float)planet.Distance),
+                    GetCursor, TooltipActivationMode.Click, TooltipActivationMode.Click));
+            }
+            entry.CustomRender = delegate(InteractiveEntry renderEntry, InteractiveRenderContext context, List<MySprite> targetSprites)
+            {
+                DrawPlanetVisual(targetSprites, planet, renderEntry, context);
+            };
             InteractiveList.Add(entry);
+        }
+
+        void DrawPlanetVisual(
+            List<MySprite> sprites,
+            PlanetProjection planet,
+            InteractiveEntry entry,
+            InteractiveRenderContext context)
+        {
+            var circle = entry as InteractiveCircleEntry;
+            var center = circle != null ? circle.Center : planet.ScreenPos;
+            var radius = circle != null ? circle.Radius : planet.MarkerRadius;
+            var texture = planet.Texture;
 
             var baseColor = ApplyAlpha(texture.BaseColor, planet.Visibility);
             float diameter = radius * 2f;
@@ -1358,8 +1589,8 @@ namespace LcdMod.Client.Apps
                     Type = SpriteType.TEXTURE,
                     Data = "Circle",
                     Position = center,
-                    Size = new Vector2(diameter + 10 * Scale),
-                    Color = ApplyAlpha(AppConfig.HeaderColor, planet.Visibility),
+                    Size = new Vector2(diameter + 10 * context.Scale),
+                    Color = ApplyAlpha(context.PanelColor, planet.Visibility),
                     Alignment = TextAlignment.CENTER
                 });
             }

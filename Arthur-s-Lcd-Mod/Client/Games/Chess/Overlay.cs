@@ -16,6 +16,14 @@ namespace LcdMod.Client.Games.Chess
 
         public abstract void Render(List<MySprite> frame);
 
+        public virtual void RenderBox(List<MySprite> frame, int index)
+        {
+        }
+
+        public virtual void LayoutChanged()
+        {
+        }
+
         public virtual void Dispose()
         {
             if (Disposed)
@@ -97,28 +105,45 @@ namespace LcdMod.Client.Games.Chess
                 ));
             }
 
-            foreach (var box in Boxes)
-                _sprites.Add(box.ToSprite(Color.White));
-
-            _sprites.Add(header.ToSprite(Color.LightGray));
-
-            var color = (_chessGame.Board[_index] & 0xF0);
-
-            for (var i = 0; i < _promotions.Count; i++)
-            {
-                var grid = Boxes[i];
-                var data = _chessGame.GetTextureFromId((byte)(color | _promotions.ElementAt(i).Value));
-
-                _sprites.Add(new MySprite(SpriteType.TEXT, data,
-                    new Vector2(grid.Center.X, grid.Position.Y + _chessGame.Padding),
-                    fontId: "Monospace", rotation: _chessGame.Scale));
-            }
-
-            _sprites.Add(new RectangleF(header.Center.X - header.Height / 2, header.Y, header.Width / 2, header.Height)
-                .ToCross(Color.Black));
+            Boxes.Add(header);
         }
 
         public override void Render(List<MySprite> frame) => frame.AddRange(_sprites);
+
+        public override void LayoutChanged()
+        {
+            if (Disposed)
+                return;
+
+            _sprites.Clear();
+            Boxes.Clear();
+            BakeControls();
+        }
+
+        public override void RenderBox(List<MySprite> frame, int index)
+        {
+            if (index < 0 || index >= Boxes.Count)
+                return;
+
+            var box = Boxes[index];
+
+            if (index >= _promotions.Count)
+            {
+                frame.Add(box.ToSprite(Color.LightGray));
+                frame.Add(new RectangleF(box.Center.X - box.Height / 2, box.Y, box.Width / 2, box.Height)
+                    .ToCross(Color.Black));
+                return;
+            }
+
+            frame.Add(box.ToSprite(Color.White));
+
+            var color = (_chessGame.Board[_index] & 0xF0);
+            var data = _chessGame.GetTextureFromId((byte)(color | _promotions.ElementAt(index).Value));
+
+            frame.Add(new MySprite(SpriteType.TEXT, data,
+                new Vector2(box.Center.X, box.Position.Y + _chessGame.Padding),
+                fontId: "Monospace", rotation: _chessGame.Scale));
+        }
 
         public override void Dispose()
         {
@@ -188,6 +213,16 @@ namespace LcdMod.Client.Games.Chess
         }
 
         public override void Render(List<MySprite> frame) => frame.AddRange(_sprites);
+
+        public override void LayoutChanged()
+        {
+            if (Disposed)
+                return;
+
+            _sprites.Clear();
+            Boxes.Clear();
+            BakeControls();
+        }
 
         public override void Dispose()
         {

@@ -193,12 +193,16 @@ namespace LcdMod.Client.Apps
                 int row = i / cols;
                 float xStart = gridLeft + col * slotW;
                 float yStart = gridTop + row * slotH;
-                DrawPowerSlot(sprites, slots[startIdx + i], xStart, yStart, slotW, slotH);
+                RegisterPowerEntryHitbox(slots[startIdx + i], new RectangleF(xStart, yStart, slotW, slotH));
             }
         }
 
-        void DrawPowerSlot(List<MySprite> sprites, PowerEntry slot, float xStart, float yStart, float width, float height)
+        void DrawPowerSlotVisual(List<MySprite> sprites, PowerEntry slot, RectangleF bounds)
         {
+            float xStart = bounds.X;
+            float yStart = bounds.Y;
+            float width = bounds.Width;
+            float height = bounds.Height;
             float labelGap = Math.Max(1f, Scale * 2f);
             Vector2 pctRef = FormatingHelper.GetSizeInPixel(slot.PercentText, "White", 1f, Surface);
             float pctScale = Math.Min(
@@ -227,8 +231,6 @@ namespace LcdMod.Client.Apps
                 Alignment = TextAlignment.CENTER,
                 FontId = "White"
             });
-
-            RegisterPowerEntryHitbox(slot, new RectangleF(xStart, yStart, width, height));
         }
         
         void DrawPowerEntry(
@@ -447,7 +449,8 @@ namespace LcdMod.Client.Apps
                     null,
                     BuildPowerEntryTooltip(entry.EntryId))
                 {
-                    ClickSound = AudioHelper.HudClick
+                    ClickSound = AudioHelper.HudClick,
+                    CustomRender = RenderPowerEntryHitbox
                 };
                 _entryHitboxById[entry.EntryId] = hitbox;
             }
@@ -456,10 +459,24 @@ namespace LcdMod.Client.Apps
                 hitbox.SetRect(bounds);
                 hitbox.SetCursor(CursorType.Hand);
                 hitbox.SetTooltip(BuildPowerEntryTooltip(entry.EntryId));
+                hitbox.CustomRender = RenderPowerEntryHitbox;
             }
 
             hitbox.SetVisible(true);
             InteractiveList.Add(hitbox);
+        }
+
+        void RenderPowerEntryHitbox(InteractiveEntry hitbox, InteractiveRenderContext context, List<MySprite> sprites)
+        {
+            if (hitbox == null)
+                return;
+
+            var entryId = (long)hitbox.DataContext;
+            var entry = GetPowerEntry(entryId);
+            if (entry == null)
+                return;
+
+            DrawPowerSlotVisual(sprites, entry, hitbox.Bounds);
         }
 
         InteractiveTooltip BuildPowerEntryTooltip(long entryId)

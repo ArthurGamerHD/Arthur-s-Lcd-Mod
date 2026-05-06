@@ -230,6 +230,8 @@ namespace LcdMod.Client.Games.Chess
             _boardSide = (int)Math.Sqrt(Board.Length);
 
             _gridCells = GetGridCells(BoardViewBox, _boardSide);
+            if (_boardCellEntries == null || _boardCellEntries.Length != _gridCells.Length)
+                _boardCellEntries = null;
 
             float cellSize = _gridCells[0].Width;
             var sb = new StringBuilder(GetTextureFromId(0x01));
@@ -238,40 +240,6 @@ namespace LcdMod.Client.Games.Chess
             Padding = cellSize * .1f;
 
             _boardVisualCache.Clear();
-
-            var row = 0;
-
-            for (var index = 0; index < _gridCells.Length; index++)
-            {
-                var gridCell = _gridCells[index];
-                if (index % 8 == 0)
-                    row++;
-
-                _boardVisualCache.Add(gridCell.ToSprite(_boardColors[(index + row) % 2]));
-            }
-
-            var step = _playingAsBlack ? 1 : -1;
-            var colorOffset = _playingAsBlack ? 1 : 0;
-
-            row = _playingAsBlack ? 1 : _boardSide;
-            for (var index = 0; index < _gridCells.Length; index += _boardSide)
-            {
-                _boardVisualCache.Add(new MySprite(SpriteType.TEXT, row.ToString(),
-                    _gridCells[index].Position + new Vector2(Padding, 0), null,
-                    _boardColors[(row + colorOffset) % 2], rotation: Scale * 8));
-                row += step;
-            }
-
-            var column = _playingAsBlack ? (char)('a' + _boardSide - 1) : 'a';
-
-            for (var index = _boardSide * (_boardSide - 1); index < _gridCells.Length; index++)
-            {
-                _boardVisualCache.Add(new MySprite(SpriteType.TEXT, column.ToString(),
-                    new Vector2(_gridCells[index].Right - Padding, _gridCells[index].Bottom - 3 * Padding) -
-                    Padding / 2, null,
-                    _boardColors[(column + colorOffset) % 2], rotation: Scale * 8));
-                column -= (char)step;
-            }
         }
 
 
@@ -302,11 +270,95 @@ namespace LcdMod.Client.Games.Chess
 
         void RenderBoard(List<MySprite> frame) => frame.AddRange(_boardVisualCache);
 
+        void RenderBoardCell(List<MySprite> frame, int index)
+        {
+            var gridCell = GetGridCell(index);
+            int row = index / _boardSide + 1;
+            frame.Add(gridCell.ToSprite(_boardColors[(index + row) % 2]));
+
+            RenderBoardCellOverlays(frame, index, gridCell);
+            RenderPiece(frame, index, gridCell);
+            RenderBoardCellCoordinates(frame, index, gridCell);
+        }
+
+        void RenderBoardCellOverlays(List<MySprite> frame, int index, RectangleF gridCell)
+        {
+            var color = _boardColors[2];
+
+            if (_history.Any())
+            {
+                var last = _history.Last();
+                if (PointToIndex(last.Item1) == index || PointToIndex(last.Item2) == index)
+                    frame.Add(gridCell.ToSprite(color));
+            }
+
+            if (SelectedTile != null && PointToIndex(SelectedTile.Value) == index)
+                frame.Add(gridCell.ToSprite(color));
+
+            if (_selectedTile != null && _availableMoves[_selectedTile.Value] != null)
+            {
+                var point = BoardPointFromGridIndex(index);
+                if (_availableMoves[_selectedTile.Value].Any(move => move.X == point.X && move.Y == point.Y))
+                {
+                    color = _showDangers && IsPositionInDanger(point, _selectedColor, Board)
+                        ? _boardColors[4]
+                        : _boardColors[3];
+                    frame.Add(GetCell(point) != 0
+                        ? gridCell.ToCircleHollow(_boardColors[3])
+                        : gridCell.ToCircle(color));
+                }
+            }
+
+            if (_checkPosition != null && _checkPosition.Value.X + _checkPosition.Value.Y * _boardSide == index)
+                frame.Add(gridCell.ToSprite(_boardColors[4]));
+        }
+
+        void RenderPiece(List<MySprite> frame, int index, RectangleF grid)
+        {
+            var cell = Board[index];
+            if (cell == 0)
+                return;
+
+            var data = GetTextureFromId(cell);
+
+            frame.Add(new MySprite(SpriteType.TEXT, data,
+                new Vector2(grid.Center.X, grid.Position.Y + Padding),
+                fontId: "LcdMod_Monospace", rotation: Scale));
+        }
+
+        void RenderBoardCellCoordinates(List<MySprite> frame, int index, RectangleF gridCell)
+        {
+            var colorOffset = _playingAsBlack ? 1 : 0;
+
+            if (index % _boardSide == 0)
+            {
+                int displayRow = _playingAsBlack ? index / _boardSide + 1 : _boardSide - index / _boardSide;
+                frame.Add(new MySprite(SpriteType.TEXT, displayRow.ToString(),
+                    gridCell.Position + new Vector2(Padding, 0), null,
+                    _boardColors[(displayRow + colorOffset) % 2], rotation: Scale * 8));
+            }
+
+            if (index >= _boardSide * (_boardSide - 1))
+            {
+                int columnIndex = index - _boardSide * (_boardSide - 1);
+                var column = _playingAsBlack
+                    ? (char)('a' + _boardSide - 1 - columnIndex)
+                    : (char)('a' + columnIndex);
+
+                frame.Add(new MySprite(SpriteType.TEXT, column.ToString(),
+                    new Vector2(gridCell.Right - Padding, gridCell.Bottom - 3 * Padding) -
+                    Padding / 2, null,
+                    _boardColors[(column + colorOffset) % 2], rotation: Scale * 8));
+            }
+        }
+
         public readonly byte[] Board = new byte[64];
 
         readonly List<MyTuple<Point, Point>> _history = new List<MyTuple<Point, Point>>();
 
         RectangleF[] _gridCells;
+        InteractiveRectangleEntry[] _boardCellEntries;
+        readonly List<InteractiveRectangleEntry> _overlayControlEntries = new List<InteractiveRectangleEntry>();
 
         IMyTextSurface _panel;
         InteractiveSurfaceScript _script;
@@ -435,6 +487,9 @@ namespace LcdMod.Client.Games.Chess
 
         void SetBot(ChessBotSelection difficulty)
         {
+            if(_selectedBot == difficulty && _api != null)
+                return;
+            
             IChessBot bot;
             switch (difficulty)
             {
@@ -452,9 +507,15 @@ namespace LcdMod.Client.Games.Chess
                     break;
             }
 
-            _selectedBot = difficulty;
+
             _api = bot == null ? null : new ChessBotApi(this, bot);
             BuildGlobalMenu();
+
+            if(_selectedBot == difficulty)
+                return;
+
+            _selectedBot = difficulty;
+            Save();
         }
 
         void ReloadProgram()
@@ -547,7 +608,11 @@ namespace LcdMod.Client.Games.Chess
             }
         }
 
-        public void LayoutChanged() => BuildGlobalMenu();
+        public void LayoutChanged()
+        {
+            BuildGlobalMenu();
+            RebuildLayout();
+        }
 
         void PopulateHistory()
         {
@@ -709,11 +774,9 @@ namespace LcdMod.Client.Games.Chess
             _sprites.Clear();
 
             if (_viewBox != _script.ViewBox)
-                BakeBoardVisual();
+                RebuildLayout();
 
             RenderBoard(_sprites);
-            RenderBoardOverlays(_sprites);
-            RenderPieces(_sprites);
 
             if (_overlayOverlay?.Disposed ?? false)
                 _overlayOverlay = null;
@@ -722,6 +785,12 @@ namespace LcdMod.Client.Games.Chess
 
             RebuildInteractiveEntries();
             return _sprites;
+        }
+
+        void RebuildLayout()
+        {
+            BakeBoardVisual();
+            _overlayOverlay?.LayoutChanged();
         }
 
         void HandleCoroutine()
@@ -750,38 +819,97 @@ namespace LcdMod.Client.Games.Chess
             if (_gridCells == null || _gridCells.Length == 0)
                 return;
 
+            EnsureBoardCellEntries();
+
             for (int index = 0; index < _gridCells.Length; index++)
             {
-                if (!IsBoardCellInteractive(index))
-                    continue;
-
-                int capturedIndex = index;
-                Interactive.Add(new InteractiveRectangleEntry(
-                    _gridCells[index],
-                    GetBoardCellCursor(index),
-                    capturedIndex,
-                    (value, sender) => ClickBoardCell((int)value))
-                {
-                    ClickSound = GetBoardCellClickSound(index),
-                });
+                bool canClick = IsBoardCellInteractive(index);
+                var entry = _boardCellEntries[index];
+                entry.SetRect(_gridCells[index]);
+                entry.SetCursor(canClick ? GetBoardCellCursor(index) : CursorType.Default);
+                entry.SetDataContext(index);
+                entry.SetOnClick(canClick ? (Action<object, object>)ClickBoardCellFromEntry : null);
+                entry.ClickSound = GetBoardCellClickSound(index);
+                entry.SetVisible(true);
+                Interactive.Add(entry);
             }
 
             if (_botThinkRunning || _botThinkCoroutine != null)
+            {
+                HideOverlayControlEntries();
                 return;
+            }
 
             if (_overlayOverlay == null)
+            {
+                HideOverlayControlEntries();
                 return;
+            }
 
             for (int index = 0; index < _overlayOverlay.Boxes.Count; index++)
             {
-                int capturedIndex = index;
-                Interactive.Add(new InteractiveRectangleEntry(
-                    _overlayOverlay.Boxes[index],
-                    CursorType.Hand,
-                    capturedIndex,
-                    (value, sender) => ClickControlBox((int)value)));
+                var entry = GetOverlayControlEntry(index);
+                entry.SetRect(_overlayOverlay.Boxes[index]);
+                entry.SetCursor(CursorType.Hand);
+                entry.SetDataContext(index);
+                entry.SetOnClick(ClickControlBoxFromEntry);
+                entry.SetVisible(true);
+                Interactive.Add(entry);
+            }
+
+            for (int index = _overlayOverlay.Boxes.Count; index < _overlayControlEntries.Count; index++)
+                _overlayControlEntries[index].SetVisible(false);
+        }
+
+        void EnsureBoardCellEntries()
+        {
+            if (_gridCells == null)
+                return;
+
+            if (_boardCellEntries != null && _boardCellEntries.Length == _gridCells.Length)
+                return;
+
+            _boardCellEntries = new InteractiveRectangleEntry[_gridCells.Length];
+            for (int index = 0; index < _boardCellEntries.Length; index++)
+            {
+                _boardCellEntries[index] = new InteractiveRectangleEntry(_gridCells[index], CursorType.Default, index)
+                {
+                    CustomRender = delegate(InteractiveEntry entry, InteractiveRenderContext context, List<MySprite> sprites)
+                    {
+                        RenderBoardCell(sprites, (int)entry.DataContext);
+                    }
+                };
             }
         }
+
+        InteractiveRectangleEntry GetOverlayControlEntry(int index)
+        {
+            while (_overlayControlEntries.Count <= index)
+            {
+                _overlayControlEntries.Add(new InteractiveRectangleEntry(
+                    default(RectangleF),
+                    CursorType.Hand,
+                    _overlayControlEntries.Count)
+                {
+                    CustomRender = delegate(InteractiveEntry entry, InteractiveRenderContext context, List<MySprite> sprites)
+                    {
+                        _overlayOverlay?.RenderBox(sprites, (int)entry.DataContext);
+                    }
+                });
+            }
+
+            return _overlayControlEntries[index];
+        }
+
+        void HideOverlayControlEntries()
+        {
+            for (int index = 0; index < _overlayControlEntries.Count; index++)
+                _overlayControlEntries[index].SetVisible(false);
+        }
+
+        void ClickBoardCellFromEntry(object value, object sender) => ClickBoardCell((int)value);
+
+        void ClickControlBoxFromEntry(object value, object sender) => ClickControlBox((int)value);
 
         bool IsBoardCellInteractive(int index)
         {

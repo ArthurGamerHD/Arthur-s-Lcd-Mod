@@ -57,6 +57,11 @@ namespace LcdMod.Client.Apps
         public override List<InteractiveEntry> InteractiveList => _currentGame != null ? _currentGame.Interactive : _emptyInteractiveList;
 
         GlobalMenuEntry _rootMenu;
+
+        protected override bool RendersInteractiveEntriesInGetSprites
+        {
+            get { return true; }
+        }
         
         public GameSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)
         {
@@ -106,6 +111,7 @@ namespace LcdMod.Client.Apps
         protected override List<MySprite> GetSprites()
         {
             var sprites = _currentGame?.Render() ?? new List<MySprite>();
+            RenderInteractiveEntryVisuals(sprites);
             DrawTitle(sprites);
             return sprites;
         }

@@ -197,12 +197,18 @@ namespace LcdMod.Client.Gui.Controls.Interactive
                 ? new RectangleF(button1Rect.Right + buttonSpacing, currentY, button2Width, buttonHeight)
                 : default(RectangleF);
 
-            DrawButton(owner, _sprites, button1Rect, _button1, buttonScale, panelColor, textColor, cursorPosition);
-
-            if (showButton2)
-                DrawButton(owner, _sprites, button2Rect, _button2, buttonScale, panelColor, textColor, cursorPosition);
-
             EnsureEntries(button1Rect, button2Rect, showButton2);
+
+            var renderContext = new InteractiveRenderContext(surface, scale, fontScale, textColor, panelColor, cursorPosition);
+            ConfigureButtonRender(_button1Entry, _button1, buttonScale, panelColor, textColor, owner);
+            _button1Entry.Render(renderContext, _sprites);
+
+            if (showButton2 && _button2Entry != null)
+            {
+                ConfigureButtonRender(_button2Entry, _button2, buttonScale, panelColor, textColor, owner);
+                _button2Entry.Render(renderContext, _sprites);
+            }
+
             targetSprites.AddRange(_sprites);
         }
 
@@ -276,10 +282,27 @@ namespace LcdMod.Client.Gui.Controls.Interactive
         }
             
 
+        static void ConfigureButtonRender(
+            InteractiveRectangleEntry entry,
+            string text,
+            float textScale,
+            Color panelColor,
+            Color textColor,
+            InteractiveSurfaceScript owner)
+        {
+            if (entry == null)
+                return;
+
+            entry.CustomRender = delegate(InteractiveEntry renderEntry, InteractiveRenderContext context, List<MySprite> sprites)
+            {
+                DrawButton(renderEntry.Bounds, owner, sprites, text, textScale, panelColor, textColor, context.CursorPosition);
+            };
+        }
+
         static void DrawButton(
+            RectangleF rect,
             InteractiveSurfaceScript owner,
             List<MySprite> sprites,
-            RectangleF rect,
             string text,
             float textScale,
             Color panelColor,

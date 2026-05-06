@@ -10,6 +10,37 @@ using VRageMath;
 
 namespace LcdMod.Client.Utility
 {
+    public sealed class InteractiveRenderContext
+    {
+        public InteractiveRenderContext(
+            Sandbox.ModAPI.Ingame.IMyTextSurface surface,
+            float scale,
+            float fontScale,
+            Color textColor,
+            Color panelColor,
+            Vector2 cursorPosition)
+        {
+            Surface = surface;
+            Scale = scale;
+            FontScale = fontScale;
+            TextColor = textColor;
+            PanelColor = panelColor;
+            CursorPosition = cursorPosition;
+        }
+
+        public Sandbox.ModAPI.Ingame.IMyTextSurface Surface { get; private set; }
+        public float Scale { get; private set; }
+        public float FontScale { get; private set; }
+        public Color TextColor { get; private set; }
+        public Color PanelColor { get; private set; }
+        public Vector2 CursorPosition { get; private set; }
+    }
+
+    public delegate void InteractiveRenderHandler(
+        InteractiveEntry entry,
+        InteractiveRenderContext context,
+        List<MySprite> sprites);
+
     public interface ITooltipLine
     {
         string GetText();
@@ -655,8 +686,20 @@ namespace LcdMod.Client.Utility
 
         public object DataContext { get; private set; }
 
+        public InteractiveEntry SetDataContext(object dataContext)
+        {
+            DataContext = dataContext;
+            return this;
+        }
+
         public Action<object, object> OnClick { get; private set; }
         public Action<object, object> OnSecondaryClick { get; set; }
+
+        public InteractiveEntry SetOnClick(Action<object, object> onClick)
+        {
+            OnClick = onClick;
+            return this;
+        }
 
         public InteractiveTooltip Tooltip { get; private set; }
 
@@ -666,9 +709,57 @@ namespace LcdMod.Client.Utility
             return this;
         }
 
+        public InteractiveRenderHandler CustomRender { get; set; }
+
         public abstract RectangleF Bounds { get; }
         public MySoundPair ClickSound { get; set; } = AudioHelper.HudClick;
         public MySoundPair ClickFailSound { get; set; } = AudioHelper.HudUnable;
+
+        public void Render(InteractiveRenderContext context, List<MySprite> sprites)
+        {
+            if (context == null || sprites == null)
+                return;
+
+            if (CustomRender != null)
+            {
+                CustomRender(this, context, sprites);
+                return;
+            }
+
+            RenderDefault(context, sprites);
+        }
+
+        protected virtual void RenderDefault(InteractiveRenderContext context, List<MySprite> sprites)
+        {
+            var rect = Bounds;
+            var fillColor = rect.Contains(context.CursorPosition)
+                ? context.PanelColor.DeriveAccentColor()
+                : context.PanelColor;
+
+            RectanglePanel.CreateSpritesFromRect(rect, sprites, fillColor, 0.2f);
+            RenderDefaultText(rect, context, sprites);
+        }
+
+        protected void RenderDefaultText(RectangleF rect, InteractiveRenderContext context, List<MySprite> sprites)
+        {
+            string text = DataContext != null ? DataContext.ToString() : string.Empty;
+            if (string.IsNullOrEmpty(text))
+                return;
+
+            float textScale = 0.58f * context.Scale * context.FontScale;
+            var textSize = FormatingHelper.GetSizeInPixel(text, "White", textScale, context.Surface);
+
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXT,
+                Data = text,
+                Position = new Vector2(rect.Center.X, rect.Center.Y - textSize.Y * 0.5f),
+                Color = context.TextColor,
+                FontId = "White",
+                Alignment = TextAlignment.CENTER,
+                RotationOrScale = textScale
+            });
+        }
 
         public bool Hit(Vector2 point)
         {
@@ -719,6 +810,25 @@ namespace LcdMod.Client.Utility
                 return false;
 
             return Vector2.DistanceSquared(point, Center) <= Radius * Radius;
+        }
+
+        protected override void RenderDefault(InteractiveRenderContext context, List<MySprite> sprites)
+        {
+            var fillColor = Hit(context.CursorPosition)
+                ? context.PanelColor.DeriveAccentColor()
+                : context.PanelColor;
+
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE,
+                Data = "Circle",
+                Position = Center,
+                Size = new Vector2(Radius * 2f),
+                Color = fillColor,
+                Alignment = TextAlignment.CENTER
+            });
+
+            RenderDefaultText(Bounds, context, sprites);
         }
     }
 

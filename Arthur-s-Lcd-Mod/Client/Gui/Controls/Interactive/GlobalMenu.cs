@@ -119,9 +119,10 @@ namespace LcdMod.Client.Gui.Controls.Interactive
             float rootHeight = Math.Max(24f * scale, FormatingHelper.GetSizeInPixel("Ag", "White", rootScale, surface).Y + 10f * scale);
             float itemHeight = Math.Max(22f * scale, FormatingHelper.GetSizeInPixel("Ag", "White", popupScale, surface).Y + 9f * scale);
             float rootPaddingX = 12f * scale;
+            var renderContext = new InteractiveRenderContext(surface, scale, fontScale, textColor, panelColor, cursorPosition);
 
-            DrawRootBar(viewBox, scale, rootScale, rootHeight, rootPaddingX, panelColor, textColor, cursorPosition, surface);
-            DrawOpenPopups(owner, viewBox, scale, popupScale, itemHeight, panelColor, textColor, shadowColor, cursorPosition, surface);
+            DrawRootBar(viewBox, scale, rootScale, rootHeight, rootPaddingX, panelColor, textColor, cursorPosition, surface, renderContext);
+            DrawOpenPopups(owner, viewBox, scale, popupScale, itemHeight, panelColor, textColor, shadowColor, cursorPosition, surface, renderContext);
 
             targetSprites.AddRange(_sprites);
         }
@@ -134,7 +135,8 @@ namespace LcdMod.Client.Gui.Controls.Interactive
             Color panelColor,
             Color textColor,
             Vector2 cursorPosition,
-            Sandbox.ModAPI.Ingame.IMyTextSurface surface)
+            Sandbox.ModAPI.Ingame.IMyTextSurface surface,
+            InteractiveRenderContext renderContext)
         {
             var barRect = new RectangleF(viewBox.X, viewBox.Y, viewBox.Width, rootHeight);
             RectanglePanel.CreateSpritesFromRect(barRect, _sprites, panelColor, surface.TextPadding == 0 ? 0 : 0.5f);
@@ -149,8 +151,16 @@ namespace LcdMod.Client.Gui.Controls.Interactive
                 float width = Math.Max(42f * scale, size.X + rootPaddingX * 2f);
                 var rect = new RectangleF(x, viewBox.Y, width, rootHeight);
 
-                DrawItem(rect, entry, rootScale, panelColor, textColor, cursorPosition, surface, true);
-                ShowNode(node, rect, entry != null && entry.HasChildren ? CursorType.Hand : entry != null ? entry.Cursor : CursorType.Default);
+                var interactiveEntry = ShowNode(node, rect, entry != null && entry.HasChildren ? CursorType.Hand : entry != null ? entry.Cursor : CursorType.Default);
+                if (interactiveEntry != null)
+                {
+                    interactiveEntry.CustomRender = delegate(InteractiveEntry item, InteractiveRenderContext context, List<MySprite> sprites)
+                    {
+                        DrawItemVisual(item.Bounds, entry, rootScale, panelColor, textColor, cursorPosition, surface, true, sprites);
+                    };
+                    interactiveEntry.Render(renderContext, _sprites);
+                }
+
                 x += width;
             }
         }
@@ -165,7 +175,8 @@ namespace LcdMod.Client.Gui.Controls.Interactive
             Color textColor,
             Color shadowColor,
             Vector2 cursorPosition,
-            Sandbox.ModAPI.Ingame.IMyTextSurface surface)
+            Sandbox.ModAPI.Ingame.IMyTextSurface surface,
+            InteractiveRenderContext renderContext)
         {
             for (int level = 0; level < _openPath.Count; level++)
             {
@@ -192,24 +203,32 @@ namespace LcdMod.Client.Gui.Controls.Interactive
                     var childNode = children[i];
                     var child = childNode.Entry;
                     var rect = new RectangleF(popupRect.X, popupRect.Y + itemHeight * i, popupRect.Width, itemHeight);
-                    DrawItem(rect, child, popupScale, panelColor, textColor, cursorPosition, surface, false);
-                    ShowNode(childNode, rect, child != null && child.HasChildren ? CursorType.Hand : child != null ? child.Cursor : CursorType.Default);
+                    var interactiveEntry = ShowNode(childNode, rect, child != null && child.HasChildren ? CursorType.Hand : child != null ? child.Cursor : CursorType.Default);
+                    if (interactiveEntry != null)
+                    {
+                        interactiveEntry.CustomRender = delegate(InteractiveEntry item, InteractiveRenderContext context, List<MySprite> sprites)
+                        {
+                            DrawItemVisual(item.Bounds, child, popupScale, panelColor, textColor, cursorPosition, surface, false, sprites);
+                        };
+                        interactiveEntry.Render(renderContext, _sprites);
+                    }
                 }
             }
         }
 
-        void DrawItem(RectangleF rect,
+        static void DrawItemVisual(RectangleF rect,
             GlobalMenuEntry entry,
             float textScale,
             Color panelColor,
             Color textColor,
             Vector2 cursorPosition,
             Sandbox.ModAPI.Ingame.IMyTextSurface surface,
-            bool root)
+            bool root,
+            List<MySprite> sprites)
         {
             bool hover = rect.Contains(cursorPosition);
             var fillColor = hover ? panelColor.DeriveAccentColor() : panelColor;
-            RectanglePanel.CreateSpritesFromRect(rect, _sprites, fillColor, 0.5f);
+            RectanglePanel.CreateSpritesFromRect(rect, sprites, fillColor, 0.5f);
 
             string text = GetText(entry);
             float iconSpace = !root && entry != null && !string.IsNullOrEmpty(entry.Icon) ? rect.Height : 0f;
@@ -217,7 +236,7 @@ namespace LcdMod.Client.Gui.Controls.Interactive
 
             if (iconSpace > 0f)
             {
-                _sprites.Add(new MySprite
+                sprites.Add(new MySprite
                 {
                     Type = SpriteType.TEXTURE,
                     Data = entry?.Icon,
@@ -228,7 +247,7 @@ namespace LcdMod.Client.Gui.Controls.Interactive
                 });
             }
 
-            _sprites.Add(new MySprite
+            sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
                 Data = text,
@@ -241,7 +260,7 @@ namespace LcdMod.Client.Gui.Controls.Interactive
 
             if (!root && entry != null && entry.HasChildren)
             {
-                _sprites.Add(new MySprite
+                sprites.Add(new MySprite
                 {
                     Type = SpriteType.TEXT,
                     Data = ">",
@@ -254,10 +273,10 @@ namespace LcdMod.Client.Gui.Controls.Interactive
             }
         }
 
-        void ShowNode(Node node, RectangleF rect, CursorType cursor)
+        InteractiveRectangleEntry ShowNode(Node node, RectangleF rect, CursorType cursor)
         {
             if (node == null)
-                return;
+                return null;
 
             node.Rect = rect;
 
@@ -273,6 +292,7 @@ namespace LcdMod.Client.Gui.Controls.Interactive
 
             node.InteractiveEntry.SetVisible(true);
             _interactiveEntries.Add(node.InteractiveEntry);
+            return node.InteractiveEntry;
         }
 
         void OnEntryClick(object dataContext, object sender)
