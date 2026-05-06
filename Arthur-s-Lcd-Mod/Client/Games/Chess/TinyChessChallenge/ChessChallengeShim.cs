@@ -89,18 +89,11 @@ namespace ChessChallenge.API
             // parallel worker after PrepareBoard() has built a snapshot on the main thread.
             //
             // Important: bots are allowed to mutate the Board during search using
-            // MakeMove/UndoMove/ForceSkipTurn/UndoSkipTurn. If a bot exits early or
-            // fails to perfectly unwind its search, the shared shim Board can remain
-            // in a non-root state. Reset it after Think so the next turn starts from
-            // the live ChessGame again.
-            try
-            {
-                return _bot.Think(_board, timer ?? new Timer(1000));
-            }
-            finally
-            {
-                _board.LoadFromGame();
-            }
+            // MakeMove/UndoMove/ForceSkipTurn/UndoSkipTurn. Do not reset the board here:
+            // LoadFromGame() reads live Space Engineers / ChessGame state and must run on
+            // the game thread. The caller resets the shim board on the main thread after
+            // the worker returns.
+            return _bot.Think(_board, timer ?? new Timer(1000));
         }
 
         public bool PlayBotMove(int millisecondsRemaining = 1000)
@@ -159,6 +152,7 @@ namespace ChessChallenge.API
             public int PlyCount;
             public int MoveHistoryCount;
             public int RepetitionHistoryCount;
+            public ulong[] RepetitionHistory;
         }
 
         public Board(ChessGame game)
@@ -183,8 +177,10 @@ namespace ChessChallenge.API
 
             _whiteToMove = _game.IsChallengeWhiteToMove;
             _plyCount = _game.ChallengePlyCount;
-            _fiftyMoveCounter = 0;
-            _enPassantSquareIndex = -1;
+
+            var replayState = _game.GetChallengeReplayState();
+            _fiftyMoveCounter = replayState.FiftyMoveCounter;
+            _enPassantSquareIndex = replayState.EnPassantSquareIndex;
 
             _whiteCastleKingSide = _game.HasChallengeKingsideCastleRight(true);
             _whiteCastleQueenSide = _game.HasChallengeQueensideCastleRight(true);
@@ -192,12 +188,17 @@ namespace ChessChallenge.API
             _blackCastleQueenSide = _game.HasChallengeQueensideCastleRight(false);
 
             _gameMoveHistory.Clear();
-            var existingHistory = _game.GetChallengeMoveHistory();
-            if (existingHistory != null)
-                _gameMoveHistory.AddRange(existingHistory);
+            if (replayState.MoveHistory != null)
+                _gameMoveHistory.AddRange(replayState.MoveHistory);
 
             _repetitionHistory.Clear();
-            _repetitionHistory.Add(ZobristKey);
+            if (replayState.RepetitionHistory != null)
+                _repetitionHistory.AddRange(replayState.RepetitionHistory);
+
+            // Keep the current root key present even if replay data is missing or older
+            // saved data cannot be reconstructed perfectly.
+            if (_repetitionHistory.Count == 0 || _repetitionHistory[_repetitionHistory.Count - 1] != ZobristKey)
+                _repetitionHistory.Add(ZobristKey);
 
             _stateStack.Clear();
         }
@@ -527,6 +528,12 @@ namespace ChessChallenge.API
             if (recordHistory)
             {
                 _gameMoveHistory.Add(move);
+
+                // Match the original board's repetition semantics: once a pawn move
+                // or capture happens, positions before it cannot be repeated.
+                if (movingPiece == PieceType.Pawn || isCapture)
+                    _repetitionHistory.Clear();
+
                 _repetitionHistory.Add(ZobristKey);
             }
         }
@@ -615,7 +622,8 @@ namespace ChessChallenge.API
                 FiftyMoveCounter = _fiftyMoveCounter,
                 PlyCount = _plyCount,
                 MoveHistoryCount = _gameMoveHistory.Count,
-                RepetitionHistoryCount = _repetitionHistory.Count
+                RepetitionHistoryCount = _repetitionHistory.Count,
+                RepetitionHistory = _repetitionHistory.ToArray()
             };
         }
 
@@ -635,8 +643,9 @@ namespace ChessChallenge.API
             while (_gameMoveHistory.Count > state.MoveHistoryCount)
                 _gameMoveHistory.RemoveAt(_gameMoveHistory.Count - 1);
 
-            while (_repetitionHistory.Count > state.RepetitionHistoryCount)
-                _repetitionHistory.RemoveAt(_repetitionHistory.Count - 1);
+            _repetitionHistory.Clear();
+            if (state.RepetitionHistory != null)
+                _repetitionHistory.AddRange(state.RepetitionHistory);
         }
 
         public bool IsInCheck()
@@ -754,16 +763,23 @@ namespace ChessChallenge.API
 
         public bool IsRepeatedPosition()
         {
-            ulong key = ZobristKey;
-            int count = 0;
+            // The original challenge API reports repetition while searching if the
+            // current position has appeared earlier in the game/search line. It does
+            // not wait for a formal third occurrence; this helps bots avoid shuffling.
+            if (_stateStack.Count == 0)
+                return false;
 
-            for (int i = 0; i < _repetitionHistory.Count; i++)
+            ulong key = ZobristKey;
+
+            // Ignore the current node, which is always the last item pushed by
+            // MakeMove/ForceSkipTurn.
+            for (int i = 0; i < _repetitionHistory.Count - 1; i++)
             {
                 if (_repetitionHistory[i] == key)
-                    count++;
+                    return true;
             }
 
-            return count >= 3;
+            return false;
         }
 
         public bool IsInsufficientMaterial()
@@ -1349,9 +1365,48 @@ namespace ChessChallenge.API
                 if (IsNull)
                     return 0;
 
+                int flag = MoveFlag;
                 return (ushort)(StartSquare.Index |
                                 (TargetSquare.Index << 6) |
-                                ((int)PromotionPieceType << 12));
+                                (flag << 12));
+            }
+        }
+
+        const int NoFlag = 0;
+        const int EnPassantCaptureFlag = 1;
+        const int CastleFlag = 2;
+        const int PawnTwoUpFlag = 3;
+        const int PromoteToQueenFlag = 4;
+        const int PromoteToKnightFlag = 5;
+        const int PromoteToRookFlag = 6;
+        const int PromoteToBishopFlag = 7;
+
+        int MoveFlag
+        {
+            get
+            {
+                if (_isEnPassant)
+                    return EnPassantCaptureFlag;
+
+                if (_isCastles)
+                    return CastleFlag;
+
+                if (MovePieceType == PieceType.Pawn && Math.Abs(TargetSquare.Index - StartSquare.Index) == 16)
+                    return PawnTwoUpFlag;
+
+                switch (PromotionPieceType)
+                {
+                    case PieceType.Queen:
+                        return PromoteToQueenFlag;
+                    case PieceType.Knight:
+                        return PromoteToKnightFlag;
+                    case PieceType.Rook:
+                        return PromoteToRookFlag;
+                    case PieceType.Bishop:
+                        return PromoteToBishopFlag;
+                    default:
+                        return NoFlag;
+                }
             }
         }
 
@@ -1378,8 +1433,10 @@ namespace ChessChallenge.API
             var capturedPiece = board != null ? board.GetPiece(TargetSquare) : new Piece(PieceType.None, false, TargetSquare);
 
             MovePieceType = movePiece.PieceType;
-            CapturePieceType = capturedPiece.PieceType;
-            _isEnPassant = false;
+            _isEnPassant = MovePieceType == PieceType.Pawn &&
+                           capturedPiece.PieceType == PieceType.None &&
+                           Math.Abs(StartSquare.File - TargetSquare.File) == 1;
+            CapturePieceType = _isEnPassant ? PieceType.Pawn : capturedPiece.PieceType;
             _isCastles = MovePieceType == PieceType.King && Math.Abs(StartSquare.File - TargetSquare.File) == 2;
             _isNull = false;
         }
@@ -1447,12 +1504,9 @@ namespace ChessChallenge.API
 
         public bool Equals(Move other)
         {
-            return StartSquare == other.StartSquare &&
-                   TargetSquare == other.TargetSquare &&
+            return RawValue == other.RawValue &&
                    MovePieceType == other.MovePieceType &&
-                   CapturePieceType == other.CapturePieceType &&
-                   PromotionPieceType == other.PromotionPieceType &&
-                   IsNull == other.IsNull;
+                   CapturePieceType == other.CapturePieceType;
         }
 
         public static bool operator ==(Move lhs, Move rhs)

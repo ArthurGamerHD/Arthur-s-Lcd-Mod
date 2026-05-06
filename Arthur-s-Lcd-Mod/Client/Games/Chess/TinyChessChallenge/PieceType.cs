@@ -1,12 +1,15 @@
-﻿namespace LcdMod.Client.Games.Chess.TinyChessChallenge
+namespace LcdMod.Client.Games.Chess.TinyChessChallenge
 {
+    // Must match ChessChallenge.API.PieceType exactly.
+    // Many original bots rely on these numeric values for packed tables,
+    // piece-value arrays, move ordering, and attack lookups.
     public enum PieceType
     {
         None = 0,
         Pawn = 1,
-        Rook = 2,
-        Knight = 3,
-        Bishop = 4,
+        Knight = 2,
+        Bishop = 3,
+        Rook = 4,
         Queen = 5,
         King = 6
     }

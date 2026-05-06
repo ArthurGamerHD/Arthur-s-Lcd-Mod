@@ -52,45 +52,25 @@ namespace LcdMod.Client.Games.Chess
         PgnReplayState BuildPgnReplayState()
         {
             var state = new PgnReplayState();
-            var board = BuildPgnInitialBoard();
 
             for (int i = 0; i < _history.Count; i++)
             {
-                var move = _history[i];
-                var origin = move.Item1;
-                var target = move.Item2;
+                var record = _history[i];
 
-                if (!IsPgnPointOnBoard(origin) || !IsPgnPointOnBoard(target))
+                if (string.IsNullOrEmpty(record.San))
                 {
-                    state.Moves.Add(ToPgnCoordinateMove(origin, target, PieceType.None));
+                    state.Moves.Add(ToPgnCoordinateMove(record.Origin, record.Target, record.PromotionPieceType));
                     state.ReplayWasClean = false;
-                    continue;
+                }
+                else
+                {
+                    state.Moves.Add(record.San);
                 }
 
-                var originIndex = PointToIndex(origin);
-                var movingCell = board[originIndex];
-
-                if (movingCell == 0)
-                {
-                    state.Moves.Add(ToPgnCoordinateMove(origin, target, PieceType.None));
-                    state.ReplayWasClean = false;
-                    continue;
-                }
-
-                var movingType = GetPieceType(movingCell);
-                var movingColor = GetColor(movingCell);
-                var specialMove = GetPgnSpecialMove(board, origin, target, movingType);
-                var promotionType = specialMove == SpecialMoves.Promotion
-                    ? InferPgnPromotionType(i, target, movingColor)
-                    : PieceType.None;
-
-                bool isCapture = IsPgnCapture(board, origin, target, specialMove);
-                state.Moves.Add(BuildPgnSan(board, origin, target, movingType, movingColor, specialMove, promotionType));
-
-                ApplyPgnMove(board, origin, target, specialMove, promotionType);
-
-                state.HalfmoveClock = movingType == PieceType.Pawn || isCapture ? 0 : state.HalfmoveClock + 1;
-                state.EnPassantTarget = GetPgnEnPassantTarget(origin, target, movingType);
+                state.HalfmoveClock = record.HalfmoveClockAfter;
+                state.EnPassantTarget = string.IsNullOrEmpty(record.EnPassantTargetAfter)
+                    ? "-"
+                    : record.EnPassantTargetAfter;
             }
 
             return state;
@@ -418,48 +398,6 @@ namespace LcdMod.Client.Games.Chess
             return null;
         }
 
-        PieceType InferPgnPromotionType(int moveIndex, Point promotionSquare, PieceColor movingColor)
-        {
-            for (int i = moveIndex + 1; i < _history.Count; i++)
-            {
-                var future = _history[i];
-
-                if (future.Item1 == promotionSquare)
-                    return InferPgnPromotionTypeFromMove(promotionSquare, future.Item2);
-
-                if (future.Item2 == promotionSquare)
-                    break;
-            }
-
-            var finalCell = GetCell(promotionSquare) ?? 0;
-            if (finalCell != 0 && GetColor(finalCell) == movingColor)
-            {
-                var finalType = GetPieceType(finalCell);
-                if (finalType == PieceType.Queen || finalType == PieceType.Rook ||
-                    finalType == PieceType.Bishop || finalType == PieceType.Knight)
-                    return finalType;
-            }
-
-            return PieceType.Queen;
-        }
-
-        PieceType InferPgnPromotionTypeFromMove(Point origin, Point target)
-        {
-            int dx = Math.Abs(target.X - origin.X);
-            int dy = Math.Abs(target.Y - origin.Y);
-
-            if ((dx == 1 && dy == 2) || (dx == 2 && dy == 1))
-                return PieceType.Knight;
-
-            if (dx == 0 || dy == 0)
-                return PieceType.Rook;
-
-            if (dx == dy)
-                return PieceType.Bishop;
-
-            return PieceType.Queen;
-        }
-
         string GetPgnResult()
         {
             if (!IsGameOver)
@@ -528,9 +466,9 @@ namespace LcdMod.Client.Games.Chess
                 sb.Append('K');
             if ((castling & Castling.WhiteRookLeft) != 0)
                 sb.Append('Q');
-            if ((castling & Castling.BlackRookRight) != 0)
-                sb.Append('k');
             if ((castling & Castling.BlackRookLeft) != 0)
+                sb.Append('k');
+            if ((castling & Castling.BlackRookRight) != 0)
                 sb.Append('q');
 
             return sb.Length == 0 ? "-" : sb.ToString();
@@ -618,6 +556,7 @@ namespace LcdMod.Client.Games.Chess
 
         byte ToPgnPieceValue(PieceType type)
         {
+            // Return LCD board-byte/texture ids, not ChessChallenge enum values.
             switch (type)
             {
                 case PieceType.Rook:

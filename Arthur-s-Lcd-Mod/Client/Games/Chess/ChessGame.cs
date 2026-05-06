@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -187,8 +187,8 @@ namespace LcdMod.Client.Games.Chess
             if (_history.Any())
             {
                 var last = _history.Last();
-                frame.Add(GetGridCell(PointToIndex(last.Item1)).ToSprite(color));
-                frame.Add(GetGridCell(PointToIndex(last.Item2)).ToSprite(color));
+                frame.Add(GetGridCell(PointToIndex(last.Origin)).ToSprite(color));
+                frame.Add(GetGridCell(PointToIndex(last.Target)).ToSprite(color));
             }
 
             if (SelectedTile != null)
@@ -288,7 +288,7 @@ namespace LcdMod.Client.Games.Chess
             if (_history.Any())
             {
                 var last = _history.Last();
-                if (PointToIndex(last.Item1) == index || PointToIndex(last.Item2) == index)
+                if (PointToIndex(last.Origin) == index || PointToIndex(last.Target) == index)
                     frame.Add(gridCell.ToSprite(color));
             }
 
@@ -297,7 +297,11 @@ namespace LcdMod.Client.Games.Chess
 
             if (_selectedTile != null && _availableMoves[_selectedTile.Value] != null)
             {
-                var point = BoardPointFromGridIndex(index);
+                // RenderBoardCell receives a board index. GetGridCell(index) already
+                // applies the play-as-black visual flip, so do not feed this index
+                // through BoardPointFromGridIndex here or the hint overlay gets
+                // flipped a second time.
+                var point = BoardPointFromBoardIndex(index);
                 if (_availableMoves[_selectedTile.Value].Any(move => move.X == point.X && move.Y == point.Y))
                 {
                     color = _showDangers && IsPositionInDanger(point, _selectedColor, Board)
@@ -328,22 +332,24 @@ namespace LcdMod.Client.Games.Chess
 
         void RenderBoardCellCoordinates(List<MySprite> frame, int index, RectangleF gridCell)
         {
+            // index is a board index. Labels must be placed according to the visual
+            // index after the play-as-black flip, but the text itself should still
+            // describe the chess coordinate of this board square.
+            var visualIndex = BoardIndexToVisualIndex(index);
+            var boardPoint = BoardPointFromBoardIndex(index);
             var colorOffset = _playingAsBlack ? 1 : 0;
 
-            if (index % _boardSide == 0)
+            if (visualIndex % _boardSide == 0)
             {
-                int displayRow = _playingAsBlack ? index / _boardSide + 1 : _boardSide - index / _boardSide;
+                int displayRow = _boardSide - boardPoint.Y;
                 frame.Add(new MySprite(SpriteType.TEXT, displayRow.ToString(),
                     gridCell.Position + new Vector2(Padding, 0), null,
                     _boardColors[(displayRow + colorOffset) % 2], rotation: Scale * 8));
             }
 
-            if (index >= _boardSide * (_boardSide - 1))
+            if (visualIndex >= _boardSide * (_boardSide - 1))
             {
-                int columnIndex = index - _boardSide * (_boardSide - 1);
-                var column = _playingAsBlack
-                    ? (char)('a' + _boardSide - 1 - columnIndex)
-                    : (char)('a' + columnIndex);
+                var column = (char)('a' + boardPoint.X);
 
                 frame.Add(new MySprite(SpriteType.TEXT, column.ToString(),
                     new Vector2(gridCell.Right - Padding, gridCell.Bottom - 3 * Padding) -
@@ -354,7 +360,7 @@ namespace LcdMod.Client.Games.Chess
 
         public readonly byte[] Board = new byte[64];
 
-        readonly List<MyTuple<Point, Point>> _history = new List<MyTuple<Point, Point>>();
+        readonly List<ChessMoveRecord> _history = new List<ChessMoveRecord>();
 
         RectangleF[] _gridCells;
         InteractiveRectangleEntry[] _boardCellEntries;
@@ -531,16 +537,12 @@ namespace LcdMod.Client.Games.Chess
 
         ChessGameConfig BuildConfig()
         {
-            var history = new StringBuilder();
-            foreach (var pointPair in _history)
-                history.Append($"{pointPair.Item1.ToChar()}{pointPair.Item2.ToChar()}");
-
             return new ChessGameConfig
             {
                 Board = Board,
                 Move = _currentMove,
                 Castling = (int)_availableCastling,
-                History = history.ToString(),
+                History = ChessMoveRecord.SerializeList(_history),
                 PlayingAsWhitePlayerId = _playingAsWhitePlayerId,
                 PlayingAsBlackPlayerId = _playingAsBlackPlayerId,
                 SessionId = _sessionId,
@@ -587,16 +589,11 @@ namespace LcdMod.Client.Games.Chess
 
                 var history = config.History ?? string.Empty;
 
-                if (history.Length > 4096)
+                if (history.Length > 262144)
                     throw new Exception("Corrupted History.");
 
                 _history.Clear();
-
-                if (history.Length != 0 && history.Length % 2 == 0)
-                {
-                    for (var index = 0; index < history.Length; index += 2)
-                        _history.Add(new MyTuple<Point, Point>(history[index].ToPoint(), history[index + 1].ToPoint()));
-                }
+                _history.AddRange(ChessMoveRecord.DeserializeList(history));
 
                 _shoudRecalculateMoves = true;
             }
@@ -618,9 +615,7 @@ namespace LcdMod.Client.Games.Chess
         {
             _historyText = string.Empty;
             for (var index = 0; index < _history.Count; index++)
-                _historyText =
-                    $"{index + 1}. {ToChessMove(_history[index].Item1)} > {ToChessMove(_history[index].Item2)}" + "\n" +
-                    _historyText;
+                _historyText = FormatHistoryLine(_history[index]) + "\n" + _historyText;
         }
 
         ChessBotApi _api;
@@ -711,7 +706,11 @@ namespace LcdMod.Client.Games.Chess
                 {
                     try
                     {
-                        _botThinkMove = _api.ThinkPrepared();
+                        // Give the original challenge bots a realistic amount of
+                        // virtual clock. Bot614 in particular budgets a fraction of
+                        // MillisecondsRemaining, so the old 1000ms default made it
+                        // search for only a few dozen milliseconds.
+                        _botThinkMove = _api.ThinkPrepared(10000);
                     }
                     catch (Exception e)
                     {
@@ -724,6 +723,12 @@ namespace LcdMod.Client.Games.Chess
                 yield return true;
 
             _botThinkRunning = false;
+
+            // Reset the mutable API board from live game state on the main thread.
+            // This mirrors the original API's use of a cloned search board without
+            // reading game state from the parallel worker.
+            if (_api != null && _api.Board != null)
+                _api.Board.LoadFromGame();
 
             if (_botThinkException != null)
             {
@@ -826,7 +831,7 @@ namespace LcdMod.Client.Games.Chess
                 bool canClick = IsBoardCellInteractive(index);
                 var entry = _boardCellEntries[index];
                 entry.SetRect(_gridCells[index]);
-                entry.SetCursor(canClick ? GetBoardCellCursor(index) : CursorType.Default);
+                entry.SetCursor(GetBoardCellCursor(index));
                 entry.SetDataContext(index);
                 entry.SetOnClick(canClick ? (Action<object, object>)ClickBoardCellFromEntry : null);
                 entry.ClickSound = GetBoardCellClickSound(index);
@@ -1025,12 +1030,7 @@ namespace LcdMod.Client.Games.Chess
 
         Point BoardPointFromGridIndex(int index)
         {
-            var point = new Point(index % _boardSide, index / _boardSide);
-
-            if (_playingAsBlack)
-                point = new Point(_boardSide - point.X - 1, _boardSide - point.Y - 1);
-
-            return point;
+            return BoardPointFromBoardIndex(VisualIndexToBoardIndex(index));
         }
 
         void ClickControlBox(int index)

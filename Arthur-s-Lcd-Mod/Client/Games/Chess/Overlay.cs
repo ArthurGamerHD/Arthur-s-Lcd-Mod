@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Games.Chess.Enum;
+using LcdMod.Client.Games.Chess.TinyChessChallenge;
 using LcdMod.Client.Helpers;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
@@ -66,14 +67,27 @@ namespace LcdMod.Client.Games.Chess
         {
             byte value;
             if (_promotions.TryGetValue(symbol, out value))
-            {
-                _chessGame.Board[_index] &= 0xF0; // remove the piece type but keep the color
-                _chessGame.Board[_index] |= value;
-                _chessGame.ExecuteMove(_origin, _target, _chessGame.Board, SpecialMoves.Promotion);
-            }
+                _chessGame.ExecuteMove(_origin, _target, _chessGame.Board, SpecialMoves.Promotion, ToPromotionPieceType(value));
 
             _chessGame.Save();
             Dispose();
+        }
+
+        static PieceType ToPromotionPieceType(byte value)
+        {
+            switch (value)
+            {
+                case 0x02:
+                    return PieceType.Rook;
+                case 0x03:
+                    return PieceType.Knight;
+                case 0x04:
+                    return PieceType.Bishop;
+                case 0x05:
+                    return PieceType.Queen;
+                default:
+                    return PieceType.Queen;
+            }
         }
 
         public override void ClickBox(int index)

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using ChessChallenge.API;
 using LcdMod.Client.Games.Chess.Enum;
@@ -42,26 +43,42 @@ namespace LcdMod.Client.Games.Chess
                 foreach (var target in pair.Value)
                 {
                     var targetCell = GetCell(target) ?? 0;
-                    var captureType = targetCell != 0
-                        ? ToChallengePieceType(GetPieceType(targetCell))
-                        : PieceType.None;
+                    var isEnPassant = movePieceType == PieceType.Pawn &&
+                                      origin.X != target.X &&
+                                      targetCell == 0;
+                    var isCastles = movePieceType == PieceType.King &&
+                                    Math.Abs(origin.X - target.X) == 2;
+                    var captureType = isEnPassant
+                        ? PieceType.Pawn
+                        : targetCell != 0 ? ToChallengePieceType(GetPieceType(targetCell)) : PieceType.None;
 
                     if (capturesOnly && captureType == PieceType.None)
                         continue;
 
                     var promotionType = GetChallengePromotionType(origin, target, fromCell);
 
-                    result.Add(new Move(
-                        ToChallengeSquare(origin),
-                        ToChallengeSquare(target),
-                        movePieceType,
-                        captureType,
-                        promotionType,
-                        isEnPassant: movePieceType == PieceType.Pawn &&
-                                     origin.X != target.X &&
-                                     targetCell == 0,
-                        isCastles: movePieceType == PieceType.King &&
-                                   Math.Abs(origin.X - target.X) == 2));
+                    if (promotionType != PieceType.None)
+                    {
+                        result.Add(new Move(ToChallengeSquare(origin), ToChallengeSquare(target), movePieceType,
+                            captureType, PieceType.Queen, isEnPassant, isCastles));
+                        result.Add(new Move(ToChallengeSquare(origin), ToChallengeSquare(target), movePieceType,
+                            captureType, PieceType.Knight, isEnPassant, isCastles));
+                        result.Add(new Move(ToChallengeSquare(origin), ToChallengeSquare(target), movePieceType,
+                            captureType, PieceType.Rook, isEnPassant, isCastles));
+                        result.Add(new Move(ToChallengeSquare(origin), ToChallengeSquare(target), movePieceType,
+                            captureType, PieceType.Bishop, isEnPassant, isCastles));
+                    }
+                    else
+                    {
+                        result.Add(new Move(
+                            ToChallengeSquare(origin),
+                            ToChallengeSquare(target),
+                            movePieceType,
+                            captureType,
+                            PieceType.None,
+                            isEnPassant,
+                            isCastles));
+                    }
                 }
             }
 
@@ -94,15 +111,22 @@ namespace LcdMod.Client.Games.Chess
                 return;
             }
 
-            if (move.IsPromotion && GetCell(origin) != null)
+            if (!_availableMoves.ContainsKey(origin) ||
+                !_availableMoves[origin].Any(a => a.X == target.X && a.Y == target.Y))
             {
-                var originIndex = PointToIndex(origin);
-                Board[originIndex] &= 0xF0;
-                Board[originIndex] |= ToGamePromotionPieceValue(move.PromotionPieceType);
+                LogHelper.LogInfo($"Rejected illegal bot move: {move}");
+                return;
             }
 
-            if (TryMove(origin, target, Board) == ActionResult.Success)
-                Save();
+            var specialMove = move.IsEnPassant
+                ? SpecialMoves.EnPassant
+                : move.IsCastles ? SpecialMoves.Castling : SpecialMoves.None;
+
+            if (move.IsPromotion)
+                specialMove = SpecialMoves.Promotion;
+
+            ExecuteMove(origin, target, Board, specialMove, move.IsPromotion ? move.PromotionPieceType : PieceType.None);
+            Save();
         }
 
         public Piece GetChallengePiece(Square square)
@@ -144,13 +168,18 @@ namespace LcdMod.Client.Games.Chess
 
         public bool HasChallengeKingsideCastleRight(bool white)
         {
-            var colorMask = white ? Castling.WhiteRookRight : Castling.BlackRookRight;
+            // The game-space Castling enum names black rook sides from Black's
+            // perspective. In API/chess coordinates, black kingside is h8, which is
+            // BlackRookLeft in this enum.
+            var colorMask = white ? Castling.WhiteRookRight : Castling.BlackRookLeft;
             return (_availableCastling & colorMask) != 0;
         }
 
         public bool HasChallengeQueensideCastleRight(bool white)
         {
-            var colorMask = white ? Castling.WhiteRookLeft : Castling.BlackRookLeft;
+            // In API/chess coordinates, black queenside is a8, which is
+            // BlackRookRight in the game-space enum.
+            var colorMask = white ? Castling.WhiteRookLeft : Castling.BlackRookRight;
             return (_availableCastling & colorMask) != 0;
         }
 
@@ -171,43 +200,235 @@ namespace LcdMod.Client.Games.Chess
 
         public ulong GetChallengePositionHash()
         {
+            return GetChallengeReplayState().CurrentPositionHash;
+        }
+
+        public Move[] GetChallengeMoveHistory()
+        {
+            return GetChallengeReplayState().MoveHistory.ToArray();
+        }
+
+        public ChallengeReplayState GetChallengeReplayState()
+        {
+            var state = new ChallengeReplayState();
+            var replayBoard = CreateChallengeStartBoard();
+            var replayCastling = Castling.Full;
+            var enPassantSquareIndex = -1;
+            var fiftyMoveCounter = 0;
+            var ply = 0;
+
+            state.RepetitionHistory.Add(HashChallengePosition(replayBoard, true, replayCastling, enPassantSquareIndex));
+
+            for (int i = 0; i < _history.Count; i++)
+            {
+                var record = _history[i];
+                var origin = record.Origin;
+                var target = record.Target;
+                var originIndex = PointToIndex(origin);
+                var targetIndex = PointToIndex(target);
+
+                if (originIndex < 0 || originIndex >= replayBoard.Length ||
+                    targetIndex < 0 || targetIndex >= replayBoard.Length)
+                    continue;
+
+                var fromCell = replayBoard[originIndex];
+                if (fromCell == 0)
+                    continue;
+
+                var moveType = record.MovingPieceType != PieceType.None
+                    ? record.MovingPieceType
+                    : GetPieceType(fromCell);
+                var isEnPassant = record.SpecialMove == SpecialMoves.EnPassant;
+                var isCastles = record.SpecialMove == SpecialMoves.Castling;
+                var captureType = record.CapturedPieceType;
+                var promotionType = record.PromotionPieceType;
+
+                state.MoveHistory.Add(new Move(
+                    ToChallengeSquare(origin),
+                    ToChallengeSquare(target),
+                    ToChallengePieceType(moveType),
+                    ToChallengePieceType(captureType),
+                    ToChallengePieceType(promotionType),
+                    isEnPassant,
+                    isCastles));
+
+                ApplyReplayMove(replayBoard, origin, target, isEnPassant, isCastles, promotionType);
+
+                replayCastling = record.CastlingRightsAfter;
+                enPassantSquareIndex = ParseReplayEnPassantSquare(record.EnPassantTargetAfter);
+                fiftyMoveCounter = record.HalfmoveClockAfter;
+
+                if (moveType == PieceType.Pawn || captureType != PieceType.None)
+                    state.RepetitionHistory.Clear();
+
+                ply++;
+                state.RepetitionHistory.Add(HashChallengePosition(replayBoard, (ply % 2) == 0, replayCastling, enPassantSquareIndex));
+            }
+
+            state.FiftyMoveCounter = fiftyMoveCounter;
+            state.EnPassantSquareIndex = enPassantSquareIndex;
+            state.CurrentPositionHash = HashChallengePosition(Board, IsChallengeWhiteToMove, _availableCastling, enPassantSquareIndex);
+
+            if (state.RepetitionHistory.Count == 0 ||
+                state.RepetitionHistory[state.RepetitionHistory.Count - 1] != state.CurrentPositionHash)
+            {
+                state.RepetitionHistory.Add(state.CurrentPositionHash);
+            }
+
+            return state;
+        }
+
+        int ParseReplayEnPassantSquare(string squareName)
+        {
+            if (string.IsNullOrEmpty(squareName) || squareName == "-" || squareName.Length < 2)
+                return -1;
+
+            int file = squareName[0] - 'a';
+            int rank;
+            if (!int.TryParse(squareName.Substring(1), out rank))
+                return -1;
+
+            if (file < 0 || file >= _boardSide || rank < 1 || rank > _boardSide)
+                return -1;
+
+            return ToChallengeSquare(new Point(file, _boardSide - rank)).Index;
+        }
+
+        byte[] CreateChallengeStartBoard()
+        {
+            var board = new byte[_boardSide * _boardSide];
+
+            // Black
+            board[0] = 0x02;
+            board[1] = 0x03;
+            board[2] = 0x04;
+            board[3] = 0x05;
+            board[4] = 0x06;
+            board[5] = 0x04;
+            board[6] = 0x03;
+            board[7] = 0x02;
+            for (int i = 8; i < 16; i++)
+                board[i] = 0x01;
+
+            // White
+            board[56] = 0x12;
+            board[57] = 0x13;
+            board[58] = 0x14;
+            board[59] = 0x15;
+            board[60] = 0x16;
+            board[61] = 0x14;
+            board[62] = 0x13;
+            board[63] = 0x12;
+            for (int i = 48; i < 56; i++)
+                board[i] = 0x11;
+
+            return board;
+        }
+
+        void ApplyReplayMove(byte[] replayBoard, Point origin, Point target, bool isEnPassant, bool isCastles, PieceType promotionType)
+        {
+            var originIndex = PointToIndex(origin);
+            var targetIndex = PointToIndex(target);
+            var cellToMove = replayBoard[originIndex];
+
+            if (isEnPassant)
+                replayBoard[PointToIndex(new Point(target.X, origin.Y))] = 0;
+
+            if (isCastles)
+            {
+                var direction = origin.X - target.X < 0 ? 1 : -1;
+                var distance = direction > 0 ? 3 : 4;
+                var rookPos = new Point(origin.X + (distance * direction), origin.Y);
+                var rookIndex = PointToIndex(rookPos);
+                var rook = replayBoard[rookIndex];
+                replayBoard[rookIndex] = 0;
+                replayBoard[PointToIndex(new Point(rookPos.X + (distance - 1) * -direction, origin.Y))] = rook;
+            }
+
+            replayBoard[originIndex] = 0;
+
+            if (promotionType != PieceType.None)
+            {
+                cellToMove &= 0xF0;
+                cellToMove |= ToGamePromotionPieceValue(promotionType);
+            }
+
+            replayBoard[targetIndex] = cellToMove;
+        }
+
+        void UpdateReplayCastlingRights(ref Castling castling, Point origin)
+        {
+            if (origin.Y != 0 && origin.Y != _boardSide - 1)
+                return;
+
+            if (origin.X == 0)
+                castling &= origin.Y == 0 ? ~Castling.BlackRookRight : ~Castling.WhiteRookLeft;
+            else if (origin.X == _boardSide - 1)
+                castling &= origin.Y == 0 ? ~Castling.BlackRookLeft : ~Castling.WhiteRookRight;
+            else if (origin.X == 4)
+                castling &= origin.Y == 0 ? ~Castling.BlackKing : ~Castling.WhiteKing;
+        }
+
+        ulong HashChallengePosition(byte[] board, bool whiteToMove, Castling castling, int enPassantSquareIndex)
+        {
             unchecked
             {
                 ulong hash = 1469598103934665603UL;
+                var pieces = new PieceType[64];
+                var whitePieces = new bool[64];
 
-                for (int i = 0; i < Board.Length; i++)
+                for (int i = 0; i < board.Length; i++)
                 {
-                    hash ^= Board[i];
+                    var cell = board[i];
+                    var square = ToChallengeSquare(IndexToPoint(i)).Index;
+
+                    if (cell == 0)
+                    {
+                        pieces[square] = PieceType.None;
+                        whitePieces[square] = false;
+                    }
+                    else
+                    {
+                        pieces[square] = ToChallengePieceType(GetPieceType(cell));
+                        whitePieces[square] = GetColor(cell) == PieceColor.White;
+                    }
+                }
+
+                for (int i = 0; i < 64; i++)
+                {
+                    hash ^= (ulong)((int)pieces[i] + 1);
+                    hash *= 1099511628211UL;
+                    hash ^= whitePieces[i] ? 1UL : 0UL;
                     hash *= 1099511628211UL;
                 }
 
-                hash ^= (ulong)_currentMove;
+                hash ^= whiteToMove ? 1UL : 0UL;
                 hash *= 1099511628211UL;
-
-                hash ^= (ulong)_availableCastling;
+                hash ^= (ulong)(HasReplayKingsideCastleRight(castling, true) ? 1 : 0);
+                hash *= 1099511628211UL;
+                hash ^= (ulong)(HasReplayQueensideCastleRight(castling, true) ? 1 : 0);
+                hash *= 1099511628211UL;
+                hash ^= (ulong)(HasReplayKingsideCastleRight(castling, false) ? 1 : 0);
+                hash *= 1099511628211UL;
+                hash ^= (ulong)(HasReplayQueensideCastleRight(castling, false) ? 1 : 0);
+                hash *= 1099511628211UL;
+                hash ^= (ulong)(enPassantSquareIndex + 1);
                 hash *= 1099511628211UL;
 
                 return hash;
             }
         }
 
-        public Move[] GetChallengeMoveHistory()
+        static bool HasReplayKingsideCastleRight(Castling castling, bool white)
         {
-            var result = new List<Move>(_history.Count);
+            var colorMask = white ? Castling.WhiteRookRight : Castling.BlackRookLeft;
+            return (castling & colorMask) != 0;
+        }
 
-            foreach (var pair in _history)
-            {
-                var fromCell = GetCell(pair.Item1) ?? 0;
-                var targetCell = GetCell(pair.Item2) ?? 0;
-
-                result.Add(new Move(
-                    ToChallengeSquare(pair.Item1),
-                    ToChallengeSquare(pair.Item2),
-                    fromCell != 0 ? ToChallengePieceType(GetPieceType(fromCell)) : PieceType.None,
-                    targetCell != 0 ? ToChallengePieceType(GetPieceType(targetCell)) : PieceType.None));
-            }
-
-            return result.ToArray();
+        static bool HasReplayQueensideCastleRight(Castling castling, bool white)
+        {
+            var colorMask = white ? Castling.WhiteRookLeft : Castling.BlackRookRight;
+            return (castling & colorMask) != 0;
         }
 
         public string GetChallengeFenString()
@@ -244,9 +465,17 @@ namespace LcdMod.Client.Games.Chess
                     sb.Append('/');
             }
 
+            var replayState = GetChallengeReplayState();
+
             sb.Append(IsChallengeWhiteToMove ? " w " : " b ");
             sb.Append(BuildFenCastlingRights());
-            sb.Append(" - 0 ");
+            sb.Append(' ');
+            sb.Append(replayState.EnPassantSquareIndex >= 0
+                ? new Square(replayState.EnPassantSquareIndex).Name
+                : "-");
+            sb.Append(' ');
+            sb.Append(replayState.FiftyMoveCounter);
+            sb.Append(' ');
             sb.Append((_currentMove / 2) + 1);
             return sb.ToString();
         }
@@ -280,6 +509,7 @@ namespace LcdMod.Client.Games.Chess
 
         static byte ToGamePromotionPieceValue(PieceType type)
         {
+            // Return LCD board-byte/texture ids, not ChessChallenge enum values.
             switch (type)
             {
                 case PieceType.Rook:
@@ -370,5 +600,14 @@ namespace LcdMod.Client.Games.Chess
 
             return sb.Length == 0 ? "-" : sb.ToString();
         }
+    }
+
+    public sealed class ChallengeReplayState
+    {
+        public readonly List<Move> MoveHistory = new List<Move>();
+        public readonly List<ulong> RepetitionHistory = new List<ulong>();
+        public int EnPassantSquareIndex = -1;
+        public int FiftyMoveCounter;
+        public ulong CurrentPositionHash;
     }
 }

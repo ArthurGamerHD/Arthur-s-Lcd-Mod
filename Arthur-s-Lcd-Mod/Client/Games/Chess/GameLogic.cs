@@ -2,7 +2,6 @@
 using System.Linq;
 using LcdMod.Client.Games.Chess.Enum;
 using LcdMod.Client.Games.Chess.TinyChessChallenge;
-using VRage;
 using VRageMath;
 
 namespace LcdMod.Client.Games.Chess
@@ -112,45 +111,106 @@ namespace LcdMod.Client.Games.Chess
             return ActionResult.Success;
         }
 
-        public void ExecuteMove(Point origin, Point target, byte[] board, SpecialMoves specialMove = SpecialMoves.None)
+        public void ExecuteMove(
+            Point origin,
+            Point target,
+            byte[] board,
+            SpecialMoves specialMove = SpecialMoves.None,
+            PieceType promotionType = PieceType.None)
         {
-            Move(origin, target, board, specialMove);
-            
+            var record = CreateMoveRecord(origin, target, board, specialMove, promotionType);
+
+            Move(origin, target, board, specialMove, record.PromotionPieceType);
+
             if (_availableCastling != Castling.None)
-                UpdateCastling(origin);
+                UpdateCastling(origin, target);
 
             _currentMove++;
-            _history.Add(new MyTuple<Point, Point>(origin, target));
-            var text = $"{_currentMove}. {ToChessMove(origin)} > {ToChessMove(target)}";
 
-            switch (specialMove)
-            {
-                case SpecialMoves.Promotion:
-                    text += $" {GetPieceType(GetCell(target))}";
-                    break;
-
-                case SpecialMoves.EnPassant:
-                    text += $" En Passant";
-                    break;
-
-                case SpecialMoves.Castling:
-                    text += $" Castling";
-                    break;
-            }
-
-            _historyText = text + "\n" + _historyText;
+            FinalizeMoveRecord(record);
+            _history.Add(record);
+            _historyText = FormatHistoryLine(record) + "\n" + _historyText;
 
             _coroutine = GeneratePathFind();
         }
 
+        ChessMoveRecord CreateMoveRecord(
+            Point origin,
+            Point target,
+            byte[] board,
+            SpecialMoves specialMove,
+            PieceType promotionType)
+        {
+            var originIndex = PointToIndex(origin);
+            var targetIndex = PointToIndex(target);
+            var movingCell = board[originIndex];
+            var targetCell = board[targetIndex];
+            var movingType = GetPieceType(movingCell);
+            var movingColor = GetColor(movingCell);
+
+            if (specialMove == SpecialMoves.Promotion && promotionType == PieceType.None)
+                promotionType = PieceType.Queen;
+
+            var capturedType = PieceType.None;
+            if (specialMove == SpecialMoves.EnPassant)
+                capturedType = PieceType.Pawn;
+            else if (targetCell != 0 && GetColor(targetCell) != movingColor)
+                capturedType = GetPieceType(targetCell);
+
+            return new ChessMoveRecord
+            {
+                Ply = _currentMove + 1,
+                MovingColor = movingColor,
+                MovingPieceType = movingType,
+                Origin = origin,
+                Target = target,
+                CapturedPieceType = capturedType,
+                PromotionPieceType = specialMove == SpecialMoves.Promotion ? promotionType : PieceType.None,
+                SpecialMove = specialMove,
+                San = BuildPgnSan(board, origin, target, movingType, movingColor, specialMove,
+                    specialMove == SpecialMoves.Promotion ? promotionType : PieceType.None)
+            };
+        }
+
+        void FinalizeMoveRecord(ChessMoveRecord record)
+        {
+            var previousHalfmoveClock = _history.Count == 0 ? 0 : _history[_history.Count - 1].HalfmoveClockAfter;
+
+            record.EnPassantTargetAfter = GetPgnEnPassantTarget(record.Origin, record.Target, record.MovingPieceType);
+            record.HalfmoveClockAfter = record.MovingPieceType == PieceType.Pawn || record.CapturedPieceType != PieceType.None
+                ? 0
+                : previousHalfmoveClock + 1;
+            record.CastlingRightsAfter = _availableCastling;
+            record.FenAfter = BuildPgnFen(Board, _currentMove, _availableCastling, record.EnPassantTargetAfter,
+                record.HalfmoveClockAfter);
+        }
+
+        string FormatHistoryLine(ChessMoveRecord record)
+        {
+            var moveNumber = ((record.Ply - 1) / 2) + 1;
+            var movePrefix = record.MovingColor == PieceColor.White
+                ? moveNumber + "."
+                : moveNumber + "...";
+            var san = string.IsNullOrEmpty(record.San)
+                ? ToPgnCoordinateMove(record.Origin, record.Target, record.PromotionPieceType)
+                : record.San;
+
+            return movePrefix + " " + san;
+        }
+
         SpecialMoves GetSpecialMove(Point origin, Point target, byte[] board, PieceType type) =>
-            type == PieceType.Pawn && Math.Abs(origin.X -target.X) == 1 && GetCell(target, board) == 0
+            type == PieceType.Pawn && Math.Abs(origin.X - target.X) == 1 && GetCell(target, board) == 0
                 ? SpecialMoves.EnPassant
                 : type == PieceType.King && Math.Abs(origin.X - target.X) == 2
                     ? SpecialMoves.Castling
                     : 0;
 
-        void Move(Point origin, Point target, byte[] board, SpecialMoves specialMove = SpecialMoves.None)
+        void Move(
+            Point origin,
+            Point target,
+            byte[] board,
+            SpecialMoves specialMove = SpecialMoves.None,
+            PieceType promotionType = PieceType.None)
         {
             var originIndex = PointToIndex(origin);
             var targetIndex = PointToIndex(target);
@@ -175,10 +235,26 @@ namespace LcdMod.Client.Games.Chess
             }
 
             board[originIndex] = 0;
+
+            if (specialMove == SpecialMoves.Promotion)
+            {
+                if (promotionType == PieceType.None)
+                    promotionType = PieceType.Queen;
+
+                cellToMove &= 0xF0;
+                cellToMove |= ToGamePromotionPieceValue(promotionType);
+            }
+
             board[targetIndex] = cellToMove;
         }
 
-        void UpdateCastling(Point origin)
+        void UpdateCastling(Point origin, Point target)
+        {
+            ClearCastlingRightFromMovedSquare(origin);
+            ClearCastlingRightFromCapturedRookSquare(target);
+        }
+
+        void ClearCastlingRightFromMovedSquare(Point origin)
         {
             if (origin.Y != 0 && origin.Y != _boardSide - 1)
                 return;
@@ -189,6 +265,17 @@ namespace LcdMod.Client.Games.Chess
                 _availableCastling &= origin.Y == 0 ? ~Castling.BlackRookLeft : ~Castling.WhiteRookRight;
             else if (origin.X == 4)
                 _availableCastling &= origin.Y == 0 ? ~Castling.BlackKing : ~Castling.WhiteKing;
+        }
+
+        void ClearCastlingRightFromCapturedRookSquare(Point target)
+        {
+            if (target.Y != 0 && target.Y != _boardSide - 1)
+                return;
+
+            if (target.X == 0)
+                _availableCastling &= target.Y == 0 ? ~Castling.BlackRookRight : ~Castling.WhiteRookLeft;
+            else if (target.X == _boardSide - 1)
+                _availableCastling &= target.Y == 0 ? ~Castling.BlackRookLeft : ~Castling.WhiteRookRight;
         }
     }
 }

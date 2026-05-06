@@ -169,15 +169,14 @@ namespace LcdMod.Client.Games.Chess
 
 
             var lastMove = _history.Last();
-            var pieceType = GetPieceType(GetCell(lastMove.Item2));
 
-            if (pieceType != PieceType.Pawn || Math.Abs(lastMove.Item1.X - point.X) != 1)
+            if (lastMove.MovingPieceType != PieceType.Pawn || Math.Abs(lastMove.Origin.X - point.X) != 1)
                 return;
 
-            if ((color == PieceColor.White && lastMove.Item1.Y == 1 && lastMove.Item2.Y == 3) ||
-                (color == PieceColor.Black && lastMove.Item1.Y == 6 && lastMove.Item2.Y == 4))
+            if ((color == PieceColor.White && lastMove.Origin.Y == 1 && lastMove.Target.Y == 3) ||
+                (color == PieceColor.Black && lastMove.Origin.Y == 6 && lastMove.Target.Y == 4))
             {
-                possibleMoves.Add(new Point(lastMove.Item1.X, lastMove.Item1.Y - step));
+                possibleMoves.Add(new Point(lastMove.Origin.X, lastMove.Origin.Y - step));
             }
         }
 
