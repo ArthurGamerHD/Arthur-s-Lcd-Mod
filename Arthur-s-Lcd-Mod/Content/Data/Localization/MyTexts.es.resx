@@ -166,7 +166,7 @@
   <data name="LcdMod_StarMap_Info_RadiusShort" xml:space="preserve">
     <value>Radio: {0}</value>
   </data>
-  <data name="LcdMod_StarMap_Info_Atmosphere_Short" xml:space="preserve">
+  <data name="LcdMod_Atmosphere_Short" xml:space="preserve">
     <value>Atm.: {0}</value>
   </data>
   <data name="LcdMod_StarMap_Info_O2" xml:space="preserve">
