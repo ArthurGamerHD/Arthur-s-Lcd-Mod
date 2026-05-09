@@ -1,8 +1,10 @@
+using LcdMod.Common.Config.Models.Apps;
 using ProtoBuf;
 
 namespace LcdMod.Common.Config.Models
 {
     [ProtoContract]
+    [ProtoInclude(113, typeof(ScreenConfigRaycast))]
     public partial class ScreenConfigInteractive : ScreenConfigColorable
     {
         public override int Id => 14;

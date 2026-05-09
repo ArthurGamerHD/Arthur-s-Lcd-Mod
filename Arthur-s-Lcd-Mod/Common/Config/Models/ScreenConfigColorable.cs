@@ -1,4 +1,3 @@
-//todo: remove this
 using LcdMod.Common.Helpers;
 using ProtoBuf;
 using VRageMath;

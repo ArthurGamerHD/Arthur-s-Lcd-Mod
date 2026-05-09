@@ -467,7 +467,7 @@ namespace LcdMod.Client.Utility
             float contentLeftX = cardRect.X + padding.X;
             float contentCenterX = contentLeftX + contentWidth * 0.5f;
 
-            float bodyLeftX = contentLeftX + Math.Max(0f, (contentWidth - bodyWidth) * 0.5f);
+            float bodyLeftX = contentLeftX;
             float iconLeftX = bodyLeftX;
             float leftX = bodyLeftX + iconSize + iconGap;
 
@@ -779,6 +779,54 @@ namespace LcdMod.Client.Utility
 
             handler(DataContext ?? this, sender);
             return true;
+        }
+    }
+
+    public class InteractiveCustomEntry : InteractiveEntry
+    {
+        readonly Func<Vector2, bool> _hitGetter;
+        readonly Func<RectangleF> _boundsGetter;
+        RectangleF _bounds;
+
+        public InteractiveCustomEntry(RectangleF bounds, Func<Vector2, bool> hitGetter,
+            CursorType? cursor = null, object dataContext = null,
+            Action<object, object> onClick = null, InteractiveTooltip tooltip = null)
+            : base(cursor, dataContext, onClick, tooltip)
+        {
+            _bounds = bounds;
+            _hitGetter = hitGetter;
+        }
+
+        public InteractiveCustomEntry(Func<RectangleF> boundsGetter, Func<Vector2, bool> hitGetter,
+            CursorType? cursor = null, object dataContext = null,
+            Action<object, object> onClick = null, InteractiveTooltip tooltip = null)
+            : base(cursor, dataContext, onClick, tooltip)
+        {
+            _boundsGetter = boundsGetter;
+            _hitGetter = hitGetter;
+        }
+
+        public override RectangleF Bounds => _boundsGetter != null ? _boundsGetter() : _bounds;
+
+        public void SetBounds(RectangleF bounds)
+        {
+            _bounds = bounds;
+        }
+
+        protected override bool HitCore(Vector2 point)
+        {
+            return _hitGetter != null && _hitGetter(point);
+        }
+
+        protected override void RenderDefault(InteractiveRenderContext context, List<MySprite> sprites)
+        {
+            var rect = Bounds;
+            var fillColor = Hit(context.CursorPosition)
+                ? context.PanelColor.DeriveAccentColor()
+                : context.PanelColor;
+
+            RectanglePanel.CreateSpritesFromRect(rect, sprites, fillColor, 0.2f);
+            RenderDefaultText(rect, context, sprites);
         }
     }
 

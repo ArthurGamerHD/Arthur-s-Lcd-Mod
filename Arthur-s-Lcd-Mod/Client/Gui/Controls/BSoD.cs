@@ -35,7 +35,7 @@ namespace LcdMod.Client.Gui.Controls
             bool ultraWide = viewBox.Width >= 2f * viewBox.Height;
             float layoutScale = app.Scale * (ultraWide ? 2f : 1f);
             float margin = ClampSafe(shortSide * 0.04f, 8f * app.Scale, 24f * layoutScale);
-            float titleScale = Math.Max(0.35f, layoutScale);
+            float titleScale = Math.Max(0.30f, layoutScale);
             float bodyScale = Math.Max(0.25f, titleScale * 0.5f);
             float textLeft = viewBox.X + margin;
             float textRight = viewBox.Right - margin;
@@ -47,7 +47,7 @@ namespace LcdMod.Client.Gui.Controls
 
             y = DrawWrappedText(
                 app,
-                "Your Station ran into a problem and needs to Restart.\nWe're waiting for a while, And then we'll restart if for you",
+                "Your Station ran into a problem and needs to Restart. We're waiting for a while, And then we'll restart if for you",
                 new Vector2(textLeft, y),
                 textWidth,
                 titleScale,

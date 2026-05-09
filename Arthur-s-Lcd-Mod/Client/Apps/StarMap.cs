@@ -2777,17 +2777,17 @@ namespace LcdMod.Client.Apps
 
         void CachePlanetInfoLines(ref PlanetProjection planet)
         {
-            planet.CachedInfoLines = BuildCachedPlanetInfoLines(planet, false);
-            planet.CachedCompactInfoLines = BuildCachedPlanetInfoLines(planet, true);
+            planet.CachedInfoLines = BuildCachedPlanetInfoLines(planet);
+            planet.CachedCompactInfoLines = BuildCachedPlanetInfoLines(planet);
         }
 
         List<ITooltipLine> BuildPlanetInfoLines(PlanetProjection planet, bool compactRadiusLabel)
         {
             var cachedLines = compactRadiusLabel ? planet.CachedCompactInfoLines : planet.CachedInfoLines;
-            return cachedLines ?? BuildCachedPlanetInfoLines(planet, compactRadiusLabel);
+            return cachedLines ?? BuildCachedPlanetInfoLines(planet);
         }
 
-        List<ITooltipLine> BuildCachedPlanetInfoLines(PlanetProjection planet, bool compactRadiusLabel)
+        List<ITooltipLine> BuildCachedPlanetInfoLines(PlanetProjection planet)
         {
             var lines = new List<ITooltipLine>(9)
             {

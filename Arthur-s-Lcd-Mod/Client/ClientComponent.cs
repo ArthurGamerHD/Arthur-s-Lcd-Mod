@@ -12,6 +12,7 @@ using LcdMod.Client.TerminalControls.Filter;
 using LcdMod.Client.TerminalControls.Filter.Buttons;
 using LcdMod.Client.TerminalControls.Filter.Listbox;
 using LcdMod.Client.TerminalControls.Generic;
+using LcdMod.Client.TerminalControls.Scale;
 using LcdMod.Common.Helpers;
 using LcdMod.Common.Networking;
 using Sandbox.Game.Entities;
@@ -81,6 +82,9 @@ namespace LcdMod.Client
             Controls.Add(new SliderCursorScale());
             Controls.Add(new SwitchToggleAlt());
             Controls.Add(new SliderRotation());
+            
+            Controls.Add(new SliderRaysPerTick());
+            Controls.Add(new SliderRenderScale());
 
             Controls.Add(new ComboboxDisplayMode());
             Controls.Add(new ComboboxGraphWindow());

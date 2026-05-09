@@ -63,6 +63,38 @@ namespace LcdMod.Client.ScreenAreas
             return true;
         }
 
+        public static bool IsScreenAreaVisibleToCamera(SurfaceScriptBase screen)
+        {
+            if (screen == null || screen.Block == null)
+                return false;
+
+            var session = MyAPIGateway.Session;
+            var camera = session?.Camera;
+            if (camera == null)
+                return false;
+
+            MinimalMwmScreenAreaGeometry geometry;
+            if (!TryGetScreenAreaGeometry(screen, out geometry))
+                return false;
+
+            BoundingBoxD bounds;
+            if (!TryGetScreenAreaWorldBounds(
+                    screen.Block.Model,
+                    screen.Block.WorldMatrix,
+                    geometry,
+                    camera.Position,
+                    out bounds))
+                return false;
+
+            double maxDistance = Math.Max(1d, camera.FarPlaneDistance);
+            double distanceSq = Vector3D.DistanceSquared(camera.Position, bounds.Center);
+            if (distanceSq > maxDistance * maxDistance)
+                return false;
+
+            bounds.Inflate(0.05d);
+            return camera.IsInFrustum(ref bounds);
+        }
+
         static Vector2 ToSurfacePoint(Sandbox.ModAPI.Ingame.IMyTextSurface surface, Vector2 uv)
         {
             if (surface == null)
@@ -72,6 +104,70 @@ namespace LcdMod.Client.ScreenAreas
             return new Vector2(
                 offset.X + uv.X * surface.SurfaceSize.X,
                 offset.Y + uv.Y * surface.SurfaceSize.Y);
+        }
+
+        static bool TryGetScreenAreaWorldBounds(
+            IMyModel blockModel,
+            MatrixD worldMatrix,
+            MinimalMwmScreenAreaGeometry geometry,
+            Vector3D cameraPosition,
+            out BoundingBoxD bounds)
+        {
+            bounds = default(BoundingBoxD);
+            if (blockModel == null || geometry == null || geometry.TriangleIndices == null)
+                return false;
+
+            var min = new Vector3D(double.MaxValue);
+            var max = new Vector3D(double.MinValue);
+            var hasPoint = false;
+            var hasFacingTriangle = false;
+
+            for (int i = 0; i < geometry.TriangleIndices.Count; i++)
+            {
+                var triangle = blockModel.GetTriangle(geometry.TriangleIndices[i]);
+
+                Vector3 aLocal;
+                Vector3 bLocal;
+                Vector3 cLocal;
+                blockModel.GetVertex(triangle.I0, triangle.I1, triangle.I2, out aLocal, out bLocal, out cLocal);
+
+                var a = Vector3D.Transform((Vector3D)aLocal, worldMatrix);
+                var b = Vector3D.Transform((Vector3D)bLocal, worldMatrix);
+                var c = Vector3D.Transform((Vector3D)cLocal, worldMatrix);
+
+                IncludePoint(ref min, ref max, a);
+                IncludePoint(ref min, ref max, b);
+                IncludePoint(ref min, ref max, c);
+                hasPoint = true;
+
+                var normal = Vector3D.Cross(b - a, c - a);
+                var center = (a + b + c) / 3d;
+                if (Vector3D.Dot(normal, cameraPosition - center) > 1e-9)
+                    hasFacingTriangle = true;
+            }
+
+            if (!hasPoint || !hasFacingTriangle)
+                return false;
+
+            bounds = new BoundingBoxD(min, max);
+            return true;
+        }
+
+        static void IncludePoint(ref Vector3D min, ref Vector3D max, Vector3D point)
+        {
+            if (point.X < min.X)
+                min.X = point.X;
+            if (point.Y < min.Y)
+                min.Y = point.Y;
+            if (point.Z < min.Z)
+                min.Z = point.Z;
+
+            if (point.X > max.X)
+                max.X = point.X;
+            if (point.Y > max.Y)
+                max.Y = point.Y;
+            if (point.Z > max.Z)
+                max.Z = point.Z;
         }
 
         static bool TryGetScreenAreaGeometry(SurfaceScriptBase screen, out MinimalMwmScreenAreaGeometry geometry)
