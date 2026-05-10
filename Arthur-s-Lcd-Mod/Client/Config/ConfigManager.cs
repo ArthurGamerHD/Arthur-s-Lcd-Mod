@@ -24,22 +24,6 @@ namespace LcdMod.Client.Config
         static readonly IConfigGenerator ConfigGenerator = new ConfigGenerator();
         
         public static ScreenConfigGeneral GenerateConfig(int configId) => ConfigGenerator.GenerateConfig((ConfigKind)configId) as ScreenConfigGeneral;
-        public static NetworkManager NetworkManager;
-
-
-        public static void Init()
-        {
-            LogHelper.Log(MyLogSeverity.Info, $"Setting up Network Manager using port {Constants.Port}");
-            NetworkManager = new NetworkManager(Constants.Port);
-            NetworkManager.Init();
-        }
-
-        public static void Close()
-        {
-            LogHelper.Log(MyLogSeverity.Info, $"Closing Network Manager");
-            NetworkManager?.Dispose();
-            NetworkManager = null;
-        }
 
         public static void SaveAll()
         {
@@ -80,7 +64,7 @@ namespace LcdMod.Client.Config
             foreach (var app in GetAppsForBlock(storageEntity as IMyTerminalBlock)) 
                 app.RequestRedraw();
 
-            NetworkManager.TransmitToServer(new NetworkPackageSyncScreenConfig(storageEntity.EntityId, providerConfig));
+            LcdModSessionComponent.NetworkManager.TransmitToServer(new NetworkPackageSyncScreenConfig(storageEntity.EntityId, providerConfig));
             Save(storageEntity, providerConfig);
         }
 

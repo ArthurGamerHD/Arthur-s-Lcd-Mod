@@ -23,8 +23,8 @@ namespace LcdMod.Client.Terminal
 
         readonly LcdModSessionComponent _session;
         
-        public IMyTerminalControlButton CustomDataButton;
-        public IMyTerminalControlButton ShowTextPanelButton;
+        public static IMyTerminalControlButton CustomDataButton;
+        public static IMyTerminalControlButton ShowTextPanelButton;
 
         public TerminalManager(LcdModSessionComponent session)
         {

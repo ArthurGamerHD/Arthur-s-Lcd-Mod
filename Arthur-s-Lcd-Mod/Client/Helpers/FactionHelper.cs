@@ -76,7 +76,7 @@ namespace LcdMod.Client.Helpers
             if(MyAPIGateway.Session.IsServer)
                 Common.Helpers.FactionHelperCommon.EditFaction(packet);
             else
-                ConfigManager.NetworkManager.TransmitToServer(packet, false);
+                LcdModSessionComponent.NetworkManager.TransmitToServer(packet, false);
 
             MyAPIGateway.Utilities.ShowMessage("lcdMod", LocHelper.GetLoc("LcdMod_FactionColor_Updated"));
         }

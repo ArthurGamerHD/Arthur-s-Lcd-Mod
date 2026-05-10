@@ -29,6 +29,8 @@ namespace LcdMod
         public static LcdModClientComponent Client;
         public static LcdModServerComponent Server;
 
+        public static NetworkManager NetworkManager = new NetworkManager(Constants.Port);
+
         public static event Action OnSave;
         public static event Action OnLanguageChanged;
         public static event Action OnAfterSimulationUpdate;
@@ -116,8 +118,6 @@ namespace LcdMod
             Server?.UnloadData();
             Client = null;
             Server = null;
-
-            ConfigManager.Close();
             _instance = null;
         }
 
@@ -152,8 +152,9 @@ namespace LcdMod
         {
             try
             {
-                ConfigManager.Init();
-                ConfigManager.NetworkManager.OnReceivedPacket += OnReceivedPacket;
+                NetworkManager.OnReceivedPacket += OnReceivedPacket;
+                
+                NetworkManager.Init();
 
                 Server?.BeforeStart();
                 Client?.BeforeStart();
@@ -181,6 +182,12 @@ namespace LcdMod
                         break;
                     case PackageCode.PlayerInputBlacklist:
                         HandlePlayerInputBlacklist(args);
+                        break;
+                    case PackageCode.TextInputHelper:
+                        if (args.IsFromServer)
+                            Client?.HandleTextInput(args);
+                        else
+                            Server?.HandleTextInput(args);
                         break;
                     default:
                         {
