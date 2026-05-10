@@ -15,7 +15,8 @@
       "Bash(/c/Python314/python.exe ./gen_resx.py)",
       "Bash(/c/Python314/python.exe *)",
       "Bash(rm -rf C:/Users/maike/AppData/Roaming/SpaceEngineers/Mods/Graph)",
-      "Bash(rm -rf Graph/Generated Graph/__MdkGenerated_*.cs Graph/obj Graph/bin)"
+      "Bash(rm -rf Graph/Generated Graph/__MdkGenerated_*.cs Graph/obj Graph/bin)",
+      "mcp__ide__getDiagnostics"
     ]
   }
 }

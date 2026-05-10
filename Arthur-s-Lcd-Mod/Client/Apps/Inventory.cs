@@ -1,17 +1,17 @@
 using System.Collections.Generic;
 using Generated;
-using LcdMod.Client.TerminalControls.Groups;
+using LcdMod.Client.Terminal.Controls.Groups;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using VRage.Game.ModAPI;
 using VRageMath;
-using CheckboxHideEmpty = LcdMod.Client.TerminalControls.Generic.CheckboxHideEmpty;
-using ComboboxSorting = LcdMod.Client.TerminalControls.Generic.ComboboxSorting;
+using CheckboxHideEmpty = LcdMod.Client.Terminal.Controls.Generic.CheckboxHideEmpty;
+using ComboboxSorting = LcdMod.Client.Terminal.Controls.Generic.ComboboxSorting;
 using ItemsSurfaceScriptBase = LcdMod.Client.Apps.Abstract.ItemsSurfaceScriptBase;
-using LabelSeparator = LcdMod.Client.TerminalControls.Filter.LabelSeparator;
+using LabelSeparator = LcdMod.Client.Terminal.Controls.Filter.LabelSeparator;
 using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
-using SeparatorFilter = LcdMod.Client.TerminalControls.Filter.SeparatorFilter;
-using SwitchToggleLines = LcdMod.Client.TerminalControls.Generic.SwitchToggleLines;
+using SeparatorFilter = LcdMod.Client.Terminal.Controls.Filter.SeparatorFilter;
+using SwitchToggleLines = LcdMod.Client.Terminal.Controls.Generic.SwitchToggleLines;
 
 namespace LcdMod.Client.Apps
 {

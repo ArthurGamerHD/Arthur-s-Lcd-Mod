@@ -5,7 +5,7 @@ using Generated;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui.Controls;
 using LcdMod.Client.Helpers;
-using LcdMod.Client.TerminalControls;
+using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Utility;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;

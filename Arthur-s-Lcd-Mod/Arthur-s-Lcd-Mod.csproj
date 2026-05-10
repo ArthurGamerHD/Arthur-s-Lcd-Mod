@@ -54,6 +54,7 @@
     
     <ItemGroup>
       <Folder Include="Client\Config\" />
+      <Folder Include="Client\Terminal\" />
     </ItemGroup>
 
     <Target Name="RemoveZhCnResxAlias" AfterTargets="PostBuildEvent">

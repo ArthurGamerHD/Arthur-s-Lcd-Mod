@@ -3,7 +3,7 @@ using LcdMod.Client.Config;
 using LcdMod.Client.Games.Minesweeper;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.Controls.Interactive;
-using LcdMod.Client.TerminalControls;
+using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Utility;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;

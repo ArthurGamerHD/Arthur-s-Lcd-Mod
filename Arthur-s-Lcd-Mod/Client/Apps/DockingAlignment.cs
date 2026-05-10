@@ -5,7 +5,7 @@ using Generated;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Helpers;
-using LcdMod.Client.TerminalControls;
+using LcdMod.Client.Terminal.Controls;
 using Sandbox.Definitions;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;

@@ -6,8 +6,8 @@ using Generated;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Gui.Controls;
 using LcdMod.Client.Gui.Models.Antenna;
-using LcdMod.Client.TerminalControls;
-using LcdMod.Client.TerminalControls.Groups;
+using LcdMod.Client.Terminal.Controls;
+using LcdMod.Client.Terminal.Controls.Groups;
 using LcdMod.Client.Utility;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
@@ -15,9 +15,9 @@ using VRage.Game.GUI.TextPanel;
 using VRage.ModAPI;
 using VRageMath;
 using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
-using LabelSeparator = LcdMod.Client.TerminalControls.Filter.LabelSeparator;
-using SeparatorFilter = LcdMod.Client.TerminalControls.Filter.SeparatorFilter;
-using SwitchToggleLines = LcdMod.Client.TerminalControls.Generic.SwitchToggleLines;
+using LabelSeparator = LcdMod.Client.Terminal.Controls.Filter.LabelSeparator;
+using SeparatorFilter = LcdMod.Client.Terminal.Controls.Filter.SeparatorFilter;
+using SwitchToggleLines = LcdMod.Client.Terminal.Controls.Generic.SwitchToggleLines;
 
 namespace LcdMod.Client.Apps
 {

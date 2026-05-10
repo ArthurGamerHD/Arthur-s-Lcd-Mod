@@ -13,7 +13,7 @@ using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRageMath;
-using ComboboxGraphWindow = LcdMod.Client.TerminalControls.Generic.ComboboxGraphWindow;
+using ComboboxGraphWindow = LcdMod.Client.Terminal.Controls.Generic.ComboboxGraphWindow;
 using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
 
 namespace LcdMod.Client.Apps

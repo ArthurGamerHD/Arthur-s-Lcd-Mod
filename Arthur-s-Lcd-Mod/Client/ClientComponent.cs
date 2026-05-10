@@ -5,41 +5,30 @@ using System.Linq;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Config;
 using LcdMod.Client.Helpers;
-using LcdMod.Client.TerminalControls;
-using LcdMod.Client.TerminalControls.Blueprint;
-using LcdMod.Client.TerminalControls.Color;
-using LcdMod.Client.TerminalControls.Filter;
-using LcdMod.Client.TerminalControls.Filter.Buttons;
-using LcdMod.Client.TerminalControls.Filter.Listbox;
-using LcdMod.Client.TerminalControls.Generic;
-using LcdMod.Client.TerminalControls.Scale;
+using LcdMod.Client.Terminal;
 using LcdMod.Common.Helpers;
 using LcdMod.Common.Networking;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
-using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using ItemsSurfaceScriptBase = LcdMod.Client.Apps.Abstract.ItemsSurfaceScriptBase;
-using SliderCursorScale = LcdMod.Client.TerminalControls.Interactive.SliderCursorScale;
-using SliderFontSize = LcdMod.Client.TerminalControls.Scale.SliderFontSize;
-using SliderScale = LcdMod.Client.TerminalControls.Scale.SliderScale;
-using SwitchToggleAlt = LcdMod.Client.TerminalControls.Interactive.SwitchToggleAlt;
 
 namespace LcdMod.Client
 {
     public sealed class LcdModClientComponent
     {
-        public static readonly List<TerminalControlsWrapper> Controls = new List<TerminalControlsWrapper>();
         public static readonly List<Action> RunNextFrame = new List<Action>();
         static readonly List<Action> RunThisFrame = new List<Action>();
 
         readonly LcdModSessionComponent _session;
+        readonly TerminalManager _terminalManager;
 
         public LcdModClientComponent(LcdModSessionComponent session)
         {
             _session = session;
+            _terminalManager = new TerminalManager(session);
         }
 
         public void LoadData()
@@ -62,67 +51,19 @@ namespace LcdMod.Client
         {
             PlanetHelper.RefreshPlanets();
             LoadLocalization();
-            MyAPIGateway.TerminalControls.CustomControlGetter += CustomControlGetter;
             MyAPIGateway.Gui.GuiControlRemoved += OnGuiControlRemoved;
-
-            TerminalControlsListbox source = new ListboxBlockCandidates();
-            TerminalControlsListbox target = new ListboxBlockSelected();
-
-            Controls.Add(new SliderFontSize());
-            Controls.Add(new SliderPadding());
-            Controls.Add(new SliderFov());
-
-            Controls.Add(new SwitchToggleColors());
-            Controls.Add(new ColorPickerAccent());
-            Controls.Add(new ColorPickerWarning());
-            Controls.Add(new ColorPickerError());
-
-            Controls.Add(new SwitchToggleHeader());
-            Controls.Add(new SliderScale());
-            Controls.Add(new SliderCursorScale());
-            Controls.Add(new SwitchToggleAlt());
-            Controls.Add(new SliderRotation());
-            
-            Controls.Add(new SliderRaysPerTick());
-            Controls.Add(new SliderRenderScale());
-
-            Controls.Add(new ComboboxDisplayMode());
-            Controls.Add(new ComboboxGraphWindow());
-            Controls.Add(new SliderOreScannerConeAngle());
-            Controls.Add(new ListboxOreScannerReference());
-            Controls.Add(new ListboxReferenceBlockSelection());
-            Controls.Add(new SwitchToggleLines());
-
-            Controls.Add(new ListboxProjectorSelection());
-            Controls.Add(new CheckboxHideEmpty());
-            Controls.Add(new SeparatorFilter());
-            Controls.Add(new LabelSeparator());
-            Controls.Add(source);
-            Controls.Add(new ButtonBlockAddToSelection(source, target));
-            Controls.Add(target);
-            Controls.Add(new ButtonBlockRemoveFromSelection(source, target));
-
-            source = new ListboxItemsCandidates();
-            target = new ListboxItemsSelected();
-
-            Controls.Add(source);
-            Controls.Add(new ButtonItemAddToSelection(source, target));
-            Controls.Add(target);
-            Controls.Add(new ButtonItemRemoveFromSelection(source, target));
-
-            Controls.Add(new ComboboxSorting());
+            _terminalManager.Initialize();
         }
 
         public void UnloadData()
         {
-            MyAPIGateway.TerminalControls.CustomControlGetter -= CustomControlGetter;
+            _terminalManager.Unload();
             MyAPIGateway.Gui.GuiControlRemoved -= OnGuiControlRemoved;
             MyAPIGateway.Entities.OnEntityAdd -= EntityAdded;
             MyAPIGateway.Session.Factions.FactionCreated -= FactionUpdated;
             MyAPIGateway.Session.Factions.FactionEdited -= FactionUpdated;
             MyAPIGateway.Session.Factions.FactionStateChanged -= FactionStateChanged;
 
-            Controls.Clear();
             _session._grids.Clear();
             LcdModSessionComponent.Components.Clear();
             _session.ClearModules();
@@ -345,53 +286,12 @@ namespace LcdMod.Client
             LcdModSessionComponent.RaiseLanguageChanged();
         }
 
-        void CustomControlGetter(IMyTerminalBlock block, List<IMyTerminalControl> controls)
-        {
-            if (controls == null)
-                return;
-
-            try
-            {
-                SetupProviderTerminal(block, controls);
-            }
-            catch (Exception e)
-            {
-                ErrorHandlerHelper.LogError(e, _session);
-            }
-        }
-
-        void SetupProviderTerminal(IMyTerminalBlock block, List<IMyTerminalControl> controls)
-        {
-            var provider = block as IMyTextSurfaceProvider;
-            if (provider == null)
-                return;
-
-            LcdModSessionComponent.LastSelectedBlock = block;
-
-            if (provider is IMyTextPanel)
-            {
-                controls.AddRange(Controls.Select(control => control.TerminalControl));
-            }
-            else if (provider.SurfaceCount > 0)
-            {
-                var index = controls.FindIndex(p => p.Id == "Script") + 3;
-
-                foreach (var control in Controls)
-                {
-                    controls.AddOrInsert(control.TerminalControl, index);
-                    index++;
-                }
-            }
-        }
-
         public static void SetLocalPlayerUseInputBlocked(bool blocked) => SetPlayerUseInputBlocked(MyAPIGateway.Session.LocalHumanPlayer.IdentityId, blocked);
 
         static void SetPlayerUseInputBlocked(long playerId, bool blocked)
         {
             bool enabled = !blocked;
             LcdModSessionComponent.ApplyPlayerUseInputEnabled(playerId, enabled);
-
-            // Multiplayer server-side blacklist propagation is intentionally disabled for local-client testing.
 
             if (MyAPIGateway.Multiplayer.MultiplayerActive &&
                 !MyAPIGateway.Multiplayer.IsServer &&

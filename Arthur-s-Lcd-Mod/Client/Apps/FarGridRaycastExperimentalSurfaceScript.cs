@@ -5,7 +5,7 @@ using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Utility;
 using Generated;
-using LcdMod.Client.TerminalControls.Scale;
+using LcdMod.Client.Terminal.Controls.Scale;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
@@ -16,7 +16,7 @@ using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRageMath;
 using InteractiveSurfaceScript = LcdMod.Client.Apps.Abstract.InteractiveSurfaceScript;
-using SliderFov = LcdMod.Client.TerminalControls.Generic.SliderFov;
+using SliderFov = LcdMod.Client.Terminal.Controls.Generic.SliderFov;
 
 namespace LcdMod.Client.Apps
 {

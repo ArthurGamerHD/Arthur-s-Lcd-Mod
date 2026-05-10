@@ -6,8 +6,8 @@ using Generated;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui.Controls;
 using LcdMod.Client.Helpers;
-using LcdMod.Client.TerminalControls;
-using LcdMod.Client.TerminalControls.Groups;
+using LcdMod.Client.Terminal.Controls;
+using LcdMod.Client.Terminal.Controls.Groups;
 using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
@@ -18,11 +18,11 @@ using VRage.Game.ModAPI;
 using VRage.Utils;
 using VRageMath;
 using ItemsSurfaceScriptBase = LcdMod.Client.Apps.Abstract.ItemsSurfaceScriptBase;
-using LabelSeparator = LcdMod.Client.TerminalControls.Filter.LabelSeparator;
-using ListboxProjectorSelection = LcdMod.Client.TerminalControls.Blueprint.ListboxProjectorSelection;
+using LabelSeparator = LcdMod.Client.Terminal.Controls.Filter.LabelSeparator;
+using ListboxProjectorSelection = LcdMod.Client.Terminal.Controls.Blueprint.ListboxProjectorSelection;
 using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
-using SeparatorFilter = LcdMod.Client.TerminalControls.Filter.SeparatorFilter;
-using SwitchToggleLines = LcdMod.Client.TerminalControls.Generic.SwitchToggleLines;
+using SeparatorFilter = LcdMod.Client.Terminal.Controls.Filter.SeparatorFilter;
+using SwitchToggleLines = LcdMod.Client.Terminal.Controls.Generic.SwitchToggleLines;
 
 namespace LcdMod.Client.Apps
 {

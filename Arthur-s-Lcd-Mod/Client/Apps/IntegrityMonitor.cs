@@ -6,7 +6,7 @@ using Generated;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Helpers;
-using LcdMod.Client.TerminalControls;
+using LcdMod.Client.Terminal.Controls;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using SpaceEngineers.Game.ModAPI;
@@ -17,8 +17,8 @@ using VRage.Utils;
 using VRageMath;
 using ColorExtensions = LcdMod.Client.Extensions.ColorExtensions;
 using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
-using ListboxProjectorSelection = LcdMod.Client.TerminalControls.Blueprint.ListboxProjectorSelection;
-using SliderRotation = LcdMod.Client.TerminalControls.Generic.SliderRotation;
+using ListboxProjectorSelection = LcdMod.Client.Terminal.Controls.Blueprint.ListboxProjectorSelection;
+using SliderRotation = LcdMod.Client.Terminal.Controls.Generic.SliderRotation;
 
 namespace LcdMod.Client.Apps
 {

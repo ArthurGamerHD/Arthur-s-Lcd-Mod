@@ -4,7 +4,7 @@ using System.Text;
 using Generated;
 using LcdMod.Client.Gui.Controls;
 using LcdMod.Client.Helpers;
-using LcdMod.Client.TerminalControls;
+using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Utility;
 using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
