@@ -140,6 +140,9 @@ namespace LcdMod.Client.Apps.Abstract
 
         protected bool ResolveRotationOrSurfaceIndex()
         {
+            if (Block.CubeGrid.Physics == null)
+                return false;
+
             var previous = _rotationOrSurfaceIndex;
 
             if (Block is IMyTextPanel)
@@ -162,16 +165,18 @@ namespace LcdMod.Client.Apps.Abstract
             if (surfaceProvider == null)
                 return false;
 
+            var currentSurfaceName = Surface.Name;
+            
             for (int i = 0; i < surfaceProvider.SurfaceCount; i++)
             {
-                if (surfaceProvider.GetSurface(i) != Surface)
+                if (surfaceProvider.GetSurface(i).Name != currentSurfaceName)
                     continue;
 
                 _rotationOrSurfaceIndex = i;
                 return previous != _rotationOrSurfaceIndex;
             }
 
-            LogHelper.Log(MyLogSeverity.Error, "Failed to find surface for {0}, defaulting to surface 0", Block);
+            LogHelper.Log(MyLogSeverity.Warning, "Failed to find surface {0} for {1}- defaulting to surface 0", Surface.Name, Block);
             _rotationOrSurfaceIndex = 0;
             return previous != _rotationOrSurfaceIndex;
         }
