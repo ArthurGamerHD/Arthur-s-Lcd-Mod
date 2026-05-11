@@ -533,8 +533,8 @@ namespace LcdMod.Client.Apps
                 var generator = planet.Generator;
                 var atmosphere = generator?.Atmosphere;
                 MyTemperatureLevel? averageTemperature = generator?.DefaultSurfaceTemperature;
-                double surfaceGravity = generator?.SurfaceGravity ?? 0d;
-                double gravityFalloff = generator?.GravityFalloffPower ?? 0d;
+                double surfaceGravity = planet.GetInitArguments.SurfaceGravity;
+                double gravityFalloff =  planet.GetInitArguments.GravityFalloff;
                 double gravityLimitRadius = 0d;
                 if (planet.MaximumRadius > 0d && surfaceGravity > 0d && gravityFalloff > 0d)
                     gravityLimitRadius = planet.MaximumRadius * Math.Pow(surfaceGravity / 0.05d, 1d / gravityFalloff);
@@ -1635,7 +1635,7 @@ namespace LcdMod.Client.Apps
             if (!planets.TryGetValue(gravityPlanetId, out planet) || planet == null || planet.MarkedForClose)
                 return 0f;
 
-            double surfaceGravity = planet.Generator?.SurfaceGravity ?? 0d;
+            double surfaceGravity = planet.GetInitArguments.SurfaceGravity;
             if (surfaceGravity <= 1e-6d)
                 return 0f;
 
@@ -2145,8 +2145,8 @@ namespace LcdMod.Client.Apps
                 var generator = planet.Generator;
                 var atmosphere = generator?.Atmosphere;
                 MyTemperatureLevel? averageTemperature = generator?.DefaultSurfaceTemperature;
-                double surfaceGravity = generator?.SurfaceGravity ?? 0d;
-                double gravityFalloff = generator?.GravityFalloffPower ?? 0d;
+                double surfaceGravity = planet.GetInitArguments.SurfaceGravity;
+                double gravityFalloff = planet.GetInitArguments.GravityFalloff;
                 double gravityLimitRadius = 0d;
                 if (planet.MaximumRadius > 0d && surfaceGravity > 0d && gravityFalloff > 0d)
                     gravityLimitRadius = planet.MaximumRadius * Math.Pow(surfaceGravity / 0.05d, 1d / gravityFalloff);
