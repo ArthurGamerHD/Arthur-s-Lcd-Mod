@@ -38,7 +38,7 @@ namespace LcdMod.Client
             var group = CommandManager.GetOrCreateGroup("/lcdMod", new CmdGroupInitializer(4));
             group.TryAdd("FactionColor", FactionHelper.SetColor);
             group.TryAdd("PreloadTextures", _ => BlockIconHelper.PreloadAllTextures());
-            group.TryAdd("TestLcd", strings => TextInputHelper.SpawnForLocalPlayer(strings.FirstOrDefault(), s => MyAPIGateway.Utilities.ShowNotification("User typed: " + s), 60, "Hello World!"));
+            group.TryAdd("TestLcd", strings => TextInputHelper.SpawnForLocalPlayer(strings.FirstOrDefault(), s => MyAPIGateway.Utilities.ShowNotification("User typed: " + s), "Hello World!", strings.Length > 1 ? strings[1] : string.Empty));
 
             DebuggerHelper.Break();
             MyAPIGateway.Entities.OnEntityAdd += EntityAdded;
@@ -298,12 +298,6 @@ namespace LcdMod.Client
                 !MyAPIGateway.Multiplayer.IsServer &&
                 LcdModSessionComponent.NetworkManager != null)
                 LcdModSessionComponent.NetworkManager.TransmitToServer(new PacketPlayerInputBlacklist(playerId, enabled), false);
-        }
-
-        public void HandleTextInput(ReceivedPacketEventArgs args)
-        {
-            var packet = args.UnWrap<PacketTextInputHelper>();
-            TextInputHelper.SpawnFromRemotePlayer(packet);
         }
     }
 }

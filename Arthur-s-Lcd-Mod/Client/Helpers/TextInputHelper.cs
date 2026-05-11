@@ -1,18 +1,15 @@
 using System;
-using LcdMod.Client.Config;
-using LcdMod.Client.Terminal;
-using LcdMod.Common.Networking;
-using LcdMod.Common.Terminal;
+using System.Collections.Generic;
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.Definitions;
+using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
-using SpaceEngineers.Game.EntityComponents.Blocks;
 using VRage;
 using VRage.Game;
 using VRage.Game.ModAPI;
 using VRage.Game.ObjectBuilders;
 using VRage.Game.ObjectBuilders.ComponentSystem;
-using VRage.Library.Utils;
+using VRage.ModAPI;
 using VRage.ObjectBuilders;
 using VRageMath;
 
@@ -20,169 +17,167 @@ namespace LcdMod.Client.Helpers
 {
     public static class TextInputHelper
     {
-        static readonly MyDefinitionId CornerLcdId = new MyDefinitionId(typeof(MyObjectBuilder_TextPanel), "SmallBlockCorner_LCD_Flat_1");
+        static bool _wasOpened;
 
-        static TextInputLcd _clientTextInput;
+        static readonly MyDefinitionId CockpitId =
+            new MyDefinitionId(typeof(MyObjectBuilder_Cockpit), "SmallBlockCockpit");
+        static MyCockpitDefinition _cockpitDefinition;
+        static string _originalLcdDisplayName;
+
+        static TextInputModel _clientTextInput;
 
         static Action<string> _currentCallback;
 
         static string _currentTitle = string.Empty;
+        static string _currentSubTitle = string.Empty;
         static string _initialText = string.Empty;
 
-        public static void SpawnForLocalPlayer(string title, Action<string> callback, int lifetimeTicks = -1, string initialText = "")
+        public static void SpawnForLocalPlayer(
+            string title,
+            Action<string> callback,
+            string initialText = "",
+            string subtitle = "")
         {
-            IMyPlayer player = MyAPIGateway.Session?.LocalHumanPlayer;
-            if (player == null)
-                return;
-
-            if (TerminalManager.ShowTextPanelButton == null)
-            {
-                MyAPIGateway.Utilities.ShowNotification("LcdMod_ShowTextPanel_Action_Missing");
-                return;
-            }
-
             _currentTitle = title;
-            _initialText = initialText;
+            _currentSubTitle = subtitle;
+            _initialText = initialText ?? string.Empty;
             _currentCallback = callback;
-
-            long playerId = player.IdentityId;
             
             _clientTextInput?.Close();
-            
-            if (MyAPIGateway.Multiplayer.MultiplayerActive && !MyAPIGateway.Multiplayer.IsServer)
-                LcdModSessionComponent.NetworkManager?.TransmitToServer(
-                    new PacketTextInputHelper(playerId, GhostLcdAction.Spawn, lifetimeTicks), false, sendToSender: true);
-            else
+
+            // Cockpit.OpenWindow() lets this stay purely client-side.
+            SpawnInternal(OpenTextBox);
+        }
+        
+        public static string GetSerializedText(int surfaceIndex = 0)
+        {
+            if (_clientTextInput.Grid == null)
+                return string.Empty;
+
+            var slimBlock = _clientTextInput.Grid.GetCubeBlock(Vector3I.Zero);
+            var fatBlock = slimBlock?.FatBlock;
+            if (fatBlock == null)
+                return string.Empty;
+
+            var blockBuilder = fatBlock.GetObjectBuilderCubeBlock(true);
+            if (blockBuilder?.ComponentContainer?.Components == null)
+                return string.Empty;
+
+            foreach (var componentData in blockBuilder.ComponentContainer.Components)
             {
-                SpawnInternal(player.Character, playerId, lifetimeTicks, 0,
-                    ghost =>
-                    {
-                        _clientTextInput = ghost;
-                        MyAPIGateway.Utilities.ShowNotification(
-                            $"block spawned at {ghost.Grid.PositionComp.GetPosition()}");
-                        OpenTextBox();
-                    });
+                if (componentData.TypeId != "MyMultiTextPanelComponent")
+                    continue;
+
+                var multiTextBuilder =
+                    componentData.Component as MyObjectBuilder_MultiTextPanelComponent;
+
+                if (multiTextBuilder?.TextPanelsContents == null)
+                    return string.Empty;
+
+                if (surfaceIndex < 0 || surfaceIndex >= multiTextBuilder.TextPanelsContents.Count)
+                    return string.Empty;
+
+                return multiTextBuilder.TextPanelsContents[surfaceIndex].Text ?? string.Empty;
             }
+
+            return string.Empty;
         }
 
-        public static void SpawnFromRemotePlayer(PacketTextInputHelper package)
+        static void OpenTextBox(TextInputModel textInputModel)
         {
-            IMyPlayer player = MyAPIGateway.Session?.LocalHumanPlayer;
-            if (player == null)
+            _clientTextInput?.Close();
+            _clientTextInput = textInputModel;
+            
+            if (_clientTextInput?.Cockpit == null || _clientTextInput.Lcd == null)
                 return;
             
-            SpawnInternal(player.Character, player.IdentityId, package.LifetimeTicks, package.GridId,
-                ghost =>
-                {
-                    _clientTextInput = ghost;
-                    OpenTextBox();
-                });
-        }
-
-        static void OpenTextBox()
-        {
-            TerminalManager.ShowTextPanelButton.Action(_clientTextInput?.Lcd);
+            _clientTextInput.Cockpit.OpenWindow(true, false, true);
             LcdModClientComponent.RunNextFrame.Add(CheckIfIsOpened);
         }
 
+        static void RestoreLcdName() => _cockpitDefinition.ScreenAreas[0].DisplayName = _originalLcdDisplayName;
+
         static void CheckIfIsOpened()
         {
-            if (MyAPIGateway.Gui.IsCursorVisible)
+            var isOpen = MyAPIGateway.Gui.IsCursorVisible;
+            
+            if (isOpen || !_wasOpened)
             {
+                _wasOpened = isOpen;
                 LcdModClientComponent.RunNextFrame.Add(CheckIfIsOpened);
-                return; // user still with the textbox opened
+                return; // user still has the textbox opened
             }
-
-            if (_clientTextInput.Lcd == null)
-                return;
-
-            var oldText = _clientTextInput.Lcd.GetText();
-            if (_clientTextInput.Lcd.WriteText("dummy"))
-            {
-                _currentCallback(oldText);
-                _clientTextInput.Close();
-                _clientTextInput = null;
-            }
-            else // game still thinks the Lcd is being edited
-            {
-                LcdModClientComponent.RunNextFrame.Add(CheckIfIsOpened);
-            }
-        }
-
-        public static void ClientUpdate()
-        {
-            if (_clientTextInput != null)
-            {
-                _clientTextInput.Update();
-                LcdModClientComponent.RunNextFrame.Add(ClientUpdate);
-            }
-        }
-
-        public static void ClientClear()
-        {
-            _clientTextInput?.Close();
+            
+            _wasOpened = false;
+            var text = GetSerializedText();
+            RestoreLcdName();
+            _currentCallback?.Invoke(text);
+            _clientTextInput.Close();
             _clientTextInput = null;
         }
 
-        static void SpawnInternal(
-            IMyCharacter character,
-            long playerId,
-            int lifetimeTicks,
-            long gridId,
-            Action<TextInputLcd> onSpawned)
+        static void SpawnInternal(Action<TextInputModel> onSpawned)
         {
-            if (character == null)
+            if (_cockpitDefinition == null)
             {
-                MyAPIGateway.Utilities.ShowNotification($"character was null");
-                return;
+                _cockpitDefinition = (MyCockpitDefinition)MyDefinitionManager.Static.GetCubeBlockDefinition(CockpitId);
+                if (_cockpitDefinition == null)
+                {
+                    MyAPIGateway.Utilities.ShowNotification("Cockpit definition was null");
+                    return;
+                }
+
+                _originalLcdDisplayName = _cockpitDefinition.ScreenAreas[0].DisplayName;
             }
 
-            var definition = MyDefinitionManager.Static.GetCubeBlockDefinition(CornerLcdId);
-            if (definition == null)
-            {
-                MyAPIGateway.Utilities.ShowNotification($"CornerLcd definition was null");
-                return;
-            }
+            _cockpitDefinition.ScreenAreas[0].DisplayName = _currentSubTitle;
 
-            var blockBuilder = (MyObjectBuilder_TextPanel)MyObjectBuilderSerializer.CreateNewObject(definition.Id);
-            var compBuilder = MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_LcdSurfaceComponent>();
-            compBuilder.TextPanelContent = new MySerializedTextPanelData
+            var blockBuilder = (MyObjectBuilder_Cockpit)
+                MyObjectBuilderSerializer.CreateNewObject(_cockpitDefinition.Id);
+            
+            
+            var multiTextBuilder =
+                MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_MultiTextPanelComponent>();
+
+            multiTextBuilder.TextPanelsContents = new List<MySerializedTextPanelData>
             {
-                Text = _initialText
+                new MySerializedTextPanelData
+                {
+                    Text = _initialText ?? string.Empty
+                }
             };
 
             blockBuilder.BuildPercent = 1f;
             blockBuilder.IntegrityPercent = 1f;
             blockBuilder.Min = Vector3I.Zero;
             blockBuilder.BlockOrientation = MyBlockOrientation.Identity;
-            if (gridId == 0)
-                gridId = MyRandom.Instance.NextLong() & 72057594037927935L;
-            blockBuilder.EntityId = gridId;
-            blockBuilder.PublicTitle = string.IsNullOrEmpty(_currentTitle) ? "notepad.exe" : _currentTitle;
-            
+            blockBuilder.CustomName = string.IsNullOrEmpty(_currentTitle)
+                ? "notepad.exe"
+                : _currentTitle;
+
             blockBuilder.ComponentContainer = new MyObjectBuilder_ComponentContainer();
             blockBuilder.ComponentContainer.Components.Add(
                 new MyObjectBuilder_ComponentContainer.ComponentData
                 {
-                    TypeId = "MyLcdSurfaceComponent",
-                    Component = compBuilder
+                    TypeId = "MyMultiTextPanelComponent",
+                    Component = multiTextBuilder
                 });
-            
-            
+
             var gridBuilder = MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_CubeGrid>();
-            gridBuilder.GridSizeEnum = definition.CubeSize;
+            gridBuilder.GridSizeEnum = _cockpitDefinition.CubeSize;
             gridBuilder.IsStatic = false;
             gridBuilder.Editable = false;
             gridBuilder.DestructibleBlocks = false;
             gridBuilder.CubeBlocks.Add(blockBuilder);
-            gridBuilder.PositionAndOrientation = new MyPositionAndOrientation(character.WorldMatrix);
-            
+            var matrix = MyAPIGateway.Session?.LocalHumanPlayer?.Character?.PositionComp?.WorldMatrixRef;
+            gridBuilder.PositionAndOrientation = new MyPositionAndOrientation(matrix ?? MatrixD.Zero);
+
             MyAPIGateway.Utilities.InvokeOnGameThread(() =>
             {
                 var entity = MyAPIGateway.Entities.CreateFromObjectBuilderAndAdd(gridBuilder);
                 if (entity == null)
                 {
-                    MyAPIGateway.Utilities.ShowNotification($"entity was null");
+                    MyAPIGateway.Utilities.ShowNotification("entity was null");
                     return;
                 }
 
@@ -194,16 +189,67 @@ namespace LcdMod.Client.Helpers
                 var grid = entity as IMyCubeGrid;
                 if (grid == null)
                 {
-                    MyAPIGateway.Utilities.ShowNotification($"grid was null");
+                    MyAPIGateway.Utilities.ShowNotification("grid was null");
                     return;
                 }
 
-                grid.CustomName = $"LCDMod_TextInputForPlayer{character.DisplayName}";
+                grid.CustomName = "LCDMod_TextInputGrid";
 
-                onSpawned(new TextInputLcd(grid, character, playerId, lifetimeTicks));
+                onSpawned(new TextInputModel(grid, grid.GetCubeBlock(Vector3I.Zero)?.FatBlock as MyCockpit));
             });
+        }
+        
+        public sealed class TextInputModel
+        {
+            public IMyCubeGrid Grid { get; private set; }
+            public MyCockpit Cockpit { get; private set; }
+            public IMyTextSurface Lcd { get; private set; }
+
+            public TextInputModel(IMyCubeGrid grid, MyCockpit cockpit)
+            {
+                Grid = grid;
+                Cockpit = cockpit;
+                Lcd = (IMyTextSurface)((IMyCockpit)Cockpit)?.GetSurface(0);
+                Grid.OnMarkForClose += OnGridMarkedForClose;
+                Update();
+            }
+
+            public void Update()
+            {
+                if (Grid != null)
+                    LcdModClientComponent.RunNextFrame.Add(Update);
+
+                var position = MyAPIGateway.Session?.LocalHumanPlayer?.GetPosition();
+                if(position != null && Grid != null)
+                    Grid.SetPosition(position.Value);
+            }
             
-            LcdModClientComponent.RunNextFrame.Add(ClientUpdate);
+            public void Close()
+            {
+                if (Grid == null)
+                    return;
+
+                Grid.OnMarkForClose -= OnGridMarkedForClose;
+
+                if (!Grid.MarkedForClose)
+                    Grid.Close();
+
+                Grid = null;
+                Cockpit = null;
+                Lcd = null;
+            }
+
+            void OnGridMarkedForClose(IMyEntity _)
+            {
+                if (Grid == null)
+                    return;
+            
+                Grid.OnMarkForClose -= OnGridMarkedForClose;
+
+                Grid = null;
+                Cockpit = null;
+                Lcd = null;
+            }
         }
     }
 }

@@ -183,12 +183,6 @@ namespace LcdMod
                     case PackageCode.PlayerInputBlacklist:
                         HandlePlayerInputBlacklist(args);
                         break;
-                    case PackageCode.TextInputHelper:
-                        if (args.IsFromServer)
-                            Client?.HandleTextInput(args);
-                        else
-                            Server?.HandleTextInput(args);
-                        break;
                     default:
                         {
                             LogHelper.Log(MyLogSeverity.Error, $"Unexpected Packet Code Received");

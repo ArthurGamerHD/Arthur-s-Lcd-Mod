@@ -138,8 +138,7 @@ namespace LcdMod.Common.Networking
     {
         SyncConfig = 1,
         EditFaction = 2,
-        PlayerInputBlacklist = 3,
-        TextInputHelper = 4,
+        PlayerInputBlacklist = 3
     }
 
     public class ReceivedPacketEventArgs : EventArgs

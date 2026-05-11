@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using LcdMod.Common.Config;
 using LcdMod.Common.Helpers;
 using LcdMod.Common.Networking;
-using LcdMod.Server.Helpers;
 using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
@@ -165,17 +164,6 @@ namespace LcdMod.Server
             }
 
             FactionHelperCommon.EditFaction(packet);
-        }
-
-        public void HandleTextInput(ReceivedPacketEventArgs args)
-        {
-            var packet = args.UnWrap<PacketTextInputHelper>();
-            
-            TextInputHelper.SpawnForPlayer(gridId =>
-            {
-                packet.GridId = gridId;
-                LcdModSessionComponent.NetworkManager?.TransmitToPlayer(packet, args.SenderId);
-            }, packet.PlayerId, packet.LifetimeTicks);
         }
     }
 }
