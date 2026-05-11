@@ -6,9 +6,12 @@ using LcdMod.Common.Terminal;
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
+using SpaceEngineers.Game.EntityComponents.Blocks;
 using VRage;
 using VRage.Game;
 using VRage.Game.ModAPI;
+using VRage.Game.ObjectBuilders;
+using VRage.Game.ObjectBuilders.ComponentSystem;
 using VRage.Library.Utils;
 using VRage.ObjectBuilders;
 using VRageMath;
@@ -17,16 +20,16 @@ namespace LcdMod.Client.Helpers
 {
     public static class TextInputHelper
     {
-        static readonly MyDefinitionId CornerLcdId =
-            new MyDefinitionId(typeof(MyObjectBuilder_TextPanel), "SmallBlockCorner_LCD_Flat_1");
+        static readonly MyDefinitionId CornerLcdId = new MyDefinitionId(typeof(MyObjectBuilder_TextPanel), "SmallBlockCorner_LCD_Flat_1");
 
         static TextInputLcd _clientTextInput;
 
         static Action<string> _currentCallback;
 
         static string _currentTitle = string.Empty;
+        static string _initialText = string.Empty;
 
-        public static void SpawnForLocalPlayer(string title, Action<string> callback, int lifetimeTicks = -1)
+        public static void SpawnForLocalPlayer(string title, Action<string> callback, int lifetimeTicks = -1, string initialText = "")
         {
             IMyPlayer player = MyAPIGateway.Session?.LocalHumanPlayer;
             if (player == null)
@@ -39,18 +42,12 @@ namespace LcdMod.Client.Helpers
             }
 
             _currentTitle = title;
+            _initialText = initialText;
             _currentCallback = callback;
 
             long playerId = player.IdentityId;
-
-            if (_clientTextInput != null)
-            {
-                // this should never happen on a normal situation, but if the user is laggy,
-                // reuse the same block instead of creating a new one 
-                OpenTextBox(_clientTextInput, _currentTitle);
-                return;
-            }
-
+            
+            _clientTextInput?.Close();
             
             if (MyAPIGateway.Multiplayer.MultiplayerActive && !MyAPIGateway.Multiplayer.IsServer)
                 LcdModSessionComponent.NetworkManager?.TransmitToServer(
@@ -63,7 +60,7 @@ namespace LcdMod.Client.Helpers
                         _clientTextInput = ghost;
                         MyAPIGateway.Utilities.ShowNotification(
                             $"block spawned at {ghost.Grid.PositionComp.GetPosition()}");
-                        OpenTextBox(ghost, title);
+                        OpenTextBox();
                     });
             }
         }
@@ -78,16 +75,13 @@ namespace LcdMod.Client.Helpers
                 ghost =>
                 {
                     _clientTextInput = ghost;
-                    OpenTextBox(ghost, _currentTitle);
+                    OpenTextBox();
                 });
         }
 
-        static void OpenTextBox(TextInputLcd textInput, string title)
+        static void OpenTextBox()
         {
-            textInput.Lcd?.WritePublicTitle(title);
-            TerminalManager.ShowTextPanelButton.Action(textInput.Lcd);
-
-
+            TerminalManager.ShowTextPanelButton.Action(_clientTextInput?.Lcd);
             LcdModClientComponent.RunNextFrame.Add(CheckIfIsOpened);
         }
 
@@ -102,9 +96,10 @@ namespace LcdMod.Client.Helpers
             if (_clientTextInput.Lcd == null)
                 return;
 
+            var oldText = _clientTextInput.Lcd.GetText();
             if (_clientTextInput.Lcd.WriteText("dummy"))
             {
-                _currentCallback(_clientTextInput.Lcd.GetText());
+                _currentCallback(oldText);
                 _clientTextInput.Close();
                 _clientTextInput = null;
             }
@@ -149,16 +144,31 @@ namespace LcdMod.Client.Helpers
                 return;
             }
 
+            var blockBuilder = (MyObjectBuilder_TextPanel)MyObjectBuilderSerializer.CreateNewObject(definition.Id);
+            var compBuilder = MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_LcdSurfaceComponent>();
+            compBuilder.TextPanelContent = new MySerializedTextPanelData
+            {
+                Text = _initialText
+            };
 
-            var blockBuilder = (MyObjectBuilder_CubeBlock)MyObjectBuilderSerializer.CreateNewObject(definition.Id);
             blockBuilder.BuildPercent = 1f;
             blockBuilder.IntegrityPercent = 1f;
             blockBuilder.Min = Vector3I.Zero;
             blockBuilder.BlockOrientation = MyBlockOrientation.Identity;
             if (gridId == 0)
                 gridId = MyRandom.Instance.NextLong() & 72057594037927935L;
-            
             blockBuilder.EntityId = gridId;
+            blockBuilder.PublicTitle = string.IsNullOrEmpty(_currentTitle) ? "notepad.exe" : _currentTitle;
+            
+            blockBuilder.ComponentContainer = new MyObjectBuilder_ComponentContainer();
+            blockBuilder.ComponentContainer.Components.Add(
+                new MyObjectBuilder_ComponentContainer.ComponentData
+                {
+                    TypeId = "MyLcdSurfaceComponent",
+                    Component = compBuilder
+                });
+            
+            
             var gridBuilder = MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_CubeGrid>();
             gridBuilder.GridSizeEnum = definition.CubeSize;
             gridBuilder.IsStatic = false;
@@ -166,7 +176,7 @@ namespace LcdMod.Client.Helpers
             gridBuilder.DestructibleBlocks = false;
             gridBuilder.CubeBlocks.Add(blockBuilder);
             gridBuilder.PositionAndOrientation = new MyPositionAndOrientation(character.WorldMatrix);
-
+            
             MyAPIGateway.Utilities.InvokeOnGameThread(() =>
             {
                 var entity = MyAPIGateway.Entities.CreateFromObjectBuilderAndAdd(gridBuilder);

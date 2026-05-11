@@ -38,7 +38,7 @@ namespace LcdMod.Client
             var group = CommandManager.GetOrCreateGroup("/lcdMod", new CmdGroupInitializer(4));
             group.TryAdd("FactionColor", FactionHelper.SetColor);
             group.TryAdd("PreloadTextures", _ => BlockIconHelper.PreloadAllTextures());
-            group.TryAdd("TestLcd", strings => TextInputHelper.SpawnForLocalPlayer(strings.FirstOrDefault(), s => MyAPIGateway.Utilities.ShowNotification("User typed: " + s), 60));
+            group.TryAdd("TestLcd", strings => TextInputHelper.SpawnForLocalPlayer(strings.FirstOrDefault(), s => MyAPIGateway.Utilities.ShowNotification("User typed: " + s), 60, "Hello World!"));
 
             DebuggerHelper.Break();
             MyAPIGateway.Entities.OnEntityAdd += EntityAdded;
