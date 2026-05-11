@@ -170,7 +170,7 @@ namespace LcdMod.Client.Helpers
             gridBuilder.DestructibleBlocks = false;
             gridBuilder.CubeBlocks.Add(blockBuilder);
             var matrix = MyAPIGateway.Session?.LocalHumanPlayer?.Character?.PositionComp?.WorldMatrixRef;
-            gridBuilder.PositionAndOrientation = new MyPositionAndOrientation(matrix ?? MatrixD.Zero);
+            gridBuilder.PositionAndOrientation = new MyPositionAndOrientation(matrix ?? MatrixD.Identity);
 
             MyAPIGateway.Utilities.InvokeOnGameThread(() =>
             {
