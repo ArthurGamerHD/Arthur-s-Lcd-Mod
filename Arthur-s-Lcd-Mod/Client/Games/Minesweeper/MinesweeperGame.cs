@@ -290,9 +290,19 @@ namespace LcdMod.Client.Games.Minesweeper
                     config.Cells.Length != config.Width * config.Height)
                     throw new Exception("Corrupted minesweeper board.");
 
+                var needsNewBoard = config.Width != _width || config.Height != _height;
+                
                 _width = config.Width;
                 _height = config.Height;
                 _mineCount = Math.Max(1, Math.Min(config.MineCount, _width * _height - 1));
+                _difficulty = InferDifficulty(_width, _height, _mineCount);
+
+                if (needsNewBoard)
+                {
+                    AllocateBoard();
+                    BakeBoardVisual();
+                }
+
                 _state = (MinesweeperState)config.State;
                 _revealedCount = config.RevealedCount;
                 _flagsUsed = config.FlagsUsed;
@@ -303,7 +313,6 @@ namespace LcdMod.Client.Games.Minesweeper
                 config.Cells.CopyTo(_cells, 0);
                 DeserializeHistory(config.History);
                 DeserializeUnknownCells(config.UnknownCells);
-                _difficulty = InferDifficulty(_width, _height, _mineCount);
                 _elapsedSeconds = Math.Max(0, Math.Min(MAX_TIMER_SECONDS, config.ElapsedSeconds));
                 _timerStartedFrame = config.TimerStartedFrame;
                 if (_timerStartedFrame <= 0L && config.TimerRunning)
@@ -331,7 +340,9 @@ namespace LcdMod.Client.Games.Minesweeper
                 return MinesweeperDifficulty.Hard;
             if (width == 16 && height == 16 && mineCount == 40)
                 return MinesweeperDifficulty.Medium;
-            return MinesweeperDifficulty.Easy;
+            if (width == 9 && height == 9 && mineCount == 10)
+                return MinesweeperDifficulty.Easy;
+            return MinesweeperDifficulty.Custom;
         }
 
         void BakeBoardVisual()
@@ -1363,8 +1374,9 @@ namespace LcdMod.Client.Games.Minesweeper
 
     internal enum MinesweeperDifficulty
     {
+        Custom,
         Easy,
         Medium,
-        Hard
+        Hard,
     }
 }
