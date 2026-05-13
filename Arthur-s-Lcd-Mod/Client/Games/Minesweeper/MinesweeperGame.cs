@@ -12,6 +12,7 @@ using LcdMod.Common.Helpers;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
+using VRage.Game.ModAPI.Ingame.Utilities;
 using VRageMath;
 using InteractiveSurfaceScript = LcdMod.Client.Apps.Abstract.InteractiveSurfaceScript;
 
@@ -24,6 +25,8 @@ namespace LcdMod.Client.Games.Minesweeper
         const byte FLAGGED = 4;
         const byte EXPLODED = 8;
         const int ADJACENT_SHIFT = 4;
+        const int MAX_SIZE = 48;
+        const int MAX_BOMB = MAX_SIZE*MAX_SIZE-1;
         const float BOARD_FRAME_RATIO = 0.01f;
         const float OUTER_FRAME_CONTENT_MARGIN_RATIO = 0.016f;
         const float TILE_BEVEL_RATIO = 0.16f;
@@ -141,10 +144,51 @@ namespace LcdMod.Client.Games.Minesweeper
                         new GlobalMenuEntry(LocHelper.GetLoc("DifficultyNormal") + " - 16x16 40",
                             delegate { SetDifficulty(MinesweeperDifficulty.Medium); }),
                         new GlobalMenuEntry(LocHelper.GetLoc("DifficultyHard") + " - 30x16 99",
-                            delegate { SetDifficulty(MinesweeperDifficulty.Hard); })
+                            delegate { SetDifficulty(MinesweeperDifficulty.Hard); }),
+                        new GlobalMenuEntry(LocHelper.GetLoc("Custom"),
+                            delegate { ApplyCustomDifficulty(); })
                     })
                 })
             );
+        }
+
+        void ApplyCustomDifficulty()
+        {
+            var ini = new MyIni();
+            ini.Set(CUSTOM_DATA_KEY, "Width", _width);
+            ini.Set(CUSTOM_DATA_KEY, "Height", _height);
+            ini.Set(CUSTOM_DATA_KEY, "Mines", _mineCount);
+            ini.SetComment(CUSTOM_DATA_KEY, "Width", $"2-{MAX_SIZE}");
+            ini.SetComment(CUSTOM_DATA_KEY, "Height", $"2-{MAX_SIZE}");
+            ini.SetComment(CUSTOM_DATA_KEY, "Mines", $"1-{MAX_BOMB}");
+            TextInputHelper.SpawnForLocalPlayer(LocHelper.GetLoc("LcdMod_Minesweeper"), LoadDifficultyIni,
+                ini.ToString());
+        }
+
+        void LoadDifficultyIni(string obj)
+        {
+            var ini = new MyIni();
+            if (!ini.TryParse(obj))
+            {
+                _script.PlaySounds(AudioHelper.HudUnable);
+                return;
+            }
+
+            _width = ini.Get(CUSTOM_DATA_KEY, "Width").ToInt32(9);
+            _height = ini.Get(CUSTOM_DATA_KEY, "Height").ToInt32(9);
+            _mineCount = ini.Get(CUSTOM_DATA_KEY, "Mines").ToInt32(10);
+
+            _width = MathHelper.Clamp(_width, 2, MAX_SIZE);
+            _height = MathHelper.Clamp(_height, 2, MAX_SIZE);
+            _mineCount = MathHelper.Clamp(_mineCount, 1, _width * _height - 1);
+
+            _difficulty = InferDifficulty(_width, _height, _mineCount);
+#if DEBUG
+            MyAPIGateway.Utilities.ShowMessage("Minesweeper difficulty: ",
+                $"w:{_width}, h:{_height}, m:{_mineCount}, d:{_difficulty}");
+#endif
+            NewGame();
+            Save();
         }
 
         public void Tick()
@@ -194,7 +238,6 @@ namespace LcdMod.Client.Games.Minesweeper
                     _mineCount = 40;
                     break;
                 case MinesweeperDifficulty.Easy:
-                default:
                     _width = 9;
                     _height = 9;
                     _mineCount = 10;
@@ -204,7 +247,9 @@ namespace LcdMod.Client.Games.Minesweeper
 
         void NewGame()
         {
-            ApplyDifficulty(_difficulty);
+            if (_difficulty != MinesweeperDifficulty.Custom)
+                ApplyDifficulty(_difficulty);
+
             AllocateBoard();
             _state = MinesweeperState.Playing;
             _revealedCount = 0;
@@ -291,7 +336,7 @@ namespace LcdMod.Client.Games.Minesweeper
                     throw new Exception("Corrupted minesweeper board.");
 
                 var needsNewBoard = config.Width != _width || config.Height != _height;
-                
+
                 _width = config.Width;
                 _height = config.Height;
                 _mineCount = Math.Max(1, Math.Min(config.MineCount, _width * _height - 1));
@@ -776,10 +821,11 @@ namespace LcdMod.Client.Games.Minesweeper
                         RestartGameFromEntry)
                     {
                         ClickSound = AudioHelper.HudClick,
-                        CustomRender = delegate(InteractiveEntry entry, InteractiveRenderContext context, List<MySprite> sprites)
-                        {
-                            DrawStatusButton(sprites);
-                        }
+                        CustomRender =
+                            delegate(InteractiveEntry entry, InteractiveRenderContext context, List<MySprite> sprites)
+                            {
+                                DrawStatusButton(sprites);
+                            }
                     };
                 }
                 else
@@ -835,10 +881,11 @@ namespace LcdMod.Client.Games.Minesweeper
                     CursorType.Default,
                     i)
                 {
-                    CustomRender = delegate(InteractiveEntry entry, InteractiveRenderContext context, List<MySprite> sprites)
-                    {
-                        RenderCell(sprites, (int)entry.DataContext);
-                    }
+                    CustomRender =
+                        delegate(InteractiveEntry entry, InteractiveRenderContext context, List<MySprite> sprites)
+                        {
+                            RenderCell(sprites, (int)entry.DataContext);
+                        }
                 };
             }
         }
@@ -973,9 +1020,15 @@ namespace LcdMod.Client.Games.Minesweeper
 
             var protectedCells = new HashSet<int>();
             protectedCells.Add(safeIndex);
-            var safeNeighbors = GetNeighbors(safeIndex);
-            for (int i = 0; i < safeNeighbors.Count; i++)
-                protectedCells.Add(safeNeighbors[i]);
+
+            if (_width * _height > _mineCount + 9)
+            {   // not really up to spec, but saves restarting on very bad game stars,
+                // except when custom mode does not allow
+                var safeNeighbors = GetNeighbors(safeIndex);
+                for (int i = 0; i < safeNeighbors.Count; i++)
+                    protectedCells.Add(safeNeighbors[i]);
+            }
+
 
             int maxMines = Math.Max(1, _cells.Length - protectedCells.Count);
             int minesToPlace = Math.Min(_mineCount, maxMines);
