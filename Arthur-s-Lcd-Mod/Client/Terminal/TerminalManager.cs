@@ -41,6 +41,7 @@ namespace LcdMod.Client.Terminal
             Controls.Add(new SliderFontSize());
             Controls.Add(new SliderPadding());
             Controls.Add(new SliderFov());
+            Controls.Add(new SliderRadarRange());
 
             Controls.Add(new SwitchToggleColors());
             Controls.Add(new ColorPickerAccent());

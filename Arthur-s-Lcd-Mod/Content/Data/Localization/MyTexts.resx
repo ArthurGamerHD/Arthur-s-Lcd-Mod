@@ -406,4 +406,10 @@
   <data name="LcdMod_EightBallPool_GroupOpen" xml:space="preserve">
     <value>open</value>
   </data>
+  <data name="LcdMod_Magnification" xml:space="preserve">
+    <value>Magnification</value>
+  </data>
+  <data name="LcdMod_Radar_AntennaRangeWarning" xml:space="preserve">
+    <value>Only radio signals are detected beyond 3 km.</value>
+  </data>
 </root>

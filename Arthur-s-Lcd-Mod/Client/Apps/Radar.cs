@@ -2,9 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using Generated;
-using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.Config;
 using LcdMod.Client.Extensions;
+using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
+using LcdMod.Client.Terminal.Controls;
 using LcdMod.Common.Helpers;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
@@ -17,6 +19,8 @@ using VRageMath;
 using IMyCockpit = Sandbox.ModAPI.IMyCockpit;
 using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
 using IMyCubeGrid = VRage.Game.ModAPI.IMyCubeGrid;
+using InteractiveSurfaceScript = LcdMod.Client.Apps.Abstract.InteractiveSurfaceScript;
+using SliderRadarRange = LcdMod.Client.Terminal.Controls.Generic.SliderRadarRange;
 
 namespace LcdMod.Client.Apps
 {
@@ -33,9 +37,11 @@ namespace LcdMod.Client.Apps
     }
 
     [MyTextSurfaceScript(ID, TITLE)]
-    public partial class RadarSurfaceScript : SurfaceScriptBase
+    public partial class RadarSurfaceScript : InteractiveSurfaceScript,
+        IUsesTerminalControl<SliderRadarRange>
     {
         protected override ConfigKind ConfigKind => ConfigKind.Radar;
+        public override CursorType CursorType { get; protected set; } = CursorType.Default;
         public const string ID = "LcdMod_Radar";
         public const string TITLE = "LcdMod_Radar";
 
@@ -46,6 +52,7 @@ namespace LcdMod.Client.Apps
         const float RING_2_M = 1400f;
         const float RING_3_M = 2000f;
         const float DEFAULT_RANGE = 3000f;
+        const string LONG_RANGE_WARNING_KEY = "LcdMod_Radar_AntennaRangeWarning";
 
         const float LOCK_ANIM_DISTANCE = 20f;
 
@@ -81,8 +88,10 @@ namespace LcdMod.Client.Apps
         readonly List<long> _toRemove = new List<long>();
         readonly List<ContactRecord> _sortedContacts = new List<ContactRecord>();
         readonly List<IMyCubeGrid> _tempGroupGrids = new List<IMyCubeGrid>();
+        readonly List<IMySlimBlock> _tempSlimBlocks = new List<IMySlimBlock>();
 
         float _maxRange = DEFAULT_RANGE;
+        bool _syncConfigNextRun;
         long _debugLockedTargetEntityId;
         float _debugLockedTargetPercent;
         string _debugLockedTargetName = string.Empty;
@@ -126,40 +135,38 @@ namespace LcdMod.Client.Apps
             if (AppConfig == null)
                 return;
 
+            base.SafeRun();
+            SyncConfigIfNeeded();
             CollectContacts();
             PurgeStaleContacts();
             BuildSortedContacts();
             UpdateFooterHeights();
 
-            using (var frame = Surface.DrawFrame())
-            {
-                try
-                {
-                    AddBackground(_backgroundSprites);
-                    DrawTitle(_foregroundSprites); // sets CaretY; respects AppConfig.TitleVisible
-                    DrawFooter(_foregroundSprites); // pre-render footer layout before radar sizing
-                    RenderRadar(_backgroundSprites);
+            RenderSprites();
+        }
 
-                    frame.AddRange(_backgroundSprites);
-                    frame.AddRange(_foregroundSprites);
-                }
-                finally
-                {
-                    _backgroundSprites.Clear();
-                    _foregroundSprites.Clear();
-                }
-            }
+        protected override List<MySprite> GetSprites()
+        {
+            _backgroundSprites.Clear();
+            _foregroundSprites.Clear();
+
+            AddBackground(_backgroundSprites);
+            DrawTitle(_foregroundSprites);
+            DrawFooter(_foregroundSprites);
+            RenderRadar(_backgroundSprites);
+
+            _backgroundSprites.AddRange(_foregroundSprites);
+            _foregroundSprites.Clear();
+            return _backgroundSprites;
         }
 
 
         void CollectContacts()
         {
             _seenThisFrame.Clear();
-            float detectedRange = 0f;
+            _maxRange = GetConfiguredRange();
 
             CollectEntityContacts();
-
-            _maxRange = detectedRange > 1f ? detectedRange : DEFAULT_RANGE;
 
             foreach (var kv in _contacts)
             {
@@ -261,11 +268,14 @@ namespace LcdMod.Client.Apps
                     if (ownGroup || selectedGrid == null)
                         continue;
 
+                    var pos = selectedGrid.WorldMatrix.Translation;
+                    if (Vector3D.Distance(pos, shipPos) > DEFAULT_RANGE &&
+                        !GridGroupHasLongRangeSignal(_tempGroupGrids, shipPos, ownGrid))
+                        continue;
+
                     long entityId = selectedGrid.EntityId;
                     if (_seenThisFrame.Contains(entityId)) continue;
                     _seenThisFrame.Add(entityId);
-
-                    var pos = selectedGrid.WorldMatrix.Translation;
 
                     ContactRecord rec;
                     if (!_contacts.TryGetValue(entityId, out rec))
@@ -287,6 +297,91 @@ namespace LcdMod.Client.Apps
             {
                 ErrorHandlerHelper.LogError(ex, this);
             }
+        }
+
+        void SyncConfigIfNeeded()
+        {
+            if (!_syncConfigNextRun)
+                return;
+
+            _syncConfigNextRun = false;
+            if (Block != null && ProviderConfig != null)
+                ConfigManager.Sync(Block, ProviderConfig);
+        }
+
+        float GetConfiguredRange()
+        {
+            return SliderRadarRange.GetRangeMeters(AppConfig?.RangeScale ?? SliderRadarRange.DefaultScale);
+        }
+
+        bool GridGroupHasLongRangeSignal(List<IMyCubeGrid> grids, Vector3D receiverPosition, IMyCubeGrid receiverGrid)
+        {
+            for (int i = 0; i < grids.Count; i++)
+                if (GridHasLongRangeSignal(grids[i], receiverPosition, receiverGrid))
+                    return true;
+
+            return false;
+        }
+
+        bool GridHasLongRangeSignal(IMyCubeGrid grid, Vector3D receiverPosition, IMyCubeGrid receiverGrid)
+        {
+            if (grid == null)
+                return false;
+
+            try
+            {
+                _tempSlimBlocks.Clear();
+                grid.GetBlocks(_tempSlimBlocks,
+                    slimBlock => IsLongRangeSignalBlockInRange(slimBlock, receiverPosition, receiverGrid));
+                return _tempSlimBlocks.Count > 0;
+            }
+            catch (Exception e)
+            {
+                ErrorHandlerHelper.LogError(e, this);
+                return false;
+            }
+            finally
+            {
+                _tempSlimBlocks.Clear();
+            }
+        }
+
+        static bool IsLongRangeSignalBlockInRange(
+            IMySlimBlock slimBlock,
+            Vector3D receiverPosition,
+            IMyCubeGrid receiverGrid)
+        {
+            var block = slimBlock?.FatBlock;
+            var functional = block as Sandbox.ModAPI.IMyFunctionalBlock;
+            if (functional == null || !functional.IsFunctional || !functional.Enabled)
+                return false;
+
+            var radio = block as IMyRadioAntenna;
+            if (radio != null)
+                return radio.IsBroadcasting && BroadcastRangeReaches(radio.WorldMatrix.Translation, radio.Radius,
+                    receiverPosition);
+
+            var beacon = block as IMyBeacon;
+            if (beacon != null)
+                return BroadcastRangeReaches(beacon.WorldMatrix.Translation, beacon.Radius, receiverPosition);
+
+            var laser = block as IMyLaserAntenna;
+            if (laser == null || laser.Other == null || receiverGrid == null)
+                return false;
+
+            return laser.Other.CubeGrid != null &&
+                   laser.Other.CubeGrid.EntityId == receiverGrid.EntityId &&
+                   laser.IsInRange(laser.Other);
+        }
+
+        static bool BroadcastRangeReaches(Vector3D broadcastPosition, float radius, Vector3D receiverPosition)
+        {
+            if (radius <= 0f)
+                return false;
+
+            double radiusSq = radius;
+            radiusSq *= radiusSq;
+            return Vector3D.DistanceSquared(broadcastPosition, receiverPosition) <= radiusSq;
         }
 
         double GetGridVolumeScore(IMyCubeGrid grid)
@@ -580,6 +675,7 @@ namespace LcdMod.Client.Apps
             Vector2 radarCenterPos = new Vector2(ViewBox.Center.X, areaTop + viewportCropped.Y * 0.5f);
             var radarPlaneSize = new Vector2(sideLength, sideLength * _radarProjectionCos) * AppConfig.Scale;
 
+            DrawLongRangeWarning(sprites, areaBottom, cappedScale);
             DrawRadarPlaneBackground(sprites, radarCenterPos, radarPlaneSize, radarScale, lineColor, backColor,
                 planeColor);
             DrawRadarPlane(sprites, radarCenterPos, radarPlaneSize, radarScale, lineColor);
@@ -611,6 +707,46 @@ namespace LcdMod.Client.Apps
                     TextAlignment.CENTER,
                     debugScale));
             }
+        }
+
+        void DrawLongRangeWarning(List<MySprite> sprites, float areaBottom, float scale)
+        {
+            if (_maxRange <= DEFAULT_RANGE + 0.5f)
+                return;
+
+            float textScale = 0.42f * scale * FontScale;
+            float textHeight = Surface.MeasureStringInPixels(
+                new StringBuilder(LocHelper.GetLoc(LONG_RANGE_WARNING_KEY)),
+                "White",
+                textScale).Y;
+            float y = areaBottom - textHeight * 0.5f;
+            sprites.Add(new MySprite(
+                SpriteType.TEXT,
+                LocHelper.GetLoc(LONG_RANGE_WARNING_KEY),
+                new Vector2(ViewBox.Center.X, y),
+                null,
+                new Color(AppConfig.WarningColor, 0.9f),
+                "White",
+                TextAlignment.CENTER,
+                textScale));
+        }
+
+        protected override void OnMouseScroll(int delta, ref bool handled)
+        {
+            base.OnMouseScroll(delta, ref handled);
+
+            if (AppConfig == null || delta == 0 || handled)
+                return;
+
+            float currentScale = SliderRadarRange.ClampRangeScale(AppConfig.RangeScale);
+            float nextScale = SliderRadarRange.ApplyScrollStep(currentScale, delta);
+            if (Math.Abs(currentScale - nextScale) <= 0.001f)
+                return;
+
+            AppConfig.RangeScale = nextScale;
+            _maxRange = SliderRadarRange.GetRangeMeters(nextScale);
+            _syncConfigNextRun = true;
+            handled = true;
         }
 
         void UpdateProjectionAngle()
