@@ -277,4 +277,134 @@
   <data name="LcdMod_CursorScale" xml:space="preserve">
     <value>カーソルの拡大率</value>
   </data>
+
+  <data name="LcdMod_EightBallPool" xml:space="preserve">
+    <value>8ボールプール</value>
+  </data>
+  <data name="LcdMod_RackBalls" xml:space="preserve">
+    <value>ボールをラック</value>
+  </data>
+  <data name="LcdMod_ResetCueBall" xml:space="preserve">
+    <value>手球をリセット</value>
+  </data>
+  <data name="LcdMod_EightBallPool_CheatModeOn" xml:space="preserve">
+    <value>チートモード: オン</value>
+  </data>
+  <data name="LcdMod_EightBallPool_CheatModeOff" xml:space="preserve">
+    <value>チートモード: オフ</value>
+  </data>
+  <data name="LcdMod_EightBallPool_NewGamePrompt" xml:space="preserve">
+    <value>新しい8ボールプールのゲームを開始しますか？</value>
+  </data>
+  <data name="LcdMod_EightBallPool_Dismiss" xml:space="preserve">
+    <value>閉じる</value>
+  </data>
+  <data name="LcdMod_EightBallPool_PlayerBreak" xml:space="preserve">
+    <value>プレイヤー{0}がブレイク。</value>
+  </data>
+  <data name="LcdMod_EightBallPool_Scratch" xml:space="preserve">
+    <value>スクラッチ。</value>
+  </data>
+  <data name="LcdMod_EightBallPool_PocketedOpponentBall" xml:space="preserve">
+    <value>相手のボール{0}をポケットしました。</value>
+  </data>
+  <data name="LcdMod_EightBallPool_WinEightBall" xml:space="preserve">
+    <value>プレイヤー{0}は8ボールをポケットして勝利しました。</value>
+  </data>
+  <data name="LcdMod_EightBallPool_WinEarlyEightBall" xml:space="preserve">
+    <value>プレイヤー{0}の勝利。プレイヤー{1}が早すぎる段階で8ボールをポケットしました。</value>
+  </data>
+  <data name="LcdMod_EightBallPool_FoulOpen" xml:space="preserve">
+    <value>ファウル: {0} テーブルはまだオープンです。フリーボールは与えられません。プレイヤー{1}がショットします。</value>
+  </data>
+  <data name="LcdMod_EightBallPool_IllegalShot" xml:space="preserve">
+    <value>不正なショット</value>
+  </data>
+  <data name="LcdMod_EightBallPool_WinNoFreeBall" xml:space="preserve">
+    <value>プレイヤー{0}の勝利。利用可能なフリーボールがない状態でのファウルです。</value>
+  </data>
+  <data name="LcdMod_EightBallPool_FoulAward" xml:space="preserve">
+    <value>ファウル: {0}{1} プレイヤー{2}がショットします。</value>
+  </data>
+  <data name="LcdMod_EightBallPool_PlayerShootsAgain" xml:space="preserve">
+    <value>プレイヤー{0}がボールをポケットしたため、もう一度ショットします。</value>
+  </data>
+  <data name="LcdMod_EightBallPool_NoBallPocketed" xml:space="preserve">
+    <value>ボールはポケットされませんでした。プレイヤー{0}がショットします。</value>
+  </data>
+  <data name="LcdMod_EightBallPool_NoObjectBallHit" xml:space="preserve">
+    <value>オブジェクトボールに当たりませんでした。</value>
+  </data>
+  <data name="LcdMod_EightBallPool_HitEightBallBeforeGroups" xml:space="preserve">
+    <value>グループが決まる前に8ボールに当たりました。</value>
+  </data>
+  <data name="LcdMod_EightBallPool_HitOpponentBeforeEight" xml:space="preserve">
+    <value>8ボールより先に相手のボールに当たりました。</value>
+  </data>
+  <data name="LcdMod_EightBallPool_HitEightBallBeforeClearing" xml:space="preserve">
+    <value>割り当てられたボールをクリアする前に8ボールに当たりました。</value>
+  </data>
+  <data name="LcdMod_EightBallPool_HitOpponentFirst" xml:space="preserve">
+    <value>最初に相手のボールに当たりました。</value>
+  </data>
+  <data name="LcdMod_EightBallPool_AwardFreeBall" xml:space="preserve">
+    <value> プレイヤー{0}は{1}を無料で獲得します。</value>
+  </data>
+  <data name="LcdMod_EightBallPool_NoFreeBallAvailable" xml:space="preserve">
+    <value> 利用可能なフリーボールはありませんでした。</value>
+  </data>
+  <data name="LcdMod_EightBallPool_PlayerGroupsAssigned" xml:space="preserve">
+    <value>プレイヤー1は{0}。プレイヤー2は{1}。</value>
+  </data>
+  <data name="LcdMod_EightBallPool_GameOverWinner" xml:space="preserve">
+    <value>ゲーム終了: プレイヤー{0}の勝利。</value>
+  </data>
+  <data name="LcdMod_EightBallPool_PlayerToShoot" xml:space="preserve">
+    <value>プレイヤー{0}のショット。</value>
+  </data>
+  <data name="LcdMod_EightBallPool_GameOverNewGameHint" xml:space="preserve">
+    <value>{0} 新しいゲームを始めるにはメニューを開いてください。</value>
+  </data>
+  <data name="LcdMod_EightBallPool_BallsRolling" xml:space="preserve">
+    <value>ボールが動いています...</value>
+  </data>
+  <data name="LcdMod_EightBallPool_CueBallInHand" xml:space="preserve">
+    <value>プレイヤー{0}、手球は手元です: 強調表示された半円の内側に置いてください。</value>
+  </data>
+  <data name="LcdMod_EightBallPool_TableClearedNewRack" xml:space="preserve">
+    <value>テーブルがクリアされました。新しいラックのためにメニューを開いてください。</value>
+  </data>
+  <data name="LcdMod_EightBallPool_Shots" xml:space="preserve">
+    <value>ショット数: {0}</value>
+  </data>
+  <data name="LcdMod_EightBallPool_BallNameEight" xml:space="preserve">
+    <value>8ボール</value>
+  </data>
+  <data name="LcdMod_EightBallPool_BallNameStripe" xml:space="preserve">
+    <value>ストライプ{0}</value>
+  </data>
+  <data name="LcdMod_EightBallPool_BallNameSolid" xml:space="preserve">
+    <value>ソリッド{0}</value>
+  </data>
+  <data name="LcdMod_EightBallPool_BallNameGeneric" xml:space="preserve">
+    <value>ボール{0}</value>
+  </data>
+  <data name="LcdMod_EightBallPool_FooterPlayerLabel" xml:space="preserve">
+    <value>プレイヤー{0}  {1}</value>
+  </data>
+  <data name="LcdMod_EightBallPool_Winner" xml:space="preserve">
+    <value>勝者</value>
+  </data>
+  <data name="LcdMod_EightBallPool_NoBalls" xml:space="preserve">
+    <value>ボールなし</value>
+  </data>
+  <data name="LcdMod_EightBallPool_GroupSolids" xml:space="preserve">
+    <value>ソリッド</value>
+  </data>
+  <data name="LcdMod_EightBallPool_GroupStripes" xml:space="preserve">
+    <value>ストライプ</value>
+  </data>
+  <data name="LcdMod_EightBallPool_GroupOpen" xml:space="preserve">
+    <value>オープン</value>
+  </data>
 </root>

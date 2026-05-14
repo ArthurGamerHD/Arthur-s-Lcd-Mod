@@ -276,4 +276,134 @@
   <data name="LcdMod_CursorScale" xml:space="preserve">
     <value>Масштаб курсора</value>
   </data>
+
+  <data name="LcdMod_EightBallPool" xml:space="preserve">
+    <value>Пул «восьмёрка»</value>
+  </data>
+  <data name="LcdMod_RackBalls" xml:space="preserve">
+    <value>Расставить шары</value>
+  </data>
+  <data name="LcdMod_ResetCueBall" xml:space="preserve">
+    <value>Сбросить биток</value>
+  </data>
+  <data name="LcdMod_EightBallPool_CheatModeOn" xml:space="preserve">
+    <value>Режим читов: ВКЛ</value>
+  </data>
+  <data name="LcdMod_EightBallPool_CheatModeOff" xml:space="preserve">
+    <value>Режим читов: ВЫКЛ</value>
+  </data>
+  <data name="LcdMod_EightBallPool_NewGamePrompt" xml:space="preserve">
+    <value>Начать новую игру в пул «восьмёрка»?</value>
+  </data>
+  <data name="LcdMod_EightBallPool_Dismiss" xml:space="preserve">
+    <value>Закрыть</value>
+  </data>
+  <data name="LcdMod_EightBallPool_PlayerBreak" xml:space="preserve">
+    <value>Игрок {0} разбивает.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_Scratch" xml:space="preserve">
+    <value>Биток в лузе.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_PocketedOpponentBall" xml:space="preserve">
+    <value>забил шар соперника {0}.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_WinEightBall" xml:space="preserve">
+    <value>Игрок {0} побеждает, забив шар 8.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_WinEarlyEightBall" xml:space="preserve">
+    <value>Игрок {0} побеждает. Игрок {1} слишком рано забил шар 8.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_FoulOpen" xml:space="preserve">
+    <value>Фол: {0} Стол всё ещё открыт; свободный шар не присуждён. Бьёт игрок {1}.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_IllegalShot" xml:space="preserve">
+    <value>неправильный удар</value>
+  </data>
+  <data name="LcdMod_EightBallPool_WinNoFreeBall" xml:space="preserve">
+    <value>Игрок {0} побеждает. Фол, свободного шара нет.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_FoulAward" xml:space="preserve">
+    <value>Фол: {0}{1} Бьёт игрок {2}.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_PlayerShootsAgain" xml:space="preserve">
+    <value>Игрок {0} забил шар и бьёт снова.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_NoBallPocketed" xml:space="preserve">
+    <value>Шар не забит. Бьёт игрок {0}.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_NoObjectBallHit" xml:space="preserve">
+    <value>не был задет прицельный шар.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_HitEightBallBeforeGroups" xml:space="preserve">
+    <value>задел шар 8 до назначения групп.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_HitOpponentBeforeEight" xml:space="preserve">
+    <value>задел шар соперника перед шаром 8.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_HitEightBallBeforeClearing" xml:space="preserve">
+    <value>задел шар 8 до очистки назначенных шаров.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_HitOpponentFirst" xml:space="preserve">
+    <value>сначала задел шар соперника.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_AwardFreeBall" xml:space="preserve">
+    <value> Игрок {0} получает {1} бесплатно.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_NoFreeBallAvailable" xml:space="preserve">
+    <value> Свободного шара не было.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_PlayerGroupsAssigned" xml:space="preserve">
+    <value>Игрок 1 — {0}. Игрок 2 — {1}.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_GameOverWinner" xml:space="preserve">
+    <value>Игра окончена: игрок {0} побеждает.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_PlayerToShoot" xml:space="preserve">
+    <value>Бьёт игрок {0}.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_GameOverNewGameHint" xml:space="preserve">
+    <value>{0} Откройте меню для новой игры.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_BallsRolling" xml:space="preserve">
+    <value>Шары катятся...</value>
+  </data>
+  <data name="LcdMod_EightBallPool_CueBallInHand" xml:space="preserve">
+    <value>Игрок {0}, биток с руки: поместите его внутри подсвеченного полукруга.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_TableClearedNewRack" xml:space="preserve">
+    <value>Стол очищен. Откройте меню для новой расстановки.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_Shots" xml:space="preserve">
+    <value>Удары: {0}</value>
+  </data>
+  <data name="LcdMod_EightBallPool_BallNameEight" xml:space="preserve">
+    <value>шар 8</value>
+  </data>
+  <data name="LcdMod_EightBallPool_BallNameStripe" xml:space="preserve">
+    <value>полосатый {0}</value>
+  </data>
+  <data name="LcdMod_EightBallPool_BallNameSolid" xml:space="preserve">
+    <value>сплошной {0}</value>
+  </data>
+  <data name="LcdMod_EightBallPool_BallNameGeneric" xml:space="preserve">
+    <value>шар {0}</value>
+  </data>
+  <data name="LcdMod_EightBallPool_FooterPlayerLabel" xml:space="preserve">
+    <value>Игрок {0}  {1}</value>
+  </data>
+  <data name="LcdMod_EightBallPool_Winner" xml:space="preserve">
+    <value>ПОБЕДИТЕЛЬ</value>
+  </data>
+  <data name="LcdMod_EightBallPool_NoBalls" xml:space="preserve">
+    <value>нет шаров</value>
+  </data>
+  <data name="LcdMod_EightBallPool_GroupSolids" xml:space="preserve">
+    <value>сплошные</value>
+  </data>
+  <data name="LcdMod_EightBallPool_GroupStripes" xml:space="preserve">
+    <value>полосатые</value>
+  </data>
+  <data name="LcdMod_EightBallPool_GroupOpen" xml:space="preserve">
+    <value>открыт</value>
+  </data>
 </root>

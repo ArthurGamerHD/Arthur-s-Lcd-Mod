@@ -277,4 +277,134 @@
   <data name="LcdMod_CursorScale" xml:space="preserve">
     <value>Escala do cursor</value>
   </data>
+
+  <data name="LcdMod_EightBallPool" xml:space="preserve">
+    <value>Sinuca</value>
+  </data>
+  <data name="LcdMod_RackBalls" xml:space="preserve">
+    <value>Montar bolas</value>
+  </data>
+  <data name="LcdMod_ResetCueBall" xml:space="preserve">
+    <value>Reposicionar bola branca</value>
+  </data>
+  <data name="LcdMod_EightBallPool_CheatModeOn" xml:space="preserve">
+    <value>Modo trapaça: ATIVADO</value>
+  </data>
+  <data name="LcdMod_EightBallPool_CheatModeOff" xml:space="preserve">
+    <value>Modo trapaça: DESATIVADO</value>
+  </data>
+  <data name="LcdMod_EightBallPool_NewGamePrompt" xml:space="preserve">
+    <value>Iniciar um novo jogo de Sinuca?</value>
+  </data>
+  <data name="LcdMod_EightBallPool_Dismiss" xml:space="preserve">
+    <value>Fechar</value>
+  </data>
+  <data name="LcdMod_EightBallPool_PlayerBreak" xml:space="preserve">
+    <value>O jogador {0} abre a partida.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_Scratch" xml:space="preserve">
+    <value>Bola branca encaçapada.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_PocketedOpponentBall" xml:space="preserve">
+    <value>encaçapou a bola adversária {0}.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_WinEightBall" xml:space="preserve">
+    <value>O jogador {0} vence ao encaçapar a bola 8.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_WinEarlyEightBall" xml:space="preserve">
+    <value>O jogador {0} vence. O jogador {1} encaçapou a bola 8 cedo demais.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_FoulOpen" xml:space="preserve">
+    <value>Falta: {0} A mesa ainda está aberta; nenhuma bola grátis concedida. O jogador {1} joga.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_IllegalShot" xml:space="preserve">
+    <value>tacada ilegal</value>
+  </data>
+  <data name="LcdMod_EightBallPool_WinNoFreeBall" xml:space="preserve">
+    <value>O jogador {0} vence. Falta sem bola grátis disponível.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_FoulAward" xml:space="preserve">
+    <value>Falta: {0}{1} O jogador {2} joga.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_PlayerShootsAgain" xml:space="preserve">
+    <value>O jogador {0} encaçapou uma bola e joga novamente.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_NoBallPocketed" xml:space="preserve">
+    <value>Nenhuma bola encaçapada. O jogador {0} joga.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_NoObjectBallHit" xml:space="preserve">
+    <value>nenhuma bola-alvo foi atingida.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_HitEightBallBeforeGroups" xml:space="preserve">
+    <value>atingiu a bola 8 antes de os grupos serem definidos.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_HitOpponentBeforeEight" xml:space="preserve">
+    <value>atingiu uma bola adversária antes da bola 8.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_HitEightBallBeforeClearing" xml:space="preserve">
+    <value>atingiu a bola 8 antes de limpar as bolas atribuídas.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_HitOpponentFirst" xml:space="preserve">
+    <value>atingiu primeiro uma bola adversária.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_AwardFreeBall" xml:space="preserve">
+    <value> O jogador {0} recebe {1} de graça.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_NoFreeBallAvailable" xml:space="preserve">
+    <value> Nenhuma bola grátis estava disponível.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_PlayerGroupsAssigned" xml:space="preserve">
+    <value>O jogador 1 fica com {0}. O jogador 2 fica com {1}.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_GameOverWinner" xml:space="preserve">
+    <value>Fim de jogo: o jogador {0} vence.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_PlayerToShoot" xml:space="preserve">
+    <value>O jogador {0} joga.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_GameOverNewGameHint" xml:space="preserve">
+    <value>{0} Abra o menu para iniciar um novo jogo.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_BallsRolling" xml:space="preserve">
+    <value>Bolas rolando...</value>
+  </data>
+  <data name="LcdMod_EightBallPool_CueBallInHand" xml:space="preserve">
+    <value>Jogador {0}, bola branca na mão: coloque-a dentro do semicírculo destacado.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_TableClearedNewRack" xml:space="preserve">
+    <value>Mesa limpa. Abra o menu para uma nova formação.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_Shots" xml:space="preserve">
+    <value>Tacadas: {0}</value>
+  </data>
+  <data name="LcdMod_EightBallPool_BallNameEight" xml:space="preserve">
+    <value>a bola 8</value>
+  </data>
+  <data name="LcdMod_EightBallPool_BallNameStripe" xml:space="preserve">
+    <value>listrada {0}</value>
+  </data>
+  <data name="LcdMod_EightBallPool_BallNameSolid" xml:space="preserve">
+    <value>lisa {0}</value>
+  </data>
+  <data name="LcdMod_EightBallPool_BallNameGeneric" xml:space="preserve">
+    <value>bola {0}</value>
+  </data>
+  <data name="LcdMod_EightBallPool_FooterPlayerLabel" xml:space="preserve">
+    <value>Jogador {0}  {1}</value>
+  </data>
+  <data name="LcdMod_EightBallPool_Winner" xml:space="preserve">
+    <value>VENCEDOR</value>
+  </data>
+  <data name="LcdMod_EightBallPool_NoBalls" xml:space="preserve">
+    <value>sem bolas</value>
+  </data>
+  <data name="LcdMod_EightBallPool_GroupSolids" xml:space="preserve">
+    <value>lisas</value>
+  </data>
+  <data name="LcdMod_EightBallPool_GroupStripes" xml:space="preserve">
+    <value>listradas</value>
+  </data>
+  <data name="LcdMod_EightBallPool_GroupOpen" xml:space="preserve">
+    <value>aberta</value>
+  </data>
 </root>

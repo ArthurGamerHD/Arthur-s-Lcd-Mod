@@ -276,4 +276,134 @@
   <data name="LcdMod_CursorScale" xml:space="preserve">
     <value>Kurzor méretezése</value>
   </data>
+
+  <data name="LcdMod_EightBallPool" xml:space="preserve">
+    <value>8-as pool</value>
+  </data>
+  <data name="LcdMod_RackBalls" xml:space="preserve">
+    <value>Golyók felrakása</value>
+  </data>
+  <data name="LcdMod_ResetCueBall" xml:space="preserve">
+    <value>Fehér golyó visszaállítása</value>
+  </data>
+  <data name="LcdMod_EightBallPool_CheatModeOn" xml:space="preserve">
+    <value>Csalás mód: BE</value>
+  </data>
+  <data name="LcdMod_EightBallPool_CheatModeOff" xml:space="preserve">
+    <value>Csalás mód: KI</value>
+  </data>
+  <data name="LcdMod_EightBallPool_NewGamePrompt" xml:space="preserve">
+    <value>Új 8-as pool játék indítása?</value>
+  </data>
+  <data name="LcdMod_EightBallPool_Dismiss" xml:space="preserve">
+    <value>Bezárás</value>
+  </data>
+  <data name="LcdMod_EightBallPool_PlayerBreak" xml:space="preserve">
+    <value>Játékos {0} kezd.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_Scratch" xml:space="preserve">
+    <value>Fehér golyó lyukba ment.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_PocketedOpponentBall" xml:space="preserve">
+    <value>belökte az ellenfél {0} golyóját.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_WinEightBall" xml:space="preserve">
+    <value>Játékos {0} nyer, mert belökte a 8-as golyót.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_WinEarlyEightBall" xml:space="preserve">
+    <value>Játékos {0} nyer. Játékos {1} túl korán lökte be a 8-as golyót.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_FoulOpen" xml:space="preserve">
+    <value>Szabálytalanság: {0} Az asztal még nyitott; nincs ingyen golyó. Játékos {1} lök.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_IllegalShot" xml:space="preserve">
+    <value>szabálytalan lökés</value>
+  </data>
+  <data name="LcdMod_EightBallPool_WinNoFreeBall" xml:space="preserve">
+    <value>Játékos {0} nyer. Szabálytalanság elérhető ingyen golyó nélkül.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_FoulAward" xml:space="preserve">
+    <value>Szabálytalanság: {0}{1} Játékos {2} lök.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_PlayerShootsAgain" xml:space="preserve">
+    <value>Játékos {0} belökött egy golyót, és újra lökhet.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_NoBallPocketed" xml:space="preserve">
+    <value>Nem került golyó lyukba. Játékos {0} lök.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_NoObjectBallHit" xml:space="preserve">
+    <value>nem talált el célgolyót.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_HitEightBallBeforeGroups" xml:space="preserve">
+    <value>a csoportok kijelölése előtt találta el a 8-as golyót.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_HitOpponentBeforeEight" xml:space="preserve">
+    <value>az ellenfél golyóját találta el a 8-as golyó előtt.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_HitEightBallBeforeClearing" xml:space="preserve">
+    <value>a kijelölt golyók eltakarítása előtt találta el a 8-as golyót.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_HitOpponentFirst" xml:space="preserve">
+    <value>először az ellenfél golyóját találta el.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_AwardFreeBall" xml:space="preserve">
+    <value> Játékos {0} ingyen megkapja ezt: {1}.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_NoFreeBallAvailable" xml:space="preserve">
+    <value> Nem volt elérhető ingyen golyó.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_PlayerGroupsAssigned" xml:space="preserve">
+    <value>1. játékos: {0}. 2. játékos: {1}.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_GameOverWinner" xml:space="preserve">
+    <value>Játék vége: Játékos {0} nyer.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_PlayerToShoot" xml:space="preserve">
+    <value>Játékos {0} következik.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_GameOverNewGameHint" xml:space="preserve">
+    <value>{0} Nyisd meg a menüt új játékhoz.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_BallsRolling" xml:space="preserve">
+    <value>A golyók gurulnak...</value>
+  </data>
+  <data name="LcdMod_EightBallPool_CueBallInHand" xml:space="preserve">
+    <value>Játékos {0}, fehér golyó kézben: helyezd a kiemelt félkörön belülre.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_TableClearedNewRack" xml:space="preserve">
+    <value>Az asztal kiürült. Nyisd meg a menüt új felrakáshoz.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_Shots" xml:space="preserve">
+    <value>Lökések: {0}</value>
+  </data>
+  <data name="LcdMod_EightBallPool_BallNameEight" xml:space="preserve">
+    <value>a 8-as golyó</value>
+  </data>
+  <data name="LcdMod_EightBallPool_BallNameStripe" xml:space="preserve">
+    <value>csíkos {0}</value>
+  </data>
+  <data name="LcdMod_EightBallPool_BallNameSolid" xml:space="preserve">
+    <value>teli {0}</value>
+  </data>
+  <data name="LcdMod_EightBallPool_BallNameGeneric" xml:space="preserve">
+    <value>golyó {0}</value>
+  </data>
+  <data name="LcdMod_EightBallPool_FooterPlayerLabel" xml:space="preserve">
+    <value>Játékos {0}  {1}</value>
+  </data>
+  <data name="LcdMod_EightBallPool_Winner" xml:space="preserve">
+    <value>GYŐZTES</value>
+  </data>
+  <data name="LcdMod_EightBallPool_NoBalls" xml:space="preserve">
+    <value>nincs golyó</value>
+  </data>
+  <data name="LcdMod_EightBallPool_GroupSolids" xml:space="preserve">
+    <value>teliek</value>
+  </data>
+  <data name="LcdMod_EightBallPool_GroupStripes" xml:space="preserve">
+    <value>csíkosak</value>
+  </data>
+  <data name="LcdMod_EightBallPool_GroupOpen" xml:space="preserve">
+    <value>nyitott</value>
+  </data>
 </root>

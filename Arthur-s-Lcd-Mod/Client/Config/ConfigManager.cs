@@ -11,7 +11,6 @@ using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
-using VRage.Utils;
 using ScreenConfigGeneral = LcdMod.Common.Config.Models.ScreenConfigGeneral;
 
 namespace LcdMod.Client.Config

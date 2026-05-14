@@ -276,4 +276,134 @@
   <data name="LcdMod_CursorScale" xml:space="preserve">
     <value>Skaliranje kursora</value>
   </data>
+
+  <data name="LcdMod_EightBallPool" xml:space="preserve">
+    <value>Biljar osmice</value>
+  </data>
+  <data name="LcdMod_RackBalls" xml:space="preserve">
+    <value>Postavi kugle</value>
+  </data>
+  <data name="LcdMod_ResetCueBall" xml:space="preserve">
+    <value>Resetiraj bijelu kuglu</value>
+  </data>
+  <data name="LcdMod_EightBallPool_CheatModeOn" xml:space="preserve">
+    <value>Način varanja: UKLJUČEN</value>
+  </data>
+  <data name="LcdMod_EightBallPool_CheatModeOff" xml:space="preserve">
+    <value>Način varanja: ISKLJUČEN</value>
+  </data>
+  <data name="LcdMod_EightBallPool_NewGamePrompt" xml:space="preserve">
+    <value>Pokrenuti novu igru biljarske osmice?</value>
+  </data>
+  <data name="LcdMod_EightBallPool_Dismiss" xml:space="preserve">
+    <value>Zatvori</value>
+  </data>
+  <data name="LcdMod_EightBallPool_PlayerBreak" xml:space="preserve">
+    <value>Igrač {0} razbija.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_Scratch" xml:space="preserve">
+    <value>Bijela kugla je upala.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_PocketedOpponentBall" xml:space="preserve">
+    <value>ubacio protivničku kuglu {0}.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_WinEightBall" xml:space="preserve">
+    <value>Igrač {0} pobjeđuje ubacivanjem kugle 8.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_WinEarlyEightBall" xml:space="preserve">
+    <value>Igrač {0} pobjeđuje. Igrač {1} prerano je ubacio kuglu 8.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_FoulOpen" xml:space="preserve">
+    <value>Faul: {0} Stol je još otvoren; nema dodijeljene besplatne kugle. Igrač {1} igra.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_IllegalShot" xml:space="preserve">
+    <value>neispravan udarac</value>
+  </data>
+  <data name="LcdMod_EightBallPool_WinNoFreeBall" xml:space="preserve">
+    <value>Igrač {0} pobjeđuje. Faul bez dostupne besplatne kugle.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_FoulAward" xml:space="preserve">
+    <value>Faul: {0}{1} Igrač {2} igra.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_PlayerShootsAgain" xml:space="preserve">
+    <value>Igrač {0} ubacio je kuglu i igra ponovno.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_NoBallPocketed" xml:space="preserve">
+    <value>Nijedna kugla nije ubačena. Igrač {0} igra.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_NoObjectBallHit" xml:space="preserve">
+    <value>nije pogođena nijedna ciljna kugla.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_HitEightBallBeforeGroups" xml:space="preserve">
+    <value>pogodio je kuglu 8 prije dodjele grupa.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_HitOpponentBeforeEight" xml:space="preserve">
+    <value>pogodio je protivničku kuglu prije kugle 8.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_HitEightBallBeforeClearing" xml:space="preserve">
+    <value>pogodio je kuglu 8 prije čišćenja dodijeljenih kugli.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_HitOpponentFirst" xml:space="preserve">
+    <value>prvo je pogodio protivničku kuglu.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_AwardFreeBall" xml:space="preserve">
+    <value> Igrač {0} besplatno dobiva {1}.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_NoFreeBallAvailable" xml:space="preserve">
+    <value> Besplatna kugla nije bila dostupna.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_PlayerGroupsAssigned" xml:space="preserve">
+    <value>Igrač 1 je {0}. Igrač 2 je {1}.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_GameOverWinner" xml:space="preserve">
+    <value>Kraj igre: igrač {0} pobjeđuje.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_PlayerToShoot" xml:space="preserve">
+    <value>Igrač {0} igra.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_GameOverNewGameHint" xml:space="preserve">
+    <value>{0} Otvori izbornik za novu igru.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_BallsRolling" xml:space="preserve">
+    <value>Kugle se kotrljaju...</value>
+  </data>
+  <data name="LcdMod_EightBallPool_CueBallInHand" xml:space="preserve">
+    <value>Igrač {0}, bijela kugla u ruci: postavi je unutar označenog polukruga.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_TableClearedNewRack" xml:space="preserve">
+    <value>Stol očišćen. Otvori izbornik za novo slaganje.</value>
+  </data>
+  <data name="LcdMod_EightBallPool_Shots" xml:space="preserve">
+    <value>Udarci: {0}</value>
+  </data>
+  <data name="LcdMod_EightBallPool_BallNameEight" xml:space="preserve">
+    <value>kugla 8</value>
+  </data>
+  <data name="LcdMod_EightBallPool_BallNameStripe" xml:space="preserve">
+    <value>prugasta {0}</value>
+  </data>
+  <data name="LcdMod_EightBallPool_BallNameSolid" xml:space="preserve">
+    <value>puna {0}</value>
+  </data>
+  <data name="LcdMod_EightBallPool_BallNameGeneric" xml:space="preserve">
+    <value>kugla {0}</value>
+  </data>
+  <data name="LcdMod_EightBallPool_FooterPlayerLabel" xml:space="preserve">
+    <value>Igrač {0}  {1}</value>
+  </data>
+  <data name="LcdMod_EightBallPool_Winner" xml:space="preserve">
+    <value>POBJEDNIK</value>
+  </data>
+  <data name="LcdMod_EightBallPool_NoBalls" xml:space="preserve">
+    <value>bez kugli</value>
+  </data>
+  <data name="LcdMod_EightBallPool_GroupSolids" xml:space="preserve">
+    <value>pune</value>
+  </data>
+  <data name="LcdMod_EightBallPool_GroupStripes" xml:space="preserve">
+    <value>prugaste</value>
+  </data>
+  <data name="LcdMod_EightBallPool_GroupOpen" xml:space="preserve">
+    <value>otvoren</value>
+  </data>
 </root>

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using LcdMod.Client.Config;
 using LcdMod.Common.Networking;
 using Sandbox.ModAPI;
 using VRage.Game;

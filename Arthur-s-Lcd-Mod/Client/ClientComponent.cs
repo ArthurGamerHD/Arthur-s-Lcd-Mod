@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using LcdMod.Client.Apps.Abstract;
-using LcdMod.Client.Config;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Terminal;
 using LcdMod.Common.Helpers;

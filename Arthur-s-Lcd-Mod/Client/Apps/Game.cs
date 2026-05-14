@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using LcdMod.Client.Config;
 using LcdMod.Client.Games.Minesweeper;
+using LcdMod.Client.Games.EightBallPool;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.Controls.Interactive;
 using LcdMod.Client.Terminal.Controls;
@@ -24,7 +25,8 @@ namespace LcdMod.Client.Apps
         {
             Chess,
             Game2048,
-            Minesweeper
+            Minesweeper,
+            EightBallPool
         }
         
         public const string ID = "LcdMod_GameSurfaceScript";
@@ -47,6 +49,11 @@ namespace LcdMod.Client.Apps
                 {
                 Key = (long)GameEnum.Minesweeper,
                 Value = MyStringId.GetOrCompute("LcdMod_Minesweeper")
+                },
+                new MyTerminalControlComboBoxItem
+                {
+                    Key = (long)GameEnum.EightBallPool,
+                    Value = MyStringId.GetOrCompute("LcdMod_EightBallPool")
                 }
             };
 
@@ -129,6 +136,11 @@ namespace LcdMod.Client.Apps
                     _currentGame = new MinesweeperGame(Surface as IMyTextSurface, this);
                     break;
                 }
+                case GameEnum.EightBallPool:
+                {
+                    _currentGame = new EightBallPoolGame(Surface as IMyTextSurface, this);
+                    break;
+                }
             }
 
             if(_currentGame != null)
@@ -136,6 +148,11 @@ namespace LcdMod.Client.Apps
         }
         
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
+
+        internal bool IsCurrentGame(IGame game)
+        {
+            return ReferenceEquals(_currentGame, game);
+        }
 
         protected override void LayoutChanged()
         {
