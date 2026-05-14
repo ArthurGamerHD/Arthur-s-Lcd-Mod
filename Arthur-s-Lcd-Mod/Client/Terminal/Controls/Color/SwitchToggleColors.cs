@@ -1,4 +1,5 @@
 using LcdMod.Client.Config;
+using LcdMod.Client.Extensions;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage;
@@ -36,16 +37,8 @@ namespace LcdMod.Client.Terminal.Controls.Color
                 return;
 
             config.CustomizedColors = value;
-
             ConfigManager.Sync(block);
-
-            var surface = (block as IMyTextSurfaceProvider)?.GetSurface(screen);
-            if (surface != null)
-            {
-                var script = surface.Script;
-                surface.Script = "None";
-                surface.Script = script;
-            }
+            block.RefreshTerminal();
         }
 
         bool Getter(IMyTerminalBlock myTerminalBlock)

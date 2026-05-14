@@ -183,6 +183,9 @@ namespace LcdMod.Client.Apps.Abstract
 
         void DrawSplash()
         {
+            if (ViewBox.Size == Vector2.Zero)
+                UpdateViewBox();
+
             var offset = Math.Min(ViewBox.Width, ViewBox.Height) / 5;
             var frame = Surface.DrawFrame();
             frame.Add(new MySprite(SpriteType.TEXTURE, "SquareSimple", ViewBox.Center,

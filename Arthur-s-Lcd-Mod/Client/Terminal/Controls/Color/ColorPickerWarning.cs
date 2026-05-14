@@ -16,11 +16,11 @@ namespace LcdMod.Client.Terminal.Controls.Color
 
         public ColorPickerWarning()
         {
-            var colorPicker = CreateControl<IMyTerminalControlColor>("ErrorColor");
+            var colorPicker = CreateControl<IMyTerminalControlColor>("WarningColor");
             colorPicker.Getter = Getter;
             colorPicker.Setter = Setter;
             colorPicker.Visible = Visible;
-            colorPicker.Title = MyStringId.GetOrCompute("ContractScreen_Aministration_CreatinResultCaption_Error");
+            colorPicker.Title = MyStringId.GetOrCompute("SalvageService_InventoryWarning_Title");
             TerminalControl = colorPicker;
         }
 
