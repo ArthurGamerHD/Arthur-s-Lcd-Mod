@@ -11,6 +11,7 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Listbox
     {
         public override IMyTerminalControl TerminalControl => _terminalControl;
         IMyTerminalControl _terminalControl;
+        string _selectionScript;
         public List<MyTerminalControlListBoxItem> Selection { get; private set; }
 
         protected void CreateListbox(string id, string title)
@@ -28,6 +29,8 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Listbox
         protected virtual void Getter(IMyTerminalBlock b, List<MyTerminalControlListBoxItem> itemList,
             List<MyTerminalControlListBoxItem> selected)
         {
+            UpdateSelectionContext(b);
+
             if (Selection == null || !Selection.Any())
                 return;
 
@@ -46,6 +49,35 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Listbox
 
         }
 
-        void Setter(IMyTerminalBlock b, List<MyTerminalControlListBoxItem> selection) => Selection =  selection;
+        protected virtual void Setter(IMyTerminalBlock b, List<MyTerminalControlListBoxItem> selection)
+        {
+            UpdateSelectionContext(b);
+            Selection = selection == null || selection.Count == 0
+                ? null
+                : new List<MyTerminalControlListBoxItem>(selection);
+        }
+
+        void UpdateSelectionContext(IMyTerminalBlock block)
+        {
+            string script = GetSelectedSurfaceScript(block);
+            if (_selectionScript == script)
+                return;
+
+            _selectionScript = script;
+            Selection = null;
+        }
+
+        string GetSelectedSurfaceScript(IMyTerminalBlock block)
+        {
+            var provider = block as IMyTextSurfaceProvider;
+            if (provider == null || provider.SurfaceCount <= 0)
+                return null;
+
+            int index = GetThisSurfaceIndex(block);
+            if (index < 0 || index >= provider.SurfaceCount)
+                return null;
+
+            return provider.GetSurface(index)?.Script;
+        }
     }
 }
