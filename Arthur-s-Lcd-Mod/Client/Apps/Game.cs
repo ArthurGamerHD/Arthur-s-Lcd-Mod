@@ -31,6 +31,7 @@ namespace LcdMod.Client.Apps
         
         public const string ID = "LcdMod_GameSurfaceScript";
         public const string TITLE = "LcdMod_Games";
+        protected override string DefaultTitle => TITLE;
         
         static readonly List<MyTerminalControlComboBoxItem> GameList =
             new List<MyTerminalControlComboBoxItem>

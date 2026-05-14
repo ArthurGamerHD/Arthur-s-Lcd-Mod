@@ -76,7 +76,7 @@ namespace LcdMod.Client.Apps.Abstract
             }
         }
 
-        protected virtual string DefaultTitle => "|";
+        protected virtual string DefaultTitle => "<Title not Set>";
 
         public float Scale = 1;
         protected float FontScale => _userFontScale <= 0f ? 1f : _userFontScale;
@@ -676,6 +676,7 @@ namespace LcdMod.Client.Apps.Abstract
             UpdateViewBox();
             ResolveRotationOrSurfaceIndex();
             _backgroundGrids.Clear();
+            (Block as IMyTerminalBlock)?.RefreshTerminal();
         }
 
         protected void DrawLoadingScreen(float scale = 1f, bool drawTitle = true)
