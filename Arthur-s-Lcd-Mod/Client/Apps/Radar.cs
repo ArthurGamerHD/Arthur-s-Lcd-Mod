@@ -212,6 +212,10 @@ namespace LcdMod.Client.Apps
                 _processedGroupGridIds.Clear();
                 foreach (var entity in _tempEntities)
                 {
+                    if (TryCollectSignalProxyContact(entity, shipPos, ownGrid, ownGridOwnerId, lockedTargetGridId,
+                            lockedTargetEntityId, normalizedLockPercent))
+                        continue;
+
                     var grid = entity as IMyCubeGrid;
                     if (grid == null || grid.Physics == null)
                         continue;
@@ -297,6 +301,110 @@ namespace LcdMod.Client.Apps
             {
                 ErrorHandlerHelper.LogError(ex, this);
             }
+        }
+
+        bool TryCollectSignalProxyContact(
+            IMyEntity entity,
+            Vector3D receiverPosition,
+            IMyCubeGrid receiverGrid,
+            long receiverOwnerId,
+            long lockedTargetGridId,
+            long lockedTargetEntityId,
+            float normalizedLockPercent)
+        {
+            if (entity == null || receiverGrid == null)
+                return false;
+
+            var block = entity as IMyCubeBlock;
+            var signalGrid = block?.CubeGrid;
+            if (signalGrid != null && signalGrid.EntityId == receiverGrid.EntityId)
+                return false;
+
+            if (!IsLongRangeSignalEntityInRange(entity, receiverPosition, receiverGrid))
+                return false;
+
+            long entityId = signalGrid?.EntityId ?? entity.EntityId;
+            if (_seenThisFrame.Contains(entityId))
+                return true;
+
+            var pos = entity.WorldMatrix.Translation;
+            if (Vector3D.Distance(pos, receiverPosition) > _maxRange)
+                return true;
+
+            _seenThisFrame.Add(entityId);
+
+            long ownerId = signalGrid != null
+                ? GetPrimaryGridOwner(signalGrid)
+                : GetPrimaryBlockOwner(block as IMyTerminalBlock);
+
+            ContactRecord rec;
+            if (!_contacts.TryGetValue(entityId, out rec))
+            {
+                rec = new ContactRecord { EntityId = entityId };
+                _contacts[entityId] = rec;
+            }
+
+            rec.Name = GetSignalProxyName(entity, block, signalGrid);
+            rec.Relationship = GetOwnerRelationship(ownerId, receiverOwnerId);
+            rec.IconTexture = GetFactionIconForOwner(ownerId);
+            rec.WorldPosition = pos;
+            rec.IsTargeted = entity.EntityId == lockedTargetEntityId ||
+                             (signalGrid != null && signalGrid.EntityId == lockedTargetGridId);
+            rec.TargetLockPercent = rec.IsTargeted ? normalizedLockPercent : 0f;
+            rec.MissedFrames = 0;
+            return true;
+        }
+
+        static string GetSignalProxyName(IMyEntity entity, IMyCubeBlock block, IMyCubeGrid signalGrid)
+        {
+            var radio = entity as IMyRadioAntenna;
+            if (radio != null && !string.IsNullOrWhiteSpace(radio.HudText))
+                return radio.HudText;
+
+            var beacon = entity as IMyBeacon;
+            if (beacon != null && !string.IsNullOrWhiteSpace(beacon.HudText))
+                return beacon.HudText;
+
+            var terminalBlock = block as IMyTerminalBlock;
+            if (terminalBlock != null && !string.IsNullOrWhiteSpace(terminalBlock.CustomName))
+                return terminalBlock.CustomName;
+
+            if (signalGrid != null && !string.IsNullOrWhiteSpace(signalGrid.DisplayName))
+                return signalGrid.DisplayName;
+
+            return entity.DisplayName ?? string.Empty;
+        }
+
+        static long GetPrimaryBlockOwner(IMyTerminalBlock block)
+        {
+            return block != null ? block.OwnerId : 0L;
+        }
+
+        static bool IsLongRangeSignalEntityInRange(
+            IMyEntity entity,
+            Vector3D receiverPosition,
+            IMyCubeGrid receiverGrid)
+        {
+            var functional = entity as Sandbox.ModAPI.IMyFunctionalBlock;
+            if (functional == null || !functional.IsFunctional || !functional.Enabled)
+                return false;
+
+            var radio = entity as IMyRadioAntenna;
+            if (radio != null)
+                return radio.IsBroadcasting && BroadcastRangeReaches(radio.WorldMatrix.Translation, radio.Radius,
+                    receiverPosition);
+
+            var beacon = entity as IMyBeacon;
+            if (beacon != null)
+                return BroadcastRangeReaches(beacon.WorldMatrix.Translation, beacon.Radius, receiverPosition);
+
+            var laser = entity as IMyLaserAntenna;
+            if (laser == null || laser.Other == null || receiverGrid == null)
+                return false;
+
+            return laser.Other.CubeGrid != null &&
+                   laser.Other.CubeGrid.EntityId == receiverGrid.EntityId &&
+                   laser.IsInRange(laser.Other);
         }
 
         void SyncConfigIfNeeded()
@@ -580,6 +688,11 @@ namespace LcdMod.Client.Apps
         MyRelationsBetweenPlayerAndBlock GetGridRelationship(IMyCubeGrid grid, long ownGridOwnerId)
         {
             long ownerId = GetPrimaryGridOwner(grid);
+            return GetOwnerRelationship(ownerId, ownGridOwnerId);
+        }
+
+        MyRelationsBetweenPlayerAndBlock GetOwnerRelationship(long ownerId, long ownGridOwnerId)
+        {
             if (ownerId == 0)
                 return MyRelationsBetweenPlayerAndBlock.Neutral;
 
