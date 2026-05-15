@@ -68,7 +68,7 @@ namespace LcdMod.Client.Apps
         // Battery aggregate
         float _avgBatteryCharge;
         bool _isCharging;
-        string _timeLabel = "--";
+        string _timeLabel = string.Empty;
 
         readonly List<IMyPowerProducer> _producers = new List<IMyPowerProducer>();
         readonly List<IMyTerminalBlock> _terminals = new List<IMyTerminalBlock>();
@@ -127,8 +127,8 @@ namespace LcdMod.Client.Apps
                 var prod = _producers[i];
                 try
                 {
-                    double cur = prod.CurrentOutput * 1000000.0;
-                    double max = prod.MaxOutput * 1000000.0;
+                    double cur = MegaWattsToWatts(prod.CurrentOutput);
+                    double max = MegaWattsToWatts(prod.MaxOutput);
 
                     if (prod is IMyBatteryBlock)
                     {
@@ -200,7 +200,7 @@ namespace LcdMod.Client.Apps
                 double w = 0;
                 try
                 {
-                    w = sink.CurrentInputByType(ElectricityId) * 1000000.0;
+                    w = MegaWattsToWatts(sink.CurrentInputByType(ElectricityId));
                 }
             catch (Exception e)
             {
@@ -241,17 +241,17 @@ namespace LcdMod.Client.Apps
 
                 float netRate = Math.Abs(netIn - netOut);
                 if (netRate < eps)
-                    _timeLabel = "--";
+                    _timeLabel = LocHelper.GetLoc("LcdMod_NotAvailable");
                 else if (_isCharging)
-                    _timeLabel = FormatTimeHours((totalMax - totalStored) / netRate);
+                    _timeLabel = FormatingHelper.FormatTimeHours((totalMax - totalStored) / netRate);
                 else
-                    _timeLabel = FormatTimeHours(totalStored / netRate);
+                    _timeLabel = FormatingHelper.FormatTimeHours(totalStored / netRate);
             }
             else
             {
                 _avgBatteryCharge = 0f;
                 _isCharging = false;
-                _timeLabel = "--";
+                _timeLabel = LocHelper.GetLoc("LcdMod_NotAvailable");
             }
         }
 
@@ -379,8 +379,10 @@ namespace LcdMod.Client.Apps
             Color fg = Surface.ScriptForegroundColor;
             float ts = Scale * 0.72f * FontScale;
 
-            string consumeLabel = "Consumo atual: " + FormatingHelper.WattsToString(_totalConsumptionW);
-            string capLabel = "Capacidade max: " + FormatingHelper.WattsToString(_totalMaxW);
+            string consumeLabel = FormatLoc("LcdMod_EnergyDashboard_CurrentConsumption",
+                FormatingHelper.WattsToString(_totalConsumptionW));
+            string capLabel = FormatLoc("LcdMod_EnergyDashboard_MaxCapacity",
+                FormatingHelper.WattsToString(_totalMaxW));
 
             sprites.Add(new MySprite
             {
@@ -436,7 +438,8 @@ namespace LcdMod.Client.Apps
 
             double totalProd = _solar.CurrentW + _wind.CurrentW + _reactor.CurrentW
                                + _engine.CurrentW + _batteryProd.CurrentW;
-            string prodLabel = "Produção: " + FormatingHelper.WattsToString(totalProd);
+            string prodLabel = FormatLoc("LcdMod_EnergyDashboard_Production",
+                FormatingHelper.WattsToString(totalProd));
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT, Data = prodLabel,
@@ -461,31 +464,36 @@ namespace LcdMod.Client.Apps
 
             if (_solar.MaxW > 0)
             {
-                DrawProductionRow(sprites, "Solar", _solar, xLeft, y, labelW, barW, numW, rowH, fg, accent);
+                DrawProductionRow(sprites, LocHelper.GetLoc("LcdMod_EnergyDashboard_Solar"), _solar, xLeft, y,
+                    labelW, barW, numW, rowH, fg, accent);
                 y += rowH;
             }
 
             if (_wind.MaxW > 0)
             {
-                DrawProductionRow(sprites, "Wind", _wind, xLeft, y, labelW, barW, numW, rowH, fg, accent);
+                DrawProductionRow(sprites, LocHelper.GetLoc("LcdMod_EnergyDashboard_Wind"), _wind, xLeft, y,
+                    labelW, barW, numW, rowH, fg, accent);
                 y += rowH;
             }
 
             if (_reactor.MaxW > 0)
             {
-                DrawProductionRow(sprites, "Reactor", _reactor, xLeft, y, labelW, barW, numW, rowH, fg, accent);
+                DrawProductionRow(sprites, LocHelper.GetLoc("LcdMod_EnergyDashboard_Reactor"), _reactor, xLeft, y,
+                    labelW, barW, numW, rowH, fg, accent);
                 y += rowH;
             }
 
             if (_engine.MaxW > 0)
             {
-                DrawProductionRow(sprites, "Engine", _engine, xLeft, y, labelW, barW, numW, rowH, fg, accent);
+                DrawProductionRow(sprites, LocHelper.GetLoc("LcdMod_EnergyDashboard_Engine"), _engine, xLeft, y,
+                    labelW, barW, numW, rowH, fg, accent);
                 y += rowH;
             }
 
             if (_batteryProd.MaxW > 0)
             {
-                DrawProductionRow(sprites, "Battery", _batteryProd, xLeft, y, labelW, barW, numW, rowH, fg, accent);
+                DrawProductionRow(sprites, LocHelper.GetLoc("LcdMod_EnergyDashboard_Battery"), _batteryProd, xLeft,
+                    y, labelW, barW, numW, rowH, fg, accent);
             }
         }
 
@@ -567,7 +575,9 @@ namespace LcdMod.Client.Apps
             Color lineColor = isProduction ? accent : warn;
             float ts = Scale * 0.62f * FontScale;
 
-            string label = isProduction ? "Produção de energia" : "Consumo de energia";
+            string label = isProduction
+                ? LocHelper.GetLoc("LcdMod_EnergyDashboard_ProductionGraph")
+                : LocHelper.GetLoc("LcdMod_EnergyDashboard_ConsumptionGraph");
             float labelH = FormatingHelper.GetSizeInPixel(label, "White", ts, Surface).Y;
 
             // ── scan samples to find max value ──
@@ -597,7 +607,7 @@ namespace LcdMod.Client.Apps
             int numSteps = (int)Math.Round(axisMax / step);
 
             // ── axis column width based on widest label ──
-            string topLabel = FormatAxisWatts(axisMax);
+            string topLabel = FormatingHelper.WattsToString(axisMax);
             float axisW = FormatingHelper.GetSizeInPixel(topLabel, "White", ts, Surface).X + 4f * Scale;
 
             float plotXLeft = xLeft + axisW;
@@ -648,7 +658,7 @@ namespace LcdMod.Client.Apps
                 }
 
                 // Y-axis label (right-aligned into the axis column)
-                string lbl = FormatAxisWatts(v);
+                string lbl = FormatingHelper.WattsToString(v);
                 float lblY = lineY - labelHHalf;
                 lblY = Math.Max(plotY, Math.Min(plotY + plotH - labelHHalf * 2f, lblY));
                 sprites.Add(new MySprite
@@ -712,17 +722,6 @@ namespace LcdMod.Client.Apps
             return niceNorm * mag;
         }
 
-        // Formats a watt value as an integer with the appropriate unit (W / kW / MW).
-        static string FormatAxisWatts(double watts)
-        {
-            if (watts <= 0) return "0";
-            if (watts >= 1000000.0)
-                return ((int)Math.Round(watts / 1000000.0)).ToString() + " MW";
-            if (watts >= 1000.0)
-                return ((int)Math.Round(watts / 1000.0)).ToString() + " kW";
-            return ((int)Math.Round(watts)).ToString() + " W";
-        }
-
         static void DrawLineSegment(List<MySprite> sprites, Vector2 p1, Vector2 p2,
             float thickness, Color color)
         {
@@ -779,7 +778,9 @@ namespace LcdMod.Client.Apps
                 bodyW, bodyH, _avgBatteryCharge, iconColor, fg, pctScale);
 
             // State + time (right-aligned, two lines)
-            string stateWord = _isCharging ? "Carregando" : "Descarregando";
+            string stateWord = _isCharging
+                ? LocHelper.GetLoc("LcdMod_EnergyDashboard_Charging")
+                : LocHelper.GetLoc("LcdMod_EnergyDashboard_Discharging");
             string stateText = stateWord + " — " + _timeLabel;
             Vector2 stSz = FormatingHelper.GetSizeInPixel(stateText, "White", ts, Surface);
             sprites.Add(new MySprite
@@ -791,7 +792,11 @@ namespace LcdMod.Client.Apps
             });
 
             int batCount = _batteries.Count;
-            string countText = batCount + (batCount == 1 ? " bateria" : " baterias");
+            string countText = FormatLoc(
+                batCount == 1
+                    ? "LcdMod_EnergyDashboard_BatteryCountSingular"
+                    : "LcdMod_EnergyDashboard_BatteryCountPlural",
+                batCount);
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT, Data = countText,
@@ -918,13 +923,14 @@ namespace LcdMod.Client.Apps
             return AppConfig.HeaderColor;
         }
 
-        static string FormatTimeHours(float hours)
+        static double MegaWattsToWatts(float megawatts)
         {
-            if (hours < 0f) return "--";
-            if (hours > 99.99f) return ">99h";
-            int h = (int)hours;
-            int m = (int)((hours - h) * 60f);
-            return h > 0 ? h.ToString() + "h " + m.ToString() + "m" : m.ToString() + "m";
+            return megawatts * 1000000.0;
+        }
+
+        static string FormatLoc(string key, object arg)
+        {
+            return string.Format(FormatingHelper.Culture, LocHelper.GetLoc(key), arg);
         }
     }
 }
