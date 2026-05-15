@@ -10,6 +10,7 @@ namespace LcdMod.Client.Terminal.Controls.Scale
     public sealed partial class SliderRenderScale : TerminalControlsWrapper
     {
         public override IMyTerminalControl TerminalControl { get; }
+        protected override bool RequiresAdvancedTweakables => true;
 
         public SliderRenderScale()
         {

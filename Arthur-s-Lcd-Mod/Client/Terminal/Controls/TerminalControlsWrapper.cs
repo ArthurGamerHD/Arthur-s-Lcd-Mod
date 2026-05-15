@@ -1,4 +1,5 @@
 using Generated;
+using LcdMod.Client.Config;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
@@ -21,6 +22,8 @@ namespace LcdMod.Client.Terminal.Controls
         ///     Prefix for ID of every control
         /// </summary>
         protected virtual string IdPrefix { get; } = "Space_Engineers_Lcd_MOD_";
+
+        protected virtual bool RequiresAdvancedTweakables => false;
 
         /// <summary>
         ///     Gets the current selected surface index from <see cref="block" />'s terminal
@@ -51,6 +54,9 @@ namespace LcdMod.Client.Terminal.Controls
         /// <returns>Boolean indicating if the block is visible or not</returns>
         public virtual bool Visible(IMyTerminalBlock block)
         {
+            if (RequiresAdvancedTweakables && !LocalConfigManager.AdvancedTweakables)
+                return false;
+
             var sf = ((IMyTextSurfaceProvider)block).GetSurface(GetThisSurfaceIndex(block));
             return !string.IsNullOrEmpty(sf?.Script) && sf.ContentType == ContentType.SCRIPT &&
                    VisibleForScript(sf.Script);

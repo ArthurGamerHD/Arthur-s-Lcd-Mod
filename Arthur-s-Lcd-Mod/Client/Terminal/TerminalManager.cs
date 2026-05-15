@@ -34,6 +34,9 @@ namespace LcdMod.Client.Terminal
         public void Initialize()
         {
             MyAPIGateway.TerminalControls.CustomControlGetter += CustomControlGetter;
+            
+            Controls.Add(new ButtonShowConfig());
+
 
             TerminalControlsListbox source = new ListboxBlockCandidates();
             TerminalControlsListbox target = new ListboxBlockSelected();
@@ -59,8 +62,6 @@ namespace LcdMod.Client.Terminal
 
             Controls.Add(new ComboboxDisplayMode());
             Controls.Add(new ComboboxGraphWindow());
-            Controls.Add(new SliderOreScannerConeAngle());
-            Controls.Add(new ListboxOreScannerReference());
             Controls.Add(new ListboxReferenceBlockSelection());
             Controls.Add(new SwitchToggleLines());
 

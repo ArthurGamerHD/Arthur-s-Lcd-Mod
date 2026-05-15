@@ -48,7 +48,7 @@ namespace LcdMod.Common.Config.Models
             }
         }
 
-        public void CopyFrom(ScreenProviderConfig other)
+        public ScreenProviderConfig CopyFrom(ScreenProviderConfig other)
         {
             if (Screens.Count != other.Screens.Count)
             {
@@ -79,15 +79,14 @@ namespace LcdMod.Common.Config.Models
                 target.Clone(source);
                 Screens[index] = target;
             }
+            
+            return this;
         }
 
         public void SetParent(IMyCubeBlock block)
         {
             Parent = block.CubeGrid.EntityId;
-
             BindRuntimeParent((IMyTerminalBlock)block);
-            
-            // todo: Some Extra logic is Required to properly migrate blocks ids when creating Blueprints
             foreach (var s in Screens.OfType<ScreenConfigWithBlocks>()) s.SelectedBlocks = Array.Empty<long>();
         }
     }

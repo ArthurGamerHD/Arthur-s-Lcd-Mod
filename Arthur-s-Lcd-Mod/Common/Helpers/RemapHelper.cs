@@ -67,10 +67,7 @@ namespace LcdMod.Common.Helpers
                 var screen = providerConfig.Screens[i];
                 if (screen == null)
                     continue;
-
-                if (screen.OreScannerReferenceId != 0)
-                    PinBlock(screen.OreScannerReferenceId);
-
+                
                 var withBlocks = screen as ScreenConfigWithBlocks;
                 if (withBlocks != null)
                     PinBlocks(withBlocks.SelectedBlocks);
@@ -183,13 +180,6 @@ namespace LcdMod.Common.Helpers
                 var screen = providerConfig.Screens[i];
                 if (screen == null)
                     continue;
-
-                long oreScannerReferenceId = screen.OreScannerReferenceId;
-                if (TryRemap(oreScannerReferenceId, remap, out oreScannerReferenceId))
-                {
-                    screen.OreScannerReferenceId = oreScannerReferenceId;
-                    changed = true;
-                }
 
                 var withBlocks = screen as ScreenConfigWithBlocks;
                 if (withBlocks != null)

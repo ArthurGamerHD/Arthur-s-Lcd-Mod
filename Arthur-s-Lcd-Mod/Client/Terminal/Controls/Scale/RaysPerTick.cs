@@ -10,6 +10,7 @@ namespace LcdMod.Client.Terminal.Controls.Scale
     public sealed partial class SliderRaysPerTick : TerminalControlsWrapper
     {
         public override IMyTerminalControl TerminalControl { get; }
+        protected override bool RequiresAdvancedTweakables => true;
 
         public SliderRaysPerTick()
         {

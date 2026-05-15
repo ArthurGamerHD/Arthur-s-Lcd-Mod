@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.Config;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Terminal;
 using LcdMod.Common.Helpers;
@@ -33,9 +34,11 @@ namespace LcdMod.Client
 
         public void LoadData()
         {
+            LocalConfigManager.Load();
             _session.RegisterModules();
 
             var group = CommandManager.GetOrCreateGroup("/lcdMod", new CmdGroupInitializer(4));
+            group.TryAdd("Advanced", LocalConfigManager.SetAdvancedTweakablesCommand, 1);
             group.TryAdd("FactionColor", FactionHelper.SetColor);
             group.TryAdd("PreloadTextures", _ => BlockIconHelper.PreloadAllTextures());
             group.TryAdd("TestLcd", strings => TextInputHelper.SpawnForLocalPlayer(strings.FirstOrDefault(), s => MyAPIGateway.Utilities.ShowNotification("User typed: " + s), "Hello World!", strings.Length > 1 ? strings[1] : string.Empty));
@@ -58,6 +61,7 @@ namespace LcdMod.Client
 
         public void UnloadData()
         {
+            LocalConfigManager.Save();
             _terminalManager.Unload();
             MyAPIGateway.Gui.GuiControlRemoved -= OnGuiControlRemoved;
             MyAPIGateway.Entities.OnEntityAdd -= EntityAdded;
