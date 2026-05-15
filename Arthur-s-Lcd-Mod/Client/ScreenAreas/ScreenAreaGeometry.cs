@@ -308,7 +308,7 @@ namespace LcdMod.Client.ScreenAreas
 
 #if DEBUG
             LogHelper.LogOnce("path:" + cacheKey, "normalized asset to path: " + assetName + " -> " + modelPath);
-#endif  
+#endif
             string lodPath = modelPath;
 
             try
@@ -321,7 +321,7 @@ namespace LcdMod.Client.ScreenAreas
 #if DEBUG
                         foreach (var lod in loDs)
                             LogHelper.LogOnce("path:lod:" + lod, $"Found lod {lod}");
-#endif            
+#endif
                         lodPath = ToModelPath(loDs[0] + ".mwm");
                         LogHelper.LogOnce("using:lod:" + lodPath, $"Using {lodPath} for {modelPath}");
                     }
@@ -371,31 +371,34 @@ namespace LcdMod.Client.ScreenAreas
             }
         }
 
-        static BinaryReader OpenMwm(string contentPath)
+        static BinaryReader OpenMwm(string content)
         {
             var utilities = MyAPIGateway.Utilities;
-            if (string.IsNullOrWhiteSpace(contentPath))
+            if (string.IsNullOrWhiteSpace(content))
                 return null;
 
-            if (contentPath.Contains("KOLT"))
-                LogHelper.LogOnce("file:game:" + contentPath,
-                    $"MWM from mod content: {contentPath} found: {MyAPIGateway.Session.Mods.Where(mod => utilities.FileExistsInModLocation(contentPath, mod)).FirstOrDefault()} ");
-
-            foreach (var mod in MyAPIGateway.Session.Mods.Where(mod =>
-                         utilities.FileExistsInModLocation(contentPath, mod)))
+            foreach (var mod in MyAPIGateway.Session.Mods.Where(mod => utilities.FileExistsInModLocation(content, mod)))
             {
-                LogHelper.LogOnce("file:mod:" + contentPath, "opening MWM from mod location: " + contentPath);
-
-
-                return utilities.ReadBinaryFileInModLocation(contentPath, mod);
+                try
+                {
+                    LogHelper.LogOnce("file:mod:" + content,
+                        $"opening MWM from mod ({mod.Name} {mod.PublishedServiceName}) location: " + content);
+                    return utilities.ReadBinaryFileInModLocation(content, mod);
+                }
+                catch (Exception e)
+                {   // mods can be unpredictable... had a guy uploading his entire bin64 folder to workshop and crashing this method
+                    LogHelper.LogOnce("fail:file:mod:" + content,
+                        $"Fail to load MWM from mod ({mod.Name} {mod.PublishedServiceName}) location: " + content + $"\n{e}");
+                }
             }
 
-            if (utilities.FileExistsInGameContent(contentPath))
+            if (utilities.FileExistsInGameContent(content))
             {
-                LogHelper.LogOnce("file:game:" + contentPath, "opening MWM from game content: " + contentPath);
-                return utilities.ReadBinaryFileInGameContent(contentPath);
+                LogHelper.LogOnce("file:game:" + content, "opening MWM from game content: " + content);
+                return utilities.ReadBinaryFileInGameContent(content);
             }
 
+            LogHelper.LogOnce("fail:file:" + content, "Unable to locate MWM: " + content);
             return null;
         }
 

@@ -12,6 +12,7 @@ using Sandbox.ModAPI;
 using VRage;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
+using VRage.Utils;
 using ItemsSurfaceScriptBase = LcdMod.Client.Apps.Abstract.ItemsSurfaceScriptBase;
 
 namespace LcdMod.Client
@@ -254,6 +255,10 @@ namespace LcdMod.Client
         void LoadLocalization()
         {
             var path = Path.Combine(_session.ModContext.ModPathData, "Localization");
+
+            if (path.EndsWith("/Localization")) // workaround for linux-native
+                path = path.Replace("\\", "/"); // todo: remove after fix https://github.com/viktor-ferenczi/se-linux-compat
+
             var supportedLanguages = new HashSet<MyLanguagesEnum>();
             MyTexts.LoadSupportedLanguages(path, supportedLanguages);
 
