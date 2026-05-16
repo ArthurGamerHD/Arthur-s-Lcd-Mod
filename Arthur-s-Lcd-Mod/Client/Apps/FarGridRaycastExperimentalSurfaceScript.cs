@@ -574,6 +574,17 @@ namespace LcdMod.Client.Apps
 
         void RunScanSlice(int generation)
         {
+            if (Block == null || Block.MarkedForClose || Surface == null)
+            {
+                lock (_sampleLock)
+                {
+                    if (generation == _scanGeneration)
+                        _scanPending = false;
+                }
+
+                return;
+            }
+
             ScanJob job;
             int startIndex;
             int endIndex;
