@@ -1,5 +1,3 @@
-using System;
-using System.IO;
 using LcdMod.Client.Extensions;
 using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;

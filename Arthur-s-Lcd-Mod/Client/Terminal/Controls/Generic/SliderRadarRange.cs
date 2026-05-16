@@ -1,4 +1,3 @@
-using System;
 using System.Text;
 using LcdMod.Client.Config;
 using LcdMod.Client.Helpers;
@@ -12,10 +11,10 @@ namespace LcdMod.Client.Terminal.Controls.Generic
 {
     public sealed partial class SliderRadarRange : TerminalControlsWrapper
     {
-        public const float MinScale = 0.1f;
-        public const float MaxScale = 10f;
-        public const float DefaultScale = 1f;
-        public const float BaseRangeMeters = 3000f;
+        public const float MIN_SCALE = 0.1f;
+        public const float MAX_SCALE = 10f;
+        public const float DEFAULT_SCALE = 1f;
+        public const float BASE_RANGE_METERS = 3000f;
 
         public override IMyTerminalControl TerminalControl { get; }
 
@@ -25,7 +24,7 @@ namespace LcdMod.Client.Terminal.Controls.Generic
             slider.Getter = Getter;
             slider.Setter = Setter;
             slider.Visible = Visible;
-            slider.SetLimits(MinScale, MaxScale);
+            slider.SetLimits(MIN_SCALE, MAX_SCALE);
             slider.Writer = Writer;
             slider.Title = MyStringId.GetOrCompute("LcdMod_Magnification");
 
@@ -55,7 +54,7 @@ namespace LcdMod.Client.Terminal.Controls.Generic
         {
             var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigRadar;
             if (config == null)
-                return DefaultScale;
+                return DEFAULT_SCALE;
 
             return ClampRangeScale(config.RangeScale);
         }
@@ -63,15 +62,15 @@ namespace LcdMod.Client.Terminal.Controls.Generic
         public static float ClampRangeScale(float scale)
         {
             if (float.IsNaN(scale) || float.IsInfinity(scale))
-                return DefaultScale;
+                return DEFAULT_SCALE;
 
-            return MathHelper.Clamp(scale <= 0f ? DefaultScale : scale, MinScale, MaxScale);
+            return MathHelper.Clamp(scale <= 0f ? DEFAULT_SCALE : scale, MIN_SCALE, MAX_SCALE);
         }
 
         public static float GetRangeMeters(float scale)
         {
             float magnification = ClampRangeScale(scale);
-            return BaseRangeMeters / magnification;
+            return BASE_RANGE_METERS / magnification;
         }
 
         public static float ApplyScrollStep(float scale, int delta)

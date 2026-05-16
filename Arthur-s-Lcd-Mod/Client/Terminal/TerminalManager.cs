@@ -61,6 +61,7 @@ namespace LcdMod.Client.Terminal
             Controls.Add(new SliderRenderScale());
 
             Controls.Add(new ComboboxDisplayMode());
+            Controls.Add(new ComboboxReferenceMode());
             Controls.Add(new ComboboxGraphWindow());
             Controls.Add(new ListboxReferenceBlockSelection());
             Controls.Add(new SwitchToggleLines());

@@ -17,6 +17,8 @@ namespace LcdMod.Client.ScreenAreas
     {
         static readonly Dictionary<string, CachedScreenArea> Cache =
             new Dictionary<string, CachedScreenArea>(StringComparer.OrdinalIgnoreCase);
+        static readonly Dictionary<string, Matrix> LocalMatrixCache =
+            new Dictionary<string, Matrix>(StringComparer.OrdinalIgnoreCase);
 
         public static bool TryGetScreenUvIntersection(
             SurfaceScriptBase screen,
@@ -95,6 +97,73 @@ namespace LcdMod.Client.ScreenAreas
             return camera.IsInFrustum(ref bounds);
         }
 
+        public static bool TryGetScreenWorldNormalDirection(SurfaceScriptBase screen, out Vector3D normal)
+        {
+            normal = Vector3D.Zero;
+            if (screen == null || screen.Block == null)
+                return false;
+
+            MinimalMwmScreenAreaGeometry geometry;
+            if (!TryGetScreenAreaGeometry(screen, out geometry))
+                return false;
+
+            return TryGetScreenWorldNormalDirection(
+                screen.Block.Model,
+                screen.Block.WorldMatrix,
+                geometry,
+                out normal);
+        }
+
+        public static bool TryGetScreenLocalNormalDirection(SurfaceScriptBase screen, out Vector3 normal)
+        {
+            normal = Vector3.Zero;
+            if (screen == null || screen.Block == null)
+                return false;
+
+            MinimalMwmScreenAreaGeometry geometry;
+            if (!TryGetScreenAreaGeometry(screen, out geometry))
+                return false;
+
+            return TryGetScreenLocalNormalDirection(screen.Block.Model, geometry, out normal);
+        }
+
+        public static bool TryGetScreenLocalMatrix(SurfaceScriptBase screen, out Matrix localMatrix)
+        {
+            localMatrix = Matrix.Identity;
+            if (screen == null || screen.Block == null)
+                return false;
+
+            var localKey = BuildLocalMatrixCacheKey(screen);
+            if (!string.IsNullOrEmpty(localKey) && LocalMatrixCache.TryGetValue(localKey, out localMatrix))
+                return true;
+
+            MinimalMwmScreenAreaGeometry geometry;
+            if (!TryGetScreenAreaGeometry(screen, out geometry))
+                return false;
+
+            if (!TryGetScreenLocalMatrix(screen.Block.Model, geometry, out localMatrix))
+                return false;
+
+            if (!string.IsNullOrEmpty(localKey))
+                LocalMatrixCache[localKey] = localMatrix;
+
+            return true;
+        }
+
+        public static bool TryGetScreenWorldMatrix(SurfaceScriptBase screen, out MatrixD worldMatrix)
+        {
+            worldMatrix = MatrixD.Identity;
+            if (screen == null || screen.Block == null)
+                return false;
+
+            Matrix localMatrix;
+            if (!TryGetScreenLocalMatrix(screen, out localMatrix))
+                return false;
+
+            worldMatrix = (MatrixD)localMatrix * screen.Block.WorldMatrix;
+            return true;
+        }
+
         static Vector2 ToSurfacePoint(Sandbox.ModAPI.Ingame.IMyTextSurface surface, Vector2 uv)
         {
             if (surface == null)
@@ -151,6 +220,433 @@ namespace LcdMod.Client.ScreenAreas
 
             bounds = new BoundingBoxD(min, max);
             return true;
+        }
+
+        static bool TryGetScreenWorldNormalDirection(
+            IMyModel blockModel,
+            MatrixD worldMatrix,
+            MinimalMwmScreenAreaGeometry geometry,
+            out Vector3D normal)
+        {
+            normal = Vector3D.Zero;
+            Vector3 localNormal;
+            if (!TryGetScreenLocalNormalDirection(blockModel, geometry, out localNormal))
+                return false;
+
+            normal = Vector3D.TransformNormal((Vector3D)localNormal, worldMatrix);
+            if (normal.LengthSquared() <= 1e-12)
+                return false;
+
+            normal.Normalize();
+            return true;
+        }
+
+        static bool TryGetScreenLocalNormalDirection(
+            IMyModel blockModel,
+            MinimalMwmScreenAreaGeometry geometry,
+            out Vector3 normal)
+        {
+            normal = Vector3.Zero;
+            if (blockModel == null || geometry == null || geometry.TriangleIndices == null ||
+                geometry.UvTriangles == null)
+                return false;
+
+            int bestTriangleIndex;
+            if (!TryGetCenterTriangleIndex(geometry, out bestTriangleIndex))
+                return false;
+
+            return TryGetScreenTriangleLocalNormal(
+                blockModel,
+                geometry.TriangleIndices[bestTriangleIndex],
+                out normal);
+        }
+
+        static bool TryGetScreenLocalMatrix(
+            IMyModel blockModel,
+            MinimalMwmScreenAreaGeometry geometry,
+            out Matrix localMatrix)
+        {
+            localMatrix = Matrix.Identity;
+            if (blockModel == null || geometry == null || geometry.TriangleIndices == null ||
+                geometry.UvTriangles == null)
+                return false;
+
+            int bestTriangleIndex;
+            if (!TryGetCenterTriangleIndex(geometry, out bestTriangleIndex))
+                return false;
+
+            Vector3 centerPoint;
+            Vector3 right;
+            Vector3 upFromUv;
+            Vector3 forward;
+            if (!TryGetScreenLocalAxesFromTriangleUv(blockModel, geometry, bestTriangleIndex, out right, out upFromUv, out forward))
+                return false;
+
+            var rawCenter = GetScreenCenterRawUv(geometry);
+            if (!TryGetLocalPointAtRawUv(blockModel, geometry, rawCenter, out centerPoint))
+            {
+                var triangle = blockModel.GetTriangle(geometry.TriangleIndices[bestTriangleIndex]);
+                Vector3 aLocal;
+                Vector3 bLocal;
+                Vector3 cLocal;
+                blockModel.GetVertex(triangle.I0, triangle.I1, triangle.I2, out aLocal, out bLocal, out cLocal);
+                centerPoint = (aLocal + bLocal + cLocal) / 3f;
+            }
+
+            localMatrix = Matrix.Identity;
+            localMatrix.Forward = forward;
+            localMatrix.Right = right;
+            localMatrix.Up = upFromUv;
+            localMatrix.Translation = centerPoint;
+            return true;
+        }
+
+        static bool TryGetScreenLocalAxesFromTriangleUv(
+            IMyModel blockModel,
+            MinimalMwmScreenAreaGeometry geometry,
+            int geometryTriangleIndex,
+            out Vector3 right,
+            out Vector3 up,
+            out Vector3 forward)
+        {
+            right = Vector3.Zero;
+            up = Vector3.Zero;
+            forward = Vector3.Zero;
+            if (blockModel == null || geometry == null || geometry.TriangleIndices == null || geometry.UvTriangles == null)
+                return false;
+
+            if (geometryTriangleIndex < 0 || geometryTriangleIndex >= geometry.TriangleIndices.Count ||
+                geometryTriangleIndex >= geometry.UvTriangles.Count)
+                return false;
+
+            var modelTriangle = blockModel.GetTriangle(geometry.TriangleIndices[geometryTriangleIndex]);
+            Vector3 p0;
+            Vector3 p1;
+            Vector3 p2;
+            blockModel.GetVertex(modelTriangle.I0, modelTriangle.I1, modelTriangle.I2, out p0, out p1, out p2);
+
+            Vector2 uv0;
+            Vector2 uv1;
+            Vector2 uv2;
+            if (!TryGetRuntimeTriangleUvs(geometry, modelTriangle.I0, modelTriangle.I1, modelTriangle.I2, out uv0, out uv1, out uv2))
+            {
+                var fallback = geometry.UvTriangles[geometryTriangleIndex];
+                uv0 = fallback.A;
+                uv1 = fallback.B;
+                uv2 = fallback.C;
+            }
+
+            var dp1 = p1 - p0;
+            var dp2 = p2 - p0;
+            var duv1 = uv1 - uv0;
+            var duv2 = uv2 - uv0;
+            var det = duv1.X * duv2.Y - duv1.Y * duv2.X;
+            if (Math.Abs(det) <= 1e-10f)
+                return false;
+
+            var invDet = 1f / det;
+            var dPdu = (dp1 * duv2.Y - dp2 * duv1.Y) * invDet;
+            var dPdv = (dp2 * duv1.X - dp1 * duv2.X) * invDet;
+
+            right = dPdu;
+            if (right.LengthSquared() <= 1e-12f)
+                return false;
+            right.Normalize();
+
+            // Screen Y grows downward; raw UV Y grows upward, so "up" in screen space is -dPdv.
+            up = -dPdv;
+            up -= right * Vector3.Dot(up, right);
+            if (up.LengthSquared() <= 1e-12f)
+                return false;
+            up.Normalize();
+
+            // right x up points toward away-facing side in this screen-space convention.
+            forward = Vector3.Cross(right, up);
+            if (forward.LengthSquared() <= 1e-12f)
+                return false;
+            forward.Normalize();
+
+            // Re-orthonormalize up from right/forward to preserve away-facing forward
+            // without introducing vertical mirroring.
+            up = Vector3.Cross(right, forward);
+            if (up.LengthSquared() <= 1e-12f)
+                return false;
+            up.Normalize();
+
+            return true;
+        }
+
+        static Vector2 GetScreenCenterRawUv(MinimalMwmScreenAreaGeometry geometry)
+        {
+            if (geometry != null && geometry.HasUvBounds)
+                return (geometry.UvMin + geometry.UvMax) * 0.5f;
+
+            return new Vector2(0.5f, -0.5f);
+        }
+
+        static bool TryGetCenterTriangleIndex(MinimalMwmScreenAreaGeometry geometry, out int triangleIndex)
+        {
+            triangleIndex = -1;
+            if (geometry == null || geometry.TriangleIndices == null || geometry.UvTriangles == null)
+                return false;
+
+            var centerRawUv = GetScreenCenterRawUv(geometry);
+            var count = Math.Min(geometry.TriangleIndices.Count, geometry.UvTriangles.Count);
+            var bestDistanceSq = double.MaxValue;
+            for (int i = 0; i < count; i++)
+            {
+                var uvTriangle = geometry.UvTriangles[i];
+                float u;
+                float v;
+                float w;
+                if (TryGetUvBarycentric(centerRawUv, uvTriangle.A, uvTriangle.B, uvTriangle.C,
+                        out u, out v, out w))
+                {
+                    triangleIndex = i;
+                    return true;
+                }
+
+                var distanceSq = DistanceSquaredToUvTriangle(centerRawUv, uvTriangle);
+                if (distanceSq >= bestDistanceSq)
+                    continue;
+
+                bestDistanceSq = distanceSq;
+                triangleIndex = i;
+            }
+
+            return triangleIndex >= 0;
+        }
+
+        static bool TryGetScreenTriangleLocalNormal(
+            IMyModel blockModel,
+            int triangleIndex,
+            out Vector3 normal)
+        {
+            normal = Vector3.Zero;
+            if (blockModel == null)
+                return false;
+
+            var triangle = blockModel.GetTriangle(triangleIndex);
+
+            Vector3 aLocal;
+            Vector3 bLocal;
+            Vector3 cLocal;
+            blockModel.GetVertex(triangle.I0, triangle.I1, triangle.I2, out aLocal, out bLocal, out cLocal);
+
+            var edge1 = bLocal - aLocal;
+            var edge2 = cLocal - aLocal;
+            normal = Vector3.Cross(edge1, edge2);
+            if (normal.LengthSquared() <= 1e-12f)
+                return false;
+
+            normal.Normalize();
+            return true;
+        }
+
+        static bool TryGetLocalPointAtRawUv(
+            IMyModel blockModel,
+            MinimalMwmScreenAreaGeometry geometry,
+            Vector2 rawUv,
+            out Vector3 point)
+        {
+            point = Vector3.Zero;
+            if (blockModel == null || geometry == null || geometry.TriangleIndices == null ||
+                geometry.UvTriangles == null)
+                return false;
+
+            var count = Math.Min(geometry.TriangleIndices.Count, geometry.UvTriangles.Count);
+            var bestTriangleIndex = -1;
+            var bestDistanceSq = double.MaxValue;
+            float bestU = 0f;
+            float bestV = 0f;
+            float bestW = 0f;
+
+            for (int i = 0; i < count; i++)
+            {
+                var triangle = blockModel.GetTriangle(geometry.TriangleIndices[i]);
+                Vector2 uv0;
+                Vector2 uv1;
+                Vector2 uv2;
+                if (!TryGetRuntimeTriangleUvs(geometry, triangle.I0, triangle.I1, triangle.I2, out uv0, out uv1, out uv2))
+                {
+                    var fallback = geometry.UvTriangles[i];
+                    uv0 = fallback.A;
+                    uv1 = fallback.B;
+                    uv2 = fallback.C;
+                }
+
+                float u;
+                float v;
+                float w;
+                if (TryGetUvBarycentric(rawUv, uv0, uv1, uv2, out u, out v, out w))
+                {
+                    bestTriangleIndex = i;
+                    bestU = u;
+                    bestV = v;
+                    bestW = w;
+                    break;
+                }
+
+                var distanceSq = DistanceSquaredToUvTriangle(rawUv, new MinimalMwmUvTriangle(uv0, uv1, uv2));
+                if (distanceSq >= bestDistanceSq)
+                    continue;
+
+                bestDistanceSq = distanceSq;
+                bestTriangleIndex = i;
+                GetClosestUvBarycentric(rawUv, uv0, uv1, uv2, out bestU, out bestV, out bestW);
+            }
+
+            if (bestTriangleIndex < 0)
+                return false;
+
+            var bestTriangle = blockModel.GetTriangle(geometry.TriangleIndices[bestTriangleIndex]);
+            Vector3 aLocal;
+            Vector3 bLocal;
+            Vector3 cLocal;
+            blockModel.GetVertex(bestTriangle.I0, bestTriangle.I1, bestTriangle.I2, out aLocal, out bLocal, out cLocal);
+            point = aLocal * bestU + bLocal * bestV + cLocal * bestW;
+            return true;
+        }
+
+        static void GetClosestUvBarycentric(
+            Vector2 point,
+            Vector2 a,
+            Vector2 b,
+            Vector2 c,
+            out float u,
+            out float v,
+            out float w)
+        {
+            var abPoint = ClosestPointOnUvSegment(point, a, b);
+            var bcPoint = ClosestPointOnUvSegment(point, b, c);
+            var caPoint = ClosestPointOnUvSegment(point, c, a);
+            var abDistance = Vector2.DistanceSquared(point, abPoint);
+            var bcDistance = Vector2.DistanceSquared(point, bcPoint);
+            var caDistance = Vector2.DistanceSquared(point, caPoint);
+
+            if (abDistance <= bcDistance && abDistance <= caDistance)
+            {
+                var t = GetUvSegmentT(abPoint, a, b);
+                u = 1f - t;
+                v = t;
+                w = 0f;
+                return;
+            }
+
+            if (bcDistance <= caDistance)
+            {
+                var t = GetUvSegmentT(bcPoint, b, c);
+                u = 0f;
+                v = 1f - t;
+                w = t;
+                return;
+            }
+
+            var caT = GetUvSegmentT(caPoint, c, a);
+            u = caT;
+            v = 0f;
+            w = 1f - caT;
+        }
+
+        static Vector2 ClosestPointOnUvSegment(Vector2 point, Vector2 a, Vector2 b)
+        {
+            var segment = b - a;
+            var lengthSq = segment.LengthSquared();
+            if (lengthSq <= 1e-12f)
+                return a;
+
+            var t = MathHelper.Clamp(Vector2.Dot(point - a, segment) / lengthSq, 0f, 1f);
+            return a + segment * t;
+        }
+
+        static float GetUvSegmentT(Vector2 point, Vector2 a, Vector2 b)
+        {
+            var segment = b - a;
+            var lengthSq = segment.LengthSquared();
+            if (lengthSq <= 1e-12f)
+                return 0f;
+
+            return MathHelper.Clamp(Vector2.Dot(point - a, segment) / lengthSq, 0f, 1f);
+        }
+
+        static bool TryGetRuntimeTriangleUvs(
+            MinimalMwmScreenAreaGeometry geometry,
+            int i0,
+            int i1,
+            int i2,
+            out Vector2 uv0,
+            out Vector2 uv1,
+            out Vector2 uv2)
+        {
+            uv0 = Vector2.Zero;
+            uv1 = Vector2.Zero;
+            uv2 = Vector2.Zero;
+
+            if (geometry == null || geometry.UvByVertexIndex == null)
+                return false;
+
+            return geometry.UvByVertexIndex.TryGetValue(i0, out uv0) &&
+                   geometry.UvByVertexIndex.TryGetValue(i1, out uv1) &&
+                   geometry.UvByVertexIndex.TryGetValue(i2, out uv2);
+        }
+
+        static bool TryGetUvBarycentric(
+            Vector2 point,
+            Vector2 a,
+            Vector2 b,
+            Vector2 c,
+            out float u,
+            out float v,
+            out float w)
+        {
+            const float epsilon = 1e-5f;
+            u = 0f;
+            v = 0f;
+            w = 0f;
+
+            var v0 = b - a;
+            var v1 = c - a;
+            var v2 = point - a;
+            var d00 = Vector2.Dot(v0, v0);
+            var d01 = Vector2.Dot(v0, v1);
+            var d11 = Vector2.Dot(v1, v1);
+            var d20 = Vector2.Dot(v2, v0);
+            var d21 = Vector2.Dot(v2, v1);
+            var denom = d00 * d11 - d01 * d01;
+            if (Math.Abs(denom) <= epsilon)
+                return false;
+
+            v = (d11 * d20 - d01 * d21) / denom;
+            w = (d00 * d21 - d01 * d20) / denom;
+            u = 1f - v - w;
+            return u >= -epsilon && v >= -epsilon && w >= -epsilon;
+        }
+
+        static double DistanceSquaredToUvTriangle(Vector2 point, MinimalMwmUvTriangle triangle)
+        {
+            float u;
+            float v;
+            float w;
+            if (TryGetUvBarycentric(point, triangle.A, triangle.B, triangle.C, out u, out v, out w))
+                return 0d;
+
+            return Math.Min(
+                DistanceSquaredToUvSegment(point, triangle.A, triangle.B),
+                Math.Min(
+                    DistanceSquaredToUvSegment(point, triangle.B, triangle.C),
+                    DistanceSquaredToUvSegment(point, triangle.C, triangle.A)));
+        }
+
+        static double DistanceSquaredToUvSegment(Vector2 point, Vector2 a, Vector2 b)
+        {
+            var segment = b - a;
+            var lengthSq = segment.LengthSquared();
+            if (lengthSq <= 1e-12f)
+                return Vector2.DistanceSquared(point, a);
+
+            var t = MathHelper.Clamp(Vector2.Dot(point - a, segment) / lengthSq, 0f, 1f);
+            var closest = a + segment * t;
+            return Vector2.DistanceSquared(point, closest);
         }
 
         static void IncludePoint(ref Vector3D min, ref Vector3D max, Vector3D point)
@@ -270,6 +766,18 @@ namespace LcdMod.Client.ScreenAreas
                     return;
 
             materials.Add(material);
+        }
+
+        static string BuildLocalMatrixCacheKey(SurfaceScriptBase screen)
+        {
+            if (screen == null || screen.Block == null)
+                return null;
+
+            var definition = screen.Block.BlockDefinition;
+            if (definition.TypeId.IsNull)
+                return null;
+
+            return definition.TypeIdString + "/" + definition.SubtypeName + "#" + screen.RotationOrSurfaceIndex;
         }
 
         static bool TryGetScreenAreaGeometry(string assetName, string material,

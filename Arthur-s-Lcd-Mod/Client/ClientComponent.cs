@@ -13,7 +13,6 @@ using Sandbox.ModAPI;
 using VRage;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
-using VRage.Utils;
 using ItemsSurfaceScriptBase = LcdMod.Client.Apps.Abstract.ItemsSurfaceScriptBase;
 
 namespace LcdMod.Client

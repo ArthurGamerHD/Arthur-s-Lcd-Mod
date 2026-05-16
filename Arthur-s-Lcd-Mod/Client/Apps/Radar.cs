@@ -6,7 +6,9 @@ using LcdMod.Client.Config;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
+using LcdMod.Client.ScreenAreas;
 using LcdMod.Client.Terminal.Controls;
+using LcdMod.Client.Terminal.Controls.Generic;
 using LcdMod.Common.Helpers;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
@@ -38,7 +40,8 @@ namespace LcdMod.Client.Apps
 
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class RadarSurfaceScript : InteractiveSurfaceScript,
-        IUsesTerminalControl<SliderRadarRange>
+        IUsesTerminalControl<SliderRadarRange>,
+        IUsesTerminalControl<ComboboxReferenceMode>
     {
         protected override ConfigKind ConfigKind => ConfigKind.Radar;
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
@@ -385,7 +388,7 @@ namespace LcdMod.Client.Apps
             Vector3D receiverPosition,
             IMyCubeGrid receiverGrid)
         {
-            var functional = entity as Sandbox.ModAPI.IMyFunctionalBlock;
+            var functional = entity as IMyFunctionalBlock;
             if (functional == null || !functional.IsFunctional || !functional.Enabled)
                 return false;
 
@@ -419,7 +422,7 @@ namespace LcdMod.Client.Apps
 
         float GetConfiguredRange()
         {
-            return SliderRadarRange.GetRangeMeters(AppConfig?.RangeScale ?? SliderRadarRange.DefaultScale);
+            return SliderRadarRange.GetRangeMeters(AppConfig?.RangeScale ?? SliderRadarRange.DEFAULT_SCALE);
         }
 
         bool GridGroupHasLongRangeSignal(List<IMyCubeGrid> grids, Vector3D receiverPosition, IMyCubeGrid receiverGrid)
@@ -460,7 +463,7 @@ namespace LcdMod.Client.Apps
             IMyCubeGrid receiverGrid)
         {
             var block = slimBlock?.FatBlock;
-            var functional = block as Sandbox.ModAPI.IMyFunctionalBlock;
+            var functional = block as IMyFunctionalBlock;
             if (functional == null || !functional.IsFunctional || !functional.Enabled)
                 return false;
 
@@ -874,7 +877,9 @@ namespace LcdMod.Client.Apps
             _targetsBelowPlane.Clear();
             _targetsAbovePlane.Clear();
 
-            var gridMatrix = Block.WorldMatrix;
+            MatrixD gridMatrix;
+            if (!TryGetReferenceWorldMatrix(out gridMatrix))
+                gridMatrix = Block.WorldMatrix;
             int shown = Math.Min(_sortedContacts.Count, MAX_CONTACTS);
             bool hasLockedTarget = false;
             for (int i = 0; i < shown; i++)
@@ -920,6 +925,50 @@ namespace LcdMod.Client.Apps
 
             _targetsBelowPlane.Sort((a, b) => a.Position.Y.CompareTo(b.Position.Y));
             _targetsAbovePlane.Sort((a, b) => a.Position.Y.CompareTo(b.Position.Y));
+        }
+
+        bool TryGetReferenceWorldMatrix(out MatrixD world)
+        {
+            world = MatrixD.Identity;
+            var mode = (ReferenceMode)(AppConfig?.ReferenceMode ?? (int)ReferenceMode.Auto);
+            switch (mode)
+            {
+                case ReferenceMode.Screen:
+                    return ScreenAreaGeometry.TryGetScreenWorldMatrix(this, out world);
+                case ReferenceMode.Controller:
+                    return TryGetControllerWorldMatrix(out world);
+                case ReferenceMode.Auto:
+                default:
+                    if (Block is IMyCockpit)
+                    {
+                        world = Block.WorldMatrix;
+                        return true;
+                    }
+
+                    return ScreenAreaGeometry.TryGetScreenWorldMatrix(this, out world);
+            }
+        }
+
+        bool TryGetControllerWorldMatrix(out MatrixD world)
+        {
+            world = MatrixD.Identity;
+            var myGrid = Block?.CubeGrid as Sandbox.Game.Entities.MyCubeGrid;
+            if (myGrid == null)
+                return false;
+
+            if (myGrid.MainCockpit != null)
+            {
+                world = myGrid.MainCockpit.WorldMatrix;
+                return true;
+            }
+
+            if (myGrid.MainRemoteControl != null)
+            {
+                world = myGrid.MainRemoteControl.WorldMatrix;
+                return true;
+            }
+
+            return false;
         }
 
         bool TryBuildTargetInfo(ContactRecord contact, MatrixD gridMatrix, Color errColor, Color warnColor,

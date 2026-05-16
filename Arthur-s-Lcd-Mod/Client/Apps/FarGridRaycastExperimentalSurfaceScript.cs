@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Text;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
+using LcdMod.Client.ScreenAreas;
+using LcdMod.Client.Terminal.Controls;
+using LcdMod.Client.Terminal.Controls.Generic;
 using LcdMod.Client.Utility;
 using Generated;
 using LcdMod.Client.Terminal.Controls.Scale;
@@ -23,7 +26,8 @@ namespace LcdMod.Client.Apps
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class FarGridRaycastExperimentalSurfaceScript : InteractiveSurfaceScript,
         IUsesTerminalControl<SliderRenderScale>,
-        IUsesTerminalControl<SliderRaysPerTick>
+        IUsesTerminalControl<SliderRaysPerTick>,
+        IUsesTerminalControl<ComboboxReferenceMode>
     {
         protected override ConfigKind ConfigKind => ConfigKind.Raycast;
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
@@ -102,7 +106,6 @@ namespace LcdMod.Client.Apps
         bool _frameBuildPending;
         bool _frameBuildWorkerRunning;
         bool _frameBuildQueued;
-
         protected override string DefaultTitle => TITLE;
 
         public FarGridRaycastExperimentalSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
@@ -165,9 +168,18 @@ namespace LcdMod.Client.Apps
             if (Block == null)
                 return false;
 
+            MatrixD referenceWorld;
+            if (TryGetReferenceWorldMatrix(out referenceWorld))
+            {
+                origin = referenceWorld.Translation;
+                forward = referenceWorld.Forward;
+                right = referenceWorld.Right;
+                up = referenceWorld.Up;
+                return Normalize(ref forward) && Normalize(ref right) && Normalize(ref up);
+            }
+
             origin = Block.GetPosition();
             var world = Block.WorldMatrix;
-            //todo: replace this with the calculated screen normal from ScreenAreaGeometry.
             forward = world.Forward;
             if (!Normalize(ref forward))
                 return false;
@@ -182,6 +194,56 @@ namespace LcdMod.Client.Apps
 
             up = Vector3D.Cross(right, forward);
             return Normalize(ref up);
+        }
+
+        bool TryGetReferenceWorldMatrix(out MatrixD world)
+        {
+            world = MatrixD.Identity;
+            var mode = (ReferenceMode)(AppConfig?.ReferenceMode ?? (int)ReferenceMode.Auto);
+            switch (mode)
+            {
+                case ReferenceMode.Screen:
+                    return ScreenAreaGeometry.TryGetScreenWorldMatrix(this, out world);
+                case ReferenceMode.Controller:
+                    return TryGetControllerWorldMatrix(out world);
+                case ReferenceMode.Auto:
+                default:
+                    if (Block is IMyCockpit && TryGetCockpitWorldMatrix(out world))
+                        return true;
+                    return ScreenAreaGeometry.TryGetScreenWorldMatrix(this, out world);
+            }
+        }
+
+        bool TryGetCockpitWorldMatrix(out MatrixD world)
+        {
+            world = MatrixD.Identity;
+            var cockpit = Block as IMyCockpit;
+            if (cockpit == null)
+                return false;
+            world = cockpit.WorldMatrix;
+            return true;
+        }
+
+        bool TryGetControllerWorldMatrix(out MatrixD world)
+        {
+            world = MatrixD.Identity;
+            var controller = ResolveShipController();
+            if (controller == null)
+                return false;
+            world = controller.WorldMatrix;
+            return true;
+        }
+
+        IMyShipController ResolveShipController()
+        {
+            var myGrid = Block?.CubeGrid as MyCubeGrid;
+            if (myGrid == null)
+                return null;
+            if (myGrid.MainCockpit != null)
+                return myGrid.MainCockpit as IMyShipController;
+            if (myGrid.MainRemoteControl != null)
+                return myGrid.MainRemoteControl as IMyShipController;
+            return null;
         }
 
         protected override void OnMouseScroll(int delta, ref bool handled)

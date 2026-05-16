@@ -6,7 +6,9 @@ using LcdMod.Client.Extensions;
 using LcdMod.Client.Config;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
+using LcdMod.Client.ScreenAreas;
 using LcdMod.Client.Terminal.Controls;
+using LcdMod.Client.Terminal.Controls.Generic;
 using LcdMod.Client.Utility;
 using Sandbox.Game.Entities;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
@@ -17,6 +19,7 @@ using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRageMath;
 using InteractiveSurfaceScript = LcdMod.Client.Apps.Abstract.InteractiveSurfaceScript;
+using IMyCockpit = Sandbox.ModAPI.IMyCockpit;
 using SliderFov = LcdMod.Client.Terminal.Controls.Generic.SliderFov;
 
 namespace LcdMod.Client.Apps
@@ -24,7 +27,8 @@ namespace LcdMod.Client.Apps
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class StarMapSurfaceScript : InteractiveSurfaceScript,
         IUsesTerminalControl<SliderFov>,
-        IMultiDisplayMode
+        IMultiDisplayMode,
+        IUsesTerminalControl<ComboboxReferenceMode>
     {
         protected override ConfigKind ConfigKind => ConfigKind.StarMap;
         float _fov;
@@ -425,18 +429,18 @@ namespace LcdMod.Client.Apps
             if (Block == null)
                 return false;
 
-            MatrixD world = Block.WorldMatrix;
+            MatrixD referenceMatrix = GetReferenceMatrix();
             int groundStartIndex = groundSprites.Count;
             int groundOcclusionStartIndex = groundOcclusionSprites.Count;
             int ringStartIndex = ringSprites.Count;
             int overlayStartIndex = overlaySprites.Count;
-            if (TryUseDynamicMapCache(groundSprites, groundOcclusionSprites, ringSprites, overlaySprites, planets.Count, world))
+            if (TryUseDynamicMapCache(groundSprites, groundOcclusionSprites, ringSprites, overlaySprites, planets.Count, referenceMatrix))
                 return true;
 
-            var camPos = world.Translation;
-            var camRight = world.Right;
-            var camUp = world.Up;
-            var camForward = world.Forward;
+            var camPos = referenceMatrix.Translation;
+            var camRight = referenceMatrix.Right;
+            var camUp = referenceMatrix.Up;
+            var camForward = referenceMatrix.Forward;
 
             long gravityPlanetId = GetCurrentGravityPlanetId(camPos, planets);
             float naturalGravityMultiplier = GetNaturalGravityMultiplier(camPos);
@@ -457,7 +461,7 @@ namespace LcdMod.Client.Apps
                 groundSprites,
                 groundOcclusionSprites,
                 overlaySprites,
-                world,
+                referenceMatrix,
                 camPos,
                 halfFovX,
                 gravityPlanetId,
@@ -592,14 +596,14 @@ namespace LcdMod.Client.Apps
                     DrawArtificialHorizonPlanetOverlay(
                         overlaySprites,
                         artificialHorizonGravity,
-                        world,
+                        referenceMatrix,
                         gravityPlanetId,
                         planets,
                         _suppressDynamicOverlays);
             }
             else
             {
-                DrawArtificialHorizonSpaceOverlay(overlaySprites, world, _suppressDynamicOverlays);
+                DrawArtificialHorizonSpaceOverlay(overlaySprites, referenceMatrix, _suppressDynamicOverlays);
             }
 
             for (int i = visiblePlanets.Count - 1; i >= 0; i--) // far -> near draw order
@@ -619,7 +623,7 @@ namespace LcdMod.Client.Apps
                 overlaySprites,
                 overlayStartIndex,
                 planets.Count,
-                world);
+                referenceMatrix);
             return hasDetectedPlanets;
         }
 
@@ -2902,7 +2906,70 @@ namespace LcdMod.Client.Apps
 
         MatrixD GetReferenceMatrix()
         {
-            return Block != null ? Block.WorldMatrix : MatrixD.Identity;
+            if (Block == null)
+                return MatrixD.Identity;
+
+            MatrixD screenWorld;
+            if (!TryGetReferenceWorldMatrix(out screenWorld))
+                return Block.WorldMatrix;
+
+            var forward = screenWorld.Forward;
+            var right = screenWorld.Right;
+            var up = screenWorld.Up;
+            if (forward.Normalize() <= 1e-6 || right.Normalize() <= 1e-6 || up.Normalize() <= 1e-6)
+                return Block.WorldMatrix;
+
+            screenWorld.Forward = forward;
+            screenWorld.Right = right;
+            screenWorld.Up = up;
+            return screenWorld;
+        }
+
+        bool TryGetReferenceWorldMatrix(out MatrixD world)
+        {
+            world = MatrixD.Identity;
+            var mode = (ReferenceMode)(AppConfig?.ReferenceMode ?? (int)ReferenceMode.Auto);
+            switch (mode)
+            {
+                case ReferenceMode.Screen:
+                    return ScreenAreaGeometry.TryGetScreenWorldMatrix(this, out world);
+                case ReferenceMode.Controller:
+                    return TryGetControllerWorldMatrix(out world);
+                case ReferenceMode.Auto:
+                default:
+                    if (Block is IMyCockpit && TryGetCockpitWorldMatrix(out world))
+                        return true;
+                    return ScreenAreaGeometry.TryGetScreenWorldMatrix(this, out world);
+            }
+        }
+
+        bool TryGetCockpitWorldMatrix(out MatrixD world)
+        {
+            world = MatrixD.Identity;
+            var cockpit = Block as IMyCockpit;
+            if (cockpit == null)
+                return false;
+            world = cockpit.WorldMatrix;
+            return true;
+        }
+
+        bool TryGetControllerWorldMatrix(out MatrixD world)
+        {
+            world = MatrixD.Identity;
+            var myGrid = Block?.CubeGrid as MyCubeGrid;
+            if (myGrid == null)
+                return false;
+            if (myGrid.MainCockpit != null)
+            {
+                world = myGrid.MainCockpit.WorldMatrix;
+                return true;
+            }
+            if (myGrid.MainRemoteControl != null)
+            {
+                world = myGrid.MainRemoteControl.WorldMatrix;
+                return true;
+            }
+            return false;
         }
 
         void ClickOnGps(string planetName, Vector3D position, Color color)

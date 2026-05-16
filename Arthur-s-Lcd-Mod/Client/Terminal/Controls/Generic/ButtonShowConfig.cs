@@ -5,7 +5,6 @@ using LcdMod.Common.Config.Models;
 using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
-using VRage.Game.ModAPI;
 using VRage.Utils;
 
 namespace LcdMod.Client.Terminal.Controls.Generic
