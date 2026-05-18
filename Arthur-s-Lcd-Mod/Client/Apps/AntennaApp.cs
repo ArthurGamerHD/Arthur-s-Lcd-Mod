@@ -5,6 +5,7 @@ using LcdMod.Client.Grid;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Gui.Controls;
 using LcdMod.Client.Gui.Models.Antenna;
+using LcdMod.Client.SurfaceScripts;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Utility;
 using Sandbox.ModAPI;

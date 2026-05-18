@@ -1,15 +1,17 @@
 using System;
 using System.Collections.Generic;
+using LcdMod.Client.Apps;
+using LcdMod.Client.Apps.Abstract;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using VRageMath;
 using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
 using IMyTerminalBlock = Sandbox.ModAPI.IMyTerminalBlock;
 
-namespace LcdMod.Client.Apps
+namespace LcdMod.Client.SurfaceScripts
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public partial class GasSurfaceScript : Abstract.PercentageSurfaceScript<GasSurfaceScript.Entry>
+    public partial class GasSurfaceScript : PercentageSurfaceScript<GasSurfaceScript.Entry>
     {
         public const string ID = "GasGraph";
         public const string TITLE = "LcdMod_GasFilled";

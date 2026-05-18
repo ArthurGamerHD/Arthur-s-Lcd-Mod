@@ -6,6 +6,7 @@ using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Gui.Controls.Interactive;
 using LcdMod.Client.Gui.Models.Power;
+using LcdMod.Client.SurfaceScripts;
 using LcdMod.Client.Utility;
 using VRage;
 using VRage.Game.GUI.TextPanel;

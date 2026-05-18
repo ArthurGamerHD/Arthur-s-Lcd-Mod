@@ -4,6 +4,7 @@ using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.Models.Power;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Utility;
+using LcdMod.Client.Apps;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
@@ -11,7 +12,7 @@ using VRage.Game.ModAPI;
 using VRageMath;
 using InteractiveSurfaceScript = LcdMod.Client.Apps.Abstract.InteractiveSurfaceScript;
 
-namespace LcdMod.Client.Apps
+namespace LcdMod.Client.SurfaceScripts
 {
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class PowerFilledSurfaceScript : InteractiveSurfaceScript

@@ -3,7 +3,7 @@ using System.Text;
 using LcdMod.Client.Grid;
 using LcdMod.Client.Helpers;
 using VRageMath;
-using AntennaSurfaceScript = LcdMod.Client.Apps.AntennaSurfaceScript;
+using AntennaSurfaceScript = LcdMod.Client.SurfaceScripts.AntennaSurfaceScript;
 using IMyRadioAntenna = Sandbox.ModAPI.IMyRadioAntenna;
 
 namespace LcdMod.Client.Gui.Models.Antenna

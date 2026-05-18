@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Generated;
+using LcdMod.Client.Apps;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Gui.Models.Antenna;
 using LcdMod.Client.Terminal.Controls;
@@ -17,7 +18,7 @@ using LabelSeparator = LcdMod.Client.Terminal.Controls.Filter.LabelSeparator;
 using SeparatorFilter = LcdMod.Client.Terminal.Controls.Filter.SeparatorFilter;
 using SwitchToggleLines = LcdMod.Client.Terminal.Controls.Generic.SwitchToggleLines;
 
-namespace LcdMod.Client.Apps
+namespace LcdMod.Client.SurfaceScripts
 {
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class AntennaSurfaceScript : SurfaceScriptBase,

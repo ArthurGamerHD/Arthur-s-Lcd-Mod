@@ -1,64 +1,30 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Generated;
-using LcdMod.Client.Apps.Abstract;
-using Sandbox.Game.GameSystems.TextSurfaceScripts;
-using Sandbox.ModAPI;
+using LcdMod.Client.SurfaceScripts;
 using VRage.Game.GUI.TextPanel;
-using VRage.Game.ModAPI;
 using VRageMath;
 
 namespace LcdMod.Client.Apps
 {
-#if DEBUG
-    [MyTextSurfaceScript(ID, TITLE)]
-#endif
-    public partial class SessionDebugSurfaceScript : SurfaceScriptBase
+    internal sealed class SessionDebugApp
     {
-        protected override ConfigKind ConfigKind => ConfigKind.Colorable;
-
-        public const string ID = "SessionDebug";
-        public const string TITLE = "LcdMod Session Debug";
-        const string DEBUG_FONT = "Monospace";
-        const float LINE_SCALE = 0.62f;
+        const string DebugFont = "Monospace";
+        const float LineScale = 0.62f;
         static readonly Color RunningColor = new Color(80, 220, 120);
         static readonly Color IdleColor = new Color(230, 90, 90);
         static readonly Color SleepingColor = new Color(235, 210, 60);
+        readonly List<MySprite> _sprites = new List<MySprite>();
 
-        List<MySprite> _sprites = new List<MySprite>();
-        public override ScriptUpdate NeedsUpdate => ScriptUpdate.Update10;
-
-        public SessionDebugSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
-            : base(surface, block, size)
+        public List<MySprite> GetSprites(SessionDebugSurfaceScript owner)
         {
-            LcdModSessionComponent.OnAfterSimulationUpdate += HandleAfterSimulationUpdate;
-        }
-
-        public override void Dispose()
-        {
-            LcdModSessionComponent.OnAfterSimulationUpdate -= HandleAfterSimulationUpdate;
-            base.Dispose();
-        }
-
-        void HandleAfterSimulationUpdate()
-        {
-            if (Surface == null)
-                return;
-
-            RenderSprites();
-        }
-
-        protected override List<MySprite> GetSprites()
-        {
-            var viewBox = GetViewBox();
+            var viewBox = GetViewBox(owner);
             var snapshot = LcdModSessionComponent.DebugSnapshot;
-            var lines = BuildDebugLines(snapshot);
-            var lineHeight = Surface.MeasureStringInPixels(new StringBuilder("A"), DEBUG_FONT, LINE_SCALE).Y + 2f;
+            var lines = BuildDebugLines(snapshot, owner);
+            var lineHeight = owner.Surface.MeasureStringInPixels(new StringBuilder("A"), DebugFont, LineScale).Y + 2f;
             var start = viewBox.Position + new Vector2(8f, 8f);
 
             _sprites.Clear();
-            
             for (int i = 0; i < lines.Count; i++)
             {
                 _sprites.Add(new MySprite
@@ -67,37 +33,32 @@ namespace LcdMod.Client.Apps
                     Data = lines[i].Text,
                     Position = start + new Vector2(0f, i * lineHeight),
                     Color = lines[i].Color,
-                    FontId = DEBUG_FONT,
+                    FontId = DebugFont,
                     Alignment = TextAlignment.LEFT,
-                    RotationOrScale = LINE_SCALE
+                    RotationOrScale = LineScale
                 });
             }
+
             return _sprites;
         }
 
-        public override void SafeRun()
+        static RectangleF GetViewBox(SessionDebugSurfaceScript owner)
         {
-        }
-
-        RectangleF GetViewBox()
-        {
-            var sizeOffset = (Surface.TextureSize - Surface.SurfaceSize) / 2f;
-            var padding = (Surface.TextPadding / 100f) * Surface.SurfaceSize;
+            var sizeOffset = (owner.Surface.TextureSize - owner.Surface.SurfaceSize) / 2f;
+            var padding = (owner.Surface.TextPadding / 100f) * owner.Surface.SurfaceSize;
             sizeOffset += padding / 2f;
-            return new RectangleF(sizeOffset.X, sizeOffset.Y, Surface.SurfaceSize.X - padding.X,
-                Surface.SurfaceSize.Y - padding.Y);
+            return new RectangleF(sizeOffset.X, sizeOffset.Y, owner.Surface.SurfaceSize.X - padding.X, owner.Surface.SurfaceSize.Y - padding.Y);
         }
 
-        List<DebugLine> BuildDebugLines(SessionDebugSnapshot snapshot)
+        static List<DebugLine> BuildDebugLines(SessionDebugSnapshot snapshot, SessionDebugSurfaceScript owner)
         {
             var lines = new List<DebugLine>(32);
-            lines.Add(new DebugLine($"LcdMod Session Debug - {GetHashCode()}", Color.White));
+            lines.Add(new DebugLine("LcdMod Session Debug - " + owner.GetHashCode(), Color.White));
             lines.Add(new DebugLine("Tick: " + Fixed4(snapshot.UpdateTick), Color.White));
             lines.Add(new DebugLine("Tracked Grids: " + Fixed4(snapshot.TrackedGrids), Color.White));
             lines.Add(new DebugLine("GridLogic Entries: " + Fixed4(snapshot.TrackedGridLogic), Color.White));
             lines.Add(new DebugLine("Refresh In Progress: " + Fixed4(snapshot.RefreshInProgress), Color.White));
-            lines.Add(new DebugLine("Last Iterations Sum: " + Fixed4(snapshot.TotalLastRefreshIterations),
-                Color.White));
+            lines.Add(new DebugLine("Last Iterations Sum: " + Fixed4(snapshot.TotalLastRefreshIterations), Color.White));
             lines.Add(new DebugLine("Last Processed Sum: " + Fixed4(snapshot.TotalLastRefreshProcessed), Color.White));
             lines.Add(new DebugLine("Avg Next Batch: " + Fixed4(snapshot.AverageNextBatchSize), Color.White));
             lines.Add(new DebugLine(string.Empty, Color.White));
@@ -112,23 +73,19 @@ namespace LcdMod.Client.Apps
             }
 
             int shown = 0;
-            foreach (var pair in components
-                         .Where(p => p.Value != null && p.Value.Grid != null)
-                         .OrderByDescending(p => p.Value.LastRefreshIterations)
-                         .ThenBy(p => p.Key))
+            foreach (var pair in components.Where(p => p.Value != null && p.Value.Grid != null).OrderByDescending(p => p.Value.LastRefreshIterations).ThenBy(p => p.Key))
             {
                 if (shown >= 32)
                 {
-                    lines.Add(new DebugLine($"-- More {components.Count - shown} --", Color.White));
+                    lines.Add(new DebugLine("-- More " + (components.Count - shown) + " --", Color.White));
                     break;
                 }
-
 
                 var logic = pair.Value;
                 if (logic == null)
                     continue;
 
-                var gridName = ClampToWidth(logic.Grid?.CustomName ?? string.Empty, 22);
+                var gridName = ClampToWidth(logic.Grid != null ? logic.Grid.CustomName ?? string.Empty : string.Empty, 22);
                 lines.Add(new DebugLine(
                     gridName + " "
                              + Fixed4(logic.LastRefreshIterations) + " "
@@ -136,7 +93,6 @@ namespace LcdMod.Client.Apps
                              + Fixed4(logic.CurrentRefreshBatchSize) + " "
                              + Fixed4(logic.EstimatedNextRefreshBatchSize),
                     logic.IsSleeping ? SleepingColor : (logic.IsRefreshRunning ? RunningColor : IdleColor)));
-
                 shown++;
             }
 

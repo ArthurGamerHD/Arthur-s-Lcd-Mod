@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using Generated;
+using LcdMod.Client.Apps;
+using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Terminal.Controls.Groups;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
@@ -11,10 +13,10 @@ using SeparatorFilter = LcdMod.Client.Terminal.Controls.Filter.SeparatorFilter;
 using ScreenConfigWithBlocks = LcdMod.Common.Config.Models.Apps.ScreenConfigWithBlocks;
 using SwitchToggleLines = LcdMod.Client.Terminal.Controls.Generic.SwitchToggleLines;
 
-namespace LcdMod.Client.Apps
+namespace LcdMod.Client.SurfaceScripts
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public partial class CargoFilledSurfaceScript : Abstract.PercentageSurfaceScript<CargoFilledSurfaceScript.Entry>,
+    public partial class CargoFilledSurfaceScript : PercentageSurfaceScript<CargoFilledSurfaceScript.Entry>,
         IUsesTerminalControl<SwitchToggleLines>,
         IUsesTerminalControl<SeparatorFilter>,
         IUsesTerminalControl<LabelSeparator>,

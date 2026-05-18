@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using LcdMod.Common.Helpers;
+using LcdMod.Client.SurfaceScripts;
 using Sandbox.ModAPI;
 using VRage.Game.ModAPI;
 using IMyCubeGrid = VRage.Game.ModAPI.IMyCubeGrid;
