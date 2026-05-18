@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using LcdMod.Client.Apps;
 using LcdMod.Client.Config;
 using LcdMod.Client.Games.Minesweeper;
 using LcdMod.Client.Games.EightBallPool;
@@ -58,6 +59,7 @@ namespace LcdMod.Client.SurfaceScripts
                 }
             };
 
+        public override IApp App => _currentGame;
         IGame _currentGame;
 
         readonly List<InteractiveEntry> _emptyInteractiveList = new List<InteractiveEntry>();
@@ -109,15 +111,15 @@ namespace LcdMod.Client.SurfaceScripts
             if(_currentGame == null)
                 InitGame((GameEnum)AppConfig.DisplayMode);
 
-            _currentGame?.Tick();
+            _currentGame?.Update();
             
             if (_currentGame != null)
                 RenderSprites();
         }
 
-        protected override List<MySprite> GetSprites()
+        public override List<MySprite> GetSprites()
         {
-            var sprites = _currentGame?.Render() ?? new List<MySprite>();
+            var sprites = _currentGame?.GetSprites() ?? new List<MySprite>();
             RenderInteractiveEntryVisuals(sprites);
             DrawTitle(sprites);
             return sprites;
@@ -187,14 +189,11 @@ namespace LcdMod.Client.SurfaceScripts
         public List<MyTerminalControlComboBoxItem> GetDisplayModes() => GameList;
     }
 
-    internal interface IGame
+    internal interface IGame : IApp
     {
         List<InteractiveEntry> Interactive { get; }
         GameSurfaceScript.GameEnum Id { get; }
-        void Tick();
-        List<MySprite> Render();
         void Save();
         void Load();
-        void LayoutChanged();
     }
 }

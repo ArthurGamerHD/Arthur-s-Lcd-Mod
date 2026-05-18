@@ -1,41 +1,85 @@
 using System.Collections.Generic;
 using Generated;
+using LcdMod.Client.Apps;
+using LcdMod.Client.SurfaceScripts.Abstract;
+using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Terminal.Controls.Groups;
+using LcdMod.Client.Utility;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
+using Sandbox.ModAPI.Interfaces.Terminal;
+using VRage.Game;
+using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
+using VRage.ModAPI;
 using VRageMath;
 using CheckboxHideEmpty = LcdMod.Client.Terminal.Controls.Generic.CheckboxHideEmpty;
 using ComboboxSorting = LcdMod.Client.Terminal.Controls.Generic.ComboboxSorting;
-using ItemsSurfaceScriptBase = LcdMod.Client.SurfaceScripts.Abstract.ItemsSurfaceScriptBase;
 using LabelSeparator = LcdMod.Client.Terminal.Controls.Filter.LabelSeparator;
-using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
 using SeparatorFilter = LcdMod.Client.Terminal.Controls.Filter.SeparatorFilter;
 using SwitchToggleLines = LcdMod.Client.Terminal.Controls.Generic.SwitchToggleLines;
+using ScreenConfigWithItems = LcdMod.Common.Config.Models.Apps.ScreenConfigWithItems;
 
 namespace LcdMod.Client.SurfaceScripts
 {
     [MyTextSurfaceScript(ID, "Inventory")]
-    public partial class InventoryLcdSurfaceScript : ItemsSurfaceScriptBase,
+    public partial class InventoryLcdSurfaceScript : SurfaceScriptBase,
         IUsesTerminalControl<SwitchToggleLines>,
         IUsesTerminalControl<CheckboxHideEmpty>,
         IUsesTerminalControl<SeparatorFilter>,
         IUsesTerminalControl<LabelSeparator>,
         IUsesTerminalControlGroup<BlocksFilterTerminalControlGroup>,
         IUsesTerminalControlGroup<ItemsFilterTerminalControlGroup>,
-        IUsesTerminalControl<ComboboxSorting>
+        IUsesTerminalControl<ComboboxSorting>,
+        IMultiDisplayMode
     {
+        protected override ConfigKind ConfigKind => ConfigKind.WithItems;
         public const string ID = "InventoryCharts";
-        public const string NAME = "Inventory";
+        public const string NAME = InventoryApp.NAME;
 
-        public override Dictionary<MyItemType, double> ItemSource =>
-            AppConfig == null ? null : GridLogic?.GetItems(AppConfig, Block as IMyTerminalBlock);
+        InventoryApp _app;
 
+        public override IApp App => _app;
+        public override string Title => _app != null ? _app.Title : base.Title;
         protected override string DefaultTitle => NAME;
 
         public InventoryLcdSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface,
             block, size)
         {
+        }
+
+        public List<MyTerminalControlComboBoxItem> GetDisplayModes()
+        {
+            return DisplayModes.GridAndLegacy;
+        }
+
+        public override void SafeRun()
+        {
+            if (AppConfig == null)
+                return;
+
+            if (_app == null)
+                _app = new InventoryApp((ScreenConfigWithItems)AppConfig, this);
+
+            _app.Update();
+
+            if (!_app.HasItems)
+            {
+                if (_app.HasFilters)
+                    EmptyWithFilters();
+                else
+                    Empty();
+                return;
+            }
+
+            using (var frame = Surface.DrawFrame())
+            {
+                var sprites = new List<MySprite>();
+                AddBackground(sprites);
+                DrawTitle(sprites);
+                sprites.AddRange(_app.GetSprites());
+                frame.AddRange(sprites);
+            }
         }
     }
 }

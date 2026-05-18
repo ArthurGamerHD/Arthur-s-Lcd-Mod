@@ -20,7 +20,7 @@ namespace LcdMod.Client.Terminal.Controls.Generic
 
         public SliderRadarRange()
         {
-            var slider = CreateControl<IMyTerminalControlSlider>("LcdMod_SliderRadarRange");
+            var slider = CreateControl<IMyTerminalControlSlider>("SliderRadarRange");
             slider.Getter = Getter;
             slider.Setter = Setter;
             slider.Visible = Visible;

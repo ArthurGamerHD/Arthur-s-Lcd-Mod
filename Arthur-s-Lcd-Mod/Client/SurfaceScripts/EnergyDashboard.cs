@@ -20,6 +20,7 @@ namespace LcdMod.Client.SurfaceScripts
         public const string ID = "LcdMod_EnergyDashboard";
         public const string TITLE = "LcdMod_EnergyDashboard";
         protected override string DefaultTitle => TITLE;
+        public override IApp App => _app;
         IApp _app;
 
         public EnergyDashboardSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)

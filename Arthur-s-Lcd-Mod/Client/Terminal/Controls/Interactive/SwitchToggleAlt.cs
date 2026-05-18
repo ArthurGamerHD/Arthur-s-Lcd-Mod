@@ -14,7 +14,7 @@ namespace LcdMod.Client.Terminal.Controls.Interactive
         
         public SwitchToggleAlt()
         {
-            var slider = CreateControl<IMyTerminalControlOnOffSwitch>("LcdMod_SwitchToggleRequiresAlt");
+            var slider = CreateControl<IMyTerminalControlOnOffSwitch>("SwitchToggleRequiresAlt");
             slider.Getter = Getter;
             slider.Setter = Setter;
             slider.Visible = Visible;

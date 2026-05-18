@@ -14,7 +14,7 @@ namespace LcdMod.Client.Terminal.Controls.Scale
 
         public SliderRaysPerTick()
         {
-            var slider = CreateControl<IMyTerminalControlSlider>("LcdMod_RaysPerTickSlider");
+            var slider = CreateControl<IMyTerminalControlSlider>("RaysPerTickSlider");
             slider.Getter = Getter;
             slider.Setter = Setter;
             slider.Visible = Visible;

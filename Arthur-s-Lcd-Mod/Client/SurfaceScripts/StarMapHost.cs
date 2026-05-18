@@ -33,6 +33,7 @@ namespace LcdMod.Client.SurfaceScripts
         protected override bool RendersInteractiveEntriesInGetSprites => true;
 
         readonly List<InteractiveEntry> _interactiveListFallback = new List<InteractiveEntry>();
+        public override IApp App => _app;
         StarMapApp _app;
 
         public override List<InteractiveEntry> InteractiveList => _app != null ? _app.InteractiveList : _interactiveListFallback;
@@ -73,7 +74,7 @@ namespace LcdMod.Client.SurfaceScripts
             RenderSprites();
         }
 
-        protected override List<MySprite> GetSprites()
+        public override List<MySprite> GetSprites()
         {
             var sprites = new List<MySprite>();
             AddBackground(sprites);

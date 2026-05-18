@@ -7,7 +7,7 @@ using VRageMath;
 
 namespace LcdMod.Client.Apps
 {
-    internal sealed class SessionDebugApp
+    internal sealed class SessionDebugApp : IApp
     {
         const string DebugFont = "Monospace";
         const float LineScale = 0.62f;
@@ -172,6 +172,19 @@ namespace LcdMod.Client.Apps
                 Text = text;
                 Color = color;
             }
+        }
+
+        public void Update()
+        {
+        }
+
+        public void LayoutChanged()
+        {
+        }
+
+        public List<MySprite> GetSprites()
+        {
+            return new List<MySprite>();
         }
     }
 }

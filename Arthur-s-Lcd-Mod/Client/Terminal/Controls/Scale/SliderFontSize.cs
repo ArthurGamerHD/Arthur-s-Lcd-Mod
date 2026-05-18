@@ -12,7 +12,7 @@ namespace LcdMod.Client.Terminal.Controls.Scale
 
         public SliderFontSize()
         {
-            var slider = CreateControl<IMyTerminalControlSlider>("LcdMod_SliderFontSize");
+            var slider = CreateControl<IMyTerminalControlSlider>("SliderFontSize");
             slider.Getter = Getter;
             slider.Setter = Setter;
             slider.Visible = Visible;

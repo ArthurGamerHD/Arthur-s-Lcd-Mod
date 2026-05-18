@@ -24,6 +24,7 @@ namespace LcdMod.Client.SurfaceScripts
 
         protected override string DefaultTitle => TITLE;
 
+        public override IApp App => _app;
         IAppInteractive _app;
         readonly List<InteractiveEntry> _interactiveListFallback = new List<InteractiveEntry>();
         public override List<InteractiveEntry> InteractiveList => _app != null ? _app.InteractiveList : _interactiveListFallback;
@@ -51,7 +52,7 @@ namespace LcdMod.Client.SurfaceScripts
             RenderSprites();
         }
 
-        protected override List<MySprite> GetSprites()
+        public override List<MySprite> GetSprites()
         {
             var sprites = new List<MySprite>();
             AddBackground(sprites);

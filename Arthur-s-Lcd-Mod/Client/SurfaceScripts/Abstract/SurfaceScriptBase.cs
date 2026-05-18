@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using Generated;
+using LcdMod.Client.Apps;
 using LcdMod.Client.Config;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Grid;
@@ -29,6 +30,7 @@ using IMyCockpit = Sandbox.ModAPI.IMyCockpit;
 using IMyShipController = Sandbox.ModAPI.IMyShipController;
 using IMyTextSurfaceProvider = Sandbox.ModAPI.Ingame.IMyTextSurfaceProvider;
 using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
+using NotImplementedException = LcdMod.Common.NotImplementedException;
 using ScreenConfigColorable = LcdMod.Common.Config.Models.ScreenConfigColorable;
 using ScreenConfigGeneral = LcdMod.Common.Config.Models.ScreenConfigGeneral;
 
@@ -139,6 +141,8 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 return _rotationOrSurfaceIndex;
             }
         }
+
+        public abstract IApp App { get; }
 
         public IMyLcdSurfaceComponent _lcdSurfaceComponent;
 
@@ -406,7 +410,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         /// Resets the <see cref="CaretY"/> to the Top of the screen, if <see cref="TitleVisible"/>, draws the Tittle 
         /// </summary>
         /// <param name="frame"></param>
-        protected virtual void DrawTitle(List<MySprite> frame)
+        public virtual void DrawTitle(List<MySprite> frame)
         {
             const float margin = 0f;
             float headerScale = LayoutScale;
@@ -597,7 +601,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             return new MyTuple<RectangleF, RectangleF, RectangleF>(iconRect, numberRect, nameRect);
         }
 
-        protected virtual void DrawMessage(List<MySprite> sprites, string message, string icon, Color color,
+        public virtual void DrawMessage(List<MySprite> sprites, string message, string icon, Color color,
             float scale = 1f)
         {
             float contentTop = CaretY;
@@ -635,6 +639,11 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
             sprites.Add(textSprite.Shadow(2 * Scale));
             sprites.Add(textSprite);
+        }
+
+        public virtual void DrawLoading(List<MySprite> sprites, float scale = 1f)
+        {
+            DrawLoadingFrame(sprites, scale);
         }
 
 
@@ -677,7 +686,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             }
         }
 
-        protected void TrimText(ref StringBuilder sb, float availableWidth, float fontSize = 1)
+        public void TrimText(ref StringBuilder sb, float availableWidth, float fontSize = 1)
         {
             Vector2 textSize = Surface.MeasureStringInPixels(sb, "White", fontSize * Scale * FontScale);
 
@@ -861,7 +870,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         }
 
 
-        protected void AddBackground(List<MySprite> frame, Color? color = null)
+        public void AddBackground(List<MySprite> frame, Color? color = null)
         {
             if (!_backgroundGrids.Any())
             {
@@ -915,9 +924,9 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             }
         }
 
-        protected virtual List<MySprite> GetSprites()
+        public virtual List<MySprite> GetSprites()
         {
-            throw new Exception("The method or operation is not implemented.");
+            throw new NotImplementedException();
         }
 
         protected virtual List<MySprite> RenderFrame(Func<List<MySprite>> sprites)

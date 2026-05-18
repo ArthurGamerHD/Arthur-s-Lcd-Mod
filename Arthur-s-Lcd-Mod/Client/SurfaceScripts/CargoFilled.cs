@@ -32,6 +32,7 @@ namespace LcdMod.Client.SurfaceScripts
         public const string TITLE = "DisplayName_CargoFilledEntityComponent";
         protected override string DefaultTitle => TITLE;
 
+        public override IApp App => _app;
         CargoFilledApp _app;
 
         public CargoFilledSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)

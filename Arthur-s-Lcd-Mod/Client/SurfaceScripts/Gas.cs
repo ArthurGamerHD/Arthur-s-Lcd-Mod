@@ -22,7 +22,8 @@ namespace LcdMod.Client.SurfaceScripts
         public const string ID = "GasGraph";
         public const string TITLE = "LcdMod_GasFilled";
         protected override string DefaultTitle => TITLE;
-
+        
+        public override IApp App => _app;
         GasApp _app;
 
         public GasSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)

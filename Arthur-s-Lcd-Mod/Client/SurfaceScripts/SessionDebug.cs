@@ -28,6 +28,8 @@ namespace LcdMod.Client.SurfaceScripts
             LcdModSessionComponent.OnAfterSimulationUpdate += HandleAfterSimulationUpdate;
         }
 
+        public override IApp App => _app;
+
         public override void Dispose()
         {
             LcdModSessionComponent.OnAfterSimulationUpdate -= HandleAfterSimulationUpdate;
@@ -42,7 +44,7 @@ namespace LcdMod.Client.SurfaceScripts
             RenderSprites();
         }
 
-        protected override List<MySprite> GetSprites()
+        public override List<MySprite> GetSprites()
         {
             return _app.GetSprites(this);
         }

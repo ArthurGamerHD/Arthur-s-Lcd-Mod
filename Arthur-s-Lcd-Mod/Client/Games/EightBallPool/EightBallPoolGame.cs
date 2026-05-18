@@ -176,7 +176,7 @@ namespace LcdMod.Client.Games.EightBallPool
             BakeLayout();
         }
 
-        public void Tick()
+        public void Update()
         {
             var frame = GetCurrentGameplayFrame();
             if (_lastPhysicsFrame <= 0L) _lastPhysicsFrame = frame;
@@ -199,7 +199,7 @@ namespace LcdMod.Client.Games.EightBallPool
             if (moving) QueueSelfUpdateIfNeeded();
         }
 
-        public List<MySprite> Render()
+        public List<MySprite> GetSprites()
         {
             _sprites.Clear();
             if (_viewBox != _script.ViewBox || _playRect.Width <= 0f) BakeLayout();

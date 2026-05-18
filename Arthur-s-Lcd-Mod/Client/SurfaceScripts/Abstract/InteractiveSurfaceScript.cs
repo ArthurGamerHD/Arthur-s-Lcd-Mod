@@ -454,7 +454,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         public virtual void SetGlobalMenu(params GlobalMenuEntry[] entries) => SetGlobalMenu(entries != null ? new List<GlobalMenuEntry>(entries) : null);
 
-        protected override void DrawTitle(List<MySprite> frame)
+        public override void DrawTitle(List<MySprite> frame)
         {
             if (!ShouldRenderGlobalMenu())
             {

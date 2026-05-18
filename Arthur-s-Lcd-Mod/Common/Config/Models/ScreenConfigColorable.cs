@@ -1,4 +1,5 @@
 using System.Xml.Serialization;
+using LcdMod.Common.Config.Models.Apps;
 using LcdMod.Common.Helpers;
 using ProtoBuf;
 using VRageMath;

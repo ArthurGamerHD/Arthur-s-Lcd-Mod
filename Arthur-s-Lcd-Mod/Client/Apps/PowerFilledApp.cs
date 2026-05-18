@@ -88,6 +88,10 @@ namespace LcdMod.Client.Apps
             return false;
         }
 
+        public void OnMouseScroll(int delta, ref bool handled)
+        {
+        }
+
         public PowerEntry GetPowerEntry(long entryId)
         {
             PowerEntry entry;

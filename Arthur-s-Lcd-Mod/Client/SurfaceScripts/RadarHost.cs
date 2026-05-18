@@ -29,6 +29,8 @@ namespace LcdMod.Client.SurfaceScripts
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
 
         readonly List<InteractiveEntry> _interactiveListFallback = new List<InteractiveEntry>();
+
+        public override IApp App => _app;       
         RadarApp _app;
 
         public override List<InteractiveEntry> InteractiveList => _app != null ? _app.InteractiveList : _interactiveListFallback;
@@ -50,7 +52,7 @@ namespace LcdMod.Client.SurfaceScripts
             RenderSprites();
         }
 
-        protected override List<MySprite> GetSprites()
+        public override List<MySprite> GetSprites()
         {
             var sprites = new List<MySprite>();
             AddBackground(sprites);

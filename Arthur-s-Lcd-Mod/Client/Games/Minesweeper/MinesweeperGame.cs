@@ -191,12 +191,12 @@ namespace LcdMod.Client.Games.Minesweeper
             Save();
         }
 
-        public void Tick()
+        public void Update()
         {
             UpdateSuspiciousEmote();
         }
 
-        public List<MySprite> Render()
+        public List<MySprite> GetSprites()
         {
             _sprites.Clear();
 

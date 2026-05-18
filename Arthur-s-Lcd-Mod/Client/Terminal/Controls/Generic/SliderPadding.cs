@@ -12,7 +12,7 @@ namespace LcdMod.Client.Terminal.Controls.Generic
 
         public SliderPadding()
         {
-            var slider = CreateControl<IMyTerminalControlSlider>("LcdMod_PaddingSlider");
+            var slider = CreateControl<IMyTerminalControlSlider>("PaddingSlider");
             slider.Getter = Getter;
             slider.Setter = Setter;
             slider.Visible = Visible;

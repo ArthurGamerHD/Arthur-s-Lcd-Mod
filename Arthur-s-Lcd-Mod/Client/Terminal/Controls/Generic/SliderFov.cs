@@ -21,7 +21,7 @@ namespace LcdMod.Client.Terminal.Controls.Generic
 
         public SliderFov()
         {
-            var slider = CreateControl<IMyTerminalControlSlider>("LcdMod_SliderFov");
+            var slider = CreateControl<IMyTerminalControlSlider>("SliderFov");
             slider.Getter = Getter;
             slider.Setter = Setter;
             slider.Visible = Visible;

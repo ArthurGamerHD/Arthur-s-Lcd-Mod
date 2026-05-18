@@ -14,7 +14,7 @@ namespace LcdMod.Client.Terminal.Controls.Scale
 
         public SliderRenderScale()
         {
-            var slider = CreateControl<IMyTerminalControlSlider>("LcdMod_RenderScaleSlider");
+            var slider = CreateControl<IMyTerminalControlSlider>("RenderScaleSlider");
             slider.Getter = Getter;
             slider.Setter = Setter;
             slider.Visible = Visible;

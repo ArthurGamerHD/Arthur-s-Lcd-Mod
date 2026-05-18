@@ -9,5 +9,6 @@ namespace LcdMod.Client.Apps
     {
         List<InteractiveEntry> InteractiveList { get; }
         bool HasVisibleItems();
+        void OnMouseScroll(int delta, ref bool handled);
     }
 }

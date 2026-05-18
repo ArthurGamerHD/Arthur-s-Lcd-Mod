@@ -1,52 +1,53 @@
+using System;
 using System.Text;
 using LcdMod.Client.Config;
+using LcdMod.Common.Config.Models.Apps;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
 using ScreenConfigGeneral = LcdMod.Common.Config.Models.ScreenConfigGeneral;
-using ScreenConfigInteractive = LcdMod.Common.Config.Models.ScreenConfigInteractive;
 
-namespace LcdMod.Client.Terminal.Controls.Interactive
+namespace LcdMod.Client.Terminal.Controls.Proxy
 {
-    public sealed partial class SliderCursorScale : TerminalControlsWrapper
+    public sealed partial class SliderProxyY : TerminalControlsWrapper
     {
         public override IMyTerminalControl TerminalControl { get; }
 
-        public SliderCursorScale()
+        public SliderProxyY()
         {
-            var slider = CreateControl<IMyTerminalControlSlider>("CursorScaleSlider");
+            var slider = CreateControl<IMyTerminalControlSlider>("SliderProxyY");
             slider.Getter = Getter;
             slider.Setter = Setter;
             slider.Visible = Visible;
-            slider.SetLimits(0, ScreenConfigGeneral.MAX_SCALE);
+            slider.SetLimits(0, 16);
             slider.Writer = Writer;
-            slider.Title = MyStringId.GetOrCompute("LcdMod_CursorScale");
+            slider.Title = MyStringId.GetOrCompute("LcdModProxyOffsetY");
 
             TerminalControl = slider;
         }
 
         void Writer(IMyTerminalBlock b, StringBuilder arg2)
         {
-            arg2.Append(Getter(b).ToString("0.000"));
+            arg2.Append(Getter(b).ToString("0"));
         }
 
         void Setter(IMyTerminalBlock block, float value)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigInteractive;
+            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigRenderProxy;
             if (config == null)
                 return;
 
-            config.CursorScale = value;
+            config.YAxisOffset = (byte)Math.Round(value);
             ConfigManager.Sync(block);
         }
 
         float Getter(IMyTerminalBlock block)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigInteractive;
+            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigRenderProxy;
             if (config == null)
                 return 1;
 
-            return config.CursorScale;
+            return config.YAxisOffset;
         }
     }
 }

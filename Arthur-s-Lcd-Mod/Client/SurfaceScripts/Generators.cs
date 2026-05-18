@@ -1,72 +1,61 @@
-using System;
+using System.Collections.Generic;
+using Generated;
+using LcdMod.Client.Apps;
+using LcdMod.Client.SurfaceScripts.Abstract;
+using LcdMod.Client.Terminal.Controls;
+using LcdMod.Client.Utility;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
-using SpaceEngineers.Game.ModAPI;
+using Sandbox.ModAPI.Interfaces.Terminal;
+using VRage.Game;
+using VRage.Game.GUI.TextPanel;
+using VRage.Game.ModAPI;
+using VRage.ModAPI;
+using VRage.Utils;
 using VRageMath;
-using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
-using PowerSurfaceScriptBase = LcdMod.Client.SurfaceScripts.Abstract.PowerSurfaceScriptBase;
 
 namespace LcdMod.Client.SurfaceScripts
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public partial class GeneratorsSurfaceScript : PowerSurfaceScriptBase
+    public partial class GeneratorsSurfaceScript : SurfaceScriptBase, IMultiDisplayMode
     {
+        protected override ConfigKind ConfigKind => ConfigKind.Power;
         public const string ID = "GeneratorsGraph";
         public const string TITLE = "RadialMenuGroupTitle_Power";
 
-        static readonly PowerEntryDefinition[] Definitions =
-        {
-            new PowerEntryDefinition("solar", "DisplayName_BlockGroup_SolarPanels", "Solar Panels"),
-            new PowerEntryDefinition("wind", "DisplayName_BlockGroup_WindTurbines", "Wind Turbines"),
-            new PowerEntryDefinition("reactor", "DisplayName_BlockGroup_Reactors", "Reactors"),
-            new PowerEntryDefinition("engine", "DisplayName_BlockGroup_HydrogenEngines", "Engines"),
-            new PowerEntryDefinition("batteries", "DisplayName_BlockGroup_Batteries", "Batteries")
-        };
+        GeneratorsApp _app;
 
-        protected override PowerEntryDefinition[] EntryDefinitions => Definitions;
+        public override IApp App => _app;
         protected override string DefaultTitle => TITLE;
 
         public GeneratorsSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
             : base(surface, block, size)
         {
-            InitializeEntries();
         }
 
-        protected override bool TryMapProducerType(string typeId, IMyPowerProducer producer, out string entryKey)
+        public List<MyTerminalControlComboBoxItem> GetDisplayModes()
         {
-            if (producer is IMyBatteryBlock)
-            {
-                entryKey = "battery";
-                return true;
-            }
+            return DisplayModes.GridAndLegacy;
+        }
 
-            if (producer is IMySolarPanel)
-            {
-                entryKey = "solar";
-                return true;
-            }
+        public override void SafeRun()
+        {
+            if (AppConfig == null)
+                return;
 
-            if (producer is IMyWindTurbine)
-            {
-                entryKey = "wind";
-                return true;
-            }
+            if (_app == null)
+                _app = new GeneratorsApp(AppConfig, this);
 
-            if (producer is IMyReactor)
-            {
-                entryKey = "reactor";
-                return true;
-            }
+            _app.Update();
 
-            // dam you hydrogen engine
-            if (typeId.EndsWith("HydrogenEngine", StringComparison.OrdinalIgnoreCase))
+            using (var frame = Surface.DrawFrame())
             {
-                entryKey = "engine";
-                return true;
+                var sprites = new List<MySprite>();
+                AddBackground(sprites);
+                DrawTitle(sprites);
+                sprites.AddRange(_app.GetSprites());
+                frame.AddRange(sprites);
             }
-
-            entryKey = null;
-            return false;
         }
     }
 }

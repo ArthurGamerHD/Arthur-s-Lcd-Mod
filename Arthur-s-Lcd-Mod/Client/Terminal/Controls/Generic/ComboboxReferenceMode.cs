@@ -21,7 +21,7 @@ namespace LcdMod.Client.Terminal.Controls.Generic
 
         public ComboboxReferenceMode()
         {
-            var combo = CreateControl<IMyTerminalControlCombobox>("LcdMod_ReferenceMode");
+            var combo = CreateControl<IMyTerminalControlCombobox>("ReferenceMode");
             combo.Getter = Getter;
             combo.Setter = Setter;
             combo.ComboBoxContent = Content;

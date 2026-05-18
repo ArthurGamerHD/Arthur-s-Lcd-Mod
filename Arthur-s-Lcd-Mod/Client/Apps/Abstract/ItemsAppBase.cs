@@ -2,10 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Generated;
+using LcdMod.Client.Extensions;
+using LcdMod.Client.Grid;
+using LcdMod.Client.Gui.Controls;
 using LcdMod.Client.Helpers;
+using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Utility;
+using LcdMod.Common.Config.Models.Apps;
 using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
@@ -18,12 +22,11 @@ using VRage.Utils;
 using VRageMath;
 using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
 
-namespace LcdMod.Client.SurfaceScripts.Abstract
+namespace LcdMod.Client.Apps.Abstract
 {
-    public abstract partial class ItemsSurfaceScriptBase : SurfaceScriptBase, IMultiDisplayMode
+    public abstract class ItemsAppBase : AppBase
     {
-        protected override ConfigKind ConfigKind => ConfigKind.WithItems;
-        protected override SortMethod SortMethod => (SortMethod)AppConfig.SortMethod;
+        protected virtual SortMethod SortMethod => (SortMethod)AppConfig.SortMethod;
 
         public static Dictionary<MyItemType, string> SpriteCache =
             new Dictionary<MyItemType, string>();
@@ -31,8 +34,37 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         static readonly Dictionary<MyDefinitionId, MyItemType> TypeCache = new Dictionary<MyDefinitionId, MyItemType>();
 
         readonly Dictionary<MyItemType, double> _itemsCache = new Dictionary<MyItemType, double>();
+        readonly List<KeyValuePair<MyItemType, double>> _items = new List<KeyValuePair<MyItemType, double>>();
+        float _caretY;
+        float _footerHeight;
+        protected string LocalizedTitleCache = string.Empty;
 
         public abstract Dictionary<MyItemType, double> ItemSource { get; }
+        protected virtual string DefaultTitle => "<Title not Set>";
+
+        protected new ScreenConfigWithItems AppConfig => (ScreenConfigWithItems)base.AppConfig;
+        protected IMyCubeBlock Block => Host.Block;
+        protected Sandbox.ModAPI.Ingame.IMyTextSurface Surface => Host.Surface;
+        protected RectangleF ViewBox => Host.ViewBox;
+        protected float Scale => Host.Scale;
+        protected float FontScale => Host.Surface.FontSize;
+        protected float LayoutScale => Scale * FontScale;
+        protected Color ForegroundColor => Host.ForegroundColor;
+        protected Color BackgroundColor => Host.BackgroundColor;
+        protected GridLogic GridLogic => Host.GridLogic;
+        protected bool TitleVisible => Host.TitleVisible;
+        protected float CaretY
+        {
+            get { return _caretY; }
+            set { _caretY = value; }
+        }
+        protected float FooterHeight
+        {
+            get { return _footerHeight; }
+            set { _footerHeight = value; }
+        }
+        public bool HasItems => _items.Count > 0;
+        public bool HasFilters { get; private set; }
 
         public List<MyTerminalControlComboBoxItem> GetDisplayModes()
         {
@@ -55,7 +87,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         string[] _selectedCategories;
 
-        public override string Title
+        public string Title
         {
             get
             {
@@ -91,13 +123,9 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         protected const int MINIMUM_COL_WIDTH = 220;
         protected const int SCROLLER_WIDTH = 8;
         protected const int SCROLL_DELAY = 12;
-        long _clock;
-        bool _hasDrawnAtLeastOnce;
-        bool _needsImmediateDraw;
         protected string PreviousType = "";
 
-        protected ItemsSurfaceScriptBase(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface,
-            block, size)
+        protected ItemsAppBase(ScreenConfigWithItems config, IAppHost host) : base(config, host)
         {
         }
 
@@ -166,23 +194,20 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             }
         }
 
-        public override void SafeRun()
+        public override void Update()
         {
-            if (!IsScreenReadyToRender)
-                return;
-
-            _clock++;
-            if (_hasDrawnAtLeastOnce && _clock % SCROLL_DELAY != 0 && !Dirty && !_needsImmediateDraw)
-                return;
-
+            _items.Clear();
+            
             if (AppConfig == null)
                 return;
 
             try
             {
-                DrawItems();
-                _hasDrawnAtLeastOnce = true;
-                _needsImmediateDraw = false;
+                var items = ReadItems(Block as IMyTerminalBlock);
+                _items.AddRange(items);
+                HasFilters = AppConfig.SelectedCategories.Any() || AppConfig.SelectedBlocks.Any() ||
+                             AppConfig.SelectedItems.Any() || AppConfig.SelectedGroups.Any() ||
+                             AppConfig.SelectedDefinition.Any();
             }
             catch (Exception e)
             {
@@ -190,49 +215,31 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             }
         }
 
-        protected override void LayoutChanged()
+        public override void LayoutChanged()
         {
             base.LayoutChanged();
             LocKeysCache.Clear();
             LocalizedTitleCache = string.Empty;
-            _needsImmediateDraw = true;
         }
 
-        public virtual void DrawItems()
+        public override List<MySprite> GetSprites()
         {
-            var items = ReadItems(Block as IMyTerminalBlock);
+            var sprites = new List<MySprite>();
+            _caretY = ContentTop();
+            _footerHeight = 0f;
+            DrawFooter(sprites);
 
-            if (items.Count == 0)
+            switch (AppConfig.DisplayMode)
             {
-                if (AppConfig.SelectedCategories.Any() || AppConfig.SelectedBlocks.Any() || AppConfig.SelectedItems.Any() ||
-                    AppConfig.SelectedGroups.Any() || AppConfig.SelectedDefinition.Any() )
-                    EmptyWithFilters();
-                else
-                    Empty();
-
-                return;
+                case (int)DisplayMode.Legacy:
+                    DrawList(sprites, _items);
+                    break;
+                case (int)DisplayMode.Grid:
+                    DrawGrid(sprites, _items);
+                    break;
             }
 
-            using (var frame = Surface.DrawFrame())
-            {
-                var sprites = new List<MySprite>();
-
-                AddBackground(sprites);
-                DrawTitle(sprites);
-                DrawFooter(sprites);
-
-                switch (AppConfig.DisplayMode)
-                {
-                    case (int)DisplayMode.Legacy:
-                        DrawList(sprites, items);
-                        break;
-                    case (int)DisplayMode.Grid:
-                        DrawGrid(sprites, items);
-                        break;
-                }
-
-                frame.AddRange(sprites);
-            }
+            return sprites;
         }
 
         void DrawList(List<MySprite> sprites, List<KeyValuePair<MyItemType, double>> items)
@@ -671,69 +678,100 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         }
 
 
-        public override void DrawTitle(List<MySprite> frame)
+        protected virtual void DrawFooter(List<MySprite> frame)
         {
-            var margin = 0f;
-            float headerScale = LayoutScale;
-            float titleBarHeight = TITLE_BAR_HEIGHT_BASE * headerScale;
+        }
 
-            Vector2 position = ViewBox.Position;
-            position.X += margin;
-            position.Y += 0f;
+        float ContentTop()
+        {
+            return TitleVisible ? ViewBox.Y + 40f * Scale * FontScale : ViewBox.Y;
+        }
 
-            CaretY = position.Y;
+        static int GetScrollStep(float secondsPerStep)
+        {
+            try
+            {
+                var session = MyAPIGateway.Session;
+                if (session == null)
+                    return 0;
 
-            if (!TitleVisible)
+                if (secondsPerStep <= 0f)
+                    secondsPerStep = 1f / 60f;
+
+                var ticksPerStep = Math.Max(1, (int)Math.Round(secondsPerStep * 60f));
+                return (int)(session.GameplayFrameCounter / ticksPerStep);
+            }
+            catch (Exception ex)
+            {
+                MyLog.Default.WriteLine($"[LcdMod] ItemsApp GetScrollStep error: {ex.Message}");
+                return 0;
+            }
+        }
+
+        protected virtual RectangleF GetCellViewBox(float xStart, float xEnd, float yStart, float cellHeight,
+            float cellPadding)
+        {
+            var innerLeft = xStart + cellPadding;
+            var innerRight = xEnd - cellPadding;
+            var innerTop = yStart + cellPadding;
+            var innerBottom = yStart + cellHeight - cellPadding;
+            return new RectangleF(innerLeft, innerTop, innerRight - innerLeft, innerBottom - innerTop);
+        }
+
+        protected virtual MyTuple<RectangleF, RectangleF, RectangleF> GetCellSlots(float innerLeft, float innerRight,
+            float innerTop, float innerBottom, float spacing)
+        {
+            var topRowHeight = spacing * Scale;
+            var bottomRowTop = innerTop + topRowHeight;
+            var bottomRowHeight = Math.Max(0f, innerBottom - bottomRowTop);
+            var iconSize = innerBottom - innerTop;
+            var contentLeft = innerLeft + iconSize;
+            var contentWidth = Math.Max(0f, innerRight - contentLeft);
+
+            var iconRect = new RectangleF(innerLeft, innerTop, iconSize, iconSize);
+            var numberRect = new RectangleF(contentLeft, innerTop, contentWidth, topRowHeight);
+            var nameRect = new RectangleF(contentLeft, bottomRowTop, contentWidth, bottomRowHeight);
+            return new MyTuple<RectangleF, RectangleF, RectangleF>(iconRect, numberRect, nameRect);
+        }
+
+        protected void TrimText(ref StringBuilder sb, float availableWidth, float fontSize = 1)
+        {
+            Vector2 textSize = Surface.MeasureStringInPixels(sb, "White", fontSize * Scale * FontScale);
+
+            if (textSize.X <= availableWidth)
                 return;
 
-            AddHeaderSprite(frame, new MySprite()
+            var source = sb.ToString();
+            for (int i = source.Length - 1; i > 0; i--)
             {
-                Type = SpriteType.TEXTURE,
-                Data = Icon,
-                Position = position + new Vector2(20f) * headerScale,
-                Size = new Vector2(40f * headerScale),
-                Color = AppConfig.HeaderColor,
-                Alignment = TextAlignment.CENTER
-            });
-            position.X += ViewBox.Width / 8f;
+                sb.Clear();
+                sb.Append(FormatingHelper.TrimName(source, i));
+                textSize = Surface.MeasureStringInPixels(sb, "White", fontSize * Scale * FontScale);
 
-            var stockText = MyTexts.Get(MyStringId.GetOrCompute("BlockPropertyTitle_Stockpile"));
-            var endSize = Surface.MeasureStringInPixels(stockText, "White", Scale * 1.3f * FontScale);
+                if (textSize.X <= availableWidth)
+                    break;
+            }
+        }
 
-            var availableSize = new Rectangle((int)position.X, (int)position.Y,
-                (int)(ViewBox.Width - position.X + (ViewBox.X) - endSize.X - (2 * margin)),
-                (int)(position.Y + TITLE_HEIGHT * headerScale));
-            frame.Add(MySprite.CreateClipRect(availableSize));
+        protected virtual void DrawCellBackground(List<MySprite> frame, KeyValuePair<MyItemType, double> item,
+            float xStart, float xEnd, float yStart, float cellHeight, float cellPadding)
+        {
+            var rl = xStart + cellPadding / 2;
+            var rr = xEnd - cellPadding / 2;
+            var rt = yStart + cellPadding / 2;
+            var rb = yStart + cellHeight - cellPadding / 2;
 
+            var backgroundColor = item.Value == 0 ? AppConfig.ErrorColor : AppConfig.HeaderColor;
+            var accent = backgroundColor.MulValue(0.2f);
+            var cellRect = new RectangleF(rl, rt, rr - rl, rb - rt);
+            var dropShadow = new RectangleF(cellRect.Position + 2, cellRect.Size);
+            RectanglePanel.CreateSpritesFromRect(dropShadow, frame, accent, .2f);
+            RectanglePanel.CreateSpritesFromRect(cellRect, frame, backgroundColor, .2f);
+        }
 
-            var displayName = GetCachedTitleText(availableSize.Width);
-
-            AddHeaderSprite(frame, new MySprite()
-            {
-                Type = SpriteType.TEXT,
-                Data = displayName,
-                Position = position,
-                RotationOrScale = Scale * 1.3f * FontScale,
-                Color = AppConfig.HeaderColor,
-                Alignment = TextAlignment.LEFT,
-                FontId = "White"
-            });
-
-            frame.Add(MySprite.CreateClearClipRect());
-            position.X = ViewBox.Width + ViewBox.X - margin;
-
-            AddHeaderSprite(frame, new MySprite()
-            {
-                Type = SpriteType.TEXT,
-                Data = stockText.ToString(),
-                Position = position,
-                RotationOrScale = Scale * 1.3f * FontScale,
-                Color = AppConfig.HeaderColor,
-                Alignment = TextAlignment.RIGHT,
-                FontId = "White"
-            });
-
-            CaretY += titleBarHeight;
+        protected Vector2 ToScreenMargin(Vector2 absoluteCenterInViewBox)
+        {
+            return new Vector2(absoluteCenterInViewBox.X, 512f - absoluteCenterInViewBox.Y);
         }
     }
 

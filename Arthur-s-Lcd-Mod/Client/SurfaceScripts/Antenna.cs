@@ -29,6 +29,7 @@ namespace LcdMod.Client.SurfaceScripts
         IMultiDisplayMode
     {
         protected override ConfigKind ConfigKind => ConfigKind.WithBlocks;
+        public override IApp App => _app;
         AntennaApp _app;
 
         public const string ID = "AntennaGraph";

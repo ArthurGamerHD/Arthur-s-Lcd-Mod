@@ -564,7 +564,7 @@ namespace LcdMod.Client.Games.Chess
         Move _botThinkMove;
         Exception _botThinkException;
 
-        public void Tick()
+        public void Update()
         {
             HandleCoroutine();
             if (_api != null)
@@ -713,7 +713,7 @@ namespace LcdMod.Client.Games.Chess
         ChessBotSelection _selectedBot = 0;
         bool _shoudRecalculateMoves;
 
-        public List<MySprite> Render()
+        public List<MySprite> GetSprites()
         {
             _sprites.Clear();
 

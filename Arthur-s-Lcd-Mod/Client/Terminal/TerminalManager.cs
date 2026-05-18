@@ -9,6 +9,7 @@ using LcdMod.Client.Terminal.Controls.Filter.Buttons;
 using LcdMod.Client.Terminal.Controls.Filter.Listbox;
 using LcdMod.Client.Terminal.Controls.Generic;
 using LcdMod.Client.Terminal.Controls.Interactive;
+using LcdMod.Client.Terminal.Controls.Proxy;
 using LcdMod.Client.Terminal.Controls.Scale;
 using LcdMod.Common.Helpers;
 using Sandbox.Game.EntityComponents;
@@ -84,6 +85,8 @@ namespace LcdMod.Client.Terminal
             Controls.Add(new ButtonItemRemoveFromSelection(source, target));
 
             Controls.Add(new ComboboxSorting());
+            Controls.Add(new SliderProxyX());
+            Controls.Add(new SliderProxyY());
         }
 
         public void Unload()
