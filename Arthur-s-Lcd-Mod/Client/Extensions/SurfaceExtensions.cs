@@ -1,4 +1,4 @@
-using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.SurfaceScripts.Abstract;
 
 namespace LcdMod.Client.Extensions
 {

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Extensions;
 using LcdMod.Common.Helpers;
 using Sandbox.Definitions;

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui.Controls;
 using LcdMod.Client.Helpers;
@@ -36,7 +37,7 @@ namespace LcdMod.Client.Apps
         ScreenConfigColorable Config => (ScreenConfigColorable)AppConfig;
         public bool HasEntries => _entries.Count > 0;
 
-        public GasApp(ScreenConfigGeneral config, SurfaceScriptBase host) : base(config, host)
+        public GasApp(ScreenConfigGeneral config, IAppHost host) : base(config, host)
         {
         }
 

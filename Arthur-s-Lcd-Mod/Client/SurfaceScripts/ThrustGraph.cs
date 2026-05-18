@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Generated;
-using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Helpers;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Config;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Terminal;
@@ -13,7 +13,7 @@ using Sandbox.ModAPI;
 using VRage;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
-using ItemsSurfaceScriptBase = LcdMod.Client.Apps.Abstract.ItemsSurfaceScriptBase;
+using ItemsSurfaceScriptBase = LcdMod.Client.SurfaceScripts.Abstract.ItemsSurfaceScriptBase;
 
 namespace LcdMod.Client
 {

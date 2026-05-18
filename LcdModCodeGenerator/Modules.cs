@@ -241,7 +241,7 @@ public sealed class Modules : IIncrementalGenerator
         builder.AppendLine("            var module = new GeneratedSurfaceModule(interfaceType, hook, unhook);");
         builder.AppendLine("            GeneratedSurfaceModules.Add(module);");
         builder.AppendLine();
-        builder.AppendLine("            foreach (var surface in global::LcdMod.Client.Apps.Abstract.SurfaceScriptBase.Instances)");
+        builder.AppendLine("            foreach (var surface in global::LcdMod.Client.SurfaceScripts.Abstract.SurfaceScriptBase.Instances)");
         builder.AppendLine("                TryHookSurfaceModule(surface, module);");
         builder.AppendLine();
         builder.AppendLine("            return true;");
@@ -262,7 +262,7 @@ public sealed class Modules : IIncrementalGenerator
         builder.AppendLine("            return TryRegisterSurfaceModule(typeof(TInterface), boxedHook, boxedUnhook);");
         builder.AppendLine("        }");
         builder.AppendLine();
-        builder.AppendLine("        internal static void HookSurfaceModules(global::LcdMod.Client.Apps.Abstract.SurfaceScriptBase surface)");
+        builder.AppendLine("        internal static void HookSurfaceModules(global::LcdMod.Client.SurfaceScripts.Abstract.SurfaceScriptBase surface)");
         builder.AppendLine("        {");
         builder.AppendLine("            if (surface == null)");
         builder.AppendLine("                return;");
@@ -271,7 +271,7 @@ public sealed class Modules : IIncrementalGenerator
         builder.AppendLine("                TryHookSurfaceModule(surface, GeneratedSurfaceModules[i]);");
         builder.AppendLine("        }");
         builder.AppendLine();
-        builder.AppendLine("        internal static void UnhookSurfaceModules(global::LcdMod.Client.Apps.Abstract.SurfaceScriptBase surface)");
+        builder.AppendLine("        internal static void UnhookSurfaceModules(global::LcdMod.Client.SurfaceScripts.Abstract.SurfaceScriptBase surface)");
         builder.AppendLine("        {");
         builder.AppendLine("            if (surface == null)");
         builder.AppendLine("                return;");
@@ -281,7 +281,7 @@ public sealed class Modules : IIncrementalGenerator
         builder.AppendLine("        }");
         builder.AppendLine();
         builder.AppendLine("        static void TryHookSurfaceModule(");
-        builder.AppendLine("            global::LcdMod.Client.Apps.Abstract.SurfaceScriptBase surface,");
+        builder.AppendLine("            global::LcdMod.Client.SurfaceScripts.Abstract.SurfaceScriptBase surface,");
         builder.AppendLine("            GeneratedSurfaceModule module)");
         builder.AppendLine("        {");
         builder.AppendLine("            if (surface == null || module == null || module.Hook == null)");
@@ -294,7 +294,7 @@ public sealed class Modules : IIncrementalGenerator
         builder.AppendLine("        }");
         builder.AppendLine();
         builder.AppendLine("        static void TryUnhookSurfaceModule(");
-        builder.AppendLine("            global::LcdMod.Client.Apps.Abstract.SurfaceScriptBase surface,");
+        builder.AppendLine("            global::LcdMod.Client.SurfaceScripts.Abstract.SurfaceScriptBase surface,");
         builder.AppendLine("            GeneratedSurfaceModule module)");
         builder.AppendLine("        {");
         builder.AppendLine("            if (surface == null || module == null || module.Unhook == null)");
@@ -371,7 +371,7 @@ public sealed class Modules : IIncrementalGenerator
         builder.AppendLine("        {");
         builder.AppendLine("            if (GeneratedSurfaceModules.Count > 0)");
         builder.AppendLine("            {");
-        builder.AppendLine("                foreach (var surface in global::LcdMod.Client.Apps.Abstract.SurfaceScriptBase.Instances)");
+        builder.AppendLine("                foreach (var surface in global::LcdMod.Client.SurfaceScripts.Abstract.SurfaceScriptBase.Instances)");
         builder.AppendLine("                    UnhookSurfaceModules(surface);");
         builder.AppendLine("            }");
         builder.AppendLine();

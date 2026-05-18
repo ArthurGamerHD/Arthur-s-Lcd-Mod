@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Grid;
 using LcdMod.Client.Helpers;
 using Sandbox.ModAPI.Ingame;
@@ -16,7 +16,7 @@ namespace LcdMod.Client.Gui.Models.Antenna
     {
         long _statusAnimTick;
 
-        public LaserAntennaCollector(SurfaceScriptBase antennaSurfaceScript) : base(antennaSurfaceScript)
+        public LaserAntennaCollector(IAppHost antennaSurfaceScript) : base(antennaSurfaceScript)
         {
             
         }

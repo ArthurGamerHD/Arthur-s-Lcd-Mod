@@ -4,7 +4,7 @@ using Sandbox.ModAPI;
 using SpaceEngineers.Game.ModAPI;
 using VRageMath;
 using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
-using PowerSurfaceScriptBase = LcdMod.Client.Apps.Abstract.PowerSurfaceScriptBase;
+using PowerSurfaceScriptBase = LcdMod.Client.SurfaceScripts.Abstract.PowerSurfaceScriptBase;
 
 namespace LcdMod.Client.SurfaceScripts
 {

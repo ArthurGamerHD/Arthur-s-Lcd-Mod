@@ -17,7 +17,7 @@ using VRageMath;
 using ColorExtensions = LcdMod.Client.Extensions.ColorExtensions;
 using IMyCubeGrid = VRage.Game.ModAPI.IMyCubeGrid;
 
-namespace LcdMod.Client.Apps.Abstract
+namespace LcdMod.Client.SurfaceScripts.Abstract
 {
     public abstract partial class PowerSurfaceScriptBase : SurfaceScriptBase, IMultiDisplayMode
     {

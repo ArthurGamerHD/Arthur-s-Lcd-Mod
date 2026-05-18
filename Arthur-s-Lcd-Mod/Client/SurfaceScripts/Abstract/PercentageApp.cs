@@ -3,14 +3,13 @@ using System.Collections.Generic;
 using System.Text;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui.Controls;
-using LcdMod.Client.Helpers;
 using LcdMod.Client.Terminal.Controls;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 using ColorExtensions = VRageMath.ColorExtensions;
 
-namespace LcdMod.Client.Apps.Abstract
+namespace LcdMod.Client.SurfaceScripts.Abstract
 {
     internal sealed class PercentageApp<TEntry>
     {

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui.Controls;
 using LcdMod.Client.Helpers;
@@ -29,7 +30,7 @@ namespace LcdMod.Client.Apps
         ScreenConfigWithBlocks Config => (ScreenConfigWithBlocks)AppConfig;
         public bool HasEntries => _entries.Count > 0;
 
-        public CargoFilledApp(ScreenConfigGeneral config, SurfaceScriptBase host) : base(config, host)
+        public CargoFilledApp(ScreenConfigGeneral config, IAppHost host) : base(config, host)
         {
         }
 

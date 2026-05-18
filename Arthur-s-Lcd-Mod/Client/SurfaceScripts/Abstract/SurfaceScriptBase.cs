@@ -32,9 +32,9 @@ using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
 using ScreenConfigColorable = LcdMod.Common.Config.Models.ScreenConfigColorable;
 using ScreenConfigGeneral = LcdMod.Common.Config.Models.ScreenConfigGeneral;
 
-namespace LcdMod.Client.Apps.Abstract
+namespace LcdMod.Client.SurfaceScripts.Abstract
 {
-    public abstract class SurfaceScriptBase : MyTSSCommon, IUsesTerminalControlGroup<BaseTerminalControlGroup>
+    public abstract class SurfaceScriptBase : MyTSSCommon, IAppHost, IUsesTerminalControlGroup<BaseTerminalControlGroup>
     {
         public static SurfaceCollection Instances = new SurfaceCollection();
 
@@ -44,7 +44,7 @@ namespace LcdMod.Client.Apps.Abstract
 
         public IMyFaction Faction { get; protected set; }
         protected string Icon { get; set; }
-        public new readonly IMyCubeBlock Block;
+        public new IMyCubeBlock Block { get; }
 
         protected long WaitForFrame;
         protected long LastRenderFrame;
@@ -58,7 +58,7 @@ namespace LcdMod.Client.Apps.Abstract
         /// </summary>
         public virtual RectangleF ViewBox { get; protected set; }
 
-        public GridLogic GridLogic;
+        public GridLogic GridLogic { get; private set; }
         int _rotationOrSurfaceIndex;
 
         protected float CaretY;
@@ -82,7 +82,7 @@ namespace LcdMod.Client.Apps.Abstract
 
         protected virtual string DefaultTitle => "<Title not Set>";
 
-        public float Scale = 1;
+        public float Scale { get; set; } = 1;
         protected float FontScale => _userFontScale <= 0f ? 1f : _userFontScale;
         protected float LayoutScale => Scale * FontScale;
 
@@ -105,7 +105,7 @@ namespace LcdMod.Client.Apps.Abstract
         bool _dirty;
         bool _disposed;
 
-        public ScreenProviderConfig ProviderConfig;
+        public ScreenProviderConfig ProviderConfig { get; private set; }
         protected bool IsScreenReadyToRender { get; private set; }
 
         protected SurfaceScriptBase(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block,
@@ -335,7 +335,11 @@ namespace LcdMod.Client.Apps.Abstract
                 LayoutChanged();
 
             if (GridLogic == null)
-                LcdModSessionComponent.Components.TryGetValue(Block.CubeGrid.EntityId, out GridLogic);
+            {
+                GridLogic gridLogic;
+                if (LcdModSessionComponent.Components.TryGetValue(Block.CubeGrid.EntityId, out gridLogic))
+                    GridLogic = gridLogic;
+            }
 
             if (GridLogic == null)
                 GridLogic = LcdModSessionComponent.GetOrCreateGridLogic(Block?.CubeGrid);
@@ -387,7 +391,9 @@ namespace LcdMod.Client.Apps.Abstract
                 if (surface.Equals(surfaceProvider.GetSurface(index)))
                 {
                     ScreenConfigGeneral config;
-                    ConfigManager.LoadSettings(block, index, ConfigKind, ref ProviderConfig, out config);
+                    var providerConfig = ProviderConfig;
+                    ConfigManager.LoadSettings(block, index, ConfigKind, ref providerConfig, out config);
+                    ProviderConfig = providerConfig;
                     Config = config;
                     return;
                 }

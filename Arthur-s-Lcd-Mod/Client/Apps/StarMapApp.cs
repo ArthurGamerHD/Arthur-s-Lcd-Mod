@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Config;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
-using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Terminal.Controls.Generic;
 using LcdMod.Client.Utility;
@@ -23,7 +24,7 @@ namespace LcdMod.Client.Apps
 {
     public partial class StarMapApp : AppBase, IAppInteractive
     {
-        readonly SurfaceScriptBase _host;
+        readonly IAppHost _host;
         new ScreenConfigStarMap AppConfig => (ScreenConfigStarMap)base.AppConfig;
         IMyCubeBlock Block => _host.Block;
         Sandbox.ModAPI.Ingame.IMyTextSurface Surface => _host.Surface;
@@ -189,7 +190,7 @@ namespace LcdMod.Client.Apps
                 }
             };
 
-        public StarMapApp(ScreenConfigStarMap config, SurfaceScriptBase host)
+        public StarMapApp(ScreenConfigStarMap config, IAppHost host)
             : base(config, host)
         {
             _host = host;

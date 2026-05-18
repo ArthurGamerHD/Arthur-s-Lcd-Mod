@@ -18,7 +18,7 @@ using VRage.Utils;
 using VRageMath;
 using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
 
-namespace LcdMod.Client.Apps.Abstract
+namespace LcdMod.Client.SurfaceScripts.Abstract
 {
     public abstract partial class ItemsSurfaceScriptBase : SurfaceScriptBase, IMultiDisplayMode
     {

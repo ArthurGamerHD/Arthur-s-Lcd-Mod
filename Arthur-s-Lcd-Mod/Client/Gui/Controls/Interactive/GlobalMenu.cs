@@ -5,7 +5,7 @@ using LcdMod.Client.Helpers;
 using LcdMod.Client.Utility;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
-using InteractiveSurfaceScript = LcdMod.Client.Apps.Abstract.InteractiveSurfaceScript;
+using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
 
 namespace LcdMod.Client.Gui.Controls.Interactive
 {

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
@@ -22,7 +23,7 @@ namespace LcdMod.Client.Apps
         const int ScrollTick = 12;
         const float IconTextureSize = 192f;
 
-        readonly SurfaceScriptBase _surfaceHost;
+        readonly IAppHost _surfaceHost;
         readonly InteractiveSurfaceScript _interactiveHost;
         readonly List<PowerCollector> _collectors = new List<PowerCollector>();
         readonly List<PowerEntry> _entries = new List<PowerEntry>();
@@ -33,7 +34,7 @@ namespace LcdMod.Client.Apps
         
         public List<InteractiveEntry> InteractiveList => _interactiveList;
 
-        public PowerFilledApp(ScreenConfigPower config, SurfaceScriptBase surfaceHost) : base(config, surfaceHost)
+        public PowerFilledApp(ScreenConfigPower config, IAppHost surfaceHost) : base(config, surfaceHost)
         {
             _surfaceHost = surfaceHost;
             _interactiveHost = surfaceHost as InteractiveSurfaceScript;
@@ -127,7 +128,7 @@ namespace LcdMod.Client.Apps
             });
         }
 
-        void DrawBatteries(SurfaceScriptBase owner, List<MySprite> sprites)
+        void DrawBatteries(IAppHost owner, List<MySprite> sprites)
         {
             float minW = BatterySlotW * owner.Scale;
             float minH = BatterySlotH * owner.Scale;
@@ -257,7 +258,7 @@ namespace LcdMod.Client.Apps
                 });
         }
 
-        void DrawFooter(SurfaceScriptBase owner, List<MySprite> sprites)
+        void DrawFooter(IAppHost owner, List<MySprite> sprites)
         {
             int rows = 0;
             for (int i = 0; i < _collectors.Count; i++)
@@ -304,7 +305,7 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        void DrawFooterRow(SurfaceScriptBase owner, List<MySprite> sprites, PowerCollector collector, float footerTop, float rowHeight,
+        void DrawFooterRow(IAppHost owner, List<MySprite> sprites, PowerCollector collector, float footerTop, float rowHeight,
             int rowIndex, float iconLeft, float contentRight, float textScale, float textLeftPad, Color fg)
         {
             float bandCy = footerTop + rowHeight * (rowIndex + 0.5f);
@@ -359,7 +360,7 @@ namespace LcdMod.Client.Apps
             });
         }
 
-        public void DrawPowerSlotVisual(SurfaceScriptBase owner, List<MySprite> sprites, PowerEntry slot, RectangleF bounds)
+        public void DrawPowerSlotVisual(IAppHost owner, List<MySprite> sprites, PowerEntry slot, RectangleF bounds)
         {
             float width = bounds.Width;
             float height = bounds.Height;
@@ -445,12 +446,12 @@ namespace LcdMod.Client.Apps
             return (int)(sess.GameplayFrameCounter / ticksPerStep);
         }
 
-        float GetContentTop(SurfaceScriptBase owner)
+        float GetContentTop(IAppHost owner)
         {
             return owner.TitleVisible ? owner.ViewBox.Y + (40f * owner.Scale * owner.Surface.FontSize) : owner.ViewBox.Y;
         }
 
-        float GetFooterHeight(SurfaceScriptBase owner)
+        float GetFooterHeight(IAppHost owner)
         {
             int rows = 0;
             for (int i = 0; i < _collectors.Count; i++)
@@ -461,7 +462,7 @@ namespace LcdMod.Client.Apps
             return (40f * owner.Scale * owner.Surface.FontSize) * rows;
         }
 
-        void DrawScrollBar(SurfaceScriptBase owner, List<MySprite> sprites, float scale, float initialY, float viewportH, float barCenter, float barH)
+        void DrawScrollBar(IAppHost owner, List<MySprite> sprites, float scale, float initialY, float viewportH, float barCenter, float barH)
         {
             float cx = owner.ViewBox.X + owner.ViewBox.Width - (ScrollerW / 2f) * scale;
             int bw = (int)(ScrollerW * scale);

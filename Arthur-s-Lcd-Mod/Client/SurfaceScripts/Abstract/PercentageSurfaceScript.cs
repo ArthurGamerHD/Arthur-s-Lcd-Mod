@@ -10,7 +10,7 @@ using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRageMath;
 
-namespace LcdMod.Client.Apps.Abstract
+namespace LcdMod.Client.SurfaceScripts.Abstract
 {
     public abstract partial class PercentageSurfaceScript<TEntry> : SurfaceScriptBase, IMultiDisplayMode
     {

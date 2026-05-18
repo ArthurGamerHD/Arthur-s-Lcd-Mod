@@ -2,9 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using Generated;
+using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
-using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Terminal.Controls.Generic;
 using LcdMod.Client.Terminal.Controls.Scale;
@@ -49,7 +50,7 @@ namespace LcdMod.Client.Apps
         float RayDensityMultiplier => AppConfig.RenderScale;
         int RaysPerTick => Math.Max((int)1, (int)AppConfig.RaysPerTick);
 
-        readonly SurfaceScriptBase _host;
+        readonly IAppHost _host;
         readonly List<MySprite> _sprites = new List<MySprite>();
         readonly List<InteractiveEntry> _interactiveList = new List<InteractiveEntry>();
         readonly List<IMyEntity> _entities = new List<IMyEntity>();
@@ -114,7 +115,7 @@ namespace LcdMod.Client.Apps
         Color ForegroundColor => _host.ForegroundColor;
         public List<InteractiveEntry> InteractiveList => _interactiveList;
 
-        public FarGridRaycastExperimentalApp(ScreenConfigRaycast config, SurfaceScriptBase host)
+        public FarGridRaycastExperimentalApp(ScreenConfigRaycast config, IAppHost host)
             : base(config, host)
         {
             _host = host;

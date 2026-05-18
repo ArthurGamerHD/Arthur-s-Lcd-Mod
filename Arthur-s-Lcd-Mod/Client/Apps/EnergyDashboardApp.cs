@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts;
 using LcdMod.Common.Helpers;
@@ -58,7 +59,7 @@ namespace LcdMod.Client.Apps
         ScreenConfigPower _config;
         public ScreenConfigPower Config => _config;
 
-        public EnergyDashboardApp(ScreenConfigPower config, SurfaceScriptBase host) : base(config, host)
+        public EnergyDashboardApp(ScreenConfigPower config, IAppHost host) : base(config, host)
         {
             _config = config;
         }
@@ -312,7 +313,7 @@ namespace LcdMod.Client.Apps
                 DrawBatterySection(owner, sprites, xLeft, xRight, contentW, y, batH);
         }
 
-        void DrawPowerBalanceSection(SurfaceScriptBase owner, List<MySprite> sprites, float xLeft, float xRight, float contentW, float y, float bigBarH, float rowH)
+        void DrawPowerBalanceSection(IAppHost owner, List<MySprite> sprites, float xLeft, float xRight, float contentW, float y, float bigBarH, float rowH)
         {
             Color fg = owner.Surface.ScriptForegroundColor;
             float ts = owner.Scale * 0.72f * owner.Surface.FontSize;
@@ -342,7 +343,7 @@ namespace LcdMod.Client.Apps
             sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = FormatLoc("LcdMod_EnergyDashboard_Production", FormatingHelper.WattsToString(totalProd)), Position = new Vector2(barCx, y), RotationOrScale = ts, Color = fg, Alignment = TextAlignment.CENTER, FontId = "White" });
         }
 
-        void DrawProductionSection(SurfaceScriptBase owner, List<MySprite> sprites, float xLeft, float contentW, float y, float rowH)
+        void DrawProductionSection(IAppHost owner, List<MySprite> sprites, float xLeft, float contentW, float y, float rowH)
         {
             Color fg = owner.Surface.ScriptForegroundColor;
             Color accent = _config.HeaderColor;
@@ -357,7 +358,7 @@ namespace LcdMod.Client.Apps
             if (_batteryProd.MaxW > 0) DrawProductionRow(owner, sprites, LocHelper.GetLoc("LcdMod_EnergyDashboard_Battery"), _batteryProd, xLeft, y, labelW, barW, numW, rowH, fg, accent);
         }
 
-        void DrawProductionRow(SurfaceScriptBase owner, List<MySprite> sprites, string label, Category cat, float xLeft, float y, float labelW, float barW, float numW, float rowH, Color fg, Color accent)
+        void DrawProductionRow(IAppHost owner, List<MySprite> sprites, string label, Category cat, float xLeft, float y, float labelW, float barW, float numW, float rowH, Color fg, Color accent)
         {
             float ratio = cat.MaxW > 0 ? (float)Math.Min(1.0, cat.CurrentW / cat.MaxW) : 0f;
             float rowCy = y + rowH / 2f;
@@ -383,7 +384,7 @@ namespace LcdMod.Client.Apps
             sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = maxText, Position = new Vector2(barXLeft + barW + numW, rowCy - maxSz.Y / 2f), RotationOrScale = ts, Color = new Color(fg.R, fg.G, fg.B, 170), Alignment = TextAlignment.RIGHT, FontId = "White" });
         }
 
-        void DrawLineGraph(SurfaceScriptBase owner, List<MySprite> sprites, float xLeft, float contentW, float y, float height, bool isProduction)
+        void DrawLineGraph(IAppHost owner, List<MySprite> sprites, float xLeft, float contentW, float y, float height, bool isProduction)
         {
             Color fg = owner.Surface.ScriptForegroundColor;
             Color lineColor = isProduction ? _config.HeaderColor : _config.WarningColor;
@@ -474,7 +475,7 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        void DrawBatterySection(SurfaceScriptBase owner, List<MySprite> sprites, float xLeft, float xRight, float contentW, float y, float sectionH)
+        void DrawBatterySection(IAppHost owner, List<MySprite> sprites, float xLeft, float xRight, float contentW, float y, float sectionH)
         {
             Color fg = owner.Surface.ScriptForegroundColor;
             Color iconColor = GetBatteryIconColor(owner, _avgBatteryCharge);
@@ -565,7 +566,7 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        void DrawDivider(SurfaceScriptBase owner, List<MySprite> sprites, float xLeft, float xRight, float y)
+        void DrawDivider(IAppHost owner, List<MySprite> sprites, float xLeft, float xRight, float y)
         {
             Color fg = owner.Surface.ScriptForegroundColor;
             sprites.Add(new MySprite
@@ -579,14 +580,14 @@ namespace LcdMod.Client.Apps
             });
         }
 
-        Color GetLoadColor(SurfaceScriptBase owner, float ratio)
+        Color GetLoadColor(IAppHost owner, float ratio)
         {
             if (ratio >= 0.90f) return _config.ErrorColor;
             if (ratio >= 0.70f) return _config.WarningColor;
             return _config.HeaderColor;
         }
 
-        Color GetBatteryIconColor(SurfaceScriptBase owner, float ratio)
+        Color GetBatteryIconColor(IAppHost owner, float ratio)
         {
             if (ratio < 0.15f) return _config.ErrorColor;
             if (ratio < 0.35f) return _config.WarningColor;

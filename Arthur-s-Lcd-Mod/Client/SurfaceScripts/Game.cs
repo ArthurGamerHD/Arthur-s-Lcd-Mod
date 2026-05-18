@@ -14,7 +14,7 @@ using VRage.ModAPI;
 using VRage.Utils;
 using VRageMath;
 using ChessGame = LcdMod.Client.Games.Chess.ChessGame;
-using InteractiveSurfaceScript = LcdMod.Client.Apps.Abstract.InteractiveSurfaceScript;
+using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
 
 namespace LcdMod.Client.SurfaceScripts
 {

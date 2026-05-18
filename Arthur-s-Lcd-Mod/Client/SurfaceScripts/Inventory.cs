@@ -7,7 +7,7 @@ using VRage.Game.ModAPI;
 using VRageMath;
 using CheckboxHideEmpty = LcdMod.Client.Terminal.Controls.Generic.CheckboxHideEmpty;
 using ComboboxSorting = LcdMod.Client.Terminal.Controls.Generic.ComboboxSorting;
-using ItemsSurfaceScriptBase = LcdMod.Client.Apps.Abstract.ItemsSurfaceScriptBase;
+using ItemsSurfaceScriptBase = LcdMod.Client.SurfaceScripts.Abstract.ItemsSurfaceScriptBase;
 using LabelSeparator = LcdMod.Client.Terminal.Controls.Filter.LabelSeparator;
 using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
 using SeparatorFilter = LcdMod.Client.Terminal.Controls.Filter.SeparatorFilter;

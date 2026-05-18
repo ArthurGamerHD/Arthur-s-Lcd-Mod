@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System.Text;
-using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Grid;
 using LcdMod.Client.Helpers;
 using VRageMath;
@@ -11,7 +11,7 @@ namespace LcdMod.Client.Gui.Models.Antenna
 {
     internal sealed class BeaconCollector : AntennaCollector
     {
-        public BeaconCollector(SurfaceScriptBase antennaSurfaceScript) : base(antennaSurfaceScript)
+        public BeaconCollector(IAppHost antennaSurfaceScript) : base(antennaSurfaceScript)
         {
             
         }

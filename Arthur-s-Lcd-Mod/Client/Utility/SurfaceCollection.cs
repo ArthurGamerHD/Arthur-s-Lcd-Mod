@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.SurfaceScripts.Abstract;
 
 namespace LcdMod.Client.Utility
 {

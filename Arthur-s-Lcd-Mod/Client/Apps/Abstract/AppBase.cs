@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Common.Config.Models;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
@@ -7,13 +8,13 @@ namespace LcdMod.Client.Apps.Abstract
 {
     public abstract class AppBase : IApp
     {
-        protected AppBase(ScreenConfigGeneral config, SurfaceScriptBase host)
+        protected AppBase(ScreenConfigGeneral config, IAppHost host)
         {
             AppConfig = config;
             Host = host;
         }
 
-        protected SurfaceScriptBase Host { get; private set; }
+        protected IAppHost Host { get; private set; }
         protected ScreenConfigGeneral AppConfig { get; private set; }
 
         public abstract void Update();

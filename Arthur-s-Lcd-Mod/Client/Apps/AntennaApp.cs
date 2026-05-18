@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Grid;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Gui.Controls;
@@ -33,7 +34,7 @@ namespace LcdMod.Client.Apps
         readonly List<AntennaCollector> _collectors = new List<AntennaCollector>();
         public bool HasEntries => _entries.Count > 0;
 
-        public AntennaApp(ScreenConfigWithBlocks config, SurfaceScriptBase script) : base(config, script)
+        public AntennaApp(ScreenConfigWithBlocks config, IAppHost script) : base(config, script)
         {
         }
 

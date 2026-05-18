@@ -136,7 +136,7 @@ namespace Generated
         if (entries == null || entries.Count == 0)
             return null;
 
-        var surfaceScriptBase = compilation.GetTypeByMetadataName("LcdMod.Client.Apps.Abstract.SurfaceScriptBase");
+        var surfaceScriptBase = compilation.GetTypeByMetadataName("LcdMod.Client.SurfaceScripts.Abstract.SurfaceScriptBase");
         if (surfaceScriptBase == null)
             return null;
 
@@ -183,7 +183,7 @@ namespace Generated
         if (appConfigs == null || appConfigs.Count == 0)
             return;
 
-        var surfaceScriptBase = compilation.GetTypeByMetadataName("LcdMod.Client.Apps.Abstract.SurfaceScriptBase");
+        var surfaceScriptBase = compilation.GetTypeByMetadataName("LcdMod.Client.SurfaceScripts.Abstract.SurfaceScriptBase");
         var configProperty = surfaceScriptBase?.GetMembers("Config").OfType<IPropertySymbol>().FirstOrDefault();
         if (configProperty == null)
             return;
