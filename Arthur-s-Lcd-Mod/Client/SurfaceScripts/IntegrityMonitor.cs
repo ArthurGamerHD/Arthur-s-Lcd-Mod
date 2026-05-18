@@ -20,7 +20,7 @@ using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
 using ListboxProjectorSelection = LcdMod.Client.Terminal.Controls.Blueprint.ListboxProjectorSelection;
 using SliderRotation = LcdMod.Client.Terminal.Controls.Generic.SliderRotation;
 
-namespace LcdMod.Client.Apps
+namespace LcdMod.Client.SurfaceScripts
 {
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class IntegrityMonitorSurfaceScript : SurfaceScriptBase,

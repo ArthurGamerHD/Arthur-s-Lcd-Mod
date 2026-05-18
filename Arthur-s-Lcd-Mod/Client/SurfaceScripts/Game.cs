@@ -16,7 +16,7 @@ using VRageMath;
 using ChessGame = LcdMod.Client.Games.Chess.ChessGame;
 using InteractiveSurfaceScript = LcdMod.Client.Apps.Abstract.InteractiveSurfaceScript;
 
-namespace LcdMod.Client.Apps
+namespace LcdMod.Client.SurfaceScripts
 {
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class GameSurfaceScript : InteractiveSurfaceScript, IMultiDisplayMode

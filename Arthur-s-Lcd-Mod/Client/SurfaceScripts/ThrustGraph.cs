@@ -12,7 +12,7 @@ using VRage.Utils;
 using VRageMath;
 using IMyCockpit = Sandbox.ModAPI.IMyCockpit;
 
-namespace LcdMod.Client.Apps
+namespace LcdMod.Client.SurfaceScripts
 {
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class ThrustSurfaceScript : SurfaceScriptBase

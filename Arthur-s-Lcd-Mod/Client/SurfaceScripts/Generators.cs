@@ -6,7 +6,7 @@ using VRageMath;
 using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
 using PowerSurfaceScriptBase = LcdMod.Client.Apps.Abstract.PowerSurfaceScriptBase;
 
-namespace LcdMod.Client.Apps
+namespace LcdMod.Client.SurfaceScripts
 {
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class GeneratorsSurfaceScript : PowerSurfaceScriptBase

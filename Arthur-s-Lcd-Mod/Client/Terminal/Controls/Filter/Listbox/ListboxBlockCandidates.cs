@@ -12,8 +12,8 @@ using VRage.Utils;
 using AntennaSurfaceScript = LcdMod.Client.SurfaceScripts.AntennaSurfaceScript;
 using CargoFilledSurfaceScript = LcdMod.Client.SurfaceScripts.CargoFilledSurfaceScript;
 using IMyBlockGroup = Sandbox.ModAPI.Ingame.IMyBlockGroup;
-using InventoryLcdSurfaceScript = LcdMod.Client.Apps.InventoryLcdSurfaceScript;
-using ProjectorLcdSurfaceScript = LcdMod.Client.Apps.ProjectorLcdSurfaceScript;
+using InventoryLcdSurfaceScript = LcdMod.Client.SurfaceScripts.InventoryLcdSurfaceScript;
+using ProjectorLcdSurfaceScript = LcdMod.Client.SurfaceScripts.ProjectorLcdSurfaceScript;
 using ScreenConfigWithBlocks = LcdMod.Common.Config.Models.Apps.ScreenConfigWithBlocks;
 
 namespace LcdMod.Client.Terminal.Controls.Filter.Listbox

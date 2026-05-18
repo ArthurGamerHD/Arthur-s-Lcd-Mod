@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using ChessChallenge.API;
-using LcdMod.Client.Apps;
+using LcdMod.Client.SurfaceScripts;
 using LcdMod.Client.Config;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Games.Chess.Enum;

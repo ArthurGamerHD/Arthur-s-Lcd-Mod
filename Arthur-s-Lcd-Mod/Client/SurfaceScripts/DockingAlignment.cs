@@ -19,7 +19,7 @@ using ColorExtensions = VRageMath.ColorExtensions;
 using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
 using MyShipConnectorStatus = Sandbox.ModAPI.Ingame.MyShipConnectorStatus;
 
-namespace LcdMod.Client.Apps
+namespace LcdMod.Client.SurfaceScripts
 {
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class DockingAlignment : SurfaceScriptBase,

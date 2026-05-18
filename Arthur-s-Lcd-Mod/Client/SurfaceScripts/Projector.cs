@@ -24,7 +24,7 @@ using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
 using SeparatorFilter = LcdMod.Client.Terminal.Controls.Filter.SeparatorFilter;
 using SwitchToggleLines = LcdMod.Client.Terminal.Controls.Generic.SwitchToggleLines;
 
-namespace LcdMod.Client.Apps
+namespace LcdMod.Client.SurfaceScripts
 {
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class ProjectorLcdSurfaceScript : ItemsSurfaceScriptBase,
