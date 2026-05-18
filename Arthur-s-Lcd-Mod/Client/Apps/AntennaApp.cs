@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Grid;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Gui.Controls;
@@ -16,7 +17,7 @@ using ScreenConfigWithBlocks = LcdMod.Common.Config.Models.Apps.ScreenConfigWith
 
 namespace LcdMod.Client.Apps
 {
-    public sealed class AntennaApp
+    public sealed class AntennaApp : AppBase
     {
         const float LINE = 22f;
         const float MINIMUM_COL_WIDTH = 400f;
@@ -27,29 +28,22 @@ namespace LcdMod.Client.Apps
         const float LASER_ICON_TOP_PADDING = 64f;
         const float LASER_ICON_BOTTOM_PADDING = 22f;
 
-        public ScreenConfigWithBlocks Config { get; private set; }
-        public AntennaSurfaceScript Script { get; }
+        public ScreenConfigWithBlocks Config => (ScreenConfigWithBlocks)AppConfig;
         readonly List<AntennaEntry> _entries = new List<AntennaEntry>();
         readonly List<AntennaCollector> _collectors = new List<AntennaCollector>();
         public bool HasEntries => _entries.Count > 0;
 
-        public AntennaApp(ScreenConfigWithBlocks config, AntennaSurfaceScript script)
+        public AntennaApp(ScreenConfigWithBlocks config, SurfaceScriptBase script) : base(config, script)
         {
-            Config = config;
-            Script = script;
         }
 
-        public void SetConfig(ScreenConfigWithBlocks config)
-        {
-            Config = config;
-        }
-
-        public void Update(GridLogic gridLogic)
+        public override void Update()
         {
             if (_collectors.Count == 0)
                 BuildCollectors();
 
             _entries.Clear();
+            var gridLogic = Host.GridLogic;
             if (gridLogic == null)
                 return;
 
@@ -59,7 +53,7 @@ namespace LcdMod.Client.Apps
             _entries.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.CurrentCultureIgnoreCase));
         }
 
-        public List<MySprite> GetSprites()
+        public override List<MySprite> GetSprites()
         {
             var sprites = new List<MySprite>();
 
@@ -78,17 +72,17 @@ namespace LcdMod.Client.Apps
 
         void BuildCollectors()
         {
-            _collectors.Add(new LaserAntennaCollector(Script));
-            _collectors.Add(new RadioAntennaCollector(Script));
-            _collectors.Add(new BeaconCollector(Script));
+            _collectors.Add(new LaserAntennaCollector(Host));
+            _collectors.Add(new RadioAntennaCollector(Host));
+            _collectors.Add(new BeaconCollector(Host));
         }
 
         void DrawDefaultView(List<MySprite> sprites)
         {
-            var rowHeight = GRID_CELL_LINES * LINE * Script.Scale;
+            var rowHeight = GRID_CELL_LINES * LINE * Host.Scale;
             float caretY = GetContentTop();
             float footerHeight = GetFooterHeight();
-            var viewportAvailableHeight = Script.ViewBox.Height - (caretY - Script.ViewBox.Y) - footerHeight;
+            var viewportAvailableHeight = Host.ViewBox.Height - (caretY - Host.ViewBox.Y) - footerHeight;
             int maxRows = Math.Max(1, (int)Math.Floor(viewportAvailableHeight / rowHeight));
 
             int maxVisible = maxRows;
@@ -102,26 +96,26 @@ namespace LcdMod.Client.Apps
                 int step = GetScrollStep(SCROLL_DELAY / 6);
                 startRow = step % (totalSteps + 1);
 
-                float viewportHeight = maxRows * rowHeight - (SCROLLER_WIDTH * 2 * Script.Scale);
+                float viewportHeight = maxRows * rowHeight - (SCROLLER_WIDTH * 2 * Host.Scale);
                 float scrollBarHeight = (float)maxRows / totalRows * viewportHeight;
                 float totalScrollableRows = totalRows - maxRows;
                 float scrollFraction = totalScrollableRows > 0 ? startRow / totalScrollableRows : 0f;
                 float scrollBarTravel = viewportHeight - scrollBarHeight;
                 float scrollBarY = scrollFraction * scrollBarTravel;
                 float scrollBarCenter = scrollBarY + scrollBarHeight / 2f;
-                float initialY = caretY + SCROLLER_WIDTH * Script.Scale;
+                float initialY = caretY + SCROLLER_WIDTH * Host.Scale;
 
-                DrawScrollBar(sprites, Script.Scale, initialY, viewportHeight, scrollBarCenter, scrollBarHeight);
+                DrawScrollBar(sprites, Host.Scale, initialY, viewportHeight, scrollBarCenter, scrollBarHeight);
             }
 
             int start = startRow;
             int showCount = Math.Min(maxVisible, _entries.Count - start);
 
             float margin = 0f;
-            float contentStart = Script.ViewBox.X + margin;
-            float contentEnd = Script.ViewBox.Width + Script.ViewBox.X - margin;
+            float contentStart = Host.ViewBox.X + margin;
+            float contentEnd = Host.ViewBox.Width + Host.ViewBox.X - margin;
             if (shouldScroll)
-                contentEnd -= SCROLLER_WIDTH * Script.Scale;
+                contentEnd -= SCROLLER_WIDTH * Host.Scale;
 
             if (Config.DrawLines)
             {
@@ -134,7 +128,7 @@ namespace LcdMod.Client.Apps
                         Data = "Circle",
                         Position = new Vector2((contentStart + contentEnd) / 2f, y),
                         Size = new Vector2(contentEnd - contentStart, 2f),
-                        Color = Script.ForegroundColor,
+                        Color = Host.ForegroundColor,
                         Alignment = TextAlignment.CENTER
                     });
                 }
@@ -150,10 +144,10 @@ namespace LcdMod.Client.Apps
 
         void DrawGridLike(List<MySprite> sprites, bool forceSingleColumn, bool drawLineSprites, bool drawVerticalLines, bool drawCellsAsLines)
         {
-            var rowHeight = GRID_CELL_LINES * LINE * Script.Scale;
+            var rowHeight = GRID_CELL_LINES * LINE * Host.Scale;
             float caretY = GetContentTop();
             float footerHeight = GetFooterHeight();
-            var viewportAvailableHeight = Script.ViewBox.Height - (caretY - Script.ViewBox.Y) - footerHeight;
+            var viewportAvailableHeight = Host.ViewBox.Height - (caretY - Host.ViewBox.Y) - footerHeight;
             int maxRows = Math.Max(1, (int)Math.Floor(viewportAvailableHeight / rowHeight));
             int maxCols = forceSingleColumn ? 1 : Math.Max(1, GetMaxColsFromSurface());
 
@@ -168,25 +162,25 @@ namespace LcdMod.Client.Apps
                 int step = GetScrollStep(SCROLL_DELAY / 6);
                 startRow = step % (totalSteps + 1);
 
-                float viewportHeight = maxRows * rowHeight - (SCROLLER_WIDTH * 2 * Script.Scale);
+                float viewportHeight = maxRows * rowHeight - (SCROLLER_WIDTH * 2 * Host.Scale);
                 float scrollBarHeight = (float)maxRows / totalRows * viewportHeight;
                 float totalScrollableRows = totalRows - maxRows;
                 float scrollFraction = totalScrollableRows > 0 ? startRow / totalScrollableRows : 0f;
                 float scrollBarTravel = viewportHeight - scrollBarHeight;
                 float scrollBarY = scrollFraction * scrollBarTravel;
                 float scrollBarCenter = scrollBarY + scrollBarHeight / 2f;
-                float initialY = caretY + SCROLLER_WIDTH * Script.Scale;
+                float initialY = caretY + SCROLLER_WIDTH * Host.Scale;
 
-                DrawScrollBar(sprites, Script.Scale, initialY, viewportHeight, scrollBarCenter, scrollBarHeight);
+                DrawScrollBar(sprites, Host.Scale, initialY, viewportHeight, scrollBarCenter, scrollBarHeight);
             }
 
             int start = startRow * maxCols;
             int showCount = Math.Min(maxVisible, _entries.Count - start);
 
-            float contentStart = Script.ViewBox.X;
-            float contentEnd = Script.ViewBox.Width + Script.ViewBox.X;
+            float contentStart = Host.ViewBox.X;
+            float contentEnd = Host.ViewBox.Width + Host.ViewBox.X;
             if (shouldScroll)
-                contentEnd -= SCROLLER_WIDTH * Script.Scale;
+                contentEnd -= SCROLLER_WIDTH * Host.Scale;
             float columnWidth = (contentEnd - contentStart) / maxCols;
             float gridHeight = maxRows * rowHeight;
 
@@ -239,18 +233,18 @@ namespace LcdMod.Client.Apps
 
         int GetMaxColsFromSurface()
         {
-            var max = Script.ViewBox.Width - Script.ViewBox.X;
-            var perCol = MINIMUM_COL_WIDTH * Script.Scale;
+            var max = Host.ViewBox.Width - Host.ViewBox.X;
+            var perCol = MINIMUM_COL_WIDTH * Host.Scale;
             return (int)Math.Max(1, Math.Round(max / perCol - .5, MidpointRounding.AwayFromZero));
         }
 
         float GetContentTop()
         {
-            if (!Script.TitleVisible)
-                return Script.ViewBox.Y;
+            if (!Host.TitleVisible)
+                return Host.ViewBox.Y;
 
-            float layoutScale = Script.Scale * Script.Surface.FontSize;
-            return Script.ViewBox.Y + (40f * layoutScale);
+            float layoutScale = Host.Scale * Host.Surface.FontSize;
+            return Host.ViewBox.Y + (40f * layoutScale);
         }
 
         static float GetFooterHeight() => 0f;
@@ -278,12 +272,12 @@ namespace LcdMod.Client.Apps
 
         void DrawAntennaCell(List<MySprite> sprites, AntennaEntry entry, float xStart, float xEnd, float yStart, float rowHeight, bool drawAsLines)
         {
-            var cellPadding = LINE * Script.Scale / 2f;
+            var cellPadding = LINE * Host.Scale / 2f;
             var innerLeft = xStart + cellPadding;
             var innerRight = xEnd - cellPadding;
             var innerTop = yStart + cellPadding;
             var innerBottom = yStart + rowHeight - cellPadding;
-            var topRowHeight = LINE * Script.Scale;
+            var topRowHeight = LINE * Host.Scale;
             var bottomRowTop = innerTop + topRowHeight;
             var bottomRowHeight = Math.Max(0f, innerBottom - bottomRowTop);
             var iconSize = innerBottom - innerTop;
@@ -310,7 +304,7 @@ namespace LcdMod.Client.Apps
                 RectanglePanel.CreateSpritesFromRect(cellRect, sprites, backgroundColor, .2f);
             }
 
-            var foreground = drawAsLines ? entry.StatusColor : Script.Surface.ScriptForegroundColor;
+            var foreground = drawAsLines ? entry.StatusColor : Host.Surface.ScriptForegroundColor;
             var iconSizeVector = new Vector2(iconRect.Width, iconRect.Height);
             var centeringOffsetY = 0f;
             var skipLaserOffset = string.Equals(entry.StatusIcon, "RotationPlane", StringComparison.Ordinal)
@@ -335,16 +329,16 @@ namespace LcdMod.Client.Apps
             });
 
             var titleSb = new StringBuilder(entry.Name ?? string.Empty);
-            TrimText(titleSb, Math.Max(0f, numberRect.Width - (4f * Script.Scale)), 1.1f);
+            TrimText(titleSb, Math.Max(0f, numberRect.Width - (4f * Host.Scale)), 1.1f);
             var titlePos = numberRect.Center;
             titlePos.X = numberRect.Right;
             titlePos.Y -= numberRect.Height * 0.5f;
             sprites.Add(new MySprite(SpriteType.TEXT, titleSb.ToString(), titlePos, null, foreground, "White",
-                TextAlignment.RIGHT, 1.1f * Script.Scale * Script.Surface.FontSize));
+                TextAlignment.RIGHT, 1.1f * Host.Scale * Host.Surface.FontSize));
 
             var info = new StringBuilder();
             var lines = (entry.StatusText ?? string.Empty).Split('\n');
-            var infoTrimWidth = Math.Max(0f, nameRect.Width - (6f * Script.Scale));
+            var infoTrimWidth = Math.Max(0f, nameRect.Width - (6f * Host.Scale));
             for (int i = 0; i < lines.Length; i++)
             {
                 var lineSb = new StringBuilder(lines[i].TrimEnd('\r'));
@@ -356,12 +350,12 @@ namespace LcdMod.Client.Apps
             infoPos.X = nameRect.Right;
             infoPos.Y -= nameRect.Height * 0.4f;
             sprites.Add(new MySprite(SpriteType.TEXT, info.ToString(), infoPos, null, foreground, "White",
-                TextAlignment.RIGHT, .9f * Script.Scale * Script.Surface.FontSize));
+                TextAlignment.RIGHT, .9f * Host.Scale * Host.Surface.FontSize));
         }
 
         void TrimText(StringBuilder sb, float availableWidth, float fontSize = 1f)
         {
-            var textSize = Script.Surface.MeasureStringInPixels(sb, "White", fontSize * Script.Scale * Script.Surface.FontSize);
+            var textSize = Host.Surface.MeasureStringInPixels(sb, "White", fontSize * Host.Scale * Host.Surface.FontSize);
             if (textSize.X <= availableWidth)
                 return;
 
@@ -370,7 +364,7 @@ namespace LcdMod.Client.Apps
             {
                 sb.Clear();
                 sb.Append(FormatingHelper.TrimName(source, i));
-                textSize = Script.Surface.MeasureStringInPixels(sb, "White", fontSize * Script.Scale * Script.Surface.FontSize);
+                textSize = Host.Surface.MeasureStringInPixels(sb, "White", fontSize * Host.Scale * Host.Surface.FontSize);
                 if (textSize.X <= availableWidth)
                     break;
             }
@@ -378,13 +372,13 @@ namespace LcdMod.Client.Apps
 
         void DrawScrollBar(List<MySprite> frame, float scale, float initialY, float viewportHeight, float scrollBarCenter, float scrollBarHeight)
         {
-            float barXCenter = Script.ViewBox.X + Script.ViewBox.Width - (SCROLLER_WIDTH / 2f) * scale;
+            float barXCenter = Host.ViewBox.X + Host.ViewBox.Width - (SCROLLER_WIDTH / 2f) * scale;
             int barWidth = (int)(SCROLLER_WIDTH * scale);
 
             var trackCenter = new Vector2(barXCenter, (float)Math.Round(initialY + viewportHeight / 2f, MidpointRounding.ToEven));
             DrawCapsule(frame, trackCenter, barWidth, viewportHeight,
-                new Color(Script.Surface.ScriptForegroundColor.R, Script.Surface.ScriptForegroundColor.G,
-                    Script.Surface.ScriptForegroundColor.B, 127));
+                new Color(Host.Surface.ScriptForegroundColor.R, Host.Surface.ScriptForegroundColor.G,
+                    Host.Surface.ScriptForegroundColor.B, 127));
 
             var thumbCenter = new Vector2(barXCenter, (float)Math.Round(initialY + scrollBarCenter, MidpointRounding.ToEven));
             DrawCapsule(frame, thumbCenter, barWidth, scrollBarHeight,

@@ -59,10 +59,8 @@ namespace LcdMod.Client.SurfaceScripts
 
             if (_app == null)
                 _app = new AntennaApp(AppConfig, this);
-            else if (!ReferenceEquals(_app.Config, AppConfig))
-                _app.SetConfig(AppConfig);
 
-            _app.Update(GridLogic);
+            _app.Update();
 
             if (!_app.HasEntries)
             {

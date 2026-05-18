@@ -1,36 +1,40 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using Generated;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Config;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
-using LcdMod.Client.ScreenAreas;
+using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Terminal.Controls.Generic;
 using LcdMod.Client.Utility;
+using LcdMod.Common.Config.Models.Apps;
 using Sandbox.Game.Entities;
-using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRageMath;
-using InteractiveSurfaceScript = LcdMod.Client.Apps.Abstract.InteractiveSurfaceScript;
-using IMyCockpit = Sandbox.ModAPI.IMyCockpit;
 using SliderFov = LcdMod.Client.Terminal.Controls.Generic.SliderFov;
 
 namespace LcdMod.Client.Apps
 {
-    [MyTextSurfaceScript(ID, TITLE)]
-    public partial class StarMapSurfaceScript : InteractiveSurfaceScript,
-        IUsesTerminalControl<SliderFov>,
-        IMultiDisplayMode,
-        IUsesTerminalControl<ComboboxReferenceMode>
+    public partial class StarMapApp : AppBase, IAppInteractive
     {
-        protected override ConfigKind ConfigKind => ConfigKind.StarMap;
+        readonly SurfaceScriptBase _host;
+        new ScreenConfigStarMap AppConfig => (ScreenConfigStarMap)base.AppConfig;
+        IMyCubeBlock Block => _host.Block;
+        Sandbox.ModAPI.Ingame.IMyTextSurface Surface => _host.Surface;
+        RectangleF ViewBox => _host.ViewBox;
+        float Scale => _host.Scale;
+        float FontScale => _host.Surface.FontSize;
+        Color ForegroundColor => _host.ForegroundColor;
+        Color BackgroundColor => _host.BackgroundColor;
+        public List<InteractiveEntry> InteractiveList => _interactiveList;
+        public CursorType RequestedCursorType { get; private set; } = CursorType.Default;
+
         float _fov;
         double _halfFovY;
         float _lastKnownConfigFov = float.NaN;
@@ -47,6 +51,7 @@ namespace LcdMod.Client.Apps
         readonly List<MySprite> _ringSprites = new List<MySprite>();
         readonly List<MySprite> _overlaySprites = new List<MySprite>();
         readonly List<MySprite> _sprites = new List<MySprite>();
+        readonly List<InteractiveEntry> _interactiveList = new List<InteractiveEntry>();
 
         // for Static map. These sprites and hit targets only change when the
         // surface layout changes, so they are built once and reused across Run() calls.
@@ -95,6 +100,8 @@ namespace LcdMod.Client.Apps
         long _artificialHorizonLastRadarAltPlanetId;
         bool _artificialHorizonShowAltWarning;
         long _artificialHorizonAltWarningShownAt;
+        Vector2 _cursorPosition = new Vector2(float.NaN, float.NaN);
+        long _lastCursorVisualContactFrame = long.MinValue;
 
         struct PlanetProjection
         {
@@ -167,7 +174,7 @@ namespace LcdMod.Client.Apps
         const double STATIC_PARENT_ORBIT_MAX_METERS = 300000d;
         const float STATIC_ORBIT_Y_SQUASH = 0.55f;
 
-        static readonly List<MyTerminalControlComboBoxItem> StarMapDisplayModes =
+        public static readonly List<MyTerminalControlComboBoxItem> StarMapDisplayModes =
             new List<MyTerminalControlComboBoxItem>
             {
                 new MyTerminalControlComboBoxItem
@@ -182,18 +189,10 @@ namespace LcdMod.Client.Apps
                 }
             };
 
-        protected override string DefaultTitle => TITLE;
-
-        public StarMapSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
-            : base(surface, block, size)
+        public StarMapApp(ScreenConfigStarMap config, SurfaceScriptBase host)
+            : base(config, host)
         {
-        }
-
-        public override CursorType CursorType { get; protected set; } = CursorType.Default;
-
-        protected override bool RendersInteractiveEntriesInGetSprites
-        {
-            get { return true; }
+            _host = host;
         }
 
         public List<MyTerminalControlComboBoxItem> GetDisplayModes()
@@ -201,9 +200,8 @@ namespace LcdMod.Client.Apps
             return StarMapDisplayModes;
         }
 
-        protected override void LayoutChanged()
+        public override void LayoutChanged()
         {
-            base.LayoutChanged();
             _fov = GetEffectiveVerticalFovDeg();
             _halfFovY = MathHelper.ToRadians(_fov) * 0.5;
             _lastKnownConfigFov = AppConfig?.FoV ?? MAP_VERTICAL_FOV_DEFAULT_DEG;
@@ -211,7 +209,7 @@ namespace LcdMod.Client.Apps
             InvalidateDynamicMapCache();
             RebuildPropertyLabelCache();
 
-            CursorType = GetDefaultCursorType();
+            RequestedCursorType = GetDefaultCursorType();
         }
 
         void RebuildPropertyLabelCache()
@@ -274,7 +272,7 @@ namespace LcdMod.Client.Apps
             _cachedInteractiveEntries.Clear();
         }
         
-        public override void SafeRun()
+        public override void Update()
         {
             if (AppConfig == null)
                 return;
@@ -283,8 +281,8 @@ namespace LcdMod.Client.Apps
             if (_syncConfigNextRun)
             {
                 _syncConfigNextRun = false;
-                if (Block != null && ProviderConfig != null)
-                    ConfigManager.Sync(Block, ProviderConfig);
+                if (Block != null && _host.ProviderConfig != null)
+                    ConfigManager.Sync(Block, _host.ProviderConfig);
             }
 
             bool hadKnownFov = !float.IsNaN(_lastKnownConfigFov);
@@ -296,10 +294,14 @@ namespace LcdMod.Client.Apps
                 LayoutChanged();
             }
 
-            RenderSprites();
         }
 
-        protected override List<MySprite> GetSprites()
+        public bool HasVisibleItems()
+        {
+            return true;
+        }
+
+        public override List<MySprite> GetSprites()
         {
             _baseSprites.Clear();
             _groundSprites.Clear();
@@ -307,7 +309,7 @@ namespace LcdMod.Client.Apps
             _ringSprites.Clear();
             _overlaySprites.Clear();
             InteractiveList.Clear();
-            CursorType = GetDefaultCursorType();
+            RequestedCursorType = GetDefaultCursorType();
             _suppressDynamicOverlays = false;
 
             bool staticMode = AppConfig.DisplayMode == (int)DisplayMode.Legacy;
@@ -322,9 +324,6 @@ namespace LcdMod.Client.Apps
             }
             else if (staticMode)
             {
-                AddBackground(_baseSprites);
-                DrawTitle(_overlaySprites);
-
                 _cachedStaticBaseSprites.Clear();
                 _cachedStaticBaseSprites.AddRange(_baseSprites);
                 _cachedStaticTitleSprites.Clear();
@@ -337,8 +336,6 @@ namespace LcdMod.Client.Apps
                 hasPlanets = DrawPlanetMap(_groundSprites, _groundOcclusionSprites, _ringSprites, _overlaySprites);
                 
                 _baseSprites.AddRange(_groundSprites);
-                AddBackground(_baseSprites);
-                DrawTitle(_overlaySprites);
             }
 
             if (hasPlanets)
@@ -354,8 +351,6 @@ namespace LcdMod.Client.Apps
             _sprites.Clear();
             _sprites.AddRange(_baseSprites);
             _sprites.AddRange(_ringSprites);
-            RenderInteractiveEntryVisuals(_sprites);
-
             _sprites.AddRange(_groundOcclusionSprites);
             _sprites.AddRange(_overlaySprites);
             return _sprites;
@@ -382,7 +377,7 @@ namespace LcdMod.Client.Apps
             return MyAPIGateway.Session != null ? MyAPIGateway.Session.GameplayFrameCounter : 0L;
         }
 
-        void QueueArtificialHorizonRenderNextFrame() => LcdModClientComponent.RunNextFrame.Add(RenderSprites);
+        void QueueArtificialHorizonRenderNextFrame() => LcdModClientComponent.RunNextFrame.Add(_host.RenderSprites);
 
         void DrawFovHud(List<MySprite> sprites, float fovDeg)
         {
@@ -780,6 +775,18 @@ namespace LcdMod.Client.Apps
             return HasRecentVisualContact &&
                 !float.IsNaN(CursorPosition.X) &&
                 !float.IsNaN(CursorPosition.Y);
+        }
+
+        Vector2 CursorPosition => _cursorPosition;
+
+        bool HasRecentVisualContact
+        {
+            get
+            {
+                return _lastCursorVisualContactFrame != long.MinValue &&
+                       MyAPIGateway.Session != null &&
+                       MyAPIGateway.Session.GameplayFrameCounter - _lastCursorVisualContactFrame <= 30;
+            }
         }
 
         static bool MatrixNearlyEquals(MatrixD a, MatrixD b)
@@ -2861,7 +2868,7 @@ namespace LcdMod.Client.Apps
                 getCursor: () =>
                 {
                     refresh();
-                    var jumpDrives = GridLogic != null ? GridLogic.GetJumpDrives() : null;
+                    var jumpDrives = _host.GridLogic != null ? _host.GridLogic.GetJumpDrives() : null;
                     return jumpDrives == null || jumpDrives.Count == 0
                         ? CursorType.Arrow
                         : _busy ? CursorType.WaitCursor : CursorType.Hand;
@@ -2873,7 +2880,7 @@ namespace LcdMod.Client.Apps
         {
             jumpPoint = Vector3D.Zero;
             int etaSeconds;
-            var jumpDrives = GridLogic != null ? GridLogic.GetJumpDrives() : null;
+            var jumpDrives = _host.GridLogic != null ? _host.GridLogic.GetJumpDrives() : null;
             if (jumpDrives == null || jumpDrives.Count == 0)
             {
                 text = FormatPropertyLine("Jump", LocHelper.GetLoc("LcdMod_NotAvailable"));
@@ -2887,7 +2894,7 @@ namespace LcdMod.Client.Apps
                 return false;
             }
 
-            if (GridLogic.TryGetPlanetJumpPoint(
+            if (_host.GridLogic.TryGetPlanetJumpPoint(
                     planet.PlanetId,
                     planet.Name,
                     planet.WorldPosition,
@@ -2927,49 +2934,7 @@ namespace LcdMod.Client.Apps
 
         bool TryGetReferenceWorldMatrix(out MatrixD world)
         {
-            world = MatrixD.Identity;
-            var mode = (ReferenceMode)(AppConfig?.ReferenceMode ?? (int)ReferenceMode.Auto);
-            switch (mode)
-            {
-                case ReferenceMode.Screen:
-                    return ScreenAreaGeometry.TryGetScreenWorldMatrix(this, out world);
-                case ReferenceMode.Controller:
-                    return TryGetControllerWorldMatrix(out world);
-                case ReferenceMode.Auto:
-                default:
-                    if (Block is IMyCockpit && TryGetCockpitWorldMatrix(out world))
-                        return true;
-                    return ScreenAreaGeometry.TryGetScreenWorldMatrix(this, out world);
-            }
-        }
-
-        bool TryGetCockpitWorldMatrix(out MatrixD world)
-        {
-            world = MatrixD.Identity;
-            var cockpit = Block as IMyCockpit;
-            if (cockpit == null)
-                return false;
-            world = cockpit.WorldMatrix;
-            return true;
-        }
-
-        bool TryGetControllerWorldMatrix(out MatrixD world)
-        {
-            world = MatrixD.Identity;
-            var myGrid = Block?.CubeGrid as MyCubeGrid;
-            if (myGrid == null)
-                return false;
-            if (myGrid.MainCockpit != null)
-            {
-                world = myGrid.MainCockpit.WorldMatrix;
-                return true;
-            }
-            if (myGrid.MainRemoteControl != null)
-            {
-                world = myGrid.MainRemoteControl.WorldMatrix;
-                return true;
-            }
-            return false;
+            return _host.TryGetReferenceWorldMatrix(AppConfig?.ReferenceMode ?? (int)ReferenceMode.Auto, out world);
         }
 
         void ClickOnGps(string planetName, Vector3D position, Color color)
@@ -2993,7 +2958,7 @@ namespace LcdMod.Client.Apps
                 position.Y,
                 position.Z,
                 color.ToAHex());
-            MyAPIGateway.Utilities.ShowMessage(Title, gps);
+            MyAPIGateway.Utilities.ShowMessage(_host.Title, gps);
         }
 
         static string SanitizeGpsName(string name)
@@ -3317,16 +3282,16 @@ namespace LcdMod.Client.Apps
             return true;
         }
 
-        protected override void OnLookAt(Vector2 onScreenCoordinates)
+        public void OnLookAt(Vector2 onScreenCoordinates)
         {
+            _cursorPosition = onScreenCoordinates;
+            if (MyAPIGateway.Session != null)
+                _lastCursorVisualContactFrame = MyAPIGateway.Session.GameplayFrameCounter;
             _eyeTracking.Receive(onScreenCoordinates);
-            base.OnLookAt(onScreenCoordinates);
         }
 
-        protected override void OnMouseScroll(int delta, ref bool handled)
+        public void OnMouseScroll(int delta, ref bool handled)
         {
-            base.OnMouseScroll(delta, ref handled);
-            
             if (AppConfig == null || delta == 0 || handled)
                 return;
 
@@ -3342,6 +3307,46 @@ namespace LcdMod.Client.Apps
             _lastFovChangedFrame = GetCurrentGameFrame();
             _lastKnownConfigFov = float.NaN;
             _syncConfigNextRun = true;
+        }
+
+        void DrawMessage(List<MySprite> sprites, string message, string icon, Color color, float scale = 1f)
+        {
+            var center = ViewBox.Center;
+            float iconSize = Math.Min(ViewBox.Width, ViewBox.Height) * .4f * scale;
+
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE,
+                Data = icon,
+                Position = center,
+                Size = new Vector2(iconSize),
+                Color = color,
+                Alignment = TextAlignment.CENTER
+            });
+
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXT,
+                Data = message,
+                Position = new Vector2(center.X, center.Y + iconSize / 2f),
+                Color = color,
+                Alignment = TextAlignment.CENTER,
+                FontId = "White",
+                RotationOrScale = scale * Scale * FontScale
+            });
+        }
+
+        void AddBackground(List<MySprite> sprites)
+        {
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE,
+                Data = "SquareSimple",
+                Position = ViewBox.Center,
+                Size = new Vector2(Math.Max(ViewBox.Width, ViewBox.Height) * 2f),
+                Color = new Color(BackgroundColor, 0.66f),
+                Alignment = TextAlignment.CENTER
+            });
         }
     }
 }

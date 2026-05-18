@@ -1,84 +1,74 @@
-using System;
 using System.Collections.Generic;
 using Generated;
 using LcdMod.Client.Apps;
 using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Terminal.Controls.Groups;
+using LcdMod.Client.Utility;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
+using VRage.Game;
+using VRage.Game.GUI.TextPanel;
+using VRage.Game.ModAPI;
+using VRage.ModAPI;
 using VRageMath;
 using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
 using LabelSeparator = LcdMod.Client.Terminal.Controls.Filter.LabelSeparator;
 using SeparatorFilter = LcdMod.Client.Terminal.Controls.Filter.SeparatorFilter;
-using ScreenConfigWithBlocks = LcdMod.Common.Config.Models.Apps.ScreenConfigWithBlocks;
 using SwitchToggleLines = LcdMod.Client.Terminal.Controls.Generic.SwitchToggleLines;
 
 namespace LcdMod.Client.SurfaceScripts
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public partial class CargoFilledSurfaceScript : PercentageSurfaceScript<CargoFilledSurfaceScript.Entry>,
+    public partial class CargoFilledSurfaceScript : SurfaceScriptBase,
         IUsesTerminalControl<SwitchToggleLines>,
         IUsesTerminalControl<SeparatorFilter>,
         IUsesTerminalControl<LabelSeparator>,
-        IUsesTerminalControlGroup<BlocksFilterTerminalControlGroup>
+        IUsesTerminalControlGroup<BlocksFilterTerminalControlGroup>,
+        IMultiDisplayMode
     {
         protected override ConfigKind ConfigKind => ConfigKind.WithBlocks;
-        readonly CargoFilledApp _app;
-
         public const string ID = "ContainerCharts";
         public const string TITLE = "DisplayName_CargoFilledEntityComponent";
-
-        public CargoFilledSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block,
-            size)
-        {
-            _app = new CargoFilledApp(this);
-        }
-
         protected override string DefaultTitle => TITLE;
-        internal ScreenConfigWithBlocks BlocksConfig => AppConfig;
 
-        protected override void ReadEntries(List<Entry> entries)
+        CargoFilledApp _app;
+
+        public CargoFilledSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)
         {
-            _app.ReadEntries(entries);
         }
 
-        protected override void SortEntries(List<Entry> entries)
+        public List<MyTerminalControlComboBoxItem> GetDisplayModes()
         {
-            entries.Sort((a, b) =>
+            return DisplayModes.GridAndLegacy;
+        }
+
+        public override void SafeRun()
+        {
+            if (AppConfig == null)
+                return;
+
+            if (_app == null)
+                _app = new CargoFilledApp(AppConfig, this);
+
+            Scale = GetAutoScaleUniform();
+            UpdateViewBox();
+            _app.Update();
+
+            if (!_app.HasEntries)
             {
-                var fa = a.Cap > 0 ? a.Used / a.Cap : 0;
-                var fb = b.Cap > 0 ? b.Used / b.Cap : 0;
-                var cmp = fb.CompareTo(fa);
-                if (cmp != 0) return cmp;
-                return string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase);
-            });
-        }
+                Empty();
+                return;
+            }
 
-        protected override string GetEntryName(Entry entry)
-        {
-            return entry.Name;
-        }
-
-        protected override float GetEntryPercentage(Entry entry)
-        {
-            if (entry.Cap <= 0) return 0f;
-            return (float)(entry.Used / entry.Cap);
-        }
-
-        protected override Color? GetEntryUsageColor(float pct)
-        {
-            if (pct >= .99f)
-                return AppConfig.ErrorColor;
-            if (pct > .90f)
-                return AppConfig.WarningColor;
-            return null;
-        }
-
-        public class Entry
-        {
-            public double Cap;
-            public string Name;
-            public double Used;
+            using (var frame = Surface.DrawFrame())
+            {
+                var sprites = new List<MySprite>();
+                AddBackground(sprites);
+                DrawTitle(sprites);
+                sprites.AddRange(_app.GetSprites());
+                frame.AddRange(sprites);
+            }
         }
     }
 }

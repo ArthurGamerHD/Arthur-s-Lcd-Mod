@@ -24,19 +24,19 @@ namespace LcdMod.Client.SurfaceScripts
 
         protected override string DefaultTitle => TITLE;
 
-        readonly PowerFilledApp _app;
+        IAppInteractive _app;
         readonly List<InteractiveEntry> _interactiveListFallback = new List<InteractiveEntry>();
         public override List<InteractiveEntry> InteractiveList => _app != null ? _app.InteractiveList : _interactiveListFallback;
 
         public PowerFilledSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)
         {
-            _app = new PowerFilledApp(this);
         }
 
         protected override void LayoutChanged()
         {
             base.LayoutChanged();
-            _app.LayoutChanged();
+            if (_app != null)
+                _app.LayoutChanged();
         }
 
         public override void SafeRun()
@@ -44,8 +44,10 @@ namespace LcdMod.Client.SurfaceScripts
             if (AppConfig == null)
                 return;
 
-            _app.SetConfig(AppConfig);
-            _app.Update(GridLogic);
+            if (_app == null)
+                _app = new PowerFilledApp(AppConfig, this);
+
+            _app.Update();
             RenderSprites();
         }
 

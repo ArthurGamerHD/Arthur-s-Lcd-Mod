@@ -6,7 +6,6 @@ using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Gui.Controls.Interactive;
 using LcdMod.Client.Gui.Models.Power;
-using LcdMod.Client.SurfaceScripts;
 using LcdMod.Client.Utility;
 using VRage;
 using VRage.Game.GUI.TextPanel;
@@ -15,7 +14,7 @@ using VRageMath;
 
 namespace LcdMod.Client.Apps
 {
-    internal sealed class PowerFilledApp
+    internal sealed class PowerFilledApp : AppBase, IAppInteractive
     {
         const float BatterySlotW = 100f;
         const float BatterySlotH = 100f;
@@ -31,26 +30,19 @@ namespace LcdMod.Client.Apps
         readonly Dictionary<long, PowerEntry> _entryById = new Dictionary<long, PowerEntry>();
         readonly Dictionary<long, InteractiveRectangleEntry> _entryHitboxById = new Dictionary<long, InteractiveRectangleEntry>();
         ScreenConfigPower _config;
+        
+        public List<InteractiveEntry> InteractiveList => _interactiveList;
 
-        internal List<PowerCollector> Collectors => _collectors;
-        internal List<PowerEntry> Entries => _entries;
-        internal List<InteractiveEntry> InteractiveList => _interactiveList;
-        internal Dictionary<long, PowerEntry> EntryById => _entryById;
-
-        public PowerFilledApp(SurfaceScriptBase surfaceHost)
+        public PowerFilledApp(ScreenConfigPower config, SurfaceScriptBase surfaceHost) : base(config, surfaceHost)
         {
             _surfaceHost = surfaceHost;
             _interactiveHost = surfaceHost as InteractiveSurfaceScript;
             if (_interactiveHost == null)
                 throw new ArgumentException("PowerFilledApp requires an InteractiveSurfaceScript host.", "surfaceHost");
-        }
-
-        public void SetConfig(ScreenConfigPower config)
-        {
             _config = config;
         }
 
-        public void LayoutChanged()
+        public override void LayoutChanged()
         {
             _collectors.Clear();
             _entries.Clear();
@@ -58,7 +50,7 @@ namespace LcdMod.Client.Apps
             ClearPowerEntryHitboxes();
         }
 
-        public void Update(LcdMod.Client.Grid.GridLogic gridLogic)
+        public override void Update()
         {
             if (_config == null)
                 return;
@@ -66,6 +58,7 @@ namespace LcdMod.Client.Apps
             if (_collectors.Count == 0)
                 BuildCollectors();
 
+            var gridLogic = _surfaceHost.GridLogic;
             if (gridLogic == null)
                 return;
 
@@ -100,13 +93,12 @@ namespace LcdMod.Client.Apps
             return _entryById.TryGetValue(entryId, out entry) ? entry : null;
         }
 
-        public List<MySprite> GetSprites()
+        public override List<MySprite> GetSprites()
         {
             BeginPowerEntryHitboxFrame();
             var sprites = new List<MySprite>();
-            var owner = (PowerFilledSurfaceScript)_surfaceHost;
-            DrawFooter(owner, sprites);
-            DrawBatteries(owner, sprites);
+            DrawFooter(_surfaceHost, sprites);
+            DrawBatteries(_surfaceHost, sprites);
             return sprites;
         }
 
@@ -135,7 +127,7 @@ namespace LcdMod.Client.Apps
             });
         }
 
-        void DrawBatteries(PowerFilledSurfaceScript owner, List<MySprite> sprites)
+        void DrawBatteries(SurfaceScriptBase owner, List<MySprite> sprites)
         {
             float minW = BatterySlotW * owner.Scale;
             float minH = BatterySlotH * owner.Scale;
@@ -236,7 +228,7 @@ namespace LcdMod.Client.Apps
             if (entry == null)
                 return;
 
-            DrawPowerSlotVisual((PowerFilledSurfaceScript)_surfaceHost, sprites, entry, hitbox.Bounds);
+            DrawPowerSlotVisual(_surfaceHost, sprites, entry, hitbox.Bounds);
         }
 
         InteractiveTooltip BuildPowerEntryTooltip(long entryId)
@@ -265,7 +257,7 @@ namespace LcdMod.Client.Apps
                 });
         }
 
-        void DrawFooter(PowerFilledSurfaceScript owner, List<MySprite> sprites)
+        void DrawFooter(SurfaceScriptBase owner, List<MySprite> sprites)
         {
             int rows = 0;
             for (int i = 0; i < _collectors.Count; i++)
@@ -312,7 +304,7 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        void DrawFooterRow(PowerFilledSurfaceScript owner, List<MySprite> sprites, PowerCollector collector, float footerTop, float rowHeight,
+        void DrawFooterRow(SurfaceScriptBase owner, List<MySprite> sprites, PowerCollector collector, float footerTop, float rowHeight,
             int rowIndex, float iconLeft, float contentRight, float textScale, float textLeftPad, Color fg)
         {
             float bandCy = footerTop + rowHeight * (rowIndex + 0.5f);
@@ -367,7 +359,7 @@ namespace LcdMod.Client.Apps
             });
         }
 
-        public void DrawPowerSlotVisual(PowerFilledSurfaceScript owner, List<MySprite> sprites, PowerEntry slot, RectangleF bounds)
+        public void DrawPowerSlotVisual(SurfaceScriptBase owner, List<MySprite> sprites, PowerEntry slot, RectangleF bounds)
         {
             float width = bounds.Width;
             float height = bounds.Height;
@@ -453,12 +445,12 @@ namespace LcdMod.Client.Apps
             return (int)(sess.GameplayFrameCounter / ticksPerStep);
         }
 
-        float GetContentTop(PowerFilledSurfaceScript owner)
+        float GetContentTop(SurfaceScriptBase owner)
         {
             return owner.TitleVisible ? owner.ViewBox.Y + (40f * owner.Scale * owner.Surface.FontSize) : owner.ViewBox.Y;
         }
 
-        float GetFooterHeight(PowerFilledSurfaceScript owner)
+        float GetFooterHeight(SurfaceScriptBase owner)
         {
             int rows = 0;
             for (int i = 0; i < _collectors.Count; i++)
@@ -469,7 +461,7 @@ namespace LcdMod.Client.Apps
             return (40f * owner.Scale * owner.Surface.FontSize) * rows;
         }
 
-        void DrawScrollBar(PowerFilledSurfaceScript owner, List<MySprite> sprites, float scale, float initialY, float viewportH, float barCenter, float barH)
+        void DrawScrollBar(SurfaceScriptBase owner, List<MySprite> sprites, float scale, float initialY, float viewportH, float barCenter, float barH)
         {
             float cx = owner.ViewBox.X + owner.ViewBox.Width - (ScrollerW / 2f) * scale;
             int bw = (int)(ScrollerW * scale);

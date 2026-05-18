@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts;
 using LcdMod.Common.Helpers;
@@ -11,10 +12,11 @@ using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRageMath;
+using ScreenConfigPower = LcdMod.Common.Config.Models.Apps.ScreenConfigPower;
 
 namespace LcdMod.Client.Apps
 {
-    internal sealed class EnergyDashboardApp
+    internal sealed class EnergyDashboardApp : AppBase
     {
         static readonly MyDefinitionId ElectricityId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
         static readonly float[] WindowOptions = { 1f, 5f, 30f, 60f, 300f };
@@ -53,21 +55,31 @@ namespace LcdMod.Client.Apps
         readonly List<IMyPowerProducer> _producers = new List<IMyPowerProducer>();
         readonly List<IMyTerminalBlock> _terminals = new List<IMyTerminalBlock>();
         readonly List<IMyBatteryBlock> _batteries = new List<IMyBatteryBlock>();
+        ScreenConfigPower _config;
+        public ScreenConfigPower Config => _config;
 
-        public void Update(EnergyDashboardSurfaceScript owner)
+        public EnergyDashboardApp(ScreenConfigPower config, SurfaceScriptBase host) : base(config, host)
         {
-            CollectData(owner);
-            TryAddSample(owner);
+            _config = config;
         }
 
-        public void Draw(EnergyDashboardSurfaceScript owner, List<MySprite> sprites)
+        public override void Update()
         {
-            DrawDashboard(owner, sprites);
+            CollectData(Host.GridLogic);
+            TryAddSample();
         }
 
-        void CollectData(EnergyDashboardSurfaceScript owner)
+        public override List<MySprite> GetSprites()
         {
-            var grid = owner.Block?.CubeGrid;
+            var sprites = new List<MySprite>();
+            DrawDashboard(sprites);
+            return sprites;
+        }
+
+        void CollectData(LcdMod.Client.Grid.GridLogic gridLogic)
+        {
+            var owner = Host;
+            var grid = Host.Block?.CubeGrid;
 
             _solar = new Category();
             _wind = new Category();
@@ -164,8 +176,8 @@ namespace LcdMod.Client.Apps
             }
 
             _batteries.Clear();
-            if (owner.GridLogicInternal != null)
-                _batteries.AddRange(owner.GridLogicInternal.GetBatteries());
+            if (gridLogic != null)
+                _batteries.AddRange(gridLogic.GetBatteries());
 
             if (_batteries.Count > 0)
             {
@@ -208,16 +220,16 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        float GetWindowSeconds(EnergyDashboardSurfaceScript owner)
+        float GetWindowSeconds()
         {
-            if (owner.ConfigPower == null) return 30f;
-            int idx = Math.Max(0, Math.Min(owner.ConfigPower.GraphWindowIndex, WindowOptions.Length - 1));
+            if (_config == null) return 30f;
+            int idx = Math.Max(0, Math.Min(_config.GraphWindowIndex, WindowOptions.Length - 1));
             return WindowOptions[idx];
         }
 
-        void TryAddSample(EnergyDashboardSurfaceScript owner)
+        void TryAddSample()
         {
-            float windowSeconds = GetWindowSeconds(owner);
+            float windowSeconds = GetWindowSeconds();
             if (Math.Abs(windowSeconds - _lastWindowSeconds) > 0.01f)
             {
                 _sampleCount = 0;
@@ -248,8 +260,9 @@ namespace LcdMod.Client.Apps
             _lastSampleTime = now;
         }
 
-        void DrawDashboard(EnergyDashboardSurfaceScript owner, List<MySprite> sprites)
+        void DrawDashboard(List<MySprite> sprites)
         {
+            var owner = Host;
             float xLeft = owner.ViewBox.X;
             float xRight = owner.ViewBox.Right;
             float contentW = xRight - xLeft;
@@ -267,7 +280,7 @@ namespace LcdMod.Client.Apps
             if (_batteryProd.MaxW > 0) prodRows++;
 
             float yBot = owner.ViewBox.Bottom;
-            float y = owner.CaretYInternal + gapH;
+            float y = GetContentTop() + gapH;
             float secAh = rowH + bigBarH + rowH;
             DrawPowerBalanceSection(owner, sprites, xLeft, xRight, contentW, y, bigBarH, rowH);
             y += secAh + gapH;
@@ -299,10 +312,10 @@ namespace LcdMod.Client.Apps
                 DrawBatterySection(owner, sprites, xLeft, xRight, contentW, y, batH);
         }
 
-        void DrawPowerBalanceSection(EnergyDashboardSurfaceScript owner, List<MySprite> sprites, float xLeft, float xRight, float contentW, float y, float bigBarH, float rowH)
+        void DrawPowerBalanceSection(SurfaceScriptBase owner, List<MySprite> sprites, float xLeft, float xRight, float contentW, float y, float bigBarH, float rowH)
         {
             Color fg = owner.Surface.ScriptForegroundColor;
-            float ts = owner.Scale * 0.72f * owner.FontScaleInternal;
+            float ts = owner.Scale * 0.72f * owner.Surface.FontSize;
             string consumeLabel = FormatLoc("LcdMod_EnergyDashboard_CurrentConsumption", FormatingHelper.WattsToString(_totalConsumptionW));
             string capLabel = FormatLoc("LcdMod_EnergyDashboard_MaxCapacity", FormatingHelper.WattsToString(_totalMaxW));
             sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = consumeLabel, Position = new Vector2(xLeft, y), RotationOrScale = ts, Color = fg, Alignment = TextAlignment.LEFT, FontId = "White" });
@@ -322,17 +335,17 @@ namespace LcdMod.Client.Apps
                 sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(xLeft + fillW / 2f, barCy), Size = new Vector2(fillW, bigBarH), Color = barFill, Alignment = TextAlignment.CENTER });
             }
 
-            sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = FormatingHelper.PercentageToString(ratio), Position = new Vector2(barCx, y + bigBarH * 0.08f), RotationOrScale = owner.Scale * 0.82f * owner.FontScaleInternal, Color = fg, Alignment = TextAlignment.CENTER, FontId = "White" });
+            sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = FormatingHelper.PercentageToString(ratio), Position = new Vector2(barCx, y + bigBarH * 0.08f), RotationOrScale = owner.Scale * 0.82f * owner.Surface.FontSize, Color = fg, Alignment = TextAlignment.CENTER, FontId = "White" });
 
             y += bigBarH;
             double totalProd = _solar.CurrentW + _wind.CurrentW + _reactor.CurrentW + _engine.CurrentW + _batteryProd.CurrentW;
             sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = FormatLoc("LcdMod_EnergyDashboard_Production", FormatingHelper.WattsToString(totalProd)), Position = new Vector2(barCx, y), RotationOrScale = ts, Color = fg, Alignment = TextAlignment.CENTER, FontId = "White" });
         }
 
-        void DrawProductionSection(EnergyDashboardSurfaceScript owner, List<MySprite> sprites, float xLeft, float contentW, float y, float rowH)
+        void DrawProductionSection(SurfaceScriptBase owner, List<MySprite> sprites, float xLeft, float contentW, float y, float rowH)
         {
             Color fg = owner.Surface.ScriptForegroundColor;
-            Color accent = owner.ConfigPower.HeaderColor;
+            Color accent = _config.HeaderColor;
             float labelW = contentW * 0.24f;
             float barW = contentW * 0.54f;
             float numW = contentW - labelW - barW;
@@ -344,12 +357,12 @@ namespace LcdMod.Client.Apps
             if (_batteryProd.MaxW > 0) DrawProductionRow(owner, sprites, LocHelper.GetLoc("LcdMod_EnergyDashboard_Battery"), _batteryProd, xLeft, y, labelW, barW, numW, rowH, fg, accent);
         }
 
-        void DrawProductionRow(EnergyDashboardSurfaceScript owner, List<MySprite> sprites, string label, Category cat, float xLeft, float y, float labelW, float barW, float numW, float rowH, Color fg, Color accent)
+        void DrawProductionRow(SurfaceScriptBase owner, List<MySprite> sprites, string label, Category cat, float xLeft, float y, float labelW, float barW, float numW, float rowH, Color fg, Color accent)
         {
             float ratio = cat.MaxW > 0 ? (float)Math.Min(1.0, cat.CurrentW / cat.MaxW) : 0f;
             float rowCy = y + rowH / 2f;
-            float ts = owner.Scale * 0.68f * owner.FontScaleInternal;
-            float tsBar = owner.Scale * 0.62f * owner.FontScaleInternal;
+            float ts = owner.Scale * 0.68f * owner.Surface.FontSize;
+            float tsBar = owner.Scale * 0.62f * owner.Surface.FontSize;
             float barH = rowH * 0.82f;
             Color barBg = new Color(fg.R, fg.G, fg.B, 25);
             float barXLeft = xLeft + labelW;
@@ -370,16 +383,16 @@ namespace LcdMod.Client.Apps
             sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = maxText, Position = new Vector2(barXLeft + barW + numW, rowCy - maxSz.Y / 2f), RotationOrScale = ts, Color = new Color(fg.R, fg.G, fg.B, 170), Alignment = TextAlignment.RIGHT, FontId = "White" });
         }
 
-        void DrawLineGraph(EnergyDashboardSurfaceScript owner, List<MySprite> sprites, float xLeft, float contentW, float y, float height, bool isProduction)
+        void DrawLineGraph(SurfaceScriptBase owner, List<MySprite> sprites, float xLeft, float contentW, float y, float height, bool isProduction)
         {
             Color fg = owner.Surface.ScriptForegroundColor;
-            Color lineColor = isProduction ? owner.ConfigPower.HeaderColor : owner.ConfigPower.WarningColor;
-            float ts = owner.Scale * 0.62f * owner.FontScaleInternal;
+            Color lineColor = isProduction ? _config.HeaderColor : _config.WarningColor;
+            float ts = owner.Scale * 0.62f * owner.Surface.FontSize;
             string label = isProduction ? LocHelper.GetLoc("LcdMod_EnergyDashboard_ProductionGraph") : LocHelper.GetLoc("LcdMod_EnergyDashboard_ConsumptionGraph");
             float labelH = FormatingHelper.GetSizeInPixel(label, "White", ts, owner.Surface).Y;
 
             float nowTime = GetCurrentTime();
-            float windowSecs = GetWindowSeconds(owner);
+            float windowSecs = GetWindowSeconds();
             float windowStart = nowTime - windowSecs;
 
             double maxData = 0;
@@ -461,18 +474,18 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        void DrawBatterySection(EnergyDashboardSurfaceScript owner, List<MySprite> sprites, float xLeft, float xRight, float contentW, float y, float sectionH)
+        void DrawBatterySection(SurfaceScriptBase owner, List<MySprite> sprites, float xLeft, float xRight, float contentW, float y, float sectionH)
         {
             Color fg = owner.Surface.ScriptForegroundColor;
             Color iconColor = GetBatteryIconColor(owner, _avgBatteryCharge);
             float cy = y + sectionH / 2f;
-            float ts = owner.Scale * 0.76f * owner.FontScaleInternal;
-            float tsSmall = owner.Scale * 0.63f * owner.FontScaleInternal;
+            float ts = owner.Scale * 0.76f * owner.Surface.FontSize;
+            float tsSmall = owner.Scale * 0.63f * owner.Surface.FontSize;
 
             float bodyH = sectionH * 0.72f;
             float bodyW = contentW * 0.38f;
             float iconCx = xLeft + bodyW / 2f + 2f * owner.Scale;
-            float pctScale = Math.Min(owner.Scale * 0.90f * owner.FontScaleInternal, bodyH * 0.55f / 14f);
+            float pctScale = Math.Min(owner.Scale * 0.90f * owner.Surface.FontSize, bodyH * 0.55f / 14f);
 
             DrawHorizontalBatteryIcon(sprites, owner.Surface, new Vector2(iconCx, cy), bodyW, bodyH, _avgBatteryCharge, iconColor, fg, pctScale);
 
@@ -552,7 +565,7 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        void DrawDivider(EnergyDashboardSurfaceScript owner, List<MySprite> sprites, float xLeft, float xRight, float y)
+        void DrawDivider(SurfaceScriptBase owner, List<MySprite> sprites, float xLeft, float xRight, float y)
         {
             Color fg = owner.Surface.ScriptForegroundColor;
             sprites.Add(new MySprite
@@ -566,21 +579,26 @@ namespace LcdMod.Client.Apps
             });
         }
 
-        Color GetLoadColor(EnergyDashboardSurfaceScript owner, float ratio)
+        Color GetLoadColor(SurfaceScriptBase owner, float ratio)
         {
-            if (ratio >= 0.90f) return owner.ConfigPower.ErrorColor;
-            if (ratio >= 0.70f) return owner.ConfigPower.WarningColor;
-            return owner.ConfigPower.HeaderColor;
+            if (ratio >= 0.90f) return _config.ErrorColor;
+            if (ratio >= 0.70f) return _config.WarningColor;
+            return _config.HeaderColor;
         }
 
-        Color GetBatteryIconColor(EnergyDashboardSurfaceScript owner, float ratio)
+        Color GetBatteryIconColor(SurfaceScriptBase owner, float ratio)
         {
-            if (ratio < 0.15f) return owner.ConfigPower.ErrorColor;
-            if (ratio < 0.35f) return owner.ConfigPower.WarningColor;
-            return owner.ConfigPower.HeaderColor;
+            if (ratio < 0.15f) return _config.ErrorColor;
+            if (ratio < 0.35f) return _config.WarningColor;
+            return _config.HeaderColor;
         }
 
         static double MegaWattsToWatts(float megawatts) => megawatts * 1000000.0;
         static string FormatLoc(string key, object arg) => string.Format(FormatingHelper.Culture, LocHelper.GetLoc(key), arg);
+
+        float GetContentTop()
+        {
+            return Host.TitleVisible ? Host.ViewBox.Y + (40f * Host.Scale * Host.Surface.FontSize) : Host.ViewBox.Y;
+        }
     }
 }

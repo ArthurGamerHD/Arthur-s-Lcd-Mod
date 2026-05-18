@@ -1,0 +1,70 @@
+using Generated;
+using System.Collections.Generic;
+using LcdMod.Client.Apps;
+using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.Gui;
+using LcdMod.Client.Terminal.Controls;
+using LcdMod.Client.Terminal.Controls.Generic;
+using LcdMod.Client.Utility;
+using LcdMod.Common.Config.Models.Apps;
+using Sandbox.Game.GameSystems.TextSurfaceScripts;
+using Sandbox.ModAPI;
+using VRage.Game.GUI.TextPanel;
+using VRage.Game.ModAPI;
+using VRageMath;
+using SliderRadarRange = LcdMod.Client.Terminal.Controls.Generic.SliderRadarRange;
+
+namespace LcdMod.Client.SurfaceScripts
+{
+    [MyTextSurfaceScript(ID, TITLE)]
+    public sealed class RadarSurfaceScript : InteractiveSurfaceScript,
+        IUsesTerminalControl<SliderRadarRange>,
+        IUsesTerminalControl<ComboboxReferenceMode>
+    {
+        public const string ID = "LcdMod_Radar";
+        public const string TITLE = "LcdMod_Radar";
+
+        protected override ConfigKind ConfigKind => ConfigKind.Radar;
+        protected override string DefaultTitle => TITLE;
+        public override CursorType CursorType { get; protected set; } = CursorType.Default;
+
+        readonly List<InteractiveEntry> _interactiveListFallback = new List<InteractiveEntry>();
+        RadarApp _app;
+
+        public override List<InteractiveEntry> InteractiveList => _app != null ? _app.InteractiveList : _interactiveListFallback;
+
+        public RadarSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)
+        {
+        }
+
+        public override void SafeRun()
+        {
+            var appConfig = Config as ScreenConfigRadar;
+            if (appConfig == null)
+                return;
+
+            if (_app == null)
+                _app = new RadarApp(appConfig, this);
+
+            _app.Update();
+            RenderSprites();
+        }
+
+        protected override List<MySprite> GetSprites()
+        {
+            var sprites = new List<MySprite>();
+            AddBackground(sprites);
+            DrawTitle(sprites);
+            if (_app != null)
+                sprites.AddRange(_app.GetSprites());
+            return sprites;
+        }
+
+        protected override void OnMouseScroll(int delta, ref bool handled)
+        {
+            base.OnMouseScroll(delta, ref handled);
+            if (_app != null)
+                _app.OnMouseScroll(delta, ref handled);
+        }
+    }
+}

@@ -20,7 +20,7 @@ namespace LcdMod.Client.SurfaceScripts
         public const string ID = "LcdMod_EnergyDashboard";
         public const string TITLE = "LcdMod_EnergyDashboard";
         protected override string DefaultTitle => TITLE;
-        readonly EnergyDashboardApp _app = new EnergyDashboardApp();
+        IApp _app;
 
         public EnergyDashboardSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)
         {
@@ -31,23 +31,21 @@ namespace LcdMod.Client.SurfaceScripts
             if (AppConfig == null)
                 return;
 
+            if (_app == null)
+                _app = new EnergyDashboardApp(AppConfig, this);
+
             Scale = GetAutoScaleUniform();
             UpdateViewBox();
-            _app.Update(this);
+            _app.Update();
 
             using (var frame = Surface.DrawFrame())
             {
                 var sprites = new List<MySprite>();
                 AddBackground(sprites);
                 DrawTitle(sprites);
-                _app.Draw(this, sprites);
+                sprites.AddRange(_app.GetSprites());
                 frame.AddRange(sprites);
             }
         }
-
-        internal ScreenConfigPower ConfigPower => AppConfig;
-        internal LcdMod.Client.Grid.GridLogic GridLogicInternal => GridLogic;
-        internal float CaretYInternal => CaretY;
-        internal float FontScaleInternal => FontScale;
     }
 }

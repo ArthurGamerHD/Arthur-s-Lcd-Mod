@@ -1,69 +1,65 @@
-using System;
 using System.Collections.Generic;
+using Generated;
 using LcdMod.Client.Apps;
 using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.Gui.Models.Antenna;
+using LcdMod.Client.Terminal.Controls;
+using LcdMod.Client.Utility;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
+using VRage.Game;
+using VRage.Game.GUI.TextPanel;
+using VRage.Game.ModAPI;
+using VRage.ModAPI;
 using VRageMath;
-using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
-using IMyTerminalBlock = Sandbox.ModAPI.IMyTerminalBlock;
 
 namespace LcdMod.Client.SurfaceScripts
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public partial class GasSurfaceScript : PercentageSurfaceScript<GasSurfaceScript.Entry>
+    public partial class GasSurfaceScript : SurfaceScriptBase, IMultiDisplayMode
     {
+        protected override ConfigKind ConfigKind => ConfigKind.Colorable;
         public const string ID = "GasGraph";
         public const string TITLE = "LcdMod_GasFilled";
+        protected override string DefaultTitle => TITLE;
 
-        readonly GasApp _app = new GasApp();
+        GasApp _app;
 
         public GasSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)
         {
         }
 
-        protected override string DefaultTitle => TITLE;
-
-        protected override int GetMaxColsFromSurface() => 1;
-
-        protected override void ReadEntries(List<Entry> entries)
+        public List<MyTerminalControlComboBoxItem> GetDisplayModes()
         {
-            _app.ReadEntries(Block as IMyTerminalBlock, entries, GetType());
+            return DisplayModes.GridAndLegacy;
         }
 
-        protected override void SortEntries(List<Entry> entries)
+        public override void SafeRun()
         {
-            entries.Sort((a, b) =>
+            if (AppConfig == null)
+                return;
+
+            if (_app == null)
+                _app = new GasApp(AppConfig, this);
+
+            Scale = GetAutoScaleUniform();
+            UpdateViewBox();
+            _app.Update();
+
+            if (!_app.HasEntries)
             {
-                var cmp = b.Percentage.CompareTo(a.Percentage);
-                if (cmp != 0) return cmp;
-                return string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase);
-            });
-        }
+                Empty();
+                return;
+            }
 
-        protected override string GetEntryName(Entry entry)
-        {
-            return entry.Name;
-        }
-
-        protected override float GetEntryPercentage(Entry entry)
-        {
-            return entry.Percentage;
-        }
-
-        protected override Color? GetEntryUsageColor(float pct)
-        {
-            if (pct <= .10f)
-                return AppConfig.ErrorColor;
-            if (pct <= .25f)
-                return AppConfig.WarningColor;
-            return null;
-        }
-
-        public class Entry
-        {
-            public string Name;
-            public float Percentage;
+            using (var frame = Surface.DrawFrame())
+            {
+                var sprites = new List<MySprite>();
+                AddBackground(sprites);
+                DrawTitle(sprites);
+                sprites.AddRange(_app.GetSprites());
+                frame.AddRange(sprites);
+            }
         }
     }
 }

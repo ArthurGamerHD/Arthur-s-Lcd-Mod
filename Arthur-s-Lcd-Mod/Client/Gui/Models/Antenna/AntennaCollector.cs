@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Grid;
 using LcdMod.Client.Helpers;
 
@@ -19,7 +20,7 @@ namespace LcdMod.Client.Gui.Models.Antenna
         
         public abstract void Collect(GridLogic grid, List<AntennaEntry> entries);
 
-        protected AntennaCollector(AntennaSurfaceScript antennaSurfaceScript)
+        protected AntennaCollector(SurfaceScriptBase antennaSurfaceScript)
         {
             var appConfig = (ScreenConfigWithBlocks)antennaSurfaceScript.Config;
             ForegroundColor = antennaSurfaceScript.ForegroundColor;

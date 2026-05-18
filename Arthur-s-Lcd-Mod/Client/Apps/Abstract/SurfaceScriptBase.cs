@@ -9,11 +9,13 @@ using LcdMod.Client.Extensions;
 using LcdMod.Client.Grid;
 using LcdMod.Client.Gui.Controls;
 using LcdMod.Client.Helpers;
+using LcdMod.Client.ScreenAreas;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Terminal.Controls.Groups;
 using LcdMod.Client.Utility;
 using LcdMod.Common.Config.Models;
 using LcdMod.Common.Helpers;
+using Sandbox.Game.Entities;
 using Sandbox.Game.Components;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
@@ -23,6 +25,8 @@ using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.Utils;
 using VRageMath;
+using IMyCockpit = Sandbox.ModAPI.IMyCockpit;
+using IMyShipController = Sandbox.ModAPI.IMyShipController;
 using IMyTextSurfaceProvider = Sandbox.ModAPI.Ingame.IMyTextSurfaceProvider;
 using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
 using ScreenConfigColorable = LcdMod.Common.Config.Models.ScreenConfigColorable;
@@ -54,7 +58,7 @@ namespace LcdMod.Client.Apps.Abstract
         /// </summary>
         public virtual RectangleF ViewBox { get; protected set; }
 
-        protected GridLogic GridLogic;
+        public GridLogic GridLogic;
         int _rotationOrSurfaceIndex;
 
         protected float CaretY;
@@ -489,6 +493,77 @@ namespace LcdMod.Client.Apps.Abstract
             }
         }
 
+        public bool TryGetReferenceWorldMatrix(ReferenceMode mode, out MatrixD world, bool useBlockWorldForCockpitAuto = false)
+        {
+            world = MatrixD.Identity;
+
+            switch (mode)
+            {
+                case ReferenceMode.Screen:
+                    return ScreenAreaGeometry.TryGetScreenWorldMatrix(this, out world);
+                case ReferenceMode.Controller:
+                    return TryGetControllerWorldMatrix(out world);
+                case ReferenceMode.Auto:
+                default:
+                    if (Block is IMyCockpit)
+                    {
+                        if (useBlockWorldForCockpitAuto)
+                        {
+                            world = Block.WorldMatrix;
+                            return true;
+                        }
+
+                        if (TryGetCockpitWorldMatrix(out world))
+                            return true;
+                    }
+
+                    return ScreenAreaGeometry.TryGetScreenWorldMatrix(this, out world);
+            }
+        }
+
+        public bool TryGetReferenceWorldMatrix(int referenceModeValue, out MatrixD world, bool useBlockWorldForCockpitAuto = false)
+        {
+            var mode = (ReferenceMode)referenceModeValue;
+            return TryGetReferenceWorldMatrix(mode, out world, useBlockWorldForCockpitAuto);
+        }
+
+        public bool TryGetCockpitWorldMatrix(out MatrixD world)
+        {
+            world = MatrixD.Identity;
+            var cockpit = Block as IMyCockpit;
+            if (cockpit == null)
+                return false;
+
+            world = cockpit.WorldMatrix;
+            return true;
+        }
+
+        public bool TryGetControllerWorldMatrix(out MatrixD world)
+        {
+            world = MatrixD.Identity;
+            var controller = ResolveShipController();
+            if (controller == null)
+                return false;
+
+            world = controller.WorldMatrix;
+            return true;
+        }
+
+        public IMyShipController ResolveShipController()
+        {
+            var myGrid = Block?.CubeGrid as MyCubeGrid;
+            if (myGrid == null)
+                return null;
+
+            if (myGrid.MainCockpit != null)
+                return myGrid.MainCockpit as IMyShipController;
+
+            if (myGrid.MainRemoteControl != null)
+                return myGrid.MainRemoteControl as IMyShipController;
+
+            return null;
+        }
+
 
         protected virtual RectangleF GetCellViewBox(float xStart, float xEnd, float yStart, float cellHeight,
             float cellPadding)
@@ -792,6 +867,7 @@ namespace LcdMod.Client.Apps.Abstract
 
             frame.AddRange(_backgroundGrids);
         }
+
 
         protected static void AddHeaderSprite(List<MySprite> frame, MySprite sprite)
         {

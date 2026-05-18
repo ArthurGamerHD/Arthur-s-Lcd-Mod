@@ -1,16 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using Generated;
 using LcdMod.Client.Config;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
-using LcdMod.Client.ScreenAreas;
+using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Terminal.Controls.Generic;
+using LcdMod.Client.Utility;
 using LcdMod.Common.Helpers;
-using Sandbox.Game.GameSystems.TextSurfaceScripts;
+using LcdMod.Common.Config.Models.Apps;
 using Sandbox.ModAPI;
 using VRage;
 using VRage.Game;
@@ -18,10 +18,8 @@ using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRageMath;
-using IMyCockpit = Sandbox.ModAPI.IMyCockpit;
 using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
 using IMyCubeGrid = VRage.Game.ModAPI.IMyCubeGrid;
-using InteractiveSurfaceScript = LcdMod.Client.Apps.Abstract.InteractiveSurfaceScript;
 using SliderRadarRange = LcdMod.Client.Terminal.Controls.Generic.SliderRadarRange;
 
 namespace LcdMod.Client.Apps
@@ -38,17 +36,10 @@ namespace LcdMod.Client.Apps
         public int MissedFrames;
     }
 
-    [MyTextSurfaceScript(ID, TITLE)]
-    public partial class RadarSurfaceScript : InteractiveSurfaceScript,
-        IUsesTerminalControl<SliderRadarRange>,
-        IUsesTerminalControl<ComboboxReferenceMode>
+    public partial class RadarApp : AppBase, IAppInteractive
     {
-        protected override ConfigKind ConfigKind => ConfigKind.Radar;
-        public override CursorType CursorType { get; protected set; } = CursorType.Default;
         public const string ID = "LcdMod_Radar";
         public const string TITLE = "LcdMod_Radar";
-
-        protected override string DefaultTitle => TITLE;
 
         // Fixed ring distances (meters) drawn regardless of dynamic range
         const float RING_1_M = 800f;
@@ -108,11 +99,25 @@ namespace LcdMod.Client.Apps
         readonly StringBuilder _footerTextBuilder = new StringBuilder();
         readonly List<MySprite> _backgroundSprites = new List<MySprite>();
         readonly List<MySprite> _foregroundSprites = new List<MySprite>();
+        readonly List<InteractiveEntry> _interactiveList = new List<InteractiveEntry>();
         long _cachedCharacterId;
         Sandbox.Game.EntityComponents.MyTargetLockingComponent _cachedCharacterTargetLocking;
         float _radarProjectionCos;
         float _radarProjectionSin;
         float _radarFooterClampHeight;
+        float _footerHeight;
+
+        readonly SurfaceScriptBase _host;
+        new ScreenConfigRadar AppConfig => (ScreenConfigRadar)base.AppConfig;
+        IMyCubeBlock Block => _host.Block;
+        Sandbox.ModAPI.Ingame.IMyTextSurface Surface => _host.Surface;
+        RectangleF ViewBox => _host.ViewBox;
+        float Scale => _host.Scale;
+        float FontScale => _host.Surface.FontSize;
+        float LayoutScale => Scale * FontScale;
+        Color ForegroundColor => _host.ForegroundColor;
+        Color BackgroundColor => _host.BackgroundColor;
+        public List<InteractiveEntry> InteractiveList => _interactiveList;
 
         struct TargetInfo
         {
@@ -127,34 +132,34 @@ namespace LcdMod.Client.Apps
         }
 
 
-        public RadarSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
-            : base(surface, block, size)
+        public RadarApp(ScreenConfigRadar config, SurfaceScriptBase host)
+            : base(config, host)
         {
+            _host = host;
         }
 
-
-        public override void SafeRun()
+        public override void Update()
         {
             if (AppConfig == null)
                 return;
 
-            base.SafeRun();
             SyncConfigIfNeeded();
             CollectContacts();
             PurgeStaleContacts();
             BuildSortedContacts();
             UpdateFooterHeights();
-
-            RenderSprites();
         }
 
-        protected override List<MySprite> GetSprites()
+        public bool HasVisibleItems()
+        {
+            return true;
+        }
+
+        public override List<MySprite> GetSprites()
         {
             _backgroundSprites.Clear();
             _foregroundSprites.Clear();
 
-            AddBackground(_backgroundSprites);
-            DrawTitle(_foregroundSprites);
             DrawFooter(_foregroundSprites);
             RenderRadar(_backgroundSprites);
 
@@ -416,8 +421,8 @@ namespace LcdMod.Client.Apps
                 return;
 
             _syncConfigNextRun = false;
-            if (Block != null && ProviderConfig != null)
-                ConfigManager.Sync(Block, ProviderConfig);
+            if (Block != null && _host.ProviderConfig != null)
+                ConfigManager.Sync(Block, _host.ProviderConfig);
         }
 
         float GetConfiguredRange()
@@ -769,7 +774,7 @@ namespace LcdMod.Client.Apps
             GetRadarCappedScales(out cappedScale, out cappedLayoutScale);
             float margin = RADAR_MARGIN_PX * cappedScale;
             float titleTopPadding = 0f;
-            float titleClamp = TitleVisible ? TITLE_BAR_HEIGHT_BASE * cappedLayoutScale : 0f;
+            float titleClamp = _host.TitleVisible ? 40f * cappedLayoutScale : 0f;
             float footerClamp = _radarFooterClampHeight;
             float areaTop = ViewBox.Y + titleTopPadding + titleClamp + margin;
             float areaBottom = ViewBox.Bottom - footerClamp - margin;
@@ -847,10 +852,8 @@ namespace LcdMod.Client.Apps
                 textScale));
         }
 
-        protected override void OnMouseScroll(int delta, ref bool handled)
+        public void OnMouseScroll(int delta, ref bool handled)
         {
-            base.OnMouseScroll(delta, ref handled);
-
             if (AppConfig == null || delta == 0 || handled)
                 return;
 
@@ -929,46 +932,7 @@ namespace LcdMod.Client.Apps
 
         bool TryGetReferenceWorldMatrix(out MatrixD world)
         {
-            world = MatrixD.Identity;
-            var mode = (ReferenceMode)(AppConfig?.ReferenceMode ?? (int)ReferenceMode.Auto);
-            switch (mode)
-            {
-                case ReferenceMode.Screen:
-                    return ScreenAreaGeometry.TryGetScreenWorldMatrix(this, out world);
-                case ReferenceMode.Controller:
-                    return TryGetControllerWorldMatrix(out world);
-                case ReferenceMode.Auto:
-                default:
-                    if (Block is IMyCockpit)
-                    {
-                        world = Block.WorldMatrix;
-                        return true;
-                    }
-
-                    return ScreenAreaGeometry.TryGetScreenWorldMatrix(this, out world);
-            }
-        }
-
-        bool TryGetControllerWorldMatrix(out MatrixD world)
-        {
-            world = MatrixD.Identity;
-            var myGrid = Block?.CubeGrid as Sandbox.Game.Entities.MyCubeGrid;
-            if (myGrid == null)
-                return false;
-
-            if (myGrid.MainCockpit != null)
-            {
-                world = myGrid.MainCockpit.WorldMatrix;
-                return true;
-            }
-
-            if (myGrid.MainRemoteControl != null)
-            {
-                world = myGrid.MainRemoteControl.WorldMatrix;
-                return true;
-            }
-
-            return false;
+            return _host.TryGetReferenceWorldMatrix(AppConfig?.ReferenceMode ?? (int)ReferenceMode.Auto, out world, true);
         }
 
         bool TryBuildTargetInfo(ContactRecord contact, MatrixD gridMatrix, Color errColor, Color warnColor,
@@ -1346,9 +1310,9 @@ namespace LcdMod.Client.Apps
             vec = value;
         }
 
-        protected override void DrawFooter(List<MySprite> sprites)
+        void DrawFooter(List<MySprite> sprites)
         {
-            if (FooterHeight <= 0f)
+            if (_footerHeight <= 0f)
                 return;
             if (_sortedContacts.Count == 0)
                 return;
@@ -1357,7 +1321,7 @@ namespace LcdMod.Client.Apps
             float left = ViewBox.X + margin;
             float right = ViewBox.Right - margin;
             float width = Math.Max(1f, right - left);
-            float top = ViewBox.Bottom - FooterHeight;
+            float top = ViewBox.Bottom - _footerHeight;
             float footerScale = LayoutScale;
             float pad = 6f * footerScale;
             float headerHeight = FOOTER_HEADER_HEIGHT_PX * footerScale;
@@ -1374,8 +1338,8 @@ namespace LcdMod.Client.Apps
             {
                 Type = SpriteType.TEXTURE,
                 Data = "SquareSimple",
-                Position = new Vector2(left + width * 0.5f, top + FooterHeight * 0.5f),
-                Size = new Vector2(width, FooterHeight),
+                Position = new Vector2(left + width * 0.5f, top + _footerHeight * 0.5f),
+                Size = new Vector2(width, _footerHeight),
                 Color = new Color(BackgroundColor.MulValue(0.8f), 0.5f),
                 Alignment = TextAlignment.CENTER
             });
@@ -1384,7 +1348,7 @@ namespace LcdMod.Client.Apps
                 (int)Math.Floor(left),
                 (int)Math.Floor(top),
                 (int)Math.Ceiling(width),
-                (int)Math.Ceiling(FooterHeight))));
+                (int)Math.Ceiling(_footerHeight))));
 
             sprites.Add(new MySprite
             {
@@ -1413,7 +1377,7 @@ namespace LcdMod.Client.Apps
             var warnColor = AppConfig.WarningColor;
             var allyColor = AppConfig.HeaderColor;
             float contentTop = top + headerHeight + pad;
-            float contentBottom = top + FooterHeight - pad;
+            float contentBottom = top + _footerHeight - pad;
             float rowHeight = Math.Max(1f, (contentBottom - contentTop) / Math.Max(1, rowsPerCol));
             float drawColWidth = width / cols;
 
@@ -1481,7 +1445,7 @@ namespace LcdMod.Client.Apps
         void UpdateFooterHeights()
         {
             int entries = _sortedContacts.Count;
-            FooterHeight = CalculateFooterHeight(entries, Scale, LayoutScale);
+            _footerHeight = CalculateFooterHeight(entries, Scale, LayoutScale);
             float cappedScale;
             float cappedLayoutScale;
             GetRadarCappedScales(out cappedScale, out cappedLayoutScale);
@@ -1579,6 +1543,39 @@ namespace LcdMod.Client.Apps
                     return "Circle";
                 default:
                     return "Triangle";
+            }
+        }
+
+        void TrimText(ref StringBuilder sb, float availableWidth, float fontSize = 1f)
+        {
+            Vector2 textSize = Surface.MeasureStringInPixels(sb, "White", fontSize * Scale * FontScale);
+            if (textSize.X <= availableWidth)
+                return;
+
+            var source = sb.ToString();
+            for (int i = source.Length - 1; i > 0; i--)
+            {
+                sb.Clear();
+                sb.Append(FormatingHelper.TrimName(source, i));
+                textSize = Surface.MeasureStringInPixels(sb, "White", fontSize * Scale * FontScale);
+                if (textSize.X <= availableWidth)
+                    break;
+            }
+        }
+
+        static int GetScrollStep(int secondsPerStep)
+        {
+            try
+            {
+                var sess = MyAPIGateway.Session;
+                if (sess == null)
+                    return 0;
+                int ticksPerStep = Math.Max(1, secondsPerStep * 60);
+                return (int)(sess.GameplayFrameCounter / ticksPerStep);
+            }
+            catch
+            {
+                return 0;
             }
         }
     }

@@ -1,39 +1,31 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Generated;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
-using LcdMod.Client.ScreenAreas;
+using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Terminal.Controls.Generic;
-using LcdMod.Client.Utility;
-using Generated;
 using LcdMod.Client.Terminal.Controls.Scale;
-using Sandbox.Game.GameSystems.TextSurfaceScripts;
+using LcdMod.Client.Utility;
+using LcdMod.Common.Config.Models.Apps;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.GUI.TextPanel;
-using VRage.Game.Models;
 using VRage.Game.ModAPI;
+using VRage.Game.Models;
 using VRage.ModAPI;
 using VRageMath;
-using InteractiveSurfaceScript = LcdMod.Client.Apps.Abstract.InteractiveSurfaceScript;
 using SliderFov = LcdMod.Client.Terminal.Controls.Generic.SliderFov;
 
 namespace LcdMod.Client.Apps
 {
-    [MyTextSurfaceScript(ID, TITLE)]
-    public partial class FarGridRaycastExperimentalSurfaceScript : InteractiveSurfaceScript,
-        IUsesTerminalControl<SliderRenderScale>,
-        IUsesTerminalControl<SliderRaysPerTick>,
-        IUsesTerminalControl<ComboboxReferenceMode>
+    public partial class FarGridRaycastExperimentalApp : AppBase, IAppInteractive
     {
-        protected override ConfigKind ConfigKind => ConfigKind.Raycast;
-        public override CursorType CursorType { get; protected set; } = CursorType.Default;
-
-        const string ID = "LcdMod_FarGridRaycastExperimental";
-        const string TITLE = "Far Grid Raycast Experimental";
+        public const string ID = "LcdMod_FarGridRaycastExperimental";
+        public const string TITLE = "Far Grid Raycast Experimental";
 
         const float REFERENCE_FONT_SCALE = 0.1f;
         const float REFERENCE_CHARACTERS = 178f;
@@ -53,10 +45,13 @@ namespace LcdMod.Client.Apps
         const string MISS_GLYPH = "";
         const int COLOR_GLYPH_BASE = 0xE100;
 
+        new ScreenConfigRaycast AppConfig => (ScreenConfigRaycast)base.AppConfig;
         float RayDensityMultiplier => AppConfig.RenderScale;
-        int RaysPerTick => Math.Max(1, AppConfig.RaysPerTick);
+        int RaysPerTick => Math.Max((int)1, (int)AppConfig.RaysPerTick);
 
+        readonly SurfaceScriptBase _host;
         readonly List<MySprite> _sprites = new List<MySprite>();
+        readonly List<InteractiveEntry> _interactiveList = new List<InteractiveEntry>();
         readonly List<IMyEntity> _entities = new List<IMyEntity>();
         readonly List<VisibleTarget> _visibleTargets = new List<VisibleTarget>();
         readonly List<IMyCubeGrid> _tempGroupGrids = new List<IMyCubeGrid>();
@@ -106,21 +101,34 @@ namespace LcdMod.Client.Apps
         bool _frameBuildPending;
         bool _frameBuildWorkerRunning;
         bool _frameBuildQueued;
-        protected override string DefaultTitle => TITLE;
 
-        public FarGridRaycastExperimentalSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
-            : base(surface, block, size)
+        IMyCubeBlock Block => _host.Block;
+        Sandbox.ModAPI.Ingame.IMyTextSurface Surface => _host.Surface;
+        RectangleF ViewBox => _host.ViewBox;
+        float Scale
         {
+            get { return _host.Scale; }
+            set { _host.Scale = value; }
+        }
+        float FontScale => _host.Surface.FontSize;
+        Color ForegroundColor => _host.ForegroundColor;
+        public List<InteractiveEntry> InteractiveList => _interactiveList;
+
+        public FarGridRaycastExperimentalApp(ScreenConfigRaycast config, SurfaceScriptBase host)
+            : base(config, host)
+        {
+            _host = host;
         }
 
-        public override void SafeRun()
+        public bool HasVisibleItems()
         {
-            if (AppConfig == null)
-                return;
+            return true;
+        }
 
+        public override void Update()
+        {
             if (IsScanPending())
             {
-                RenderSprites();
                 return;
             }
 
@@ -131,7 +139,6 @@ namespace LcdMod.Client.Apps
             if (!TryGetViewFrame(out origin, out forward, out right, out up))
             {
                 ClearSamples();
-                RenderSprites();
                 return;
             }
 
@@ -150,12 +157,10 @@ namespace LcdMod.Client.Apps
             if (_visibleTargets.Count == 0)
             {
                 ClearSamples();
-                RenderSprites();
                 return;
             }
 
             BeginScan(origin, forward, right, up, columns, rows, horizontalTan, verticalTan);
-            RenderSprites();
         }
 
         bool TryGetViewFrame(out Vector3D origin, out Vector3D forward, out Vector3D right, out Vector3D up)
@@ -198,58 +203,11 @@ namespace LcdMod.Client.Apps
 
         bool TryGetReferenceWorldMatrix(out MatrixD world)
         {
-            world = MatrixD.Identity;
-            var mode = (ReferenceMode)(AppConfig?.ReferenceMode ?? (int)ReferenceMode.Auto);
-            switch (mode)
-            {
-                case ReferenceMode.Screen:
-                    return ScreenAreaGeometry.TryGetScreenWorldMatrix(this, out world);
-                case ReferenceMode.Controller:
-                    return TryGetControllerWorldMatrix(out world);
-                case ReferenceMode.Auto:
-                default:
-                    if (Block is IMyCockpit && TryGetCockpitWorldMatrix(out world))
-                        return true;
-                    return ScreenAreaGeometry.TryGetScreenWorldMatrix(this, out world);
-            }
+            return _host.TryGetReferenceWorldMatrix(AppConfig?.ReferenceMode ?? (int)ReferenceMode.Auto, out world);
         }
 
-        bool TryGetCockpitWorldMatrix(out MatrixD world)
+        public void OnMouseScroll(int delta, ref bool handled)
         {
-            world = MatrixD.Identity;
-            var cockpit = Block as IMyCockpit;
-            if (cockpit == null)
-                return false;
-            world = cockpit.WorldMatrix;
-            return true;
-        }
-
-        bool TryGetControllerWorldMatrix(out MatrixD world)
-        {
-            world = MatrixD.Identity;
-            var controller = ResolveShipController();
-            if (controller == null)
-                return false;
-            world = controller.WorldMatrix;
-            return true;
-        }
-
-        IMyShipController ResolveShipController()
-        {
-            var myGrid = Block?.CubeGrid as MyCubeGrid;
-            if (myGrid == null)
-                return null;
-            if (myGrid.MainCockpit != null)
-                return myGrid.MainCockpit as IMyShipController;
-            if (myGrid.MainRemoteControl != null)
-                return myGrid.MainRemoteControl as IMyShipController;
-            return null;
-        }
-
-        protected override void OnMouseScroll(int delta, ref bool handled)
-        {
-            base.OnMouseScroll(delta, ref handled);
-
             if (delta == 0 || handled)
                 return;
 
@@ -969,15 +927,12 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        protected override List<MySprite> GetSprites()
+        public override List<MySprite> GetSprites()
         {
             _sprites.Clear();
             InteractiveList.Clear();
-            CursorType = CursorType.Default;
 
-            AddBackground(_sprites);
             DrawFrame(_sprites);
-            DrawTitle(_sprites);
             if (ShouldDrawMagnificationHud())
                 DrawMagnificationHud(_sprites);
 
@@ -1581,7 +1536,7 @@ namespace LcdMod.Client.Apps
                 () => hitbox.GetTooltipTitle(),
                 () => BuildDetectedGridInfoLines(hitbox),
                 () => hitbox.GetTooltipFooter(),
-                () => CursorType.Default,
+                null,
                 TooltipActivationMode.Click,
                 TooltipActivationMode.Click));
 
