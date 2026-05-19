@@ -105,51 +105,52 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         public override void SafeRun()
         {
-
             if (AppConfig == null)
                 return;
 
-            using (var frame = Surface.DrawFrame())
+            RenderSprites();
+        }
+
+        public override List<MySprite> GetSprites()
+        {
+            var sprites = new List<MySprite>();
+            AddBackground(sprites);
+            DrawTitle(sprites);
+            DrawFooter(sprites);
+
+            SumPowerSources(Block?.CubeGrid, _totalsByKey);
+            UpdateEntryValues();
+            BuildVisibleEntries();
+
+            if (string.IsNullOrEmpty(_maxLabelCache))
+                _maxLabelCache = MyTexts.Get(MyStringId.GetOrCompute("BlockPropertiesText_MaxOutput")).ToString();
+            if (string.IsNullOrEmpty(_currentLabelCache))
+                _currentLabelCache = MyTexts.Get(MyStringId.GetOrCompute("BlockPropertyProperties_CurrentOutput"))
+                    .ToString();
+
+            switch (AppConfig.DisplayMode)
             {
-                var sprites = new List<MySprite>();
-                AddBackground(sprites);
-                DrawTitle(sprites);
-                DrawFooter(sprites);
-
-                SumPowerSources(Block?.CubeGrid, _totalsByKey);
-                UpdateEntryValues();
-                BuildVisibleEntries();
-
-                if (string.IsNullOrEmpty(_maxLabelCache))
-                    _maxLabelCache = MyTexts.Get(MyStringId.GetOrCompute("BlockPropertiesText_MaxOutput")).ToString();
-                if (string.IsNullOrEmpty(_currentLabelCache))
-                    _currentLabelCache = MyTexts.Get(MyStringId.GetOrCompute("BlockPropertyProperties_CurrentOutput"))
-                        .ToString();
-
-                switch (AppConfig.DisplayMode)
-                {
-                    case (int)DisplayMode.Grid:
-                        DrawGridLike(
-                            sprites,
-                            _visibleEntries,
-                            _maxLabelCache,
-                            _currentLabelCache,
-                            false,
-                            AppConfig.DrawLines,
-                            AppConfig.DrawLines,
-                            AppConfig.DrawLines);
-                        break;
-                    default:
-                        DrawDefaultView(
-                            sprites,
-                            _visibleEntries,
-                            _maxLabelCache,
-                            _currentLabelCache);
-                        break;
-                }
-
-                frame.AddRange(sprites);
+                case (int)DisplayMode.Grid:
+                    DrawGridLike(
+                        sprites,
+                        _visibleEntries,
+                        _maxLabelCache,
+                        _currentLabelCache,
+                        false,
+                        AppConfig.DrawLines,
+                        AppConfig.DrawLines,
+                        AppConfig.DrawLines);
+                    break;
+                default:
+                    DrawDefaultView(
+                        sprites,
+                        _visibleEntries,
+                        _maxLabelCache,
+                        _currentLabelCache);
+                    break;
             }
+
+            return sprites;
         }
 
         protected abstract bool TryMapProducerType(string typeId, IMyPowerProducer producer, out string entryKey);

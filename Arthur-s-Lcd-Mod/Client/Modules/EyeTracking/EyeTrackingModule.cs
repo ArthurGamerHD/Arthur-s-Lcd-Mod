@@ -38,6 +38,8 @@ namespace LcdMod.Client.Modules.EyeTracking
         {
             if (instance != null)
                 _pendingModules.Add(instance);
+            else
+                LogHelper.Log(MyLogSeverity.Warning, $"{nameof(EyeTrackingModule)} tried to register an null instance");
         }
 
 
@@ -285,7 +287,7 @@ namespace LcdMod.Client.Modules.EyeTracking
             if (entries == null || !entries.Any())
                 return false;
 
-            var position = screen.CursorPosition;
+            var position = screen.CursorPosition + screen.HitTestOffset;
             if (float.IsNaN(position.X) || float.IsNaN(position.Y))
                 return false;
 

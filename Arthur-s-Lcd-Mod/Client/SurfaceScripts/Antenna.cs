@@ -63,21 +63,23 @@ namespace LcdMod.Client.SurfaceScripts
 
             _app.Update();
 
-            if (!_app.HasEntries)
+            RenderSprites();
+        }
+
+        public override List<MySprite> GetSprites()
+        {
+            var sprites = new List<MySprite>();
+            if (_app == null || !_app.HasEntries)
             {
-                Empty();
-                return;
+                AddEmptySprites(sprites);
+                return sprites;
             }
 
-            using (var frame = Surface.DrawFrame())
-            {
-                var sprites = new List<MySprite>();
-                AddBackground(sprites);
-                DrawTitle(sprites);
-                DrawFooter(sprites);
-                sprites.AddRange(_app.GetSprites());
-                frame.AddRange(sprites);
-            }
+            AddBackground(sprites);
+            DrawTitle(sprites);
+            DrawFooter(sprites);
+            sprites.AddRange(_app.GetSprites());
+            return sprites;
         }
     }
 }

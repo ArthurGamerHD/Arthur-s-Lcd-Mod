@@ -19,7 +19,7 @@ namespace LcdMod.Client.Terminal.Controls.Proxy
             slider.Getter = Getter;
             slider.Setter = Setter;
             slider.Visible = Visible;
-            slider.SetLimits(0, 16);
+            slider.SetLimits(-16, 16);
             slider.Writer = Writer;
             slider.Title = MyStringId.GetOrCompute("LcdModProxyOffsetX");
 
@@ -37,7 +37,7 @@ namespace LcdMod.Client.Terminal.Controls.Proxy
             if (config == null)
                 return;
 
-            config.XAxisOffset = (byte)Math.Round(value);
+            config.XAxisOffset = (sbyte)Math.Round(value);
             ConfigManager.Sync(block);
         }
 

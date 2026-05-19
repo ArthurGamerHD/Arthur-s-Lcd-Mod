@@ -21,6 +21,8 @@ namespace LcdMod.Client.Utility
 
         Vector2 CursorPosition { get; }
 
+        Vector2 HitTestOffset { get; }
+
         ICollection<InteractiveEntry> InteractiveEntries { get; }
         
         CursorType CursorType { get; }

@@ -855,15 +855,16 @@ namespace LcdMod.Client.Apps
 
         public void OnMouseScroll(int delta, ref bool handled)
         {
-            if (AppConfig == null || delta == 0 || handled)
+            var config = base.AppConfig as ScreenConfigRadar;
+            if (config == null || delta == 0 || handled)
                 return;
 
-            float currentScale = SliderRadarRange.ClampRangeScale(AppConfig.RangeScale);
+            float currentScale = SliderRadarRange.ClampRangeScale(config.RangeScale);
             float nextScale = SliderRadarRange.ApplyScrollStep(currentScale, delta);
             if (Math.Abs(currentScale - nextScale) <= 0.001f)
                 return;
 
-            AppConfig.RangeScale = nextScale;
+            config.RangeScale = nextScale;
             _maxRange = SliderRadarRange.GetRangeMeters(nextScale);
             _syncConfigNextRun = true;
             handled = true;

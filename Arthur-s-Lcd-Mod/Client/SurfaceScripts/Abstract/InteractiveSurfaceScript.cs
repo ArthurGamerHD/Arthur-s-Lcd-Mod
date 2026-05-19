@@ -35,6 +35,16 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         public Vector2 CursorPosition { get; protected set; } = new Vector2(float.NaN, float.NaN);
 
+        public virtual Vector2 HitTestOffset
+        {
+            get { return Vector2.Zero; }
+        }
+
+        protected Vector2 HitTestCursorPosition
+        {
+            get { return CursorPosition + HitTestOffset; }
+        }
+
         RectangleF _baseViewBox;
         readonly HiddenGlobalMenuEntry _hiddenGlobalMenuEntry;
 
@@ -85,11 +95,11 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             var padding = (Surface.TextPadding / 100f) * Surface.SurfaceSize;
             sizeOffset += padding / 2f;
 
-            _baseViewBox = new RectangleF(
+            _baseViewBox = ApplyProxyOffsets(new RectangleF(
                 sizeOffset.X,
                 sizeOffset.Y,
                 Surface.SurfaceSize.X - padding.X,
-                Surface.SurfaceSize.Y - padding.Y);
+                Surface.SurfaceSize.Y - padding.Y));
 
             ViewBox = _baseViewBox;
 
@@ -145,10 +155,10 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             handled = true;
         }
 
-        protected bool CursorInsideTooltip => _hasTooltipBounds && _tooltipRect.Contains(CursorPosition);
+        protected bool CursorInsideTooltip => _hasTooltipBounds && _tooltipRect.Contains(HitTestCursorPosition);
 
         protected bool CursorInsideTooltipKeepOpenArea =>
-            _hasTooltipBounds && _tooltipKeepOpenRect.Contains(CursorPosition);
+            _hasTooltipBounds && _tooltipKeepOpenRect.Contains(HitTestCursorPosition);
 
         protected bool HasRecentVisualContact
         {
@@ -256,7 +266,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         InteractiveEntry FindTooltipHitTarget()
         {
-            var position = CursorPosition;
+            var position = HitTestCursorPosition;
             if (float.IsNaN(position.X) || float.IsNaN(position.Y) || !HasRecentVisualContact)
                 return null;
 
@@ -273,7 +283,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             return null;
         }
 
-        public bool HasTooltipInputAtCursor(bool rightClick)
+        public virtual bool HasTooltipInputAtCursor(bool rightClick)
         {
             var target = FindTooltipHitTarget();
             if (target != null && target.Tooltip != null &&
@@ -286,7 +296,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             var active = ResolveManualTooltipParent() ?? _activeTooltipParentEntry;
             if (active != null && active.Visible && active.Tooltip != null && _hasTooltipBounds &&
                 TooltipButtonMatches(active.Tooltip.CloseMode, rightClick) &&
-                (CursorInsideTooltip || CursorInsideTooltipKeepOpenArea || active.Hit(CursorPosition)))
+                (CursorInsideTooltip || CursorInsideTooltipKeepOpenArea || active.Hit(HitTestCursorPosition)))
             {
                 return true;
             }
@@ -294,17 +304,17 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             return false;
         }
 
-        public bool TryHandleTooltipActivationClick(bool rightClick)
+        public virtual bool TryHandleTooltipActivationClick(bool rightClick)
         {
             InteractiveEntry tooltipParent;
             return TryHandleTooltipActivationClick(rightClick, out tooltipParent);
         }
 
-        public bool TryHandleTooltipActivationClick(bool rightClick, out InteractiveEntry tooltipParent)
+        public virtual bool TryHandleTooltipActivationClick(bool rightClick, out InteractiveEntry tooltipParent)
         {
             tooltipParent = null;
 
-            var position = CursorPosition;
+            var position = HitTestCursorPosition;
             if (float.IsNaN(position.X) || float.IsNaN(position.Y) || !HasRecentVisualContact)
                 return false;
 
@@ -344,7 +354,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 if (manualTooltip != null && manualTooltip.CloseMode != TooltipActivationMode.Auto)
                     return manualParent;
 
-                var positionForManual = CursorPosition;
+                var positionForManual = HitTestCursorPosition;
                 if (!float.IsNaN(positionForManual.X) && !float.IsNaN(positionForManual.Y) && HasRecentVisualContact &&
                     (manualParent.Hit(positionForManual) || CursorInsideTooltip || CursorInsideTooltipKeepOpenArea))
                 {
@@ -363,7 +373,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 return _activeTooltipParentEntry;
             }
 
-            var position = CursorPosition;
+            var position = HitTestCursorPosition;
             if (float.IsNaN(position.X) || float.IsNaN(position.Y) || !HasRecentVisualContact)
                 return null;
 
@@ -590,7 +600,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             _messageBox.Show(title, content, button1, button2, button1Callback, button2Callback, icon);
         }
 
-        public bool IsInsideContainer(InteractiveEntry entry, Vector2 position)
+        public virtual bool IsInsideContainer(InteractiveEntry entry, Vector2 position)
         {
             if (entry == null || !entry.Visible || entry.Children == null || entry.Children.Count == 0)
                 return false;
@@ -600,7 +610,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         void UpdateCursorFromTopHit()
         {
-            var position = CursorPosition;
+            var position = HitTestCursorPosition;
             if (float.IsNaN(position.X) || float.IsNaN(position.Y) || !HasRecentVisualContact)
                 return;
 

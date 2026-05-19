@@ -40,18 +40,19 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
             Scale = GetAutoScaleUniform();
             UpdateViewBox();
+            RenderSprites();
+        }
 
+        public override List<MySprite> GetSprites()
+        {
             var sprites = _app.GetSprites();
             if (sprites == null)
             {
-                Empty();
-                return;
+                sprites = new List<MySprite>();
+                AddEmptySprites(sprites);
             }
 
-            using (var frame = Surface.DrawFrame())
-            {
-                frame.AddRange(sprites);
-            }
+            return sprites;
         }
 
         protected override void LayoutChanged()

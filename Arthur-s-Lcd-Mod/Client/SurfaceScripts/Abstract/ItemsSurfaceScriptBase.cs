@@ -180,7 +180,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
             try
             {
-                DrawItems();
+                RenderSprites();
                 _hasDrawnAtLeastOnce = true;
                 _needsImmediateDraw = false;
             }
@@ -198,41 +198,37 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             _needsImmediateDraw = true;
         }
 
-        public virtual void DrawItems()
+        public override List<MySprite> GetSprites()
         {
+            var sprites = new List<MySprite>();
             var items = ReadItems(Block as IMyTerminalBlock);
 
             if (items.Count == 0)
             {
                 if (AppConfig.SelectedCategories.Any() || AppConfig.SelectedBlocks.Any() || AppConfig.SelectedItems.Any() ||
                     AppConfig.SelectedGroups.Any() || AppConfig.SelectedDefinition.Any() )
-                    EmptyWithFilters();
+                    AddEmptyWithFiltersSprites(sprites);
                 else
-                    Empty();
+                    AddEmptySprites(sprites);
 
-                return;
+                return sprites;
             }
 
-            using (var frame = Surface.DrawFrame())
+            AddBackground(sprites);
+            DrawTitle(sprites);
+            DrawFooter(sprites);
+
+            switch (AppConfig.DisplayMode)
             {
-                var sprites = new List<MySprite>();
-
-                AddBackground(sprites);
-                DrawTitle(sprites);
-                DrawFooter(sprites);
-
-                switch (AppConfig.DisplayMode)
-                {
-                    case (int)DisplayMode.Legacy:
-                        DrawList(sprites, items);
-                        break;
-                    case (int)DisplayMode.Grid:
-                        DrawGrid(sprites, items);
-                        break;
-                }
-
-                frame.AddRange(sprites);
+                case (int)DisplayMode.Legacy:
+                    DrawList(sprites, items);
+                    break;
+                case (int)DisplayMode.Grid:
+                    DrawGrid(sprites, items);
+                    break;
             }
+
+            return sprites;
         }
 
         void DrawList(List<MySprite> sprites, List<KeyValuePair<MyItemType, double>> items)
