@@ -16,6 +16,8 @@ using VRage.Game.Components;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.Utils;
+using static LcdMod.Common.Helpers.Constants;
+using Constants = Generated.Constants;
 
 namespace LcdMod
 {
@@ -29,7 +31,7 @@ namespace LcdMod
         public static LcdModClientComponent Client;
         public static LcdModServerComponent Server;
 
-        public static NetworkManager NetworkManager = new NetworkManager(Constants.Port);
+        public static NetworkManager NetworkManager = new NetworkManager(Port);
 
         public static event Action OnSave;
         public static event Action OnLanguageChanged;
@@ -95,6 +97,8 @@ namespace LcdMod
 
         public override void LoadData()
         {
+            LogHelper.LogInfo("Init - Version " + VersionName);
+            
             _instance = this;
             if (Components == null)
                 Components = new Dictionary<long, GridLogic>();
