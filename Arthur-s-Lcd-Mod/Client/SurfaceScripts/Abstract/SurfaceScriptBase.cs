@@ -353,12 +353,14 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             if (!_init)
                 Init();
 
+            if (_init)
+                Instances.RefreshActiveInstance(this);
+
             IsScreenReadyToRender = false;
 
             if (Config == null)
             {
                 GetSettings((IMyTextSurface)Surface, Block);
-                DrawSplash();
                 return;
             }
 

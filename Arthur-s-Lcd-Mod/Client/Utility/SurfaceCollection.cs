@@ -23,7 +23,7 @@ namespace LcdMod.Client.Utility
             _panel = panel;
         }
 
-        public SurfaceScriptBase GetActiveInstance()
+        internal override SurfaceScriptBase GetActiveInstance()
         {
             return GetInstance(GetActiveRotationIndex());
         }
@@ -94,6 +94,7 @@ namespace LcdMod.Client.Utility
     {
         readonly Dictionary<int, SurfaceScriptBase> _instancesByIndex =
             new Dictionary<int, SurfaceScriptBase>();
+        SurfaceScriptBase _activeInstance;
 
         public SurfaceScriptBase GetInstance(int index)
         {
@@ -108,6 +109,21 @@ namespace LcdMod.Client.Utility
         }
 
         internal abstract int GetIndex(SurfaceScriptBase instance);
+
+        internal virtual SurfaceScriptBase GetActiveInstance()
+        {
+            return null;
+        }
+
+        internal bool RefreshActiveInstance(out SurfaceScriptBase activeInstance)
+        {
+            activeInstance = GetActiveInstance();
+            if (ReferenceEquals(_activeInstance, activeInstance))
+                return false;
+
+            _activeInstance = activeInstance;
+            return activeInstance != null;
+        }
 
         internal void Add(SurfaceScriptBase instance)
         {
@@ -124,6 +140,9 @@ namespace LcdMod.Client.Utility
         {
             if (instance == null)
                 return;
+
+            if (ReferenceEquals(_activeInstance, instance))
+                _activeInstance = null;
 
             var emptyIndexes = new List<int>();
             foreach (var entry in _instancesByIndex)
@@ -153,6 +172,7 @@ namespace LcdMod.Client.Utility
 
         public event Action<SurfaceScriptBase> Added;
         public event Action<SurfaceScriptBase> Removed;
+        public event Action<SurfaceScriptBase> ActiveInstanceChanged;
         public int Count => _items.Count;
         public bool IsReadOnly => false;
         
@@ -199,6 +219,21 @@ namespace LcdMod.Client.Utility
         {
             var instances = GetInstances(block);
             return instances?.GetInstance(index);
+        }
+
+        public void RefreshActiveInstance(SurfaceScriptBase item)
+        {
+            var block = item?.Block as IMyTerminalBlock;
+            if (block == null)
+                return;
+
+            SurfaceTssInstancesBase instances;
+            if (!_instancesByBlock.TryGetValue(block.EntityId, out instances))
+                return;
+
+            SurfaceScriptBase activeInstance;
+            if (instances.RefreshActiveInstance(out activeInstance))
+                ActiveInstanceChanged?.Invoke(activeInstance);
         }
 
         void AddToSlots(SurfaceScriptBase item)

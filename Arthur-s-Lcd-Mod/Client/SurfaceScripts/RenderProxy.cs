@@ -44,6 +44,7 @@ namespace LcdMod.Client.SurfaceScripts
         readonly List<InteractiveEntry> _interactiveListFallback = new List<InteractiveEntry>();
         static readonly List<IMySlimBlock> AutoCascadeBlocks = new List<IMySlimBlock>();
         static readonly HashSet<long> ActiveRotationCascadeHosts = new HashSet<long>();
+        static SurfaceCollection ActiveInstanceCollection;
 
         SurfaceScriptBase _parent;
         ISurfaceTssInstances _parentInstances;
@@ -61,6 +62,9 @@ namespace LcdMod.Client.SurfaceScripts
         float _lastObservedOffsetX;
         float _lastObservedOffsetY;
         bool _hasObservedConfig;
+        int _initialAutoAdjustAttempts;
+
+        const int INITIAL_AUTO_ADJUST_MAX_ATTEMPTS = 10;
 
         public override IApp App
         {
@@ -107,6 +111,7 @@ namespace LcdMod.Client.SurfaceScripts
         public RenderProxySurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block,
             size)
         {
+            EnsureActiveInstanceChangeSubscription();
         }
 
         public void SetParent(SurfaceScriptBase parent)
@@ -165,15 +170,20 @@ namespace LcdMod.Client.SurfaceScripts
 
         public void ApplyProxyAutoOffset()
         {
+            TryApplyProxyAutoOffset(true);
+        }
+
+        bool TryApplyProxyAutoOffset(bool cascade)
+        {
             var appConfig = AppConfig as ScreenConfigRenderProxy;
             if (appConfig == null)
-                return;
+                return false;
 
             sbyte x;
             sbyte y;
             ProxyAutoContext context;
             if (!TryCalculateAutoOffset(out x, out y, out context))
-                return;
+                return false;
 
             if (appConfig.XAxisOffset != x || appConfig.YAxisOffset != y)
             {
@@ -190,7 +200,64 @@ namespace LcdMod.Client.SurfaceScripts
                 RenderSprites();
             }
 
-            StartProxyAutoCascade(context, x, y);
+            if (cascade)
+                StartProxyAutoCascade(context, x, y);
+
+            return true;
+        }
+
+        static void EnsureActiveInstanceChangeSubscription()
+        {
+            var collection = SurfaceScriptBase.Instances;
+            if (ReferenceEquals(ActiveInstanceCollection, collection))
+                return;
+
+            if (ActiveInstanceCollection != null)
+                ActiveInstanceCollection.ActiveInstanceChanged -= HandleActiveInstanceChanged;
+
+            ActiveInstanceCollection = collection;
+
+            if (ActiveInstanceCollection != null)
+                ActiveInstanceCollection.ActiveInstanceChanged += HandleActiveInstanceChanged;
+        }
+
+        static void HandleActiveInstanceChanged(SurfaceScriptBase activeInstance)
+        {
+            var proxy = activeInstance as RenderProxySurfaceScript;
+            if (proxy == null)
+                return;
+
+            proxy.HandleBecameActiveInstance();
+        }
+
+        void HandleBecameActiveInstance()
+        {
+            _initialAutoAdjustAttempts = 0;
+            ScheduleInitialAutoAdjust();
+        }
+
+        void ScheduleInitialAutoAdjust()
+        {
+            if (_initialAutoAdjustAttempts >= INITIAL_AUTO_ADJUST_MAX_ATTEMPTS)
+                return;
+
+            _initialAutoAdjustAttempts++;
+            LcdModClientComponent.RunNextFrame.Add(TryInitialAutoAdjust);
+        }
+
+        void TryInitialAutoAdjust()
+        {
+            if (Block == null || Block.MarkedForClose)
+                return;
+
+            if (AppConfig == null)
+            {
+                ScheduleInitialAutoAdjust();
+                return;
+            }
+
+            if (!TryApplyProxyAutoOffset(false))
+                ScheduleInitialAutoAdjust();
         }
 
         bool TryCalculateAutoOffset(out sbyte x, out sbyte y)
