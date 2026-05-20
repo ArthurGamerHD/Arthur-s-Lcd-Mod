@@ -20,6 +20,7 @@ using Sandbox.Game.Entities;
 using Sandbox.Game.Components;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
+using Sandbox.ModAPI.Interfaces;
 using VRage;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
@@ -52,6 +53,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         protected long WaitForFrame;
         protected long LastRenderFrame;
+        public long LastRunTick { get; private set; } = long.MinValue;
 
         public Vector2 TextureSize => Surface.TextureSize;
 
@@ -63,6 +65,8 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         public virtual RectangleF ViewBox { get; protected set; }
 
         public GridLogic GridLogic { get; private set; }
+
+        bool _init;
         int _rotationOrSurfaceIndex;
 
         protected float CaretY;
@@ -71,6 +75,8 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         protected const float TITLE_BAR_HEIGHT_BASE = 40f;
 
         protected string LocalizedTitleCache = string.Empty;
+
+        string _customInfo;
 
 
         public virtual string Title
@@ -118,6 +124,9 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         {
             WaitForFrame = MyAPIGateway.Session.GameplayFrameCounter + 6 * 5; // minimum of 5 frames splash screen 
             Block = (IMyCubeBlock)base.Block;
+            var terminalBlock = (IMyTerminalBlock)Block;
+            terminalBlock.AppendingCustomInfo += CustomInfo;
+
             _textureSize = (Vector2I)Surface.TextureSize;
             var surfaceSize = Surface.SurfaceSize;
             _renderComp = (MyRenderComponentScreenAreas)Block.Render;
@@ -126,70 +135,56 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 ? new Vector2(1f, 1f * surfaceSize.Y / surfaceSize.X)
                 : new Vector2(1f * surfaceSize.X / surfaceSize.Y, 1f);
 
-            Instances.Add(this);
-
             if (Block != null) Block.OnMarkForClose += HandleBlockMarkedForClose;
-            ResolveRotationOrSurfaceIndex();
             UpdateFaction(FactionHelper.GetOwnerFaction(Block as IMyTerminalBlock));
             DrawSplash();
 
             LcdModSessionComponent.OnLanguageChanged += LayoutChanged;
         }
 
-        public int RotationOrSurfaceIndex
-        {
-            get
-            {
-                ResolveRotationOrSurfaceIndex();
-                return _rotationOrSurfaceIndex;
-            }
-        }
+        public int RotationOrSurfaceIndex => _rotationOrSurfaceIndex;
 
         public abstract IApp App { get; }
 
-        public IMyLcdSurfaceComponent _lcdSurfaceComponent;
+        static ITerminalProperty<float> _rotateProperty;
+        ITerminalProperty<float> floatProperty;
 
-        protected bool ResolveRotationOrSurfaceIndex()
+        protected int ResolveRotationOrSurfaceIndex()
         {
             if (Block.CubeGrid.Physics == null)
-                return false;
-
-            var previous = _rotationOrSurfaceIndex;
+                return -1;
 
             if (Block is IMyTextPanel)
             {
+                floatProperty = ((IMyTextPanel)Block).GetProperty("Rotate").Cast<float>();
                 foreach (var component in Block.Components)
                 {
                     _lcdSurfaceComponent = component as IMyLcdSurfaceComponent;
                     if (_lcdSurfaceComponent == null)
                         continue;
 
-                    _rotationOrSurfaceIndex = _lcdSurfaceComponent.SelectedRotationIndex;
-                    return previous != _rotationOrSurfaceIndex;
+                    return _lcdSurfaceComponent.SelectedRotationIndex;
                 }
 
-                _rotationOrSurfaceIndex = 0;
-                return previous != _rotationOrSurfaceIndex;
+                return -1;
             }
 
             var surfaceProvider = Block as IMyTextSurfaceProvider;
             if (surfaceProvider == null)
-                return false;
+                return -1;
 
             var currentSurfaceName = Surface.Name;
-            
+
             for (int i = 0; i < surfaceProvider.SurfaceCount; i++)
             {
                 if (surfaceProvider.GetSurface(i).Name != currentSurfaceName)
                     continue;
 
-                _rotationOrSurfaceIndex = i;
-                return previous != _rotationOrSurfaceIndex;
+                return i;
             }
 
-            LogHelper.Log(MyLogSeverity.Warning, "Failed to find surface {0} for {1}- defaulting to surface 0", Surface.Name, Block);
-            _rotationOrSurfaceIndex = 0;
-            return previous != _rotationOrSurfaceIndex;
+            LogHelper.Log(MyLogSeverity.Warning, "Failed to find surface {0} for {1}", Surface.Name, Block);
+            return -1;
         }
 
         void DrawSplash()
@@ -207,26 +202,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             frame.Add(new MySprite(SpriteType.TEXT, Title, new Vector2(ViewBox.Center.X, ViewBox.Center.Y + offset),
                 null, FactionHelper.GetIconColor(Faction), "White", rotation: 1.6f * FontScale));
             frame.Dispose();
-        }
-
-        protected void EmptyWithFilters()
-        {
-            using (var frame = Surface.DrawFrame())
-            {
-                var sprites = new List<MySprite>();
-                AddEmptyWithFiltersSprites(sprites);
-                frame.AddRange(sprites);
-            }
-        }
-
-        protected void Empty()
-        {
-            using (var frame = Surface.DrawFrame())
-            {
-                var sprites = new List<MySprite>();
-                AddEmptySprites(sprites);
-                frame.AddRange(sprites);
-            }
         }
 
         protected void AddEmptyWithFiltersSprites(List<MySprite> sprites)
@@ -281,7 +256,10 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             try
             {
                 if (Block != null)
+                {
                     Block.OnMarkForClose -= HandleBlockMarkedForClose;
+                    ((IMyTerminalBlock)Block).AppendingCustomInfo -= CustomInfo;
+                }
             }
             catch (Exception e)
             {
@@ -357,15 +335,23 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 viewBox.Height + (maxOffsetY - minOffsetY));
         }
 
+        IMyHudNotification a;
+
         public override void Run()
         {
-            if (MyAPIGateway.Session.GameplayFrameCounter < WaitForFrame || _disposed)
+            var currentFrame = MyAPIGateway.Session.GameplayFrameCounter;
+            if (currentFrame < WaitForFrame || _disposed)
                 return;
-            
+
+            LastRunTick = currentFrame;
+
             base.Run();
 
             if (ViewBox.Size == Vector2.Zero)
                 UpdateViewBox();
+
+            if (!_init)
+                Init();
 
             IsScreenReadyToRender = false;
 
@@ -375,8 +361,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 DrawSplash();
                 return;
             }
-
-            ResolveRotationOrSurfaceIndex();
 
             if (Math.Abs(_userPadding - Surface.TextPadding) > .01f ||
                 Math.Abs(_userScale - Config.Scale) > .001f ||
@@ -416,12 +400,44 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             }
         }
 
+        void Init()
+        {
+            try
+            {
+                throw new Exception("Hello DNSpy");
+            }
+            catch
+            {
+                /* workaround for Debugger.Attach() not available for Mods */
+            }
+            _rotationOrSurfaceIndex = ResolveRotationOrSurfaceIndex();
+            var panel = Block as IMyTextPanel;
+            
+            if (panel != null && Instances.GetInstance(panel, _rotationOrSurfaceIndex) != null)
+            {
+                _cachedFrame.Clear();
+                _customInfo = LocHelper.GetLoc("LcdMod_IndexConflict");
+                DrawMessage(_cachedFrame, _customInfo, "Warning", Color.Red, 1);
+                _customInfo += "\n" + LocHelper.GetLoc("LcdMod_IndexConflictDetails");
+                panel.RefreshCustomInfo();
+                return;
+            }
+
+            Instances.Add(this);
+            _init = true;
+        }
+
+        void CustomInfo(IMyTerminalBlock arg1, StringBuilder arg2)
+        {
+            arg2.AppendLine(_customInfo);
+        }
+
         public void OnException(Exception e)
         {
             try
             {
                 var bSoD = BSoD.ShowBSoD(this, e);
-            
+
                 _renderComp.RenderSpritesToTexture(RotationOrSurfaceIndex, bSoD.Frame, _textureSize, _aspectRatio,
                     Surface.ScriptBackgroundColor, Surface.BackgroundAlpha);
             }
@@ -551,7 +567,8 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             }
         }
 
-        public bool TryGetReferenceWorldMatrix(ReferenceMode mode, out MatrixD world, bool useBlockWorldForCockpitAuto = false)
+        public bool TryGetReferenceWorldMatrix(ReferenceMode mode, out MatrixD world,
+            bool useBlockWorldForCockpitAuto = false)
         {
             world = MatrixD.Identity;
 
@@ -579,7 +596,8 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             }
         }
 
-        public bool TryGetReferenceWorldMatrix(int referenceModeValue, out MatrixD world, bool useBlockWorldForCockpitAuto = false)
+        public bool TryGetReferenceWorldMatrix(int referenceModeValue, out MatrixD world,
+            bool useBlockWorldForCockpitAuto = false)
         {
             var mode = (ReferenceMode)referenceModeValue;
             return TryGetReferenceWorldMatrix(mode, out world, useBlockWorldForCockpitAuto);
@@ -812,7 +830,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             InvalidateTitleCache();
             Scale = GetAutoScaleUniform();
             UpdateViewBox();
-            ResolveRotationOrSurfaceIndex();
             _backgroundGrids.Clear();
             (Block as IMyTerminalBlock)?.RefreshTerminal();
         }
@@ -953,6 +970,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         readonly Vector2I _textureSize;
         readonly Vector2 _aspectRatio;
         readonly MyRenderComponentScreenAreas _renderComp;
+        IMyLcdSurfaceComponent _lcdSurfaceComponent;
 
         /// <summary>
         /// Calling this break the regular rendering of the Text surface, ensure ALL render call is routed here if the app needs to use it
@@ -965,7 +983,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         public void RenderSprites(bool force)
         {
             var currentFrame = MyAPIGateway.Session.GameplayFrameCounter;
-            
+
             if ((!force && LastRenderFrame == currentFrame) || WaitForFrame > currentFrame || _disposed)
                 return;
             try

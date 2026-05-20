@@ -386,7 +386,7 @@ namespace LcdMod.Client.Apps
 
         static long GetPrimaryBlockOwner(IMyTerminalBlock block)
         {
-            return block != null ? block.OwnerId : 0L;
+            return block?.OwnerId ?? 0L;
         }
 
         static bool IsLongRangeSignalEntityInRange(

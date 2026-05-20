@@ -1175,7 +1175,7 @@ namespace ChessChallenge.API
 
         public static ulong GetPieceAttacks(PieceType pieceType, Square square, Board board, bool isWhite)
         {
-            return GetPieceAttacks(pieceType, square, board != null ? board.AllPiecesBitboard : 0UL, isWhite);
+            return GetPieceAttacks(pieceType, square, board?.AllPiecesBitboard ?? 0UL, isWhite);
         }
 
         public static ulong GetPieceAttacks(PieceType pieceType, Square square, ulong blockers, bool isWhite)
@@ -1201,7 +1201,7 @@ namespace ChessChallenge.API
 
         public static ulong GetSliderAttacks(PieceType pieceType, Square square, Board board)
         {
-            return GetSliderAttacks(pieceType, square, board != null ? board.AllPiecesBitboard : 0UL);
+            return GetSliderAttacks(pieceType, square, board?.AllPiecesBitboard ?? 0UL);
         }
 
         public static ulong GetSliderAttacks(PieceType pieceType, Square square, ulong blockers)
@@ -1427,8 +1427,8 @@ namespace ChessChallenge.API
             TargetSquare = new Square(moveName.Substring(2, 2));
             PromotionPieceType = moveName.Length >= 5 ? ParsePromotion(moveName[4]) : PieceType.None;
 
-            var movePiece = board != null ? board.GetPiece(StartSquare) : new Piece(PieceType.None, false, StartSquare);
-            var capturedPiece = board != null ? board.GetPiece(TargetSquare) : new Piece(PieceType.None, false, TargetSquare);
+            var movePiece = board?.GetPiece(StartSquare) ?? new Piece(PieceType.None, false, StartSquare);
+            var capturedPiece = board?.GetPiece(TargetSquare) ?? new Piece(PieceType.None, false, TargetSquare);
 
             MovePieceType = movePiece.PieceType;
             _isEnPassant = MovePieceType == PieceType.Pawn &&

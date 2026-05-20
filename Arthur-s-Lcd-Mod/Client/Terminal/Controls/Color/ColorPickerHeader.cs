@@ -42,7 +42,7 @@ namespace LcdMod.Client.Terminal.Controls.Color
         VRageMath.Color Getter(IMyTerminalBlock block)
         {
             var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigColorable;
-            return config == null ? VRageMath.Color.White : config.HeaderColor;
+            return config?.HeaderColor ?? VRageMath.Color.White;
         }
     }
 }

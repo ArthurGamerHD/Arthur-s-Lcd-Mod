@@ -21,6 +21,7 @@ namespace LcdMod.Client.Modules.EyeTracking
     {
         const double MAX_TRACKING_DISTANCE_METERS = 20d;
         const double MAX_TRACKING_DISTANCE_SQ = MAX_TRACKING_DISTANCE_METERS * MAX_TRACKING_DISTANCE_METERS;
+        const long ACTIVE_SURFACE_TIMEOUT_FRAMES = 30;
 
         readonly HashSet<IEyeTracking> _modules = new HashSet<IEyeTracking>();
         readonly List<IEyeTracking> _pendingModules = new List<IEyeTracking>();
@@ -102,6 +103,9 @@ namespace LcdMod.Client.Modules.EyeTracking
                 if (surfaceScript == null || screen.Block == null)
                     continue;
 
+                if (!HasRecentlyRun(surfaceScript))
+                    continue;
+
                 if (surfaceScript.RequiresAlt && !_moveCameraControl.IsPressed())
                     continue;
 
@@ -174,6 +178,16 @@ namespace LcdMod.Client.Modules.EyeTracking
             }
 
             _lastActiveNearbyCount = resolvedCount;
+        }
+
+        static bool HasRecentlyRun(InteractiveSurfaceScript surfaceScript)
+        {
+            if (surfaceScript == null || MyAPIGateway.Session == null)
+                return false;
+
+            return surfaceScript.LastRunTick != long.MinValue &&
+                   MyAPIGateway.Session.GameplayFrameCounter - surfaceScript.LastRunTick <=
+                   ACTIVE_SURFACE_TIMEOUT_FRAMES;
         }
 
         public void PostUpdate()

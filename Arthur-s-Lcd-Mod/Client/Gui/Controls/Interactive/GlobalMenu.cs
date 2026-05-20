@@ -151,7 +151,7 @@ namespace LcdMod.Client.Gui.Controls.Interactive
                 float width = Math.Max(42f * scale, size.X + rootPaddingX * 2f);
                 var rect = new RectangleF(x, viewBox.Y, width, rootHeight);
 
-                var interactiveEntry = ShowNode(node, rect, entry != null && entry.HasChildren ? CursorType.Hand : entry != null ? entry.Cursor : CursorType.Default);
+                var interactiveEntry = ShowNode(node, rect, entry != null && entry.HasChildren ? CursorType.Hand : entry?.Cursor ?? CursorType.Default);
                 if (interactiveEntry != null)
                 {
                     interactiveEntry.CustomRender = delegate(InteractiveEntry item, InteractiveRenderContext context, List<MySprite> sprites)
@@ -203,7 +203,7 @@ namespace LcdMod.Client.Gui.Controls.Interactive
                     var childNode = children[i];
                     var child = childNode.Entry;
                     var rect = new RectangleF(popupRect.X, popupRect.Y + itemHeight * i, popupRect.Width, itemHeight);
-                    var interactiveEntry = ShowNode(childNode, rect, child != null && child.HasChildren ? CursorType.Hand : child != null ? child.Cursor : CursorType.Default);
+                    var interactiveEntry = ShowNode(childNode, rect, child != null && child.HasChildren ? CursorType.Hand : child?.Cursor ?? CursorType.Default);
                     if (interactiveEntry != null)
                     {
                         interactiveEntry.CustomRender = delegate(InteractiveEntry item, InteractiveRenderContext context, List<MySprite> sprites)

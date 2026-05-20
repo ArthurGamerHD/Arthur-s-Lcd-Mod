@@ -133,7 +133,7 @@ namespace LcdMod.Client.ScreenAreas
             if (screen == null || screen.Block == null)
                 return false;
 
-            var localKey = BuildLocalMatrixCacheKey(screen);
+            var localKey = BuildLocalMatrixCacheKey(screen.Block, screen.RotationOrSurfaceIndex);
             if (!string.IsNullOrEmpty(localKey) && LocalMatrixCache.TryGetValue(localKey, out localMatrix))
                 return true;
 
@@ -142,6 +142,47 @@ namespace LcdMod.Client.ScreenAreas
                 return false;
 
             if (!TryGetScreenLocalMatrix(screen.Block.Model, geometry, out localMatrix))
+                return false;
+
+            if (!string.IsNullOrEmpty(localKey))
+                LocalMatrixCache[localKey] = localMatrix;
+
+            return true;
+        }
+
+        public static bool TryGetScreenWorldMatrix(IMyCubeBlock block, int surfaceIndex, out MatrixD worldMatrix)
+        {
+            worldMatrix = MatrixD.Identity;
+            if (block == null)
+                return false;
+
+            Matrix localMatrix;
+            if (!TryGetScreenLocalMatrix(block, surfaceIndex, out localMatrix))
+                return false;
+
+            worldMatrix = (MatrixD)localMatrix * block.WorldMatrix;
+            return true;
+        }
+
+        public static bool TryGetScreenLocalMatrix(IMyCubeBlock block, int surfaceIndex, out Matrix localMatrix)
+        {
+            localMatrix = Matrix.Identity;
+            if (block == null)
+                return false;
+
+            var localKey = BuildLocalMatrixCacheKey(block, surfaceIndex);
+            if (!string.IsNullOrEmpty(localKey) && LocalMatrixCache.TryGetValue(localKey, out localMatrix))
+                return true;
+
+            MinimalMwmScreenAreaGeometry geometry;
+            if (!TryGetScreenAreaGeometry(block, surfaceIndex, out geometry))
+                return false;
+
+            var blockEntity = block as IMyEntity;
+            if (blockEntity == null || blockEntity.Model == null)
+                return false;
+
+            if (!TryGetScreenLocalMatrix(blockEntity.Model, geometry, out localMatrix))
                 return false;
 
             if (!string.IsNullOrEmpty(localKey))
@@ -669,17 +710,39 @@ namespace LcdMod.Client.ScreenAreas
         static bool TryGetScreenAreaGeometry(SurfaceScriptBase screen, out MinimalMwmScreenAreaGeometry geometry)
         {
             geometry = null;
+            if (screen == null || screen.Block == null)
+                return false;
+
+            return TryGetScreenAreaGeometry(
+                screen.Block,
+                screen.RotationOrSurfaceIndex,
+                screen.Description(),
+                out geometry);
+        }
+
+        static bool TryGetScreenAreaGeometry(IMyCubeBlock block, int surfaceIndex, out MinimalMwmScreenAreaGeometry geometry)
+        {
+            return TryGetScreenAreaGeometry(block, surfaceIndex, block?.ToString() ?? "<null>", out geometry);
+        }
+
+        static bool TryGetScreenAreaGeometry(
+            IMyCubeBlock block,
+            int surfaceIndex,
+            string description,
+            out MinimalMwmScreenAreaGeometry geometry)
+        {
+            geometry = null;
 
             try
             {
-                if (screen == null || screen.Block == null)
+                if (block == null)
                     return false;
 
-                var blockEntity = screen.Block as IMyEntity;
+                var blockEntity = block as IMyEntity;
                 if (blockEntity == null || blockEntity.Model == null)
                 {
-                    LogHelper.LogOnce("skip:no-model:" + screen.Block.EntityId,
-                        "block has no loaded model: " + screen.Description());
+                    LogHelper.LogOnce("skip:no-model:" + block.EntityId,
+                        "block has no loaded model: " + description);
                     return false;
                 }
 
@@ -687,22 +750,22 @@ namespace LcdMod.Client.ScreenAreas
 
                 if (string.IsNullOrWhiteSpace(assetName))
                 {
-                    LogHelper.LogOnce("skip:no-asset:" + screen.Block.EntityId,
-                        "block model has empty AssetName: " + screen.Description());
+                    LogHelper.LogOnce("skip:no-asset:" + block.EntityId,
+                        "block model has empty AssetName: " + description);
                     return false;
                 }
 
-                var materials = ResolveMaterialCandidates(screen);
+                var materials = ResolveMaterialCandidates(block, surfaceIndex);
                 if (materials.Count == 0)
                 {
-                    LogHelper.LogOnce("skip:no-materials:" + screen.Block.EntityId,
-                        "no material candidates: " + screen.Description());
+                    LogHelper.LogOnce("skip:no-materials:" + block.EntityId,
+                        "no material candidates: " + description);
                     return false;
                 }
 
                 LogHelper.LogOnce(
-                    "try:" + screen.Block.EntityId + ":" + screen.RotationOrSurfaceIndex + ":" + assetName,
-                    "trying " + screen.Description() + ", asset=" + assetName + ", materials=" +
+                    "try:" + block.EntityId + ":" + surfaceIndex + ":" + assetName,
+                    "trying " + description + ", asset=" + assetName + ", materials=" +
                     string.Join(", ", materials.ToArray()));
 
                 for (int i = 0; i < materials.Count; i++)
@@ -712,8 +775,8 @@ namespace LcdMod.Client.ScreenAreas
                 }
 
                 LogHelper.LogOnce(
-                    "skip:no-match:" + screen.Block.EntityId + ":" + screen.RotationOrSurfaceIndex + ":" + assetName,
-                    "no matching screen geometry for " + screen.Description() +
+                    "skip:no-match:" + block.EntityId + ":" + surfaceIndex + ":" + assetName,
+                    "no matching screen geometry for " + description +
                     ", asset=" + assetName + ", materials=" + string.Join(", ", materials.ToArray()));
                 return false;
             }
@@ -727,28 +790,31 @@ namespace LcdMod.Client.ScreenAreas
 
         static List<string> ResolveMaterialCandidates(SurfaceScriptBase screen)
         {
+            return screen == null ? new List<string>() : ResolveMaterialCandidates(screen.Block, screen.RotationOrSurfaceIndex);
+        }
+
+        static List<string> ResolveMaterialCandidates(IMyCubeBlock block, int surfaceIndex)
+        {
             var result = new List<string>();
-            var definition = screen.Block.SlimBlock.BlockDefinition as MyFunctionalBlockDefinition;
+            var definition = block?.SlimBlock?.BlockDefinition as MyFunctionalBlockDefinition;
 
             if (definition == null)
             {
-                LogHelper.LogOnce("skip:invalid-definition:" + screen.Block.EntityId,
-                    $"no matching MyFunctionalBlockDefinition for block {screen.Block.BlockDefinition}");
+                LogHelper.LogOnce("skip:invalid-definition:" + block?.EntityId,
+                    $"no matching MyFunctionalBlockDefinition for block {block?.BlockDefinition}");
                 return result;
             }
 
-            LogHelper.LogOnce($"offset:{screen.Block.BlockDefinition}",
-                $"{screen.Block.BlockDefinition} " +
+            LogHelper.LogOnce($"offset:{block.BlockDefinition}",
+                $"{block.BlockDefinition} " +
                 $"Offset: {definition.ModelOffset} " +
-                $"Scale: {screen.Block.Model.ScaleFactor}x " +
-                $"Size: {screen.Block.Model.BoundingBoxSize}");
-
-            var surfaceIndex = screen.RotationOrSurfaceIndex;
+                $"Scale: {block.Model.ScaleFactor}x " +
+                $"Size: {block.Model.BoundingBoxSize}");
 
             if (surfaceIndex >= definition.ScreenAreas.Count)
             {
-                LogHelper.LogOnce("skip:index-out-of-range:" + screen.Block.EntityId,
-                    $"no matching surface {surfaceIndex} for block {screen.Block.BlockDefinition}, (range from 0 to {definition.ScreenAreas.Count}");
+                LogHelper.LogOnce("skip:index-out-of-range:" + block.EntityId,
+                    $"no matching surface {surfaceIndex} for block {block.BlockDefinition}, (range from 0 to {definition.ScreenAreas.Count}");
                 return result;
             }
 
@@ -773,11 +839,19 @@ namespace LcdMod.Client.ScreenAreas
             if (screen == null || screen.Block == null)
                 return null;
 
-            var definition = screen.Block.BlockDefinition;
+            return BuildLocalMatrixCacheKey(screen.Block, screen.RotationOrSurfaceIndex);
+        }
+
+        static string BuildLocalMatrixCacheKey(IMyCubeBlock block, int surfaceIndex)
+        {
+            if (block == null)
+                return null;
+
+            var definition = block.BlockDefinition;
             if (definition.TypeId.IsNull)
                 return null;
 
-            return definition.TypeIdString + "/" + definition.SubtypeName + "#" + screen.RotationOrSurfaceIndex;
+            return definition.TypeIdString + "/" + definition.SubtypeName + "#" + surfaceIndex;
         }
 
         static bool TryGetScreenAreaGeometry(string assetName, string material,

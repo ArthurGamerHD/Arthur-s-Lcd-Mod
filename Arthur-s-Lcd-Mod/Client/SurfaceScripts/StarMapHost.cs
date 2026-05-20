@@ -84,7 +84,7 @@ namespace LcdMod.Client.SurfaceScripts
                 sprites.AddRange(_app.GetSprites());
                 RenderInteractiveEntryVisuals(sprites);
             }
-            CursorType = _app != null ? _app.RequestedCursorType : CursorType.Default;
+            CursorType = _app?.RequestedCursorType ?? CursorType.Default;
             return sprites;
         }
 

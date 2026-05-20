@@ -82,7 +82,7 @@ namespace LcdMod.Client.Gui.Models.Power
 
         public IList<ITooltipLine> GetDetails()
         {
-            var details = _getDetails != null ? _getDetails() : null;
+            var details = _getDetails?.Invoke();
             if (details != null)
                 return details;
 

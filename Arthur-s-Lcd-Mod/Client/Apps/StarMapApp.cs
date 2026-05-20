@@ -1201,7 +1201,7 @@ namespace LcdMod.Client.Apps
                 LocHelper.GetLoc("DisplayName_TSS_ArtificialHorizon_AltitudeWarning"),
                 "Warning",
                 GetArtificialHorizonWarningColor(),
-                AppConfig != null ? AppConfig.Scale : Scale);
+                AppConfig?.Scale ?? Scale);
         }
 
         void DrawArtificialHorizonAltimeter(List<MySprite> sprites, int radarAltitude, float hudScale)
@@ -1418,12 +1418,12 @@ namespace LcdMod.Client.Apps
 
         Color GetArtificialHorizonWarningColor()
         {
-            return AppConfig != null ? AppConfig.WarningColor : ForegroundColor;
+            return AppConfig?.WarningColor ?? ForegroundColor;
         }
 
         Color GetArtificialHorizonErrorColor()
         {
-            return (AppConfig != null ? AppConfig.ErrorColor : ForegroundColor)
+            return (AppConfig?.ErrorColor ?? ForegroundColor)
                 .MulValue(2f)
                 .MulSaturation(2f);
         }
@@ -2080,7 +2080,7 @@ namespace LcdMod.Client.Apps
 
         RectangleF GetTextureBounds()
         {
-            Vector2 textureSize = Surface != null ? Surface.TextureSize : Vector2.Zero;
+            Vector2 textureSize = Surface?.TextureSize ?? Vector2.Zero;
             return new RectangleF(
                 0f,
                 0f,
@@ -2869,7 +2869,7 @@ namespace LcdMod.Client.Apps
                 getCursor: () =>
                 {
                     refresh();
-                    var jumpDrives = _host.GridLogic != null ? _host.GridLogic.GetJumpDrives() : null;
+                    var jumpDrives = _host.GridLogic?.GetJumpDrives();
                     return jumpDrives == null || jumpDrives.Count == 0
                         ? CursorType.Arrow
                         : _busy ? CursorType.WaitCursor : CursorType.Hand;
@@ -2881,7 +2881,7 @@ namespace LcdMod.Client.Apps
         {
             jumpPoint = Vector3D.Zero;
             int etaSeconds;
-            var jumpDrives = _host.GridLogic != null ? _host.GridLogic.GetJumpDrives() : null;
+            var jumpDrives = _host.GridLogic?.GetJumpDrives();
             if (jumpDrives == null || jumpDrives.Count == 0)
             {
                 text = FormatPropertyLine("Jump", LocHelper.GetLoc("LcdMod_NotAvailable"));
@@ -3061,8 +3061,8 @@ namespace LcdMod.Client.Apps
             InteractiveRenderContext context)
         {
             var circle = entry as InteractiveCircleEntry;
-            var center = circle != null ? circle.Center : planet.ScreenPos;
-            var radius = circle != null ? circle.Radius : planet.MarkerRadius;
+            var center = circle?.Center ?? planet.ScreenPos;
+            var radius = circle?.Radius ?? planet.MarkerRadius;
             var texture = planet.Texture;
 
             var baseColor = ApplyAlpha(texture.BaseColor, planet.Visibility);

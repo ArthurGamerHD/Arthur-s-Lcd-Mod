@@ -85,6 +85,7 @@ namespace LcdMod.Client.Terminal
             Controls.Add(new ButtonItemRemoveFromSelection(source, target));
 
             Controls.Add(new ComboboxSorting());
+            Controls.Add(new ButtonProxyAuto());
             Controls.Add(new SliderProxyX());
             Controls.Add(new SliderProxyY());
         }

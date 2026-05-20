@@ -426,7 +426,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
             var tooltip = parentEntry.Tooltip;
             var textColor = ForegroundColor;
-            var panelColor = ColorableConfig != null ? ColorableConfig.HeaderColor : BackgroundColor;
+            var panelColor = ColorableConfig?.HeaderColor ?? BackgroundColor;
 
             var tooltipSprites = tooltip.Render(
                 parentEntry,

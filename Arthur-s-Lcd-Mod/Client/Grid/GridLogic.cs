@@ -525,7 +525,7 @@ namespace LcdMod.Client.Grid
 
         string GetGridNameToken()
         {
-            var gridName = Grid != null ? Grid.CustomName : null;
+            var gridName = Grid?.CustomName;
             if (string.IsNullOrWhiteSpace(gridName))
                 return "Unknown";
 

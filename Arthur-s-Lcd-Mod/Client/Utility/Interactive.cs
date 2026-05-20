@@ -806,7 +806,7 @@ namespace LcdMod.Client.Utility
             _hitGetter = hitGetter;
         }
 
-        public override RectangleF Bounds => _boundsGetter != null ? _boundsGetter() : _bounds;
+        public override RectangleF Bounds => _boundsGetter?.Invoke() ?? _bounds;
 
         public void SetBounds(RectangleF bounds)
         {
