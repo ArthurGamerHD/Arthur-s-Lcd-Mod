@@ -4,10 +4,18 @@
         <TargetFramework>netstandard2.0</TargetFramework>
         <LangVersion>latest</LangVersion>
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-        <Configurations>Release;Debug</Configurations>
+        <Configurations>Release;Debug;Experimetal</Configurations>
         <Platforms>x64</Platforms>
         <IsRoslynComponent>true</IsRoslynComponent>
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+        <DefineConstants>TRACE;EXPERIMENTAL</DefineConstants>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)' == 'Experimetal'">
+        <DefineConstants>TRACE;RELEASE;EXPERIMENTAL</DefineConstants>
+        <Optimize>true</Optimize>
+        <DebugSymbols>false</DebugSymbols>
     </PropertyGroup>
 
     <ItemGroup>

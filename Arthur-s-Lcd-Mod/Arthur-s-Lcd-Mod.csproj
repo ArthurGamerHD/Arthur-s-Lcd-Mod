@@ -4,8 +4,16 @@
         <RootNamespace>LcdMod</RootNamespace>
         <LangVersion>6</LangVersion>
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-        <Configurations>Release;Debug</Configurations>
+        <Configurations>Release;Debug;Experimetal</Configurations>
         <Platforms>x64</Platforms>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+        <DefineConstants>TRACE;EXPERIMENTAL</DefineConstants>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)' == 'Experimetal'">
+        <DefineConstants>TRACE;RELEASE;EXPERIMENTAL</DefineConstants>
+        <Optimize>true</Optimize>
+        <DebugSymbols>false</DebugSymbols>
     </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="Mal.Mdk2.ModAnalyzers" Version="2.1.15">

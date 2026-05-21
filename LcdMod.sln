@@ -4,19 +4,35 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Arthur-s-Lcd-Mod", "Arthur-
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LcdModCodeGenerator", "LcdModCodeGenerator\LcdModCodeGenerator.csproj", "{9B85F0B8-4B83-40A6-B347-96FCC4D5041E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Arthur-s-Lcd-Mod.Tests", "Arthur-s-Lcd-Mod.Tests\Arthur-s-Lcd-Mod.Tests.csproj", "{14CA1271-9420-44F7-B3B1-8167F52675C2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
+		Experimetal|x64 = Experimetal|x64
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{F1DBB535-3C48-4F7F-80D7-F642CCF46A0B}.Debug|x64.ActiveCfg = Debug|x64
 		{F1DBB535-3C48-4F7F-80D7-F642CCF46A0B}.Debug|x64.Build.0 = Debug|x64
+		{F1DBB535-3C48-4F7F-80D7-F642CCF46A0B}.Experimetal|x64.ActiveCfg = Experimetal|x64
+		{F1DBB535-3C48-4F7F-80D7-F642CCF46A0B}.Experimetal|x64.Build.0 = Experimetal|x64
 		{F1DBB535-3C48-4F7F-80D7-F642CCF46A0B}.Release|x64.ActiveCfg = Release|x64
 		{F1DBB535-3C48-4F7F-80D7-F642CCF46A0B}.Release|x64.Build.0 = Release|x64
 		{9B85F0B8-4B83-40A6-B347-96FCC4D5041E}.Debug|x64.ActiveCfg = Debug|Any CPU
 		{9B85F0B8-4B83-40A6-B347-96FCC4D5041E}.Debug|x64.Build.0 = Debug|Any CPU
+		{9B85F0B8-4B83-40A6-B347-96FCC4D5041E}.Experimetal|x64.ActiveCfg = Experimetal|Any CPU
+		{9B85F0B8-4B83-40A6-B347-96FCC4D5041E}.Experimetal|x64.Build.0 = Experimetal|Any CPU
 		{9B85F0B8-4B83-40A6-B347-96FCC4D5041E}.Release|x64.ActiveCfg = Release|Any CPU
 		{9B85F0B8-4B83-40A6-B347-96FCC4D5041E}.Release|x64.Build.0 = Release|Any CPU
+		{14CA1271-9420-44F7-B3B1-8167F52675C2}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{14CA1271-9420-44F7-B3B1-8167F52675C2}.Debug|x64.Build.0 = Debug|Any CPU
+		{14CA1271-9420-44F7-B3B1-8167F52675C2}.Experimetal|x64.ActiveCfg = Experimetal|Any CPU
+		{14CA1271-9420-44F7-B3B1-8167F52675C2}.Experimetal|x64.Build.0 = Experimetal|Any CPU
+		{14CA1271-9420-44F7-B3B1-8167F52675C2}.Release|x64.ActiveCfg = Release|Any CPU
+		{14CA1271-9420-44F7-B3B1-8167F52675C2}.Release|x64.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 EndGlobal
