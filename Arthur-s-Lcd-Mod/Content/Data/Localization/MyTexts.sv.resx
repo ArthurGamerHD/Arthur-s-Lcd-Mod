@@ -406,4 +406,73 @@
   <data name="LcdMod_EightBallPool_GroupOpen" xml:space="preserve">
     <value>öppet</value>
   </data>
+<data name="LcdMod_EnergyDashboard_CurrentConsumption" xml:space="preserve">
+    <value>Nuvarande förbrukning: {0}</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_MaxCapacity" xml:space="preserve">
+    <value>Maxkapacitet: {0}</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Production" xml:space="preserve">
+    <value>Produktion: {0}</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Solar" xml:space="preserve">
+    <value>Sol</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Wind" xml:space="preserve">
+    <value>Vind</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Reactor" xml:space="preserve">
+    <value>Reaktor</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Engine" xml:space="preserve">
+    <value>Vätgasmotor</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Battery" xml:space="preserve">
+    <value>Batteri</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_ProductionGraph" xml:space="preserve">
+    <value>Energiproduktion</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_ConsumptionGraph" xml:space="preserve">
+    <value>Energiförbrukning</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Charging" xml:space="preserve">
+    <value>Laddning</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Discharging" xml:space="preserve">
+    <value>Urladdning</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_BatteryCountSingular" xml:space="preserve">
+    <value>{0} batteri</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_BatteryCountPlural" xml:space="preserve">
+    <value>{0} batterier</value>
+  </data>
+  <data name="LcdMod_Magnification" xml:space="preserve">
+    <value>Förstoring</value>
+  </data>
+  <data name="LcdMod_Radar_AntennaRangeWarning" xml:space="preserve">
+    <value>Endast radiosignaler upptäcks bortom 3 km.</value>
+  </data>
+  <data name="LcdMod_Grid" xml:space="preserve">
+    <value>Rutnät</value>
+  </data>
+  <data name="LcdMod_List" xml:space="preserve">
+    <value>Lista</value>
+  </data>
+  <data name="LcdMod_RenderProxy" xml:space="preserve">
+    <value>Renderingsproxy</value>
+  </data>
+  <data name="LcdMod_ProxyOffsetX" xml:space="preserve">
+    <value>Proxyförskjutning X</value>
+  </data>
+  <data name="LcdMod_ProxyOffsetY" xml:space="preserve">
+    <value>Proxyförskjutning Y</value>
+  </data>
+  <data name="LcdMod_AutoOffset" xml:space="preserve">
+    <value>Auto</value>
+  </data>
+  <data name="LcdMod_AutoOffset_Tooltip" xml:space="preserve">
+    <value>Beräkna automatiskt proxyförskjutningen från den valda värdskärmen.</value>
+  </data>
 </root>

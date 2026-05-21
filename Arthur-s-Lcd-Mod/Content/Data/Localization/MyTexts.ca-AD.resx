@@ -407,4 +407,73 @@
   <data name="LcdMod_EightBallPool_GroupOpen" xml:space="preserve">
     <value>oberta</value>
   </data>
+<data name="LcdMod_EnergyDashboard_CurrentConsumption" xml:space="preserve">
+    <value>Consum actual: {0}</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_MaxCapacity" xml:space="preserve">
+    <value>Capacitat màxima: {0}</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Production" xml:space="preserve">
+    <value>Producció: {0}</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Solar" xml:space="preserve">
+    <value>Solar</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Wind" xml:space="preserve">
+    <value>Vent</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Reactor" xml:space="preserve">
+    <value>Reactor</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Engine" xml:space="preserve">
+    <value>Motor d'hidrogen</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Battery" xml:space="preserve">
+    <value>Bateria</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_ProductionGraph" xml:space="preserve">
+    <value>Producció d'energia</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_ConsumptionGraph" xml:space="preserve">
+    <value>Consum d'energia</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Charging" xml:space="preserve">
+    <value>Carregant</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Discharging" xml:space="preserve">
+    <value>Descarregant</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_BatteryCountSingular" xml:space="preserve">
+    <value>{0} bateria</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_BatteryCountPlural" xml:space="preserve">
+    <value>{0} bateries</value>
+  </data>
+  <data name="LcdMod_Magnification" xml:space="preserve">
+    <value>Ampliació</value>
+  </data>
+  <data name="LcdMod_Radar_AntennaRangeWarning" xml:space="preserve">
+    <value>Només es detecten senyals de ràdio més enllà de 3 km.</value>
+  </data>
+  <data name="LcdMod_Grid" xml:space="preserve">
+    <value>Graella</value>
+  </data>
+  <data name="LcdMod_List" xml:space="preserve">
+    <value>Llista</value>
+  </data>
+  <data name="LcdMod_RenderProxy" xml:space="preserve">
+    <value>Proxy de renderització</value>
+  </data>
+  <data name="LcdMod_ProxyOffsetX" xml:space="preserve">
+    <value>Desplaçament X del proxy</value>
+  </data>
+  <data name="LcdMod_ProxyOffsetY" xml:space="preserve">
+    <value>Desplaçament Y del proxy</value>
+  </data>
+  <data name="LcdMod_AutoOffset" xml:space="preserve">
+    <value>Automàtic</value>
+  </data>
+  <data name="LcdMod_AutoOffset_Tooltip" xml:space="preserve">
+    <value>Calcula automàticament el desplaçament del proxy a partir de la pantalla host seleccionada.</value>
+  </data>
 </root>

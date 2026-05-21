@@ -406,4 +406,73 @@
   <data name="LcdMod_EightBallPool_GroupOpen" xml:space="preserve">
     <value>开放</value>
   </data>
+<data name="LcdMod_EnergyDashboard_CurrentConsumption" xml:space="preserve">
+    <value>当前消耗：{0}</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_MaxCapacity" xml:space="preserve">
+    <value>最大容量：{0}</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Production" xml:space="preserve">
+    <value>生产：{0}</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Solar" xml:space="preserve">
+    <value>太阳能</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Wind" xml:space="preserve">
+    <value>风力</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Reactor" xml:space="preserve">
+    <value>反应堆</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Engine" xml:space="preserve">
+    <value>氢气引擎</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Battery" xml:space="preserve">
+    <value>电池</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_ProductionGraph" xml:space="preserve">
+    <value>能源生产</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_ConsumptionGraph" xml:space="preserve">
+    <value>能源消耗</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Charging" xml:space="preserve">
+    <value>正在充电</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Discharging" xml:space="preserve">
+    <value>正在放电</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_BatteryCountSingular" xml:space="preserve">
+    <value>{0} 个电池</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_BatteryCountPlural" xml:space="preserve">
+    <value>{0} 个电池</value>
+  </data>
+  <data name="LcdMod_Magnification" xml:space="preserve">
+    <value>放大倍率</value>
+  </data>
+  <data name="LcdMod_Radar_AntennaRangeWarning" xml:space="preserve">
+    <value>超过 3 公里时仅会检测到无线电信号。</value>
+  </data>
+  <data name="LcdMod_Grid" xml:space="preserve">
+    <value>网格</value>
+  </data>
+  <data name="LcdMod_List" xml:space="preserve">
+    <value>列表</value>
+  </data>
+  <data name="LcdMod_RenderProxy" xml:space="preserve">
+    <value>渲染代理</value>
+  </data>
+  <data name="LcdMod_ProxyOffsetX" xml:space="preserve">
+    <value>代理偏移 X</value>
+  </data>
+  <data name="LcdMod_ProxyOffsetY" xml:space="preserve">
+    <value>代理偏移 Y</value>
+  </data>
+  <data name="LcdMod_AutoOffset" xml:space="preserve">
+    <value>自动</value>
+  </data>
+  <data name="LcdMod_AutoOffset_Tooltip" xml:space="preserve">
+    <value>根据所选主机屏幕自动计算代理偏移。</value>
+  </data>
 </root>

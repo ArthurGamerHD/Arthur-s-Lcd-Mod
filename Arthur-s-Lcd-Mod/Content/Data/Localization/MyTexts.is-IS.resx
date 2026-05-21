@@ -410,4 +410,73 @@
   <data name="LcdMod_EightBallPool_GroupOpen" xml:space="preserve">
     <value>opið</value>
   </data>
+<data name="LcdMod_EnergyDashboard_CurrentConsumption" xml:space="preserve">
+    <value>Núverandi notkun: {0}</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_MaxCapacity" xml:space="preserve">
+    <value>Hámarksgeta: {0}</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Production" xml:space="preserve">
+    <value>Framleiðsla: {0}</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Solar" xml:space="preserve">
+    <value>Sól</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Wind" xml:space="preserve">
+    <value>Vindur</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Reactor" xml:space="preserve">
+    <value>Kjarnakljúfur</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Engine" xml:space="preserve">
+    <value>Vetnisvél</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Battery" xml:space="preserve">
+    <value>Rafhlaða</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_ProductionGraph" xml:space="preserve">
+    <value>Orkuframleiðsla</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_ConsumptionGraph" xml:space="preserve">
+    <value>Orkunotkun</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Charging" xml:space="preserve">
+    <value>Hleðsla</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Discharging" xml:space="preserve">
+    <value>Afhleðsla</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_BatteryCountSingular" xml:space="preserve">
+    <value>{0} rafhlaða</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_BatteryCountPlural" xml:space="preserve">
+    <value>{0} rafhlöður</value>
+  </data>
+  <data name="LcdMod_Magnification" xml:space="preserve">
+    <value>Stækkun</value>
+  </data>
+  <data name="LcdMod_Radar_AntennaRangeWarning" xml:space="preserve">
+    <value>Aðeins útvarpsmerki greinast handan 3 km.</value>
+  </data>
+  <data name="LcdMod_Grid" xml:space="preserve">
+    <value>Reitanet</value>
+  </data>
+  <data name="LcdMod_List" xml:space="preserve">
+    <value>Listi</value>
+  </data>
+  <data name="LcdMod_RenderProxy" xml:space="preserve">
+    <value>Myndunar-proxy</value>
+  </data>
+  <data name="LcdMod_ProxyOffsetX" xml:space="preserve">
+    <value>Proxy-hliðrun X</value>
+  </data>
+  <data name="LcdMod_ProxyOffsetY" xml:space="preserve">
+    <value>Proxy-hliðrun Y</value>
+  </data>
+  <data name="LcdMod_AutoOffset" xml:space="preserve">
+    <value>Sjálfvirkt</value>
+  </data>
+  <data name="LcdMod_AutoOffset_Tooltip" xml:space="preserve">
+    <value>Reiknaðu proxy-hliðrun sjálfkrafa út frá völdum hýsilskjá.</value>
+  </data>
 </root>

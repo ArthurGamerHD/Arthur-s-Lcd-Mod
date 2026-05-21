@@ -407,4 +407,73 @@
   <data name="LcdMod_EightBallPool_GroupOpen" xml:space="preserve">
     <value>offen</value>
   </data>
+<data name="LcdMod_EnergyDashboard_CurrentConsumption" xml:space="preserve">
+    <value>Aktueller Verbrauch: {0}</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_MaxCapacity" xml:space="preserve">
+    <value>Max. Kapazität: {0}</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Production" xml:space="preserve">
+    <value>Produktion: {0}</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Solar" xml:space="preserve">
+    <value>Solar</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Wind" xml:space="preserve">
+    <value>Wind</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Reactor" xml:space="preserve">
+    <value>Reaktor</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Engine" xml:space="preserve">
+    <value>Wasserstoffmotor</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Battery" xml:space="preserve">
+    <value>Batterie</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_ProductionGraph" xml:space="preserve">
+    <value>Energieproduktion</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_ConsumptionGraph" xml:space="preserve">
+    <value>Energieverbrauch</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Charging" xml:space="preserve">
+    <value>Laden</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Discharging" xml:space="preserve">
+    <value>Entladen</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_BatteryCountSingular" xml:space="preserve">
+    <value>{0} Batterie</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_BatteryCountPlural" xml:space="preserve">
+    <value>{0} Batterien</value>
+  </data>
+  <data name="LcdMod_Magnification" xml:space="preserve">
+    <value>Vergrößerung</value>
+  </data>
+  <data name="LcdMod_Radar_AntennaRangeWarning" xml:space="preserve">
+    <value>Jenseits von 3 km werden nur Funksignale erkannt.</value>
+  </data>
+  <data name="LcdMod_Grid" xml:space="preserve">
+    <value>Raster</value>
+  </data>
+  <data name="LcdMod_List" xml:space="preserve">
+    <value>Liste</value>
+  </data>
+  <data name="LcdMod_RenderProxy" xml:space="preserve">
+    <value>Render-Proxy</value>
+  </data>
+  <data name="LcdMod_ProxyOffsetX" xml:space="preserve">
+    <value>Proxy-Versatz X</value>
+  </data>
+  <data name="LcdMod_ProxyOffsetY" xml:space="preserve">
+    <value>Proxy-Versatz Y</value>
+  </data>
+  <data name="LcdMod_AutoOffset" xml:space="preserve">
+    <value>Auto</value>
+  </data>
+  <data name="LcdMod_AutoOffset_Tooltip" xml:space="preserve">
+    <value>Proxy-Versatz automatisch anhand des ausgewählten Host-Bildschirms berechnen.</value>
+  </data>
 </root>

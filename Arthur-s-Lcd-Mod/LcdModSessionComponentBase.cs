@@ -17,7 +17,6 @@ using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.Utils;
 using static LcdMod.Common.Helpers.Constants;
-using Constants = Generated.Constants;
 
 namespace LcdMod
 {

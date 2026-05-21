@@ -18,8 +18,8 @@ namespace LcdMod.Client.Terminal.Controls.Proxy
             button.Action = Apply;
             button.Enabled = Enabled;
             button.Visible = Visible;
-            button.Title = MyStringId.GetOrCompute("Auto");
-            button.Tooltip = MyStringId.GetOrCompute("Automatically calculate the proxy offset from the selected host screen.");
+            button.Title = MyStringId.GetOrCompute("LcdMod_AutoOffset");
+            button.Tooltip = MyStringId.GetOrCompute("LcdMod_AutoOffset_Tooltip");
 
             TerminalControl = button;
         }

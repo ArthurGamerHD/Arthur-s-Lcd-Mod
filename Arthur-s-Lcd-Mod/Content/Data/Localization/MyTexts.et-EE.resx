@@ -406,4 +406,73 @@
   <data name="LcdMod_EightBallPool_GroupOpen" xml:space="preserve">
     <value>avatud</value>
   </data>
+<data name="LcdMod_EnergyDashboard_CurrentConsumption" xml:space="preserve">
+    <value>Praegune tarbimine: {0}</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_MaxCapacity" xml:space="preserve">
+    <value>Maksimaalne mahutavus: {0}</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Production" xml:space="preserve">
+    <value>Tootmine: {0}</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Solar" xml:space="preserve">
+    <value>Päikeseenergia</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Wind" xml:space="preserve">
+    <value>Tuul</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Reactor" xml:space="preserve">
+    <value>Reaktor</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Engine" xml:space="preserve">
+    <value>Vesinikmootor</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Battery" xml:space="preserve">
+    <value>Aku</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_ProductionGraph" xml:space="preserve">
+    <value>Energia tootmine</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_ConsumptionGraph" xml:space="preserve">
+    <value>Energiatarbimine</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Charging" xml:space="preserve">
+    <value>Laadimine</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_Discharging" xml:space="preserve">
+    <value>Tühjenemine</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_BatteryCountSingular" xml:space="preserve">
+    <value>{0} aku</value>
+  </data>
+  <data name="LcdMod_EnergyDashboard_BatteryCountPlural" xml:space="preserve">
+    <value>{0} akut</value>
+  </data>
+  <data name="LcdMod_Magnification" xml:space="preserve">
+    <value>Suurendus</value>
+  </data>
+  <data name="LcdMod_Radar_AntennaRangeWarning" xml:space="preserve">
+    <value>Üle 3 km tuvastatakse ainult raadiosignaale.</value>
+  </data>
+  <data name="LcdMod_Grid" xml:space="preserve">
+    <value>Ruudustik</value>
+  </data>
+  <data name="LcdMod_List" xml:space="preserve">
+    <value>Loend</value>
+  </data>
+  <data name="LcdMod_RenderProxy" xml:space="preserve">
+    <value>Renderduse proxy</value>
+  </data>
+  <data name="LcdMod_ProxyOffsetX" xml:space="preserve">
+    <value>Proxy nihe X</value>
+  </data>
+  <data name="LcdMod_ProxyOffsetY" xml:space="preserve">
+    <value>Proxy nihe Y</value>
+  </data>
+  <data name="LcdMod_AutoOffset" xml:space="preserve">
+    <value>Automaatne</value>
+  </data>
+  <data name="LcdMod_AutoOffset_Tooltip" xml:space="preserve">
+    <value>Arvuta proxy nihe automaatselt valitud hostiekraani järgi.</value>
+  </data>
 </root>

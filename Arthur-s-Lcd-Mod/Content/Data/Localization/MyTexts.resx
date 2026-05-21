@@ -169,7 +169,7 @@
     <value>Signal tilt</value>
   </data>
   <data name="LcdMod_OreScanner_TiltLabel" xml:space="preserve">
-    <value>Signal tilt:   {0}</value>
+    <value>Signal tilt: {0}</value>
   </data>
   <data name="LcdMod_OreScanner_Reference" xml:space="preserve">
     <value>Reference cockpit / control seat</value>
@@ -222,7 +222,7 @@
   <data name="LcdMod_StarMap_Label_Temperature" xml:space="preserve">
     <value>Temperature</value>
   </data>
-<data name="LcdMod_Chess" xml:space="preserve">
+  <data name="LcdMod_Chess" xml:space="preserve">
     <value>Chess</value>
   </data>
   <data name="LcdMod_Export" xml:space="preserve">
@@ -267,7 +267,7 @@
   <data name="LcdMod_ShowDangerousTiles" xml:space="preserve">
     <value>Show Threatened Squares</value>
   </data>
-<data name="LcdMod_Radius" xml:space="preserve">
+  <data name="LcdMod_Radius" xml:space="preserve">
     <value>Radius: {0}</value>
   </data>
   <data name="LcdMod_Radius_Short" xml:space="preserve">
@@ -318,7 +318,7 @@
   <data name="LcdMod_Jump_Short" xml:space="preserve">
     <value>Jump: {0}</value>
   </data>
-<data name="LcdMod_AlwaysActive" xml:space="preserve">
+  <data name="LcdMod_AlwaysActive" xml:space="preserve">
     <value>Always Active</value>
   </data>
   <data name="LcdMod_AlwaysActive_Tooltip" xml:space="preserve">
@@ -327,7 +327,6 @@
   <data name="LcdMod_CursorScale" xml:space="preserve">
     <value>Cursor Scale</value>
   </data>
-
   <data name="LcdMod_EightBallPool_CheatModeOn" xml:space="preserve">
     <value>Cheat Mode: ON</value>
   </data>
@@ -431,7 +430,7 @@
     <value>ball {0}</value>
   </data>
   <data name="LcdMod_EightBallPool_FooterPlayerLabel" xml:space="preserve">
-    <value>Player {0}  {1}</value>
+    <value>Player {0} {1}</value>
   </data>
   <data name="LcdMod_EightBallPool_Winner" xml:space="preserve">
     <value>WINNER</value>
@@ -453,5 +452,26 @@
   </data>
   <data name="LcdMod_Radar_AntennaRangeWarning" xml:space="preserve">
     <value>Only radio signals are detected beyond 3 km.</value>
+  </data>
+  <data name="LcdMod_Grid" xml:space="preserve">
+    <value>Grid</value>
+  </data>
+  <data name="LcdMod_List" xml:space="preserve">
+    <value>List</value>
+  </data>
+<data name="LcdMod_RenderProxy" xml:space="preserve">
+    <value>Render Proxy</value>
+  </data>
+  <data name="LcdMod_ProxyOffsetX" xml:space="preserve">
+    <value>Proxy Offset X</value>
+  </data>
+  <data name="LcdMod_ProxyOffsetY" xml:space="preserve">
+    <value>Proxy Offset Y</value>
+  </data>
+  <data name="LcdMod_AutoOffset" xml:space="preserve">
+    <value>Auto</value>
+  </data>
+<data name="LcdMod_AutoOffset_Tooltip" xml:space="preserve">
+    <value>Automatically calculate the proxy offset from the selected host screen.</value>
   </data>
 </root>

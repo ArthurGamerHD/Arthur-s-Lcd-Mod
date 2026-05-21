@@ -12,12 +12,12 @@ namespace LcdMod.Client.Utility
                 new MyTerminalControlComboBoxItem
                 {
                     Key = 0,
-                    Value = MyStringId.GetOrCompute("Lcd_Grid")
+                    Value = MyStringId.GetOrCompute("LcdMod_Grid")
                 },
                 new MyTerminalControlComboBoxItem
                 {
                     Key = 1,
-                    Value = MyStringId.GetOrCompute("StoryTitle_MinerStories12")
+                    Value = MyStringId.GetOrCompute("LcdMod_List")
                 }
             };
     }

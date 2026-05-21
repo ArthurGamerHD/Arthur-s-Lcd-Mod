@@ -21,7 +21,7 @@ namespace LcdMod.Client.Terminal.Controls.Proxy
             slider.Visible = Visible;
             slider.SetLimits(-16, 16);
             slider.Writer = Writer;
-            slider.Title = MyStringId.GetOrCompute("LcdModProxyOffsetY");
+            slider.Title = MyStringId.GetOrCompute("LcdMod_ProxyOffsetY");
 
             TerminalControl = slider;
         }
