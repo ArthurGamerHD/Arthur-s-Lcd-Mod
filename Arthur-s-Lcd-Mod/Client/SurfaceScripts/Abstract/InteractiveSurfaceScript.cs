@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Generated;
+using LcdMod.Client.Config;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.Controls.Interactive;
 using LcdMod.Client.Utility;
@@ -723,7 +724,8 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 {
                     entry.Render(context, sprites);
 #if DEBUG
-                    AddDebugInteractiveBounds(entry, sprites);
+                    if (LocalConfigManager.DebugInteractive)
+                        AddDebugInteractiveBounds(entry, sprites);
 #endif
                 }
             }

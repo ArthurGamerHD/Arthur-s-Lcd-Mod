@@ -9,6 +9,8 @@ namespace LcdMod.Client.Config
         public static LcdModLocalConfig Config { get; private set; } = new LcdModLocalConfig();
 
         public static bool AdvancedTweakables => Config != null && Config.AdvancedTweekables;
+        public static bool DebugInteractive => Config != null && Config.DebugInteractive;
+        public static bool DebugSurface => Config != null && Config.DebugSurface;
 
         public static void Load()
         {
@@ -56,6 +58,46 @@ namespace LcdMod.Client.Config
                 "AdvancedTweekables mode " + (AdvancedTweakables ? "enabled." : "disabled."));
         }
 
+        public static void SetDebugInteractiveCommand(string[] args)
+        {
+            bool enabled;
+            if (!TryParseOptionalBoolean(args, DebugInteractive, out enabled))
+            {
+                MyAPIGateway.Utilities.ShowMessage("lcdMod", "Usage: /lcdmod debuginteractive [true|false]");
+                return;
+            }
+
+            if (Config == null)
+                Config = new LcdModLocalConfig();
+
+            Config.DebugInteractive = enabled;
+            Save();
+
+            MyAPIGateway.Utilities.ShowMessage(
+                "lcdMod",
+                "DebugInteractive mode " + (DebugInteractive ? "enabled." : "disabled."));
+        }
+
+        public static void SetDebugSurfaceCommand(string[] args)
+        {
+            bool enabled;
+            if (!TryParseOptionalBoolean(args, DebugSurface, out enabled))
+            {
+                MyAPIGateway.Utilities.ShowMessage("lcdMod", "Usage: /lcdmod debugsurface [true|false]");
+                return;
+            }
+
+            if (Config == null)
+                Config = new LcdModLocalConfig();
+
+            Config.DebugSurface = enabled;
+            Save();
+
+            MyAPIGateway.Utilities.ShowMessage(
+                "lcdMod",
+                "DebugSurface mode " + (DebugSurface ? "enabled." : "disabled."));
+        }
+
         static LcdModLocalConfig DeserializeConfig(string xml)
         {
             if (string.IsNullOrWhiteSpace(xml))
@@ -87,6 +129,15 @@ namespace LcdMod.Client.Config
                 default:
                     return false;
             }
+        }
+
+        static bool TryParseOptionalBoolean(string[] args, bool currentValue, out bool result)
+        {
+            result = !currentValue;
+            if (args == null || args.Length == 0)
+                return true;
+
+            return args.Length == 1 && TryParseBoolean(args[0], out result);
         }
     }
 }

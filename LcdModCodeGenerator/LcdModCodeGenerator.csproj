@@ -4,7 +4,7 @@
         <TargetFramework>netstandard2.0</TargetFramework>
         <LangVersion>latest</LangVersion>
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-        <Configurations>Release;Debug;Experimetal</Configurations>
+        <Configurations>Release;Debug;Experimental</Configurations>
         <Platforms>x64</Platforms>
         <IsRoslynComponent>true</IsRoslynComponent>
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
@@ -12,7 +12,7 @@
     <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
         <DefineConstants>TRACE;EXPERIMENTAL</DefineConstants>
     </PropertyGroup>
-    <PropertyGroup Condition="'$(Configuration)' == 'Experimetal'">
+    <PropertyGroup Condition="'$(Configuration)' == 'Experimental'">
         <DefineConstants>TRACE;RELEASE;EXPERIMENTAL</DefineConstants>
         <Optimize>true</Optimize>
         <DebugSymbols>false</DebugSymbols>

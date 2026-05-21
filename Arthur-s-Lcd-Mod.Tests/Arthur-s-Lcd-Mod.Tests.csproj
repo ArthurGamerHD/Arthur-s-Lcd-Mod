@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
     <IsPackable>false</IsPackable>
-    <Configurations>Release;Debug;Experimetal</Configurations>
+    <Configurations>Release;Debug;Experimental</Configurations>
   </PropertyGroup>
 
   <ItemGroup>

@@ -41,6 +41,12 @@ namespace LcdMod.Client.ScreenAreas
             DrawDebugText(bestHit);
         }
 
+        public static void ClearDebugDraw()
+        {
+            for (int i = 0; i < _debugNotifications.Count; i++)
+                _debugNotifications[i].Hide();
+        }
+
 
         static void DebugDraw(
             SurfaceScriptBase screen,

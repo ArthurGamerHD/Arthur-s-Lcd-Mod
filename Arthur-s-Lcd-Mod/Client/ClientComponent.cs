@@ -36,11 +36,15 @@ namespace LcdMod.Client
             LocalConfigManager.Load();
             _session.RegisterModules();
 
-            var group = CommandManager.GetOrCreateGroup("/lcdMod", new CmdGroupInitializer(4));
-            group.TryAdd("Advanced", LocalConfigManager.SetAdvancedTweakablesCommand, 1);
+            var group = CommandManager.GetOrCreateGroup("/lcdMod", new CmdGroupInitializer(6));
             group.TryAdd("FactionColor", FactionHelper.SetColor);
+            group.TryAdd("Advanced", LocalConfigManager.SetAdvancedTweakablesCommand, 1);
             group.TryAdd("PreloadTextures", _ => BlockIconHelper.PreloadAllTextures());
-            group.TryAdd("TestLcd", strings => TextInputHelper.SpawnForLocalPlayer(strings.FirstOrDefault(), s => MyAPIGateway.Utilities.ShowNotification("User typed: " + s), "Hello World!", strings.Length > 1 ? strings[1] : string.Empty));
+#if DEBUG
+            group.TryAdd("DebugInteractive", LocalConfigManager.SetDebugInteractiveCommand);
+            group.TryAdd("DebugSurface", LocalConfigManager.SetDebugSurfaceCommand);
+            group.TryAdd("TextInput", strings => TextInputHelper.SpawnForLocalPlayer(strings.FirstOrDefault(), s => MyAPIGateway.Utilities.ShowNotification("User typed: " + s), "Hello World!", strings.Length > 1 ? strings[1] : string.Empty));
+#endif
 
             DebuggerHelper.Break();
             MyAPIGateway.Entities.OnEntityAdd += EntityAdded;

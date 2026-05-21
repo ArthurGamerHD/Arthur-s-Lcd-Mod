@@ -147,7 +147,12 @@ namespace LcdMod
             Client?.UpdateAfterSimulation();
 #if DEBUG
             if (Client != null && !MyAPIGateway.Utilities.IsDedicated)
-                ScreenAreaGeometry.DebugDraw();
+            {
+                if (LocalConfigManager.DebugSurface)
+                    ScreenAreaGeometry.DebugDraw();
+                else
+                    ScreenAreaGeometry.ClearDebugDraw();
+            }
 #endif
         }
 

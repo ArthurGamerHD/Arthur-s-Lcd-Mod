@@ -16,7 +16,9 @@ using VRageMath;
 
 namespace LcdMod.Client.SurfaceScripts
 {
+#if EXPERIMENTAL
     [MyTextSurfaceScript(ID, TITLE)]
+#endif
     public sealed class FarGridRaycastExperimentalSurfaceScript : InteractiveSurfaceScript,
         IUsesTerminalControl<SliderRenderScale>,
         IUsesTerminalControl<SliderRaysPerTick>,
