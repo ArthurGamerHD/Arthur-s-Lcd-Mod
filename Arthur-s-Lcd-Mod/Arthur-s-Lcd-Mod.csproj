@@ -28,6 +28,8 @@
         <AdditionalFiles Remove="Content\*\**\*.cs"/>
         <AdditionalFiles Remove="Content\Other content folders"/>
         <AdditionalFiles Remove="Content\Data\SBC files can go here"/>
+        <AdditionalFiles Remove="Content\Data\SBC files can go here"/>
+        <None Remove="thumb.jpg"/>
         <None Remove="thumb.png"/>
 
         <!-- why keen? why chinese language is not up to spec? ...  -->
@@ -37,6 +39,12 @@
     <Target Name="MapzhTozhCN" BeforeTargets="PostBuildEvent">
         <Copy SourceFiles="$(MSBuildProjectDirectory)\Content\Data\Localization\MyTexts.zh.resx"
               DestinationFiles="$(MSBuildProjectDirectory)\Content\Data\Localization\MyTexts.zh-CN.resx"
+              SkipUnchangedFiles="true"/>
+    </Target>
+
+    <Target Name="Mapjpgtopng" BeforeTargets="PostBuildEvent">
+        <Copy SourceFiles="$(MSBuildProjectDirectory)\thumb.jpg"
+              DestinationFiles="$(MSBuildProjectDirectory)\thumb.png"
               SkipUnchangedFiles="true"/>
     </Target>
     
@@ -59,5 +67,9 @@
 
     <Target Name="RemoveZhCnResxAlias" AfterTargets="PostBuildEvent">
         <Delete Files="$(MSBuildProjectDirectory)\Content\Data\Localization\MyTexts.zh-CN.resx" />
+    </Target>
+
+    <Target Name="RemoveThumbAlias" AfterTargets="PostBuildEvent">
+        <Delete Files="$(MSBuildProjectDirectory)\thumb.png" />
     </Target>
 </Project>

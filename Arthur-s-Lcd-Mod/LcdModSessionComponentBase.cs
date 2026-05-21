@@ -31,7 +31,7 @@ namespace LcdMod
         public static LcdModClientComponent Client;
         public static LcdModServerComponent Server;
 
-        public static NetworkManager NetworkManager = new NetworkManager(Port);
+        public static NetworkManager NetworkManager = new NetworkManager(PORT);
 
         public static event Action OnSave;
         public static event Action OnLanguageChanged;
