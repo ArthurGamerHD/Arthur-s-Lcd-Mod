@@ -43,8 +43,8 @@ public sealed class MarkdownParserSnapshotTests
                 "custom-elements",
                 """
                 Colors [color:#FF0000]Red[/color] [color:#00FF00]Green[/color] [color:#0000FF]Blue[/color]
-                Font [font:"monospace"]monospace[/font] [font:"white"]white[/font] [font:"debug"]debug[/font]
-                Font & Colors [font:"monospace"][color:#FF0000]Red Monospace[/color][/font] [font:"white"][color:#00FF00]Green "White"[/color][/font] [font:"debug"][color:#0000FF]Blue Debug[/color][/font]
+                Font [font:"Monospace"]monospace[/font] [font:"white"]white[/font] [font:"debug"]debug[/font]
+                Font & Colors [font:"Monospace"][color:#FF0000]Red Monospace[/color][/font] [font:"white"][color:#00FF00]Green "White"[/color][/font] [font:"debug"][color:#0000FF]Blue Debug[/color][/font]
                 """
             }
         };

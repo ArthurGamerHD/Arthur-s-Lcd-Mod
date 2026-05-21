@@ -64,6 +64,23 @@ namespace LcdMod.Client.Markdown
                     continue;
                 }
 
+                if (TryParseLoc(out node))
+                {
+                    AddNode(nodes, node);
+                    continue;
+                }
+
+                if (TryParseUnderline(out node))
+                {
+                    AddNode(nodes, node);
+                    continue;
+                }
+
+                if (TryParseStrikethrough(out node))
+                {
+                    AddNode(nodes, node);
+                    continue;
+                }
 
                 if (TryParseLink(out node))
                 {
@@ -193,22 +210,58 @@ namespace LcdMod.Client.Markdown
                 out node);
         }
 
+        bool TryParseUnderline(out InlineNode node)
+        {
+            return TryParseContainer(
+                "<u>",
+                "</u>",
+                delegate(List<InlineNode> children)
+                {
+                    UnderlineInline underline = new UnderlineInline();
+                    underline.Children.AddRange(children);
+                    return underline;
+                },
+                out node);
+        }
+
+        bool TryParseStrikethrough(out InlineNode node)
+        {
+            return TryParseContainer(
+                "~~",
+                delegate(List<InlineNode> children)
+                {
+                    StrikethroughInline strikethrough = new StrikethroughInline();
+                    strikethrough.Children.AddRange(children);
+                    return strikethrough;
+                },
+                out node);
+        }
+
         bool TryParseContainer(
             string delimiter,
             ContainerFactory factory,
             out InlineNode node)
         {
+            return TryParseContainer(delimiter, delimiter, factory, out node);
+        }
+
+        bool TryParseContainer(
+            string openingDelimiter,
+            string closingDelimiter,
+            ContainerFactory factory,
+            out InlineNode node)
+        {
             node = null;
 
-            if (!StartsWith(delimiter))
+            if (!StartsWith(openingDelimiter))
                 return false;
 
             int originalPosition = _position;
 
-            _position += delimiter.Length;
+            _position += openingDelimiter.Length;
 
             List<InlineNode> children;
-            bool closed = ParseUntil(delimiter, out children);
+            bool closed = ParseUntil(closingDelimiter, out children);
 
             if (!closed)
             {
@@ -286,6 +339,41 @@ namespace LcdMod.Client.Markdown
             }
 
             node = image;
+            return true;
+        }
+
+        bool TryParseLoc(out InlineNode node)
+        {
+            node = null;
+
+            const string prefix = "[loc]";
+            const string close = "[/loc]";
+
+            if (!StartsWith(prefix))
+                return false;
+
+            int originalPosition = _position;
+            int keyStart = _position + prefix.Length;
+            int keyEnd = _text.IndexOf(close, keyStart);
+
+            if (keyEnd < 0)
+            {
+                _position = originalPosition;
+                return false;
+            }
+
+            string key = _text.Substring(keyStart, keyEnd - keyStart).Trim();
+            if (key.Length == 0)
+            {
+                _position = originalPosition;
+                return false;
+            }
+
+            _position = keyEnd + close.Length;
+
+            LocInline locInline = new LocInline();
+            locInline.Key = key;
+            node = locInline;
             return true;
         }
 

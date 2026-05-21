@@ -10,15 +10,11 @@ namespace LcdMod.Client.Utility
     /// <summary>
     /// Receives gaze coordinates that should be consumed and mapped on the next render frame.
     /// </summary>
-    public interface IEyeTracking : ISoundCapable,
+    public interface IEyeTracking : IInputBlock,
+        ISoundCapable,
         IUsesTerminalControl<SliderCursorScale>,
         IUsesTerminalControl<SwitchToggleAlt>
     {
-        Sandbox.ModAPI.Ingame.IMyTextSurface Surface { get; }
-        VRage.Game.ModAPI.Ingame.IMyCubeBlock Block { get; }
-        
-        int RotationOrSurfaceIndex { get; }
-
         Vector2 CursorPosition { get; }
 
         Vector2 HitTestOffset { get; }

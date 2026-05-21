@@ -57,6 +57,13 @@ namespace LcdMod.Client.Markdown
                     continue;
                 }
 
+                ListBlock list;
+                if (TryParseList(lines, ref index, out list))
+                {
+                    document.Blocks.Add(list);
+                    continue;
+                }
+
                 ParagraphBlock paragraph = ParseParagraph(lines, ref index);
                 paragraph.Inlines.AddRange(_inlineParser.Parse(paragraph.RawText));
                 document.Blocks.Add(paragraph);
@@ -169,6 +176,93 @@ namespace LcdMod.Client.Markdown
             return true;
         }
 
+        bool TryParseList(string[] lines, ref int index, out ListBlock block)
+        {
+            block = null;
+
+            bool ordered;
+            string content;
+            if (!TryParseListMarker(lines[index], out ordered, out content))
+                return false;
+
+            block = new ListBlock();
+            block.Ordered = ordered;
+
+            while (index < lines.Length)
+            {
+                if (IsBlank(lines[index]))
+                    break;
+
+                bool currentOrdered;
+                string currentContent;
+                if (!TryParseListMarker(lines[index], out currentOrdered, out currentContent) || currentOrdered != ordered)
+                    break;
+
+                StringBuilder itemText = new StringBuilder(currentContent.Trim());
+                index++;
+
+                while (index < lines.Length)
+                {
+                    if (IsBlank(lines[index]))
+                        break;
+
+                    bool nextOrdered;
+                    string nextContent;
+                    if (TryParseListMarker(lines[index], out nextOrdered, out nextContent) && nextOrdered == ordered)
+                        break;
+
+                    itemText.Append(" ");
+                    itemText.Append(lines[index].Trim());
+                    index++;
+                }
+
+                ParagraphBlock paragraph = new ParagraphBlock();
+                paragraph.RawText = itemText.ToString();
+                paragraph.Inlines.AddRange(_inlineParser.Parse(paragraph.RawText));
+
+                ListItemBlock item = new ListItemBlock();
+                item.Children.Add(paragraph);
+                block.Items.Add(item);
+            }
+
+            return block.Items.Count != 0;
+        }
+
+        static bool TryParseListMarker(string line, out bool ordered, out string content)
+        {
+            ordered = false;
+            content = string.Empty;
+
+            if (line == null)
+                return false;
+
+            string trimmed = line.TrimStart();
+            if (trimmed.Length < 3)
+                return false;
+
+            char marker = trimmed[0];
+            if ((marker == '-' || marker == '*' || marker == '+') && char.IsWhiteSpace(trimmed[1]))
+            {
+                content = trimmed.Substring(2);
+                return true;
+            }
+
+            int digitCount = 0;
+            while (digitCount < trimmed.Length && char.IsDigit(trimmed[digitCount]))
+                digitCount++;
+
+            if (digitCount == 0 || digitCount + 1 >= trimmed.Length)
+                return false;
+
+            char orderedMarker = trimmed[digitCount];
+            if ((orderedMarker != '.' && orderedMarker != ')') || !char.IsWhiteSpace(trimmed[digitCount + 1]))
+                return false;
+
+            ordered = true;
+            content = trimmed.Substring(digitCount + 2);
+            return true;
+        }
+
         static ParagraphBlock ParseParagraph(string[] lines, ref int index)
         {
             StringBuilder builder = new StringBuilder();
@@ -190,6 +284,11 @@ namespace LcdMod.Client.Markdown
                 CodeBlock ignoredCodeBlock;
                 int tempIndex = index;
                 if (TryParseFencedCodeBlock(lines, ref tempIndex, out ignoredCodeBlock))
+                    break;
+
+                bool ignoredOrdered;
+                string ignoredContent;
+                if (TryParseListMarker(line, out ignoredOrdered, out ignoredContent))
                     break;
 
                 if (builder.Length > 0)

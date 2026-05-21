@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text;
 using LcdMod.Common.Helpers;
@@ -42,6 +43,28 @@ namespace LcdMod.Client.Helpers
             var texture = CreateLcdTextureDefinition(definition);
             MyDefinitionManager.Static.Definitions.AddOrReplaceDefinition(texture);
             return texture.Id.SubtypeName;
+        }
+
+        public static bool TryGetOrAddTextureForBlockName(string blockDefinitionName, out string textureName)
+        {
+            textureName = blockDefinitionName;
+            if (string.IsNullOrEmpty(blockDefinitionName))
+                return false;
+
+            foreach (var definitionBase in MyDefinitionManager.Static.GetAllDefinitions())
+            {
+                var blockDefinition = definitionBase as MyCubeBlockDefinition;
+                if (blockDefinition == null)
+                    continue;
+
+                if (!string.Equals(blockDefinition.Id.ToString(), blockDefinitionName, StringComparison.Ordinal))
+                    continue;
+
+                textureName = GetOrAddTextureForBlock(blockDefinition);
+                return true;
+            }
+
+            return false;
         }
 
         static MyLCDTextureDefinition CreateLcdTextureDefinition(MyCubeBlockDefinition blockDefinition)

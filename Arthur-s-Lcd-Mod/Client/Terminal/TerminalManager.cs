@@ -9,6 +9,7 @@ using LcdMod.Client.Terminal.Controls.Filter.Buttons;
 using LcdMod.Client.Terminal.Controls.Filter.Listbox;
 using LcdMod.Client.Terminal.Controls.Generic;
 using LcdMod.Client.Terminal.Controls.Interactive;
+using LcdMod.Client.Terminal.Controls.Markdown;
 using LcdMod.Client.Terminal.Controls.Proxy;
 using LcdMod.Client.Terminal.Controls.Scale;
 using LcdMod.Common.Helpers;
@@ -37,6 +38,7 @@ namespace LcdMod.Client.Terminal
             MyAPIGateway.TerminalControls.CustomControlGetter += CustomControlGetter;
             
             Controls.Add(new ButtonShowConfig());
+            Controls.Add(new ButtonEditMarkdown());
 
 
             TerminalControlsListbox source = new ListboxBlockCandidates();

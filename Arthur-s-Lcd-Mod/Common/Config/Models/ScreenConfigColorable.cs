@@ -30,6 +30,8 @@ namespace LcdMod.Common.Config.Models
     [XmlInclude(typeof(ScreenConfigDocking))]
     [ProtoInclude(112, typeof(ScreenConfigInteractive))]
     [XmlInclude(typeof(ScreenConfigInteractive))]
+    [ProtoInclude(115, typeof(ScreenConfigMarkdown))]
+    [XmlInclude(typeof(ScreenConfigMarkdown))]
     public partial class ScreenConfigColorable : ScreenConfigGeneral
     {
         public override int Id => 5;

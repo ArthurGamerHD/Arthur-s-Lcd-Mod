@@ -146,9 +146,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         public abstract IApp App { get; }
 
-        static ITerminalProperty<float> _rotateProperty;
-        ITerminalProperty<float> floatProperty;
-
         protected int ResolveRotationOrSurfaceIndex()
         {
             if (Block.CubeGrid.Physics == null)
@@ -156,7 +153,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
             if (Block is IMyTextPanel)
             {
-                floatProperty = ((IMyTextPanel)Block).GetProperty("Rotate").Cast<float>();
                 foreach (var component in Block.Components)
                 {
                     _lcdSurfaceComponent = component as IMyLcdSurfaceComponent;
@@ -334,8 +330,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 viewBox.Width + (maxOffsetX - minOffsetX),
                 viewBox.Height + (maxOffsetY - minOffsetY));
         }
-
-        IMyHudNotification a;
 
         public override void Run()
         {

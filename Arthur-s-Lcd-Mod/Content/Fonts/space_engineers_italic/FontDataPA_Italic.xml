@@ -1,0 +1,568 @@
+<?xml version='1.0' encoding='utf-8'?>
+<font
+        xmlns="http://xna.microsoft.com/bitmapfont"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://xna.microsoft.com/bitmapfont bitmapfont.xsd"
+
+        name="FontDataPA_Italic" base="30" height="37"
+        face="Space Engineers" size="23" style="i"
+>
+    <bitmaps>
+        <bitmap id="0" name="FontDataPA_Italic-0.dds" size="1024x1024"/>
+        
+    </bitmaps>
+    <glyphs>
+        <glyph ch=" " code="0020" bm="0" origin="2,2" size="23x45" aw="8" lsb="-7"/>
+        <glyph ch="!" code="0021" bm="0" origin="27,2" size="31x45" aw="8" lsb="-7"/>
+        <glyph ch="&quot;" code="0022" bm="0" origin="60,2" size="33x45" aw="10" lsb="-7"/>
+        <glyph ch="#" code="0023" bm="0" origin="95,2" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="$" code="0024" bm="0" origin="139,2" size="43x45" aw="20" lsb="-7"/>
+        <glyph ch="%" code="0025" bm="0" origin="184,2" size="47x45" aw="24" lsb="-7"/>
+        <glyph ch="&amp;" code="0026" bm="0" origin="233,2" size="43x45" aw="20" lsb="-7"/>
+        <glyph ch="'" code="0027" bm="0" origin="278,2" size="29x45" aw="6" lsb="-7"/>
+        <glyph ch="(" code="0028" bm="0" origin="309,2" size="31x45" aw="9" lsb="-7"/>
+        <glyph ch=")" code="0029" bm="0" origin="342,2" size="31x45" aw="9" lsb="-7"/>
+        <glyph ch="*" code="002a" bm="0" origin="375,2" size="33x45" aw="11" lsb="-7"/>
+        <glyph ch="+" code="002b" bm="0" origin="410,2" size="41x45" aw="18" lsb="-7"/>
+        <glyph ch="," code="002c" bm="0" origin="453,2" size="32x45" aw="9" lsb="-7"/>
+        <glyph ch="-" code="002d" bm="0" origin="487,2" size="33x45" aw="10" lsb="-7"/>
+        <glyph ch="." code="002e" bm="0" origin="522,2" size="32x45" aw="9" lsb="-7"/>
+        <glyph ch="/" code="002f" bm="0" origin="556,2" size="37x45" aw="14" lsb="-7"/>
+        <glyph ch="0" code="0030" bm="0" origin="595,2" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="1" code="0031" bm="0" origin="639,2" size="31x45" aw="9" lsb="-7"/>
+        <glyph ch="2" code="0032" bm="0" origin="672,2" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="3" code="0033" bm="0" origin="716,2" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="4" code="0034" bm="0" origin="758,2" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="5" code="0035" bm="0" origin="802,2" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="6" code="0036" bm="0" origin="846,2" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="7" code="0037" bm="0" origin="890,2" size="39x45" aw="16" lsb="-7"/>
+        <glyph ch="8" code="0038" bm="0" origin="931,2" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="9" code="0039" bm="0" origin="975,2" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch=":" code="003a" bm="0" origin="2,49" size="32x45" aw="9" lsb="-7"/>
+        <glyph ch=";" code="003b" bm="0" origin="36,49" size="32x45" aw="9" lsb="-7"/>
+        <glyph ch="&lt;" code="003c" bm="0" origin="70,49" size="41x45" aw="18" lsb="-7"/>
+        <glyph ch="=" code="003d" bm="0" origin="113,49" size="41x45" aw="18" lsb="-7"/>
+        <glyph ch="&gt;" code="003e" bm="0" origin="156,49" size="41x45" aw="18" lsb="-7"/>
+        <glyph ch="?" code="003f" bm="0" origin="199,49" size="39x45" aw="16" lsb="-7"/>
+        <glyph ch="@" code="0040" bm="0" origin="240,49" size="48x45" aw="25" lsb="-7"/>
+        <glyph ch="A" code="0041" bm="0" origin="290,49" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="B" code="0042" bm="0" origin="336,49" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="C" code="0043" bm="0" origin="382,49" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="D" code="0044" bm="0" origin="426,49" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="E" code="0045" bm="0" origin="472,49" size="41x45" aw="18" lsb="-7"/>
+        <glyph ch="F" code="0046" bm="0" origin="515,49" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="G" code="0047" bm="0" origin="557,49" size="43x45" aw="20" lsb="-7"/>
+        <glyph ch="H" code="0048" bm="0" origin="602,49" size="43x45" aw="20" lsb="-7"/>
+        <glyph ch="I" code="0049" bm="0" origin="647,49" size="31x45" aw="8" lsb="-7"/>
+        <glyph ch="J" code="004a" bm="0" origin="680,49" size="39x45" aw="16" lsb="-7"/>
+        <glyph ch="K" code="004b" bm="0" origin="721,49" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="L" code="004c" bm="0" origin="763,49" size="37x45" aw="15" lsb="-7"/>
+        <glyph ch="M" code="004d" bm="0" origin="802,49" size="49x45" aw="26" lsb="-7"/>
+        <glyph ch="N" code="004e" bm="0" origin="853,49" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="O" code="004f" bm="0" origin="899,49" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="P" code="0050" bm="0" origin="945,49" size="43x45" aw="20" lsb="-7"/>
+        <glyph ch="Q" code="0051" bm="0" origin="2,96" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="R" code="0052" bm="0" origin="48,96" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="S" code="0053" bm="0" origin="94,96" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="T" code="0054" bm="0" origin="140,96" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="U" code="0055" bm="0" origin="182,96" size="43x45" aw="20" lsb="-7"/>
+        <glyph ch="V" code="0056" bm="0" origin="227,96" size="43x45" aw="20" lsb="-7"/>
+        <glyph ch="W" code="0057" bm="0" origin="272,96" size="54x45" aw="31" lsb="-7"/>
+        <glyph ch="X" code="0058" bm="0" origin="328,96" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="Y" code="0059" bm="0" origin="372,96" size="43x45" aw="20" lsb="-7"/>
+        <glyph ch="Z" code="005a" bm="0" origin="417,96" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="[" code="005b" bm="0" origin="461,96" size="32x45" aw="9" lsb="-7"/>
+        <glyph ch="\" code="005c" bm="0" origin="495,96" size="35x45" aw="12" lsb="-7"/>
+        <glyph ch="]" code="005d" bm="0" origin="532,96" size="32x45" aw="9" lsb="-7"/>
+        <glyph ch="^" code="005e" bm="0" origin="566,96" size="41x45" aw="18" lsb="-7"/>
+        <glyph ch="_" code="005f" bm="0" origin="609,96" size="38x45" aw="15" lsb="-7"/>
+        <glyph ch="`" code="0060" bm="0" origin="649,96" size="30x45" aw="8" lsb="-7"/>
+        <glyph ch="a" code="0061" bm="0" origin="681,96" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="b" code="0062" bm="0" origin="723,96" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="c" code="0063" bm="0" origin="765,96" size="39x45" aw="16" lsb="-7"/>
+        <glyph ch="d" code="0064" bm="0" origin="806,96" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="e" code="0065" bm="0" origin="848,96" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="f" code="0066" bm="0" origin="890,96" size="31x45" aw="9" lsb="-7"/>
+        <glyph ch="g" code="0067" bm="0" origin="923,96" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="h" code="0068" bm="0" origin="965,96" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="i" code="0069" bm="0" origin="2,143" size="30x45" aw="8" lsb="-7"/>
+        <glyph ch="j" code="006a" bm="0" origin="34,143" size="30x45" aw="8" lsb="-7"/>
+        <glyph ch="k" code="006b" bm="0" origin="66,143" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="l" code="006c" bm="0" origin="108,143" size="30x45" aw="8" lsb="-7"/>
+        <glyph ch="m" code="006d" bm="0" origin="140,143" size="50x45" aw="27" lsb="-7"/>
+        <glyph ch="n" code="006e" bm="0" origin="192,143" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="o" code="006f" bm="0" origin="234,143" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="p" code="0070" bm="0" origin="276,143" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="q" code="0071" bm="0" origin="318,143" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="r" code="0072" bm="0" origin="360,143" size="33x45" aw="10" lsb="-7"/>
+        <glyph ch="s" code="0073" bm="0" origin="395,143" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="t" code="0074" bm="0" origin="437,143" size="32x45" aw="9" lsb="-7"/>
+        <glyph ch="u" code="0075" bm="0" origin="471,143" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="v" code="0076" bm="0" origin="513,143" size="37x45" aw="15" lsb="-7"/>
+        <glyph ch="w" code="0077" bm="0" origin="552,143" size="50x45" aw="27" lsb="-7"/>
+        <glyph ch="x" code="0078" bm="0" origin="604,143" size="38x45" aw="15" lsb="-7"/>
+        <glyph ch="y" code="0079" bm="0" origin="644,143" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="z" code="007a" bm="0" origin="686,143" size="39x45" aw="16" lsb="-7"/>
+        <glyph ch="{" code="007b" bm="0" origin="727,143" size="32x45" aw="9" lsb="-7"/>
+        <glyph ch="|" code="007c" bm="0" origin="761,143" size="29x45" aw="6" lsb="-7"/>
+        <glyph ch="}" code="007d" bm="0" origin="792,143" size="32x45" aw="9" lsb="-7"/>
+        <glyph ch="~" code="007e" bm="0" origin="826,143" size="41x45" aw="18" lsb="-7"/>
+        <glyph ch=" " code="00a0" bm="0" origin="869,143" size="23x45" aw="8" lsb="-7"/>
+        <glyph ch="¡" code="00a1" bm="0" origin="894,143" size="31x45" aw="8" lsb="-7"/>
+        <glyph ch="¢" code="00a2" bm="0" origin="927,143" size="39x45" aw="16" lsb="-7"/>
+        <glyph ch="£" code="00a3" bm="0" origin="968,143" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="¤" code="00a4" bm="0" origin="2,190" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="¥" code="00a5" bm="0" origin="46,190" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="¦" code="00a6" bm="0" origin="90,190" size="29x45" aw="6" lsb="-7"/>
+        <glyph ch="§" code="00a7" bm="0" origin="121,190" size="43x45" aw="20" lsb="-7"/>
+        <glyph ch="¨" code="00a8" bm="0" origin="166,190" size="30x45" aw="8" lsb="-7"/>
+        <glyph ch="©" code="00a9" bm="0" origin="198,190" size="48x45" aw="25" lsb="-7"/>
+        <glyph ch="ª" code="00aa" bm="0" origin="248,190" size="33x45" aw="10" lsb="-7"/>
+        <glyph ch="«" code="00ab" bm="0" origin="283,190" size="37x45" aw="15" lsb="-7"/>
+        <glyph ch="¬" code="00ac" bm="0" origin="322,190" size="41x45" aw="18" lsb="-7"/>
+        <glyph ch="­" code="00ad" bm="0" origin="365,190" size="33x45" aw="10" lsb="-7"/>
+        <glyph ch="®" code="00ae" bm="0" origin="400,190" size="48x45" aw="25" lsb="-7"/>
+        <glyph ch="¯" code="00af" bm="0" origin="450,190" size="30x45" aw="8" lsb="-7"/>
+        <glyph ch="°" code="00b0" bm="0" origin="482,190" size="35x45" aw="12" lsb="-7"/>
+        <glyph ch="±" code="00b1" bm="0" origin="519,190" size="41x45" aw="18" lsb="-7"/>
+        <glyph ch="²" code="00b2" bm="0" origin="562,190" size="34x45" aw="11" lsb="-7"/>
+        <glyph ch="³" code="00b3" bm="0" origin="598,190" size="34x45" aw="11" lsb="-7"/>
+        <glyph ch="´" code="00b4" bm="0" origin="634,190" size="30x45" aw="8" lsb="-7"/>
+        <glyph ch="µ" code="00b5" bm="0" origin="666,190" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="¶" code="00b6" bm="0" origin="708,190" size="41x45" aw="18" lsb="-7"/>
+        <glyph ch="·" code="00b7" bm="0" origin="751,190" size="32x45" aw="9" lsb="-7"/>
+        <glyph ch="¸" code="00b8" bm="0" origin="785,190" size="30x45" aw="8" lsb="-7"/>
+        <glyph ch="¹" code="00b9" bm="0" origin="817,190" size="34x45" aw="11" lsb="-7"/>
+        <glyph ch="º" code="00ba" bm="0" origin="853,190" size="33x45" aw="10" lsb="-7"/>
+        <glyph ch="»" code="00bb" bm="0" origin="888,190" size="37x45" aw="15" lsb="-7"/>
+        <glyph ch="¼" code="00bc" bm="0" origin="927,190" size="50x45" aw="27" lsb="-7"/>
+        <glyph ch="½" code="00bd" bm="0" origin="2,237" size="52x45" aw="29" lsb="-7"/>
+        <glyph ch="¾" code="00be" bm="0" origin="56,237" size="51x45" aw="28" lsb="-7"/>
+        <glyph ch="¿" code="00bf" bm="0" origin="109,237" size="39x45" aw="16" lsb="-7"/>
+        <glyph ch="À" code="00c0" bm="0" origin="150,237" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="Á" code="00c1" bm="0" origin="196,237" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="Â" code="00c2" bm="0" origin="242,237" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="Ã" code="00c3" bm="0" origin="288,237" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="Ä" code="00c4" bm="0" origin="334,237" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="Å" code="00c5" bm="0" origin="380,237" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="Æ" code="00c6" bm="0" origin="426,237" size="54x45" aw="31" lsb="-7"/>
+        <glyph ch="Ç" code="00c7" bm="0" origin="482,237" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="È" code="00c8" bm="0" origin="526,237" size="41x45" aw="18" lsb="-7"/>
+        <glyph ch="É" code="00c9" bm="0" origin="569,237" size="41x45" aw="18" lsb="-7"/>
+        <glyph ch="Ê" code="00ca" bm="0" origin="612,237" size="41x45" aw="18" lsb="-7"/>
+        <glyph ch="Ë" code="00cb" bm="0" origin="655,237" size="41x45" aw="18" lsb="-7"/>
+        <glyph ch="Ì" code="00cc" bm="0" origin="698,237" size="31x45" aw="8" lsb="-7"/>
+        <glyph ch="Í" code="00cd" bm="0" origin="731,237" size="31x45" aw="8" lsb="-7"/>
+        <glyph ch="Î" code="00ce" bm="0" origin="764,237" size="31x45" aw="8" lsb="-7"/>
+        <glyph ch="Ï" code="00cf" bm="0" origin="797,237" size="31x45" aw="8" lsb="-7"/>
+        <glyph ch="Ð" code="00d0" bm="0" origin="830,237" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="Ñ" code="00d1" bm="0" origin="876,237" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="Ò" code="00d2" bm="0" origin="922,237" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="Ó" code="00d3" bm="0" origin="968,237" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="Ô" code="00d4" bm="0" origin="2,284" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="Õ" code="00d5" bm="0" origin="48,284" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="Ö" code="00d6" bm="0" origin="94,284" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="×" code="00d7" bm="0" origin="140,284" size="41x45" aw="18" lsb="-7"/>
+        <glyph ch="Ø" code="00d8" bm="0" origin="183,284" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="Ù" code="00d9" bm="0" origin="229,284" size="43x45" aw="20" lsb="-7"/>
+        <glyph ch="Ú" code="00da" bm="0" origin="274,284" size="43x45" aw="20" lsb="-7"/>
+        <glyph ch="Û" code="00db" bm="0" origin="319,284" size="43x45" aw="20" lsb="-7"/>
+        <glyph ch="Ü" code="00dc" bm="0" origin="364,284" size="43x45" aw="20" lsb="-7"/>
+        <glyph ch="Ý" code="00dd" bm="0" origin="409,284" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Þ" code="00de" bm="0" origin="451,284" size="43x45" aw="20" lsb="-7"/>
+        <glyph ch="ß" code="00df" bm="0" origin="496,284" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="à" code="00e0" bm="0" origin="540,284" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="á" code="00e1" bm="0" origin="582,284" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="â" code="00e2" bm="0" origin="624,284" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="ã" code="00e3" bm="0" origin="666,284" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="ä" code="00e4" bm="0" origin="708,284" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="å" code="00e5" bm="0" origin="750,284" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="æ" code="00e6" bm="0" origin="792,284" size="52x45" aw="28" lsb="-7"/>
+        <glyph ch="ç" code="00e7" bm="0" origin="846,284" size="39x45" aw="16" lsb="-7"/>
+        <glyph ch="è" code="00e8" bm="0" origin="887,284" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="é" code="00e9" bm="0" origin="929,284" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="ê" code="00ea" bm="0" origin="971,284" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="ë" code="00eb" bm="0" origin="2,331" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="ì" code="00ec" bm="0" origin="44,331" size="30x45" aw="8" lsb="-7"/>
+        <glyph ch="í" code="00ed" bm="0" origin="76,331" size="30x45" aw="8" lsb="-7"/>
+        <glyph ch="î" code="00ee" bm="0" origin="108,331" size="30x45" aw="8" lsb="-7"/>
+        <glyph ch="ï" code="00ef" bm="0" origin="140,331" size="30x45" aw="8" lsb="-7"/>
+        <glyph ch="ð" code="00f0" bm="0" origin="172,331" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="ñ" code="00f1" bm="0" origin="214,331" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="ò" code="00f2" bm="0" origin="256,331" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="ó" code="00f3" bm="0" origin="298,331" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="ô" code="00f4" bm="0" origin="340,331" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="õ" code="00f5" bm="0" origin="382,331" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="ö" code="00f6" bm="0" origin="424,331" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="÷" code="00f7" bm="0" origin="466,331" size="41x45" aw="18" lsb="-7"/>
+        <glyph ch="ø" code="00f8" bm="0" origin="509,331" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="ù" code="00f9" bm="0" origin="551,331" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="ú" code="00fa" bm="0" origin="593,331" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="û" code="00fb" bm="0" origin="635,331" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="ü" code="00fc" bm="0" origin="677,331" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="ý" code="00fd" bm="0" origin="719,331" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="þ" code="00fe" bm="0" origin="761,331" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="ÿ" code="00ff" bm="0" origin="803,331" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Ā" code="0100" bm="0" origin="845,331" size="43x45" aw="20" lsb="-7"/>
+        <glyph ch="ā" code="0101" bm="0" origin="890,331" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Ă" code="0102" bm="0" origin="932,331" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="ă" code="0103" bm="0" origin="978,331" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Ą" code="0104" bm="0" origin="2,378" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="ą" code="0105" bm="0" origin="48,378" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Ć" code="0106" bm="0" origin="90,378" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="ć" code="0107" bm="0" origin="134,378" size="39x45" aw="16" lsb="-7"/>
+        <glyph ch="Ĉ" code="0108" bm="0" origin="175,378" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="ĉ" code="0109" bm="0" origin="219,378" size="39x45" aw="16" lsb="-7"/>
+        <glyph ch="Ċ" code="010a" bm="0" origin="260,378" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="ċ" code="010b" bm="0" origin="304,378" size="39x45" aw="16" lsb="-7"/>
+        <glyph ch="Č" code="010c" bm="0" origin="345,378" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="č" code="010d" bm="0" origin="389,378" size="39x45" aw="16" lsb="-7"/>
+        <glyph ch="Ď" code="010e" bm="0" origin="430,378" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="ď" code="010f" bm="0" origin="476,378" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Đ" code="0110" bm="0" origin="518,378" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="đ" code="0111" bm="0" origin="564,378" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Ē" code="0112" bm="0" origin="606,378" size="41x45" aw="18" lsb="-7"/>
+        <glyph ch="ē" code="0113" bm="0" origin="649,378" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Ĕ" code="0114" bm="0" origin="691,378" size="41x45" aw="18" lsb="-7"/>
+        <glyph ch="ĕ" code="0115" bm="0" origin="734,378" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Ė" code="0116" bm="0" origin="776,378" size="41x45" aw="18" lsb="-7"/>
+        <glyph ch="ė" code="0117" bm="0" origin="819,378" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Ę" code="0118" bm="0" origin="861,378" size="41x45" aw="18" lsb="-7"/>
+        <glyph ch="ę" code="0119" bm="0" origin="904,378" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Ě" code="011a" bm="0" origin="946,378" size="41x45" aw="18" lsb="-7"/>
+        <glyph ch="ě" code="011b" bm="0" origin="2,425" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Ĝ" code="011c" bm="0" origin="44,425" size="43x45" aw="20" lsb="-7"/>
+        <glyph ch="ĝ" code="011d" bm="0" origin="89,425" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Ğ" code="011e" bm="0" origin="131,425" size="43x45" aw="20" lsb="-7"/>
+        <glyph ch="ğ" code="011f" bm="0" origin="176,425" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Ġ" code="0120" bm="0" origin="218,425" size="43x45" aw="20" lsb="-7"/>
+        <glyph ch="ġ" code="0121" bm="0" origin="263,425" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Ģ" code="0122" bm="0" origin="305,425" size="43x45" aw="20" lsb="-7"/>
+        <glyph ch="ģ" code="0123" bm="0" origin="350,425" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Ĥ" code="0124" bm="0" origin="392,425" size="43x45" aw="20" lsb="-7"/>
+        <glyph ch="ĥ" code="0125" bm="0" origin="437,425" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Ħ" code="0126" bm="0" origin="479,425" size="43x45" aw="20" lsb="-7"/>
+        <glyph ch="ħ" code="0127" bm="0" origin="524,425" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Ĩ" code="0128" bm="0" origin="566,425" size="31x45" aw="8" lsb="-7"/>
+        <glyph ch="ĩ" code="0129" bm="0" origin="599,425" size="30x45" aw="8" lsb="-7"/>
+        <glyph ch="Ī" code="012a" bm="0" origin="631,425" size="31x45" aw="8" lsb="-7"/>
+        <glyph ch="ī" code="012b" bm="0" origin="664,425" size="30x45" aw="8" lsb="-7"/>
+        <glyph ch="Į" code="012e" bm="0" origin="696,425" size="31x45" aw="8" lsb="-7"/>
+        <glyph ch="į" code="012f" bm="0" origin="729,425" size="30x45" aw="8" lsb="-7"/>
+        <glyph ch="İ" code="0130" bm="0" origin="761,425" size="31x45" aw="8" lsb="-7"/>
+        <glyph ch="ı" code="0131" bm="0" origin="794,425" size="30x45" aw="8" lsb="-7"/>
+        <glyph ch="Ĳ" code="0132" bm="0" origin="826,425" size="47x45" aw="24" lsb="-7"/>
+        <glyph ch="ĳ" code="0133" bm="0" origin="875,425" size="37x45" aw="14" lsb="-7"/>
+        <glyph ch="Ĵ" code="0134" bm="0" origin="914,425" size="39x45" aw="16" lsb="-7"/>
+        <glyph ch="ĵ" code="0135" bm="0" origin="955,425" size="30x45" aw="8" lsb="-7"/>
+        <glyph ch="Ķ" code="0136" bm="0" origin="2,472" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="ķ" code="0137" bm="0" origin="44,472" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Ĺ" code="0139" bm="0" origin="86,472" size="37x45" aw="15" lsb="-7"/>
+        <glyph ch="ĺ" code="013a" bm="0" origin="125,472" size="30x45" aw="8" lsb="-7"/>
+        <glyph ch="Ļ" code="013b" bm="0" origin="157,472" size="37x45" aw="15" lsb="-7"/>
+        <glyph ch="ļ" code="013c" bm="0" origin="196,472" size="30x45" aw="8" lsb="-7"/>
+        <glyph ch="Ľ" code="013d" bm="0" origin="228,472" size="37x45" aw="15" lsb="-7"/>
+        <glyph ch="ľ" code="013e" bm="0" origin="267,472" size="30x45" aw="8" lsb="-7"/>
+        <glyph ch="Ŀ" code="013f" bm="0" origin="299,472" size="37x45" aw="15" lsb="-7"/>
+        <glyph ch="ŀ" code="0140" bm="0" origin="338,472" size="33x45" aw="10" lsb="-7"/>
+        <glyph ch="Ł" code="0141" bm="0" origin="373,472" size="37x45" aw="15" lsb="-7"/>
+        <glyph ch="ł" code="0142" bm="0" origin="412,472" size="30x45" aw="8" lsb="-7"/>
+        <glyph ch="Ń" code="0143" bm="0" origin="444,472" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="ń" code="0144" bm="0" origin="490,472" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Ņ" code="0145" bm="0" origin="532,472" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="ņ" code="0146" bm="0" origin="578,472" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Ň" code="0147" bm="0" origin="620,472" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="ň" code="0148" bm="0" origin="666,472" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="ŉ" code="0149" bm="0" origin="708,472" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Ō" code="014c" bm="0" origin="750,472" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="ō" code="014d" bm="0" origin="796,472" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Ŏ" code="014e" bm="0" origin="838,472" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="ŏ" code="014f" bm="0" origin="884,472" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Ő" code="0150" bm="0" origin="926,472" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="ő" code="0151" bm="0" origin="972,472" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Œ" code="0152" bm="0" origin="2,519" size="54x45" aw="31" lsb="-7"/>
+        <glyph ch="œ" code="0153" bm="0" origin="58,519" size="52x45" aw="28" lsb="-7"/>
+        <glyph ch="Ŕ" code="0154" bm="0" origin="112,519" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="ŕ" code="0155" bm="0" origin="158,519" size="33x45" aw="10" lsb="-7"/>
+        <glyph ch="Ŗ" code="0156" bm="0" origin="193,519" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="ŗ" code="0157" bm="0" origin="239,519" size="33x45" aw="10" lsb="-7"/>
+        <glyph ch="Ř" code="0158" bm="0" origin="274,519" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="ř" code="0159" bm="0" origin="320,519" size="33x45" aw="10" lsb="-7"/>
+        <glyph ch="Ś" code="015a" bm="0" origin="355,519" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="ś" code="015b" bm="0" origin="401,519" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Ŝ" code="015c" bm="0" origin="443,519" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="ŝ" code="015d" bm="0" origin="489,519" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Ş" code="015e" bm="0" origin="531,519" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="ş" code="015f" bm="0" origin="577,519" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Š" code="0160" bm="0" origin="619,519" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="š" code="0161" bm="0" origin="665,519" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Ţ" code="0162" bm="0" origin="707,519" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="ţ" code="0163" bm="0" origin="749,519" size="32x45" aw="9" lsb="-7"/>
+        <glyph ch="Ť" code="0164" bm="0" origin="783,519" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="ť" code="0165" bm="0" origin="825,519" size="32x45" aw="9" lsb="-7"/>
+        <glyph ch="Ŧ" code="0166" bm="0" origin="859,519" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="ŧ" code="0167" bm="0" origin="901,519" size="32x45" aw="9" lsb="-7"/>
+        <glyph ch="Ũ" code="0168" bm="0" origin="935,519" size="43x45" aw="20" lsb="-7"/>
+        <glyph ch="ũ" code="0169" bm="0" origin="980,519" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Ū" code="016a" bm="0" origin="2,566" size="43x45" aw="20" lsb="-7"/>
+        <glyph ch="ū" code="016b" bm="0" origin="47,566" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Ŭ" code="016c" bm="0" origin="89,566" size="43x45" aw="20" lsb="-7"/>
+        <glyph ch="ŭ" code="016d" bm="0" origin="134,566" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Ů" code="016e" bm="0" origin="176,566" size="43x45" aw="20" lsb="-7"/>
+        <glyph ch="ů" code="016f" bm="0" origin="221,566" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Ű" code="0170" bm="0" origin="263,566" size="43x45" aw="20" lsb="-7"/>
+        <glyph ch="ű" code="0171" bm="0" origin="308,566" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Ų" code="0172" bm="0" origin="350,566" size="43x45" aw="20" lsb="-7"/>
+        <glyph ch="ų" code="0173" bm="0" origin="395,566" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Ŵ" code="0174" bm="0" origin="437,566" size="54x45" aw="31" lsb="-7"/>
+        <glyph ch="ŵ" code="0175" bm="0" origin="493,566" size="50x45" aw="27" lsb="-7"/>
+        <glyph ch="Ŷ" code="0176" bm="0" origin="545,566" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="ŷ" code="0177" bm="0" origin="587,566" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Ÿ" code="0178" bm="0" origin="629,566" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Ź" code="0179" bm="0" origin="671,566" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="ź" code="017a" bm="0" origin="715,566" size="39x45" aw="16" lsb="-7"/>
+        <glyph ch="Ż" code="017b" bm="0" origin="756,566" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="ż" code="017c" bm="0" origin="800,566" size="39x45" aw="16" lsb="-7"/>
+        <glyph ch="Ž" code="017d" bm="0" origin="841,566" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="ž" code="017e" bm="0" origin="885,566" size="39x45" aw="16" lsb="-7"/>
+        <glyph ch="ƒ" code="0192" bm="0" origin="926,566" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="Ș" code="0218" bm="0" origin="970,566" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="ș" code="0219" bm="0" origin="2,613" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Ț" code="021a" bm="0" origin="44,613" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="ț" code="021b" bm="0" origin="86,613" size="32x45" aw="9" lsb="-7"/>
+        <glyph ch="ˆ" code="02c6" bm="0" origin="120,613" size="30x45" aw="8" lsb="-7"/>
+        <glyph ch="ˇ" code="02c7" bm="0" origin="152,613" size="30x45" aw="8" lsb="-7"/>
+        <glyph ch="ˉ" code="02c9" bm="0" origin="184,613" size="29x45" aw="6" lsb="-7"/>
+        <glyph ch="˘" code="02d8" bm="0" origin="215,613" size="30x45" aw="8" lsb="-7"/>
+        <glyph ch="˙" code="02d9" bm="0" origin="247,613" size="30x45" aw="8" lsb="-7"/>
+        <glyph ch="˚" code="02da" bm="0" origin="279,613" size="30x45" aw="8" lsb="-7"/>
+        <glyph ch="˛" code="02db" bm="0" origin="311,613" size="30x45" aw="8" lsb="-7"/>
+        <glyph ch="˜" code="02dc" bm="0" origin="343,613" size="30x45" aw="8" lsb="-7"/>
+        <glyph ch="˝" code="02dd" bm="0" origin="375,613" size="30x45" aw="8" lsb="-7"/>
+        <glyph ch="Ё" code="0401" bm="0" origin="407,613" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="Ѓ" code="0403" bm="0" origin="451,613" size="39x45" aw="16" lsb="-7"/>
+        <glyph ch="Є" code="0404" bm="0" origin="492,613" size="41x45" aw="18" lsb="-7"/>
+        <glyph ch="Ѕ" code="0405" bm="0" origin="535,613" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="І" code="0406" bm="0" origin="581,613" size="31x45" aw="8" lsb="-7"/>
+        <glyph ch="Ї" code="0407" bm="0" origin="614,613" size="31x45" aw="8" lsb="-7"/>
+        <glyph ch="Ј" code="0408" bm="0" origin="647,613" size="39x45" aw="16" lsb="-7"/>
+        <glyph ch="Љ" code="0409" bm="0" origin="688,613" size="51x45" aw="28" lsb="-7"/>
+        <glyph ch="Њ" code="040a" bm="0" origin="741,613" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="Ќ" code="040c" bm="0" origin="787,613" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="Ў" code="040e" bm="0" origin="831,613" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Џ" code="040f" bm="0" origin="873,613" size="41x45" aw="18" lsb="-7"/>
+        <glyph ch="А" code="0410" bm="0" origin="916,613" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="Б" code="0411" bm="0" origin="960,613" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="В" code="0412" bm="0" origin="2,660" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="Г" code="0413" bm="0" origin="46,660" size="37x45" aw="15" lsb="-7"/>
+        <glyph ch="Д" code="0414" bm="0" origin="85,660" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="Е" code="0415" bm="0" origin="129,660" size="41x45" aw="18" lsb="-7"/>
+        <glyph ch="Ж" code="0416" bm="0" origin="172,660" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="З" code="0417" bm="0" origin="218,660" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="И" code="0418" bm="0" origin="260,660" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="Й" code="0419" bm="0" origin="304,660" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="К" code="041a" bm="0" origin="348,660" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Л" code="041b" bm="0" origin="390,660" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="М" code="041c" bm="0" origin="432,660" size="49x45" aw="26" lsb="-7"/>
+        <glyph ch="Н" code="041d" bm="0" origin="483,660" size="41x45" aw="18" lsb="-7"/>
+        <glyph ch="О" code="041e" bm="0" origin="526,660" size="43x45" aw="20" lsb="-7"/>
+        <glyph ch="П" code="041f" bm="0" origin="571,660" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="Р" code="0420" bm="0" origin="615,660" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="С" code="0421" bm="0" origin="659,660" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="Т" code="0422" bm="0" origin="703,660" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="У" code="0423" bm="0" origin="747,660" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="Ф" code="0424" bm="0" origin="791,660" size="43x45" aw="20" lsb="-7"/>
+        <glyph ch="Х" code="0425" bm="0" origin="836,660" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="Ц" code="0426" bm="0" origin="880,660" size="43x45" aw="20" lsb="-7"/>
+        <glyph ch="Ч" code="0427" bm="0" origin="925,660" size="39x45" aw="16" lsb="-7"/>
+        <glyph ch="Ш" code="0428" bm="0" origin="966,660" size="50x45" aw="26" lsb="-7"/>
+        <glyph ch="Щ" code="0429" bm="0" origin="2,707" size="52x45" aw="29" lsb="-7"/>
+        <glyph ch="Ъ" code="042a" bm="0" origin="56,707" size="43x45" aw="20" lsb="-7"/>
+        <glyph ch="Ы" code="042b" bm="0" origin="101,707" size="47x45" aw="24" lsb="-7"/>
+        <glyph ch="Ь" code="042c" bm="0" origin="150,707" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="Э" code="042d" bm="0" origin="194,707" size="41x45" aw="18" lsb="-7"/>
+        <glyph ch="Ю" code="042e" bm="0" origin="237,707" size="50x45" aw="27" lsb="-7"/>
+        <glyph ch="Я" code="042f" bm="0" origin="289,707" size="43x45" aw="20" lsb="-7"/>
+        <glyph ch="а" code="0430" bm="0" origin="334,707" size="39x45" aw="16" lsb="-7"/>
+        <glyph ch="б" code="0431" bm="0" origin="375,707" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="в" code="0432" bm="0" origin="417,707" size="38x45" aw="16" lsb="-7"/>
+        <glyph ch="г" code="0433" bm="0" origin="457,707" size="37x45" aw="15" lsb="-7"/>
+        <glyph ch="д" code="0434" bm="0" origin="496,707" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="е" code="0435" bm="0" origin="538,707" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="ж" code="0436" bm="0" origin="580,707" size="43x45" aw="20" lsb="-7"/>
+        <glyph ch="з" code="0437" bm="0" origin="625,707" size="37x45" aw="15" lsb="-7"/>
+        <glyph ch="и" code="0438" bm="0" origin="664,707" size="39x45" aw="16" lsb="-7"/>
+        <glyph ch="й" code="0439" bm="0" origin="705,707" size="39x45" aw="16" lsb="-7"/>
+        <glyph ch="к" code="043a" bm="0" origin="746,707" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="л" code="043b" bm="0" origin="788,707" size="37x45" aw="15" lsb="-7"/>
+        <glyph ch="м" code="043c" bm="0" origin="827,707" size="48x45" aw="25" lsb="-7"/>
+        <glyph ch="н" code="043d" bm="0" origin="877,707" size="38x45" aw="16" lsb="-7"/>
+        <glyph ch="о" code="043e" bm="0" origin="917,707" size="39x45" aw="16" lsb="-7"/>
+        <glyph ch="п" code="043f" bm="0" origin="958,707" size="39x45" aw="16" lsb="-7"/>
+        <glyph ch="р" code="0440" bm="0" origin="2,754" size="39x45" aw="17" lsb="-7"/>
+        <glyph ch="с" code="0441" bm="0" origin="43,754" size="39x45" aw="16" lsb="-7"/>
+        <glyph ch="т" code="0442" bm="0" origin="84,754" size="37x45" aw="14" lsb="-7"/>
+        <glyph ch="у" code="0443" bm="0" origin="123,754" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="ф" code="0444" bm="0" origin="165,754" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="х" code="0445" bm="0" origin="211,754" size="38x45" aw="15" lsb="-7"/>
+        <glyph ch="ц" code="0446" bm="0" origin="251,754" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="ч" code="0447" bm="0" origin="293,754" size="38x45" aw="15" lsb="-7"/>
+        <glyph ch="ш" code="0448" bm="0" origin="333,754" size="49x45" aw="25" lsb="-7"/>
+        <glyph ch="щ" code="0449" bm="0" origin="384,754" size="50x45" aw="27" lsb="-7"/>
+        <glyph ch="ъ" code="044a" bm="0" origin="436,754" size="39x45" aw="16" lsb="-7"/>
+        <glyph ch="ы" code="044b" bm="0" origin="477,754" size="43x45" aw="20" lsb="-7"/>
+        <glyph ch="ь" code="044c" bm="0" origin="522,754" size="39x45" aw="16" lsb="-7"/>
+        <glyph ch="э" code="044d" bm="0" origin="563,754" size="37x45" aw="14" lsb="-7"/>
+        <glyph ch="ю" code="044e" bm="0" origin="602,754" size="46x45" aw="23" lsb="-7"/>
+        <glyph ch="я" code="044f" bm="0" origin="650,754" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="ё" code="0451" bm="0" origin="692,754" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="ђ" code="0452" bm="0" origin="734,754" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="ѓ" code="0453" bm="0" origin="776,754" size="38x45" aw="16" lsb="-7"/>
+        <glyph ch="є" code="0454" bm="0" origin="816,754" size="37x45" aw="14" lsb="-7"/>
+        <glyph ch="ѕ" code="0455" bm="0" origin="855,754" size="39x45" aw="16" lsb="-7"/>
+        <glyph ch="і" code="0456" bm="0" origin="896,754" size="30x45" aw="8" lsb="-7"/>
+        <glyph ch="ї" code="0457" bm="0" origin="928,754" size="30x45" aw="8" lsb="-7"/>
+        <glyph ch="ј" code="0458" bm="0" origin="960,754" size="29x45" aw="7" lsb="-7"/>
+        <glyph ch="љ" code="0459" bm="0" origin="2,801" size="45x45" aw="22" lsb="-7"/>
+        <glyph ch="њ" code="045a" bm="0" origin="49,801" size="49x45" aw="25" lsb="-7"/>
+        <glyph ch="ћ" code="045b" bm="0" origin="100,801" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="ќ" code="045c" bm="0" origin="142,801" size="39x45" aw="16" lsb="-7"/>
+        <glyph ch="ў" code="045e" bm="0" origin="183,801" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="џ" code="045f" bm="0" origin="225,801" size="40x45" aw="17" lsb="-7"/>
+        <glyph ch="Ґ" code="0490" bm="0" origin="267,801" size="37x45" aw="15" lsb="-7"/>
+        <glyph ch="ґ" code="0491" bm="0" origin="306,801" size="36x45" aw="13" lsb="-7"/>
+        <glyph ch="–" code="2013" bm="0" origin="344,801" size="38x45" aw="15" lsb="-7"/>
+        <glyph ch="—" code="2014" bm="0" origin="384,801" size="54x45" aw="31" lsb="-7"/>
+        <glyph ch="‘" code="2018" bm="0" origin="440,801" size="29x45" aw="6" lsb="-7"/>
+        <glyph ch="’" code="2019" bm="0" origin="471,801" size="29x45" aw="6" lsb="-7"/>
+        <glyph ch="‚" code="201a" bm="0" origin="502,801" size="29x45" aw="6" lsb="-7"/>
+        <glyph ch="“" code="201c" bm="0" origin="533,801" size="34x45" aw="12" lsb="-7"/>
+        <glyph ch="”" code="201d" bm="0" origin="569,801" size="34x45" aw="12" lsb="-7"/>
+        <glyph ch="„" code="201e" bm="0" origin="605,801" size="34x45" aw="12" lsb="-7"/>
+        <glyph ch="†" code="2020" bm="0" origin="641,801" size="43x45" aw="20" lsb="-7"/>
+        <glyph ch="‡" code="2021" bm="0" origin="686,801" size="43x45" aw="20" lsb="-7"/>
+        <glyph ch="•" code="2022" bm="0" origin="731,801" size="38x45" aw="15" lsb="-7"/>
+        <glyph ch="…" code="2026" bm="0" origin="771,801" size="54x45" aw="31" lsb="-7"/>
+        <glyph ch="‰" code="2030" bm="0" origin="827,801" size="54x45" aw="31" lsb="-7"/>
+        <glyph ch="‹" code="2039" bm="0" origin="883,801" size="31x45" aw="8" lsb="-7"/>
+        <glyph ch="›" code="203a" bm="0" origin="916,801" size="31x45" aw="8" lsb="-7"/>
+        <glyph ch="€" code="20ac" bm="0" origin="949,801" size="42x45" aw="19" lsb="-7"/>
+        <glyph ch="™" code="2122" bm="0" origin="2,848" size="54x45" aw="30" lsb="-7"/>
+        <glyph ch="−" code="2212" bm="0" origin="58,848" size="41x45" aw="18" lsb="-7"/>
+        <glyph ch="∙" code="2219" bm="0" origin="101,848" size="31x45" aw="8" lsb="-7"/>
+        <glyph ch="□" code="25a1" bm="0" origin="134,848" size="44x45" aw="21" lsb="-7"/>
+        <glyph ch="" code="e001" bm="0" origin="180,848" size="53x52" aw="40" lsb="-7" forcewhite="true"/>
+        <glyph ch="" code="e002" bm="0" origin="235,848" size="53x52" aw="40" lsb="-7" forcewhite="true"/>
+        <glyph ch="" code="e003" bm="0" origin="290,848" size="53x52" aw="40" lsb="-7" forcewhite="true"/>
+        <glyph ch="" code="e004" bm="0" origin="345,848" size="53x52" aw="40" lsb="-7" forcewhite="true"/>
+        <glyph ch="" code="e005" bm="0" origin="400,848" size="53x52" aw="41" lsb="-7" forcewhite="true"/>
+        <glyph ch="" code="e006" bm="0" origin="455,848" size="53x52" aw="41" lsb="-7" forcewhite="true"/>
+        <glyph ch="" code="e007" bm="0" origin="510,848" size="53x52" aw="32" lsb="-7" forcewhite="true"/>
+        <glyph ch="" code="e008" bm="0" origin="565,848" size="53x52" aw="32" lsb="-7" forcewhite="true"/>
+        <glyph ch="" code="e009" bm="0" origin="620,848" size="53x52" aw="40" lsb="-7" forcewhite="true"/>
+        <glyph ch="" code="e00a" bm="0" origin="675,848" size="53x52" aw="40" lsb="-7" forcewhite="true"/>
+        <glyph ch="" code="e00b" bm="0" origin="730,848" size="53x52" aw="34" lsb="-7" forcewhite="true"/>
+        <glyph ch="" code="e00c" bm="0" origin="785,848" size="53x52" aw="34" lsb="-7" forcewhite="true"/>
+        <glyph ch="" code="e00d" bm="0" origin="840,848" size="53x52" aw="40" lsb="-7" forcewhite="true"/>
+        <glyph ch="" code="e00e" bm="0" origin="895,848" size="53x52" aw="40" lsb="-7" forcewhite="true"/>
+        <glyph ch="" code="e00f" bm="0" origin="950,848" size="53x52" aw="40" lsb="-7" forcewhite="true"/>
+        <glyph ch="" code="e010" bm="0" origin="2,902" size="53x52" aw="41" lsb="-7" forcewhite="true"/>
+        <glyph ch="" code="e011" bm="0" origin="57,902" size="53x52" aw="32" lsb="-7" forcewhite="true"/>
+        <glyph ch="" code="e012" bm="0" origin="112,902" size="53x52" aw="41" lsb="-7" forcewhite="true"/>
+        <glyph ch="" code="e013" bm="0" origin="167,902" size="53x52" aw="32" lsb="-7" forcewhite="true"/>
+        <glyph ch="" code="e014" bm="0" origin="222,902" size="53x52" aw="40" lsb="-7" forcewhite="true"/>
+        <glyph ch="" code="e015" bm="0" origin="277,902" size="53x52" aw="40" lsb="-7" forcewhite="true"/>
+        <glyph ch="" code="e016" bm="0" origin="332,902" size="53x52" aw="40" lsb="-7" forcewhite="true"/>
+        <glyph ch="" code="e017" bm="0" origin="387,902" size="53x52" aw="40" lsb="-7" forcewhite="true"/>
+        <glyph ch="" code="e018" bm="0" origin="442,902" size="53x52" aw="40" lsb="-7" forcewhite="true"/>
+        <glyph ch="" code="e019" bm="0" origin="497,902" size="53x52" aw="40" lsb="-7" forcewhite="true"/>
+        <glyph ch="" code="e020" bm="0" origin="552,902" size="53x52" aw="40" lsb="-7" forcewhite="true"/>
+        <glyph ch="" code="e021" bm="0" origin="607,902" size="53x52" aw="40" lsb="-7" forcewhite="true"/>
+        <glyph ch="" code="e022" bm="0" origin="662,902" size="53x52" aw="40" lsb="-7" forcewhite="true"/>
+        <glyph ch="" code="e023" bm="0" origin="717,902" size="53x52" aw="40" lsb="-7" forcewhite="true"/>
+        <glyph ch="" code="e024" bm="0" origin="772,902" size="53x52" aw="40" lsb="-7" forcewhite="true"/>
+        <glyph ch="" code="e025" bm="0" origin="827,902" size="53x52" aw="40" lsb="-7" forcewhite="true"/>
+        <glyph ch="" code="e026" bm="0" origin="882,902" size="53x52" aw="40" lsb="-7" forcewhite="true"/>
+        <glyph ch="" code="e027" bm="0" origin="937,902" size="53x52" aw="40" lsb="-7" forcewhite="true"/>
+    </glyphs>
+    <kernpairs>
+        <kernpair left="Ж" right="в" adjust="-1"/>
+        <kernpair left="Ж" right="ж" adjust="-1"/>
+        <kernpair left="ъ" right="в" adjust="-2"/>
+        <kernpair left="ь" right="в" adjust="-2"/>
+        <kernpair left="Ґ" right="," adjust="-1"/>
+        <kernpair left="Ґ" right="-" adjust="-1"/>
+        <kernpair left="Ґ" right="." adjust="-1"/>
+        <kernpair left="Ґ" right="‚" adjust="-1"/>
+        <kernpair left="Ґ" right="„" adjust="-1"/>
+        <kernpair left="Ґ" right="…" adjust="-1"/>
+        <kernpair left="Ґ" right="–" adjust="-1"/>
+        <kernpair left="Ґ" right="—" adjust="-1"/>
+        <kernpair left="Ґ" right="š" adjust="-2"/>
+        <kernpair left="Ґ" right="œ" adjust="-2"/>
+        <kernpair left="Ґ" right="à" adjust="-2"/>
+        <kernpair left="Ґ" right="á" adjust="-2"/>
+        <kernpair left="Ґ" right="â" adjust="-2"/>
+        <kernpair left="Ґ" right="ã" adjust="-2"/>
+        <kernpair left="Ґ" right="ä" adjust="-2"/>
+        <kernpair left="Ґ" right="å" adjust="-2"/>
+        <kernpair left="Ґ" right="æ" adjust="-2"/>
+        <kernpair left="Ґ" right="ç" adjust="-2"/>
+        <kernpair left="Ґ" right="è" adjust="-2"/>
+        <kernpair left="Ґ" right="é" adjust="-2"/>
+        <kernpair left="Ґ" right="ê" adjust="-2"/>
+        <kernpair left="Ґ" right="ë" adjust="-2"/>
+        <kernpair left="Ґ" right="ð" adjust="-2"/>
+        <kernpair left="Ґ" right="ñ" adjust="-1"/>
+        <kernpair left="Ґ" right="ò" adjust="-2"/>
+        <kernpair left="Ґ" right="ó" adjust="-2"/>
+        <kernpair left="Ґ" right="ô" adjust="-2"/>
+        <kernpair left="Ґ" right="õ" adjust="-2"/>
+        <kernpair left="Ґ" right="ö" adjust="-2"/>
+        <kernpair left="Ґ" right="ø" adjust="-2"/>
+        <kernpair left="Ґ" right="ù" adjust="-1"/>
+        <kernpair left="Ґ" right="ú" adjust="-1"/>
+        <kernpair left="Ґ" right="û" adjust="-1"/>
+        <kernpair left="Ґ" right="ü" adjust="-1"/>
+        <kernpair left="Ґ" right="ž" adjust="-1"/>
+        <kernpair left="Ґ" right="ā" adjust="-2"/>
+        <kernpair left="Ґ" right="ă" adjust="-2"/>
+        <kernpair left="Ґ" right="ą" adjust="-2"/>
+        <kernpair left="Ґ" right="ć" adjust="-2"/>
+        <kernpair left="Ґ" right="ĉ" adjust="-2"/>
+        <kernpair left="Ґ" right="č" adjust="-2"/>
+        <kernpair left="Ґ" right="ď" adjust="-2"/>
+        <kernpair left="Ґ" right="đ" adjust="-2"/>
+        <kernpair left="Ґ" right="ě" adjust="-2"/>
+        <kernpair left="Ґ" right="ē" adjust="-2"/>
+        <kernpair left="Ґ" right="ĕ" adjust="-2"/>
+        <kernpair left="Ґ" right="ę" adjust="-2"/>
+        <kernpair left="Ґ" right="ĝ" adjust="-2"/>
+        <kernpair left="Ґ" right="ğ" adjust="-2"/>
+        <kernpair left="Ґ" right="ń" adjust="-1"/>
+        <kernpair left="Ґ" right="ň" adjust="-1"/>
+        <kernpair left="Ґ" right="ō" adjust="-2"/>
+        <kernpair left="Ґ" right="ŏ" adjust="-2"/>
+        <kernpair left="Ґ" right="ŕ" adjust="-1"/>
+        <kernpair left="Ґ" right="ř" adjust="-1"/>
+        <kernpair left="Ґ" right="ś" adjust="-2"/>
+        <kernpair left="Ґ" right="ŝ" adjust="-2"/>
+        <kernpair left="Ґ" right="ş" adjust="-2"/>
+        <kernpair left="Ґ" right="ș" adjust="-2"/>
+        <kernpair left="Ґ" right="ũ" adjust="-1"/>
+        <kernpair left="Ґ" right="ū" adjust="-1"/>
+        <kernpair left="Ґ" right="ŭ" adjust="-1"/>
+        <kernpair left="Ґ" right="ů" adjust="-1"/>
+        <kernpair left="Ґ" right="ų" adjust="-1"/>
+        <kernpair left="Ґ" right="ŵ" adjust="-1"/>
+        <kernpair left="Ґ" right="ź" adjust="-1"/>
+        <kernpair left="Ґ" right="Ц" adjust="-2"/>
+        <kernpair left="Ґ" right="Ш" adjust="-2"/>
+        <kernpair left="Ґ" right="Ы" adjust="-1"/>
+        <kernpair left="Ґ" right="Ю" adjust="-1"/>
+        <kernpair left="Ґ" right="б" adjust="-2"/>
+        <kernpair left="Ґ" right="в" adjust="-1"/>
+        <kernpair left="Ґ" right="ж" adjust="-1"/>
+        <kernpair left="Ґ" right="н" adjust="-2"/>
+    </kernpairs>
+</font>

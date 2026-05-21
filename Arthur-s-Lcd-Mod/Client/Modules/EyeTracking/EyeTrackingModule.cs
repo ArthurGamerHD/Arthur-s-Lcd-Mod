@@ -30,7 +30,6 @@ namespace LcdMod.Client.Modules.EyeTracking
         object _pressedClickableDataContext;
         bool _primaryWasPressed;
         bool _secondaryWasPressed;
-        bool _useInputBlocked;
 
         readonly IMyControl _moveCameraControl =
             MyAPIGateway.Input.GetGameControl(MyStringId.GetOrCompute("LOOKAROUND"));
@@ -70,18 +69,13 @@ namespace LcdMod.Client.Modules.EyeTracking
             if (MyAPIGateway.Gui.IsCursorVisible || (!_moveCameraControl.IsPressed() &&
                                                      ((entity?.BlockDefinition as MyCockpitDefinition)
                                                          ?.EnableShipControl ?? false)))
-            {
-                if (_useInputBlocked)
-                    LcdModClientComponent.SetLocalPlayerUseInputBlocked(blocked: _useInputBlocked = false);
-
                 return;
-            }
 
             Vector3D cameraPos;
             Vector3D cameraForward;
             if (!TryGetCameraRay(out cameraPos, out cameraForward))
             {
-                UpdateClickState(null, null, false, false);
+                UpdateClickState(null, null);
                 _lastActiveNearbyCount = 0;
                 return;
             }
@@ -170,7 +164,7 @@ namespace LcdMod.Client.Modules.EyeTracking
             try
             {
                 UpdateScrollState(lookingScreen);
-                UpdateClickState(hoveredClickable, eyeTrackingEntity, tooltipBlocksPrimary, tooltipBlocksSecondary);
+                UpdateClickState(hoveredClickable, eyeTrackingEntity);
             }
             catch (Exception e)
             {
@@ -196,19 +190,11 @@ namespace LcdMod.Client.Modules.EyeTracking
 
         void UpdateClickState(
             InteractiveEntry hoveredClickable,
-            IEyeTracking eyeTrackingEntity,
-            bool tooltipBlocksPrimary,
-            bool tooltipBlocksSecondary)
+            IEyeTracking eyeTrackingEntity)
         {
             bool primaryPressed = MyAPIGateway.Input != null && HoldingClick;
             bool secondaryPressed = MyAPIGateway.Input != null && HoldingRightClick;
-            bool shouldBlockUse = hoveredClickable != null || tooltipBlocksPrimary || tooltipBlocksSecondary;
-
-            if (_useInputBlocked != shouldBlockUse)
-            {
-                LcdModClientComponent.SetLocalPlayerUseInputBlocked(blocked: shouldBlockUse);
-                _useInputBlocked = shouldBlockUse;
-            }
+            bool hasInputTarget = hoveredClickable != null || eyeTrackingEntity != null;
 
             if ((primaryPressed && !_primaryWasPressed) || (secondaryPressed && !_secondaryWasPressed))
             {
@@ -255,7 +241,7 @@ namespace LcdMod.Client.Modules.EyeTracking
                 _pressedClickableDataContext = null;
             }
 
-            if (!shouldBlockUse)
+            if (!hasInputTarget)
             {
                 _pressedClickable = null;
                 _pressedClickableDataContext = null;

@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<Definitions xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <Fonts>
+        <Font>
+            <Id>
+                <TypeId>FontDefinition</TypeId>
+                <SubtypeId>White-Bold</SubtypeId>
+            </Id>
+            <Path>Fonts\space_engineers_bold\FontDataPA_Bold.xml</Path>
+        </Font>
+
+        <Font>
+            <Id>
+                <TypeId>FontDefinition</TypeId>
+                <SubtypeId>White-Italic</SubtypeId>
+            </Id>
+            <Path>Fonts\space_engineers_italic\FontDataPA_Italic.xml</Path>
+        </Font>
+
+        <Font>
+            <Id>
+                <TypeId>FontDefinition</TypeId>
+                <SubtypeId>White-Bold-Italic</SubtypeId>
+            </Id>
+            <Path>Fonts\space_engineers_bold_italic\FontDataPA_BoldItalic.xml</Path>
+        </Font>
+    </Fonts>
+</Definitions>

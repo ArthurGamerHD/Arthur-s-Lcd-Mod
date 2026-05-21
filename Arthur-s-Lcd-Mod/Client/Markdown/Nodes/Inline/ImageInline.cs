@@ -16,5 +16,10 @@ namespace LcdMod.Client.Markdown.Nodes.Inline
         public string Source { get; set; }
 
         public ImageType Kind { get; set; }
+
+        public float Width { get; set; } = 64;
+        public float Height { get; set; } = 64;
+
+        public SizeType SizeType { get; set; } = SizeType.Pixel;
     }
 }
