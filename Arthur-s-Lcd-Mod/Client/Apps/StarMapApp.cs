@@ -2081,11 +2081,24 @@ namespace LcdMod.Client.Apps
         RectangleF GetTextureBounds()
         {
             Vector2 textureSize = Surface?.TextureSize ?? Vector2.Zero;
-            return new RectangleF(
+            var textureBounds = new RectangleF(
                 0f,
                 0f,
                 Math.Max(1f, textureSize.X),
                 Math.Max(1f, textureSize.Y));
+            var viewBox = ViewBox;
+            if (viewBox.Width <= 0f || viewBox.Height <= 0f)
+                return textureBounds;
+
+            float left = Math.Min(textureBounds.X, viewBox.X);
+            float top = Math.Min(textureBounds.Y, viewBox.Y);
+            float right = Math.Max(textureBounds.Right, viewBox.Right);
+            float bottom = Math.Max(textureBounds.Bottom, viewBox.Bottom);
+            return new RectangleF(
+                left,
+                top,
+                Math.Max(1f, right - left),
+                Math.Max(1f, bottom - top));
         }
 
         void RestoreTextureClip(List<MySprite> sprites)

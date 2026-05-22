@@ -43,6 +43,8 @@ namespace LcdMod.Client
 #if DEBUG
             group.TryAdd("DebugInteractive", LocalConfigManager.SetDebugInteractiveCommand);
             group.TryAdd("DebugSurface", LocalConfigManager.SetDebugSurfaceCommand);
+            group.TryAdd("SpriteCountDebug", LocalConfigManager.SetSpriteCountDebugCommand);
+            group.TryAdd("VisibleClip", LocalConfigManager.SetVisibleClipCommand);
             group.TryAdd("TextInput", strings => TextInputHelper.SpawnForLocalPlayer(strings.FirstOrDefault(), s => MyAPIGateway.Utilities.ShowNotification("User typed: " + s), "Hello World!", strings.Length > 1 ? strings[1] : string.Empty));
 #endif
 

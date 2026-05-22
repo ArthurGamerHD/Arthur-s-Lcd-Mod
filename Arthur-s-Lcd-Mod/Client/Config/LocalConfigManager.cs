@@ -9,8 +9,13 @@ namespace LcdMod.Client.Config
         public static LcdModLocalConfig Config { get; private set; } = new LcdModLocalConfig();
 
         public static bool AdvancedTweakables => Config != null && Config.AdvancedTweekables;
+        
+#if DEBUG
         public static bool DebugInteractive => Config != null && Config.DebugInteractive;
         public static bool DebugSurface => Config != null && Config.DebugSurface;
+        public static bool SpriteCountDebug => Config != null && Config.SpriteCountDebug;
+        public static bool VisibleClip => Config != null && Config.VisibleClip;
+#endif
 
         public static void Load()
         {
@@ -58,6 +63,7 @@ namespace LcdMod.Client.Config
                 "AdvancedTweekables mode " + (AdvancedTweakables ? "enabled." : "disabled."));
         }
 
+#if DEBUG
         public static void SetDebugInteractiveCommand(string[] args)
         {
             bool enabled;
@@ -98,6 +104,56 @@ namespace LcdMod.Client.Config
                 "DebugSurface mode " + (DebugSurface ? "enabled." : "disabled."));
         }
 
+        public static void SetSpriteCountDebugCommand(string[] args)
+        {
+            bool enabled;
+            if (!TryParseOptionalBoolean(args, SpriteCountDebug, out enabled))
+            {
+                MyAPIGateway.Utilities.ShowMessage("lcdMod", "Usage: /lcdmod spritecountdebug [true|false]");
+                return;
+            }
+
+            if (Config == null)
+                Config = new LcdModLocalConfig();
+
+            Config.SpriteCountDebug = enabled;
+            Save();
+
+            MyAPIGateway.Utilities.ShowMessage(
+                "lcdMod",
+                "SpriteCountDebug mode " + (SpriteCountDebug ? "enabled." : "disabled."));
+        }
+
+        public static void SetVisibleClipCommand(string[] args)
+        {
+            bool enabled;
+            if (!TryParseOptionalBoolean(args, VisibleClip, out enabled))
+            {
+                MyAPIGateway.Utilities.ShowMessage("lcdMod", "Usage: /lcdmod visibleclip [true|false]");
+                return;
+            }
+
+            if (Config == null)
+                Config = new LcdModLocalConfig();
+
+            Config.VisibleClip = enabled;
+            Save();
+
+            MyAPIGateway.Utilities.ShowMessage(
+                "lcdMod",
+                "VisibleClip mode " + (VisibleClip ? "enabled." : "disabled."));
+        }
+        
+        
+        static bool TryParseOptionalBoolean(string[] args, bool currentValue, out bool result)
+        {
+            result = !currentValue;
+            if (args == null || args.Length == 0)
+                return true;
+
+            return args.Length == 1 && TryParseBoolean(args[0], out result);
+        }
+#endif
         static LcdModLocalConfig DeserializeConfig(string xml)
         {
             if (string.IsNullOrWhiteSpace(xml))
@@ -129,15 +185,6 @@ namespace LcdMod.Client.Config
                 default:
                     return false;
             }
-        }
-
-        static bool TryParseOptionalBoolean(string[] args, bool currentValue, out bool result)
-        {
-            result = !currentValue;
-            if (args == null || args.Length == 0)
-                return true;
-
-            return args.Length == 1 && TryParseBoolean(args[0], out result);
         }
     }
 }

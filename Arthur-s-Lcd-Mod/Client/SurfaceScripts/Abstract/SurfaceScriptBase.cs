@@ -51,6 +51,8 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         protected string Icon { get; set; }
         public new IMyCubeBlock Block { get; }
 
+        protected virtual bool ClipToBounds => _registeredProxyOffsets.Count > 0;
+
         protected long WaitForFrame;
         protected long LastRenderFrame;
         public long LastRunTick { get; private set; } = long.MinValue;
@@ -984,12 +986,17 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 return;
             try
             {
-                var spriteList = RenderFrame(GetSprites);
+                var spriteList = PrepareSpritesForRender(RenderFrame(GetSprites));
                 CacheFrameForProxies(spriteList);
+                var renderList = ClipToBounds ? ClipSpriteListToSurfaceBounds(spriteList) : spriteList;
                 LastRenderFrame = currentFrame;
                 NotifyRendered();
 
-                _renderComp.RenderSpritesToTexture(RotationOrSurfaceIndex, spriteList, _textureSize, _aspectRatio,
+#if DEBUG
+                AddSpriteCountDebug(renderList);
+#endif
+
+                _renderComp.RenderSpritesToTexture(RotationOrSurfaceIndex, renderList, _textureSize, _aspectRatio,
                     Surface.ScriptBackgroundColor, Surface.BackgroundAlpha);
             }
             catch (Exception e)
@@ -1016,6 +1023,366 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 }
             }
         }
+
+        List<MySprite> ClipSpriteListToSurfaceBounds(List<MySprite> sprites)
+        {
+            if (!ClipToBounds || sprites == null || sprites.Count == 0)
+                return sprites;
+
+            var renderBounds = new RectangleF(0f, 0f, _textureSize.X, _textureSize.Y);
+            var renderSprites = new List<MySprite>(sprites.Count);
+            bool skipClippedSprites = false;
+
+            for (int i = 0; i < sprites.Count; i++)
+            {
+                MySprite sprite;
+                var sourceSprite = sprites[i];
+                if (!TryPrepareHostSpriteForRender(
+                        sourceSprite,
+                        renderBounds,
+                        ref skipClippedSprites,
+                        out sprite))
+                {
+#if DEBUG
+                    AddInvalidClipDebugSprite(sourceSprite, renderBounds, renderSprites);
+#endif
+                    continue;
+                }
+
+                renderSprites.Add(sprite);
+#if DEBUG
+                AddVisibleClipDebugSprites(sourceSprite, sprite, renderSprites);
+#endif
+            }
+
+            return renderSprites;
+        }
+
+#if DEBUG
+        static void AddVisibleClipDebugSprites(MySprite sourceSprite, MySprite renderSprite, List<MySprite> renderSprites)
+        {
+            if (!LocalConfigManager.VisibleClip ||
+                renderSprites == null ||
+                sourceSprite.Type != SpriteType.CLIP_RECT ||
+                !renderSprite.Position.HasValue ||
+                !renderSprite.Size.HasValue)
+            {
+                return;
+            }
+
+            var size = renderSprite.Size.Value;
+            if (size.X <= 0f || size.Y <= 0f)
+                return;
+
+            var rect = new RectangleF(renderSprite.Position.Value, size);
+            AddVisibleClipRect(rect, new Color(255, 0, 0, 55), renderSprites);
+            AddVisibleClipBorder(rect, new Color(255, 0, 0, 255), renderSprites);
+        }
+
+        static void AddInvalidClipDebugSprite(MySprite sourceSprite, RectangleF renderBounds, List<MySprite> renderSprites)
+        {
+            if (!LocalConfigManager.VisibleClip ||
+                renderSprites == null ||
+                sourceSprite.Type != SpriteType.CLIP_RECT ||
+                !sourceSprite.Position.HasValue ||
+                !sourceSprite.Size.HasValue)
+            {
+                return;
+            }
+
+            var clip = NormalizeRect(new RectangleF(sourceSprite.Position.Value, sourceSprite.Size.Value));
+            if (clip.Width <= 0f || clip.Height <= 0f)
+                return;
+
+            float markerSize = Math.Max(8f, Math.Min(renderBounds.Width, renderBounds.Height) * 0.025f);
+            var markerCenter = new Vector2(
+                MathHelper.Clamp(clip.Center.X, renderBounds.X + markerSize, renderBounds.Right - markerSize),
+                MathHelper.Clamp(clip.Center.Y, renderBounds.Y + markerSize, renderBounds.Bottom - markerSize));
+
+            renderSprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE,
+                Data = "Cross",
+                Position = markerCenter,
+                Size = new Vector2(markerSize * 2f),
+                Color = new Color(255, 0, 0, 255),
+                Alignment = TextAlignment.CENTER
+            });
+        }
+
+        static void AddVisibleClipRect(RectangleF rect, Color color, List<MySprite> renderSprites)
+        {
+            renderSprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE,
+                Data = "SquareSimple",
+                Position = rect.Center,
+                Size = rect.Size,
+                Color = color,
+                Alignment = TextAlignment.CENTER
+            });
+        }
+
+        static void AddVisibleClipBorder(RectangleF rect, Color color, List<MySprite> renderSprites)
+        {
+            float thickness = Math.Max(2f, Math.Min(rect.Width, rect.Height) * 0.015f);
+            AddVisibleClipRect(new RectangleF(rect.X, rect.Y, rect.Width, thickness), color, renderSprites);
+            AddVisibleClipRect(new RectangleF(rect.X, rect.Bottom - thickness, rect.Width, thickness), color, renderSprites);
+            AddVisibleClipRect(new RectangleF(rect.X, rect.Y, thickness, rect.Height), color, renderSprites);
+            AddVisibleClipRect(new RectangleF(rect.Right - thickness, rect.Y, thickness, rect.Height), color, renderSprites);
+        }
+#endif
+
+        static bool TryPrepareHostSpriteForRender(
+            MySprite sprite,
+            RectangleF renderBounds,
+            ref bool skipClippedSprites,
+            out MySprite renderSprite)
+        {
+            renderSprite = sprite;
+
+            if (sprite.Type == SpriteType.CLIP_RECT)
+            {
+                bool keepClip = TryClipRectToRenderBounds(sprite, renderBounds, out renderSprite);
+                skipClippedSprites = !keepClip;
+                return keepClip;
+            }
+
+            if (skipClippedSprites)
+                return false;
+
+            if (sprite.Type == SpriteType.TEXTURE)
+            {
+                sprite = NormalizeTextureSprite(sprite, renderBounds);
+                renderSprite = sprite;
+                return TextureTouches(sprite, renderBounds);
+            }
+
+            return true;
+        }
+
+        static bool TextureTouches(MySprite sprite, RectangleF renderBounds)
+        {
+            var bounds = GetTextureBounds(sprite, renderBounds);
+            return RectanglesTouch(bounds, renderBounds);
+        }
+
+        static RectangleF GetTextureBounds(MySprite sprite, RectangleF renderBounds)
+        {
+            var position = sprite.Position ?? renderBounds.Center;
+            var size = sprite.Size ?? renderBounds.Size;
+            var bounds = GetAlignedBounds(position, size, sprite.Alignment);
+            if (Math.Abs(sprite.RotationOrScale) <= 0.0001f)
+                return bounds;
+
+            return GetRotatedBounds(bounds, position, sprite.RotationOrScale);
+        }
+
+        static MySprite NormalizeTextureSprite(MySprite sprite, RectangleF renderBounds)
+        {
+            var position = sprite.Position ?? renderBounds.Center;
+            var size = sprite.Size ?? renderBounds.Size;
+            if (size.X >= 0f && size.Y >= 0f)
+                return sprite;
+
+            var bounds = NormalizeRect(GetAlignedBounds(position, size, sprite.Alignment));
+            var normalizedPosition = GetAlignedPosition(bounds, sprite.Alignment);
+
+            return new MySprite(
+                sprite.Type,
+                sprite.Data,
+                normalizedPosition,
+                bounds.Size,
+                sprite.Color,
+                sprite.FontId,
+                sprite.Alignment,
+                sprite.RotationOrScale);
+        }
+
+        static RectangleF GetAlignedBounds(Vector2 position, Vector2 size, TextAlignment alignment)
+        {
+            switch (alignment)
+            {
+                case TextAlignment.CENTER:
+                    return new RectangleF(position.X - size.X * 0.5f, position.Y - size.Y * 0.5f, size.X, size.Y);
+                case TextAlignment.RIGHT:
+                    return new RectangleF(position.X - size.X, position.Y - size.Y * 0.5f, size.X, size.Y);
+                case TextAlignment.LEFT:
+                default:
+                    return new RectangleF(position.X, position.Y - size.Y * 0.5f, size.X, size.Y);
+            }
+        }
+
+        static Vector2 GetAlignedPosition(RectangleF bounds, TextAlignment alignment)
+        {
+            switch (alignment)
+            {
+                case TextAlignment.CENTER:
+                    return bounds.Center;
+                case TextAlignment.RIGHT:
+                    return new Vector2(bounds.Right, bounds.Center.Y);
+                case TextAlignment.LEFT:
+                default:
+                    return new Vector2(bounds.X, bounds.Center.Y);
+            }
+        }
+
+        static RectangleF GetRotatedBounds(RectangleF bounds, Vector2 pivot, float rotation)
+        {
+            float cos = (float)Math.Cos(rotation);
+            float sin = (float)Math.Sin(rotation);
+
+            float minX = float.MaxValue;
+            float minY = float.MaxValue;
+            float maxX = float.MinValue;
+            float maxY = float.MinValue;
+
+            AddRotatedPoint(bounds.X, bounds.Y, pivot, cos, sin, ref minX, ref minY, ref maxX, ref maxY);
+            AddRotatedPoint(bounds.Right, bounds.Y, pivot, cos, sin, ref minX, ref minY, ref maxX, ref maxY);
+            AddRotatedPoint(bounds.Right, bounds.Bottom, pivot, cos, sin, ref minX, ref minY, ref maxX, ref maxY);
+            AddRotatedPoint(bounds.X, bounds.Bottom, pivot, cos, sin, ref minX, ref minY, ref maxX, ref maxY);
+
+            return new RectangleF(minX, minY, maxX - minX, maxY - minY);
+        }
+
+        static void AddRotatedPoint(
+            float x,
+            float y,
+            Vector2 pivot,
+            float cos,
+            float sin,
+            ref float minX,
+            ref float minY,
+            ref float maxX,
+            ref float maxY)
+        {
+            float relativeX = x - pivot.X;
+            float relativeY = y - pivot.Y;
+            float rotatedX = pivot.X + relativeX * cos - relativeY * sin;
+            float rotatedY = pivot.Y + relativeX * sin + relativeY * cos;
+
+            if (rotatedX < minX)
+                minX = rotatedX;
+            if (rotatedY < minY)
+                minY = rotatedY;
+            if (rotatedX > maxX)
+                maxX = rotatedX;
+            if (rotatedY > maxY)
+                maxY = rotatedY;
+        }
+
+        static bool TryClipRectToRenderBounds(MySprite sprite, RectangleF renderBounds, out MySprite clippedSprite)
+        {
+            clippedSprite = sprite;
+            if (!sprite.Position.HasValue || !sprite.Size.HasValue)
+                return true;
+
+            var clip = NormalizeRect(new RectangleF(sprite.Position.Value, sprite.Size.Value));
+            RectangleF clipped;
+            RectangleF.Intersect(ref clip, ref renderBounds, out clipped);
+            if (clipped.Width <= 0f || clipped.Height <= 0f)
+                return false;
+
+            clippedSprite = new MySprite(
+                SpriteType.CLIP_RECT,
+                sprite.Data,
+                clipped.Position,
+                clipped.Size,
+                sprite.Color,
+                sprite.FontId,
+                sprite.Alignment,
+                sprite.RotationOrScale);
+            return true;
+        }
+
+        static RectangleF NormalizeRect(RectangleF rect)
+        {
+            float left = Math.Min(rect.X, rect.Right);
+            float top = Math.Min(rect.Y, rect.Bottom);
+            float right = Math.Max(rect.X, rect.Right);
+            float bottom = Math.Max(rect.Y, rect.Bottom);
+            return new RectangleF(left, top, right - left, bottom - top);
+        }
+
+        static bool RectanglesTouch(RectangleF a, RectangleF b)
+        {
+            return a.Right > b.X &&
+                   a.X < b.Right &&
+                   a.Bottom > b.Y &&
+                   a.Y < b.Bottom;
+        }
+
+        static List<MySprite> PrepareSpritesForRender(List<MySprite> sprites)
+        {
+            if (sprites == null || sprites.Count == 0)
+                return sprites ?? new List<MySprite>();
+
+            List<MySprite> prepared = null;
+            for (int i = 0; i < sprites.Count; i++)
+            {
+                var sprite = sprites[i];
+                if (CanRenderSprite(sprite))
+                {
+                    if (prepared != null)
+                        prepared.Add(sprite);
+                    continue;
+                }
+
+                if (prepared == null)
+                {
+                    prepared = new List<MySprite>(sprites.Count);
+                    for (int j = 0; j < i; j++)
+                        prepared.Add(sprites[j]);
+                }
+            }
+
+            return prepared ?? sprites;
+        }
+
+        static bool CanRenderSprite(MySprite sprite)
+        {
+            if (!IsFinite(sprite.RotationOrScale))
+                return false;
+
+            if (sprite.Position.HasValue && !IsFinite(sprite.Position.Value))
+                return false;
+
+            if (sprite.Size.HasValue && !IsFinite(sprite.Size.Value))
+                return false;
+
+            return true;
+        }
+
+        static bool IsFinite(Vector2 value)
+        {
+            return IsFinite(value.X) && IsFinite(value.Y);
+        }
+
+        static bool IsFinite(float value)
+        {
+            return !float.IsNaN(value) && !float.IsInfinity(value);
+        }
+
+#if DEBUG
+        void AddSpriteCountDebug(List<MySprite> spriteList)
+        {
+            if (!LocalConfigManager.SpriteCountDebug || spriteList == null)
+                return;
+
+            int finalCount = spriteList.Count + 1;
+            float scale = 2;
+            spriteList.Add(new MySprite
+            {
+                Type = SpriteType.TEXT,
+                Data = finalCount.ToString(),
+                Position = Surface.TextureSize / 2f,
+                Color = Color.Red,
+                Alignment = TextAlignment.CENTER,
+                FontId = "White",
+                RotationOrScale = scale
+            });
+        }
+#endif
 
         public virtual List<MySprite> GetSprites()
         {

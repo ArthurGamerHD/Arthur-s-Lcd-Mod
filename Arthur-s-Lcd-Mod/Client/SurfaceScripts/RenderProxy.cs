@@ -35,8 +35,10 @@ namespace LcdMod.Client.SurfaceScripts
         public const string TITLE = "LcdMod_RenderProxy";
 
         List<MySprite> _sprites = new List<MySprite>();
+        readonly List<InteractiveEntry> _parentInteractiveEntries = new List<InteractiveEntry>();
 
         protected override ConfigKind ConfigKind => ConfigKind.RenderProxy;
+        protected override bool ClipToBounds => true;
 
         protected override string DefaultTitle => TITLE;
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
@@ -92,7 +94,11 @@ namespace LcdMod.Client.SurfaceScripts
             {
                 var parentInteractive = _parent as InteractiveSurfaceScript;
                 if (IsParentAlive(_parent) && parentInteractive != null)
-                    return parentInteractive.InteractiveList;
+                {
+                    _parentInteractiveEntries.Clear();
+                    _parentInteractiveEntries.AddRange(parentInteractive.InteractiveEntries);
+                    return _parentInteractiveEntries;
+                }
 
                 var appInteractive = AppInteractive;
                 if (appInteractive != null)
@@ -1271,6 +1277,7 @@ namespace LcdMod.Client.SurfaceScripts
                 try
                 {
                     parentInteractive.LookAt(onScreenCoordinates + HitTestOffset);
+                    parentInteractive.RenderSprites(force: true);
                     return;
                 }
                 catch
@@ -1284,19 +1291,28 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override bool HasTooltipInputAtCursor(bool rightClick)
         {
-            ResolveParentFromConfig();
+            InteractiveSurfaceScript parentInteractive;
+            if (TryGetParentInteractive(out parentInteractive))
+                return parentInteractive.HasTooltipInputAtCursor(rightClick);
+
             return base.HasTooltipInputAtCursor(rightClick);
         }
 
         public override bool TryHandleTooltipActivationClick(bool rightClick, out InteractiveEntry tooltipParent)
         {
-            ResolveParentFromConfig();
+            InteractiveSurfaceScript parentInteractive;
+            if (TryGetParentInteractive(out parentInteractive))
+                return parentInteractive.TryHandleTooltipActivationClick(rightClick, out tooltipParent);
+
             return base.TryHandleTooltipActivationClick(rightClick, out tooltipParent);
         }
 
         public override bool IsInsideContainer(InteractiveEntry entry, Vector2 position)
         {
-            ResolveParentFromConfig();
+            InteractiveSurfaceScript parentInteractive;
+            if (TryGetParentInteractive(out parentInteractive))
+                return parentInteractive.IsInsideContainer(entry, position);
+
             return base.IsInsideContainer(entry, position);
         }
 
@@ -1360,19 +1376,41 @@ namespace LcdMod.Client.SurfaceScripts
             }
 
             foreach (var sprite in parentFrame)
-            {
-                _sprites.Add(new MySprite(
-                    sprite.Type,
-                    sprite.Data,
-                    sprite.Position - offset,
-                    sprite.Size,
-                    sprite.Color,
-                    sprite.FontId,
-                    sprite.Alignment,
-                    sprite.RotationOrScale));
-            }
+                _sprites.Add(RemapParentSprite(sprite, offset));
 
             return _sprites;
+        }
+
+        static MySprite RemapParentSprite(MySprite sprite, Vector2 offset)
+        {
+            if (sprite.Type == SpriteType.CLIP_RECT)
+                return RemapParentClipRect(sprite, offset);
+
+            return new MySprite(
+                sprite.Type,
+                sprite.Data,
+                sprite.Position - offset,
+                sprite.Size,
+                sprite.Color,
+                sprite.FontId,
+                sprite.Alignment,
+                sprite.RotationOrScale);
+        }
+
+        static MySprite RemapParentClipRect(MySprite sprite, Vector2 offset)
+        {
+            if (!sprite.Position.HasValue)
+                return sprite;
+
+            return new MySprite(
+                SpriteType.CLIP_RECT,
+                sprite.Data,
+                sprite.Position.Value - offset,
+                sprite.Size,
+                sprite.Color,
+                sprite.FontId,
+                sprite.Alignment,
+                sprite.RotationOrScale);
         }
 
         protected override void OnMouseScroll(int delta, ref bool handled)
