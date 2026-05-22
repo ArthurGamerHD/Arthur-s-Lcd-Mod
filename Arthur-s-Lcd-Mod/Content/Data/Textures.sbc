@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
     <LCDTextures>
+
+        <LCDTextureDefinition> <!-- Custom variant of Vanilla Cursor Hand sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="CursorHand"/>
+            <SpritePath>Textures/Sprites/MouseCursorHand.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+        
         <LCDTextureDefinition> <!-- Custom Warning Sprite -->
             <Id Type="LCDTextureDefinition" Subtype="Warning"/>
             <SpritePath>Textures/Sprites/Warning.dds</SpritePath>
