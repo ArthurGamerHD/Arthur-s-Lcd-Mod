@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using Generated;
 using LcdMod.Client.Config;
 using LcdMod.Client.Gui;
-using LcdMod.Client.Gui.Controls.Interactive;
+using LcdMod.Client.Gui.ControlsTemplates;
+using LcdMod.Client.Gui.ControlsTemplates.Interactive;
+using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Utility;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
@@ -49,9 +51,9 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         RectangleF _baseViewBox;
         readonly HiddenGlobalMenuEntry _hiddenGlobalMenuEntry;
 
-        readonly List<InteractiveEntry> _interactiveEntriesWithOverlay = new List<InteractiveEntry>();
+        readonly List<ControlBase> _interactiveEntriesWithOverlay = new List<ControlBase>();
 
-        public ICollection<InteractiveEntry> InteractiveEntries
+        public ICollection<ControlBase> InteractiveEntries
         {
             get
             {
@@ -86,7 +88,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             }
         }
 
-        public virtual List<InteractiveEntry> InteractiveList { get; } = new List<InteractiveEntry>();
+        public virtual List<ControlBase> InteractiveList { get; } = new List<ControlBase>();
 
         protected override void UpdateViewBox()
         {
@@ -133,8 +135,8 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             OnMouseScroll(delta, ref handled);
         }
 
-        InteractiveEntry _activeTooltipParentEntry;
-        InteractiveEntry _manualTooltipParentEntry;
+        ControlBase _activeTooltipParentEntry;
+        ControlBase _manualTooltipParentEntry;
         object _manualTooltipParentObject;
 
         MessageBox _messageBox;
@@ -225,7 +227,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             return false;
         }
 
-        InteractiveEntry FindVisibleTooltipEntryByContext(object dataContext)
+        ControlBase FindVisibleTooltipEntryByContext(object dataContext)
         {
             for (int i = InteractiveList.Count - 1; i >= 0; i--)
             {
@@ -242,7 +244,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             return null;
         }
 
-        InteractiveEntry ResolveManualTooltipParent()
+        ControlBase ResolveManualTooltipParent()
         {
             if (_manualTooltipParentEntry != null &&
                 _manualTooltipParentEntry.Visible &&
@@ -265,7 +267,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             return null;
         }
 
-        InteractiveEntry FindTooltipHitTarget()
+        ControlBase FindTooltipHitTarget()
         {
             var position = HitTestCursorPosition;
             if (float.IsNaN(position.X) || float.IsNaN(position.Y) || !HasRecentVisualContact)
@@ -307,11 +309,11 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         public virtual bool TryHandleTooltipActivationClick(bool rightClick)
         {
-            InteractiveEntry tooltipParent;
+            ControlBase tooltipParent;
             return TryHandleTooltipActivationClick(rightClick, out tooltipParent);
         }
 
-        public virtual bool TryHandleTooltipActivationClick(bool rightClick, out InteractiveEntry tooltipParent)
+        public virtual bool TryHandleTooltipActivationClick(bool rightClick, out ControlBase tooltipParent)
         {
             tooltipParent = null;
 
@@ -346,7 +348,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             return true;
         }
 
-        InteractiveEntry FindTooltipTarget()
+        ControlBase FindTooltipTarget()
         {
             var manualParent = ResolveManualTooltipParent();
             if (manualParent != null)
@@ -601,7 +603,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             _messageBox.Show(title, content, button1, button2, button1Callback, button2Callback, icon);
         }
 
-        public virtual bool IsInsideContainer(InteractiveEntry entry, Vector2 position)
+        public virtual bool IsInsideContainer(ControlBase entry, Vector2 position)
         {
             if (entry == null || !entry.Visible || entry.Children == null || entry.Children.Count == 0)
                 return false;
@@ -615,7 +617,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             if (float.IsNaN(position.X) || float.IsNaN(position.Y) || !HasRecentVisualContact)
                 return;
 
-            var entries = InteractiveEntries as IList<InteractiveEntry>;
+            var entries = InteractiveEntries as IList<ControlBase>;
             if (entries == null)
                 return;
 
@@ -632,7 +634,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             CursorType = CursorType.Default;
         }
 
-        InteractiveEntry ResolveTopHitEntry(InteractiveEntry entry, Vector2 position)
+        ControlBase ResolveTopHitEntry(ControlBase entry, Vector2 position)
         {
             if (entry == null || !entry.Visible)
                 return null;
@@ -709,7 +711,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             if (sprites == null || InteractiveList == null || InteractiveList.Count == 0)
                 return;
 
-            var context = new InteractiveRenderContext(
+            var context = new ControlRenderContext(
                 Surface,
                 Scale,
                 FontScale,
@@ -732,7 +734,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         }
 
 #if DEBUG
-        static void AddDebugInteractiveBounds(InteractiveEntry entry, List<MySprite> sprites)
+        static void AddDebugInteractiveBounds(ControlBase entry, List<MySprite> sprites)
         {
             var bounds = entry.Bounds;
             if (bounds.Width <= 0f || bounds.Height <= 0f)

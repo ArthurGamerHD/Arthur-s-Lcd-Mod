@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Generated;
 using LcdMod.Client.Gui;
+using LcdMod.Client.Gui.ControlsTemplates;
 using VRageMath;
 using SliderCursorScale = LcdMod.Client.Terminal.Controls.Interactive.SliderCursorScale;
 using SwitchToggleAlt = LcdMod.Client.Terminal.Controls.Interactive.SwitchToggleAlt;
@@ -19,7 +20,7 @@ namespace LcdMod.Client.Utility
 
         Vector2 HitTestOffset { get; }
 
-        ICollection<InteractiveEntry> InteractiveEntries { get; }
+        ICollection<ControlBase> InteractiveEntries { get; }
         
         CursorType CursorType { get; }
         

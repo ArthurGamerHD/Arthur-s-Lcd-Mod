@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using Sandbox.ModAPI.Ingame;
 using VRage.Game;
 using VRageMath;
 
@@ -213,5 +214,8 @@ namespace LcdMod.Client.Helpers
                 return $"{ts.Hours:D2}:{ts.Minutes:D2}:{ts.Seconds:D2}";
             return ts.TotalSeconds > 60 ? $"{ts.Minutes:D2}:{ts.Seconds:D2}" : $"{ts.Seconds}s";
         }
+
+        public static float LineHeight(float scale, IMyTextSurface surface, string font = "White", string probe = "Ag") 
+            => GetSizeInPixel(probe, font, scale, surface).Y;
     }
 }

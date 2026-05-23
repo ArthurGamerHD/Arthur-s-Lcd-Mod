@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using LcdMod.Client.Gui.Controls;
+using LcdMod.Client.Gui.ControlsTemplates;
+using LcdMod.Client.Gui.ControlsTemplates.Panels;
+using LcdMod.Client.Gui.ControlsTemplates.Progress;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
@@ -473,8 +475,8 @@ namespace LcdMod.Client.Apps.Abstract
                     (xEnd - xStart) - cellPadding,
                     rowHeight - cellPadding);
                 var dropShadow = new RectangleF(cellRect.Position + 2, cellRect.Size);
-                RectanglePanel.CreateSpritesFromRect(dropShadow, sprites, hsv.HSVtoColor(), .2f);
-                RectanglePanel.CreateSpritesFromRect(cellRect, sprites, backgroundColor, .2f);
+                Border.CreateSpritesFromRect(dropShadow, sprites, hsv.HSVtoColor(), .2f);
+                Border.CreateSpritesFromRect(cellRect, sprites, backgroundColor, .2f);
             }
 
             var iconRect = slots.Item1;

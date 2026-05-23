@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Apps;
+using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using Sandbox.Game.Components;
 using Sandbox.ModAPI;

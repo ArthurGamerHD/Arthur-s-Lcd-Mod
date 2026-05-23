@@ -1,5 +1,5 @@
 using System.Text;
-using LcdMod.Client.Markdown.Nodes;
+using LcdMod.Client.Markdown;
 using LcdMod.Common;
 
 namespace LcdMod.Client.Markdown

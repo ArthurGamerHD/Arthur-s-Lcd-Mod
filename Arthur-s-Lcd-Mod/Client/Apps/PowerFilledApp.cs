@@ -4,9 +4,10 @@ using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui;
+using LcdMod.Client.Gui.ControlsTemplates;
+using LcdMod.Client.Gui.Tooltip;
+using LcdMod.Client.Gui.UserControls.Power;
 using LcdMod.Client.Helpers;
-using LcdMod.Client.Gui.Controls.Interactive;
-using LcdMod.Client.Gui.Models.Power;
 using LcdMod.Client.Utility;
 using VRage;
 using VRage.Game.GUI.TextPanel;
@@ -27,12 +28,12 @@ namespace LcdMod.Client.Apps
         readonly InteractiveSurfaceScript _interactiveHost;
         readonly List<PowerCollector> _collectors = new List<PowerCollector>();
         readonly List<PowerEntry> _entries = new List<PowerEntry>();
-        readonly List<InteractiveEntry> _interactiveList = new List<InteractiveEntry>();
+        readonly List<ControlBase> _interactiveList = new List<ControlBase>();
         readonly Dictionary<long, PowerEntry> _entryById = new Dictionary<long, PowerEntry>();
         readonly Dictionary<long, InteractiveRectangleEntry> _entryHitboxById = new Dictionary<long, InteractiveRectangleEntry>();
         ScreenConfigPower _config;
         
-        public List<InteractiveEntry> InteractiveList => _interactiveList;
+        public List<ControlBase> InteractiveList => _interactiveList;
 
         public PowerFilledApp(ScreenConfigPower config, IAppHost surfaceHost) : base(config, surfaceHost)
         {
@@ -224,7 +225,7 @@ namespace LcdMod.Client.Apps
             _interactiveList.Add(hitbox);
         }
 
-        void RenderPowerEntryHitbox(InteractiveEntry hitbox, InteractiveRenderContext context, List<MySprite> sprites)
+        void RenderPowerEntryHitbox(ControlBase hitbox, ControlRenderContext context, List<MySprite> sprites)
         {
             if (hitbox == null)
                 return;

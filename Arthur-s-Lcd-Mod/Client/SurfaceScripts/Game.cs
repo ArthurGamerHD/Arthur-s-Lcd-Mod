@@ -1,10 +1,12 @@
 using System.Collections.Generic;
 using LcdMod.Client.Apps;
+using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Config;
 using LcdMod.Client.Games.Minesweeper;
 using LcdMod.Client.Games.EightBallPool;
 using LcdMod.Client.Gui;
-using LcdMod.Client.Gui.Controls.Interactive;
+using LcdMod.Client.Gui.ControlsTemplates;
+using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Utility;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
@@ -62,9 +64,9 @@ namespace LcdMod.Client.SurfaceScripts
         public override IApp App => _currentGame;
         IGame _currentGame;
 
-        readonly List<InteractiveEntry> _emptyInteractiveList = new List<InteractiveEntry>();
+        readonly List<ControlBase> _emptyInteractiveList = new List<ControlBase>();
 
-        public override List<InteractiveEntry> InteractiveList => _currentGame != null ? _currentGame.Interactive : _emptyInteractiveList;
+        public override List<ControlBase> InteractiveList => _currentGame != null ? _currentGame.Interactive : _emptyInteractiveList;
 
         GlobalMenuEntry _rootMenu;
 
@@ -191,7 +193,7 @@ namespace LcdMod.Client.SurfaceScripts
 
     internal interface IGame : IApp
     {
-        List<InteractiveEntry> Interactive { get; }
+        List<ControlBase> Interactive { get; }
         GameSurfaceScript.GameEnum Id { get; }
         void Save();
         void Load();

@@ -4,7 +4,9 @@ using System.Text;
 using LcdMod.Client.SurfaceScripts;
 using LcdMod.Client.Config;
 using LcdMod.Client.Gui;
-using LcdMod.Client.Gui.Controls.Interactive;
+using LcdMod.Client.Gui.ControlsTemplates;
+using LcdMod.Client.Gui.ControlsTemplates.Interactive;
+using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Modules.EyeTracking;
 using LcdMod.Client.Utility;
@@ -110,7 +112,7 @@ namespace LcdMod.Client.Games.Minesweeper
         float _cellTextScale;
         float _displayTextScale;
 
-        public List<InteractiveEntry> Interactive { get; }
+        public List<ControlBase> Interactive { get; }
 
         public GameSurfaceScript.GameEnum Id => GameSurfaceScript.GameEnum.Minesweeper;
 
@@ -118,7 +120,7 @@ namespace LcdMod.Client.Games.Minesweeper
         {
             _panel = panel;
             _script = script;
-            Interactive = new List<InteractiveEntry>();
+            Interactive = new List<ControlBase>();
             _difficulty = MinesweeperDifficulty.Easy;
 
             ReloadProgram();
@@ -822,7 +824,7 @@ namespace LcdMod.Client.Games.Minesweeper
                     {
                         ClickSound = AudioHelper.HudClick,
                         CustomRender =
-                            delegate(InteractiveEntry entry, InteractiveRenderContext context, List<MySprite> sprites)
+                            delegate(ControlBase entry, ControlRenderContext context, List<MySprite> sprites)
                             {
                                 DrawStatusButton(sprites);
                             }
@@ -882,7 +884,7 @@ namespace LcdMod.Client.Games.Minesweeper
                     i)
                 {
                     CustomRender =
-                        delegate(InteractiveEntry entry, InteractiveRenderContext context, List<MySprite> sprites)
+                        delegate(ControlBase entry, ControlRenderContext context, List<MySprite> sprites)
                         {
                             RenderCell(sprites, (int)entry.DataContext);
                         }

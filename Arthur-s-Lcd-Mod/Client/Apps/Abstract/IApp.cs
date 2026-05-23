@@ -1,8 +1,7 @@
 using System.Collections.Generic;
 using VRage.Game.GUI.TextPanel;
-using VRageMath;
 
-namespace LcdMod.Client.Apps
+namespace LcdMod.Client.Apps.Abstract
 {
     public interface IApp
     {

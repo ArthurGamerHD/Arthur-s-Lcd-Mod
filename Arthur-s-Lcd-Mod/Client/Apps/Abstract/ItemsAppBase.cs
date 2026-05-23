@@ -4,7 +4,8 @@ using System.Linq;
 using System.Text;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Grid;
-using LcdMod.Client.Gui.Controls;
+using LcdMod.Client.Gui.ControlsTemplates;
+using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
@@ -765,8 +766,8 @@ namespace LcdMod.Client.Apps.Abstract
             var accent = backgroundColor.MulValue(0.2f);
             var cellRect = new RectangleF(rl, rt, rr - rl, rb - rt);
             var dropShadow = new RectangleF(cellRect.Position + 2, cellRect.Size);
-            RectanglePanel.CreateSpritesFromRect(dropShadow, frame, accent, .2f);
-            RectanglePanel.CreateSpritesFromRect(cellRect, frame, backgroundColor, .2f);
+            Border.CreateSpritesFromRect(dropShadow, frame, accent, .2f);
+            Border.CreateSpritesFromRect(cellRect, frame, backgroundColor, .2f);
         }
 
         protected Vector2 ToScreenMargin(Vector2 absoluteCenterInViewBox)

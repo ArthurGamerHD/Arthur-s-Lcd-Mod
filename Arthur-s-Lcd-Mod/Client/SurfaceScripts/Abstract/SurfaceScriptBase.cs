@@ -5,10 +5,13 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Generated;
 using LcdMod.Client.Apps;
+using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Config;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Grid;
-using LcdMod.Client.Gui.Controls;
+using LcdMod.Client.Gui.ControlsTemplates;
+using LcdMod.Client.Gui.ControlsTemplates.Panels;
+using LcdMod.Client.Gui.UserControls;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.ScreenAreas;
 using LcdMod.Client.Terminal.Controls;
@@ -723,8 +726,8 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             var a = backgroundColor.MulValue(0.2f);
             var cellRect = new RectangleF(rl, rt, rr - rl, rb - rt);
             var dropShadow = new RectangleF(cellRect.Position + 2, cellRect.Size);
-            RectanglePanel.CreateSpritesFromRect(dropShadow, frame, a, .2f);
-            RectanglePanel.CreateSpritesFromRect(cellRect, frame, backgroundColor, .2f);
+            Border.CreateSpritesFromRect(dropShadow, frame, a, .2f);
+            Border.CreateSpritesFromRect(cellRect, frame, backgroundColor, .2f);
         }
 
         protected static void ParseFilter(IMyTerminalBlock lcd, out string mode, out string token)

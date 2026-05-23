@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
-using LcdMod.Client.Gui.Controls;
+using LcdMod.Client.Gui.ControlsTemplates;
+using LcdMod.Client.Gui.UserControls;
 using LcdMod.Client.Markdown;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Common.Config.Models;

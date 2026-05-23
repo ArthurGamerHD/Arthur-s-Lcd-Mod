@@ -10,7 +10,9 @@ using LcdMod.Client.Extensions;
 using LcdMod.Client.Games.Chess.Enum;
 using LcdMod.Client.Games.Chess.TinyChessChallenge.Bots;
 using LcdMod.Client.Gui;
-using LcdMod.Client.Gui.Controls.Interactive;
+using LcdMod.Client.Gui.ControlsTemplates;
+using LcdMod.Client.Gui.ControlsTemplates.Interactive;
+using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Utility;
 using LcdMod.Common.Helpers;
@@ -50,7 +52,7 @@ namespace LcdMod.Client.Games.Chess
 
         readonly Dictionary<byte, string> _textureCache = new Dictionary<byte, string>();
 
-        public List<InteractiveEntry> Interactive { get; } = new List<InteractiveEntry>();
+        public List<ControlBase> Interactive { get; } = new List<ControlBase>();
         public GameSurfaceScript.GameEnum Id => GameSurfaceScript.GameEnum.Chess;
 
         static string UnpackTexture(string packed)
@@ -819,7 +821,7 @@ namespace LcdMod.Client.Games.Chess
             {
                 _boardCellEntries[index] = new InteractiveRectangleEntry(_gridCells[index], CursorType.Default, index)
                 {
-                    CustomRender = delegate(InteractiveEntry entry, InteractiveRenderContext context, List<MySprite> sprites)
+                    CustomRender = delegate(ControlBase entry, ControlRenderContext context, List<MySprite> sprites)
                     {
                         RenderBoardCell(sprites, (int)entry.DataContext);
                     }
@@ -836,7 +838,7 @@ namespace LcdMod.Client.Games.Chess
                     CursorType.Hand,
                     _overlayControlEntries.Count)
                 {
-                    CustomRender = delegate(InteractiveEntry entry, InteractiveRenderContext context, List<MySprite> sprites)
+                    CustomRender = delegate(ControlBase entry, ControlRenderContext context, List<MySprite> sprites)
                     {
                         _overlayOverlay?.RenderBox(sprites, (int)entry.DataContext);
                     }

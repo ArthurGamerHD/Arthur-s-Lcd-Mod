@@ -1,6 +1,7 @@
 using System.Collections.Generic;
+using LcdMod.Client.Markdown;
 
-namespace LcdMod.Client.Markdown.Nodes.Inline.NonStandard
+namespace LcdMod.Client.Markdown.Inline.NonStandard
 {
     public sealed class ColorInline : InlineNode
     {

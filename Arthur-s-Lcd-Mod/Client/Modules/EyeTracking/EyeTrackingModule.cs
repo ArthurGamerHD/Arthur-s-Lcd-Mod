@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Generated;
+using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.ScreenAreas;
 using LcdMod.Client.Utility;
@@ -26,7 +27,7 @@ namespace LcdMod.Client.Modules.EyeTracking
         readonly HashSet<IEyeTracking> _modules = new HashSet<IEyeTracking>();
         readonly List<IEyeTracking> _pendingModules = new List<IEyeTracking>();
         int _lastActiveNearbyCount;
-        InteractiveEntry _pressedClickable;
+        ControlBase _pressedClickable;
         object _pressedClickableDataContext;
         bool _primaryWasPressed;
         bool _secondaryWasPressed;
@@ -81,7 +82,7 @@ namespace LcdMod.Client.Modules.EyeTracking
             }
 
             var resolvedCount = 0;
-            InteractiveEntry hoveredClickable = null;
+            ControlBase hoveredClickable = null;
             IEyeTracking eyeTrackingEntity = null;
             IEyeTracking tooltipInputEntity = null;
             IEyeTracking lookingScreen = null;
@@ -145,7 +146,7 @@ namespace LcdMod.Client.Modules.EyeTracking
                         }
                     }
 
-                    InteractiveEntry clickable;
+                    ControlBase clickable;
                     if (TryGetHoveredClickable(screen, out clickable))
                     {
                         if (distanceSq < hoveredDistanceSq)
@@ -189,7 +190,7 @@ namespace LcdMod.Client.Modules.EyeTracking
         }
 
         void UpdateClickState(
-            InteractiveEntry hoveredClickable,
+            ControlBase hoveredClickable,
             IEyeTracking eyeTrackingEntity)
         {
             bool primaryPressed = MyAPIGateway.Input != null && HoldingClick;
@@ -217,7 +218,7 @@ namespace LcdMod.Client.Modules.EyeTracking
                                     : hoveredClickable.SecondaryClick(eyeTrackingEntity))
                         ; // handle click first
 
-                    InteractiveEntry tooltipParent;
+                    ControlBase tooltipParent;
                     click = click || TryHandleTooltipActivation(eyeTrackingEntity,
                         rightClick: !_primaryWasPressed && _secondaryWasPressed,
                         tooltipParent: out tooltipParent); // then handle tooltip if needed
@@ -264,7 +265,7 @@ namespace LcdMod.Client.Modules.EyeTracking
         static bool TryHandleTooltipActivation(
             IEyeTracking eyeTrackingEntity,
             bool rightClick,
-            out InteractiveEntry tooltipParent)
+            out ControlBase tooltipParent)
         {
             tooltipParent = null;
 
@@ -279,7 +280,7 @@ namespace LcdMod.Client.Modules.EyeTracking
 
         public static bool HoldingRightClick => MyAPIGateway.Input.IsRightMousePressed();
 
-        static bool TryGetHoveredClickable(IEyeTracking screen, out InteractiveEntry clickable)
+        static bool TryGetHoveredClickable(IEyeTracking screen, out ControlBase clickable)
         {
             clickable = null;
 
@@ -303,9 +304,9 @@ namespace LcdMod.Client.Modules.EyeTracking
 
         static bool TryResolveHitClickable(
             IEyeTracking screen,
-            InteractiveEntry entry,
+            ControlBase entry,
             Vector2 position,
-            out InteractiveEntry clickable)
+            out ControlBase clickable)
         {
             clickable = null;
 

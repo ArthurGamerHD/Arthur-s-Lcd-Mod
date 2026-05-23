@@ -1,10 +1,11 @@
 using System.Collections.Generic;
 using Generated;
 using LcdMod.Client.Gui;
-using LcdMod.Client.Gui.Models.Power;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Utility;
 using LcdMod.Client.Apps;
+using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.Gui.ControlsTemplates;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
@@ -26,8 +27,8 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override IApp App => _app;
         IAppInteractive _app;
-        readonly List<InteractiveEntry> _interactiveListFallback = new List<InteractiveEntry>();
-        public override List<InteractiveEntry> InteractiveList => _app != null ? _app.InteractiveList : _interactiveListFallback;
+        readonly List<ControlBase> _interactiveListFallback = new List<ControlBase>();
+        public override List<ControlBase> InteractiveList => _app != null ? _app.InteractiveList : _interactiveListFallback;
 
         public PowerFilledSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)
         {

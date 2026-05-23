@@ -5,6 +5,7 @@ using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Config;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui;
+using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
@@ -100,7 +101,7 @@ namespace LcdMod.Client.Apps
         readonly StringBuilder _footerTextBuilder = new StringBuilder();
         readonly List<MySprite> _backgroundSprites = new List<MySprite>();
         readonly List<MySprite> _foregroundSprites = new List<MySprite>();
-        readonly List<InteractiveEntry> _interactiveList = new List<InteractiveEntry>();
+        readonly List<ControlBase> _interactiveList = new List<ControlBase>();
         long _cachedCharacterId;
         Sandbox.Game.EntityComponents.MyTargetLockingComponent _cachedCharacterTargetLocking;
         float _radarProjectionCos;
@@ -118,7 +119,7 @@ namespace LcdMod.Client.Apps
         float LayoutScale => Scale * FontScale;
         Color ForegroundColor => _host.ForegroundColor;
         Color BackgroundColor => _host.BackgroundColor;
-        public List<InteractiveEntry> InteractiveList => _interactiveList;
+        public List<ControlBase> InteractiveList => _interactiveList;
 
         struct TargetInfo
         {

@@ -1,13 +1,11 @@
 using System.Collections.Generic;
-using LcdMod.Client.Utility;
-using VRage.Game.GUI.TextPanel;
-using VRageMath;
+using LcdMod.Client.Gui.ControlsTemplates;
 
-namespace LcdMod.Client.Apps
+namespace LcdMod.Client.Apps.Abstract
 {
     public interface IAppInteractive : IApp
     {
-        List<InteractiveEntry> InteractiveList { get; }
+        List<ControlBase> InteractiveList { get; }
         bool HasVisibleItems();
         void OnMouseScroll(int delta, ref bool handled);
     }

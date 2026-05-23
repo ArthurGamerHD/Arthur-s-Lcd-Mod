@@ -4,10 +4,12 @@ using System.Text;
 using LcdMod.Client.SurfaceScripts;
 using LcdMod.Client.Config;
 using LcdMod.Client.Gui;
-using LcdMod.Client.Gui.Controls.Interactive;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Utility;
 using LcdMod.Client.Extensions;
+using LcdMod.Client.Gui.ControlsTemplates;
+using LcdMod.Client.Gui.ControlsTemplates.Interactive;
+using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
@@ -114,7 +116,7 @@ namespace LcdMod.Client.Games.EightBallPool
         InteractiveRectangleEntry _tableEntry;
         readonly object _tableContext = new object();
 
-        public List<InteractiveEntry> Interactive { get; private set; }
+        public List<ControlBase> Interactive { get; private set; }
         public GameSurfaceScript.GameEnum Id => GameSurfaceScript.GameEnum.EightBallPool;
 
         struct Ball
@@ -129,7 +131,7 @@ namespace LcdMod.Client.Games.EightBallPool
         {
             _panel = panel;
             _script = script;
-            Interactive = new List<InteractiveEntry>();
+            Interactive = new List<ControlBase>();
             InitializeBallNumbers();
             ReloadProgram();
             BuildGlobalMenu();
