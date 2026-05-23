@@ -25,11 +25,11 @@ namespace LcdMod.Client.Gui.Tooltip
         readonly Func<CursorType?> _getCursor;
         readonly Func<string> _iconTextureGetter;
         readonly List<ControlBase> _interactiveEntries = new List<ControlBase>();
-        readonly Dictionary<ITooltipLine, TooltipLineInteractiveEntry> _lineEntryByLine =
-            new Dictionary<ITooltipLine, TooltipLineInteractiveEntry>();
+        readonly Dictionary<ITooltipLine, TooltipLineControl> _lineEntryByLine =
+            new Dictionary<ITooltipLine, TooltipLineControl>();
         readonly HashSet<ITooltipLine> _linesUsedThisFrame = new HashSet<ITooltipLine>();
 
-        InteractiveRectangleEntry _cardEntry;
+        RectangleControl _cardControl;
 
         public InteractiveTooltip(
             Func<string> titleGetter,
@@ -133,8 +133,8 @@ namespace LcdMod.Client.Gui.Tooltip
 
         public void Hide()
         {
-            if (_cardEntry != null)
-                _cardEntry.SetVisible(false);
+            if (_cardControl != null)
+                _cardControl.SetVisible(false);
 
             foreach (var kv in _lineEntryByLine)
             {
@@ -263,29 +263,29 @@ namespace LcdMod.Client.Gui.Tooltip
             Border.CreateSpritesFromRect(shadowRect, sprites, shadowColor, 0.2f);
             Border.CreateSpritesFromRect(cardRect, sprites, panelColor, 0.2f);
 
-            if (_cardEntry == null)
+            if (_cardControl == null)
             {
-                _cardEntry = new InteractiveRectangleEntry(
+                _cardControl = new RectangleControl(
                     cardRect,
                     cursor,
                     parentEntry.DataContext);
             }
-            else if (!Equals(_cardEntry.DataContext, parentEntry.DataContext))
+            else if (!Equals(_cardControl.DataContext, parentEntry.DataContext))
             {
-                _cardEntry.SetVisible(false);
-                _cardEntry = new InteractiveRectangleEntry(
+                _cardControl.SetVisible(false);
+                _cardControl = new RectangleControl(
                     cardRect,
                     cursor,
                     parentEntry.DataContext);
             }
             else
             {
-                _cardEntry.SetRect(cardRect);
-                _cardEntry.SetCursor(cursor);
+                _cardControl.SetRect(cardRect);
+                _cardControl.SetCursor(cursor);
             }
 
-            _cardEntry.SetVisible(true);
-            _interactiveEntries.Add(_cardEntry);
+            _cardControl.SetVisible(true);
+            _interactiveEntries.Add(_cardControl);
 
             float currentY = cardRect.Y + padding.Y;
 
@@ -357,12 +357,12 @@ namespace LcdMod.Client.Gui.Tooltip
 
                 if (hasLineEntry)
                 {
-                    TooltipLineInteractiveEntry lineEntry;
+                    TooltipLineControl lineEntry;
                     var resolvedCursor = lineCursors[i] ?? (clickables[i] ? CursorType.Hand : CursorType.Default);
 
                     if (!_lineEntryByLine.TryGetValue(line, out lineEntry) || lineEntry == null)
                     {
-                        lineEntry = new TooltipLineInteractiveEntry(lineBounds, line, resolvedCursor);
+                        lineEntry = new TooltipLineControl(lineBounds, line, resolvedCursor);
                         _lineEntryByLine[line] = lineEntry;
                     }
                     else
@@ -552,31 +552,4 @@ namespace LcdMod.Client.Gui.Tooltip
             RenderDefaultText(Bounds, context, sprites);
         }
     }
-
-
-    public class InteractiveRectangleEntry : ControlBase
-    {
-        public InteractiveRectangleEntry(RectangleF bounds, CursorType? cursor = null, object dataContext = null,
-            Action<object, object> onClick = null, InteractiveTooltip tooltip = null)
-            : base(cursor, dataContext, onClick, tooltip)
-        {
-            Rect = bounds;
-        }
-
-        public RectangleF Rect { get; private set; }
-
-        public void SetRect(RectangleF bounds)
-        {
-            Rect = bounds;
-        }
-
-        public override RectangleF Bounds => Rect;
-        public object RightClick { get; set; }
-
-        protected override bool HitCore(Vector2 point)
-        {
-            return Rect.Contains(point);
-        }
-    }
-
 }

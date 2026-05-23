@@ -113,7 +113,7 @@ namespace LcdMod.Client.Games.EightBallPool
         int _playerOneGroup = GROUP_OPEN;
         int _winner;
         string _lastStatusMessage = string.Empty;
-        InteractiveRectangleEntry _tableEntry;
+        RectangleControl _tableControl;
         readonly object _tableContext = new object();
 
         public List<ControlBase> Interactive { get; private set; }
@@ -463,22 +463,22 @@ namespace LcdMod.Client.Games.EightBallPool
         {
             Interactive.Clear();
             if (_playRect.Width <= 0f || _playRect.Height <= 0f) return;
-            if (_tableEntry == null)
+            if (_tableControl == null)
             {
-                _tableEntry = new InteractiveRectangleEntry(_playRect, CursorType.Hand, _tableContext, ClickTableFromEntry)
+                _tableControl = new RectangleControl(_playRect, CursorType.Hand, _tableContext, ClickTableFromEntry)
                 {
                     CustomRender = delegate { },
                     OnSecondaryClick = PlaceCueBallFromEntry,
                     ClickSound = AudioHelper.HudClick
                 };
             }
-            _tableEntry.SetRect(_playRect);
-            _tableEntry.SetCursor(GetTableCursorType());
-            _tableEntry.SetDataContext(_tableContext);
-            _tableEntry.SetOnClick(ClickTableFromEntry);
-            _tableEntry.OnSecondaryClick = PlaceCueBallFromEntry;
-            _tableEntry.SetVisible(true);
-            Interactive.Add(_tableEntry);
+            _tableControl.SetRect(_playRect);
+            _tableControl.SetCursor(GetTableCursorType());
+            _tableControl.SetDataContext(_tableContext);
+            _tableControl.SetOnClick(ClickTableFromEntry);
+            _tableControl.OnSecondaryClick = PlaceCueBallFromEntry;
+            _tableControl.SetVisible(true);
+            Interactive.Add(_tableControl);
         }
 
         CursorType GetTableCursorType()

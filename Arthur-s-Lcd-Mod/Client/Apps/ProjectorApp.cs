@@ -251,31 +251,16 @@ namespace LcdMod.Client.Apps
             return list;
         }
 
-        protected override void DrawRow(List<MySprite> frame, KeyValuePair<MyItemType, double> item, bool showScrollBar)
+        protected override void DrawListItemContent(List<MySprite> frame, KeyValuePair<MyItemType, double> item,
+            string sprite, Color foreground, RectangleF bounds)
         {
-            string sprite;
             string localizedName;
 
-            if (!SpriteCache.TryGetValue(item.Key, out sprite))
-            {
-                var reference = new List<string>();
-                var color = "ColorfulIcons_" + item.Key.ToString().Substring(16);
-                const string notFound = "Textures\\FactionLogo\\Unknown.dds";
-
-                Surface.GetSprites(reference);
-                if (reference.Contains(color))
-                    sprite = color;
-                else if (reference.Contains(item.Key.ToString()))
-                    sprite = item.Key.ToString();
-                else sprite = notFound;
-
-                AddToSpriteCache(item.Key, sprite);
-            }
-
             var margin = 0f;
-            Vector2 position = ViewBox.Position;
-            position.X += margin;
-            position.Y = CaretY;
+            var xStart = bounds.X + margin;
+            var xEnd = bounds.Right - margin;
+            Vector2 position = bounds.Position;
+            position.X = xStart;
 
             bool drawSeparatorLine = AppConfig.SortMethod == (int)SortMethod.Type && PreviousType != item.Key.TypeId;
 
@@ -285,8 +270,8 @@ namespace LcdMod.Client.Apps
                 {
                     Type = SpriteType.TEXTURE,
                     Data = "Circle",
-                    Position = new Vector2(ViewBox.Center.X, position.Y),
-                    Size = new Vector2(ViewBox.Width - 2 * margin, 1),
+                    Position = new Vector2((xStart + xEnd) / 2f, position.Y),
+                    Size = new Vector2(xEnd - xStart, 1),
                     Color = drawSeparatorLine ? AppConfig.HeaderColor : Surface.ScriptForegroundColor,
                     Alignment = TextAlignment.CENTER
                 });
@@ -305,11 +290,11 @@ namespace LcdMod.Client.Apps
                 Color = rowColor,
                 Alignment = TextAlignment.CENTER
             });
-            position.X += ViewBox.Width / 8f;
+            position.X += (xEnd - xStart) / 8f;
             var quantityColumnsWidth = 2f * GetQuantityColumnWidth() + GetQuantityColumnGap();
 
             var clip = new Rectangle((int)position.X, (int)position.Y,
-                (int)(ViewBox.Width - position.X + (ViewBox.X) - quantityColumnsWidth - margin),
+                (int)(xEnd - position.X - quantityColumnsWidth),
                 (int)(position.Y + (LINE_HEIGHT + 5) * Scale));
 
             frame.Add(MySprite.CreateClipRect(clip));
@@ -336,8 +321,7 @@ namespace LcdMod.Client.Apps
                 FontId = "White"
             });
             frame.Add(MySprite.CreateClearClipRect());
-            position.X = ViewBox.Width + ViewBox.X - margin;
-            if (showScrollBar) position.X -= SCROLLER_WIDTH * Scale;
+            position.X = xEnd;
             frame.Add(new MySprite()
             {
                 Type = SpriteType.TEXT,
@@ -359,8 +343,6 @@ namespace LcdMod.Client.Apps
                 Alignment = TextAlignment.RIGHT,
                 FontId = "White"
             });
-
-            CaretY += LINE_HEIGHT * Scale;
         }
 
         protected override void DrawCellContent(List<MySprite> frame, KeyValuePair<MyItemType, double> item,

@@ -16,8 +16,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         readonly object _button2Context = new object();
         readonly List<MySprite> _sprites = new List<MySprite>();
 
-        InteractiveRectangleEntry _button1Entry;
-        InteractiveRectangleEntry _button2Entry;
+        RectangleControl _button1Control;
+        RectangleControl _button2Control;
         Action<object, object> _button1Callback;
         Action<object, object> _button2Callback;
 
@@ -52,11 +52,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             if (Dismissed)
                 return;
 
-            if (_button1Entry != null && _button1Entry.Visible)
-                entries.Add(_button1Entry);
+            if (_button1Control != null && _button1Control.Visible)
+                entries.Add(_button1Control);
 
-            if (_button2Entry != null && _button2Entry.Visible)
-                entries.Add(_button2Entry);
+            if (_button2Control != null && _button2Control.Visible)
+                entries.Add(_button2Control);
         }
 
         public void Render(InteractiveSurfaceScript owner,
@@ -201,13 +201,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             EnsureEntries(button1Rect, button2Rect, showButton2);
 
             var renderContext = new ControlRenderContext(surface, scale, fontScale, textColor, panelColor, cursorPosition);
-            ConfigureButtonRender(_button1Entry, _button1, buttonScale, panelColor, textColor, owner);
-            _button1Entry.Render(renderContext, _sprites);
+            ConfigureButtonRender(_button1Control, _button1, buttonScale, panelColor, textColor, owner);
+            _button1Control.Render(renderContext, _sprites);
 
-            if (showButton2 && _button2Entry != null)
+            if (showButton2 && _button2Control != null)
             {
-                ConfigureButtonRender(_button2Entry, _button2, buttonScale, panelColor, textColor, owner);
-                _button2Entry.Render(renderContext, _sprites);
+                ConfigureButtonRender(_button2Control, _button2, buttonScale, panelColor, textColor, owner);
+                _button2Control.Render(renderContext, _sprites);
             }
 
             targetSprites.AddRange(_sprites);
@@ -223,9 +223,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
         void EnsureEntries(RectangleF button1Rect, RectangleF button2Rect, bool showButton2)
         {
-            if (_button1Entry == null)
+            if (_button1Control == null)
             {
-                _button1Entry = new InteractiveRectangleEntry(
+                _button1Control = new RectangleControl(
                     button1Rect,
                     CursorType.Hand,
                     _button1Context,
@@ -233,15 +233,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             }
             else
             {
-                _button1Entry.SetRect(button1Rect);
-                _button1Entry.SetCursor(CursorType.Hand);
+                _button1Control.SetRect(button1Rect);
+                _button1Control.SetCursor(CursorType.Hand);
             }
 
-            _button1Entry.SetVisible(true);
+            _button1Control.SetVisible(true);
 
-            if (_button2Entry == null)
+            if (_button2Control == null)
             {
-                _button2Entry = new InteractiveRectangleEntry(
+                _button2Control = new RectangleControl(
                     button2Rect,
                     CursorType.Hand,
                     _button2Context,
@@ -249,11 +249,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             }
             else
             {
-                _button2Entry.SetRect(button2Rect);
-                _button2Entry.SetCursor(CursorType.Hand);
+                _button2Control.SetRect(button2Rect);
+                _button2Control.SetCursor(CursorType.Hand);
             }
 
-            _button2Entry.SetVisible(showButton2);
+            _button2Control.SetVisible(showButton2);
         }
 
         void OnButton1Click(object dataContext, object sender)
@@ -284,17 +284,17 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             
 
         static void ConfigureButtonRender(
-            InteractiveRectangleEntry entry,
+            RectangleControl control,
             string text,
             float textScale,
             Color panelColor,
             Color textColor,
             InteractiveSurfaceScript owner)
         {
-            if (entry == null)
+            if (control == null)
                 return;
 
-            entry.CustomRender = delegate(ControlBase renderEntry, ControlRenderContext context, List<MySprite> sprites)
+            control.CustomRender = delegate(ControlBase renderEntry, ControlRenderContext context, List<MySprite> sprites)
             {
                 DrawButton(renderEntry.Bounds, owner, sprites, text, textScale, panelColor, textColor, context.CursorPosition);
             };

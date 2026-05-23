@@ -17,7 +17,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             public GlobalMenuEntry Entry;
             public int Level;
             public RectangleF Rect;
-            public InteractiveRectangleEntry InteractiveEntry;
+            public RectangleControl Control;
             public readonly List<Node> Children = new List<Node>();
         }
 
@@ -274,26 +274,26 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             }
         }
 
-        InteractiveRectangleEntry ShowNode(Node node, RectangleF rect, CursorType cursor)
+        RectangleControl ShowNode(Node node, RectangleF rect, CursorType cursor)
         {
             if (node == null)
                 return null;
 
             node.Rect = rect;
 
-            if (node.InteractiveEntry == null)
+            if (node.Control == null)
             {
-                node.InteractiveEntry = new InteractiveRectangleEntry(rect, cursor, node, OnEntryClick);
+                node.Control = new RectangleControl(rect, cursor, node, OnEntryClick);
             }
             else
             {
-                node.InteractiveEntry.SetRect(rect);
-                node.InteractiveEntry.SetCursor(cursor);
+                node.Control.SetRect(rect);
+                node.Control.SetCursor(cursor);
             }
 
-            node.InteractiveEntry.SetVisible(true);
-            _interactiveEntries.Add(node.InteractiveEntry);
-            return node.InteractiveEntry;
+            node.Control.SetVisible(true);
+            _interactiveEntries.Add(node.Control);
+            return node.Control;
         }
 
         void OnEntryClick(object dataContext, object sender)

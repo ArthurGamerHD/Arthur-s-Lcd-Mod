@@ -30,7 +30,7 @@ namespace LcdMod.Client.Apps
         readonly List<PowerEntry> _entries = new List<PowerEntry>();
         readonly List<ControlBase> _interactiveList = new List<ControlBase>();
         readonly Dictionary<long, PowerEntry> _entryById = new Dictionary<long, PowerEntry>();
-        readonly Dictionary<long, InteractiveRectangleEntry> _entryHitboxById = new Dictionary<long, InteractiveRectangleEntry>();
+        readonly Dictionary<long, RectangleControl> _entryHitboxById = new Dictionary<long, RectangleControl>();
         ScreenConfigPower _config;
         
         public List<ControlBase> InteractiveList => _interactiveList;
@@ -203,10 +203,10 @@ namespace LcdMod.Client.Apps
             if (entry == null)
                 return;
 
-            InteractiveRectangleEntry hitbox;
+            RectangleControl hitbox;
             if (!_entryHitboxById.TryGetValue(entry.EntryId, out hitbox) || hitbox == null)
             {
-                hitbox = new InteractiveRectangleEntry(bounds, CursorType.Hand, entry.EntryId, null, BuildPowerEntryTooltip(entry.EntryId))
+                hitbox = new RectangleControl(bounds, CursorType.Hand, entry.EntryId, null, BuildPowerEntryTooltip(entry.EntryId))
                 {
                     ClickSound = AudioHelper.HudClick,
                     CustomRender = RenderPowerEntryHitbox

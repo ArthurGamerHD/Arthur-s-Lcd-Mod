@@ -3,27 +3,23 @@ using LcdMod.Client.Gui.ControlsTemplates;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 
-namespace LcdMod.Client.Gui.ControlsTemplates.Panels.WrappedGrid
+namespace LcdMod.Client.Gui.ControlsTemplates.Panels.StackPanel
 {
-    public sealed class WrappedGridCell
+    public sealed class StackPanelCell
     {
-        internal WrappedGridCell(int visibleIndex, int itemIndex, int row, int column, RectangleF bounds)
+        internal StackPanelCell(int visibleIndex, int itemIndex, RectangleF bounds)
         {
             VisibleIndex = visibleIndex;
             ItemIndex = itemIndex;
-            Row = row;
-            Column = column;
             Bounds = bounds;
         }
 
         public int VisibleIndex { get; private set; }
         public int ItemIndex { get; private set; }
-        public int Row { get; private set; }
-        public int Column { get; private set; }
         public RectangleF Bounds { get; private set; }
         public ControlBase Control { get; private set; }
 
-        public WrappedGridCell SetControl(ControlBase control)
+        public StackPanelCell SetControl(ControlBase control)
         {
             Control = control;
             return this;

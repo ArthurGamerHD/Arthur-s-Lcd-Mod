@@ -89,8 +89,8 @@ namespace LcdMod.Client.Games.Minesweeper
         RectangleF _boardViewBox;
         float _boardFrameThickness;
         RectangleF[] _gridCells;
-        InteractiveRectangleEntry _statusButtonEntry;
-        InteractiveRectangleEntry[] _cellEntries;
+        RectangleControl _statusButtonControl;
+        RectangleControl[] _cellEntries;
         byte[] _cells;
 
         int _width;
@@ -814,9 +814,9 @@ namespace LcdMod.Client.Games.Minesweeper
 
             if (_statusButtonRect.Width > 0f && _statusButtonRect.Height > 0f)
             {
-                if (_statusButtonEntry == null)
+                if (_statusButtonControl == null)
                 {
-                    _statusButtonEntry = new InteractiveRectangleEntry(
+                    _statusButtonControl = new RectangleControl(
                         _statusButtonRect,
                         CursorType.Hand,
                         _statusButtonContext,
@@ -832,18 +832,18 @@ namespace LcdMod.Client.Games.Minesweeper
                 }
                 else
                 {
-                    _statusButtonEntry.SetRect(_statusButtonRect);
-                    _statusButtonEntry.SetCursor(CursorType.Hand);
-                    _statusButtonEntry.SetDataContext(_statusButtonContext);
-                    _statusButtonEntry.SetOnClick(RestartGameFromEntry);
+                    _statusButtonControl.SetRect(_statusButtonRect);
+                    _statusButtonControl.SetCursor(CursorType.Hand);
+                    _statusButtonControl.SetDataContext(_statusButtonContext);
+                    _statusButtonControl.SetOnClick(RestartGameFromEntry);
                 }
 
-                _statusButtonEntry.SetVisible(true);
-                Interactive.Add(_statusButtonEntry);
+                _statusButtonControl.SetVisible(true);
+                Interactive.Add(_statusButtonControl);
             }
-            else if (_statusButtonEntry != null)
+            else if (_statusButtonControl != null)
             {
-                _statusButtonEntry.SetVisible(false);
+                _statusButtonControl.SetVisible(false);
             }
 
             if (_gridCells == null)
@@ -875,10 +875,10 @@ namespace LcdMod.Client.Games.Minesweeper
             if (_cellEntries != null && _cellEntries.Length == _gridCells.Length)
                 return;
 
-            _cellEntries = new InteractiveRectangleEntry[_gridCells.Length];
+            _cellEntries = new RectangleControl[_gridCells.Length];
             for (int i = 0; i < _cellEntries.Length; i++)
             {
-                _cellEntries[i] = new InteractiveRectangleEntry(
+                _cellEntries[i] = new RectangleControl(
                     _gridCells[i],
                     CursorType.Default,
                     i)

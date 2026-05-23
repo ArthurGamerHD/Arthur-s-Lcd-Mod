@@ -33,7 +33,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         protected InteractiveSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
             : base(surface, block, size)
         {
-            _hiddenGlobalMenuEntry = new HiddenGlobalMenuEntry(this);
+            _hiddenGlobalMenuControl = new HiddenGlobalMenuControl(this);
         }
 
         public Vector2 CursorPosition { get; protected set; } = new Vector2(float.NaN, float.NaN);
@@ -49,7 +49,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         }
 
         RectangleF _baseViewBox;
-        readonly HiddenGlobalMenuEntry _hiddenGlobalMenuEntry;
+        readonly HiddenGlobalMenuControl _hiddenGlobalMenuControl;
 
         readonly List<ControlBase> _interactiveEntriesWithOverlay = new List<ControlBase>();
 
@@ -79,9 +79,9 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 }
                 else if (CanOpenHiddenGlobalMenu())
                 {
-                    _hiddenGlobalMenuEntry.SetRect(_baseViewBox);
-                    _hiddenGlobalMenuEntry.SetVisible(true);
-                    _interactiveEntriesWithOverlay.Insert(0, _hiddenGlobalMenuEntry);
+                    _hiddenGlobalMenuControl.SetRect(_baseViewBox);
+                    _hiddenGlobalMenuControl.SetVisible(true);
+                    _interactiveEntriesWithOverlay.Insert(0, _hiddenGlobalMenuControl);
                 }
 
                 return _interactiveEntriesWithOverlay;
@@ -458,7 +458,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             if (_globalMenu != null)
                 _globalMenu.HideEntries();
 
-            _hiddenGlobalMenuEntry.SetVisible(false);
+            _hiddenGlobalMenuControl.SetVisible(false);
             CloseHiddenGlobalMenu();
             _globalMenu = entries == null || entries.Count == 0 ? null : new GlobalMenu(entries);
 
@@ -472,7 +472,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             if (!ShouldRenderGlobalMenu())
             {
                 _globalMenu?.HideEntries();
-                _hiddenGlobalMenuEntry.SetVisible(CanOpenHiddenGlobalMenu());
+                _hiddenGlobalMenuControl.SetVisible(CanOpenHiddenGlobalMenu());
                 base.DrawTitle(frame);
                 return;
             }
@@ -565,11 +565,11 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             _hiddenGlobalMenuVisibleUntilFrame = long.MinValue;
         }
 
-        sealed class HiddenGlobalMenuEntry : InteractiveRectangleEntry
+        sealed class HiddenGlobalMenuControl : RectangleControl
         {
             readonly InteractiveSurfaceScript _owner;
 
-            public HiddenGlobalMenuEntry(InteractiveSurfaceScript owner)
+            public HiddenGlobalMenuControl(InteractiveSurfaceScript owner)
                 : base(default(RectangleF), CursorType.Default, owner)
             {
                 _owner = owner;

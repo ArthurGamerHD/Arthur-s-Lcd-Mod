@@ -45,15 +45,24 @@ namespace LcdMod.Client.Gui.ControlsTemplates
                 AddChild(child);
         }
 
-        public virtual bool CanClick => Visible && OnClick != null;
+        public virtual bool CanClick
+        {
+            get
+            {
+                var model = Model;
+                return Visible && (OnClick != null || OnSecondaryClick != null ||
+                                   model != null && (model.CanClick || model.CanSecondaryClick));
+            }
+        }
 
         protected ControlBase(CursorType? cursor = null, object dataContext = null, Action<object, object> onClick = null,
             InteractiveTooltip tooltip = null)
         {
             DataContext = dataContext;
             OnClick = onClick;
-            Tooltip = tooltip;
-            Cursor = cursor ?? (onClick != null ? CursorType.Hand : CursorType.Default);
+            Tooltip = tooltip ?? Model?.Tooltip;
+            Style = Model?.Style;
+            Cursor = cursor ?? GetDefaultCursor(onClick, Model);
         }
 
         public CursorType Cursor { get; private set; }
@@ -65,10 +74,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         }
 
         public object DataContext { get; private set; }
+        public ControlModelBase Model => DataContext as ControlModelBase;
 
         public ControlBase SetDataContext(object dataContext)
         {
             DataContext = dataContext;
+            ApplyModelDefaults();
             return this;
         }
 
@@ -82,10 +93,19 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         }
 
         public InteractiveTooltip Tooltip { get; private set; }
+        public ControlStyle Style { get; private set; }
+        bool _styleExplicitlySet;
 
         public ControlBase SetTooltip(InteractiveTooltip tooltip)
         {
             Tooltip = tooltip;
+            return this;
+        }
+
+        public ControlBase SetStyle(ControlStyle style)
+        {
+            Style = style;
+            _styleExplicitlySet = true;
             return this;
         }
 
@@ -100,23 +120,24 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             if (context == null || sprites == null)
                 return;
 
-            if (CustomRender != null)
+            var renderContext = ResolveRenderContext(context);
+            var customRender = CustomRender ?? Model?.CustomRender;
+            if (customRender != null)
             {
-                CustomRender(this, context, sprites);
+                customRender(this, renderContext, sprites);
                 return;
             }
 
-            RenderDefault(context, sprites);
+            RenderDefault(renderContext, sprites);
         }
 
         protected virtual void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
         {
             var rect = Bounds;
-            var fillColor = rect.Contains(context.CursorPosition)
-                ? context.PanelColor.DeriveAccentColor()
-                : context.PanelColor;
+            var hovered = rect.Contains(context.CursorPosition);
+            var fillColor = context.Style.GetPanelColor(hovered);
 
-            Border.CreateSpritesFromRect(rect, sprites, fillColor, 0.2f);
+            Border.CreateSpritesFromRect(rect, sprites, fillColor, context.Style.BorderPercentage);
             RenderDefaultText(rect, context, sprites);
         }
 
@@ -134,7 +155,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
                 Type = SpriteType.TEXT,
                 Data = text,
                 Position = new Vector2(rect.Center.X, rect.Center.Y - textSize.Y * 0.5f),
-                Color = context.TextColor,
+                Color = context.Style.GetTextColor(rect.Contains(context.CursorPosition)),
                 FontId = "White",
                 Alignment = TextAlignment.CENTER,
                 RotationOrScale = textScale
@@ -148,17 +169,73 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 
         protected abstract bool HitCore(Vector2 point);
 
-        public virtual bool Click(object sender)=> HandleClick(sender, OnClick);
+        public virtual bool Click(object sender)=> HandleClick(sender, OnClick, false);
         
-        public virtual bool SecondaryClick(object sender) => HandleClick(sender, OnSecondaryClick);
+        public virtual bool SecondaryClick(object sender) => HandleClick(sender, OnSecondaryClick, true);
 
-        internal bool HandleClick(object sender, Action<object, object> handler)
+        internal bool HandleClick(object sender, Action<object, object> handler, bool secondary)
         {
-            if (!Visible || handler == null)
+            if (!Visible)
                 return false;
 
-            handler(DataContext ?? this, sender);
-            return true;
+            if (handler != null)
+            {
+                handler(DataContext ?? this, sender);
+                return true;
+            }
+
+            var model = Model;
+            if (model == null)
+                return false;
+
+            return secondary ? model.SecondaryClick(sender) : model.Click(sender);
+        }
+
+        static CursorType GetDefaultCursor(Action<object, object> onClick, ControlModelBase model)
+        {
+            if (onClick != null)
+                return CursorType.Hand;
+
+            if (model != null)
+            {
+                if (model.Cursor != CursorType.Default)
+                    return model.Cursor;
+
+                if (model.CanClick || model.CanSecondaryClick)
+                    return CursorType.Hand;
+            }
+
+            return CursorType.Default;
+        }
+
+        void ApplyModelDefaults()
+        {
+            var model = Model;
+            if (model == null)
+                return;
+
+            if (Tooltip == null)
+                Tooltip = model.Tooltip;
+
+            if (!_styleExplicitlySet)
+                Style = model.Style;
+
+            if (Cursor == CursorType.Default)
+                Cursor = GetDefaultCursor(OnClick, model);
+        }
+
+        ControlRenderContext ResolveRenderContext(ControlRenderContext context)
+        {
+            var style = Style ?? Model?.Style;
+            if (style == null || ReferenceEquals(style, context.Style))
+                return context;
+
+            return new ControlRenderContext(
+                context.Surface,
+                context.Scale,
+                context.FontScale,
+                style,
+                context.CursorPosition);
         }
     }
 }

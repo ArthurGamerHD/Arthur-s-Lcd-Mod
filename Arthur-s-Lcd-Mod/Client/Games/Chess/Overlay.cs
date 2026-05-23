@@ -16,7 +16,7 @@ namespace LcdMod.Client.Games.Chess
 {
     public abstract class Overlay : IDisposable
     {
-        public InteractiveRectangleEntry InteractiveRectangleEntry;
+        public RectangleControl RectangleControl;
         
         public bool Disposed { get; protected set; }
         public readonly List<RectangleF> Boxes = new List<RectangleF>();
@@ -195,7 +195,7 @@ namespace LcdMod.Client.Games.Chess
             _chessGame = chessGame;
             BakeControls();
             
-            InteractiveRectangleEntry = new InteractiveRectangleEntry(
+            RectangleControl = new RectangleControl(
                 chessGame.BoardViewBox, 
                 CursorType.No, 
                 this, 

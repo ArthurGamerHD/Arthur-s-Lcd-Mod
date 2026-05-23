@@ -2696,7 +2696,7 @@ namespace LcdMod.Client.Apps
             if (!hasEntry)
                 return rect;
 
-            var entry = new InteractiveRectangleEntry(
+            var entry = new RectangleControl(
                 rect,
                 cursor ?? (line.IsClickable ? CursorType.Hand : CursorType.Default),
                 line.GetDataContext(),

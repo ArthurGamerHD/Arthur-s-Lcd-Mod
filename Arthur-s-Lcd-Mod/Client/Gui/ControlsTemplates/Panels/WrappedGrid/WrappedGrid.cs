@@ -13,73 +13,36 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels.WrappedGrid
         public RectangleF ContentBounds { get; private set; }
         public float RowHeight { get; private set; }
         public float ColumnWidth { get; private set; }
-        public float ScrollerWidthPixels { get; private set; }
         public int ItemCount { get; private set; }
         public int Columns { get; private set; }
         public int MaxRows { get; private set; }
         public int RenderedRows { get; private set; }
         public int TotalRows { get; private set; }
-        public int StartRow { get; private set; }
         public int StartIndex { get; private set; }
         public int VisibleCellCount { get; private set; }
-        public bool IsScrollable { get; private set; }
 
         public static WrappedGrid Create(
-            RectangleF viewBox,
-            float contentTop,
-            float footerHeight,
+            RectangleF contentBounds,
             float rowHeight,
             float minimumColumnWidth,
             int itemCount,
-            float scale,
-            int scrollStep,
+            int startIndex = 0,
             bool forceSingleColumn = false)
         {
             var grid = new WrappedGrid();
-            grid.ViewBox = viewBox;
+            grid.ViewBox = contentBounds;
+            grid.ContentBounds = contentBounds;
             grid.RowHeight = Math.Max(1f, rowHeight);
             grid.ItemCount = Math.Max(0, itemCount);
+            grid.StartIndex = Math.Max(0, Math.Min(startIndex, grid.ItemCount));
 
-            float availableHeight = Math.Max(0f, viewBox.Bottom - contentTop - Math.Max(0f, footerHeight));
-            grid.MaxRows = Math.Max(1, (int)Math.Floor(availableHeight / grid.RowHeight));
+            grid.MaxRows = Math.Max(1, (int)Math.Floor(Math.Max(0f, contentBounds.Height) / grid.RowHeight));
+            grid.Columns = CalculateColumns(contentBounds.Width, minimumColumnWidth, forceSingleColumn, grid.ItemCount);
+            grid.TotalRows = grid.ItemCount == 0 ? 0 : (int)Math.Ceiling(grid.ItemCount / (float)grid.Columns);
+            grid.RenderedRows = grid.TotalRows == 0 ? 0 : Math.Min(grid.MaxRows, Math.Max(0, grid.TotalRows - grid.StartIndex / grid.Columns));
 
-            bool scroll = false;
-            int columns = 1;
-            int totalRows = 0;
-
-            for (int pass = 0; pass < 3; pass++)
-            {
-                float availableWidth = Math.Max(1f, viewBox.Width - (scroll ? grid.ScrollerWidthPixels : 0f));
-                columns = CalculateColumns(availableWidth, minimumColumnWidth, forceSingleColumn, grid.ItemCount);
-                totalRows = grid.ItemCount == 0 ? 0 : (int)Math.Ceiling(grid.ItemCount / (float)columns);
-
-                bool nextScroll = totalRows > grid.MaxRows;
-                if (nextScroll == scroll)
-                    break;
-
-                scroll = nextScroll;
-            }
-
-            grid.IsScrollable = scroll;
-            grid.Columns = Math.Max(1, columns);
-            grid.TotalRows = totalRows;
-            grid.RenderedRows = totalRows == 0 ? 0 : Math.Min(grid.MaxRows, totalRows);
-
-            float contentWidth = Math.Max(1f, viewBox.Width - (grid.IsScrollable ? grid.ScrollerWidthPixels : 0f));
+            float contentWidth = Math.Max(1f, contentBounds.Width);
             grid.ColumnWidth = contentWidth / grid.Columns;
-            grid.ContentBounds = new RectangleF(
-                viewBox.X,
-                contentTop,
-                contentWidth,
-                grid.RenderedRows * grid.RowHeight);
-
-            if (grid.IsScrollable)
-            {
-                int scrollableRows = Math.Max(1, grid.TotalRows - grid.MaxRows);
-                grid.StartRow = scrollStep % (scrollableRows + 1);
-            }
-
-            grid.StartIndex = grid.StartRow * grid.Columns;
             grid.VisibleCellCount = Math.Min(grid.MaxRows * grid.Columns, Math.Max(0, grid.ItemCount - grid.StartIndex));
             return grid;
         }

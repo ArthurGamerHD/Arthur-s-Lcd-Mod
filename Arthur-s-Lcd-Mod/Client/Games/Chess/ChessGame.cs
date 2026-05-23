@@ -304,8 +304,8 @@ namespace LcdMod.Client.Games.Chess
         readonly List<ChessMoveRecord> _history = new List<ChessMoveRecord>();
 
         RectangleF[] _gridCells;
-        InteractiveRectangleEntry[] _boardCellEntries;
-        readonly List<InteractiveRectangleEntry> _overlayControlEntries = new List<InteractiveRectangleEntry>();
+        RectangleControl[] _boardCellEntries;
+        readonly List<RectangleControl> _overlayControlEntries = new List<RectangleControl>();
 
         IMyTextSurface _panel;
         InteractiveSurfaceScript _script;
@@ -804,8 +804,8 @@ namespace LcdMod.Client.Games.Chess
             for (int index = _overlayOverlay.Boxes.Count; index < _overlayControlEntries.Count; index++)
                 _overlayControlEntries[index].SetVisible(false);
 
-            if(_overlayOverlay.InteractiveRectangleEntry != null)
-                Interactive.Add(_overlayOverlay.InteractiveRectangleEntry);
+            if(_overlayOverlay.RectangleControl != null)
+                Interactive.Add(_overlayOverlay.RectangleControl);
         }
 
         void EnsureBoardCellEntries()
@@ -816,10 +816,10 @@ namespace LcdMod.Client.Games.Chess
             if (_boardCellEntries != null && _boardCellEntries.Length == _gridCells.Length)
                 return;
 
-            _boardCellEntries = new InteractiveRectangleEntry[_gridCells.Length];
+            _boardCellEntries = new RectangleControl[_gridCells.Length];
             for (int index = 0; index < _boardCellEntries.Length; index++)
             {
-                _boardCellEntries[index] = new InteractiveRectangleEntry(_gridCells[index], CursorType.Default, index)
+                _boardCellEntries[index] = new RectangleControl(_gridCells[index], CursorType.Default, index)
                 {
                     CustomRender = delegate(ControlBase entry, ControlRenderContext context, List<MySprite> sprites)
                     {
@@ -829,11 +829,11 @@ namespace LcdMod.Client.Games.Chess
             }
         }
 
-        InteractiveRectangleEntry GetOverlayControlEntry(int index)
+        RectangleControl GetOverlayControlEntry(int index)
         {
             while (_overlayControlEntries.Count <= index)
             {
-                _overlayControlEntries.Add(new InteractiveRectangleEntry(
+                _overlayControlEntries.Add(new RectangleControl(
                     default(RectangleF),
                     CursorType.Hand,
                     _overlayControlEntries.Count)

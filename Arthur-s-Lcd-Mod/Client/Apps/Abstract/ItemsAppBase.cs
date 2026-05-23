@@ -4,8 +4,11 @@ using System.Linq;
 using System.Text;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Grid;
+using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
+using LcdMod.Client.Gui.ControlsTemplates.Panels.StackPanel;
+using LcdMod.Client.Gui.ControlsTemplates.Panels.WrappedGrid;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
@@ -245,187 +248,249 @@ namespace LcdMod.Client.Apps.Abstract
 
         void DrawList(List<MySprite> sprites, List<KeyValuePair<MyItemType, double>> items)
         {
-            int maxRows = GetMaxRowsFromSurface();
-            if (maxRows < 1)
-                maxRows = 1;
+            var rowHeight = LINE_HEIGHT * Scale;
+            var panel = ScrollPanel.Create(
+                ViewBox,
+                CaretY,
+                FooterHeight,
+                rowHeight,
+                items.Count,
+                SCROLLER_WIDTH * Scale,
+                GetScrollStep(SCROLL_DELAY / 6));
 
-            bool shouldScroll = items.Count > maxRows;
+            RenderScrollPanelBar(sprites, panel);
 
-            int start = 0;
+            var stack = StackPanel.Create(panel.ContentBounds, rowHeight, items.Count, panel.GetStartIndex(1));
+            if (stack.VisibleCellCount <= 0)
+                return;
 
-            if (shouldScroll)
+            PreviousType = items[stack.StartIndex].Key.TypeId;
+            var renderContext = CreateItemRenderContext();
+
+            for (int i = 0; i < stack.VisibleCellCount; i++)
             {
-                int totalSteps = items.Count - maxRows;
-                if (totalSteps < 1) totalSteps = 1;
-
-                int step = GetScrollStep(SCROLL_DELAY / 6);
-
-                start = step % (totalSteps + 1);
-
-                float viewportHeight = maxRows * (LINE_HEIGHT * Scale) - (SCROLLER_WIDTH * 2 * Scale);
-                float scrollBarHeight = (float)maxRows / items.Count * viewportHeight;
-
-                float totalScrollableRows = items.Count - maxRows;
-                float scrollFraction = (totalScrollableRows > 0) ? start / totalScrollableRows : 0f;
-
-                float scrollBarTrackHeight = viewportHeight;
-                float scrollBarTravel = scrollBarTrackHeight - scrollBarHeight;
-
-                float scrollBarY = scrollFraction * scrollBarTravel;
-                float scrollBarCenter = scrollBarY + scrollBarHeight / 2f;
-
-                var initialY = CaretY + SCROLLER_WIDTH * Scale;
-
-                DrawScrollBar(sprites, Scale, initialY, viewportHeight, scrollBarCenter, scrollBarHeight);
+                var cell = stack.GetCell(i);
+                cell.SetControl(CreateListItemControl(items[cell.ItemIndex], cell.Bounds));
+                cell.Render(renderContext, sprites);
             }
 
-            int showCount = Math.Min(maxRows, items.Count);
-
-            PreviousType = items[start].Key.TypeId;
-
-            for (int visIdx = start; visIdx < start + showCount; visIdx++)
-                DrawRow(sprites, items[visIdx], shouldScroll);
+            CaretY = panel.ContentBounds.Y + panel.MaxVisibleRows * rowHeight;
         }
 
         void DrawGrid(List<MySprite> sprites, List<KeyValuePair<MyItemType, double>> items)
         {
             var rowHeight = 3f * LINE_HEIGHT * Scale;
-            var viewportAvailableHeight = ViewBox.Height - (CaretY - ViewBox.Y) - FooterHeight;
-            int maxRows = Math.Max(1, (int)Math.Floor(viewportAvailableHeight / rowHeight));
-            int maxCols = Math.Max(1, GetMaxColsFromSurface());
+            int step = GetScrollStep(SCROLL_DELAY / 6);
+            var panel = CreateGridScrollPanel(rowHeight, items.Count, step);
+            var grid = WrappedGrid.Create(panel.ContentBounds, rowHeight, MINIMUM_COL_WIDTH * Scale, items.Count);
+            grid = WrappedGrid.Create(
+                panel.ContentBounds,
+                rowHeight,
+                MINIMUM_COL_WIDTH * Scale,
+                items.Count,
+                panel.GetStartIndex(grid.Columns));
 
-            int maxVisible = maxRows * maxCols;
-            bool shouldScroll = items.Count > maxVisible;
-
-            int startRow = 0;
-
-            if (shouldScroll)
-            {
-                int totalRows = (int)Math.Ceiling(items.Count / (float)maxCols);
-                int totalSteps = totalRows - maxRows;
-                if (totalSteps < 1) totalSteps = 1;
-
-                int step = GetScrollStep(SCROLL_DELAY / 6);
-
-                startRow = step % (totalSteps + 1);
-
-                float viewportHeight = maxRows * rowHeight - (SCROLLER_WIDTH * 2 * Scale);
-                float scrollBarHeight = (float)maxRows / totalRows * viewportHeight;
-
-                float totalScrollableRows = totalRows - maxRows;
-                float scrollFraction = (totalScrollableRows > 0) ? startRow / totalScrollableRows : 0f;
-
-                float scrollBarTrackHeight = viewportHeight;
-                float scrollBarTravel = scrollBarTrackHeight - scrollBarHeight;
-
-                float scrollBarY = scrollFraction * scrollBarTravel;
-                float scrollBarCenter = scrollBarY + scrollBarHeight / 2f;
-
-                var initialY = CaretY + SCROLLER_WIDTH * Scale;
-
-                DrawScrollBar(sprites, Scale, initialY, viewportHeight, scrollBarCenter, scrollBarHeight);
-            }
-
-            int start = startRow * maxCols;
-            int showCount = Math.Min(maxVisible, items.Count - start);
-            var margin = 0f;
-            var contentStart = ViewBox.X + margin;
-            var contentEnd = ViewBox.Width + ViewBox.X - margin;
-            if (shouldScroll)
-                contentEnd -= SCROLLER_WIDTH * Scale;
-            var columnWidth = (contentEnd - contentStart) / maxCols;
-            var gridHeight = maxRows * rowHeight;
+            RenderScrollPanelBar(sprites, panel);
 
             if (AppConfig.DrawLines)
+                DrawWrappedGridLines(sprites, panel, grid);
+
+            if (grid.VisibleCellCount <= 0)
+                return;
+
+            PreviousType = items[grid.StartIndex].Key.TypeId;
+            var renderContext = CreateItemRenderContext();
+
+            for (int gridIdx = 0; gridIdx < grid.VisibleCellCount; gridIdx++)
             {
-                var lineColor = AppConfig.HeaderColor;
-
-                for (int row = 0; row <= maxRows; row++)
-                {
-                    var y = CaretY + row * rowHeight;
-                    sprites.Add(new MySprite
-                    {
-                        Type = SpriteType.TEXTURE,
-                        Data = "SquareSimple",
-                        Position = new Vector2((contentStart + contentEnd) / 2f, y),
-                        Size = new Vector2(contentEnd - contentStart, 2f),
-                        Color = lineColor,
-                        Alignment = TextAlignment.CENTER
-                    });
-                }
-
-                for (int col = 0; col <= maxCols; col++)
-                {
-                    var x = contentStart + col * columnWidth;
-                    sprites.Add(new MySprite
-                    {
-                        Type = SpriteType.TEXTURE,
-                        Data = "SquareSimple",
-                        Position = new Vector2(x, CaretY + gridHeight / 2f),
-                        Size = new Vector2(2f, gridHeight),
-                        Color = lineColor,
-                        Alignment = TextAlignment.CENTER
-                    });
-                }
+                var cell = grid.GetCell(gridIdx);
+                cell.SetControl(CreateGridItemControl(items[cell.ItemIndex], cell.Bounds));
+                cell.Render(renderContext, sprites);
             }
 
-            PreviousType = items[start].Key.TypeId;
+            CaretY = panel.ContentBounds.Y + panel.MaxVisibleRows * rowHeight;
+        }
 
-            for (int gridIdx = 0; gridIdx < showCount; gridIdx++)
+        ControlRenderContext CreateItemRenderContext()
+        {
+            return new ControlRenderContext(
+                Surface,
+                Scale,
+                FontScale,
+                Surface.ScriptForegroundColor,
+                AppConfig.HeaderColor,
+                new Vector2(float.NaN, float.NaN));
+        }
+
+        void RenderScrollPanelBar(List<MySprite> sprites, ScrollPanel panel)
+        {
+            if (panel == null || !panel.IsScrollable)
+                return;
+
+            var trackColor = new Color(Surface.ScriptForegroundColor.R, Surface.ScriptForegroundColor.G,
+                Surface.ScriptForegroundColor.B, 127);
+            var thumbColor = new Color(AppConfig.HeaderColor.R, AppConfig.HeaderColor.G,
+                AppConfig.HeaderColor.B, 250);
+            panel.RenderScrollBar(sprites, trackColor, thumbColor);
+        }
+
+        ScrollPanel CreateGridScrollPanel(float rowHeight, int itemCount, int scrollStep)
+        {
+            var panel = ScrollPanel.Create(
+                ViewBox,
+                CaretY,
+                FooterHeight,
+                rowHeight,
+                0,
+                SCROLLER_WIDTH * Scale,
+                scrollStep);
+
+            for (int pass = 0; pass < 3; pass++)
             {
-                int visIdx = start + gridIdx;
-                int col = gridIdx % maxCols;
-                float xStart = contentStart + col * columnWidth;
-                float xEnd = (col == maxCols - 1) ? contentEnd : xStart + columnWidth;
-                bool moveToNextLine = (col == maxCols - 1) || (gridIdx == showCount - 1);
-                DrawGridCell(sprites, items[visIdx], xStart, xEnd, moveToNextLine);
+                var grid = WrappedGrid.Create(panel.ContentBounds, rowHeight, MINIMUM_COL_WIDTH * Scale, itemCount);
+                panel = ScrollPanel.Create(
+                    ViewBox,
+                    CaretY,
+                    FooterHeight,
+                    rowHeight,
+                    grid.TotalRows,
+                    SCROLLER_WIDTH * Scale,
+                    scrollStep);
+            }
+
+            return panel;
+        }
+
+        void DrawWrappedGridLines(List<MySprite> sprites, ScrollPanel panel, WrappedGrid grid)
+        {
+            var lineColor = AppConfig.HeaderColor;
+            var contentStart = panel.ContentBounds.X;
+            var contentEnd = panel.ContentBounds.Right;
+            var gridHeight = panel.MaxVisibleRows * grid.RowHeight;
+
+            for (int row = 0; row <= panel.MaxVisibleRows; row++)
+            {
+                var y = panel.ContentBounds.Y + row * grid.RowHeight;
+                sprites.Add(new MySprite
+                {
+                    Type = SpriteType.TEXTURE,
+                    Data = "SquareSimple",
+                    Position = new Vector2((contentStart + contentEnd) / 2f, y),
+                    Size = new Vector2(contentEnd - contentStart, 2f),
+                    Color = lineColor,
+                    Alignment = TextAlignment.CENTER
+                });
+            }
+
+            for (int col = 0; col <= grid.Columns; col++)
+            {
+                var x = col == grid.Columns ? contentEnd : contentStart + col * grid.ColumnWidth;
+                sprites.Add(new MySprite
+                {
+                    Type = SpriteType.TEXTURE,
+                    Data = "SquareSimple",
+                    Position = new Vector2(x, panel.ContentBounds.Y + gridHeight / 2f),
+                    Size = new Vector2(2f, gridHeight),
+                    Color = lineColor,
+                    Alignment = TextAlignment.CENTER
+                });
             }
         }
 
-        int GetMaxColsFromSurface()
+        ControlBase CreateGridItemControl(KeyValuePair<MyItemType, double> item, RectangleF bounds)
         {
-            var max = ViewBox.Width - (ViewBox.X);
-            var perCol = MINIMUM_COL_WIDTH * Scale;
-            return (int)(Math.Round(max / perCol - .5, MidpointRounding.AwayFromZero));
+            var model = new GridItemControlModel(item, ResolveSprite(item.Key), GetGridCellForeground(item))
+            {
+                Style = new ControlStyle(Surface.ScriptForegroundColor, GetGridCellPanelColor(item)),
+                CustomRender = RenderGridItemControl
+            };
+
+            return new RectangleControl(bounds, CursorType.Default, model);
         }
 
-        int GetMaxRowsFromSurface()
+        void RenderGridItemControl(ControlBase control, ControlRenderContext context, List<MySprite> frame)
         {
-            var max = ViewBox.Height - (CaretY - ViewBox.Y) - FooterHeight;
-            var perLine = LINE_HEIGHT * Scale;
-            return (int)(Math.Round(max / perLine - .5, MidpointRounding.AwayFromZero));
+            var model = control.Model as GridItemControlModel;
+            if (model == null)
+                return;
+
+            var rect = control.Bounds;
+            var cellPadding = (LINE_HEIGHT * Scale) / 2f;
+            var cellViewBox = GetCellViewBox(rect.X, rect.Right, rect.Y, rect.Height, cellPadding);
+
+            if (!AppConfig.DrawLines)
+                DrawCellBackground(frame, model.Item, rect.X, rect.Right, rect.Y, rect.Height, cellPadding);
+
+            PreviousType = model.Item.Key.TypeId;
+            var slots = GetCellSlots(cellViewBox.X, cellViewBox.Right, cellViewBox.Y, cellViewBox.Bottom, LINE_HEIGHT);
+            DrawCellContent(frame, model.Item, model.Sprite, model.Foreground, slots);
         }
 
-
-        protected virtual void DrawRow(List<MySprite> frame, KeyValuePair<MyItemType, double> item, bool showScrollBar)
+        string ResolveSprite(MyItemType itemType)
         {
             string sprite;
+            if (SpriteCache.TryGetValue(itemType, out sprite))
+                return sprite;
+
+            var reference = new List<string>();
+            var color = "ColorfulIcons_" + itemType.ToString().Substring(16);
+            const string notFound = "Textures\\FactionLogo\\Unknown.dds";
+
+            Surface.GetSprites(reference);
+            if (reference.Contains(color))
+                sprite = color;
+            else if (reference.Contains(itemType.ToString()))
+                sprite = itemType.ToString();
+            else
+                sprite = notFound;
+
+            AddToSpriteCache(itemType, sprite);
+            return sprite;
+        }
+
+        Color GetGridCellForeground(KeyValuePair<MyItemType, double> item)
+        {
+            if (AppConfig.DrawLines && item.Value == 0)
+                return new Color(96, 32, 32);
+
+            return Surface.ScriptForegroundColor;
+        }
+
+        protected virtual Color GetGridCellPanelColor(KeyValuePair<MyItemType, double> item)
+        {
+            return item.Value == 0 ? AppConfig.ErrorColor : AppConfig.HeaderColor;
+        }
+
+        ControlBase CreateListItemControl(KeyValuePair<MyItemType, double> item, RectangleF bounds)
+        {
+            var model = new ListItemControlModel(item, ResolveSprite(item.Key), GetListItemForeground(item))
+            {
+                Style = new ControlStyle(Surface.ScriptForegroundColor, BackgroundColor),
+                CustomRender = RenderListItemControl
+            };
+
+            return new RectangleControl(bounds, CursorType.Default, model);
+        }
+
+        void RenderListItemControl(ControlBase control, ControlRenderContext context, List<MySprite> frame)
+        {
+            var model = control.Model as ListItemControlModel;
+            if (model == null)
+                return;
+
+            DrawListItemContent(frame, model.Item, model.Sprite, model.Foreground, control.Bounds);
+        }
+
+        protected virtual void DrawListItemContent(List<MySprite> frame, KeyValuePair<MyItemType, double> item,
+            string sprite, Color foreground, RectangleF bounds)
+        {
             string localizedName;
 
-            var foreground = item.Value == 0 ? AppConfig.ErrorColor : Surface.ScriptForegroundColor;
-
-            if (!SpriteCache.TryGetValue(item.Key, out sprite))
-            {
-                var reference = new List<string>();
-                var color = "ColorfulIcons_" + item.Key.ToString().Substring(16);
-                const string notFound = "Textures\\FactionLogo\\Unknown.dds";
-
-                Surface.GetSprites(reference);
-                if (reference.Contains(color))
-                    sprite = color;
-                else if (reference.Contains(item.Key.ToString()))
-                    sprite = item.Key.ToString();
-                else sprite = notFound;
-
-                AddToSpriteCache(item.Key, sprite);
-            }
-
             var margin = 0f;
-            var xStart = ViewBox.X + margin;
-            var xEnd = ViewBox.Width + ViewBox.X - margin;
-            Vector2 position = ViewBox.Position;
+            var xStart = bounds.X + margin;
+            var xEnd = bounds.Right - margin;
+            Vector2 position = bounds.Position;
             position.X = xStart;
-            position.Y = CaretY;
 
             bool drawSeparatorLine = AppConfig.SortMethod == (int)SortMethod.Type && PreviousType != item.Key.TypeId;
 
@@ -484,8 +549,6 @@ namespace LcdMod.Client.Apps.Abstract
             });
             frame.Add(MySprite.CreateClearClipRect());
             position.X = xEnd;
-            if (showScrollBar)
-                position.X -= SCROLLER_WIDTH * Scale;
             frame.Add(new MySprite()
             {
                 Type = SpriteType.TEXT,
@@ -497,55 +560,12 @@ namespace LcdMod.Client.Apps.Abstract
                 FontId = "White"
             });
 
-            CaretY += LINE_HEIGHT * Scale;
         }
 
-        protected virtual void DrawGridCell(List<MySprite> frame,
-            KeyValuePair<MyItemType, double> item, float xStart, float xEnd, bool moveToNextLine)
+        Color GetListItemForeground(KeyValuePair<MyItemType, double> item)
         {
-            var gridCellHeight = 3 * LINE_HEIGHT * Scale;
-            var cellPadding = (LINE_HEIGHT * Scale) / 2f;
-            string sprite;
-            var foreground = Surface.ScriptForegroundColor;
-
-            if (!SpriteCache.TryGetValue(item.Key, out sprite))
-            {
-                var reference = new List<string>();
-                var color = "ColorfulIcons_" + item.Key.ToString().Substring(16);
-                const string notFound = "Textures\\FactionLogo\\Unknown.dds";
-
-                Surface.GetSprites(reference);
-                if (reference.Contains(color))
-                    sprite = color;
-                else if (reference.Contains(item.Key.ToString()))
-                    sprite = item.Key.ToString();
-                else sprite = notFound;
-
-                AddToSpriteCache(item.Key, sprite);
-            }
-
-            Vector2 position = ViewBox.Position;
-            position.X = xStart;
-            position.Y = CaretY;
-            var cellViewBox = GetCellViewBox(xStart, xEnd, position.Y, gridCellHeight, cellPadding);
-
-            if (!AppConfig.DrawLines)
-            {
-                DrawCellBackground(frame, item, xStart, xEnd, position.Y, gridCellHeight, cellPadding);
-            }
-            else if (item.Value == 0)
-            {
-                foreground = new Color(96, 32, 32);
-            }
-
-            PreviousType = item.Key.TypeId;
-            var slots = GetCellSlots(cellViewBox.X, cellViewBox.Right, cellViewBox.Y, cellViewBox.Bottom, LINE_HEIGHT);
-            DrawCellContent(frame, item, sprite, foreground, slots);
-
-            if (moveToNextLine)
-                CaretY += gridCellHeight;
+            return item.Value == 0 ? AppConfig.ErrorColor : Surface.ScriptForegroundColor;
         }
-
 
         protected virtual void DrawCellContent(List<MySprite> frame, KeyValuePair<MyItemType, double> item,
             string sprite, Color foreground, MyTuple<RectangleF, RectangleF, RectangleF> slots)
@@ -615,69 +635,6 @@ namespace LcdMod.Client.Apps.Abstract
                 fontSize * .95f * FontScale
             ));
         }
-
-        protected void DrawScrollBar(List<MySprite> frame, float scale, float initialY, float viewportHeight,
-            float scrollBarCenter, float scrollBarHeight)
-        {
-            float barXCenter = ViewBox.X + ViewBox.Width - (SCROLLER_WIDTH / 2f) * scale;
-            int barWidth = (int)(SCROLLER_WIDTH * scale);
-
-            var trackCenter = new Vector2(barXCenter,
-                (float)Math.Round(initialY + viewportHeight / 2f, MidpointRounding.ToEven));
-            DrawCapsule(frame, trackCenter, barWidth, viewportHeight,
-                new Color(Surface.ScriptForegroundColor.R, Surface.ScriptForegroundColor.G,
-                    Surface.ScriptForegroundColor.B, 127));
-
-            var thumbCenter = new Vector2(barXCenter,
-                (float)Math.Round(initialY + scrollBarCenter, MidpointRounding.ToEven));
-            DrawCapsule(frame, thumbCenter, barWidth, scrollBarHeight,
-                new Color(AppConfig.HeaderColor.R, AppConfig.HeaderColor.G, AppConfig.HeaderColor.B, 250));
-        }
-
-
-        /// <summary>
-        /// Draws a "capsule": a rectangle plus two half-circles.
-        /// </summary>
-        void DrawCapsule(List<MySprite> frame, Vector2 center, int width, float height, Color color)
-        {
-            // Base rectangle
-            frame.Add(new MySprite()
-            {
-                Type = SpriteType.TEXTURE,
-                Data = "SquareSimple",
-                Position = center,
-                Size = new Vector2(width, height + .5f),
-                Color = color,
-                Alignment = TextAlignment.CENTER
-            });
-
-            var capsSize = new Vector2(width);
-
-            // Top cap (semicircle pointing down, rotation = 0)
-            frame.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = "SemiCircle",
-                Position = new Vector2(center.X, center.Y - height / 2f),
-                Size = capsSize, // circle diameter
-                RotationOrScale = 0f, // 0 rad → flat side up, round side down
-                Color = color,
-                Alignment = TextAlignment.CENTER
-            });
-
-            // Bottom cap (semicircle pointing up, rotation = π)
-            frame.Add(new MySprite()
-            {
-                Type = SpriteType.TEXTURE,
-                Data = "SemiCircle",
-                Position = new Vector2(center.X, center.Y + height / 2f),
-                Size = capsSize,
-                RotationOrScale = (float)Math.PI, // flipped
-                Color = color,
-                Alignment = TextAlignment.CENTER
-            });
-        }
-
 
         protected virtual void DrawFooter(List<MySprite> frame)
         {
@@ -773,6 +730,34 @@ namespace LcdMod.Client.Apps.Abstract
         protected Vector2 ToScreenMargin(Vector2 absoluteCenterInViewBox)
         {
             return new Vector2(absoluteCenterInViewBox.X, 512f - absoluteCenterInViewBox.Y);
+        }
+
+        sealed class GridItemControlModel : ControlModelBase
+        {
+            public readonly KeyValuePair<MyItemType, double> Item;
+            public readonly string Sprite;
+            public readonly Color Foreground;
+
+            public GridItemControlModel(KeyValuePair<MyItemType, double> item, string sprite, Color foreground)
+            {
+                Item = item;
+                Sprite = sprite;
+                Foreground = foreground;
+            }
+        }
+
+        sealed class ListItemControlModel : ControlModelBase
+        {
+            public readonly KeyValuePair<MyItemType, double> Item;
+            public readonly string Sprite;
+            public readonly Color Foreground;
+
+            public ListItemControlModel(KeyValuePair<MyItemType, double> item, string sprite, Color foreground)
+            {
+                Item = item;
+                Sprite = sprite;
+                Foreground = foreground;
+            }
         }
     }
 

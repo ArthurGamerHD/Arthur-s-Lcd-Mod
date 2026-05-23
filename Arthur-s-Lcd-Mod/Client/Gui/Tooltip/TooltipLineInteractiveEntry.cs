@@ -1,12 +1,13 @@
+using LcdMod.Client.Gui.ControlsTemplates;
 using VRageMath;
 
 namespace LcdMod.Client.Gui.Tooltip
 {
-    sealed class TooltipLineInteractiveEntry : InteractiveRectangleEntry
+    sealed class TooltipLineControl : RectangleControl
     {
         readonly ITooltipLine _line;
 
-        public TooltipLineInteractiveEntry(RectangleF rect, ITooltipLine line, CursorType cursor)
+        public TooltipLineControl(RectangleF rect, ITooltipLine line, CursorType cursor)
             : base(rect, cursor, line)
         {
             _line = line;
