@@ -251,18 +251,35 @@ namespace LcdMod.Client.Apps
             return list;
         }
 
-        protected override void DrawListItemContent(List<MySprite> frame, KeyValuePair<MyItemType, double> item,
-            string sprite, Color foreground, RectangleF bounds)
+        protected override ItemViewModel GetOrCreateItemViewModel(KeyValuePair<MyItemType, double> item)
         {
-            string localizedName;
+            var viewModel = base.GetOrCreateItemViewModel(item);
+            var shortageColor = GetShortageColor(item.Key, item.Value);
+            var rowColor = shortageColor ?? Surface.ScriptForegroundColor;
+            var useAlertText = shortageColor.HasValue && AppConfig.DrawLines;
+            var neededText = FormatingHelper.FormatItemQty(GetNeededQty(item.Key));
+            var availableText = FormatingHelper.FormatItemQty(GetAvailableQty(item.Key, item.Value));
 
+            viewModel.PrimaryAmountText = neededText;
+            viewModel.SecondaryAmountText = availableText;
+            viewModel.AmountText = availableText + "/" + neededText;
+            viewModel.ListTextColor = rowColor;
+            viewModel.ListIconColor = rowColor;
+            viewModel.GridTextColor = useAlertText ? shortageColor.Value : Surface.ScriptForegroundColor;
+            viewModel.GridIconColor = useAlertText ? shortageColor.Value : Color.White;
+            viewModel.PanelColor = shortageColor ?? AppConfig.HeaderColor;
+            return viewModel;
+        }
+
+        protected override void DrawListItemContent(List<MySprite> frame, ItemViewModel item, RectangleF bounds)
+        {
             var margin = 0f;
             var xStart = bounds.X + margin;
             var xEnd = bounds.Right - margin;
             Vector2 position = bounds.Position;
             position.X = xStart;
 
-            bool drawSeparatorLine = AppConfig.SortMethod == (int)SortMethod.Type && PreviousType != item.Key.TypeId;
+            bool drawSeparatorLine = AppConfig.SortMethod == (int)SortMethod.Type && PreviousType != item.TypeId;
 
             if (AppConfig.DrawLines || drawSeparatorLine)
             {
@@ -277,17 +294,15 @@ namespace LcdMod.Client.Apps
                 });
             }
 
-            PreviousType = item.Key.TypeId;
-            var shortageColor = GetShortageColor(item.Key, item.Value);
-            var rowColor = shortageColor ?? Surface.ScriptForegroundColor;
+            PreviousType = item.TypeId;
 
             frame.Add(new MySprite()
             {
                 Type = SpriteType.TEXTURE,
-                Data = sprite,
+                Data = item.Icon,
                 Position = position + new Vector2(20f, 15) * Scale,
                 Size = new Vector2(LINE_HEIGHT * Scale),
-                Color = rowColor,
+                Color = item.ListIconColor,
                 Alignment = TextAlignment.CENTER
             });
             position.X += (xEnd - xStart) / 8f;
@@ -299,16 +314,7 @@ namespace LcdMod.Client.Apps
 
             frame.Add(MySprite.CreateClipRect(clip));
 
-            if (!LocKeysCache.TryGetValue(item.Key, out localizedName))
-            {
-                var key =
-                    MyDefinitionManager.Static.TryGetPhysicalItemDefinition(item.Key).DisplayNameEnum?.ToString() ??
-                    item.Key.SubtypeId;
-                var sb = new StringBuilder(MyTexts.GetString(key));
-                TrimText(ref sb, clip.Width);
-                localizedName = sb.ToString();
-                LocKeysCache[item.Key] = sb.ToString();
-            }
+            var localizedName = TrimText(item.DisplayName, clip.Width);
 
             frame.Add(new MySprite()
             {
@@ -316,7 +322,7 @@ namespace LcdMod.Client.Apps
                 Data = localizedName,
                 Position = position,
                 RotationOrScale = Scale * FontScale,
-                Color = rowColor,
+                Color = item.ListTextColor,
                 Alignment = TextAlignment.LEFT,
                 FontId = "White"
             });
@@ -325,10 +331,10 @@ namespace LcdMod.Client.Apps
             frame.Add(new MySprite()
             {
                 Type = SpriteType.TEXT,
-                Data = FormatingHelper.FormatItemQty(GetNeededQty(item.Key)),
+                Data = item.PrimaryAmountText,
                 Position = position,
                 RotationOrScale = Scale * FontScale,
-                Color = rowColor,
+                Color = item.ListTextColor,
                 Alignment = TextAlignment.RIGHT,
                 FontId = "White"
             });
@@ -336,46 +342,33 @@ namespace LcdMod.Client.Apps
             frame.Add(new MySprite()
             {
                 Type = SpriteType.TEXT,
-                Data = FormatingHelper.FormatItemQty(GetAvailableQty(item.Key, item.Value)),
+                Data = item.SecondaryAmountText,
                 Position = position,
                 RotationOrScale = Scale * FontScale,
-                Color = rowColor,
+                Color = item.ListTextColor,
                 Alignment = TextAlignment.RIGHT,
                 FontId = "White"
             });
         }
 
-        protected override void DrawCellContent(List<MySprite> frame, KeyValuePair<MyItemType, double> item,
-            string sprite, Color foreground, MyTuple<RectangleF, RectangleF, RectangleF> slots)
+        protected override void DrawCellContent(List<MySprite> frame, ItemViewModel item,
+            MyTuple<RectangleF, RectangleF, RectangleF> slots)
         {
-            string localizedName;
             var iconRect = slots.Item1;
             var numberRect = slots.Item2;
             var nameRect = slots.Item3;
-            var shortageColor = GetShortageColor(item.Key, item.Value);
-            var useAlertText = shortageColor.HasValue && AppConfig.DrawLines;
-            var color = useAlertText ? shortageColor.Value : foreground;
 
             frame.Add(new MySprite
             {
                 Type = SpriteType.TEXTURE,
-                Data = sprite,
+                Data = item.Icon,
                 Position = new Vector2(iconRect.X, iconRect.Y + iconRect.Height / 2f),
                 Size = new Vector2(iconRect.Width),
                 Alignment = TextAlignment.LEFT,
-                Color = useAlertText ? shortageColor.Value : Color.White
+                Color = item.GridIconColor
             });
 
-            if (!LocKeysCache.TryGetValue(item.Key, out localizedName))
-            {
-                var key =
-                    MyDefinitionManager.Static.TryGetPhysicalItemDefinition(item.Key).DisplayNameEnum?.ToString() ??
-                    item.Key.SubtypeId;
-                var sb = new StringBuilder(MyTexts.GetString(key));
-                TrimText(ref sb, nameRect.Width);
-                localizedName = sb.ToString();
-                LocKeysCache[item.Key] = sb.ToString();
-            }
+            var localizedName = TrimText(item.DisplayName, nameRect.Width);
 
             Vector2 size = FormatingHelper.GetSizeInPixel(localizedName, "White", 1, Surface);
             float minProportion = Math.Min(nameRect.Width / size.X, nameRect.Height / size.Y);
@@ -390,14 +383,13 @@ namespace LcdMod.Client.Apps
                 localizedName,
                 pos,
                 null,
-                color,
+                item.GridTextColor,
                 "White",
                 TextAlignment.RIGHT,
                 fontSize * .95f * FontScale
             ));
 
-            var qty = FormatingHelper.FormatItemQty(GetAvailableQty(item.Key, item.Value)) + "/" +
-                      FormatingHelper.FormatItemQty(GetNeededQty(item.Key));
+            var qty = item.AmountText;
             size = FormatingHelper.GetSizeInPixel(qty, "White", 1, Surface);
             minProportion = Math.Min(numberRect.Width / size.X, numberRect.Height / size.Y);
             fontSize = minProportion;
@@ -411,14 +403,14 @@ namespace LcdMod.Client.Apps
                 qty,
                 pos,
                 null,
-                color,
+                item.GridTextColor,
                 "White",
                 TextAlignment.RIGHT,
                 fontSize * .95f * FontScale
             ));
         }
 
-        protected override void DrawCellBackground(List<MySprite> frame, KeyValuePair<MyItemType, double> item,
+        protected override void DrawCellBackground(List<MySprite> frame, ItemViewModel item,
             float xStart, float xEnd, float yStart, float cellHeight, float cellPadding)
         {
             var rl = xStart + cellPadding / 2;
@@ -426,8 +418,7 @@ namespace LcdMod.Client.Apps
             var rt = yStart + cellPadding / 2;
             var rb = yStart + cellHeight - cellPadding / 2;
 
-            var shortageColor = GetShortageColor(item.Key, item.Value);
-            var backgroundColor = shortageColor ?? AppConfig.HeaderColor;
+            var backgroundColor = item.PanelColor;
             var a = backgroundColor.ColorToHSV();
             a.Z *= 0.2f;
             var cellRect = new RectangleF(rl, rt, rr - rl, rb - rt);

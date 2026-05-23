@@ -38,7 +38,8 @@ namespace LcdMod.Client.Apps.Abstract
         static readonly Dictionary<MyDefinitionId, MyItemType> TypeCache = new Dictionary<MyDefinitionId, MyItemType>();
 
         readonly Dictionary<MyItemType, double> _itemsCache = new Dictionary<MyItemType, double>();
-        readonly List<KeyValuePair<MyItemType, double>> _items = new List<KeyValuePair<MyItemType, double>>();
+        readonly List<ItemViewModel> _items = new List<ItemViewModel>();
+        readonly Dictionary<MyItemType, ItemViewModel> _models = new Dictionary<MyItemType, ItemViewModel>();
         float _caretY;
         float _footerHeight;
         protected string LocalizedTitleCache = string.Empty;
@@ -208,7 +209,9 @@ namespace LcdMod.Client.Apps.Abstract
             try
             {
                 var items = ReadItems(Block as IMyTerminalBlock);
-                _items.AddRange(items);
+                for (int i = 0; i < items.Count; i++)
+                    _items.Add(GetOrCreateItemViewModel(items[i]));
+
                 HasFilters = AppConfig.SelectedCategories.Any() || AppConfig.SelectedBlocks.Any() ||
                              AppConfig.SelectedItems.Any() || AppConfig.SelectedGroups.Any() ||
                              AppConfig.SelectedDefinition.Any();
@@ -246,7 +249,37 @@ namespace LcdMod.Client.Apps.Abstract
             return sprites;
         }
 
-        void DrawList(List<MySprite> sprites, List<KeyValuePair<MyItemType, double>> items)
+        protected virtual ItemViewModel GetOrCreateItemViewModel(KeyValuePair<MyItemType, double> item)
+        {
+            ItemViewModel model;
+            
+            var amountText = FormatingHelper.FormatItemQty(item.Value);
+            
+            if (!_models.TryGetValue(item.Key, out model))
+            {
+                model = new ItemViewModel(item.Key, item.Value)
+                {
+                    Icon = ResolveSprite(item.Key),
+                    DisplayName = ResolveDisplayName(item.Key),
+                };
+                
+                _models.Add(item.Key, model);
+            }
+
+            model.AmountText = amountText;
+            model.PrimaryAmountText = amountText;
+            model.ListTextColor = item.Value == 0 ? AppConfig.ErrorColor : Surface.ScriptForegroundColor;
+            model.ListIconColor = item.Value == 0 ? new Color(96, 32, 32) : Color.White;
+            model.GridTextColor = AppConfig.DrawLines && item.Value == 0
+                ? new Color(96, 32, 32)
+                : Surface.ScriptForegroundColor;
+            model.GridIconColor = item.Value == 0 ? AppConfig.ErrorColor : Color.White;
+            model.PanelColor = item.Value == 0 ? AppConfig.ErrorColor : AppConfig.HeaderColor;
+
+            return model;
+        }
+
+        void DrawList(List<MySprite> sprites, List<ItemViewModel> items)
         {
             var rowHeight = LINE_HEIGHT * Scale;
             var panel = ScrollPanel.Create(
@@ -264,7 +297,7 @@ namespace LcdMod.Client.Apps.Abstract
             if (stack.VisibleCellCount <= 0)
                 return;
 
-            PreviousType = items[stack.StartIndex].Key.TypeId;
+            PreviousType = items[stack.StartIndex].TypeId;
             var renderContext = CreateItemRenderContext();
 
             for (int i = 0; i < stack.VisibleCellCount; i++)
@@ -277,7 +310,7 @@ namespace LcdMod.Client.Apps.Abstract
             CaretY = panel.ContentBounds.Y + panel.MaxVisibleRows * rowHeight;
         }
 
-        void DrawGrid(List<MySprite> sprites, List<KeyValuePair<MyItemType, double>> items)
+        void DrawGrid(List<MySprite> sprites, List<ItemViewModel> items)
         {
             var rowHeight = 3f * LINE_HEIGHT * Scale;
             int step = GetScrollStep(SCROLL_DELAY / 6);
@@ -298,7 +331,7 @@ namespace LcdMod.Client.Apps.Abstract
             if (grid.VisibleCellCount <= 0)
                 return;
 
-            PreviousType = items[grid.StartIndex].Key.TypeId;
+            PreviousType = items[grid.StartIndex].TypeId;
             var renderContext = CreateItemRenderContext();
 
             for (int gridIdx = 0; gridIdx < grid.VisibleCellCount; gridIdx++)
@@ -397,20 +430,17 @@ namespace LcdMod.Client.Apps.Abstract
             }
         }
 
-        ControlBase CreateGridItemControl(KeyValuePair<MyItemType, double> item, RectangleF bounds)
+        ControlBase CreateGridItemControl(ItemViewModel item, RectangleF bounds)
         {
-            var model = new GridItemControlModel(item, ResolveSprite(item.Key), GetGridCellForeground(item))
-            {
-                Style = new ControlStyle(Surface.ScriptForegroundColor, GetGridCellPanelColor(item)),
-                CustomRender = RenderGridItemControl
-            };
+            item.Style = new ControlStyle(Surface.ScriptForegroundColor, item.PanelColor);
+            item.CustomRender = RenderGridItemControl;
 
-            return new RectangleControl(bounds, CursorType.Default, model);
+            return new RectangleControl(bounds, CursorType.Default, item);
         }
 
         void RenderGridItemControl(ControlBase control, ControlRenderContext context, List<MySprite> frame)
         {
-            var model = control.Model as GridItemControlModel;
+            var model = control.Model as ItemViewModel;
             if (model == null)
                 return;
 
@@ -419,11 +449,11 @@ namespace LcdMod.Client.Apps.Abstract
             var cellViewBox = GetCellViewBox(rect.X, rect.Right, rect.Y, rect.Height, cellPadding);
 
             if (!AppConfig.DrawLines)
-                DrawCellBackground(frame, model.Item, rect.X, rect.Right, rect.Y, rect.Height, cellPadding);
+                DrawCellBackground(frame, model, rect.X, rect.Right, rect.Y, rect.Height, cellPadding);
 
-            PreviousType = model.Item.Key.TypeId;
+            PreviousType = model.TypeId;
             var slots = GetCellSlots(cellViewBox.X, cellViewBox.Right, cellViewBox.Y, cellViewBox.Bottom, LINE_HEIGHT);
-            DrawCellContent(frame, model.Item, model.Sprite, model.Foreground, slots);
+            DrawCellContent(frame, model, slots);
         }
 
         string ResolveSprite(MyItemType itemType)
@@ -448,51 +478,47 @@ namespace LcdMod.Client.Apps.Abstract
             return sprite;
         }
 
-        Color GetGridCellForeground(KeyValuePair<MyItemType, double> item)
+        string ResolveDisplayName(MyItemType itemType)
         {
-            if (AppConfig.DrawLines && item.Value == 0)
-                return new Color(96, 32, 32);
+            string localizedName;
+            if (LocKeysCache.TryGetValue(itemType, out localizedName))
+                return localizedName;
 
-            return Surface.ScriptForegroundColor;
+            var key =
+                MyDefinitionManager.Static.TryGetPhysicalItemDefinition(itemType).DisplayNameEnum?.ToString() ??
+                itemType.SubtypeId;
+
+            localizedName = MyTexts.GetString(key);
+            LocKeysCache[itemType] = localizedName;
+            return localizedName;
         }
 
-        protected virtual Color GetGridCellPanelColor(KeyValuePair<MyItemType, double> item)
+        ControlBase CreateListItemControl(ItemViewModel item, RectangleF bounds)
         {
-            return item.Value == 0 ? AppConfig.ErrorColor : AppConfig.HeaderColor;
-        }
+            item.Style = new ControlStyle(Surface.ScriptForegroundColor, BackgroundColor);
+            item.CustomRender = RenderListItemControl;
 
-        ControlBase CreateListItemControl(KeyValuePair<MyItemType, double> item, RectangleF bounds)
-        {
-            var model = new ListItemControlModel(item, ResolveSprite(item.Key), GetListItemForeground(item))
-            {
-                Style = new ControlStyle(Surface.ScriptForegroundColor, BackgroundColor),
-                CustomRender = RenderListItemControl
-            };
-
-            return new RectangleControl(bounds, CursorType.Default, model);
+            return new RectangleControl(bounds, CursorType.Default, item);
         }
 
         void RenderListItemControl(ControlBase control, ControlRenderContext context, List<MySprite> frame)
         {
-            var model = control.Model as ListItemControlModel;
+            var model = control.Model as ItemViewModel;
             if (model == null)
                 return;
 
-            DrawListItemContent(frame, model.Item, model.Sprite, model.Foreground, control.Bounds);
+            DrawListItemContent(frame, model, control.Bounds);
         }
 
-        protected virtual void DrawListItemContent(List<MySprite> frame, KeyValuePair<MyItemType, double> item,
-            string sprite, Color foreground, RectangleF bounds)
+        protected virtual void DrawListItemContent(List<MySprite> frame, ItemViewModel item, RectangleF bounds)
         {
-            string localizedName;
-
             var margin = 0f;
             var xStart = bounds.X + margin;
             var xEnd = bounds.Right - margin;
             Vector2 position = bounds.Position;
             position.X = xStart;
 
-            bool drawSeparatorLine = AppConfig.SortMethod == (int)SortMethod.Type && PreviousType != item.Key.TypeId;
+            bool drawSeparatorLine = AppConfig.SortMethod == (int)SortMethod.Type && PreviousType != item.TypeId;
 
             if (AppConfig.DrawLines || drawSeparatorLine)
             {
@@ -507,16 +533,16 @@ namespace LcdMod.Client.Apps.Abstract
                 });
             }
 
-            PreviousType = item.Key.TypeId;
+            PreviousType = item.TypeId;
 
             frame.Add(new MySprite
             {
                 Type = SpriteType.TEXTURE,
-                Data = sprite,
+                Data = item.Icon,
                 Position = position + new Vector2(20f, 15) * Scale,
                 Size = new Vector2(LINE_HEIGHT * Scale),
                 Alignment = TextAlignment.CENTER,
-                Color = item.Value == 0 ? new Color(96, 32, 32) : Color.White
+                Color = item.ListIconColor
             });
             position.X += (xEnd - xStart) / 8f;
 
@@ -526,16 +552,7 @@ namespace LcdMod.Client.Apps.Abstract
 
             frame.Add(MySprite.CreateClipRect(clip));
 
-            if (!LocKeysCache.TryGetValue(item.Key, out localizedName))
-            {
-                var key =
-                    MyDefinitionManager.Static.TryGetPhysicalItemDefinition(item.Key).DisplayNameEnum?.ToString() ??
-                    item.Key.SubtypeId;
-                var sb = new StringBuilder(MyTexts.GetString(key));
-                TrimText(ref sb, clip.Width);
-                localizedName = sb.ToString();
-                LocKeysCache[item.Key] = sb.ToString();
-            }
+            var localizedName = TrimText(item.DisplayName, clip.Width);
 
             frame.Add(new MySprite()
             {
@@ -543,7 +560,7 @@ namespace LcdMod.Client.Apps.Abstract
                 Data = localizedName,
                 Position = position,
                 RotationOrScale = Scale * FontScale,
-                Color = foreground,
+                Color = item.ListTextColor,
                 Alignment = TextAlignment.LEFT,
                 FontId = "White"
             });
@@ -552,25 +569,19 @@ namespace LcdMod.Client.Apps.Abstract
             frame.Add(new MySprite()
             {
                 Type = SpriteType.TEXT,
-                Data = FormatingHelper.FormatItemQty(item.Value),
+                Data = item.PrimaryAmountText ?? item.AmountText,
                 Position = position,
                 RotationOrScale = Scale * FontScale,
-                Color = foreground,
+                Color = item.ListTextColor,
                 Alignment = TextAlignment.RIGHT,
                 FontId = "White"
             });
 
         }
 
-        Color GetListItemForeground(KeyValuePair<MyItemType, double> item)
+        protected virtual void DrawCellContent(List<MySprite> frame, ItemViewModel item,
+            MyTuple<RectangleF, RectangleF, RectangleF> slots)
         {
-            return item.Value == 0 ? AppConfig.ErrorColor : Surface.ScriptForegroundColor;
-        }
-
-        protected virtual void DrawCellContent(List<MySprite> frame, KeyValuePair<MyItemType, double> item,
-            string sprite, Color foreground, MyTuple<RectangleF, RectangleF, RectangleF> slots)
-        {
-            string localizedName;
             var iconRect = slots.Item1;
             var numberRect = slots.Item2;
             var nameRect = slots.Item3;
@@ -578,23 +589,14 @@ namespace LcdMod.Client.Apps.Abstract
             frame.Add(new MySprite
             {
                 Type = SpriteType.TEXTURE,
-                Data = sprite,
+                Data = item.Icon,
                 Position = new Vector2(iconRect.X, iconRect.Y + iconRect.Height / 2f),
                 Size = new Vector2(iconRect.Width),
                 Alignment = TextAlignment.LEFT,
-                Color = item.Value == 0 ? AppConfig.ErrorColor : Color.White
+                Color = item.GridIconColor
             });
 
-            if (!LocKeysCache.TryGetValue(item.Key, out localizedName))
-            {
-                var key =
-                    MyDefinitionManager.Static.TryGetPhysicalItemDefinition(item.Key).DisplayNameEnum?.ToString() ??
-                    item.Key.SubtypeId;
-                var sb = new StringBuilder(MyTexts.GetString(key));
-                TrimText(ref sb, nameRect.Width);
-                localizedName = sb.ToString();
-                LocKeysCache[item.Key] = sb.ToString();
-            }
+            var localizedName = TrimText(item.DisplayName, nameRect.Width);
 
             Vector2 size = FormatingHelper.GetSizeInPixel(localizedName, "White", 1, Surface);
             float minProportion = Math.Min(nameRect.Width / size.X, nameRect.Height / size.Y);
@@ -609,13 +611,13 @@ namespace LcdMod.Client.Apps.Abstract
                 localizedName,
                 pos,
                 null,
-                foreground,
+                item.GridTextColor,
                 "White",
                 TextAlignment.RIGHT,
                 fontSize * .95f * FontScale
             ));
 
-            var qty = FormatingHelper.FormatItemQty(item.Value);
+            var qty = item.AmountText;
             size = FormatingHelper.GetSizeInPixel(qty, "White", 1, Surface);
             minProportion = Math.Min(numberRect.Width / size.X, numberRect.Height / size.Y);
             fontSize = minProportion;
@@ -629,7 +631,7 @@ namespace LcdMod.Client.Apps.Abstract
                 qty,
                 pos,
                 null,
-                foreground,
+                item.GridTextColor,
                 "White",
                 TextAlignment.RIGHT,
                 fontSize * .95f * FontScale
@@ -711,7 +713,14 @@ namespace LcdMod.Client.Apps.Abstract
             }
         }
 
-        protected virtual void DrawCellBackground(List<MySprite> frame, KeyValuePair<MyItemType, double> item,
+        protected string TrimText(string text, float availableWidth, float fontSize = 1)
+        {
+            var sb = new StringBuilder(text ?? string.Empty);
+            TrimText(ref sb, availableWidth, fontSize);
+            return sb.ToString();
+        }
+
+        protected virtual void DrawCellBackground(List<MySprite> frame, ItemViewModel item,
             float xStart, float xEnd, float yStart, float cellHeight, float cellPadding)
         {
             var rl = xStart + cellPadding / 2;
@@ -719,7 +728,7 @@ namespace LcdMod.Client.Apps.Abstract
             var rt = yStart + cellPadding / 2;
             var rb = yStart + cellHeight - cellPadding / 2;
 
-            var backgroundColor = item.Value == 0 ? AppConfig.ErrorColor : AppConfig.HeaderColor;
+            var backgroundColor = item.PanelColor;
             var accent = backgroundColor.MulValue(0.2f);
             var cellRect = new RectangleF(rl, rt, rr - rl, rb - rt);
             var dropShadow = new RectangleF(cellRect.Position + 2, cellRect.Size);
@@ -732,32 +741,31 @@ namespace LcdMod.Client.Apps.Abstract
             return new Vector2(absoluteCenterInViewBox.X, 512f - absoluteCenterInViewBox.Y);
         }
 
-        sealed class GridItemControlModel : ControlModelBase
+        protected class ItemViewModel : ControlModelBase
         {
-            public readonly KeyValuePair<MyItemType, double> Item;
-            public readonly string Sprite;
-            public readonly Color Foreground;
-
-            public GridItemControlModel(KeyValuePair<MyItemType, double> item, string sprite, Color foreground)
+            public ItemViewModel(MyItemType itemType, double amount)
             {
-                Item = item;
-                Sprite = sprite;
-                Foreground = foreground;
+                ItemType = itemType;
+                Amount = amount;
             }
-        }
 
-        sealed class ListItemControlModel : ControlModelBase
-        {
-            public readonly KeyValuePair<MyItemType, double> Item;
-            public readonly string Sprite;
-            public readonly Color Foreground;
-
-            public ListItemControlModel(KeyValuePair<MyItemType, double> item, string sprite, Color foreground)
+            public MyItemType ItemType { get; private set; }
+            public double Amount { get; set; }
+            public string TypeId
             {
-                Item = item;
-                Sprite = sprite;
-                Foreground = foreground;
+                get { return ItemType.TypeId; }
             }
+
+            public string Icon { get; set; }
+            public string DisplayName { get; set; }
+            public string AmountText { get; set; }
+            public string PrimaryAmountText { get; set; }
+            public string SecondaryAmountText { get; set; }
+            public Color ListTextColor { get; set; }
+            public Color ListIconColor { get; set; }
+            public Color GridTextColor { get; set; }
+            public Color GridIconColor { get; set; }
+            public Color PanelColor { get; set; }
         }
     }
 
