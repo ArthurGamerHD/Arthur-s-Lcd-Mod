@@ -29,6 +29,7 @@ namespace LcdMod.Client.Gui.Tooltip
             new Dictionary<ITooltipLine, TooltipLineControl>();
         readonly HashSet<ITooltipLine> _linesUsedThisFrame = new HashSet<ITooltipLine>();
 
+        TooltipContainerControl _containerControl;
         RectangleControl _cardControl;
 
         public InteractiveTooltip(
@@ -111,6 +112,11 @@ namespace LcdMod.Client.Gui.Tooltip
 
         public IList<ControlBase> InteractiveEntries => _interactiveEntries;
 
+        public ControlBase TooltipContainer
+        {
+            get { return _containerControl; }
+        }
+
         public string GetTitle()
         {
             return _titleGetter != null ? (_titleGetter() ?? string.Empty) : string.Empty;
@@ -133,6 +139,12 @@ namespace LcdMod.Client.Gui.Tooltip
 
         public void Hide()
         {
+            if (_containerControl != null)
+            {
+                _containerControl.ClearChildren();
+                _containerControl.SetVisible(false);
+            }
+
             if (_cardControl != null)
                 _cardControl.SetVisible(false);
 
@@ -260,6 +272,13 @@ namespace LcdMod.Client.Gui.Tooltip
                 parentBounds.Height);
             HasBounds = true;
 
+            var containerRect = CloseMode == TooltipActivationMode.Auto
+                ? Union(cardRect, KeepOpenBounds)
+                : viewBox;
+            EnsureContainer(containerRect);
+            _containerControl.ClearChildren();
+            _interactiveEntries.Add(_containerControl);
+
             Border.CreateSpritesFromRect(shadowRect, sprites, shadowColor, 0.2f);
             Border.CreateSpritesFromRect(cardRect, sprites, panelColor, 0.2f);
 
@@ -285,7 +304,7 @@ namespace LcdMod.Client.Gui.Tooltip
             }
 
             _cardControl.SetVisible(true);
-            _interactiveEntries.Add(_cardControl);
+            _containerControl.AddChild(_cardControl);
 
             float currentY = cardRect.Y + padding.Y;
 
@@ -375,7 +394,7 @@ namespace LcdMod.Client.Gui.Tooltip
                     lineEntry.ClickSound = line.GetClickSound();
 
                     _linesUsedThisFrame.Add(line);
-                    _interactiveEntries.Add(lineEntry);
+                    _containerControl.AddChild(lineEntry);
                 }
 
                 var position = new Vector2(leftX, currentY - lineSizes[i].Y * 0.25f * lineScale);
@@ -432,6 +451,29 @@ namespace LcdMod.Client.Gui.Tooltip
             return sprites;
         }
 
+        void EnsureContainer(RectangleF bounds)
+        {
+            if (_containerControl == null)
+            {
+                _containerControl = new TooltipContainerControl(bounds);
+            }
+            else
+            {
+                _containerControl.SetRect(bounds);
+            }
+
+            _containerControl.SetVisible(true);
+        }
+
+        static RectangleF Union(RectangleF first, RectangleF second)
+        {
+            float x = Math.Min(first.X, second.X);
+            float y = Math.Min(first.Y, second.Y);
+            float right = Math.Max(first.Right, second.Right);
+            float bottom = Math.Max(first.Bottom, second.Bottom);
+            return new RectangleF(x, y, Math.Max(0f, right - x), Math.Max(0f, bottom - y));
+        }
+
         void PruneUnusedLineEntries()
         {
             if (_lineEntryByLine.Count == 0)
@@ -452,6 +494,18 @@ namespace LcdMod.Client.Gui.Tooltip
 
             for (int i = 0; i < remove.Count; i++)
                 _lineEntryByLine.Remove(remove[i]);
+        }
+    }
+
+    sealed class TooltipContainerControl : RectangleControl
+    {
+        public TooltipContainerControl(RectangleF rect)
+            : base(rect, CursorType.Default)
+        {
+        }
+
+        protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+        {
         }
     }
 

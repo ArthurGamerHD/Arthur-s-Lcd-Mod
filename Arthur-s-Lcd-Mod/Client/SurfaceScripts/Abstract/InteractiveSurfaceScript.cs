@@ -84,8 +84,21 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                     _interactiveEntriesWithOverlay.Insert(0, _hiddenGlobalMenuControl);
                 }
 
+                AddActiveTooltipContainer(_interactiveEntriesWithOverlay);
+
                 return _interactiveEntriesWithOverlay;
             }
+        }
+
+        void AddActiveTooltipContainer(List<ControlBase> entries)
+        {
+            if (_activeTooltipParentEntry == null || !_activeTooltipParentEntry.Visible ||
+                _activeTooltipParentEntry.Tooltip == null)
+                return;
+
+            var container = _activeTooltipParentEntry.Tooltip.TooltipContainer;
+            if (container != null && container.Visible)
+                entries.Add(container);
         }
 
         public virtual List<ControlBase> InteractiveList { get; } = new List<ControlBase>();
@@ -127,12 +140,24 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             CursorPosition = onScreenCoordinates;
             OnLookAt(onScreenCoordinates);
             RenderSprites();
+            try
+            {
+                TryHoverAtCursor(this);
+            }
+            catch (Exception e)
+            {
+                OnException(e);
+            }
         }
 
         public void MouseScroll(int delta)
         {
             bool handled = false;
-            OnMouseScroll(delta, ref handled);
+            if (TryScrollAtCursor(delta, this))
+                handled = true;
+
+            if (!handled)
+                OnMouseScroll(delta, ref handled);
         }
 
         ControlBase _activeTooltipParentEntry;
@@ -204,9 +229,8 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             _tooltipRect = default(RectangleF);
             _tooltipKeepOpenRect = default(RectangleF);
 
-            // Keep tooltip entries permanently attached to their parent entry.
-            // Invisible entries are non-interactive because InteractiveEntry.Hit(),
-            // InteractiveEntry.Click(), CanClick, and ResolveTopHitEntry() are visibility-gated.
+            // Keep tooltip controls alive between frames. Visibility gating keeps hidden
+            // tooltip controls out of hit testing and cursor resolution.
         }
 
 
@@ -231,14 +255,31 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         {
             for (int i = InteractiveList.Count - 1; i >= 0; i--)
             {
-                var entry = InteractiveList[i];
-                if (entry != null &&
-                    entry.Visible &&
-                    entry.Tooltip != null &&
-                    Equals(entry.DataContext, dataContext))
-                {
+                var entry = FindVisibleTooltipEntryByContext(InteractiveList[i], dataContext);
+                if (entry != null)
                     return entry;
-                }
+            }
+
+            return null;
+        }
+
+        ControlBase FindVisibleTooltipEntryByContext(ControlBase entry, object dataContext)
+        {
+            if (entry == null || !entry.Visible)
+                return null;
+
+            if (entry.Tooltip != null && Equals(entry.DataContext, dataContext))
+                return entry;
+
+            var children = entry.Children;
+            if (children == null || children.Count == 0)
+                return null;
+
+            for (int i = children.Count - 1; i >= 0; i--)
+            {
+                var child = FindVisibleTooltipEntryByContext(children[i], dataContext);
+                if (child != null)
+                    return child;
             }
 
             return null;
@@ -275,11 +316,12 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
             for (int i = InteractiveList.Count - 1; i >= 0; i--)
             {
-                var entry = InteractiveList[i];
-                if (entry == null || !entry.Visible || entry.Tooltip == null)
+                var root = InteractiveList[i];
+                ControlBase entry;
+                if (root == null || !root.TryResolveTooltipTarget(position, out entry))
                     continue;
 
-                if (entry.Hit(position))
+                if (entry.Tooltip != null)
                     return entry;
             }
 
@@ -299,7 +341,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             var active = ResolveManualTooltipParent() ?? _activeTooltipParentEntry;
             if (active != null && active.Visible && active.Tooltip != null && _hasTooltipBounds &&
                 TooltipButtonMatches(active.Tooltip.CloseMode, rightClick) &&
-                (CursorInsideTooltip || CursorInsideTooltipKeepOpenArea || active.Hit(HitTestCursorPosition)))
+                ViewBox.Contains(HitTestCursorPosition))
             {
                 return true;
             }
@@ -324,7 +366,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             var active = ResolveManualTooltipParent() ?? _activeTooltipParentEntry;
             if (active != null && active.Visible && active.Tooltip != null && _hasTooltipBounds &&
                 TooltipButtonMatches(active.Tooltip.CloseMode, rightClick) &&
-                (CursorInsideTooltip || CursorInsideTooltipKeepOpenArea || active.Hit(position)))
+                ViewBox.Contains(position))
             {
                 tooltipParent = active;
                 HideAttachedTooltip();
@@ -385,10 +427,8 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 var activeParent = _activeTooltipParentObject;
                 for (int i = InteractiveList.Count - 1; i >= 0; i--)
                 {
-                    var entry = InteractiveList[i];
+                    var entry = FindVisibleTooltipEntryByContext(InteractiveList[i], activeParent);
                     if (entry != null &&
-                        entry.Visible &&
-                        entry.Tooltip != null &&
                         entry.Tooltip.OpenMode == TooltipActivationMode.Auto &&
                         Equals(entry.DataContext, activeParent))
                     {
@@ -399,15 +439,15 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
             for (int i = InteractiveList.Count - 1; i >= 0; i--)
             {
-                var entry = InteractiveList[i];
-                if (entry == null || !entry.Visible || entry.Tooltip == null)
+                var root = InteractiveList[i];
+                ControlBase entry;
+                if (root == null || !root.TryResolveTooltipTarget(position, out entry))
                     continue;
 
                 if (entry.Tooltip.OpenMode != TooltipActivationMode.Auto)
                     continue;
 
-                if (entry.Hit(position))
-                    return entry;
+                return entry;
             }
 
             return null;
@@ -449,7 +489,28 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
             sprites.AddRange(tooltipSprites);
 
-            parentEntry.AddChildren(tooltip.InteractiveEntries);
+            ConfigureTooltipContainer(tooltip);
+        }
+
+        void ConfigureTooltipContainer(InteractiveTooltip tooltip)
+        {
+            if (tooltip == null || tooltip.TooltipContainer == null)
+                return;
+
+            var container = tooltip.TooltipContainer;
+            container.SetOnClick(null);
+            container.OnSecondaryClick = null;
+
+            if (tooltip.CloseMode == TooltipActivationMode.Click)
+                container.SetOnClick(DismissTooltipFromContainer);
+            else if (tooltip.CloseMode == TooltipActivationMode.RightClick)
+                container.OnSecondaryClick = DismissTooltipFromContainer;
+        }
+
+        void DismissTooltipFromContainer(object dataContext, object sender)
+        {
+            HideAttachedTooltip();
+            ClearManualTooltipState();
         }
 
 
@@ -578,6 +639,8 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             }
 
             public override bool CanClick => Visible;
+            public override bool CanPrimaryClick => Visible;
+            public override bool CanSecondaryClick => Visible;
 
             public override bool Click(object sender)
             {
@@ -617,49 +680,142 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             if (float.IsNaN(position.X) || float.IsNaN(position.Y) || !HasRecentVisualContact)
                 return;
 
+            ControlBase entry;
+            CursorType = TryResolveHit(position, out entry) ? entry.Cursor : CursorType.Default;
+        }
+
+        public virtual bool TryResolveHitAtCursor(out ControlBase entry)
+        {
+            entry = null;
+            var position = HitTestCursorPosition;
+            return IsValidHitTestPosition(position) && TryResolveHit(position, out entry);
+        }
+
+        public virtual bool TryResolveClickableAtCursor(bool secondary, out ControlBase entry)
+        {
+            entry = null;
+            var position = HitTestCursorPosition;
+            return IsValidHitTestPosition(position) && TryResolveClickable(position, secondary, out entry);
+        }
+
+        public virtual bool TryResolveClickableAtCursor(out ControlBase entry)
+        {
+            entry = null;
+            var position = HitTestCursorPosition;
+            return IsValidHitTestPosition(position) && TryResolveClickable(position, out entry);
+        }
+
+        public virtual bool TryClickAtCursor(bool secondary, object sender, out ControlBase entry)
+        {
+            entry = null;
+            var position = HitTestCursorPosition;
+            if (!IsValidHitTestPosition(position) || !TryResolveClickable(position, secondary, out entry))
+                return false;
+
+            return secondary ? entry.SecondaryClick(sender) : entry.Click(sender);
+        }
+
+        public virtual bool TryScrollAtCursor(int delta, object sender)
+        {
+            var position = HitTestCursorPosition;
+            if (!IsValidHitTestPosition(position))
+                return false;
+
             var entries = InteractiveEntries as IList<ControlBase>;
             if (entries == null)
-                return;
+                return false;
 
             for (int i = entries.Count - 1; i >= 0; i--)
             {
-                var entry = ResolveTopHitEntry(entries[i], position);
-                if (entry == null)
-                    continue;
-
-                CursorType = entry.Cursor;
-                return;
+                var root = entries[i];
+                if (root != null && root.Scroll(position, sender, delta))
+                    return true;
             }
 
-            CursorType = CursorType.Default;
+            return false;
         }
 
-        ControlBase ResolveTopHitEntry(ControlBase entry, Vector2 position)
+        public virtual bool TryHoverAtCursor(object sender)
         {
-            if (entry == null || !entry.Visible)
-                return null;
+            var position = HitTestCursorPosition;
+            if (!IsValidHitTestPosition(position))
+                return false;
 
-            bool selfHit = entry.Hit(position);
+            var entries = InteractiveEntries as IList<ControlBase>;
+            if (entries == null)
+                return false;
 
-            // Tooltip child entries are allowed to resolve only through the currently
-            // active tooltip parent. This prevents old parents that still reference
-            // shared/reused tooltip children from producing ghost hitboxes or cursor styles.
-            bool mayCheckChildren =
-                entry.Children != null &&
-                entry.Children.Count > 0 &&
-                (selfHit || (_hasTooltipBounds && ReferenceEquals(entry, _activeTooltipParentEntry)));
-
-            if (mayCheckChildren)
+            for (int i = entries.Count - 1; i >= 0; i--)
             {
-                for (int i = entry.Children.Count - 1; i >= 0; i--)
-                {
-                    var childHit = ResolveTopHitEntry(entry.Children[i], position);
-                    if (childHit != null)
-                        return childHit;
-                }
+                var root = entries[i];
+                if (root != null && root.Hover(position, sender))
+                    return true;
             }
 
-            return selfHit ? entry : null;
+            return false;
+        }
+
+        bool TryResolveHit(Vector2 position, out ControlBase entry)
+        {
+            entry = null;
+            var entries = InteractiveEntries as IList<ControlBase>;
+            if (entries == null)
+                return false;
+
+            for (int i = entries.Count - 1; i >= 0; i--)
+            {
+                var root = entries[i];
+                if (root != null && root.TryResolveHit(position, out entry))
+                    return true;
+            }
+
+            return false;
+        }
+
+        bool TryResolveClickable(Vector2 position, bool secondary, out ControlBase entry)
+        {
+            entry = null;
+            var entries = InteractiveEntries as IList<ControlBase>;
+            if (entries == null)
+                return false;
+
+            for (int i = entries.Count - 1; i >= 0; i--)
+            {
+                var root = entries[i];
+                if (root == null)
+                    continue;
+
+                bool resolved = secondary
+                    ? root.TryResolveSecondaryClickable(position, out entry)
+                    : root.TryResolvePrimaryClickable(position, out entry);
+
+                if (resolved)
+                    return true;
+            }
+
+            return false;
+        }
+
+        bool TryResolveClickable(Vector2 position, out ControlBase entry)
+        {
+            entry = null;
+            var entries = InteractiveEntries as IList<ControlBase>;
+            if (entries == null)
+                return false;
+
+            for (int i = entries.Count - 1; i >= 0; i--)
+            {
+                var root = entries[i];
+                if (root != null && root.TryResolveClickable(position, out entry))
+                    return true;
+            }
+
+            return false;
+        }
+
+        bool IsValidHitTestPosition(Vector2 position)
+        {
+            return !float.IsNaN(position.X) && !float.IsNaN(position.Y) && HasRecentVisualContact;
         }
 
         protected override List<MySprite> RenderFrame(Func<List<MySprite>> sprites)

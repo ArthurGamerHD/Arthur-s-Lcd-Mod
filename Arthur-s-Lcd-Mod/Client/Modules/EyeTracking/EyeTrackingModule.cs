@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Generated;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Helpers;
@@ -86,6 +85,7 @@ namespace LcdMod.Client.Modules.EyeTracking
             IEyeTracking eyeTrackingEntity = null;
             IEyeTracking tooltipInputEntity = null;
             IEyeTracking lookingScreen = null;
+            bool? activeClickButton = GetActiveClickButton();
             bool tooltipBlocksPrimary = false;
             bool tooltipBlocksSecondary = false;
             double hoveredDistanceSq = double.MaxValue;
@@ -147,7 +147,7 @@ namespace LcdMod.Client.Modules.EyeTracking
                     }
 
                     ControlBase clickable;
-                    if (TryGetHoveredClickable(screen, out clickable))
+                    if (TryGetHoveredClickable(screen, activeClickButton, out clickable))
                     {
                         if (distanceSq < hoveredDistanceSq)
                         {
@@ -211,16 +211,21 @@ namespace LcdMod.Client.Modules.EyeTracking
 
                 try
                 {
+                    var interactiveSurface = eyeTrackingEntity as InteractiveSurfaceScript;
+                    var rightClick = !_primaryWasPressed && _secondaryWasPressed;
+                    ControlBase clickedControl;
                     var click = _pressedClickable != null && hoveredClickable != null &&
                                 Equals(objA: _pressedClickableDataContext, objB: hoveredDataContext) &&
-                                (_primaryWasPressed
-                                    ? hoveredClickable.Click(eyeTrackingEntity)
-                                    : hoveredClickable.SecondaryClick(eyeTrackingEntity))
+                                (interactiveSurface != null
+                                    ? interactiveSurface.TryClickAtCursor(rightClick, eyeTrackingEntity, out clickedControl)
+                                    : rightClick
+                                        ? hoveredClickable.SecondaryClick(eyeTrackingEntity)
+                                        : hoveredClickable.Click(eyeTrackingEntity))
                         ; // handle click first
 
                     ControlBase tooltipParent;
                     click = click || TryHandleTooltipActivation(eyeTrackingEntity,
-                        rightClick: !_primaryWasPressed && _secondaryWasPressed,
+                        rightClick: rightClick,
                         tooltipParent: out tooltipParent); // then handle tooltip if needed
 
                     if (eyeTrackingEntity != null)
@@ -280,67 +285,61 @@ namespace LcdMod.Client.Modules.EyeTracking
 
         public static bool HoldingRightClick => MyAPIGateway.Input.IsRightMousePressed();
 
-        static bool TryGetHoveredClickable(IEyeTracking screen, out ControlBase clickable)
+        bool? GetActiveClickButton()
+        {
+            if (MyAPIGateway.Input == null)
+                return null;
+
+            if (HoldingClick || _primaryWasPressed)
+                return false;
+
+            if (HoldingRightClick || _secondaryWasPressed)
+                return true;
+
+            return null;
+        }
+
+        static bool TryGetHoveredClickable(IEyeTracking screen, bool? secondary, out ControlBase clickable)
         {
             clickable = null;
 
+            var interactiveSurface = screen as InteractiveSurfaceScript;
+            if (interactiveSurface != null)
+            {
+                return secondary.HasValue
+                    ? interactiveSurface.TryResolveClickableAtCursor(secondary.Value, out clickable)
+                    : interactiveSurface.TryResolveClickableAtCursor(out clickable);
+            }
+
             var entries = screen.InteractiveEntries;
-            if (entries == null || !entries.Any())
+            if (entries == null || entries.Count == 0)
                 return false;
 
             var position = screen.CursorPosition + screen.HitTestOffset;
             if (float.IsNaN(position.X) || float.IsNaN(position.Y))
                 return false;
 
-            for (int i = entries.Count - 1; i >= 0; i--)
+            var list = entries as IList<ControlBase>;
+            if (list == null)
+                return false;
+
+            for (int i = list.Count - 1; i >= 0; i--)
             {
-                var entry = entries.ElementAt(i);
-                if (TryResolveHitClickable(screen, entry, position, out clickable))
+                var entry = list[i];
+                if (entry == null)
+                    continue;
+
+                bool resolved = secondary.HasValue
+                    ? secondary.Value
+                        ? entry.TryResolveSecondaryClickable(position, out clickable)
+                        : entry.TryResolvePrimaryClickable(position, out clickable)
+                    : entry.TryResolveClickable(position, out clickable);
+
+                if (resolved)
                     return true;
             }
 
             return false;
-        }
-
-        static bool TryResolveHitClickable(
-            IEyeTracking screen,
-            ControlBase entry,
-            Vector2 position,
-            out ControlBase clickable)
-        {
-            clickable = null;
-
-            if (entry == null || !entry.Visible)
-                return false;
-
-            bool selfHit = entry.Hit(position);
-
-            var children = entry.Children;
-            bool hasChild;
-
-            var interactiveSurface = screen as InteractiveSurfaceScript;
-            if (interactiveSurface != null)
-                hasChild = interactiveSurface.IsInsideContainer(entry, position);
-            else
-                hasChild = selfHit && children != null && children.Count > 0;
-
-            if (hasChild && children != null && children.Count > 0)
-            {
-                for (int i = children.Count - 1; i >= 0; i--)
-                {
-                    if (TryResolveHitClickable(screen, children[i], position, out clickable))
-                        return true;
-                }
-            }
-
-            if (!selfHit)
-                return false;
-
-            if (!entry.CanClick)
-                return false;
-
-            clickable = entry;
-            return true;
         }
 
         static bool TryGetCameraRay(out Vector3D origin, out Vector3D direction)

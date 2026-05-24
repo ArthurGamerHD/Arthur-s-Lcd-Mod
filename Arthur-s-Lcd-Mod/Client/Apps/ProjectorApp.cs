@@ -13,6 +13,7 @@ using LcdMod.Client.Terminal.Controls;
 using LcdMod.Common.Config.Models.Apps;
 using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
+using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage;
 using VRage.Game.GUI.TextPanel;
@@ -68,7 +69,6 @@ namespace LcdMod.Client.Apps
         {
             base.LayoutChanged();
             _projectorDataInitialized = false;
-
             _customTitle = _projector?.CustomName;
 
             var raA = MyTexts.Get(MyStringId.GetOrCompute("ScreenTerminalProduction_RequiredAndAvailable")).ToString()
@@ -268,6 +268,8 @@ namespace LcdMod.Client.Apps
             viewModel.GridTextColor = useAlertText ? shortageColor.Value : Surface.ScriptForegroundColor;
             viewModel.GridIconColor = useAlertText ? shortageColor.Value : Color.White;
             viewModel.PanelColor = shortageColor ?? AppConfig.HeaderColor;
+            viewModel.ListStyle.SetColors(Surface.ScriptForegroundColor, BackgroundColor);
+            viewModel.GridStyle.SetColors(Surface.ScriptForegroundColor, viewModel.PanelColor);
             return viewModel;
         }
 

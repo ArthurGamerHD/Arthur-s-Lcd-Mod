@@ -25,6 +25,14 @@ public sealed class ConfigKinds : IIncrementalGenerator
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
+    static readonly DiagnosticDescriptor InteractiveAppConfigWarning = new(
+        id: "LcdMOD005",
+        title: "Interactive app uses non-interactive config",
+        messageFormat: "Interactive type '{0}' uses config '{1}', which does not inherit ScreenConfigInteractive",
+        category: "LcdModCodeGenerator",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         context.RegisterPostInitializationOutput(static spc =>
@@ -49,6 +57,8 @@ namespace Generated
             var appConfigSource = BuildAppConfigsSource(appConfigs);
             if (appConfigSource != null)
                 spc.AddSource("AppConfigs.g.cs", appConfigSource);
+            ReportInteractiveSurfaceConfigUsages(compilation, appConfigs, spc);
+            ReportInteractiveAppConfigUsages(compilation, spc);
             ReportConfigPropertyUsages(compilation, appConfigs, spc);
         });
     }
@@ -222,6 +232,104 @@ namespace Generated
         return true;
     }
 
+    static void ReportInteractiveSurfaceConfigUsages(
+        Compilation compilation,
+        List<(INamedTypeSymbol AppType, INamedTypeSymbol ConfigType)> appConfigs,
+        SourceProductionContext spc)
+    {
+        if (appConfigs == null || appConfigs.Count == 0)
+            return;
+
+        var interactiveSurfaceScript =
+            compilation.GetTypeByMetadataName("LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript");
+        var interactiveConfig = compilation.GetTypeByMetadataName("LcdMod.Common.Config.Models.ScreenConfigInteractive");
+        if (interactiveSurfaceScript == null || interactiveConfig == null)
+            return;
+
+        foreach (var appConfig in appConfigs)
+        {
+            if (!InheritsFromOrEquals(appConfig.AppType, interactiveSurfaceScript) ||
+                InheritsFromOrEquals(appConfig.ConfigType, interactiveConfig))
+                continue;
+
+            var location = FindConfigKind(appConfig.AppType)?.Locations.FirstOrDefault() ??
+                           appConfig.AppType.Locations.FirstOrDefault() ??
+                           Location.None;
+            spc.ReportDiagnostic(Diagnostic.Create(
+                InteractiveAppConfigWarning,
+                location,
+                appConfig.AppType.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat),
+                appConfig.ConfigType.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat)));
+        }
+    }
+
+    static void ReportInteractiveAppConfigUsages(Compilation compilation, SourceProductionContext spc)
+    {
+        var interactiveApp = compilation.GetTypeByMetadataName("LcdMod.Client.Apps.Abstract.IAppInteractive");
+        var generalConfig = compilation.GetTypeByMetadataName("LcdMod.Common.Config.Models.ScreenConfigGeneral");
+        var interactiveConfig = compilation.GetTypeByMetadataName("LcdMod.Common.Config.Models.ScreenConfigInteractive");
+        if (interactiveApp == null || generalConfig == null || interactiveConfig == null)
+            return;
+
+        ReportInteractiveAppConfigUsages(
+            compilation.Assembly.GlobalNamespace,
+            interactiveApp,
+            generalConfig,
+            interactiveConfig,
+            spc);
+    }
+
+    static void ReportInteractiveAppConfigUsages(
+        INamespaceSymbol ns,
+        INamedTypeSymbol interactiveApp,
+        INamedTypeSymbol generalConfig,
+        INamedTypeSymbol interactiveConfig,
+        SourceProductionContext spc)
+    {
+        foreach (var type in ns.GetTypeMembers())
+            ReportInteractiveAppConfigUsagesInType(type, interactiveApp, generalConfig, interactiveConfig, spc);
+
+        foreach (var childNs in ns.GetNamespaceMembers())
+            ReportInteractiveAppConfigUsages(childNs, interactiveApp, generalConfig, interactiveConfig, spc);
+    }
+
+    static void ReportInteractiveAppConfigUsagesInType(
+        INamedTypeSymbol type,
+        INamedTypeSymbol interactiveApp,
+        INamedTypeSymbol generalConfig,
+        INamedTypeSymbol interactiveConfig,
+        SourceProductionContext spc)
+    {
+        if (type.TypeKind == TypeKind.Class && Implements(type, interactiveApp))
+        {
+            foreach (var constructor in type.InstanceConstructors.Where(c => !c.IsImplicitlyDeclared))
+            {
+                foreach (var parameter in constructor.Parameters)
+                {
+                    var configType = parameter.Type as INamedTypeSymbol;
+                    if (configType == null || !InheritsFromOrEquals(configType, generalConfig))
+                        continue;
+
+                    if (InheritsFromOrEquals(configType, interactiveConfig))
+                        continue;
+
+                    var location = parameter.Locations.FirstOrDefault() ??
+                                   constructor.Locations.FirstOrDefault() ??
+                                   type.Locations.FirstOrDefault() ??
+                                   Location.None;
+                    spc.ReportDiagnostic(Diagnostic.Create(
+                        InteractiveAppConfigWarning,
+                        location,
+                        type.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat),
+                        configType.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat)));
+                }
+            }
+        }
+
+        foreach (var nested in type.GetTypeMembers())
+            ReportInteractiveAppConfigUsagesInType(nested, interactiveApp, generalConfig, interactiveConfig, spc);
+    }
+
     static void AddAppConfig(StringBuilder sb, INamedTypeSymbol appType, INamedTypeSymbol configType)
     {
         var accessibility = GetAccessibility(appType);
@@ -269,6 +377,17 @@ namespace Generated
     static bool InheritsFrom(INamedTypeSymbol type, INamedTypeSymbol baseType)
     {
         for (var current = type.BaseType; current != null; current = current.BaseType)
+        {
+            if (SymbolEqualityComparer.Default.Equals(current, baseType))
+                return true;
+        }
+
+        return false;
+    }
+
+    static bool InheritsFromOrEquals(INamedTypeSymbol type, INamedTypeSymbol baseType)
+    {
+        for (var current = type; current != null; current = current.BaseType)
         {
             if (SymbolEqualityComparer.Default.Equals(current, baseType))
                 return true;

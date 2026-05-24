@@ -14,6 +14,7 @@ namespace LcdMod.Client.Gui.Tooltip
         }
 
         public override bool CanClick => Visible && _line != null && _line.GetOnClick() != null;
+        public override bool CanPrimaryClick => CanClick;
 
         public override bool Click(object sender)
         {

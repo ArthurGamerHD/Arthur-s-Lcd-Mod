@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using LcdMod.Client;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Grid;
 using LcdMod.Client.Gui;
@@ -22,13 +23,12 @@ using VRage.Game;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
-using VRage.Utils;
 using VRageMath;
 using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
 
 namespace LcdMod.Client.Apps.Abstract
 {
-    public abstract class ItemsAppBase : AppBase
+    public abstract class ItemsAppBase : AppBase, IAppInteractive
     {
         protected virtual SortMethod SortMethod => (SortMethod)AppConfig.SortMethod;
 
@@ -40,6 +40,10 @@ namespace LcdMod.Client.Apps.Abstract
         readonly Dictionary<MyItemType, double> _itemsCache = new Dictionary<MyItemType, double>();
         readonly List<ItemViewModel> _items = new List<ItemViewModel>();
         readonly Dictionary<MyItemType, ItemViewModel> _models = new Dictionary<MyItemType, ItemViewModel>();
+        readonly List<ControlBase> _interactiveList = new List<ControlBase>();
+        readonly ScrollPanel _scrollPanel;
+        int _viewModelLayoutVersion = 1;
+        bool _scrollRenderQueued;
         float _caretY;
         float _footerHeight;
         protected string LocalizedTitleCache = string.Empty;
@@ -70,6 +74,7 @@ namespace LcdMod.Client.Apps.Abstract
         }
         public bool HasItems => _items.Count > 0;
         public bool HasFilters { get; private set; }
+        public List<ControlBase> InteractiveList => _interactiveList;
 
         public List<MyTerminalControlComboBoxItem> GetDisplayModes()
         {
@@ -132,6 +137,9 @@ namespace LcdMod.Client.Apps.Abstract
 
         protected ItemsAppBase(ScreenConfigWithItems config, IAppHost host) : base(config, host)
         {
+            _scrollPanel = new ScrollPanel(CursorType.Default, this);
+            _scrollPanel.ScrollChanged = OnScrollPanelChanged;
+            _scrollPanel.SetVisible(false);
         }
 
 
@@ -202,6 +210,7 @@ namespace LcdMod.Client.Apps.Abstract
         public override void Update()
         {
             _items.Clear();
+            ClearInteractiveTree();
             
             if (AppConfig == null)
                 return;
@@ -227,11 +236,13 @@ namespace LcdMod.Client.Apps.Abstract
             base.LayoutChanged();
             LocKeysCache.Clear();
             LocalizedTitleCache = string.Empty;
+            _viewModelLayoutVersion++;
         }
 
         public override List<MySprite> GetSprites()
         {
             var sprites = new List<MySprite>();
+            ClearInteractiveTree();
             _caretY = ContentTop();
             _footerHeight = 0f;
             DrawFooter(sprites);
@@ -246,66 +257,92 @@ namespace LcdMod.Client.Apps.Abstract
                     break;
             }
 
+            QueueControlRenderIfNeeded();
             return sprites;
         }
 
         protected virtual ItemViewModel GetOrCreateItemViewModel(KeyValuePair<MyItemType, double> item)
         {
             ItemViewModel model;
-            
-            var amountText = FormatingHelper.FormatItemQty(item.Value);
-            
+
             if (!_models.TryGetValue(item.Key, out model))
             {
-                model = new ItemViewModel(item.Key, item.Value)
-                {
-                    Icon = ResolveSprite(item.Key),
-                    DisplayName = ResolveDisplayName(item.Key),
-                };
-                
+                model = new ItemViewModel(item.Key);
                 _models.Add(item.Key, model);
             }
 
+            if (model.LayoutVersion != _viewModelLayoutVersion)
+                RefreshItemViewModelLayout(model);
+
+            RefreshItemViewModelValue(model, item.Value);
+            return model;
+        }
+
+        protected virtual void RefreshItemViewModelLayout(ItemViewModel model)
+        {
+            if (model == null)
+                return;
+
+            model.Icon = ResolveSprite(model.ItemType);
+            model.DisplayName = ResolveDisplayName(model.ItemType);
+            model.LayoutVersion = _viewModelLayoutVersion;
+        }
+
+        protected virtual void RefreshItemViewModelValue(ItemViewModel model, double amount)
+        {
+            if (model == null)
+                return;
+
+            model.Amount = amount;
+            var amountText = FormatingHelper.FormatItemQty(amount);
             model.AmountText = amountText;
             model.PrimaryAmountText = amountText;
-            model.ListTextColor = item.Value == 0 ? AppConfig.ErrorColor : Surface.ScriptForegroundColor;
-            model.ListIconColor = item.Value == 0 ? new Color(96, 32, 32) : Color.White;
-            model.GridTextColor = AppConfig.DrawLines && item.Value == 0
+            model.SecondaryAmountText = null;
+            model.ListTextColor = amount == 0 ? AppConfig.ErrorColor : Surface.ScriptForegroundColor;
+            model.ListIconColor = amount == 0 ? new Color(96, 32, 32) : Color.White;
+            model.GridTextColor = AppConfig.DrawLines && amount == 0
                 ? new Color(96, 32, 32)
                 : Surface.ScriptForegroundColor;
-            model.GridIconColor = item.Value == 0 ? AppConfig.ErrorColor : Color.White;
-            model.PanelColor = item.Value == 0 ? AppConfig.ErrorColor : AppConfig.HeaderColor;
-
-            return model;
+            model.GridIconColor = amount == 0 ? AppConfig.ErrorColor : Color.White;
+            model.PanelColor = amount == 0 ? AppConfig.ErrorColor : AppConfig.HeaderColor;
+            model.ListStyle.SetColors(Surface.ScriptForegroundColor, BackgroundColor);
+            model.GridStyle.SetColors(Surface.ScriptForegroundColor, model.PanelColor);
         }
 
         void DrawList(List<MySprite> sprites, List<ItemViewModel> items)
         {
             var rowHeight = LINE_HEIGHT * Scale;
-            var panel = ScrollPanel.Create(
+            _scrollPanel.Configure(
                 ViewBox,
                 CaretY,
                 FooterHeight,
                 rowHeight,
                 items.Count,
                 SCROLLER_WIDTH * Scale,
-                GetScrollStep(SCROLL_DELAY / 6));
-
-            RenderScrollPanelBar(sprites, panel);
+                SCROLL_DELAY / 6f);
+            var panel = _scrollPanel;
 
             var stack = StackPanel.Create(panel.ContentBounds, rowHeight, items.Count, panel.GetStartIndex(1));
             if (stack.VisibleCellCount <= 0)
                 return;
 
+            BeginInteractiveTree(panel);
             PreviousType = items[stack.StartIndex].TypeId;
             var renderContext = CreateItemRenderContext();
+            panel.Render(renderContext, sprites);
 
+            BeginScrollPanelClip(sprites, panel);
             for (int i = 0; i < stack.VisibleCellCount; i++)
             {
                 var cell = stack.GetCell(i);
-                cell.SetControl(CreateListItemControl(items[cell.ItemIndex], cell.Bounds));
+                var control = CreateListItemControl(items[cell.ItemIndex], cell.Bounds);
+                AddInteractiveChild(control);
+                cell.SetControl(control);
                 cell.Render(renderContext, sprites);
             }
+            EndScrollPanelClip(sprites);
+
+            RenderScrollPanelBar(sprites, panel);
 
             CaretY = panel.ContentBounds.Y + panel.MaxVisibleRows * rowHeight;
         }
@@ -313,8 +350,7 @@ namespace LcdMod.Client.Apps.Abstract
         void DrawGrid(List<MySprite> sprites, List<ItemViewModel> items)
         {
             var rowHeight = 3f * LINE_HEIGHT * Scale;
-            int step = GetScrollStep(SCROLL_DELAY / 6);
-            var panel = CreateGridScrollPanel(rowHeight, items.Count, step);
+            var panel = ConfigureGridScrollPanel(rowHeight, items.Count, SCROLL_DELAY / 6f);
             var grid = WrappedGrid.Create(panel.ContentBounds, rowHeight, MINIMUM_COL_WIDTH * Scale, items.Count);
             grid = WrappedGrid.Create(
                 panel.ContentBounds,
@@ -323,23 +359,29 @@ namespace LcdMod.Client.Apps.Abstract
                 items.Count,
                 panel.GetStartIndex(grid.Columns));
 
-            RenderScrollPanelBar(sprites, panel);
-
-            if (AppConfig.DrawLines)
-                DrawWrappedGridLines(sprites, panel, grid);
-
             if (grid.VisibleCellCount <= 0)
                 return;
 
+            BeginInteractiveTree(panel);
             PreviousType = items[grid.StartIndex].TypeId;
             var renderContext = CreateItemRenderContext();
+            panel.Render(renderContext, sprites);
+
+            BeginScrollPanelClip(sprites, panel);
+            if (AppConfig.DrawLines)
+                DrawWrappedGridLines(sprites, panel, grid);
 
             for (int gridIdx = 0; gridIdx < grid.VisibleCellCount; gridIdx++)
             {
                 var cell = grid.GetCell(gridIdx);
-                cell.SetControl(CreateGridItemControl(items[cell.ItemIndex], cell.Bounds));
+                var control = CreateGridItemControl(items[cell.ItemIndex], cell.Bounds);
+                AddInteractiveChild(control);
+                cell.SetControl(control);
                 cell.Render(renderContext, sprites);
             }
+            EndScrollPanelClip(sprites);
+
+            RenderScrollPanelBar(sprites, panel);
 
             CaretY = panel.ContentBounds.Y + panel.MaxVisibleRows * rowHeight;
         }
@@ -367,31 +409,53 @@ namespace LcdMod.Client.Apps.Abstract
             panel.RenderScrollBar(sprites, trackColor, thumbColor);
         }
 
-        ScrollPanel CreateGridScrollPanel(float rowHeight, int itemCount, int scrollStep)
+        void BeginScrollPanelClip(List<MySprite> sprites, ScrollPanel panel)
         {
-            var panel = ScrollPanel.Create(
+            if (sprites == null || panel == null)
+                return;
+
+            var bounds = panel.ContentViewportBounds;
+            if (bounds.Width <= 0f || bounds.Height <= 0f)
+                return;
+
+            int x = (int)Math.Floor(bounds.X);
+            int y = (int)Math.Floor(bounds.Y);
+            int right = (int)Math.Ceiling(bounds.Right);
+            int bottom = (int)Math.Ceiling(bounds.Bottom);
+            sprites.Add(MySprite.CreateClipRect(new Rectangle(x, y, Math.Max(0, right - x), Math.Max(0, bottom - y))));
+        }
+
+        void EndScrollPanelClip(List<MySprite> sprites)
+        {
+            if (sprites != null)
+                sprites.Add(MySprite.CreateClearClipRect());
+        }
+
+        ScrollPanel ConfigureGridScrollPanel(float rowHeight, int itemCount, float autoScrollSecondsPerStep)
+        {
+            _scrollPanel.Configure(
                 ViewBox,
                 CaretY,
                 FooterHeight,
                 rowHeight,
                 0,
                 SCROLLER_WIDTH * Scale,
-                scrollStep);
+                autoScrollSecondsPerStep);
 
             for (int pass = 0; pass < 3; pass++)
             {
-                var grid = WrappedGrid.Create(panel.ContentBounds, rowHeight, MINIMUM_COL_WIDTH * Scale, itemCount);
-                panel = ScrollPanel.Create(
+                var grid = WrappedGrid.Create(_scrollPanel.ContentBounds, rowHeight, MINIMUM_COL_WIDTH * Scale, itemCount);
+                _scrollPanel.Configure(
                     ViewBox,
                     CaretY,
                     FooterHeight,
                     rowHeight,
                     grid.TotalRows,
                     SCROLLER_WIDTH * Scale,
-                    scrollStep);
+                    autoScrollSecondsPerStep);
             }
 
-            return panel;
+            return _scrollPanel;
         }
 
         void DrawWrappedGridLines(List<MySprite> sprites, ScrollPanel panel, WrappedGrid grid)
@@ -399,7 +463,7 @@ namespace LcdMod.Client.Apps.Abstract
             var lineColor = AppConfig.HeaderColor;
             var contentStart = panel.ContentBounds.X;
             var contentEnd = panel.ContentBounds.Right;
-            var gridHeight = panel.MaxVisibleRows * grid.RowHeight;
+            var gridHeight = panel.ContentBounds.Height;
 
             for (int row = 0; row <= panel.MaxVisibleRows; row++)
             {
@@ -432,7 +496,7 @@ namespace LcdMod.Client.Apps.Abstract
 
         ControlBase CreateGridItemControl(ItemViewModel item, RectangleF bounds)
         {
-            item.Style = new ControlStyle(Surface.ScriptForegroundColor, item.PanelColor);
+            item.Style = item.GridStyle;
             item.CustomRender = RenderGridItemControl;
 
             return new RectangleControl(bounds, CursorType.Default, item);
@@ -495,7 +559,7 @@ namespace LcdMod.Client.Apps.Abstract
 
         ControlBase CreateListItemControl(ItemViewModel item, RectangleF bounds)
         {
-            item.Style = new ControlStyle(Surface.ScriptForegroundColor, BackgroundColor);
+            item.Style = item.ListStyle;
             item.CustomRender = RenderListItemControl;
 
             return new RectangleControl(bounds, CursorType.Default, item);
@@ -642,30 +706,85 @@ namespace LcdMod.Client.Apps.Abstract
         {
         }
 
-        float ContentTop()
+        void ClearInteractiveTree()
         {
-            return TitleVisible ? ViewBox.Y + 40f * Scale * FontScale : ViewBox.Y;
+            _scrollPanel.ClearChildren();
+            _scrollPanel.SetVisible(false);
+            _interactiveList.Clear();
         }
 
-        static int GetScrollStep(float secondsPerStep)
+        void BeginInteractiveTree(ScrollPanel panel)
+        {
+            panel.SetVisible(true);
+            if (!_interactiveList.Contains(panel))
+                _interactiveList.Add(panel);
+        }
+
+        void AddInteractiveChild(ControlBase control)
+        {
+            if (control != null)
+                _scrollPanel.AddChild(control);
+        }
+
+        public bool HasVisibleItems()
+        {
+            return HasItems;
+        }
+
+        public void OnMouseScroll(int delta, ref bool handled)
+        {
+        }
+
+        void OnScrollPanelChanged(ScrollPanel panel)
+        {
+            QueueControlRenderIfNeeded();
+        }
+
+        void QueueControlRenderIfNeeded()
+        {
+            if (_scrollRenderQueued || !_scrollPanel.IsDirty || !CanSelfRender())
+                return;
+
+            _scrollRenderQueued = true;
+            LcdModClientComponent.RunNextFrame.Add(RunQueuedScrollRender);
+        }
+
+        void RunQueuedScrollRender()
+        {
+            _scrollRenderQueued = false;
+
+            try
+            {
+                if (!_scrollPanel.IsDirty || !CanSelfRender())
+                    return;
+
+                Host.RenderSprites();
+            }
+            catch (Exception e)
+            {
+                ErrorHandlerHelper.LogError(e, this);
+            }
+        }
+
+        bool CanSelfRender()
         {
             try
             {
-                var session = MyAPIGateway.Session;
-                if (session == null)
-                    return 0;
-
-                if (secondsPerStep <= 0f)
-                    secondsPerStep = 1f / 60f;
-
-                var ticksPerStep = Math.Max(1, (int)Math.Round(secondsPerStep * 60f));
-                return (int)(session.GameplayFrameCounter / ticksPerStep);
+                return Host != null &&
+                       Host.Surface != null &&
+                       Host.Block != null &&
+                       !Host.Block.MarkedForClose &&
+                       !Host.Block.Closed;
             }
-            catch (Exception ex)
+            catch
             {
-                MyLog.Default.WriteLine($"[LcdMod] ItemsApp GetScrollStep error: {ex.Message}");
-                return 0;
+                return false;
             }
+        }
+
+        float ContentTop()
+        {
+            return TitleVisible ? ViewBox.Y + 40f * Scale * FontScale : ViewBox.Y;
         }
 
         protected virtual RectangleF GetCellViewBox(float xStart, float xEnd, float yStart, float cellHeight,
@@ -743,14 +862,16 @@ namespace LcdMod.Client.Apps.Abstract
 
         protected class ItemViewModel : ControlModelBase
         {
-            public ItemViewModel(MyItemType itemType, double amount)
+            public ItemViewModel(MyItemType itemType)
             {
                 ItemType = itemType;
-                Amount = amount;
+                ListStyle = new ControlStyle(Color.White, Color.Transparent);
+                GridStyle = new ControlStyle(Color.White, Color.Transparent);
             }
 
             public MyItemType ItemType { get; private set; }
             public double Amount { get; set; }
+            public int LayoutVersion { get; set; }
             public string TypeId
             {
                 get { return ItemType.TypeId; }
@@ -766,6 +887,8 @@ namespace LcdMod.Client.Apps.Abstract
             public Color GridTextColor { get; set; }
             public Color GridIconColor { get; set; }
             public Color PanelColor { get; set; }
+            public ControlStyle ListStyle { get; private set; }
+            public ControlStyle GridStyle { get; private set; }
         }
     }
 

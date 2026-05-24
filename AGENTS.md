@@ -23,3 +23,15 @@ When rendering LCD sprites or creating interactive hitboxes, always account for 
 2. Rectangle and texture-style layout math usually uses top/left rectangle origins.
 3. Before adding a hitbox for rendered text, convert the measured text size and alignment into the actual on-screen rectangle.
 4. Do not reuse a text sprite `Position` directly as a rectangle top-left corner.
+
+
+# MVVM / Control Rendering Instruction
+
+When a control is backed by a view model, do not recreate that view model every frame.
+
+Rules:
+
+1. Keep view models stable across render/update frames and mutate their value fields when data changes.
+2. Recreate or fully refresh view models only when parent layout changes, such as screen size, parent control bounds, localization/layout cache invalidation, or a different control composition.
+3. Put layout-sensitive cached text, measured values, icon choices, and style values behind explicit layout invalidation instead of rebuilding them in normal per-frame updates.
+4. Lists and grids should reuse existing item view models keyed by stable model identity whenever possible.

@@ -10,8 +10,14 @@ using VRageMath;
 
 namespace LcdMod.Client.Gui.ControlsTemplates
 {
+    public delegate bool ControlScrollHandler(object dataContext, object sender, int delta);
+    public delegate bool ControlHoverHandler(object dataContext, object sender);
+    delegate bool ControlHitFilter(ControlBase control);
+
     public abstract class ControlBase
     {
+        bool _isDirty;
+
         public bool Visible { get; private set; } = true;
 
         public void SetVisible(bool visible)
@@ -24,6 +30,28 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         public IList<ControlBase> Children => _children;
 
         public bool HasChildren => _children.Count > 0;
+
+        public bool IsDirty
+        {
+            get
+            {
+                if (_isDirty)
+                    return true;
+
+                for (int i = 0; i < _children.Count; i++)
+                {
+                    if (_children[i] != null && _children[i].IsDirty)
+                        return true;
+                }
+
+                return false;
+            }
+        }
+
+        public void MarkDirty()
+        {
+            _isDirty = true;
+        }
 
         public void ClearChildren()
         {
@@ -47,11 +75,42 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 
         public virtual bool CanClick
         {
+            get { return CanPrimaryClick || CanSecondaryClick; }
+        }
+
+        public virtual bool CanPrimaryClick
+        {
             get
             {
                 var model = Model;
-                return Visible && (OnClick != null || OnSecondaryClick != null ||
-                                   model != null && (model.CanClick || model.CanSecondaryClick));
+                return Visible && (OnClick != null || model != null && model.CanClick);
+            }
+        }
+
+        public virtual bool CanSecondaryClick
+        {
+            get
+            {
+                var model = Model;
+                return Visible && (OnSecondaryClick != null || model != null && model.CanSecondaryClick);
+            }
+        }
+
+        public virtual bool CanScroll
+        {
+            get
+            {
+                var model = Model;
+                return Visible && (OnScroll != null || model != null && model.CanScroll);
+            }
+        }
+
+        public virtual bool CanHover
+        {
+            get
+            {
+                var model = Model;
+                return Visible && (OnHover != null || model != null && model.CanHover);
             }
         }
 
@@ -85,10 +144,24 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 
         public Action<object, object> OnClick { get; private set; }
         public Action<object, object> OnSecondaryClick { get; set; }
+        public ControlScrollHandler OnScroll { get; set; }
+        public ControlHoverHandler OnHover { get; set; }
 
         public ControlBase SetOnClick(Action<object, object> onClick)
         {
             OnClick = onClick;
+            return this;
+        }
+
+        public ControlBase SetOnScroll(ControlScrollHandler onScroll)
+        {
+            OnScroll = onScroll;
+            return this;
+        }
+
+        public ControlBase SetOnHover(ControlHoverHandler onHover)
+        {
+            OnHover = onHover;
             return this;
         }
 
@@ -120,15 +193,27 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             if (context == null || sprites == null)
                 return;
 
-            var renderContext = ResolveRenderContext(context);
-            var customRender = CustomRender ?? Model?.CustomRender;
-            if (customRender != null)
+            try
             {
-                customRender(this, renderContext, sprites);
-                return;
-            }
+                var renderContext = ResolveRenderContext(context);
+                var customRender = CustomRender ?? Model?.CustomRender;
+                if (customRender != null)
+                {
+                    customRender(this, renderContext, sprites);
+                    return;
+                }
 
-            RenderDefault(renderContext, sprites);
+                RenderDefault(renderContext, sprites);
+            }
+            finally
+            {
+                _isDirty = IsDirtyAfterRender();
+            }
+        }
+
+        protected virtual bool IsDirtyAfterRender()
+        {
+            return false;
         }
 
         protected virtual void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
@@ -169,6 +254,78 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 
         protected abstract bool HitCore(Vector2 point);
 
+        public bool TryResolveHit(Vector2 point, out ControlBase hit)
+        {
+            hit = ResolveHit(point, AcceptAnyHit);
+            return hit != null;
+        }
+
+        public bool TryResolveClickable(Vector2 point, out ControlBase clickable)
+        {
+            clickable = ResolveHit(point, AcceptClickableHit);
+            return clickable != null;
+        }
+
+        public bool TryResolvePrimaryClickable(Vector2 point, out ControlBase clickable)
+        {
+            clickable = ResolveHit(point, AcceptPrimaryClickableHit);
+            return clickable != null;
+        }
+
+        public bool TryResolveSecondaryClickable(Vector2 point, out ControlBase clickable)
+        {
+            clickable = ResolveHit(point, AcceptSecondaryClickableHit);
+            return clickable != null;
+        }
+
+        public bool TryResolveScrollable(Vector2 point, out ControlBase scrollable)
+        {
+            scrollable = ResolveHit(point, AcceptScrollableHit);
+            return scrollable != null;
+        }
+
+        public bool TryResolveHoverable(Vector2 point, out ControlBase hoverable)
+        {
+            hoverable = ResolveHit(point, AcceptHoverableHit);
+            return hoverable != null;
+        }
+
+        public bool TryResolveTooltipTarget(Vector2 point, out ControlBase tooltipTarget)
+        {
+            tooltipTarget = ResolveHit(point, AcceptTooltipHit);
+            return tooltipTarget != null;
+        }
+
+        public CursorType GetCursor(Vector2 point)
+        {
+            ControlBase hit;
+            return TryResolveHit(point, out hit) ? hit.Cursor : CursorType.Default;
+        }
+
+        public bool Click(Vector2 point, object sender)
+        {
+            ControlBase clickable;
+            return TryResolvePrimaryClickable(point, out clickable) && clickable.Click(sender);
+        }
+
+        public bool SecondaryClick(Vector2 point, object sender)
+        {
+            ControlBase clickable;
+            return TryResolveSecondaryClickable(point, out clickable) && clickable.SecondaryClick(sender);
+        }
+
+        public bool Scroll(Vector2 point, object sender, int delta)
+        {
+            ControlBase scrollable;
+            return TryResolveScrollable(point, out scrollable) && scrollable.Scroll(sender, delta);
+        }
+
+        public bool Hover(Vector2 point, object sender)
+        {
+            ControlBase hoverable;
+            return TryResolveHoverable(point, out hoverable) && hoverable.Hover(sender);
+        }
+
         public virtual bool Click(object sender)=> HandleClick(sender, OnClick, false);
         
         public virtual bool SecondaryClick(object sender) => HandleClick(sender, OnSecondaryClick, true);
@@ -189,6 +346,90 @@ namespace LcdMod.Client.Gui.ControlsTemplates
                 return false;
 
             return secondary ? model.SecondaryClick(sender) : model.Click(sender);
+        }
+
+        public virtual bool Scroll(object sender, int delta)
+        {
+            if (!Visible)
+                return false;
+
+            if (OnScroll != null)
+                return OnScroll(DataContext ?? this, sender, delta);
+
+            var model = Model;
+            return model != null && model.Scroll(sender, delta);
+        }
+
+        public virtual bool Hover(object sender)
+        {
+            if (!Visible)
+                return false;
+
+            if (OnHover != null)
+                return OnHover(DataContext ?? this, sender);
+
+            var model = Model;
+            return model != null && model.Hover(sender);
+        }
+
+        ControlBase ResolveHit(Vector2 point, ControlHitFilter accept)
+        {
+            if (!Visible)
+                return null;
+
+            bool selfHit = HitCore(point);
+
+            if (CanResolveChildren(point, selfHit) && _children.Count > 0)
+            {
+                for (int i = _children.Count - 1; i >= 0; i--)
+                {
+                    var childHit = _children[i].ResolveHit(point, accept);
+                    if (childHit != null)
+                        return childHit;
+                }
+            }
+
+            return selfHit && accept(this) ? this : null;
+        }
+
+        protected virtual bool CanResolveChildren(Vector2 point, bool selfHit)
+        {
+            return selfHit;
+        }
+
+        static bool AcceptAnyHit(ControlBase control)
+        {
+            return true;
+        }
+
+        static bool AcceptClickableHit(ControlBase control)
+        {
+            return control.CanClick;
+        }
+
+        static bool AcceptPrimaryClickableHit(ControlBase control)
+        {
+            return control.CanPrimaryClick;
+        }
+
+        static bool AcceptSecondaryClickableHit(ControlBase control)
+        {
+            return control.CanSecondaryClick;
+        }
+
+        static bool AcceptScrollableHit(ControlBase control)
+        {
+            return control.CanScroll;
+        }
+
+        static bool AcceptHoverableHit(ControlBase control)
+        {
+            return control.CanHover;
+        }
+
+        static bool AcceptTooltipHit(ControlBase control)
+        {
+            return control.Tooltip != null;
         }
 
         static CursorType GetDefaultCursor(Action<object, object> onClick, ControlModelBase model)

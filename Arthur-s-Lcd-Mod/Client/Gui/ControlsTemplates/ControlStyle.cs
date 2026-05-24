@@ -17,6 +17,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         public Color? HoverTextColor { get; set; }
         public float BorderPercentage { get; set; } = 0.2f;
 
+        public void SetColors(Color textColor, Color panelColor)
+        {
+            TextColor = textColor;
+            PanelColor = panelColor;
+        }
+
         public Color GetPanelColor(bool hovered)
         {
             if (!hovered)

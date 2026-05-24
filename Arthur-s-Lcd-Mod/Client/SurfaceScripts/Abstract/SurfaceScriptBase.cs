@@ -154,7 +154,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         protected int ResolveRotationOrSurfaceIndex()
         {
             if (Block.CubeGrid.Physics == null)
-                return -1;
+                return -1; // we can ignore surface that does not exist
 
             if (Block is IMyTextPanel)
             {
@@ -166,22 +166,22 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
                     return _lcdSurfaceComponent.SelectedRotationIndex;
                 }
-
-                return -1;
             }
-
-            var surfaceProvider = Block as IMyTextSurfaceProvider;
-            if (surfaceProvider == null)
-                return -1;
-
-            var currentSurfaceName = Surface.Name;
-
-            for (int i = 0; i < surfaceProvider.SurfaceCount; i++)
+            else
             {
-                if (surfaceProvider.GetSurface(i).Name != currentSurfaceName)
-                    continue;
+                var surfaceProvider = Block as IMyTextSurfaceProvider;
+                if (surfaceProvider != null)
+                {
+                    var currentSurfaceName = Surface.Name;
 
-                return i;
+                    for (int i = 0; i < surfaceProvider.SurfaceCount; i++)
+                    {
+                        if (surfaceProvider.GetSurface(i).Name != currentSurfaceName)
+                            continue;
+
+                        return i;
+                    }
+                }
             }
 
             LogHelper.Log(MyLogSeverity.Warning, "Failed to find surface {0} for {1}", Surface.Name, Block);

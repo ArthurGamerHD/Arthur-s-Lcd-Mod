@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using Generated;
 using LcdMod.Client.Apps;
 using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.Gui;
+using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Terminal.Controls.Groups;
@@ -24,7 +26,7 @@ using ScreenConfigWithItems = LcdMod.Common.Config.Models.Apps.ScreenConfigWithI
 namespace LcdMod.Client.SurfaceScripts
 {
     [MyTextSurfaceScript(ID, "Inventory")]
-    public partial class InventoryLcdSurfaceScript : SurfaceScriptBase,
+    public partial class InventoryLcdSurfaceScript : InteractiveSurfaceScript,
         IUsesTerminalControl<SwitchToggleLines>,
         IUsesTerminalControl<CheckboxHideEmpty>,
         IUsesTerminalControl<SeparatorFilter>,
@@ -38,11 +40,15 @@ namespace LcdMod.Client.SurfaceScripts
         public const string ID = "InventoryCharts";
         public const string NAME = InventoryApp.NAME;
 
+        readonly List<ControlBase> _interactiveListFallback = new List<ControlBase>();
         InventoryApp _app;
 
         public override IApp App => _app;
+        public override CursorType CursorType { get; protected set; } = CursorType.Default;
+        public override List<ControlBase> InteractiveList => _app != null ? _app.InteractiveList : _interactiveListFallback;
         public override string Title => _app != null ? _app.Title : base.Title;
         protected override string DefaultTitle => NAME;
+        protected override bool RendersInteractiveEntriesInGetSprites => true;
 
         public InventoryLcdSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface,
             block, size)
@@ -58,6 +64,8 @@ namespace LcdMod.Client.SurfaceScripts
         {
             if (AppConfig == null)
                 return;
+
+            base.SafeRun();
 
             if (_app == null)
                 _app = new InventoryApp((ScreenConfigWithItems)AppConfig, this);
