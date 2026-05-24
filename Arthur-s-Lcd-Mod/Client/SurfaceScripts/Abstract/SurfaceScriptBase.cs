@@ -942,13 +942,73 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         {
             if (!_backgroundGrids.Any())
             {
-                color = new Color(color ?? BackgroundColor, 0.66f);
+                var backgroundColor = new Color(color ?? BackgroundColor, 0.66f);
                 var frameTemp = Surface.DrawFrame();
-                AddBackground(frameTemp, color);
+                AddTiledBackground(frameTemp, backgroundColor);
                 frameTemp.AddToList(_backgroundGrids);
             }
 
             frame.AddRange(_backgroundGrids);
+        }
+
+        void AddTiledBackground(MySpriteDrawFrame frame, Color color)
+        {
+            var tile = MyTextSurfaceHelper.DEFAULT_BACKGROUND;
+            tile.Color = color;
+
+            var tileSize = tile.Size ?? new Vector2(MyTextSurfaceHelper.BACKGROUND_SIZE);
+            if (tileSize.X <= 0f || tileSize.Y <= 0f)
+                tileSize = new Vector2(MyTextSurfaceHelper.BACKGROUND_SIZE);
+
+            var shift = MyTextSurfaceHelper.BACKGROUND_SHIFT;
+            float stepX = Math.Abs(shift.X) > 0.001f ? Math.Abs(shift.X) : tileSize.X;
+            float stepY = Math.Abs(shift.Y) > 0.001f ? Math.Abs(shift.Y) : tileSize.Y;
+
+            if (stepX <= 0f || stepY <= 0f)
+                return;
+
+            var basePosition = (tile.Position ?? Vector2.Zero) + Surface.TextureSize / 2f;
+            var bounds = GetBackgroundBounds();
+            var halfSize = tileSize * 0.5f;
+
+            float startX = GetFirstBackgroundTileCenter(bounds.X, basePosition.X, halfSize.X, stepX);
+            float startY = GetFirstBackgroundTileCenter(bounds.Y, basePosition.Y, halfSize.Y, stepY);
+
+            for (float y = startY; y - halfSize.Y < bounds.Bottom; y += stepY)
+            {
+                for (float x = startX; x - halfSize.X < bounds.Right; x += stepX)
+                {
+                    tile.Position = new Vector2(x, y);
+                    frame.Add(tile);
+                }
+            }
+        }
+
+        RectangleF GetBackgroundBounds()
+        {
+            var textureSize = Surface.TextureSize;
+            var bounds = new RectangleF(
+                0f,
+                0f,
+                Math.Max(1f, textureSize.X),
+                Math.Max(1f, textureSize.Y));
+
+            var viewBox = ViewBox;
+            if (viewBox.Width <= 0f || viewBox.Height <= 0f)
+                return bounds;
+
+            float left = Math.Min(bounds.X, viewBox.X);
+            float top = Math.Min(bounds.Y, viewBox.Y);
+            float right = Math.Max(bounds.Right, viewBox.Right);
+            float bottom = Math.Max(bounds.Bottom, viewBox.Bottom);
+
+            return new RectangleF(left, top, Math.Max(1f, right - left), Math.Max(1f, bottom - top));
+        }
+
+        static float GetFirstBackgroundTileCenter(float boundsStart, float baseCenter, float halfSize, float step)
+        {
+            float baseStart = baseCenter - halfSize;
+            return baseCenter + (float)Math.Floor((boundsStart - baseStart) / step) * step;
         }
 
 
