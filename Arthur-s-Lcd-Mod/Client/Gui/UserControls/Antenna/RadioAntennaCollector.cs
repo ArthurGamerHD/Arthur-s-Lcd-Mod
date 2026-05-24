@@ -14,7 +14,11 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
         {
         }
         
-        public override void Collect(GridLogic grid, List<AntennaEntry> entries)
+        public override void Collect(
+            GridLogic grid,
+            List<AntennaEntry> entries,
+            Dictionary<long, AntennaEntry> models,
+            HashSet<long> activeEntryIds)
         {
             var radios = grid.GetAntenna();
 
@@ -24,15 +28,14 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
                 if(!IsValid(radio))
                     continue;
 
-                entries.Add(new AntennaEntry
-                {
-                    Name = GetName(radio),
-                    StatusIcon = GetStatusIcon(radio),
-                    StatusText = GetStatusText(radio),
-                    StatusColor = GetStatusColor(radio),
-                    IsFunctional = radio.IsFunctional,
-                    UseLaserIconCompensation = false
-                });
+                var entry = GetOrCreateEntry(radio.EntityId, entries, models, activeEntryIds);
+                entry.Update(
+                    GetName(radio),
+                    GetStatusIcon(radio),
+                    GetStatusText(radio),
+                    GetStatusColor(radio),
+                    radio.IsFunctional,
+                    false);
             }
         }
 

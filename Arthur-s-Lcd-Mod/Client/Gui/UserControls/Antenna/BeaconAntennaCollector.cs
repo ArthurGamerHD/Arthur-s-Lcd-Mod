@@ -15,7 +15,11 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
             
         }
 
-        public override void Collect(GridLogic grid, List<AntennaEntry> entries)
+        public override void Collect(
+            GridLogic grid,
+            List<AntennaEntry> entries,
+            Dictionary<long, AntennaEntry> models,
+            HashSet<long> activeEntryIds)
         {
             var beacons = grid.GetBeacons();
 
@@ -26,15 +30,14 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
                 if(!IsValid(beacon))
                     continue;
                 
-                entries.Add(new AntennaEntry
-                {
-                    Name = GetName(beacon),
-                    StatusIcon = GetStatusIcon(beacon),
-                    StatusText = GetStatusText(beacon),
-                    StatusColor = GetStatusColor(beacon),
-                    IsFunctional = beacon.IsFunctional,
-                    UseLaserIconCompensation = false
-                });
+                var entry = GetOrCreateEntry(beacon.EntityId, entries, models, activeEntryIds);
+                entry.Update(
+                    GetName(beacon),
+                    GetStatusIcon(beacon),
+                    GetStatusText(beacon),
+                    GetStatusColor(beacon),
+                    beacon.IsFunctional,
+                    false);
             }
         }
 

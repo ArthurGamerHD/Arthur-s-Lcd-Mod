@@ -173,6 +173,7 @@ namespace LcdMod.Client.Apps
             int show = Math.Min(renderRows * cols, count - startIdx);
 
             BeginScrollPanelClip(sprites);
+            var renderContext = CreateRenderContext(owner);
 
             for (int i = 0; i < show; i++)
             {
@@ -181,8 +182,8 @@ namespace LcdMod.Client.Apps
                 float xStart = xLeft + col * slotW;
                 float yStart = _scrollPanel.ContentBounds.Y + row * slotH;
                 var bounds = new RectangleF(xStart, yStart, slotW, slotH);
-                DrawPowerSlotVisual(owner, sprites, _entries[startIdx + i], bounds);
-                RegisterPowerEntryHitbox(_entries[startIdx + i], bounds);
+                var control = RegisterPowerEntryHitbox(_entries[startIdx + i], bounds);
+                control?.Render(renderContext, sprites);
             }
 
             EndScrollPanelClip(sprites);
@@ -245,31 +246,44 @@ namespace LcdMod.Client.Apps
                 sprites.Add(MySprite.CreateClearClipRect());
         }
 
-        void RegisterPowerEntryHitbox(PowerEntry entry, RectangleF bounds)
+        ControlRenderContext CreateRenderContext(IAppHost owner)
+        {
+            return new ControlRenderContext(
+                owner.Surface,
+                owner.Scale,
+                owner.Surface.FontSize,
+                owner.Surface.ScriptForegroundColor,
+                _config.HeaderColor,
+                new Vector2(float.NaN, float.NaN));
+        }
+
+        RectangleControl RegisterPowerEntryHitbox(PowerEntry entry, RectangleF bounds)
         {
             if (entry == null)
-                return;
+                return null;
 
             RectangleControl hitbox;
             if (!_entryHitboxById.TryGetValue(entry.EntryId, out hitbox) || hitbox == null)
             {
-                hitbox = new RectangleControl(bounds, CursorType.Hand, entry.EntryId, null, BuildPowerEntryTooltip(entry.EntryId))
+                hitbox = new RectangleControl(bounds, CursorType.Hand, entry, null, BuildPowerEntryTooltip(entry.EntryId))
                 {
                     ClickSound = AudioHelper.HudClick,
-                    CustomRender = RenderNoopControl
+                    CustomRender = RenderPowerEntryHitbox
                 };
                 _entryHitboxById[entry.EntryId] = hitbox;
             }
             else
             {
                 hitbox.SetRect(bounds);
+                hitbox.SetDataContext(entry);
                 hitbox.SetCursor(CursorType.Hand);
                 hitbox.SetTooltip(BuildPowerEntryTooltip(entry.EntryId));
-                hitbox.CustomRender = RenderNoopControl;
+                hitbox.CustomRender = RenderPowerEntryHitbox;
             }
 
             hitbox.SetVisible(true);
             _scrollPanel.AddChild(hitbox);
+            return hitbox;
         }
 
         void OnScrollPanelChanged(ScrollPanel panel)
@@ -277,16 +291,16 @@ namespace LcdMod.Client.Apps
             _interactiveHost.RenderSprites();
         }
 
-        static void RenderNoopControl(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
-        {
-        }
-
         void RenderPowerEntryHitbox(ControlBase hitbox, ControlRenderContext context, List<MySprite> sprites)
         {
             if (hitbox == null)
                 return;
 
-            var entry = GetPowerEntry((long)hitbox.DataContext);
+            var entry = hitbox.DataContext as PowerEntry;
+            if (entry == null)
+                return;
+
+            entry = GetPowerEntry(entry.EntryId);
             if (entry == null)
                 return;
 

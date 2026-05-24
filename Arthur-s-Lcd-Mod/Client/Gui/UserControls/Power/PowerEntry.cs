@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Generic;
+using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.Tooltip;
 using Sandbox.ModAPI;
 using VRageMath;
 
 namespace LcdMod.Client.Gui.UserControls.Power
 {
-    internal sealed class PowerEntry
+    internal sealed class PowerEntry : ControlModelBase
     {
         Func<IList<ITooltipLine>> _getDetails;
 

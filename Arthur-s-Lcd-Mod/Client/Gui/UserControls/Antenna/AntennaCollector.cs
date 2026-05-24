@@ -16,7 +16,11 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
         protected readonly ScreenConfigWithBlocks ScreenConfigGeneral;
         readonly Dictionary<string, string> _locCache = new Dictionary<string, string>();
         
-        public abstract void Collect(GridLogic grid, List<AntennaEntry> entries);
+        public abstract void Collect(
+            GridLogic grid,
+            List<AntennaEntry> entries,
+            Dictionary<long, AntennaEntry> models,
+            HashSet<long> activeEntryIds);
 
         protected AntennaCollector(IAppHost antennaSurfaceScript)
         {
@@ -36,7 +40,29 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
             _locCache[key] = value;
             return value;
         }
-        
+
+        protected AntennaEntry GetOrCreateEntry(
+            long entryId,
+            List<AntennaEntry> entries,
+            Dictionary<long, AntennaEntry> models,
+            HashSet<long> activeEntryIds)
+        {
+            if (activeEntryIds != null)
+                activeEntryIds.Add(entryId);
+
+            AntennaEntry entry;
+            if (models == null || !models.TryGetValue(entryId, out entry) || entry == null)
+            {
+                entry = new AntennaEntry(entryId);
+                if (models != null)
+                    models[entryId] = entry;
+            }
+
+            if (entries != null)
+                entries.Add(entry);
+
+            return entry;
+        }
         
         protected bool IsValid(IMyTerminalBlock block) => block != null && !block.Closed && (!ScreenConfigGeneral.SelectedBlocks.Any() || ScreenConfigGeneral.SelectedBlocks.Contains(block.EntityId));
     }

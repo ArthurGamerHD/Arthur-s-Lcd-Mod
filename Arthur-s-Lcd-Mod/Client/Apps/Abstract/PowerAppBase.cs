@@ -45,23 +45,40 @@ namespace LcdMod.Client.Apps.Abstract
             }
         }
 
-        struct PowerEntry
+        sealed class PowerEntry : ControlModelBase
         {
-            public string Name;
-            public float Usage;
-            public double Current;
-            public double Max;
-            public string UsageLine;
-            public int DetectedBlocks;
-
-            public PowerEntry(string name)
+            public PowerEntry(string key, string name)
             {
-                Name = name;
-                Usage = 0f;
-                Current = 0;
-                Max = 0;
+                Key = key;
+                Name = name ?? string.Empty;
                 UsageLine = string.Empty;
-                DetectedBlocks = 0;
+            }
+
+            public string Key { get; private set; }
+            public string Name { get; set; }
+            public float Usage { get; set; }
+            public double Current { get; set; }
+            public double Max { get; set; }
+            public string UsageLine { get; set; }
+            public int DetectedBlocks { get; set; }
+            public string MaxLabel { get; private set; }
+            public string CurrentLabel { get; private set; }
+            public bool DrawAsLines { get; private set; }
+
+            public void UpdateValues(float usage, double current, double max, string usageLine, int detectedBlocks)
+            {
+                Usage = usage;
+                Current = current;
+                Max = max;
+                UsageLine = usageLine ?? string.Empty;
+                DetectedBlocks = detectedBlocks;
+            }
+
+            public void ConfigureRender(string maxLabel, string currentLabel, bool drawAsLines)
+            {
+                MaxLabel = maxLabel ?? string.Empty;
+                CurrentLabel = currentLabel ?? string.Empty;
+                DrawAsLines = drawAsLines;
             }
         }
 
@@ -78,6 +95,7 @@ namespace LcdMod.Client.Apps.Abstract
         PowerEntry[] _entriesOrdered;
         readonly List<PowerEntry> _visibleEntries = new List<PowerEntry>();
         readonly List<IMyPowerProducer> _producers = new List<IMyPowerProducer>();
+        readonly Dictionary<string, RectangleControl> _entryControls = new Dictionary<string, RectangleControl>();
         readonly List<ControlBase> _interactiveList = new List<ControlBase>();
         readonly ScrollPanel _scrollPanel;
         readonly InteractiveSurfaceScript _interactiveHost;
@@ -190,7 +208,7 @@ namespace LcdMod.Client.Apps.Abstract
             {
                 var definition = definitions[i];
                 _entryOrder[i] = definition.Key;
-                _entriesByKey[definition.Key] = new PowerEntry(ResolveDisplayName(definition));
+                _entriesByKey[definition.Key] = new PowerEntry(definition.Key, ResolveDisplayName(definition));
                 _totalsByKey[definition.Key] = new PowerTotals();
             }
 
@@ -209,7 +227,6 @@ namespace LcdMod.Client.Apps.Abstract
                 var definition = definitions[i];
                 var entry = _entriesByKey[definition.Key];
                 entry.Name = ResolveDisplayName(definition);
-                _entriesByKey[definition.Key] = entry;
             }
 
             _usagePrefix = MyTexts.Get(MyStringId.GetOrCompute("HudInfoNamePowerUsage")) + " ";
@@ -236,12 +253,12 @@ namespace LcdMod.Client.Apps.Abstract
                 var usage = totals.Max > 0 ? (float)Math.Min(Math.Max(totals.Current / totals.Max, 0), 1) : 0f;
 
                 var entry = _entriesByKey[key];
-                entry.Usage = usage;
-                entry.Current = totals.Current;
-                entry.Max = totals.Max;
-                entry.UsageLine = _usagePrefix + FormatingHelper.PercentageToString(usage);
-                entry.DetectedBlocks = totals.Count;
-                _entriesByKey[key] = entry;
+                entry.UpdateValues(
+                    usage,
+                    totals.Current,
+                    totals.Max,
+                    _usagePrefix + FormatingHelper.PercentageToString(usage),
+                    totals.Count);
             }
 
             SyncOrderedEntries();
@@ -323,6 +340,7 @@ namespace LcdMod.Client.Apps.Abstract
                 contentEnd -= SCROLLER_WIDTH * Scale;
 
             BeginScrollPanelClip(sprites);
+            var renderContext = CreateRenderContext();
 
             if (AppConfig.DrawLines)
             {
@@ -346,10 +364,13 @@ namespace LcdMod.Client.Apps.Abstract
                 int idx = start + gridIdx;
                 int row = gridIdx;
                 float yStart = _scrollPanel.ContentBounds.Y + row * rowHeight;
-                DrawGridPowerCell(sprites, entries[idx], contentStart, contentEnd, yStart, rowHeight, maxLabel,
+                var control = AddInteractiveChild(
+                    new RectangleF(contentStart, yStart, contentEnd - contentStart, rowHeight),
+                    entries[idx],
+                    maxLabel,
                     currentLabel,
                     true);
-                AddInteractiveChild(new RectangleF(contentStart, yStart, contentEnd - contentStart, rowHeight), entries[idx]);
+                control?.Render(renderContext, sprites);
             }
 
             EndScrollPanelClip(sprites);
@@ -378,6 +399,7 @@ namespace LcdMod.Client.Apps.Abstract
             float gridHeight = maxRows * rowHeight;
 
             BeginScrollPanelClip(sprites);
+            var renderContext = CreateRenderContext();
 
             if (drawLineSprites)
             {
@@ -422,9 +444,13 @@ namespace LcdMod.Client.Apps.Abstract
                 float xStart = contentStart + col * columnWidth;
                 float xEnd = (col == maxCols - 1) ? contentEnd : xStart + columnWidth;
                 float yStart = _scrollPanel.ContentBounds.Y + row * rowHeight;
-                DrawGridPowerCell(sprites, entries[idx], xStart, xEnd, yStart, rowHeight, maxLabel, currentLabel,
+                var control = AddInteractiveChild(
+                    new RectangleF(xStart, yStart, xEnd - xStart, rowHeight),
+                    entries[idx],
+                    maxLabel,
+                    currentLabel,
                     drawCellsAsLines);
-                AddInteractiveChild(new RectangleF(xStart, yStart, xEnd - xStart, rowHeight), entries[idx]);
+                control?.Render(renderContext, sprites);
             }
 
             EndScrollPanelClip(sprites);
@@ -437,6 +463,9 @@ namespace LcdMod.Client.Apps.Abstract
             _scrollPanel.ClearChildren();
             _scrollPanel.SetVisible(false);
             _interactiveList.Clear();
+
+            foreach (var kv in _entryControls)
+                kv.Value?.SetVisible(false);
         }
 
         void ConfigureScrollPanel(float contentTop, float rowHeight, int totalRows)
@@ -478,16 +507,48 @@ namespace LcdMod.Client.Apps.Abstract
                 sprites.Add(MySprite.CreateClearClipRect());
         }
 
-        void AddInteractiveChild(RectangleF bounds, object dataContext)
+        ControlRenderContext CreateRenderContext()
         {
-            _scrollPanel.AddChild(new RectangleControl(bounds, CursorType.Default, dataContext)
-            {
-                CustomRender = RenderNoopControl
-            });
+            return new ControlRenderContext(
+                Surface,
+                Scale,
+                FontScale,
+                Surface.ScriptForegroundColor,
+                AppConfig.HeaderColor,
+                new Vector2(float.NaN, float.NaN));
         }
 
-        static void RenderNoopControl(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        RectangleControl AddInteractiveChild(
+            RectangleF bounds,
+            PowerEntry dataContext,
+            string maxLabel,
+            string currentLabel,
+            bool drawAsLines)
         {
+            if (dataContext == null)
+                return null;
+
+            dataContext.ConfigureRender(maxLabel, currentLabel, drawAsLines);
+
+            RectangleControl control;
+            if (!_entryControls.TryGetValue(dataContext.Key, out control) || control == null)
+            {
+                control = new RectangleControl(bounds, CursorType.Default, dataContext)
+                {
+                    CustomRender = RenderPowerEntryControl
+                };
+                _entryControls[dataContext.Key] = control;
+            }
+            else
+            {
+                control.SetRect(bounds);
+                control.SetDataContext(dataContext);
+                control.CustomRender = RenderPowerEntryControl;
+            }
+
+            control.SetVisible(true);
+            _scrollPanel.AddChild(control);
+            return control;
         }
 
         public bool HasVisibleItems()
@@ -578,6 +639,25 @@ namespace LcdMod.Client.Apps.Abstract
                 TextAlignment.RIGHT,
                 .9f * Scale * FontScale
             ));
+        }
+
+        void RenderPowerEntryControl(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        {
+            var entry = control?.DataContext as PowerEntry;
+            if (entry == null)
+                return;
+
+            var bounds = control.Bounds;
+            DrawGridPowerCell(
+                sprites,
+                entry,
+                bounds.X,
+                bounds.Right,
+                bounds.Y,
+                bounds.Height,
+                entry.MaxLabel,
+                entry.CurrentLabel,
+                entry.DrawAsLines);
         }
 
         void DrawCellPie(List<MySprite> sprites, RectangleF iconRect, float usage)

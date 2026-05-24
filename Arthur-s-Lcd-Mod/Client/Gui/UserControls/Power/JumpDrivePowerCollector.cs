@@ -30,6 +30,8 @@ namespace LcdMod.Client.Gui.UserControls.Power
             new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
 
         readonly List<IMyJumpDrive> _visible = new List<IMyJumpDrive>();
+        Dictionary<long, PowerEntry> _activeEntriesBuffer = new Dictionary<long, PowerEntry>();
+        Dictionary<long, PowerEntry> _standbyEntriesBuffer = new Dictionary<long, PowerEntry>();
 
         float _averageCharge;
         string _statusText = string.Empty;
@@ -65,9 +67,13 @@ namespace LcdMod.Client.Gui.UserControls.Power
             _rightSideColor = ScreenConfigPower.HeaderColor;
             _statusKind = PowerStatusKind.None;
             _statusColor = Color.White;
+            _standbyEntriesBuffer.Clear();
 
             if (grid == null)
+            {
+                _activeEntriesBuffer.Clear();
                 return;
+            }
 
             var jumpDrives = grid.GetJumpDrives();
             int fullCount = 0;
@@ -89,6 +95,7 @@ namespace LcdMod.Client.Gui.UserControls.Power
 
             if (_visible.Count == 0)
             {
+                SwapEntryBuffers();
                 EndCenterIconSpinFrame();
                 return;
             }
@@ -126,20 +133,10 @@ namespace LcdMod.Client.Gui.UserControls.Power
                     ratio,
                     isFull ? 0.25f : -1f);
 
-                entries.Add(new PowerEntry(
-                    jumpDrive.EntityId,
-                    Texture,
-                    ratio,
-                    FormatingHelper.PercentageToString(ratio),
-                    GetJumpDriveIconColor(ratio),
-                    true,
-                    centerRotation, 
-                    CenterIconScale,
-                    BlockIconHelper.GetOrAddTextureForBlock(((MyCubeBlock)jumpDrive).BlockDefinition),
-                    jumpDrive,
-                    () => BuildJumpDriveDetails(jumpDrive)));
+                entries.Add(GetOrUpdateJumpDriveEntry(jumpDrive, ratio, centerRotation));
             }
             EndCenterIconSpinFrame();
+            SwapEntryBuffers();
 
             _averageCharge = sumRatio / _visible.Count;
 
@@ -183,6 +180,56 @@ namespace LcdMod.Client.Gui.UserControls.Power
             if (ratio < 0.15f) return ScreenConfigPower.ErrorColor;
             if (ratio < FULL_THRESHOLD) return ScreenConfigPower.WarningColor;
             return ScreenConfigPower.HeaderColor;
+        }
+
+        PowerEntry GetOrUpdateJumpDriveEntry(IMyJumpDrive jumpDrive, float ratio, float centerRotation)
+        {
+            var entryId = jumpDrive.EntityId;
+            var capturedJumpDrive = jumpDrive;
+            var blockIcon = BlockIconHelper.GetOrAddTextureForBlock(((MyCubeBlock)jumpDrive).BlockDefinition);
+
+            PowerEntry entry;
+            if (!_activeEntriesBuffer.TryGetValue(entryId, out entry) || entry == null)
+            {
+                entry = new PowerEntry(
+                    entryId,
+                    Texture,
+                    ratio,
+                    FormatingHelper.PercentageToString(ratio),
+                    GetJumpDriveIconColor(ratio),
+                    true,
+                    centerRotation,
+                    CenterIconScale,
+                    blockIcon,
+                    capturedJumpDrive,
+                    () => BuildJumpDriveDetails(capturedJumpDrive));
+            }
+            else
+            {
+                entry.Update(
+                    entryId,
+                    Texture,
+                    ratio,
+                    FormatingHelper.PercentageToString(ratio),
+                    GetJumpDriveIconColor(ratio),
+                    true,
+                    centerRotation,
+                    CenterIconScale,
+                    blockIcon,
+                    capturedJumpDrive,
+                    () => BuildJumpDriveDetails(capturedJumpDrive));
+            }
+
+            _standbyEntriesBuffer[entryId] = entry;
+            return entry;
+        }
+
+        void SwapEntryBuffers()
+        {
+            var tmp = _activeEntriesBuffer;
+            _activeEntriesBuffer = _standbyEntriesBuffer;
+            _standbyEntriesBuffer = tmp;
+            _standbyEntriesBuffer.Clear();
         }
 
         static IList<ITooltipLine> BuildJumpDriveDetails(IMyJumpDrive jumpDrive)

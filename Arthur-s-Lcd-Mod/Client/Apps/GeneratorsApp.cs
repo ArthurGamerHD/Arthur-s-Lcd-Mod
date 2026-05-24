@@ -29,7 +29,7 @@ namespace LcdMod.Client.Apps
         {
             if (producer is IMyBatteryBlock)
             {
-                entryKey = "battery";
+                entryKey = "batteries";
                 return true;
             }
 

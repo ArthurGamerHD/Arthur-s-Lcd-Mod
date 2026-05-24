@@ -20,7 +20,11 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
             
         }
 
-        public override void Collect(GridLogic grid, List<AntennaEntry> entries)
+        public override void Collect(
+            GridLogic grid,
+            List<AntennaEntry> entries,
+            Dictionary<long, AntennaEntry> models,
+            HashSet<long> activeEntryIds)
         {
             var lasers = grid.GetLaserAntennae();
 
@@ -30,15 +34,14 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
                 if(!IsValid(laser))
                     continue;
 
-                entries.Add(new AntennaEntry
-                {
-                    Name = GetName(laser),
-                    StatusIcon = GetStatusIcon(laser),
-                    StatusText = GetStatusText(laser),
-                    StatusColor = GetStatusColor(laser),
-                    IsFunctional = laser.IsFunctional,
-                    UseLaserIconCompensation = true
-                });
+                var entry = GetOrCreateEntry(laser.EntityId, entries, models, activeEntryIds);
+                entry.Update(
+                    GetName(laser),
+                    GetStatusIcon(laser),
+                    GetStatusText(laser),
+                    GetStatusColor(laser),
+                    laser.IsFunctional,
+                    true);
             }
         }
 

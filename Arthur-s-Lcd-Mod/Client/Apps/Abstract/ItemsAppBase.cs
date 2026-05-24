@@ -40,6 +40,10 @@ namespace LcdMod.Client.Apps.Abstract
         readonly Dictionary<MyItemType, double> _itemsCache = new Dictionary<MyItemType, double>();
         readonly List<ItemViewModel> _items = new List<ItemViewModel>();
         readonly Dictionary<MyItemType, ItemViewModel> _models = new Dictionary<MyItemType, ItemViewModel>();
+        readonly Dictionary<MyItemType, RectangleControl> _listItemControls =
+            new Dictionary<MyItemType, RectangleControl>();
+        readonly Dictionary<MyItemType, RectangleControl> _gridItemControls =
+            new Dictionary<MyItemType, RectangleControl>();
         readonly List<ControlBase> _interactiveList = new List<ControlBase>();
         readonly ScrollPanel _scrollPanel;
         int _viewModelLayoutVersion = 1;
@@ -497,9 +501,8 @@ namespace LcdMod.Client.Apps.Abstract
         ControlBase CreateGridItemControl(ItemViewModel item, RectangleF bounds)
         {
             item.Style = item.GridStyle;
-            item.CustomRender = RenderGridItemControl;
 
-            return new RectangleControl(bounds, CursorType.Default, item);
+            return GetOrCreateItemControl(_gridItemControls, item, bounds, RenderGridItemControl);
         }
 
         void RenderGridItemControl(ControlBase control, ControlRenderContext context, List<MySprite> frame)
@@ -560,9 +563,37 @@ namespace LcdMod.Client.Apps.Abstract
         ControlBase CreateListItemControl(ItemViewModel item, RectangleF bounds)
         {
             item.Style = item.ListStyle;
-            item.CustomRender = RenderListItemControl;
 
-            return new RectangleControl(bounds, CursorType.Default, item);
+            return GetOrCreateItemControl(_listItemControls, item, bounds, RenderListItemControl);
+        }
+
+        RectangleControl GetOrCreateItemControl(
+            Dictionary<MyItemType, RectangleControl> controls,
+            ItemViewModel item,
+            RectangleF bounds,
+            InteractiveRenderHandler render)
+        {
+            if (item == null)
+                return null;
+
+            RectangleControl control;
+            if (!controls.TryGetValue(item.ItemType, out control) || control == null)
+            {
+                control = new RectangleControl(bounds, CursorType.Default, item)
+                {
+                    CustomRender = render
+                };
+                controls[item.ItemType] = control;
+            }
+            else
+            {
+                control.SetRect(bounds);
+                control.SetDataContext(item);
+                control.CustomRender = render;
+            }
+
+            control.SetVisible(true);
+            return control;
         }
 
         void RenderListItemControl(ControlBase control, ControlRenderContext context, List<MySprite> frame)
@@ -711,6 +742,17 @@ namespace LcdMod.Client.Apps.Abstract
             _scrollPanel.ClearChildren();
             _scrollPanel.SetVisible(false);
             _interactiveList.Clear();
+            SetItemControlsVisible(_listItemControls, false);
+            SetItemControlsVisible(_gridItemControls, false);
+        }
+
+        static void SetItemControlsVisible(Dictionary<MyItemType, RectangleControl> controls, bool visible)
+        {
+            if (controls == null)
+                return;
+
+            foreach (var kv in controls)
+                kv.Value?.SetVisible(visible);
         }
 
         void BeginInteractiveTree(ScrollPanel panel)

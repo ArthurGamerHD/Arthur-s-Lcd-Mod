@@ -33,6 +33,10 @@ namespace LcdMod.Client.Apps
 
         public ScreenConfigWithBlocks Config => (ScreenConfigWithBlocks)AppConfig;
         readonly List<AntennaEntry> _entries = new List<AntennaEntry>();
+        readonly Dictionary<long, AntennaEntry> _entryModels = new Dictionary<long, AntennaEntry>();
+        readonly HashSet<long> _activeEntryIds = new HashSet<long>();
+        readonly List<long> _entriesToRemove = new List<long>();
+        readonly Dictionary<long, RectangleControl> _entryControls = new Dictionary<long, RectangleControl>();
         readonly List<AntennaCollector> _collectors = new List<AntennaCollector>();
         readonly List<ControlBase> _interactiveList = new List<ControlBase>();
         readonly ScrollPanel _scrollPanel;
@@ -57,13 +61,18 @@ namespace LcdMod.Client.Apps
                 BuildCollectors();
 
             _entries.Clear();
+            _activeEntryIds.Clear();
             var gridLogic = Host.GridLogic;
             if (gridLogic == null)
+            {
+                RemoveInactiveEntryModels();
                 return;
+            }
 
             for (int i = 0; i < _collectors.Count; i++)
-                _collectors[i].Collect(gridLogic, _entries);
+                _collectors[i].Collect(gridLogic, _entries, _entryModels, _activeEntryIds);
 
+            RemoveInactiveEntryModels();
             _entries.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.CurrentCultureIgnoreCase));
         }
 
@@ -111,6 +120,7 @@ namespace LcdMod.Client.Apps
                 contentEnd -= SCROLLER_WIDTH * Host.Scale;
 
             BeginScrollPanelClip(sprites);
+            var renderContext = CreateRenderContext();
 
             if (Config.DrawLines)
             {
@@ -133,8 +143,11 @@ namespace LcdMod.Client.Apps
             {
                 int idx = start + gridIdx;
                 float yStart = _scrollPanel.ContentBounds.Y + gridIdx * rowHeight;
-                DrawAntennaCell(sprites, _entries[idx], contentStart, contentEnd, yStart, rowHeight, true);
-                AddInteractiveChild(new RectangleF(contentStart, yStart, contentEnd - contentStart, rowHeight), _entries[idx]);
+                var control = AddInteractiveChild(
+                    new RectangleF(contentStart, yStart, contentEnd - contentStart, rowHeight),
+                    _entries[idx],
+                    true);
+                control?.Render(renderContext, sprites);
             }
 
             EndScrollPanelClip(sprites);
@@ -163,6 +176,7 @@ namespace LcdMod.Client.Apps
             float gridHeight = maxRows * rowHeight;
 
             BeginScrollPanelClip(sprites);
+            var renderContext = CreateRenderContext();
 
             if (drawLineSprites)
             {
@@ -207,8 +221,11 @@ namespace LcdMod.Client.Apps
                 float xStart = contentStart + col * columnWidth;
                 float xEnd = (col == maxCols - 1) ? contentEnd : xStart + columnWidth;
                 float yStart = _scrollPanel.ContentBounds.Y + row * rowHeight;
-                DrawAntennaCell(sprites, _entries[idx], xStart, xEnd, yStart, rowHeight, drawCellsAsLines);
-                AddInteractiveChild(new RectangleF(xStart, yStart, xEnd - xStart, rowHeight), _entries[idx]);
+                var control = AddInteractiveChild(
+                    new RectangleF(xStart, yStart, xEnd - xStart, rowHeight),
+                    _entries[idx],
+                    drawCellsAsLines);
+                control?.Render(renderContext, sprites);
             }
 
             EndScrollPanelClip(sprites);
@@ -221,6 +238,9 @@ namespace LcdMod.Client.Apps
             _scrollPanel.ClearChildren();
             _scrollPanel.SetVisible(false);
             _interactiveList.Clear();
+
+            foreach (var kv in _entryControls)
+                kv.Value?.SetVisible(false);
         }
 
         void ConfigureScrollPanel(float contentTop, float footerHeight, float rowHeight, int totalRows)
@@ -262,16 +282,64 @@ namespace LcdMod.Client.Apps
                 sprites.Add(MySprite.CreateClearClipRect());
         }
 
-        void AddInteractiveChild(RectangleF bounds, object dataContext)
+        ControlRenderContext CreateRenderContext()
         {
-            _scrollPanel.AddChild(new RectangleControl(bounds, CursorType.Default, dataContext)
-            {
-                CustomRender = RenderNoopControl
-            });
+            return new ControlRenderContext(
+                Host.Surface,
+                Host.Scale,
+                Host.Surface.FontSize,
+                Host.Surface.ScriptForegroundColor,
+                Config.HeaderColor,
+                new Vector2(float.NaN, float.NaN));
         }
 
-        static void RenderNoopControl(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        RectangleControl AddInteractiveChild(RectangleF bounds, AntennaEntry dataContext, bool drawAsLines)
         {
+            if (dataContext == null)
+                return null;
+
+            dataContext.DrawAsLines = drawAsLines;
+
+            RectangleControl control;
+            if (!_entryControls.TryGetValue(dataContext.EntryId, out control) || control == null)
+            {
+                control = new RectangleControl(bounds, CursorType.Default, dataContext)
+                {
+                    CustomRender = RenderAntennaEntryControl
+                };
+                _entryControls[dataContext.EntryId] = control;
+            }
+            else
+            {
+                control.SetRect(bounds);
+                control.SetDataContext(dataContext);
+                control.CustomRender = RenderAntennaEntryControl;
+            }
+
+            control.SetVisible(true);
+            _scrollPanel.AddChild(control);
+            return control;
+        }
+
+        void RemoveInactiveEntryModels()
+        {
+            _entriesToRemove.Clear();
+            foreach (var kv in _entryModels)
+            {
+                if (!_activeEntryIds.Contains(kv.Key))
+                    _entriesToRemove.Add(kv.Key);
+            }
+
+            for (int i = 0; i < _entriesToRemove.Count; i++)
+            {
+                var entryId = _entriesToRemove[i];
+                _entryModels.Remove(entryId);
+
+                RectangleControl control;
+                if (_entryControls.TryGetValue(entryId, out control) && control != null)
+                    control.SetVisible(false);
+                _entryControls.Remove(entryId);
+            }
         }
 
         public bool HasVisibleItems()
@@ -408,6 +476,23 @@ namespace LcdMod.Client.Apps
             infoPos.Y -= nameRect.Height * 0.4f;
             sprites.Add(new MySprite(SpriteType.TEXT, info.ToString(), infoPos, null, foreground, "White",
                 TextAlignment.RIGHT, .9f * Host.Scale * Host.Surface.FontSize));
+        }
+
+        void RenderAntennaEntryControl(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        {
+            var entry = control?.DataContext as AntennaEntry;
+            if (entry == null)
+                return;
+
+            var bounds = control.Bounds;
+            DrawAntennaCell(
+                sprites,
+                entry,
+                bounds.X,
+                bounds.Right,
+                bounds.Y,
+                bounds.Height,
+                entry.DrawAsLines);
         }
 
         void TrimText(StringBuilder sb, float availableWidth, float fontSize = 1f)
