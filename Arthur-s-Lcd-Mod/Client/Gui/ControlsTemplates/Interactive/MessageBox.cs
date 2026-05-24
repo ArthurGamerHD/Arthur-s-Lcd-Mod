@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.Tooltip;
@@ -12,10 +13,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 {
     sealed class MessageBox
     {
+        readonly IApp _parentApp;
         readonly object _button1Context = new object();
         readonly object _button2Context = new object();
         readonly List<MySprite> _sprites = new List<MySprite>();
 
+        MessageBoxContainerControl _containerControl;
         RectangleControl _button1Control;
         RectangleControl _button2Control;
         Action<object, object> _button1Callback;
@@ -27,6 +30,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         string _button1;
         string _button2;
         string _icon;
+
+        public MessageBox(IApp parentApp)
+        {
+            if (parentApp == null)
+                throw new ArgumentNullException("parentApp");
+
+            _parentApp = parentApp;
+        }
 
         public void Show(
             string title,
@@ -49,14 +60,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
         public void AddInteractiveEntries(List<ControlBase> entries)
         {
-            if (Dismissed)
+            if (Dismissed || entries == null)
                 return;
 
-            if (_button1Control != null && _button1Control.Visible)
-                entries.Add(_button1Control);
-
-            if (_button2Control != null && _button2Control.Visible)
-                entries.Add(_button2Control);
+            if (_containerControl != null && _containerControl.Visible)
+                entries.Add(_containerControl);
         }
 
         public void Render(InteractiveSurfaceScript owner,
@@ -74,6 +82,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
             if (Dismissed)
                 return;
+
+            EnsureContainer(viewBox);
+            _containerControl.ClearChildren();
 
             var shadowColor = panelColor.MulValue(0.2f);
                 
@@ -199,6 +210,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 : default(RectangleF);
 
             EnsureEntries(button1Rect, button2Rect, showButton2);
+            _containerControl.AddChild(_button1Control);
+            if (showButton2 && _button2Control != null)
+                _containerControl.AddChild(_button2Control);
 
             var renderContext = new ControlRenderContext(surface, scale, fontScale, textColor, panelColor, cursorPosition);
             ConfigureButtonRender(_button1Control, _button1, buttonScale, panelColor, textColor, owner);
@@ -211,6 +225,17 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             }
 
             targetSprites.AddRange(_sprites);
+        }
+
+        void EnsureContainer(RectangleF bounds)
+        {
+            if (_containerControl == null)
+                _containerControl = new MessageBoxContainerControl(bounds, _parentApp);
+            else
+                _containerControl.SetRect(bounds);
+
+            _containerControl.SetDataContext(_parentApp);
+            _containerControl.SetVisible(true);
         }
 
         static string[] SplitLines(string content)
@@ -280,6 +305,16 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             _button1Callback = null;
             _button2Callback = null;
             _sprites.Clear();
+
+            if (_button1Control != null)
+                _button1Control.SetVisible(false);
+            if (_button2Control != null)
+                _button2Control.SetVisible(false);
+            if (_containerControl != null)
+            {
+                _containerControl.ClearChildren();
+                _containerControl.SetVisible(false);
+            }
         }
             
 
@@ -327,6 +362,18 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 Alignment = TextAlignment.CENTER,
                 RotationOrScale = textScale
             });
+        }
+    }
+
+    sealed class MessageBoxContainerControl : RectangleControl
+    {
+        public MessageBoxContainerControl(RectangleF rect, IApp parentApp)
+            : base(rect, CursorType.Default, parentApp)
+        {
+        }
+
+        protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+        {
         }
     }
 }

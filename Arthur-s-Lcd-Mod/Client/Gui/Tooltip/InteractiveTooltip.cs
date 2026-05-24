@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
@@ -166,6 +167,7 @@ namespace LcdMod.Client.Gui.Tooltip
 
         public List<MySprite> Render(
             ControlBase parentEntry,
+            IApp parentApp,
             RectangleF viewBox,
             float scale,
             float fontScale,
@@ -275,7 +277,7 @@ namespace LcdMod.Client.Gui.Tooltip
             var containerRect = CloseMode == TooltipActivationMode.Auto
                 ? Union(cardRect, KeepOpenBounds)
                 : viewBox;
-            EnsureContainer(containerRect);
+            EnsureContainer(containerRect, parentApp);
             _containerControl.ClearChildren();
             _interactiveEntries.Add(_containerControl);
 
@@ -451,17 +453,18 @@ namespace LcdMod.Client.Gui.Tooltip
             return sprites;
         }
 
-        void EnsureContainer(RectangleF bounds)
+        void EnsureContainer(RectangleF bounds, IApp parentApp)
         {
             if (_containerControl == null)
             {
-                _containerControl = new TooltipContainerControl(bounds);
+                _containerControl = new TooltipContainerControl(bounds, parentApp);
             }
             else
             {
                 _containerControl.SetRect(bounds);
             }
 
+            _containerControl.SetDataContext(parentApp);
             _containerControl.SetVisible(true);
         }
 
@@ -499,8 +502,8 @@ namespace LcdMod.Client.Gui.Tooltip
 
     sealed class TooltipContainerControl : RectangleControl
     {
-        public TooltipContainerControl(RectangleF rect)
-            : base(rect, CursorType.Default)
+        public TooltipContainerControl(RectangleF rect, IApp parentApp)
+            : base(rect, CursorType.Default, parentApp)
         {
         }
 

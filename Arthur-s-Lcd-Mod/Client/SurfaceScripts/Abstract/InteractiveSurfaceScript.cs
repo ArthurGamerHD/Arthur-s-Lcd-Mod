@@ -53,41 +53,50 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         readonly List<ControlBase> _interactiveEntriesWithOverlay = new List<ControlBase>();
 
-        public ICollection<ControlBase> InteractiveEntries
+        public ICollection<ControlBase> InteractiveEntries => GetInteractiveEntries();
+
+        public ICollection<ControlBase> GetInteractiveEntries(bool includeDisabled = false)
         {
-            get
+            _interactiveEntriesWithOverlay.Clear();
+
+            if (_messageBox != null)
             {
-                _interactiveEntriesWithOverlay.Clear();
-
-                if (_messageBox != null)
+                if (_messageBox.Dismissed)
                 {
-                    if (_messageBox.Dismissed)
-                    {
-                        _messageBox = null;
-                    }
-                    else
-                    {
-                        _messageBox.AddInteractiveEntries(_interactiveEntriesWithOverlay);
-                        return _interactiveEntriesWithOverlay;
-                    }
+                    _messageBox = null;
                 }
-
-                _interactiveEntriesWithOverlay.AddRange(InteractiveList);
-                if (ShouldRenderGlobalMenu())
+                else
                 {
-                    _globalMenu?.AddInteractiveEntries(_interactiveEntriesWithOverlay);
-                }
-                else if (CanOpenHiddenGlobalMenu())
-                {
-                    _hiddenGlobalMenuControl.SetRect(_baseViewBox);
-                    _hiddenGlobalMenuControl.SetVisible(true);
-                    _interactiveEntriesWithOverlay.Insert(0, _hiddenGlobalMenuControl);
-                }
+                    if (includeDisabled)
+                        AddBaseInteractiveEntries(_interactiveEntriesWithOverlay);
 
-                AddActiveTooltipContainer(_interactiveEntriesWithOverlay);
-
-                return _interactiveEntriesWithOverlay;
+                    _messageBox.AddInteractiveEntries(_interactiveEntriesWithOverlay);
+                    return _interactiveEntriesWithOverlay;
+                }
             }
+
+            AddBaseInteractiveEntries(_interactiveEntriesWithOverlay);
+            return _interactiveEntriesWithOverlay;
+        }
+
+        void AddBaseInteractiveEntries(List<ControlBase> entries)
+        {
+            if (entries == null)
+                return;
+
+            entries.AddRange(InteractiveList);
+            if (ShouldRenderGlobalMenu())
+            {
+                _globalMenu?.AddInteractiveEntries(entries);
+            }
+            else if (CanOpenHiddenGlobalMenu())
+            {
+                _hiddenGlobalMenuControl.SetRect(_baseViewBox);
+                _hiddenGlobalMenuControl.SetVisible(true);
+                entries.Insert(0, _hiddenGlobalMenuControl);
+            }
+
+            AddActiveTooltipContainer(entries);
         }
 
         void AddActiveTooltipContainer(List<ControlBase> entries)
@@ -473,6 +482,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
             var tooltipSprites = tooltip.Render(
                 parentEntry,
+                App,
                 ViewBox,
                 Scale,
                 FontScale,
@@ -662,7 +672,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             Action<object, object> button2Callback = null,
             string icon = null)
         {
-            _messageBox = new MessageBox();
+            _messageBox = new MessageBox(App);
             _messageBox.Show(title, content, button1, button2, button1Callback, button2Callback, icon);
         }
 

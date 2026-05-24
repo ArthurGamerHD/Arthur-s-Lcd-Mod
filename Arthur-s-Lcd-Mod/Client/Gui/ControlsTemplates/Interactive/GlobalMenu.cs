@@ -10,7 +10,7 @@ using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.Interacti
 
 namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 {
-    sealed class GlobalMenu
+    sealed class GlobalMenu : RectangleControl
     {
         sealed class Node
         {
@@ -25,10 +25,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         readonly List<Node> _openPath = new List<Node>();
         readonly List<ControlBase> _interactiveEntries = new List<ControlBase>();
         readonly List<MySprite> _sprites = new List<MySprite>();
-
-        public bool Visible { get; private set; }
+        RectangleF _menuBounds;
+        RectangleF _renderViewBox;
+        float _popupMaxWidth;
+        bool _hasMenuBounds;
 
         public GlobalMenu(List<GlobalMenuEntry> entries)
+            : base(default(RectangleF), CursorType.Default)
         {
             if (entries != null)
             {
@@ -36,7 +39,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                     _rootNodes.Add(CreateNode(entries[i], 0));
             }
 
-            Visible = _rootNodes.Count > 0;
+            SetVisible(_rootNodes.Count > 0);
         }
 
         static Node CreateNode(GlobalMenuEntry entry, int level)
@@ -58,30 +61,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
         public void AddInteractiveEntries(List<ControlBase> entries)
         {
-            if (!Visible)
+            if (!Visible || entries == null || !_hasMenuBounds)
                 return;
 
-            for (int i = 0; i < _interactiveEntries.Count; i++)
-            {
-                var entry = _interactiveEntries[i];
-                if (entry != null && entry.Visible)
-                    entries.Add(entry);
-            }
-        }
-
-        public bool Hit(Vector2 point)
-        {
-            if (!Visible)
-                return false;
-
-            for (int i = 0; i < _interactiveEntries.Count; i++)
-            {
-                var entry = _interactiveEntries[i];
-                if (entry != null && entry.Hit(point))
-                    return true;
-            }
-
-            return false;
+            entries.Add(this);
         }
 
         public float GetReservedHeight(
@@ -114,18 +97,41 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             if (!Visible || _rootNodes.Count == 0)
                 return;
 
+            SetDataContext(owner != null ? owner.App : null);
+            _renderViewBox = viewBox;
+            _popupMaxWidth = owner != null ? owner.ViewBox.Width * 0.65f : viewBox.Width * 0.65f;
+            var renderContext = new ControlRenderContext(surface, scale, fontScale, textColor, panelColor, cursorPosition);
+
+            base.Render(renderContext, targetSprites);
+        }
+
+        protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+        {
+            _sprites.Clear();
+
+            if (!Visible || _rootNodes.Count == 0)
+                return;
+
+            var viewBox = _renderViewBox;
+            var surface = context.Surface;
+            var scale = context.Scale;
+            var fontScale = context.FontScale;
+            var textColor = context.TextColor;
+            var panelColor = context.PanelColor;
+            var cursorPosition = context.CursorPosition;
             var shadowColor = panelColor.MulValue(0.2f);
             float rootScale = 0.58f * scale * fontScale;
             float popupScale = 0.56f * scale * fontScale;
             float rootHeight = Math.Max(24f * scale, FormatingHelper.LineHeight(rootScale, surface) + 10f * scale);
             float itemHeight = Math.Max(22f * scale, FormatingHelper.LineHeight(rootScale, surface) + 8f * scale);
             float rootPaddingX = 12f * scale;
-            var renderContext = new ControlRenderContext(surface, scale, fontScale, textColor, panelColor, cursorPosition);
 
-            DrawRootBar(viewBox, scale, rootScale, rootHeight, rootPaddingX, panelColor, textColor, cursorPosition, surface, renderContext);
-            DrawOpenPopups(owner, viewBox, scale, popupScale, itemHeight, panelColor, textColor, shadowColor, cursorPosition, surface, renderContext);
+            DrawRootBar(viewBox, scale, rootScale, rootHeight, rootPaddingX, panelColor, textColor, cursorPosition, surface, context);
+            DrawOpenPopups(viewBox, scale, popupScale, itemHeight, panelColor, textColor, shadowColor, cursorPosition, surface, context);
 
-            targetSprites.AddRange(_sprites);
+            SetRect(_hasMenuBounds ? _menuBounds : default(RectangleF));
+
+            sprites.AddRange(_sprites);
         }
 
         void DrawRootBar(RectangleF viewBox,
@@ -167,7 +173,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         }
 
         void DrawOpenPopups(
-            InteractiveSurfaceScript owner,
             RectangleF viewBox,
             float scale,
             float popupScale,
@@ -187,7 +192,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
                 var parentRect = parentNode.Rect;
                 var children = parentNode.Children;
-                float popupWidth = CalculatePopupWidth(owner, children, popupScale, surface, scale);
+                float popupWidth = CalculatePopupWidth(children, popupScale, surface, scale, _popupMaxWidth);
                 var popupRect = level == 0
                     ? new RectangleF(parentRect.X, parentRect.Bottom, popupWidth, itemHeight * children.Count)
                     : new RectangleF(parentRect.Right - scale, parentRect.Y, popupWidth, itemHeight * children.Count);
@@ -293,7 +298,25 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
             node.Control.SetVisible(true);
             _interactiveEntries.Add(node.Control);
+            AddChild(node.Control);
+            AddMenuBounds(rect);
             return node.Control;
+        }
+
+        void AddMenuBounds(RectangleF rect)
+        {
+            if (!_hasMenuBounds)
+            {
+                _menuBounds = rect;
+                _hasMenuBounds = true;
+                return;
+            }
+
+            float x = Math.Min(_menuBounds.X, rect.X);
+            float y = Math.Min(_menuBounds.Y, rect.Y);
+            float right = Math.Max(_menuBounds.Right, rect.Right);
+            float bottom = Math.Max(_menuBounds.Bottom, rect.Bottom);
+            _menuBounds = new RectangleF(x, y, right - x, bottom - y);
         }
 
         void OnEntryClick(object dataContext, object sender)
@@ -335,14 +358,18 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             }
 
             _interactiveEntries.Clear();
+            ClearChildren();
+            SetRect(default(RectangleF));
+            _menuBounds = default(RectangleF);
+            _hasMenuBounds = false;
         }
 
         static float CalculatePopupWidth(
-            InteractiveSurfaceScript owner,
             List<Node> nodes,
             float textScale,
             Sandbox.ModAPI.Ingame.IMyTextSurface surface,
-            float scale)
+            float scale,
+            float maxWidth)
         {
             float width = 120f * scale;
 
@@ -366,7 +393,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                     width = candidate;
             }
 
-            return Math.Min(width, owner.ViewBox.Width * 0.65f);
+            return maxWidth > 0f ? Math.Min(width, maxWidth) : width;
         }
 
         static string GetText(GlobalMenuEntry entry)

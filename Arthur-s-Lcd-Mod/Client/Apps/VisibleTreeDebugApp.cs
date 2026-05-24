@@ -22,6 +22,7 @@ namespace LcdMod.Client.Apps
         static readonly Color RootColor = new Color(120, 200, 255);
         static readonly Color ChildColor = new Color(210, 230, 255);
         static readonly Color ModelColor = new Color(170, 235, 170);
+        static readonly Color DisabledColor = new Color(145, 145, 145);
         static readonly Color WarningColor = new Color(235, 210, 60);
         static readonly Color ErrorColor = new Color(230, 90, 90);
 
@@ -115,10 +116,22 @@ namespace LcdMod.Client.Apps
                 return lines;
             }
 
-            var entries = interactive.InteractiveEntries;
+            var activeEntries = new HashSet<ControlBase>();
+            var activeEntryList = interactive.InteractiveEntries;
+            if (activeEntryList != null)
+            {
+                foreach (var entry in activeEntryList)
+                {
+                    if (entry != null)
+                        activeEntries.Add(entry);
+                }
+            }
+
+            var entries = interactive.GetInteractiveEntries(true);
             int rootCount = entries != null ? entries.Count : 0;
             lines.Add(new DebugLine("Cursor: " + FormatVector(interactive.CursorPosition) +
-                                    "  Root Controls: " + Fixed4(rootCount), HeaderColor));
+                                    "  Root Controls: " + Fixed4(rootCount) +
+                                    "  Include Disabled", HeaderColor));
             lines.Add(new DebugLine(string.Empty, HeaderColor));
 
             if (entries == null || entries.Count == 0)
@@ -131,7 +144,8 @@ namespace LcdMod.Client.Apps
             var visited = new HashSet<ControlBase>();
             foreach (var entry in entries)
             {
-                AppendControl(lines, entry, index.ToString(), 0, visited);
+                bool disabled = !activeEntries.Contains(entry);
+                AppendControl(lines, entry, index.ToString(), 0, visited, disabled);
                 index++;
             }
 
@@ -143,19 +157,24 @@ namespace LcdMod.Client.Apps
             ControlBase control,
             string path,
             int depth,
-            HashSet<ControlBase> visited)
+            HashSet<ControlBase> visited,
+            bool disabled)
         {
             if (control == null || !control.Visible)
                 return;
 
-            var color = depth == 0
-                ? RootColor
-                : control.Model != null
-                    ? ModelColor
-                    : ChildColor;
+            Color color;
+            if (disabled)
+                color = DisabledColor;
+            else if (depth == 0)
+                color = RootColor;
+            else if (control.Model != null)
+                color = ModelColor;
+            else
+                color = ChildColor;
 
             string prefix = new string(' ', Math.Min(depth, MaxDepth) * 2);
-            lines.Add(new DebugLine(prefix + path + " " + BuildControlText(control), color));
+            lines.Add(new DebugLine(prefix + path + " " + BuildControlText(control, disabled), color));
 
             if (!visited.Add(control))
             {
@@ -168,19 +187,29 @@ namespace LcdMod.Client.Apps
                 return;
 
             for (int i = 0; i < children.Count; i++)
-                AppendControl(lines, children[i], path + "." + i, depth + 1, visited);
+                AppendControl(lines, children[i], path + "." + i, depth + 1, visited, disabled);
         }
 
-        static string BuildControlText(ControlBase control)
+        static string BuildControlText(ControlBase control, bool disabled)
         {
             var sb = new StringBuilder();
             sb.Append(control.GetType().Name);
 
+            var overlayKind = GetOverlayKind(control);
+            if (!string.IsNullOrEmpty(overlayKind))
+                sb.Append(" overlay=").Append(overlayKind);
+
             var model = control.Model;
+            var parentApp = control.DataContext as IApp;
             if (model != null)
                 sb.Append(" model=").Append(model.GetType().Name);
+            else if (parentApp != null)
+                sb.Append(" parentApp=").Append(ClampToWidth(parentApp.GetType().Name, 24));
             else if (control.DataContext != null)
                 sb.Append(" data=").Append(ClampToWidth(control.DataContext.GetType().Name, 24));
+
+            if (disabled)
+                sb.Append(" disabled");
 
             sb.Append(" flags=").Append(GetFlags(control));
             if (control.Cursor != CursorType.Default)
@@ -202,6 +231,26 @@ namespace LcdMod.Client.Apps
             sb.Append(" bounds=").Append(FormatRect(control.Bounds));
 
             return sb.ToString();
+        }
+
+        static string GetOverlayKind(ControlBase control)
+        {
+            if (control == null)
+                return string.Empty;
+
+            var name = control.GetType().Name;
+            if (name == "TooltipContainerControl")
+                return "Tooltip";
+            if (name == "MessageBoxContainerControl")
+                return "MessageBox";
+            if (name == "GlobalMenu")
+                return "GlobalMenu";
+            if (name == "GlobalMenuContainerControl")
+                return "GlobalMenu";
+            if (name == "HiddenGlobalMenuControl")
+                return "HiddenGlobalMenu";
+
+            return string.Empty;
         }
 
         static string GetTargetName(SurfaceScriptBase target)
