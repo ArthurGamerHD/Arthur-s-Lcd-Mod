@@ -5,6 +5,7 @@ using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
+using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Gui.UserControls.Power;
 using LcdMod.Client.Helpers;
@@ -31,6 +32,7 @@ namespace LcdMod.Client.Apps
         readonly List<ControlBase> _interactiveList = new List<ControlBase>();
         readonly Dictionary<long, PowerEntry> _entryById = new Dictionary<long, PowerEntry>();
         readonly Dictionary<long, RectangleControl> _entryHitboxById = new Dictionary<long, RectangleControl>();
+        readonly ScrollPanel _scrollPanel;
         ScreenConfigPower _config;
         
         public List<ControlBase> InteractiveList => _interactiveList;
@@ -42,6 +44,10 @@ namespace LcdMod.Client.Apps
             if (_interactiveHost == null)
                 throw new ArgumentException("PowerFilledApp requires an InteractiveSurfaceScript host.", "surfaceHost");
             _config = config;
+
+            _scrollPanel = new ScrollPanel(CursorType.Default, this);
+            _scrollPanel.ScrollChanged = OnScrollPanelChanged;
+            _scrollPanel.SetVisible(false);
         }
 
         public override void LayoutChanged()
@@ -138,54 +144,72 @@ namespace LcdMod.Client.Apps
             float minW = BatterySlotW * owner.Scale;
             float minH = BatterySlotH * owner.Scale;
             float contentTop = GetContentTop(owner) + 6f * owner.Scale;
+            float footerHeight = GetFooterHeight(owner);
             float availW = owner.ViewBox.Width;
-            float availH = owner.ViewBox.Height - (contentTop - owner.ViewBox.Y) - GetFooterHeight(owner);
             float xLeft = owner.ViewBox.X;
             float xRight = owner.ViewBox.X + owner.ViewBox.Width;
 
             int count = _entries.Count;
+            if (count <= 0)
+                return;
+
             int cols = Math.Min(count, Math.Max(1, (int)Math.Floor(availW / minW)));
-            int maxRows = Math.Max(1, (int)Math.Floor(availH / minH));
             int totalRows = (int)Math.Ceiling(count / (float)cols);
-            bool scroll = totalRows > maxRows;
-            int startRow = 0;
+            ConfigurePowerScrollPanel(owner, contentTop, footerHeight, minH, totalRows);
 
-            if (scroll)
+            if (_scrollPanel.IsScrollable)
             {
-                int steps = Math.Max(1, totalRows - maxRows);
-                int step = GetScrollStep(ScrollTick / 6f);
-                startRow = step % (steps + 1);
-
-                float vpH = availH - ScrollerW * 2 * owner.Scale;
-                float barH = (float)maxRows / totalRows * vpH;
-                float frac = (float)startRow / steps;
-                float barY = frac * (vpH - barH);
-                DrawScrollBar(owner, sprites, owner.Scale, contentTop + ScrollerW * owner.Scale, vpH, barY + barH / 2f, barH);
-
                 xRight -= ScrollerW * owner.Scale;
                 availW = xRight - xLeft;
                 cols = Math.Min(count, Math.Max(1, (int)Math.Floor(availW / minW)));
+                totalRows = (int)Math.Ceiling(count / (float)cols);
+                ConfigurePowerScrollPanel(owner, contentTop, footerHeight, minH, totalRows);
             }
 
-            int rows = scroll ? maxRows : Math.Min(maxRows, totalRows);
             float slotW = availW / cols;
             float slotH = minH;
-            int startIdx = startRow * cols;
-            int show = Math.Min(rows * cols, count - startIdx);
+            int startIdx = _scrollPanel.GetStartIndex(cols);
+            int renderRows = _scrollPanel.VisibleRows + (_scrollPanel.IsScrollable ? 1 : 0);
+            int show = Math.Min(renderRows * cols, count - startIdx);
+
+            BeginScrollPanelClip(sprites);
 
             for (int i = 0; i < show; i++)
             {
                 int col = i % cols;
                 int row = i / cols;
                 float xStart = xLeft + col * slotW;
-                float yStart = contentTop + row * slotH;
-                RegisterPowerEntryHitbox(_entries[startIdx + i], new RectangleF(xStart, yStart, slotW, slotH));
+                float yStart = _scrollPanel.ContentBounds.Y + row * slotH;
+                var bounds = new RectangleF(xStart, yStart, slotW, slotH);
+                DrawPowerSlotVisual(owner, sprites, _entries[startIdx + i], bounds);
+                RegisterPowerEntryHitbox(_entries[startIdx + i], bounds);
             }
+
+            EndScrollPanelClip(sprites);
+            RenderScrollPanelBar(owner, sprites);
+        }
+
+        void ConfigurePowerScrollPanel(IAppHost owner, float contentTop, float footerHeight, float rowHeight, int totalRows)
+        {
+            _scrollPanel.Configure(owner.ViewBox, contentTop, footerHeight, rowHeight, totalRows, ScrollerW * owner.Scale, ScrollTick / 6f);
+            _scrollPanel.SetVisible(true);
+            if (!_interactiveList.Contains(_scrollPanel))
+                _interactiveList.Add(_scrollPanel);
+        }
+
+        void RenderScrollPanelBar(IAppHost owner, List<MySprite> sprites)
+        {
+            _scrollPanel.RenderScrollBar(
+                sprites,
+                new Color(owner.Surface.ScriptForegroundColor.R, owner.Surface.ScriptForegroundColor.G, owner.Surface.ScriptForegroundColor.B, 127),
+                new Color(_config.HeaderColor.R, _config.HeaderColor.G, _config.HeaderColor.B, 250));
         }
 
         void BeginPowerEntryHitboxFrame()
         {
             _interactiveList.Clear();
+            _scrollPanel.ClearChildren();
+            _scrollPanel.SetVisible(false);
             foreach (var kv in _entryHitboxById)
                 kv.Value?.SetVisible(false);
         }
@@ -196,6 +220,29 @@ namespace LcdMod.Client.Apps
                 kv.Value?.SetVisible(false);
             _entryHitboxById.Clear();
             _interactiveList.Clear();
+        }
+
+
+        void BeginScrollPanelClip(List<MySprite> sprites)
+        {
+            if (sprites == null)
+                return;
+
+            var bounds = _scrollPanel.ContentViewportBounds;
+            if (bounds.Width <= 0f || bounds.Height <= 0f)
+                return;
+
+            int x = (int)Math.Floor(bounds.X);
+            int y = (int)Math.Floor(bounds.Y);
+            int right = (int)Math.Ceiling(bounds.Right);
+            int bottom = (int)Math.Ceiling(bounds.Bottom);
+            sprites.Add(MySprite.CreateClipRect(new Rectangle(x, y, Math.Max(0, right - x), Math.Max(0, bottom - y))));
+        }
+
+        static void EndScrollPanelClip(List<MySprite> sprites)
+        {
+            if (sprites != null)
+                sprites.Add(MySprite.CreateClearClipRect());
         }
 
         void RegisterPowerEntryHitbox(PowerEntry entry, RectangleF bounds)
@@ -209,7 +256,7 @@ namespace LcdMod.Client.Apps
                 hitbox = new RectangleControl(bounds, CursorType.Hand, entry.EntryId, null, BuildPowerEntryTooltip(entry.EntryId))
                 {
                     ClickSound = AudioHelper.HudClick,
-                    CustomRender = RenderPowerEntryHitbox
+                    CustomRender = RenderNoopControl
                 };
                 _entryHitboxById[entry.EntryId] = hitbox;
             }
@@ -218,11 +265,20 @@ namespace LcdMod.Client.Apps
                 hitbox.SetRect(bounds);
                 hitbox.SetCursor(CursorType.Hand);
                 hitbox.SetTooltip(BuildPowerEntryTooltip(entry.EntryId));
-                hitbox.CustomRender = RenderPowerEntryHitbox;
+                hitbox.CustomRender = RenderNoopControl;
             }
 
             hitbox.SetVisible(true);
-            _interactiveList.Add(hitbox);
+            _scrollPanel.AddChild(hitbox);
+        }
+
+        void OnScrollPanelChanged(ScrollPanel panel)
+        {
+            _interactiveHost.RenderSprites();
+        }
+
+        static void RenderNoopControl(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        {
         }
 
         void RenderPowerEntryHitbox(ControlBase hitbox, ControlRenderContext context, List<MySprite> sprites)

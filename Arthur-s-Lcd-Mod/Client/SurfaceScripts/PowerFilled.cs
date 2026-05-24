@@ -29,6 +29,7 @@ namespace LcdMod.Client.SurfaceScripts
         IAppInteractive _app;
         readonly List<ControlBase> _interactiveListFallback = new List<ControlBase>();
         public override List<ControlBase> InteractiveList => _app != null ? _app.InteractiveList : _interactiveListFallback;
+        protected override bool RendersInteractiveEntriesInGetSprites => true;
 
         public PowerFilledSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)
         {
@@ -45,6 +46,8 @@ namespace LcdMod.Client.SurfaceScripts
         {
             if (AppConfig == null)
                 return;
+
+            base.SafeRun();
 
             if (_app == null)
                 _app = new PowerFilledApp(AppConfig, this);

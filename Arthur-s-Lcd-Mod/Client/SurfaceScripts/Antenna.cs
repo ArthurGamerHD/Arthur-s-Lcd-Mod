@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using Generated;
 using LcdMod.Client.Apps;
 using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.Gui;
+using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Terminal.Controls.Groups;
@@ -21,7 +23,7 @@ using SwitchToggleLines = LcdMod.Client.Terminal.Controls.Generic.SwitchToggleLi
 namespace LcdMod.Client.SurfaceScripts
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public partial class AntennaSurfaceScript : SurfaceScriptBase,
+    public partial class AntennaSurfaceScript : InteractiveSurfaceScript,
         IUsesTerminalControl<SwitchToggleLines>,
         IUsesTerminalControl<SeparatorFilter>,
         IUsesTerminalControl<LabelSeparator>,
@@ -30,7 +32,11 @@ namespace LcdMod.Client.SurfaceScripts
     {
         protected override ConfigKind ConfigKind => ConfigKind.WithBlocks;
         public override IApp App => _app;
+        readonly List<ControlBase> _interactiveListFallback = new List<ControlBase>();
         AntennaApp _app;
+        public override CursorType CursorType { get; protected set; } = CursorType.Default;
+        public override List<ControlBase> InteractiveList => _app != null ? _app.InteractiveList : _interactiveListFallback;
+        protected override bool RendersInteractiveEntriesInGetSprites => true;
 
         public const string ID = "AntennaGraph";
         public const string TITLE = "Antenna";
@@ -57,6 +63,8 @@ namespace LcdMod.Client.SurfaceScripts
         {
             if (AppConfig == null)
                 return;
+
+            base.SafeRun();
 
             if (_app == null)
                 _app = new AntennaApp(AppConfig, this);
