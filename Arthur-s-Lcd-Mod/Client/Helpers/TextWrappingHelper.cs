@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using Sandbox.ModAPI.Ingame;
 using VRageMath;
+using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 
 namespace LcdMod.Client.Helpers
 {

@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
-using Sandbox.ModAPI.Ingame;
 using VRage.Game;
 using VRageMath;
+using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 
 namespace LcdMod.Client.Helpers
 {
@@ -17,7 +17,7 @@ namespace LcdMod.Client.Helpers
         public static CultureInfo Culture => CultureInfo.CurrentUICulture;
 
         public static Vector2 GetSizeInPixel(string text, string font, float fontSize,
-            Sandbox.ModAPI.Ingame.IMyTextSurface surface)
+            IMyTextSurface surface)
         {
             Vector2 size;
             var key = text + font + fontSize;
