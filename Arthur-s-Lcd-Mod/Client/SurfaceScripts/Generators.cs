@@ -1,6 +1,9 @@
 using System.Collections.Generic;
 using Generated;
 using LcdMod.Client.Apps;
+using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.Gui;
+using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Utility;
@@ -17,15 +20,19 @@ using VRageMath;
 namespace LcdMod.Client.SurfaceScripts
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public partial class GeneratorsSurfaceScript : SurfaceScriptBase, IMultiDisplayMode
+    public partial class GeneratorsSurfaceScript : InteractiveSurfaceScript, IMultiDisplayMode
     {
         protected override ConfigKind ConfigKind => ConfigKind.Power;
         public const string ID = "GeneratorsGraph";
         public const string TITLE = "RadialMenuGroupTitle_Power";
 
+        readonly List<ControlBase> _interactiveListFallback = new List<ControlBase>();
         GeneratorsApp _app;
 
         public override IApp App => _app;
+        public override CursorType CursorType { get; protected set; } = CursorType.Default;
+        public override List<ControlBase> InteractiveList => _app != null ? _app.InteractiveList : _interactiveListFallback;
+        protected override bool RendersInteractiveEntriesInGetSprites => true;
         protected override string DefaultTitle => TITLE;
 
         public GeneratorsSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
@@ -42,6 +49,8 @@ namespace LcdMod.Client.SurfaceScripts
         {
             if (AppConfig == null)
                 return;
+
+            base.SafeRun();
 
             if (_app == null)
                 _app = new GeneratorsApp(AppConfig, this);

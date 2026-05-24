@@ -1,23 +1,24 @@
-using LcdMod.Client.Markdown;
-
-public sealed class MarkdownParser
+namespace LcdMod.Client.Markdown
 {
-    readonly BlockParser _blockParser;
-    readonly InlineParser _inlineParser;
-
-    public MarkdownParser()
+    public sealed class MarkdownParser
     {
-        _inlineParser = new InlineParser();
-        _blockParser = new BlockParser(_inlineParser);
-    }
+        readonly BlockParser _blockParser;
+        readonly InlineParser _inlineParser;
 
-    public MarkdownDocument Parse(string text)
-    {
-        if (text == null)
-            text = string.Empty;
+        public MarkdownParser()
+        {
+            _inlineParser = new InlineParser();
+            _blockParser = new BlockParser(_inlineParser);
+        }
 
-        MarkdownDocument document = _blockParser.Parse(text);
+        public MarkdownDocument Parse(string text)
+        {
+            if (text == null)
+                text = string.Empty;
 
-        return document;
+            MarkdownDocument document = _blockParser.Parse(text);
+
+            return document;
+        }
     }
 }

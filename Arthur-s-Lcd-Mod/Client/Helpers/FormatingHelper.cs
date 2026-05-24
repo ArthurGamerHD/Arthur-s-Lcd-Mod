@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Text;
 using VRage.Game;
 using VRageMath;
+using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 
 namespace LcdMod.Client.Helpers
 {
@@ -16,7 +17,7 @@ namespace LcdMod.Client.Helpers
         public static CultureInfo Culture => CultureInfo.CurrentUICulture;
 
         public static Vector2 GetSizeInPixel(string text, string font, float fontSize,
-            Sandbox.ModAPI.Ingame.IMyTextSurface surface)
+            IMyTextSurface surface)
         {
             Vector2 size;
             var key = text + font + fontSize;
@@ -213,5 +214,8 @@ namespace LcdMod.Client.Helpers
                 return $"{ts.Hours:D2}:{ts.Minutes:D2}:{ts.Seconds:D2}";
             return ts.TotalSeconds > 60 ? $"{ts.Minutes:D2}:{ts.Seconds:D2}" : $"{ts.Seconds}s";
         }
+
+        public static float LineHeight(float scale, IMyTextSurface surface, string font = "White", string probe = "Ag") 
+            => GetSizeInPixel(probe, font, scale, surface).Y;
     }
 }

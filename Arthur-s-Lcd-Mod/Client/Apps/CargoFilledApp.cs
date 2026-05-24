@@ -4,11 +4,13 @@ using System.Text;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Extensions;
-using LcdMod.Client.Gui.Controls;
+using LcdMod.Client.Gui;
+using LcdMod.Client.Gui.ControlsTemplates;
+using LcdMod.Client.Gui.ControlsTemplates.Panels;
+using LcdMod.Client.Gui.ControlsTemplates.Progress;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Utility;
-using LcdMod.Common.Config.Models;
 using LcdMod.Common.Config.Models.Apps;
 using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
@@ -20,24 +22,41 @@ using IMySlimBlock = VRage.Game.ModAPI.IMySlimBlock;
 
 namespace LcdMod.Client.Apps
 {
-    public sealed class CargoFilledApp : AppBase
+    public sealed class CargoFilledApp : AppBase, IAppInteractive
     {
         const int ScrollerWidth = 8;
         const int LineHeight = 40;
         const int ScrollDelay = 12;
 
         readonly List<Entry> _entries = new List<Entry>();
+        readonly Dictionary<long, Entry> _entryModels = new Dictionary<long, Entry>();
+        readonly HashSet<long> _activeEntryIds = new HashSet<long>();
+        readonly List<long> _entriesToRemove = new List<long>();
+        readonly Dictionary<long, RectangleControl> _entryControls = new Dictionary<long, RectangleControl>();
+        readonly List<ControlBase> _interactiveList = new List<ControlBase>();
+        readonly ScrollPanel _scrollPanel;
+        readonly InteractiveSurfaceScript _interactiveHost;
         ScreenConfigWithBlocks Config => (ScreenConfigWithBlocks)AppConfig;
         public bool HasEntries => _entries.Count > 0;
+        public List<ControlBase> InteractiveList => _interactiveList;
 
-        public CargoFilledApp(ScreenConfigGeneral config, IAppHost host) : base(config, host)
+        public CargoFilledApp(ScreenConfigWithBlocks config, IAppHost host) : base(config, host)
         {
+            _interactiveHost = host as InteractiveSurfaceScript;
+            if (_interactiveHost == null)
+                throw new ArgumentException("CargoFilledApp requires an InteractiveSurfaceScript host.", "host");
+
+            _scrollPanel = new ScrollPanel(CursorType.Default, this);
+            _scrollPanel.ScrollChanged = OnScrollPanelChanged;
+            _scrollPanel.SetVisible(false);
         }
 
         public override void Update()
         {
             _entries.Clear();
+            _activeEntryIds.Clear();
             AggregateAllContainersInLogicalGroup(Host.Block?.CubeGrid, _entries);
+            RemoveInactiveEntryModels();
             _entries.Sort((a, b) =>
             {
                 var fa = a.Cap > 0 ? a.Used / a.Cap : 0;
@@ -50,6 +69,7 @@ namespace LcdMod.Client.Apps
 
         public override List<MySprite> GetSprites()
         {
+            ClearInteractiveTree();
             var sprites = new List<MySprite>();
             switch (Config.DisplayMode)
             {
@@ -67,83 +87,61 @@ namespace LcdMod.Client.Apps
         void DrawList(List<MySprite> sprites)
         {
             var rowHeight = LineHeight * Host.Scale;
-            var viewportAvailableHeight = Host.ViewBox.Height - (GetContentTop() - Host.ViewBox.Y);
-            int maxRows = Math.Max(1, (int)Math.Floor(viewportAvailableHeight / rowHeight));
-            bool shouldScroll = _entries.Count > maxRows;
+            var contentTop = GetContentTop();
+            ConfigureScrollPanel(contentTop, rowHeight, _entries.Count);
 
-            int start = 0;
-            if (shouldScroll)
+            BeginScrollPanelClip(sprites);
+            var renderContext = CreateRenderContext();
+
+            int start = _scrollPanel.GetStartIndex(1);
+            int renderRows = _scrollPanel.VisibleRows + (_scrollPanel.IsScrollable ? 1 : 0);
+            int showCount = Math.Min(renderRows, _entries.Count - start);
+            for (int i = 0; i < showCount; i++)
             {
-                int totalSteps = Math.Max(1, _entries.Count - maxRows);
-                int step = GetScrollStep(ScrollDelay / 6f);
-                start = step % (totalSteps + 1);
-
-                float viewportHeight = maxRows * rowHeight - (ScrollerWidth * 2 * Host.Scale);
-                float scrollBarHeight = (float)maxRows / _entries.Count * viewportHeight;
-                float totalScrollableRows = _entries.Count - maxRows;
-                float scrollFraction = totalScrollableRows > 0 ? start / totalScrollableRows : 0f;
-                float scrollBarTravel = viewportHeight - scrollBarHeight;
-                float scrollBarY = scrollFraction * scrollBarTravel;
-                float scrollBarCenter = scrollBarY + scrollBarHeight / 2f;
-                float initialY = GetContentTop() + ScrollerWidth * Host.Scale;
-                DrawScrollBar(sprites, Host.Scale, initialY, viewportHeight, scrollBarCenter, scrollBarHeight);
+                var bounds = GetListRowBounds(i, _scrollPanel.ContentBounds.Y, _scrollPanel.IsScrollable);
+                var control = AddInteractiveChild(bounds, _entries[start + i], false);
+                control?.Render(renderContext, sprites);
             }
 
-            int showCount = Math.Min(maxRows, _entries.Count - start);
-            for (int i = 0; i < showCount; i++)
-                DrawRow(sprites, _entries[start + i], shouldScroll, i);
+            EndScrollPanelClip(sprites);
+            RenderScrollPanelBar(sprites);
         }
 
         void DrawGrid(List<MySprite> sprites)
         {
             var rowHeight = 2f * LineHeight * Host.Scale;
-            var viewportAvailableHeight = Host.ViewBox.Height - (GetContentTop() - Host.ViewBox.Y);
-            int maxRows = Math.Max(1, (int)Math.Floor(viewportAvailableHeight / rowHeight));
+            var contentTop = GetContentTop();
             int maxCols = Math.Max(1, (int)Math.Round((Host.ViewBox.Width - Host.ViewBox.X) / (220f * Host.Scale) - .5, MidpointRounding.AwayFromZero));
-            int maxVisible = maxRows * maxCols;
-            bool shouldScroll = _entries.Count > maxVisible;
-            int startRow = 0;
+            int totalRows = (int)Math.Ceiling(_entries.Count / (float)maxCols);
+            ConfigureScrollPanel(contentTop, rowHeight, totalRows);
 
-            if (shouldScroll)
-            {
-                int totalRows = (int)Math.Ceiling(_entries.Count / (float)maxCols);
-                int totalSteps = Math.Max(1, totalRows - maxRows);
-                int step = GetScrollStep(ScrollDelay / 6f);
-                startRow = step % (totalSteps + 1);
-
-                float viewportHeight = maxRows * rowHeight - (ScrollerWidth * 2 * Host.Scale);
-                float scrollBarHeight = (float)maxRows / totalRows * viewportHeight;
-                float totalScrollableRows = totalRows - maxRows;
-                float scrollFraction = totalScrollableRows > 0 ? startRow / totalScrollableRows : 0f;
-                float scrollBarTravel = viewportHeight - scrollBarHeight;
-                float scrollBarY = scrollFraction * scrollBarTravel;
-                float scrollBarCenter = scrollBarY + scrollBarHeight / 2f;
-                float initialY = GetContentTop() + ScrollerWidth * Host.Scale;
-                DrawScrollBar(sprites, Host.Scale, initialY, viewportHeight, scrollBarCenter, scrollBarHeight);
-            }
-
-            int start = startRow * maxCols;
-            int showCount = Math.Min(maxVisible, _entries.Count - start);
+            int maxRows = _scrollPanel.MaxVisibleRows;
+            int start = _scrollPanel.GetStartIndex(maxCols);
+            int renderRows = _scrollPanel.VisibleRows + (_scrollPanel.IsScrollable ? 1 : 0);
+            int showCount = Math.Min(renderRows * maxCols, _entries.Count - start);
             float contentStart = Host.ViewBox.X;
             float contentEnd = Host.ViewBox.Width + Host.ViewBox.X;
-            if (shouldScroll)
+            if (_scrollPanel.IsScrollable)
                 contentEnd -= ScrollerWidth * Host.Scale;
             float columnWidth = (contentEnd - contentStart) / maxCols;
             float gridHeight = maxRows * rowHeight;
+
+            BeginScrollPanelClip(sprites);
+            var renderContext = CreateRenderContext();
 
             if (Config.DrawLines)
             {
                 var lineColor = Config.HeaderColor;
                 for (int row = 0; row <= maxRows; row++)
                 {
-                    var y = GetContentTop() + row * rowHeight;
+                    var y = _scrollPanel.ContentBounds.Y + row * rowHeight;
                     sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2((contentStart + contentEnd) / 2f, y), Size = new Vector2(contentEnd - contentStart, 2f), Color = lineColor, Alignment = TextAlignment.CENTER });
                 }
 
                 for (int col = 0; col <= maxCols; col++)
                 {
                     var x = contentStart + col * columnWidth;
-                    sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(x, GetContentTop() + gridHeight / 2f), Size = new Vector2(2f, gridHeight), Color = lineColor, Alignment = TextAlignment.CENTER });
+                    sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(x, _scrollPanel.ContentViewportBounds.Y + gridHeight / 2f), Size = new Vector2(2f, gridHeight), Color = lineColor, Alignment = TextAlignment.CENTER });
                 }
             }
 
@@ -154,25 +152,29 @@ namespace LcdMod.Client.Apps
                 int row = gridIdx / maxCols;
                 float xStart = contentStart + col * columnWidth;
                 float xEnd = (col == maxCols - 1) ? contentEnd : xStart + columnWidth;
-                float yStart = GetContentTop() + row * rowHeight;
-                DrawGridCell(sprites, _entries[idx], xStart, xEnd, yStart, rowHeight);
+                float yStart = _scrollPanel.ContentBounds.Y + row * rowHeight;
+                var control = AddInteractiveChild(
+                    new RectangleF(xStart, yStart, xEnd - xStart, rowHeight),
+                    _entries[idx],
+                    true);
+                control?.Render(renderContext, sprites);
             }
+
+            EndScrollPanelClip(sprites);
+            RenderScrollPanelBar(sprites);
         }
 
-        void DrawRow(List<MySprite> frame, Entry entry, bool showScrollBar, int rowIndex)
+        void DrawRow(List<MySprite> frame, Entry entry, RectangleF bounds)
         {
             var pct = MathHelper.Clamp(entry.Cap <= 0 ? 0f : (float)(entry.Used / entry.Cap), 0f, 1f);
-            float y = GetContentTop() + rowIndex * LineHeight * Host.Scale;
-            Vector2 position = new Vector2(Host.ViewBox.Position.X, y);
+            Vector2 position = bounds.Position;
 
             if (Config.DrawLines)
                 frame.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(Host.ViewBox.Center.X, position.Y), Size = new Vector2(Host.ViewBox.Width, 2f), Color = Host.ForegroundColor, Alignment = TextAlignment.CENTER });
 
-            var clip = new Rectangle((int)position.X, (int)position.Y, (int)(Host.ViewBox.Width - position.X + Host.ViewBox.X - 145 * Host.Scale), (int)(LineHeight * Host.Scale));
+            var clip = new Rectangle((int)position.X, (int)position.Y, (int)Math.Max(0f, bounds.Width - 145 * Host.Scale), (int)bounds.Height);
             var barMargin = 8 * Host.Scale;
-            Vector2 size = showScrollBar
-                ? new Vector2(Host.ViewBox.Width - position.X + Host.ViewBox.X - ScrollerWidth * Host.Scale, clip.Height) - barMargin
-                : new Vector2(Host.ViewBox.Width - position.X + Host.ViewBox.X, clip.Height) - barMargin;
+            Vector2 size = new Vector2(bounds.Width, clip.Height) - barMargin;
 
             BarPanel.CreateSprites(frame, new Vector2(clip.Location.X, clip.Location.Y + Host.Scale) + barMargin / 2f, size, Config.HeaderColor, Host.BackgroundColor.DeriveAccentColor(), pct, GetEntryUsageColor(pct));
             frame.Add(MySprite.CreateClipRect(clip));
@@ -180,7 +182,7 @@ namespace LcdMod.Client.Apps
             position.Y += 4 * Host.Scale;
             frame.Add(new MySprite { Type = SpriteType.TEXT, Data = entry.Name, Position = position, RotationOrScale = Host.Scale, Color = Host.Surface.ScriptForegroundColor, Alignment = TextAlignment.LEFT, FontId = "White" });
             frame.Add(MySprite.CreateClearClipRect());
-            position.X = Host.ViewBox.Width + Host.ViewBox.X - (showScrollBar ? ScrollerWidth * Host.Scale : 0f);
+            position.X = bounds.Right;
             frame.Add(new MySprite { Type = SpriteType.TEXT, Data = FormatingHelper.PercentageToString(pct), Position = position, RotationOrScale = Host.Scale, Color = Host.Surface.ScriptForegroundColor, Alignment = TextAlignment.RIGHT, FontId = "White" });
         }
 
@@ -197,8 +199,8 @@ namespace LcdMod.Client.Apps
                 hsv.Z *= 0.2f;
                 var cellRect = new RectangleF(xStart + cellPadding / 2f, yStart + cellPadding / 2f, (xEnd - xStart) - cellPadding, rowHeight - cellPadding);
                 var dropShadow = new RectangleF(cellRect.Position + 2, cellRect.Size);
-                RectanglePanel.CreateSpritesFromRect(dropShadow, frame, hsv.HSVtoColor(), .2f);
-                RectanglePanel.CreateSpritesFromRect(cellRect, frame, backgroundColor, .2f);
+                Border.CreateSpritesFromRect(dropShadow, frame, hsv.HSVtoColor(), .2f);
+                Border.CreateSpritesFromRect(cellRect, frame, backgroundColor, .2f);
             }
 
             var nameHeight = Math.Max(0f, cellView.Height * .45f);
@@ -218,6 +220,119 @@ namespace LcdMod.Client.Apps
             frame.Add(new MySprite { Type = SpriteType.TEXT, Data = FormatingHelper.PercentageToString(pct), Position = new Vector2(textRect.Right - (2f * Host.Scale), textRect.Y + 2f * Host.Scale), RotationOrScale = .95f * Host.Scale, Color = Host.Surface.ScriptForegroundColor, Alignment = TextAlignment.RIGHT, FontId = "White" });
         }
 
+
+        void ClearInteractiveTree()
+        {
+            _scrollPanel.ClearChildren();
+            _scrollPanel.SetVisible(false);
+            _interactiveList.Clear();
+
+            foreach (var kv in _entryControls)
+                kv.Value?.SetVisible(false);
+        }
+
+        void ConfigureScrollPanel(float contentTop, float rowHeight, int totalRows)
+        {
+            _scrollPanel.Configure(Host.ViewBox, contentTop, 0f, rowHeight, totalRows, ScrollerWidth * Host.Scale, ScrollDelay / 6f);
+            _scrollPanel.SetVisible(true);
+            if (!_interactiveList.Contains(_scrollPanel))
+                _interactiveList.Add(_scrollPanel);
+        }
+
+        void RenderScrollPanelBar(List<MySprite> sprites)
+        {
+            _scrollPanel.RenderScrollBar(
+                sprites,
+                new Color(Host.Surface.ScriptForegroundColor.R, Host.Surface.ScriptForegroundColor.G, Host.Surface.ScriptForegroundColor.B, 127),
+                new Color(Config.HeaderColor.R, Config.HeaderColor.G, Config.HeaderColor.B, 250));
+        }
+
+        RectangleF GetListRowBounds(int rowIndex, float contentTop, bool showScrollBar)
+        {
+            var y = contentTop + rowIndex * LineHeight * Host.Scale;
+            var left = Host.ViewBox.Position.X;
+            var width = Host.ViewBox.Width - left + Host.ViewBox.X;
+            if (showScrollBar)
+                width -= ScrollerWidth * Host.Scale;
+            return new RectangleF(left, y, width, LineHeight * Host.Scale);
+        }
+
+
+        void BeginScrollPanelClip(List<MySprite> sprites)
+        {
+            if (sprites == null)
+                return;
+
+            var bounds = _scrollPanel.ContentViewportBounds;
+            if (bounds.Width <= 0f || bounds.Height <= 0f)
+                return;
+
+            int x = (int)Math.Floor(bounds.X);
+            int y = (int)Math.Floor(bounds.Y);
+            int right = (int)Math.Ceiling(bounds.Right);
+            int bottom = (int)Math.Ceiling(bounds.Bottom);
+            sprites.Add(MySprite.CreateClipRect(new Rectangle(x, y, Math.Max(0, right - x), Math.Max(0, bottom - y))));
+        }
+
+        static void EndScrollPanelClip(List<MySprite> sprites)
+        {
+            if (sprites != null)
+                sprites.Add(MySprite.CreateClearClipRect());
+        }
+
+        ControlRenderContext CreateRenderContext()
+        {
+            return new ControlRenderContext(
+                Host.Surface,
+                Host.Scale,
+                Host.Surface.FontSize,
+                Host.Surface.ScriptForegroundColor,
+                Config.HeaderColor,
+                new Vector2(float.NaN, float.NaN));
+        }
+
+        RectangleControl AddInteractiveChild(RectangleF bounds, Entry dataContext, bool renderAsGrid)
+        {
+            if (dataContext == null)
+                return null;
+
+            dataContext.RenderAsGrid = renderAsGrid;
+
+            RectangleControl control;
+            if (!_entryControls.TryGetValue(dataContext.EntryId, out control) || control == null)
+            {
+                control = new RectangleControl(bounds, CursorType.Default, dataContext)
+                {
+                    CustomRender = RenderCargoEntryControl
+                };
+                _entryControls[dataContext.EntryId] = control;
+            }
+            else
+            {
+                control.SetRect(bounds);
+                control.SetDataContext(dataContext);
+                control.CustomRender = RenderCargoEntryControl;
+            }
+
+            control.SetVisible(true);
+            _scrollPanel.AddChild(control);
+            return control;
+        }
+
+        public bool HasVisibleItems()
+        {
+            return HasEntries;
+        }
+
+        public void OnMouseScroll(int delta, ref bool handled)
+        {
+        }
+
+        void OnScrollPanelChanged(ScrollPanel panel)
+        {
+            _interactiveHost.RenderSprites();
+        }
+
         Color? GetEntryUsageColor(float pct)
         {
             if (pct >= .99f)
@@ -225,6 +340,19 @@ namespace LcdMod.Client.Apps
             if (pct > .90f)
                 return Config.WarningColor;
             return null;
+        }
+
+        void RenderCargoEntryControl(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        {
+            var entry = control?.DataContext as Entry;
+            if (entry == null)
+                return;
+
+            var bounds = control.Bounds;
+            if (entry.RenderAsGrid)
+                DrawGridCell(sprites, entry, bounds.X, bounds.Right, bounds.Y, bounds.Height);
+            else
+                DrawRow(sprites, entry, bounds);
         }
 
         float GetContentTop()
@@ -437,16 +565,67 @@ namespace LcdMod.Client.Apps
                         name = "Container";
                     }
 
-                    details.Add(new Entry { Name = name, Used = localUsed, Cap = localCap });
+                    var entry = GetOrCreateEntry(fat.EntityId);
+                    entry.Update(name, localUsed, localCap);
+                    details.Add(entry);
                 }
             }
         }
 
-        public class Entry
+        Entry GetOrCreateEntry(long entryId)
         {
-            public double Cap;
-            public string Name;
-            public double Used;
+            _activeEntryIds.Add(entryId);
+
+            Entry entry;
+            if (!_entryModels.TryGetValue(entryId, out entry) || entry == null)
+            {
+                entry = new Entry(entryId);
+                _entryModels[entryId] = entry;
+            }
+
+            return entry;
+        }
+
+        void RemoveInactiveEntryModels()
+        {
+            _entriesToRemove.Clear();
+            foreach (var kv in _entryModels)
+            {
+                if (!_activeEntryIds.Contains(kv.Key))
+                    _entriesToRemove.Add(kv.Key);
+            }
+
+            for (int i = 0; i < _entriesToRemove.Count; i++)
+            {
+                var entryId = _entriesToRemove[i];
+                _entryModels.Remove(entryId);
+
+                RectangleControl control;
+                if (_entryControls.TryGetValue(entryId, out control) && control != null)
+                    control.SetVisible(false);
+                _entryControls.Remove(entryId);
+            }
+        }
+
+        public class Entry : ControlModelBase
+        {
+            public Entry(long entryId)
+            {
+                EntryId = entryId;
+            }
+
+            public long EntryId { get; private set; }
+            public double Cap { get; private set; }
+            public string Name { get; private set; }
+            public double Used { get; private set; }
+            public bool RenderAsGrid { get; set; }
+
+            public void Update(string name, double used, double cap)
+            {
+                Name = name ?? string.Empty;
+                Used = used;
+                Cap = cap;
+            }
         }
     }
 }

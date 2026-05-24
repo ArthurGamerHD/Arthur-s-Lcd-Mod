@@ -5,6 +5,8 @@ using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Config;
 using LcdMod.Client.Gui;
+using LcdMod.Client.Gui.ControlsTemplates;
+using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
@@ -33,7 +35,7 @@ namespace LcdMod.Client.Apps
         float FontScale => _host.Surface.FontSize;
         Color ForegroundColor => _host.ForegroundColor;
         Color BackgroundColor => _host.BackgroundColor;
-        public List<InteractiveEntry> InteractiveList => _interactiveList;
+        public List<ControlBase> InteractiveList => _interactiveList;
         public CursorType RequestedCursorType { get; private set; } = CursorType.Default;
 
         float _fov;
@@ -52,7 +54,7 @@ namespace LcdMod.Client.Apps
         readonly List<MySprite> _ringSprites = new List<MySprite>();
         readonly List<MySprite> _overlaySprites = new List<MySprite>();
         readonly List<MySprite> _sprites = new List<MySprite>();
-        readonly List<InteractiveEntry> _interactiveList = new List<InteractiveEntry>();
+        readonly List<ControlBase> _interactiveList = new List<ControlBase>();
 
         // for Static map. These sprites and hit targets only change when the
         // surface layout changes, so they are built once and reused across Run() calls.
@@ -61,7 +63,7 @@ namespace LcdMod.Client.Apps
         readonly List<MySprite> _cachedStaticBaseSprites = new List<MySprite>();
         readonly List<MySprite> _cachedStaticTitleSprites = new List<MySprite>();
         readonly List<MySprite> _cachedStaticRingSprites = new List<MySprite>();
-        readonly List<InteractiveEntry> _cachedInteractiveEntries = new List<InteractiveEntry>();
+        readonly List<ControlBase> _cachedInteractiveEntries = new List<ControlBase>();
 
         bool _dynamicMapCacheValid;
         MatrixD _cachedDynamicWorldMatrix;
@@ -2495,7 +2497,7 @@ namespace LcdMod.Client.Apps
             }
 
             bool placeOnRight = planet.ScreenPos.X <= ViewBox.Center.X;
-            float lineStep = FormatingHelper.GetSizeInPixel("Ag", "White", sideInfoScale, Surface).Y + 2f;
+            float lineStep = FormatingHelper.LineHeight(sideInfoScale, Surface) + 2f;
             float requiredHeight = (count - 1) * lineStep + maxLineHeight;
             float availableHeight = planet.MarkerRadius * 2f;
             float availableWidth = planet.MarkerRadius * 2f;
@@ -2694,13 +2696,13 @@ namespace LcdMod.Client.Apps
             if (!hasEntry)
                 return rect;
 
-            var entry = new InteractiveRectangleEntry(
+            var entry = new RectangleControl(
                 rect,
                 cursor ?? (line.IsClickable ? CursorType.Hand : CursorType.Default),
                 line.GetDataContext(),
                 line.GetOnClick());
             entry.ClickSound = line.GetClickSound();
-            entry.CustomRender = delegate(InteractiveEntry renderEntry, InteractiveRenderContext context, List<MySprite> targetSprites)
+            entry.CustomRender = delegate(ControlBase renderEntry, ControlRenderContext context, List<MySprite> targetSprites)
             {
                 if (line.IsClickable)
                     DrawTextHitboxUnderline(textRect, labelColor, targetSprites, textScale);
@@ -3059,7 +3061,7 @@ namespace LcdMod.Client.Apps
                     () => FormatingHelper.DistanceToString((float)planet.Distance),
                     GetCursor, TooltipActivationMode.Click, TooltipActivationMode.Click));
             }
-            entry.CustomRender = delegate(InteractiveEntry renderEntry, InteractiveRenderContext context, List<MySprite> targetSprites)
+            entry.CustomRender = delegate(ControlBase renderEntry, ControlRenderContext context, List<MySprite> targetSprites)
             {
                 DrawPlanetVisual(targetSprites, planet, renderEntry, context);
                 RestoreTextureClip(targetSprites);
@@ -3070,8 +3072,8 @@ namespace LcdMod.Client.Apps
         void DrawPlanetVisual(
             List<MySprite> sprites,
             PlanetProjection planet,
-            InteractiveEntry entry,
-            InteractiveRenderContext context)
+            ControlBase entry,
+            ControlRenderContext context)
         {
             var circle = entry as InteractiveCircleEntry;
             var center = circle?.Center ?? planet.ScreenPos;

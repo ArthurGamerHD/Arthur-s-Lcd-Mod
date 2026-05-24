@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using LcdMod.Client.Extensions;
-using LcdMod.Client.Gui.Controls;
+using LcdMod.Client.Gui.ControlsTemplates;
+using LcdMod.Client.Gui.ControlsTemplates.Panels;
+using LcdMod.Client.Gui.ControlsTemplates.Progress;
 using LcdMod.Client.Terminal.Controls;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
@@ -181,8 +183,8 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 hsv.Z *= 0.2f;
                 var cellRect = new RectangleF(xStart + cellPadding / 2f, yStart + cellPadding / 2f, (xEnd - xStart) - cellPadding, rowHeight - cellPadding);
                 var dropShadow = new RectangleF(cellRect.Position + 2, cellRect.Size);
-                RectanglePanel.CreateSpritesFromRect(dropShadow, frame, hsv.HSVtoColor(), .2f);
-                RectanglePanel.CreateSpritesFromRect(cellRect, frame, backgroundColor, .2f);
+                Border.CreateSpritesFromRect(dropShadow, frame, hsv.HSVtoColor(), .2f);
+                Border.CreateSpritesFromRect(cellRect, frame, backgroundColor, .2f);
             }
 
             var nameHeight = Math.Max(0f, cellView.Height * .45f);

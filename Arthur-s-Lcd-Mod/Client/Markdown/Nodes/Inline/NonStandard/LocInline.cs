@@ -1,4 +1,6 @@
-namespace LcdMod.Client.Markdown.Nodes.Inline.NonStandard
+using LcdMod.Client.Markdown;
+
+namespace LcdMod.Client.Markdown.Inline.NonStandard
 {
     public sealed class LocInline : InlineNode
     {

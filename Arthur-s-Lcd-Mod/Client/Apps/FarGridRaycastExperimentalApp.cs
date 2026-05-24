@@ -4,6 +4,8 @@ using System.Text;
 using Generated;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Gui;
+using LcdMod.Client.Gui.ControlsTemplates;
+using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
@@ -52,7 +54,7 @@ namespace LcdMod.Client.Apps
 
         readonly IAppHost _host;
         readonly List<MySprite> _sprites = new List<MySprite>();
-        readonly List<InteractiveEntry> _interactiveList = new List<InteractiveEntry>();
+        readonly List<ControlBase> _interactiveList = new List<ControlBase>();
         readonly List<IMyEntity> _entities = new List<IMyEntity>();
         readonly List<VisibleTarget> _visibleTargets = new List<VisibleTarget>();
         readonly List<IMyCubeGrid> _tempGroupGrids = new List<IMyCubeGrid>();
@@ -113,7 +115,7 @@ namespace LcdMod.Client.Apps
         }
         float FontScale => _host.Surface.FontSize;
         Color ForegroundColor => _host.ForegroundColor;
-        public List<InteractiveEntry> InteractiveList => _interactiveList;
+        public List<ControlBase> InteractiveList => _interactiveList;
 
         public FarGridRaycastExperimentalApp(ScreenConfigRaycast config, IAppHost host)
             : base(config, host)
@@ -1577,7 +1579,7 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        void RenderDetectedGridHitbox(InteractiveEntry entry, InteractiveRenderContext context, List<MySprite> sprites)
+        void RenderDetectedGridHitbox(ControlBase entry, ControlRenderContext context, List<MySprite> sprites)
         {
             // Intentionally invisible. These entries only export per-grid hit tests to InteractiveEntries.
         }

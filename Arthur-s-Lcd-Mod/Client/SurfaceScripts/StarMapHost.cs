@@ -1,8 +1,10 @@
 using Generated;
 using System.Collections.Generic;
 using LcdMod.Client.Apps;
+using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Gui;
+using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Terminal.Controls.Generic;
 using LcdMod.Client.Utility;
@@ -32,11 +34,11 @@ namespace LcdMod.Client.SurfaceScripts
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
         protected override bool RendersInteractiveEntriesInGetSprites => true;
 
-        readonly List<InteractiveEntry> _interactiveListFallback = new List<InteractiveEntry>();
+        readonly List<ControlBase> _interactiveListFallback = new List<ControlBase>();
         public override IApp App => _app;
         StarMapApp _app;
 
-        public override List<InteractiveEntry> InteractiveList => _app != null ? _app.InteractiveList : _interactiveListFallback;
+        public override List<ControlBase> InteractiveList => _app != null ? _app.InteractiveList : _interactiveListFallback;
 
         public StarMapSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)
         {

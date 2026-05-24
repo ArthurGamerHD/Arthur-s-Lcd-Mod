@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Text;
-using LcdMod.Client.Markdown.Nodes.Inline;
-using LcdMod.Client.Markdown.Nodes.Inline.NonStandard;
+using LcdMod.Client.Markdown.Inline;
+using LcdMod.Client.Markdown.Inline.NonStandard;
 
 namespace LcdMod.Client.Markdown
 {

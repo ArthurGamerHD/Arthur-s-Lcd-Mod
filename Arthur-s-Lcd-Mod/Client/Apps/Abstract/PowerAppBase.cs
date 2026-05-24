@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using LcdMod.Client.Gui.Controls;
+using LcdMod.Client.Gui;
+using LcdMod.Client.Gui.ControlsTemplates;
+using LcdMod.Client.Gui.ControlsTemplates.Panels;
+using LcdMod.Client.Gui.ControlsTemplates.Progress;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
@@ -20,7 +23,7 @@ using IMyCubeGrid = VRage.Game.ModAPI.IMyCubeGrid;
 
 namespace LcdMod.Client.Apps.Abstract
 {
-    public abstract class PowerAppBase : AppBase
+    public abstract class PowerAppBase : AppBase, IAppInteractive
     {
         protected const float LINE = 22f;
         protected const float MINIMUM_COL_WIDTH = 400f;
@@ -42,23 +45,40 @@ namespace LcdMod.Client.Apps.Abstract
             }
         }
 
-        struct PowerEntry
+        sealed class PowerEntry : ControlModelBase
         {
-            public string Name;
-            public float Usage;
-            public double Current;
-            public double Max;
-            public string UsageLine;
-            public int DetectedBlocks;
-
-            public PowerEntry(string name)
+            public PowerEntry(string key, string name)
             {
-                Name = name;
-                Usage = 0f;
-                Current = 0;
-                Max = 0;
+                Key = key;
+                Name = name ?? string.Empty;
                 UsageLine = string.Empty;
-                DetectedBlocks = 0;
+            }
+
+            public string Key { get; private set; }
+            public string Name { get; set; }
+            public float Usage { get; set; }
+            public double Current { get; set; }
+            public double Max { get; set; }
+            public string UsageLine { get; set; }
+            public int DetectedBlocks { get; set; }
+            public string MaxLabel { get; private set; }
+            public string CurrentLabel { get; private set; }
+            public bool DrawAsLines { get; private set; }
+
+            public void UpdateValues(float usage, double current, double max, string usageLine, int detectedBlocks)
+            {
+                Usage = usage;
+                Current = current;
+                Max = max;
+                UsageLine = usageLine ?? string.Empty;
+                DetectedBlocks = detectedBlocks;
+            }
+
+            public void ConfigureRender(string maxLabel, string currentLabel, bool drawAsLines)
+            {
+                MaxLabel = maxLabel ?? string.Empty;
+                CurrentLabel = currentLabel ?? string.Empty;
+                DrawAsLines = drawAsLines;
             }
         }
 
@@ -75,6 +95,10 @@ namespace LcdMod.Client.Apps.Abstract
         PowerEntry[] _entriesOrdered;
         readonly List<PowerEntry> _visibleEntries = new List<PowerEntry>();
         readonly List<IMyPowerProducer> _producers = new List<IMyPowerProducer>();
+        readonly Dictionary<string, RectangleControl> _entryControls = new Dictionary<string, RectangleControl>();
+        readonly List<ControlBase> _interactiveList = new List<ControlBase>();
+        readonly ScrollPanel _scrollPanel;
+        readonly InteractiveSurfaceScript _interactiveHost;
 
         Color _ascentColor = Color.White;
         string _usagePrefix = string.Empty;
@@ -91,11 +115,19 @@ namespace LcdMod.Client.Apps.Abstract
         float FontScale => Host.Surface.FontSize;
         float LayoutScale => Scale * FontScale;
         Color ForegroundColor => Host.ForegroundColor;
+        public List<ControlBase> InteractiveList => _interactiveList;
 
         protected abstract PowerEntryDefinition[] EntryDefinitions { get; }
 
         protected PowerAppBase(ScreenConfigPower config, IAppHost host) : base(config, host)
         {
+            _interactiveHost = host as InteractiveSurfaceScript;
+            if (_interactiveHost == null)
+                throw new ArgumentException("PowerAppBase requires an InteractiveSurfaceScript host.", "host");
+
+            _scrollPanel = new ScrollPanel(CursorType.Default, this);
+            _scrollPanel.ScrollChanged = OnScrollPanelChanged;
+            _scrollPanel.SetVisible(false);
         }
 
         public List<MyTerminalControlComboBoxItem> GetDisplayModes()
@@ -131,6 +163,7 @@ namespace LcdMod.Client.Apps.Abstract
 
         public override List<MySprite> GetSprites()
         {
+            ClearInteractiveTree();
             var sprites = new List<MySprite>();
             _caretY = ContentTop();
 
@@ -175,7 +208,7 @@ namespace LcdMod.Client.Apps.Abstract
             {
                 var definition = definitions[i];
                 _entryOrder[i] = definition.Key;
-                _entriesByKey[definition.Key] = new PowerEntry(ResolveDisplayName(definition));
+                _entriesByKey[definition.Key] = new PowerEntry(definition.Key, ResolveDisplayName(definition));
                 _totalsByKey[definition.Key] = new PowerTotals();
             }
 
@@ -194,7 +227,6 @@ namespace LcdMod.Client.Apps.Abstract
                 var definition = definitions[i];
                 var entry = _entriesByKey[definition.Key];
                 entry.Name = ResolveDisplayName(definition);
-                _entriesByKey[definition.Key] = entry;
             }
 
             _usagePrefix = MyTexts.Get(MyStringId.GetOrCompute("HudInfoNamePowerUsage")) + " ";
@@ -221,12 +253,12 @@ namespace LcdMod.Client.Apps.Abstract
                 var usage = totals.Max > 0 ? (float)Math.Min(Math.Max(totals.Current / totals.Max, 0), 1) : 0f;
 
                 var entry = _entriesByKey[key];
-                entry.Usage = usage;
-                entry.Current = totals.Current;
-                entry.Max = totals.Max;
-                entry.UsageLine = _usagePrefix + FormatingHelper.PercentageToString(usage);
-                entry.DetectedBlocks = totals.Count;
-                _entriesByKey[key] = entry;
+                entry.UpdateValues(
+                    usage,
+                    totals.Current,
+                    totals.Max,
+                    _usagePrefix + FormatingHelper.PercentageToString(usage),
+                    totals.Count);
             }
 
             SyncOrderedEntries();
@@ -294,46 +326,27 @@ namespace LcdMod.Client.Apps.Abstract
         void DrawDefaultView(List<MySprite> sprites, List<PowerEntry> entries, string maxLabel, string currentLabel)
         {
             var rowHeight = GRID_CELL_LINES * LINE * Scale;
-            var viewportAvailableHeight = ViewBox.Height - (_caretY - ViewBox.Y) - FooterHeight;
-            int maxRows = Math.Max(1, (int)Math.Floor(viewportAvailableHeight / rowHeight));
+            ConfigureScrollPanel(_caretY, rowHeight, entries.Count);
 
-            int maxVisible = maxRows;
-            bool shouldScroll = entries.Count > maxVisible;
-            int startRow = 0;
-
-            if (shouldScroll)
-            {
-                int totalRows = entries.Count;
-                int totalSteps = Math.Max(1, totalRows - maxRows);
-                int step = GetScrollStep(SCROLL_DELAY / 6);
-                startRow = step % (totalSteps + 1);
-
-                float viewportHeight = maxRows * rowHeight - (SCROLLER_WIDTH * 2 * Scale);
-                float scrollBarHeight = (float)maxRows / totalRows * viewportHeight;
-                float totalScrollableRows = totalRows - maxRows;
-                float scrollFraction = totalScrollableRows > 0 ? startRow / totalScrollableRows : 0f;
-                float scrollBarTravel = viewportHeight - scrollBarHeight;
-                float scrollBarY = scrollFraction * scrollBarTravel;
-                float scrollBarCenter = scrollBarY + scrollBarHeight / 2f;
-                float initialY = _caretY + SCROLLER_WIDTH * Scale;
-
-                DrawScrollBar(sprites, Scale, initialY, viewportHeight, scrollBarCenter, scrollBarHeight);
-            }
-
-            int start = startRow;
-            int showCount = Math.Min(maxVisible, entries.Count - start);
+            int maxRows = _scrollPanel.MaxVisibleRows;
+            int start = _scrollPanel.GetStartIndex(1);
+            int renderRows = _scrollPanel.VisibleRows + (_scrollPanel.IsScrollable ? 1 : 0);
+            int showCount = Math.Min(renderRows, entries.Count - start);
 
             float margin = 0f;
             float contentStart = ViewBox.X + margin;
             float contentEnd = ViewBox.Width + ViewBox.X - margin;
-            if (shouldScroll)
+            if (_scrollPanel.IsScrollable)
                 contentEnd -= SCROLLER_WIDTH * Scale;
+
+            BeginScrollPanelClip(sprites);
+            var renderContext = CreateRenderContext();
 
             if (AppConfig.DrawLines)
             {
                 for (int row = 0; row <= maxRows; row++)
                 {
-                    var y = _caretY + row * rowHeight;
+                    var y = _scrollPanel.ContentBounds.Y + row * rowHeight;
                     sprites.Add(new MySprite
                     {
                         Type = SpriteType.TEXTURE,
@@ -350,61 +363,50 @@ namespace LcdMod.Client.Apps.Abstract
             {
                 int idx = start + gridIdx;
                 int row = gridIdx;
-                float yStart = _caretY + row * rowHeight;
-                DrawGridPowerCell(sprites, entries[idx], contentStart, contentEnd, yStart, rowHeight, maxLabel,
+                float yStart = _scrollPanel.ContentBounds.Y + row * rowHeight;
+                var control = AddInteractiveChild(
+                    new RectangleF(contentStart, yStart, contentEnd - contentStart, rowHeight),
+                    entries[idx],
+                    maxLabel,
                     currentLabel,
                     true);
+                control?.Render(renderContext, sprites);
             }
+
+            EndScrollPanelClip(sprites);
+            RenderScrollPanelBar(sprites);
         }
 
         void DrawGridLike(List<MySprite> sprites, List<PowerEntry> entries, string maxLabel, string currentLabel,
             bool forceSingleColumn, bool drawLineSprites, bool drawVerticalLines, bool drawCellsAsLines)
         {
             var rowHeight = GRID_CELL_LINES * LINE * Scale;
-            var viewportAvailableHeight = ViewBox.Height - (_caretY - ViewBox.Y) - FooterHeight;
-            int maxRows = Math.Max(1, (int)Math.Floor(viewportAvailableHeight / rowHeight));
             int maxCols = forceSingleColumn ? 1 : Math.Max(1, GetMaxColsFromSurface());
+            int totalRows = (int)Math.Ceiling(entries.Count / (float)maxCols);
+            ConfigureScrollPanel(_caretY, rowHeight, totalRows);
 
-            int maxVisible = maxRows * maxCols;
-            bool shouldScroll = entries.Count > maxVisible;
-            int startRow = 0;
-
-            if (shouldScroll)
-            {
-                int totalRows = (int)Math.Ceiling(entries.Count / (float)maxCols);
-                int totalSteps = Math.Max(1, totalRows - maxRows);
-                int step = GetScrollStep(SCROLL_DELAY / 6);
-                startRow = step % (totalSteps + 1);
-
-                float viewportHeight = maxRows * rowHeight - (SCROLLER_WIDTH * 2 * Scale);
-                float scrollBarHeight = (float)maxRows / totalRows * viewportHeight;
-                float totalScrollableRows = totalRows - maxRows;
-                float scrollFraction = totalScrollableRows > 0 ? startRow / totalScrollableRows : 0f;
-                float scrollBarTravel = viewportHeight - scrollBarHeight;
-                float scrollBarY = scrollFraction * scrollBarTravel;
-                float scrollBarCenter = scrollBarY + scrollBarHeight / 2f;
-                float initialY = _caretY + SCROLLER_WIDTH * Scale;
-
-                DrawScrollBar(sprites, Scale, initialY, viewportHeight, scrollBarCenter, scrollBarHeight);
-            }
-
-            int start = startRow * maxCols;
-            int showCount = Math.Min(maxVisible, entries.Count - start);
+            int maxRows = _scrollPanel.MaxVisibleRows;
+            int start = _scrollPanel.GetStartIndex(maxCols);
+            int renderRows = _scrollPanel.VisibleRows + (_scrollPanel.IsScrollable ? 1 : 0);
+            int showCount = Math.Min(renderRows * maxCols, entries.Count - start);
 
             float margin = 0f;
             float contentStart = ViewBox.X + margin;
             float contentEnd = ViewBox.Width + ViewBox.X - margin;
-            if (shouldScroll)
+            if (_scrollPanel.IsScrollable)
                 contentEnd -= SCROLLER_WIDTH * Scale;
             float columnWidth = (contentEnd - contentStart) / maxCols;
             float gridHeight = maxRows * rowHeight;
+
+            BeginScrollPanelClip(sprites);
+            var renderContext = CreateRenderContext();
 
             if (drawLineSprites)
             {
                 var lineColor = new Color(AppConfig.HeaderColor.R, AppConfig.HeaderColor.G, AppConfig.HeaderColor.B);
                 for (int row = 0; row <= maxRows; row++)
                 {
-                    var y = _caretY + row * rowHeight;
+                    var y = _scrollPanel.ContentBounds.Y + row * rowHeight;
                     sprites.Add(new MySprite
                     {
                         Type = SpriteType.TEXTURE,
@@ -425,7 +427,7 @@ namespace LcdMod.Client.Apps.Abstract
                         {
                             Type = SpriteType.TEXTURE,
                             Data = "SquareSimple",
-                            Position = new Vector2(x, _caretY + gridHeight / 2f),
+                            Position = new Vector2(x, _scrollPanel.ContentViewportBounds.Y + gridHeight / 2f),
                             Size = new Vector2(2f, gridHeight),
                             Color = lineColor,
                             Alignment = TextAlignment.CENTER
@@ -441,10 +443,126 @@ namespace LcdMod.Client.Apps.Abstract
                 int row = gridIdx / maxCols;
                 float xStart = contentStart + col * columnWidth;
                 float xEnd = (col == maxCols - 1) ? contentEnd : xStart + columnWidth;
-                float yStart = _caretY + row * rowHeight;
-                DrawGridPowerCell(sprites, entries[idx], xStart, xEnd, yStart, rowHeight, maxLabel, currentLabel,
+                float yStart = _scrollPanel.ContentBounds.Y + row * rowHeight;
+                var control = AddInteractiveChild(
+                    new RectangleF(xStart, yStart, xEnd - xStart, rowHeight),
+                    entries[idx],
+                    maxLabel,
+                    currentLabel,
                     drawCellsAsLines);
+                control?.Render(renderContext, sprites);
             }
+
+            EndScrollPanelClip(sprites);
+            RenderScrollPanelBar(sprites);
+        }
+
+
+        void ClearInteractiveTree()
+        {
+            _scrollPanel.ClearChildren();
+            _scrollPanel.SetVisible(false);
+            _interactiveList.Clear();
+
+            foreach (var kv in _entryControls)
+                kv.Value?.SetVisible(false);
+        }
+
+        void ConfigureScrollPanel(float contentTop, float rowHeight, int totalRows)
+        {
+            _scrollPanel.Configure(ViewBox, contentTop, FooterHeight, rowHeight, totalRows, SCROLLER_WIDTH * Scale, SCROLL_DELAY / 6f);
+            _scrollPanel.SetVisible(true);
+            if (!_interactiveList.Contains(_scrollPanel))
+                _interactiveList.Add(_scrollPanel);
+        }
+
+        void RenderScrollPanelBar(List<MySprite> sprites)
+        {
+            _scrollPanel.RenderScrollBar(
+                sprites,
+                new Color(Surface.ScriptForegroundColor.R, Surface.ScriptForegroundColor.G, Surface.ScriptForegroundColor.B, 127),
+                new Color(AppConfig.HeaderColor.R, AppConfig.HeaderColor.G, AppConfig.HeaderColor.B, 250));
+        }
+
+
+        void BeginScrollPanelClip(List<MySprite> sprites)
+        {
+            if (sprites == null)
+                return;
+
+            var bounds = _scrollPanel.ContentViewportBounds;
+            if (bounds.Width <= 0f || bounds.Height <= 0f)
+                return;
+
+            int x = (int)Math.Floor(bounds.X);
+            int y = (int)Math.Floor(bounds.Y);
+            int right = (int)Math.Ceiling(bounds.Right);
+            int bottom = (int)Math.Ceiling(bounds.Bottom);
+            sprites.Add(MySprite.CreateClipRect(new Rectangle(x, y, Math.Max(0, right - x), Math.Max(0, bottom - y))));
+        }
+
+        static void EndScrollPanelClip(List<MySprite> sprites)
+        {
+            if (sprites != null)
+                sprites.Add(MySprite.CreateClearClipRect());
+        }
+
+        ControlRenderContext CreateRenderContext()
+        {
+            return new ControlRenderContext(
+                Surface,
+                Scale,
+                FontScale,
+                Surface.ScriptForegroundColor,
+                AppConfig.HeaderColor,
+                new Vector2(float.NaN, float.NaN));
+        }
+
+        RectangleControl AddInteractiveChild(
+            RectangleF bounds,
+            PowerEntry dataContext,
+            string maxLabel,
+            string currentLabel,
+            bool drawAsLines)
+        {
+            if (dataContext == null)
+                return null;
+
+            dataContext.ConfigureRender(maxLabel, currentLabel, drawAsLines);
+
+            RectangleControl control;
+            if (!_entryControls.TryGetValue(dataContext.Key, out control) || control == null)
+            {
+                control = new RectangleControl(bounds, CursorType.Default, dataContext)
+                {
+                    CustomRender = RenderPowerEntryControl
+                };
+                _entryControls[dataContext.Key] = control;
+            }
+            else
+            {
+                control.SetRect(bounds);
+                control.SetDataContext(dataContext);
+                control.CustomRender = RenderPowerEntryControl;
+            }
+
+            control.SetVisible(true);
+            _scrollPanel.AddChild(control);
+            return control;
+        }
+
+        public bool HasVisibleItems()
+        {
+            return _visibleEntries.Count > 0;
+        }
+
+        public void OnMouseScroll(int delta, ref bool handled)
+        {
+        }
+
+        void OnScrollPanelChanged(ScrollPanel panel)
+        {
+            _interactiveHost.RenderSprites();
         }
 
         int GetMaxColsFromSurface()
@@ -473,8 +591,8 @@ namespace LcdMod.Client.Apps.Abstract
                     (xEnd - xStart) - cellPadding,
                     rowHeight - cellPadding);
                 var dropShadow = new RectangleF(cellRect.Position + 2, cellRect.Size);
-                RectanglePanel.CreateSpritesFromRect(dropShadow, sprites, hsv.HSVtoColor(), .2f);
-                RectanglePanel.CreateSpritesFromRect(cellRect, sprites, backgroundColor, .2f);
+                Border.CreateSpritesFromRect(dropShadow, sprites, hsv.HSVtoColor(), .2f);
+                Border.CreateSpritesFromRect(cellRect, sprites, backgroundColor, .2f);
             }
 
             var iconRect = slots.Item1;
@@ -521,6 +639,25 @@ namespace LcdMod.Client.Apps.Abstract
                 TextAlignment.RIGHT,
                 .9f * Scale * FontScale
             ));
+        }
+
+        void RenderPowerEntryControl(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        {
+            var entry = control?.DataContext as PowerEntry;
+            if (entry == null)
+                return;
+
+            var bounds = control.Bounds;
+            DrawGridPowerCell(
+                sprites,
+                entry,
+                bounds.X,
+                bounds.Right,
+                bounds.Y,
+                bounds.Height,
+                entry.MaxLabel,
+                entry.CurrentLabel,
+                entry.DrawAsLines);
         }
 
         void DrawCellPie(List<MySprite> sprites, RectangleF iconRect, float usage)

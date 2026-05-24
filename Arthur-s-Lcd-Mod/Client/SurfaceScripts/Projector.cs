@@ -1,6 +1,9 @@
 using System.Collections.Generic;
 using Generated;
 using LcdMod.Client.Apps;
+using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.Gui;
+using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls.Groups;
 using LcdMod.Common.Config.Models.Apps;
@@ -17,7 +20,7 @@ using SwitchToggleLines = LcdMod.Client.Terminal.Controls.Generic.SwitchToggleLi
 namespace LcdMod.Client.SurfaceScripts
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public partial class ProjectorLcdSurfaceScript : SurfaceScriptBase,
+    public partial class ProjectorLcdSurfaceScript : InteractiveSurfaceScript,
         IUsesTerminalControl<SwitchToggleLines>,
         IUsesTerminalControl<ListboxProjectorSelection>,
         IUsesTerminalControl<SeparatorFilter>,
@@ -28,11 +31,15 @@ namespace LcdMod.Client.SurfaceScripts
         public const string ID = "ProjectorCharts";
         public const string TITLE = ProjectorApp.TITLE;
 
+        readonly List<ControlBase> _interactiveListFallback = new List<ControlBase>();
         ProjectorApp _app;
 
         public override IApp App => _app;
+        public override CursorType CursorType { get; protected set; } = CursorType.Default;
+        public override List<ControlBase> InteractiveList => _app != null ? _app.InteractiveList : _interactiveListFallback;
         public override string Title => _app != null ? _app.Title : base.Title;
         protected override string DefaultTitle => TITLE;
+        protected override bool RendersInteractiveEntriesInGetSprites => true;
 
         public ProjectorLcdSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
             : base(surface, block, size)
@@ -51,6 +58,8 @@ namespace LcdMod.Client.SurfaceScripts
             var appConfig = AppConfig as ScreenConfigProjector;
             if (appConfig == null)
                 return;
+
+            base.SafeRun();
 
             if (_app == null)
             {

@@ -10,7 +10,9 @@ using LcdMod.Client.Extensions;
 using LcdMod.Client.Games.Chess.Enum;
 using LcdMod.Client.Games.Chess.TinyChessChallenge.Bots;
 using LcdMod.Client.Gui;
-using LcdMod.Client.Gui.Controls.Interactive;
+using LcdMod.Client.Gui.ControlsTemplates;
+using LcdMod.Client.Gui.ControlsTemplates.Interactive;
+using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Utility;
 using LcdMod.Common.Helpers;
@@ -50,7 +52,7 @@ namespace LcdMod.Client.Games.Chess
 
         readonly Dictionary<byte, string> _textureCache = new Dictionary<byte, string>();
 
-        public List<InteractiveEntry> Interactive { get; } = new List<InteractiveEntry>();
+        public List<ControlBase> Interactive { get; } = new List<ControlBase>();
         public GameSurfaceScript.GameEnum Id => GameSurfaceScript.GameEnum.Chess;
 
         static string UnpackTexture(string packed)
@@ -302,8 +304,8 @@ namespace LcdMod.Client.Games.Chess
         readonly List<ChessMoveRecord> _history = new List<ChessMoveRecord>();
 
         RectangleF[] _gridCells;
-        InteractiveRectangleEntry[] _boardCellEntries;
-        readonly List<InteractiveRectangleEntry> _overlayControlEntries = new List<InteractiveRectangleEntry>();
+        RectangleControl[] _boardCellEntries;
+        readonly List<RectangleControl> _overlayControlEntries = new List<RectangleControl>();
 
         IMyTextSurface _panel;
         InteractiveSurfaceScript _script;
@@ -802,8 +804,8 @@ namespace LcdMod.Client.Games.Chess
             for (int index = _overlayOverlay.Boxes.Count; index < _overlayControlEntries.Count; index++)
                 _overlayControlEntries[index].SetVisible(false);
 
-            if(_overlayOverlay.InteractiveRectangleEntry != null)
-                Interactive.Add(_overlayOverlay.InteractiveRectangleEntry);
+            if(_overlayOverlay.RectangleControl != null)
+                Interactive.Add(_overlayOverlay.RectangleControl);
         }
 
         void EnsureBoardCellEntries()
@@ -814,12 +816,12 @@ namespace LcdMod.Client.Games.Chess
             if (_boardCellEntries != null && _boardCellEntries.Length == _gridCells.Length)
                 return;
 
-            _boardCellEntries = new InteractiveRectangleEntry[_gridCells.Length];
+            _boardCellEntries = new RectangleControl[_gridCells.Length];
             for (int index = 0; index < _boardCellEntries.Length; index++)
             {
-                _boardCellEntries[index] = new InteractiveRectangleEntry(_gridCells[index], CursorType.Default, index)
+                _boardCellEntries[index] = new RectangleControl(_gridCells[index], CursorType.Default, index)
                 {
-                    CustomRender = delegate(InteractiveEntry entry, InteractiveRenderContext context, List<MySprite> sprites)
+                    CustomRender = delegate(ControlBase entry, ControlRenderContext context, List<MySprite> sprites)
                     {
                         RenderBoardCell(sprites, (int)entry.DataContext);
                     }
@@ -827,16 +829,16 @@ namespace LcdMod.Client.Games.Chess
             }
         }
 
-        InteractiveRectangleEntry GetOverlayControlEntry(int index)
+        RectangleControl GetOverlayControlEntry(int index)
         {
             while (_overlayControlEntries.Count <= index)
             {
-                _overlayControlEntries.Add(new InteractiveRectangleEntry(
+                _overlayControlEntries.Add(new RectangleControl(
                     default(RectangleF),
                     CursorType.Hand,
                     _overlayControlEntries.Count)
                 {
-                    CustomRender = delegate(InteractiveEntry entry, InteractiveRenderContext context, List<MySprite> sprites)
+                    CustomRender = delegate(ControlBase entry, ControlRenderContext context, List<MySprite> sprites)
                     {
                         _overlayOverlay?.RenderBox(sprites, (int)entry.DataContext);
                     }

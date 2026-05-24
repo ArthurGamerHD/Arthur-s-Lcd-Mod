@@ -1,6 +1,7 @@
 using System.Collections.Generic;
+using LcdMod.Client.Markdown;
 
-namespace LcdMod.Client.Markdown.Nodes
+namespace LcdMod.Client.Markdown
 {
     public sealed class ListBlock : BlockNode
     {

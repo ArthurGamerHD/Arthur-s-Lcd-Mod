@@ -56,7 +56,7 @@ public sealed class MarkdownParserSnapshotTests
     {
         try
         {
-            MarkdownDocument document = new global::MarkdownParser().Parse(markdown);
+            MarkdownDocument document = new MarkdownParser().Parse(markdown);
             XDocument xml = MarkdownXmlSnapshotSerializer.Serialize(document);
 
             WriteSnapshot(name, xml);

@@ -1,0 +1,482 @@
+using System;
+using System.Collections.Generic;
+using LcdMod.Client.Extensions;
+using LcdMod.Client.Gui.ControlsTemplates.Panels;
+using LcdMod.Client.Gui.Tooltip;
+using LcdMod.Client.Helpers;
+using Sandbox.Game.Entities;
+using VRage.Game.GUI.TextPanel;
+using VRageMath;
+
+namespace LcdMod.Client.Gui.ControlsTemplates
+{
+    public delegate bool ControlScrollHandler(object dataContext, object sender, int delta);
+    public delegate bool ControlHoverHandler(object dataContext, object sender);
+    delegate bool ControlHitFilter(ControlBase control);
+
+    public abstract class ControlBase
+    {
+        bool _isDirty;
+
+        public bool Visible { get; private set; } = true;
+
+        public void SetVisible(bool visible)
+        {
+            Visible = visible;
+        }
+
+        readonly List<ControlBase> _children = new List<ControlBase>();
+
+        public IList<ControlBase> Children => _children;
+
+        public bool HasChildren => _children.Count > 0;
+
+        public bool IsDirty
+        {
+            get
+            {
+                if (_isDirty)
+                    return true;
+
+                for (int i = 0; i < _children.Count; i++)
+                {
+                    if (_children[i] != null && _children[i].IsDirty)
+                        return true;
+                }
+
+                return false;
+            }
+        }
+
+        public void MarkDirty()
+        {
+            _isDirty = true;
+        }
+
+        public void ClearChildren()
+        {
+            _children.Clear();
+        }
+
+        public void AddChild(ControlBase child)
+        {
+            if (child != null && !_children.Contains(child))
+                _children.Add(child);
+        }
+
+        public void AddChildren(IEnumerable<ControlBase> children)
+        {
+            if (children == null)
+                return;
+
+            foreach (var child in children)
+                AddChild(child);
+        }
+
+        public virtual bool CanClick
+        {
+            get { return CanPrimaryClick || CanSecondaryClick; }
+        }
+
+        public virtual bool CanPrimaryClick
+        {
+            get
+            {
+                var model = Model;
+                return Visible && (OnClick != null || model != null && model.CanClick);
+            }
+        }
+
+        public virtual bool CanSecondaryClick
+        {
+            get
+            {
+                var model = Model;
+                return Visible && (OnSecondaryClick != null || model != null && model.CanSecondaryClick);
+            }
+        }
+
+        public virtual bool CanScroll
+        {
+            get
+            {
+                var model = Model;
+                return Visible && (OnScroll != null || model != null && model.CanScroll);
+            }
+        }
+
+        public virtual bool CanHover
+        {
+            get
+            {
+                var model = Model;
+                return Visible && (OnHover != null || model != null && model.CanHover);
+            }
+        }
+
+        protected ControlBase(CursorType? cursor = null, object dataContext = null, Action<object, object> onClick = null,
+            InteractiveTooltip tooltip = null)
+        {
+            DataContext = dataContext;
+            OnClick = onClick;
+            Tooltip = tooltip ?? Model?.Tooltip;
+            Style = Model?.Style;
+            Cursor = cursor ?? GetDefaultCursor(onClick, Model);
+        }
+
+        public CursorType Cursor { get; private set; }
+
+        public ControlBase SetCursor(CursorType cursor)
+        {
+            Cursor = cursor;
+            return this;
+        }
+
+        public object DataContext { get; private set; }
+        public ControlModelBase Model => DataContext as ControlModelBase;
+
+        public ControlBase SetDataContext(object dataContext)
+        {
+            DataContext = dataContext;
+            ApplyModelDefaults();
+            return this;
+        }
+
+        public Action<object, object> OnClick { get; private set; }
+        public Action<object, object> OnSecondaryClick { get; set; }
+        public ControlScrollHandler OnScroll { get; set; }
+        public ControlHoverHandler OnHover { get; set; }
+
+        public ControlBase SetOnClick(Action<object, object> onClick)
+        {
+            OnClick = onClick;
+            return this;
+        }
+
+        public ControlBase SetOnScroll(ControlScrollHandler onScroll)
+        {
+            OnScroll = onScroll;
+            return this;
+        }
+
+        public ControlBase SetOnHover(ControlHoverHandler onHover)
+        {
+            OnHover = onHover;
+            return this;
+        }
+
+        public InteractiveTooltip Tooltip { get; private set; }
+        public ControlStyle Style { get; private set; }
+        bool _styleExplicitlySet;
+
+        public ControlBase SetTooltip(InteractiveTooltip tooltip)
+        {
+            Tooltip = tooltip;
+            return this;
+        }
+
+        public ControlBase SetStyle(ControlStyle style)
+        {
+            Style = style;
+            _styleExplicitlySet = true;
+            return this;
+        }
+
+        public InteractiveRenderHandler CustomRender { get; set; }
+
+        public abstract RectangleF Bounds { get; }
+        public MySoundPair ClickSound { get; set; } = AudioHelper.HudClick;
+        public MySoundPair ClickFailSound { get; set; } = AudioHelper.HudUnable;
+
+        public void Render(ControlRenderContext context, List<MySprite> sprites)
+        {
+            if (context == null || sprites == null)
+                return;
+
+            try
+            {
+                var renderContext = ResolveRenderContext(context);
+                var customRender = CustomRender ?? Model?.CustomRender;
+                if (customRender != null)
+                {
+                    customRender(this, renderContext, sprites);
+                    return;
+                }
+
+                RenderDefault(renderContext, sprites);
+            }
+            finally
+            {
+                _isDirty = IsDirtyAfterRender();
+            }
+        }
+
+        protected virtual bool IsDirtyAfterRender()
+        {
+            return false;
+        }
+
+        protected virtual void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+        {
+            var rect = Bounds;
+            var hovered = rect.Contains(context.CursorPosition);
+            var fillColor = context.Style.GetPanelColor(hovered);
+
+            Border.CreateSpritesFromRect(rect, sprites, fillColor, context.Style.BorderPercentage);
+            RenderDefaultText(rect, context, sprites);
+        }
+
+        protected void RenderDefaultText(RectangleF rect, ControlRenderContext context, List<MySprite> sprites)
+        {
+            string text = DataContext != null ? DataContext.ToString() : string.Empty;
+            if (string.IsNullOrEmpty(text))
+                return;
+
+            float textScale = 0.58f * context.Scale * context.FontScale;
+            var textSize = FormatingHelper.GetSizeInPixel(text, "White", textScale, context.Surface);
+
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXT,
+                Data = text,
+                Position = new Vector2(rect.Center.X, rect.Center.Y - textSize.Y * 0.5f),
+                Color = context.Style.GetTextColor(rect.Contains(context.CursorPosition)),
+                FontId = "White",
+                Alignment = TextAlignment.CENTER,
+                RotationOrScale = textScale
+            });
+        }
+
+        public bool Hit(Vector2 point)
+        {
+            return Visible && HitCore(point);
+        }
+
+        protected abstract bool HitCore(Vector2 point);
+
+        public bool TryResolveHit(Vector2 point, out ControlBase hit)
+        {
+            hit = ResolveHit(point, AcceptAnyHit);
+            return hit != null;
+        }
+
+        public bool TryResolveClickable(Vector2 point, out ControlBase clickable)
+        {
+            clickable = ResolveHit(point, AcceptClickableHit);
+            return clickable != null;
+        }
+
+        public bool TryResolvePrimaryClickable(Vector2 point, out ControlBase clickable)
+        {
+            clickable = ResolveHit(point, AcceptPrimaryClickableHit);
+            return clickable != null;
+        }
+
+        public bool TryResolveSecondaryClickable(Vector2 point, out ControlBase clickable)
+        {
+            clickable = ResolveHit(point, AcceptSecondaryClickableHit);
+            return clickable != null;
+        }
+
+        public bool TryResolveScrollable(Vector2 point, out ControlBase scrollable)
+        {
+            scrollable = ResolveHit(point, AcceptScrollableHit);
+            return scrollable != null;
+        }
+
+        public bool TryResolveHoverable(Vector2 point, out ControlBase hoverable)
+        {
+            hoverable = ResolveHit(point, AcceptHoverableHit);
+            return hoverable != null;
+        }
+
+        public bool TryResolveTooltipTarget(Vector2 point, out ControlBase tooltipTarget)
+        {
+            tooltipTarget = ResolveHit(point, AcceptTooltipHit);
+            return tooltipTarget != null;
+        }
+
+        public CursorType GetCursor(Vector2 point)
+        {
+            ControlBase hit;
+            return TryResolveHit(point, out hit) ? hit.Cursor : CursorType.Default;
+        }
+
+        public bool Click(Vector2 point, object sender)
+        {
+            ControlBase clickable;
+            return TryResolvePrimaryClickable(point, out clickable) && clickable.Click(sender);
+        }
+
+        public bool SecondaryClick(Vector2 point, object sender)
+        {
+            ControlBase clickable;
+            return TryResolveSecondaryClickable(point, out clickable) && clickable.SecondaryClick(sender);
+        }
+
+        public bool Scroll(Vector2 point, object sender, int delta)
+        {
+            ControlBase scrollable;
+            return TryResolveScrollable(point, out scrollable) && scrollable.Scroll(sender, delta);
+        }
+
+        public bool Hover(Vector2 point, object sender)
+        {
+            ControlBase hoverable;
+            return TryResolveHoverable(point, out hoverable) && hoverable.Hover(sender);
+        }
+
+        public virtual bool Click(object sender)=> HandleClick(sender, OnClick, false);
+        
+        public virtual bool SecondaryClick(object sender) => HandleClick(sender, OnSecondaryClick, true);
+
+        internal bool HandleClick(object sender, Action<object, object> handler, bool secondary)
+        {
+            if (!Visible)
+                return false;
+
+            if (handler != null)
+            {
+                handler(DataContext ?? this, sender);
+                return true;
+            }
+
+            var model = Model;
+            if (model == null)
+                return false;
+
+            return secondary ? model.SecondaryClick(sender) : model.Click(sender);
+        }
+
+        public virtual bool Scroll(object sender, int delta)
+        {
+            if (!Visible)
+                return false;
+
+            if (OnScroll != null)
+                return OnScroll(DataContext ?? this, sender, delta);
+
+            var model = Model;
+            return model != null && model.Scroll(sender, delta);
+        }
+
+        public virtual bool Hover(object sender)
+        {
+            if (!Visible)
+                return false;
+
+            if (OnHover != null)
+                return OnHover(DataContext ?? this, sender);
+
+            var model = Model;
+            return model != null && model.Hover(sender);
+        }
+
+        ControlBase ResolveHit(Vector2 point, ControlHitFilter accept)
+        {
+            if (!Visible)
+                return null;
+
+            bool selfHit = HitCore(point);
+
+            if (CanResolveChildren(point, selfHit) && _children.Count > 0)
+            {
+                for (int i = _children.Count - 1; i >= 0; i--)
+                {
+                    var childHit = _children[i].ResolveHit(point, accept);
+                    if (childHit != null)
+                        return childHit;
+                }
+            }
+
+            return selfHit && accept(this) ? this : null;
+        }
+
+        protected virtual bool CanResolveChildren(Vector2 point, bool selfHit)
+        {
+            return selfHit;
+        }
+
+        static bool AcceptAnyHit(ControlBase control)
+        {
+            return true;
+        }
+
+        static bool AcceptClickableHit(ControlBase control)
+        {
+            return control.CanClick;
+        }
+
+        static bool AcceptPrimaryClickableHit(ControlBase control)
+        {
+            return control.CanPrimaryClick;
+        }
+
+        static bool AcceptSecondaryClickableHit(ControlBase control)
+        {
+            return control.CanSecondaryClick;
+        }
+
+        static bool AcceptScrollableHit(ControlBase control)
+        {
+            return control.CanScroll;
+        }
+
+        static bool AcceptHoverableHit(ControlBase control)
+        {
+            return control.CanHover;
+        }
+
+        static bool AcceptTooltipHit(ControlBase control)
+        {
+            return control.Tooltip != null;
+        }
+
+        static CursorType GetDefaultCursor(Action<object, object> onClick, ControlModelBase model)
+        {
+            if (onClick != null)
+                return CursorType.Hand;
+
+            if (model != null)
+            {
+                if (model.Cursor != CursorType.Default)
+                    return model.Cursor;
+
+                if (model.CanClick || model.CanSecondaryClick)
+                    return CursorType.Hand;
+            }
+
+            return CursorType.Default;
+        }
+
+        void ApplyModelDefaults()
+        {
+            var model = Model;
+            if (model == null)
+                return;
+
+            if (Tooltip == null)
+                Tooltip = model.Tooltip;
+
+            if (!_styleExplicitlySet)
+                Style = model.Style;
+
+            if (Cursor == CursorType.Default)
+                Cursor = GetDefaultCursor(OnClick, model);
+        }
+
+        ControlRenderContext ResolveRenderContext(ControlRenderContext context)
+        {
+            var style = Style ?? Model?.Style;
+            if (style == null || ReferenceEquals(style, context.Style))
+                return context;
+
+            return new ControlRenderContext(
+                context.Surface,
+                context.Scale,
+                context.FontScale,
+                style,
+                context.CursorPosition);
+        }
+    }
+}
