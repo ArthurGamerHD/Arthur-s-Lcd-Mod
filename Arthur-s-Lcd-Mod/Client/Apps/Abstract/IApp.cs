@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using LcdMod.Client.Gui.ControlsTemplates;
-using Sandbox.ModAPI.Ingame;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
+using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 
 namespace LcdMod.Client.Apps.Abstract
 {

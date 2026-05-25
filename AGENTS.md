@@ -42,3 +42,13 @@ Rules:
 2. Recreate or fully refresh view models only when parent layout changes, such as screen size, parent control bounds, localization/layout cache invalidation, or a different control composition.
 3. Put layout-sensitive cached text, measured values, icon choices, and style values behind explicit layout invalidation instead of rebuilding them in normal per-frame updates.
 4. Lists and grids should reuse existing item view models keyed by stable model identity whenever possible.
+
+# IMyTextSurface
+
+Space engineers uses Sandbox.ModAPI.Ingame.IMyTextSurface for TextSurfaceScript:
+
+1. When creating any surface-related class or utility using IMyTextSurface, explicit import `using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;`
+2. Do not let the default resolver find a match for `IMyTextSurface`
+3. Do NOT import `Sandbox.ModAPI.Ingame` unless explicit necessary
+4. Always prefer the `Sandbox.ModAPI` over `Sandbox.ModAPI.Ingame` when possible
+
