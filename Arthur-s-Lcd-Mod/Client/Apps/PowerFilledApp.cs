@@ -9,7 +9,6 @@ using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Gui.UserControls.Power;
 using LcdMod.Client.Helpers;
-using LcdMod.Client.Utility;
 using VRage;
 using VRage.Game.GUI.TextPanel;
 using ScreenConfigPower = LcdMod.Common.Config.Models.Apps.ScreenConfigPower;
@@ -19,11 +18,11 @@ namespace LcdMod.Client.Apps
 {
     internal sealed class PowerFilledApp : AppBase, IAppInteractive
     {
-        const float BatterySlotW = 100f;
-        const float BatterySlotH = 100f;
-        const float ScrollerW = 8f;
-        const int ScrollTick = 12;
-        const float IconTextureSize = 192f;
+        const float BATTERY_SLOT_W = 100f;
+        const float BATTERY_SLOT_H = 100f;
+        const float SCROLLER_W = 8f;
+        const int SCROLL_TICK = 12;
+        const float ICON_TEXTURE_SIZE = 192f;
 
         readonly IAppHost _surfaceHost;
         readonly InteractiveSurfaceScript _interactiveHost;
@@ -141,8 +140,8 @@ namespace LcdMod.Client.Apps
 
         void DrawBatteries(IAppHost owner, List<MySprite> sprites)
         {
-            float minW = BatterySlotW * owner.Scale;
-            float minH = BatterySlotH * owner.Scale;
+            float minW = BATTERY_SLOT_W * owner.Scale;
+            float minH = BATTERY_SLOT_H * owner.Scale;
             float contentTop = GetContentTop(owner) + 6f * owner.Scale;
             float footerHeight = GetFooterHeight(owner);
             float availW = owner.ViewBox.Width;
@@ -159,7 +158,7 @@ namespace LcdMod.Client.Apps
 
             if (_scrollPanel.IsScrollable)
             {
-                xRight -= ScrollerW * owner.Scale;
+                xRight -= SCROLLER_W * owner.Scale;
                 availW = xRight - xLeft;
                 cols = Math.Min(count, Math.Max(1, (int)Math.Floor(availW / minW)));
                 totalRows = (int)Math.Ceiling(count / (float)cols);
@@ -192,7 +191,7 @@ namespace LcdMod.Client.Apps
 
         void ConfigurePowerScrollPanel(IAppHost owner, float contentTop, float footerHeight, float rowHeight, int totalRows)
         {
-            _scrollPanel.Configure(owner.ViewBox, contentTop, footerHeight, rowHeight, totalRows, ScrollerW * owner.Scale, ScrollTick / 6f);
+            _scrollPanel.Configure(owner.ViewBox, contentTop, footerHeight, rowHeight, totalRows, SCROLLER_W * owner.Scale, SCROLL_TICK / 6f);
             _scrollPanel.SetVisible(true);
             if (!_interactiveList.Contains(_scrollPanel))
                 _interactiveList.Add(_scrollPanel);
@@ -248,12 +247,10 @@ namespace LcdMod.Client.Apps
 
         ControlRenderContext CreateRenderContext(IAppHost owner)
         {
-            return new ControlRenderContext(
+            return CreateControlRenderContext(
                 owner.Surface,
                 owner.Scale,
                 owner.Surface.FontSize,
-                owner.Surface.ScriptForegroundColor,
-                _config.HeaderColor,
                 new Vector2(float.NaN, float.NaN));
         }
 
@@ -466,7 +463,7 @@ namespace LcdMod.Client.Apps
             bool drawCenterIcon = true, float centerIconRotation = 0f, float centerIconScale = 1f)
         {
             ratio = MathHelper.Clamp(ratio, 0f, 1f);
-            float texScale = iconSize / IconTextureSize;
+            float texScale = iconSize / ICON_TEXTURE_SIZE;
             float spriteLeft = center.X - iconSize / 2f;
             float spriteTop = center.Y - iconSize / 2f;
             float innerLeft = spriteLeft + (texture.Left + texture.Margin) * texScale;
@@ -510,17 +507,6 @@ namespace LcdMod.Client.Apps
             });
         }
 
-        static int GetScrollStep(float secondsPerStep)
-        {
-            var sess = Sandbox.ModAPI.MyAPIGateway.Session;
-            if (sess == null)
-                return 0;
-            if (secondsPerStep <= 0f)
-                secondsPerStep = 1f / 60f;
-            int ticksPerStep = Math.Max(1, (int)Math.Round(secondsPerStep * 60f));
-            return (int)(sess.GameplayFrameCounter / ticksPerStep);
-        }
-
         float GetContentTop(IAppHost owner)
         {
             return owner.TitleVisible ? owner.ViewBox.Y + (40f * owner.Scale * owner.Surface.FontSize) : owner.ViewBox.Y;
@@ -535,24 +521,6 @@ namespace LcdMod.Client.Apps
             if (rows == 0)
                 return 0f;
             return (40f * owner.Scale * owner.Surface.FontSize) * rows;
-        }
-
-        void DrawScrollBar(IAppHost owner, List<MySprite> sprites, float scale, float initialY, float viewportH, float barCenter, float barH)
-        {
-            float cx = owner.ViewBox.X + owner.ViewBox.Width - (ScrollerW / 2f) * scale;
-            int bw = (int)(ScrollerW * scale);
-            var trackCtr = new Vector2(cx, (float)Math.Round(initialY + viewportH / 2f, MidpointRounding.ToEven));
-            DrawCapsule(sprites, trackCtr, bw, viewportH, new Color(owner.Surface.ScriptForegroundColor.R, owner.Surface.ScriptForegroundColor.G, owner.Surface.ScriptForegroundColor.B, 127));
-            var thumbCtr = new Vector2(cx, (float)Math.Round(initialY + barCenter, MidpointRounding.ToEven));
-            DrawCapsule(sprites, thumbCtr, bw, barH, new Color(_config.HeaderColor.R, _config.HeaderColor.G, _config.HeaderColor.B, 250));
-        }
-
-        static void DrawCapsule(List<MySprite> sprites, Vector2 center, int width, float height, Color color)
-        {
-            sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = center, Size = new Vector2(width, height + 0.5f), Color = color, Alignment = TextAlignment.CENTER });
-            var caps = new Vector2(width);
-            sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SemiCircle", Position = new Vector2(center.X, center.Y - height / 2f), Size = caps, RotationOrScale = 0f, Color = color, Alignment = TextAlignment.CENTER });
-            sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SemiCircle", Position = new Vector2(center.X, center.Y + height / 2f), Size = caps, RotationOrScale = (float)Math.PI, Color = color, Alignment = TextAlignment.CENTER });
         }
     }
 }

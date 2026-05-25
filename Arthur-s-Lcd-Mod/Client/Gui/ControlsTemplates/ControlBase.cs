@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Helpers;
@@ -120,7 +119,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             DataContext = dataContext;
             OnClick = onClick;
             Tooltip = tooltip ?? Model?.Tooltip;
-            Style = Model?.Style;
             Cursor = cursor ?? GetDefaultCursor(onClick, Model);
         }
 
@@ -167,7 +165,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 
         public InteractiveTooltip Tooltip { get; private set; }
         public ControlStyle Style { get; private set; }
-        bool _styleExplicitlySet;
 
         public ControlBase SetTooltip(InteractiveTooltip tooltip)
         {
@@ -178,7 +175,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         public ControlBase SetStyle(ControlStyle style)
         {
             Style = style;
-            _styleExplicitlySet = true;
             return this;
         }
 
@@ -218,12 +214,56 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 
         protected virtual void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
         {
-            var rect = Bounds;
+            var rect = GetViewBox();
             var hovered = rect.Contains(context.CursorPosition);
             var fillColor = context.Style.GetPanelColor(hovered);
 
             Border.CreateSpritesFromRect(rect, sprites, fillColor, context.Style.BorderPercentage);
             RenderDefaultText(rect, context, sprites);
+        }
+
+
+        public RectangleF GetViewBox()
+        {
+            return ApplyPadding(Bounds, GetLocalPadding());
+        }
+
+        protected Vector4 GetLocalPadding()
+        {
+            var style = GetLocalStyle();
+            return style == null ? Vector4.Zero : style.Padding;
+        }
+
+        ControlStyle GetLocalStyle()
+        {
+            return Style;
+        }
+
+        static RectangleF ApplyPadding(RectangleF bounds, Vector4 padding)
+        {
+            if (bounds.Width <= 0f || bounds.Height <= 0f ||
+                padding.X == 0f && padding.Y == 0f && padding.Z == 0f && padding.W == 0f)
+                return bounds;
+
+            float left = ClampPadding(padding.X);
+            float top = ClampPadding(padding.Y);
+            float right = ClampPadding(padding.Z);
+            float bottom = ClampPadding(padding.W);
+
+            var x = bounds.X + bounds.Width * left;
+            var y = bounds.Y + bounds.Height * top;
+            var width = Math.Max(0f, bounds.Width * (1f - left - right));
+            var height = Math.Max(0f, bounds.Height * (1f - top - bottom));
+            return new RectangleF(x, y, width, height);
+        }
+
+        static float ClampPadding(float value)
+        {
+            if (value < 0f)
+                return 0f;
+            if (value > 1f)
+                return 1f;
+            return value;
         }
 
         protected void RenderDefaultText(RectangleF rect, ControlRenderContext context, List<MySprite> sprites)
@@ -458,24 +498,24 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             if (Tooltip == null)
                 Tooltip = model.Tooltip;
 
-            if (!_styleExplicitlySet)
-                Style = model.Style;
-
             if (Cursor == CursorType.Default)
                 Cursor = GetDefaultCursor(OnClick, model);
         }
 
         ControlRenderContext ResolveRenderContext(ControlRenderContext context)
         {
-            var style = Style ?? Model?.Style;
+            var style = GetLocalStyle();
             if (style == null || ReferenceEquals(style, context.Style))
                 return context;
+
+            style = style.ResolveAgainst(context.Style, context.Theme);
 
             return new ControlRenderContext(
                 context.Surface,
                 context.Scale,
                 context.FontScale,
                 style,
+                context.Theme,
                 context.CursorPosition);
         }
     }

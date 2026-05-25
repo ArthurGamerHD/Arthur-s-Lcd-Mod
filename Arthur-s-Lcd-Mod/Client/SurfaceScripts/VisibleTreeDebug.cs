@@ -5,9 +5,6 @@ using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Config;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
-using LcdMod.Client.Utility;
-using LcdMod.Common.Config.Models.Apps;
-using Sandbox.Game.Components;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
@@ -40,7 +37,7 @@ namespace LcdMod.Client.SurfaceScripts
 
         public bool IsReferenceBlockCandidate(IMyTerminalBlock block)
         {
-            if (!(block is IMyTextPanel) || block == null || block.MarkedForClose || block.Equals(Block))
+            if (!(block is IMyTextPanel) || block.MarkedForClose || block.Equals(Block))
                 return false;
 
             var apps = ConfigManager.GetAppsForBlock(block);
@@ -63,7 +60,7 @@ namespace LcdMod.Client.SurfaceScripts
             target = null;
             status = null;
 
-            var config = AppConfig as ScreenConfigRenderProxy;
+            var config = AppConfig;
             if (config == null)
             {
                 status = "Missing reference config";

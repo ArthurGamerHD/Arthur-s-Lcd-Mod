@@ -4,12 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using Generated;
-using LcdMod.Client.Apps;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Config;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Grid;
-using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.UserControls;
 using LcdMod.Client.Helpers;
@@ -23,7 +21,6 @@ using Sandbox.Game.Entities;
 using Sandbox.Game.Components;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
-using Sandbox.ModAPI.Interfaces;
 using VRage;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
@@ -43,7 +40,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
     public abstract class SurfaceScriptBase : MyTSSCommon, IAppHost, IUsesTerminalControlGroup<BaseTerminalControlGroup>
     {
         public static SurfaceCollection Instances = new SurfaceCollection();
-
+        public Dictionary<string, Color> Theme { get; set; }
         readonly List<MySprite> _backgroundGrids = new List<MySprite>();
         readonly Dictionary<long, Vector2> _registeredProxyOffsets = new Dictionary<long, Vector2>();
         readonly List<MySprite> _cachedFrame = new List<MySprite>();
@@ -418,7 +415,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             {
                 _cachedFrame.Clear();
                 _customInfo = LocHelper.GetLoc("LcdMod_IndexConflict");
-                DrawMessage(_cachedFrame, _customInfo, "Warning", Color.Red, 1);
+                DrawMessage(_cachedFrame, _customInfo, "Warning", Color.Red);
                 _customInfo += "\n" + LocHelper.GetLoc("LcdMod_IndexConflictDetails");
                 panel.RefreshCustomInfo();
                 return;
@@ -835,6 +832,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             (Block as IMyTerminalBlock)?.RefreshTerminal();
         }
 
+
         protected void DrawLoadingScreen(float scale = 1f, bool drawTitle = true)
         {
             using (var frame = Surface.DrawFrame())
@@ -1074,8 +1072,9 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             if (handlers == null)
                 return;
 
-            foreach (Action<SurfaceScriptBase> handler in handlers.GetInvocationList())
+            foreach (var @delegate in handlers.GetInvocationList())
             {
+                var handler = (Action<SurfaceScriptBase>)@delegate;
                 try
                 {
                     handler(this);

@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using LcdMod.Client.Apps;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Config;
 using LcdMod.Client.Games.Minesweeper;
@@ -8,7 +7,6 @@ using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Client.Terminal.Controls;
-using LcdMod.Client.Utility;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
@@ -191,7 +189,7 @@ namespace LcdMod.Client.SurfaceScripts
         public List<MyTerminalControlComboBoxItem> GetDisplayModes() => GameList;
     }
 
-    internal interface IGame : IApp
+    internal interface IGame : IThemedApp
     {
         List<ControlBase> Interactive { get; }
         GameSurfaceScript.GameEnum Id { get; }

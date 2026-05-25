@@ -2,8 +2,6 @@ using System.Collections.Generic;
 using System;
 using System.Linq;
 using Generated;
-using LcdMod.Client;
-using LcdMod.Client.Apps;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Config;
 using LcdMod.Client.Gui;
@@ -15,7 +13,6 @@ using LcdMod.Client.Terminal.Controls.Proxy;
 using LcdMod.Common.Config.Models;
 using LcdMod.Client.Utility;
 using LcdMod.Common.Config.Models.Apps;
-using Sandbox.Game.Components;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces;
@@ -48,7 +45,7 @@ namespace LcdMod.Client.SurfaceScripts
         readonly List<ControlBase> _interactiveListFallback = new List<ControlBase>();
         static readonly List<IMySlimBlock> AutoCascadeBlocks = new List<IMySlimBlock>();
         static readonly HashSet<long> ActiveRotationCascadeHosts = new HashSet<long>();
-        static SurfaceCollection ActiveInstanceCollection;
+        static SurfaceCollection _activeInstanceCollection;
 
         SurfaceScriptBase _parent;
         ISurfaceTssInstances _parentInstances;
@@ -136,7 +133,7 @@ namespace LcdMod.Client.SurfaceScripts
 
         bool IsBasicReferenceBlockCandidate(IMyTerminalBlock block)
         {
-            if (!(block is IMyTextPanel) || block == null || block.MarkedForClose || block.Equals(Block))
+            if (!(block is IMyTextPanel) || block.MarkedForClose || block.Equals(Block))
                 return false;
 
             return !ConfigManager.GetAppsForBlock(block).Any(a => a is RenderProxySurfaceScript);
@@ -154,13 +151,6 @@ namespace LcdMod.Client.SurfaceScripts
         bool HasMatchingResolution(SurfaceScriptBase parent)
         {
             return parent != null && SameResolution(parent.TextureSize, Surface.TextureSize);
-        }
-
-        bool HasSameScreenSubtype(SurfaceScriptBase parent)
-        {
-            return parent != null &&
-                   parent.Block != null &&
-                   parent.Block.BlockDefinition.SubtypeName == Block.BlockDefinition.SubtypeName;
         }
 
         static bool SameResolution(Vector2 a, Vector2 b)
@@ -183,7 +173,7 @@ namespace LcdMod.Client.SurfaceScripts
 
         bool TryApplyProxyAutoOffset(bool cascade)
         {
-            var appConfig = AppConfig as ScreenConfigRenderProxy;
+            var appConfig = AppConfig;
             if (appConfig == null)
                 return false;
 
@@ -217,16 +207,16 @@ namespace LcdMod.Client.SurfaceScripts
         static void EnsureActiveInstanceChangeSubscription()
         {
             var collection = SurfaceScriptBase.Instances;
-            if (ReferenceEquals(ActiveInstanceCollection, collection))
+            if (ReferenceEquals(_activeInstanceCollection, collection))
                 return;
 
-            if (ActiveInstanceCollection != null)
-                ActiveInstanceCollection.ActiveInstanceChanged -= HandleActiveInstanceChanged;
+            if (_activeInstanceCollection != null)
+                _activeInstanceCollection.ActiveInstanceChanged -= HandleActiveInstanceChanged;
 
-            ActiveInstanceCollection = collection;
+            _activeInstanceCollection = collection;
 
-            if (ActiveInstanceCollection != null)
-                ActiveInstanceCollection.ActiveInstanceChanged += HandleActiveInstanceChanged;
+            if (_activeInstanceCollection != null)
+                _activeInstanceCollection.ActiveInstanceChanged += HandleActiveInstanceChanged;
         }
 
         static void HandleActiveInstanceChanged(SurfaceScriptBase activeInstance)
@@ -266,12 +256,6 @@ namespace LcdMod.Client.SurfaceScripts
 
             if (!TryApplyProxyAutoOffset(false))
                 ScheduleInitialAutoAdjust();
-        }
-
-        bool TryCalculateAutoOffset(out sbyte x, out sbyte y)
-        {
-            ProxyAutoContext context;
-            return TryCalculateAutoOffset(out x, out y, out context);
         }
 
         bool TryCalculateAutoOffset(out sbyte x, out sbyte y, out ProxyAutoContext context)
@@ -707,13 +691,6 @@ namespace LcdMod.Client.SurfaceScripts
                 panel.Script = ID;
         }
 
-        bool TryGetConfiguredHost(out SurfaceScriptBase host)
-        {
-            IMyTerminalBlock hostBlock;
-            int hostRotationIndex;
-            return TryGetConfiguredHost(out hostBlock, out hostRotationIndex, out host);
-        }
-
         bool TryGetConfiguredHost(
             out IMyTerminalBlock hostBlock,
             out int hostRotationIndex,
@@ -723,7 +700,7 @@ namespace LcdMod.Client.SurfaceScripts
             hostRotationIndex = -1;
             host = null;
 
-            var appConfig = AppConfig as ScreenConfigRenderProxy;
+            var appConfig = AppConfig;
             if (appConfig == null || appConfig.ReferenceBlock == 0L)
                 return false;
 
@@ -749,33 +726,6 @@ namespace LcdMod.Client.SurfaceScripts
                 host = null;
 
             return host != null;
-        }
-
-        static bool TryGetScreenGridFrame(
-            SurfaceScriptBase screen,
-            out Vector3I right,
-            out Vector3I up,
-            out Vector3I forward,
-            out Vector3D center)
-        {
-            right = Vector3I.Zero;
-            up = Vector3I.Zero;
-            forward = Vector3I.Zero;
-            center = Vector3D.Zero;
-
-            if (screen == null || screen.Block == null || screen.Block.CubeGrid == null)
-                return false;
-
-            MatrixD screenWorld;
-            if (!ScreenAreaGeometry.TryGetScreenWorldMatrix(screen, out screenWorld))
-                return false;
-
-            var inverseGrid = MatrixD.Invert(screen.Block.CubeGrid.WorldMatrix);
-            center = Vector3D.Transform(screenWorld.Translation, inverseGrid) / screen.Block.CubeGrid.GridSize;
-
-            return TryGetGridAxis(Vector3D.TransformNormal(screenWorld.Right, inverseGrid), out right) &&
-                   TryGetGridAxis(Vector3D.TransformNormal(screenWorld.Up, inverseGrid), out up) &&
-                   TryGetGridAxis(Vector3D.TransformNormal(screenWorld.Forward, inverseGrid), out forward);
         }
 
         static bool TryGetScreenGridFrame(
@@ -902,11 +852,6 @@ namespace LcdMod.Client.SurfaceScripts
             public readonly int DistanceFromStart;
             public readonly int RotationIndex;
 
-            public ProxyAutoTarget(IMyTextPanel block, sbyte x, sbyte y, long hostId, int distanceFromStart)
-                : this(block, x, y, hostId, distanceFromStart, 0)
-            {
-            }
-
             public ProxyAutoTarget(
                 IMyTextPanel block,
                 sbyte x,
@@ -1004,7 +949,7 @@ namespace LcdMod.Client.SurfaceScripts
         {
             var panel = Block as IMyTextPanel;
             var hostPanel = hostBlock as IMyTextPanel;
-            var appConfig = AppConfig as ScreenConfigRenderProxy;
+            var appConfig = AppConfig;
             if (panel == null || hostPanel == null || appConfig == null)
                 return false;
 
@@ -1024,7 +969,7 @@ namespace LcdMod.Client.SurfaceScripts
 
         Vector2 GetCurrentProxyOffset()
         {
-            var appConfig = AppConfig as ScreenConfigRenderProxy;
+            var appConfig = AppConfig;
             float xOffset = appConfig?.XAxisOffset ?? 0f;
             float yOffset = appConfig?.YAxisOffset ?? 0f;
             return new Vector2(Surface.TextureSize.X * xOffset, Surface.TextureSize.Y * yOffset);
@@ -1060,7 +1005,7 @@ namespace LcdMod.Client.SurfaceScripts
             }
 
             if (_registeredParent == _parent && _registeredProxyKey != 0L && _registeredProxyKey != proxyKey)
-                _registeredParent.UnregisterProxy(_registeredProxyKey);
+                _registeredParent?.UnregisterProxy(_registeredProxyKey);
 
             if (!_parent.RegisterProxy(proxyKey,
                     new Vector2(Surface.TextureSize.X * x, Surface.TextureSize.Y * y)))
@@ -1228,7 +1173,7 @@ namespace LcdMod.Client.SurfaceScripts
 
         void UpdateRebindCooldown()
         {
-            var appConfig = AppConfig as ScreenConfigRenderProxy;
+            var appConfig = AppConfig;
             long referenceId = appConfig?.ReferenceBlock ?? 0L;
             float x = appConfig?.XAxisOffset ?? 0f;
             float y = appConfig?.YAxisOffset ?? 0f;
@@ -1329,7 +1274,7 @@ namespace LcdMod.Client.SurfaceScripts
                 DrawTitle(_sprites);
             }
 
-            if (!(Block is Sandbox.ModAPI.IMyTextPanel))
+            if (!(Block is IMyTextPanel))
             {
                 var color = AppConfig?.ErrorColor ?? new Color(220, 80, 80);
                 DrawMessage(_sprites, "Unsupported Screen", "Cross", color, 0.9f);

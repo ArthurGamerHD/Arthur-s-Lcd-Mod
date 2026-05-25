@@ -8,8 +8,8 @@ namespace LcdMod.Client.Helpers
 {
     internal static class TextWrappingHelper
     {
-        const float FallbackCharacterWidth = 16f;
-        const float FallbackLineHeight = 30f;
+        const float FALLBACK_CHARACTER_WIDTH = 16f;
+        const float FALLBACK_LINE_HEIGHT = 30f;
 
         public static List<string> WrapText(
             string text,
@@ -126,7 +126,7 @@ namespace LcdMod.Client.Helpers
                 return 1f;
 
             float measured = MeasureText(surface, "Ag", fontId, scale).Y;
-            float fallback = FallbackLineHeight * Math.Max(0.01f, scale);
+            float fallback = FALLBACK_LINE_HEIGHT * Math.Max(0.01f, scale);
             return Math.Max(1f, Math.Max(measured, fallback) + lineSpacing);
         }
 
@@ -141,7 +141,7 @@ namespace LcdMod.Client.Helpers
 
             float safeScale = Math.Max(0.01f, scale);
             float width = measured.X > 0f ? measured.X : EstimateWidth(text, safeScale);
-            float height = measured.Y > 0f ? measured.Y : FallbackLineHeight * safeScale;
+            float height = measured.Y > 0f ? measured.Y : FALLBACK_LINE_HEIGHT * safeScale;
             return new Vector2(width, height);
         }
 
@@ -162,7 +162,7 @@ namespace LcdMod.Client.Helpers
             }
 
             maxLineLength = Math.Max(maxLineLength, currentLineLength);
-            return maxLineLength * FallbackCharacterWidth * scale;
+            return maxLineLength * FALLBACK_CHARACTER_WIDTH * scale;
         }
 
         public static string TrimToWidth(

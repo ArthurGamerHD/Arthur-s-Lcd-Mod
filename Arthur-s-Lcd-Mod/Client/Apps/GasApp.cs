@@ -2,14 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using LcdMod.Client.Apps.Abstract;
-using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Extensions;
-using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.ControlsTemplates.Progress;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Terminal.Controls;
-using LcdMod.Client.Utility;
 using LcdMod.Common.Config.Models;
 using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
@@ -28,9 +25,9 @@ namespace LcdMod.Client.Apps
 {
     public sealed class GasApp : AppBase
     {
-        const int ScrollerWidth = 8;
-        const int LineHeight = 40;
-        const int ScrollDelay = 12;
+        const int SCROLLER_WIDTH = 8;
+        const int LINE_HEIGHT = 40;
+        const int SCROLL_DELAY = 12;
 
         readonly Dictionary<string, string> _gasDisplayNameCache =
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -73,7 +70,7 @@ namespace LcdMod.Client.Apps
 
         void DrawList(List<MySprite> sprites)
         {
-            var rowHeight = LineHeight * Host.Scale;
+            var rowHeight = LINE_HEIGHT * Host.Scale;
             var viewportAvailableHeight = Host.ViewBox.Height - (GetContentTop() - Host.ViewBox.Y);
             int maxRows = Math.Max(1, (int)Math.Floor(viewportAvailableHeight / rowHeight));
             bool shouldScroll = _entries.Count > maxRows;
@@ -82,17 +79,17 @@ namespace LcdMod.Client.Apps
             if (shouldScroll)
             {
                 int totalSteps = Math.Max(1, _entries.Count - maxRows);
-                int step = GetScrollStep(ScrollDelay / 6f);
+                int step = GetScrollStep(SCROLL_DELAY / 6f);
                 start = step % (totalSteps + 1);
 
-                float viewportHeight = maxRows * rowHeight - (ScrollerWidth * 2 * Host.Scale);
+                float viewportHeight = maxRows * rowHeight - (SCROLLER_WIDTH * 2 * Host.Scale);
                 float scrollBarHeight = (float)maxRows / _entries.Count * viewportHeight;
                 float totalScrollableRows = _entries.Count - maxRows;
                 float scrollFraction = totalScrollableRows > 0 ? start / totalScrollableRows : 0f;
                 float scrollBarTravel = viewportHeight - scrollBarHeight;
                 float scrollBarY = scrollFraction * scrollBarTravel;
                 float scrollBarCenter = scrollBarY + scrollBarHeight / 2f;
-                float initialY = GetContentTop() + ScrollerWidth * Host.Scale;
+                float initialY = GetContentTop() + SCROLLER_WIDTH * Host.Scale;
                 DrawScrollBar(sprites, Host.Scale, initialY, viewportHeight, scrollBarCenter, scrollBarHeight);
             }
 
@@ -103,39 +100,36 @@ namespace LcdMod.Client.Apps
 
         void DrawGrid(List<MySprite> sprites)
         {
-            var rowHeight = 2f * LineHeight * Host.Scale;
+            var rowHeight = 2f * LINE_HEIGHT * Host.Scale;
             var viewportAvailableHeight = Host.ViewBox.Height - (GetContentTop() - Host.ViewBox.Y);
             int maxRows = Math.Max(1, (int)Math.Floor(viewportAvailableHeight / rowHeight));
-            int maxCols = 1; // Keep previous Gas behavior.
-            int maxVisible = maxRows * maxCols;
-            bool shouldScroll = _entries.Count > maxVisible;
+            bool shouldScroll = _entries.Count > maxRows;
             int startRow = 0;
 
             if (shouldScroll)
             {
-                int totalRows = (int)Math.Ceiling(_entries.Count / (float)maxCols);
+                int totalRows = _entries.Count;
                 int totalSteps = Math.Max(1, totalRows - maxRows);
-                int step = GetScrollStep(ScrollDelay / 6f);
+                int step = GetScrollStep(SCROLL_DELAY / 6f);
                 startRow = step % (totalSteps + 1);
 
-                float viewportHeight = maxRows * rowHeight - (ScrollerWidth * 2 * Host.Scale);
+                float viewportHeight = maxRows * rowHeight - (SCROLLER_WIDTH * 2 * Host.Scale);
                 float scrollBarHeight = (float)maxRows / totalRows * viewportHeight;
                 float totalScrollableRows = totalRows - maxRows;
                 float scrollFraction = totalScrollableRows > 0 ? startRow / totalScrollableRows : 0f;
                 float scrollBarTravel = viewportHeight - scrollBarHeight;
                 float scrollBarY = scrollFraction * scrollBarTravel;
                 float scrollBarCenter = scrollBarY + scrollBarHeight / 2f;
-                float initialY = GetContentTop() + ScrollerWidth * Host.Scale;
+                float initialY = GetContentTop() + SCROLLER_WIDTH * Host.Scale;
                 DrawScrollBar(sprites, Host.Scale, initialY, viewportHeight, scrollBarCenter, scrollBarHeight);
             }
 
-            int start = startRow * maxCols;
-            int showCount = Math.Min(maxVisible, _entries.Count - start);
+            int start = startRow;
+            int showCount = Math.Min(maxRows, _entries.Count - start);
             float contentStart = Host.ViewBox.X;
             float contentEnd = Host.ViewBox.Width + Host.ViewBox.X;
             if (shouldScroll)
-                contentEnd -= ScrollerWidth * Host.Scale;
-            float columnWidth = (contentEnd - contentStart) / maxCols;
+                contentEnd -= SCROLLER_WIDTH * Host.Scale;
             float gridHeight = maxRows * rowHeight;
 
             if (Config.DrawLines)
@@ -147,38 +141,33 @@ namespace LcdMod.Client.Apps
                     sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2((contentStart + contentEnd) / 2f, y), Size = new Vector2(contentEnd - contentStart, 2f), Color = lineColor, Alignment = TextAlignment.CENTER });
                 }
 
-                for (int col = 0; col <= maxCols; col++)
-                {
-                    var x = contentStart + col * columnWidth;
-                    sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(x, GetContentTop() + gridHeight / 2f), Size = new Vector2(2f, gridHeight), Color = lineColor, Alignment = TextAlignment.CENTER });
-                }
+                var lineCenterY = GetContentTop() + gridHeight / 2f;
+                sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(contentStart, lineCenterY), Size = new Vector2(2f, gridHeight), Color = lineColor, Alignment = TextAlignment.CENTER });
+                sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(contentEnd, lineCenterY), Size = new Vector2(2f, gridHeight), Color = lineColor, Alignment = TextAlignment.CENTER });
             }
 
             for (int gridIdx = 0; gridIdx < showCount; gridIdx++)
             {
                 int idx = start + gridIdx;
-                int col = gridIdx % maxCols;
-                int row = gridIdx / maxCols;
-                float xStart = contentStart + col * columnWidth;
-                float xEnd = (col == maxCols - 1) ? contentEnd : xStart + columnWidth;
+                int row = gridIdx;
                 float yStart = GetContentTop() + row * rowHeight;
-                DrawGridCell(sprites, _entries[idx], xStart, xEnd, yStart, rowHeight);
+                DrawGridCell(sprites, _entries[idx], contentStart, contentEnd, yStart, rowHeight);
             }
         }
 
         void DrawRow(List<MySprite> frame, Entry entry, bool showScrollBar, int rowIndex)
         {
             var pct = MathHelper.Clamp(entry.Percentage, 0f, 1f);
-            float y = GetContentTop() + rowIndex * LineHeight * Host.Scale;
+            float y = GetContentTop() + rowIndex * LINE_HEIGHT * Host.Scale;
             Vector2 position = new Vector2(Host.ViewBox.Position.X, y);
 
             if (Config.DrawLines)
                 frame.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(Host.ViewBox.Center.X, position.Y), Size = new Vector2(Host.ViewBox.Width, 2f), Color = Host.ForegroundColor, Alignment = TextAlignment.CENTER });
 
-            var clip = new Rectangle((int)position.X, (int)position.Y, (int)(Host.ViewBox.Width - position.X + Host.ViewBox.X - 145 * Host.Scale), (int)(LineHeight * Host.Scale));
+            var clip = new Rectangle((int)position.X, (int)position.Y, (int)(Host.ViewBox.Width - position.X + Host.ViewBox.X - 145 * Host.Scale), (int)(LINE_HEIGHT * Host.Scale));
             var barMargin = 8 * Host.Scale;
             Vector2 size = showScrollBar
-                ? new Vector2(Host.ViewBox.Width - position.X + Host.ViewBox.X - ScrollerWidth * Host.Scale, clip.Height) - barMargin
+                ? new Vector2(Host.ViewBox.Width - position.X + Host.ViewBox.X - SCROLLER_WIDTH * Host.Scale, clip.Height) - barMargin
                 : new Vector2(Host.ViewBox.Width - position.X + Host.ViewBox.X, clip.Height) - barMargin;
 
             BarPanel.CreateSprites(frame, new Vector2(clip.Location.X, clip.Location.Y + Host.Scale) + barMargin / 2f, size, Config.HeaderColor, Host.BackgroundColor.DeriveAccentColor(), pct, GetEntryUsageColor(pct));
@@ -187,13 +176,13 @@ namespace LcdMod.Client.Apps
             position.Y += 4 * Host.Scale;
             frame.Add(new MySprite { Type = SpriteType.TEXT, Data = entry.Name, Position = position, RotationOrScale = Host.Scale, Color = Host.Surface.ScriptForegroundColor, Alignment = TextAlignment.LEFT, FontId = "White" });
             frame.Add(MySprite.CreateClearClipRect());
-            position.X = Host.ViewBox.Width + Host.ViewBox.X - (showScrollBar ? ScrollerWidth * Host.Scale : 0f);
+            position.X = Host.ViewBox.Width + Host.ViewBox.X - (showScrollBar ? SCROLLER_WIDTH * Host.Scale : 0f);
             frame.Add(new MySprite { Type = SpriteType.TEXT, Data = FormatingHelper.PercentageToString(pct), Position = position, RotationOrScale = Host.Scale, Color = Host.Surface.ScriptForegroundColor, Alignment = TextAlignment.RIGHT, FontId = "White" });
         }
 
         void DrawGridCell(List<MySprite> frame, Entry entry, float xStart, float xEnd, float yStart, float rowHeight)
         {
-            var cellPadding = (LineHeight * Host.Scale) / 3f;
+            var cellPadding = (LINE_HEIGHT * Host.Scale) / 3f;
             var pct = MathHelper.Clamp(entry.Percentage, 0f, 1f);
             var cellView = GetCellViewBox(xStart, xEnd, yStart, rowHeight, cellPadding);
 
@@ -275,7 +264,7 @@ namespace LcdMod.Client.Apps
                 if (secondsPerStep <= 0f)
                     secondsPerStep = 1f / 60f;
                 int ticksPerStep = Math.Max(1, (int)Math.Round(secondsPerStep * 60f));
-                return (int)(sess.GameplayFrameCounter / ticksPerStep);
+                return sess.GameplayFrameCounter / ticksPerStep;
             }
             catch
             {
@@ -285,8 +274,8 @@ namespace LcdMod.Client.Apps
 
         void DrawScrollBar(List<MySprite> frame, float scale, float initialY, float viewportHeight, float scrollBarCenter, float scrollBarHeight)
         {
-            float barXCenter = Host.ViewBox.X + Host.ViewBox.Width - (ScrollerWidth / 2f) * scale;
-            int barWidth = (int)(ScrollerWidth * scale);
+            float barXCenter = Host.ViewBox.X + Host.ViewBox.Width - (SCROLLER_WIDTH / 2f) * scale;
+            int barWidth = (int)(SCROLLER_WIDTH * scale);
 
             var trackCenter = new Vector2(barXCenter, (float)Math.Round(initialY + viewportHeight / 2f, MidpointRounding.ToEven));
             DrawCapsule(frame, trackCenter, barWidth, viewportHeight,

@@ -105,7 +105,7 @@ namespace LcdMod.Client.Apps.Abstract
         string _maxLabelCache = string.Empty;
         string _currentLabelCache = string.Empty;
         float _caretY;
-        const float FooterHeight = 0f;
+        const float FOOTER_HEIGHT = 0f;
 
         protected new ScreenConfigPower AppConfig => (ScreenConfigPower)base.AppConfig;
         IMyCubeBlock Block => Host.Block;
@@ -470,7 +470,7 @@ namespace LcdMod.Client.Apps.Abstract
 
         void ConfigureScrollPanel(float contentTop, float rowHeight, int totalRows)
         {
-            _scrollPanel.Configure(ViewBox, contentTop, FooterHeight, rowHeight, totalRows, SCROLLER_WIDTH * Scale, SCROLL_DELAY / 6f);
+            _scrollPanel.Configure(ViewBox, contentTop, FOOTER_HEIGHT, rowHeight, totalRows, SCROLLER_WIDTH * Scale, SCROLL_DELAY / 6f);
             _scrollPanel.SetVisible(true);
             if (!_interactiveList.Contains(_scrollPanel))
                 _interactiveList.Add(_scrollPanel);
@@ -509,12 +509,10 @@ namespace LcdMod.Client.Apps.Abstract
 
         ControlRenderContext CreateRenderContext()
         {
-            return new ControlRenderContext(
+            return CreateControlRenderContext(
                 Surface,
                 Scale,
                 FontScale,
-                Surface.ScriptForegroundColor,
-                AppConfig.HeaderColor,
                 new Vector2(float.NaN, float.NaN));
         }
 
@@ -678,61 +676,6 @@ namespace LcdMod.Client.Apps.Abstract
                 false);
         }
 
-        void DrawScrollBar(List<MySprite> frame, float scale, float initialY, float viewportHeight,
-            float scrollBarCenter, float scrollBarHeight)
-        {
-            float barXCenter = ViewBox.X + ViewBox.Width - (SCROLLER_WIDTH / 2f) * scale;
-            int barWidth = (int)(SCROLLER_WIDTH * scale);
-
-            var trackCenter = new Vector2(barXCenter,
-                (float)Math.Round(initialY + viewportHeight / 2f, MidpointRounding.ToEven));
-            DrawCapsule(frame, trackCenter, barWidth, viewportHeight,
-                new Color(Surface.ScriptForegroundColor.R, Surface.ScriptForegroundColor.G,
-                    Surface.ScriptForegroundColor.B, 127));
-
-            var thumbCenter = new Vector2(barXCenter,
-                (float)Math.Round(initialY + scrollBarCenter, MidpointRounding.ToEven));
-            DrawCapsule(frame, thumbCenter, barWidth, scrollBarHeight,
-                new Color(AppConfig.HeaderColor.R, AppConfig.HeaderColor.G, AppConfig.HeaderColor.B, 250));
-        }
-
-        void DrawCapsule(List<MySprite> frame, Vector2 center, int width, float height, Color color)
-        {
-            frame.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = "SquareSimple",
-                Position = center,
-                Size = new Vector2(width, height + .5f),
-                Color = color,
-                Alignment = TextAlignment.CENTER
-            });
-
-            var capsSize = new Vector2(width);
-
-            frame.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = "SemiCircle",
-                Position = new Vector2(center.X, center.Y - height / 2f),
-                Size = capsSize,
-                RotationOrScale = 0f,
-                Color = color,
-                Alignment = TextAlignment.CENTER
-            });
-
-            frame.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = "SemiCircle",
-                Position = new Vector2(center.X, center.Y + height / 2f),
-                Size = capsSize,
-                RotationOrScale = (float)Math.PI,
-                Color = color,
-                Alignment = TextAlignment.CENTER
-            });
-        }
-
         float ContentTop()
         {
             return Host.TitleVisible ? ViewBox.Y + 40f * LayoutScale : ViewBox.Y;
@@ -785,27 +728,6 @@ namespace LcdMod.Client.Apps.Abstract
         Vector2 ToScreenMargin(Vector2 absoluteCenterInViewBox)
         {
             return new Vector2(absoluteCenterInViewBox.X, 512f - absoluteCenterInViewBox.Y);
-        }
-
-        static int GetScrollStep(float secondsPerStep)
-        {
-            try
-            {
-                var session = MyAPIGateway.Session;
-                if (session == null)
-                    return 0;
-
-                if (secondsPerStep <= 0f)
-                    secondsPerStep = 1f / 60f;
-
-                var ticksPerStep = Math.Max(1, (int)Math.Round(secondsPerStep * 60f));
-                return (int)(session.GameplayFrameCounter / ticksPerStep);
-            }
-            catch (Exception ex)
-            {
-                MyLog.Default.WriteLine($"[LcdMod] PowerApp GetScrollStep error: {ex.Message}");
-                return 0;
-            }
         }
 
         protected static double ToWatts(float powerUnit)

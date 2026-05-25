@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using LcdMod.Client.Gui.ControlsTemplates;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 

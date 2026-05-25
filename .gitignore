@@ -3,3 +3,4 @@
 .idea
 *.DotSettings.user
 *.local.ini
+/SE.Source

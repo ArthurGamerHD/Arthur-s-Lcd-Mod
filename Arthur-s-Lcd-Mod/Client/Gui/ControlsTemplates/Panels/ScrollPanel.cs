@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using LcdMod.Client.Gui.ControlsTemplates;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
@@ -9,11 +8,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 {
     public sealed class ScrollPanel : ControlBase
     {
-        const long ManualScrollOverrideFrames = 300L;
-        const float DefaultManualScrollPixelMultiplier = 0.08f;
-        const float ManualScrollVelocityImpulse = 0.12f;
-        const float InertiaDecayPerFrame = 0.88f;
-        const float StopVelocityPixelsPerFrame = 0.05f;
+        const long MANUAL_SCROLL_OVERRIDE_FRAMES = 300L;
+        const float DEFAULT_MANUAL_SCROLL_PIXEL_MULTIPLIER = 0.08f;
+        const float MANUAL_SCROLL_VELOCITY_IMPULSE = 0.12f;
+        const float INERTIA_DECAY_PER_FRAME = 0.88f;
+        const float STOP_VELOCITY_PIXELS_PER_FRAME = 0.05f;
 
         public ScrollPanel(CursorType? cursor = null, object dataContext = null)
             : base(cursor, dataContext)
@@ -27,7 +26,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         public float RowHeight { get; private set; }
         public float ScrollerWidthPixels { get; private set; }
         public float AutoScrollSecondsPerStep { get; private set; }
-        public float ManualScrollPixelMultiplier { get; set; } = DefaultManualScrollPixelMultiplier;
+        public float ManualScrollPixelMultiplier { get; set; } = DEFAULT_MANUAL_SCROLL_PIXEL_MULTIPLIER;
+        public bool ManualScrollInertiaEnabled { get; set; } = true;
         public float ScrollOffsetPixels { get; private set; }
         public float RowOffsetPixels { get; private set; }
         public float ScrollVelocityPixelsPerFrame { get; private set; }
@@ -36,6 +36,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         public int TotalRows { get; private set; }
         public int MaxVisibleRows { get; private set; }
         public int VisibleRows { get; private set; }
+        public int RenderRows { get; private set; }
         public int StartRow { get; private set; }
         public bool IsScrollable { get; private set; }
         float _manualScrollPixels;
@@ -120,10 +121,16 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             ScrollerWidthPixels = Math.Max(0f, scrollerWidthPixels);
             TotalRows = Math.Max(0, totalRows);
 
-            float availableHeight = Math.Max(0f, viewBox.Bottom - contentTop - Math.Max(0f, footerHeight));
-            MaxVisibleRows = Math.Max(1, (int)Math.Floor(availableHeight / RowHeight));
-            IsScrollable = TotalRows > MaxVisibleRows;
-            VisibleRows = TotalRows == 0 ? 0 : Math.Min(TotalRows, MaxVisibleRows);
+            float viewportHeight = Math.Max(0f, viewBox.Bottom - contentTop - Math.Max(0f, footerHeight));
+            MaxVisibleRows = Math.Max(1, (int)Math.Floor(viewportHeight / RowHeight));
+
+            float totalContentHeight = TotalRows * RowHeight;
+            IsScrollable = totalContentHeight > viewportHeight + 0.001f;
+
+            PanelBounds = new RectangleF(viewBox.X, contentTop, viewBox.Width, viewportHeight);
+
+            float contentWidth = Math.Max(1f, viewBox.Width - (IsScrollable ? ScrollerWidthPixels : 0f));
+            ContentViewportBounds = new RectangleF(viewBox.X, contentTop, contentWidth, viewportHeight);
 
             if (!IsScrollable && TotalRows > 0)
             {
@@ -132,7 +139,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
                 IsAnimating = false;
             }
 
-            int maxStartRow = GetMaxStartRow();
             float maxScrollOffset = GetMaxScrollOffsetPixels();
             if (TotalRows > 0 && IsScrollable)
             {
@@ -143,21 +149,21 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             ScrollOffsetPixels = IsScrollable && scrollOffsetProvider != null
                 ? Clamp(scrollOffsetProvider(maxScrollOffset), 0f, maxScrollOffset)
                 : 0f;
-            StartRow = Clamp((int)Math.Floor(ScrollOffsetPixels / RowHeight), 0, maxStartRow);
+            StartRow = Clamp((int)Math.Floor(ScrollOffsetPixels / RowHeight), 0, GetMaxStartRow());
             RowOffsetPixels = Math.Max(0f, ScrollOffsetPixels - StartRow * RowHeight);
 
-            float panelHeight = MaxVisibleRows * RowHeight;
-            PanelBounds = new RectangleF(viewBox.X, contentTop, viewBox.Width, panelHeight);
+            int maxRowsInViewport = Math.Max(1, (int)Math.Ceiling(viewportHeight / RowHeight));
+            VisibleRows = TotalRows == 0 ? 0 : Math.Min(TotalRows - StartRow, maxRowsInViewport);
+            int renderRowsForViewport = Math.Max(1, (int)Math.Ceiling((viewportHeight + RowOffsetPixels) / RowHeight) + 1);
+            RenderRows = TotalRows == 0
+                ? 0
+                : Math.Min(TotalRows - StartRow, renderRowsForViewport);
 
-            float contentWidth = Math.Max(1f, viewBox.Width - (IsScrollable ? ScrollerWidthPixels : 0f));
-            ContentViewportBounds = new RectangleF(viewBox.X, contentTop, contentWidth, panelHeight);
-
-            int renderRows = MaxVisibleRows + (IsScrollable && RowOffsetPixels > 0.001f ? 1 : 0);
             ContentBounds = new RectangleF(
                 viewBox.X,
                 contentTop - RowOffsetPixels,
                 contentWidth,
-                renderRows * RowHeight);
+                RenderRows * RowHeight);
         }
 
         public int GetStartIndex(int columns)
@@ -181,7 +187,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             RowOffsetPixels = Math.Max(0f, ScrollOffsetPixels - StartRow * RowHeight);
 
             if (AutoScrollSecondsPerStep > 0f)
-                _manualOverrideUntilFrame = GetFrameCounter() + ManualScrollOverrideFrames;
+                _manualOverrideUntilFrame = GetFrameCounter() + MANUAL_SCROLL_OVERRIDE_FRAMES;
 
             MarkDirty();
             ScrollChanged?.Invoke(this);
@@ -207,11 +213,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             if (!IsScrollable || sprites == null || TotalRows <= 0)
                 return;
 
-            float viewportHeight = Math.Max(1f, MaxVisibleRows * RowHeight - ScrollerWidthPixels * 2f);
-            float scrollBarHeight = Math.Max(1f, (float)MaxVisibleRows / TotalRows * viewportHeight);
+            float trackHeight = Math.Max(1f, ContentViewportBounds.Height - ScrollerWidthPixels * 2f);
+            float totalContentHeight = Math.Max(1f, TotalRows * RowHeight);
+            float scrollBarHeight = Math.Max(1f, Math.Min(trackHeight, ContentViewportBounds.Height / totalContentHeight * trackHeight));
             float maxScrollOffset = GetMaxScrollOffsetPixels();
             float scrollFraction = maxScrollOffset > 0f ? ScrollOffsetPixels / maxScrollOffset : 0f;
-            float scrollBarTravel = Math.Max(0f, viewportHeight - scrollBarHeight);
+            float scrollBarTravel = Math.Max(0f, trackHeight - scrollBarHeight);
             float scrollBarCenter = scrollFraction * scrollBarTravel + scrollBarHeight / 2f;
             float initialY = ContentViewportBounds.Y + ScrollerWidthPixels;
             float barXCenter = ViewBox.X + ViewBox.Width - ScrollerWidthPixels / 2f;
@@ -219,8 +226,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
             var trackCenter = new Vector2(
                 barXCenter,
-                (float)Math.Round(initialY + viewportHeight / 2f, MidpointRounding.ToEven));
-            DrawCapsule(sprites, trackCenter, barWidth, viewportHeight, trackColor);
+                (float)Math.Round(initialY + trackHeight / 2f, MidpointRounding.ToEven));
+            DrawCapsule(sprites, trackCenter, barWidth, trackHeight, trackColor);
 
             var thumbCenter = new Vector2(
                 barXCenter,
@@ -241,12 +248,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
         int GetMaxStartRow()
         {
-            return Math.Max(0, TotalRows - MaxVisibleRows);
+            return RowHeight <= 0f ? 0 : Math.Max(0, (int)Math.Floor(GetMaxScrollOffsetPixels() / RowHeight));
         }
 
         float GetMaxScrollOffsetPixels()
         {
-            return GetMaxStartRow() * RowHeight;
+            return Math.Max(0f, TotalRows * RowHeight - ContentViewportBounds.Height);
         }
 
         float GetManualScrollPixelDelta(int wheelDelta)
@@ -256,19 +263,27 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
             float multiplier = ManualScrollPixelMultiplier > 0f
                 ? ManualScrollPixelMultiplier
-                : DefaultManualScrollPixelMultiplier;
+                : DEFAULT_MANUAL_SCROLL_PIXEL_MULTIPLIER;
             float pixels = Math.Abs(wheelDelta) * multiplier;
             return wheelDelta > 0 ? -pixels : pixels;
         }
 
         void AddScrollVelocity(float pixelDelta)
         {
+            if (!ManualScrollInertiaEnabled)
+            {
+                ScrollVelocityPixelsPerFrame = 0f;
+                IsAnimating = false;
+                _lastInertiaFrame = GetFrameCounter();
+                return;
+            }
+
             float maxVelocity = Math.Max(1f, RowHeight);
             ScrollVelocityPixelsPerFrame = Clamp(
-                ScrollVelocityPixelsPerFrame + pixelDelta * ManualScrollVelocityImpulse,
+                ScrollVelocityPixelsPerFrame + pixelDelta * MANUAL_SCROLL_VELOCITY_IMPULSE,
                 -maxVelocity,
                 maxVelocity);
-            IsAnimating = Math.Abs(ScrollVelocityPixelsPerFrame) > StopVelocityPixelsPerFrame;
+            IsAnimating = Math.Abs(ScrollVelocityPixelsPerFrame) > STOP_VELOCITY_PIXELS_PER_FRAME;
             _lastInertiaFrame = GetFrameCounter();
         }
 
@@ -277,7 +292,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             var previousScroll = _manualScrollPixels;
             var previousVelocity = ScrollVelocityPixelsPerFrame;
 
-            if (Math.Abs(ScrollVelocityPixelsPerFrame) <= StopVelocityPixelsPerFrame)
+            if (Math.Abs(ScrollVelocityPixelsPerFrame) <= STOP_VELOCITY_PIXELS_PER_FRAME)
             {
                 ScrollVelocityPixelsPerFrame = 0f;
                 IsAnimating = false;
@@ -312,13 +327,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
                     break;
                 }
 
-                ScrollVelocityPixelsPerFrame *= InertiaDecayPerFrame;
+                ScrollVelocityPixelsPerFrame *= INERTIA_DECAY_PER_FRAME;
             }
 
-            if (Math.Abs(ScrollVelocityPixelsPerFrame) <= StopVelocityPixelsPerFrame)
+            if (Math.Abs(ScrollVelocityPixelsPerFrame) <= STOP_VELOCITY_PIXELS_PER_FRAME)
                 ScrollVelocityPixelsPerFrame = 0f;
 
-            IsAnimating = Math.Abs(ScrollVelocityPixelsPerFrame) > StopVelocityPixelsPerFrame;
+            IsAnimating = Math.Abs(ScrollVelocityPixelsPerFrame) > STOP_VELOCITY_PIXELS_PER_FRAME;
 
             if (Math.Abs(_manualScrollPixels - previousScroll) > 0.001f ||
                 Math.Abs(ScrollVelocityPixelsPerFrame - previousVelocity) > 0.001f ||

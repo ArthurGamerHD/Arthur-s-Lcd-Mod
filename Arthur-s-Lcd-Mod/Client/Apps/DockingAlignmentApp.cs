@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using LcdMod.Client.Apps.Abstract;
-using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Terminal.Controls;
@@ -93,7 +92,7 @@ namespace LcdMod.Client.Apps
         float FontScale => Host.Surface.FontSize;
         float LayoutScale => Scale * FontScale;
         Color BackgroundColor => Host.BackgroundColor;
-        const float FooterHeight = 0f;
+        const float FOOTER_HEIGHT = 0f;
 
         public DockingAlignmentApp(ScreenConfigDocking config, IAppHost host) : base(config, host)
         {
@@ -567,7 +566,7 @@ namespace LcdMod.Client.Apps
             var footerHeight = 58f * LayoutScale;
             var referenceTextMargin = ViewBox.Height * 0.02f;
             var contentTop = ContentTop();
-            var contentBottom = ViewBox.Bottom - FooterHeight - footerHeight;
+            var contentBottom = ViewBox.Bottom - FOOTER_HEIGHT - footerHeight;
             var contentHeight = Math.Max(0f, contentBottom - contentTop);
             var content = new RectangleF(ViewBox.X, contentTop, ViewBox.Width, contentHeight);
             var squareSize = Math.Min(content.Width, content.Height);
@@ -585,7 +584,7 @@ namespace LcdMod.Client.Apps
             {
                 FooterHeight = footerHeight,
                 ReferenceTextMargin = referenceTextMargin,
-                FooterTop = ViewBox.Bottom - FooterHeight - footerHeight,
+                FooterTop = ViewBox.Bottom - FOOTER_HEIGHT - footerHeight,
                 Square = square,
                 MarkerSize = squareSize * 0.1f,
                 Font = font,
@@ -649,7 +648,7 @@ namespace LcdMod.Client.Apps
             string yawValue, float yawFont)
         {
             var textOffsetY = FormatingHelper.GetSizeInPixel("A", "White", font, Surface).Y * 0.5f;
-            var y = ViewBox.Bottom - FooterHeight - footerHeight - referenceTextMargin - 8f * LayoutScale - textOffsetY;
+            var y = ViewBox.Bottom - FOOTER_HEIGHT - footerHeight - referenceTextMargin - 8f * LayoutScale - textOffsetY;
             var targetGridName = FormatingHelper.TrimName(_targetBlock.CubeGrid?.CustomName);
             var labels = new[]
             {
@@ -697,7 +696,7 @@ namespace LcdMod.Client.Apps
         void DrawPositionFooter(Vector3D positionOffset, Vector3D rotationOffset, double dockingAxisDistance,
             double closingVelocity, float footerHeight, Color valueColor)
         {
-            var footerTop = ViewBox.Bottom - FooterHeight - footerHeight;
+            var footerTop = ViewBox.Bottom - FOOTER_HEIGHT - footerHeight;
             var row1Y = footerTop + footerHeight * 0.36f;
             var row2Y = footerTop + footerHeight * 0.78f;
             var footerTextScale = Math.Max(0.36f, 0.52f * Scale) * FontScale;

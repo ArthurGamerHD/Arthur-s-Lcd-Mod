@@ -3,18 +3,13 @@ using System.Collections.Generic;
 using System.Text;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.SurfaceScripts.Abstract;
-using LcdMod.Client.Grid;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.UserControls.Antenna;
 using LcdMod.Client.Helpers;
-using LcdMod.Client.SurfaceScripts;
 using LcdMod.Client.Terminal.Controls;
-using LcdMod.Client.Utility;
-using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
-using VRage.Utils;
 using VRageMath;
 using ScreenConfigWithBlocks = LcdMod.Common.Config.Models.Apps.ScreenConfigWithBlocks;
 
@@ -284,12 +279,10 @@ namespace LcdMod.Client.Apps
 
         ControlRenderContext CreateRenderContext()
         {
-            return new ControlRenderContext(
+            return CreateControlRenderContext(
                 Host.Surface,
                 Host.Scale,
                 Host.Surface.FontSize,
-                Host.Surface.ScriptForegroundColor,
-                Config.HeaderColor,
                 new Vector2(float.NaN, float.NaN));
         }
 
@@ -373,27 +366,6 @@ namespace LcdMod.Client.Apps
         }
 
         static float GetFooterHeight() => 0f;
-
-        static int GetScrollStep(float secondsPerStep)
-        {
-            try
-            {
-                var sess = MyAPIGateway.Session;
-                if (sess == null)
-                    return 0;
-
-                if (secondsPerStep <= 0f)
-                    secondsPerStep = 1f / 60f;
-
-                int ticksPerStep = Math.Max(1, (int)Math.Round(secondsPerStep * 60f));
-                return (int)(sess.GameplayFrameCounter / ticksPerStep);
-            }
-            catch (Exception ex)
-            {
-                MyLog.Default.WriteLine($"[LcdMod] AntennaApp.GetScrollStep error: {ex.Message}");
-                return 0;
-            }
-        }
 
         void DrawAntennaCell(List<MySprite> sprites, AntennaEntry entry, float xStart, float xEnd, float yStart, float rowHeight, bool drawAsLines)
         {
@@ -510,56 +482,6 @@ namespace LcdMod.Client.Apps
                 if (textSize.X <= availableWidth)
                     break;
             }
-        }
-
-        void DrawScrollBar(List<MySprite> frame, float scale, float initialY, float viewportHeight, float scrollBarCenter, float scrollBarHeight)
-        {
-            float barXCenter = Host.ViewBox.X + Host.ViewBox.Width - (SCROLLER_WIDTH / 2f) * scale;
-            int barWidth = (int)(SCROLLER_WIDTH * scale);
-
-            var trackCenter = new Vector2(barXCenter, (float)Math.Round(initialY + viewportHeight / 2f, MidpointRounding.ToEven));
-            DrawCapsule(frame, trackCenter, barWidth, viewportHeight,
-                new Color(Host.Surface.ScriptForegroundColor.R, Host.Surface.ScriptForegroundColor.G,
-                    Host.Surface.ScriptForegroundColor.B, 127));
-
-            var thumbCenter = new Vector2(barXCenter, (float)Math.Round(initialY + scrollBarCenter, MidpointRounding.ToEven));
-            DrawCapsule(frame, thumbCenter, barWidth, scrollBarHeight,
-                new Color(Config.HeaderColor.R, Config.HeaderColor.G, Config.HeaderColor.B, 250));
-        }
-
-        static void DrawCapsule(List<MySprite> frame, Vector2 center, int width, float height, Color color)
-        {
-            frame.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = "SquareSimple",
-                Position = center,
-                Size = new Vector2(width, height + .5f),
-                Color = color,
-                Alignment = TextAlignment.CENTER
-            });
-
-            var capsSize = new Vector2(width);
-            frame.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = "SemiCircle",
-                Position = new Vector2(center.X, center.Y - height / 2f),
-                Size = capsSize,
-                RotationOrScale = 0f,
-                Color = color,
-                Alignment = TextAlignment.CENTER
-            });
-            frame.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = "SemiCircle",
-                Position = new Vector2(center.X, center.Y + height / 2f),
-                Size = capsSize,
-                RotationOrScale = (float)Math.PI,
-                Color = color,
-                Alignment = TextAlignment.CENTER
-            });
         }
     }
 }

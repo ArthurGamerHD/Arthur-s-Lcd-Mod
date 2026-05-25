@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
-using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Common.Config.Models.Apps;
 using Sandbox.ModAPI;
 using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;

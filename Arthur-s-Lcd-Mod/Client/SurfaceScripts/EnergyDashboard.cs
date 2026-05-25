@@ -6,11 +6,9 @@ using LcdMod.Client.SurfaceScripts.Abstract;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
-using VRage.Game.ModAPI;
 using VRageMath;
 using ComboboxGraphWindow = LcdMod.Client.Terminal.Controls.Generic.ComboboxGraphWindow;
 using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
-using ScreenConfigPower = LcdMod.Common.Config.Models.Apps.ScreenConfigPower;
 
 namespace LcdMod.Client.SurfaceScripts
 {

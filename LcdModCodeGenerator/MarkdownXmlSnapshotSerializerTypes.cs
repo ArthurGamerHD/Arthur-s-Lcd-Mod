@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
@@ -11,8 +10,8 @@ namespace LcdModCodeGenerator;
 [Generator]
 public sealed class MarkdownXmlSnapshotSerializerTypes : IIncrementalGenerator
 {
-    const string SerializerTypeName = "MarkdownXmlSnapshotSerializer";
-    const string MarkdownNodeMetadataName = "LcdMod.Client.Markdown.MarkdownNode";
+    const string SERIALIZER_TYPE_NAME = "MarkdownXmlSnapshotSerializer";
+    const string MARKDOWN_NODE_METADATA_NAME = "LcdMod.Client.Markdown.MarkdownNode";
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
@@ -31,7 +30,7 @@ public sealed class MarkdownXmlSnapshotSerializerTypes : IIncrementalGenerator
             if (serializerTypes.Length == 0)
                 return;
 
-            var markdownNodeType = compilation.GetTypeByMetadataName(MarkdownNodeMetadataName);
+            var markdownNodeType = compilation.GetTypeByMetadataName(MARKDOWN_NODE_METADATA_NAME);
             if (markdownNodeType == null)
                 return;
 
@@ -55,7 +54,7 @@ public sealed class MarkdownXmlSnapshotSerializerTypes : IIncrementalGenerator
     {
         var classDeclaration = node as ClassDeclarationSyntax;
         return classDeclaration != null &&
-               classDeclaration.Identifier.ValueText == SerializerTypeName &&
+               classDeclaration.Identifier.ValueText == SERIALIZER_TYPE_NAME &&
                classDeclaration.Modifiers.Any(m => m.ValueText == "partial");
     }
 

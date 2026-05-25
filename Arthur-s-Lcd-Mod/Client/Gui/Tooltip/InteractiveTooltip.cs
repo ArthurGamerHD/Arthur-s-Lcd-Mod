@@ -5,6 +5,7 @@ using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Helpers;
+using LcdMod.Common.Helpers;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 
@@ -179,6 +180,12 @@ namespace LcdMod.Client.Gui.Tooltip
             var sprites = new List<MySprite>();
             _interactiveEntries.Clear();
             _linesUsedThisFrame.Clear();
+            var themedApp = parentApp as IThemedApp;
+            if (themedApp != null)
+            {
+                textColor = themedApp.GetThemeColor(Constants.ON_SURFACE);
+                panelColor = themedApp.GetThemeColor(Constants.SURFACE_CONTAINER_HIGH);
+            }
 
             var tooltipLines = Lines;
             var title = GetTitle();
@@ -372,8 +379,11 @@ namespace LcdMod.Client.Gui.Tooltip
                 bool hasLineEntry = line != null && (clickables[i] || hasLineCursor);
 
                 bool lineHovered = hasLineEntry && lineBounds.Contains(cursorPosition);
+                if (lineHovered && themedApp == null)
+                    throw new ResourceKeyNotFoundException(Constants.PRIMARY, "ParentTheme");
+
                 var lineColor = lineHovered
-                    ? panelColor.DeriveTextAccentColor()
+                    ? themedApp.GetThemeColor(Constants.PRIMARY)
                     : textColor;
 
                 if (hasLineEntry)
@@ -552,7 +562,7 @@ namespace LcdMod.Client.Gui.Tooltip
         {
             var rect = Bounds;
             var fillColor = Hit(context.CursorPosition)
-                ? context.PanelColor.DeriveAccentColor()
+                ? context.HoverPanelColor
                 : context.PanelColor;
 
             Border.CreateSpritesFromRect(rect, sprites, fillColor, 0.2f);
@@ -593,7 +603,7 @@ namespace LcdMod.Client.Gui.Tooltip
         protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
         {
             var fillColor = Hit(context.CursorPosition)
-                ? context.PanelColor.DeriveAccentColor()
+                ? context.HoverPanelColor
                 : context.PanelColor;
 
             sprites.Add(new MySprite

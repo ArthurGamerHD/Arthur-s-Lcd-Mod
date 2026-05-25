@@ -10,7 +10,6 @@ using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.ControlsTemplates.Progress;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Terminal.Controls;
-using LcdMod.Client.Utility;
 using LcdMod.Common.Config.Models.Apps;
 using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
@@ -24,9 +23,9 @@ namespace LcdMod.Client.Apps
 {
     public sealed class CargoFilledApp : AppBase, IAppInteractive
     {
-        const int ScrollerWidth = 8;
-        const int LineHeight = 40;
-        const int ScrollDelay = 12;
+        const int SCROLLER_WIDTH = 8;
+        const int LINE_HEIGHT = 40;
+        const int SCROLL_DELAY = 12;
 
         readonly List<Entry> _entries = new List<Entry>();
         readonly Dictionary<long, Entry> _entryModels = new Dictionary<long, Entry>();
@@ -86,7 +85,7 @@ namespace LcdMod.Client.Apps
 
         void DrawList(List<MySprite> sprites)
         {
-            var rowHeight = LineHeight * Host.Scale;
+            var rowHeight = LINE_HEIGHT * Host.Scale;
             var contentTop = GetContentTop();
             ConfigureScrollPanel(contentTop, rowHeight, _entries.Count);
 
@@ -109,7 +108,7 @@ namespace LcdMod.Client.Apps
 
         void DrawGrid(List<MySprite> sprites)
         {
-            var rowHeight = 2f * LineHeight * Host.Scale;
+            var rowHeight = 2f * LINE_HEIGHT * Host.Scale;
             var contentTop = GetContentTop();
             int maxCols = Math.Max(1, (int)Math.Round((Host.ViewBox.Width - Host.ViewBox.X) / (220f * Host.Scale) - .5, MidpointRounding.AwayFromZero));
             int totalRows = (int)Math.Ceiling(_entries.Count / (float)maxCols);
@@ -122,7 +121,7 @@ namespace LcdMod.Client.Apps
             float contentStart = Host.ViewBox.X;
             float contentEnd = Host.ViewBox.Width + Host.ViewBox.X;
             if (_scrollPanel.IsScrollable)
-                contentEnd -= ScrollerWidth * Host.Scale;
+                contentEnd -= SCROLLER_WIDTH * Host.Scale;
             float columnWidth = (contentEnd - contentStart) / maxCols;
             float gridHeight = maxRows * rowHeight;
 
@@ -188,7 +187,7 @@ namespace LcdMod.Client.Apps
 
         void DrawGridCell(List<MySprite> frame, Entry entry, float xStart, float xEnd, float yStart, float rowHeight)
         {
-            var cellPadding = (LineHeight * Host.Scale) / 3f;
+            var cellPadding = (LINE_HEIGHT * Host.Scale) / 3f;
             var pct = MathHelper.Clamp(entry.Cap <= 0 ? 0f : (float)(entry.Used / entry.Cap), 0f, 1f);
             var cellView = GetCellViewBox(xStart, xEnd, yStart, rowHeight, cellPadding);
 
@@ -233,7 +232,7 @@ namespace LcdMod.Client.Apps
 
         void ConfigureScrollPanel(float contentTop, float rowHeight, int totalRows)
         {
-            _scrollPanel.Configure(Host.ViewBox, contentTop, 0f, rowHeight, totalRows, ScrollerWidth * Host.Scale, ScrollDelay / 6f);
+            _scrollPanel.Configure(Host.ViewBox, contentTop, 0f, rowHeight, totalRows, SCROLLER_WIDTH * Host.Scale, SCROLL_DELAY / 6f);
             _scrollPanel.SetVisible(true);
             if (!_interactiveList.Contains(_scrollPanel))
                 _interactiveList.Add(_scrollPanel);
@@ -249,12 +248,12 @@ namespace LcdMod.Client.Apps
 
         RectangleF GetListRowBounds(int rowIndex, float contentTop, bool showScrollBar)
         {
-            var y = contentTop + rowIndex * LineHeight * Host.Scale;
+            var y = contentTop + rowIndex * LINE_HEIGHT * Host.Scale;
             var left = Host.ViewBox.Position.X;
             var width = Host.ViewBox.Width - left + Host.ViewBox.X;
             if (showScrollBar)
-                width -= ScrollerWidth * Host.Scale;
-            return new RectangleF(left, y, width, LineHeight * Host.Scale);
+                width -= SCROLLER_WIDTH * Host.Scale;
+            return new RectangleF(left, y, width, LINE_HEIGHT * Host.Scale);
         }
 
 
@@ -282,12 +281,10 @@ namespace LcdMod.Client.Apps
 
         ControlRenderContext CreateRenderContext()
         {
-            return new ControlRenderContext(
+            return CreateControlRenderContext(
                 Host.Surface,
                 Host.Scale,
                 Host.Surface.FontSize,
-                Host.Surface.ScriptForegroundColor,
-                Config.HeaderColor,
                 new Vector2(float.NaN, float.NaN));
         }
 
@@ -384,74 +381,6 @@ namespace LcdMod.Client.Apps
                 if (textSize.X <= availableWidth)
                     break;
             }
-        }
-
-        static int GetScrollStep(float secondsPerStep)
-        {
-            try
-            {
-                var sess = MyAPIGateway.Session;
-                if (sess == null)
-                    return 0;
-                if (secondsPerStep <= 0f)
-                    secondsPerStep = 1f / 60f;
-                int ticksPerStep = Math.Max(1, (int)Math.Round(secondsPerStep * 60f));
-                return (int)(sess.GameplayFrameCounter / ticksPerStep);
-            }
-            catch
-            {
-                return 0;
-            }
-        }
-
-        void DrawScrollBar(List<MySprite> frame, float scale, float initialY, float viewportHeight, float scrollBarCenter, float scrollBarHeight)
-        {
-            float barXCenter = Host.ViewBox.X + Host.ViewBox.Width - (ScrollerWidth / 2f) * scale;
-            int barWidth = (int)(ScrollerWidth * scale);
-
-            var trackCenter = new Vector2(barXCenter, (float)Math.Round(initialY + viewportHeight / 2f, MidpointRounding.ToEven));
-            DrawCapsule(frame, trackCenter, barWidth, viewportHeight,
-                new Color(Host.Surface.ScriptForegroundColor.R, Host.Surface.ScriptForegroundColor.G, Host.Surface.ScriptForegroundColor.B, 127));
-
-            var thumbCenter = new Vector2(barXCenter, (float)Math.Round(initialY + scrollBarCenter, MidpointRounding.ToEven));
-            DrawCapsule(frame, thumbCenter, barWidth, scrollBarHeight,
-                new Color(Config.HeaderColor.R, Config.HeaderColor.G, Config.HeaderColor.B, 250));
-        }
-
-        static void DrawCapsule(List<MySprite> frame, Vector2 center, int width, float height, Color color)
-        {
-            frame.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = "SquareSimple",
-                Position = center,
-                Size = new Vector2(width, height + .5f),
-                Color = color,
-                Alignment = TextAlignment.CENTER
-            });
-
-            var capsSize = new Vector2(width);
-            frame.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = "SemiCircle",
-                Position = new Vector2(center.X, center.Y - height / 2f),
-                Size = capsSize,
-                RotationOrScale = 0f,
-                Color = color,
-                Alignment = TextAlignment.CENTER
-            });
-
-            frame.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = "SemiCircle",
-                Position = new Vector2(center.X, center.Y + height / 2f),
-                Size = capsSize,
-                RotationOrScale = (float)Math.PI,
-                Color = color,
-                Alignment = TextAlignment.CENTER
-            });
         }
 
         void AggregateAllContainersInLogicalGroup(IMyCubeGrid rootGrid, List<Entry> details)

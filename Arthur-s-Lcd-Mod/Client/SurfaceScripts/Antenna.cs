@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using Generated;
 using LcdMod.Client.Apps;
@@ -11,7 +10,6 @@ using LcdMod.Client.Terminal.Controls.Groups;
 using LcdMod.Client.Utility;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
-using VRage.Game;
 using VRage.Game.GUI.TextPanel;
 using VRage.ModAPI;
 using VRageMath;

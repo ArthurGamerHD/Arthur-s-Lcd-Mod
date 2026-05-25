@@ -2,29 +2,26 @@ using System;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Extensions;
+using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
-using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Helpers;
+using LcdMod.Common.Helpers;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
 
 namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 {
-    sealed class MessageBox
+    sealed class MessageBox : Dialog
     {
-        readonly IApp _parentApp;
         readonly object _button1Context = new object();
         readonly object _button2Context = new object();
-        readonly List<MySprite> _sprites = new List<MySprite>();
 
-        MessageBoxContainerControl _containerControl;
         RectangleControl _button1Control;
         RectangleControl _button2Control;
         Action<object, object> _button1Callback;
         Action<object, object> _button2Callback;
 
-        public bool Dismissed;
         string _title;
         string _content;
         string _button1;
@@ -32,11 +29,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         string _icon;
 
         public MessageBox(IApp parentApp)
+            : base(parentApp)
         {
-            if (parentApp == null)
-                throw new ArgumentNullException("parentApp");
-
-            _parentApp = parentApp;
         }
 
         public void Show(
@@ -58,17 +52,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             _button2Callback = button2Callback;
         }
 
-        public void AddInteractiveEntries(List<ControlBase> entries)
-        {
-            if (Dismissed || entries == null)
-                return;
-
-            if (_containerControl != null && _containerControl.Visible)
-                entries.Add(_containerControl);
-        }
-
-        public void Render(InteractiveSurfaceScript owner,
-            List<MySprite> targetSprites,
+        protected override void RenderCore(
+            InteractiveSurfaceScript owner,
             RectangleF viewBox,
             float scale,
             float fontScale,
@@ -78,17 +63,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             Color panelColor,
             Vector2 cursorPosition)
         {
-            _sprites.Clear();
-
-            if (Dismissed)
-                return;
-
             EnsureContainer(viewBox);
-            _containerControl.ClearChildren();
+            ContainerControl.ClearChildren();
 
-            var shadowColor = panelColor.MulValue(0.2f);
+            var cardColor = GetThemeColor(Constants.SURFACE_CONTAINER_HIGH);
+            var cardTextColor = GetThemeColor(Constants.ON_SURFACE);
+            var shadowColor = GetThemeColor(Constants.SHADOW);
                 
-            _sprites.Add(new MySprite(SpriteType.TEXTURE,
+            Sprites.Add(new MySprite(SpriteType.TEXTURE,
                 "SquareSimple",
                 surface.TextureSize/2,
                 surface.TextureSize,
@@ -145,8 +127,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 cardHeight);
 
             var shadowRect = new RectangleF(cardRect.Position + 2f, cardRect.Size);
-            Border.CreateSpritesFromRect(shadowRect, _sprites, shadowColor, 0.2f);
-            Border.CreateSpritesFromRect(cardRect, _sprites, panelColor, 0.2f);
+            Border.CreateSpritesFromRect(shadowRect, Sprites, shadowColor, 0.2f);
+            Border.CreateSpritesFromRect(cardRect, Sprites, cardColor, 0.2f);
 
             float currentY = cardRect.Y + padding.Y;
 
@@ -155,14 +137,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 Type = SpriteType.TEXT,
                 Data = _title,
                 Position = new Vector2(cardRect.Center.X, currentY),
-                Color = textColor,
+                Color = cardTextColor,
                 FontId = "White",
                 Alignment = TextAlignment.CENTER,
                 RotationOrScale = titleScale
             };
 
-            _sprites.Add(titleSprite.Shadow(2 * titleScale, shadowColor));
-            _sprites.Add(titleSprite);
+            Sprites.Add(titleSprite.Shadow(2 * titleScale, shadowColor));
+            Sprites.Add(titleSprite);
 
             currentY += titleSize.Y + spacing;
 
@@ -173,13 +155,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
             if (hasIcon)
             {
-                _sprites.Add(new MySprite
+                Sprites.Add(new MySprite
                 {
                     Type = SpriteType.TEXTURE,
                     Data = _icon,
                     Position = new Vector2(contentStartX + iconSize * 0.5f, contentMiddleY),
                     Size = new Vector2(iconSize),
-                    Color = textColor,
+                    Color = cardTextColor,
                     Alignment = TextAlignment.CENTER
                 });
             }
@@ -187,12 +169,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             float textX = contentStartX + iconSize + iconGap;
             for (int i = 0; i < contentLines.Length; i++)
             {
-                _sprites.Add(new MySprite
+                Sprites.Add(new MySprite
                 {
                     Type = SpriteType.TEXT,
                     Data = contentLines[i],
                     Position = new Vector2(textX, currentY),
-                    Color = textColor,
+                    Color = cardTextColor,
                     FontId = "White",
                     Alignment = TextAlignment.LEFT,
                     RotationOrScale = contentScale
@@ -210,32 +192,19 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 : default(RectangleF);
 
             EnsureEntries(button1Rect, button2Rect, showButton2);
-            _containerControl.AddChild(_button1Control);
+            ContainerControl.AddChild(_button1Control);
             if (showButton2 && _button2Control != null)
-                _containerControl.AddChild(_button2Control);
+                ContainerControl.AddChild(_button2Control);
 
-            var renderContext = new ControlRenderContext(surface, scale, fontScale, textColor, panelColor, cursorPosition);
-            ConfigureButtonRender(_button1Control, _button1, buttonScale, panelColor, textColor, owner);
-            _button1Control.Render(renderContext, _sprites);
+            var renderContext = CreateRenderContext(surface, scale, fontScale, textColor, panelColor, cursorPosition);
+            ConfigureButtonRender(_button1Control, _button1, buttonScale, ThemedParentApp, owner);
+            _button1Control.Render(renderContext, Sprites);
 
             if (showButton2 && _button2Control != null)
             {
-                ConfigureButtonRender(_button2Control, _button2, buttonScale, panelColor, textColor, owner);
-                _button2Control.Render(renderContext, _sprites);
+                ConfigureButtonRender(_button2Control, _button2, buttonScale, ThemedParentApp, owner);
+                _button2Control.Render(renderContext, Sprites);
             }
-
-            targetSprites.AddRange(_sprites);
-        }
-
-        void EnsureContainer(RectangleF bounds)
-        {
-            if (_containerControl == null)
-                _containerControl = new MessageBoxContainerControl(bounds, _parentApp);
-            else
-                _containerControl.SetRect(bounds);
-
-            _containerControl.SetDataContext(_parentApp);
-            _containerControl.SetVisible(true);
         }
 
         static string[] SplitLines(string content)
@@ -299,22 +268,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 callback(dataContext, sender);
         }
 
-        void Dismiss()
+        protected override void OnDismiss()
         {
-            Dismissed = true;
             _button1Callback = null;
             _button2Callback = null;
-            _sprites.Clear();
 
             if (_button1Control != null)
                 _button1Control.SetVisible(false);
             if (_button2Control != null)
                 _button2Control.SetVisible(false);
-            if (_containerControl != null)
-            {
-                _containerControl.ClearChildren();
-                _containerControl.SetVisible(false);
-            }
         }
             
 
@@ -322,16 +284,16 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             RectangleControl control,
             string text,
             float textScale,
-            Color panelColor,
-            Color textColor,
+            IThemedApp themedParentApp,
             InteractiveSurfaceScript owner)
         {
             if (control == null)
                 return;
 
+            control.SetStyle(Button.CreatePrimaryButtonStyle(themedParentApp != null ? themedParentApp.Theme : null));
             control.CustomRender = delegate(ControlBase renderEntry, ControlRenderContext context, List<MySprite> sprites)
             {
-                DrawButton(renderEntry.Bounds, owner, sprites, text, textScale, panelColor, textColor, context.CursorPosition);
+                DrawButton(renderEntry.Bounds, owner, sprites, text, textScale, context);
             };
         }
 
@@ -341,39 +303,24 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             List<MySprite> sprites,
             string text,
             float textScale,
-            Color panelColor,
-            Color textColor,
-            Vector2 cursorPosition)
+            ControlRenderContext context)
         {
-            var hover = rect.Contains(cursorPosition);
-            var buttonColor = hover
-                ? panelColor.DeriveAccentColor()
-                : panelColor.MulValue(0.85f);
+            var hover = rect.Contains(context.CursorPosition);
+            var buttonColor = context.Style.GetPanelColor(hover);
+            var buttonTextColor = context.Style.GetTextColor(hover);
 
-            Border.CreateSpritesFromRect(rect, sprites, buttonColor, 0.5f);
+            Border.CreateSpritesFromRect(rect, sprites, buttonColor, context.Style.BorderPercentage);
 
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
                 Data = text,
                 Position = new Vector2(rect.Center.X, rect.Center.Y - FormatingHelper.GetSizeInPixel(text, "White", textScale, owner.Surface).Y * 0.5f),
-                Color = hover ? panelColor.MulValue(0.85f) : textColor,
+                Color = buttonTextColor,
                 FontId = "White",
                 Alignment = TextAlignment.CENTER,
                 RotationOrScale = textScale
             });
-        }
-    }
-
-    sealed class MessageBoxContainerControl : RectangleControl
-    {
-        public MessageBoxContainerControl(RectangleF rect, IApp parentApp)
-            : base(rect, CursorType.Default, parentApp)
-        {
-        }
-
-        protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
-        {
         }
     }
 }

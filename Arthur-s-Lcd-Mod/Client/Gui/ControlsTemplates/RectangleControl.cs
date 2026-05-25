@@ -15,7 +15,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 
         public RectangleF Rect { get; private set; }
 
-        public void SetRect(RectangleF bounds)
+        public virtual void SetRect(RectangleF bounds)
         {
             Rect = bounds;
         }

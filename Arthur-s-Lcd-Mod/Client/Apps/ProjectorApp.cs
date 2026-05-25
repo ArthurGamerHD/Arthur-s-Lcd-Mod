@@ -4,16 +4,13 @@ using System.Linq;
 using System.Text;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Extensions;
-using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.ControlsTemplates.Progress;
 using LcdMod.Client.Helpers;
-using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Common.Config.Models.Apps;
 using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
-using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage;
 using VRage.Game.GUI.TextPanel;
@@ -257,6 +254,8 @@ namespace LcdMod.Client.Apps
             var shortageColor = GetShortageColor(item.Key, item.Value);
             var rowColor = shortageColor ?? Surface.ScriptForegroundColor;
             var useAlertText = shortageColor.HasValue && AppConfig.DrawLines;
+            var panelColor = AppConfig.HeaderColor;
+            var panelTextColor = Surface.ScriptForegroundColor;
             var neededText = FormatingHelper.FormatItemQty(GetNeededQty(item.Key));
             var availableText = FormatingHelper.FormatItemQty(GetAvailableQty(item.Key, item.Value));
 
@@ -264,13 +263,19 @@ namespace LcdMod.Client.Apps
             viewModel.SecondaryAmountText = availableText;
             viewModel.AmountText = availableText + "/" + neededText;
             viewModel.ListTextColor = rowColor;
-            viewModel.ListIconColor = rowColor;
-            viewModel.GridTextColor = useAlertText ? shortageColor.Value : Surface.ScriptForegroundColor;
-            viewModel.GridIconColor = useAlertText ? shortageColor.Value : Color.White;
-            viewModel.PanelColor = shortageColor ?? AppConfig.HeaderColor;
-            viewModel.ListStyle.SetColors(Surface.ScriptForegroundColor, BackgroundColor);
-            viewModel.GridStyle.SetColors(Surface.ScriptForegroundColor, viewModel.PanelColor);
+            viewModel.ListIconColor = Color.White;
+            viewModel.IconBackgroundColor = shortageColor.HasValue && shortageColor.Value.Equals(AppConfig.ErrorColor)
+                ? AppConfig.ErrorColor
+                : Color.White;
+            viewModel.GridTextColor = useAlertText ? shortageColor.Value : panelTextColor;
+            viewModel.GridIconColor = Color.White;
+            viewModel.PanelColor = shortageColor ?? panelColor;
             return viewModel;
+        }
+
+        protected override double GetDefaultCraftAmount(ItemViewModel item)
+        {
+            return item == null ? 1d : Math.Max(1d, Math.Ceiling(item.Amount));
         }
 
         protected override void DrawListItemContent(List<MySprite> frame, ItemViewModel item, RectangleF bounds)
@@ -298,15 +303,12 @@ namespace LcdMod.Client.Apps
 
             PreviousType = item.TypeId;
 
-            frame.Add(new MySprite()
-            {
-                Type = SpriteType.TEXTURE,
-                Data = item.Icon,
-                Position = position + new Vector2(20f, 15) * Scale,
-                Size = new Vector2(LINE_HEIGHT * Scale),
-                Color = item.ListIconColor,
-                Alignment = TextAlignment.CENTER
-            });
+            DrawItemIcon(frame,
+                item.Icon,
+                position + new Vector2(20f, 15) * Scale,
+                new Vector2(LINE_HEIGHT * Scale),
+                TextAlignment.CENTER,
+                item.IconBackgroundColor);
             position.X += (xEnd - xStart) / 8f;
             var quantityColumnsWidth = 2f * GetQuantityColumnWidth() + GetQuantityColumnGap();
 
@@ -360,15 +362,12 @@ namespace LcdMod.Client.Apps
             var numberRect = slots.Item2;
             var nameRect = slots.Item3;
 
-            frame.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = item.Icon,
-                Position = new Vector2(iconRect.X, iconRect.Y + iconRect.Height / 2f),
-                Size = new Vector2(iconRect.Width),
-                Alignment = TextAlignment.LEFT,
-                Color = item.GridIconColor
-            });
+            DrawItemIcon(frame,
+                item.Icon,
+                new Vector2(iconRect.X, iconRect.Y + iconRect.Height / 2f),
+                new Vector2(iconRect.Width),
+                TextAlignment.LEFT,
+                item.IconBackgroundColor);
 
             var localizedName = TrimText(item.DisplayName, nameRect.Width);
 

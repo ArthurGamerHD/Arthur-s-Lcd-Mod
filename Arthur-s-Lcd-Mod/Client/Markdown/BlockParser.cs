@@ -1,6 +1,5 @@
 using System.Text;
-using LcdMod.Client.Markdown;
-using LcdMod.Common;
+// ReSharper disable NotAccessedOutParameterVariable
 
 namespace LcdMod.Client.Markdown
 {

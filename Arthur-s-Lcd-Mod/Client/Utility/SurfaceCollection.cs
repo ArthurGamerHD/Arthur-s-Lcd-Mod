@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
-using LcdMod.Client.Apps;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.SurfaceScripts.Abstract;
-using Sandbox.Game.Components;
 using Sandbox.ModAPI;
 using IMyTextSurfaceProvider = Sandbox.ModAPI.Ingame.IMyTextSurfaceProvider;
 
@@ -81,8 +79,12 @@ namespace LcdMod.Client.Utility
 
     public sealed class TextSurfaceProviderTssInstances : SurfaceTssInstancesBase
     {
+        // ReSharper disable once UnusedAutoPropertyAccessor.Global
+        public IMyTextSurfaceProvider Provider { get; }
+
         public TextSurfaceProviderTssInstances(IMyTextSurfaceProvider provider)
         {
+            Provider = provider;
         }
 
         internal override int GetIndex(SurfaceScriptBase instance)

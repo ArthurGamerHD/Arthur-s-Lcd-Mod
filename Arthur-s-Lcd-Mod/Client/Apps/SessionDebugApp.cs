@@ -10,8 +10,8 @@ namespace LcdMod.Client.Apps
 {
     internal sealed class SessionDebugApp : IApp
     {
-        const string DebugFont = "Monospace";
-        const float LineScale = 0.62f;
+        const string DEBUG_FONT = "Monospace";
+        const float LINE_SCALE = 0.62f;
         static readonly Color RunningColor = new Color(80, 220, 120);
         static readonly Color IdleColor = new Color(230, 90, 90);
         static readonly Color SleepingColor = new Color(235, 210, 60);
@@ -22,7 +22,7 @@ namespace LcdMod.Client.Apps
             var viewBox = GetViewBox(owner);
             var snapshot = LcdModSessionComponent.DebugSnapshot;
             var lines = BuildDebugLines(snapshot, owner);
-            var lineHeight = owner.Surface.MeasureStringInPixels(new StringBuilder("A"), DebugFont, LineScale).Y + 2f;
+            var lineHeight = owner.Surface.MeasureStringInPixels(new StringBuilder("A"), DEBUG_FONT, LINE_SCALE).Y + 2f;
             var start = viewBox.Position + new Vector2(8f, 8f);
 
             _sprites.Clear();
@@ -34,9 +34,9 @@ namespace LcdMod.Client.Apps
                     Data = lines[i].Text,
                     Position = start + new Vector2(0f, i * lineHeight),
                     Color = lines[i].Color,
-                    FontId = DebugFont,
+                    FontId = DEBUG_FONT,
                     Alignment = TextAlignment.LEFT,
-                    RotationOrScale = LineScale
+                    RotationOrScale = LINE_SCALE
                 });
             }
 

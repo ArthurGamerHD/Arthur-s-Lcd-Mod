@@ -8,9 +8,7 @@ using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Helpers;
-using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
-using LcdMod.Client.Terminal.Controls.Generic;
 using LcdMod.Client.Utility;
 using LcdMod.Common.Config.Models.Apps;
 using Sandbox.Game.Entities;
@@ -24,7 +22,7 @@ using SliderFov = LcdMod.Client.Terminal.Controls.Generic.SliderFov;
 
 namespace LcdMod.Client.Apps
 {
-    public partial class StarMapApp : AppBase, IAppInteractive
+    public class StarMapApp : AppBase, IAppInteractive
     {
         readonly IAppHost _host;
         new ScreenConfigStarMap AppConfig => (ScreenConfigStarMap)base.AppConfig;

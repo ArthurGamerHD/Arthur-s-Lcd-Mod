@@ -5,6 +5,7 @@ using System.Linq;
 using LcdMod.Client.Helpers;
 using LcdMod.Common.Helpers;
 
+using Sandbox.Definitions;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.ModAPI;
@@ -27,6 +28,16 @@ namespace LcdMod.Client.Grid
         const int REQUEST_TTL_TICKS = 120;
         const int TARGET_REFRESH_TICKS = 119;
         const int REFRESH_BATCH_SIZE = 128;
+        static readonly object AssemblerBlueprintDatabaseLock = new object();
+        static bool _blueprintResultDatabaseInitialized;
+        public static readonly Dictionary<string, HashSet<MyDefinitionId>> CraftableBlueprintsByAssemblerSubtype =
+            new Dictionary<string, HashSet<MyDefinitionId>>(StringComparer.Ordinal);
+        public static readonly Dictionary<MyDefinitionId, HashSet<string>> AssemblerSubtypesByCraftableBlueprint =
+            new Dictionary<MyDefinitionId, HashSet<string>>();
+        public static readonly Dictionary<MyDefinitionId, HashSet<MyDefinitionId>> CreatedItemsByBlueprint =
+            new Dictionary<MyDefinitionId, HashSet<MyDefinitionId>>();
+        public static readonly Dictionary<MyDefinitionId, HashSet<MyDefinitionId>> BlueprintsByCreatedItem =
+            new Dictionary<MyDefinitionId, HashSet<MyDefinitionId>>();
         long _clock;
         int _ticksSinceRequested = int.MaxValue;
 
@@ -41,11 +52,13 @@ namespace LcdMod.Client.Grid
         List<IMyBeacon> _beacons = new List<IMyBeacon>();
         List<IMyBatteryBlock> _batteries = new List<IMyBatteryBlock>();
         List<IMyJumpDrive> _jumpDrives = new List<IMyJumpDrive>();
+        List<IMyAssembler> _assemblers = new List<IMyAssembler>();
         List<IMyLaserAntenna> _nextLasers = new List<IMyLaserAntenna>();
         List<IMyRadioAntenna> _nextRadio = new List<IMyRadioAntenna>();
         List<IMyBeacon> _nextBeacons = new List<IMyBeacon>();
         List<IMyBatteryBlock> _nextBatteries = new List<IMyBatteryBlock>();
         List<IMyJumpDrive> _nextJumpDrives = new List<IMyJumpDrive>();
+        List<IMyAssembler> _nextAssemblers = new List<IMyAssembler>();
         IEnumerator<bool> _refreshUpdater;
         bool _refreshQueued;
         int _currentRefreshBatchSize = REFRESH_BATCH_SIZE;
@@ -341,6 +354,100 @@ namespace LcdMod.Client.Grid
             StartRefresh();
         }
 
+        public static bool EnsureAssemblerBlueprintDatabase(IMyAssembler assembler)
+        {
+            if (assembler == null || MyDefinitionManager.Static == null)
+                return false;
+
+            var assemblerSubtype = GetAssemblerSubtype(assembler);
+            if (string.IsNullOrEmpty(assemblerSubtype))
+                return false;
+
+            lock (AssemblerBlueprintDatabaseLock)
+            {
+                EnsureBlueprintResultDatabaseNoLock();
+
+                if (CraftableBlueprintsByAssemblerSubtype.ContainsKey(assemblerSubtype))
+                    return false;
+
+                var craftableBlueprints = new HashSet<MyDefinitionId>();
+                foreach (var blueprint in MyDefinitionManager.Static.GetBlueprintDefinitions())
+                {
+                    if (blueprint == null || !CanAssemblerUseBlueprint(assembler, blueprint))
+                        continue;
+
+                    craftableBlueprints.Add(blueprint.Id);
+                    AddToSet(AssemblerSubtypesByCraftableBlueprint, blueprint.Id, assemblerSubtype);
+                }
+
+                CraftableBlueprintsByAssemblerSubtype[assemblerSubtype] = craftableBlueprints;
+                return true;
+            }
+        }
+
+        static void EnsureBlueprintResultDatabaseNoLock()
+        {
+            if (_blueprintResultDatabaseInitialized || MyDefinitionManager.Static == null)
+                return;
+
+            foreach (var blueprint in MyDefinitionManager.Static.GetBlueprintDefinitions())
+            {
+                if (blueprint == null || CreatedItemsByBlueprint.ContainsKey(blueprint.Id))
+                    continue;
+
+                var createdItems = new HashSet<MyDefinitionId>();
+                var results = blueprint.Results;
+                if (results != null)
+                {
+                    for (int i = 0; i < results.Length; i++)
+                    {
+                        var itemId = results[i].Id;
+                        createdItems.Add(itemId);
+                        AddToSet(BlueprintsByCreatedItem, itemId, blueprint.Id);
+                    }
+                }
+
+                CreatedItemsByBlueprint[blueprint.Id] = createdItems;
+            }
+
+            _blueprintResultDatabaseInitialized = true;
+        }
+
+        static bool CanAssemblerUseBlueprint(IMyAssembler assembler, MyBlueprintDefinitionBase blueprint)
+        {
+            try
+            {
+                return assembler.CanUseBlueprint(blueprint.Id);
+            }
+            catch (Exception e)
+            {
+                ErrorHandlerHelper.LogError(e, typeof(GridLogic));
+                return false;
+            }
+        }
+
+        public static string GetAssemblerSubtype(IMyAssembler assembler)
+        {
+            if (assembler == null)
+                return string.Empty;
+
+            var definitionId = assembler.BlockDefinition;
+            var subtype = definitionId.SubtypeName;
+            return string.IsNullOrEmpty(subtype) ? definitionId.ToString() : subtype;
+        }
+
+        static void AddToSet<TKey, TValue>(Dictionary<TKey, HashSet<TValue>> dictionary, TKey key, TValue value)
+        {
+            HashSet<TValue> values;
+            if (!dictionary.TryGetValue(key, out values))
+            {
+                values = new HashSet<TValue>();
+                dictionary[key] = values;
+            }
+
+            values.Add(value);
+        }
+
         IEnumerable<bool> RefreshInventoriesCoroutine()
         {
             _nextBlocks.Clear();
@@ -350,6 +457,7 @@ namespace LcdMod.Client.Grid
             _nextBeacons.Clear();
             _nextBatteries.Clear();
             _nextJumpDrives.Clear();
+            _nextAssemblers.Clear();
 
             Grid.GetBlocks(_nextBlocks, a => a.FatBlock is IMyTerminalBlock);
 
@@ -380,6 +488,13 @@ namespace LcdMod.Client.Grid
                 if (jumpDrive != null)
                     _nextJumpDrives.Add(jumpDrive);
 
+                var assembler = block as IMyAssembler;
+                if (assembler != null)
+                {
+                    _nextAssemblers.Add(assembler);
+                    EnsureAssemblerBlueprintDatabase(assembler);
+                }
+
                 if (block.HasInventory && block.InventoryCount != 0)
                     _nextInvBlocks.Add(block);
 
@@ -398,6 +513,7 @@ namespace LcdMod.Client.Grid
             SwapBuffer(ref _beacons, ref _nextBeacons);
             SwapBuffer(ref _batteries, ref _nextBatteries);
             SwapBuffer(ref _jumpDrives, ref _nextJumpDrives);
+            SwapBuffer(ref _assemblers, ref _nextAssemblers);
             SwapBuffer(ref _lasers, ref _nextLasers);
             SwapBuffer(ref _radio, ref _nextRadio);
         }
@@ -430,6 +546,12 @@ namespace LcdMod.Client.Grid
         {
             RefreshIfNeeded();
             return _jumpDrives;
+        }
+
+        public List<IMyAssembler> GetAssemblers()
+        {
+            RefreshIfNeeded();
+            return _assemblers;
         }
 
         public bool TryGetPlanetJumpPoint(

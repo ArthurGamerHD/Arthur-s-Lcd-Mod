@@ -1,20 +1,20 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.SurfaceScripts;
 using LcdMod.Client.Config;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
-using LcdMod.Client.Utility;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Interactive;
-using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
+using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 
 namespace LcdMod.Client.Games.EightBallPool
 {
@@ -63,6 +63,19 @@ namespace LcdMod.Client.Games.EightBallPool
             new Vector2(0f, 0f), new Vector2(0.5f, 0f), new Vector2(1f, 0f),
             new Vector2(0f, TABLE_HEIGHT), new Vector2(0.5f, TABLE_HEIGHT), new Vector2(1f, TABLE_HEIGHT)
         };
+
+        public IReadOnlyDictionary<string, Color> Theme => (_script.App as AppBase)?.Theme;
+
+        public ControlRenderContext CreateControlRenderContext(
+            IMyTextSurface surface,
+            float scale,
+            float fontScale,
+            Vector2 cursorPosition)
+        { 
+            return (_script.App as AppBase)?.CreateControlRenderContext(surface, scale, fontScale, cursorPosition);
+        }
+
+        public Color GetThemeColor(string role) => (_script.App as AppBase)?.GetThemeColor(role) ?? Color.White;
 
         readonly Color _feltColor = new Color(24, 105, 64);
         readonly Color _railColor = new Color(82, 43, 22);

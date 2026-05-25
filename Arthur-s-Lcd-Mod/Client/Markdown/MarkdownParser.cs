@@ -2,13 +2,13 @@ namespace LcdMod.Client.Markdown
 {
     public sealed class MarkdownParser
     {
-        readonly BlockParser _blockParser;
-        readonly InlineParser _inlineParser;
+        public BlockParser BlockParser { get; }
+        public InlineParser InlineParser { get; }
 
         public MarkdownParser()
         {
-            _inlineParser = new InlineParser();
-            _blockParser = new BlockParser(_inlineParser);
+            InlineParser = new InlineParser();
+            BlockParser = new BlockParser(InlineParser);
         }
 
         public MarkdownDocument Parse(string text)
@@ -16,7 +16,7 @@ namespace LcdMod.Client.Markdown
             if (text == null)
                 text = string.Empty;
 
-            MarkdownDocument document = _blockParser.Parse(text);
+            MarkdownDocument document = BlockParser.Parse(text);
 
             return document;
         }

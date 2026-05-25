@@ -1,5 +1,6 @@
+// ReSharper disable RedundantUsingDirective
+// ReSharper disable ArrangeObjectCreationWhenTypeEvident
 using System.Collections.Generic;
-using LcdMod.Client.Markdown;
 
 namespace LcdMod.Client.Markdown.Inline
 {

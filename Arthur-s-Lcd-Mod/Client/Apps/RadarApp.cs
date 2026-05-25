@@ -4,13 +4,9 @@ using System.Text;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Config;
 using LcdMod.Client.Extensions;
-using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Helpers;
-using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
-using LcdMod.Client.Terminal.Controls.Generic;
-using LcdMod.Client.Utility;
 using LcdMod.Common.Helpers;
 using LcdMod.Common.Config.Models.Apps;
 using Sandbox.ModAPI;
@@ -38,7 +34,7 @@ namespace LcdMod.Client.Apps
         public int MissedFrames;
     }
 
-    public partial class RadarApp : AppBase, IAppInteractive
+    public class RadarApp : AppBase, IAppInteractive
     {
         public const string ID = "LcdMod_Radar";
         public const string TITLE = "LcdMod_Radar";
@@ -1574,7 +1570,7 @@ namespace LcdMod.Client.Apps
                 if (sess == null)
                     return 0;
                 int ticksPerStep = Math.Max(1, secondsPerStep * 60);
-                return (int)(sess.GameplayFrameCounter / ticksPerStep);
+                return sess.GameplayFrameCounter / ticksPerStep;
             }
             catch
             {

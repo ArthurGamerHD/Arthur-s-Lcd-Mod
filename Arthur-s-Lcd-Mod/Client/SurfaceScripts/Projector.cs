@@ -6,7 +6,6 @@ using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls.Groups;
-using LcdMod.Common.Config.Models.Apps;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
@@ -55,7 +54,7 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override void SafeRun()
         {
-            var appConfig = AppConfig as ScreenConfigProjector;
+            var appConfig = AppConfig;
             if (appConfig == null)
                 return;
 
@@ -75,7 +74,7 @@ namespace LcdMod.Client.SurfaceScripts
         public override List<MySprite> GetSprites()
         {
             var sprites = new List<MySprite>();
-            var appConfig = AppConfig as ScreenConfigProjector;
+            var appConfig = AppConfig;
             if (_app == null || appConfig == null)
                 return sprites;
 

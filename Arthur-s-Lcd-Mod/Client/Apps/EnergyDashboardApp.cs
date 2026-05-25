@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
-using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Helpers;
-using LcdMod.Client.SurfaceScripts;
 using LcdMod.Common.Helpers;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
@@ -21,7 +19,7 @@ namespace LcdMod.Client.Apps
     {
         static readonly MyDefinitionId ElectricityId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
         static readonly float[] WindowOptions = { 1f, 5f, 30f, 60f, 300f };
-        const int GraphPoints = 90;
+        const int GRAPH_POINTS = 90;
 
         struct Sample
         {
@@ -36,7 +34,7 @@ namespace LcdMod.Client.Apps
             public double MaxW;
         }
 
-        readonly Sample[] _samples = new Sample[GraphPoints];
+        readonly Sample[] _samples = new Sample[GRAPH_POINTS];
         int _sampleHead;
         int _sampleCount;
         float _lastSampleTime = -999f;
@@ -77,7 +75,7 @@ namespace LcdMod.Client.Apps
             return sprites;
         }
 
-        void CollectData(LcdMod.Client.Grid.GridLogic gridLogic)
+        void CollectData(Grid.GridLogic gridLogic)
         {
             var owner = Host;
             var grid = Host.Block?.CubeGrid;
@@ -250,14 +248,14 @@ namespace LcdMod.Client.Apps
                 return;
             }
 
-            float interval = windowSeconds / GraphPoints;
+            float interval = windowSeconds / GRAPH_POINTS;
             if (now - _lastSampleTime < interval)
                 return;
 
             double totalProd = _solar.CurrentW + _wind.CurrentW + _reactor.CurrentW + _engine.CurrentW;
             _samples[_sampleHead] = new Sample { TimeS = now, ProductionW = totalProd, ConsumptionW = _totalConsumptionW };
-            _sampleHead = (_sampleHead + 1) % GraphPoints;
-            if (_sampleCount < GraphPoints) _sampleCount++;
+            _sampleHead = (_sampleHead + 1) % GRAPH_POINTS;
+            if (_sampleCount < GRAPH_POINTS) _sampleCount++;
             _lastSampleTime = now;
         }
 
@@ -325,7 +323,7 @@ namespace LcdMod.Client.Apps
 
             float ratio = _totalMaxW > 0 ? (float)Math.Min(1.0, _totalConsumptionW / _totalMaxW) : 0f;
             Color barBg = new Color(fg.R, fg.G, fg.B, 25);
-            Color barFill = GetLoadColor(owner, ratio);
+            Color barFill = GetLoadColor(ratio);
             float barCx = xLeft + contentW / 2f;
             float barCy = y + bigBarH / 2f;
 
@@ -402,7 +400,7 @@ namespace LcdMod.Client.Apps
             {
                 for (int i = 0; i < _sampleCount; i++)
                 {
-                    int idx = (_sampleHead - _sampleCount + i + GraphPoints) % GraphPoints;
+                    int idx = (_sampleHead - _sampleCount + i + GRAPH_POINTS) % GRAPH_POINTS;
                     var s = _samples[idx];
                     if (s.TimeS < windowStart) continue;
                     double v = isProduction ? s.ProductionW : s.ConsumptionW;
@@ -453,7 +451,7 @@ namespace LcdMod.Client.Apps
 
             for (int i = 0; i < _sampleCount; i++)
             {
-                int idx = (_sampleHead - _sampleCount + i + GraphPoints) % GraphPoints;
+                int idx = (_sampleHead - _sampleCount + i + GRAPH_POINTS) % GRAPH_POINTS;
                 var s = _samples[idx];
                 if (s.TimeS < windowStart)
                 {
@@ -478,7 +476,7 @@ namespace LcdMod.Client.Apps
         void DrawBatterySection(IAppHost owner, List<MySprite> sprites, float xLeft, float xRight, float contentW, float y, float sectionH)
         {
             Color fg = owner.Surface.ScriptForegroundColor;
-            Color iconColor = GetBatteryIconColor(owner, _avgBatteryCharge);
+            Color iconColor = GetBatteryIconColor(_avgBatteryCharge);
             float cy = y + sectionH / 2f;
             float ts = owner.Scale * 0.76f * owner.Surface.FontSize;
             float tsSmall = owner.Scale * 0.63f * owner.Surface.FontSize;
@@ -580,14 +578,14 @@ namespace LcdMod.Client.Apps
             });
         }
 
-        Color GetLoadColor(IAppHost owner, float ratio)
+        Color GetLoadColor(float ratio)
         {
             if (ratio >= 0.90f) return _config.ErrorColor;
             if (ratio >= 0.70f) return _config.WarningColor;
             return _config.HeaderColor;
         }
 
-        Color GetBatteryIconColor(IAppHost owner, float ratio)
+        Color GetBatteryIconColor(float ratio)
         {
             if (ratio < 0.15f) return _config.ErrorColor;
             if (ratio < 0.35f) return _config.WarningColor;

@@ -295,7 +295,6 @@ namespace LcdMod.Client.Gui.UserControls
                 if (code != null)
                 {
                     AddTextRun(result, new TextRun(TextWrappingHelper.NormalizeNewlines(code.Text ?? string.Empty).Trim(), style.WithFont(CODE_FONT)));
-                    return;
                 }
             }
 

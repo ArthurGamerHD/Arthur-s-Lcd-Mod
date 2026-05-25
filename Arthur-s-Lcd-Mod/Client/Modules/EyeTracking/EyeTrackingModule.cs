@@ -86,8 +86,6 @@ namespace LcdMod.Client.Modules.EyeTracking
             IEyeTracking tooltipInputEntity = null;
             IEyeTracking lookingScreen = null;
             bool? activeClickButton = GetActiveClickButton();
-            bool tooltipBlocksPrimary = false;
-            bool tooltipBlocksSecondary = false;
             double hoveredDistanceSq = double.MaxValue;
             double tooltipDistanceSq = double.MaxValue;
             double lookingDistanceSq = double.MaxValue;
@@ -136,8 +134,6 @@ namespace LcdMod.Client.Modules.EyeTracking
                             {
                                 tooltipDistanceSq = distanceSq;
                                 tooltipInputEntity = screen;
-                                tooltipBlocksPrimary = blocksPrimary;
-                                tooltipBlocksSecondary = blocksSecondary;
                             }
                         }
                         catch (Exception e)

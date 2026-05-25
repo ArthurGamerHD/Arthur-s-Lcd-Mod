@@ -178,8 +178,8 @@ namespace LcdMod.Client.ScreenAreas
             if (!TryGetScreenAreaGeometry(block, surfaceIndex, out geometry))
                 return false;
 
-            var blockEntity = block as IMyEntity;
-            if (blockEntity == null || blockEntity.Model == null)
+            var blockEntity = (IMyEntity)block;
+            if (blockEntity.Model == null)
                 return false;
 
             if (!TryGetScreenLocalMatrix(blockEntity.Model, geometry, out localMatrix))
@@ -738,8 +738,8 @@ namespace LcdMod.Client.ScreenAreas
                 if (block == null)
                     return false;
 
-                var blockEntity = block as IMyEntity;
-                if (blockEntity == null || blockEntity.Model == null)
+                var blockEntity = (IMyEntity)block;
+                if (blockEntity.Model == null)
                 {
                     LogHelper.LogOnce("skip:no-model:" + block.EntityId,
                         "block has no loaded model: " + description);
@@ -788,11 +788,6 @@ namespace LcdMod.Client.ScreenAreas
             return false;
         }
 
-        static List<string> ResolveMaterialCandidates(SurfaceScriptBase screen)
-        {
-            return screen == null ? new List<string>() : ResolveMaterialCandidates(screen.Block, screen.RotationOrSurfaceIndex);
-        }
-
         static List<string> ResolveMaterialCandidates(IMyCubeBlock block, int surfaceIndex)
         {
             var result = new List<string>();
@@ -832,14 +827,6 @@ namespace LcdMod.Client.ScreenAreas
                     return;
 
             materials.Add(material);
-        }
-
-        static string BuildLocalMatrixCacheKey(SurfaceScriptBase screen)
-        {
-            if (screen == null || screen.Block == null)
-                return null;
-
-            return BuildLocalMatrixCacheKey(screen.Block, screen.RotationOrSurfaceIndex);
         }
 
         static string BuildLocalMatrixCacheKey(IMyCubeBlock block, int surfaceIndex)

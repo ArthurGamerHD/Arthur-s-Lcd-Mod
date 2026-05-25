@@ -1,3 +1,6 @@
+// ReSharper disable RedundantUsingDirective
+// ReSharper disable ArrangeObjectCreationWhenTypeEvident
+using System;
 using System.Collections.Generic;
 using System.Text;
 using LcdMod.Client.Markdown.Inline;
@@ -354,7 +357,7 @@ namespace LcdMod.Client.Markdown
 
             int originalPosition = _position;
             int keyStart = _position + prefix.Length;
-            int keyEnd = _text.IndexOf(close, keyStart);
+            int keyEnd = _text.IndexOf(close, keyStart, StringComparison.Ordinal);
 
             if (keyEnd < 0)
             {

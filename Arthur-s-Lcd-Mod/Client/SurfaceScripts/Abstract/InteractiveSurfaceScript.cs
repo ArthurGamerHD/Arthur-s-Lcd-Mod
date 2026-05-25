@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using LcdMod.Client.Apps.Abstract;
 using Generated;
 using LcdMod.Client.Config;
 using LcdMod.Client.Gui;
@@ -59,18 +60,18 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         {
             _interactiveEntriesWithOverlay.Clear();
 
-            if (_messageBox != null)
+            if (_dialog != null)
             {
-                if (_messageBox.Dismissed)
+                if (_dialog.Dismissed)
                 {
-                    _messageBox = null;
+                    _dialog = null;
                 }
                 else
                 {
                     if (includeDisabled)
                         AddBaseInteractiveEntries(_interactiveEntriesWithOverlay);
 
-                    _messageBox.AddInteractiveEntries(_interactiveEntriesWithOverlay);
+                    _dialog.AddInteractiveEntries(_interactiveEntriesWithOverlay);
                     return _interactiveEntriesWithOverlay;
                 }
             }
@@ -173,7 +174,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         ControlBase _manualTooltipParentEntry;
         object _manualTooltipParentObject;
 
-        MessageBox _messageBox;
+        Dialog _dialog;
         GlobalMenu _globalMenu;
 
         protected virtual void OnLookAt(Vector2 onScreenCoordinates)
@@ -672,8 +673,15 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             Action<object, object> button2Callback = null,
             string icon = null)
         {
-            _messageBox = new MessageBox(App);
-            _messageBox.Show(title, content, button1, button2, button1Callback, button2Callback, icon);
+            var messageBox = new MessageBox(App);
+            messageBox.Show(title, content, button1, button2, button1Callback, button2Callback, icon);
+            ShowDialog(messageBox);
+        }
+
+        internal void ShowDialog(Dialog dialog)
+        {
+            _dialog = dialog;
+            RenderSprites();
         }
 
         public virtual bool IsInsideContainer(ControlBase entry, Vector2 position)
@@ -836,7 +844,10 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
             RenderAttachedTooltip(spriteList);
 
-            _messageBox?.Render(
+            if (_dialog != null && _dialog.Dismissed)
+                _dialog = null;
+
+            _dialog?.Render(
                 this,
                 spriteList,
                 _baseViewBox,
@@ -877,13 +888,16 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             if (sprites == null || InteractiveList == null || InteractiveList.Count == 0)
                 return;
 
-            var context = new ControlRenderContext(
-                Surface,
-                Scale,
-                FontScale,
-                ForegroundColor,
-                ColorableConfig?.HeaderColor ?? BackgroundColor,
-                CursorPosition);
+            var themedApp = App as IThemedApp;
+            var context = themedApp != null
+                ? themedApp.CreateControlRenderContext(Surface, Scale, FontScale, CursorPosition)
+                : new ControlRenderContext(
+                    Surface,
+                    Scale,
+                    FontScale,
+                    ForegroundColor,
+                    ColorableConfig?.HeaderColor ?? BackgroundColor,
+                    CursorPosition);
 
             for (int i = 0; i < InteractiveList.Count; i++)
             {

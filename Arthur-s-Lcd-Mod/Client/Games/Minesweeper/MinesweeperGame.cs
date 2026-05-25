@@ -1,15 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.SurfaceScripts;
 using LcdMod.Client.Config;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Interactive;
-using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Modules.EyeTracking;
-using LcdMod.Client.Utility;
 using LcdMod.Common.Helpers;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
@@ -17,6 +16,7 @@ using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI.Ingame.Utilities;
 using VRageMath;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
+using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 
 namespace LcdMod.Client.Games.Minesweeper
 {
@@ -69,6 +69,19 @@ namespace LcdMod.Client.Games.Minesweeper
             new Color(236, 240, 241), // Unknown
             new Color(231, 076, 060), // Flag
         };
+
+        public IReadOnlyDictionary<string, Color> Theme => (_script.App as AppBase)?.Theme;
+
+        public ControlRenderContext CreateControlRenderContext(
+            IMyTextSurface surface,
+            float scale,
+            float fontScale,
+            Vector2 cursorPosition)
+        { 
+            return (_script.App as AppBase)?.CreateControlRenderContext(surface, scale, fontScale, cursorPosition);
+        }
+
+        public Color GetThemeColor(string role) => (_script.App as AppBase)?.GetThemeColor(role) ?? Color.White;
 
         readonly Color _bevelLight = new Color(120, 127, 135);
         readonly Color _bevelDark = new Color(39, 46, 53);

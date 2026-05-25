@@ -7,7 +7,6 @@ using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
-using VRage.Input;
 using VRage.ModAPI;
 using VRage.Utils;
 using VRageMath;
@@ -20,6 +19,8 @@ namespace LcdMod.Client.Modules.InputBlock
         const double MAX_TRACKING_DISTANCE_SQ = MAX_TRACKING_DISTANCE_METERS * MAX_TRACKING_DISTANCE_METERS;
         const long ACTIVE_SURFACE_TIMEOUT_FRAMES = 30;
 
+        public static Color OriginalHighlightColor = Color.Transparent;
+        
         readonly HashSet<IInputBlock> _modules = new HashSet<IInputBlock>();
         readonly List<IInputBlock> _pendingModules = new List<IInputBlock>();
         int _lastActiveNearbyCount;
@@ -123,6 +124,18 @@ namespace LcdMod.Client.Modules.InputBlock
 
             LcdModClientComponent.SetLocalPlayerUseInputBlocked(blocked);
             _useInputBlocked = blocked;
+
+            if (blocked)
+            {
+                if (MyDefinitionManager.Static.EnvironmentDefinition.ContourHighlightColor != Color.Transparent)
+                    OriginalHighlightColor = MyDefinitionManager.Static.EnvironmentDefinition.ContourHighlightColor;
+
+                MyDefinitionManager.Static.EnvironmentDefinition.ContourHighlightColor = Color.Transparent;
+            }
+            else
+            {
+                MyDefinitionManager.Static.EnvironmentDefinition.ContourHighlightColor = OriginalHighlightColor;
+            }
         }
 
         static bool HasRecentlyRun(IInputBlock screen)

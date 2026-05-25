@@ -432,15 +432,12 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
             PreviousType = item.Key.TypeId;
 
-            frame.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = sprite,
-                Position = position + new Vector2(20f, 15) * Scale,
-                Size = new Vector2(LINE_HEIGHT * Scale),
-                Alignment = TextAlignment.CENTER,
-                Color = item.Value == 0 ? new Color(96, 32, 32) : Color.White
-            });
+            DrawItemIcon(frame,
+                sprite,
+                position + new Vector2(20f, 15) * Scale,
+                new Vector2(LINE_HEIGHT * Scale),
+                TextAlignment.CENTER,
+                item.Value == 0 ? AppConfig.ErrorColor : Color.White);
             position.X += (xEnd - xStart) / 8f;
 
             var clip = new Rectangle((int)position.X, (int)position.Y,
@@ -535,6 +532,36 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         }
 
 
+        protected virtual void DrawItemIcon(List<MySprite> frame, string icon, Vector2 position, Vector2 size,
+            TextAlignment alignment, Color backgroundColor)
+        {
+            if (frame == null || size.X <= 0f || size.Y <= 0f)
+                return;
+
+            frame.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE,
+                Data = "SquareSimple",
+                Position = position,
+                Size = size,
+                Alignment = alignment,
+                Color = backgroundColor
+            });
+
+            if (string.IsNullOrEmpty(icon))
+                return;
+
+            frame.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE,
+                Data = icon,
+                Position = position,
+                Size = size,
+                Alignment = alignment,
+                Color = Color.White
+            });
+        }
+
         protected virtual void DrawCellContent(List<MySprite> frame, KeyValuePair<MyItemType, double> item,
             string sprite, Color foreground, MyTuple<RectangleF, RectangleF, RectangleF> slots)
         {
@@ -543,15 +570,12 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             var numberRect = slots.Item2;
             var nameRect = slots.Item3;
 
-            frame.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = sprite,
-                Position = new Vector2(iconRect.X, iconRect.Y + iconRect.Height / 2f),
-                Size = new Vector2(iconRect.Width),
-                Alignment = TextAlignment.LEFT,
-                Color = item.Value == 0 ? AppConfig.ErrorColor : Color.White
-            });
+            DrawItemIcon(frame,
+                sprite,
+                new Vector2(iconRect.X, iconRect.Y + iconRect.Height / 2f),
+                new Vector2(iconRect.Width),
+                TextAlignment.LEFT,
+                item.Value == 0 ? AppConfig.ErrorColor : Color.White);
 
             if (!LocKeysCache.TryGetValue(item.Key, out localizedName))
             {

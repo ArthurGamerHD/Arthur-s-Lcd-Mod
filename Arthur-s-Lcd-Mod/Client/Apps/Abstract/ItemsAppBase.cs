@@ -2,11 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using LcdMod.Client;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Grid;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
+using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.ControlsTemplates.Panels.StackPanel;
 using LcdMod.Client.Gui.ControlsTemplates.Panels.WrappedGrid;
@@ -289,6 +289,8 @@ namespace LcdMod.Client.Apps.Abstract
 
             model.Icon = ResolveSprite(model.ItemType);
             model.DisplayName = ResolveDisplayName(model.ItemType);
+            model.Cursor = CursorType.Hand;
+            model.OnClick = OnItemClicked;
             model.LayoutVersion = _viewModelLayoutVersion;
         }
 
@@ -303,14 +305,15 @@ namespace LcdMod.Client.Apps.Abstract
             model.PrimaryAmountText = amountText;
             model.SecondaryAmountText = null;
             model.ListTextColor = amount == 0 ? AppConfig.ErrorColor : Surface.ScriptForegroundColor;
-            model.ListIconColor = amount == 0 ? new Color(96, 32, 32) : Color.White;
+            model.ListIconColor = Color.White;
+            model.IconBackgroundColor = amount == 0 ? AppConfig.ErrorColor : Color.White;
+            var panelColor = AppConfig.HeaderColor;
+            var panelTextColor = Surface.ScriptForegroundColor;
             model.GridTextColor = AppConfig.DrawLines && amount == 0
                 ? new Color(96, 32, 32)
-                : Surface.ScriptForegroundColor;
-            model.GridIconColor = amount == 0 ? AppConfig.ErrorColor : Color.White;
-            model.PanelColor = amount == 0 ? AppConfig.ErrorColor : AppConfig.HeaderColor;
-            model.ListStyle.SetColors(Surface.ScriptForegroundColor, BackgroundColor);
-            model.GridStyle.SetColors(Surface.ScriptForegroundColor, model.PanelColor);
+                : panelTextColor;
+            model.GridIconColor = Color.White;
+            model.PanelColor = amount == 0 ? AppConfig.ErrorColor : panelColor;
         }
 
         void DrawList(List<MySprite> sprites, List<ItemViewModel> items)
@@ -390,14 +393,12 @@ namespace LcdMod.Client.Apps.Abstract
             CaretY = panel.ContentBounds.Y + panel.MaxVisibleRows * rowHeight;
         }
 
-        ControlRenderContext CreateItemRenderContext()
+        public ControlRenderContext CreateItemRenderContext()
         {
-            return new ControlRenderContext(
+            return CreateControlRenderContext(
                 Surface,
                 Scale,
                 FontScale,
-                Surface.ScriptForegroundColor,
-                AppConfig.HeaderColor,
                 new Vector2(float.NaN, float.NaN));
         }
 
@@ -500,8 +501,6 @@ namespace LcdMod.Client.Apps.Abstract
 
         ControlBase CreateGridItemControl(ItemViewModel item, RectangleF bounds)
         {
-            item.Style = item.GridStyle;
-
             return GetOrCreateItemControl(_gridItemControls, item, bounds, RenderGridItemControl);
         }
 
@@ -562,8 +561,6 @@ namespace LcdMod.Client.Apps.Abstract
 
         ControlBase CreateListItemControl(ItemViewModel item, RectangleF bounds)
         {
-            item.Style = item.ListStyle;
-
             return GetOrCreateItemControl(_listItemControls, item, bounds, RenderListItemControl);
         }
 
@@ -594,6 +591,31 @@ namespace LcdMod.Client.Apps.Abstract
 
             control.SetVisible(true);
             return control;
+        }
+
+        void OnItemClicked(object dataContext, object sender)
+        {
+            var item = dataContext as ItemViewModel;
+            if (item == null)
+                return;
+
+            var interactiveHost = Host as InteractiveSurfaceScript;
+            if (interactiveHost == null)
+                return;
+
+            interactiveHost.ShowDialog(new CraftDialog(
+                this,
+                GridLogic,
+                item.ItemType,
+                item.DisplayName,
+                item.Icon,
+                GetDefaultCraftAmount(item),
+                delegate(Dialog dialog) { interactiveHost.ShowDialog(dialog); }));
+        }
+
+        protected virtual double GetDefaultCraftAmount(ItemViewModel item)
+        {
+            return 1d;
         }
 
         void RenderListItemControl(ControlBase control, ControlRenderContext context, List<MySprite> frame)
@@ -630,15 +652,12 @@ namespace LcdMod.Client.Apps.Abstract
 
             PreviousType = item.TypeId;
 
-            frame.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = item.Icon,
-                Position = position + new Vector2(20f, 15) * Scale,
-                Size = new Vector2(LINE_HEIGHT * Scale),
-                Alignment = TextAlignment.CENTER,
-                Color = item.ListIconColor
-            });
+            DrawItemIcon(frame,
+                item.Icon,
+                position + new Vector2(20f, 15) * Scale,
+                new Vector2(LINE_HEIGHT * Scale),
+                TextAlignment.CENTER,
+                item.IconBackgroundColor);
             position.X += (xEnd - xStart) / 8f;
 
             var clip = new Rectangle((int)position.X, (int)position.Y,
@@ -674,6 +693,37 @@ namespace LcdMod.Client.Apps.Abstract
 
         }
 
+        protected virtual void DrawItemIcon(List<MySprite> frame, string icon, Vector2 position, Vector2 size,
+            TextAlignment alignment, Color backgroundColor)
+        {
+            if (frame == null || size.X <= 0f || size.Y <= 0f)
+                return;
+
+            if (string.IsNullOrEmpty(icon))
+            {
+                frame.Add(new MySprite
+                {
+                    Type = SpriteType.TEXTURE,
+                    Data = "Danger",
+                    Position = position,
+                    Size = size,
+                    Alignment = alignment,
+                    Color = backgroundColor
+                });
+                return;
+            }
+
+            frame.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE,
+                Data = icon,
+                Position = position,
+                Size = size,
+                Alignment = alignment,
+                Color = Color.White
+            });
+        }
+
         protected virtual void DrawCellContent(List<MySprite> frame, ItemViewModel item,
             MyTuple<RectangleF, RectangleF, RectangleF> slots)
         {
@@ -681,15 +731,12 @@ namespace LcdMod.Client.Apps.Abstract
             var numberRect = slots.Item2;
             var nameRect = slots.Item3;
 
-            frame.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = item.Icon,
-                Position = new Vector2(iconRect.X, iconRect.Y + iconRect.Height / 2f),
-                Size = new Vector2(iconRect.Width),
-                Alignment = TextAlignment.LEFT,
-                Color = item.GridIconColor
-            });
+            DrawItemIcon(frame,
+                item.Icon,
+                new Vector2(iconRect.X, iconRect.Y + iconRect.Height / 2f),
+                new Vector2(iconRect.Width),
+                TextAlignment.LEFT,
+                item.IconBackgroundColor);
 
             var localizedName = TrimText(item.DisplayName, nameRect.Width);
 
@@ -907,8 +954,6 @@ namespace LcdMod.Client.Apps.Abstract
             public ItemViewModel(MyItemType itemType)
             {
                 ItemType = itemType;
-                ListStyle = new ControlStyle(Color.White, Color.Transparent);
-                GridStyle = new ControlStyle(Color.White, Color.Transparent);
             }
 
             public MyItemType ItemType { get; private set; }
@@ -928,9 +973,8 @@ namespace LcdMod.Client.Apps.Abstract
             public Color ListIconColor { get; set; }
             public Color GridTextColor { get; set; }
             public Color GridIconColor { get; set; }
+            public Color IconBackgroundColor { get; set; }
             public Color PanelColor { get; set; }
-            public ControlStyle ListStyle { get; private set; }
-            public ControlStyle GridStyle { get; private set; }
         }
     }
 

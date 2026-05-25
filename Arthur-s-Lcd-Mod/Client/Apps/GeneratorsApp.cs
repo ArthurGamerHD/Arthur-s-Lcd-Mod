@@ -1,6 +1,5 @@
 using System;
 using LcdMod.Client.Apps.Abstract;
-using LcdMod.Client.SurfaceScripts.Abstract;
 using Sandbox.ModAPI;
 using SpaceEngineers.Game.ModAPI;
 using ScreenConfigPower = LcdMod.Common.Config.Models.Apps.ScreenConfigPower;

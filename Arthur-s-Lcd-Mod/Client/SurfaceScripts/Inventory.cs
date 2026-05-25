@@ -10,8 +10,6 @@ using LcdMod.Client.Terminal.Controls.Groups;
 using LcdMod.Client.Utility;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
-using Sandbox.ModAPI.Interfaces.Terminal;
-using VRage.Game;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
@@ -21,7 +19,6 @@ using ComboboxSorting = LcdMod.Client.Terminal.Controls.Generic.ComboboxSorting;
 using LabelSeparator = LcdMod.Client.Terminal.Controls.Filter.LabelSeparator;
 using SeparatorFilter = LcdMod.Client.Terminal.Controls.Filter.SeparatorFilter;
 using SwitchToggleLines = LcdMod.Client.Terminal.Controls.Generic.SwitchToggleLines;
-using ScreenConfigWithItems = LcdMod.Common.Config.Models.Apps.ScreenConfigWithItems;
 
 namespace LcdMod.Client.SurfaceScripts
 {
@@ -68,7 +65,7 @@ namespace LcdMod.Client.SurfaceScripts
             base.SafeRun();
 
             if (_app == null)
-                _app = new InventoryApp((ScreenConfigWithItems)AppConfig, this);
+                _app = new InventoryApp(AppConfig, this);
 
             _app.Update();
 

@@ -2,13 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using LcdMod.Client.Apps.Abstract;
-using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Helpers;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
-using VRage.ModAPI;
 using VRage.Utils;
 using VRageMath;
 using IMyCockpit = Sandbox.ModAPI.IMyCockpit;
@@ -290,7 +288,7 @@ namespace LcdMod.Client.Apps
                     secondsPerStep = 1f / 60f;
 
                 var ticksPerStep = Math.Max(1, (int)Math.Round(secondsPerStep * 60f));
-                return (int)(session.GameplayFrameCounter / ticksPerStep);
+                return session.GameplayFrameCounter / ticksPerStep;
             }
             catch (Exception ex)
             {

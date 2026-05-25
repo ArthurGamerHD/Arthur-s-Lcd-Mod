@@ -15,9 +15,9 @@ namespace LcdMod.Client.Apps
 {
     internal sealed class VisibleTreeDebugApp : IApp
     {
-        const string DebugFont = "Monospace";
-        const float LineScale = 0.52f;
-        const int MaxDepth = 32;
+        const string DEBUG_FONT = "Monospace";
+        const float LINE_SCALE = 0.52f;
+        const int MAX_DEPTH = 32;
         static readonly Color HeaderColor = Color.White;
         static readonly Color RootColor = new Color(120, 200, 255);
         static readonly Color ChildColor = new Color(210, 230, 255);
@@ -36,7 +36,7 @@ namespace LcdMod.Client.Apps
             var viewBox = GetViewBox(owner);
             var lines = BuildDebugLines(owner, target, status);
             float textScale = GetTextScale(owner);
-            float lineHeight = owner.Surface.MeasureStringInPixels(new StringBuilder("A"), DebugFont, textScale).Y + 2f;
+            float lineHeight = owner.Surface.MeasureStringInPixels(new StringBuilder("A"), DEBUG_FONT, textScale).Y + 2f;
             var start = viewBox.Position + new Vector2(8f, 8f);
             int maxLines = Math.Max(1, (int)Math.Floor((viewBox.Height - 16f) / lineHeight));
 
@@ -49,7 +49,7 @@ namespace LcdMod.Client.Apps
                     Data = lines[i].Text,
                     Position = start + new Vector2(0f, i * lineHeight),
                     Color = lines[i].Color,
-                    FontId = DebugFont,
+                    FontId = DEBUG_FONT,
                     Alignment = TextAlignment.LEFT,
                     RotationOrScale = textScale
                 });
@@ -63,7 +63,7 @@ namespace LcdMod.Client.Apps
                     Data = "-- More " + (lines.Count - maxLines) + " --",
                     Position = start + new Vector2(0f, (maxLines - 1) * lineHeight),
                     Color = WarningColor,
-                    FontId = DebugFont,
+                    FontId = DEBUG_FONT,
                     Alignment = TextAlignment.LEFT,
                     RotationOrScale = textScale
                 });
@@ -77,7 +77,7 @@ namespace LcdMod.Client.Apps
             float fontScale = owner.Surface != null && owner.Surface.FontSize > 0f
                 ? owner.Surface.FontSize
                 : 1f;
-            return Math.Max(0.05f, LineScale * owner.Scale * fontScale);
+            return Math.Max(0.05f, LINE_SCALE * owner.Scale * fontScale);
         }
 
         static RectangleF GetViewBox(VisibleTreeDebugSurfaceScript owner)
@@ -173,7 +173,7 @@ namespace LcdMod.Client.Apps
             else
                 color = ChildColor;
 
-            string prefix = new string(' ', Math.Min(depth, MaxDepth) * 2);
+            string prefix = new string(' ', Math.Min(depth, MAX_DEPTH) * 2);
             lines.Add(new DebugLine(prefix + path + " " + BuildControlText(control, disabled), color));
 
             if (!visited.Add(control))
@@ -241,8 +241,8 @@ namespace LcdMod.Client.Apps
             var name = control.GetType().Name;
             if (name == "TooltipContainerControl")
                 return "Tooltip";
-            if (name == "MessageBoxContainerControl")
-                return "MessageBox";
+            if (name == "DialogContainerControl")
+                return "Dialog";
             if (name == "GlobalMenu")
                 return "GlobalMenu";
             if (name == "GlobalMenuContainerControl")

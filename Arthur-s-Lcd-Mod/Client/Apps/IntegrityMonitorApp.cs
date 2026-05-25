@@ -3,10 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using LcdMod.Client.Apps.Abstract;
-using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Helpers;
-using LcdMod.Client.Terminal.Controls;
 using LcdMod.Common.Config.Models.Apps;
 using Sandbox.ModAPI;
 using SpaceEngineers.Game.ModAPI;
@@ -292,7 +290,7 @@ namespace LcdMod.Client.Apps
                     secondsPerStep = 1f / 60f;
 
                 var ticksPerStep = Math.Max(1, (int)Math.Round(secondsPerStep * 60f));
-                return (int)(session.GameplayFrameCounter / ticksPerStep);
+                return session.GameplayFrameCounter / ticksPerStep;
             }
             catch (Exception ex)
             {

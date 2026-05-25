@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
-using LcdMod.Client.Extensions;
+using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
-using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Helpers;
+using LcdMod.Common.Helpers;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
@@ -100,7 +100,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             SetDataContext(owner != null ? owner.App : null);
             _renderViewBox = viewBox;
             _popupMaxWidth = owner != null ? owner.ViewBox.Width * 0.65f : viewBox.Width * 0.65f;
-            var renderContext = new ControlRenderContext(surface, scale, fontScale, textColor, panelColor, cursorPosition);
+            var themedApp = owner != null ? owner.App as IThemedApp : null;
+            var renderContext = themedApp != null
+                ? themedApp.CreateControlRenderContext(surface, scale, fontScale, cursorPosition)
+                : new ControlRenderContext(surface, scale, fontScale, textColor, panelColor, cursorPosition);
 
             base.Render(renderContext, targetSprites);
         }
@@ -116,18 +119,17 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             var surface = context.Surface;
             var scale = context.Scale;
             var fontScale = context.FontScale;
-            var textColor = context.TextColor;
             var panelColor = context.PanelColor;
             var cursorPosition = context.CursorPosition;
-            var shadowColor = panelColor.MulValue(0.2f);
+            var shadowColor = context.GetThemeColor(Constants.SHADOW);
             float rootScale = 0.58f * scale * fontScale;
             float popupScale = 0.56f * scale * fontScale;
             float rootHeight = Math.Max(24f * scale, FormatingHelper.LineHeight(rootScale, surface) + 10f * scale);
             float itemHeight = Math.Max(22f * scale, FormatingHelper.LineHeight(rootScale, surface) + 8f * scale);
             float rootPaddingX = 12f * scale;
 
-            DrawRootBar(viewBox, scale, rootScale, rootHeight, rootPaddingX, panelColor, textColor, cursorPosition, surface, context);
-            DrawOpenPopups(viewBox, scale, popupScale, itemHeight, panelColor, textColor, shadowColor, cursorPosition, surface, context);
+            DrawRootBar(viewBox, scale, rootScale, rootHeight, rootPaddingX, panelColor, cursorPosition, surface, context);
+            DrawOpenPopups(viewBox, scale, popupScale, itemHeight, panelColor, shadowColor, cursorPosition, surface, context);
 
             SetRect(_hasMenuBounds ? _menuBounds : default(RectangleF));
 
@@ -140,7 +142,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             float rootHeight,
             float rootPaddingX,
             Color panelColor,
-            Color textColor,
             Vector2 cursorPosition,
             Sandbox.ModAPI.Ingame.IMyTextSurface surface,
             ControlRenderContext renderContext)
@@ -163,7 +164,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 {
                     interactiveEntry.CustomRender = delegate(ControlBase item, ControlRenderContext context, List<MySprite> sprites)
                     {
-                        DrawItemVisual(item.Bounds, entry, rootScale, panelColor, textColor, cursorPosition, surface, true, sprites);
+                        DrawItemVisual(item.Bounds, entry, rootScale, context, cursorPosition, surface, true, sprites);
                     };
                     interactiveEntry.Render(renderContext, _sprites);
                 }
@@ -178,7 +179,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             float popupScale,
             float itemHeight,
             Color panelColor,
-            Color textColor,
             Color shadowColor,
             Vector2 cursorPosition,
             Sandbox.ModAPI.Ingame.IMyTextSurface surface,
@@ -214,7 +214,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                     {
                         interactiveEntry.CustomRender = delegate(ControlBase item, ControlRenderContext context, List<MySprite> sprites)
                         {
-                            DrawItemVisual(item.Bounds, child, popupScale, panelColor, textColor, cursorPosition, surface, false, sprites);
+                            DrawItemVisual(item.Bounds, child, popupScale, context, cursorPosition, surface, false, sprites);
                         };
                         interactiveEntry.Render(renderContext, _sprites);
                     }
@@ -225,15 +225,17 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         static void DrawItemVisual(RectangleF rect,
             GlobalMenuEntry entry,
             float textScale,
-            Color panelColor,
-            Color textColor,
+            ControlRenderContext context,
             Vector2 cursorPosition,
             Sandbox.ModAPI.Ingame.IMyTextSurface surface,
             bool root,
             List<MySprite> sprites)
         {
             bool hover = rect.Contains(cursorPosition);
-            var fillColor = hover ? panelColor.DeriveAccentColor() : panelColor;
+            var fillColor = hover
+                ? context.GetThemeColor(Constants.PRIMARY + Constants.HOVER)
+                : context.GetThemeColor(Constants.PRIMARY);
+            var itemTextColor = context.GetThemeColor(Constants.ON_PRIMARY);
             Border.CreateSpritesFromRect(rect, sprites, fillColor, 0.5f);
 
             string text = GetText(entry);
@@ -248,7 +250,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                     Data = entry?.Icon,
                     Position = new Vector2(rect.X + rect.Height * 0.5f, rect.Center.Y),
                     Size = new Vector2(rect.Height * 0.62f),
-                    Color = textColor,
+                    Color = itemTextColor,
                     Alignment = TextAlignment.CENTER
                 });
             }
@@ -258,7 +260,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 Type = SpriteType.TEXT,
                 Data = text,
                 Position = new Vector2(rect.X + 8f * textScale + iconSpace, rect.Center.Y - FormatingHelper.GetSizeInPixel(text, "White", textScale, surface).Y * 0.5f),
-                Color = hover ? panelColor.MulValue(0.85f) : textColor,
+                Color = itemTextColor,
                 FontId = "White",
                 Alignment = TextAlignment.LEFT,
                 RotationOrScale = textScale
@@ -271,7 +273,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                     Type = SpriteType.TEXT,
                     Data = ">",
                     Position = new Vector2(rect.Right - arrowSpace, rect.Center.Y - FormatingHelper.GetSizeInPixel(">", "White", textScale, surface).Y * 0.5f),
-                    Color = hover ? panelColor.MulValue(0.85f) : textColor,
+                    Color = itemTextColor,
                     FontId = "White",
                     Alignment = TextAlignment.LEFT,
                     RotationOrScale = textScale

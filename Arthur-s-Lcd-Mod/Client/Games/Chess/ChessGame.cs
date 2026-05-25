@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using ChessChallenge.API;
+using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.SurfaceScripts;
 using LcdMod.Client.Config;
 using LcdMod.Client.Extensions;
@@ -12,9 +13,7 @@ using LcdMod.Client.Games.Chess.TinyChessChallenge.Bots;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Interactive;
-using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Helpers;
-using LcdMod.Client.Utility;
 using LcdMod.Common.Helpers;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
@@ -22,6 +21,7 @@ using VRage.Game;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
+using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 
 namespace LcdMod.Client.Games.Chess
 {
@@ -36,7 +36,7 @@ namespace LcdMod.Client.Games.Chess
         long _playingAsBlackPlayerId;
         int _sessionId;
 
-        public Sandbox.ModAPI.Ingame.IMyTextSurface Surface => _script.Surface;
+        public IMyTextSurface Surface => _script.Surface;
 
         RectangleF _viewBox;
         public RectangleF BoardViewBox;
@@ -54,6 +54,19 @@ namespace LcdMod.Client.Games.Chess
 
         public List<ControlBase> Interactive { get; } = new List<ControlBase>();
         public GameSurfaceScript.GameEnum Id => GameSurfaceScript.GameEnum.Chess;
+
+        public IReadOnlyDictionary<string, Color> Theme => (_script.App as AppBase)?.Theme;
+
+        public ControlRenderContext CreateControlRenderContext(
+            IMyTextSurface surface,
+            float scale,
+            float fontScale,
+            Vector2 cursorPosition)
+        { 
+            return (_script.App as AppBase)?.CreateControlRenderContext(surface, scale, fontScale, cursorPosition);
+        }
+
+        public Color GetThemeColor(string role) => (_script.App as AppBase)?.GetThemeColor(role) ?? Color.White;
 
         static string UnpackTexture(string packed)
         {

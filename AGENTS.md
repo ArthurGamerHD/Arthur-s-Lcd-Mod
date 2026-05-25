@@ -25,6 +25,13 @@ When rendering LCD sprites or creating interactive hitboxes, always account for 
 4. Do not reuse a text sprite `Position` directly as a rectangle top-left corner.
 
 
+# Space Engineers Source Instruction
+
+Decompiled Space Engineers sources are available in `./SE.Source/`.
+
+If `./SE.Source/` is missing or does not contain the needed source, run `./DumpSource.sh` only after ensuring `./Arthur-s-Lcd-Mod/mdk.local.ini` exists and has a valid `[mdk]` `binarypath=` pointing to the Space Engineers `Bin64` directory.
+
+
 # MVVM / Control Rendering Instruction
 
 When a control is backed by a view model, do not recreate that view model every frame.

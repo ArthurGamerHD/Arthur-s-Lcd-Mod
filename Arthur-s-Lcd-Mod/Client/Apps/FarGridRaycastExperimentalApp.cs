@@ -1,17 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using Generated;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Helpers;
-using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
-using LcdMod.Client.Terminal.Controls.Generic;
-using LcdMod.Client.Terminal.Controls.Scale;
-using LcdMod.Client.Utility;
 using LcdMod.Common.Config.Models.Apps;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
@@ -25,7 +20,7 @@ using SliderFov = LcdMod.Client.Terminal.Controls.Generic.SliderFov;
 
 namespace LcdMod.Client.Apps
 {
-    public partial class FarGridRaycastExperimentalApp : AppBase, IAppInteractive
+    public class FarGridRaycastExperimentalApp : AppBase, IAppInteractive
     {
         public const string ID = "LcdMod_FarGridRaycastExperimental";
         public const string TITLE = "Far Grid Raycast Experimental";
@@ -50,7 +45,7 @@ namespace LcdMod.Client.Apps
 
         new ScreenConfigRaycast AppConfig => (ScreenConfigRaycast)base.AppConfig;
         float RayDensityMultiplier => AppConfig.RenderScale;
-        int RaysPerTick => Math.Max((int)1, (int)AppConfig.RaysPerTick);
+        int RaysPerTick => Math.Max(1, AppConfig.RaysPerTick);
 
         readonly IAppHost _host;
         readonly List<MySprite> _sprites = new List<MySprite>();
@@ -108,11 +103,6 @@ namespace LcdMod.Client.Apps
         IMyCubeBlock Block => _host.Block;
         Sandbox.ModAPI.Ingame.IMyTextSurface Surface => _host.Surface;
         RectangleF ViewBox => _host.ViewBox;
-        float Scale
-        {
-            get { return _host.Scale; }
-            set { _host.Scale = value; }
-        }
         float FontScale => _host.Surface.FontSize;
         Color ForegroundColor => _host.ForegroundColor;
         public List<ControlBase> InteractiveList => _interactiveList;

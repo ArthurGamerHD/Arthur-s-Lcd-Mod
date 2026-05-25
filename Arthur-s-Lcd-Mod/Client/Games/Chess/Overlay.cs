@@ -6,9 +6,7 @@ using LcdMod.Client.Games.Chess.Enum;
 using LcdMod.Client.Games.Chess.TinyChessChallenge;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
-using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Helpers;
-using LcdMod.Client.Utility;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 

@@ -12,7 +12,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 
         public CursorType Cursor { get; set; }
         public InteractiveTooltip Tooltip { get; set; }
-        public ControlStyle Style { get; set; }
         public InteractiveRenderHandler CustomRender { get; set; }
         public Action<object, object> OnClick { get; set; }
         public Action<object, object> OnSecondaryClick { get; set; }
