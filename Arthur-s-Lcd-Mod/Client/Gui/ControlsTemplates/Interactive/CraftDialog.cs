@@ -108,7 +108,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             var renderContext = CreateRenderContext(surface, scale, fontScale, textColor, panelColor, cursorPosition);
 
             var titleSize = FormatingHelper.GetSizeInPixel("Craft", "White", titleScale, surface);
-            float currentY = cardRect.Y + padding.Y;
+            var currentY = cardRect.Y + padding.Y;
             DrawText("Craft", new Vector2(cardRect.Center.X, currentY), titleScale, cardTextColor, TextAlignment.CENTER);
             currentY += titleSize.Y + spacing * 0.7f;
 
@@ -150,8 +150,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             container.AddChild(_amountControl);
             _amountControl.Render(renderContext, Sprites);
 
-            float buttonSpacing = 12f * scale;
-            float buttonWidth = Math.Max(92f * scale, (cardRect.Width - padding.X * 2f - buttonSpacing) * 0.5f);
+            var buttonSpacing = 12f * scale;
+            var buttonWidth = Math.Max(92f * scale, (cardRect.Width - padding.X * 2f - buttonSpacing) * 0.5f);
             var buttonsWidth = buttonWidth * 2f + buttonSpacing;
             var craftRect = new RectangleF(cardRect.Center.X - buttonsWidth * 0.5f, buttonsTop, buttonWidth, buttonHeight);
             var cancelRect = new RectangleF(craftRect.Right + buttonSpacing, buttonsTop, buttonWidth, buttonHeight);
@@ -322,8 +322,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
             button.SetCursor(enabled ? CursorType.Hand : CursorType.Default);
             button.SetStyle(enabled
-                ? Button.CreatePrimaryButtonStyle(themedParentApp != null ? themedParentApp.Theme : null)
-                : Button.CreateDisabledButtonStyle(themedParentApp != null ? themedParentApp.Theme : null));
+                ? Button.CreatePrimaryButtonStyle(themedParentApp?.Theme)
+                : Button.CreateDisabledButtonStyle(themedParentApp?.Theme));
             button.CustomRender = delegate(ControlBase renderEntry, ControlRenderContext context, List<MySprite> sprites)
             {
                 DrawButton(renderEntry.Bounds, owner, sprites, text, textScale, context, enabled);
@@ -384,7 +384,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
             try
             {
-                int requestedItems = Math.Max(1, (int)Math.Ceiling(_amountModel.Value));
+                var requestedItems = Math.Max(1, (int)Math.Ceiling(_amountModel.Value));
                 QueueSplitCraft(requestedItems);
                 Dismiss();
             }
@@ -404,7 +404,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             if (blueprint == null || blueprint.Results == null)
                 return requestedItems;
 
-            for (int i = 0; i < blueprint.Results.Length; i++)
+            for (var i = 0; i < blueprint.Results.Length; i++)
             {
                 if (!blueprint.Results[i].Id.Equals(_itemDefinitionId))
                     continue;
@@ -425,13 +425,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             if (requestedItems <= 0 || selected.Count == 0)
                 return;
 
-            int count = selected.Count;
-            int baseShare = requestedItems / count;
-            int remainder = requestedItems % count;
+            var count = selected.Count;
+            var baseShare = requestedItems / count;
+            var remainder = requestedItems % count;
 
-            for (int i = 0; i < count; i++)
+            for (var i = 0; i < count; i++)
             {
-                int itemShare = baseShare + (i < remainder ? 1 : 0);
+                var itemShare = baseShare + (i < remainder ? 1 : 0);
                 if (itemShare <= 0)
                     continue;
 
@@ -445,7 +445,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         {
             var selected = new List<CraftAssemblerOption>();
 
-            for (int i = 0; i < _selectedAssemblers.Count; i++)
+            for (var i = 0; i < _selectedAssemblers.Count; i++)
             {
                 var option = _selectedAssemblers[i];
                 if (option != null && option.Assembler != null && option.Blueprint != null)
@@ -459,11 +459,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         {
             _assemblerOptions.Clear();
 
-            var assemblers = _gridLogic == null ? null : _gridLogic.GetAssemblers();
+            var assemblers = _gridLogic?.GetAssemblers();
             if (assemblers == null || assemblers.Count == 0)
                 return;
 
-            for (int i = 0; i < assemblers.Count; i++)
+            for (var i = 0; i < assemblers.Count; i++)
             {
                 var assembler = assemblers[i];
                 if (assembler == null)
@@ -532,7 +532,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             if (options == null)
                 return;
 
-            for (int i = 0; i < _assemblerOptions.Count; i++)
+            for (var i = 0; i < _assemblerOptions.Count; i++)
             {
                 var option = _assemblerOptions[i];
                 if (option != null && options.Contains(option))
@@ -560,11 +560,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             if (b == null)
                 return -1;
 
-            int idle = b.Idle.CompareTo(a.Idle);
+            var idle = b.Idle.CompareTo(a.Idle);
             if (idle != 0)
                 return idle;
 
-            int speed = b.Speed.CompareTo(a.Speed);
+            var speed = b.Speed.CompareTo(a.Speed);
             if (speed != 0)
                 return speed;
 
@@ -580,11 +580,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             if (b == null)
                 return -1;
 
-            int primary = b.IsPrimary.CompareTo(a.IsPrimary);
+            var primary = b.IsPrimary.CompareTo(a.IsPrimary);
             if (primary != 0)
                 return primary;
 
-            int priority = a.Priority.CompareTo(b.Priority);
+            var priority = a.Priority.CompareTo(b.Priority);
             if (priority != 0)
                 return priority;
 
@@ -623,7 +623,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             try
             {
                 var definition = MyDefinitionManager.Static.GetCubeBlockDefinition(assembler.BlockDefinition) as MyAssemblerDefinition;
-                return definition == null ? 1f : definition.AssemblySpeed;
+                return definition?.AssemblySpeed ?? 1f;
             }
             catch
             {
@@ -769,8 +769,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 });
             }
 
-            float buttonSpacing = 12f * scale;
-            float buttonWidth = Math.Max(92f * scale, (cardRect.Width - padding.X * 2f - buttonSpacing) * 0.5f);
+            var buttonSpacing = 12f * scale;
+            var buttonWidth = Math.Max(92f * scale, (cardRect.Width - padding.X * 2f - buttonSpacing) * 0.5f);
             var buttonsWidth = buttonWidth * 2f + buttonSpacing;
             var selectRect = new RectangleF(cardRect.Center.X - buttonsWidth * 0.5f, buttonTop, buttonWidth, buttonHeight);
             var cancelRect = new RectangleF(selectRect.Right + buttonSpacing, buttonTop, buttonWidth, buttonHeight);

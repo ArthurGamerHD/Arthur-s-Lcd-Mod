@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using LcdMod.Client.Apps.Abstract;
-using LcdMod.Client.Games;
 using LcdMod.Client.SurfaceScripts;
 using LcdMod.Client.Config;
 using LcdMod.Client.Gui;

@@ -20,11 +20,18 @@ namespace LcdMod.Client.Apps
         const float ARROW_SIZE_MULTIPLIER = 3f;
         const float BASE_OPACITY = 0.25f;
         const float LEGEND_HEIGHT_BASE = 56f;
+        const float TELEMETRY_PANEL_WIDTH_BASE = 122f;
+        const float TELEMETRY_CELL_HEIGHT_BASE = 52f;
+        const float TELEMETRY_PANEL_GAP_BASE = 8f;
+        const float TELEMETRY_PANEL_MARGIN_BASE = 8f;
         const float GRAVITY_ARROW_LENGTH_FACTOR = 0.85f;
         const float GRAVITY_NORMALIZE_MPS2 = 10f;
         const float GRAVITY_LOAD_WARN_THRESHOLD = 0.80f;
         const float GRAVITY_LOAD_CRITICAL_THRESHOLD = 0.95f;
         const float GRAVITY_ERROR_FLASH_SECONDS = 0.5f;
+        const double STOP_SPEED_EPSILON = 5e-2d;
+        const double STOP_FORCE_EPSILON = 1e-3d;
+        const double STOP_ACCELERATION_EPSILON = 1e-3d;
         const int DIR_FORWARD = 0;
         const int DIR_BACKWARD = 1;
         const int DIR_LEFT = 2;
@@ -38,6 +45,11 @@ namespace LcdMod.Client.Apps
         Vector3D _gravityVector;
         float _gravityLoad;
         bool _hasGravity;
+        double _stopSpeed;
+        double _stopNetForce;
+        double _stopSeconds;
+        double _stopDistance;
+        bool _hasStopEstimate;
 
         ScreenConfigColorable Config => (ScreenConfigColorable)AppConfig;
         IMyCubeBlock Block => Host.Block;
@@ -64,6 +76,11 @@ namespace LcdMod.Client.Apps
             Array.Clear(_fills, 0, _fills.Length);
             HasData = false;
             _hasGravity = false;
+            _hasStopEstimate = false;
+            _stopSpeed = 0d;
+            _stopNetForce = 0d;
+            _stopSeconds = 0d;
+            _stopDistance = 0d;
 
             if (Config == null)
                 return;
@@ -114,12 +131,14 @@ namespace LcdMod.Client.Apps
             }
 
             _hasGravity = TryGetNaturalGravityAndUtilization(_maxThrust, out _gravityVector, out _gravityLoad);
+            UpdateStopEstimate(_maxThrust);
         }
 
         public override List<MySprite> GetSprites()
         {
             var sprites = new List<MySprite>();
             DrawIsometricAxes(sprites, _fills, _hasGravity ? (Vector3D?)_gravityVector : null, _gravityLoad);
+            DrawTelemetrySidePanels(sprites);
             DrawBottomLegend(sprites, _maxThrust);
             DrawGravityLoadWarning(sprites, _hasGravity, _gravityLoad);
             return sprites;
@@ -128,13 +147,14 @@ namespace LcdMod.Client.Apps
         void DrawIsometricAxes(List<MySprite> sprites, float[] fills, Vector3D? gravityVector, float gravityLoad)
         {
             float contentTop = ContentTop;
-            float legendHeight = LEGEND_HEIGHT_BASE * LayoutScale;
+            float legendHeight = GetBottomPanelHeight();
             float contentBottom = ViewBox.Bottom - legendHeight;
             float contentHeight = contentBottom - contentTop;
             if (contentHeight <= 0f) return;
 
             var origin = new Vector2(ViewBox.Center.X, contentTop + (contentHeight * 0.5f));
-            float axisLength = Math.Min(ViewBox.Width, contentHeight) * 0.35f;
+            float visualWidth = Math.Max(1f, ViewBox.Width - (GetTelemetryPanelWidth() + GetTelemetryPanelMargin()) * 2f);
+            float axisLength = Math.Min(visualWidth, contentHeight) * 0.35f;
             float thickness = AXIS_THICKNESS * Scale;
             float arrowSize = thickness * ARROW_SIZE_MULTIPLIER;
             float cos30 = 0.8660254f;
@@ -200,6 +220,11 @@ namespace LcdMod.Client.Apps
                     }
                 }
             }
+        }
+
+        float GetBottomPanelHeight()
+        {
+            return LEGEND_HEIGHT_BASE * LayoutScale;
         }
 
         bool TryGetNaturalGravityAndUtilization(double[] maxThrust, out Vector3D gravity, out float utilization)
@@ -312,11 +337,148 @@ namespace LcdMod.Client.Apps
             double desiredUp = Vector3D.Dot(antiGravityDir, gridMatrix.Up);
 
             // Per-axis force availability in the exact anti-gravity sign direction.
-            double availableForwardAxis = desiredForward >= 0d ? maxThrust[DIR_FORWARD] : maxThrust[DIR_BACKWARD];
-            double availableRightAxis = desiredRight >= 0d ? maxThrust[DIR_RIGHT] : maxThrust[DIR_LEFT];
-            double availableUpAxis = desiredUp >= 0d ? maxThrust[DIR_UP] : maxThrust[DIR_DOWN];
+            double availableForwardAxis = GetAxisForce(maxThrust,
+                desiredForward >= 0d ? DIR_FORWARD : DIR_BACKWARD);
+            double availableRightAxis = GetAxisForce(maxThrust,
+                desiredRight >= 0d ? DIR_RIGHT : DIR_LEFT);
+            double availableUpAxis = GetAxisForce(maxThrust,
+                desiredUp >= 0d ? DIR_UP : DIR_DOWN);
 
-            // Resultant along anti-gravity is constrained by the weakest axis contribution (bottleneck).
+            double availableForce = ComputeAxisConstrainedForce(
+                desiredForward,
+                desiredRight,
+                desiredUp,
+                availableForwardAxis,
+                availableRightAxis,
+                availableUpAxis);
+            if (availableForce <= 1e-3) return 1f;
+
+            double requiredForce = shipMass * gravityMagnitude;
+            return (float)(requiredForce / availableForce);
+        }
+
+        void UpdateStopEstimate(double[] maxThrust)
+        {
+            var grid = Block == null ? null : Block.CubeGrid;
+            if (grid == null) return;
+
+            Vector3D velocity = grid.LinearVelocity;
+            _stopSpeed = velocity.Length();
+            if (_stopSpeed <= STOP_SPEED_EPSILON)
+            {
+                _hasStopEstimate = true;
+                _stopSeconds = 0d;
+                _stopNetForce = 0d;
+                _stopDistance = 0d;
+                return;
+            }
+
+            Vector3D brakeDirection = -velocity / _stopSpeed;
+            double opposingThrust = ComputeAvailableForceInDirection(maxThrust, brakeDirection);
+            if (opposingThrust <= STOP_FORCE_EPSILON)
+                return;
+
+            double mass;
+            if (!TryGetShipMass(out mass))
+                return;
+
+            Vector3D gravity;
+            double gravityDeceleration = TryGetGravityAcceleration(out gravity)
+                ? Vector3D.Dot(gravity, brakeDirection)
+                : 0d;
+
+            double netDeceleration = opposingThrust / mass + gravityDeceleration;
+            if (netDeceleration <= STOP_ACCELERATION_EPSILON)
+                return;
+
+            _stopNetForce = netDeceleration * mass;
+            _stopSeconds = _stopSpeed / netDeceleration;
+            _stopDistance = _stopSpeed * _stopSpeed / (2d * netDeceleration);
+            _hasStopEstimate = true;
+        }
+
+        bool TryGetGravityAcceleration(out Vector3D gravity)
+        {
+            gravity = Vector3D.Zero;
+
+            var cockpit = ResolveCockpitForGravity();
+            if (cockpit != null)
+            {
+                gravity = cockpit.GetTotalGravity();
+                return gravity.LengthSquared() > 1e-8;
+            }
+
+            var grid = Block == null ? null : Block.CubeGrid;
+            if (grid == null)
+                return false;
+
+            gravity = grid.NaturalGravity;
+            return gravity.LengthSquared() > 1e-8;
+        }
+
+        bool TryGetShipMass(out double mass)
+        {
+            mass = 0d;
+
+            var cockpit = ResolveCockpitForGravity();
+            if (cockpit != null)
+            {
+                var shipMass = cockpit.CalculateShipMass();
+                mass = shipMass.PhysicalMass;
+            }
+
+            if (mass <= 0d)
+            {
+                var grid = Block == null ? null : Block.CubeGrid;
+                if (grid != null && grid.Physics != null)
+                    mass = grid.Physics.Mass;
+            }
+
+            return mass > 0d;
+        }
+
+        double ComputeAvailableForceInDirection(
+            double[] maxThrust,
+            Vector3D desiredWorldDirection)
+        {
+            if (maxThrust == null || maxThrust.Length < 6 || desiredWorldDirection.LengthSquared() <= 1e-8)
+                return 0d;
+
+            var grid = Block == null ? null : Block.CubeGrid;
+            if (grid == null) return 0d;
+
+            desiredWorldDirection.Normalize();
+            var gridMatrix = grid.WorldMatrix;
+
+            double desiredForward = Vector3D.Dot(desiredWorldDirection, gridMatrix.Forward);
+            double desiredRight = Vector3D.Dot(desiredWorldDirection, gridMatrix.Right);
+            double desiredUp = Vector3D.Dot(desiredWorldDirection, gridMatrix.Up);
+
+            double availableForwardAxis = GetAxisForce(maxThrust,
+                desiredForward >= 0d ? DIR_FORWARD : DIR_BACKWARD);
+            double availableRightAxis = GetAxisForce(maxThrust,
+                desiredRight >= 0d ? DIR_RIGHT : DIR_LEFT);
+            double availableUpAxis = GetAxisForce(maxThrust,
+                desiredUp >= 0d ? DIR_UP : DIR_DOWN);
+
+            return ComputeAxisConstrainedForce(
+                desiredForward,
+                desiredRight,
+                desiredUp,
+                availableForwardAxis,
+                availableRightAxis,
+                availableUpAxis);
+        }
+
+        static double ComputeAxisConstrainedForce(
+            double desiredForward,
+            double desiredRight,
+            double desiredUp,
+            double availableForwardAxis,
+            double availableRightAxis,
+            double availableUpAxis)
+        {
+            // Resultant force along a requested direction is limited by the weakest axis contribution.
             const double eps = 1e-6;
             double lambdaMax = double.PositiveInfinity;
 
@@ -327,23 +489,27 @@ namespace LcdMod.Client.Apps
             if (Math.Abs(desiredUp) > eps)
                 lambdaMax = Math.Min(lambdaMax, availableUpAxis / Math.Abs(desiredUp));
 
-            double availableForce = double.IsInfinity(lambdaMax) ? 0d : Math.Max(0d, lambdaMax);
-            if (availableForce <= 1e-3) return 1f;
+            return double.IsInfinity(lambdaMax) ? 0d : Math.Max(0d, lambdaMax);
+        }
 
-            double requiredForce = shipMass * gravityMagnitude;
-            return (float)(requiredForce / availableForce);
+        static double GetAxisForce(double[] maxThrust, int index)
+        {
+            if (maxThrust == null || index < 0 || index >= maxThrust.Length)
+                return 0d;
+
+            return Math.Max(0d, maxThrust[index]);
         }
 
         void DrawBottomLegend(List<MySprite> sprites, double[] maxThrust)
         {
-            float legendHeight = LEGEND_HEIGHT_BASE * LayoutScale;
+            float legendRowsHeight = LEGEND_HEIGHT_BASE * LayoutScale;
             float margin = 0f;
             float left = ViewBox.X + margin;
             float right = ViewBox.Right - margin;
             float width = Math.Max(1f, right - left);
-            float top = ViewBox.Bottom - legendHeight;
+            float top = ViewBox.Bottom - legendRowsHeight;
             float padX = 6f * Scale;
-            float rowH = legendHeight * 0.5f;
+            float rowH = legendRowsHeight * 0.5f;
             float colW = width / 3f;
             float textScale = 0.46f * Scale * FontScale;
             string forward = LocHelper.GetLoc("Thrust_Forward");
@@ -357,8 +523,8 @@ namespace LcdMod.Client.Apps
             {
                 Type = SpriteType.TEXTURE,
                 Data = "SquareSimple",
-                Position = new Vector2(left + width * 0.5f, top + legendHeight * 0.5f),
-                Size = new Vector2(width, legendHeight),
+                Position = new Vector2(left + width * 0.5f, top + legendRowsHeight * 0.5f),
+                Size = new Vector2(width, legendRowsHeight),
                 Color = new Color(BackgroundColor.MulValue(0.8f), 0.5f),
                 Alignment = TextAlignment.CENTER
             });
@@ -376,6 +542,112 @@ namespace LcdMod.Client.Apps
                 maxThrust[DIR_RIGHT], Color.Red, ForegroundColor, textScale);
             DrawLegendCell(sprites, left + 2f * colW, top + rowH, colW, rowH, padX, down, maxThrust[DIR_DOWN],
                 Color.Green, ForegroundColor, textScale);
+        }
+
+        void DrawTelemetrySidePanels(List<MySprite> sprites)
+        {
+            float contentTop = ContentTop;
+            float contentBottom = ViewBox.Bottom - GetBottomPanelHeight();
+            float contentHeight = contentBottom - contentTop;
+            if (contentHeight <= 0f)
+                return;
+
+            float panelWidth = GetTelemetryPanelWidth();
+            float margin = GetTelemetryPanelMargin();
+            float gap = TELEMETRY_PANEL_GAP_BASE * LayoutScale;
+            float cellHeight = Math.Min(
+                TELEMETRY_CELL_HEIGHT_BASE * LayoutScale,
+                Math.Max(30f * Scale, (contentHeight - gap) * 0.36f));
+            float panelHeight = cellHeight * 2f + gap;
+            if (panelHeight <= 0f || panelWidth <= 0f)
+                return;
+
+            float top = contentTop + Math.Max(0f, (contentHeight - panelHeight) * 0.5f);
+            float leftX = ViewBox.X + margin;
+            float rightX = ViewBox.Right - margin - panelWidth;
+
+            if(_stopSpeed == 0)
+                return;
+
+            DrawTelemetryCell(sprites, new RectangleF(leftX, top, panelWidth, cellHeight), _stopSpeed.ToString("0", FormatingHelper.Culture));
+            DrawTelemetryCell(sprites, new RectangleF(leftX, top + cellHeight + gap, panelWidth, cellHeight), FormatStopDistance());
+            DrawTelemetryCell(sprites, new RectangleF(rightX, top, panelWidth, cellHeight), FormatStopTimeValue());
+            DrawTelemetryCell(sprites, new RectangleF(rightX, top + cellHeight + gap, panelWidth, cellHeight), FormatStopForce());
+        }
+
+        float GetTelemetryPanelWidth()
+        {
+            return Math.Min(TELEMETRY_PANEL_WIDTH_BASE * LayoutScale, ViewBox.Width * 0.25f);
+        }
+
+        float GetTelemetryPanelMargin()
+        {
+            return TELEMETRY_PANEL_MARGIN_BASE * Scale;
+        }
+
+        void DrawTelemetryCell(List<MySprite> sprites, RectangleF rect, string value)
+        {
+            float hudScale = Math.Max(0.1f, Scale);
+            float valueScale = hudScale;
+            float textOffset = 5f * hudScale;
+            var boxSize = new Vector2(89f, 32f) * hudScale;
+            var rightCenter = rect.Center + new Vector2(boxSize.X * 0.5f, 0f);
+            var valueText = TrimText(value, boxSize.X - textOffset - 4f * hudScale, valueScale);
+            var valueSize = FormatingHelper.GetSizeInPixel(valueText, "White", valueScale, Surface);
+
+            var color = _stopSpeed > 1 ? ForegroundColor : new Color(ForegroundColor, (float)_stopSpeed);
+            
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE,
+                Data = "AH_TextBox",
+                Position = rightCenter,
+                Size = boxSize,
+                Color = color,
+                Alignment = TextAlignment.RIGHT
+            });
+
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXT,
+                Data = valueText,
+                Position = new Vector2(rightCenter.X - textOffset, rect.Center.Y - valueSize.Y * 0.5f),
+                Size = boxSize,
+                Color = color,
+                Alignment = TextAlignment.RIGHT,
+                FontId = "White",
+                RotationOrScale = valueScale
+            });
+        }
+
+        string TrimText(string value, float availableWidth, float textScale)
+        {
+            if (string.IsNullOrEmpty(value) || availableWidth <= 0f || Surface == null)
+                return string.Empty;
+
+            var size = FormatingHelper.GetSizeInPixel(value, "White", textScale, Surface);
+            if (size.X <= availableWidth)
+                return value;
+
+            return FormatingHelper.TrimName(value,
+                Math.Max(1, (int)(value.Length * availableWidth / Math.Max(1f, size.X))));
+        }
+
+        string FormatStopDistance() => _hasStopEstimate ? FormatingHelper.DistanceToString((float)_stopDistance, "0") :  "n/a";
+
+        string FormatStopTimeValue() => _hasStopEstimate ? FormatStopTime(_stopSeconds) : "n/a";
+
+        string FormatStopForce() => _hasStopEstimate ? FormatingHelper.NewtonForceToString(_stopNetForce, "0") : "n/a";
+        
+        static string FormatStopTime(double seconds)
+        {
+            if (double.IsNaN(seconds) || double.IsInfinity(seconds) || seconds < 0d)
+                return "n/a";
+
+            if (seconds <= 0d)
+                return "0s";
+
+            return seconds < 1d ? "<1s" : FormatingHelper.FormatTimeHours((float)(seconds / 3600d));
         }
 
         static void DrawLegendCell(List<MySprite> sprites, float x, float y, float w, float h, float padX,

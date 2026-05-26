@@ -42,24 +42,24 @@ namespace LcdMod.Client.Helpers
             return input.ToString("0.##", Culture);
         }
 
-        public static string DistanceToString(float meters)
+        public static string DistanceToString(float meters, string format = "0.##")
         {
             var distance = (double)meters;
             var abs = Math.Abs(distance);
             var sign = distance < 0d ? "-" : "";
 
             if (abs >= 299792458d)
-                return sign + (abs / 299792458d).ToString("0.##", Culture) + " ls";
+                return sign + (abs / 299792458d).ToString(format, Culture) + " ls";
             if (abs >= 1000000000d)
-                return sign + (abs / 1000000000d).ToString("0.##", Culture) + " Gm";
+                return sign + (abs / 1000000000d).ToString(format, Culture) + " Gm";
             if (abs >= 1000000d)
-                return sign + (abs / 1000000d).ToString("0.##", Culture) + " Mm";
+                return sign + (abs / 1000000d).ToString(format, Culture) + " Mm";
             if (abs >= 1000d)
-                return sign + (abs / 1000d).ToString("0.##", Culture) + " km";
+                return sign + (abs / 1000d).ToString(format, Culture) + " km";
             if (abs >= 1d)
-                return sign + abs.ToString("0.##", Culture) + " m";
+                return sign + abs.ToString(format, Culture) + " m";
 
-            return sign + (abs * 100d).ToString("0.##", Culture) + " cm";
+            return sign + (abs * 100d).ToString(format, Culture) + " cm";
         }
 
         public static string GravityToString(double gravityG)
@@ -138,7 +138,7 @@ namespace LcdMod.Client.Helpers
         }
 
 
-        public static string NewtonForceToString(double newtons)
+        public static string NewtonForceToString(double newtons, string format = "0.##")
         {
             double a = Math.Abs(newtons);
             string sign = newtons < 0 ? "-" : "";
@@ -146,18 +146,18 @@ namespace LcdMod.Client.Helpers
             if (a < 1e-12)
                 return "0 N";
 
-            if (a >= 1e24) return sign + (a / 1e24).ToString("0.##", Culture) + " YN";
-            if (a >= 1e21) return sign + (a / 1e21).ToString("0.##", Culture) + " ZN";
-            if (a >= 1e18) return sign + (a / 1e18).ToString("0.##", Culture) + " EN";
-            if (a >= 1e15) return sign + (a / 1e15).ToString("0.##", Culture) + " PN";
-            if (a >= 1e12) return sign + (a / 1e12).ToString("0.##", Culture) + " TN";
-            if (a >= 1e9) return sign + (a / 1e9).ToString("0.##", Culture) + " GN";
-            if (a >= 1e6) return sign + (a / 1e6).ToString("0.##", Culture) + " MN";
-            if (a >= 1e3) return sign + (a / 1e3).ToString("0.##", Culture) + " kN";
-            if (a >= 1e-3) return sign + (a / 1e-3).ToString("0.##", Culture) + " mN";
-            if (a >= 1e-6) return sign + (a / 1e-6).ToString("0.##", Culture) + " uN";
-            if (a >= 1e-9) return sign + (a / 1e-9).ToString("0.##", Culture) + " nN";
-            return sign + a.ToString("0.##", Culture) + " N";
+            if (a >= 1e24) return sign + (a / 1e24).ToString(format, Culture) + " YN";
+            if (a >= 1e21) return sign + (a / 1e21).ToString(format, Culture) + " ZN";
+            if (a >= 1e18) return sign + (a / 1e18).ToString(format, Culture) + " EN";
+            if (a >= 1e15) return sign + (a / 1e15).ToString(format, Culture) + " PN";
+            if (a >= 1e12) return sign + (a / 1e12).ToString(format, Culture) + " TN";
+            if (a >= 1e9) return sign + (a / 1e9).ToString(format, Culture) + " GN";
+            if (a >= 1e6) return sign + (a / 1e6).ToString(format, Culture) + " MN";
+            if (a >= 1e3) return sign + (a / 1e3).ToString(format, Culture) + " kN";
+            if (a >= 1e-3) return sign + (a / 1e-3).ToString(format, Culture) + " mN";
+            if (a >= 1e-6) return sign + (a / 1e-6).ToString(format, Culture) + " uN";
+            if (a >= 1e-9) return sign + (a / 1e-9).ToString(format, Culture) + " nN";
+            return sign + a.ToString(format, Culture) + " N";
         }
 
         public static string PercentageToString(float f) => f.ToString("P0", Culture).Replace(" ", string.Empty);

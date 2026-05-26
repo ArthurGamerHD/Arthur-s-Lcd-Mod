@@ -35,8 +35,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         {
             if (entries != null)
             {
-                for (int i = 0; i < entries.Count; i++)
-                    _rootNodes.Add(CreateNode(entries[i], 0));
+                foreach (var entry in entries)
+                    _rootNodes.Add(CreateNode(entry, 0));
             }
 
             SetVisible(_rootNodes.Count > 0);
@@ -50,11 +50,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 Level = level
             };
 
-            if (entry != null && entry.Children != null)
-            {
-                for (int i = 0; i < entry.Children.Count; i++)
-                    node.Children.Add(CreateNode(entry.Children[i], level + 1));
-            }
+            if (entry?.Children == null) return node;
+            foreach (var subEntry in entry.Children)
+                node.Children.Add(CreateNode(subEntry, level + 1));
 
             return node;
         }
@@ -76,7 +74,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             if (!Visible || _rootNodes.Count == 0)
                 return 0f;
 
-            float rootScale = 0.58f * scale * fontScale;
+            var rootScale = 0.58f * scale * fontScale;
             return Math.Max(24f * scale, FormatingHelper.LineHeight(rootScale, surface) + 10f * scale);
         }
 
@@ -97,10 +95,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             if (!Visible || _rootNodes.Count == 0)
                 return;
 
-            SetDataContext(owner != null ? owner.App : null);
+            SetDataContext(owner?.App);
             _renderViewBox = viewBox;
             _popupMaxWidth = owner != null ? owner.ViewBox.Width * 0.65f : viewBox.Width * 0.65f;
-            var themedApp = owner != null ? owner.App as IThemedApp : null;
+            var themedApp = owner?.App as IThemedApp;
             var renderContext = themedApp != null
                 ? themedApp.CreateControlRenderContext(surface, scale, fontScale, cursorPosition)
                 : new ControlRenderContext(surface, scale, fontScale, textColor, panelColor, cursorPosition);
@@ -122,11 +120,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             var panelColor = context.PanelColor;
             var cursorPosition = context.CursorPosition;
             var shadowColor = context.GetThemeColor(Constants.SHADOW);
-            float rootScale = 0.58f * scale * fontScale;
-            float popupScale = 0.56f * scale * fontScale;
-            float rootHeight = Math.Max(24f * scale, FormatingHelper.LineHeight(rootScale, surface) + 10f * scale);
-            float itemHeight = Math.Max(22f * scale, FormatingHelper.LineHeight(rootScale, surface) + 8f * scale);
-            float rootPaddingX = 12f * scale;
+            var rootScale = 0.58f * scale * fontScale;
+            var popupScale = 0.56f * scale * fontScale;
+            var rootHeight = Math.Max(24f * scale, FormatingHelper.LineHeight(rootScale, surface) + 10f * scale);
+            var itemHeight = Math.Max(22f * scale, FormatingHelper.LineHeight(rootScale, surface) + 8f * scale);
+            var rootPaddingX = 12f * scale;
 
             DrawRootBar(viewBox, scale, rootScale, rootHeight, rootPaddingX, panelColor, cursorPosition, surface, context);
             DrawOpenPopups(viewBox, scale, popupScale, itemHeight, panelColor, shadowColor, cursorPosition, surface, context);
@@ -149,14 +147,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             var barRect = new RectangleF(viewBox.X, viewBox.Y, viewBox.Width, rootHeight);
             Border.CreateSpritesFromRect(barRect, _sprites, panelColor, surface.TextPadding == 0 ? 0 : 0.5f);
 
-            float x = viewBox.X;
-            for (int i = 0; i < _rootNodes.Count; i++)
+            var x = viewBox.X;
+            foreach (var node in _rootNodes)
             {
-                var node = _rootNodes[i];
                 var entry = node.Entry;
-                string text = GetText(entry);
+                var text = GetText(entry);
                 var size = FormatingHelper.GetSizeInPixel(text, "White", rootScale, surface);
-                float width = Math.Max(42f * scale, size.X + rootPaddingX * 2f);
+                var width = Math.Max(42f * scale, size.X + rootPaddingX * 2f);
                 var rect = new RectangleF(x, viewBox.Y, width, rootHeight);
 
                 var interactiveEntry = ShowNode(node, rect, entry != null && entry.HasChildren ? CursorType.Hand : entry?.Cursor ?? CursorType.Default);
@@ -184,15 +181,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             Sandbox.ModAPI.Ingame.IMyTextSurface surface,
             ControlRenderContext renderContext)
         {
-            for (int level = 0; level < _openPath.Count; level++)
+            for (var level = 0; level < _openPath.Count; level++)
             {
                 var parentNode = _openPath[level];
-                if (parentNode == null || parentNode.Entry == null || !parentNode.Entry.HasChildren || parentNode.Children.Count == 0)
+                if (parentNode?.Entry == null || !parentNode.Entry.HasChildren || parentNode.Children.Count == 0)
                     break;
 
                 var parentRect = parentNode.Rect;
                 var children = parentNode.Children;
-                float popupWidth = CalculatePopupWidth(children, popupScale, surface, scale, _popupMaxWidth);
+                var popupWidth = CalculatePopupWidth(children, popupScale, surface, scale, _popupMaxWidth);
                 var popupRect = level == 0
                     ? new RectangleF(parentRect.X, parentRect.Bottom, popupWidth, itemHeight * children.Count)
                     : new RectangleF(parentRect.Right - scale, parentRect.Y, popupWidth, itemHeight * children.Count);
@@ -204,7 +201,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 Border.CreateSpritesFromRect(shadowRect, _sprites, shadowColor, 0.16f);
                 Border.CreateSpritesFromRect(popupRect, _sprites, panelColor, 0.16f);
 
-                for (int i = 0; i < children.Count; i++)
+                for (var i = 0; i < children.Count; i++)
                 {
                     var childNode = children[i];
                     var child = childNode.Entry;
@@ -231,16 +228,16 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             bool root,
             List<MySprite> sprites)
         {
-            bool hover = rect.Contains(cursorPosition);
+            var hover = rect.Contains(cursorPosition);
             var fillColor = hover
-                ? context.GetThemeColor(Constants.PRIMARY + Constants.HOVER)
-                : context.GetThemeColor(Constants.PRIMARY);
-            var itemTextColor = context.GetThemeColor(Constants.ON_PRIMARY);
+                ? context.GetThemeColor(Constants.PRIMARY_CONTAINER + Constants.HOVER)
+                : context.GetThemeColor(Constants.PRIMARY_CONTAINER);
+            var itemTextColor = context.GetThemeColor(Constants.ON_PRIMARY_CONTAINER);
             Border.CreateSpritesFromRect(rect, sprites, fillColor, 0.5f);
 
-            string text = GetText(entry);
-            float iconSpace = !root && entry != null && !string.IsNullOrEmpty(entry.Icon) ? rect.Height : 0f;
-            float arrowSpace = !root && entry != null && entry.HasChildren ? 16f * textScale : 0f;
+            var text = GetText(entry);
+            var iconSpace = !root && entry != null && !string.IsNullOrEmpty(entry.Icon) ? rect.Height : 0f;
+            var arrowSpace = !root && entry != null && entry.HasChildren ? 16f * textScale : 0f;
 
             if (iconSpace > 0f)
             {
@@ -314,17 +311,17 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 return;
             }
 
-            float x = Math.Min(_menuBounds.X, rect.X);
-            float y = Math.Min(_menuBounds.Y, rect.Y);
-            float right = Math.Max(_menuBounds.Right, rect.Right);
-            float bottom = Math.Max(_menuBounds.Bottom, rect.Bottom);
+            var x = Math.Min(_menuBounds.X, rect.X);
+            var y = Math.Min(_menuBounds.Y, rect.Y);
+            var right = Math.Max(_menuBounds.Right, rect.Right);
+            var bottom = Math.Max(_menuBounds.Bottom, rect.Bottom);
             _menuBounds = new RectangleF(x, y, right - x, bottom - y);
         }
 
         void OnEntryClick(object dataContext, object sender)
         {
             var node = dataContext as Node;
-            if (node == null || node.Entry == null)
+            if (node?.Entry == null)
                 return;
 
             if (_rootNodes.Contains(node) && _openPath.Contains(node))
@@ -353,10 +350,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
         public void HideEntries()
         {
-            for (int i = 0; i < _interactiveEntries.Count; i++)
+            foreach (var control in _interactiveEntries)
             {
-                if (_interactiveEntries[i] != null)
-                    _interactiveEntries[i].SetVisible(false);
+                if (control != null)
+                    control.SetVisible(false);
             }
 
             _interactiveEntries.Clear();
@@ -373,19 +370,19 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             float scale,
             float maxWidth)
         {
-            float width = 120f * scale;
+            var width = 120f * scale;
 
             if (nodes == null)
                 return width;
 
-            for (int i = 0; i < nodes.Count; i++)
+            foreach (var node in nodes)
             {
-                var entry = nodes[i] != null ? nodes[i].Entry : null;
+                var entry = node?.Entry;
                 if (entry == null)
                     continue;
 
                 var size = FormatingHelper.GetSizeInPixel(GetText(entry), "White", textScale, surface);
-                float candidate = size.X + 42f * scale;
+                var candidate = size.X + 42f * scale;
                 if (!string.IsNullOrEmpty(entry.Icon))
                     candidate += 20f * scale;
                 if (entry.HasChildren)

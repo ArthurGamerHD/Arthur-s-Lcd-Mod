@@ -4,8 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using ChessChallenge.API;
-using LcdMod.Client.Apps.Abstract;
-using LcdMod.Client.Games;
 using LcdMod.Client.SurfaceScripts;
 using LcdMod.Client.Config;
 using LcdMod.Client.Extensions;

@@ -87,9 +87,9 @@ namespace LcdMod.Client.Games
 
         bool ShouldUseDarkTheme()
         {
-            var backgroundColor = _script == null ? Color.White : _script.BackgroundColor;
-            return backgroundColor.ContrastRatio(Color.Black) >=
-                   backgroundColor.ContrastRatio(Color.White);
+            var foregroundColor = _script == null ? Color.White : _script.ForegroundColor;
+            return foregroundColor.ContrastRatio(Color.Black) >=
+                   foregroundColor.ContrastRatio(Color.White);
         }
     }
 }

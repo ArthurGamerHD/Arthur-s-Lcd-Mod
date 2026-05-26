@@ -76,48 +76,48 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 surface.TextureSize,
                 new Color(0, 0, 0, 128)));
 
-            float titleScale = 0.82f * scale * fontScale;
-            float contentScale = 0.58f * scale * fontScale;
-            float buttonScale = 0.58f * scale * fontScale;
+            var titleScale = 0.82f * scale * fontScale;
+            var contentScale = 0.58f * scale * fontScale;
+            var buttonScale = 0.58f * scale * fontScale;
 
-            Vector2 padding = new Vector2(18f, 14f) * scale;
-            float spacing = 10f * scale;
-            float buttonSpacing = 10f * scale;
-            float buttonHeight = Math.Max(24f * scale, FormatingHelper.LineHeight(buttonScale, surface) + 10f * scale);
-            float minButtonWidth = 78f * scale;
+            var padding = new Vector2(18f, 14f) * scale;
+            var spacing = 10f * scale;
+            var buttonSpacing = 10f * scale;
+            var buttonHeight = Math.Max(24f * scale, FormatingHelper.LineHeight(buttonScale, surface) + 10f * scale);
+            var minButtonWidth = 78f * scale;
 
             var titleSize = FormatingHelper.GetSizeInPixel(_title, "White", titleScale, surface);
             var contentLines = SplitLines(_content);
             if (contentLines.Length == 0)
                 contentLines = new[] { string.Empty };
 
-            float lineStep = FormatingHelper.LineHeight(contentScale, surface) + 2f * scale;
-            float maxContentWidth = 0f;
-            for (int i = 0; i < contentLines.Length; i++)
+            var lineStep = FormatingHelper.LineHeight(contentScale, surface) + 2f * scale;
+            var maxContentWidth = 0f;
+            for (var i = 0; i < contentLines.Length; i++)
             {
                 var size = FormatingHelper.GetSizeInPixel(contentLines[i], "White", contentScale, surface);
                 if (size.X > maxContentWidth)
                     maxContentWidth = size.X;
             }
 
-            bool hasIcon = !string.IsNullOrEmpty(_icon);
-            float iconSize = hasIcon ? Math.Max(32f * scale, lineStep * Math.Min(2.5f, Math.Max(1f, contentLines.Length))) : 0f;
-            float iconGap = hasIcon ? 12f * scale : 0f;
-            float contentBlockWidth = maxContentWidth + iconSize + iconGap;
+            var hasIcon = !string.IsNullOrEmpty(_icon);
+            var iconSize = hasIcon ? Math.Max(32f * scale, lineStep * Math.Min(2.5f, Math.Max(1f, contentLines.Length))) : 0f;
+            var iconGap = hasIcon ? 12f * scale : 0f;
+            var contentBlockWidth = maxContentWidth + iconSize + iconGap;
 
             var button1Size = FormatingHelper.GetSizeInPixel(_button1, "White", buttonScale, surface);
             var button2Size = FormatingHelper.GetSizeInPixel(_button2, "White", buttonScale, surface);
-            float button1Width = Math.Max(minButtonWidth, button1Size.X + 28f * scale);
-            bool showButton2 = _button2Callback != null || !string.IsNullOrWhiteSpace(_button2);
-            float button2Width = showButton2 ? Math.Max(minButtonWidth, button2Size.X + 28f * scale) : 0f;
-            float buttonsWidth = showButton2 ? button1Width + buttonSpacing + button2Width : button1Width;
+            var button1Width = Math.Max(minButtonWidth, button1Size.X + 28f * scale);
+            var showButton2 = _button2Callback != null || !string.IsNullOrWhiteSpace(_button2);
+            var button2Width = showButton2 ? Math.Max(minButtonWidth, button2Size.X + 28f * scale) : 0f;
+            var buttonsWidth = showButton2 ? button1Width + buttonSpacing + button2Width : button1Width;
 
-            float contentHeight = lineStep * contentLines.Length;
-            float cardWidth = Math.Max(240f * scale,
+            var contentHeight = lineStep * contentLines.Length;
+            var cardWidth = Math.Max(240f * scale,
                 Math.Max(titleSize.X, Math.Max(contentBlockWidth, buttonsWidth)) + padding.X * 2f);
             cardWidth = Math.Min(cardWidth, viewBox.Width - padding.X * 2f);
 
-            float cardHeight = padding.Y * 2f + titleSize.Y + spacing + Math.Max(contentHeight, iconSize) + spacing + buttonHeight;
+            var cardHeight = padding.Y * 2f + titleSize.Y + spacing + Math.Max(contentHeight, iconSize) + spacing + buttonHeight;
             cardHeight = Math.Min(cardHeight, viewBox.Height - padding.Y * 2f);
 
             var cardRect = new RectangleF(
@@ -130,7 +130,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             Border.CreateSpritesFromRect(shadowRect, Sprites, shadowColor, 0.2f);
             Border.CreateSpritesFromRect(cardRect, Sprites, cardColor, 0.2f);
 
-            float currentY = cardRect.Y + padding.Y;
+            var currentY = cardRect.Y + padding.Y;
 
             var titleSprite = new MySprite
             {
@@ -148,10 +148,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
             currentY += titleSize.Y + spacing;
 
-            float contentAreaWidth = cardRect.Width - padding.X * 2f;
-            float contentStartX = cardRect.X + padding.X + Math.Max(0f, (contentAreaWidth - contentBlockWidth) * 0.5f);
-            float contentTop = currentY;
-            float contentMiddleY = contentTop + Math.Max(contentHeight, iconSize) * 0.5f;
+            var contentAreaWidth = cardRect.Width - padding.X * 2f;
+            var contentStartX = cardRect.X + padding.X + Math.Max(0f, (contentAreaWidth - contentBlockWidth) * 0.5f);
+            var contentTop = currentY;
+            var contentMiddleY = contentTop + Math.Max(contentHeight, iconSize) * 0.5f;
 
             if (hasIcon)
             {
@@ -166,8 +166,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 });
             }
 
-            float textX = contentStartX + iconSize + iconGap;
-            for (int i = 0; i < contentLines.Length; i++)
+            var textX = contentStartX + iconSize + iconGap;
+            for (var i = 0; i < contentLines.Length; i++)
             {
                 Sprites.Add(new MySprite
                 {
@@ -185,7 +185,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
             currentY = contentTop + Math.Max(contentHeight, iconSize) + spacing;
 
-            float buttonsStartX = cardRect.Center.X - buttonsWidth * 0.5f;
+            var buttonsStartX = cardRect.Center.X - buttonsWidth * 0.5f;
             var button1Rect = new RectangleF(buttonsStartX, currentY, button1Width, buttonHeight);
             var button2Rect = showButton2
                 ? new RectangleF(button1Rect.Right + buttonSpacing, currentY, button2Width, buttonHeight)
@@ -290,7 +290,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             if (control == null)
                 return;
 
-            control.SetStyle(Button.CreatePrimaryButtonStyle(themedParentApp != null ? themedParentApp.Theme : null));
+            control.SetStyle(Button.CreatePrimaryButtonStyle(themedParentApp?.Theme));
             control.CustomRender = delegate(ControlBase renderEntry, ControlRenderContext context, List<MySprite> sprites)
             {
                 DrawButton(renderEntry.Bounds, owner, sprites, text, textScale, context);

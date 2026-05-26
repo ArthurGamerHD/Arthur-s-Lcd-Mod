@@ -42,7 +42,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
         protected IReadOnlyDictionary<string, Color> ParentTheme
         {
-            get { return _themedParentApp == null ? null : _themedParentApp.Theme; }
+            get { return _themedParentApp?.Theme; }
         }
 
         protected DialogContainerControl ContainerControl
