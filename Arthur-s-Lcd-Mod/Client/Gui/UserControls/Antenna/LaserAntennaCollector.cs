@@ -114,7 +114,7 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
                         return sb.ToString();
 
                     var distance = Vector3.Distance(other.GetPosition(), laserAntenna.GetPosition());
-                    sb.AppendLine(GetLocCached("TerminalDistance") + ": " + FormatingHelper.DistanceToString(distance));
+                    sb.AppendLine(FormatLabelWithColon(GetLocCached("TerminalDistance")) + " " + FormatingHelper.DistanceToString(distance));
                     sb.AppendLine(other.CubeGrid.CustomName);
 
                     return sb.ToString();

@@ -484,4 +484,58 @@
   <data name="LcdMod_AutoOffset_Tooltip" xml:space="preserve">
     <value>Bereken automatisch de proxyverschuiving op basis van het geselecteerde hostscherm.</value>
   </data>
+<data name="LcdMod_CraftDialog_Title" xml:space="preserve">
+    <value>Maken</value>
+  </data>
+  <data name="LcdMod_CraftDialog_Button_Craft" xml:space="preserve">
+    <value>Maken</value>
+  </data>
+  <data name="LcdMod_Common_Button_Cancel" xml:space="preserve">
+    <value>Annuleren</value>
+  </data>
+  <data name="LcdMod_CraftDialog_AssemblerSelection_Title" xml:space="preserve">
+    <value>Assemblers selecteren</value>
+  </data>
+  <data name="LcdMod_CraftDialog_AssemblerSelection_Empty" xml:space="preserve">
+    <value>Geen assembler gevonden</value>
+  </data>
+  <data name="LcdMod_Common_Button_Select" xml:space="preserve">
+    <value>Selecteren</value>
+  </data>
+  <data name="LcdMod_CraftDialog_Assemblers_None" xml:space="preserve">
+    <value>Assemblers: geen</value>
+  </data>
+  <data name="LcdMod_CraftDialog_Assemblers_Single" xml:space="preserve">
+    <value>Assembler: {0}</value>
+  </data>
+  <data name="LcdMod_CraftDialog_Assemblers_SelectedCount" xml:space="preserve">
+    <value>Assemblers: {0} geselecteerd</value>
+  </data>
+  <data name="LcdMod_CraftDialog_Assembler_FallbackName" xml:space="preserve">
+    <value>Assembler</value>
+  </data>
+  <data name="LcdMod_CraftDialog_Assembler_Status_Idle" xml:space="preserve">
+    <value>Inactief</value>
+  </data>
+  <data name="LcdMod_CraftDialog_AssemblerOption_WithStatus" xml:space="preserve">
+    <value>{0} ({1}) x{2}</value>
+  </data>
+  <data name="LcdMod_CraftDialog_AssemblerOption" xml:space="preserve">
+    <value>{0} x{1}</value>
+  </data>
+  <data name="LcdMod_Common_Button_OK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="LcdMod_Common_Value_Unavailable" xml:space="preserve">
+    <value>n.v.t.</value>
+  </data>
+  <data name="LcdMod_Common_Time_ZeroSeconds" xml:space="preserve">
+    <value>0 s</value>
+  </data>
+  <data name="LcdMod_Common_Time_LessThanOneSecond" xml:space="preserve">
+    <value>&lt; 1 s</value>
+  </data>
+  <data name="LcdMod_Common_Label_WithColon" xml:space="preserve">
+    <value>{0}:</value>
+  </data>
 </root>

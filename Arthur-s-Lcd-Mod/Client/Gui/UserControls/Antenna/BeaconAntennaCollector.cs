@@ -74,7 +74,7 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
 
             var sb = new StringBuilder();
             sb.AppendLine(string.IsNullOrWhiteSpace(beacon.HudText) ? beacon.CustomName : beacon.HudText);
-            sb.Append(GetLocCached("BlockPropertyDescription_BroadcastRadius") + ": " +
+            sb.Append(FormatLabelWithColon(GetLocCached("BlockPropertyDescription_BroadcastRadius")) + " " +
                       FormatingHelper.DistanceToString(beacon.Radius));
             return sb.ToString();
         }

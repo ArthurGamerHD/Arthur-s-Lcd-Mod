@@ -484,4 +484,58 @@
   <data name="LcdMod_AutoOffset_Tooltip" xml:space="preserve">
     <value>Automatikusan számítsa ki a proxy eltolását a kiválasztott gazdakijelző alapján.</value>
   </data>
+<data name="LcdMod_CraftDialog_Title" xml:space="preserve">
+    <value>Gyártás</value>
+  </data>
+  <data name="LcdMod_CraftDialog_Button_Craft" xml:space="preserve">
+    <value>Gyártás</value>
+  </data>
+  <data name="LcdMod_Common_Button_Cancel" xml:space="preserve">
+    <value>Mégse</value>
+  </data>
+  <data name="LcdMod_CraftDialog_AssemblerSelection_Title" xml:space="preserve">
+    <value>Összeszerelők kiválasztása</value>
+  </data>
+  <data name="LcdMod_CraftDialog_AssemblerSelection_Empty" xml:space="preserve">
+    <value>Nem található összeszerelő</value>
+  </data>
+  <data name="LcdMod_Common_Button_Select" xml:space="preserve">
+    <value>Kiválasztás</value>
+  </data>
+  <data name="LcdMod_CraftDialog_Assemblers_None" xml:space="preserve">
+    <value>Összeszerelők: nincs</value>
+  </data>
+  <data name="LcdMod_CraftDialog_Assemblers_Single" xml:space="preserve">
+    <value>Összeszerelő: {0}</value>
+  </data>
+  <data name="LcdMod_CraftDialog_Assemblers_SelectedCount" xml:space="preserve">
+    <value>Összeszerelők: {0} kiválasztva</value>
+  </data>
+  <data name="LcdMod_CraftDialog_Assembler_FallbackName" xml:space="preserve">
+    <value>Összeszerelő</value>
+  </data>
+  <data name="LcdMod_CraftDialog_Assembler_Status_Idle" xml:space="preserve">
+    <value>Üresjárat</value>
+  </data>
+  <data name="LcdMod_CraftDialog_AssemblerOption_WithStatus" xml:space="preserve">
+    <value>{0} ({1}) x{2}</value>
+  </data>
+  <data name="LcdMod_CraftDialog_AssemblerOption" xml:space="preserve">
+    <value>{0} x{1}</value>
+  </data>
+  <data name="LcdMod_Common_Button_OK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="LcdMod_Common_Value_Unavailable" xml:space="preserve">
+    <value>N/A</value>
+  </data>
+  <data name="LcdMod_Common_Time_ZeroSeconds" xml:space="preserve">
+    <value>0 mp</value>
+  </data>
+  <data name="LcdMod_Common_Time_LessThanOneSecond" xml:space="preserve">
+    <value>&lt; 1 mp</value>
+  </data>
+  <data name="LcdMod_Common_Label_WithColon" xml:space="preserve">
+    <value>{0}:</value>
+  </data>
 </root>

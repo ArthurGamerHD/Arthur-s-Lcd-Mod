@@ -1362,7 +1362,8 @@ namespace LcdMod.Client.Apps
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
-                Data = MyTexts.GetString("BlockPropertyTitle_OreDetectorRange") + ": " +
+                Data = string.Format(FormatingHelper.Culture, LocHelper.GetLoc("LcdMod_Common_Label_WithColon"),
+                           MyTexts.GetString("BlockPropertyTitle_OreDetectorRange")) + " " +
                        FormatingHelper.DistanceToString(_maxRange),
                 Position = new Vector2(left + width - pad, top + 1f * Scale),
                 Color = new Color(ForegroundColor, 0.75f),

@@ -74,7 +74,7 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
             sb.AppendLine(string.IsNullOrWhiteSpace(radioAntenna.HudText)
                 ? radioAntenna.CustomName
                 : radioAntenna.HudText);
-            sb.AppendLine(GetLocCached("BlockPropertyDescription_BroadcastRadius") + ": " +
+            sb.AppendLine(FormatLabelWithColon(GetLocCached("BlockPropertyDescription_BroadcastRadius")) + " " +
                       FormatingHelper.DistanceToString(radioAntenna.Radius));
             sb.AppendLine(radioAntenna.IsBroadcasting
                 ? GetLocCached("NotificationCharacterBroadcastingOn")

@@ -633,21 +633,23 @@ namespace LcdMod.Client.Apps
                 Math.Max(1, (int)(value.Length * availableWidth / Math.Max(1f, size.X))));
         }
 
-        string FormatStopDistance() => _hasStopEstimate ? FormatingHelper.DistanceToString((float)_stopDistance, "0") :  "n/a";
+        string FormatStopDistance() => _hasStopEstimate ? FormatingHelper.DistanceToString((float)_stopDistance, "0") : LocHelper.GetLoc("LcdMod_Common_Value_Unavailable");
 
-        string FormatStopTimeValue() => _hasStopEstimate ? FormatStopTime(_stopSeconds) : "n/a";
+        string FormatStopTimeValue() => _hasStopEstimate ? FormatStopTime(_stopSeconds) : LocHelper.GetLoc("LcdMod_Common_Value_Unavailable");
 
-        string FormatStopForce() => _hasStopEstimate ? FormatingHelper.NewtonForceToString(_stopNetForce, "0") : "n/a";
+        string FormatStopForce() => _hasStopEstimate ? FormatingHelper.NewtonForceToString(_stopNetForce, "0") : LocHelper.GetLoc("LcdMod_Common_Value_Unavailable");
         
         static string FormatStopTime(double seconds)
         {
             if (double.IsNaN(seconds) || double.IsInfinity(seconds) || seconds < 0d)
-                return "n/a";
+                return LocHelper.GetLoc("LcdMod_Common_Value_Unavailable");
 
             if (seconds <= 0d)
-                return "0s";
+                return LocHelper.GetLoc("LcdMod_Common_Time_ZeroSeconds");
 
-            return seconds < 1d ? "<1s" : FormatingHelper.FormatTimeHours((float)(seconds / 3600d));
+            return seconds < 1d
+                ? LocHelper.GetLoc("LcdMod_Common_Time_LessThanOneSecond")
+                : FormatingHelper.FormatTimeHours((float)(seconds / 3600d));
         }
 
         static void DrawLegendCell(List<MySprite> sprites, float x, float y, float w, float h, float padX,
@@ -672,7 +674,7 @@ namespace LcdMod.Client.Apps
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
-                Data = label + ":",
+                Data = string.Format(FormatingHelper.Culture, LocHelper.GetLoc("LcdMod_Common_Label_WithColon"), label),
                 Position = new Vector2(textLeftX, yPos),
                 Color = textColor,
                 Alignment = TextAlignment.LEFT,

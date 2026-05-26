@@ -275,7 +275,7 @@ namespace LcdMod.Client.Gui.UserControls.Power
                 return lines;
 
             float ratio = GetRatio(battery);
-            lines.Add(new StaticTooltipLine($"{LocHelper.GetLoc("RadialMenuGroupTitle_Power")}: " + FormatingHelper.PercentageToString(ratio)));
+            lines.Add(new StaticTooltipLine(FormatLabelWithColon(LocHelper.GetLoc("RadialMenuGroupTitle_Power")) + " " + FormatingHelper.PercentageToString(ratio)));
             lines.Add(new StaticTooltipLine(LocHelper.GetLoc("BlockPropertiesText_StoredPower") + FormatingHelper.MegaWattHoursToString(battery.CurrentStoredPower) + " / " + FormatingHelper.WattHoursToString(battery.MaxStoredPower)));
             lines.Add(new StaticTooltipLine(LocHelper.GetLoc("BlockPropertyProperties_CurrentInput") + FormatingHelper.MegaWattsToString((battery.CurrentInput - battery.CurrentOutput)) 
                                                       // display I/O if is both charging and discharging at the same time
@@ -284,7 +284,7 @@ namespace LcdMod.Client.Gui.UserControls.Power
             if (!ToggleModeCache.TryGetValue(battery.EntityId, out toggleMode))
             {
                 toggleMode = new DynamicTooltipLine(
-                    () => LocHelper.GetLoc("BlockPropertyTitle_ChargeMode") + ": " + battery.ChargeMode,
+                    () => FormatLabelWithColon(LocHelper.GetLoc("BlockPropertyTitle_ChargeMode")) + " " + battery.ChargeMode,
                     () => true,
                     () => battery,
                     () => (o, o1) => CycleBatteryMode(battery),
@@ -330,6 +330,11 @@ namespace LcdMod.Client.Gui.UserControls.Power
                     battery.ChargeMode = ChargeMode.Recharge;
                     break;
             }
+        }
+
+        static string FormatLabelWithColon(string label)
+        {
+            return string.Format(FormatingHelper.Culture, LocHelper.GetLoc("LcdMod_Common_Label_WithColon"), label);
         }
 
         string GetStatusText()

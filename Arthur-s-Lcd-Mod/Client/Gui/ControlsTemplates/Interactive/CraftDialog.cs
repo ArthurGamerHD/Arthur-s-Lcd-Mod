@@ -63,7 +63,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 MaxValue = 1000000d,
                 Format = "0",
                 Step = 1d,
-                Title = "Craft",
+                Title = Loc("LcdMod_CraftDialog_Title"),
                 Subtitle = _itemName
             };
         }
@@ -107,9 +107,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
             var renderContext = CreateRenderContext(surface, scale, fontScale, textColor, panelColor, cursorPosition);
 
-            var titleSize = FormatingHelper.GetSizeInPixel("Craft", "White", titleScale, surface);
+            var title = Loc("LcdMod_CraftDialog_Title");
+            var titleSize = FormatingHelper.GetSizeInPixel(title, "White", titleScale, surface);
             var currentY = cardRect.Y + padding.Y;
-            DrawText("Craft", new Vector2(cardRect.Center.X, currentY), titleScale, cardTextColor, TextAlignment.CENTER);
+            DrawText(title, new Vector2(cardRect.Center.X, currentY), titleScale, cardTextColor, TextAlignment.CENTER);
             currentY += titleSize.Y + spacing * 0.7f;
 
             var assemblerRect = new RectangleF(cardRect.X + padding.X, currentY, cardRect.Width - padding.X * 2f,
@@ -160,8 +161,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             container.AddChild(_craftButton);
             container.AddChild(_cancelButton);
 
-            ConfigureButton(_craftButton, "Craft", buttonScale, panelColor, textColor, ThemedParentApp, owner, CanCraft());
-            ConfigureButton(_cancelButton, "Cancel", buttonScale, panelColor, textColor, ThemedParentApp, owner, true);
+            ConfigureButton(_craftButton, Loc("LcdMod_CraftDialog_Button_Craft"), buttonScale, panelColor, textColor, ThemedParentApp, owner, CanCraft());
+            ConfigureButton(_cancelButton, Loc("LcdMod_Common_Button_Cancel"), buttonScale, panelColor, textColor, ThemedParentApp, owner, true);
             _craftButton.Render(renderContext, Sprites);
             _cancelButton.Render(renderContext, Sprites);
         }
@@ -543,12 +544,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         string GetAssemblerSelectionLabel()
         {
             if (_selectedAssemblers.Count == 0)
-                return "Assemblers: None";
+                return Loc("LcdMod_CraftDialog_Assemblers_None");
 
             if (_selectedAssemblers.Count == 1)
-                return "Assembler: " + _selectedAssemblers[0].DisplayName;
+                return FormatLoc("LcdMod_CraftDialog_Assemblers_Single", _selectedAssemblers[0].DisplayName);
 
-            return "Assemblers: " + _selectedAssemblers.Count.ToString() + " selected";
+            return FormatLoc("LcdMod_CraftDialog_Assemblers_SelectedCount", _selectedAssemblers.Count);
         }
 
         static int CompareAssemblerOptions(CraftAssemblerOption a, CraftAssemblerOption b)
@@ -603,7 +604,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             }
 
             var subtype = GridLogic.GetAssemblerSubtype(assembler);
-            return string.IsNullOrEmpty(subtype) ? "Assembler" : subtype;
+            return string.IsNullOrEmpty(subtype) ? Loc("LcdMod_CraftDialog_Assembler_FallbackName") : subtype;
         }
 
         static bool IsAssemblerIdle(IMyAssembler assembler)
@@ -642,6 +643,16 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 return text;
 
             return FormatingHelper.TrimName(text, Math.Max(1, (int)(text.Length * availableWidth / Math.Max(1f, size.X))));
+        }
+
+        static string Loc(string key)
+        {
+            return LocHelper.GetLoc(key);
+        }
+
+        static string FormatLoc(string key, object arg)
+        {
+            return string.Format(FormatingHelper.Culture, Loc(key), arg);
         }
     }
 
@@ -712,7 +723,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 GetThemeColor(Constants.SHADOW), 0.2f);
             Border.CreateSpritesFromRect(cardRect, Sprites, cardColor, 0.2f);
 
-            var title = "Select Assemblers";
+            var title = LocHelper.GetLoc("LcdMod_CraftDialog_AssemblerSelection_Title");
             var titleSize = FormatingHelper.GetSizeInPixel(title, "White", titleScale, surface);
             Sprites.Add(new MySprite
             {
@@ -760,7 +771,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 Sprites.Add(new MySprite
                 {
                     Type = SpriteType.TEXT,
-                    Data = "No assembler found",
+                    Data = LocHelper.GetLoc("LcdMod_CraftDialog_AssemblerSelection_Empty"),
                     Position = new Vector2(listRect.Center.X, listRect.Center.Y - titleSize.Y * 0.5f),
                     Color = cardTextColor,
                     FontId = "White",
@@ -778,8 +789,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             EnsureButtons(selectRect, cancelRect);
             container.AddChild(_selectButton);
             container.AddChild(_cancelButton);
-            CraftDialog.ConfigureButton(_selectButton, "Select", buttonScale, panelColor, textColor, ThemedParentApp, owner, HasSelection());
-            CraftDialog.ConfigureButton(_cancelButton, "Cancel", buttonScale, panelColor, textColor, ThemedParentApp, owner, true);
+            CraftDialog.ConfigureButton(_selectButton, LocHelper.GetLoc("LcdMod_Common_Button_Select"), buttonScale, panelColor, textColor, ThemedParentApp, owner, HasSelection());
+            CraftDialog.ConfigureButton(_cancelButton, LocHelper.GetLoc("LcdMod_Common_Button_Cancel"), buttonScale, panelColor, textColor, ThemedParentApp, owner, true);
             _selectButton.Render(renderContext, Sprites);
             _cancelButton.Render(renderContext, Sprites);
         }
@@ -830,8 +841,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             if (option == null)
                 return string.Empty;
 
-            var suffix = option.Idle ? " (Idle)" : string.Empty;
-            return option.DisplayName + suffix + " x" + option.Speed.ToString("0.##");
+            var speedText = option.Speed.ToString("0.##", FormatingHelper.Culture);
+            return option.Idle
+                ? string.Format(FormatingHelper.Culture, LocHelper.GetLoc("LcdMod_CraftDialog_AssemblerOption_WithStatus"),
+                    option.DisplayName, LocHelper.GetLoc("LcdMod_CraftDialog_Assembler_Status_Idle"), speedText)
+                : string.Format(FormatingHelper.Culture, LocHelper.GetLoc("LcdMod_CraftDialog_AssemblerOption"),
+                    option.DisplayName, speedText);
         }
 
         bool HasSelection()

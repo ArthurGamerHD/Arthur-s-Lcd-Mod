@@ -44,7 +44,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         {
             _title = title ?? string.Empty;
             _content = content ?? string.Empty;
-            _button1 = string.IsNullOrEmpty(button1) ? "OK" : button1;
+            _button1 = string.IsNullOrEmpty(button1) ? LocHelper.GetLoc("LcdMod_Common_Button_OK") : button1;
             _button2 = button2 ?? string.Empty;
             _icon = icon;
 

@@ -41,6 +41,11 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
             return value;
         }
 
+        protected string FormatLabelWithColon(string label)
+        {
+            return string.Format(FormatingHelper.Culture, GetLocCached("LcdMod_Common_Label_WithColon"), label);
+        }
+
         protected AntennaEntry GetOrCreateEntry(
             long entryId,
             List<AntennaEntry> entries,

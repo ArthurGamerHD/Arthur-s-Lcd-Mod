@@ -484,4 +484,58 @@
   <data name="LcdMod_AutoOffset_Tooltip" xml:space="preserve">
     <value>根据所选主机屏幕自动计算代理偏移。</value>
   </data>
+<data name="LcdMod_CraftDialog_Title" xml:space="preserve">
+    <value>制造</value>
+  </data>
+  <data name="LcdMod_CraftDialog_Button_Craft" xml:space="preserve">
+    <value>制造</value>
+  </data>
+  <data name="LcdMod_Common_Button_Cancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="LcdMod_CraftDialog_AssemblerSelection_Title" xml:space="preserve">
+    <value>选择装配器</value>
+  </data>
+  <data name="LcdMod_CraftDialog_AssemblerSelection_Empty" xml:space="preserve">
+    <value>未找到装配器</value>
+  </data>
+  <data name="LcdMod_Common_Button_Select" xml:space="preserve">
+    <value>选择</value>
+  </data>
+  <data name="LcdMod_CraftDialog_Assemblers_None" xml:space="preserve">
+    <value>装配器：无</value>
+  </data>
+  <data name="LcdMod_CraftDialog_Assemblers_Single" xml:space="preserve">
+    <value>装配器：{0}</value>
+  </data>
+  <data name="LcdMod_CraftDialog_Assemblers_SelectedCount" xml:space="preserve">
+    <value>装配器：已选择 {0} 个</value>
+  </data>
+  <data name="LcdMod_CraftDialog_Assembler_FallbackName" xml:space="preserve">
+    <value>装配器</value>
+  </data>
+  <data name="LcdMod_CraftDialog_Assembler_Status_Idle" xml:space="preserve">
+    <value>空闲</value>
+  </data>
+  <data name="LcdMod_CraftDialog_AssemblerOption_WithStatus" xml:space="preserve">
+    <value>{0}（{1}）x{2}</value>
+  </data>
+  <data name="LcdMod_CraftDialog_AssemblerOption" xml:space="preserve">
+    <value>{0} x{1}</value>
+  </data>
+  <data name="LcdMod_Common_Button_OK" xml:space="preserve">
+    <value>确定</value>
+  </data>
+  <data name="LcdMod_Common_Value_Unavailable" xml:space="preserve">
+    <value>不适用</value>
+  </data>
+  <data name="LcdMod_Common_Time_ZeroSeconds" xml:space="preserve">
+    <value>0秒</value>
+  </data>
+  <data name="LcdMod_Common_Time_LessThanOneSecond" xml:space="preserve">
+    <value>&lt;1秒</value>
+  </data>
+  <data name="LcdMod_Common_Label_WithColon" xml:space="preserve">
+    <value>{0}：</value>
+  </data>
 </root>
