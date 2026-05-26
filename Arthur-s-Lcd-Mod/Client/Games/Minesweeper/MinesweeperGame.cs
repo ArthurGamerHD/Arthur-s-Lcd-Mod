@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.Games;
 using LcdMod.Client.SurfaceScripts;
 using LcdMod.Client.Config;
 using LcdMod.Client.Gui;
@@ -70,18 +71,20 @@ namespace LcdMod.Client.Games.Minesweeper
             new Color(231, 076, 060), // Flag
         };
 
-        public IReadOnlyDictionary<string, Color> Theme => (_script.App as AppBase)?.Theme;
+        readonly GameThemeContext _themeContext;
+
+        public IReadOnlyDictionary<string, Color> Theme => _themeContext.Theme;
 
         public ControlRenderContext CreateControlRenderContext(
             IMyTextSurface surface,
             float scale,
             float fontScale,
             Vector2 cursorPosition)
-        { 
-            return (_script.App as AppBase)?.CreateControlRenderContext(surface, scale, fontScale, cursorPosition);
+        {
+            return _themeContext.CreateControlRenderContext(surface, scale, fontScale, cursorPosition);
         }
 
-        public Color GetThemeColor(string role) => (_script.App as AppBase)?.GetThemeColor(role) ?? Color.White;
+        public Color GetThemeColor(string role) => _themeContext.GetThemeColor(role);
 
         readonly Color _bevelLight = new Color(120, 127, 135);
         readonly Color _bevelDark = new Color(39, 46, 53);
@@ -133,6 +136,7 @@ namespace LcdMod.Client.Games.Minesweeper
         {
             _panel = panel;
             _script = script;
+            _themeContext = new GameThemeContext(script);
             Interactive = new List<ControlBase>();
             _difficulty = MinesweeperDifficulty.Easy;
 

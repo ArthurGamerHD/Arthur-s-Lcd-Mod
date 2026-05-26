@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using ChessChallenge.API;
 using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.Games;
 using LcdMod.Client.SurfaceScripts;
 using LcdMod.Client.Config;
 using LcdMod.Client.Extensions;
@@ -55,18 +56,20 @@ namespace LcdMod.Client.Games.Chess
         public List<ControlBase> Interactive { get; } = new List<ControlBase>();
         public GameSurfaceScript.GameEnum Id => GameSurfaceScript.GameEnum.Chess;
 
-        public IReadOnlyDictionary<string, Color> Theme => (_script.App as AppBase)?.Theme;
+        readonly GameThemeContext _themeContext;
+
+        public IReadOnlyDictionary<string, Color> Theme => _themeContext.Theme;
 
         public ControlRenderContext CreateControlRenderContext(
             IMyTextSurface surface,
             float scale,
             float fontScale,
             Vector2 cursorPosition)
-        { 
-            return (_script.App as AppBase)?.CreateControlRenderContext(surface, scale, fontScale, cursorPosition);
+        {
+            return _themeContext.CreateControlRenderContext(surface, scale, fontScale, cursorPosition);
         }
 
-        public Color GetThemeColor(string role) => (_script.App as AppBase)?.GetThemeColor(role) ?? Color.White;
+        public Color GetThemeColor(string role) => _themeContext.GetThemeColor(role);
 
         static string UnpackTexture(string packed)
         {
@@ -359,6 +362,7 @@ namespace LcdMod.Client.Games.Chess
         {
             _panel = panel;
             _script = script;
+            _themeContext = new GameThemeContext(script);
             ReloadProgram();
             SetBot(_selectedBot);
         }
