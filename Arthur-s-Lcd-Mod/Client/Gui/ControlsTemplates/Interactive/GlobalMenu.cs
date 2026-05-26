@@ -50,6 +50,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 Level = level
             };
 
+            if (entry != null)
+                entry.Active = false;
+
             if (entry?.Children == null) return node;
             foreach (var subEntry in entry.Children)
                 node.Children.Add(CreateNode(subEntry, level + 1));
@@ -229,10 +232,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             List<MySprite> sprites)
         {
             var hover = rect.Contains(cursorPosition);
+            var active = hover || entry != null && entry.Active;
             var fillColor = hover
                 ? context.GetThemeColor(Constants.PRIMARY_CONTAINER + Constants.HOVER)
-                : context.GetThemeColor(Constants.PRIMARY_CONTAINER);
-            var itemTextColor = context.GetThemeColor(Constants.ON_PRIMARY_CONTAINER);
+                : active
+                    ? context.GetThemeColor(Constants.PRIMARY_CONTAINER)
+                    : Color.Transparent;
+            var itemTextColor = context.GetThemeColor(active ? Constants.ON_PRIMARY_CONTAINER : Constants.ON_PRIMARY);
             Border.CreateSpritesFromRect(rect, sprites, fillColor, 0.5f);
 
             var text = GetText(entry);
@@ -327,6 +333,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             if (_rootNodes.Contains(node) && _openPath.Contains(node))
             {
                 _openPath.Clear();
+                SyncActiveEntries();
             }
             else if (node.Entry.HasChildren)
             {
@@ -338,6 +345,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 else
                     _openPath[node.Level] = node;
 
+                SyncActiveEntries();
                 return;
             }
 
@@ -345,6 +353,35 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             {
                 node.Entry.OnClick(node.Entry.DataContext ?? node.Entry, sender);
                 _openPath.Clear();
+                SyncActiveEntries();
+            }
+        }
+
+        void SyncActiveEntries()
+        {
+            SetActive(_rootNodes, false);
+
+            foreach (var node in _openPath)
+            {
+                if (node?.Entry != null)
+                    node.Entry.Active = true;
+            }
+        }
+
+        static void SetActive(List<Node> nodes, bool active)
+        {
+            if (nodes == null)
+                return;
+
+            foreach (var node in nodes)
+            {
+                if (node == null)
+                    continue;
+
+                if (node.Entry != null)
+                    node.Entry.Active = active;
+
+                SetActive(node.Children, active);
             }
         }
 

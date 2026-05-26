@@ -32,9 +32,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             Children = children;
         }
 
-        public bool HasChildren
-        {
-            get { return Children != null && Children.Count > 0; }
-        }
+        public bool HasChildren => Children != null && Children.Count > 0;
+
+        public bool Active { get; set; }
     }
 }
