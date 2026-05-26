@@ -11,6 +11,7 @@ namespace LcdMod.Client.Helpers
     public static class BlockIconHelper
     {
         static readonly HashSet<MyCubeBlockDefinition> HashSet = new HashSet<MyCubeBlockDefinition>();
+        static readonly HashSet<MyPhysicalItemDefinition> ItemHashSet = new HashSet<MyPhysicalItemDefinition>();
         
         public static void PreloadAllTextures()
         {
@@ -67,6 +68,19 @@ namespace LcdMod.Client.Helpers
             return false;
         }
 
+        public static string GetOrAddTextureForItem(MyPhysicalItemDefinition definition)
+        {
+            if (definition == null)
+                return string.Empty;
+
+            if (!ItemHashSet.Add(definition))
+                return definition.Id.ToString();
+
+            var texture = CreateLcdTextureDefinition(definition);
+            MyDefinitionManager.Static.Definitions.AddOrReplaceDefinition(texture);
+            return texture.Id.SubtypeName;
+        }
+
         static MyLCDTextureDefinition CreateLcdTextureDefinition(MyCubeBlockDefinition blockDefinition)
         {
             MyLCDTextureDefinition textureDefinition = new MyLCDTextureDefinition
@@ -75,6 +89,20 @@ namespace LcdMod.Client.Helpers
                 Public = false,
                 LocalizationId = blockDefinition.DisplayNameString,
                 SpritePath = blockDefinition.Icons.Length != 0 ? blockDefinition.Icons[0] : string.Empty,
+                Selectable = false
+            };
+
+            return textureDefinition;
+        }
+
+        static MyLCDTextureDefinition CreateLcdTextureDefinition(MyPhysicalItemDefinition itemDefinition)
+        {
+            MyLCDTextureDefinition textureDefinition = new MyLCDTextureDefinition
+            {
+                Id = new MyDefinitionId((MyObjectBuilderType) typeof(MyObjectBuilder_LCDTextureDefinition), itemDefinition.Id.ToString()),
+                Public = false,
+                LocalizationId = itemDefinition.DisplayNameString,
+                SpritePath = itemDefinition.Icons.Length != 0 ? itemDefinition.Icons[0] : string.Empty,
                 Selectable = false
             };
 

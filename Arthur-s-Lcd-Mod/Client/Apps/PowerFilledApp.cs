@@ -22,7 +22,6 @@ namespace LcdMod.Client.Apps
         const float BATTERY_SLOT_H = 100f;
         const float SCROLLER_W = 8f;
         const int SCROLL_TICK = 12;
-        const float ICON_TEXTURE_SIZE = 192f;
 
         readonly IAppHost _surfaceHost;
         readonly InteractiveSurfaceScript _interactiveHost;
@@ -463,15 +462,13 @@ namespace LcdMod.Client.Apps
             bool drawCenterIcon = true, float centerIconRotation = 0f, float centerIconScale = 1f)
         {
             ratio = MathHelper.Clamp(ratio, 0f, 1f);
-            float texScale = iconSize / ICON_TEXTURE_SIZE;
-            float spriteLeft = center.X - iconSize / 2f;
-            float spriteTop = center.Y - iconSize / 2f;
-            float innerLeft = spriteLeft + (texture.Left + texture.Margin) * texScale;
-            float innerTop = spriteTop + (texture.Top + texture.Margin) * texScale;
-            float innerRight = center.X + iconSize / 2f - (texture.Right + texture.Margin) * texScale;
-            float innerBottom = center.Y + iconSize / 2f - (texture.Bottom + texture.Margin) * texScale;
-            float innerW = Math.Max(0f, innerRight - innerLeft);
-            float innerH = Math.Max(0f, innerBottom - innerTop);
+            var innerRect = texture.GetInnerRect(center, iconSize);
+            float innerLeft = innerRect.X;
+            float innerTop = innerRect.Y;
+            float innerRight = innerRect.Right;
+            float innerBottom = innerRect.Bottom;
+            float innerW = innerRect.Width;
+            float innerH = innerRect.Height;
 
             if (ratio > 0.005f && innerW > 0f && innerH > 0f)
             {

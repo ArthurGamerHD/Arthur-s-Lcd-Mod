@@ -55,5 +55,17 @@
             <SpritePath>Textures/Sprites/flag.dds</SpritePath>
             <Selectable>false</Selectable>
         </LCDTextureDefinition>
+        
+        <LCDTextureDefinition> <!-- Custom Farm Plot Sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="FarmPlot"/>
+            <SpritePath>Textures/Sprites/FarmPlot.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Custom Farm Plot Sprite Background Mask -->
+            <Id Type="LCDTextureDefinition" Subtype="FarmPlotMask"/>
+            <SpritePath>Textures/Sprites/FarmPlotMask.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
     </LCDTextures>
 </Definitions>

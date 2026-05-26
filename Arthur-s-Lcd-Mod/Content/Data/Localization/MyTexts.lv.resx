@@ -18,6 +18,15 @@
   <data name="LcdMod_EnergyDashboard" xml:space="preserve">
     <value>Enerģijas panelis</value>
   </data>
+  <data name="LcdMod_Farm" xml:space="preserve">
+    <value>Fermas informācija</value>
+  </data>
+  <data name="LcdMod_Farm_Water" xml:space="preserve">
+    <value>Ūdens: {0}</value>
+  </data>
+  <data name="LcdMod_Farm_OutputAmount" xml:space="preserve">
+    <value>{0} x{1}</value>
+  </data>
   <data name="LcdMod_GraphWindow" xml:space="preserve">
     <value>Grafika laika logs</value>
   </data>

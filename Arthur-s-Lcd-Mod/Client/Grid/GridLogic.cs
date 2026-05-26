@@ -12,6 +12,8 @@ using VRage.Game.ModAPI;
 using VRage.Game.ModAPI.Ingame;
 using VRageMath;
 using IMyCubeGrid = VRage.Game.ModAPI.IMyCubeGrid;
+using IMyFarmPlotLogic = Sandbox.ModAPI.IMyFarmPlotLogic;
+using IMyFunctionalBlock = Sandbox.ModAPI.IMyFunctionalBlock;
 using IMySlimBlock = VRage.Game.ModAPI.IMySlimBlock;
 using IngameItem = VRage.Game.ModAPI.Ingame.MyInventoryItem;
 using ScreenConfigWithBlocks = LcdMod.Common.Config.Models.Apps.ScreenConfigWithBlocks;
@@ -41,6 +43,9 @@ namespace LcdMod.Client.Grid
         long _clock;
         int _ticksSinceRequested = int.MaxValue;
 
+        static readonly HashSet<string> KnowSubtypes = new HashSet<string>();
+        static readonly HashSet<string> KnowFarmSubtypes = new HashSet<string>();
+        
         public readonly IMyCubeGrid Grid;
         List<IMySlimBlock> _blocks = new List<IMySlimBlock>();
         List<IMyTerminalBlock> _invBlocks = new List<IMyTerminalBlock>();
@@ -53,12 +58,14 @@ namespace LcdMod.Client.Grid
         List<IMyBatteryBlock> _batteries = new List<IMyBatteryBlock>();
         List<IMyJumpDrive> _jumpDrives = new List<IMyJumpDrive>();
         List<IMyAssembler> _assemblers = new List<IMyAssembler>();
+        List<FarmPlotEntry> _farmPlots = new List<FarmPlotEntry>();
         List<IMyLaserAntenna> _nextLasers = new List<IMyLaserAntenna>();
         List<IMyRadioAntenna> _nextRadio = new List<IMyRadioAntenna>();
         List<IMyBeacon> _nextBeacons = new List<IMyBeacon>();
         List<IMyBatteryBlock> _nextBatteries = new List<IMyBatteryBlock>();
         List<IMyJumpDrive> _nextJumpDrives = new List<IMyJumpDrive>();
         List<IMyAssembler> _nextAssemblers = new List<IMyAssembler>();
+        List<FarmPlotEntry> _nextFarmPlots = new List<FarmPlotEntry>();
         IEnumerator<bool> _refreshUpdater;
         bool _refreshQueued;
         int _currentRefreshBatchSize = REFRESH_BATCH_SIZE;
@@ -458,6 +465,7 @@ namespace LcdMod.Client.Grid
             _nextBatteries.Clear();
             _nextJumpDrives.Clear();
             _nextAssemblers.Clear();
+            _nextFarmPlots.Clear();
 
             Grid.GetBlocks(_nextBlocks, a => a.FatBlock is IMyTerminalBlock);
 
@@ -495,6 +503,32 @@ namespace LcdMod.Client.Grid
                     EnsureAssemblerBlueprintDatabase(assembler);
                 }
 
+                var farmPlotBlock = block as IMyFunctionalBlock;
+                if (farmPlotBlock != null)
+                {
+                    if (KnowFarmSubtypes.Contains(farmPlotBlock.BlockDefinition.SubtypeName) || KnowSubtypes.Add(farmPlotBlock.BlockDefinition.SubtypeName))
+                    {
+                        IMyFarmPlotLogic planterComponent = null;
+                        IMyResourceStorageComponent storageComponent = null;
+                        
+                        foreach (var component in block.Components)
+                        {
+                            if (planterComponent == null)
+                                planterComponent = component as IMyFarmPlotLogic;
+
+                            if (storageComponent == null)
+                                storageComponent = component as IMyResourceStorageComponent;
+
+                            if (planterComponent == null || storageComponent == null)
+                                continue;
+
+                            KnowFarmSubtypes.Add(farmPlotBlock.BlockDefinition.SubtypeName);
+                            _nextFarmPlots.Add(new FarmPlotEntry(farmPlotBlock, planterComponent, storageComponent));
+                            break;
+                        }
+                    }
+                }
+
                 if (block.HasInventory && block.InventoryCount != 0)
                     _nextInvBlocks.Add(block);
 
@@ -514,8 +548,25 @@ namespace LcdMod.Client.Grid
             SwapBuffer(ref _batteries, ref _nextBatteries);
             SwapBuffer(ref _jumpDrives, ref _nextJumpDrives);
             SwapBuffer(ref _assemblers, ref _nextAssemblers);
+            SwapBuffer(ref _farmPlots, ref _nextFarmPlots);
             SwapBuffer(ref _lasers, ref _nextLasers);
             SwapBuffer(ref _radio, ref _nextRadio);
+        }
+
+        static bool TryGetFarmPlotLogic(IMyFunctionalBlock block, out IMyFarmPlotLogic farmPlotLogic)
+        {
+            farmPlotLogic = null;
+            if (block == null)
+                return false;
+
+            foreach (var component in block.Components)
+            {
+                farmPlotLogic = component as IMyFarmPlotLogic;
+                if (farmPlotLogic != null)
+                    return true;
+            }
+
+            return false;
         }
 
         public List<IMyLaserAntenna> GetLaserAntennae()
@@ -552,6 +603,12 @@ namespace LcdMod.Client.Grid
         {
             RefreshIfNeeded();
             return _assemblers;
+        }
+
+        public List<FarmPlotEntry> GetFarmPlots()
+        {
+            RefreshIfNeeded();
+            return _farmPlots;
         }
 
         public bool TryGetPlanetJumpPoint(

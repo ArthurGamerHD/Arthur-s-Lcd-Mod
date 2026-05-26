@@ -18,6 +18,15 @@
   <data name="LcdMod_EnergyDashboard" xml:space="preserve">
     <value>Energi Panel</value>
   </data>
+  <data name="LcdMod_Farm" xml:space="preserve">
+    <value>Gårdinformation</value>
+  </data>
+  <data name="LcdMod_Farm_Water" xml:space="preserve">
+    <value>Vand: {0}</value>
+  </data>
+  <data name="LcdMod_Farm_OutputAmount" xml:space="preserve">
+    <value>{0} x{1}</value>
+  </data>
   <data name="LcdMod_GraphWindow" xml:space="preserve">
     <value>Graf tidsvindue</value>
   </data>

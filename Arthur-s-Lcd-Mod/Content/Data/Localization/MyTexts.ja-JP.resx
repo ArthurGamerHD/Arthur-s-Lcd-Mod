@@ -18,6 +18,15 @@
   <data name="LcdMod_EnergyDashboard" xml:space="preserve">
     <value>エネルギーダッシュボード</value>
   </data>
+  <data name="LcdMod_Farm" xml:space="preserve">
+    <value>農場情報</value>
+  </data>
+  <data name="LcdMod_Farm_Water" xml:space="preserve">
+    <value>水: {0}</value>
+  </data>
+  <data name="LcdMod_Farm_OutputAmount" xml:space="preserve">
+    <value>{0} x{1}</value>
+  </data>
   <data name="LcdMod_GraphWindow" xml:space="preserve">
     <value>グラフ時間幅</value>
   </data>
