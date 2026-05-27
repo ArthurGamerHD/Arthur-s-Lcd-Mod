@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Generated;
+using LcdMod.Client.Helpers;
 using LcdMod.Client.ScreenAreas;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Utility;
@@ -75,6 +76,9 @@ namespace LcdMod.Client.Modules.InputBlock
 
             var player = MyAPIGateway.Session?.LocalHumanPlayer;
             var entity = player?.Controller?.ControlledEntity?.Entity as MyCubeBlock;
+
+            if (LocalPlayerBlockStateHelper.IsBlockPlacerActive())
+                return false;
 
             if (MyAPIGateway.Gui.IsCursorVisible || (!_moveCameraControl.IsPressed() &&
                                                      ((entity?.BlockDefinition as MyCockpitDefinition)

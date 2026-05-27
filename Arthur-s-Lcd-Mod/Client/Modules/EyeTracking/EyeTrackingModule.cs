@@ -71,6 +71,13 @@ namespace LcdMod.Client.Modules.EyeTracking
                                                          ?.EnableShipControl ?? false)))
                 return;
 
+            if (LocalPlayerBlockStateHelper.IsBlockPlacerActive())
+            {
+                UpdateClickState(null, null);
+                _lastActiveNearbyCount = 0;
+                return;
+            }
+
             Vector3D cameraPos;
             Vector3D cameraForward;
             if (!TryGetCameraRay(out cameraPos, out cameraForward))
