@@ -90,6 +90,7 @@ namespace LcdMod.Client.Terminal
 
             Controls.Add(new SliderProxyX());
             Controls.Add(new SliderProxyY());
+            Controls.Add(new SwitchProxyAutoAdjust());
             Controls.Add(new ButtonProxyAuto());
         }
 

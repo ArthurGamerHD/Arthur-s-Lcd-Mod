@@ -473,7 +473,7 @@ namespace LcdMod.Client.Gui.UserControls
                     Data = spriteName,
                     Position = new Vector2(x + size.X * 0.5f, y + size.Y * 0.5f),
                     Size = size,
-                    Color = Color.White,
+                    Color = run.ColorExplicit ? run.Color : Color.White,
                     Alignment = TextAlignment.CENTER
                 });
             }
@@ -773,6 +773,7 @@ namespace LcdMod.Client.Gui.UserControls
             public readonly float Scale;
             public readonly bool Underline;
             public readonly bool Strikethrough;
+            public readonly bool ColorExplicit;
 
             public TextStyle(Color color, string fontId, float scale)
                 : this(color, fontId, scale, false, false)
@@ -780,47 +781,53 @@ namespace LcdMod.Client.Gui.UserControls
             }
 
             TextStyle(Color color, string fontId, float scale, bool underline, bool strikethrough)
+                : this(color, fontId, scale, underline, strikethrough, false)
+            {
+            }
+
+            TextStyle(Color color, string fontId, float scale, bool underline, bool strikethrough, bool colorExplicit)
             {
                 Color = color;
                 FontId = NormalizeFontId(fontId);
                 Scale = scale;
                 Underline = underline;
                 Strikethrough = strikethrough;
+                ColorExplicit = colorExplicit;
             }
 
             public TextStyle WithColor(Color color)
             {
-                return new TextStyle(color, FontId, Scale, Underline, Strikethrough);
+                return new TextStyle(color, FontId, Scale, Underline, Strikethrough, true);
             }
 
             public TextStyle WithFont(string fontId)
             {
-                return new TextStyle(Color, fontId, Scale, Underline, Strikethrough);
+                return new TextStyle(Color, fontId, Scale, Underline, Strikethrough, ColorExplicit);
             }
 
             public TextStyle WithBold()
             {
-                return new TextStyle(Color, GetBoldFont(FontId), Scale, Underline, Strikethrough);
+                return new TextStyle(Color, GetBoldFont(FontId), Scale, Underline, Strikethrough, ColorExplicit);
             }
 
             public TextStyle WithItalic()
             {
-                return new TextStyle(Color, GetItalicFont(FontId), Scale, Underline, Strikethrough);
+                return new TextStyle(Color, GetItalicFont(FontId), Scale, Underline, Strikethrough, ColorExplicit);
             }
 
             public TextStyle WithUnderline()
             {
-                return new TextStyle(Color, FontId, Scale, true, Strikethrough);
+                return new TextStyle(Color, FontId, Scale, true, Strikethrough, ColorExplicit);
             }
 
             public TextStyle WithStrikethrough()
             {
-                return new TextStyle(Color, FontId, Scale, Underline, true);
+                return new TextStyle(Color, FontId, Scale, Underline, true, ColorExplicit);
             }
 
             public TextStyle WithScale(float scale)
             {
-                return new TextStyle(Color, FontId, scale, Underline, Strikethrough);
+                return new TextStyle(Color, FontId, scale, Underline, Strikethrough, ColorExplicit);
             }
 
             public bool Equals(TextStyle other)
@@ -829,7 +836,8 @@ namespace LcdMod.Client.Gui.UserControls
                        string.Equals(FontId, other.FontId, StringComparison.Ordinal) &&
                        Math.Abs(Scale - other.Scale) < 0.0001f &&
                        Underline == other.Underline &&
-                       Strikethrough == other.Strikethrough;
+                       Strikethrough == other.Strikethrough &&
+                       ColorExplicit == other.ColorExplicit;
             }
 
             static string GetBoldFont(string fontId)
@@ -921,6 +929,7 @@ namespace LcdMod.Client.Gui.UserControls
             }
 
             public Color Color { get { return Style.Color; } }
+            public bool ColorExplicit { get { return Style.ColorExplicit; } }
             public string FontId { get { return Style.FontId; } }
             public float Scale { get { return Style.Scale; } }
             public bool Underline { get { return Style.Underline; } }

@@ -3,6 +3,8 @@ using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Serialization;
 using LcdMod.Client.Markdown;
+using LcdMod.Client.Markdown.Inline;
+using LcdMod.Client.Markdown.Inline.NonStandard;
 
 namespace Arthur_s_Lcd_Mod.Tests;
 
@@ -23,7 +25,7 @@ public sealed class MarkdownParserSnapshotTests
             {
                 "links-and-images",
                 """
-                Open [manual **now**](https://example.test/manual) and ![reactor](sprite:Textures/Sprites/Reactor.dds).
+                Open [manual **now**](https://example.test/manual) and [color:#FFAA00]![reactor](sprite:Textures/Sprites/Reactor.dds)[/color].
                 """
             },
             {
@@ -48,6 +50,19 @@ public sealed class MarkdownParserSnapshotTests
                 """
             }
         };
+    }
+
+    [Fact]
+    public void ParseColorWrappedImage()
+    {
+        MarkdownDocument document = new MarkdownParser().Parse("[color:#12ABEF]![Arrow](sprite:Arrow)[/color]");
+        ParagraphBlock paragraph = Assert.IsType<ParagraphBlock>(Assert.Single(document.Blocks));
+        ColorInline color = Assert.IsType<ColorInline>(Assert.Single(paragraph.Inlines));
+        ImageInline image = Assert.IsType<ImageInline>(Assert.Single(color.Children));
+
+        Assert.Equal("#12ABEF", color.Color);
+        Assert.Equal(ImageType.Sprite, image.Kind);
+        Assert.Equal("Arrow", image.Source);
     }
 
     [Theory]

@@ -485,6 +485,15 @@
   <data name="LcdMod_AutoOffset_Tooltip" xml:space="preserve">
     <value>Calcular automáticamente el desplazamiento del proxy a partir de la pantalla host seleccionada.</value>
   </data>
+  <data name="LcdMod_EnableAutoAdjust" xml:space="preserve">
+    <value>Enable Auto Adjust</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_EnableAutoAdjust_Tooltip" xml:space="preserve">
+    <value>Automatically adjust the render proxy on startup and when the linked screen rotation changes.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+
 <data name="LcdMod_CraftDialog_Title" xml:space="preserve">
     <value>Fabricar</value>
   </data>

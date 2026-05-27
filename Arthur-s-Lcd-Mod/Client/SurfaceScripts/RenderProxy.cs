@@ -27,6 +27,7 @@ namespace LcdMod.Client.SurfaceScripts
     public partial class RenderProxySurfaceScript : InteractiveSurfaceScript,
         IUsesTerminalControl<SliderProxyX>,
         IUsesTerminalControl<SliderProxyY>,
+        IUsesTerminalControl<SwitchProxyAutoAdjust>,
         IReferenceBlockSelection,
         IProxyAutoOffset
     {
@@ -236,6 +237,9 @@ namespace LcdMod.Client.SurfaceScripts
 
         void ScheduleInitialAutoAdjust()
         {
+            if (AppConfig != null && !AppConfig.EnableAutoAdjust)
+                return;
+
             if (_initialAutoAdjustAttempts >= INITIAL_AUTO_ADJUST_MAX_ATTEMPTS)
                 return;
 
@@ -253,6 +257,9 @@ namespace LcdMod.Client.SurfaceScripts
                 ScheduleInitialAutoAdjust();
                 return;
             }
+
+            if (!AppConfig.EnableAutoAdjust)
+                return;
 
             if (!TryApplyProxyAutoOffset(false))
                 ScheduleInitialAutoAdjust();
@@ -594,6 +601,9 @@ namespace LcdMod.Client.SurfaceScripts
                     continue;
                 }
 
+                if (!proxyConfig.EnableAutoAdjust)
+                    continue;
+
                 if (GetSelectedTextPanelRotationIndex(panel) == context.HostRotationIndex)
                     continue;
 
@@ -665,6 +675,9 @@ namespace LcdMod.Client.SurfaceScripts
             {
                 return;
             }
+
+            if (!proxyConfig.EnableAutoAdjust)
+                return;
 
             bool rotationChanged = SetSelectedTextPanelRotationIndex(target.Block, target.RotationIndex);
             EnsureProxyScript(target.Block, rotationChanged);
@@ -953,7 +966,7 @@ namespace LcdMod.Client.SurfaceScripts
             if (panel == null || hostPanel == null || appConfig == null)
                 return false;
 
-            return GetSelectedTextPanelRotationIndex(panel) != hostRotationIndex;
+            return appConfig.EnableAutoAdjust && GetSelectedTextPanelRotationIndex(panel) != hostRotationIndex;
         }
 
         long GetProxyRegistrationId()
