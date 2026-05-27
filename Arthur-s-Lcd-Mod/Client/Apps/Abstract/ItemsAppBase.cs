@@ -940,8 +940,10 @@ namespace LcdMod.Client.Apps.Abstract
             var accent = backgroundColor.MulValue(0.2f);
             var cellRect = new RectangleF(rl, rt, rr - rl, rb - rt);
             var dropShadow = new RectangleF(cellRect.Position + 2, cellRect.Size);
-            Border.CreateSpritesFromRect(dropShadow, frame, accent, .2f);
-            Border.CreateSpritesFromRect(cellRect, frame, backgroundColor, .2f);
+            Border.CreateSpritesFromRect(dropShadow, frame, accent,
+                radiusScale: Scale);
+            Border.CreateSpritesFromRect(cellRect, frame, backgroundColor,
+                radiusScale: Scale);
         }
 
         protected Vector2 ToScreenMargin(Vector2 absoluteCenterInViewBox)

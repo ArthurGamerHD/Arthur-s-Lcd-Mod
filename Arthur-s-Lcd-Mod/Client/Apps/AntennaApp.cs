@@ -397,8 +397,8 @@ namespace LcdMod.Client.Apps
                     (xEnd - xStart) - cellPadding,
                     rowHeight - cellPadding);
                 var dropShadow = new RectangleF(cellRect.Position + 2, cellRect.Size);
-                Border.CreateSpritesFromRect(dropShadow, sprites, hsv.HSVtoColor(), .2f);
-                Border.CreateSpritesFromRect(cellRect, sprites, backgroundColor, .2f);
+                Border.CreateSpritesFromRect(dropShadow, sprites, hsv.HSVtoColor(), radiusScale: Host.Scale);
+                Border.CreateSpritesFromRect(cellRect, sprites, backgroundColor,radiusScale: Host.Scale);
             }
 
             var foreground = drawAsLines ? entry.StatusColor : Host.Surface.ScriptForegroundColor;

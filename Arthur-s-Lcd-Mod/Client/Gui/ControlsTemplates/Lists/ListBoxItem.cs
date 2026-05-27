@@ -41,7 +41,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
 
             var selectedStyle = new ControlStyle(selectedText, selectedPanel)
             {
-                BorderPercentage = style.BorderPercentage,
+                BorderRadiusPixels = style.BorderRadiusPixels,
                 HoverPanelColor = selectedPanel,
                 HoverTextColor = selectedText,
                 Padding = style.Padding
@@ -56,7 +56,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
                 context.CursorPosition);
 
             var rect = GetViewBox();
-            Border.CreateSpritesFromRect(rect, sprites, selectedPanel, selectedStyle.BorderPercentage);
+            Border.CreateSpritesFromRect(rect, sprites, selectedPanel,selectedStyle.BorderRadiusPixels, context.Scale);
             RenderDefaultText(rect, selectedContext, sprites);
         }
     }

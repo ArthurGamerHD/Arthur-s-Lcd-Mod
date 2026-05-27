@@ -288,8 +288,10 @@ namespace LcdMod.Client.Gui.Tooltip
             _containerControl.ClearChildren();
             _interactiveEntries.Add(_containerControl);
 
-            Border.CreateSpritesFromRect(shadowRect, sprites, shadowColor, 0.2f);
-            Border.CreateSpritesFromRect(cardRect, sprites, panelColor, 0.2f);
+            Border.CreateSpritesFromRect(shadowRect, sprites, shadowColor,
+                radiusScale: scale);
+            Border.CreateSpritesFromRect(cardRect, sprites, panelColor,
+                radiusScale: scale);
 
             if (_cardControl == null)
             {
@@ -565,7 +567,8 @@ namespace LcdMod.Client.Gui.Tooltip
                 ? context.HoverPanelColor
                 : context.PanelColor;
 
-            Border.CreateSpritesFromRect(rect, sprites, fillColor, 0.2f);
+            Border.CreateSpritesFromRect(rect, sprites, fillColor,
+                radiusScale: context.Scale);
             RenderDefaultText(rect, context, sprites);
         }
     }

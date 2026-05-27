@@ -7,29 +7,37 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 {
     public static class Border
     {
+        public const float DefaultRadiusPixels = 6f;
+
         public static List<MySprite> SpritesBuffer = new List<MySprite>(16);
 
-        public static void CreateSpritesFromRect(RectangleF rect, List<MySprite> sprites,
-            Color? color = null, float borderPercentage = 0)
+        public static float ScaleRadius(float radiusPixels, float scale)
         {
+            var size = radiusPixels * Math.Max(0f, scale);
+            return size < 1f ? 0f : (int)size;
+        }
+
+        public static void CreateSpritesFromRect(RectangleF rect, List<MySprite> sprites, Color? color = null, float radiusPixels = DefaultRadiusPixels, float radiusScale = 1f)
+        {
+            radiusPixels = ScaleRadius(radiusPixels, radiusScale);
+
             if (color == null)
                 color = Color.Gray;
 
-
-            if (borderPercentage == 0)
+            if (radiusPixels <= 0)
                 sprites.Add(new MySprite(0, "SquareSimple", rect.Center, rect.Size, color));
             else
-                sprites.AddRange(DrawRectangle(rect, color.Value, 1f, borderPercentage));
+                sprites.AddRange(DrawRectangle(rect, color.Value, 1f, radiusPixels));
         }
 
         public static MySprite[] DrawRectangle(RectangleF rectangle, Color color, float finalScale = 1f,
-            float borderPercentage = 0.15f)
+            float radiusPixels = DefaultRadiusPixels)
         {
             SpritesBuffer.Clear();
             Vector2 fullSize = rectangle.Size * finalScale;
             Vector2 half = fullSize * 0.5f;
 
-            float r = Math.Min(rectangle.Width, rectangle.Height) * borderPercentage / 2f * finalScale;
+            float r = Math.Min(radiusPixels * finalScale, Math.Min(fullSize.X, fullSize.Y) * 0.5f);
             Vector2 coreSize = new Vector2(
                 fullSize.X - 2f * r,
                 fullSize.Y - 2f * r

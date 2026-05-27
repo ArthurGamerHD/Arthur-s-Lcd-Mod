@@ -723,8 +723,10 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             var a = backgroundColor.MulValue(0.2f);
             var cellRect = new RectangleF(rl, rt, rr - rl, rb - rt);
             var dropShadow = new RectangleF(cellRect.Position + 2, cellRect.Size);
-            Border.CreateSpritesFromRect(dropShadow, frame, a, .2f);
-            Border.CreateSpritesFromRect(cellRect, frame, backgroundColor, .2f);
+            Border.CreateSpritesFromRect(dropShadow, frame, a,
+                radiusScale: Scale);
+            Border.CreateSpritesFromRect(cellRect, frame, backgroundColor,
+                radiusScale: Scale);
         }
 
         protected static void ParseFilter(IMyTerminalBlock lcd, out string mode, out string token)

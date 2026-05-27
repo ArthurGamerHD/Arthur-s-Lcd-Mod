@@ -102,8 +102,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 cardHeight);
 
             var shadowColor = GetThemeColor(Constants.SHADOW);
-            Border.CreateSpritesFromRect(new RectangleF(cardRect.Position + 2f, cardRect.Size), Sprites, shadowColor, 0.2f);
-            Border.CreateSpritesFromRect(cardRect, Sprites, cardColor, 0.2f);
+            Border.CreateSpritesFromRect(new RectangleF(cardRect.Position + 2f, cardRect.Size), Sprites, shadowColor,
+                radiusScale: scale);
+            Border.CreateSpritesFromRect(cardRect, Sprites, cardColor,
+                radiusScale: scale);
 
             var renderContext = CreateRenderContext(surface, scale, fontScale, textColor, panelColor, cursorPosition);
 
@@ -237,7 +239,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                     Constants.PRIMARY_CONTAINER + Constants.HOVER,
                     Constants.ON_PRIMARY_CONTAINER,
                     ParentTheme);
-                _amountControlStyle.BorderPercentage = 0.5f;
+                _amountControlStyle.BorderRadiusPixels = Border.DefaultRadiusPixels;
             }
 
             _amountControlStyle.ThemeColors = ParentTheme;
@@ -274,7 +276,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 : context.GetThemeColor(Constants.SURFACE_CONTAINER);
             var labelColor = context.GetThemeColor(Constants.ON_SURFACE);
 
-            Border.CreateSpritesFromRect(rect, sprites, fill, 0.2f);
+            Border.CreateSpritesFromRect(rect, sprites, fill,
+                radiusScale: context.Scale);
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
@@ -344,7 +347,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             var buttonColor = context.Style.GetPanelColor(hover);
             var buttonTextColor = context.Style.GetTextColor(hover);
 
-            Border.CreateSpritesFromRect(rect, sprites, buttonColor, context.Style.BorderPercentage);
+            Border.CreateSpritesFromRect(rect, sprites, buttonColor,
+                radiusScale: context.Scale);
 
             sprites.Add(new MySprite
             {
@@ -720,8 +724,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 cardHeight);
 
             Border.CreateSpritesFromRect(new RectangleF(cardRect.Position + 2f, cardRect.Size), Sprites,
-                GetThemeColor(Constants.SHADOW), 0.2f);
-            Border.CreateSpritesFromRect(cardRect, Sprites, cardColor, 0.2f);
+                GetThemeColor(Constants.SHADOW), radiusScale: scale);
+            Border.CreateSpritesFromRect(cardRect, Sprites, cardColor,
+                radiusScale: scale);
 
             var title = LocHelper.GetLoc("LcdMod_CraftDialog_AssemblerSelection_Title");
             var titleSize = FormatingHelper.GetSizeInPixel(title, "White", titleScale, surface);
@@ -751,7 +756,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                     Constants.SECONDARY_CONTAINER + Constants.HOVER,
                     Constants.ON_SECONDARY_CONTAINER,
                     ParentTheme);
-                _listBoxStyle.BorderPercentage = 0;
+                _listBoxStyle.BorderRadiusPixels = 0;
                 _listBox.SetStyle(_listBoxStyle);
             }
             else
@@ -817,7 +822,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             
             _listBox.SetVisible(_options.Count > 0);
             if (_listBox.Style != null) 
-                _listBox.Style.BorderPercentage = 0;
+                _listBox.Style.BorderRadiusPixels = 0;
         }
 
         void EnsureButtons(RectangleF selectRect, RectangleF cancelRect)

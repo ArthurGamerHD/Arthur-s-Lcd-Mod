@@ -22,7 +22,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         public string PanelRole { get; set; }
         public string HoverPanelRole { get; set; }
         public string HoverTextRole { get; set; }
-        public float BorderPercentage { get; set; } = 0.2f;
+        public float BorderRadiusPixels { get; set; } = Panels.Border.DefaultRadiusPixels;
         
         /// <summary>
         /// Left, Top, Right, Bottom and are expressed as 0..1 percentages of the control bounds.
@@ -30,7 +30,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         /// </summary>
         public Vector4 Padding { get; set; }
         public bool InheritParentColors { get; set; }
-        public bool InheritParentBorderPercentage { get; set; }
+        public bool InheritParentBorder { get; set; }
 
         public static ControlStyle FromThemeRoles(
             string textRole,
@@ -69,7 +69,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             {
                 Padding = padding,
                 InheritParentColors = true,
-                InheritParentBorderPercentage = true
+                InheritParentBorder = true
             };
         }
 
@@ -107,7 +107,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         public ControlStyle ResolveAgainst(ControlStyle parent, IReadOnlyDictionary<string, Color> parentTheme)
         {
             if (!InheritParentColors &&
-                !InheritParentBorderPercentage &&
+                !InheritParentBorder &&
                 (ThemeColors != null || parentTheme == null))
                 return this;
 
@@ -127,8 +127,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates
                     resolved.ThemeColors = parent.ThemeColors;
                 }
 
-                if (InheritParentBorderPercentage)
-                    resolved.BorderPercentage = parent.BorderPercentage;
+                if (InheritParentBorder)
+                    resolved.BorderRadiusPixels = parent.BorderRadiusPixels;
             }
 
             if (resolved.ThemeColors == null)
@@ -157,10 +157,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates
                 PanelRole = PanelRole,
                 HoverPanelRole = HoverPanelRole,
                 HoverTextRole = HoverTextRole,
-                BorderPercentage = BorderPercentage,
+                BorderRadiusPixels = BorderRadiusPixels,
                 Padding = Padding,
                 InheritParentColors = InheritParentColors,
-                InheritParentBorderPercentage = InheritParentBorderPercentage,
+                InheritParentBorder = InheritParentBorder,
                 ThemeColors = ThemeColors
             };
         }

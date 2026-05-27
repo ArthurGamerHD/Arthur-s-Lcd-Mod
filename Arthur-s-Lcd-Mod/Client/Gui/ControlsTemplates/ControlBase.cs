@@ -218,7 +218,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             var hovered = rect.Contains(context.CursorPosition);
             var fillColor = context.Style.GetPanelColor(hovered);
 
-            Border.CreateSpritesFromRect(rect, sprites, fillColor, context.Style.BorderPercentage);
+            Border.CreateSpritesFromRect(rect, sprites, fillColor,
+                radiusScale: context.Scale);
             RenderDefaultText(rect, context, sprites);
         }
 

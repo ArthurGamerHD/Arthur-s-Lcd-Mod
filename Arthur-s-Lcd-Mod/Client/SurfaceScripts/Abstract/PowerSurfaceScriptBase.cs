@@ -468,8 +468,10 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                     (xEnd - xStart) - cellPadding,
                     rowHeight - cellPadding);
                 var dropShadow = new RectangleF(cellRect.Position + 2, cellRect.Size);
-                Border.CreateSpritesFromRect(dropShadow, sprites, hsv.HSVtoColor(), .2f);
-                Border.CreateSpritesFromRect(cellRect, sprites, backgroundColor, .2f);
+                Border.CreateSpritesFromRect(dropShadow, sprites, hsv.HSVtoColor(),
+                    radiusScale: Scale);
+                Border.CreateSpritesFromRect(cellRect, sprites, backgroundColor,
+                    radiusScale: Scale);
             }
 
             var iconRect = slots.Item1;

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Common.Helpers;
 using VRageMath;
@@ -37,7 +38,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
                 Constants.PRIMARY_CONTAINER + Constants.HOVER,
                 Constants.ON_PRIMARY_CONTAINER,
                 theme);
-            style.BorderPercentage = 0.5f;
+            style.BorderRadiusPixels = Border.DefaultRadiusPixels;
             return style;
         }
 
@@ -54,7 +55,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
                 Constants.DISABLED_BACKGROUND,
                 Constants.DISABLED_FOREGROUND,
                 theme);
-            style.BorderPercentage = 0.5f;
+            style.BorderRadiusPixels = Border.DefaultRadiusPixels;
             return style;
         }
     }

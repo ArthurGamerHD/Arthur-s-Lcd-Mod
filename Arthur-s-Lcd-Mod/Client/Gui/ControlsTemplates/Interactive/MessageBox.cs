@@ -127,8 +127,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 cardHeight);
 
             var shadowRect = new RectangleF(cardRect.Position + 2f, cardRect.Size);
-            Border.CreateSpritesFromRect(shadowRect, Sprites, shadowColor, 0.2f);
-            Border.CreateSpritesFromRect(cardRect, Sprites, cardColor, 0.2f);
+            Border.CreateSpritesFromRect(shadowRect, Sprites, shadowColor, radiusScale: scale);
+            Border.CreateSpritesFromRect(cardRect, Sprites, cardColor, radiusScale: scale);
 
             var currentY = cardRect.Y + padding.Y;
 
@@ -309,7 +309,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             var buttonColor = context.Style.GetPanelColor(hover);
             var buttonTextColor = context.Style.GetTextColor(hover);
 
-            Border.CreateSpritesFromRect(rect, sprites, buttonColor, context.Style.BorderPercentage);
+            Border.CreateSpritesFromRect(rect, sprites, buttonColor,
+                radiusScale: context.Scale);
 
             sprites.Add(new MySprite
             {

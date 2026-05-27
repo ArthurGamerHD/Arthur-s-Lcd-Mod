@@ -424,8 +424,8 @@ namespace LcdMod.Client.Apps
             a.Z *= 0.2f;
             var cellRect = new RectangleF(rl, rt, rr - rl, rb - rt);
             var dropShadow = new RectangleF(cellRect.Position + 2, cellRect.Size);
-            Border.CreateSpritesFromRect(dropShadow, frame, a.HSVtoColor(), .2f);
-            Border.CreateSpritesFromRect(cellRect, frame, backgroundColor, .2f);
+            Border.CreateSpritesFromRect(dropShadow, frame, a.HSVtoColor(), radiusScale: Scale);
+            Border.CreateSpritesFromRect(cellRect, frame, backgroundColor, radiusScale: Scale);
         }
 
         int GetNeededQty(MyItemType itemType)

@@ -63,7 +63,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
             var listContext = CreateListRenderContext(context);
             var viewBox = GetViewBox();
             var backgroundColor = listContext.Style.GetPanelColor(false);
-            Border.CreateSpritesFromRect(viewBox, sprites, backgroundColor, listContext.Style.BorderPercentage);
+            Border.CreateSpritesFromRect(viewBox, sprites, backgroundColor,
+                Border.ScaleRadius(listContext.Style.BorderRadiusPixels, listContext.Scale));
 
             BeginClip(sprites, _scrollPanel.ContentViewportBounds);
             RenderRows(listContext, sprites);
@@ -83,7 +84,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
             var textColor = context.GetThemeColor(Constants.ON_SECONDARY_CONTAINER);
             var style = new ControlStyle(textColor, containerColor)
             {
-                BorderPercentage = context.Style.BorderPercentage,
+                BorderRadiusPixels = context.Style.BorderRadiusPixels,
                 HoverPanelColor = hoverContainerColor,
                 HoverTextColor = textColor,
                 Padding = context.Style.Padding

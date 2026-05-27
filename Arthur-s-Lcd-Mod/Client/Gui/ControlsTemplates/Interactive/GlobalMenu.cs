@@ -148,7 +148,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             ControlRenderContext renderContext)
         {
             var barRect = new RectangleF(viewBox.X, viewBox.Y, viewBox.Width, rootHeight);
-            Border.CreateSpritesFromRect(barRect, _sprites, panelColor, surface.TextPadding == 0 ? 0 : 0.5f);
+            Border.CreateSpritesFromRect(barRect, _sprites, panelColor,
+                radiusScale: surface.TextPadding == 0 ? 0 : scale);
 
             var x = viewBox.X;
             foreach (var node in _rootNodes)
@@ -201,8 +202,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 popupRect.Y = MathHelper.Clamp(popupRect.Y, viewBox.Y, viewBox.Bottom - popupRect.Height);
 
                 var shadowRect = new RectangleF(popupRect.Position + 2f * scale, popupRect.Size);
-                Border.CreateSpritesFromRect(shadowRect, _sprites, shadowColor, 0.16f);
-                Border.CreateSpritesFromRect(popupRect, _sprites, panelColor, 0.16f);
+                Border.CreateSpritesFromRect(shadowRect, _sprites, shadowColor,
+                    radiusScale: scale);
+                Border.CreateSpritesFromRect(popupRect, _sprites, panelColor,
+                    radiusScale: scale);
 
                 for (var i = 0; i < children.Count; i++)
                 {
@@ -239,7 +242,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                     ? context.GetThemeColor(Constants.PRIMARY_CONTAINER)
                     : Color.Transparent;
             var itemTextColor = context.GetThemeColor(active ? Constants.ON_PRIMARY_CONTAINER : Constants.ON_PRIMARY);
-            Border.CreateSpritesFromRect(rect, sprites, fillColor, 0.5f);
+            Border.CreateSpritesFromRect(rect, sprites, fillColor,
+                radiusScale: context.Scale);
 
             var text = GetText(entry);
             var iconSpace = !root && entry != null && !string.IsNullOrEmpty(entry.Icon) ? rect.Height : 0f;
