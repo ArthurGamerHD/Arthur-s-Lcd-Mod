@@ -38,7 +38,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
                 Constants.PRIMARY_CONTAINER + Constants.HOVER,
                 Constants.ON_PRIMARY_CONTAINER,
                 theme);
-            style.BorderRadiusPixels = Border.DefaultRadiusPixels;
+            style.BorderRadiusPixels = Border.DEFAULT_RADIUS_PIXELS;
             return style;
         }
 
@@ -55,7 +55,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
                 Constants.DISABLED_BACKGROUND,
                 Constants.DISABLED_FOREGROUND,
                 theme);
-            style.BorderRadiusPixels = Border.DefaultRadiusPixels;
+            style.BorderRadiusPixels = Border.DEFAULT_RADIUS_PIXELS;
             return style;
         }
     }

@@ -1739,7 +1739,8 @@ namespace LcdMod.Client.Games.EightBallPool
             DrawBevelBorder(sprites, _playRect, playBorder, GetInnerBevelTopLeftColor(), GetInnerBevelBottomRightColor());
             DrawPocketFunnels(sprites);
 #if DEBUG
-            DrawPhysicsWallsDebug(sprites);
+            if(LocalConfigManager.DebugInteractive)
+                DrawPhysicsWallsDebug(sprites);
 #endif
             DrawHeadString(sprites);
             DrawCueRespawnArea(sprites);
@@ -1863,7 +1864,7 @@ namespace LcdMod.Client.Games.EightBallPool
         }
 
 
-
+#if DEBUG
         void DrawPhysicsWallsDebug(List<MySprite> sprites)
         {
             var debugColor = new Color(255, 0, 255, 210);
@@ -1940,6 +1941,7 @@ namespace LcdMod.Client.Games.EightBallPool
             sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "CircleHollow", Position = center, Size = new Vector2(radius * 2f),
                 Color = outlineColor, Alignment = TextAlignment.CENTER });
         }
+#endif
 
         float GetPocketScreenRadius()
         {

@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Grid;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Inputs;
 using LcdMod.Client.Gui.ControlsTemplates.Lists;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
+using LcdMod.Client.Gui.ControlsTemplates.Panels.WrappedGrid;
 using LcdMod.Client.Helpers;
 using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
@@ -21,14 +23,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
     sealed class CraftDialog : Dialog
     {
         readonly GridLogic _gridLogic;
-        // ReSharper disable once NotAccessedField.Local
-        readonly MyItemType _itemType;
-        readonly MyDefinitionId _itemDefinitionId;
-        readonly string _itemName;
-        readonly string _itemIcon;
         readonly Action<Dialog> _showDialog;
+        readonly List<CraftRequest> _requests = new List<CraftRequest>();
         readonly List<CraftAssemblerOption> _assemblerOptions = new List<CraftAssemblerOption>();
         readonly List<CraftAssemblerOption> _selectedAssemblers = new List<CraftAssemblerOption>();
+        readonly bool _useRequestGrid;
 
         NumericUpDownModel _amountModel;
         NumericUpDown _amountControl;
@@ -36,6 +35,24 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         RectangleControl _assemblerControl;
         Button _craftButton;
         Button _cancelButton;
+
+        public sealed class CraftRequest
+        {
+            public readonly MyItemType ItemType;
+            public readonly MyDefinitionId DefinitionId;
+            public readonly string Name;
+            public readonly string Icon;
+            public readonly int Amount;
+
+            public CraftRequest(MyItemType itemType, string name, string icon, double amount)
+            {
+                ItemType = itemType;
+                DefinitionId = itemType;
+                Name = string.IsNullOrEmpty(name) ? itemType.SubtypeId : name;
+                Icon = icon;
+                Amount = Math.Max(1, (int)Math.Ceiling(amount));
+            }
+        }
 
         public CraftDialog(
             IApp parentApp,
@@ -45,27 +62,71 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             string itemIcon,
             double defaultAmount,
             Action<Dialog> showDialog)
+            : this(parentApp, gridLogic, CreateSingleRequest(itemType, itemName, itemIcon, defaultAmount),
+                showDialog, false)
+        {
+        }
+
+        public CraftDialog(
+            IApp parentApp,
+            GridLogic gridLogic,
+            IEnumerable<CraftRequest> requests,
+            Action<Dialog> showDialog)
+            : this(parentApp, gridLogic, requests, showDialog, true)
+        {
+        }
+
+        CraftDialog(
+            IApp parentApp,
+            GridLogic gridLogic,
+            IEnumerable<CraftRequest> requests,
+            Action<Dialog> showDialog,
+            bool useRequestGrid)
             : base(parentApp)
         {
             _gridLogic = gridLogic;
-            _itemType = itemType;
-            _itemDefinitionId = itemType;
-            _itemName = string.IsNullOrEmpty(itemName) ? itemType.SubtypeId : itemName;
-            _itemIcon = itemIcon;
             _showDialog = showDialog;
+            _useRequestGrid = useRequestGrid;
+            AddRequests(requests);
 
             BuildAssemblerOptions();
             SelectDefaultAssemblers();
-            _amountModel = new NumericUpDownModel
+            if (!_useRequestGrid && _requests.Count > 0)
             {
-                Value = Math.Max(1d, Math.Ceiling(defaultAmount)),
-                MinValue = 1d,
-                MaxValue = 1000000d,
-                Format = "0",
-                Step = 1d,
-                Title = Loc("LcdMod_CraftDialog_Title"),
-                Subtitle = _itemName
-            };
+                var request = _requests[0];
+                _amountModel = new NumericUpDownModel
+                {
+                    Value = request.Amount,
+                    MinValue = 1d,
+                    MaxValue = 1000000d,
+                    Format = "0",
+                    Step = 1d,
+                    Title = Loc("LcdMod_CraftDialog_Title"),
+                    Subtitle = request.Name
+                };
+            }
+        }
+
+        static List<CraftRequest> CreateSingleRequest(MyItemType itemType, string itemName, string itemIcon,
+            double defaultAmount)
+        {
+            return new List<CraftRequest> { new CraftRequest(itemType, itemName, itemIcon, defaultAmount) };
+        }
+
+        void AddRequests(IEnumerable<CraftRequest> requests)
+        {
+            if (requests == null)
+                return;
+
+            var seen = new HashSet<MyDefinitionId>();
+            foreach (var request in requests)
+            {
+                if (request == null || request.Amount <= 0 || seen.Contains(request.DefinitionId))
+                    continue;
+
+                seen.Add(request.DefinitionId);
+                _requests.Add(request);
+            }
         }
 
         protected override void RenderCore(
@@ -93,8 +154,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             var cardColor = GetThemeColor(Constants.SURFACE_CONTAINER_HIGH);
             var cardTextColor = GetThemeColor(Constants.ON_SURFACE);
 
-            var cardWidth = Math.Min(viewBox.Width - padding.X * 2f, Math.Max(360f * scale, viewBox.Width * 0.62f));
-            var cardHeight = Math.Min(viewBox.Height - padding.Y * 2f, Math.Max(235f * scale, viewBox.Height * 0.52f));
+            var cardWidth = _useRequestGrid
+                ? Math.Min(viewBox.Width - padding.X * 2f, Math.Max(460f * scale, viewBox.Width * 0.82f))
+                : Math.Min(viewBox.Width - padding.X * 2f, Math.Max(360f * scale, viewBox.Width * 0.62f));
+            var cardHeight = _useRequestGrid
+                ? Math.Min(viewBox.Height - padding.Y * 2f, Math.Max(310f * scale, viewBox.Height * 0.72f))
+                : Math.Min(viewBox.Height - padding.Y * 2f, Math.Max(235f * scale, viewBox.Height * 0.52f));
             var cardRect = new RectangleF(
                 viewBox.Center.X - cardWidth * 0.5f,
                 viewBox.Center.Y - cardHeight * 0.5f,
@@ -109,7 +174,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
             var renderContext = CreateRenderContext(surface, scale, fontScale, textColor, panelColor, cursorPosition);
 
-            var title = Loc("LcdMod_CraftDialog_Title");
+            var title = _useRequestGrid ? "Craft all" : Loc("LcdMod_CraftDialog_Title");
             var titleSize = FormatingHelper.GetSizeInPixel(title, "White", titleScale, surface);
             var currentY = cardRect.Y + padding.Y;
             DrawText(title, new Vector2(cardRect.Center.X, currentY), titleScale, cardTextColor, TextAlignment.CENTER);
@@ -128,30 +193,43 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             var contentBottom = buttonsTop - spacing;
             var contentHeight = Math.Max(0f, contentBottom - currentY);
             var contentWidth = cardRect.Width - padding.X * 2f;
-            var amountHeight = Math.Max(30f * scale, Math.Min(42f * scale, contentHeight * 0.35f));
-            var itemRowsHeight = Math.Max(0f, contentHeight - amountHeight - spacing);
-            itemRowsHeight = Math.Min(itemRowsHeight,
-                Math.Max(56f * scale, FormatingHelper.LineHeight(nameScale, surface) * 2f + 4f * scale));
+            if (_useRequestGrid)
+            {
+                var gridRect = new RectangleF(cardRect.X + padding.X, currentY, contentWidth, contentHeight);
+                DrawRequestGrid(gridRect, scale, fontScale, surface, cardTextColor);
+            }
+            else if (_requests.Count > 0)
+            {
+                var request = _requests[0];
+                var amountHeight = Math.Max(30f * scale, Math.Min(42f * scale, contentHeight * 0.35f));
+                var itemRowsHeight = Math.Max(0f, contentHeight - amountHeight - spacing);
+                itemRowsHeight = Math.Min(itemRowsHeight,
+                    Math.Max(56f * scale, FormatingHelper.LineHeight(nameScale, surface) * 2f + 4f * scale));
 
-            var iconSize = Math.Min(Math.Max(44f * scale, itemRowsHeight), 72f * scale);
-            var iconRect = new RectangleF(cardRect.X + padding.X, currentY + (itemRowsHeight - iconSize) * 0.5f,
-                iconSize, iconSize);
-            var rightX = iconRect.Right + 16f * scale;
-            var rightWidth = Math.Max(0f, cardRect.Right - padding.X - rightX);
-            var nameHeight = itemRowsHeight;
+                var iconSize = Math.Min(Math.Max(44f * scale, itemRowsHeight), 72f * scale);
+                var iconRect = new RectangleF(cardRect.X + padding.X, currentY + (itemRowsHeight - iconSize) * 0.5f,
+                    iconSize, iconSize);
+                var rightX = iconRect.Right + 16f * scale;
+                var rightWidth = Math.Max(0f, cardRect.Right - padding.X - rightX);
+                var nameHeight = itemRowsHeight;
 
-            DrawItemIcon(iconRect);
+                DrawItemIcon(iconRect, request.Icon);
 
-            var nameText = TrimText(_itemName, rightWidth, nameScale, surface);
-            var nameY = currentY + Math.Max(0f, (nameHeight - FormatingHelper.GetSizeInPixel(nameText, "White", nameScale, surface).Y) * 0.5f);
-            DrawText(nameText, new Vector2(rightX, nameY), nameScale, cardTextColor, TextAlignment.LEFT);
+                var nameText = TrimText(request.Name, rightWidth, nameScale, surface);
+                var nameY = currentY + Math.Max(0f,
+                    (nameHeight - FormatingHelper.GetSizeInPixel(nameText, "White", nameScale, surface).Y) * 0.5f);
+                DrawText(nameText, new Vector2(rightX, nameY), nameScale, cardTextColor, TextAlignment.LEFT);
 
-            var amountTop = Math.Min(contentBottom - amountHeight, currentY + itemRowsHeight + spacing);
-            var amountRect = new RectangleF(cardRect.X + padding.X, amountTop, contentWidth, amountHeight);
-            EnsureAmountControl(amountRect);
-            ConfigureAmountControlStyle();
-            container.AddChild(_amountControl);
-            _amountControl.Render(renderContext, Sprites);
+                if (_amountModel != null)
+                {
+                    var amountTop = Math.Min(contentBottom - amountHeight, currentY + itemRowsHeight + spacing);
+                    var amountRect = new RectangleF(cardRect.X + padding.X, amountTop, contentWidth, amountHeight);
+                    EnsureAmountControl(amountRect);
+                    ConfigureAmountControlStyle();
+                    container.AddChild(_amountControl);
+                    _amountControl.Render(renderContext, Sprites);
+                }
+            }
 
             var buttonSpacing = 12f * scale;
             var buttonWidth = Math.Max(92f * scale, (cardRect.Width - padding.X * 2f - buttonSpacing) * 0.5f);
@@ -163,7 +241,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             container.AddChild(_craftButton);
             container.AddChild(_cancelButton);
 
-            ConfigureButton(_craftButton, Loc("LcdMod_CraftDialog_Button_Craft"), buttonScale, panelColor, textColor, ThemedParentApp, owner, CanCraft());
+            ConfigureButton(_craftButton, _useRequestGrid ? "Craft all" : Loc("LcdMod_CraftDialog_Button_Craft"),
+                buttonScale, panelColor, textColor, ThemedParentApp, owner, CanCraft());
             ConfigureButton(_cancelButton, Loc("LcdMod_Common_Button_Cancel"), buttonScale, panelColor, textColor, ThemedParentApp, owner, true);
             _craftButton.Render(renderContext, Sprites);
             _cancelButton.Render(renderContext, Sprites);
@@ -178,9 +257,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 new Color(0, 0, 0, 128)));
         }
 
-        void DrawItemIcon(RectangleF rect)
+        void DrawItemIcon(RectangleF rect, string icon)
         {
-            if (string.IsNullOrEmpty(_itemIcon))
+            if (string.IsNullOrEmpty(icon))
             {
                 Sprites.Add(new MySprite
                 {
@@ -197,12 +276,74 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             Sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXTURE,
-                Data = _itemIcon,
+                Data = icon,
                 Position = rect.Center,
                 Size = rect.Size,
                 Color = Color.White,
                 Alignment = TextAlignment.CENTER
             });
+        }
+
+        void DrawRequestGrid(RectangleF rect, float scale, float fontScale,
+            Sandbox.ModAPI.Ingame.IMyTextSurface surface, Color textColor)
+        {
+            if (_requests.Count == 0 || rect.Width <= 0f || rect.Height <= 0f)
+                return;
+
+            var minColumnWidth = Math.Max(90f * scale, 1f);
+            var columns = Math.Max(1, (int)Math.Floor(rect.Width / minColumnWidth));
+            columns = Math.Min(columns, _requests.Count);
+
+            var rows = Math.Max(1, (_requests.Count + columns - 1) / columns);
+            var rowHeight = rect.Height / rows;
+            rowHeight = Math.Max(1f, Math.Min(58f * scale, rowHeight));
+
+            var grid = WrappedGrid.Create(rect, rowHeight, minColumnWidth, _requests.Count);
+            var visibleCount = Math.Min(grid.VisibleCellCount, _requests.Count);
+            var cellPadding = 4f * scale;
+            var itemBackground = GetThemeColor(Constants.SURFACE_CONTAINER);
+            var amountColor = GetThemeColor(Constants.ON_SURFACE_VARIANT);
+            var nameScale = 0.42f * scale * fontScale;
+            var amountScale = 0.36f * scale * fontScale;
+
+            for (var i = 0; i < visibleCount; i++)
+            {
+                var cell = grid.GetCell(i);
+                if (cell.ItemIndex < 0 || cell.ItemIndex >= _requests.Count)
+                    continue;
+
+                var request = _requests[cell.ItemIndex];
+                var cellRect = new RectangleF(
+                    cell.Bounds.X + cellPadding,
+                    cell.Bounds.Y + cellPadding,
+                    Math.Max(0f, cell.Bounds.Width - cellPadding * 2f),
+                    Math.Max(0f, cell.Bounds.Height - cellPadding * 2f));
+
+                if (cellRect.Width <= 0f || cellRect.Height <= 0f)
+                    continue;
+
+                Border.CreateSpritesFromRect(cellRect, Sprites, itemBackground, radiusScale: scale);
+
+                var iconSize = Math.Max(0f, Math.Min(30f * scale, cellRect.Height - 8f * scale));
+                var iconRect = new RectangleF(
+                    cellRect.X + 6f * scale,
+                    cellRect.Center.Y - iconSize * 0.5f,
+                    iconSize,
+                    iconSize);
+                if (iconSize > 4f)
+                    DrawItemIcon(iconRect, request.Icon);
+
+                var textX = iconSize > 4f ? iconRect.Right + 6f * scale : cellRect.X + 6f * scale;
+                var textWidth = Math.Max(0f, cellRect.Right - textX - 6f * scale);
+                var name = TrimText(request.Name, textWidth, nameScale, surface);
+                var amount = TrimText("x " + FormatingHelper.FormatItemQty(request.Amount), textWidth, amountScale, surface);
+                var nameHeight = FormatingHelper.LineHeight(nameScale, surface);
+                var amountHeight = FormatingHelper.LineHeight(amountScale, surface);
+                var textTop = cellRect.Center.Y - (nameHeight + amountHeight) * 0.5f;
+
+                DrawText(name, new Vector2(textX, textTop), nameScale, textColor, TextAlignment.LEFT);
+                DrawText(amount, new Vector2(textX, textTop + nameHeight), amountScale, amountColor, TextAlignment.LEFT);
+            }
         }
 
         void DrawText(string text, Vector2 position, float scale, Color color, TextAlignment alignment)
@@ -239,7 +380,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                     Constants.PRIMARY_CONTAINER + Constants.HOVER,
                     Constants.ON_PRIMARY_CONTAINER,
                     ParentTheme);
-                _amountControlStyle.BorderRadiusPixels = Border.DefaultRadiusPixels;
+                _amountControlStyle.BorderRadiusPixels = Border.DEFAULT_RADIUS_PIXELS;
             }
 
             _amountControlStyle.ThemeColors = ParentTheme;
@@ -379,7 +520,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
         bool CanCraft()
         {
-            return _selectedAssemblers.Count > 0 && _amountModel != null && _amountModel.Value > 0d;
+            if (_requests.Count == 0 || _selectedAssemblers.Count == 0)
+                return false;
+
+            return _useRequestGrid || (_amountModel != null && _amountModel.Value > 0d);
         }
 
         void OnCraftClicked(ButtonModel model, object sender)
@@ -389,8 +533,16 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
             try
             {
-                var requestedItems = Math.Max(1, (int)Math.Ceiling(_amountModel.Value));
-                QueueSplitCraft(requestedItems);
+                if (_useRequestGrid)
+                {
+                    QueueAllCraft();
+                }
+                else if (_requests.Count > 0)
+                {
+                    var requestedItems = Math.Max(1, (int)Math.Ceiling(_amountModel.Value));
+                    QueueSplitCraft(_requests[0], requestedItems);
+                }
+
                 Dismiss();
             }
             catch (Exception e)
@@ -404,14 +556,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             Dismiss();
         }
 
-        double CalculateQueueAmount(MyBlueprintDefinitionBase blueprint, double requestedItems)
+        double CalculateQueueAmount(MyBlueprintDefinitionBase blueprint, MyDefinitionId itemDefinitionId,
+            double requestedItems)
         {
             if (blueprint == null || blueprint.Results == null)
                 return requestedItems;
 
             for (var i = 0; i < blueprint.Results.Length; i++)
             {
-                if (!blueprint.Results[i].Id.Equals(_itemDefinitionId))
+                if (!blueprint.Results[i].Id.Equals(itemDefinitionId))
                     continue;
 
                 var resultAmount = (double)blueprint.Results[i].Amount;
@@ -424,15 +577,23 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             return requestedItems;
         }
 
-        void QueueSplitCraft(int requestedItems)
+        void QueueAllCraft()
         {
-            var selected = GetCraftableSelectedAssemblers();
+            for (var i = 0; i < _requests.Count; i++)
+                QueueSplitCraft(_requests[i], _requests[i].Amount);
+        }
+
+        void QueueSplitCraft(CraftRequest request, int requestedItems)
+        {
+            var selected = GetCraftableSelectedAssemblers(request);
             if (requestedItems <= 0 || selected.Count == 0)
                 return;
 
+            var requestCount = Math.Round((double)requestedItems, MidpointRounding.AwayFromZero);
+            
             var count = selected.Count;
-            var baseShare = requestedItems / count;
-            var remainder = requestedItems % count;
+            var baseShare = requestCount / count;
+            var remainder = requestCount % count;
 
             for (var i = 0; i < count; i++)
             {
@@ -441,19 +602,26 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                     continue;
 
                 var option = selected[i];
-                var queueAmount = CalculateQueueAmount(option.Blueprint, itemShare);
-                option.Assembler.AddQueueItem(option.Blueprint.Id, queueAmount);
+                MyBlueprintDefinitionBase blueprint;
+                if (!option.BlueprintsByItem.TryGetValue(request.DefinitionId, out blueprint) || blueprint == null)
+                    continue;
+
+                var queueAmount = CalculateQueueAmount(blueprint, request.DefinitionId, itemShare);
+                option.Assembler.AddQueueItem(blueprint.Id, queueAmount);
             }
         }
 
-        List<CraftAssemblerOption> GetCraftableSelectedAssemblers()
+        List<CraftAssemblerOption> GetCraftableSelectedAssemblers(CraftRequest request)
         {
             var selected = new List<CraftAssemblerOption>();
+            if (request == null)
+                return selected;
 
             for (var i = 0; i < _selectedAssemblers.Count; i++)
             {
                 var option = _selectedAssemblers[i];
-                if (option != null && option.Assembler != null && option.Blueprint != null)
+                if (option != null && option.Assembler != null &&
+                    option.BlueprintsByItem.ContainsKey(request.DefinitionId))
                     selected.Add(option);
             }
 
@@ -485,11 +653,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
         CraftAssemblerOption CreateAssemblerOption(IMyAssembler assembler)
         {
-            HashSet<MyDefinitionId> blueprintsByItem;
-            if (!GridLogic.BlueprintsByCreatedItem.TryGetValue(_itemDefinitionId, out blueprintsByItem) ||
-                blueprintsByItem == null || blueprintsByItem.Count == 0)
-                return null;
-
             var assemblerSubtype = GridLogic.GetAssemblerSubtype(assembler);
             HashSet<MyDefinitionId> craftableBlueprints;
             if (string.IsNullOrEmpty(assemblerSubtype) ||
@@ -497,7 +660,39 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 craftableBlueprints == null)
                 return null;
 
-            CraftAssemblerOption best = null;
+            var option = new CraftAssemblerOption
+            {
+                Assembler = assembler,
+                DisplayName = GetAssemblerName(assembler),
+                Idle = IsAssemblerIdle(assembler),
+                Speed = GetAssemblerSpeed(assembler)
+            };
+
+            for (var i = 0; i < _requests.Count; i++)
+            {
+                var request = _requests[i];
+                if (option.BlueprintsByItem.ContainsKey(request.DefinitionId))
+                    continue;
+
+                var blueprint = FindBestBlueprint(request.DefinitionId, craftableBlueprints);
+                if (blueprint == null)
+                    continue;
+
+                option.BlueprintsByItem[request.DefinitionId] = blueprint;
+            }
+
+            return option.BlueprintsByItem.Count == 0 ? null : option;
+        }
+
+        static MyBlueprintDefinitionBase FindBestBlueprint(MyDefinitionId itemDefinitionId,
+            HashSet<MyDefinitionId> craftableBlueprints)
+        {
+            HashSet<MyDefinitionId> blueprintsByItem;
+            if (!GridLogic.BlueprintsByCreatedItem.TryGetValue(itemDefinitionId, out blueprintsByItem) ||
+                blueprintsByItem == null || blueprintsByItem.Count == 0)
+                return null;
+
+            MyBlueprintDefinitionBase best = null;
             foreach (var blueprintId in blueprintsByItem)
             {
                 if (!craftableBlueprints.Contains(blueprintId))
@@ -507,17 +702,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 if (blueprint == null)
                     continue;
 
-                var option = new CraftAssemblerOption
-                {
-                    Assembler = assembler,
-                    Blueprint = blueprint,
-                    DisplayName = GetAssemblerName(assembler),
-                    Idle = IsAssemblerIdle(assembler),
-                    Speed = GetAssemblerSpeed(assembler)
-                };
-
-                if (best == null || CompareBlueprintChoice(option.Blueprint, best.Blueprint) < 0)
-                    best = option;
+                if (best == null || CompareBlueprintChoice(blueprint, best) < 0)
+                    best = blueprint;
             }
 
             return best;
@@ -526,8 +712,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         void SelectDefaultAssemblers()
         {
             _selectedAssemblers.Clear();
-            if (_assemblerOptions.Count > 0)
+            if (_useRequestGrid)
+            {
+                _selectedAssemblers.AddRange(_assemblerOptions.Where(a => a.Speed >= 1));
+            }
+            else if (_assemblerOptions.Count > 0)
+            {
                 _selectedAssemblers.Add(_assemblerOptions[0]);
+            }
         }
 
         void SetSelectedAssemblers(List<CraftAssemblerOption> options)
@@ -883,7 +1075,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
     sealed class CraftAssemblerOption
     {
         public IMyAssembler Assembler;
-        public MyBlueprintDefinitionBase Blueprint;
+        public readonly Dictionary<MyDefinitionId, MyBlueprintDefinitionBase> BlueprintsByItem =
+            new Dictionary<MyDefinitionId, MyBlueprintDefinitionBase>();
         public string DisplayName;
         public bool Idle;
         public float Speed;

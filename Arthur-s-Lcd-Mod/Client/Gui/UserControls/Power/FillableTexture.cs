@@ -4,7 +4,7 @@ namespace LcdMod.Client.Gui.UserControls.Power
 {
     internal sealed class FillableTexture
     {
-        public const float DefaultTextureSize = 192f;
+        public const float DEFAULT_TEXTURE_SIZE = 192f;
 
         public string Name { get; }
         public float Margin { get; }
@@ -25,7 +25,7 @@ namespace LcdMod.Client.Gui.UserControls.Power
             float bottom,
             string centerIconTexture = null,
             bool rotateCenterIconByRatio = false,
-            float textureSize = DefaultTextureSize)
+            float textureSize = DEFAULT_TEXTURE_SIZE)
         {
             Name = name;
             Margin = margin;
@@ -33,7 +33,7 @@ namespace LcdMod.Client.Gui.UserControls.Power
             Right = right;
             Top = top;
             Bottom = bottom;
-            TextureSize = textureSize > 0f ? textureSize : DefaultTextureSize;
+            TextureSize = textureSize > 0f ? textureSize : DEFAULT_TEXTURE_SIZE;
             CenterIconTexture = centerIconTexture;
             RotateCenterIconByRatio = rotateCenterIconByRatio;
         }

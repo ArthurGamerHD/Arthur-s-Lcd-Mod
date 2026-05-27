@@ -22,7 +22,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         public string PanelRole { get; set; }
         public string HoverPanelRole { get; set; }
         public string HoverTextRole { get; set; }
-        public float BorderRadiusPixels { get; set; } = Panels.Border.DefaultRadiusPixels;
+        public float BorderRadiusPixels { get; set; } = Panels.Border.DEFAULT_RADIUS_PIXELS;
         
         /// <summary>
         /// Left, Top, Right, Bottom and are expressed as 0..1 percentages of the control bounds.

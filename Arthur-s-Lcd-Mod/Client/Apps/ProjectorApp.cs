@@ -4,9 +4,14 @@ using System.Linq;
 using System.Text;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Extensions;
+using LcdMod.Client.Gui;
+using LcdMod.Client.Gui.ControlsTemplates;
+using LcdMod.Client.Gui.ControlsTemplates.Basic;
+using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.ControlsTemplates.Progress;
 using LcdMod.Client.Helpers;
+using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Common.Config.Models.Apps;
 using LcdMod.Common.Helpers;
@@ -53,13 +58,28 @@ namespace LcdMod.Client.Apps
         float _requiredX;
         float _availableX;
         bool _projectorDataInitialized;
+        Button _craftAllButton;
+        ControlStyle _craftAllButtonStyle;
+        ControlStyle _craftAllDisabledButtonStyle;
 
         const float PIE_RADIUS = 40;
+        const string CRAFT_ALL_TEXT = "Craft all";
 
         public bool IsLoading { get; private set; }
 
         public ProjectorApp(ScreenConfigProjector config, IAppHost host) : base(config, host)
         {
+        }
+
+        struct ProjectorFooterLayout
+        {
+            public float Height;
+            public float Top;
+            public float ContentTop;
+            public float ContentLeft;
+            public float TextRight;
+            public Vector2 PieCenter;
+            public RectangleF ButtonRect;
         }
 
         public override void LayoutChanged()
@@ -90,25 +110,19 @@ namespace LcdMod.Client.Apps
 
             if (_totalBlocks == 0 || _totalComponents == 0)
                 return;
-            
-            var pos = ViewBox.Position;
-            var footerPaddingX = GetFooterPaddingX();
-            var footerInnerPaddingX = GetFooterInnerPaddingX();
-            var footerContentLeft = ViewBox.X + footerPaddingX + footerInnerPaddingX;
-            var footerContentRight = ViewBox.Right - footerPaddingX - footerInnerPaddingX;
-            pos.X = footerContentLeft;
 
             int built = Math.Max(_totalBlocks - _remainingBlocks, 0);
             float textScale = Scale * 0.9f * FontScale;
             var lineSpacer = GetFooterLineSpacer();
             var legendSize = GetFooterLegendSize();
             var pieSize = GetFooterPieSize();
+            var layout = CreateFooterLayout();
+            var pos = new Vector2(layout.ContentLeft, layout.ContentTop);
 
-            FooterHeight = GetFooterHeight();
+            FooterHeight = layout.Height;
             pos.X += pieSize.X;
 
-            var footerTop = ViewBox.Bottom - FooterHeight;
-            pos.Y = GetFooterContentTop();
+            var footerTop = layout.Top;
 
             frame.Add(new MySprite
             {
@@ -132,7 +146,7 @@ namespace LcdMod.Client.Apps
 
             StringBuilder sb = new StringBuilder($"{blocksString}{blocksPct:P2}  ({built}/{_totalBlocks} )");
 
-            TrimText(ref sb, footerContentRight - pos.X, 0.9f);
+            TrimText(ref sb, layout.TextRight - pos.X, 0.9f);
 
             frame.Add(new MySprite
             {
@@ -155,7 +169,7 @@ namespace LcdMod.Client.Apps
                 $"/{FormatingHelper.FormatItemQty(_totalComponents)})");
 
 
-            TrimText(ref sb, footerContentRight - pos.X, 0.9f);
+            TrimText(ref sb, layout.TextRight - pos.X, 0.9f);
 
             frame.Add(new MySprite
             {
@@ -198,13 +212,15 @@ namespace LcdMod.Client.Apps
                 frame,
                 "",
                 (IMyTextSurface)Surface,
-                ToScreenMargin(GetFooterPieCenter()),
+                ToScreenMargin(layout.PieCenter),
                 pieSize,
                 componentsPct,
                 blocksPct,
                 AppConfig.HeaderColor,
                 true,
                 false);
+
+            DrawCraftAllButton(frame, layout, _missingComponents > 0);
         }
 
         public override void Update()
@@ -468,14 +484,69 @@ namespace LcdMod.Client.Apps
             return 20f * Scale;
         }
 
-        Vector2 GetFooterPieCenter()
+        ProjectorFooterLayout CreateFooterLayout()
         {
-            var footerLeft = ViewBox.X;
-            var pieCenterX = footerLeft + GetFooterInnerPaddingX() + GetFooterPieSize().X * 0.5f;
-            var footerHeight = GetFooterHeight();
-            var footerTop = ViewBox.Bottom - footerHeight;
-            var pieCenterY = footerTop + footerHeight * 0.5f;
-            return new Vector2(pieCenterX, pieCenterY);
+            var baseHeight = GetFooterBaseHeight();
+            var buttonSize = GetCraftAllButtonSize();
+            var buttonGap = 8f * Scale;
+            var footerPaddingX = GetFooterPaddingX();
+            var footerInnerPaddingX = GetFooterInnerPaddingX();
+            var footerContentLeft = ViewBox.X + footerPaddingX + footerInnerPaddingX;
+            var footerContentRight = ViewBox.Right - footerPaddingX - footerInnerPaddingX;
+            var legendSize = GetFooterLegendSize();
+            var textLeft = footerContentLeft + GetFooterPieSize().X + legendSize.X +
+                           GetFooterLegendTextSpacing() + 10f * Scale;
+            var minTextWidth = Math.Max(170f * Scale, Math.Max(_requiredX, _availableX) * Scale * FontScale * 2f);
+            var canUseSideButton = footerContentRight - textLeft >= minTextWidth + buttonGap + buttonSize.X;
+
+            var layout = new ProjectorFooterLayout
+            {
+                Height = canUseSideButton ? baseHeight : baseHeight + buttonGap + buttonSize.Y,
+                ContentLeft = footerContentLeft,
+                TextRight = footerContentRight
+            };
+
+            layout.Top = ViewBox.Bottom - layout.Height;
+            layout.ContentTop = layout.Top + GetFooterPaddingY();
+            layout.PieCenter = new Vector2(
+                ViewBox.X + GetFooterInnerPaddingX() + GetFooterPieSize().X * 0.5f,
+                layout.Top + baseHeight * 0.5f);
+
+            if (canUseSideButton)
+            {
+                layout.ButtonRect = new RectangleF(
+                    footerContentRight - buttonSize.X,
+                    layout.Top + (baseHeight - buttonSize.Y) * 0.5f,
+                    buttonSize.X,
+                    buttonSize.Y);
+                layout.TextRight = layout.ButtonRect.X - buttonGap;
+            }
+            else
+            {
+                var availableWidth = Math.Max(0f, footerContentRight - footerContentLeft);
+                var buttonWidth = Math.Min(availableWidth, Math.Max(buttonSize.X, 150f * Scale));
+                layout.ButtonRect = new RectangleF(
+                    footerContentLeft + (availableWidth - buttonWidth) * 0.5f,
+                    layout.Top + baseHeight + buttonGap,
+                    buttonWidth,
+                    buttonSize.Y);
+            }
+
+            return layout;
+        }
+
+        Vector2 GetCraftAllButtonSize()
+        {
+            var textScale = GetCraftAllButtonTextScale(Scale, FontScale);
+            var textSize = FormatingHelper.GetSizeInPixel(CRAFT_ALL_TEXT, "White", textScale, Surface);
+            return new Vector2(
+                Math.Max(112f * Scale, textSize.X + 24f * Scale),
+                Math.Max(28f * Scale, FormatingHelper.LineHeight(textScale, Surface) + 10f * Scale));
+        }
+
+        static float GetCraftAllButtonTextScale(float scale, float fontScale)
+        {
+            return 0.58f * scale * fontScale;
         }
 
         float GetFooterPaddingX()
@@ -518,15 +589,142 @@ namespace LcdMod.Client.Apps
             return 25f * 2f * LayoutScale;
         }
 
-        float GetFooterContentTop()
-        {
-            return ViewBox.Bottom - GetFooterHeight() + GetFooterPaddingY();
-        }
-
-        float GetFooterHeight()
+        float GetFooterBaseHeight()
         {
             var pieSize = GetFooterPieSize();
             return Math.Max(GetFooterTextHeight(), pieSize.Y) + GetFooterPaddingY() * 2f;
+        }
+
+        void DrawCraftAllButton(List<MySprite> frame, ProjectorFooterLayout layout, bool enabled)
+        {
+            if (layout.ButtonRect.Width <= 0f || layout.ButtonRect.Height <= 0f)
+                return;
+
+            EnsureCraftAllButton(layout.ButtonRect);
+            ConfigureCraftAllButton(enabled);
+
+            if (!InteractiveList.Contains(_craftAllButton))
+                InteractiveList.Add(_craftAllButton);
+
+            _craftAllButton.Render(CreateItemRenderContext(), frame);
+        }
+
+        void EnsureCraftAllButton(RectangleF rect)
+        {
+            if (_craftAllButton == null)
+            {
+                _craftAllButton = new Button(rect, new ButtonModel
+                {
+                    Text = CRAFT_ALL_TEXT,
+                    Clicked = OnCraftAllClicked
+                });
+            }
+            else
+            {
+                _craftAllButton.SetRect(rect);
+            }
+
+            _craftAllButton.SetVisible(true);
+        }
+
+        void ConfigureCraftAllButton(bool enabled)
+        {
+            var model = _craftAllButton.DataContext as ButtonModel;
+            if (model != null)
+            {
+                model.Text = CRAFT_ALL_TEXT;
+                model.Enabled = enabled;
+            }
+
+            _craftAllButton.SetCursor(enabled ? CursorType.Hand : CursorType.Default);
+            _craftAllButton.SetStyle(GetCraftAllButtonStyle(enabled));
+            _craftAllButton.CustomRender = RenderCraftAllButton;
+        }
+
+        ControlStyle GetCraftAllButtonStyle(bool enabled)
+        {
+            if (enabled)
+            {
+                if (_craftAllButtonStyle == null)
+                    _craftAllButtonStyle = Button.CreatePrimaryButtonStyle(Theme);
+                else
+                    _craftAllButtonStyle.ThemeColors = Theme;
+
+                return _craftAllButtonStyle;
+            }
+
+            if (_craftAllDisabledButtonStyle == null)
+                _craftAllDisabledButtonStyle = Button.CreateDisabledButtonStyle(Theme);
+            else
+                _craftAllDisabledButtonStyle.ThemeColors = Theme;
+
+            return _craftAllDisabledButtonStyle;
+        }
+
+        void RenderCraftAllButton(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        {
+            var model = control.DataContext as ButtonModel;
+            var enabled = model == null || model.Enabled;
+            var rect = control.Bounds;
+            var hover = enabled && rect.Contains(context.CursorPosition);
+            var buttonColor = context.Style.GetPanelColor(hover);
+            var textColor = context.Style.GetTextColor(hover);
+            var text = model == null || string.IsNullOrEmpty(model.Text) ? CRAFT_ALL_TEXT : model.Text;
+            var textScale = GetCraftAllButtonTextScale(context.Scale, context.FontScale);
+
+            Border.CreateSpritesFromRect(rect, sprites, buttonColor, radiusScale: context.Scale);
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXT,
+                Data = text,
+                Position = new Vector2(rect.Center.X,
+                    rect.Center.Y - FormatingHelper.GetSizeInPixel(text, "White", textScale, context.Surface).Y * 0.5f),
+                RotationOrScale = textScale,
+                Color = textColor,
+                Alignment = TextAlignment.CENTER,
+                FontId = "White"
+            });
+        }
+
+        void OnCraftAllClicked(ButtonModel model, object sender)
+        {
+            if (_missingComponents <= 0)
+                return;
+
+            var interactiveHost = Host as InteractiveSurfaceScript;
+            if (interactiveHost == null)
+                return;
+
+            var requests = BuildCraftAllRequests();
+            if (requests.Count == 0)
+                return;
+
+            interactiveHost.ShowDialog(new CraftDialog(
+                this,
+                GridLogic,
+                requests,
+                delegate(Dialog dialog) { interactiveHost.ShowDialog(dialog); }));
+        }
+
+        List<CraftDialog.CraftRequest> BuildCraftAllRequests()
+        {
+            var requests = new List<CraftDialog.CraftRequest>();
+            var sortedItems = ReadItems(Block as IMyTerminalBlock);
+
+            for (var i = 0; i < sortedItems.Count; i++)
+            {
+                var item = sortedItems[i];
+                if (item.Value <= 0d)
+                    continue;
+
+                requests.Add(new CraftDialog.CraftRequest(
+                    item.Key,
+                    ResolveDisplayName(item.Key),
+                    ResolveSprite(item.Key),
+                    item.Value));
+            }
+
+            return requests;
         }
 
         void EnsureData()

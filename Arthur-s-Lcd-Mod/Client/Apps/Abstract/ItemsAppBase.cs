@@ -522,7 +522,7 @@ namespace LcdMod.Client.Apps.Abstract
             DrawCellContent(frame, model, slots);
         }
 
-        string ResolveSprite(MyItemType itemType)
+        protected string ResolveSprite(MyItemType itemType)
         {
             string sprite;
             if (SpriteCache.TryGetValue(itemType, out sprite))
@@ -544,7 +544,7 @@ namespace LcdMod.Client.Apps.Abstract
             return sprite;
         }
 
-        string ResolveDisplayName(MyItemType itemType)
+        protected string ResolveDisplayName(MyItemType itemType)
         {
             string localizedName;
             if (LocKeysCache.TryGetValue(itemType, out localizedName))

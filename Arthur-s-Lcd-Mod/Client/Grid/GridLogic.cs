@@ -553,22 +553,6 @@ namespace LcdMod.Client.Grid
             SwapBuffer(ref _radio, ref _nextRadio);
         }
 
-        static bool TryGetFarmPlotLogic(IMyFunctionalBlock block, out IMyFarmPlotLogic farmPlotLogic)
-        {
-            farmPlotLogic = null;
-            if (block == null)
-                return false;
-
-            foreach (var component in block.Components)
-            {
-                farmPlotLogic = component as IMyFarmPlotLogic;
-                if (farmPlotLogic != null)
-                    return true;
-            }
-
-            return false;
-        }
-
         public List<IMyLaserAntenna> GetLaserAntennae()
         {
             RefreshIfNeeded();

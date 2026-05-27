@@ -762,12 +762,6 @@ namespace LcdMod.Client.Apps
             return 0f;
         }
 
-        static bool TryParseFirstPercent(string text, out float value)
-        {
-            int percentIndex;
-            return TryParseFirstPercent(text, out value, out percentIndex);
-        }
-
         static bool TryParseFirstPercent(string text, out float value, out int percentIndex)
         {
             value = 0f;
@@ -799,11 +793,10 @@ namespace LcdMod.Client.Apps
             return float.TryParse(token, NumberStyles.Float, CultureInfo.InvariantCulture, out value);
         }
 
-        static bool TryParseFirstTimeAfter(string text, int startIndex, out float seconds)
+        static void TryParseFirstTimeAfter(string text, int startIndex, out float seconds)
         {
             seconds = 0f;
-            if (string.IsNullOrEmpty(text))
-                return false;
+            if (string.IsNullOrEmpty(text)) return;
 
             startIndex = Math.Max(0, Math.Min(startIndex, text.Length));
             for (int i = startIndex; i < text.Length; i++)
@@ -816,11 +809,9 @@ namespace LcdMod.Client.Apps
                 if (TryParseTimeAt(text, i, out parsedSeconds, out endIndex))
                 {
                     seconds = parsedSeconds;
-                    return true;
+                    return;
                 }
             }
-
-            return false;
         }
 
         static bool TryParseTimeAt(string text, int startIndex, out int seconds, out int endIndex)

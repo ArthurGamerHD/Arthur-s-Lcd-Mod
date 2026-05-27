@@ -7,7 +7,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 {
     public static class Border
     {
-        public const float DefaultRadiusPixels = 6f;
+        public const float DEFAULT_RADIUS_PIXELS = 6f;
 
         public static List<MySprite> SpritesBuffer = new List<MySprite>(16);
 
@@ -17,7 +17,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             return size < 1f ? 0f : (int)size;
         }
 
-        public static void CreateSpritesFromRect(RectangleF rect, List<MySprite> sprites, Color? color = null, float radiusPixels = DefaultRadiusPixels, float radiusScale = 1f)
+        public static void CreateSpritesFromRect(RectangleF rect, List<MySprite> sprites, Color? color = null, float radiusPixels = DEFAULT_RADIUS_PIXELS, float radiusScale = 1f)
         {
             radiusPixels = ScaleRadius(radiusPixels, radiusScale);
 
@@ -31,7 +31,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         }
 
         public static MySprite[] DrawRectangle(RectangleF rectangle, Color color, float finalScale = 1f,
-            float radiusPixels = DefaultRadiusPixels)
+            float radiusPixels = DEFAULT_RADIUS_PIXELS)
         {
             SpritesBuffer.Clear();
             Vector2 fullSize = rectangle.Size * finalScale;
