@@ -16,6 +16,7 @@ using IMyFarmPlotLogic = Sandbox.ModAPI.IMyFarmPlotLogic;
 using IMyFunctionalBlock = Sandbox.ModAPI.IMyFunctionalBlock;
 using IMySlimBlock = VRage.Game.ModAPI.IMySlimBlock;
 using IngameItem = VRage.Game.ModAPI.Ingame.MyInventoryItem;
+using NotImplementedException = LcdMod.Common.NotImplementedException;
 using ScreenConfigWithBlocks = LcdMod.Common.Config.Models.Apps.ScreenConfigWithBlocks;
 using ScreenConfigWithItems = LcdMod.Common.Config.Models.Apps.ScreenConfigWithItems;
 
@@ -58,6 +59,10 @@ namespace LcdMod.Client.Grid
         List<IMyBatteryBlock> _batteries = new List<IMyBatteryBlock>();
         List<IMyJumpDrive> _jumpDrives = new List<IMyJumpDrive>();
         List<IMyAssembler> _assemblers = new List<IMyAssembler>();
+        List<IMyTerminalBlock> _terminalBlocks = new List<IMyTerminalBlock>();
+        List<IMyCargoContainer> _cargoContainers = new List<IMyCargoContainer>();
+        List<IMyGasTank> _gasTanks = new List<IMyGasTank>();
+        List<IMyPowerProducer> _powerProducers = new List<IMyPowerProducer>();
         List<FarmPlotEntry> _farmPlots = new List<FarmPlotEntry>();
         List<IMyLaserAntenna> _nextLasers = new List<IMyLaserAntenna>();
         List<IMyRadioAntenna> _nextRadio = new List<IMyRadioAntenna>();
@@ -65,6 +70,10 @@ namespace LcdMod.Client.Grid
         List<IMyBatteryBlock> _nextBatteries = new List<IMyBatteryBlock>();
         List<IMyJumpDrive> _nextJumpDrives = new List<IMyJumpDrive>();
         List<IMyAssembler> _nextAssemblers = new List<IMyAssembler>();
+        List<IMyTerminalBlock> _nextTerminalBlocks = new List<IMyTerminalBlock>();
+        List<IMyCargoContainer> _nextCargoContainers = new List<IMyCargoContainer>();
+        List<IMyGasTank> _nextGasTanks = new List<IMyGasTank>();
+        List<IMyPowerProducer> _nextPowerProducers = new List<IMyPowerProducer>();
         List<FarmPlotEntry> _nextFarmPlots = new List<FarmPlotEntry>();
         IEnumerator<bool> _refreshUpdater;
         bool _refreshQueued;
@@ -465,6 +474,10 @@ namespace LcdMod.Client.Grid
             _nextBatteries.Clear();
             _nextJumpDrives.Clear();
             _nextAssemblers.Clear();
+            _nextTerminalBlocks.Clear();
+            _nextCargoContainers.Clear();
+            _nextGasTanks.Clear();
+            _nextPowerProducers.Clear();
             _nextFarmPlots.Clear();
 
             Grid.GetBlocks(_nextBlocks, a => a.FatBlock is IMyTerminalBlock);
@@ -475,6 +488,20 @@ namespace LcdMod.Client.Grid
                 var block = _nextBlocks[i].FatBlock as IMyTerminalBlock;
                 if (block == null)
                     continue;
+
+                _nextTerminalBlocks.Add(block);
+
+                var cargo = block as IMyCargoContainer;
+                if (cargo != null)
+                    _nextCargoContainers.Add(cargo);
+
+                var gasTank = block as IMyGasTank;
+                if (gasTank != null)
+                    _nextGasTanks.Add(gasTank);
+
+                var producer = block as IMyPowerProducer;
+                if (producer != null)
+                    _nextPowerProducers.Add(producer);
 
                 var antenna = block as IMyRadioAntenna;
                 if (antenna != null)
@@ -542,51 +569,51 @@ namespace LcdMod.Client.Grid
             }
 
             // Atomically swap the visible snapshot once fully built.
+            SwapBuffer(ref _radio, ref _nextRadio);
+            SwapBuffer(ref _lasers, ref _nextLasers);
             SwapBuffer(ref _blocks, ref _nextBlocks);
-            SwapBuffer(ref _invBlocks, ref _nextInvBlocks);
             SwapBuffer(ref _beacons, ref _nextBeacons);
+            SwapBuffer(ref _gasTanks, ref _nextGasTanks);
+            SwapBuffer(ref _invBlocks, ref _nextInvBlocks);
+            SwapBuffer(ref _farmPlots, ref _nextFarmPlots);
             SwapBuffer(ref _batteries, ref _nextBatteries);
             SwapBuffer(ref _jumpDrives, ref _nextJumpDrives);
             SwapBuffer(ref _assemblers, ref _nextAssemblers);
-            SwapBuffer(ref _farmPlots, ref _nextFarmPlots);
-            SwapBuffer(ref _lasers, ref _nextLasers);
-            SwapBuffer(ref _radio, ref _nextRadio);
+            SwapBuffer(ref _terminalBlocks, ref _nextTerminalBlocks);
+            SwapBuffer(ref _powerProducers, ref _nextPowerProducers);
+            SwapBuffer(ref _cargoContainers, ref _nextCargoContainers);
+
+
         }
 
-        public List<IMyLaserAntenna> GetLaserAntennae()
+        public List<T> GetTerminalBlocks<T>() where T : IMyTerminalBlock
         {
             RefreshIfNeeded();
-            return _lasers;
-        }
-        
-        public List<IMyRadioAntenna> GetAntenna()
-        {
-            RefreshIfNeeded();
-            return _radio;
-        }
-        
-        public List<IMyBeacon> GetBeacons()
-        {
-            RefreshIfNeeded();
-            return _beacons;
-        }
+            switch (typeof(T).Name)
+            {
+                case nameof(IMyTerminalBlock):
+                    return _terminalBlocks as List<T>;
+                case nameof(IMyCargoContainer):
+                    return _cargoContainers as List<T>;
+                case nameof(IMyGasTank):
+                    return _gasTanks as List<T>;
+                case nameof(IMyPowerProducer):
+                    return _powerProducers as List<T>;
+                case nameof(IMyLaserAntenna):
+                    return _lasers as List<T>;
+                case nameof(IMyRadioAntenna):
+                    return _radio as List<T>;
+                case nameof(IMyBeacon):
+                    return _beacons as List<T>;
+                case nameof(IMyBatteryBlock):
+                    return _batteries as List<T>;
+                case nameof(IMyJumpDrive):
+                    return _jumpDrives as List<T>;
+                case nameof(IMyAssembler):
+                    return _assemblers as List<T>;
+            }
 
-        public List<IMyBatteryBlock> GetBatteries()
-        {
-            RefreshIfNeeded();
-            return _batteries;
-        }
-
-        public List<IMyJumpDrive> GetJumpDrives()
-        {
-            RefreshIfNeeded();
-            return _jumpDrives;
-        }
-
-        public List<IMyAssembler> GetAssemblers()
-        {
-            RefreshIfNeeded();
-            return _assemblers;
+            throw new NotImplementedException(typeof(T).Name);
         }
 
         public List<FarmPlotEntry> GetFarmPlots()
@@ -608,7 +635,7 @@ namespace LcdMod.Client.Grid
             if (Grid == null)
                 return false;
 
-            var jumpDrives = GetJumpDrives();
+            var jumpDrives = GetTerminalBlocks<IMyJumpDrive>();
             if (jumpDrives == null || jumpDrives.Count == 0)
                 return false;
 

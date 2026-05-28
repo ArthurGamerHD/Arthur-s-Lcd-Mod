@@ -2882,7 +2882,7 @@ namespace LcdMod.Client.Apps
                 getCursor: () =>
                 {
                     refresh();
-                    var jumpDrives = _host.GridLogic?.GetJumpDrives();
+                    var jumpDrives = _host.GridLogic?.GetTerminalBlocks<IMyJumpDrive>();
                     return jumpDrives == null || jumpDrives.Count == 0
                         ? CursorType.Arrow
                         : _busy ? CursorType.WaitCursor : CursorType.Hand;
@@ -2894,7 +2894,7 @@ namespace LcdMod.Client.Apps
         {
             jumpPoint = Vector3D.Zero;
             int etaSeconds;
-            var jumpDrives = _host.GridLogic?.GetJumpDrives();
+            var jumpDrives = _host.GridLogic?.GetTerminalBlocks<IMyJumpDrive>();
             if (jumpDrives == null || jumpDrives.Count == 0)
             {
                 text = FormatPropertyLine("Jump", LocHelper.GetLoc("LcdMod_NotAvailable"));

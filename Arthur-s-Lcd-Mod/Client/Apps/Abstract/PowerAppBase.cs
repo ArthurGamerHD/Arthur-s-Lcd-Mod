@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using LcdMod.Client.Grid;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
@@ -150,7 +151,7 @@ namespace LcdMod.Client.Apps.Abstract
             if (AppConfig == null)
                 return;
 
-            SumPowerSources(Block?.CubeGrid, _totalsByKey);
+            SumPowerSources(Host.GridLogic, _totalsByKey);
             UpdateEntryValues();
             BuildVisibleEntries();
 
@@ -281,7 +282,7 @@ namespace LcdMod.Client.Apps.Abstract
                 _entriesOrdered[i] = _entriesByKey[_entryOrder[i]];
         }
 
-        void SumPowerSources(IMyCubeGrid grid, Dictionary<string, PowerTotals> totals)
+        void SumPowerSources(GridLogic gridLogic, Dictionary<string, PowerTotals> totals)
         {
             for (int i = 0; i < _entryOrder.Length; i++)
             {
@@ -289,11 +290,11 @@ namespace LcdMod.Client.Apps.Abstract
                 totals[key] = new PowerTotals();
             }
 
-            if (grid == null)
+            if (gridLogic == null)
                 return;
 
             _producers.Clear();
-            GridHelper.GetAllLogicBlocksOfType(grid, _producers, GridLinkTypeEnum.Logical);
+            _producers.AddRange(gridLogic.GetTerminalBlocks<IMyPowerProducer>());
 
             for (int i = 0; i < _producers.Count; i++)
             {

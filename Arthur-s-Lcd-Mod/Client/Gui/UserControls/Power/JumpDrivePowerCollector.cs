@@ -75,7 +75,7 @@ namespace LcdMod.Client.Gui.UserControls.Power
                 return;
             }
 
-            var jumpDrives = grid.GetJumpDrives();
+            var jumpDrives = grid.GetTerminalBlocks<IMyJumpDrive>();
             int fullCount = 0;
             int notFullCount = 0;
             BeginCenterIconSpinFrame();

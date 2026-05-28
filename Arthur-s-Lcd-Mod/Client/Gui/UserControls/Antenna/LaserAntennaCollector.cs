@@ -26,7 +26,7 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
             Dictionary<long, AntennaEntry> models,
             HashSet<long> activeEntryIds)
         {
-            var lasers = grid.GetLaserAntennae();
+            var lasers = grid.GetTerminalBlocks<IMyLaserAntenna>();
 
             for (int i = 0; i < lasers.Count; i++)
             {

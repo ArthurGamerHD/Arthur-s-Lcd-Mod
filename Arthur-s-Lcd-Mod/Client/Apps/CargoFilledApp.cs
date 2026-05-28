@@ -4,6 +4,7 @@ using System.Text;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Extensions;
+using LcdMod.Client.Grid;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
@@ -54,7 +55,7 @@ namespace LcdMod.Client.Apps
         {
             _entries.Clear();
             _activeEntryIds.Clear();
-            AggregateAllContainersInLogicalGroup(Host.Block?.CubeGrid, _entries);
+            AggregateAllContainersFromGridLogic(Host.GridLogic, _entries);
             RemoveInactiveEntryModels();
             _entries.Sort((a, b) =>
             {
@@ -383,121 +384,79 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        void AggregateAllContainersInLogicalGroup(IMyCubeGrid rootGrid, List<Entry> details)
+        void AggregateAllContainersFromGridLogic(GridLogic gridLogic, List<Entry> details)
         {
-            if (rootGrid == null)
+            if (gridLogic == null)
                 return;
 
-            var grids = new List<IMyCubeGrid>();
-            try
-            {
-                MyAPIGateway.GridGroups.GetGroup(rootGrid, GridLinkTypeEnum.Logical, grids);
-            }
-            catch (Exception e)
-            {
-                ErrorHandlerHelper.LogError(e, Host);
-            }
+            var containers = gridLogic.GetTerminalBlocks<IMyCargoContainer>();
+            if (containers == null)
+                return;
 
-            var hasRoot = false;
-            for (var i = 0; i < grids.Count; i++)
+            for (var i = 0; i < containers.Count; i++)
             {
-                if (grids[i] != rootGrid)
-                    continue;
-                hasRoot = true;
-                break;
-            }
-
-            if (!hasRoot)
-                grids.Insert(0, rootGrid);
-
-            var slims = new List<IMySlimBlock>();
-            for (var gi = 0; gi < grids.Count; gi++)
-            {
-                var g = grids[gi];
-                if (g == null)
+                var fat = containers[i];
+                if (fat == null)
                     continue;
 
-                slims.Clear();
-                g.GetBlocks(slims);
+                var config = Config;
+                if (config != null && config.SelectedBlocks.Length > 0 &&
+                    Array.IndexOf(config.SelectedBlocks, fat.EntityId) < 0)
+                    continue;
 
-                for (var i = 0; i < slims.Count; i++)
+                if (!fat.HasInventory)
+                    continue;
+
+                double localUsed = 0;
+                double localCap = 0;
+                var invCount = 0;
+                try
                 {
-                    var fat = slims[i].FatBlock as IMyTerminalBlock;
-                    if (fat == null)
-                        continue;
-
-                    var typeIdStr = string.Empty;
-                    try
-                    {
-                        typeIdStr = fat.BlockDefinition.TypeIdString ?? fat.BlockDefinition.TypeId.ToString();
-                    }
-                    catch (Exception e)
-                    {
-                        ErrorHandlerHelper.LogError(e, Host);
-                    }
-
-                    if (typeIdStr.IndexOf("CargoContainer", StringComparison.OrdinalIgnoreCase) < 0)
-                        continue;
-
-                    var config = Config;
-                    if (config != null && config.SelectedBlocks.Length > 0 &&
-                        Array.IndexOf(config.SelectedBlocks, fat.EntityId) < 0)
-                        continue;
-
-                    if (!fat.HasInventory)
-                        continue;
-
-                    double localUsed = 0;
-                    double localCap = 0;
-                    var invCount = 0;
-                    try
-                    {
-                        invCount = fat.InventoryCount;
-                    }
-                    catch (Exception e)
-                    {
-                        ErrorHandlerHelper.LogError(e, Host);
-                    }
-
-                    for (var k = 0; k < invCount; k++)
-                    {
-                        var inv = fat.GetInventory(k);
-                        if (inv == null)
-                            continue;
-                        try
-                        {
-                            localUsed += (double)inv.CurrentVolume;
-                            localCap += (double)inv.MaxVolume;
-                        }
-                        catch (Exception e)
-                        {
-                            ErrorHandlerHelper.LogError(e, Host);
-                        }
-                    }
-
-                    if (localCap <= 0)
-                        continue;
-
-                    string name;
-                    try
-                    {
-                        name = fat.CustomName;
-                        if (string.IsNullOrEmpty(name))
-                            name = fat.DisplayNameText;
-                        if (string.IsNullOrEmpty(name))
-                            name = fat.BlockDefinition.SubtypeName;
-                        if (string.IsNullOrEmpty(name))
-                            name = "Container";
-                    }
-                    catch
-                    {
-                        name = "Container";
-                    }
-
-                    var entry = GetOrCreateEntry(fat.EntityId);
-                    entry.Update(name, localUsed, localCap);
-                    details.Add(entry);
+                    invCount = fat.InventoryCount;
                 }
+                catch (Exception e)
+                {
+                    ErrorHandlerHelper.LogError(e, Host);
+                }
+
+                for (var k = 0; k < invCount; k++)
+                {
+                    var inv = fat.GetInventory(k);
+                    if (inv == null)
+                        continue;
+                    try
+                    {
+                        localUsed += (double)inv.CurrentVolume;
+                        localCap += (double)inv.MaxVolume;
+                    }
+                    catch (Exception e)
+                    {
+                        ErrorHandlerHelper.LogError(e, Host);
+                    }
+                }
+
+                if (localCap <= 0)
+                    continue;
+
+                string name;
+                try
+                {
+                    name = fat.CustomName;
+                    if (string.IsNullOrEmpty(name))
+                        name = fat.DisplayNameText;
+                    if (string.IsNullOrEmpty(name))
+                        name = fat.BlockDefinition.SubtypeName;
+                    if (string.IsNullOrEmpty(name))
+                        name = "Container";
+                }
+                catch
+                {
+                    name = "Container";
+                }
+
+                var entry = GetOrCreateEntry(fat.EntityId);
+                entry.Update(name, localUsed, localCap);
+                details.Add(entry);
             }
         }
 

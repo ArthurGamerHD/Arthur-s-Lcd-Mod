@@ -69,7 +69,7 @@ namespace LcdMod.Client.Gui.UserControls.Power
                 return;
             }
 
-            var batteries = grid.GetBatteries();
+            var batteries = grid.GetTerminalBlocks<IMyBatteryBlock>();
             const float eps = 0.001f;
             float totalIn = 0f;
             float totalOut = 0f;

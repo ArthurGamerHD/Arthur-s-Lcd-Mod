@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Extensions;
+using LcdMod.Client.Grid;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.ControlsTemplates.Progress;
 using LcdMod.Client.Helpers;
@@ -326,86 +327,67 @@ namespace LcdMod.Client.Apps
 
         void ReadEntries(List<Entry> entries)
         {
-            ReadEntries(Host.Block as IMyTerminalBlock, entries, Host.GetType());
+            ReadEntries(Host.GridLogic, Host.Block as IMyTerminalBlock, entries, Host.GetType());
         }
 
-        void ReadEntries(IMyTerminalBlock sourceBlock, List<Entry> entries, Type logType)
+        void ReadEntries(GridLogic gridLogic, IMyTerminalBlock sourceBlock, List<Entry> entries, Type logType)
         {
             string mode;
             string token;
             ParseFilter(sourceBlock, out mode, out token);
 
-            var rootGrid = sourceBlock?.CubeGrid;
-            if (rootGrid == null)
+            if (gridLogic == null)
                 return;
 
-            var grids = new List<IMyCubeGrid>();
-            try
-            {
-                MyAPIGateway.GridGroups.GetGroup(rootGrid, GridLinkTypeEnum.Logical, grids);
-            }
-            catch (Exception e)
-            {
-                ErrorHandlerHelper.LogError(e, logType);
-            }
+            var tanks = gridLogic.GetTerminalBlocks<IMyGasTank>();
+            if (tanks == null)
+                return;
 
-            if (grids.Count == 0)
-                grids.Add(rootGrid);
-
-            var slims = new List<IMySlimBlock>();
-            for (var g = 0; g < grids.Count; g++)
+            for (var i = 0; i < tanks.Count; i++)
             {
-                var grid = grids[g];
-                if (grid == null)
+                var tank = tanks[i];
+                if (tank == null)
                     continue;
 
-                slims.Clear();
-                grid.GetBlocks(slims);
+                var terminal = tank as IMyTerminalBlock;
+                if (terminal == null)
+                    continue;
 
-                for (var i = 0; i < slims.Count; i++)
+                if (!string.IsNullOrEmpty(token))
                 {
-                    var tank = slims[i].FatBlock as IMyGasTank;
-                    if (tank == null)
+                    var customName = terminal.CustomName ?? string.Empty;
+                    if (customName.IndexOf(token, StringComparison.OrdinalIgnoreCase) < 0)
                         continue;
-
-                    var terminal = tank as IMyTerminalBlock;
-
-                    if (!string.IsNullOrEmpty(token))
-                    {
-                        var customName = terminal.CustomName ?? string.Empty;
-                        if (customName.IndexOf(token, StringComparison.OrdinalIgnoreCase) < 0)
-                            continue;
-                    }
-
-                    float ratio;
-                    try
-                    {
-                        ratio = (float)tank.FilledRatio;
-                    }
-                    catch (Exception e)
-                    {
-                        ErrorHandlerHelper.LogError(e, logType);
-                        continue;
-                    }
-
-                    var tankName = terminal.CustomName;
-                    if (string.IsNullOrEmpty(tankName))
-                        tankName = terminal.DisplayNameText;
-                    if (string.IsNullOrEmpty(tankName))
-                        tankName = terminal.BlockDefinition.SubtypeName;
-                    if (string.IsNullOrEmpty(tankName))
-                        tankName = "Gas Tank";
-
-                    var gasSubtype = GetStoredGasSubtype(terminal, logType);
-                    var gasName = GetGasDisplayNameCached(gasSubtype, logType);
-                    var displayName = string.IsNullOrEmpty(gasName) ? tankName : gasName + " - " + tankName;
-
-                    entries.Add(new Entry
-                    {
-                        Name = displayName,
-                        Percentage = ratio
-                    });
                 }
+
+                float ratio;
+                try
+                {
+                    ratio = (float)tank.FilledRatio;
+                }
+                catch (Exception e)
+                {
+                    ErrorHandlerHelper.LogError(e, logType);
+                    continue;
+                }
+
+                var tankName = terminal.CustomName;
+                if (string.IsNullOrEmpty(tankName))
+                    tankName = terminal.DisplayNameText;
+                if (string.IsNullOrEmpty(tankName))
+                    tankName = terminal.BlockDefinition.SubtypeName;
+                if (string.IsNullOrEmpty(tankName))
+                    tankName = "Gas Tank";
+
+                var gasSubtype = GetStoredGasSubtype(terminal, logType);
+                var gasName = GetGasDisplayNameCached(gasSubtype, logType);
+                var displayName = string.IsNullOrEmpty(gasName) ? tankName : gasName + " - " + tankName;
+
+                entries.Add(new Entry
+                {
+                    Name = displayName,
+                    Percentage = ratio
+                });
             }
         }
 

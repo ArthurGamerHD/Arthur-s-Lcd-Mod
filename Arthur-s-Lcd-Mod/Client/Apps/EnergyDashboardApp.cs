@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.Grid;
 using LcdMod.Client.Helpers;
 using LcdMod.Common.Helpers;
 using Sandbox.Game.EntityComponents;
@@ -75,10 +76,9 @@ namespace LcdMod.Client.Apps
             return sprites;
         }
 
-        void CollectData(Grid.GridLogic gridLogic)
+        void CollectData(GridLogic gridLogic)
         {
             var owner = Host;
-            var grid = Host.Block?.CubeGrid;
 
             _solar = new Category();
             _wind = new Category();
@@ -88,8 +88,8 @@ namespace LcdMod.Client.Apps
             _totalConsumptionW = 0;
 
             _producers.Clear();
-            if (grid != null)
-                GridHelper.GetAllLogicBlocksOfType(grid, _producers, GridLinkTypeEnum.Logical);
+            if (gridLogic != null)
+                _producers.AddRange(gridLogic.GetTerminalBlocks<IMyPowerProducer>());
 
             for (int i = 0; i < _producers.Count; i++)
             {
@@ -139,8 +139,8 @@ namespace LcdMod.Client.Apps
             _totalMaxW = _solar.MaxW + _wind.MaxW + _reactor.MaxW + _engine.MaxW + _batteryProd.MaxW;
 
             _terminals.Clear();
-            if (grid != null)
-                GridHelper.GetAllLogicBlocksOfType(grid, _terminals, GridLinkTypeEnum.Logical);
+            if (gridLogic != null)
+                _terminals.AddRange(gridLogic.GetTerminalBlocks<IMyTerminalBlock>());
 
             for (int i = 0; i < _terminals.Count; i++)
             {
@@ -176,7 +176,7 @@ namespace LcdMod.Client.Apps
 
             _batteries.Clear();
             if (gridLogic != null)
-                _batteries.AddRange(gridLogic.GetBatteries());
+                _batteries.AddRange(gridLogic.GetTerminalBlocks<IMyBatteryBlock>());
 
             if (_batteries.Count > 0)
             {

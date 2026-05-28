@@ -20,7 +20,7 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
             Dictionary<long, AntennaEntry> models,
             HashSet<long> activeEntryIds)
         {
-            var radios = grid.GetAntenna();
+            var radios = grid.GetTerminalBlocks<IMyRadioAntenna>();
 
             for (int i = 0; i < radios.Count; i++)
             {

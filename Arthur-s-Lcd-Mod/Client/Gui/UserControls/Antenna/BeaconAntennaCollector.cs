@@ -21,7 +21,7 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
             Dictionary<long, AntennaEntry> models,
             HashSet<long> activeEntryIds)
         {
-            var beacons = grid.GetBeacons();
+            var beacons = grid.GetTerminalBlocks<IMyBeacon>();
 
             for (int i = 0; i < beacons.Count; i++)
             {

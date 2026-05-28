@@ -632,7 +632,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         {
             _assemblerOptions.Clear();
 
-            var assemblers = _gridLogic?.GetAssemblers();
+            var assemblers = _gridLogic?.GetTerminalBlocks<IMyAssembler>();
             if (assemblers == null || assemblers.Count == 0)
                 return;
 
