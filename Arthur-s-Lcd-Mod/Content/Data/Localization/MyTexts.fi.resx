@@ -1,550 +1,562 @@
 <?xml version='1.0' encoding='utf-8'?>
 <root>
-  <resheader name="resmimetype">
-    <value>text/microsoft-resx</value>
-  </resheader>
-  <resheader name="version">
-    <value>2.0</value>
-  </resheader>
-  <data name="LcdMod_Radar" xml:space="preserve">
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>2.0</value>
+    </resheader>
+    <data name="LcdMod_Radar" xml:space="preserve">
     <value>Taktinen tutka</value>
   </data>
-  <data name="LcdMod_Radar_DetectedEntities" xml:space="preserve">
+    <data name="LcdMod_Radar_DetectedEntities" xml:space="preserve">
     <value>Havaitut entiteetit:</value>
   </data>
-  <data name="LcdMod_TopEnergy" xml:space="preserve">
+    <data name="LcdMod_TopEnergy" xml:space="preserve">
     <value>Suurin energiankulutus</value>
   </data>
-  <data name="LcdMod_EnergyDashboard" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard" xml:space="preserve">
     <value>Energia-paneeli</value>
   </data>
-  <data name="LcdMod_Farm" xml:space="preserve">
+    <data name="LcdMod_Farm" xml:space="preserve">
     <value>Maatilan tiedot</value>
   </data>
-  <data name="LcdMod_Farm_Water" xml:space="preserve">
+    <data name="LcdMod_Farm_Water" xml:space="preserve">
     <value>Vesi: {0}</value>
   </data>
-  <data name="LcdMod_Farm_OutputAmount" xml:space="preserve">
+    <data name="LcdMod_Farm_OutputAmount" xml:space="preserve">
     <value>{0} x{1}</value>
   </data>
-  <data name="LcdMod_GraphWindow" xml:space="preserve">
+    <data name="LcdMod_GraphWindow" xml:space="preserve">
     <value>Kaavion aikaikkuna</value>
   </data>
-  <data name="LcdMod_GW_1s" xml:space="preserve">
+    <data name="LcdMod_GW_1s" xml:space="preserve">
     <value>1 sekunti</value>
   </data>
-  <data name="LcdMod_GW_5s" xml:space="preserve">
+    <data name="LcdMod_GW_5s" xml:space="preserve">
     <value>5 sekuntia</value>
   </data>
-  <data name="LcdMod_GW_30s" xml:space="preserve">
+    <data name="LcdMod_GW_30s" xml:space="preserve">
     <value>30 sekuntia</value>
   </data>
-  <data name="LcdMod_GW_1m" xml:space="preserve">
+    <data name="LcdMod_GW_1m" xml:space="preserve">
     <value>1 minuutti</value>
   </data>
-  <data name="LcdMod_GW_5m" xml:space="preserve">
+    <data name="LcdMod_GW_5m" xml:space="preserve">
     <value>5 minuuttia</value>
   </data>
-  <data name="LcdMod_OreScannerRadar" xml:space="preserve">
+    <data name="LcdMod_OreScannerRadar" xml:space="preserve">
     <value>Malminetsintätutka</value>
   </data>
-  <data name="LcdMod_OreScanner_Moving" xml:space="preserve">
+    <data name="LcdMod_OreScanner_Moving" xml:space="preserve">
     <value>LIIKKEESSÄ — skanneri pois</value>
   </data>
-  <data name="LcdMod_OreScanner_Charging" xml:space="preserve">
+    <data name="LcdMod_OreScanner_Charging" xml:space="preserve">
     <value>LATAA {0}s</value>
   </data>
-  <data name="LcdMod_OreScanner_Scanning" xml:space="preserve">
+    <data name="LcdMod_OreScanner_Scanning" xml:space="preserve">
     <value>SKANNAA {0}% — kartiopyyhkäisy</value>
   </data>
-  <data name="LcdMod_OreScanner_Clear" xml:space="preserve">
+    <data name="LcdMod_OreScanner_Clear" xml:space="preserve">
     <value>PUHDAS — ei malmia</value>
   </data>
-  <data name="LcdMod_OreScanner_Signal" xml:space="preserve">
+    <data name="LcdMod_OreScanner_Signal" xml:space="preserve">
     <value>SIGNAALI {0}%</value>
   </data>
-  <data name="LcdMod_OreScanner_Range" xml:space="preserve">
+    <data name="LcdMod_OreScanner_Range" xml:space="preserve">
     <value>Kantama: {0}</value>
   </data>
-  <data name="LcdMod_OreScanner_NoDetector" xml:space="preserve">
+    <data name="LcdMod_OreScanner_NoDetector" xml:space="preserve">
     <value>GRIDISSÄ EI OLE MALMINETSINTÄÄ</value>
   </data>
-  <data name="LcdMod_OreScanner_MultipleDetectors" xml:space="preserve">
+    <data name="LcdMod_OreScanner_MultipleDetectors" xml:space="preserve">
     <value>USEITA MALMINILMAISIMIA — jätä vain yksi</value>
   </data>
-  <data name="LcdMod_OreScanner_ConeAngle" xml:space="preserve">
+    <data name="LcdMod_OreScanner_ConeAngle" xml:space="preserve">
     <value>Signaalin kallistus</value>
   </data>
-  <data name="LcdMod_OreScanner_TiltLabel" xml:space="preserve">
+    <data name="LcdMod_OreScanner_TiltLabel" xml:space="preserve">
     <value>Signaalin kallistus:   {0}</value>
   </data>
-  <data name="LcdMod_OreScanner_Reference" xml:space="preserve">
+    <data name="LcdMod_OreScanner_Reference" xml:space="preserve">
     <value>Referenssiohjaamo / ohjausistuin</value>
   </data>
-  <data name="LcdMod_OreScanner_Reference_None" xml:space="preserve">
+    <data name="LcdMod_OreScanner_Reference_None" xml:space="preserve">
     <value>(käytä painovoimaa)</value>
   </data>
-  <data name="LcdMod_Damaged" xml:space="preserve">
+    <data name="LcdMod_Damaged" xml:space="preserve">
     <value>Vaurioitunut</value>
   </data>
-  <data name="LcdMod_Axis_X_Positive" xml:space="preserve">
+    <data name="LcdMod_Axis_X_Positive" xml:space="preserve">
     <value>Positiivinen X</value>
   </data>
-  <data name="LcdMod_Axis_X_Negative" xml:space="preserve">
+    <data name="LcdMod_Axis_X_Negative" xml:space="preserve">
     <value>Negatiivinen X</value>
   </data>
-  <data name="LcdMod_Axis_Y_Positive" xml:space="preserve">
+    <data name="LcdMod_Axis_Y_Positive" xml:space="preserve">
     <value>Positiivinen Y</value>
   </data>
-  <data name="LcdMod_Axis_Y_Negative" xml:space="preserve">
+    <data name="LcdMod_Axis_Y_Negative" xml:space="preserve">
     <value>Negatiivinen Y</value>
   </data>
-  <data name="LcdMod_Axis_Z_Positive" xml:space="preserve">
+    <data name="LcdMod_Axis_Z_Positive" xml:space="preserve">
     <value>Positiivinen Z</value>
   </data>
-  <data name="LcdMod_Axis_Z_Negative" xml:space="preserve">
+    <data name="LcdMod_Axis_Z_Negative" xml:space="preserve">
     <value>Negatiivinen Z</value>
   </data>
-  <data name="LcdMod_Empty" xml:space="preserve">
+    <data name="LcdMod_Empty" xml:space="preserve">
     <value>Tyhjä</value>
   </data>
-  <data name="LcdMod_GasFilled" xml:space="preserve">
+    <data name="LcdMod_GasFilled" xml:space="preserve">
     <value>Kaasun täyttö %</value>
   </data>
-  <data name="LcdMod_PowerFilled" xml:space="preserve">
+    <data name="LcdMod_PowerFilled" xml:space="preserve">
     <value>Virran täyttö %</value>
   </data>
-  <data name="LcdMod_FactionColor_Usage" xml:space="preserve">
+    <data name="LcdMod_FactionColor_Usage" xml:space="preserve">
     <value>Käyttö: /lcdmod factioncolor &lt;r g b | #rrggbb | #rgb | hsv h s v&gt;</value>
   </data>
-  <data name="LcdMod_FactionColor_HsvFormat" xml:space="preserve">
+    <data name="LcdMod_FactionColor_HsvFormat" xml:space="preserve">
     <value>HSV-muoto: hsv &lt;h&gt; &lt;s&gt; &lt;v&gt; (liukulukuja)</value>
   </data>
-  <data name="LcdMod_FactionColor_HsvRange" xml:space="preserve">
+    <data name="LcdMod_FactionColor_HsvRange" xml:space="preserve">
     <value>HSV-arvojen on oltava välillä [0..1]. Sävy hyväksyy myös [0..360].</value>
   </data>
-  <data name="LcdMod_FactionColor_Invalid" xml:space="preserve">
+    <data name="LcdMod_FactionColor_Invalid" xml:space="preserve">
     <value>Virheellinen väri. Käytä: 255 0 0 | #ff0000 | #f00 | hsv 0 1 1</value>
   </data>
-  <data name="LcdMod_FactionColor_NoFaction" xml:space="preserve">
+    <data name="LcdMod_FactionColor_NoFaction" xml:space="preserve">
     <value>Paikalliselle pelaajalle ei löytynyt ryhmittymää.</value>
   </data>
-  <data name="LcdMod_FactionColor_Updated" xml:space="preserve">
+    <data name="LcdMod_FactionColor_Updated" xml:space="preserve">
     <value>Ryhmittymäkuvakkeen väri päivitetty.</value>
   </data>
-  <data name="LcdMod_Warning" xml:space="preserve">
+    <data name="LcdMod_Warning" xml:space="preserve">
     <value>Varoitus: {0}</value>
   </data>
-  <data name="LcdMod_Critical" xml:space="preserve">
+    <data name="LcdMod_Critical" xml:space="preserve">
     <value>Kriittinen: {0}</value>
   </data>
-  <data name="LcdMod_Thrust_GravityLoad" xml:space="preserve">
+    <data name="LcdMod_Thrust_GravityLoad" xml:space="preserve">
     <value>Painovoimakuorma</value>
   </data>
-  <data name="LcdMod_StarMapSurface" xml:space="preserve">
+    <data name="LcdMod_StarMapSurface" xml:space="preserve">
     <value>Tähtikartta</value>
   </data>
-  <data name="LcdMod_DockingAlignment" xml:space="preserve">
+    <data name="LcdMod_DockingAlignment" xml:space="preserve">
     <value>Telakoinnin kohdistus</value>
   </data>
-  <data name="LcdMod_DockingAlignment_SelectReference" xml:space="preserve">
+    <data name="LcdMod_DockingAlignment_SelectReference" xml:space="preserve">
     <value>Valitse {0} tai {1}</value>
   </data>
-  <data name="LcdMod_DockingAlignment_NoTarget" xml:space="preserve">
+    <data name="LcdMod_DockingAlignment_NoTarget" xml:space="preserve">
     <value>Telakointikohdetta ei havaittu</value>
   </data>
-  <data name="LcdMod_DockingAlignment_DisplayMode_Default" xml:space="preserve">
+    <data name="LcdMod_DockingAlignment_DisplayMode_Default" xml:space="preserve">
     <value>Oletus</value>
   </data>
-  <data name="LcdMod_DockingAlignment_DisplayMode_LcdReference" xml:space="preserve">
+    <data name="LcdMod_DockingAlignment_DisplayMode_LcdReference" xml:space="preserve">
     <value>Lcd-viite</value>
   </data>
-  <data name="LcdMod_DockingAlignment_DisplayMode_ControllerReference" xml:space="preserve">
+    <data name="LcdMod_DockingAlignment_DisplayMode_ControllerReference" xml:space="preserve">
     <value>Ohjaimen viite</value>
   </data>
-  <data name="LcdMod_NotAvailable" xml:space="preserve">
+    <data name="LcdMod_NotAvailable" xml:space="preserve">
     <value>Ei tietoa</value>
   </data>
-  <data name="LcdMod_StarMap_Info_Gravity" xml:space="preserve">
+    <data name="LcdMod_StarMap_Info_Gravity" xml:space="preserve">
     <value>Painovoima: {0}</value>
   </data>
-  <data name="LcdMod_StarMap_Info_Radius" xml:space="preserve">
+    <data name="LcdMod_StarMap_Info_Radius" xml:space="preserve">
     <value>Säde: {0}</value>
   </data>
-  <data name="LcdMod_StarMap_Info_RadiusShort" xml:space="preserve">
+    <data name="LcdMod_StarMap_Info_RadiusShort" xml:space="preserve">
     <value>Säde: {0}</value>
   </data>
-  <data name="LcdMod_Atmosphere_Short" xml:space="preserve">
+    <data name="LcdMod_Atmosphere_Short" xml:space="preserve">
     <value>Ilmakehä: {0}</value>
   </data>
-  <data name="LcdMod_StarMap_Info_O2" xml:space="preserve">
+    <data name="LcdMod_StarMap_Info_O2" xml:space="preserve">
     <value>Happi: {0}</value>
   </data>
-  <data name="LcdMod_StarMap_Info_Temperature" xml:space="preserve">
+    <data name="LcdMod_StarMap_Info_Temperature" xml:space="preserve">
     <value>Lämpötila: {0}</value>
   </data>
-  <data name="LcdMod_StarMap_Info_Wind" xml:space="preserve">
+    <data name="LcdMod_StarMap_Info_Wind" xml:space="preserve">
     <value>Tuuli: {0}</value>
   </data>
-  <data name="LcdMod_StarMap_Label_Temperature" xml:space="preserve">
+    <data name="LcdMod_StarMap_Label_Temperature" xml:space="preserve">
     <value>Lämpötila</value>
   </data>
-<data name="LcdMod_Chess" xml:space="preserve">
+    <data name="LcdMod_Chess" xml:space="preserve">
     <value>Shakki</value>
   </data>
-  <data name="LcdMod_Export" xml:space="preserve">
+    <data name="LcdMod_Export" xml:space="preserve">
     <value>Vie</value>
   </data>
-  <data name="LcdMod_FlagMode" xml:space="preserve">
+    <data name="LcdMod_FlagMode" xml:space="preserve">
     <value>Lipputila</value>
   </data>
-  <data name="LcdMod_GameSurfaceScript" xml:space="preserve">
+    <data name="LcdMod_GameSurfaceScript" xml:space="preserve">
     <value>Pelit</value>
   </data>
-  <data name="LcdMod_Games" xml:space="preserve">
+    <data name="LcdMod_Games" xml:space="preserve">
     <value>Pelit</value>
   </data>
-  <data name="LcdMod_HideDangerousTiles" xml:space="preserve">
+    <data name="LcdMod_HideDangerousTiles" xml:space="preserve">
     <value>Piilota uhatut ruudut</value>
   </data>
-  <data name="LcdMod_Minesweeper" xml:space="preserve">
+    <data name="LcdMod_Minesweeper" xml:space="preserve">
     <value>Miinaharava</value>
   </data>
-  <data name="LcdMod_NewGame" xml:space="preserve">
+    <data name="LcdMod_NewGame" xml:space="preserve">
     <value>Uusi peli</value>
   </data>
-  <data name="LcdMod_PlayAsBlack" xml:space="preserve">
+    <data name="LcdMod_PlayAsBlack" xml:space="preserve">
     <value>Pelaa mustilla</value>
   </data>
-  <data name="LcdMod_PlayAsWhite" xml:space="preserve">
+    <data name="LcdMod_PlayAsWhite" xml:space="preserve">
     <value>Pelaa valkoisilla</value>
   </data>
-  <data name="LcdMod_Selected" xml:space="preserve">
+    <data name="LcdMod_Selected" xml:space="preserve">
     <value>Valittu</value>
   </data>
-  <data name="LcdMod_ShowDangerousTiles" xml:space="preserve">
+    <data name="LcdMod_ShowDangerousTiles" xml:space="preserve">
     <value>Näytä uhatut ruudut</value>
   </data>
-<data name="LcdMod_Radius" xml:space="preserve">
+    <data name="LcdMod_Radius" xml:space="preserve">
     <value>Säde: {0}</value>
   </data>
-  <data name="LcdMod_Radius_Short" xml:space="preserve">
+    <data name="LcdMod_Radius_Short" xml:space="preserve">
     <value>R: {0}</value>
   </data>
-  <data name="LcdMod_Gravity" xml:space="preserve">
+    <data name="LcdMod_Gravity" xml:space="preserve">
     <value>Painovoima: {0}</value>
   </data>
-  <data name="LcdMod_Gravity_Short" xml:space="preserve">
+    <data name="LcdMod_Gravity_Short" xml:space="preserve">
     <value>G: {0}</value>
   </data>
-  <data name="LcdMod_Range" xml:space="preserve">
+    <data name="LcdMod_Range" xml:space="preserve">
     <value>Painovoiman kantama: {0}</value>
   </data>
-  <data name="LcdMod_Range_Short" xml:space="preserve">
+    <data name="LcdMod_Range_Short" xml:space="preserve">
     <value>PK: {0}</value>
   </data>
-  <data name="LcdMod_Atmosphere" xml:space="preserve">
+    <data name="LcdMod_Atmosphere" xml:space="preserve">
     <value>Ilmakehä: {0}</value>
   </data>
-  <data name="LcdMod_O2" xml:space="preserve">
+    <data name="LcdMod_O2" xml:space="preserve">
     <value>Happi: {0}</value>
   </data>
-  <data name="LcdMod_O2_Short" xml:space="preserve">
+    <data name="LcdMod_O2_Short" xml:space="preserve">
     <value>O2: {0}</value>
   </data>
-  <data name="LcdMod_Temperature" xml:space="preserve">
+    <data name="LcdMod_Temperature" xml:space="preserve">
     <value>Lämpötila: {0}</value>
   </data>
-  <data name="LcdMod_Temperature_Short" xml:space="preserve">
+    <data name="LcdMod_Temperature_Short" xml:space="preserve">
     <value>Lämp.: {0}</value>
   </data>
-  <data name="LcdMod_Wind" xml:space="preserve">
+    <data name="LcdMod_Wind" xml:space="preserve">
     <value>Tuuli: {0}</value>
   </data>
-  <data name="LcdMod_Wind_Short" xml:space="preserve">
+    <data name="LcdMod_Wind_Short" xml:space="preserve">
     <value>Tuuli: {0}</value>
   </data>
-  <data name="LcdMod_Position" xml:space="preserve">
+    <data name="LcdMod_Position" xml:space="preserve">
     <value>Sijainti: {0}</value>
   </data>
-  <data name="LcdMod_Position_Short" xml:space="preserve">
+    <data name="LcdMod_Position_Short" xml:space="preserve">
     <value>Sij.: {0}</value>
   </data>
-  <data name="LcdMod_Jump" xml:space="preserve">
+    <data name="LcdMod_Jump" xml:space="preserve">
     <value>Hyppykoordinaatti: {0}</value>
   </data>
-  <data name="LcdMod_Jump_Short" xml:space="preserve">
+    <data name="LcdMod_Jump_Short" xml:space="preserve">
     <value>Hyppy: {0}</value>
   </data>
-<data name="LcdMod_AlwaysActive" xml:space="preserve">
+    <data name="LcdMod_AlwaysActive" xml:space="preserve">
     <value>Aina aktiivinen</value>
   </data>
-  <data name="LcdMod_AlwaysActive_Tooltip" xml:space="preserve">
+    <data name="LcdMod_AlwaysActive_Tooltip" xml:space="preserve">
     <value>Asettaa näytön katseenseurannan olemaan aina käytössä. Kun se on poistettu käytöstä, Katso ympärille -näppäin vaaditaan.</value>
   </data>
-  <data name="LcdMod_CursorScale" xml:space="preserve">
+    <data name="LcdMod_CursorScale" xml:space="preserve">
     <value>Kohdistimen skaala</value>
   </data>
 
-  <data name="LcdMod_EightBallPool" xml:space="preserve">
+    <data name="LcdMod_EightBallPool" xml:space="preserve">
     <value>8-pallo</value>
   </data>
-  <data name="LcdMod_RackBalls" xml:space="preserve">
+    <data name="LcdMod_RackBalls" xml:space="preserve">
     <value>Aseta pallot</value>
   </data>
-  <data name="LcdMod_ResetCueBall" xml:space="preserve">
+    <data name="LcdMod_ResetCueBall" xml:space="preserve">
     <value>Palauta lyöntipallo</value>
   </data>
-  <data name="LcdMod_EightBallPool_CheatModeOn" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_CheatModeOn" xml:space="preserve">
     <value>Huijaustila: PÄÄLLÄ</value>
   </data>
-  <data name="LcdMod_EightBallPool_CheatModeOff" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_CheatModeOff" xml:space="preserve">
     <value>Huijaustila: POIS</value>
   </data>
-  <data name="LcdMod_EightBallPool_NewGamePrompt" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_NewGamePrompt" xml:space="preserve">
     <value>Aloitetaanko uusi 8-pallopeli?</value>
   </data>
-  <data name="LcdMod_EightBallPool_Dismiss" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_Dismiss" xml:space="preserve">
     <value>Sulje</value>
   </data>
-  <data name="LcdMod_EightBallPool_PlayerBreak" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_PlayerBreak" xml:space="preserve">
     <value>Pelaaja {0} aloituslyö.</value>
   </data>
-  <data name="LcdMod_EightBallPool_Scratch" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_Scratch" xml:space="preserve">
     <value>Lyöntipallo pussiin.</value>
   </data>
-  <data name="LcdMod_EightBallPool_PocketedOpponentBall" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_PocketedOpponentBall" xml:space="preserve">
     <value>pussitti vastustajan pallon {0}.</value>
   </data>
-  <data name="LcdMod_EightBallPool_WinEightBall" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_WinEightBall" xml:space="preserve">
     <value>Pelaaja {0} voittaa pussittamalla 8-pallon.</value>
   </data>
-  <data name="LcdMod_EightBallPool_WinEarlyEightBall" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_WinEarlyEightBall" xml:space="preserve">
     <value>Pelaaja {0} voittaa. Pelaaja {1} pussitti 8-pallon liian aikaisin.</value>
   </data>
-  <data name="LcdMod_EightBallPool_FoulOpen" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_FoulOpen" xml:space="preserve">
     <value>Virhe: {0} Pöytä on yhä avoin; vapaata palloa ei myönnetä. Pelaaja {1} lyö.</value>
   </data>
-  <data name="LcdMod_EightBallPool_IllegalShot" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_IllegalShot" xml:space="preserve">
     <value>laiton lyönti</value>
   </data>
-  <data name="LcdMod_EightBallPool_WinNoFreeBall" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_WinNoFreeBall" xml:space="preserve">
     <value>Pelaaja {0} voittaa. Virhe, eikä vapaata palloa ole saatavilla.</value>
   </data>
-  <data name="LcdMod_EightBallPool_FoulAward" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_FoulAward" xml:space="preserve">
     <value>Virhe: {0}{1} Pelaaja {2} lyö.</value>
   </data>
-  <data name="LcdMod_EightBallPool_PlayerShootsAgain" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_PlayerShootsAgain" xml:space="preserve">
     <value>Pelaaja {0} pussitti pallon ja lyö uudelleen.</value>
   </data>
-  <data name="LcdMod_EightBallPool_NoBallPocketed" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_NoBallPocketed" xml:space="preserve">
     <value>Yhtään palloa ei pussitettu. Pelaaja {0} lyö.</value>
   </data>
-  <data name="LcdMod_EightBallPool_NoObjectBallHit" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_NoObjectBallHit" xml:space="preserve">
     <value>osumapalloon ei osuttu.</value>
   </data>
-  <data name="LcdMod_EightBallPool_HitEightBallBeforeGroups" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_HitEightBallBeforeGroups" xml:space="preserve">
     <value>osui 8-palloon ennen ryhmien määräämistä.</value>
   </data>
-  <data name="LcdMod_EightBallPool_HitOpponentBeforeEight" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_HitOpponentBeforeEight" xml:space="preserve">
     <value>osui vastustajan palloon ennen 8-palloa.</value>
   </data>
-  <data name="LcdMod_EightBallPool_HitEightBallBeforeClearing" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_HitEightBallBeforeClearing" xml:space="preserve">
     <value>osui 8-palloon ennen kuin määrätyt pallot oli poistettu.</value>
   </data>
-  <data name="LcdMod_EightBallPool_HitOpponentFirst" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_HitOpponentFirst" xml:space="preserve">
     <value>osui ensin vastustajan palloon.</value>
   </data>
-  <data name="LcdMod_EightBallPool_AwardFreeBall" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_AwardFreeBall" xml:space="preserve">
     <value> Pelaaja {0} saa {1} ilmaiseksi.</value>
   </data>
-  <data name="LcdMod_EightBallPool_NoFreeBallAvailable" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_NoFreeBallAvailable" xml:space="preserve">
     <value> Vapaata palloa ei ollut saatavilla.</value>
   </data>
-  <data name="LcdMod_EightBallPool_PlayerGroupsAssigned" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_PlayerGroupsAssigned" xml:space="preserve">
     <value>Pelaaja 1 on {0}. Pelaaja 2 on {1}.</value>
   </data>
-  <data name="LcdMod_EightBallPool_GameOverWinner" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_GameOverWinner" xml:space="preserve">
     <value>Peli ohi: Pelaaja {0} voittaa.</value>
   </data>
-  <data name="LcdMod_EightBallPool_PlayerToShoot" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_PlayerToShoot" xml:space="preserve">
     <value>Pelaaja {0} lyö.</value>
   </data>
-  <data name="LcdMod_EightBallPool_GameOverNewGameHint" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_GameOverNewGameHint" xml:space="preserve">
     <value>{0} Avaa valikko uutta peliä varten.</value>
   </data>
-  <data name="LcdMod_EightBallPool_BallsRolling" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_BallsRolling" xml:space="preserve">
     <value>Pallot liikkuvat...</value>
   </data>
-  <data name="LcdMod_EightBallPool_CueBallInHand" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_CueBallInHand" xml:space="preserve">
     <value>Pelaaja {0}, lyöntipallo kädessä: aseta se korostetun puoliympyrän sisälle.</value>
   </data>
-  <data name="LcdMod_EightBallPool_TableClearedNewRack" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_TableClearedNewRack" xml:space="preserve">
     <value>Pöytä tyhjennetty. Avaa valikko uutta rackia varten.</value>
   </data>
-  <data name="LcdMod_EightBallPool_Shots" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_Shots" xml:space="preserve">
     <value>Lyönnit: {0}</value>
   </data>
-  <data name="LcdMod_EightBallPool_BallNameEight" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_BallNameEight" xml:space="preserve">
     <value>8-pallo</value>
   </data>
-  <data name="LcdMod_EightBallPool_BallNameStripe" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_BallNameStripe" xml:space="preserve">
     <value>raidallinen {0}</value>
   </data>
-  <data name="LcdMod_EightBallPool_BallNameSolid" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_BallNameSolid" xml:space="preserve">
     <value>yksivärinen {0}</value>
   </data>
-  <data name="LcdMod_EightBallPool_BallNameGeneric" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_BallNameGeneric" xml:space="preserve">
     <value>pallo {0}</value>
   </data>
-  <data name="LcdMod_EightBallPool_FooterPlayerLabel" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_FooterPlayerLabel" xml:space="preserve">
     <value>Pelaaja {0}  {1}</value>
   </data>
-  <data name="LcdMod_EightBallPool_Winner" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_Winner" xml:space="preserve">
     <value>VOITTAJA</value>
   </data>
-  <data name="LcdMod_EightBallPool_NoBalls" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_NoBalls" xml:space="preserve">
     <value>ei palloja</value>
   </data>
-  <data name="LcdMod_EightBallPool_GroupSolids" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_GroupSolids" xml:space="preserve">
     <value>yksiväriset</value>
   </data>
-  <data name="LcdMod_EightBallPool_GroupStripes" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_GroupStripes" xml:space="preserve">
     <value>raidalliset</value>
   </data>
-  <data name="LcdMod_EightBallPool_GroupOpen" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_GroupOpen" xml:space="preserve">
     <value>avoin</value>
   </data>
-<data name="LcdMod_EnergyDashboard_CurrentConsumption" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_CurrentConsumption" xml:space="preserve">
     <value>Nykyinen kulutus: {0}</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_MaxCapacity" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_MaxCapacity" xml:space="preserve">
     <value>Enimmäiskapasiteetti: {0}</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_Production" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_Production" xml:space="preserve">
     <value>Tuotanto: {0}</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_Solar" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_Solar" xml:space="preserve">
     <value>Aurinko</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_Wind" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_Wind" xml:space="preserve">
     <value>Tuuli</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_Reactor" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_Reactor" xml:space="preserve">
     <value>Reaktori</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_Engine" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_Engine" xml:space="preserve">
     <value>Vetymoottori</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_Battery" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_Battery" xml:space="preserve">
     <value>Akku</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_ProductionGraph" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_ProductionGraph" xml:space="preserve">
     <value>Energiantuotanto</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_ConsumptionGraph" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_ConsumptionGraph" xml:space="preserve">
     <value>Energiankulutus</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_Charging" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_Charging" xml:space="preserve">
     <value>Ladataan</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_Discharging" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_Discharging" xml:space="preserve">
     <value>Purkautuu</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_BatteryCountSingular" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_BatteryCountSingular" xml:space="preserve">
     <value>{0} akku</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_BatteryCountPlural" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_BatteryCountPlural" xml:space="preserve">
     <value>{0} akkua</value>
   </data>
-  <data name="LcdMod_Magnification" xml:space="preserve">
+    <data name="LcdMod_Magnification" xml:space="preserve">
     <value>Suurennus</value>
   </data>
-  <data name="LcdMod_Radar_AntennaRangeWarning" xml:space="preserve">
+    <data name="LcdMod_Radar_AntennaRangeWarning" xml:space="preserve">
     <value>Yli 3 km:n etäisyydeltä havaitaan vain radiosignaalit.</value>
   </data>
-  <data name="LcdMod_Grid" xml:space="preserve">
+    <data name="LcdMod_Grid" xml:space="preserve">
     <value>Ruudukko</value>
   </data>
-  <data name="LcdMod_List" xml:space="preserve">
+    <data name="LcdMod_List" xml:space="preserve">
     <value>Luettelo</value>
   </data>
-  <data name="LcdMod_RenderProxy" xml:space="preserve">
+    <data name="LcdMod_RenderProxy" xml:space="preserve">
     <value>Renderöintiproxy</value>
   </data>
-  <data name="LcdMod_ProxyOffsetX" xml:space="preserve">
+    <data name="LcdMod_ProxyOffsetX" xml:space="preserve">
     <value>Proxyn X-siirtymä</value>
   </data>
-  <data name="LcdMod_ProxyOffsetY" xml:space="preserve">
+    <data name="LcdMod_ProxyOffsetY" xml:space="preserve">
     <value>Proxyn Y-siirtymä</value>
   </data>
-  <data name="LcdMod_AutoOffset" xml:space="preserve">
+    <data name="LcdMod_AutoOffset" xml:space="preserve">
     <value>Automaattinen</value>
   </data>
-  <data name="LcdMod_AutoOffset_Tooltip" xml:space="preserve">
+    <data name="LcdMod_AutoOffset_Tooltip" xml:space="preserve">
     <value>Laske proxyn siirtymä automaattisesti valitusta isäntänäytöstä.</value>
   </data>
-  <data name="LcdMod_EnableAutoAdjust" xml:space="preserve">
-    <value>Enable Auto Adjust</value>
-    <comment>TODO_TRANSLATION</comment>
+    <data name="LcdMod_EnableAutoAdjust" xml:space="preserve">
+    <value>Ota automaattinen säätö käyttöön</value>
   </data>
-  <data name="LcdMod_EnableAutoAdjust_Tooltip" xml:space="preserve">
-    <value>Automatically adjust the render proxy on startup and when the linked screen rotation changes.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <data name="LcdMod_EnableAutoAdjust_Tooltip" xml:space="preserve">
+    <value>Säätää renderöintiproxyn automaattisesti käynnistyksessä ja kun linkitetyn näytön kierto muuttuu.</value>
   </data>
-
-<data name="LcdMod_CraftDialog_Title" xml:space="preserve">
+    <data name="LcdMod_CraftDialog_Title" xml:space="preserve">
     <value>Valmistus</value>
   </data>
-  <data name="LcdMod_CraftDialog_Button_Craft" xml:space="preserve">
+    <data name="LcdMod_CraftDialog_Button_Craft" xml:space="preserve">
     <value>Valmista</value>
   </data>
-  <data name="LcdMod_Common_Button_Cancel" xml:space="preserve">
+    <data name="LcdMod_Common_Button_Cancel" xml:space="preserve">
     <value>Peruuta</value>
   </data>
-  <data name="LcdMod_CraftDialog_AssemblerSelection_Title" xml:space="preserve">
+    <data name="LcdMod_CraftDialog_AssemblerSelection_Title" xml:space="preserve">
     <value>Valitse kokoonpanijat</value>
   </data>
-  <data name="LcdMod_CraftDialog_AssemblerSelection_Empty" xml:space="preserve">
+    <data name="LcdMod_CraftDialog_AssemblerSelection_Empty" xml:space="preserve">
     <value>Kokoonpanijaa ei löytynyt</value>
   </data>
-  <data name="LcdMod_Common_Button_Select" xml:space="preserve">
+    <data name="LcdMod_Common_Button_Select" xml:space="preserve">
     <value>Valitse</value>
   </data>
-  <data name="LcdMod_CraftDialog_Assemblers_None" xml:space="preserve">
+    <data name="LcdMod_CraftDialog_Assemblers_None" xml:space="preserve">
     <value>Kokoonpanijat: ei yhtään</value>
   </data>
-  <data name="LcdMod_CraftDialog_Assemblers_Single" xml:space="preserve">
+    <data name="LcdMod_CraftDialog_Assemblers_Single" xml:space="preserve">
     <value>Kokoonpanija: {0}</value>
   </data>
-  <data name="LcdMod_CraftDialog_Assemblers_SelectedCount" xml:space="preserve">
+    <data name="LcdMod_CraftDialog_Assemblers_SelectedCount" xml:space="preserve">
     <value>Kokoonpanijat: {0} valittu</value>
   </data>
-  <data name="LcdMod_CraftDialog_Assembler_FallbackName" xml:space="preserve">
+    <data name="LcdMod_CraftDialog_Assembler_FallbackName" xml:space="preserve">
     <value>Kokoonpanija</value>
   </data>
-  <data name="LcdMod_CraftDialog_Assembler_Status_Idle" xml:space="preserve">
+    <data name="LcdMod_CraftDialog_Assembler_Status_Idle" xml:space="preserve">
     <value>Jouten</value>
   </data>
-  <data name="LcdMod_CraftDialog_AssemblerOption_WithStatus" xml:space="preserve">
+    <data name="LcdMod_CraftDialog_AssemblerOption_WithStatus" xml:space="preserve">
     <value>{0} ({1}) x{2}</value>
   </data>
-  <data name="LcdMod_CraftDialog_AssemblerOption" xml:space="preserve">
+    <data name="LcdMod_CraftDialog_AssemblerOption" xml:space="preserve">
     <value>{0} x{1}</value>
   </data>
-  <data name="LcdMod_Common_Button_OK" xml:space="preserve">
+    <data name="LcdMod_Common_Button_OK" xml:space="preserve">
     <value>OK</value>
   </data>
-  <data name="LcdMod_Common_Value_Unavailable" xml:space="preserve">
+    <data name="LcdMod_Common_Value_Unavailable" xml:space="preserve">
     <value>ei saatavilla</value>
   </data>
-  <data name="LcdMod_Common_Time_ZeroSeconds" xml:space="preserve">
+    <data name="LcdMod_Common_Time_ZeroSeconds" xml:space="preserve">
     <value>0 s</value>
   </data>
-  <data name="LcdMod_Common_Time_LessThanOneSecond" xml:space="preserve">
+    <data name="LcdMod_Common_Time_LessThanOneSecond" xml:space="preserve">
     <value>&lt; 1 s</value>
   </data>
-  <data name="LcdMod_Common_Label_WithColon" xml:space="preserve">
+    <data name="LcdMod_Common_Label_WithColon" xml:space="preserve">
     <value>{0}:</value>
+  </data>
+    <data name="LcdMod_LocalGrid" xml:space="preserve">
+    <value>Paikallinen alus/asema</value>
+  </data>
+    <data name="LcdMod_MechanicalConnection" xml:space="preserve">
+    <value>Mekaaninen yhteys</value>
+  </data>
+    <data name="LcdMod_PhysicalConnection" xml:space="preserve">
+    <value>Fyysinen yhteys</value>
+  </data>
+    <data name="LcdMod_LinkType" xml:space="preserve">
+    <value>Linkkityyppi</value>
+  </data>
+    <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
+    <value>{0} Sisältää vain tämän aluksen tai aseman lohkot. &#xA;{1} sisältää mekaanisesti yhdistetyt alukset/asemat, kuten roottoreilla, saranoilla ja männillä yhdistetyt. &#xA;{2} sisältää mekaaniset yhteydet sekä liittimillä yhdistetyt alukset/asemat.</value>
   </data>
 </root>

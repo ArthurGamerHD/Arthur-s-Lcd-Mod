@@ -1,550 +1,562 @@
 <?xml version='1.0' encoding='utf-8'?>
 <root>
-  <resheader name="resmimetype">
-    <value>text/microsoft-resx</value>
-  </resheader>
-  <resheader name="version">
-    <value>2.0</value>
-  </resheader>
-  <data name="LcdMod_Radar" xml:space="preserve">
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>2.0</value>
+    </resheader>
+    <data name="LcdMod_Radar" xml:space="preserve">
     <value>Radar tactic</value>
   </data>
-  <data name="LcdMod_Radar_DetectedEntities" xml:space="preserve">
+    <data name="LcdMod_Radar_DetectedEntities" xml:space="preserve">
     <value>Entități detectate:</value>
   </data>
-  <data name="LcdMod_TopEnergy" xml:space="preserve">
+    <data name="LcdMod_TopEnergy" xml:space="preserve">
     <value>Cel mai mare consum de energie</value>
   </data>
-  <data name="LcdMod_EnergyDashboard" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard" xml:space="preserve">
     <value>Panou energie</value>
   </data>
-  <data name="LcdMod_Farm" xml:space="preserve">
+    <data name="LcdMod_Farm" xml:space="preserve">
     <value>Informații fermă</value>
   </data>
-  <data name="LcdMod_Farm_Water" xml:space="preserve">
+    <data name="LcdMod_Farm_Water" xml:space="preserve">
     <value>Apă: {0}</value>
   </data>
-  <data name="LcdMod_Farm_OutputAmount" xml:space="preserve">
+    <data name="LcdMod_Farm_OutputAmount" xml:space="preserve">
     <value>{0} x{1}</value>
   </data>
-  <data name="LcdMod_GraphWindow" xml:space="preserve">
+    <data name="LcdMod_GraphWindow" xml:space="preserve">
     <value>Fereastră timp grafic</value>
   </data>
-  <data name="LcdMod_GW_1s" xml:space="preserve">
+    <data name="LcdMod_GW_1s" xml:space="preserve">
     <value>1 secundă</value>
   </data>
-  <data name="LcdMod_GW_5s" xml:space="preserve">
+    <data name="LcdMod_GW_5s" xml:space="preserve">
     <value>5 secunde</value>
   </data>
-  <data name="LcdMod_GW_30s" xml:space="preserve">
+    <data name="LcdMod_GW_30s" xml:space="preserve">
     <value>30 secunde</value>
   </data>
-  <data name="LcdMod_GW_1m" xml:space="preserve">
+    <data name="LcdMod_GW_1m" xml:space="preserve">
     <value>1 minut</value>
   </data>
-  <data name="LcdMod_GW_5m" xml:space="preserve">
+    <data name="LcdMod_GW_5m" xml:space="preserve">
     <value>5 minute</value>
   </data>
-  <data name="LcdMod_OreScannerRadar" xml:space="preserve">
+    <data name="LcdMod_OreScannerRadar" xml:space="preserve">
     <value>Radar scaner minereu</value>
   </data>
-  <data name="LcdMod_OreScanner_Moving" xml:space="preserve">
+    <data name="LcdMod_OreScanner_Moving" xml:space="preserve">
     <value>ÍN MIȘCARE — scaner deconectat</value>
   </data>
-  <data name="LcdMod_OreScanner_Charging" xml:space="preserve">
+    <data name="LcdMod_OreScanner_Charging" xml:space="preserve">
     <value>SE ÍNCARCĂ {0}s</value>
   </data>
-  <data name="LcdMod_OreScanner_Scanning" xml:space="preserve">
+    <data name="LcdMod_OreScanner_Scanning" xml:space="preserve">
     <value>SCANARE {0}% — baleiaj con</value>
   </data>
-  <data name="LcdMod_OreScanner_Clear" xml:space="preserve">
+    <data name="LcdMod_OreScanner_Clear" xml:space="preserve">
     <value>LIBER — fără minereu</value>
   </data>
-  <data name="LcdMod_OreScanner_Signal" xml:space="preserve">
+    <data name="LcdMod_OreScanner_Signal" xml:space="preserve">
     <value>SEMNAL {0}%</value>
   </data>
-  <data name="LcdMod_OreScanner_Range" xml:space="preserve">
+    <data name="LcdMod_OreScanner_Range" xml:space="preserve">
     <value>Rază: {0}</value>
   </data>
-  <data name="LcdMod_OreScanner_NoDetector" xml:space="preserve">
+    <data name="LcdMod_OreScanner_NoDetector" xml:space="preserve">
     <value>NICIUN DETECTOR DE MINEREU PE GRID</value>
   </data>
-  <data name="LcdMod_OreScanner_MultipleDetectors" xml:space="preserve">
+    <data name="LcdMod_OreScanner_MultipleDetectors" xml:space="preserve">
     <value>MAI MULȚI DETECTORI DE MINEREU — lasă doar unul</value>
   </data>
-  <data name="LcdMod_OreScanner_ConeAngle" xml:space="preserve">
+    <data name="LcdMod_OreScanner_ConeAngle" xml:space="preserve">
     <value>Înclinarea semnalului</value>
   </data>
-  <data name="LcdMod_OreScanner_TiltLabel" xml:space="preserve">
+    <data name="LcdMod_OreScanner_TiltLabel" xml:space="preserve">
     <value>Înclinarea semnalului:   {0}</value>
   </data>
-  <data name="LcdMod_OreScanner_Reference" xml:space="preserve">
+    <data name="LcdMod_OreScanner_Reference" xml:space="preserve">
     <value>Cabină / scaun de control de referință</value>
   </data>
-  <data name="LcdMod_OreScanner_Reference_None" xml:space="preserve">
+    <data name="LcdMod_OreScanner_Reference_None" xml:space="preserve">
     <value>(folosește gravitația)</value>
   </data>
-  <data name="LcdMod_Damaged" xml:space="preserve">
+    <data name="LcdMod_Damaged" xml:space="preserve">
     <value>Deteriorat</value>
   </data>
-  <data name="LcdMod_Axis_X_Positive" xml:space="preserve">
+    <data name="LcdMod_Axis_X_Positive" xml:space="preserve">
     <value>X pozitiv</value>
   </data>
-  <data name="LcdMod_Axis_X_Negative" xml:space="preserve">
+    <data name="LcdMod_Axis_X_Negative" xml:space="preserve">
     <value>X negativ</value>
   </data>
-  <data name="LcdMod_Axis_Y_Positive" xml:space="preserve">
+    <data name="LcdMod_Axis_Y_Positive" xml:space="preserve">
     <value>Y pozitiv</value>
   </data>
-  <data name="LcdMod_Axis_Y_Negative" xml:space="preserve">
+    <data name="LcdMod_Axis_Y_Negative" xml:space="preserve">
     <value>Y negativ</value>
   </data>
-  <data name="LcdMod_Axis_Z_Positive" xml:space="preserve">
+    <data name="LcdMod_Axis_Z_Positive" xml:space="preserve">
     <value>Z pozitiv</value>
   </data>
-  <data name="LcdMod_Axis_Z_Negative" xml:space="preserve">
+    <data name="LcdMod_Axis_Z_Negative" xml:space="preserve">
     <value>Z negativ</value>
   </data>
-  <data name="LcdMod_Empty" xml:space="preserve">
+    <data name="LcdMod_Empty" xml:space="preserve">
     <value>Gol</value>
   </data>
-  <data name="LcdMod_GasFilled" xml:space="preserve">
+    <data name="LcdMod_GasFilled" xml:space="preserve">
     <value>Gaz umplut %</value>
   </data>
-  <data name="LcdMod_PowerFilled" xml:space="preserve">
+    <data name="LcdMod_PowerFilled" xml:space="preserve">
     <value>Energie umplută %</value>
   </data>
-  <data name="LcdMod_FactionColor_Usage" xml:space="preserve">
+    <data name="LcdMod_FactionColor_Usage" xml:space="preserve">
     <value>Utilizare: /lcdmod factioncolor &lt;r g b | #rrggbb | #rgb | hsv h s v&gt;</value>
   </data>
-  <data name="LcdMod_FactionColor_HsvFormat" xml:space="preserve">
+    <data name="LcdMod_FactionColor_HsvFormat" xml:space="preserve">
     <value>Format HSV: hsv &lt;h&gt; &lt;s&gt; &lt;v&gt; (numere reale)</value>
   </data>
-  <data name="LcdMod_FactionColor_HsvRange" xml:space="preserve">
+    <data name="LcdMod_FactionColor_HsvRange" xml:space="preserve">
     <value>Valorile HSV trebuie să fie în [0..1]. Nuanța acceptă și [0..360].</value>
   </data>
-  <data name="LcdMod_FactionColor_Invalid" xml:space="preserve">
+    <data name="LcdMod_FactionColor_Invalid" xml:space="preserve">
     <value>Culoare invalidă. Folosește: 255 0 0 | #ff0000 | #f00 | hsv 0 1 1</value>
   </data>
-  <data name="LcdMod_FactionColor_NoFaction" xml:space="preserve">
+    <data name="LcdMod_FactionColor_NoFaction" xml:space="preserve">
     <value>Nu s-a găsit nicio facțiune pentru jucătorul local.</value>
   </data>
-  <data name="LcdMod_FactionColor_Updated" xml:space="preserve">
+    <data name="LcdMod_FactionColor_Updated" xml:space="preserve">
     <value>Culoarea pictogramei facțiunii a fost actualizată.</value>
   </data>
-  <data name="LcdMod_Warning" xml:space="preserve">
+    <data name="LcdMod_Warning" xml:space="preserve">
     <value>Avertisment: {0}</value>
   </data>
-  <data name="LcdMod_Critical" xml:space="preserve">
+    <data name="LcdMod_Critical" xml:space="preserve">
     <value>Critic: {0}</value>
   </data>
-  <data name="LcdMod_Thrust_GravityLoad" xml:space="preserve">
+    <data name="LcdMod_Thrust_GravityLoad" xml:space="preserve">
     <value>Sarcină gravitațională</value>
   </data>
-  <data name="LcdMod_StarMapSurface" xml:space="preserve">
+    <data name="LcdMod_StarMapSurface" xml:space="preserve">
     <value>Hartă stelară</value>
   </data>
-  <data name="LcdMod_DockingAlignment" xml:space="preserve">
+    <data name="LcdMod_DockingAlignment" xml:space="preserve">
     <value>Aliniere pentru andocare</value>
   </data>
-  <data name="LcdMod_DockingAlignment_SelectReference" xml:space="preserve">
+    <data name="LcdMod_DockingAlignment_SelectReference" xml:space="preserve">
     <value>Selectează un {0} sau un {1}</value>
   </data>
-  <data name="LcdMod_DockingAlignment_NoTarget" xml:space="preserve">
+    <data name="LcdMod_DockingAlignment_NoTarget" xml:space="preserve">
     <value>Nu a fost detectată nicio țintă de andocare</value>
   </data>
-  <data name="LcdMod_DockingAlignment_DisplayMode_Default" xml:space="preserve">
+    <data name="LcdMod_DockingAlignment_DisplayMode_Default" xml:space="preserve">
     <value>Implicit</value>
   </data>
-  <data name="LcdMod_DockingAlignment_DisplayMode_LcdReference" xml:space="preserve">
+    <data name="LcdMod_DockingAlignment_DisplayMode_LcdReference" xml:space="preserve">
     <value>Referință Lcd</value>
   </data>
-  <data name="LcdMod_DockingAlignment_DisplayMode_ControllerReference" xml:space="preserve">
+    <data name="LcdMod_DockingAlignment_DisplayMode_ControllerReference" xml:space="preserve">
     <value>Referință controler</value>
   </data>
-  <data name="LcdMod_NotAvailable" xml:space="preserve">
+    <data name="LcdMod_NotAvailable" xml:space="preserve">
     <value>N/D</value>
   </data>
-  <data name="LcdMod_StarMap_Info_Gravity" xml:space="preserve">
+    <data name="LcdMod_StarMap_Info_Gravity" xml:space="preserve">
     <value>Gravitație: {0}</value>
   </data>
-  <data name="LcdMod_StarMap_Info_Radius" xml:space="preserve">
+    <data name="LcdMod_StarMap_Info_Radius" xml:space="preserve">
     <value>Rază: {0}</value>
   </data>
-  <data name="LcdMod_StarMap_Info_RadiusShort" xml:space="preserve">
+    <data name="LcdMod_StarMap_Info_RadiusShort" xml:space="preserve">
     <value>Rază: {0}</value>
   </data>
-  <data name="LcdMod_Atmosphere_Short" xml:space="preserve">
+    <data name="LcdMod_Atmosphere_Short" xml:space="preserve">
     <value>Atmosferă: {0}</value>
   </data>
-  <data name="LcdMod_StarMap_Info_O2" xml:space="preserve">
+    <data name="LcdMod_StarMap_Info_O2" xml:space="preserve">
     <value>Oxigen: {0}</value>
   </data>
-  <data name="LcdMod_StarMap_Info_Temperature" xml:space="preserve">
+    <data name="LcdMod_StarMap_Info_Temperature" xml:space="preserve">
     <value>Temperatură: {0}</value>
   </data>
-  <data name="LcdMod_StarMap_Info_Wind" xml:space="preserve">
+    <data name="LcdMod_StarMap_Info_Wind" xml:space="preserve">
     <value>Vânt: {0}</value>
   </data>
-  <data name="LcdMod_StarMap_Label_Temperature" xml:space="preserve">
+    <data name="LcdMod_StarMap_Label_Temperature" xml:space="preserve">
     <value>Temperatură</value>
   </data>
-<data name="LcdMod_Chess" xml:space="preserve">
+    <data name="LcdMod_Chess" xml:space="preserve">
     <value>Șah</value>
   </data>
-  <data name="LcdMod_Export" xml:space="preserve">
+    <data name="LcdMod_Export" xml:space="preserve">
     <value>Exportă</value>
   </data>
-  <data name="LcdMod_FlagMode" xml:space="preserve">
+    <data name="LcdMod_FlagMode" xml:space="preserve">
     <value>Mod steaguri</value>
   </data>
-  <data name="LcdMod_GameSurfaceScript" xml:space="preserve">
+    <data name="LcdMod_GameSurfaceScript" xml:space="preserve">
     <value>Jocuri</value>
   </data>
-  <data name="LcdMod_Games" xml:space="preserve">
+    <data name="LcdMod_Games" xml:space="preserve">
     <value>Jocuri</value>
   </data>
-  <data name="LcdMod_HideDangerousTiles" xml:space="preserve">
+    <data name="LcdMod_HideDangerousTiles" xml:space="preserve">
     <value>Ascunde pătratele amenințate</value>
   </data>
-  <data name="LcdMod_Minesweeper" xml:space="preserve">
+    <data name="LcdMod_Minesweeper" xml:space="preserve">
     <value>Căutător de mine</value>
   </data>
-  <data name="LcdMod_NewGame" xml:space="preserve">
+    <data name="LcdMod_NewGame" xml:space="preserve">
     <value>Partidă nouă</value>
   </data>
-  <data name="LcdMod_PlayAsBlack" xml:space="preserve">
+    <data name="LcdMod_PlayAsBlack" xml:space="preserve">
     <value>Joacă cu negrele</value>
   </data>
-  <data name="LcdMod_PlayAsWhite" xml:space="preserve">
+    <data name="LcdMod_PlayAsWhite" xml:space="preserve">
     <value>Joacă cu albele</value>
   </data>
-  <data name="LcdMod_Selected" xml:space="preserve">
+    <data name="LcdMod_Selected" xml:space="preserve">
     <value>Selectat</value>
   </data>
-  <data name="LcdMod_ShowDangerousTiles" xml:space="preserve">
+    <data name="LcdMod_ShowDangerousTiles" xml:space="preserve">
     <value>Afișează pătratele amenințate</value>
   </data>
-<data name="LcdMod_Radius" xml:space="preserve">
+    <data name="LcdMod_Radius" xml:space="preserve">
     <value>Rază: {0}</value>
   </data>
-  <data name="LcdMod_Radius_Short" xml:space="preserve">
+    <data name="LcdMod_Radius_Short" xml:space="preserve">
     <value>R: {0}</value>
   </data>
-  <data name="LcdMod_Gravity" xml:space="preserve">
+    <data name="LcdMod_Gravity" xml:space="preserve">
     <value>Gravitație: {0}</value>
   </data>
-  <data name="LcdMod_Gravity_Short" xml:space="preserve">
+    <data name="LcdMod_Gravity_Short" xml:space="preserve">
     <value>G: {0}</value>
   </data>
-  <data name="LcdMod_Range" xml:space="preserve">
+    <data name="LcdMod_Range" xml:space="preserve">
     <value>Rază gravitațională: {0}</value>
   </data>
-  <data name="LcdMod_Range_Short" xml:space="preserve">
+    <data name="LcdMod_Range_Short" xml:space="preserve">
     <value>RG: {0}</value>
   </data>
-  <data name="LcdMod_Atmosphere" xml:space="preserve">
+    <data name="LcdMod_Atmosphere" xml:space="preserve">
     <value>Atmosferă: {0}</value>
   </data>
-  <data name="LcdMod_O2" xml:space="preserve">
+    <data name="LcdMod_O2" xml:space="preserve">
     <value>Oxigen: {0}</value>
   </data>
-  <data name="LcdMod_O2_Short" xml:space="preserve">
+    <data name="LcdMod_O2_Short" xml:space="preserve">
     <value>O2: {0}</value>
   </data>
-  <data name="LcdMod_Temperature" xml:space="preserve">
+    <data name="LcdMod_Temperature" xml:space="preserve">
     <value>Temperatură: {0}</value>
   </data>
-  <data name="LcdMod_Temperature_Short" xml:space="preserve">
+    <data name="LcdMod_Temperature_Short" xml:space="preserve">
     <value>Temp.: {0}</value>
   </data>
-  <data name="LcdMod_Wind" xml:space="preserve">
+    <data name="LcdMod_Wind" xml:space="preserve">
     <value>Vânt: {0}</value>
   </data>
-  <data name="LcdMod_Wind_Short" xml:space="preserve">
+    <data name="LcdMod_Wind_Short" xml:space="preserve">
     <value>Vânt: {0}</value>
   </data>
-  <data name="LcdMod_Position" xml:space="preserve">
+    <data name="LcdMod_Position" xml:space="preserve">
     <value>Poziție: {0}</value>
   </data>
-  <data name="LcdMod_Position_Short" xml:space="preserve">
+    <data name="LcdMod_Position_Short" xml:space="preserve">
     <value>Poz.: {0}</value>
   </data>
-  <data name="LcdMod_Jump" xml:space="preserve">
+    <data name="LcdMod_Jump" xml:space="preserve">
     <value>Coordonată de salt: {0}</value>
   </data>
-  <data name="LcdMod_Jump_Short" xml:space="preserve">
+    <data name="LcdMod_Jump_Short" xml:space="preserve">
     <value>Salt: {0}</value>
   </data>
-<data name="LcdMod_AlwaysActive" xml:space="preserve">
+    <data name="LcdMod_AlwaysActive" xml:space="preserve">
     <value>Mereu activ</value>
   </data>
-  <data name="LcdMod_AlwaysActive_Tooltip" xml:space="preserve">
+    <data name="LcdMod_AlwaysActive_Tooltip" xml:space="preserve">
     <value>Setează urmărirea privirii pe ecran ca fiind mereu pornită. Când este dezactivată, este necesară tasta Privește în jur.</value>
   </data>
-  <data name="LcdMod_CursorScale" xml:space="preserve">
+    <data name="LcdMod_CursorScale" xml:space="preserve">
     <value>Scală cursor</value>
   </data>
 
-  <data name="LcdMod_EightBallPool" xml:space="preserve">
+    <data name="LcdMod_EightBallPool" xml:space="preserve">
     <value>Biliard 8 bile</value>
   </data>
-  <data name="LcdMod_RackBalls" xml:space="preserve">
+    <data name="LcdMod_RackBalls" xml:space="preserve">
     <value>Aranjează bilele</value>
   </data>
-  <data name="LcdMod_ResetCueBall" xml:space="preserve">
+    <data name="LcdMod_ResetCueBall" xml:space="preserve">
     <value>Resetează bila albă</value>
   </data>
-  <data name="LcdMod_EightBallPool_CheatModeOn" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_CheatModeOn" xml:space="preserve">
     <value>Mod trișare: ACTIVAT</value>
   </data>
-  <data name="LcdMod_EightBallPool_CheatModeOff" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_CheatModeOff" xml:space="preserve">
     <value>Mod trișare: DEZACTIVAT</value>
   </data>
-  <data name="LcdMod_EightBallPool_NewGamePrompt" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_NewGamePrompt" xml:space="preserve">
     <value>Pornești o partidă nouă de Biliard 8 bile?</value>
   </data>
-  <data name="LcdMod_EightBallPool_Dismiss" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_Dismiss" xml:space="preserve">
     <value>Închide</value>
   </data>
-  <data name="LcdMod_EightBallPool_PlayerBreak" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_PlayerBreak" xml:space="preserve">
     <value>Jucătorul {0} sparge.</value>
   </data>
-  <data name="LcdMod_EightBallPool_Scratch" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_Scratch" xml:space="preserve">
     <value>Bila albă a intrat în buzunar.</value>
   </data>
-  <data name="LcdMod_EightBallPool_PocketedOpponentBall" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_PocketedOpponentBall" xml:space="preserve">
     <value>a introdus bila adversarului {0}.</value>
   </data>
-  <data name="LcdMod_EightBallPool_WinEightBall" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_WinEightBall" xml:space="preserve">
     <value>Jucătorul {0} câștigă introducând bila 8.</value>
   </data>
-  <data name="LcdMod_EightBallPool_WinEarlyEightBall" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_WinEarlyEightBall" xml:space="preserve">
     <value>Jucătorul {0} câștigă. Jucătorul {1} a introdus bila 8 prea devreme.</value>
   </data>
-  <data name="LcdMod_EightBallPool_FoulOpen" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_FoulOpen" xml:space="preserve">
     <value>Fault: {0} Masa este încă deschisă; nu se acordă nicio bilă gratuită. Jucătorul {1} lovește.</value>
   </data>
-  <data name="LcdMod_EightBallPool_IllegalShot" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_IllegalShot" xml:space="preserve">
     <value>lovitură ilegală</value>
   </data>
-  <data name="LcdMod_EightBallPool_WinNoFreeBall" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_WinNoFreeBall" xml:space="preserve">
     <value>Jucătorul {0} câștigă. Fault fără bilă gratuită disponibilă.</value>
   </data>
-  <data name="LcdMod_EightBallPool_FoulAward" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_FoulAward" xml:space="preserve">
     <value>Fault: {0}{1} Jucătorul {2} lovește.</value>
   </data>
-  <data name="LcdMod_EightBallPool_PlayerShootsAgain" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_PlayerShootsAgain" xml:space="preserve">
     <value>Jucătorul {0} a introdus o bilă și lovește din nou.</value>
   </data>
-  <data name="LcdMod_EightBallPool_NoBallPocketed" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_NoBallPocketed" xml:space="preserve">
     <value>Nicio bilă introdusă. Jucătorul {0} lovește.</value>
   </data>
-  <data name="LcdMod_EightBallPool_NoObjectBallHit" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_NoObjectBallHit" xml:space="preserve">
     <value>nu a fost lovită nicio bilă obiect.</value>
   </data>
-  <data name="LcdMod_EightBallPool_HitEightBallBeforeGroups" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_HitEightBallBeforeGroups" xml:space="preserve">
     <value>a lovit bila 8 înainte ca grupele să fie atribuite.</value>
   </data>
-  <data name="LcdMod_EightBallPool_HitOpponentBeforeEight" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_HitOpponentBeforeEight" xml:space="preserve">
     <value>a lovit o bilă adversă înaintea bilei 8.</value>
   </data>
-  <data name="LcdMod_EightBallPool_HitEightBallBeforeClearing" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_HitEightBallBeforeClearing" xml:space="preserve">
     <value>a lovit bila 8 înainte de a curăța bilele atribuite.</value>
   </data>
-  <data name="LcdMod_EightBallPool_HitOpponentFirst" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_HitOpponentFirst" xml:space="preserve">
     <value>a lovit mai întâi o bilă adversă.</value>
   </data>
-  <data name="LcdMod_EightBallPool_AwardFreeBall" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_AwardFreeBall" xml:space="preserve">
     <value> Jucătorul {0} primește gratuit {1}.</value>
   </data>
-  <data name="LcdMod_EightBallPool_NoFreeBallAvailable" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_NoFreeBallAvailable" xml:space="preserve">
     <value> Nu a fost disponibilă nicio bilă gratuită.</value>
   </data>
-  <data name="LcdMod_EightBallPool_PlayerGroupsAssigned" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_PlayerGroupsAssigned" xml:space="preserve">
     <value>Jucătorul 1 este {0}. Jucătorul 2 este {1}.</value>
   </data>
-  <data name="LcdMod_EightBallPool_GameOverWinner" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_GameOverWinner" xml:space="preserve">
     <value>Joc terminat: jucătorul {0} câștigă.</value>
   </data>
-  <data name="LcdMod_EightBallPool_PlayerToShoot" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_PlayerToShoot" xml:space="preserve">
     <value>Jucătorul {0} lovește.</value>
   </data>
-  <data name="LcdMod_EightBallPool_GameOverNewGameHint" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_GameOverNewGameHint" xml:space="preserve">
     <value>{0} Deschide meniul pentru un joc nou.</value>
   </data>
-  <data name="LcdMod_EightBallPool_BallsRolling" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_BallsRolling" xml:space="preserve">
     <value>Bilele se rostogolesc...</value>
   </data>
-  <data name="LcdMod_EightBallPool_CueBallInHand" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_CueBallInHand" xml:space="preserve">
     <value>Jucătorul {0}, bila albă în mână: plaseaz-o în semicercul evidențiat.</value>
   </data>
-  <data name="LcdMod_EightBallPool_TableClearedNewRack" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_TableClearedNewRack" xml:space="preserve">
     <value>Masa a fost curățată. Deschide meniul pentru un nou aranjament.</value>
   </data>
-  <data name="LcdMod_EightBallPool_Shots" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_Shots" xml:space="preserve">
     <value>Lovituri: {0}</value>
   </data>
-  <data name="LcdMod_EightBallPool_BallNameEight" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_BallNameEight" xml:space="preserve">
     <value>bila 8</value>
   </data>
-  <data name="LcdMod_EightBallPool_BallNameStripe" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_BallNameStripe" xml:space="preserve">
     <value>dungată {0}</value>
   </data>
-  <data name="LcdMod_EightBallPool_BallNameSolid" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_BallNameSolid" xml:space="preserve">
     <value>plină {0}</value>
   </data>
-  <data name="LcdMod_EightBallPool_BallNameGeneric" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_BallNameGeneric" xml:space="preserve">
     <value>bila {0}</value>
   </data>
-  <data name="LcdMod_EightBallPool_FooterPlayerLabel" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_FooterPlayerLabel" xml:space="preserve">
     <value>Jucătorul {0}  {1}</value>
   </data>
-  <data name="LcdMod_EightBallPool_Winner" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_Winner" xml:space="preserve">
     <value>CÂȘTIGĂTOR</value>
   </data>
-  <data name="LcdMod_EightBallPool_NoBalls" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_NoBalls" xml:space="preserve">
     <value>fără bile</value>
   </data>
-  <data name="LcdMod_EightBallPool_GroupSolids" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_GroupSolids" xml:space="preserve">
     <value>pline</value>
   </data>
-  <data name="LcdMod_EightBallPool_GroupStripes" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_GroupStripes" xml:space="preserve">
     <value>dungate</value>
   </data>
-  <data name="LcdMod_EightBallPool_GroupOpen" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_GroupOpen" xml:space="preserve">
     <value>deschisă</value>
   </data>
-<data name="LcdMod_EnergyDashboard_CurrentConsumption" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_CurrentConsumption" xml:space="preserve">
     <value>Consum curent: {0}</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_MaxCapacity" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_MaxCapacity" xml:space="preserve">
     <value>Capacitate maximă: {0}</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_Production" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_Production" xml:space="preserve">
     <value>Producție: {0}</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_Solar" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_Solar" xml:space="preserve">
     <value>Solar</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_Wind" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_Wind" xml:space="preserve">
     <value>Vânt</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_Reactor" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_Reactor" xml:space="preserve">
     <value>Reactor</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_Engine" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_Engine" xml:space="preserve">
     <value>Motor pe hidrogen</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_Battery" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_Battery" xml:space="preserve">
     <value>Baterie</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_ProductionGraph" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_ProductionGraph" xml:space="preserve">
     <value>Producție de energie</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_ConsumptionGraph" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_ConsumptionGraph" xml:space="preserve">
     <value>Consum de energie</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_Charging" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_Charging" xml:space="preserve">
     <value>Încărcare</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_Discharging" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_Discharging" xml:space="preserve">
     <value>Descărcare</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_BatteryCountSingular" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_BatteryCountSingular" xml:space="preserve">
     <value>{0} baterie</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_BatteryCountPlural" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_BatteryCountPlural" xml:space="preserve">
     <value>{0} baterii</value>
   </data>
-  <data name="LcdMod_Magnification" xml:space="preserve">
+    <data name="LcdMod_Magnification" xml:space="preserve">
     <value>Mărire</value>
   </data>
-  <data name="LcdMod_Radar_AntennaRangeWarning" xml:space="preserve">
+    <data name="LcdMod_Radar_AntennaRangeWarning" xml:space="preserve">
     <value>Dincolo de 3 km sunt detectate doar semnale radio.</value>
   </data>
-  <data name="LcdMod_Grid" xml:space="preserve">
+    <data name="LcdMod_Grid" xml:space="preserve">
     <value>Grilă</value>
   </data>
-  <data name="LcdMod_List" xml:space="preserve">
+    <data name="LcdMod_List" xml:space="preserve">
     <value>Listă</value>
   </data>
-  <data name="LcdMod_RenderProxy" xml:space="preserve">
+    <data name="LcdMod_RenderProxy" xml:space="preserve">
     <value>Proxy de randare</value>
   </data>
-  <data name="LcdMod_ProxyOffsetX" xml:space="preserve">
+    <data name="LcdMod_ProxyOffsetX" xml:space="preserve">
     <value>Decalaj proxy X</value>
   </data>
-  <data name="LcdMod_ProxyOffsetY" xml:space="preserve">
+    <data name="LcdMod_ProxyOffsetY" xml:space="preserve">
     <value>Decalaj proxy Y</value>
   </data>
-  <data name="LcdMod_AutoOffset" xml:space="preserve">
+    <data name="LcdMod_AutoOffset" xml:space="preserve">
     <value>Auto</value>
   </data>
-  <data name="LcdMod_AutoOffset_Tooltip" xml:space="preserve">
+    <data name="LcdMod_AutoOffset_Tooltip" xml:space="preserve">
     <value>Calculează automat decalajul proxy din ecranul gazdă selectat.</value>
   </data>
-  <data name="LcdMod_EnableAutoAdjust" xml:space="preserve">
-    <value>Enable Auto Adjust</value>
-    <comment>TODO_TRANSLATION</comment>
+    <data name="LcdMod_EnableAutoAdjust" xml:space="preserve">
+    <value>Activează ajustarea automată</value>
   </data>
-  <data name="LcdMod_EnableAutoAdjust_Tooltip" xml:space="preserve">
-    <value>Automatically adjust the render proxy on startup and when the linked screen rotation changes.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <data name="LcdMod_EnableAutoAdjust_Tooltip" xml:space="preserve">
+    <value>Ajustează automat proxy-ul de randare la pornire și când se schimbă rotația ecranului conectat.</value>
   </data>
-
-<data name="LcdMod_CraftDialog_Title" xml:space="preserve">
+    <data name="LcdMod_CraftDialog_Title" xml:space="preserve">
     <value>Fabricare</value>
   </data>
-  <data name="LcdMod_CraftDialog_Button_Craft" xml:space="preserve">
+    <data name="LcdMod_CraftDialog_Button_Craft" xml:space="preserve">
     <value>Fabrică</value>
   </data>
-  <data name="LcdMod_Common_Button_Cancel" xml:space="preserve">
+    <data name="LcdMod_Common_Button_Cancel" xml:space="preserve">
     <value>Anulează</value>
   </data>
-  <data name="LcdMod_CraftDialog_AssemblerSelection_Title" xml:space="preserve">
+    <data name="LcdMod_CraftDialog_AssemblerSelection_Title" xml:space="preserve">
     <value>Selectează asamblorii</value>
   </data>
-  <data name="LcdMod_CraftDialog_AssemblerSelection_Empty" xml:space="preserve">
+    <data name="LcdMod_CraftDialog_AssemblerSelection_Empty" xml:space="preserve">
     <value>Nu a fost găsit niciun asamblor</value>
   </data>
-  <data name="LcdMod_Common_Button_Select" xml:space="preserve">
+    <data name="LcdMod_Common_Button_Select" xml:space="preserve">
     <value>Selectează</value>
   </data>
-  <data name="LcdMod_CraftDialog_Assemblers_None" xml:space="preserve">
+    <data name="LcdMod_CraftDialog_Assemblers_None" xml:space="preserve">
     <value>Asamblori: niciunul</value>
   </data>
-  <data name="LcdMod_CraftDialog_Assemblers_Single" xml:space="preserve">
+    <data name="LcdMod_CraftDialog_Assemblers_Single" xml:space="preserve">
     <value>Asamblor: {0}</value>
   </data>
-  <data name="LcdMod_CraftDialog_Assemblers_SelectedCount" xml:space="preserve">
+    <data name="LcdMod_CraftDialog_Assemblers_SelectedCount" xml:space="preserve">
     <value>Asamblori: {0} selectați</value>
   </data>
-  <data name="LcdMod_CraftDialog_Assembler_FallbackName" xml:space="preserve">
+    <data name="LcdMod_CraftDialog_Assembler_FallbackName" xml:space="preserve">
     <value>Asamblor</value>
   </data>
-  <data name="LcdMod_CraftDialog_Assembler_Status_Idle" xml:space="preserve">
+    <data name="LcdMod_CraftDialog_Assembler_Status_Idle" xml:space="preserve">
     <value>Inactiv</value>
   </data>
-  <data name="LcdMod_CraftDialog_AssemblerOption_WithStatus" xml:space="preserve">
+    <data name="LcdMod_CraftDialog_AssemblerOption_WithStatus" xml:space="preserve">
     <value>{0} ({1}) x{2}</value>
   </data>
-  <data name="LcdMod_CraftDialog_AssemblerOption" xml:space="preserve">
+    <data name="LcdMod_CraftDialog_AssemblerOption" xml:space="preserve">
     <value>{0} x{1}</value>
   </data>
-  <data name="LcdMod_Common_Button_OK" xml:space="preserve">
+    <data name="LcdMod_Common_Button_OK" xml:space="preserve">
     <value>OK</value>
   </data>
-  <data name="LcdMod_Common_Value_Unavailable" xml:space="preserve">
+    <data name="LcdMod_Common_Value_Unavailable" xml:space="preserve">
     <value>N/A</value>
   </data>
-  <data name="LcdMod_Common_Time_ZeroSeconds" xml:space="preserve">
+    <data name="LcdMod_Common_Time_ZeroSeconds" xml:space="preserve">
     <value>0 s</value>
   </data>
-  <data name="LcdMod_Common_Time_LessThanOneSecond" xml:space="preserve">
+    <data name="LcdMod_Common_Time_LessThanOneSecond" xml:space="preserve">
     <value>&lt; 1 s</value>
   </data>
-  <data name="LcdMod_Common_Label_WithColon" xml:space="preserve">
+    <data name="LcdMod_Common_Label_WithColon" xml:space="preserve">
     <value>{0}:</value>
+  </data>
+    <data name="LcdMod_LocalGrid" xml:space="preserve">
+    <value>Navă/stație locală</value>
+  </data>
+    <data name="LcdMod_MechanicalConnection" xml:space="preserve">
+    <value>Conexiune mecanică</value>
+  </data>
+    <data name="LcdMod_PhysicalConnection" xml:space="preserve">
+    <value>Conexiune fizică</value>
+  </data>
+    <data name="LcdMod_LinkType" xml:space="preserve">
+    <value>Tip de conexiune</value>
+  </data>
+    <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
+    <value>{0} Include doar blocurile de pe această navă sau stație. &#xA;{1} include nave/stații conectate mecanic, de exemplu prin rotoare, balamale și pistoane. &#xA;{2} include conexiuni mecanice și nave/stații conectate folosind conectori.</value>
   </data>
 </root>

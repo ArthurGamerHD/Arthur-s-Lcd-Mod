@@ -1,551 +1,563 @@
 <?xml version='1.0' encoding='utf-8'?>
 <root>
-  <resheader name="resmimetype">
-    <value>text/microsoft-resx</value>
-  </resheader>
-  <resheader name="version">
-    <value>2.0</value>
-  </resheader>
-  <data name="LcdMod_Radar" xml:space="preserve">
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>2.0</value>
+    </resheader>
+    <data name="LcdMod_Radar" xml:space="preserve">
     <value>Radar Táctico</value>
   </data>
-  <data name="LcdMod_Radar_DetectedEntities" xml:space="preserve">
+    <data name="LcdMod_Radar_DetectedEntities" xml:space="preserve">
     <value>Entidades detectadas:</value>
   </data>
-  <data name="LcdMod_TopEnergy" xml:space="preserve">
+    <data name="LcdMod_TopEnergy" xml:space="preserve">
     <value>Mayor Consumo de Energía</value>
   </data>
-  <data name="LcdMod_Damaged" xml:space="preserve">
+    <data name="LcdMod_Damaged" xml:space="preserve">
     <value>Dañado</value>
   </data>
-  <data name="LcdMod_Axis_X_Positive" xml:space="preserve">
+    <data name="LcdMod_Axis_X_Positive" xml:space="preserve">
     <value>Positivo X</value>
   </data>
-  <data name="LcdMod_Axis_X_Negative" xml:space="preserve">
+    <data name="LcdMod_Axis_X_Negative" xml:space="preserve">
     <value>Negativo X</value>
   </data>
-  <data name="LcdMod_Axis_Y_Positive" xml:space="preserve">
+    <data name="LcdMod_Axis_Y_Positive" xml:space="preserve">
     <value>Positivo Y</value>
   </data>
-  <data name="LcdMod_Axis_Y_Negative" xml:space="preserve">
+    <data name="LcdMod_Axis_Y_Negative" xml:space="preserve">
     <value>Negativo Y</value>
   </data>
-  <data name="LcdMod_Axis_Z_Positive" xml:space="preserve">
+    <data name="LcdMod_Axis_Z_Positive" xml:space="preserve">
     <value>Positivo Z</value>
   </data>
-  <data name="LcdMod_Axis_Z_Negative" xml:space="preserve">
+    <data name="LcdMod_Axis_Z_Negative" xml:space="preserve">
     <value>Negativo Z</value>
   </data>
-  <data name="LcdMod_Empty" xml:space="preserve">
+    <data name="LcdMod_Empty" xml:space="preserve">
     <value>Vacío</value>
   </data>
-  <data name="LcdMod_GasFilled" xml:space="preserve">
+    <data name="LcdMod_GasFilled" xml:space="preserve">
     <value>Gas Llenado %</value>
   </data>
-  <data name="LcdMod_PowerFilled" xml:space="preserve">
+    <data name="LcdMod_PowerFilled" xml:space="preserve">
     <value>Energía Llenada %</value>
   </data>
-  <data name="LcdMod_FactionColor_Usage" xml:space="preserve">
+    <data name="LcdMod_FactionColor_Usage" xml:space="preserve">
     <value>Uso: /lcdmod factioncolor &lt;r g b | #rrggbb | #rgb | hsv h s v&gt;</value>
   </data>
-  <data name="LcdMod_FactionColor_HsvFormat" xml:space="preserve">
+    <data name="LcdMod_FactionColor_HsvFormat" xml:space="preserve">
     <value>Formato HSV: hsv &lt;h&gt; &lt;s&gt; &lt;v&gt; (números decimales)</value>
   </data>
-  <data name="LcdMod_FactionColor_HsvRange" xml:space="preserve">
+    <data name="LcdMod_FactionColor_HsvRange" xml:space="preserve">
     <value>Los valores HSV deben estar en [0..1]. El matiz también acepta [0..360].</value>
   </data>
-  <data name="LcdMod_FactionColor_Invalid" xml:space="preserve">
+    <data name="LcdMod_FactionColor_Invalid" xml:space="preserve">
     <value>Color inválido. Usa: 255 0 0 | #ff0000 | #f00 | hsv 0 1 1</value>
   </data>
-  <data name="LcdMod_FactionColor_NoFaction" xml:space="preserve">
+    <data name="LcdMod_FactionColor_NoFaction" xml:space="preserve">
     <value>No se encontró ninguna facción para el jugador local.</value>
   </data>
-  <data name="LcdMod_FactionColor_Updated" xml:space="preserve">
+    <data name="LcdMod_FactionColor_Updated" xml:space="preserve">
     <value>Se actualizó el color del ícono de la facción.</value>
   </data>
-  <data name="LcdMod_Thrust_GravityLoad" xml:space="preserve">
+    <data name="LcdMod_Thrust_GravityLoad" xml:space="preserve">
     <value>Carga gravitatoria</value>
   </data>
 
-  <data name="LcdMod_Warning" xml:space="preserve">
+    <data name="LcdMod_Warning" xml:space="preserve">
     <value>Advertencia: {0}</value>
   </data>
-  <data name="LcdMod_Critical" xml:space="preserve">
+    <data name="LcdMod_Critical" xml:space="preserve">
     <value>Crítico: {0}</value>
   </data>
-  <data name="LcdMod_StarMapSurface" xml:space="preserve">
+    <data name="LcdMod_StarMapSurface" xml:space="preserve">
     <value>Mapa estelar</value>
   </data>
-  <data name="LcdMod_EnergyDashboard" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard" xml:space="preserve">
     <value>Panel de energía</value>
   </data>
-  <data name="LcdMod_Farm" xml:space="preserve">
+    <data name="LcdMod_Farm" xml:space="preserve">
     <value>Información de la granja</value>
   </data>
-  <data name="LcdMod_Farm_Water" xml:space="preserve">
+    <data name="LcdMod_Farm_Water" xml:space="preserve">
     <value>Agua: {0}</value>
   </data>
-  <data name="LcdMod_Farm_OutputAmount" xml:space="preserve">
+    <data name="LcdMod_Farm_OutputAmount" xml:space="preserve">
     <value>{0} x{1}</value>
   </data>
-  <data name="LcdMod_GraphWindow" xml:space="preserve">
+    <data name="LcdMod_GraphWindow" xml:space="preserve">
     <value>Ventana de tiempo del gráfico</value>
   </data>
-  <data name="LcdMod_GW_1s" xml:space="preserve">
+    <data name="LcdMod_GW_1s" xml:space="preserve">
     <value>1 segundo</value>
   </data>
-  <data name="LcdMod_GW_5s" xml:space="preserve">
+    <data name="LcdMod_GW_5s" xml:space="preserve">
     <value>5 segundos</value>
   </data>
-  <data name="LcdMod_GW_30s" xml:space="preserve">
+    <data name="LcdMod_GW_30s" xml:space="preserve">
     <value>30 segundos</value>
   </data>
-  <data name="LcdMod_GW_1m" xml:space="preserve">
+    <data name="LcdMod_GW_1m" xml:space="preserve">
     <value>1 minuto</value>
   </data>
-  <data name="LcdMod_GW_5m" xml:space="preserve">
+    <data name="LcdMod_GW_5m" xml:space="preserve">
     <value>5 minutos</value>
   </data>
-  <data name="LcdMod_OreScannerRadar" xml:space="preserve">
+    <data name="LcdMod_OreScannerRadar" xml:space="preserve">
     <value>Radar detector de mineral</value>
   </data>
-  <data name="LcdMod_OreScanner_Moving" xml:space="preserve">
+    <data name="LcdMod_OreScanner_Moving" xml:space="preserve">
     <value>EN MOVIMIENTO — escáner desconectado</value>
   </data>
-  <data name="LcdMod_OreScanner_Charging" xml:space="preserve">
+    <data name="LcdMod_OreScanner_Charging" xml:space="preserve">
     <value>CARGANDO {0}s</value>
   </data>
-  <data name="LcdMod_OreScanner_Scanning" xml:space="preserve">
+    <data name="LcdMod_OreScanner_Scanning" xml:space="preserve">
     <value>ESCANEANDO {0}% — barrido del cono</value>
   </data>
-  <data name="LcdMod_OreScanner_Clear" xml:space="preserve">
+    <data name="LcdMod_OreScanner_Clear" xml:space="preserve">
     <value>DESPEJADO — sin mineral</value>
   </data>
-  <data name="LcdMod_OreScanner_Signal" xml:space="preserve">
+    <data name="LcdMod_OreScanner_Signal" xml:space="preserve">
     <value>SEÑAL {0}%</value>
   </data>
-  <data name="LcdMod_OreScanner_Range" xml:space="preserve">
+    <data name="LcdMod_OreScanner_Range" xml:space="preserve">
     <value>Alcance: {0}</value>
   </data>
-  <data name="LcdMod_OreScanner_NoDetector" xml:space="preserve">
+    <data name="LcdMod_OreScanner_NoDetector" xml:space="preserve">
     <value>SIN DETECTOR DE MINERAL EN LA GRID</value>
   </data>
-  <data name="LcdMod_OreScanner_MultipleDetectors" xml:space="preserve">
+    <data name="LcdMod_OreScanner_MultipleDetectors" xml:space="preserve">
     <value>VARIOS DETECTORES — deja solo uno</value>
   </data>
-  <data name="LcdMod_OreScanner_ConeAngle" xml:space="preserve">
+    <data name="LcdMod_OreScanner_ConeAngle" xml:space="preserve">
     <value>Inclinación de la señal</value>
   </data>
-  <data name="LcdMod_OreScanner_TiltLabel" xml:space="preserve">
+    <data name="LcdMod_OreScanner_TiltLabel" xml:space="preserve">
     <value>Inclinación de la señal:   {0}</value>
   </data>
-  <data name="LcdMod_OreScanner_Reference" xml:space="preserve">
+    <data name="LcdMod_OreScanner_Reference" xml:space="preserve">
     <value>Cabina / asiento de referencia</value>
   </data>
-  <data name="LcdMod_OreScanner_Reference_None" xml:space="preserve">
+    <data name="LcdMod_OreScanner_Reference_None" xml:space="preserve">
     <value>(usar gravedad)</value>
   </data>
-  <data name="LcdMod_DockingAlignment" xml:space="preserve">
+    <data name="LcdMod_DockingAlignment" xml:space="preserve">
     <value>Alineación de acoplamiento</value>
   </data>
-  <data name="LcdMod_DockingAlignment_SelectReference" xml:space="preserve">
+    <data name="LcdMod_DockingAlignment_SelectReference" xml:space="preserve">
     <value>Selecciona un {0} o un {1}</value>
   </data>
-  <data name="LcdMod_DockingAlignment_NoTarget" xml:space="preserve">
+    <data name="LcdMod_DockingAlignment_NoTarget" xml:space="preserve">
     <value>No se detectó ningún objetivo de acoplamiento</value>
   </data>
-  <data name="LcdMod_DockingAlignment_DisplayMode_Default" xml:space="preserve">
+    <data name="LcdMod_DockingAlignment_DisplayMode_Default" xml:space="preserve">
     <value>Predeterminado</value>
   </data>
-  <data name="LcdMod_DockingAlignment_DisplayMode_LcdReference" xml:space="preserve">
+    <data name="LcdMod_DockingAlignment_DisplayMode_LcdReference" xml:space="preserve">
     <value>Referencia de Lcd</value>
   </data>
-  <data name="LcdMod_DockingAlignment_DisplayMode_ControllerReference" xml:space="preserve">
+    <data name="LcdMod_DockingAlignment_DisplayMode_ControllerReference" xml:space="preserve">
     <value>Referencia del controlador</value>
   </data>
-  <data name="LcdMod_NotAvailable" xml:space="preserve">
+    <data name="LcdMod_NotAvailable" xml:space="preserve">
     <value>N/D</value>
   </data>
-  <data name="LcdMod_StarMap_Info_Gravity" xml:space="preserve">
+    <data name="LcdMod_StarMap_Info_Gravity" xml:space="preserve">
     <value>Gravedad: {0}</value>
   </data>
-  <data name="LcdMod_StarMap_Info_Radius" xml:space="preserve">
+    <data name="LcdMod_StarMap_Info_Radius" xml:space="preserve">
     <value>Radio: {0}</value>
   </data>
-  <data name="LcdMod_StarMap_Info_RadiusShort" xml:space="preserve">
+    <data name="LcdMod_StarMap_Info_RadiusShort" xml:space="preserve">
     <value>Radio: {0}</value>
   </data>
-  <data name="LcdMod_Atmosphere_Short" xml:space="preserve">
+    <data name="LcdMod_Atmosphere_Short" xml:space="preserve">
     <value>Atm.: {0}</value>
   </data>
-  <data name="LcdMod_StarMap_Info_O2" xml:space="preserve">
+    <data name="LcdMod_StarMap_Info_O2" xml:space="preserve">
     <value>Oxígeno: {0}</value>
   </data>
-  <data name="LcdMod_StarMap_Info_Temperature" xml:space="preserve">
+    <data name="LcdMod_StarMap_Info_Temperature" xml:space="preserve">
     <value>Temperatura: {0}</value>
   </data>
-  <data name="LcdMod_StarMap_Info_Wind" xml:space="preserve">
+    <data name="LcdMod_StarMap_Info_Wind" xml:space="preserve">
     <value>Viento: {0}</value>
   </data>
-  <data name="LcdMod_StarMap_Label_Temperature" xml:space="preserve">
+    <data name="LcdMod_StarMap_Label_Temperature" xml:space="preserve">
     <value>Temperatura</value>
   </data>
-<data name="LcdMod_Chess" xml:space="preserve">
+    <data name="LcdMod_Chess" xml:space="preserve">
     <value>Ajedrez</value>
   </data>
-  <data name="LcdMod_Export" xml:space="preserve">
+    <data name="LcdMod_Export" xml:space="preserve">
     <value>Exportar</value>
   </data>
-  <data name="LcdMod_FlagMode" xml:space="preserve">
+    <data name="LcdMod_FlagMode" xml:space="preserve">
     <value>Modo bandera</value>
   </data>
-  <data name="LcdMod_GameSurfaceScript" xml:space="preserve">
+    <data name="LcdMod_GameSurfaceScript" xml:space="preserve">
     <value>Juegos</value>
   </data>
-  <data name="LcdMod_Games" xml:space="preserve">
+    <data name="LcdMod_Games" xml:space="preserve">
     <value>Juegos</value>
   </data>
-  <data name="LcdMod_HideDangerousTiles" xml:space="preserve">
+    <data name="LcdMod_HideDangerousTiles" xml:space="preserve">
     <value>Ocultar casillas amenazadas</value>
   </data>
-  <data name="LcdMod_Minesweeper" xml:space="preserve">
+    <data name="LcdMod_Minesweeper" xml:space="preserve">
     <value>Buscaminas</value>
   </data>
-  <data name="LcdMod_NewGame" xml:space="preserve">
+    <data name="LcdMod_NewGame" xml:space="preserve">
     <value>Nueva partida</value>
   </data>
-  <data name="LcdMod_PlayAsBlack" xml:space="preserve">
+    <data name="LcdMod_PlayAsBlack" xml:space="preserve">
     <value>Jugar con negras</value>
   </data>
-  <data name="LcdMod_PlayAsWhite" xml:space="preserve">
+    <data name="LcdMod_PlayAsWhite" xml:space="preserve">
     <value>Jugar con blancas</value>
   </data>
-  <data name="LcdMod_Selected" xml:space="preserve">
+    <data name="LcdMod_Selected" xml:space="preserve">
     <value>Seleccionado</value>
   </data>
-  <data name="LcdMod_ShowDangerousTiles" xml:space="preserve">
+    <data name="LcdMod_ShowDangerousTiles" xml:space="preserve">
     <value>Mostrar casillas amenazadas</value>
   </data>
-<data name="LcdMod_Radius" xml:space="preserve">
+    <data name="LcdMod_Radius" xml:space="preserve">
     <value>Radio: {0}</value>
   </data>
-  <data name="LcdMod_Radius_Short" xml:space="preserve">
+    <data name="LcdMod_Radius_Short" xml:space="preserve">
     <value>R: {0}</value>
   </data>
-  <data name="LcdMod_Gravity" xml:space="preserve">
+    <data name="LcdMod_Gravity" xml:space="preserve">
     <value>Gravedad: {0}</value>
   </data>
-  <data name="LcdMod_Gravity_Short" xml:space="preserve">
+    <data name="LcdMod_Gravity_Short" xml:space="preserve">
     <value>G: {0}</value>
   </data>
-  <data name="LcdMod_Range" xml:space="preserve">
+    <data name="LcdMod_Range" xml:space="preserve">
     <value>Rango gravitatorio: {0}</value>
   </data>
-  <data name="LcdMod_Range_Short" xml:space="preserve">
+    <data name="LcdMod_Range_Short" xml:space="preserve">
     <value>RG: {0}</value>
   </data>
-  <data name="LcdMod_Atmosphere" xml:space="preserve">
+    <data name="LcdMod_Atmosphere" xml:space="preserve">
     <value>Atmósfera: {0}</value>
   </data>
-  <data name="LcdMod_O2" xml:space="preserve">
+    <data name="LcdMod_O2" xml:space="preserve">
     <value>Oxígeno: {0}</value>
   </data>
-  <data name="LcdMod_O2_Short" xml:space="preserve">
+    <data name="LcdMod_O2_Short" xml:space="preserve">
     <value>O2: {0}</value>
   </data>
-  <data name="LcdMod_Temperature" xml:space="preserve">
+    <data name="LcdMod_Temperature" xml:space="preserve">
     <value>Temperatura: {0}</value>
   </data>
-  <data name="LcdMod_Temperature_Short" xml:space="preserve">
+    <data name="LcdMod_Temperature_Short" xml:space="preserve">
     <value>Temp.: {0}</value>
   </data>
-  <data name="LcdMod_Wind" xml:space="preserve">
+    <data name="LcdMod_Wind" xml:space="preserve">
     <value>Viento: {0}</value>
   </data>
-  <data name="LcdMod_Wind_Short" xml:space="preserve">
+    <data name="LcdMod_Wind_Short" xml:space="preserve">
     <value>Viento: {0}</value>
   </data>
-  <data name="LcdMod_Position" xml:space="preserve">
+    <data name="LcdMod_Position" xml:space="preserve">
     <value>Posición: {0}</value>
   </data>
-  <data name="LcdMod_Position_Short" xml:space="preserve">
+    <data name="LcdMod_Position_Short" xml:space="preserve">
     <value>Pos.: {0}</value>
   </data>
-  <data name="LcdMod_Jump" xml:space="preserve">
+    <data name="LcdMod_Jump" xml:space="preserve">
     <value>Coordenada de salto: {0}</value>
   </data>
-  <data name="LcdMod_Jump_Short" xml:space="preserve">
+    <data name="LcdMod_Jump_Short" xml:space="preserve">
     <value>Salto: {0}</value>
   </data>
-<data name="LcdMod_AlwaysActive" xml:space="preserve">
+    <data name="LcdMod_AlwaysActive" xml:space="preserve">
     <value>Siempre activo</value>
   </data>
-  <data name="LcdMod_AlwaysActive_Tooltip" xml:space="preserve">
+    <data name="LcdMod_AlwaysActive_Tooltip" xml:space="preserve">
     <value>Activa permanentemente el seguimiento visual de la pantalla. Cuando está desactivado, se requiere la tecla Mirar alrededor.</value>
   </data>
-  <data name="LcdMod_CursorScale" xml:space="preserve">
+    <data name="LcdMod_CursorScale" xml:space="preserve">
     <value>Escala del cursor</value>
   </data>
 
-  <data name="LcdMod_EightBallPool" xml:space="preserve">
+    <data name="LcdMod_EightBallPool" xml:space="preserve">
     <value>Billar 8</value>
   </data>
-  <data name="LcdMod_RackBalls" xml:space="preserve">
+    <data name="LcdMod_RackBalls" xml:space="preserve">
     <value>Colocar bolas</value>
   </data>
-  <data name="LcdMod_ResetCueBall" xml:space="preserve">
+    <data name="LcdMod_ResetCueBall" xml:space="preserve">
     <value>Restablecer bola blanca</value>
   </data>
-  <data name="LcdMod_EightBallPool_CheatModeOn" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_CheatModeOn" xml:space="preserve">
     <value>Modo trampa: ACTIVADO</value>
   </data>
-  <data name="LcdMod_EightBallPool_CheatModeOff" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_CheatModeOff" xml:space="preserve">
     <value>Modo trampa: DESACTIVADO</value>
   </data>
-  <data name="LcdMod_EightBallPool_NewGamePrompt" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_NewGamePrompt" xml:space="preserve">
     <value>¿Iniciar una partida nueva de Billar 8?</value>
   </data>
-  <data name="LcdMod_EightBallPool_Dismiss" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_Dismiss" xml:space="preserve">
     <value>Cerrar</value>
   </data>
-  <data name="LcdMod_EightBallPool_PlayerBreak" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_PlayerBreak" xml:space="preserve">
     <value>El jugador {0} rompe.</value>
   </data>
-  <data name="LcdMod_EightBallPool_Scratch" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_Scratch" xml:space="preserve">
     <value>Bola blanca embocada.</value>
   </data>
-  <data name="LcdMod_EightBallPool_PocketedOpponentBall" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_PocketedOpponentBall" xml:space="preserve">
     <value>embocó la bola del rival {0}.</value>
   </data>
-  <data name="LcdMod_EightBallPool_WinEightBall" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_WinEightBall" xml:space="preserve">
     <value>El jugador {0} gana al embocar la bola 8.</value>
   </data>
-  <data name="LcdMod_EightBallPool_WinEarlyEightBall" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_WinEarlyEightBall" xml:space="preserve">
     <value>El jugador {0} gana. El jugador {1} embocó la bola 8 antes de tiempo.</value>
   </data>
-  <data name="LcdMod_EightBallPool_FoulOpen" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_FoulOpen" xml:space="preserve">
     <value>Falta: {0} La mesa sigue abierta; no se concede bola gratis. Tira el jugador {1}.</value>
   </data>
-  <data name="LcdMod_EightBallPool_IllegalShot" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_IllegalShot" xml:space="preserve">
     <value>tiro ilegal</value>
   </data>
-  <data name="LcdMod_EightBallPool_WinNoFreeBall" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_WinNoFreeBall" xml:space="preserve">
     <value>El jugador {0} gana. Falta sin bola gratis disponible.</value>
   </data>
-  <data name="LcdMod_EightBallPool_FoulAward" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_FoulAward" xml:space="preserve">
     <value>Falta: {0}{1} Tira el jugador {2}.</value>
   </data>
-  <data name="LcdMod_EightBallPool_PlayerShootsAgain" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_PlayerShootsAgain" xml:space="preserve">
     <value>El jugador {0} embocó una bola y tira de nuevo.</value>
   </data>
-  <data name="LcdMod_EightBallPool_NoBallPocketed" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_NoBallPocketed" xml:space="preserve">
     <value>No se embocó ninguna bola. Tira el jugador {0}.</value>
   </data>
-  <data name="LcdMod_EightBallPool_NoObjectBallHit" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_NoObjectBallHit" xml:space="preserve">
     <value>no se golpeó ninguna bola objetivo.</value>
   </data>
-  <data name="LcdMod_EightBallPool_HitEightBallBeforeGroups" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_HitEightBallBeforeGroups" xml:space="preserve">
     <value>golpeó la bola 8 antes de asignar los grupos.</value>
   </data>
-  <data name="LcdMod_EightBallPool_HitOpponentBeforeEight" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_HitOpponentBeforeEight" xml:space="preserve">
     <value>golpeó una bola rival antes de la bola 8.</value>
   </data>
-  <data name="LcdMod_EightBallPool_HitEightBallBeforeClearing" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_HitEightBallBeforeClearing" xml:space="preserve">
     <value>golpeó la bola 8 antes de despejar sus bolas asignadas.</value>
   </data>
-  <data name="LcdMod_EightBallPool_HitOpponentFirst" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_HitOpponentFirst" xml:space="preserve">
     <value>golpeó primero una bola rival.</value>
   </data>
-  <data name="LcdMod_EightBallPool_AwardFreeBall" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_AwardFreeBall" xml:space="preserve">
     <value> El jugador {0} recibe {1} gratis.</value>
   </data>
-  <data name="LcdMod_EightBallPool_NoFreeBallAvailable" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_NoFreeBallAvailable" xml:space="preserve">
     <value> No había bola gratis disponible.</value>
   </data>
-  <data name="LcdMod_EightBallPool_PlayerGroupsAssigned" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_PlayerGroupsAssigned" xml:space="preserve">
     <value>El jugador 1 es {0}. El jugador 2 es {1}.</value>
   </data>
-  <data name="LcdMod_EightBallPool_GameOverWinner" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_GameOverWinner" xml:space="preserve">
     <value>Fin de la partida: gana el jugador {0}.</value>
   </data>
-  <data name="LcdMod_EightBallPool_PlayerToShoot" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_PlayerToShoot" xml:space="preserve">
     <value>Tira el jugador {0}.</value>
   </data>
-  <data name="LcdMod_EightBallPool_GameOverNewGameHint" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_GameOverNewGameHint" xml:space="preserve">
     <value>{0} Abre el menú para iniciar una nueva partida.</value>
   </data>
-  <data name="LcdMod_EightBallPool_BallsRolling" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_BallsRolling" xml:space="preserve">
     <value>Bolas en movimiento...</value>
   </data>
-  <data name="LcdMod_EightBallPool_CueBallInHand" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_CueBallInHand" xml:space="preserve">
     <value>Jugador {0}, bola blanca en mano: colócala dentro del semicírculo resaltado.</value>
   </data>
-  <data name="LcdMod_EightBallPool_TableClearedNewRack" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_TableClearedNewRack" xml:space="preserve">
     <value>Mesa despejada. Abre el menú para una nueva formación.</value>
   </data>
-  <data name="LcdMod_EightBallPool_Shots" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_Shots" xml:space="preserve">
     <value>Tiros: {0}</value>
   </data>
-  <data name="LcdMod_EightBallPool_BallNameEight" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_BallNameEight" xml:space="preserve">
     <value>la bola 8</value>
   </data>
-  <data name="LcdMod_EightBallPool_BallNameStripe" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_BallNameStripe" xml:space="preserve">
     <value>rayada {0}</value>
   </data>
-  <data name="LcdMod_EightBallPool_BallNameSolid" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_BallNameSolid" xml:space="preserve">
     <value>lisa {0}</value>
   </data>
-  <data name="LcdMod_EightBallPool_BallNameGeneric" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_BallNameGeneric" xml:space="preserve">
     <value>bola {0}</value>
   </data>
-  <data name="LcdMod_EightBallPool_FooterPlayerLabel" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_FooterPlayerLabel" xml:space="preserve">
     <value>Jugador {0}  {1}</value>
   </data>
-  <data name="LcdMod_EightBallPool_Winner" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_Winner" xml:space="preserve">
     <value>GANADOR</value>
   </data>
-  <data name="LcdMod_EightBallPool_NoBalls" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_NoBalls" xml:space="preserve">
     <value>sin bolas</value>
   </data>
-  <data name="LcdMod_EightBallPool_GroupSolids" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_GroupSolids" xml:space="preserve">
     <value>lisas</value>
   </data>
-  <data name="LcdMod_EightBallPool_GroupStripes" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_GroupStripes" xml:space="preserve">
     <value>rayadas</value>
   </data>
-  <data name="LcdMod_EightBallPool_GroupOpen" xml:space="preserve">
+    <data name="LcdMod_EightBallPool_GroupOpen" xml:space="preserve">
     <value>abierta</value>
   </data>
-<data name="LcdMod_EnergyDashboard_CurrentConsumption" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_CurrentConsumption" xml:space="preserve">
     <value>Consumo actual: {0}</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_MaxCapacity" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_MaxCapacity" xml:space="preserve">
     <value>Capacidad máxima: {0}</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_Production" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_Production" xml:space="preserve">
     <value>Producción: {0}</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_Solar" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_Solar" xml:space="preserve">
     <value>Solar</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_Wind" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_Wind" xml:space="preserve">
     <value>Eólica</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_Reactor" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_Reactor" xml:space="preserve">
     <value>Reactor</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_Engine" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_Engine" xml:space="preserve">
     <value>Motor de hidrógeno</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_Battery" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_Battery" xml:space="preserve">
     <value>Batería</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_ProductionGraph" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_ProductionGraph" xml:space="preserve">
     <value>Producción de energía</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_ConsumptionGraph" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_ConsumptionGraph" xml:space="preserve">
     <value>Consumo de energía</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_Charging" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_Charging" xml:space="preserve">
     <value>Cargando</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_Discharging" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_Discharging" xml:space="preserve">
     <value>Descargando</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_BatteryCountSingular" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_BatteryCountSingular" xml:space="preserve">
     <value>{0} batería</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_BatteryCountPlural" xml:space="preserve">
+    <data name="LcdMod_EnergyDashboard_BatteryCountPlural" xml:space="preserve">
     <value>{0} baterías</value>
   </data>
-  <data name="LcdMod_Magnification" xml:space="preserve">
+    <data name="LcdMod_Magnification" xml:space="preserve">
     <value>Ampliación</value>
   </data>
-  <data name="LcdMod_Radar_AntennaRangeWarning" xml:space="preserve">
+    <data name="LcdMod_Radar_AntennaRangeWarning" xml:space="preserve">
     <value>Solo se detectan señales de radio a más de 3 km.</value>
   </data>
-  <data name="LcdMod_Grid" xml:space="preserve">
+    <data name="LcdMod_Grid" xml:space="preserve">
     <value>Cuadrícula</value>
   </data>
-  <data name="LcdMod_List" xml:space="preserve">
+    <data name="LcdMod_List" xml:space="preserve">
     <value>Lista</value>
   </data>
-  <data name="LcdMod_RenderProxy" xml:space="preserve">
+    <data name="LcdMod_RenderProxy" xml:space="preserve">
     <value>Proxy de renderizado</value>
   </data>
-  <data name="LcdMod_ProxyOffsetX" xml:space="preserve">
+    <data name="LcdMod_ProxyOffsetX" xml:space="preserve">
     <value>Desplazamiento X del proxy</value>
   </data>
-  <data name="LcdMod_ProxyOffsetY" xml:space="preserve">
+    <data name="LcdMod_ProxyOffsetY" xml:space="preserve">
     <value>Desplazamiento Y del proxy</value>
   </data>
-  <data name="LcdMod_AutoOffset" xml:space="preserve">
+    <data name="LcdMod_AutoOffset" xml:space="preserve">
     <value>Automático</value>
   </data>
-  <data name="LcdMod_AutoOffset_Tooltip" xml:space="preserve">
+    <data name="LcdMod_AutoOffset_Tooltip" xml:space="preserve">
     <value>Calcular automáticamente el desplazamiento del proxy a partir de la pantalla host seleccionada.</value>
   </data>
-  <data name="LcdMod_EnableAutoAdjust" xml:space="preserve">
-    <value>Enable Auto Adjust</value>
-    <comment>TODO_TRANSLATION</comment>
+    <data name="LcdMod_EnableAutoAdjust" xml:space="preserve">
+    <value>Activar ajuste automático</value>
   </data>
-  <data name="LcdMod_EnableAutoAdjust_Tooltip" xml:space="preserve">
-    <value>Automatically adjust the render proxy on startup and when the linked screen rotation changes.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <data name="LcdMod_EnableAutoAdjust_Tooltip" xml:space="preserve">
+    <value>Ajusta automáticamente el proxy de renderizado al iniciar y cuando cambia la rotación de la pantalla vinculada.</value>
   </data>
-
-<data name="LcdMod_CraftDialog_Title" xml:space="preserve">
+    <data name="LcdMod_CraftDialog_Title" xml:space="preserve">
     <value>Fabricar</value>
   </data>
-  <data name="LcdMod_CraftDialog_Button_Craft" xml:space="preserve">
+    <data name="LcdMod_CraftDialog_Button_Craft" xml:space="preserve">
     <value>Fabricar</value>
   </data>
-  <data name="LcdMod_Common_Button_Cancel" xml:space="preserve">
+    <data name="LcdMod_Common_Button_Cancel" xml:space="preserve">
     <value>Cancelar</value>
   </data>
-  <data name="LcdMod_CraftDialog_AssemblerSelection_Title" xml:space="preserve">
+    <data name="LcdMod_CraftDialog_AssemblerSelection_Title" xml:space="preserve">
     <value>Seleccionar ensambladores</value>
   </data>
-  <data name="LcdMod_CraftDialog_AssemblerSelection_Empty" xml:space="preserve">
+    <data name="LcdMod_CraftDialog_AssemblerSelection_Empty" xml:space="preserve">
     <value>No se ha encontrado ningún ensamblador</value>
   </data>
-  <data name="LcdMod_Common_Button_Select" xml:space="preserve">
+    <data name="LcdMod_Common_Button_Select" xml:space="preserve">
     <value>Seleccionar</value>
   </data>
-  <data name="LcdMod_CraftDialog_Assemblers_None" xml:space="preserve">
+    <data name="LcdMod_CraftDialog_Assemblers_None" xml:space="preserve">
     <value>Ensambladores: ninguno</value>
   </data>
-  <data name="LcdMod_CraftDialog_Assemblers_Single" xml:space="preserve">
+    <data name="LcdMod_CraftDialog_Assemblers_Single" xml:space="preserve">
     <value>Ensamblador: {0}</value>
   </data>
-  <data name="LcdMod_CraftDialog_Assemblers_SelectedCount" xml:space="preserve">
+    <data name="LcdMod_CraftDialog_Assemblers_SelectedCount" xml:space="preserve">
     <value>Ensambladores: {0} seleccionados</value>
   </data>
-  <data name="LcdMod_CraftDialog_Assembler_FallbackName" xml:space="preserve">
+    <data name="LcdMod_CraftDialog_Assembler_FallbackName" xml:space="preserve">
     <value>Ensamblador</value>
   </data>
-  <data name="LcdMod_CraftDialog_Assembler_Status_Idle" xml:space="preserve">
+    <data name="LcdMod_CraftDialog_Assembler_Status_Idle" xml:space="preserve">
     <value>Inactivo</value>
   </data>
-  <data name="LcdMod_CraftDialog_AssemblerOption_WithStatus" xml:space="preserve">
+    <data name="LcdMod_CraftDialog_AssemblerOption_WithStatus" xml:space="preserve">
     <value>{0} ({1}) x{2}</value>
   </data>
-  <data name="LcdMod_CraftDialog_AssemblerOption" xml:space="preserve">
+    <data name="LcdMod_CraftDialog_AssemblerOption" xml:space="preserve">
     <value>{0} x{1}</value>
   </data>
-  <data name="LcdMod_Common_Button_OK" xml:space="preserve">
+    <data name="LcdMod_Common_Button_OK" xml:space="preserve">
     <value>Aceptar</value>
   </data>
-  <data name="LcdMod_Common_Value_Unavailable" xml:space="preserve">
+    <data name="LcdMod_Common_Value_Unavailable" xml:space="preserve">
     <value>N/D</value>
   </data>
-  <data name="LcdMod_Common_Time_ZeroSeconds" xml:space="preserve">
+    <data name="LcdMod_Common_Time_ZeroSeconds" xml:space="preserve">
     <value>0 s</value>
   </data>
-  <data name="LcdMod_Common_Time_LessThanOneSecond" xml:space="preserve">
+    <data name="LcdMod_Common_Time_LessThanOneSecond" xml:space="preserve">
     <value>&lt; 1 s</value>
   </data>
-  <data name="LcdMod_Common_Label_WithColon" xml:space="preserve">
+    <data name="LcdMod_Common_Label_WithColon" xml:space="preserve">
     <value>{0}:</value>
+  </data>
+    <data name="LcdMod_LocalGrid" xml:space="preserve">
+    <value>Nave/estación local</value>
+  </data>
+    <data name="LcdMod_MechanicalConnection" xml:space="preserve">
+    <value>Conexión mecánica</value>
+  </data>
+    <data name="LcdMod_PhysicalConnection" xml:space="preserve">
+    <value>Conexión física</value>
+  </data>
+    <data name="LcdMod_LinkType" xml:space="preserve">
+    <value>Tipo de enlace</value>
+  </data>
+    <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
+    <value>{0} Incluye solo los bloques de esta nave o estación. &#xA;{1} incluye naves/estaciones conectadas mecánicamente, como las conectadas por rotores, bisagras y pistones. &#xA;{2} incluye conexiones mecánicas y naves/estaciones conectadas mediante conectores.</value>
   </data>
 </root>

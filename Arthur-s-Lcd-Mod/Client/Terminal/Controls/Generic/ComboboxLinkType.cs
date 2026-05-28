@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using LcdMod.Client.Config;
+using LcdMod.Client.Helpers;
 using LcdMod.Common.Config.Interfaces;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
@@ -21,7 +22,12 @@ namespace LcdMod.Client.Terminal.Controls.Generic
             combo.ComboBoxContent = Content;
             combo.Visible = Visible;
             combo.Title = MyStringId.GetOrCompute("LcdMod_LinkType");
-            combo.Tooltip = MyStringId.GetOrCompute("LcdMod_LinkTypeDescription");
+            combo.Tooltip = MyStringId.GetOrCompute(string.Format(
+                LocHelper.GetLoc("LcdMod_LinkTypeDescription"),
+                LocHelper.GetLoc("LcdMod_LocalGrid"),
+                LocHelper.GetLoc("LcdMod_MechanicalConnection"),
+                LocHelper.GetLoc("LcdMod_PhysicalConnection")
+            ));
             TerminalControl = combo;
         }
 
@@ -33,12 +39,12 @@ namespace LcdMod.Client.Terminal.Controls.Generic
             });
             list.Add(new MyTerminalControlComboBoxItem
             {
-                Key = ToId(GridLinkTypeEnum.Mechanical), 
+                Key = ToId(GridLinkTypeEnum.Mechanical),
                 Value = MyStringId.GetOrCompute("LcdMod_MechanicalConnection")
             });
             list.Add(new MyTerminalControlComboBoxItem
             {
-                Key = ToId(GridLinkTypeEnum.Physical), 
+                Key = ToId(GridLinkTypeEnum.Physical),
                 Value = MyStringId.GetOrCompute("LcdMod_PhysicalConnection")
             });
         }
@@ -79,6 +85,7 @@ namespace LcdMod.Client.Terminal.Controls.Generic
                 case 2:
                     return (int)GridLinkTypeEnum.Physical;
             }
+
             return -1;
         }
     }
