@@ -11,11 +11,13 @@ using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
 using VRageMath;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
+using ComboboxLinkType = LcdMod.Client.Terminal.Controls.Generic.ComboboxLinkType;
 
 namespace LcdMod.Client.SurfaceScripts
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public partial class PowerFilledSurfaceScript : InteractiveSurfaceScript
+    public partial class PowerFilledSurfaceScript : InteractiveSurfaceScript,
+        IUsesTerminalControl<ComboboxLinkType>
     {
         protected override ConfigKind ConfigKind => ConfigKind.Power;
         public override CursorType CursorType { get; protected set; } = CursorType.Default;

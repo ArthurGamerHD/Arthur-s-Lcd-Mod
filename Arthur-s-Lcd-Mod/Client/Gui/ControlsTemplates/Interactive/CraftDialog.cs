@@ -14,6 +14,7 @@ using Sandbox.Definitions;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.GUI.TextPanel;
+using VRage.Game.ModAPI;
 using VRageMath;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
 using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
@@ -632,7 +633,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         {
             _assemblerOptions.Clear();
 
-            var assemblers = _gridLogic?.GetTerminalBlocks<IMyAssembler>();
+            var assemblers = _gridLogic?.GetTerminalBlocks<IMyAssembler>(GridLinkTypeEnum.Physical);
             if (assemblers == null || assemblers.Count == 0)
                 return;
 

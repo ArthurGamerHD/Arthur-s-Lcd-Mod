@@ -328,6 +328,7 @@ namespace LcdMod.Client.Grid
         {
             try
             {
+                GridLinkTypeEnum linkType = config.GridLinkType;
                 SearchQueryToken queryToken = SearchQueryToken.GetToken(config);
                 Dictionary<MyItemType, double> dictionary;
                 if (!_queryCache.TryGetValue(queryToken, out dictionary))
@@ -336,14 +337,14 @@ namespace LcdMod.Client.Grid
 
                     List<IMyTerminalBlock> blocks =
                         config.SelectedBlocks.Length == 0 && config.SelectedGroups.Length == 0
-                            ? GetInventories()
+                            ? GetInventories(linkType)
                             : new List<IMyTerminalBlock>();
 
                     blocks.AddRange(config.SelectedBlocks.Select(id => MyAPIGateway.Entities.GetEntityById(id))
                         .Select(entity => entity as IMyTerminalBlock)
                         .Where(block =>
                             block != null && block.HasInventory &&
-                            block.CubeGrid.IsInSameLogicalGroupAs(referenceBlock.CubeGrid)));
+                            IsBlockInGridLinkScope(block, referenceBlock, linkType)));
 
                     if (config.SelectedGroups.Any())
                     {
@@ -355,6 +356,7 @@ namespace LcdMod.Client.Grid
                                 .GetBlocks(blockFromGroups, b => b.HasInventory &&
                                                                  b.GetUserRelationToOwner(referenceBlock.OwnerId)
                                                                  <= MyRelationsBetweenPlayerAndBlock.FactionShare &&
+                                                                 IsBlockInGridLinkScope(b, referenceBlock, linkType) &&
                                                                  !blocks.Contains(b));
                             blocks.AddRange(blockFromGroups);
                         }
@@ -378,6 +380,45 @@ namespace LcdMod.Client.Grid
         {
             RefreshIfNeeded();
             return _invBlocks;
+        }
+
+        public List<IMyTerminalBlock> GetInventories(GridLinkTypeEnum linkType)
+        {
+            var terminals = GetTerminalBlocks<IMyTerminalBlock>(linkType);
+            var inventories = new List<IMyTerminalBlock>();
+            if (terminals == null)
+                return inventories;
+
+            for (int i = 0; i < terminals.Count; i++)
+            {
+                var block = terminals[i];
+                if (block != null && block.HasInventory)
+                    inventories.Add(block);
+            }
+
+            return inventories;
+        }
+
+        bool IsBlockInGridLinkScope(IMyTerminalBlock block, IMyTerminalBlock referenceBlock, GridLinkTypeEnum linkType)
+        {
+            if (block == null || referenceBlock == null || block.CubeGrid == null || referenceBlock.CubeGrid == null)
+                return false;
+
+            if (block.CubeGrid.EntityId == referenceBlock.CubeGrid.EntityId)
+                return true;
+
+            var terminals = GetTerminalBlocks<IMyTerminalBlock>(linkType);
+            if (terminals == null)
+                return false;
+
+            for (int i = 0; i < terminals.Count; i++)
+            {
+                var terminal = terminals[i];
+                if (terminal != null && terminal.EntityId == block.EntityId)
+                    return true;
+            }
+
+            return false;
         }
 
         public void RefreshIfNeeded()
@@ -601,7 +642,7 @@ namespace LcdMod.Client.Grid
 
         }
 
-        public List<T> GetTerminalBlocks<T>() where T : IMyTerminalBlock
+        internal List<T> GetTerminalBlocksInternal<T>() where T : IMyTerminalBlock
         {
             RefreshIfNeeded();
             switch (typeof(T).Name)
@@ -631,14 +672,17 @@ namespace LcdMod.Client.Grid
             throw new NotImplementedException(typeof(T).Name);
         }
 
-        public List<T> GetTerminalBlocks<T>(GridLinkTypeEnum linkType) where T : IMyTerminalBlock
+        public List<T> GetTerminalBlocks<T>(GridLinkTypeEnum linkType = (GridLinkTypeEnum)(-1)) where T : IMyTerminalBlock
         {
+            if(linkType == (GridLinkTypeEnum)(-1))
+                return GetTerminalBlocksInternal<T>();
+            
             if (linkType != GridLinkTypeEnum.Physical && linkType != GridLinkTypeEnum.Mechanical)
                 throw new NotImplementedException(typeof(T).Name);
 
             var resolver = GridGroupLogic.ResolveFor(this);
             if (resolver == null)
-                return GetTerminalBlocks<T>();
+                return GetTerminalBlocksInternal<T>();
 
             return resolver.GetTerminalBlocks<T>(this, linkType);
         }
@@ -662,7 +706,7 @@ namespace LcdMod.Client.Grid
             if (Grid == null)
                 return false;
 
-            var jumpDrives = GetTerminalBlocks<IMyJumpDrive>();
+            var jumpDrives = GetTerminalBlocksInternal<IMyJumpDrive>();
             if (jumpDrives == null || jumpDrives.Count == 0)
                 return false;
 
@@ -797,7 +841,7 @@ namespace LcdMod.Client.Grid
                 List<IMyTerminalBlock> blocks;
                 if (config.SelectedBlocks.Length == 0 && config.SelectedGroups.Length == 0)
                 {
-                    var all = GetInventories();
+                    var all = GetInventories(config.GridLinkType);
                     blocks = new List<IMyTerminalBlock>(all.Count);
                     for (int i = 0; i < all.Count; i++)
                         if (all[i] is IMyRefinery)
@@ -809,7 +853,7 @@ namespace LcdMod.Client.Grid
                     blocks.AddRange(config.SelectedBlocks
                         .Select(id => MyAPIGateway.Entities.GetEntityById(id) as IMyTerminalBlock)
                         .Where(b => (b is IMyRefinery || b is IMyAssembler) &&
-                                    b.CubeGrid.IsInSameLogicalGroupAs(referenceBlock.CubeGrid)));
+                                    IsBlockInGridLinkScope(b, referenceBlock, config.GridLinkType)));
 
                     if (config.SelectedGroups.Length > 0)
                     {
@@ -821,6 +865,7 @@ namespace LcdMod.Client.Grid
                                 .GetBlocks(groupBlocks, b => (b is IMyRefinery || b is IMyAssembler) &&
                                                              b.GetUserRelationToOwner(referenceBlock.OwnerId)
                                                              <= MyRelationsBetweenPlayerAndBlock.FactionShare &&
+                                                             IsBlockInGridLinkScope(b, referenceBlock, config.GridLinkType) &&
                                                              !blocks.Contains(b));
                             blocks.AddRange(groupBlocks);
                         }

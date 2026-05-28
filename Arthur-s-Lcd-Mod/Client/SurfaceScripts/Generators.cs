@@ -6,6 +6,7 @@ using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
+using LcdMod.Client.Terminal.Controls.Generic;
 using LcdMod.Client.Utility;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
@@ -17,7 +18,8 @@ using VRageMath;
 namespace LcdMod.Client.SurfaceScripts
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public partial class GeneratorsSurfaceScript : InteractiveSurfaceScript, IMultiDisplayMode
+    public partial class GeneratorsSurfaceScript : InteractiveSurfaceScript, IMultiDisplayMode,
+        IUsesTerminalControl<ComboboxLinkType>
     {
         protected override ConfigKind ConfigKind => ConfigKind.Power;
         public const string ID = "GeneratorsGraph";

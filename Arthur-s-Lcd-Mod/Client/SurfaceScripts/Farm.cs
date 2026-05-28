@@ -5,6 +5,7 @@ using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Helpers;
+using LcdMod.Client.Terminal.Controls.Generic;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
@@ -15,7 +16,8 @@ using IMyTextSurface = Sandbox.ModAPI.IMyTextSurface;
 namespace LcdMod.Client.SurfaceScripts
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public partial class FarmSurfaceScript : InteractiveSurfaceScript
+    public partial class FarmSurfaceScript : InteractiveSurfaceScript,
+        IUsesTerminalControl<ComboboxLinkType>
     {
         protected override ConfigKind ConfigKind => ConfigKind.Power;
         public override CursorType CursorType { get; protected set; } = CursorType.Default;

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Generated;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Grid;
 using LcdMod.Client.Helpers;
@@ -89,7 +90,7 @@ namespace LcdMod.Client.Apps
 
             _producers.Clear();
             if (gridLogic != null)
-                _producers.AddRange(gridLogic.GetTerminalBlocks<IMyPowerProducer>());
+                _producers.AddRange(gridLogic.GetTerminalBlocks<IMyPowerProducer>(Config.GridLinkType));
 
             for (int i = 0; i < _producers.Count; i++)
             {
@@ -140,7 +141,7 @@ namespace LcdMod.Client.Apps
 
             _terminals.Clear();
             if (gridLogic != null)
-                _terminals.AddRange(gridLogic.GetTerminalBlocks<IMyTerminalBlock>());
+                _terminals.AddRange(gridLogic.GetTerminalBlocks<IMyTerminalBlock>(Config.GridLinkType));
 
             for (int i = 0; i < _terminals.Count; i++)
             {
@@ -176,7 +177,7 @@ namespace LcdMod.Client.Apps
 
             _batteries.Clear();
             if (gridLogic != null)
-                _batteries.AddRange(gridLogic.GetTerminalBlocks<IMyBatteryBlock>());
+                _batteries.AddRange(gridLogic.GetTerminalBlocks<IMyBatteryBlock>(Config.GridLinkType));
 
             if (_batteries.Count > 0)
             {

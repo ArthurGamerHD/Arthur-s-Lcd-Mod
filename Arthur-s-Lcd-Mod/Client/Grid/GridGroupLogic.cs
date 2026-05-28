@@ -228,7 +228,7 @@ namespace LcdMod.Client.Grid
             if (result == null || logic == null)
                 return;
 
-            var blocks = logic.GetTerminalBlocks<T>();
+            var blocks = logic.GetTerminalBlocksInternal<T>();
             if (blocks == null)
                 return;
 

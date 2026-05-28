@@ -6,6 +6,7 @@ using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Grid;
 using LcdMod.Client.Helpers;
 using Sandbox.ModAPI.Ingame;
+using VRage.Game.ModAPI;
 using VRageMath;
 using IMyLaserAntenna = Sandbox.ModAPI.IMyLaserAntenna;
 
@@ -26,7 +27,7 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
             Dictionary<long, AntennaEntry> models,
             HashSet<long> activeEntryIds)
         {
-            var lasers = grid.GetTerminalBlocks<IMyLaserAntenna>();
+            var lasers = grid.GetTerminalBlocks<IMyLaserAntenna>(ScreenConfigGeneral.GridLinkType);
 
             for (int i = 0; i < lasers.Count; i++)
             {

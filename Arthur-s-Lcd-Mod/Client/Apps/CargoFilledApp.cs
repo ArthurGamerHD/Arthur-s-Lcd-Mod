@@ -389,7 +389,7 @@ namespace LcdMod.Client.Apps
             if (gridLogic == null)
                 return;
 
-            var containers = gridLogic.GetTerminalBlocks<IMyCargoContainer>();
+            var containers = gridLogic.GetTerminalBlocks<IMyCargoContainer>(Config.GridLinkType);
             if (containers == null)
                 return;
 

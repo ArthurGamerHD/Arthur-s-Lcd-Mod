@@ -294,7 +294,7 @@ namespace LcdMod.Client.Apps.Abstract
                 return;
 
             _producers.Clear();
-            _producers.AddRange(gridLogic.GetTerminalBlocks<IMyPowerProducer>());
+            _producers.AddRange(gridLogic.GetTerminalBlocks<IMyPowerProducer>(AppConfig.GridLinkType));
 
             for (int i = 0; i < _producers.Count; i++)
             {

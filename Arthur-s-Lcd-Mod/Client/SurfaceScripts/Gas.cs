@@ -4,6 +4,7 @@ using LcdMod.Client.Apps;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
+using LcdMod.Client.Terminal.Controls.Generic;
 using LcdMod.Client.Utility;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
@@ -15,9 +16,9 @@ using VRageMath;
 namespace LcdMod.Client.SurfaceScripts
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public partial class GasSurfaceScript : SurfaceScriptBase, IMultiDisplayMode
+    public partial class GasSurfaceScript : SurfaceScriptBase, IMultiDisplayMode, IUsesTerminalControl<ComboboxLinkType>
     {
-        protected override ConfigKind ConfigKind => ConfigKind.Colorable;
+        protected override ConfigKind ConfigKind => ConfigKind.WithBlocks;
         public const string ID = "GasGraph";
         public const string TITLE = "LcdMod_GasFilled";
         protected override string DefaultTitle => TITLE;

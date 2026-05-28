@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 
 using VRage.Game;
+using GridLinkTypeEnum = VRage.Game.ModAPI.GridLinkTypeEnum;
 using ScreenConfigWithBlocks = LcdMod.Common.Config.Models.Apps.ScreenConfigWithBlocks;
 using ScreenConfigWithItems = LcdMod.Common.Config.Models.Apps.ScreenConfigWithItems;
 
@@ -18,6 +19,7 @@ namespace LcdMod.Client.Grid
         readonly string[] _groups;
         readonly MyDefinitionId[] _items;
         readonly string[] _categories;
+        readonly GridLinkTypeEnum _linkType;
 
         readonly int _storagesHash;
         readonly int _groupsHash;
@@ -28,6 +30,7 @@ namespace LcdMod.Client.Grid
         {
             _storages = config.SelectedBlocks;
             _groups = config.SelectedGroups;
+            _linkType = config.GridLinkType;
             var items = config as ScreenConfigWithItems;
             if (items != null)
             {
@@ -74,7 +77,8 @@ namespace LcdMod.Client.Grid
 
         bool FastEquality(SearchQueryToken other)
         {
-            return _storagesHash == other._storagesHash
+            return _linkType == other._linkType
+                   && _storagesHash == other._storagesHash
                    && _groupsHash == other._groupsHash
                    && _itemsHash == other._itemsHash
                    && _categoriesHash == other._categoriesHash;
@@ -93,7 +97,8 @@ namespace LcdMod.Client.Grid
         {
             unchecked
             {
-                int hash = _storagesHash;
+                int hash = (int)_linkType;
+                hash = (hash * 397) ^ _storagesHash;
                 hash = (hash * 397) ^ _groupsHash;
                 hash = (hash * 397) ^ _itemsHash;
                 hash = (hash * 397) ^ _categoriesHash;
@@ -105,7 +110,8 @@ namespace LcdMod.Client.Grid
         {
             var inv = config as ScreenConfigWithItems;
             
-            if (!config.SelectedBlocks.Any()
+            if (config.GridLinkType == GridLinkTypeEnum.Logical
+                && !config.SelectedBlocks.Any()
                 && !config.SelectedGroups.Any()
                 && (inv == null || (!inv.SelectedItems.Any() && !inv.SelectedCategories.Any())))
                 return Empty;

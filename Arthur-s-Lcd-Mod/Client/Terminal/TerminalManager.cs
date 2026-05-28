@@ -69,6 +69,7 @@ namespace LcdMod.Client.Terminal
             Controls.Add(new ListboxReferenceBlockSelection());
             Controls.Add(new SwitchToggleLines());
 
+            Controls.Add(new ComboboxLinkType());
             Controls.Add(new ListboxProjectorSelection());
             Controls.Add(new CheckboxHideEmpty());
             Controls.Add(new SeparatorFilter());

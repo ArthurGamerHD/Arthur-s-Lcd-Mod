@@ -9,6 +9,7 @@ using LcdMod.Client.Gui.ControlsTemplates.Progress;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Common.Config.Models;
+using LcdMod.Common.Config.Models.Apps;
 using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
@@ -34,10 +35,10 @@ namespace LcdMod.Client.Apps
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         readonly List<Entry> _entries = new List<Entry>();
 
-        ScreenConfigColorable Config => (ScreenConfigColorable)AppConfig;
+        ScreenConfigWithBlocks Config => (ScreenConfigWithBlocks)AppConfig;
         public bool HasEntries => _entries.Count > 0;
 
-        public GasApp(ScreenConfigGeneral config, IAppHost host) : base(config, host)
+        public GasApp(ScreenConfigWithBlocks config, IAppHost host) : base(config, host)
         {
         }
 
@@ -339,7 +340,7 @@ namespace LcdMod.Client.Apps
             if (gridLogic == null)
                 return;
 
-            var tanks = gridLogic.GetTerminalBlocks<IMyGasTank>();
+            var tanks = gridLogic.GetTerminalBlocks<IMyGasTank>(Config.GridLinkType);
             if (tanks == null)
                 return;
 
@@ -349,9 +350,7 @@ namespace LcdMod.Client.Apps
                 if (tank == null)
                     continue;
 
-                var terminal = tank as IMyTerminalBlock;
-                if (terminal == null)
-                    continue;
+                var terminal = (IMyTerminalBlock)tank;
 
                 if (!string.IsNullOrEmpty(token))
                 {

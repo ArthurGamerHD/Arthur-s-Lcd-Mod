@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
@@ -321,6 +322,10 @@ public sealed class TerminalControls : IIncrementalGenerator
             builder.Append(namespaceName);
             builder.AppendLine();
             builder.AppendLine("{");
+        }
+        else
+        {
+            throw new InvalidDataException(controlType.ToString());
         }
 
         AppendContainingTypeDeclarations(builder, controlType, true);

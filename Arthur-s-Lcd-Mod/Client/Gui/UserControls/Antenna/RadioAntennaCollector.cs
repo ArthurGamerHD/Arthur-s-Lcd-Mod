@@ -3,6 +3,7 @@ using System.Text;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Grid;
 using LcdMod.Client.Helpers;
+using VRage.Game.ModAPI;
 using VRageMath;
 using IMyRadioAntenna = Sandbox.ModAPI.IMyRadioAntenna;
 
@@ -20,7 +21,7 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
             Dictionary<long, AntennaEntry> models,
             HashSet<long> activeEntryIds)
         {
-            var radios = grid.GetTerminalBlocks<IMyRadioAntenna>();
+            var radios = grid.GetTerminalBlocks<IMyRadioAntenna>(ScreenConfigGeneral.GridLinkType);
 
             for (int i = 0; i < radios.Count; i++)
             {

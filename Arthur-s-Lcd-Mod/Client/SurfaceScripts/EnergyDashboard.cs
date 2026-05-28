@@ -9,11 +9,14 @@ using VRage.Game.GUI.TextPanel;
 using VRageMath;
 using ComboboxGraphWindow = LcdMod.Client.Terminal.Controls.Generic.ComboboxGraphWindow;
 using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
+using ComboboxLinkType = LcdMod.Client.Terminal.Controls.Generic.ComboboxLinkType;
 
 namespace LcdMod.Client.SurfaceScripts
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public partial class EnergyDashboardSurfaceScript : SurfaceScriptBase, IUsesTerminalControl<ComboboxGraphWindow>
+    public partial class EnergyDashboardSurfaceScript : SurfaceScriptBase,
+        IUsesTerminalControl<ComboboxGraphWindow>,
+        IUsesTerminalControl<ComboboxLinkType>
     {
         protected override ConfigKind ConfigKind => ConfigKind.Power;
         public const string ID = "LcdMod_EnergyDashboard";
