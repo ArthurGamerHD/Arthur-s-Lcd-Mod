@@ -1,7 +1,11 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.Grid;
+using LcdMod.Client.Gui.ControlsTemplates;
+using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.SurfaceScripts;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
@@ -12,10 +16,27 @@ namespace LcdMod.Client.Apps
     {
         const string DEBUG_FONT = "Monospace";
         const float LINE_SCALE = 0.62f;
+        const float INNER_PADDING = 8f;
+        const float SCROLLBAR_WIDTH = 8f;
+
         static readonly Color RunningColor = new Color(80, 220, 120);
         static readonly Color IdleColor = new Color(230, 90, 90);
         static readonly Color SleepingColor = new Color(235, 210, 60);
+
         readonly List<MySprite> _sprites = new List<MySprite>();
+        readonly ScrollPanel _scrollPanel = new ScrollPanel();
+        readonly List<ControlBase> _interactiveEntries = new List<ControlBase>();
+
+        public SessionDebugApp()
+        {
+            _scrollPanel.ManualScrollInertiaEnabled = false;
+            _interactiveEntries.Add(_scrollPanel);
+        }
+
+        public List<ControlBase> InteractiveEntries
+        {
+            get { return _interactiveEntries; }
+        }
 
         public List<MySprite> GetSprites(SessionDebugSurfaceScript owner)
         {
@@ -23,22 +44,55 @@ namespace LcdMod.Client.Apps
             var snapshot = LcdModSessionComponent.DebugSnapshot;
             var lines = BuildDebugLines(snapshot, owner);
             var lineHeight = owner.Surface.MeasureStringInPixels(new StringBuilder("A"), DEBUG_FONT, LINE_SCALE).Y + 2f;
-            var start = viewBox.Position + new Vector2(8f, 8f);
+
+            var contentViewBox = new RectangleF(
+                viewBox.X + INNER_PADDING,
+                viewBox.Y + INNER_PADDING,
+                Math.Max(0f, viewBox.Width - INNER_PADDING * 2f),
+                Math.Max(0f, viewBox.Height - INNER_PADDING * 2f));
+
+            _scrollPanel.ClearChildren();
+            _scrollPanel.Configure(
+                contentViewBox,
+                contentViewBox.Y,
+                0f,
+                lineHeight,
+                lines.Count,
+                SCROLLBAR_WIDTH,
+                0f);
 
             _sprites.Clear();
-            for (int i = 0; i < lines.Count; i++)
+
+            BeginClip(_sprites, _scrollPanel.ContentViewportBounds);
+
+            int startRow = _scrollPanel.StartRow;
+            int endRow = Math.Min(lines.Count, startRow + _scrollPanel.RenderRows);
+
+            for (int i = startRow; i < endRow; i++)
             {
+                var line = lines[i];
+                int visibleIndex = i - startRow;
+
                 _sprites.Add(new MySprite
                 {
                     Type = SpriteType.TEXT,
-                    Data = lines[i].Text,
-                    Position = start + new Vector2(0f, i * lineHeight),
-                    Color = lines[i].Color,
+                    Data = line.Text,
+                    Position = new Vector2(
+                        _scrollPanel.ContentViewportBounds.X,
+                        _scrollPanel.ContentBounds.Y + visibleIndex * lineHeight),
+                    Color = line.Color,
                     FontId = DEBUG_FONT,
                     Alignment = TextAlignment.LEFT,
                     RotationOrScale = LINE_SCALE
                 });
             }
+
+            EndClip(_sprites);
+
+            _scrollPanel.RenderScrollBar(
+                _sprites,
+                new Color(45, 45, 45, 170),
+                new Color(190, 190, 190, 230));
 
             return _sprites;
         }
@@ -51,9 +105,26 @@ namespace LcdMod.Client.Apps
             return new RectangleF(sizeOffset.X, sizeOffset.Y, owner.Surface.SurfaceSize.X - padding.X, owner.Surface.SurfaceSize.Y - padding.Y);
         }
 
+        static void BeginClip(List<MySprite> sprites, RectangleF bounds)
+        {
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.CLIP_RECT,
+                Position = bounds.Position,
+                Size = bounds.Size,
+                Alignment = TextAlignment.LEFT
+            });
+        }
+
+        static void EndClip(List<MySprite> sprites)
+        {
+            sprites.Add(MySprite.CreateClearClipRect());
+        }
+
         static List<DebugLine> BuildDebugLines(SessionDebugSnapshot snapshot, SessionDebugSurfaceScript owner)
         {
-            var lines = new List<DebugLine>(32);
+            var lines = new List<DebugLine>(64);
+
             lines.Add(new DebugLine("LcdMod Session Debug - " + owner.GetHashCode(), Color.White));
             lines.Add(new DebugLine("Tick: " + Fixed4(snapshot.UpdateTick), Color.White));
             lines.Add(new DebugLine("Tracked Grids: " + Fixed4(snapshot.TrackedGrids), Color.White));
@@ -64,46 +135,42 @@ namespace LcdMod.Client.Apps
             lines.Add(new DebugLine("Avg Next Batch: " + Fixed4(snapshot.AverageNextBatchSize), Color.White));
             lines.Add(new DebugLine(string.Empty, Color.White));
             lines.Add(new DebugLine("Per Grid:", Color.White));
-            lines.Add(new DebugLine("Name                   ite  prc  bat  nxt", Color.White));
+            lines.Add(new DebugLine("Name ite prc bat nxt", Color.White));
 
             var components = LcdModSessionComponent.Components;
             if (components == null || components.Count == 0)
             {
-                lines.Add(new DebugLine("  (none)", Color.White));
+                lines.Add(new DebugLine(" (none)", Color.White));
                 return lines;
             }
 
-            int shown = 0;
-            foreach (var pair in components.Where(p => p.Value != null && p.Value.Grid != null).OrderByDescending(p => p.Value.LastRefreshIterations).ThenBy(p => p.Key))
+            foreach (var pair in components
+                         .Where(p => p.Value != null && p.Value.Grid != null)
+                         .OrderByDescending(p => p.Value.LastRefreshIterations)
+                         .ThenBy(p => p.Key))
             {
-                if (shown >= 32)
-                {
-                    lines.Add(new DebugLine("-- More " + (components.Count - shown) + " --", Color.White));
-                    break;
-                }
-
                 var logic = pair.Value;
                 if (logic == null)
                     continue;
 
                 var gridName = ClampToWidth(logic.Grid != null ? logic.Grid.CustomName ?? string.Empty : string.Empty, 22);
                 lines.Add(new DebugLine(
-                    gridName + " "
-                             + Fixed4(logic.LastRefreshIterations) + " "
-                             + Fixed4(logic.LastRefreshProcessed) + " "
-                             + Fixed4(logic.CurrentRefreshBatchSize) + " "
-                             + Fixed4(logic.EstimatedNextRefreshBatchSize),
+                    gridName + " " +
+                    Fixed4(logic.LastRefreshIterations) + " " +
+                    Fixed4(logic.LastRefreshProcessed) + " " +
+                    Fixed4(logic.CurrentRefreshBatchSize) + " " +
+                    Fixed4(logic.EstimatedNextRefreshBatchSize),
                     logic.IsSleeping ? SleepingColor : (logic.IsRefreshRunning ? RunningColor : IdleColor)));
-                shown++;
             }
 
             lines.Add(new DebugLine(string.Empty, Color.White));
             lines.Add(new DebugLine("Modules:", Color.White));
-            lines.Add(new DebugLine("Name                   cnt  act", Color.White));
+            lines.Add(new DebugLine("Name cnt act", Color.White));
+
             var moduleLines = snapshot.ModuleLines;
             if (moduleLines == null || moduleLines.Length == 0)
             {
-                lines.Add(new DebugLine("  (none)", Color.White));
+                lines.Add(new DebugLine(" (none)", Color.White));
                 return lines;
             }
 
@@ -116,7 +183,25 @@ namespace LcdMod.Client.Apps
                 moduleName = ClampToWidth(moduleName, 22);
                 lines.Add(new DebugLine(moduleName + " " + Fixed4(count) + " " + Fixed4(active), Color.White));
             }
+            
+#if EXPERIMENTAL
+            lines.Add(new DebugLine(string.Empty, Color.White));
+            lines.Add(new DebugLine("Actions:", Color.White));
 
+            foreach (var action in GridLogic.TerminalActions)
+            {
+                lines.Add(new DebugLine("   " + action.Key, Color.White));
+            }
+
+            lines.Add(new DebugLine(string.Empty, Color.White));
+            lines.Add(new DebugLine("Properties:", Color.White));
+
+            foreach (var property in GridLogic.TerminalProperties)
+            {
+                lines.Add(new DebugLine("   " + property.Key, Color.White));
+            }
+#endif
+            
             return lines;
         }
 
@@ -124,8 +209,10 @@ namespace LcdMod.Client.Apps
         {
             if (string.IsNullOrEmpty(value))
                 return new string(' ', width);
+
             if (value.Length > width)
                 return value.Substring(0, width);
+
             return value.PadRight(width);
         }
 
@@ -148,6 +235,7 @@ namespace LcdMod.Client.Apps
                 return;
 
             moduleName = parts[0].Trim();
+
             if (parts.Length > 1)
             {
                 int parsedCount;

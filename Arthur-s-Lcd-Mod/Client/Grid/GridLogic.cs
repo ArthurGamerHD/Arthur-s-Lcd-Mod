@@ -7,6 +7,7 @@ using LcdMod.Common.Helpers;
 
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
+using Sandbox.ModAPI.Interfaces;
 using VRage.Game;
 using VRage.Game.ModAPI;
 using VRage.Game.ModAPI.Ingame;
@@ -48,7 +49,14 @@ namespace LcdMod.Client.Grid
 
         static readonly HashSet<string> KnowSubtypes = new HashSet<string>();
         static readonly HashSet<string> KnowFarmSubtypes = new HashSet<string>();
-        
+
+#if EXPERIMENTAL
+        public static readonly Dictionary<string, string[]> PerSubtypeActions = new Dictionary<string, string[]>();
+        public static readonly Dictionary<string, string[]> PerSubtypeProperties = new Dictionary<string, string[]>();
+        public static readonly SortedDictionary<string, ITerminalAction> TerminalActions = new SortedDictionary<string, ITerminalAction>();
+        public static readonly SortedDictionary<string, ITerminalProperty> TerminalProperties = new SortedDictionary<string, ITerminalProperty>();
+#endif
+
         public readonly IMyCubeGrid Grid;
         GridGroupLogic _gridGroupResolver;
         List<IMySlimBlock> _blocks = new List<IMySlimBlock>();
@@ -591,10 +599,34 @@ namespace LcdMod.Client.Grid
                     EnsureAssemblerBlueprintDatabase(assembler);
                 }
 
-                var farmPlotBlock = block as IMyFunctionalBlock;
-                if (farmPlotBlock != null)
+                bool newBlock = KnowSubtypes.Add(block.BlockDefinition.SubtypeName);
+
+                var myFunctionalBlock = block as IMyFunctionalBlock;
+
+#if EXPERIMENTAL
+                if (newBlock && myFunctionalBlock != null)
                 {
-                    if (KnowFarmSubtypes.Contains(farmPlotBlock.BlockDefinition.SubtypeName) || KnowSubtypes.Add(farmPlotBlock.BlockDefinition.SubtypeName))
+                    List<ITerminalAction> terminalActions = new List<ITerminalAction>();
+                    List<ITerminalProperty> terminalProperties = new List<ITerminalProperty>();
+                    myFunctionalBlock.GetActions(terminalActions);
+                    myFunctionalBlock.GetProperties(terminalProperties);
+
+                    PerSubtypeActions[block.BlockDefinition.SubtypeName] = terminalActions.Select(a => a.Id).ToArray();
+                    PerSubtypeProperties[block.BlockDefinition.SubtypeName] = terminalProperties.Select(t => t.Id).ToArray();
+
+
+                    foreach (var property in terminalProperties) 
+                        TerminalProperties[property.Id] = property;
+                    
+                    foreach (var action in terminalActions) 
+                        TerminalActions[action.Id] = action;
+                }
+#endif
+
+
+                if (myFunctionalBlock != null)
+                {
+                    if (KnowFarmSubtypes.Contains(myFunctionalBlock.BlockDefinition.SubtypeName) || newBlock)
                     {
                         IMyFarmPlotLogic planterComponent = null;
                         IMyResourceStorageComponent storageComponent = null;
@@ -610,8 +642,8 @@ namespace LcdMod.Client.Grid
                             if (planterComponent == null || storageComponent == null)
                                 continue;
 
-                            KnowFarmSubtypes.Add(farmPlotBlock.BlockDefinition.SubtypeName);
-                            _nextFarmPlots.Add(new FarmPlotEntry(farmPlotBlock, planterComponent, storageComponent));
+                            KnowFarmSubtypes.Add(myFunctionalBlock.BlockDefinition.SubtypeName);
+                            _nextFarmPlots.Add(new FarmPlotEntry(myFunctionalBlock, planterComponent, storageComponent));
                             break;
                         }
                     }
