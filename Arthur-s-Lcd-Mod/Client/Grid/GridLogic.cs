@@ -41,6 +41,8 @@ namespace LcdMod.Client.Grid
             new Dictionary<MyDefinitionId, HashSet<MyDefinitionId>>();
         public static readonly Dictionary<MyDefinitionId, HashSet<MyDefinitionId>> BlueprintsByCreatedItem =
             new Dictionary<MyDefinitionId, HashSet<MyDefinitionId>>();
+        public static readonly Dictionary<MyDefinitionId, MyBlueprintDefinitionBase> PrimaryBlueprintByCreatedItem =
+            new Dictionary<MyDefinitionId, MyBlueprintDefinitionBase>();
         long _clock;
         int _ticksSinceRequested = int.MaxValue;
 
@@ -478,6 +480,9 @@ namespace LcdMod.Client.Grid
                         AddToSet(BlueprintsByCreatedItem, itemId, blueprint.Id);
                     }
                 }
+
+                if (blueprint.IsPrimary && results?.Length >= 1) 
+                    PrimaryBlueprintByCreatedItem[results.First().Id] = blueprint;
 
                 CreatedItemsByBlueprint[blueprint.Id] = createdItems;
             }

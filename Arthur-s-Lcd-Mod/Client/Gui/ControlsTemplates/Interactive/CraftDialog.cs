@@ -557,10 +557,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             Dismiss();
         }
 
-        double CalculateQueueAmount(MyBlueprintDefinitionBase blueprint, MyDefinitionId itemDefinitionId,
-            double requestedItems)
+        double CalculateQueueAmount(MyBlueprintDefinitionBase blueprint, MyDefinitionId itemDefinitionId, double requestedItems)
         {
-            if (blueprint == null || blueprint.Results == null)
+            if (blueprint?.Results == null)
                 return requestedItems;
 
             for (var i = 0; i < blueprint.Results.Length; i++)
@@ -569,10 +568,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                     continue;
 
                 var resultAmount = (double)blueprint.Results[i].Amount;
-                if (resultAmount <= 0d)
-                    return requestedItems;
-
-                return Math.Ceiling(requestedItems / resultAmount);
+                return resultAmount <= 0d ? requestedItems : Math.Ceiling(requestedItems / resultAmount);
             }
 
             return requestedItems;
@@ -590,16 +586,19 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             if (requestedItems <= 0 || selected.Count == 0)
                 return;
 
-            var requestCount = Math.Round((double)requestedItems, MidpointRounding.AwayFromZero);
-            
-            var count = selected.Count;
-            var baseShare = requestCount / count;
-            var remainder = requestCount % count;
+            int count = selected.Count;
 
-            for (var i = 0; i < count; i++)
+            int baseShare = requestedItems / count;
+            int remainder = requestedItems % count;
+
+            for (int i = 0; i < count; i++)
             {
-                var itemShare = baseShare + (i < remainder ? 1 : 0);
-                if (itemShare <= 0)
+                int itemsForThisThread = baseShare;
+
+                if (i < remainder)
+                    itemsForThisThread++;
+
+                if (itemsForThisThread == 0)
                     continue;
 
                 var option = selected[i];
@@ -607,7 +606,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 if (!option.BlueprintsByItem.TryGetValue(request.DefinitionId, out blueprint) || blueprint == null)
                     continue;
 
-                var queueAmount = CalculateQueueAmount(blueprint, request.DefinitionId, itemShare);
+                var queueAmount = CalculateQueueAmount(blueprint, request.DefinitionId, itemsForThisThread);
                 option.Assembler.AddQueueItem(blueprint.Id, queueAmount);
             }
         }
@@ -675,39 +674,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 if (option.BlueprintsByItem.ContainsKey(request.DefinitionId))
                     continue;
 
-                var blueprint = FindBestBlueprint(request.DefinitionId, craftableBlueprints);
-                if (blueprint == null)
+                MyBlueprintDefinitionBase blueprint;
+                if (!GridLogic.PrimaryBlueprintByCreatedItem.TryGetValue(request.DefinitionId, out blueprint))
                     continue;
+                   
 
                 option.BlueprintsByItem[request.DefinitionId] = blueprint;
             }
 
             return option.BlueprintsByItem.Count == 0 ? null : option;
-        }
-
-        static MyBlueprintDefinitionBase FindBestBlueprint(MyDefinitionId itemDefinitionId,
-            HashSet<MyDefinitionId> craftableBlueprints)
-        {
-            HashSet<MyDefinitionId> blueprintsByItem;
-            if (!GridLogic.BlueprintsByCreatedItem.TryGetValue(itemDefinitionId, out blueprintsByItem) ||
-                blueprintsByItem == null || blueprintsByItem.Count == 0)
-                return null;
-
-            MyBlueprintDefinitionBase best = null;
-            foreach (var blueprintId in blueprintsByItem)
-            {
-                if (!craftableBlueprints.Contains(blueprintId))
-                    continue;
-
-                var blueprint = MyDefinitionManager.Static.GetBlueprintDefinition(blueprintId);
-                if (blueprint == null)
-                    continue;
-
-                if (best == null || CompareBlueprintChoice(blueprint, best) < 0)
-                    best = blueprint;
-            }
-
-            return best;
         }
 
         void SelectDefaultAssemblers()
@@ -767,26 +742,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 return speed;
 
             return string.Compare(a.DisplayName, b.DisplayName, StringComparison.CurrentCulture);
-        }
-
-        static int CompareBlueprintChoice(MyBlueprintDefinitionBase a, MyBlueprintDefinitionBase b)
-        {
-            if (a == null && b == null)
-                return 0;
-            if (a == null)
-                return 1;
-            if (b == null)
-                return -1;
-
-            var primary = b.IsPrimary.CompareTo(a.IsPrimary);
-            if (primary != 0)
-                return primary;
-
-            var priority = a.Priority.CompareTo(b.Priority);
-            if (priority != 0)
-                return priority;
-
-            return string.Compare(a.Id.SubtypeName, b.Id.SubtypeName, StringComparison.CurrentCulture);
         }
 
         static string GetAssemblerName(IMyAssembler assembler)
