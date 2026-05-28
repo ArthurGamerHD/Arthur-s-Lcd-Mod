@@ -104,7 +104,7 @@ namespace LcdMod.Client.Apps
             }
 
             EndScrollPanelClip(sprites);
-            RenderScrollPanelBar(sprites);
+            _scrollPanel.Render(renderContext, sprites);
         }
 
         void DrawGrid(List<MySprite> sprites)
@@ -161,7 +161,7 @@ namespace LcdMod.Client.Apps
             }
 
             EndScrollPanelClip(sprites);
-            RenderScrollPanelBar(sprites);
+            _scrollPanel.Render(renderContext, sprites);
         }
 
         void DrawRow(List<MySprite> frame, Entry entry, RectangleF bounds)
@@ -234,17 +234,12 @@ namespace LcdMod.Client.Apps
         void ConfigureScrollPanel(float contentTop, float rowHeight, int totalRows)
         {
             _scrollPanel.Configure(Host.ViewBox, contentTop, 0f, rowHeight, totalRows, SCROLLER_WIDTH * Host.Scale, SCROLL_DELAY / 6f);
+            _scrollPanel.SetScrollBarColors(
+                new Color(Host.Surface.ScriptForegroundColor.R, Host.Surface.ScriptForegroundColor.G, Host.Surface.ScriptForegroundColor.B, 127),
+                new Color(Config.HeaderColor.R, Config.HeaderColor.G, Config.HeaderColor.B, 250));
             _scrollPanel.SetVisible(true);
             if (!_interactiveList.Contains(_scrollPanel))
                 _interactiveList.Add(_scrollPanel);
-        }
-
-        void RenderScrollPanelBar(List<MySprite> sprites)
-        {
-            _scrollPanel.RenderScrollBar(
-                sprites,
-                new Color(Host.Surface.ScriptForegroundColor.R, Host.Surface.ScriptForegroundColor.G, Host.Surface.ScriptForegroundColor.B, 127),
-                new Color(Config.HeaderColor.R, Config.HeaderColor.G, Config.HeaderColor.B, 250));
         }
 
         RectangleF GetListRowBounds(int rowIndex, float contentTop, bool showScrollBar)

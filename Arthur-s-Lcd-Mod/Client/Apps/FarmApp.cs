@@ -430,24 +430,19 @@ namespace LcdMod.Client.Apps
             }
 
             EndClip(sprites);
-            RenderScrollPanelBar(owner, sprites);
+            _scrollPanel.Render(renderContext, sprites);
         }
 
         void ConfigureFarmScrollPanel(IAppHost owner, float contentTop, float rowHeight, int totalRows)
         {
             _scrollPanel.Configure(owner.ViewBox, contentTop, 0f, rowHeight, totalRows, SCROLLER_W * owner.Scale, SCROLL_TICK / 6f);
+            var headerColor = _config != null ? _config.HeaderColor : owner.ForegroundColor;
+            _scrollPanel.SetScrollBarColors(
+                new Color(owner.Surface.ScriptForegroundColor.R, owner.Surface.ScriptForegroundColor.G, owner.Surface.ScriptForegroundColor.B, 127),
+                new Color(headerColor.R, headerColor.G, headerColor.B, 250));
             _scrollPanel.SetVisible(true);
             if (!_interactiveList.Contains(_scrollPanel))
                 _interactiveList.Add(_scrollPanel);
-        }
-
-        void RenderScrollPanelBar(IAppHost owner, List<MySprite> sprites)
-        {
-            var headerColor = _config != null ? _config.HeaderColor : owner.ForegroundColor;
-            _scrollPanel.RenderScrollBar(
-                sprites,
-                new Color(owner.Surface.ScriptForegroundColor.R, owner.Surface.ScriptForegroundColor.G, owner.Surface.ScriptForegroundColor.B, 127),
-                new Color(headerColor.R, headerColor.G, headerColor.B, 250));
         }
 
         void BeginFarmEntryHitboxFrame()

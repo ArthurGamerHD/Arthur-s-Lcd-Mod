@@ -74,7 +74,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
             var primary = context.GetThemeColor(Constants.PRIMARY);
             var trackColor = new Color(outline.R, outline.G, outline.B, 127);
             var thumbColor = new Color(primary.R, primary.G, primary.B, 250);
-            _scrollPanel.RenderScrollBar(sprites, trackColor, thumbColor);
+            _scrollPanel.SetScrollBarColors(trackColor, thumbColor);
+            _scrollPanel.Render(listContext, sprites);
         }
 
         static ControlRenderContext CreateListRenderContext(ControlRenderContext context)

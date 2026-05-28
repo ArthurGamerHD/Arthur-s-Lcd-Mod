@@ -11,6 +11,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 {
     public delegate bool ControlScrollHandler(object dataContext, object sender, int delta);
     public delegate bool ControlHoverHandler(object dataContext, object sender);
+    public delegate bool ControlDragHandler(object dataContext, object sender, Vector2 delta);
     delegate bool ControlHitFilter(ControlBase control);
 
     public abstract class ControlBase
@@ -25,7 +26,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         }
 
         readonly List<ControlBase> _children = new List<ControlBase>();
-
         public IList<ControlBase> Children => _children;
 
         public bool HasChildren => _children.Count > 0;
@@ -113,6 +113,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             }
         }
 
+        public virtual bool CanDrag
+        {
+            get { return Visible && Draggable && OnDrag != null; }
+        }
+
         protected ControlBase(CursorType? cursor = null, object dataContext = null, Action<object, object> onClick = null,
             InteractiveTooltip tooltip = null)
         {
@@ -144,6 +149,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         public Action<object, object> OnSecondaryClick { get; set; }
         public ControlScrollHandler OnScroll { get; set; }
         public ControlHoverHandler OnHover { get; set; }
+        public ControlDragHandler OnDrag { get; set; }
+        public Action<object, object> OnBeginDrag { get; set; }
+        public Action<object, object> OnEndDrag { get; set; }
+        public bool Draggable { get; set; }
+
+        public bool ClickOnPress { get; set; }
 
         public ControlBase SetOnClick(Action<object, object> onClick)
         {
@@ -163,7 +174,38 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             return this;
         }
 
+        public ControlBase SetOnDrag(ControlDragHandler onDrag)
+        {
+            OnDrag = onDrag;
+            return this;
+        }
+
+        public ControlBase SetOnBeginDrag(Action<object, object> onBeginDrag)
+        {
+            OnBeginDrag = onBeginDrag;
+            return this;
+        }
+
+        public ControlBase SetOnEndDrag(Action<object, object> onEndDrag)
+        {
+            OnEndDrag = onEndDrag;
+            return this;
+        }
+
+        public ControlBase SetDraggable(bool draggable = true)
+        {
+            Draggable = draggable;
+            return this;
+        }
+
+        public ControlBase SetClickOnPress(bool clickOnPress = true)
+        {
+            ClickOnPress = clickOnPress;
+            return this;
+        }
+
         public InteractiveTooltip Tooltip { get; private set; }
+
         public ControlStyle Style { get; private set; }
 
         public ControlBase SetTooltip(InteractiveTooltip tooltip)
@@ -181,6 +223,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         public InteractiveRenderHandler CustomRender { get; set; }
 
         public abstract RectangleF Bounds { get; }
+
         public MySoundPair ClickSound { get; set; } = AudioHelper.HudClick;
         public MySoundPair ClickFailSound { get; set; } = AudioHelper.HudUnable;
 
@@ -193,6 +236,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             {
                 var renderContext = ResolveRenderContext(context);
                 var customRender = CustomRender ?? Model?.CustomRender;
+
                 if (customRender != null)
                 {
                     customRender(this, renderContext, sprites);
@@ -222,7 +266,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates
                 radiusScale: context.Scale);
             RenderDefaultText(rect, context, sprites);
         }
-
 
         public RectangleF GetViewBox()
         {
@@ -255,6 +298,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             var y = bounds.Y + bounds.Height * top;
             var width = Math.Max(0f, bounds.Width * (1f - left - right));
             var height = Math.Max(0f, bounds.Height * (1f - top - bottom));
+
             return new RectangleF(x, y, width, height);
         }
 
@@ -262,14 +306,17 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         {
             if (value < 0f)
                 return 0f;
+
             if (value > 1f)
                 return 1f;
+
             return value;
         }
 
         protected void RenderDefaultText(RectangleF rect, ControlRenderContext context, List<MySprite> sprites)
         {
             string text = DataContext != null ? DataContext.ToString() : string.Empty;
+
             if (string.IsNullOrEmpty(text))
                 return;
 
@@ -331,6 +378,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             return hoverable != null;
         }
 
+        public bool TryResolveDraggable(Vector2 point, out ControlBase draggable)
+        {
+            draggable = ResolveHit(point, AcceptDraggableHit);
+            return draggable != null;
+        }
+
         public bool TryResolveTooltipTarget(Vector2 point, out ControlBase tooltipTarget)
         {
             tooltipTarget = ResolveHit(point, AcceptTooltipHit);
@@ -346,13 +399,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         public bool Click(Vector2 point, object sender)
         {
             ControlBase clickable;
-            return TryResolvePrimaryClickable(point, out clickable) && clickable.Click(sender);
+            return TryResolvePrimaryClickable(point, out clickable) && clickable.ClickAt(point, sender);
         }
 
         public bool SecondaryClick(Vector2 point, object sender)
         {
             ControlBase clickable;
-            return TryResolveSecondaryClickable(point, out clickable) && clickable.SecondaryClick(sender);
+            return TryResolveSecondaryClickable(point, out clickable) && clickable.SecondaryClickAt(point, sender);
         }
 
         public bool Scroll(Vector2 point, object sender, int delta)
@@ -367,8 +420,18 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             return TryResolveHoverable(point, out hoverable) && hoverable.Hover(sender);
         }
 
-        public virtual bool Click(object sender)=> HandleClick(sender, OnClick, false);
-        
+        public virtual bool ClickAt(Vector2 point, object sender)
+        {
+            return Click(sender);
+        }
+
+        public virtual bool SecondaryClickAt(Vector2 point, object sender)
+        {
+            return SecondaryClick(sender);
+        }
+
+        public virtual bool Click(object sender) => HandleClick(sender, OnClick, false);
+
         public virtual bool SecondaryClick(object sender) => HandleClick(sender, OnSecondaryClick, true);
 
         internal bool HandleClick(object sender, Action<object, object> handler, bool secondary)
@@ -383,6 +446,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             }
 
             var model = Model;
+
             if (model == null)
                 return false;
 
@@ -413,6 +477,31 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             return model != null && model.Hover(sender);
         }
 
+        public virtual bool BeginDrag(object sender)
+        {
+            if (!CanDrag)
+                return false;
+
+            if (OnBeginDrag != null)
+                OnBeginDrag(DataContext ?? this, sender);
+
+            return true;
+        }
+
+        public virtual bool Drag(object sender, Vector2 delta)
+        {
+            if (!CanDrag || !IsValidDelta(delta))
+                return false;
+
+            return OnDrag != null && OnDrag(DataContext ?? this, sender, delta);
+        }
+
+        public virtual void EndDrag(object sender)
+        {
+            if (OnEndDrag != null)
+                OnEndDrag(DataContext ?? this, sender);
+        }
+
         ControlBase ResolveHit(Vector2 point, ControlHitFilter accept)
         {
             if (!Visible)
@@ -425,6 +514,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
                 for (int i = _children.Count - 1; i >= 0; i--)
                 {
                     var childHit = _children[i].ResolveHit(point, accept);
+
                     if (childHit != null)
                         return childHit;
                 }
@@ -468,6 +558,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             return control.CanHover;
         }
 
+        static bool AcceptDraggableHit(ControlBase control)
+        {
+            return control.CanDrag;
+        }
+
         static bool AcceptTooltipHit(ControlBase control)
         {
             return control.Tooltip != null;
@@ -493,6 +588,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         void ApplyModelDefaults()
         {
             var model = Model;
+
             if (model == null)
                 return;
 
@@ -506,6 +602,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         ControlRenderContext ResolveRenderContext(ControlRenderContext context)
         {
             var style = GetLocalStyle();
+
             if (style == null || ReferenceEquals(style, context.Style))
                 return context;
 
@@ -518,6 +615,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates
                 style,
                 context.Theme,
                 context.CursorPosition);
+        }
+
+        static bool IsValidDelta(Vector2 delta)
+        {
+            return !float.IsNaN(delta.X) && !float.IsNaN(delta.Y);
         }
     }
 }

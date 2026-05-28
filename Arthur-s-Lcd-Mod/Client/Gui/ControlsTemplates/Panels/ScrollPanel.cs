@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using LcdMod.Client.Extensions;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
@@ -13,10 +14,30 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         const float MANUAL_SCROLL_VELOCITY_IMPULSE = 0.12f;
         const float INERTIA_DECAY_PER_FRAME = 0.88f;
         const float STOP_VELOCITY_PIXELS_PER_FRAME = 0.05f;
+        const long HOVER_LIFETIME_FRAMES = 2L;
+
+        readonly ScrollBarTrackControl _scrollBarTrack;
+        readonly ScrollBarThumbControl _scrollBarThumb;
 
         public ScrollPanel(CursorType? cursor = null, object dataContext = null)
             : base(cursor, dataContext)
         {
+            _scrollBarTrack = new ScrollBarTrackControl(this);
+            _scrollBarThumb = new ScrollBarThumbControl(this);
+
+            AddScrollBarChildren();
+        }
+
+        public new void ClearChildren()
+        {
+            base.ClearChildren();
+            AddScrollBarChildren();
+        }
+
+        void AddScrollBarChildren()
+        {
+            AddChild(_scrollBarTrack);
+            AddChild(_scrollBarThumb);
         }
 
         public RectangleF ViewBox { get; private set; }
@@ -39,9 +60,24 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         public int RenderRows { get; private set; }
         public int StartRow { get; private set; }
         public bool IsScrollable { get; private set; }
+
         float _manualScrollPixels;
         long _manualOverrideUntilFrame = long.MinValue;
         long _lastInertiaFrame = long.MinValue;
+        long _scrollBarThumbHoverFrame = long.MinValue;
+        bool _scrollBarThumbDragging;
+        bool _hasCustomScrollBarColors;
+        Color _scrollBarTrackColor;
+        Color _scrollBarThumbColor;
+
+        struct ScrollBarMetrics
+        {
+            public RectangleF TrackHitBounds;
+            public RectangleF TrackBounds;
+            public RectangleF ThumbBounds;
+            public float ThumbTravelPixels;
+            public float MaxScrollOffsetPixels;
+        }
 
         public override RectangleF Bounds
         {
@@ -77,6 +113,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             float autoScrollSecondsPerStep)
         {
             AutoScrollSecondsPerStep = Math.Max(0f, autoScrollSecondsPerStep);
+
             ConfigureCore(
                 viewBox,
                 contentTop,
@@ -97,6 +134,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             int autoScrollStep)
         {
             AutoScrollSecondsPerStep = 0f;
+
             ConfigureCore(
                 viewBox,
                 contentTop,
@@ -126,7 +164,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
             float totalContentHeight = TotalRows * RowHeight;
             IsScrollable = totalContentHeight > viewportHeight + 0.001f;
-
             PanelBounds = new RectangleF(viewBox.X, contentTop, viewBox.Width, viewportHeight);
 
             float contentWidth = Math.Max(1f, viewBox.Width - (IsScrollable ? ScrollerWidthPixels : 0f));
@@ -135,11 +172,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             if (!IsScrollable && TotalRows > 0)
             {
                 _manualScrollPixels = 0f;
+                _scrollBarThumbDragging = false;
+                _scrollBarThumbHoverFrame = long.MinValue;
                 ScrollVelocityPixelsPerFrame = 0f;
                 IsAnimating = false;
             }
 
             float maxScrollOffset = GetMaxScrollOffsetPixels();
+
             if (TotalRows > 0 && IsScrollable)
             {
                 _manualScrollPixels = Clamp(_manualScrollPixels, 0f, maxScrollOffset);
@@ -149,11 +189,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             ScrollOffsetPixels = IsScrollable && scrollOffsetProvider != null
                 ? Clamp(scrollOffsetProvider(maxScrollOffset), 0f, maxScrollOffset)
                 : 0f;
+
             StartRow = Clamp((int)Math.Floor(ScrollOffsetPixels / RowHeight), 0, GetMaxStartRow());
             RowOffsetPixels = Math.Max(0f, ScrollOffsetPixels - StartRow * RowHeight);
 
             int maxRowsInViewport = Math.Max(1, (int)Math.Ceiling(viewportHeight / RowHeight));
             VisibleRows = TotalRows == 0 ? 0 : Math.Min(TotalRows - StartRow, maxRowsInViewport);
+
             int renderRowsForViewport = Math.Max(1, (int)Math.Ceiling((viewportHeight + RowOffsetPixels) / RowHeight) + 1);
             RenderRows = TotalRows == 0
                 ? 0
@@ -177,6 +219,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
                 return false;
 
             float pixelDelta = GetManualScrollPixelDelta(delta);
+
             if (Math.Abs(pixelDelta) <= 0.001f)
                 return false;
 
@@ -196,11 +239,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
         protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
         {
+            RenderScrollBar(sprites, GetScrollBarTrackColor(context), GetScrollBarThumbColor(context));
         }
 
         protected override bool IsDirtyAfterRender()
         {
-            return IsAnimating;
+            return IsAnimating || _scrollBarThumbDragging || IsScrollBarThumbHovered();
         }
 
         protected override bool HitCore(Vector2 point)
@@ -208,31 +252,223 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             return PanelBounds.Contains(point);
         }
 
-        public void RenderScrollBar(List<MySprite> sprites, Color trackColor, Color thumbColor)
+        public void SetScrollBarColors(Color trackColor, Color thumbColor)
         {
-            if (!IsScrollable || sprites == null || TotalRows <= 0)
+            _scrollBarTrackColor = trackColor;
+            _scrollBarThumbColor = thumbColor;
+            _hasCustomScrollBarColors = true;
+            MarkDirty();
+        }
+
+        public void ClearScrollBarColors()
+        {
+            if (!_hasCustomScrollBarColors)
                 return;
 
-            float trackHeight = Math.Max(1f, ContentViewportBounds.Height - ScrollerWidthPixels * 2f);
-            float totalContentHeight = Math.Max(1f, TotalRows * RowHeight);
-            float scrollBarHeight = Math.Max(1f, Math.Min(trackHeight, ContentViewportBounds.Height / totalContentHeight * trackHeight));
-            float maxScrollOffset = GetMaxScrollOffsetPixels();
-            float scrollFraction = maxScrollOffset > 0f ? ScrollOffsetPixels / maxScrollOffset : 0f;
-            float scrollBarTravel = Math.Max(0f, trackHeight - scrollBarHeight);
-            float scrollBarCenter = scrollFraction * scrollBarTravel + scrollBarHeight / 2f;
-            float initialY = ContentViewportBounds.Y + ScrollerWidthPixels;
-            float barXCenter = ViewBox.X + ViewBox.Width - ScrollerWidthPixels / 2f;
-            int barWidth = Math.Max(1, (int)ScrollerWidthPixels);
+            _hasCustomScrollBarColors = false;
+            MarkDirty();
+        }
+
+        public void RenderScrollBar(List<MySprite> sprites, Color trackColor, Color thumbColor)
+        {
+            if (sprites == null)
+                return;
+
+            ScrollBarMetrics metrics;
+            if (!TryGetScrollBarMetrics(out metrics))
+                return;
+
+            float barXCenter = metrics.TrackBounds.X + metrics.TrackBounds.Width / 2f;
+            int barWidth = Math.Max(1, (int)Math.Round(metrics.TrackBounds.Width, MidpointRounding.AwayFromZero));
 
             var trackCenter = new Vector2(
                 barXCenter,
-                (float)Math.Round(initialY + trackHeight / 2f, MidpointRounding.ToEven));
-            DrawCapsule(sprites, trackCenter, barWidth, trackHeight, trackColor);
+                (float)Math.Round(metrics.TrackBounds.Y + metrics.TrackBounds.Height / 2f, MidpointRounding.ToEven));
+            DrawCapsule(sprites, trackCenter, barWidth, metrics.TrackBounds.Height, trackColor);
 
             var thumbCenter = new Vector2(
                 barXCenter,
-                (float)Math.Round(initialY + scrollBarCenter, MidpointRounding.ToEven));
-            DrawCapsule(sprites, thumbCenter, barWidth, scrollBarHeight, thumbColor);
+                (float)Math.Round(metrics.ThumbBounds.Y + metrics.ThumbBounds.Height / 2f, MidpointRounding.ToEven));
+            DrawCapsule(sprites, thumbCenter, barWidth, metrics.ThumbBounds.Height, GetThumbColor(thumbColor));
+        }
+
+        bool TryGetScrollBarMetrics(out ScrollBarMetrics metrics)
+        {
+            metrics = new ScrollBarMetrics();
+
+            if (!IsScrollable || ScrollerWidthPixels <= 0f || TotalRows <= 0)
+                return false;
+
+            float gutterWidth = Math.Max(1f, ScrollerWidthPixels);
+            float barWidth = GetScrollBarVisualWidthPixels(gutterWidth);
+            float horizontalPadding = Math.Max(0f, (gutterWidth - barWidth) * 0.5f);
+            float trackHeight = Math.Max(1f, ContentViewportBounds.Height - ScrollerWidthPixels * 2f);
+            float totalContentHeight = Math.Max(1f, TotalRows * RowHeight);
+            float thumbHeight = Math.Max(1f, Math.Min(trackHeight, ContentViewportBounds.Height / totalContentHeight * trackHeight));
+            float maxScrollOffset = GetMaxScrollOffsetPixels();
+            float thumbTravel = Math.Max(0f, trackHeight - thumbHeight);
+            float scrollFraction = maxScrollOffset > 0f ? Clamp(ScrollOffsetPixels / maxScrollOffset, 0f, 1f) : 0f;
+            float initialY = ContentViewportBounds.Y + ScrollerWidthPixels;
+            float gutterX = ViewBox.X + ViewBox.Width - gutterWidth;
+            float trackX = gutterX + horizontalPadding;
+            float thumbY = initialY + thumbTravel * scrollFraction;
+
+            metrics.TrackHitBounds = new RectangleF(gutterX, initialY, gutterWidth, trackHeight);
+            metrics.TrackBounds = new RectangleF(trackX, initialY, barWidth, trackHeight);
+            metrics.ThumbBounds = new RectangleF(trackX, thumbY, barWidth, thumbHeight);
+            metrics.ThumbTravelPixels = thumbTravel;
+            metrics.MaxScrollOffsetPixels = maxScrollOffset;
+            return true;
+        }
+
+        bool TryGetScrollBarTrackBounds(out RectangleF bounds)
+        {
+            ScrollBarMetrics metrics;
+            if (!TryGetScrollBarMetrics(out metrics))
+            {
+                bounds = default(RectangleF);
+                return false;
+            }
+
+            bounds = metrics.TrackHitBounds;
+            return true;
+        }
+
+        bool TryGetScrollBarThumbBounds(out RectangleF bounds)
+        {
+            ScrollBarMetrics metrics;
+            if (!TryGetScrollBarMetrics(out metrics))
+            {
+                bounds = default(RectangleF);
+                return false;
+            }
+
+            bounds = metrics.ThumbBounds;
+            return true;
+        }
+
+        bool JumpScrollBarThumbToPoint(Vector2 point)
+        {
+            ScrollBarMetrics metrics;
+            if (!TryGetScrollBarMetrics(out metrics) || !metrics.TrackHitBounds.Contains(point))
+                return false;
+
+            StopScrollInertia();
+            return SetScrollOffsetFromThumbTop(point.Y - metrics.ThumbBounds.Height * 0.5f, metrics);
+        }
+
+        bool DragScrollBarThumbByDelta(Vector2 delta)
+        {
+            if (float.IsNaN(delta.X) || float.IsNaN(delta.Y))
+                return false;
+
+            ScrollBarMetrics metrics;
+            if (!TryGetScrollBarMetrics(out metrics) || metrics.ThumbTravelPixels <= 0.001f)
+                return false;
+
+            float scrollDelta = metrics.MaxScrollOffsetPixels * (delta.Y / metrics.ThumbTravelPixels);
+            return SetManualScrollOffsetPixels(ScrollOffsetPixels + scrollDelta);
+        }
+
+        void BeginScrollBarThumbDrag()
+        {
+            StopScrollInertia();
+            _scrollBarThumbDragging = true;
+            MarkDirty();
+        }
+
+        void EndScrollBarThumbDrag()
+        {
+            if (!_scrollBarThumbDragging)
+                return;
+
+            _scrollBarThumbDragging = false;
+            MarkDirty();
+        }
+
+        void MarkScrollBarThumbHovered()
+        {
+            _scrollBarThumbHoverFrame = GetFrameCounter();
+            MarkDirty();
+        }
+
+        bool IsScrollBarThumbHovered()
+        {
+            return _scrollBarThumbHoverFrame != long.MinValue &&
+                   GetFrameCounter() - _scrollBarThumbHoverFrame <= HOVER_LIFETIME_FRAMES;
+        }
+
+        Color GetScrollBarTrackColor(ControlRenderContext context)
+        {
+            if (_hasCustomScrollBarColors)
+                return _scrollBarTrackColor;
+
+            var color = context != null ? context.TextColor : Color.White;
+            return new Color(color.R, color.G, color.B, 127);
+        }
+
+        Color GetScrollBarThumbColor(ControlRenderContext context)
+        {
+            if (_hasCustomScrollBarColors)
+                return _scrollBarThumbColor;
+
+            var color = context != null ? context.PanelColor : Color.White;
+            return new Color(color.R, color.G, color.B, 250);
+        }
+
+        static float GetScrollBarVisualWidthPixels(float gutterWidth)
+        {
+            if (gutterWidth <= 1f)
+                return 1f;
+
+            return Math.Max(1f, Math.Min(gutterWidth, (float)Math.Round(gutterWidth * 0.5f, MidpointRounding.AwayFromZero)));
+        }
+
+        Color GetThumbColor(Color thumbColor)
+        {
+            if (_scrollBarThumbDragging)
+                return thumbColor.DeriveAccentColor().DeriveAccentColor();
+
+            return IsScrollBarThumbHovered() ? thumbColor.DeriveAccentColor() : thumbColor;
+        }
+
+        bool SetScrollOffsetFromThumbTop(float thumbTop, ScrollBarMetrics metrics)
+        {
+            float scrollFraction = metrics.ThumbTravelPixels <= 0f
+                ? 0f
+                : Clamp((thumbTop - metrics.TrackBounds.Y) / metrics.ThumbTravelPixels, 0f, 1f);
+
+            return SetManualScrollOffsetPixels(metrics.MaxScrollOffsetPixels * scrollFraction);
+        }
+
+        bool SetManualScrollOffsetPixels(float offsetPixels)
+        {
+            float maxScrollOffset = GetMaxScrollOffsetPixels();
+            float clampedOffset = Clamp(offsetPixels, 0f, maxScrollOffset);
+            float previousOffset = ScrollOffsetPixels;
+
+            StopScrollInertia();
+            _manualScrollPixels = clampedOffset;
+            ScrollOffsetPixels = clampedOffset;
+            StartRow = Clamp((int)Math.Floor(ScrollOffsetPixels / RowHeight), 0, GetMaxStartRow());
+            RowOffsetPixels = Math.Max(0f, ScrollOffsetPixels - StartRow * RowHeight);
+
+            if (AutoScrollSecondsPerStep > 0f)
+                _manualOverrideUntilFrame = GetFrameCounter() + MANUAL_SCROLL_OVERRIDE_FRAMES;
+
+            if (Math.Abs(previousOffset - ScrollOffsetPixels) <= 0.001f)
+                return false;
+
+            MarkDirty();
+            ScrollChanged?.Invoke(this);
+            return true;
+        }
+
+        void StopScrollInertia()
+        {
+            ScrollVelocityPixelsPerFrame = 0f;
+            IsAnimating = false;
+            _lastInertiaFrame = GetFrameCounter();
         }
 
         float GetScrollOffsetForCurrentMode(float maxScrollOffset)
@@ -264,6 +500,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             float multiplier = ManualScrollPixelMultiplier > 0f
                 ? ManualScrollPixelMultiplier
                 : DEFAULT_MANUAL_SCROLL_PIXEL_MULTIPLIER;
+
             float pixels = Math.Abs(wheelDelta) * multiplier;
             return wheelDelta > 0 ? -pixels : pixels;
         }
@@ -272,9 +509,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         {
             if (!ManualScrollInertiaEnabled)
             {
-                ScrollVelocityPixelsPerFrame = 0f;
-                IsAnimating = false;
-                _lastInertiaFrame = GetFrameCounter();
+                StopScrollInertia();
                 return;
             }
 
@@ -283,32 +518,33 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
                 ScrollVelocityPixelsPerFrame + pixelDelta * MANUAL_SCROLL_VELOCITY_IMPULSE,
                 -maxVelocity,
                 maxVelocity);
+
             IsAnimating = Math.Abs(ScrollVelocityPixelsPerFrame) > STOP_VELOCITY_PIXELS_PER_FRAME;
             _lastInertiaFrame = GetFrameCounter();
         }
 
         void UpdateManualScrollInertia(float maxScrollOffset)
         {
+            if (_scrollBarThumbDragging)
+                return;
+
             var previousScroll = _manualScrollPixels;
             var previousVelocity = ScrollVelocityPixelsPerFrame;
 
             if (Math.Abs(ScrollVelocityPixelsPerFrame) <= STOP_VELOCITY_PIXELS_PER_FRAME)
             {
-                ScrollVelocityPixelsPerFrame = 0f;
-                IsAnimating = false;
-                _lastInertiaFrame = GetFrameCounter();
+                StopScrollInertia();
                 return;
             }
 
             if (AutoScrollSecondsPerStep > 0f && GetFrameCounter() > _manualOverrideUntilFrame)
             {
-                ScrollVelocityPixelsPerFrame = 0f;
-                IsAnimating = false;
-                _lastInertiaFrame = GetFrameCounter();
+                StopScrollInertia();
                 return;
             }
 
             long frame = GetFrameCounter();
+
             if (_lastInertiaFrame == long.MinValue)
                 _lastInertiaFrame = frame;
 
@@ -321,6 +557,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
                 bool hitTop = _manualScrollPixels <= 0f && ScrollVelocityPixelsPerFrame < 0f;
                 bool hitBottom = _manualScrollPixels >= maxScrollOffset && ScrollVelocityPixelsPerFrame > 0f;
+
                 if (hitTop || hitBottom)
                 {
                     ScrollVelocityPixelsPerFrame = 0f;
@@ -381,8 +618,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         {
             if (value < min)
                 return min;
+
             if (value > max)
                 return max;
+
             return value;
         }
 
@@ -390,8 +629,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         {
             if (value < min)
                 return min;
+
             if (value > max)
                 return max;
+
             return value;
         }
 
@@ -408,6 +649,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             });
 
             var capsSize = new Vector2(width);
+
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXTURE,
@@ -429,6 +671,101 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
                 Color = color,
                 Alignment = TextAlignment.CENTER
             });
+        }
+
+        sealed class ScrollBarTrackControl : ControlBase
+        {
+            readonly ScrollPanel _owner;
+
+            public ScrollBarTrackControl(ScrollPanel owner)
+                : base(CursorType.Arrow, owner)
+            {
+                _owner = owner;
+                SetClickOnPress(true);
+                SetOnClick((dataContext, sender) => { });
+            }
+
+            public override RectangleF Bounds
+            {
+                get
+                {
+                    RectangleF bounds;
+                    return _owner != null && _owner.TryGetScrollBarTrackBounds(out bounds)
+                        ? bounds
+                        : default(RectangleF);
+                }
+            }
+
+            public override bool CanPrimaryClick
+            {
+                get { return Visible && _owner != null && _owner.IsScrollable; }
+            }
+
+            public override bool ClickAt(Vector2 point, object sender)
+            {
+                return _owner != null && _owner.JumpScrollBarThumbToPoint(point);
+            }
+
+            protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+            {
+            }
+
+            protected override bool HitCore(Vector2 point)
+            {
+                RectangleF bounds;
+                return _owner != null && _owner.TryGetScrollBarTrackBounds(out bounds) && bounds.Contains(point);
+            }
+        }
+
+        sealed class ScrollBarThumbControl : ControlBase
+        {
+            readonly ScrollPanel _owner;
+
+            public ScrollBarThumbControl(ScrollPanel owner)
+                : base(CursorType.Arrow, owner)
+            {
+                _owner = owner;
+                SetDraggable();
+                SetOnBeginDrag((dataContext, sender) => _owner.BeginScrollBarThumbDrag());
+                SetOnDrag((dataContext, sender, delta) => _owner.DragScrollBarThumbByDelta(delta));
+                SetOnEndDrag((dataContext, sender) => _owner.EndScrollBarThumbDrag());
+                SetOnHover((dataContext, sender) =>
+                {
+                    _owner.MarkScrollBarThumbHovered();
+                    return true;
+                });
+            }
+
+            public override RectangleF Bounds
+            {
+                get
+                {
+                    RectangleF bounds;
+                    return _owner != null && _owner.TryGetScrollBarThumbBounds(out bounds)
+                        ? bounds
+                        : default(RectangleF);
+                }
+            }
+
+            public override bool CanHover
+            {
+                get { return Visible && _owner != null && _owner.IsScrollable; }
+            }
+
+            public override bool CanDrag
+            {
+                get { return Visible && _owner != null && _owner.IsScrollable && Draggable; }
+            }
+
+            protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+            {
+            }
+
+            protected override bool HitCore(Vector2 point)
+            {
+                RectangleF bounds;
+                return _owner != null && _owner.TryGetScrollBarThumbBounds(out bounds) && bounds.Contains(point);
+            }
         }
     }
 }

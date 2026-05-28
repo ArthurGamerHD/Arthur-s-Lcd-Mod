@@ -32,5 +32,14 @@ namespace LcdMod.Client.Extensions
             sprite.Color = color;
             return sprite;
         }
+
+        public static RectangleF Inflate(this RectangleF rectangle, float amount)
+        {
+            return new RectangleF(
+                rectangle.X - amount,
+                rectangle.Y - amount,
+                rectangle.Width + amount * 2f,
+                rectangle.Height + amount * 2f);
+        }
     }
 }

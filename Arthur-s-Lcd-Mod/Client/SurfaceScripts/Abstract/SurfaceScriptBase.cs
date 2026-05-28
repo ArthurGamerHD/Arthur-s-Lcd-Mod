@@ -400,14 +400,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         void Init()
         {
-            try
-            {
-                throw new Exception("Hello DNSpy");
-            }
-            catch
-            {
-                /* workaround for Debugger.Attach() not available for Mods */
-            }
             _rotationOrSurfaceIndex = ResolveRotationOrSurfaceIndex();
             var panel = Block as IMyTextPanel;
             
@@ -820,6 +812,9 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         protected virtual void LayoutChanged()
         {
+            if(Surface == null)
+                return; // we got disposed
+
             _userPadding = Surface.TextPadding;
             _userScale = Config.Scale;
             _userFontScale = Surface.FontSize;

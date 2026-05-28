@@ -327,6 +327,7 @@ namespace LcdMod.Client.Apps.Abstract
                 items.Count,
                 SCROLLER_WIDTH * Scale,
                 SCROLL_DELAY / 6f);
+            ConfigureScrollPanelBarColors(_scrollPanel);
             var panel = _scrollPanel;
 
             var stack = StackPanel.Create(panel.ContentBounds, rowHeight, items.Count, panel.GetStartIndex(1));
@@ -348,8 +349,6 @@ namespace LcdMod.Client.Apps.Abstract
                 cell.Render(renderContext, sprites);
             }
             EndScrollPanelClip(sprites);
-
-            RenderScrollPanelBar(sprites, panel);
 
             CaretY = panel.ContentBounds.Y + panel.MaxVisibleRows * rowHeight;
         }
@@ -388,8 +387,6 @@ namespace LcdMod.Client.Apps.Abstract
             }
             EndScrollPanelClip(sprites);
 
-            RenderScrollPanelBar(sprites, panel);
-
             CaretY = panel.ContentBounds.Y + panel.MaxVisibleRows * rowHeight;
         }
 
@@ -402,16 +399,16 @@ namespace LcdMod.Client.Apps.Abstract
                 new Vector2(float.NaN, float.NaN));
         }
 
-        void RenderScrollPanelBar(List<MySprite> sprites, ScrollPanel panel)
+        void ConfigureScrollPanelBarColors(ScrollPanel panel)
         {
-            if (panel == null || !panel.IsScrollable)
+            if (panel == null)
                 return;
 
             var trackColor = new Color(Surface.ScriptForegroundColor.R, Surface.ScriptForegroundColor.G,
                 Surface.ScriptForegroundColor.B, 127);
             var thumbColor = new Color(AppConfig.HeaderColor.R, AppConfig.HeaderColor.G,
                 AppConfig.HeaderColor.B, 250);
-            panel.RenderScrollBar(sprites, trackColor, thumbColor);
+            panel.SetScrollBarColors(trackColor, thumbColor);
         }
 
         void BeginScrollPanelClip(List<MySprite> sprites, ScrollPanel panel)
@@ -460,6 +457,7 @@ namespace LcdMod.Client.Apps.Abstract
                     autoScrollSecondsPerStep);
             }
 
+            ConfigureScrollPanelBarColors(_scrollPanel);
             return _scrollPanel;
         }
 

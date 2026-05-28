@@ -22,12 +22,18 @@ namespace LcdMod.Client.Modules.EyeTracking
         const double MAX_TRACKING_DISTANCE_METERS = 20d;
         const double MAX_TRACKING_DISTANCE_SQ = MAX_TRACKING_DISTANCE_METERS * MAX_TRACKING_DISTANCE_METERS;
         const long ACTIVE_SURFACE_TIMEOUT_FRAMES = 30;
+        const float MIN_DRAG_DELTA_PIXELS = 0.001f;
 
         readonly HashSet<IEyeTracking> _modules = new HashSet<IEyeTracking>();
         readonly List<IEyeTracking> _pendingModules = new List<IEyeTracking>();
+
         int _lastActiveNearbyCount;
         ControlBase _pressedClickable;
         object _pressedClickableDataContext;
+        ControlBase _draggingControl;
+        IEyeTracking _draggingEntity;
+        Vector2 _lastDragPosition;
+        bool _suppressPrimaryReleaseClick;
         bool _primaryWasPressed;
         bool _secondaryWasPressed;
 
@@ -41,7 +47,6 @@ namespace LcdMod.Client.Modules.EyeTracking
             else
                 LogHelper.Log(MyLogSeverity.Warning, $"{nameof(EyeTrackingModule)} tried to register an null instance");
         }
-
 
         public void Unhook(IEyeTracking instance)
         {
@@ -62,27 +67,29 @@ namespace LcdMod.Client.Modules.EyeTracking
             _pendingModules.Clear();
 
             var player = MyAPIGateway.Session?.LocalHumanPlayer;
-
             var entity = player?.Controller?.ControlledEntity?.Entity as IMyShipController as MyCubeBlock;
 
-
             if (MyAPIGateway.Gui.IsCursorVisible || (!_moveCameraControl.IsPressed() &&
-                                                     ((entity?.BlockDefinition as MyCockpitDefinition)
-                                                         ?.EnableShipControl ?? false)))
+                ((entity?.BlockDefinition as MyCockpitDefinition)?.EnableShipControl ?? false)))
+            {
+                UpdateClickState(null, null, null);
+                _lastActiveNearbyCount = 0;
                 return;
+            }
 
             if (LocalPlayerBlockStateHelper.IsBlockPlacerActive())
             {
-                UpdateClickState(null, null);
+                UpdateClickState(null, null, null);
                 _lastActiveNearbyCount = 0;
                 return;
             }
 
             Vector3D cameraPos;
             Vector3D cameraForward;
+
             if (!TryGetCameraRay(out cameraPos, out cameraForward))
             {
-                UpdateClickState(null, null);
+                UpdateClickState(null, null, null);
                 _lastActiveNearbyCount = 0;
                 return;
             }
@@ -100,6 +107,7 @@ namespace LcdMod.Client.Modules.EyeTracking
             foreach (var screen in _modules)
             {
                 var surfaceScript = screen as InteractiveSurfaceScript;
+
                 if (surfaceScript == null || screen.Block == null)
                     continue;
 
@@ -110,20 +118,23 @@ namespace LcdMod.Client.Modules.EyeTracking
                     continue;
 
                 var blockPos = screen.Block.WorldMatrix.Translation;
+
                 if (Vector3D.DistanceSquared(blockPos, cameraPos) > MAX_TRACKING_DISTANCE_SQ)
                     continue;
 
                 Vector2 lookAtCoordinates;
+
                 if (ScreenAreaGeometry.TryGetScreenPointIntersection(
-                        surfaceScript,
-                        cameraPos,
-                        cameraForward,
-                        out lookAtCoordinates))
+                    surfaceScript,
+                    cameraPos,
+                    cameraForward,
+                    out lookAtCoordinates))
                 {
                     screen.LookAt(lookAtCoordinates);
                     resolvedCount++;
 
                     var distanceSq = Vector3D.DistanceSquared(blockPos, cameraPos);
+
                     if (distanceSq < lookingDistanceSq)
                     {
                         lookingDistanceSq = distanceSq;
@@ -131,12 +142,14 @@ namespace LcdMod.Client.Modules.EyeTracking
                     }
 
                     var interactiveSurface = screen as InteractiveSurfaceScript;
+
                     if (distanceSq < tooltipDistanceSq)
                     {
                         try
                         {
                             bool blocksPrimary = interactiveSurface.HasTooltipInputAtCursor(false);
                             bool blocksSecondary = interactiveSurface.HasTooltipInputAtCursor(true);
+
                             if (blocksPrimary || blocksSecondary)
                             {
                                 tooltipDistanceSq = distanceSq;
@@ -150,6 +163,7 @@ namespace LcdMod.Client.Modules.EyeTracking
                     }
 
                     ControlBase clickable;
+
                     if (TryGetHoveredClickable(screen, activeClickButton, out clickable))
                     {
                         if (distanceSq < hoveredDistanceSq)
@@ -168,7 +182,7 @@ namespace LcdMod.Client.Modules.EyeTracking
             try
             {
                 UpdateScrollState(lookingScreen);
-                UpdateClickState(hoveredClickable, eyeTrackingEntity);
+                UpdateClickState(hoveredClickable, eyeTrackingEntity, lookingScreen);
             }
             catch (Exception e)
             {
@@ -194,66 +208,159 @@ namespace LcdMod.Client.Modules.EyeTracking
 
         void UpdateClickState(
             ControlBase hoveredClickable,
-            IEyeTracking eyeTrackingEntity)
+            IEyeTracking eyeTrackingEntity,
+            IEyeTracking lookingScreen)
         {
             bool primaryPressed = MyAPIGateway.Input != null && HoldingClick;
             bool secondaryPressed = MyAPIGateway.Input != null && HoldingRightClick;
-            bool hasInputTarget = hoveredClickable != null || eyeTrackingEntity != null;
+            bool primaryStarted = primaryPressed && !_primaryWasPressed;
+            bool secondaryStarted = secondaryPressed && !_secondaryWasPressed;
+            bool primaryReleased = !primaryPressed && _primaryWasPressed;
+            bool secondaryReleased = !secondaryPressed && _secondaryWasPressed;
+            bool hasInputTarget = hoveredClickable != null || eyeTrackingEntity != null || lookingScreen != null || _draggingControl != null;
+            bool finishedDrag = false;
 
-            if ((primaryPressed && !_primaryWasPressed) || (secondaryPressed && !_secondaryWasPressed))
+            if (primaryStarted)
             {
-                _pressedClickable = hoveredClickable;
-                _pressedClickableDataContext =
-                    hoveredClickable != null ? hoveredClickable.DataContext ?? hoveredClickable : null;
+                if (!TryBeginDrag(lookingScreen ?? eyeTrackingEntity))
+                {
+                    if (hoveredClickable != null && hoveredClickable.ClickOnPress)
+                    {
+                        HandleClickOnPress(hoveredClickable, eyeTrackingEntity);
+                        _suppressPrimaryReleaseClick = true;
+                        _pressedClickable = null;
+                        _pressedClickableDataContext = null;
+                    }
+                    else
+                    {
+                        _pressedClickable = hoveredClickable;
+                        _pressedClickableDataContext = hoveredClickable != null
+                            ? hoveredClickable.DataContext ?? hoveredClickable
+                            : null;
+                    }
+                }
+                else
+                {
+                    _suppressPrimaryReleaseClick = true;
+                    _pressedClickable = null;
+                    _pressedClickableDataContext = null;
+                }
             }
 
-            if ((!primaryPressed && _primaryWasPressed) || (!secondaryPressed && _secondaryWasPressed))
+            if (secondaryStarted)
             {
-                var hoveredDataContext =
-                    hoveredClickable != null ? hoveredClickable.DataContext ?? hoveredClickable : null;
+                _pressedClickable = hoveredClickable;
+                _pressedClickableDataContext = hoveredClickable != null ? hoveredClickable.DataContext ?? hoveredClickable : null;
+            }
+
+            if (primaryPressed && _draggingControl != null)
+            {
+                if (!ReferenceEquals(lookingScreen, _draggingEntity))
+                {
+                    EndActiveDrag();
+                    finishedDrag = true;
+                }
+                else
+                {
+                    Vector2 currentPosition;
+
+                    if (!TryGetHitTestCursorPosition(_draggingEntity, out currentPosition))
+                    {
+                        EndActiveDrag();
+                        finishedDrag = true;
+                    }
+                    else
+                    {
+                        var delta = currentPosition - _lastDragPosition;
+                        _lastDragPosition = currentPosition;
+
+                        if (!IsValidVector(delta))
+                        {
+                            EndActiveDrag();
+                            finishedDrag = true;
+                        }
+                        else if (Math.Abs(delta.X) > MIN_DRAG_DELTA_PIXELS || Math.Abs(delta.Y) > MIN_DRAG_DELTA_PIXELS)
+                        {
+                            _draggingControl.Drag(_draggingEntity, delta);
+                        }
+                    }
+                }
+            }
+
+            if (primaryReleased && _draggingControl != null)
+            {
+                EndActiveDrag();
+                finishedDrag = true;
+            }
+
+            if (primaryReleased || secondaryReleased)
+            {
+                bool suppressReleaseClick = finishedDrag || primaryReleased && _suppressPrimaryReleaseClick;
+                var hoveredDataContext = hoveredClickable != null ? hoveredClickable.DataContext ?? hoveredClickable : null;
 
                 try
                 {
                     var interactiveSurface = eyeTrackingEntity as InteractiveSurfaceScript;
                     var rightClick = !_primaryWasPressed && _secondaryWasPressed;
+
                     ControlBase clickedControl;
-                    var click = _pressedClickable != null && hoveredClickable != null &&
+                    var click = !suppressReleaseClick &&
+                                _pressedClickable != null &&
+                                hoveredClickable != null &&
                                 Equals(objA: _pressedClickableDataContext, objB: hoveredDataContext) &&
                                 (interactiveSurface != null
                                     ? interactiveSurface.TryClickAtCursor(rightClick, eyeTrackingEntity, out clickedControl)
                                     : rightClick
                                         ? hoveredClickable.SecondaryClick(eyeTrackingEntity)
-                                        : hoveredClickable.Click(eyeTrackingEntity))
-                        ; // handle click first
+                                        : hoveredClickable.Click(eyeTrackingEntity));
 
                     ControlBase tooltipParent;
-                    click = click || TryHandleTooltipActivation(eyeTrackingEntity,
-                        rightClick: rightClick,
-                        tooltipParent: out tooltipParent); // then handle tooltip if needed
+                    click = !suppressReleaseClick &&
+                            (click || TryHandleTooltipActivation(
+                                eyeTrackingEntity,
+                                rightClick: rightClick,
+                                tooltipParent: out tooltipParent));
 
-                    if (eyeTrackingEntity != null)
+                    if (eyeTrackingEntity != null && !suppressReleaseClick)
+                    {
                         eyeTrackingEntity.PlaySounds(
                             hoveredClickable == null
                                 ? AudioHelper.HudClick
                                 : click
                                     ? hoveredClickable.ClickSound
                                     : hoveredClickable.ClickFailSound);
+                    }
                 }
                 catch (Exception e)
                 {
-                    if (eyeTrackingEntity != null)
-                        eyeTrackingEntity.PlaySounds(hoveredClickable.ClickFailSound);
+                    if (eyeTrackingEntity != null && !suppressReleaseClick)
+                    {
+                        eyeTrackingEntity.PlaySounds(
+                            hoveredClickable != null
+                                ? hoveredClickable.ClickFailSound
+                                : AudioHelper.HudClick);
+                    }
+
                     ErrorHandlerHelper.LogError(error: e, source: this);
                 }
 
                 _pressedClickable = null;
                 _pressedClickableDataContext = null;
+
+                if (primaryReleased)
+                    _suppressPrimaryReleaseClick = false;
             }
 
             if (!hasInputTarget)
             {
                 _pressedClickable = null;
                 _pressedClickableDataContext = null;
+
+                if (_draggingControl != null)
+                    EndActiveDrag();
+
+                if (!primaryPressed)
+                    _suppressPrimaryReleaseClick = false;
             }
 
             _primaryWasPressed = primaryPressed;
@@ -266,8 +373,66 @@ namespace LcdMod.Client.Modules.EyeTracking
                 return;
 
             var delta = MyAPIGateway.Input.DeltaMouseScrollWheelValue();
+
             if (delta != 0)
                 lookingScreen.MouseScroll(delta);
+        }
+
+        bool TryBeginDrag(IEyeTracking screen)
+        {
+            ControlBase draggable;
+            Vector2 position;
+
+            if (!TryGetHoveredDraggable(screen, out draggable) || !TryGetHitTestCursorPosition(screen, out position))
+                return false;
+
+            if (!draggable.BeginDrag(screen))
+                return false;
+
+            _draggingControl = draggable;
+            _draggingEntity = screen;
+            _lastDragPosition = position;
+            return true;
+        }
+
+        void EndActiveDrag()
+        {
+            if (_draggingControl != null)
+                _draggingControl.EndDrag(_draggingEntity);
+
+            _draggingControl = null;
+            _draggingEntity = null;
+            _lastDragPosition = default(Vector2);
+        }
+
+        void HandleClickOnPress(ControlBase clickedControl, IEyeTracking eyeTrackingEntity)
+        {
+            if (clickedControl == null)
+                return;
+
+            bool click = false;
+
+            try
+            {
+                Vector2 position;
+                click = TryGetHitTestCursorPosition(eyeTrackingEntity, out position) &&
+                        clickedControl.ClickAt(position, eyeTrackingEntity);
+
+                if (eyeTrackingEntity != null)
+                {
+                    eyeTrackingEntity.PlaySounds(
+                        click
+                            ? clickedControl.ClickSound
+                            : clickedControl.ClickFailSound);
+                }
+            }
+            catch (Exception e)
+            {
+                if (eyeTrackingEntity != null)
+                    eyeTrackingEntity.PlaySounds(clickedControl.ClickFailSound);
+
+                ErrorHandlerHelper.LogError(error: e, source: this);
+            }
         }
 
         static bool TryHandleTooltipActivation(
@@ -276,8 +441,8 @@ namespace LcdMod.Client.Modules.EyeTracking
             out ControlBase tooltipParent)
         {
             tooltipParent = null;
-
             var interactiveSurface = eyeTrackingEntity as InteractiveSurfaceScript;
+
             return interactiveSurface != null &&
                    interactiveSurface.TryHandleTooltipActivationClick(rightClick, out tooltipParent);
         }
@@ -305,8 +470,8 @@ namespace LcdMod.Client.Modules.EyeTracking
         static bool TryGetHoveredClickable(IEyeTracking screen, bool? secondary, out ControlBase clickable)
         {
             clickable = null;
-
             var interactiveSurface = screen as InteractiveSurfaceScript;
+
             if (interactiveSurface != null)
             {
                 return secondary.HasValue
@@ -315,20 +480,23 @@ namespace LcdMod.Client.Modules.EyeTracking
             }
 
             var entries = screen.InteractiveEntries;
+
             if (entries == null || entries.Count == 0)
                 return false;
 
-            var position = screen.CursorPosition + screen.HitTestOffset;
-            if (float.IsNaN(position.X) || float.IsNaN(position.Y))
+            Vector2 position;
+            if (!TryGetHitTestCursorPosition(screen, out position))
                 return false;
 
             var list = entries as IList<ControlBase>;
+
             if (list == null)
                 return false;
 
             for (int i = list.Count - 1; i >= 0; i--)
             {
                 var entry = list[i];
+
                 if (entry == null)
                     continue;
 
@@ -345,21 +513,72 @@ namespace LcdMod.Client.Modules.EyeTracking
             return false;
         }
 
+        static bool TryGetHoveredDraggable(IEyeTracking screen, out ControlBase draggable)
+        {
+            draggable = null;
+
+            if (screen == null)
+                return false;
+
+            var entries = screen.InteractiveEntries;
+
+            if (entries == null || entries.Count == 0)
+                return false;
+
+            Vector2 position;
+            if (!TryGetHitTestCursorPosition(screen, out position))
+                return false;
+
+            var list = entries as IList<ControlBase>;
+
+            if (list == null)
+                return false;
+
+            for (int i = list.Count - 1; i >= 0; i--)
+            {
+                var entry = list[i];
+
+                if (entry != null && entry.TryResolveDraggable(position, out draggable))
+                    return true;
+            }
+
+            return false;
+        }
+
+        static bool TryGetHitTestCursorPosition(IEyeTracking screen, out Vector2 position)
+        {
+            position = default(Vector2);
+
+            if (screen == null)
+                return false;
+
+            position = screen.CursorPosition + screen.HitTestOffset;
+            return IsValidVector(position);
+        }
+
+        static bool IsValidVector(Vector2 value)
+        {
+            return !float.IsNaN(value.X) && !float.IsNaN(value.Y);
+        }
+
         static bool TryGetCameraRay(out Vector3D origin, out Vector3D direction)
         {
             origin = Vector3D.Zero;
             direction = Vector3D.Zero;
 
             var session = MyAPIGateway.Session;
+
             if (session == null)
                 return false;
 
             var camera = session.Camera;
+
             if (camera != null)
             {
                 var matrix = camera.WorldMatrix;
                 origin = matrix.Translation;
                 direction = matrix.Forward;
+
                 if (direction.LengthSquared() > 1e-8)
                 {
                     direction.Normalize();
@@ -368,12 +587,14 @@ namespace LcdMod.Client.Modules.EyeTracking
             }
 
             var cameraEntity = session.CameraController?.Entity;
+
             if (cameraEntity == null)
                 return false;
 
             var fallback = cameraEntity.WorldMatrix;
             origin = fallback.Translation;
             direction = fallback.Forward;
+
             if (direction.LengthSquared() <= 1e-8)
                 return false;
 

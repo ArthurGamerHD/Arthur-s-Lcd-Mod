@@ -60,6 +60,9 @@ namespace LcdMod.Client.Apps
                 lines.Count,
                 SCROLLBAR_WIDTH,
                 0f);
+            _scrollPanel.SetScrollBarColors(
+                new Color(45, 45, 45, 170),
+                new Color(190, 190, 190, 230));
 
             _sprites.Clear();
 
@@ -89,10 +92,9 @@ namespace LcdMod.Client.Apps
 
             EndClip(_sprites);
 
-            _scrollPanel.RenderScrollBar(
-                _sprites,
-                new Color(45, 45, 45, 170),
-                new Color(190, 190, 190, 230));
+            _scrollPanel.Render(
+                new ControlRenderContext(owner.Surface, 1f, 1f, Color.White, Color.Transparent, new Vector2(float.NaN, float.NaN)),
+                _sprites);
 
             return _sprites;
         }

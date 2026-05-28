@@ -185,23 +185,18 @@ namespace LcdMod.Client.Apps
             }
 
             EndScrollPanelClip(sprites);
-            RenderScrollPanelBar(owner, sprites);
+            _scrollPanel.Render(renderContext, sprites);
         }
 
         void ConfigurePowerScrollPanel(IAppHost owner, float contentTop, float footerHeight, float rowHeight, int totalRows)
         {
             _scrollPanel.Configure(owner.ViewBox, contentTop, footerHeight, rowHeight, totalRows, SCROLLER_W * owner.Scale, SCROLL_TICK / 6f);
+            _scrollPanel.SetScrollBarColors(
+                new Color(owner.Surface.ScriptForegroundColor.R, owner.Surface.ScriptForegroundColor.G, owner.Surface.ScriptForegroundColor.B, 127),
+                new Color(_config.HeaderColor.R, _config.HeaderColor.G, _config.HeaderColor.B, 250));
             _scrollPanel.SetVisible(true);
             if (!_interactiveList.Contains(_scrollPanel))
                 _interactiveList.Add(_scrollPanel);
-        }
-
-        void RenderScrollPanelBar(IAppHost owner, List<MySprite> sprites)
-        {
-            _scrollPanel.RenderScrollBar(
-                sprites,
-                new Color(owner.Surface.ScriptForegroundColor.R, owner.Surface.ScriptForegroundColor.G, owner.Surface.ScriptForegroundColor.B, 127),
-                new Color(_config.HeaderColor.R, _config.HeaderColor.G, _config.HeaderColor.B, 250));
         }
 
         void BeginPowerEntryHitboxFrame()
