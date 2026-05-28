@@ -109,10 +109,7 @@ namespace LcdMod.Client.SurfaceScripts
             }
         }
 
-        public override Vector2 HitTestOffset
-        {
-            get { return IsParentAlive(_parent) ? GetCurrentProxyOffset() : Vector2.Zero; }
-        }
+        public override Vector2 HitTestOffset => IsParentAlive(_parent) ? GetCurrentProxyOffset() : Vector2.Zero;
 
         public RenderProxySurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block,
             size)
@@ -120,17 +117,7 @@ namespace LcdMod.Client.SurfaceScripts
             EnsureActiveInstanceChangeSubscription();
         }
 
-        public void SetParent(SurfaceScriptBase parent)
-        {
-            if (parent != null && parent.Block != null &&
-                parent.Block.BlockDefinition.SubtypeName.Equals(Block.BlockDefinition.SubtypeName))
-                _parent = parent;
-        }
-
-        public bool IsReferenceBlockCandidate(IMyTerminalBlock block)
-        {
-            return IsBasicReferenceBlockCandidate(block) && HasMatchingResolution(block);
-        }
+        public bool IsReferenceBlockCandidate(IMyTerminalBlock block) => IsBasicReferenceBlockCandidate(block) && HasMatchingResolution(block);
 
         bool IsBasicReferenceBlockCandidate(IMyTerminalBlock block)
         {
@@ -156,7 +143,10 @@ namespace LcdMod.Client.SurfaceScripts
 
         static bool SameResolution(Vector2 a, Vector2 b)
         {
-            return Math.Abs(a.X - b.X) < 0.5f && Math.Abs(a.Y - b.Y) < 0.5f;
+            return (Math.Abs(a.X - b.X) < 0.5f &&
+                    Math.Abs(a.Y - b.Y) < 0.5f) ||
+                   (Math.Abs(a.X - b.Y) < 0.5f &&
+                    Math.Abs(a.Y - b.X) < 0.5f);
         }
 
         public bool CanApplyProxyAutoOffset()
@@ -293,8 +283,10 @@ namespace LcdMod.Client.SurfaceScripts
             Vector3I hostUp;
             Vector3I hostForward;
             Vector3D hostCenter;
+            double hostStepX;
+            double hostStepY;
             if (!TryGetScreenGridFrame(hostBlock, hostRotationIndex, out hostRight, out hostUp, out hostForward,
-                    out hostCenter))
+                    out hostCenter, out hostStepX, out hostStepY))
                 return false;
 
             context = new ProxyAutoContext
@@ -307,7 +299,9 @@ namespace LcdMod.Client.SurfaceScripts
                 Right = hostRight,
                 Up = hostUp,
                 Forward = hostForward,
-                HostCenter = hostCenter
+                HostCenter = hostCenter,
+                StepX = hostStepX,
+                StepY = hostStepY
             };
             return true;
         }
@@ -324,8 +318,10 @@ namespace LcdMod.Client.SurfaceScripts
             Vector3I panelUp;
             Vector3I panelForward;
             Vector3D panelCenter;
+            double panelStepX;
+            double panelStepY;
             if (!TryGetScreenGridFrame(panel, context.HostRotationIndex, out panelRight, out panelUp,
-                    out panelForward, out panelCenter))
+                    out panelForward, out panelCenter, out panelStepX, out panelStepY))
                 return false;
 
             return TryCalculateOffsetFromPanelFrame(
@@ -333,6 +329,8 @@ namespace LcdMod.Client.SurfaceScripts
                 panelUp,
                 panelForward,
                 panelCenter,
+                panelStepX,
+                panelStepY,
                 context,
                 out x,
                 out y);
@@ -343,6 +341,8 @@ namespace LcdMod.Client.SurfaceScripts
             Vector3I panelUp,
             Vector3I panelForward,
             Vector3D panelCenter,
+            double panelStepX,
+            double panelStepY,
             ProxyAutoContext context,
             out sbyte x,
             out sbyte y)
@@ -356,15 +356,24 @@ namespace LcdMod.Client.SurfaceScripts
             if (panelRight != context.Right || panelUp != context.Up || panelForward != context.Forward)
                 return false;
 
+            if (context.StepX <= 0.05d || context.StepY <= 0.05d || panelStepX <= 0.05d || panelStepY <= 0.05d)
+                return false;
+
+            if (Math.Abs(panelStepX - context.StepX) > 0.05d || Math.Abs(panelStepY - context.StepY) > 0.05d)
+                return false;
+
             var delta = panelCenter - context.HostCenter;
             double planeOffset = Dot(delta, context.Forward);
             if (Math.Abs(planeOffset) > 0.05d)
                 return false;
 
+            double xScreens = Dot(delta, context.Right) / context.StepX;
+            double yScreens = Dot(delta, -context.Up) / context.StepY;
+
             int xInt;
             int yInt;
-            if (!TryRoundCellOffset(Dot(delta, context.Right), out xInt) ||
-                !TryRoundCellOffset(Dot(delta, -context.Up), out yInt))
+            if (!TryRoundCellOffset(xScreens, out xInt) ||
+                !TryRoundCellOffset(yScreens, out yInt))
                 return false;
 
             if (xInt < sbyte.MinValue || xInt > sbyte.MaxValue ||
@@ -556,8 +565,10 @@ namespace LcdMod.Client.SurfaceScripts
             Vector3I hostUp;
             Vector3I hostForward;
             Vector3D hostCenter;
+            double hostStepX;
+            double hostStepY;
             if (!TryGetScreenGridFrame(hostPanel, hostRotationIndex, out hostRight, out hostUp, out hostForward,
-                    out hostCenter))
+                    out hostCenter, out hostStepX, out hostStepY))
                 return false;
 
             context = new ProxyAutoContext
@@ -570,7 +581,9 @@ namespace LcdMod.Client.SurfaceScripts
                 Right = hostRight,
                 Up = hostUp,
                 Forward = hostForward,
-                HostCenter = hostCenter
+                HostCenter = hostCenter,
+                StepX = hostStepX,
+                StepY = hostStepY
             };
             return true;
         }
@@ -747,12 +760,16 @@ namespace LcdMod.Client.SurfaceScripts
             out Vector3I right,
             out Vector3I up,
             out Vector3I forward,
-            out Vector3D center)
+            out Vector3D center,
+            out double stepX,
+            out double stepY)
         {
             right = Vector3I.Zero;
             up = Vector3I.Zero;
             forward = Vector3I.Zero;
             center = Vector3D.Zero;
+            stepX = 1d;
+            stepY = 1d;
 
             if (block == null || block.CubeGrid == null)
                 return false;
@@ -764,9 +781,36 @@ namespace LcdMod.Client.SurfaceScripts
             var inverseGrid = MatrixD.Invert(block.CubeGrid.WorldMatrix);
             center = Vector3D.Transform(screenWorld.Translation, inverseGrid) / block.CubeGrid.GridSize;
 
-            return TryGetGridAxis(Vector3D.TransformNormal(screenWorld.Right, inverseGrid), out right) &&
-                   TryGetGridAxis(Vector3D.TransformNormal(screenWorld.Up, inverseGrid), out up) &&
-                   TryGetGridAxis(Vector3D.TransformNormal(screenWorld.Forward, inverseGrid), out forward);
+            if (!TryGetGridAxis(Vector3D.TransformNormal(screenWorld.Right, inverseGrid), out right) ||
+                !TryGetGridAxis(Vector3D.TransformNormal(screenWorld.Up, inverseGrid), out up) ||
+                !TryGetGridAxis(Vector3D.TransformNormal(screenWorld.Forward, inverseGrid), out forward))
+            {
+                return false;
+            }
+
+            stepX = GetBlockSpanInGridCells(block, right);
+            stepY = GetBlockSpanInGridCells(block, up);
+
+            return stepX > 0.05d && stepY > 0.05d;
+        }
+
+        static double GetBlockSpanInGridCells(IMyCubeBlock block, Vector3I axis)
+        {
+            var slim = block?.SlimBlock;
+            if (slim == null)
+                return 1d;
+
+            var min = slim.Min;
+            var max = slim.Max;
+
+            if (axis.X != 0)
+                return Math.Abs(max.X - min.X) + 1d;
+            if (axis.Y != 0)
+                return Math.Abs(max.Y - min.Y) + 1d;
+            if (axis.Z != 0)
+                return Math.Abs(max.Z - min.Z) + 1d;
+
+            return 1d;
         }
 
         static bool TryGetGridAxis(Vector3D vector, out Vector3I axis)
@@ -854,6 +898,8 @@ namespace LcdMod.Client.SurfaceScripts
             public Vector3I Up;
             public Vector3I Forward;
             public Vector3D HostCenter;
+            public double StepX;
+            public double StepY;
         }
 
         sealed class ProxyAutoTarget
@@ -985,7 +1031,43 @@ namespace LcdMod.Client.SurfaceScripts
             var appConfig = AppConfig;
             float xOffset = appConfig?.XAxisOffset ?? 0f;
             float yOffset = appConfig?.YAxisOffset ?? 0f;
-            return new Vector2(Surface.TextureSize.X * xOffset, Surface.TextureSize.Y * yOffset);
+            return GetProxyPixelOffset(xOffset, yOffset);
+        }
+
+        Vector2 GetProxyPixelOffset(float xOffset, float yOffset)
+        {
+            var visibleRect = GetVisibleScreenRect();
+
+            // Proxy offsets are logical screen-page offsets.
+            // Cropped LCDs center the visible screen inside TextureSize,
+            // (Yes, I'm talking to YOU "Sci-Fi LCD Panel 5x3" !!!!!!!!)
+            // so one logical step must be one visible screen page, not one full texture page.
+            // ex: 512x512 texture but 512x310 size, Y starts at 101 and ends at 411
+            // so the step must be y:0 map to y:101, y:310 maps to y:411, skip 202px, then y:311 maps to y:613
+            var hostSourceOrigin = new Vector2(
+                visibleRect.X + visibleRect.Width * xOffset,
+                visibleRect.Y + visibleRect.Height * yOffset);
+
+            var localVisibleOrigin = new Vector2(visibleRect.X, visibleRect.Y);
+            return hostSourceOrigin - localVisibleOrigin;
+        }
+
+        RectangleF GetVisibleScreenRect()
+        {
+            var textureSize = Surface.TextureSize;
+            var screenSize = Surface.SurfaceSize;
+
+            if (screenSize.X <= 0f || screenSize.Y <= 0f)
+                screenSize = textureSize;
+
+            if (screenSize.X > textureSize.X)
+                screenSize.X = textureSize.X;
+
+            if (screenSize.Y > textureSize.Y)
+                screenSize.Y = textureSize.Y;
+
+            var origin = (textureSize - screenSize) / 2f;
+            return new RectangleF(origin.X, origin.Y, screenSize.X, screenSize.Y);
         }
 
         void SyncProxyRegistration()
@@ -1021,7 +1103,7 @@ namespace LcdMod.Client.SurfaceScripts
                 _registeredParent?.UnregisterProxy(_registeredProxyKey);
 
             if (!_parent.RegisterProxy(proxyKey,
-                    new Vector2(Surface.TextureSize.X * x, Surface.TextureSize.Y * y)))
+                    GetProxyPixelOffset(x, y)))
             {
                 _hostScriptUnsupported = false;
                 UnsubscribeFromParentRender();
