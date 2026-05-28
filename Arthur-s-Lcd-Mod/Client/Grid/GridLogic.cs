@@ -48,6 +48,7 @@ namespace LcdMod.Client.Grid
         static readonly HashSet<string> KnowFarmSubtypes = new HashSet<string>();
         
         public readonly IMyCubeGrid Grid;
+        GridGroupLogic _gridGroupResolver;
         List<IMySlimBlock> _blocks = new List<IMySlimBlock>();
         List<IMyTerminalBlock> _invBlocks = new List<IMyTerminalBlock>();
         List<IMySlimBlock> _nextBlocks = new List<IMySlimBlock>();
@@ -130,8 +131,22 @@ namespace LcdMod.Client.Grid
         public GridLogic(IMyCubeGrid grid)
         {
             Grid = grid;
+            _gridGroupResolver = new GridGroupLogic(this);
             _clock = new Random().Next(DELAY);
             // Initial Randomization so not every single grid ticks on the same time
+        }
+
+        internal GridGroupLogic GetLocalGridGroupResolver()
+        {
+            if (_gridGroupResolver == null || _gridGroupResolver.Owner != this)
+                _gridGroupResolver = new GridGroupLogic(this);
+            return _gridGroupResolver;
+        }
+
+        internal void SetGridGroupResolver(GridGroupLogic resolver)
+        {
+            if (resolver != null)
+                _gridGroupResolver = resolver;
         }
 
         public void MarkRequested()
@@ -614,6 +629,18 @@ namespace LcdMod.Client.Grid
             }
 
             throw new NotImplementedException(typeof(T).Name);
+        }
+
+        public List<T> GetTerminalBlocks<T>(GridLinkTypeEnum linkType) where T : IMyTerminalBlock
+        {
+            if (linkType != GridLinkTypeEnum.Physical && linkType != GridLinkTypeEnum.Mechanical)
+                throw new NotImplementedException(typeof(T).Name);
+
+            var resolver = GridGroupLogic.ResolveFor(this);
+            if (resolver == null)
+                return GetTerminalBlocks<T>();
+
+            return resolver.GetTerminalBlocks<T>(this, linkType);
         }
 
         public List<FarmPlotEntry> GetFarmPlots()
