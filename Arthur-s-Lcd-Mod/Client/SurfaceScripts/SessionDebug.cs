@@ -23,16 +23,11 @@ namespace LcdMod.Client.SurfaceScripts
         public const string ID = "SessionDebug";
         public const string TITLE = "LcdMod Session Debug";
 
-        readonly SessionDebugApp _app = new SessionDebugApp();
+        SessionDebugApp _app;
 
         public override CursorType CursorType { get; protected set; }
 
-        public override List<ControlBase> InteractiveList
-        {
-            get { return _app.InteractiveEntries; }
-        }
-
-        public override ScriptUpdate NeedsUpdate => ScriptUpdate.Update10;
+        public override List<ControlBase> InteractiveList => _app?.InteractiveEntries ?? new List<ControlBase>();
 
         public SessionDebugSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
             : base(surface, block, size)
@@ -57,14 +52,13 @@ namespace LcdMod.Client.SurfaceScripts
             RenderSprites();
         }
 
-        public override List<MySprite> GetSprites()
-        {
-            return _app.GetSprites(this);
-        }
+        public override List<MySprite> GetSprites() => _app?.GetSprites() ?? new List<MySprite>();
 
         public override void SafeRun()
         {
             base.SafeRun();
+
+            if (_app == null && AppConfig != null) _app = new SessionDebugApp(AppConfig, this);
         }
     }
 }

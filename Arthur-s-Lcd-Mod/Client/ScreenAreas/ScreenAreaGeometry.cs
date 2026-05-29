@@ -732,7 +732,6 @@ namespace LcdMod.Client.ScreenAreas
             out MinimalMwmScreenAreaGeometry geometry)
         {
             geometry = null;
-
             try
             {
                 if (block == null)
@@ -926,6 +925,7 @@ namespace LcdMod.Client.ScreenAreas
 
                 cached.Geometry = parsed;
                 cached.LoadError = null;
+#if DEBUG
                 LogHelper.LogOnce(
                     "parse:ok:" + cacheKey,
                     "parsed screen geometry: " + cacheKey +
@@ -935,6 +935,7 @@ namespace LcdMod.Client.ScreenAreas
                     ", aspect=" + parsed.Aspect +
                     ", meshUvMin=" + parsed.UvMin +
                     ", meshUvMax=" + parsed.UvMax);
+#endif
                 geometry = parsed;
                 return true;
             }

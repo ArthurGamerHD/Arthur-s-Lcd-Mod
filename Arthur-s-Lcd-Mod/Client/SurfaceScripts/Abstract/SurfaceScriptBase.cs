@@ -430,6 +430,9 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
                 _renderComp.RenderSpritesToTexture(RotationOrSurfaceIndex, bSoD.Frame, _textureSize, _aspectRatio,
                     Surface.ScriptBackgroundColor, Surface.BackgroundAlpha);
+                
+                CacheFrameForProxies(bSoD.Frame);
+                NotifyRendered();
             }
             catch (Exception e2)
             {
@@ -1453,7 +1456,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             return sprites();
         }
 
-        void CacheFrameForProxies(List<MySprite> spriteList)
+        void CacheFrameForProxies(IEnumerable<MySprite> spriteList)
         {
             if (_registeredProxyOffsets.Count <= 0 || spriteList == null)
                 return;

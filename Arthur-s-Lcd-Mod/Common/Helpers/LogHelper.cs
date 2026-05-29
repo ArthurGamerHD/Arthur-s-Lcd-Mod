@@ -19,7 +19,7 @@ namespace LcdMod.Common.Helpers
         public static void LogInfo(string message) => Log(MyLogSeverity.Info, message);
         public static void Log(MyLogSeverity severity, string message)
         {
-            MyLog.Default.Log(severity,$"[{nameof(LcdMod)}] " + message);
+            MyLog.Default.Log(severity,$"[{nameof(LcdMod)}] " + message.Replace("{", "{{").Replace("}", "}}"));
         }
         
         public static void Log(MyLogSeverity severity, string message, params object[] args)

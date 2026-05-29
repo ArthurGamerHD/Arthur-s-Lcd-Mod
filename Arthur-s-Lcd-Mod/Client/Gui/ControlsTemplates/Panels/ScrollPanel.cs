@@ -79,15 +79,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             public float MaxScrollOffsetPixels;
         }
 
-        public override RectangleF Bounds
-        {
-            get { return PanelBounds; }
-        }
+        public override RectangleF Bounds => PanelBounds;
 
-        public override bool CanScroll
-        {
-            get { return Visible && IsScrollable; }
-        }
+        public override bool CanScroll => Visible && IsScrollable;
 
         public static ScrollPanel Create(
             RectangleF viewBox,
@@ -416,13 +410,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             return new Color(color.R, color.G, color.B, 250);
         }
 
-        static float GetScrollBarVisualWidthPixels(float gutterWidth)
-        {
-            if (gutterWidth <= 1f)
-                return 1f;
-
-            return Math.Max(1f, Math.Min(gutterWidth, (float)Math.Round(gutterWidth * 0.5f, MidpointRounding.AwayFromZero)));
-        }
+        static float GetScrollBarVisualWidthPixels(float gutterWidth) => gutterWidth <= 1f ? 1f : Math.Max(1f, Math.Min(gutterWidth, (float)Math.Round(gutterWidth * 0.5f, MidpointRounding.AwayFromZero)));
 
         Color GetThumbColor(Color thumbColor)
         {
@@ -681,7 +669,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
                 : base(CursorType.Arrow, owner)
             {
                 _owner = owner;
-                SetClickOnPress(true);
+                SetClickOnPress();
                 SetOnClick((dataContext, sender) => { });
             }
 
