@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using LcdMod.Client.Terminal.Actions.Models;
 using Sandbox.ModAPI.Interfaces;
+using IMyTerminalBlock = Sandbox.ModAPI.Ingame.IMyTerminalBlock;
 
 namespace LcdMod.Client.Terminal.Models.Actions
 {
@@ -12,5 +12,6 @@ namespace LcdMod.Client.Terminal.Models.Actions
         public string Name { get; set; }
         public string BaseId { get; set; }
         public HashSet<Type> Types { get; } = new HashSet<Type>();
+        public bool Enabled(IMyTerminalBlock block) => Increase.IsEnabled(block) || Decrease.IsEnabled(block);
     }
 }

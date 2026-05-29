@@ -87,6 +87,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             var minButtonWidth = 78f * scale;
 
             var titleSize = FormatingHelper.GetSizeInPixel(_title, "White", titleScale, surface);
+            var closeSize = GetDialogCloseButtonSize(scale);
+            var headerHeight = Math.Max(titleSize.Y, closeSize.Y);
             var contentLines = SplitLines(_content);
             if (contentLines.Length == 0)
                 contentLines = new[] { string.Empty };
@@ -117,7 +119,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 Math.Max(titleSize.X, Math.Max(contentBlockWidth, buttonsWidth)) + padding.X * 2f);
             cardWidth = Math.Min(cardWidth, viewBox.Width - padding.X * 2f);
 
-            var cardHeight = padding.Y * 2f + titleSize.Y + spacing + Math.Max(contentHeight, iconSize) + spacing + buttonHeight;
+            var cardHeight = padding.Y * 2f + headerHeight + spacing + Math.Max(contentHeight, iconSize) + spacing + buttonHeight;
             cardHeight = Math.Min(cardHeight, viewBox.Height - padding.Y * 2f);
 
             var cardRect = new RectangleF(
@@ -125,6 +127,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 viewBox.Center.Y - cardHeight * 0.5f,
                 cardWidth,
                 cardHeight);
+
+            RegisterDialogCard(cardRect);
 
             var shadowRect = new RectangleF(cardRect.Position + 2f, cardRect.Size);
             Border.CreateSpritesFromRect(shadowRect, Sprites, shadowColor, radiusScale: scale);
@@ -136,7 +140,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             {
                 Type = SpriteType.TEXT,
                 Data = _title,
-                Position = new Vector2(cardRect.Center.X, currentY),
+                Position = new Vector2(cardRect.Center.X, currentY + (headerHeight - titleSize.Y) * 0.5f),
                 Color = cardTextColor,
                 FontId = "White",
                 Alignment = TextAlignment.CENTER,
@@ -146,7 +150,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             Sprites.Add(titleSprite.Shadow(2 * titleScale, shadowColor));
             Sprites.Add(titleSprite);
 
-            currentY += titleSize.Y + spacing;
+            currentY += headerHeight + spacing;
 
             var contentAreaWidth = cardRect.Width - padding.X * 2f;
             var contentStartX = cardRect.X + padding.X + Math.Max(0f, (contentAreaWidth - contentBlockWidth) * 0.5f);

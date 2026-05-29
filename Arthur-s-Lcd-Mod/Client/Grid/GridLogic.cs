@@ -48,7 +48,7 @@ namespace LcdMod.Client.Grid
         long _clock;
         int _ticksSinceRequested = int.MaxValue;
 
-        static readonly HashSet<string> KnowSubtypes = new HashSet<string>();
+        public static readonly HashSet<string> KnowSubtypes = new HashSet<string>();
         static readonly HashSet<string> KnowFarmSubtypes = new HashSet<string>();
         
 

@@ -218,8 +218,6 @@ namespace LcdMod.Client.Apps
             return lines;
         }
 
-        static bool dummy;
-
         static string ClampToWidth(string value, int width)
         {
             if (string.IsNullOrEmpty(value))

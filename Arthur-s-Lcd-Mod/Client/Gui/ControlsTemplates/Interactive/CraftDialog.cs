@@ -35,7 +35,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         ControlStyle _amountControlStyle;
         RectangleControl _assemblerControl;
         Button _craftButton;
-        Button _cancelButton;
 
         public sealed class CraftRequest
         {
@@ -167,6 +166,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 cardWidth,
                 cardHeight);
 
+            RegisterDialogCard(cardRect);
+
             var shadowColor = GetThemeColor(Constants.SHADOW);
             Border.CreateSpritesFromRect(new RectangleF(cardRect.Position + 2f, cardRect.Size), Sprites, shadowColor,
                 radiusScale: scale);
@@ -177,9 +178,16 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
             var title = _useRequestGrid ? "Craft all" : Loc("LcdMod_CraftDialog_Title");
             var titleSize = FormatingHelper.GetSizeInPixel(title, "White", titleScale, surface);
+            var closeSize = GetDialogCloseButtonSize(scale);
+            var headerHeight = Math.Max(titleSize.Y, closeSize.Y);
             var currentY = cardRect.Y + padding.Y;
-            DrawText(title, new Vector2(cardRect.Center.X, currentY), titleScale, cardTextColor, TextAlignment.CENTER);
-            currentY += titleSize.Y + spacing * 0.7f;
+            DrawText(
+                title,
+                new Vector2(cardRect.Center.X, currentY + (headerHeight - titleSize.Y) * 0.5f),
+                titleScale,
+                cardTextColor,
+                TextAlignment.CENTER);
+            currentY += headerHeight + spacing * 0.7f;
 
             var assemblerRect = new RectangleF(cardRect.X + padding.X, currentY, cardRect.Width - padding.X * 2f,
                 Math.Max(24f * scale, FormatingHelper.LineHeight(labelScale, surface) + 8f * scale));
@@ -232,21 +240,18 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 }
             }
 
-            var buttonSpacing = 12f * scale;
-            var buttonWidth = Math.Max(92f * scale, (cardRect.Width - padding.X * 2f - buttonSpacing) * 0.5f);
-            var buttonsWidth = buttonWidth * 2f + buttonSpacing;
-            var craftRect = new RectangleF(cardRect.Center.X - buttonsWidth * 0.5f, buttonsTop, buttonWidth, buttonHeight);
-            var cancelRect = new RectangleF(craftRect.Right + buttonSpacing, buttonsTop, buttonWidth, buttonHeight);
+            var buttonWidth = Math.Min(
+                Math.Max(120f * scale, (cardRect.Width - padding.X * 2f) * 0.55f),
+                Math.Max(1f, cardRect.Width - padding.X * 2f));
+            var craftRect = new RectangleF(cardRect.Center.X - buttonWidth * 0.5f, buttonsTop, buttonWidth, buttonHeight);
 
-            EnsureButtons(craftRect, cancelRect);
+            EnsureButtons(craftRect);
+
             container.AddChild(_craftButton);
-            container.AddChild(_cancelButton);
 
             ConfigureButton(_craftButton, _useRequestGrid ? "Craft all" : Loc("LcdMod_CraftDialog_Button_Craft"),
                 buttonScale, panelColor, textColor, ThemedParentApp, owner, CanCraft());
-            ConfigureButton(_cancelButton, Loc("LcdMod_Common_Button_Cancel"), buttonScale, panelColor, textColor, ThemedParentApp, owner, true);
             _craftButton.Render(renderContext, Sprites);
-            _cancelButton.Render(renderContext, Sprites);
         }
 
         void DrawBackdrop(Sandbox.ModAPI.Ingame.IMyTextSurface surface)
@@ -433,20 +438,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             });
         }
 
-        void EnsureButtons(RectangleF craftRect, RectangleF cancelRect)
+        void EnsureButtons(RectangleF craftRect)
         {
             if (_craftButton == null)
                 _craftButton = new Button(craftRect, new ButtonModel { Clicked = OnCraftClicked });
             else
                 _craftButton.SetRect(craftRect);
 
-            if (_cancelButton == null)
-                _cancelButton = new Button(cancelRect, new ButtonModel { Clicked = OnCancelClicked });
-            else
-                _cancelButton.SetRect(cancelRect);
-
             _craftButton.SetVisible(true);
-            _cancelButton.SetVisible(true);
         }
 
         internal static void ConfigureButton(
@@ -552,10 +551,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             }
         }
 
-        void OnCancelClicked(ButtonModel model, object sender)
-        {
-            Dismiss();
-        }
 
         double CalculateQueueAmount(MyBlueprintDefinitionBase blueprint, MyDefinitionId itemDefinitionId, double requestedItems)
         {
@@ -819,7 +814,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         ListBox<CraftAssemblerOption> _listBox;
         ControlStyle _listBoxStyle;
         Button _selectButton;
-        Button _cancelButton;
 
         public AssemblerSelectionDialog(
             IApp parentApp,
@@ -835,6 +829,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 : new List<CraftAssemblerOption>(selected);
             _selectedCallback = selectedCallback;
             _cancelCallback = cancelCallback;
+            OnClose = delegate
+            {
+                if (_cancelCallback != null)
+                    _cancelCallback();
+            };
         }
 
         protected override void RenderCore(
@@ -871,6 +870,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 cardWidth,
                 cardHeight);
 
+            RegisterDialogCard(cardRect);
+
             Border.CreateSpritesFromRect(new RectangleF(cardRect.Position + 2f, cardRect.Size), Sprites,
                 GetThemeColor(Constants.SHADOW), radiusScale: scale);
             Border.CreateSpritesFromRect(cardRect, Sprites, cardColor,
@@ -878,11 +879,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
             var title = LocHelper.GetLoc("LcdMod_CraftDialog_AssemblerSelection_Title");
             var titleSize = FormatingHelper.GetSizeInPixel(title, "White", titleScale, surface);
+            var closeSize = GetDialogCloseButtonSize(scale);
+            var headerHeight = Math.Max(titleSize.Y, closeSize.Y);
             Sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
                 Data = title,
-                Position = new Vector2(cardRect.Center.X, cardRect.Y + padding.Y),
+                Position = new Vector2(cardRect.Center.X, cardRect.Y + padding.Y + (headerHeight - titleSize.Y) * 0.5f),
                 Color = cardTextColor,
                 FontId = "White",
                 Alignment = TextAlignment.CENTER,
@@ -890,7 +893,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             });
 
             var buttonHeight = Math.Max(26f * scale, FormatingHelper.LineHeight(buttonScale, surface) + 10f * scale);
-            var listTop = cardRect.Y + padding.Y + titleSize.Y + spacing;
+            var listTop = cardRect.Y + padding.Y + headerHeight + spacing;
             var buttonTop = cardRect.Bottom - padding.Y - buttonHeight;
             var listRect = new RectangleF(cardRect.X + padding.X, listTop,
                 cardRect.Width - padding.X * 2f, Math.Max(0f, buttonTop - spacing - listTop));
@@ -933,19 +936,16 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 });
             }
 
-            var buttonSpacing = 12f * scale;
-            var buttonWidth = Math.Max(92f * scale, (cardRect.Width - padding.X * 2f - buttonSpacing) * 0.5f);
-            var buttonsWidth = buttonWidth * 2f + buttonSpacing;
-            var selectRect = new RectangleF(cardRect.Center.X - buttonsWidth * 0.5f, buttonTop, buttonWidth, buttonHeight);
-            var cancelRect = new RectangleF(selectRect.Right + buttonSpacing, buttonTop, buttonWidth, buttonHeight);
+            var buttonWidth = Math.Min(
+                Math.Max(120f * scale, (cardRect.Width - padding.X * 2f) * 0.55f),
+                Math.Max(1f, cardRect.Width - padding.X * 2f));
+            var selectRect = new RectangleF(cardRect.Center.X - buttonWidth * 0.5f, buttonTop, buttonWidth, buttonHeight);
 
-            EnsureButtons(selectRect, cancelRect);
+            EnsureButtons(selectRect);
+
             container.AddChild(_selectButton);
-            container.AddChild(_cancelButton);
             CraftDialog.ConfigureButton(_selectButton, LocHelper.GetLoc("LcdMod_Common_Button_Select"), buttonScale, panelColor, textColor, ThemedParentApp, owner, HasSelection());
-            CraftDialog.ConfigureButton(_cancelButton, LocHelper.GetLoc("LcdMod_Common_Button_Cancel"), buttonScale, panelColor, textColor, ThemedParentApp, owner, true);
             _selectButton.Render(renderContext, Sprites);
-            _cancelButton.Render(renderContext, Sprites);
         }
 
         void EnsureList(RectangleF rect, float rowHeight)
@@ -973,20 +973,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 _listBox.Style.BorderRadiusPixels = 0;
         }
 
-        void EnsureButtons(RectangleF selectRect, RectangleF cancelRect)
+        void EnsureButtons(RectangleF selectRect)
         {
             if (_selectButton == null)
                 _selectButton = new Button(selectRect, new ButtonModel { Clicked = OnSelectClicked });
             else
                 _selectButton.SetRect(selectRect);
 
-            if (_cancelButton == null)
-                _cancelButton = new Button(cancelRect, new ButtonModel { Clicked = OnCancelClicked });
-            else
-                _cancelButton.SetRect(cancelRect);
-
             _selectButton.SetVisible(true);
-            _cancelButton.SetVisible(true);
         }
 
         static string FormatOption(CraftAssemblerOption option)
@@ -1019,13 +1013,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 _selectedCallback(new List<CraftAssemblerOption>(_listModel.SelectedEntries));
         }
 
-        void OnCancelClicked(ButtonModel model, object sender)
-        {
-            if (_cancelCallback != null)
-                _cancelCallback();
-
-            Dismiss();
-        }
     }
 
     sealed class CraftAssemblerOption

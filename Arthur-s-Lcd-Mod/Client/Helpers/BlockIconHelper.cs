@@ -46,6 +46,33 @@ namespace LcdMod.Client.Helpers
             return texture.Id.SubtypeName;
         }
 
+
+        public static void GetRegisteredSpriteNames(List<string> spriteNames)
+        {
+            if (spriteNames == null)
+                return;
+
+            foreach (var definition in HashSet)
+            {
+                if (definition == null)
+                    continue;
+
+                var spriteName = definition.Id.ToString();
+                if (!string.IsNullOrEmpty(spriteName))
+                    spriteNames.Add(spriteName);
+            }
+
+            foreach (var definition in ItemHashSet)
+            {
+                if (definition == null)
+                    continue;
+
+                var spriteName = definition.Id.ToString();
+                if (!string.IsNullOrEmpty(spriteName))
+                    spriteNames.Add(spriteName);
+            }
+        }
+
         public static bool TryGetOrAddTextureForBlockName(string blockDefinitionName, out string textureName)
         {
             textureName = blockDefinitionName;

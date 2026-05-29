@@ -1,10 +1,9 @@
 using LcdMod.Client.Config;
-
+using LcdMod.Common.Config.Interfaces;
+using LcdMod.Common.Config.Models.Apps;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
-using ScreenConfigPower = LcdMod.Common.Config.Models.Apps.ScreenConfigPower;
-using ScreenConfigWithFilters = LcdMod.Common.Config.Models.Apps.ScreenConfigWithFilters;
 
 namespace LcdMod.Client.Terminal.Controls.Generic
 {
@@ -25,30 +24,28 @@ namespace LcdMod.Client.Terminal.Controls.Generic
             TerminalControl = slider;
         }
 
+        public override bool Visible(IMyTerminalBlock block)
+        {
+            if (!base.Visible(block))
+                return false;
+
+            return (ConfigManager.GetConfigForCurrentScreen(block) as IHideEmpty) != null;
+        }
+
         void Setter(IMyTerminalBlock block, bool value)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block);
-            var withFilters = config as ScreenConfigWithFilters;
-            var power = config as ScreenConfigPower;
-            if (withFilters == null && power == null)
+            var config = ConfigManager.GetConfigForCurrentScreen(block) as IHideEmpty;
+            if (config == null)
                 return;
 
-            if (withFilters != null)
-                withFilters.HideEmpty = value;
-            if (power != null)
-                power.HideEmpty = value;
+            config.HideEmpty = value;
             ConfigManager.Sync(block);
         }
 
         bool Getter(IMyTerminalBlock myTerminalBlock)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(myTerminalBlock);
-            var withFilters = config as ScreenConfigWithFilters;
-            if (withFilters != null)
-                return withFilters.HideEmpty;
-
-            var power = config as ScreenConfigPower;
-            return power != null && power.HideEmpty;
+            var config = ConfigManager.GetConfigForCurrentScreen(myTerminalBlock) as IHideEmpty;
+            return config != null && config.HideEmpty;
         }
     }
 }
