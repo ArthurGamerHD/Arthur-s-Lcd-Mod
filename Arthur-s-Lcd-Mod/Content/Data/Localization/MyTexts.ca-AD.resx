@@ -560,4 +560,7 @@
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
     <value>{0} Inclou només els blocs d'aquesta nau o estació. &#xA;{1} inclou naus/estacions connectades mecànicament, com les connectades per rotors, frontisses i pistons. &#xA;{2} inclou connexions mecàniques i naus/estacions connectades mitjançant connectors.</value>
   </data>
+    <data name="LcdMod_Projector_Ingots" xml:space="preserve">
+    <value>Lingots</value>
+  </data>
 </root>

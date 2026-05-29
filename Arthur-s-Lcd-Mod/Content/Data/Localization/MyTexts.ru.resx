@@ -559,4 +559,7 @@
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
     <value>{0} Включает только блоки на этом корабле или станции. &#xA;{1} включает механически соединенные корабли/станции, например через роторы, шарниры и поршни. &#xA;{2} включает механические соединения и корабли/станции, подключенные с помощью коннекторов.</value>
   </data>
+    <data name="LcdMod_Projector_Ingots" xml:space="preserve">
+    <value>Слитки</value>
+  </data>
 </root>

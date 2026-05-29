@@ -559,4 +559,7 @@
   <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
     <value>{0} 仅包括此舰船或空间站上的方块。&#xA;{1} 包括通过转子、铰链和活塞等机械方式连接的舰船/空间站。&#xA;{2} 包括机械连接以及使用连接器连接的舰船/空间站。</value>
   </data>
+    <data name="LcdMod_Projector_Ingots" xml:space="preserve">
+    <value>錠</value>
+  </data>
 </root>

@@ -559,4 +559,7 @@
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
     <value>{0} Obejmuje tylko bloki na tym statku lub tej stacji. &#xA;{1} obejmuje mechanicznie połączone statki/stacje, np. przez rotory, zawiasy i tłoki. &#xA;{2} obejmuje połączenia mechaniczne oraz statki/stacje połączone za pomocą złączy.</value>
   </data>
+    <data name="LcdMod_Projector_Ingots" xml:space="preserve">
+    <value>Sztabki</value>
+  </data>
 </root>

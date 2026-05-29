@@ -559,4 +559,7 @@
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
     <value>{0} Include doar blocurile de pe această navă sau stație. &#xA;{1} include nave/stații conectate mecanic, de exemplu prin rotoare, balamale și pistoane. &#xA;{2} include conexiuni mecanice și nave/stații conectate folosind conectori.</value>
   </data>
+    <data name="LcdMod_Projector_Ingots" xml:space="preserve">
+    <value>Lingouri</value>
+  </data>
 </root>

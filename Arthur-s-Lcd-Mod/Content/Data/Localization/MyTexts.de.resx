@@ -560,4 +560,7 @@
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
     <value>{0} Bezieht nur Blöcke auf diesem Schiff oder dieser Station ein. &#xA;{1} bezieht mechanisch verbundene Schiffe/Stationen ein, z. B. über Rotoren, Scharniere und Kolben. &#xA;{2} bezieht mechanische Verbindungen und über Konnektoren verbundene Schiffe/Stationen ein.</value>
   </data>
+    <data name="LcdMod_Projector_Ingots" xml:space="preserve">
+    <value>Barren</value>
+  </data>
 </root>

@@ -559,4 +559,7 @@
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
     <value>{0} Iekļauj tikai blokus uz šī kuģa vai stacijas. &#xA;{1} iekļauj mehāniski savienotus kuģus/stacijas, piemēram, ar rotoriem, eņģēm un virzuļiem. &#xA;{2} iekļauj mehāniskos savienojumus un kuģus/stacijas, kas savienoti ar savienotājiem.</value>
   </data>
+    <data name="LcdMod_Projector_Ingots" xml:space="preserve">
+    <value>Lietņi</value>
+  </data>
 </root>

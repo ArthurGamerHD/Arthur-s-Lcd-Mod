@@ -559,4 +559,7 @@
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
     <value>{0} Sisältää vain tämän aluksen tai aseman lohkot. &#xA;{1} sisältää mekaanisesti yhdistetyt alukset/asemat, kuten roottoreilla, saranoilla ja männillä yhdistetyt. &#xA;{2} sisältää mekaaniset yhteydet sekä liittimillä yhdistetyt alukset/asemat.</value>
   </data>
+    <data name="LcdMod_Projector_Ingots" xml:space="preserve">
+    <value>Harkot</value>
+  </data>
 </root>

@@ -559,4 +559,7 @@
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
     <value>{0} Inkluderar endast block på detta skepp eller denna station. &#xA;{1} inkluderar mekaniskt anslutna skepp/stationer, till exempel via rotorer, gångjärn och kolvar. &#xA;{2} inkluderar mekaniska anslutningar och skepp/stationer anslutna med connectors.</value>
   </data>
+    <data name="LcdMod_Projector_Ingots" xml:space="preserve">
+    <value>Tackor</value>
+  </data>
 </root>

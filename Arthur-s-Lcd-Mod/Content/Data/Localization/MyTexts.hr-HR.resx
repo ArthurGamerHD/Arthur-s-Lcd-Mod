@@ -559,4 +559,7 @@
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
     <value>{0} Uključuje samo blokove na ovom brodu ili stanici. &#xA;{1} uključuje mehanički povezane brodove/stanice, primjerice rotorima, zglobovima i klipovima. &#xA;{2} uključuje mehaničke veze i brodove/stanice povezane konektorima.</value>
   </data>
+    <data name="LcdMod_Projector_Ingots" xml:space="preserve">
+    <value>Ingoti</value>
+  </data>
 </root>

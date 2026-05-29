@@ -560,4 +560,7 @@
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
     <value>{0} Inclut uniquement les blocs de ce vaisseau ou de cette station. &#xA;{1} inclut les vaisseaux/stations reliés mécaniquement, par exemple via des rotors, charnières et pistons. &#xA;{2} inclut les connexions mécaniques et les vaisseaux/stations reliés par des connecteurs.</value>
   </data>
+    <data name="LcdMod_Projector_Ingots" xml:space="preserve">
+    <value>Lingots</value>
+  </data>
 </root>

@@ -116,10 +116,29 @@ namespace LcdMod.Client.Grid
             }
         }
 
+        public Dictionary<MyItemType, double> Ingots
+        {
+            get
+            {
+                if (!_ingotCache.Any())
+                    AggregateItems(GetInventories(), _ingotCache, IngotTypeFilter,
+                        Array.Empty<MyDefinitionId>());
+
+                return _ingotCache;
+            }
+        }
+
+        static readonly string[] IngotTypeFilter = { "Ingot" };
+
         readonly Dictionary<SearchQueryToken, Dictionary<MyItemType, double>> _queryCache =
             new Dictionary<SearchQueryToken, Dictionary<MyItemType, double>>();
 
+        readonly Dictionary<SearchQueryToken, Dictionary<MyItemType, double>> _ingotQueryCache =
+            new Dictionary<SearchQueryToken, Dictionary<MyItemType, double>>();
+
         readonly Dictionary<MyItemType, double> _compCache = new Dictionary<MyItemType, double>();
+
+        readonly Dictionary<MyItemType, double> _ingotCache = new Dictionary<MyItemType, double>();
 
         readonly Dictionary<SearchQueryToken, Dictionary<MyItemType, double>> _refineryInputQueryCache  = new Dictionary<SearchQueryToken, Dictionary<MyItemType, double>>();
         readonly Dictionary<SearchQueryToken, Dictionary<MyItemType, double>> _refineryOutputQueryCache = new Dictionary<SearchQueryToken, Dictionary<MyItemType, double>>();
@@ -205,7 +224,9 @@ namespace LcdMod.Client.Grid
         void InvalidateItemCaches()
         {
             _compCache.Clear();
+            _ingotCache.Clear();
             _queryCache.Clear();
+            _ingotQueryCache.Clear();
             _refineryInputQueryCache.Clear();
             _refineryOutputQueryCache.Clear();
         }
@@ -336,12 +357,23 @@ namespace LcdMod.Client.Grid
 
         public Dictionary<MyItemType, double> GetItems(ScreenConfigWithItems config, IMyTerminalBlock referenceBlock, string[] types = null)
         {
+            return GetItemsCore(config, referenceBlock, types, _queryCache, false);
+        }
+
+        public Dictionary<MyItemType, double> GetIngots(ScreenConfigWithItems config, IMyTerminalBlock referenceBlock)
+        {
+            return GetItemsCore(config, referenceBlock, IngotTypeFilter, _ingotQueryCache, true);
+        }
+
+        Dictionary<MyItemType, double> GetItemsCore(ScreenConfigWithItems config, IMyTerminalBlock referenceBlock,
+            string[] types, Dictionary<SearchQueryToken, Dictionary<MyItemType, double>> cache, bool forceTypes)
+        {
             try
             {
                 GridLinkTypeEnum linkType = config.GridLinkType;
                 SearchQueryToken queryToken = SearchQueryToken.GetToken(config);
                 Dictionary<MyItemType, double> dictionary;
-                if (!_queryCache.TryGetValue(queryToken, out dictionary))
+                if (!cache.TryGetValue(queryToken, out dictionary))
                 {
                     dictionary = new Dictionary<MyItemType, double>();
 
@@ -372,9 +404,10 @@ namespace LcdMod.Client.Grid
                         }
                     }
 
-                    AggregateItems(blocks, dictionary, types ?? config.SelectedCategories, config.SelectedItems);
+                    var aggregateTypes = forceTypes ? types : (types ?? config.SelectedCategories);
+                    AggregateItems(blocks, dictionary, aggregateTypes, config.SelectedItems);
 
-                    _queryCache[queryToken] = dictionary;
+                    cache[queryToken] = dictionary;
                 }
 
                 return dictionary;
@@ -464,6 +497,14 @@ namespace LcdMod.Client.Grid
 
                 CraftableBlueprintsByAssemblerSubtype[assemblerSubtype] = craftableBlueprints;
                 return true;
+            }
+        }
+
+        public static void EnsureBlueprintResultDatabase()
+        {
+            lock (AssemblerBlueprintDatabaseLock)
+            {
+                EnsureBlueprintResultDatabaseNoLock();
             }
         }
 

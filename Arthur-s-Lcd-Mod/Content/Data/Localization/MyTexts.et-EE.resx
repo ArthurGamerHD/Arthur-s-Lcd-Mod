@@ -559,4 +559,7 @@
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
     <value>{0} Kaasab ainult selle laeva või jaama plokid. &#xA;{1} kaasab mehaaniliselt ühendatud laevad/jaamad, näiteks rootorite, hingede ja kolbidega ühendatud. &#xA;{2} kaasab mehaanilised ühendused ning konnektoritega ühendatud laevad/jaamad.</value>
   </data>
+    <data name="LcdMod_Projector_Ingots" xml:space="preserve">
+    <value>Kangid</value>
+  </data>
 </root>

@@ -559,4 +559,7 @@
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
     <value>{0} Includes blocks on this grid only. &#xA;{1} includes mechanically connected grids, such as those connected by rotors, hinges and pistons. &#xA;{2} includes mechanical connections and grids connected using connectors.</value>
   </data>
+    <data name="LcdMod_Projector_Ingots" xml:space="preserve">
+    <value>Ingots</value>
+  </data>
 </root>

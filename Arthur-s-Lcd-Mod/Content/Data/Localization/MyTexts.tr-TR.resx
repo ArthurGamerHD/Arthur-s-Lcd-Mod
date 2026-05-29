@@ -559,4 +559,7 @@
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
     <value>{0} Yalnızca bu gemi veya istasyondaki blokları içerir. &#xA;{1} rotorlar, menteşeler ve pistonlar gibi mekanik olarak bağlı gemileri/istasyonları içerir. &#xA;{2} mekanik bağlantıları ve konektörlerle bağlanan gemileri/istasyonları içerir.</value>
   </data>
+    <data name="LcdMod_Projector_Ingots" xml:space="preserve">
+    <value>Külçeler</value>
+  </data>
 </root>

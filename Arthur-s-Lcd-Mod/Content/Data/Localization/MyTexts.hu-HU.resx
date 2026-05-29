@@ -559,4 +559,7 @@
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
     <value>{0} Csak ezen a hajón vagy állomáson lévő blokkokat tartalmazza. &#xA;{1} mechanikusan kapcsolt hajókat/állomásokat tartalmaz, például rotorokkal, zsanérokkal és dugattyúkkal. &#xA;{2} mechanikai kapcsolatokat és konnektorokkal összekapcsolt hajókat/állomásokat tartalmaz.</value>
   </data>
+    <data name="LcdMod_Projector_Ingots" xml:space="preserve">
+    <value>Öntvények</value>
+  </data>
 </root>

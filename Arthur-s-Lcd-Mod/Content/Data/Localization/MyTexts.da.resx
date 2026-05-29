@@ -560,4 +560,7 @@
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
     <value>{0} Medtager kun blokke på dette skib eller denne station. &#xA;{1} medtager mekanisk forbundne skibe/stationer, f.eks. via rotorer, hængsler og stempler. &#xA;{2} medtager mekaniske forbindelser og skibe/stationer forbundet med connectors.</value>
   </data>
+    <data name="LcdMod_Projector_Ingots" xml:space="preserve">
+    <value>Barrer</value>
+  </data>
 </root>

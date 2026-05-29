@@ -563,4 +563,7 @@
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
     <value>{0} Inniheldur aðeins kubba á þessu skipi eða þessari stöð. &#xA;{1} inniheldur vélrænt tengd skip/stöðvar, t.d. með snúðum, lömum og stimplum. &#xA;{2} inniheldur vélrænar tengingar og skip/stöðvar sem eru tengd með tengjum.</value>
   </data>
+    <data name="LcdMod_Projector_Ingots" xml:space="preserve">
+    <value>Stengur</value>
+  </data>
 </root>

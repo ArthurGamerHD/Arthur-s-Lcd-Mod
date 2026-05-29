@@ -559,4 +559,7 @@
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
     <value>{0} Bevat alleen blokken op dit schip of station. &#xA;{1} bevat mechanisch verbonden schepen/stations, zoals via rotors, scharnieren en zuigers. &#xA;{2} bevat mechanische verbindingen en schepen/stations die via connectors zijn verbonden.</value>
   </data>
+    <data name="LcdMod_Projector_Ingots" xml:space="preserve">
+    <value>Staven</value>
+  </data>
 </root>

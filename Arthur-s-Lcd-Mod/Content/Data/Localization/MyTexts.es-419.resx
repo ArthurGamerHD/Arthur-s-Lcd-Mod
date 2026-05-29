@@ -559,4 +559,7 @@
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
     <value>{0} Incluye solo los bloques de esta nave o estación. &#xA;{1} incluye naves/estaciones conectadas mecánicamente, como las conectadas por rotores, bisagras y pistones. &#xA;{2} incluye conexiones mecánicas y naves/estaciones conectadas mediante conectores.</value>
   </data>
+    <data name="LcdMod_Projector_Ingots" xml:space="preserve">
+    <value>Lingotes</value>
+  </data>
 </root>

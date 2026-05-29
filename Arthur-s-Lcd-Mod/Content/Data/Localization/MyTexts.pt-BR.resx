@@ -560,4 +560,7 @@
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
     <value>{0} Inclui apenas blocos nesta grid. &#xA;{1} inclui grids conectadas mecanicamente, como por rotores, dobradiças e pistões. &#xA;{2} inclui conexões mecânicas e naves/estações conectadas via conectores.</value>
   </data>
+    <data name="LcdMod_Projector_Ingots" xml:space="preserve">
+    <value>Barras</value>
+  </data>
 </root>

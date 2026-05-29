@@ -560,4 +560,7 @@
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
     <value>{0} この船舶またはステーション上のブロックのみを含みます。&#xA;{1} ローター、ヒンジ、ピストンなどで機械的に接続された船舶/ステーションを含みます。&#xA;{2} 機械接続と、コネクターで接続された船舶/ステーションを含みます。</value>
   </data>
+    <data name="LcdMod_Projector_Ingots" xml:space="preserve">
+    <value>インゴット</value>
+  </data>
 </root>

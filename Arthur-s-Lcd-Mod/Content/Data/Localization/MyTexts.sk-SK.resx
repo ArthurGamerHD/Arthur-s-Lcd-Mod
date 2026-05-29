@@ -559,4 +559,7 @@
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
     <value>{0} Zahŕňa iba bloky na tejto lodi alebo stanici. &#xA;{1} zahŕňa mechanicky pripojené lode/stanice, napríklad cez rotory, pánty a piesty. &#xA;{2} zahŕňa mechanické pripojenia a lode/stanice pripojené pomocou konektorov.</value>
   </data>
+    <data name="LcdMod_Projector_Ingots" xml:space="preserve">
+    <value>Ingoty</value>
+  </data>
 </root>

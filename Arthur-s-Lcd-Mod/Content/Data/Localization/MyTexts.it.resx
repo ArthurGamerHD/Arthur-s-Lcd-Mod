@@ -560,4 +560,7 @@
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
     <value>{0} Include solo i blocchi su questa nave o stazione. &#xA;{1} include navi/stazioni collegate meccanicamente, ad esempio tramite rotori, cardini e pistoni. &#xA;{2} include connessioni meccaniche e navi/stazioni collegate tramite connettori.</value>
   </data>
+    <data name="LcdMod_Projector_Ingots" xml:space="preserve">
+    <value>Lingotti</value>
+  </data>
 </root>

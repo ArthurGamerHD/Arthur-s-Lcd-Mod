@@ -559,4 +559,7 @@
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
     <value>{0} Inkluderer bare blokker på dette skipet eller denne stasjonen. &#xA;{1} inkluderer mekanisk tilkoblede skip/stasjoner, for eksempel via rotorer, hengsler og stempler. &#xA;{2} inkluderer mekaniske tilkoblinger og skip/stasjoner koblet sammen med connectors.</value>
   </data>
+    <data name="LcdMod_Projector_Ingots" xml:space="preserve">
+    <value>Barrer</value>
+  </data>
 </root>

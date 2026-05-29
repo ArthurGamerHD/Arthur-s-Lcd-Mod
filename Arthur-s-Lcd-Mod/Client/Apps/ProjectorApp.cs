@@ -18,6 +18,7 @@ using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
 using VRage;
+using VRage.Game;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
 using VRage.Utils;
@@ -43,14 +44,22 @@ namespace LcdMod.Client.Apps
 
         public override Dictionary<MyItemType, double> ItemSource => _missing;
 
+        // Active view (components or ore-bars/ingots, depending on _showIngots).
         readonly Dictionary<MyItemType, double> _missing = new Dictionary<MyItemType, double>();
-        readonly Dictionary<MyItemType, int> _needed = new Dictionary<MyItemType, int>();
+        readonly Dictionary<MyItemType, double> _needed = new Dictionary<MyItemType, double>();
+
+        // Always tracked as components, independent of the active view (used by "Craft all").
+        readonly Dictionary<MyItemType, double> _componentNeeded = new Dictionary<MyItemType, double>();
+        readonly Dictionary<MyItemType, double> _componentMissing = new Dictionary<MyItemType, double>();
+        readonly Dictionary<MyItemType, double> _ingotNeeded = new Dictionary<MyItemType, double>();
 
         int _totalBlocks = 1;
         int _remainingBlocks;
 
         int _totalComponents;
         int _missingComponents;
+        int _componentMissingTotal;
+        bool _showIngots;
 
         string _required = "Req";
         string _available = "Ava";
@@ -61,9 +70,14 @@ namespace LcdMod.Client.Apps
         Button _craftAllButton;
         ControlStyle _craftAllButtonStyle;
         ControlStyle _craftAllDisabledButtonStyle;
+        Button _toggleViewButton;
+        ControlStyle _toggleViewButtonStyle;
 
         const float PIE_RADIUS = 40;
         const string CRAFT_ALL_TEXT = "Craft all";
+        const string INGOT_TYPE_ID = "MyObjectBuilder_Ingot";
+        const string LOC_INGOTS_LABEL = "LcdMod_Projector_Ingots";
+        const string LOC_COMPONENTS_LABEL = "DisplayName_InventoryConstraint_Components";
 
         public bool IsLoading { get; private set; }
 
@@ -80,6 +94,7 @@ namespace LcdMod.Client.Apps
             public float TextRight;
             public Vector2 PieCenter;
             public RectangleF ButtonRect;
+            public RectangleF ToggleRect;
         }
 
         public override void LayoutChanged()
@@ -108,7 +123,9 @@ namespace LcdMod.Client.Apps
             if (_projector == null)
                 return;
 
-            if (_totalBlocks == 0 || _totalComponents == 0)
+            // Guard on the component requirement (always tracked) so the footer — and its toggle
+            // button — stays visible even when the active ore-bar view computes to zero.
+            if (_totalBlocks == 0 || _componentNeeded.Count == 0)
                 return;
 
             int built = Math.Max(_totalBlocks - _remainingBlocks, 0);
@@ -142,7 +159,7 @@ namespace LcdMod.Client.Apps
             pos.X += legendSize.X + legendTextSpacing + pieToTextGap;
 
             var blocksPct = built / (float)_totalBlocks;
-            var componentsPct = 1 - (float)_missingComponents / _totalComponents;
+            var componentsPct = _totalComponents > 0 ? 1 - (float)_missingComponents / _totalComponents : 1f;
 
             StringBuilder sb = new StringBuilder($"{blocksString}{blocksPct:P2}  ({built}/{_totalBlocks} )");
 
@@ -161,7 +178,7 @@ namespace LcdMod.Client.Apps
 
             pos.Y += lineSpacer;
 
-            var components = MyTexts.GetString("DisplayName_InventoryConstraint_Components");
+            var components = GetMaterialLabel();
 
             sb.Clear();
             sb.Append(
@@ -220,7 +237,18 @@ namespace LcdMod.Client.Apps
                 true,
                 false);
 
-            DrawCraftAllButton(frame, layout, _missingComponents > 0);
+            DrawToggleViewButton(frame, layout);
+            DrawCraftAllButton(frame, layout, _componentMissingTotal > 0);
+        }
+
+        string GetMaterialLabel()
+        {
+            return MyTexts.GetString(_showIngots ? LOC_INGOTS_LABEL : LOC_COMPONENTS_LABEL);
+        }
+
+        string GetToggleViewButtonText()
+        {
+            return MyTexts.GetString(_showIngots ? LOC_COMPONENTS_LABEL : LOC_INGOTS_LABEL);
         }
 
         public override void Update()
@@ -444,10 +472,10 @@ namespace LcdMod.Client.Apps
             Border.CreateSpritesFromRect(cellRect, frame, backgroundColor, radiusScale: Scale);
         }
 
-        int GetNeededQty(MyItemType itemType)
+        double GetNeededQty(MyItemType itemType)
         {
-            int needed;
-            return _needed.TryGetValue(itemType, out needed) ? needed : 0;
+            double needed;
+            return _needed.TryGetValue(itemType, out needed) ? needed : 0d;
         }
 
         double GetAvailableQty(MyItemType itemType, double missingQty)
@@ -488,7 +516,10 @@ namespace LcdMod.Client.Apps
         {
             var baseHeight = GetFooterBaseHeight();
             var buttonSize = GetCraftAllButtonSize();
+            var toggleSize = GetToggleViewButtonSize();
             var buttonGap = 8f * Scale;
+            var buttonsWidth = buttonSize.X + buttonGap + toggleSize.X;
+            var buttonsHeight = Math.Max(buttonSize.Y, toggleSize.Y);
             var footerPaddingX = GetFooterPaddingX();
             var footerInnerPaddingX = GetFooterInnerPaddingX();
             var footerContentLeft = ViewBox.X + footerPaddingX + footerInnerPaddingX;
@@ -497,11 +528,11 @@ namespace LcdMod.Client.Apps
             var textLeft = footerContentLeft + GetFooterPieSize().X + legendSize.X +
                            GetFooterLegendTextSpacing() + 10f * Scale;
             var minTextWidth = Math.Max(170f * Scale, Math.Max(_requiredX, _availableX) * Scale * FontScale * 2f);
-            var canUseSideButton = footerContentRight - textLeft >= minTextWidth + buttonGap + buttonSize.X;
+            var canUseSideButton = footerContentRight - textLeft >= minTextWidth + buttonGap + buttonsWidth;
 
             var layout = new ProjectorFooterLayout
             {
-                Height = canUseSideButton ? baseHeight : baseHeight + buttonGap + buttonSize.Y,
+                Height = canUseSideButton ? baseHeight : baseHeight + buttonGap + buttonsHeight,
                 ContentLeft = footerContentLeft,
                 TextRight = footerContentRight
             };
@@ -514,22 +545,36 @@ namespace LcdMod.Client.Apps
 
             if (canUseSideButton)
             {
+                var buttonTop = layout.Top + (baseHeight - buttonSize.Y) * 0.5f;
                 layout.ButtonRect = new RectangleF(
                     footerContentRight - buttonSize.X,
-                    layout.Top + (baseHeight - buttonSize.Y) * 0.5f,
+                    buttonTop,
                     buttonSize.X,
                     buttonSize.Y);
-                layout.TextRight = layout.ButtonRect.X - buttonGap;
+                layout.ToggleRect = new RectangleF(
+                    layout.ButtonRect.X - buttonGap - toggleSize.X,
+                    layout.Top + (baseHeight - toggleSize.Y) * 0.5f,
+                    toggleSize.X,
+                    toggleSize.Y);
+                layout.TextRight = layout.ToggleRect.X - buttonGap;
             }
             else
             {
                 var availableWidth = Math.Max(0f, footerContentRight - footerContentLeft);
-                var buttonWidth = Math.Min(availableWidth, Math.Max(buttonSize.X, 150f * Scale));
-                layout.ButtonRect = new RectangleF(
-                    footerContentLeft + (availableWidth - buttonWidth) * 0.5f,
-                    layout.Top + baseHeight + buttonGap,
-                    buttonWidth,
-                    buttonSize.Y);
+                var totalWidth = Math.Min(availableWidth, buttonsWidth);
+                var craftWidth = buttonSize.X;
+                var toggleWidth = toggleSize.X;
+                if (totalWidth < buttonsWidth && buttonsWidth > 0f)
+                {
+                    var ratio = totalWidth / buttonsWidth;
+                    craftWidth *= ratio;
+                    toggleWidth *= ratio;
+                }
+
+                var rowTop = layout.Top + baseHeight + buttonGap;
+                var startX = footerContentLeft + (availableWidth - (toggleWidth + buttonGap + craftWidth)) * 0.5f;
+                layout.ToggleRect = new RectangleF(startX, rowTop, toggleWidth, toggleSize.Y);
+                layout.ButtonRect = new RectangleF(startX + toggleWidth + buttonGap, rowTop, craftWidth, buttonSize.Y);
             }
 
             return layout;
@@ -542,6 +587,17 @@ namespace LcdMod.Client.Apps
             return new Vector2(
                 Math.Max(112f * Scale, textSize.X + 24f * Scale),
                 Math.Max(28f * Scale, FormatingHelper.LineHeight(textScale, Surface) + 10f * Scale));
+        }
+
+        Vector2 GetToggleViewButtonSize()
+        {
+            var textScale = GetCraftAllButtonTextScale(Scale, FontScale);
+            var ingotsSize = FormatingHelper.GetSizeInPixel(MyTexts.GetString(LOC_INGOTS_LABEL), "White", textScale, Surface);
+            var componentsSize = FormatingHelper.GetSizeInPixel(MyTexts.GetString(LOC_COMPONENTS_LABEL), "White", textScale, Surface);
+            var textWidth = Math.Max(ingotsSize.X, componentsSize.X);
+            return new Vector2(
+                Math.Max(112f * Scale, textWidth + 24f * Scale),
+                GetCraftAllButtonSize().Y);
         }
 
         static float GetCraftAllButtonTextScale(float scale, float fontScale)
@@ -607,6 +663,72 @@ namespace LcdMod.Client.Apps
                 InteractiveList.Add(_craftAllButton);
 
             _craftAllButton.Render(CreateItemRenderContext(), frame);
+        }
+
+        void DrawToggleViewButton(List<MySprite> frame, ProjectorFooterLayout layout)
+        {
+            if (layout.ToggleRect.Width <= 0f || layout.ToggleRect.Height <= 0f)
+                return;
+
+            if (_toggleViewButton == null)
+            {
+                _toggleViewButton = new Button(layout.ToggleRect, new ButtonModel
+                {
+                    Text = GetToggleViewButtonText(),
+                    Clicked = OnToggleViewClicked
+                });
+            }
+            else
+            {
+                _toggleViewButton.SetRect(layout.ToggleRect);
+            }
+
+            var model = _toggleViewButton.DataContext as ButtonModel;
+            if (model != null)
+            {
+                model.Text = GetToggleViewButtonText();
+                model.Enabled = true;
+            }
+
+            _toggleViewButton.SetVisible(true);
+            _toggleViewButton.SetCursor(CursorType.Hand);
+            _toggleViewButton.SetStyle(GetToggleViewButtonStyle());
+            _toggleViewButton.CustomRender = RenderCraftAllButton;
+
+            if (!InteractiveList.Contains(_toggleViewButton))
+                InteractiveList.Add(_toggleViewButton);
+
+            _toggleViewButton.Render(CreateItemRenderContext(), frame);
+        }
+
+        ControlStyle GetToggleViewButtonStyle()
+        {
+            if (_toggleViewButtonStyle == null)
+                _toggleViewButtonStyle = ControlStyle.FromThemeRoles(
+                    Constants.ON_SECONDARY_CONTAINER,
+                    Constants.SECONDARY_CONTAINER,
+                    Constants.SECONDARY_CONTAINER + Constants.HOVER,
+                    Constants.ON_SECONDARY_CONTAINER,
+                    Theme);
+            else
+                _toggleViewButtonStyle.ThemeColors = Theme;
+
+            _toggleViewButtonStyle.BorderRadiusPixels = Border.DEFAULT_RADIUS_PIXELS;
+            return _toggleViewButtonStyle;
+        }
+
+        void OnToggleViewClicked(ButtonModel model, object sender)
+        {
+            try
+            {
+                _showIngots = !_showIngots;
+                Update();
+                Host.RenderSprites();
+            }
+            catch (Exception e)
+            {
+                ErrorHandlerHelper.LogError(e, GetType());
+            }
         }
 
         void EnsureCraftAllButton(RectangleF rect)
@@ -688,7 +810,7 @@ namespace LcdMod.Client.Apps
 
         void OnCraftAllClicked(ButtonModel model, object sender)
         {
-            if (_missingComponents <= 0)
+            if (_componentMissingTotal <= 0)
                 return;
 
             var interactiveHost = Host as InteractiveSurfaceScript;
@@ -708,12 +830,11 @@ namespace LcdMod.Client.Apps
 
         List<CraftDialog.CraftRequest> BuildCraftAllRequests()
         {
+            // "Craft all" always operates on the missing components, regardless of the active view.
             var requests = new List<CraftDialog.CraftRequest>();
-            var sortedItems = ReadItems(Block as IMyTerminalBlock);
 
-            for (var i = 0; i < sortedItems.Count; i++)
+            foreach (var item in _componentMissing)
             {
-                var item = sortedItems[i];
                 if (item.Value <= 0d)
                     continue;
 
@@ -730,10 +851,15 @@ namespace LcdMod.Client.Apps
         void EnsureData()
         {
             _missing.Clear();
+            _needed.Clear();
+            _componentNeeded.Clear();
+            _componentMissing.Clear();
+            _ingotNeeded.Clear();
             _totalBlocks = 1;
             _remainingBlocks = 0;
             _totalComponents = 0;
             _missingComponents = 0;
+            _componentMissingTotal = 0;
 
             var lcd = Block as IMyTerminalBlock;
 
@@ -760,17 +886,15 @@ namespace LcdMod.Client.Apps
 
             try
             {
-                _needed.Clear();
-
                 foreach (var block in _projector.RemainingBlocksPerType)
                 {
                     var def = (MyCubeBlockDefinition)block.Key;
 
                     foreach (var perType in def.Components)
                     {
-                        int qty;
-                        _needed.TryGetValue(perType.Definition.Id, out qty);
-                        _needed[perType.Definition.Id] = qty + perType.Count * block.Value;
+                        double qty;
+                        _componentNeeded.TryGetValue(perType.Definition.Id, out qty);
+                        _componentNeeded[perType.Definition.Id] = qty + perType.Count * block.Value;
                     }
                 }
             }
@@ -779,12 +903,40 @@ namespace LcdMod.Client.Apps
                 ErrorHandlerHelper.LogError(e, GetType());
             }
 
-            var availableByType = GetAvailableComponents(lcd);
+            // Component shortage is always tracked so "Craft all" works in either view.
+            var availableComponents = GetAvailableComponents(lcd);
+            long componentMissing = 0;
+            foreach (var needed in _componentNeeded)
+            {
+                double available;
+                availableComponents.TryGetValue(needed.Key, out available);
 
+                double missing = needed.Value - available;
+                if (missing < 0) missing = 0;
+
+                _componentMissing[needed.Key] = missing;
+                componentMissing += (long)Math.Round(missing);
+            }
+
+            _componentMissingTotal = (int)Math.Max(0, componentMissing);
+
+            if (_showIngots)
+            {
+                BuildIngotNeeded(_componentNeeded, _ingotNeeded);
+                PopulateActiveView(_ingotNeeded, GetAvailableIngots(lcd));
+            }
+            else
+            {
+                PopulateActiveView(_componentNeeded, availableComponents);
+            }
+        }
+
+        void PopulateActiveView(Dictionary<MyItemType, double> neededByType, Dictionary<MyItemType, double> availableByType)
+        {
             long totalNeeded = 0;
             long totalMissing = 0;
 
-            foreach (var needed in _needed)
+            foreach (var needed in neededByType)
             {
                 double available;
                 availableByType.TryGetValue(needed.Key, out available);
@@ -792,14 +944,97 @@ namespace LcdMod.Client.Apps
                 double missing = needed.Value - available;
                 if (missing < 0) missing = 0;
 
-                _missing[needed.Key] = Math.Max(0, missing);
+                _needed[needed.Key] = needed.Value;
+                _missing[needed.Key] = missing;
 
-                totalNeeded += needed.Value;
+                totalNeeded += (long)Math.Round(needed.Value);
                 totalMissing += (long)Math.Round(missing);
             }
 
             _totalComponents = (int)Math.Max(0, totalNeeded);
             _missingComponents = (int)Math.Max(0, totalMissing);
+        }
+
+        // Estimates the ore-bars (ingots) consumed by the still-needed components, expanding each
+        // component through its primary blueprint. Components that are only a secondary blueprint
+        // result (absent from PrimaryBlueprintByCreatedItem) are skipped, so the total is a lower-bound
+        // estimate. Only "MyObjectBuilder_Ingot" prerequisites are counted.
+        void BuildIngotNeeded(Dictionary<MyItemType, double> componentNeeded, Dictionary<MyItemType, double> ingotNeeded)
+        {
+            ingotNeeded.Clear();
+            if (componentNeeded.Count == 0)
+                return;
+
+            try
+            {
+                LcdMod.Client.Grid.GridLogic.EnsureBlueprintResultDatabase();
+
+                foreach (var component in componentNeeded)
+                {
+                    if (component.Value <= 0d)
+                        continue;
+
+                    MyDefinitionId componentId = component.Key;
+                    MyBlueprintDefinitionBase blueprint;
+                    if (!LcdMod.Client.Grid.GridLogic.PrimaryBlueprintByCreatedItem.TryGetValue(componentId, out blueprint) ||
+                        blueprint == null)
+                        continue;
+
+                    double resultAmount = GetBlueprintResultAmount(blueprint, componentId);
+                    if (resultAmount <= 0d)
+                        resultAmount = 1d;
+
+                    double cycles = component.Value / resultAmount;
+
+                    var prerequisites = blueprint.Prerequisites;
+                    if (prerequisites == null)
+                        continue;
+
+                    for (int i = 0; i < prerequisites.Length; i++)
+                    {
+                        MyItemType ingotType = prerequisites[i].Id;
+                        if (ingotType.TypeId != INGOT_TYPE_ID)
+                            continue;
+
+                        double amount = (double)prerequisites[i].Amount * cycles;
+                        double current;
+                        ingotNeeded.TryGetValue(ingotType, out current);
+                        ingotNeeded[ingotType] = current + amount;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                ErrorHandlerHelper.LogError(e, GetType());
+            }
+        }
+
+        static double GetBlueprintResultAmount(MyBlueprintDefinitionBase blueprint, MyDefinitionId itemId)
+        {
+            var results = blueprint.Results;
+            if (results == null)
+                return 1d;
+
+            for (int i = 0; i < results.Length; i++)
+                if (results[i].Id.Equals(itemId))
+                    return (double)results[i].Amount;
+
+            return 1d;
+        }
+
+        Dictionary<MyItemType, double> GetAvailableIngots(IMyTerminalBlock referenceBlock)
+        {
+            try
+            {
+                var hasFilter = AppConfig.SelectedBlocks.Length > 0 || AppConfig.SelectedGroups.Length > 0;
+                return hasFilter ? GridLogic.GetIngots(AppConfig, referenceBlock) : GridLogic.Ingots;
+            }
+            catch (Exception e)
+            {
+                ErrorHandlerHelper.LogError(e, GetType());
+            }
+
+            return new Dictionary<MyItemType, double>();
         }
 
         Dictionary<MyItemType, double> GetAvailableComponents(IMyTerminalBlock referenceBlock)
