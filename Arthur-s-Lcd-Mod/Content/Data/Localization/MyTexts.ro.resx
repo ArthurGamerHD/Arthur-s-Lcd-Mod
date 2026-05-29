@@ -562,4 +562,19 @@
     <data name="LcdMod_Projector_Ingots" xml:space="preserve">
     <value>Lingouri</value>
   </data>
+    <data name="LcdMod_InputOutput" xml:space="preserve">
+    <value>Intrare / Ieșire</value>
+  </data>
+    <data name="LcdMod_InputOutput_Input" xml:space="preserve">
+    <value>Intrare</value>
+  </data>
+    <data name="LcdMod_InputOutput_Output" xml:space="preserve">
+    <value>Ieșire</value>
+  </data>
+    <data name="LcdMod_InputOutput_All" xml:space="preserve">
+    <value>Toate</value>
+  </data>
+    <data name="LcdMod_InputOutput_Empty" xml:space="preserve">
+    <value>Gol</value>
+  </data>
 </root>

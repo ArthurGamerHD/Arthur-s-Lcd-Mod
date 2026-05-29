@@ -562,4 +562,19 @@
     <data name="LcdMod_Projector_Ingots" xml:space="preserve">
     <value>Ingoty</value>
   </data>
+    <data name="LcdMod_InputOutput" xml:space="preserve">
+    <value>Vstup / Výstup</value>
+  </data>
+    <data name="LcdMod_InputOutput_Input" xml:space="preserve">
+    <value>Vstup</value>
+  </data>
+    <data name="LcdMod_InputOutput_Output" xml:space="preserve">
+    <value>Výstup</value>
+  </data>
+    <data name="LcdMod_InputOutput_All" xml:space="preserve">
+    <value>Vše</value>
+  </data>
+    <data name="LcdMod_InputOutput_Empty" xml:space="preserve">
+    <value>Prázdné</value>
+  </data>
 </root>

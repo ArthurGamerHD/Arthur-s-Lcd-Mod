@@ -562,4 +562,19 @@
     <data name="LcdMod_Projector_Ingots" xml:space="preserve">
     <value>錠</value>
   </data>
+    <data name="LcdMod_InputOutput" xml:space="preserve">
+    <value>输入 / 输出</value>
+  </data>
+    <data name="LcdMod_InputOutput_Input" xml:space="preserve">
+    <value>输入</value>
+  </data>
+    <data name="LcdMod_InputOutput_Output" xml:space="preserve">
+    <value>输出</value>
+  </data>
+    <data name="LcdMod_InputOutput_All" xml:space="preserve">
+    <value>全部</value>
+  </data>
+    <data name="LcdMod_InputOutput_Empty" xml:space="preserve">
+    <value>空</value>
+  </data>
 </root>

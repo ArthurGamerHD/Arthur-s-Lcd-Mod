@@ -562,4 +562,19 @@
     <data name="LcdMod_Projector_Ingots" xml:space="preserve">
     <value>Harkot</value>
   </data>
+    <data name="LcdMod_InputOutput" xml:space="preserve">
+    <value>Sisääntulo / Ulostulo</value>
+  </data>
+    <data name="LcdMod_InputOutput_Input" xml:space="preserve">
+    <value>Sisääntulo</value>
+  </data>
+    <data name="LcdMod_InputOutput_Output" xml:space="preserve">
+    <value>Ulostulo</value>
+  </data>
+    <data name="LcdMod_InputOutput_All" xml:space="preserve">
+    <value>Kaikki</value>
+  </data>
+    <data name="LcdMod_InputOutput_Empty" xml:space="preserve">
+    <value>Tyhjä</value>
+  </data>
 </root>

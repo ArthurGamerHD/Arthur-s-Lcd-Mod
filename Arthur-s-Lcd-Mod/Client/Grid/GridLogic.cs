@@ -5,10 +5,8 @@ using System.Linq;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Terminal.Actions;
 using LcdMod.Common.Helpers;
-
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
-using Sandbox.ModAPI.Interfaces;
 using VRage.Game;
 using VRage.Game.ModAPI;
 using VRage.Game.ModAPI.Ingame;
@@ -25,79 +23,119 @@ using ScreenConfigWithItems = LcdMod.Common.Config.Models.Apps.ScreenConfigWithI
 namespace LcdMod.Client.Grid
 {
     /// <summary>
-    /// Logic attached to <see cref="Grid"/>
+    ///     Logic attached to <see cref="Grid" />
     /// </summary>
     public class GridLogic
     {
-        const int DELAY = 120;
-        const int REQUEST_TTL_TICKS = 120;
-        const int TARGET_REFRESH_TICKS = 119;
-        const int REFRESH_BATCH_SIZE = 128;
-        static readonly object AssemblerBlueprintDatabaseLock = new object();
-        static bool _blueprintResultDatabaseInitialized;
+        private const int DELAY = 120;
+        private const int REQUEST_TTL_TICKS = 120;
+        private const int TARGET_REFRESH_TICKS = 119;
+        private const int REFRESH_BATCH_SIZE = 128;
+        private static readonly object AssemblerBlueprintDatabaseLock = new object();
+        private static bool _blueprintResultDatabaseInitialized;
+
         public static readonly Dictionary<string, HashSet<MyDefinitionId>> CraftableBlueprintsByAssemblerSubtype =
             new Dictionary<string, HashSet<MyDefinitionId>>(StringComparer.Ordinal);
+
         public static readonly Dictionary<MyDefinitionId, HashSet<string>> AssemblerSubtypesByCraftableBlueprint =
             new Dictionary<MyDefinitionId, HashSet<string>>();
+
         public static readonly Dictionary<MyDefinitionId, HashSet<MyDefinitionId>> CreatedItemsByBlueprint =
             new Dictionary<MyDefinitionId, HashSet<MyDefinitionId>>();
+
         public static readonly Dictionary<MyDefinitionId, HashSet<MyDefinitionId>> BlueprintsByCreatedItem =
             new Dictionary<MyDefinitionId, HashSet<MyDefinitionId>>();
+
         public static readonly Dictionary<MyDefinitionId, MyBlueprintDefinitionBase> PrimaryBlueprintByCreatedItem =
             new Dictionary<MyDefinitionId, MyBlueprintDefinitionBase>();
-        long _clock;
-        int _ticksSinceRequested = int.MaxValue;
 
-        static readonly HashSet<string> KnowSubtypes = new HashSet<string>();
-        static readonly HashSet<string> KnowFarmSubtypes = new HashSet<string>();
-        
+        private static readonly HashSet<string> KnowSubtypes = new HashSet<string>();
+        private static readonly HashSet<string> KnowFarmSubtypes = new HashSet<string>();
+
+        private static readonly string[] IngotTypeFilter = { "Ingot" };
+        private static readonly TimeSpan JumpPointGpsTtl = TimeSpan.FromSeconds(60);
+
+        private readonly Dictionary<MyItemType, double> _compCache = new Dictionary<MyItemType, double>();
+
+        private readonly Dictionary<MyItemType, double> _ingotCache = new Dictionary<MyItemType, double>();
+
+        private readonly Dictionary<SearchQueryToken, Dictionary<MyItemType, double>> _ingotQueryCache =
+            new Dictionary<SearchQueryToken, Dictionary<MyItemType, double>>();
+
+        private readonly Dictionary<long, Vector3D> _jumpPointByPlanetCache = new Dictionary<long, Vector3D>();
+
+        private readonly Dictionary<long, JumpPointGpsEntry> _jumpPointGpsEntries =
+            new Dictionary<long, JumpPointGpsEntry>();
+
+        private readonly Dictionary<SearchQueryToken, List<ProductionBlockItems>> _productionByBlockCache =
+            new Dictionary<SearchQueryToken, List<ProductionBlockItems>>();
+
+        private readonly Dictionary<SearchQueryToken, Dictionary<MyItemType, double>> _queryCache =
+            new Dictionary<SearchQueryToken, Dictionary<MyItemType, double>>();
+
 
         public readonly IMyCubeGrid Grid;
-        GridGroupLogic _gridGroupResolver;
-        List<IMySlimBlock> _blocks = new List<IMySlimBlock>();
-        List<IMyTerminalBlock> _invBlocks = new List<IMyTerminalBlock>();
-        List<IMySlimBlock> _nextBlocks = new List<IMySlimBlock>();
-        List<IMyTerminalBlock> _nextInvBlocks = new List<IMyTerminalBlock>();
-        
-        List<IMyLaserAntenna> _lasers = new List<IMyLaserAntenna>();
-        List<IMyRadioAntenna> _radio = new List<IMyRadioAntenna>();
-        List<IMyBeacon> _beacons = new List<IMyBeacon>();
-        List<IMyBatteryBlock> _batteries = new List<IMyBatteryBlock>();
-        List<IMyJumpDrive> _jumpDrives = new List<IMyJumpDrive>();
-        List<IMyAssembler> _assemblers = new List<IMyAssembler>();
-        List<IMyTerminalBlock> _terminalBlocks = new List<IMyTerminalBlock>();
-        List<IMyCargoContainer> _cargoContainers = new List<IMyCargoContainer>();
-        List<IMyGasTank> _gasTanks = new List<IMyGasTank>();
-        List<IMyPowerProducer> _powerProducers = new List<IMyPowerProducer>();
-        List<FarmPlotEntry> _farmPlots = new List<FarmPlotEntry>();
-        List<IMyLaserAntenna> _nextLasers = new List<IMyLaserAntenna>();
-        List<IMyRadioAntenna> _nextRadio = new List<IMyRadioAntenna>();
-        List<IMyBeacon> _nextBeacons = new List<IMyBeacon>();
-        List<IMyBatteryBlock> _nextBatteries = new List<IMyBatteryBlock>();
-        List<IMyJumpDrive> _nextJumpDrives = new List<IMyJumpDrive>();
-        List<IMyAssembler> _nextAssemblers = new List<IMyAssembler>();
-        List<IMyTerminalBlock> _nextTerminalBlocks = new List<IMyTerminalBlock>();
-        List<IMyCargoContainer> _nextCargoContainers = new List<IMyCargoContainer>();
-        List<IMyGasTank> _nextGasTanks = new List<IMyGasTank>();
-        List<IMyPowerProducer> _nextPowerProducers = new List<IMyPowerProducer>();
-        List<FarmPlotEntry> _nextFarmPlots = new List<FarmPlotEntry>();
-        IEnumerator<bool> _refreshUpdater;
-        bool _refreshQueued;
-        int _currentRefreshBatchSize = REFRESH_BATCH_SIZE;
-        int _nextRefreshBatchSize = REFRESH_BATCH_SIZE;
-        int _currentRefreshIterations;
-        int _currentRefreshProcessed;
-        int _lastRefreshIterations;
-        int _lastRefreshProcessed;
+        private List<IMyAssembler> _assemblers = new List<IMyAssembler>();
+        private List<IMyBatteryBlock> _batteries = new List<IMyBatteryBlock>();
+        private List<IMyBeacon> _beacons = new List<IMyBeacon>();
+        private List<IMySlimBlock> _blocks = new List<IMySlimBlock>();
+        private List<IMyCargoContainer> _cargoContainers = new List<IMyCargoContainer>();
+        private long _clock;
+        private int _currentRefreshIterations;
+        private int _currentRefreshProcessed;
+        private List<FarmPlotEntry> _farmPlots = new List<FarmPlotEntry>();
+        private List<IMyGasTank> _gasTanks = new List<IMyGasTank>();
+        private GridGroupLogic _gridGroupResolver;
+        private List<IMyTerminalBlock> _invBlocks = new List<IMyTerminalBlock>();
+        private List<IMyJumpDrive> _jumpDrives = new List<IMyJumpDrive>();
+        private long _jumpPointCacheFrame = -1;
 
-        public int LastRefreshIterations => _lastRefreshIterations;
-        public int LastRefreshProcessed => _lastRefreshProcessed;
-        public int EstimatedNextRefreshBatchSize => _nextRefreshBatchSize;
-        public int CurrentRefreshBatchSize => _currentRefreshBatchSize;
+        private List<IMyLaserAntenna> _lasers = new List<IMyLaserAntenna>();
+        private List<IMyAssembler> _nextAssemblers = new List<IMyAssembler>();
+        private List<IMyBatteryBlock> _nextBatteries = new List<IMyBatteryBlock>();
+        private List<IMyBeacon> _nextBeacons = new List<IMyBeacon>();
+        private List<IMySlimBlock> _nextBlocks = new List<IMySlimBlock>();
+        private List<IMyCargoContainer> _nextCargoContainers = new List<IMyCargoContainer>();
+        private List<FarmPlotEntry> _nextFarmPlots = new List<FarmPlotEntry>();
+        private List<IMyGasTank> _nextGasTanks = new List<IMyGasTank>();
+        private List<IMyTerminalBlock> _nextInvBlocks = new List<IMyTerminalBlock>();
+        private List<IMyJumpDrive> _nextJumpDrives = new List<IMyJumpDrive>();
+        private List<IMyLaserAntenna> _nextLasers = new List<IMyLaserAntenna>();
+        private List<IMyPowerProducer> _nextPowerProducers = new List<IMyPowerProducer>();
+        private List<IMyRadioAntenna> _nextRadio = new List<IMyRadioAntenna>();
+        private List<IMyTerminalBlock> _nextTerminalBlocks = new List<IMyTerminalBlock>();
+        private List<IMyPowerProducer> _powerProducers = new List<IMyPowerProducer>();
+        private List<IMyRadioAntenna> _radio = new List<IMyRadioAntenna>();
+        private bool _refreshQueued;
+        private IEnumerator<bool> _refreshUpdater;
+        private List<IMyTerminalBlock> _terminalBlocks = new List<IMyTerminalBlock>();
+        private int _ticksSinceRequested = int.MaxValue;
+
+        /// <summary>
+        ///     Logic attached to <see cref="grid" />
+        /// </summary>
+        /// <param name="grid"></param>
+        public GridLogic(IMyCubeGrid grid)
+        {
+            Grid = grid;
+            _gridGroupResolver = new GridGroupLogic(this);
+            _clock = new Random().Next(DELAY);
+            // Initial Randomization so not every single grid ticks on the same time
+        }
+
+        public int LastRefreshIterations { get; private set; }
+
+        public int LastRefreshProcessed { get; private set; }
+
+        public int EstimatedNextRefreshBatchSize { get; private set; } = REFRESH_BATCH_SIZE;
+
+        public int CurrentRefreshBatchSize { get; private set; } = REFRESH_BATCH_SIZE;
+
         public bool IsRefreshRunning => _refreshUpdater != null;
         public bool IsSleeping => _ticksSinceRequested > REQUEST_TTL_TICKS;
 
-        IMyGridTerminalSystem GridTerminalSystem => MyAPIGateway.TerminalActionsHelper.GetTerminalSystemForGrid(Grid);
+        private IMyGridTerminalSystem GridTerminalSystem =>
+            MyAPIGateway.TerminalActionsHelper.GetTerminalSystemForGrid(Grid);
 
         public Dictionary<MyItemType, double> Components
         {
@@ -123,43 +161,6 @@ namespace LcdMod.Client.Grid
             }
         }
 
-        static readonly string[] IngotTypeFilter = { "Ingot" };
-
-        readonly Dictionary<SearchQueryToken, Dictionary<MyItemType, double>> _queryCache =
-            new Dictionary<SearchQueryToken, Dictionary<MyItemType, double>>();
-
-        readonly Dictionary<SearchQueryToken, Dictionary<MyItemType, double>> _ingotQueryCache =
-            new Dictionary<SearchQueryToken, Dictionary<MyItemType, double>>();
-
-        readonly Dictionary<MyItemType, double> _compCache = new Dictionary<MyItemType, double>();
-
-        readonly Dictionary<MyItemType, double> _ingotCache = new Dictionary<MyItemType, double>();
-
-        readonly Dictionary<SearchQueryToken, Dictionary<MyItemType, double>> _refineryInputQueryCache  = new Dictionary<SearchQueryToken, Dictionary<MyItemType, double>>();
-        readonly Dictionary<SearchQueryToken, Dictionary<MyItemType, double>> _refineryOutputQueryCache = new Dictionary<SearchQueryToken, Dictionary<MyItemType, double>>();
-        readonly Dictionary<long, Vector3D> _jumpPointByPlanetCache = new Dictionary<long, Vector3D>();
-        readonly Dictionary<long, JumpPointGpsEntry> _jumpPointGpsEntries = new Dictionary<long, JumpPointGpsEntry>();
-        long _jumpPointCacheFrame = -1;
-        static readonly TimeSpan JumpPointGpsTtl = TimeSpan.FromSeconds(60);
-
-        struct JumpPointGpsEntry
-        {
-            public IMyGps Gps;
-            public long LastPublishedFrame;
-        }
-
-        /// <summary>
-        /// Logic attached to <see cref="grid"/>
-        /// </summary>
-        /// <param name="grid"></param>
-        public GridLogic(IMyCubeGrid grid)
-        {
-            Grid = grid;
-            _gridGroupResolver = new GridGroupLogic(this);
-            _clock = new Random().Next(DELAY);
-            // Initial Randomization so not every single grid ticks on the same time
-        }
-
         internal GridGroupLogic GetLocalGridGroupResolver()
         {
             if (_gridGroupResolver == null || _gridGroupResolver.Owner != this)
@@ -179,7 +180,7 @@ namespace LcdMod.Client.Grid
         }
 
         /// <summary>
-        /// Update Grid component after specific <see cref="DELAY"/>, Called every tick
+        ///     Update Grid component after specific <see cref="DELAY" />, Called every tick
         /// </summary>
         public void Update()
         {
@@ -194,6 +195,7 @@ namespace LcdMod.Client.Grid
                     _refreshUpdater = null;
                     _refreshQueued = false;
                 }
+
                 return;
             }
 
@@ -205,7 +207,7 @@ namespace LcdMod.Client.Grid
                 if (_clock % DELAY == 0)
                 {
                     InvalidateItemCaches();
-                    StartRefresh(force: true);
+                    StartRefresh(true);
                 }
 
                 AdvanceRefreshUpdater();
@@ -216,17 +218,16 @@ namespace LcdMod.Client.Grid
             }
         }
 
-        void InvalidateItemCaches()
+        private void InvalidateItemCaches()
         {
             _compCache.Clear();
             _ingotCache.Clear();
             _queryCache.Clear();
             _ingotQueryCache.Clear();
-            _refineryInputQueryCache.Clear();
-            _refineryOutputQueryCache.Clear();
+            _productionByBlockCache.Clear();
         }
 
-        void StartRefresh(bool force = false)
+        private void StartRefresh(bool force = false)
         {
             if (_refreshUpdater != null)
             {
@@ -238,14 +239,14 @@ namespace LcdMod.Client.Grid
             if (!force && _blocks.Count > 0)
                 return;
 
-            _currentRefreshBatchSize = Math.Max(1, _nextRefreshBatchSize);
+            CurrentRefreshBatchSize = Math.Max(1, EstimatedNextRefreshBatchSize);
             _currentRefreshIterations = 0;
             _currentRefreshProcessed = 0;
             _refreshUpdater = RefreshInventoriesCoroutine().GetEnumerator();
             _refreshQueued = false;
         }
 
-        void AdvanceRefreshUpdater()
+        private void AdvanceRefreshUpdater()
         {
             if (_refreshUpdater == null)
                 return;
@@ -273,50 +274,51 @@ namespace LcdMod.Client.Grid
             FinalizeRefreshEstimate();
 
             if (_refreshQueued)
-                StartRefresh(force: true);
+                StartRefresh(true);
         }
 
-        void FinalizeRefreshEstimate()
+        private void FinalizeRefreshEstimate()
         {
-            _lastRefreshIterations = _currentRefreshIterations;
-            _lastRefreshProcessed = _currentRefreshProcessed;
+            LastRefreshIterations = _currentRefreshIterations;
+            LastRefreshProcessed = _currentRefreshProcessed;
 
-            if (_lastRefreshProcessed <= 0)
+            if (LastRefreshProcessed <= 0)
                 return;
 
             // Estimate batch size so the next refresh tends to complete in about TARGET_REFRESH_TICKS updates.
-            _nextRefreshBatchSize = Math.Max(1,
-                (int)Math.Ceiling(_lastRefreshProcessed / (double)TARGET_REFRESH_TICKS));
+            EstimatedNextRefreshBatchSize = Math.Max(1,
+                (int)Math.Ceiling(LastRefreshProcessed / (double)TARGET_REFRESH_TICKS));
         }
 
         /// <summary>
-        /// Collect items from <see cref="blocks"/> with specific <see cref="categories"/>> or specific <see cref="idWhiteList"/> and add to <see cref="dictionary"/>
+        ///     Collect items from <see cref="blocks" /> with specific <see cref="categories" />> or specific
+        ///     <see cref="idWhiteList" /> and add to <see cref="dictionary" />
         /// </summary>
         /// <param name="blocks">Blocks to collect from</param>
         /// <param name="dictionary">Dictionary to store item Type/Ammount</param>
         /// <param name="categories">Suffix of the item to be collected</param>
         /// <param name="idWhiteList">Items to be collected</param>
-        void AggregateItems(List<IMyTerminalBlock> blocks, Dictionary<MyItemType, double> dictionary,
+        private void AggregateItems(List<IMyTerminalBlock> blocks, Dictionary<MyItemType, double> dictionary,
             string[] categories, MyDefinitionId[] idWhiteList)
         {
             dictionary.Clear();
 
-            for (int b = 0; b < blocks.Count; b++)
+            for (var b = 0; b < blocks.Count; b++)
             {
                 var tb = blocks[b];
 
-                if (!tb.HasInventory) 
+                if (!tb.HasInventory)
                     continue;
 
-                int invCount = tb.InventoryCount;
-                for (int i = 0; i < invCount; i++)
+                var invCount = tb.InventoryCount;
+                for (var i = 0; i < invCount; i++)
                 {
                     var inv = tb.GetInventory(i);
                     if (inv == null) continue;
 
                     var items = new List<IngameItem>();
                     inv.GetItems(items);
-                    for (int k = 0; k < items.Count; k++)
+                    for (var k = 0; k < items.Count; k++)
                     {
                         var it = items[k];
 
@@ -336,9 +338,9 @@ namespace LcdMod.Client.Grid
                         }
 
 
-                        MyItemType type = it.Type;
+                        var type = it.Type;
 
-                        double amount = (double)it.Amount;
+                        var amount = (double)it.Amount;
                         if (amount <= 0) continue;
 
                         double acc;
@@ -350,7 +352,8 @@ namespace LcdMod.Client.Grid
         }
 
 
-        public Dictionary<MyItemType, double> GetItems(ScreenConfigWithItems config, IMyTerminalBlock referenceBlock, string[] types = null)
+        public Dictionary<MyItemType, double> GetItems(ScreenConfigWithItems config, IMyTerminalBlock referenceBlock,
+            string[] types = null)
         {
             return GetItemsCore(config, referenceBlock, types, _queryCache, false);
         }
@@ -360,19 +363,20 @@ namespace LcdMod.Client.Grid
             return GetItemsCore(config, referenceBlock, IngotTypeFilter, _ingotQueryCache, true);
         }
 
-        Dictionary<MyItemType, double> GetItemsCore(ScreenConfigWithItems config, IMyTerminalBlock referenceBlock,
+        private Dictionary<MyItemType, double> GetItemsCore(ScreenConfigWithItems config,
+            IMyTerminalBlock referenceBlock,
             string[] types, Dictionary<SearchQueryToken, Dictionary<MyItemType, double>> cache, bool forceTypes)
         {
             try
             {
-                GridLinkTypeEnum linkType = config.GridLinkType;
-                SearchQueryToken queryToken = SearchQueryToken.GetToken(config);
+                var linkType = config.GridLinkType;
+                var queryToken = SearchQueryToken.GetToken(config);
                 Dictionary<MyItemType, double> dictionary;
                 if (!cache.TryGetValue(queryToken, out dictionary))
                 {
                     dictionary = new Dictionary<MyItemType, double>();
 
-                    List<IMyTerminalBlock> blocks =
+                    var blocks =
                         config.SelectedBlocks.Length == 0 && config.SelectedGroups.Length == 0
                             ? GetInventories(linkType)
                             : new List<IMyTerminalBlock>();
@@ -385,7 +389,7 @@ namespace LcdMod.Client.Grid
 
                     if (config.SelectedGroups.Any())
                     {
-                        List<IMyTerminalBlock> blockFromGroups = new List<IMyTerminalBlock>();
+                        var blockFromGroups = new List<IMyTerminalBlock>();
                         foreach (var groupName in config.SelectedGroups)
                         {
                             blockFromGroups.Clear();
@@ -399,7 +403,7 @@ namespace LcdMod.Client.Grid
                         }
                     }
 
-                    var aggregateTypes = forceTypes ? types : (types ?? config.SelectedCategories);
+                    var aggregateTypes = forceTypes ? types : types ?? config.SelectedCategories;
                     AggregateItems(blocks, dictionary, aggregateTypes, config.SelectedItems);
 
                     cache[queryToken] = dictionary;
@@ -427,7 +431,7 @@ namespace LcdMod.Client.Grid
             if (terminals == null)
                 return inventories;
 
-            for (int i = 0; i < terminals.Count; i++)
+            for (var i = 0; i < terminals.Count; i++)
             {
                 var block = terminals[i];
                 if (block != null && block.HasInventory)
@@ -437,7 +441,8 @@ namespace LcdMod.Client.Grid
             return inventories;
         }
 
-        bool IsBlockInGridLinkScope(IMyTerminalBlock block, IMyTerminalBlock referenceBlock, GridLinkTypeEnum linkType)
+        private bool IsBlockInGridLinkScope(IMyTerminalBlock block, IMyTerminalBlock referenceBlock,
+            GridLinkTypeEnum linkType)
         {
             if (block == null || referenceBlock == null || block.CubeGrid == null || referenceBlock.CubeGrid == null)
                 return false;
@@ -449,7 +454,7 @@ namespace LcdMod.Client.Grid
             if (terminals == null)
                 return false;
 
-            for (int i = 0; i < terminals.Count; i++)
+            for (var i = 0; i < terminals.Count; i++)
             {
                 var terminal = terminals[i];
                 if (terminal != null && terminal.EntityId == block.EntityId)
@@ -503,7 +508,7 @@ namespace LcdMod.Client.Grid
             }
         }
 
-        static void EnsureBlueprintResultDatabaseNoLock()
+        private static void EnsureBlueprintResultDatabaseNoLock()
         {
             if (_blueprintResultDatabaseInitialized || MyDefinitionManager.Static == null)
                 return;
@@ -516,16 +521,14 @@ namespace LcdMod.Client.Grid
                 var createdItems = new HashSet<MyDefinitionId>();
                 var results = blueprint.Results;
                 if (results != null)
-                {
-                    for (int i = 0; i < results.Length; i++)
+                    for (var i = 0; i < results.Length; i++)
                     {
                         var itemId = results[i].Id;
                         createdItems.Add(itemId);
                         AddToSet(BlueprintsByCreatedItem, itemId, blueprint.Id);
                     }
-                }
 
-                if (blueprint.IsPrimary && results?.Length >= 1) 
+                if (blueprint.IsPrimary && results?.Length >= 1)
                     PrimaryBlueprintByCreatedItem[results.First().Id] = blueprint;
 
                 CreatedItemsByBlueprint[blueprint.Id] = createdItems;
@@ -534,7 +537,7 @@ namespace LcdMod.Client.Grid
             _blueprintResultDatabaseInitialized = true;
         }
 
-        static bool CanAssemblerUseBlueprint(IMyAssembler assembler, MyBlueprintDefinitionBase blueprint)
+        private static bool CanAssemblerUseBlueprint(IMyAssembler assembler, MyBlueprintDefinitionBase blueprint)
         {
             try
             {
@@ -557,7 +560,7 @@ namespace LcdMod.Client.Grid
             return string.IsNullOrEmpty(subtype) ? definitionId.ToString() : subtype;
         }
 
-        static void AddToSet<TKey, TValue>(Dictionary<TKey, HashSet<TValue>> dictionary, TKey key, TValue value)
+        private static void AddToSet<TKey, TValue>(Dictionary<TKey, HashSet<TValue>> dictionary, TKey key, TValue value)
         {
             HashSet<TValue> values;
             if (!dictionary.TryGetValue(key, out values))
@@ -569,7 +572,7 @@ namespace LcdMod.Client.Grid
             values.Add(value);
         }
 
-        IEnumerable<bool> RefreshInventoriesCoroutine()
+        private IEnumerable<bool> RefreshInventoriesCoroutine()
         {
             _nextBlocks.Clear();
             _nextInvBlocks.Clear();
@@ -587,8 +590,8 @@ namespace LcdMod.Client.Grid
 
             Grid.GetBlocks(_nextBlocks, a => a.FatBlock is IMyTerminalBlock);
 
-            int processed = 0;
-            for (int i = 0; i < _nextBlocks.Count; i++)
+            var processed = 0;
+            for (var i = 0; i < _nextBlocks.Count; i++)
             {
                 var block = _nextBlocks[i].FatBlock as IMyTerminalBlock;
                 if (block == null)
@@ -635,25 +638,21 @@ namespace LcdMod.Client.Grid
                     EnsureAssemblerBlueprintDatabase(assembler);
                 }
 
-                bool newBlock = KnowSubtypes.Add(block.BlockDefinition.SubtypeName);
+                var newBlock = KnowSubtypes.Add(block.BlockDefinition.SubtypeName);
 
                 var myFunctionalBlock = block as IMyFunctionalBlock;
 
 #if EXPERIMENTAL
-                if (newBlock && myFunctionalBlock != null)
-                {
-                    ActionHelper.RegisterNewBlock(myFunctionalBlock);
-                }
+                if (newBlock && myFunctionalBlock != null) ActionHelper.RegisterNewBlock(myFunctionalBlock);
 #endif
 
 
                 if (myFunctionalBlock != null)
-                {
                     if (KnowFarmSubtypes.Contains(myFunctionalBlock.BlockDefinition.SubtypeName) || newBlock)
                     {
                         IMyFarmPlotLogic planterComponent = null;
                         IMyResourceStorageComponent storageComponent = null;
-                        
+
                         foreach (var component in block.Components)
                         {
                             if (planterComponent == null)
@@ -666,18 +665,18 @@ namespace LcdMod.Client.Grid
                                 continue;
 
                             KnowFarmSubtypes.Add(myFunctionalBlock.BlockDefinition.SubtypeName);
-                            _nextFarmPlots.Add(new FarmPlotEntry(myFunctionalBlock, planterComponent, storageComponent));
+                            _nextFarmPlots.Add(new FarmPlotEntry(myFunctionalBlock, planterComponent,
+                                storageComponent));
                             break;
                         }
                     }
-                }
 
                 if (block.HasInventory && block.InventoryCount != 0)
                     _nextInvBlocks.Add(block);
 
                 processed++;
                 _currentRefreshProcessed++;
-                if (processed >= _currentRefreshBatchSize)
+                if (processed >= CurrentRefreshBatchSize)
                 {
                     processed = 0;
                     yield return true;
@@ -698,8 +697,6 @@ namespace LcdMod.Client.Grid
             SwapBuffer(ref _terminalBlocks, ref _nextTerminalBlocks);
             SwapBuffer(ref _powerProducers, ref _nextPowerProducers);
             SwapBuffer(ref _cargoContainers, ref _nextCargoContainers);
-
-
         }
 
         internal List<T> GetTerminalBlocksInternal<T>() where T : IMyTerminalBlock
@@ -732,11 +729,12 @@ namespace LcdMod.Client.Grid
             throw new NotImplementedException(typeof(T).Name);
         }
 
-        public List<T> GetTerminalBlocks<T>(GridLinkTypeEnum linkType = (GridLinkTypeEnum)(-1)) where T : IMyTerminalBlock
+        public List<T> GetTerminalBlocks<T>(GridLinkTypeEnum linkType = (GridLinkTypeEnum)(-1))
+            where T : IMyTerminalBlock
         {
-            if(linkType == (GridLinkTypeEnum)(-1))
+            if (linkType == (GridLinkTypeEnum)(-1))
                 return GetTerminalBlocksInternal<T>();
-            
+
             if (linkType != GridLinkTypeEnum.Physical && linkType != GridLinkTypeEnum.Mechanical)
                 throw new NotImplementedException(typeof(T).Name);
 
@@ -795,13 +793,13 @@ namespace LcdMod.Client.Grid
             var offsetMeters = Math.Max(0d, planetRadiusMeters + gravityRangeMeters + 10d);
             jumpPoint = planetCenter + dir * offsetMeters;
             _jumpPointByPlanetCache[planetId] = jumpPoint;
-            
-            if(publish)
+
+            if (publish)
                 PublishJumpPointGps(planetId, planetName, jumpPoint, frame);
             return true;
         }
 
-        void PublishJumpPointGps(long planetId, string planetName, Vector3D jumpPoint, long frame)
+        private void PublishJumpPointGps(long planetId, string planetName, Vector3D jumpPoint, long frame)
         {
             if (frame < 0 || MyAPIGateway.Session == null || MyAPIGateway.Session.GPS == null)
                 return;
@@ -835,7 +833,7 @@ namespace LcdMod.Client.Grid
             _jumpPointGpsEntries[planetId] = entry;
         }
 
-        string BuildJumpPointGpsName(string planetName)
+        private string BuildJumpPointGpsName(string planetName)
         {
             var gridToken = GetGridNameToken();
             var planetToken = string.IsNullOrWhiteSpace(planetName)
@@ -844,7 +842,7 @@ namespace LcdMod.Client.Grid
             return "JumpPoint_" + gridToken + "_" + planetToken;
         }
 
-        string GetGridNameToken()
+        private string GetGridNameToken()
         {
             var gridName = Grid?.CustomName;
             if (string.IsNullOrWhiteSpace(gridName))
@@ -856,13 +854,13 @@ namespace LcdMod.Client.Grid
             return token;
         }
 
-        static string SanitizeGpsNameToken(string raw)
+        private static string SanitizeGpsNameToken(string raw)
         {
             if (string.IsNullOrEmpty(raw))
                 return string.Empty;
 
             var chars = new List<char>(raw.Length);
-            for (int i = 0; i < raw.Length; i++)
+            for (var i = 0; i < raw.Length; i++)
             {
                 var c = raw[i];
                 if (char.IsLetterOrDigit(c) || c == '_' || c == '-')
@@ -875,100 +873,150 @@ namespace LcdMod.Client.Grid
         }
 
         /// <summary>
-        /// Collects items from a single inventory slot of refineries, respecting block/group selection.
+        ///     Per-block input/output snapshot of the grid's refineries and assemblers, respecting
+        ///     block/group selection. Cached by query token and rebuilt on the batched refresh cycle.
         /// </summary>
-        /// <param name="inventoryIndex">0 = input (ores), 1 = output (ingots)</param>
-        /// <param name="config">Screen config used to filter selected blocks/groups.</param>
-        /// <param name="referenceBlock">Lcd block used for ownership/grid-group checks.</param>
-        /// <returns>Item type/amount dictionary for the requested slot; empty if no refineries found.</returns>
-        public Dictionary<MyItemType, double> GetRefineryItems(int inventoryIndex, ScreenConfigWithBlocks config, IMyTerminalBlock referenceBlock)
+        public List<ProductionBlockItems> GetProductionBlockItems(ScreenConfigWithBlocks config,
+            IMyTerminalBlock referenceBlock)
         {
-            if (inventoryIndex != 0 && inventoryIndex != 1)
-                return new Dictionary<MyItemType, double>();
-
             try
             {
-                SearchQueryToken token      = SearchQueryToken.GetToken(config);
-                var              queryCache = inventoryIndex == 0 ? _refineryInputQueryCache : _refineryOutputQueryCache;
+                var token = SearchQueryToken.GetToken(config);
 
-                Dictionary<MyItemType, double> cache;
-                if (queryCache.TryGetValue(token, out cache))
-                    return cache;
+                List<ProductionBlockItems> cached;
+                if (_productionByBlockCache.TryGetValue(token, out cached))
+                    return cached;
 
-                cache = new Dictionary<MyItemType, double>();
+                var blocks = new List<IMyTerminalBlock>();
+                BuildProductionBlockList(config, referenceBlock, blocks);
 
-                // Build refinery block list, respecting SelectedBlocks / SelectedGroups
-                List<IMyTerminalBlock> blocks;
-                if (config.SelectedBlocks.Length == 0 && config.SelectedGroups.Length == 0)
-                {
-                    var all = GetInventories(config.GridLinkType);
-                    blocks = new List<IMyTerminalBlock>(all.Count);
-                    for (int i = 0; i < all.Count; i++)
-                        if (all[i] is IMyRefinery)
-                            blocks.Add(all[i]);
-                }
-                else
-                {
-                    blocks = new List<IMyTerminalBlock>();
-                    blocks.AddRange(config.SelectedBlocks
-                        .Select(id => MyAPIGateway.Entities.GetEntityById(id) as IMyTerminalBlock)
-                        .Where(b => (b is IMyRefinery || b is IMyAssembler) &&
-                                    IsBlockInGridLinkScope(b, referenceBlock, config.GridLinkType)));
+                var result = new List<ProductionBlockItems>(blocks.Count);
+                var scratchItems = new List<IngameItem>();
+                var scratchInput = new Dictionary<MyItemType, double>();
+                var scratchOutput = new Dictionary<MyItemType, double>();
 
-                    if (config.SelectedGroups.Length > 0)
-                    {
-                        var groupBlocks = new List<IMyTerminalBlock>();
-                        foreach (var groupName in config.SelectedGroups)
-                        {
-                            groupBlocks.Clear();
-                            GridTerminalSystem.GetBlockGroupWithName(groupName)?
-                                .GetBlocks(groupBlocks, b => (b is IMyRefinery || b is IMyAssembler) &&
-                                                             b.GetUserRelationToOwner(referenceBlock.OwnerId)
-                                                             <= MyRelationsBetweenPlayerAndBlock.FactionShare &&
-                                                             IsBlockInGridLinkScope(b, referenceBlock, config.GridLinkType) &&
-                                                             !blocks.Contains(b));
-                            blocks.AddRange(groupBlocks);
-                        }
-                    }
-                }
-
-                var items = new List<IngameItem>();
-                for (int b = 0; b < blocks.Count; b++)
+                for (var b = 0; b < blocks.Count; b++)
                 {
                     var tb = blocks[b];
-                    if (inventoryIndex >= tb.InventoryCount) continue;
-                    var inv = tb.GetInventory(inventoryIndex);
-                    if (inv == null) continue;
-                    items.Clear();
-                    inv.GetItems(items);
-                    for (int k = 0; k < items.Count; k++)
-                    {
-                        var    it     = items[k];
-                        double amount = (double)it.Amount;
-                        if (amount <= 0) continue;
-                        MyItemType type = it.Type;
-                        double acc;
-                        if (cache.TryGetValue(type, out acc)) cache[type] = acc + amount;
-                        else                                   cache[type] = amount;
-                    }
+                    scratchInput.Clear();
+                    scratchOutput.Clear();
+                    ReadInventoryAmounts(tb, 0, scratchItems, scratchInput);
+                    ReadInventoryAmounts(tb, 1, scratchItems, scratchOutput);
+
+                    var entry = new ProductionBlockItems(tb.EntityId, GetBlockDisplayName(tb));
+                    FillSortedByAmount(scratchInput, entry.Input);
+                    FillSortedByAmount(scratchOutput, entry.Output);
+                    result.Add(entry);
                 }
 
-                queryCache[token] = cache;
-                return cache;
+                _productionByBlockCache[token] = result;
+                return result;
             }
             catch (Exception e)
             {
                 ErrorHandlerHelper.LogError(e, this);
-                return new Dictionary<MyItemType, double>();
+                return new List<ProductionBlockItems>();
             }
         }
 
-        static void SwapBuffer<T>(ref T active, ref T next) where T : class, IList
+        /// <summary>
+        ///     Builds the list of refinery/assembler blocks honouring SelectedBlocks / SelectedGroups / GridLinkType.
+        /// </summary>
+        private void BuildProductionBlockList(ScreenConfigWithBlocks config, IMyTerminalBlock referenceBlock,
+            List<IMyTerminalBlock> blocks)
+        {
+            blocks.Clear();
+
+            if (config.SelectedBlocks.Length == 0 && config.SelectedGroups.Length == 0)
+            {
+                var all = GetInventories(config.GridLinkType);
+                for (var i = 0; i < all.Count; i++)
+                    if (all[i] is IMyRefinery || all[i] is IMyAssembler)
+                        blocks.Add(all[i]);
+
+                return;
+            }
+
+            blocks.AddRange(config.SelectedBlocks
+                .Select(id => MyAPIGateway.Entities.GetEntityById(id) as IMyTerminalBlock)
+                .Where(b => (b is IMyRefinery || b is IMyAssembler) &&
+                            IsBlockInGridLinkScope(b, referenceBlock, config.GridLinkType)));
+
+            if (config.SelectedGroups.Length > 0 && referenceBlock != null)
+            {
+                var groupBlocks = new List<IMyTerminalBlock>();
+                foreach (var groupName in config.SelectedGroups)
+                {
+                    groupBlocks.Clear();
+                    GridTerminalSystem.GetBlockGroupWithName(groupName)?
+                        .GetBlocks(groupBlocks, b => (b is IMyRefinery || b is IMyAssembler) &&
+                                                     b.GetUserRelationToOwner(referenceBlock.OwnerId)
+                                                     <= MyRelationsBetweenPlayerAndBlock.FactionShare &&
+                                                     IsBlockInGridLinkScope(b, referenceBlock, config.GridLinkType) &&
+                                                     !blocks.Contains(b));
+                    blocks.AddRange(groupBlocks);
+                }
+            }
+        }
+
+        private static void ReadInventoryAmounts(IMyTerminalBlock block, int inventoryIndex, List<IngameItem> scratch,
+            Dictionary<MyItemType, double> destination)
+        {
+            if (inventoryIndex >= block.InventoryCount)
+                return;
+
+            var inv = block.GetInventory(inventoryIndex);
+            if (inv == null)
+                return;
+
+            scratch.Clear();
+            inv.GetItems(scratch);
+            for (var k = 0; k < scratch.Count; k++)
+            {
+                var it = scratch[k];
+                var amount = (double)it.Amount;
+                if (amount <= 0)
+                    continue;
+
+                var type = it.Type;
+                double acc;
+                if (destination.TryGetValue(type, out acc))
+                    destination[type] = acc + amount;
+                else
+                    destination[type] = amount;
+            }
+        }
+
+        private static void FillSortedByAmount(Dictionary<MyItemType, double> source,
+            List<KeyValuePair<MyItemType, double>> destination)
+        {
+            foreach (var kv in source)
+                destination.Add(kv);
+
+            destination.Sort((a, b) => b.Value.CompareTo(a.Value));
+        }
+
+        private static string GetBlockDisplayName(IMyTerminalBlock block)
+        {
+            if (!string.IsNullOrEmpty(block.CustomName))
+                return block.CustomName;
+            if (!string.IsNullOrEmpty(block.DisplayNameText))
+                return block.DisplayNameText;
+            return block.BlockDefinition.SubtypeName ?? string.Empty;
+        }
+
+        private static void SwapBuffer<T>(ref T active, ref T next) where T : class, IList
         {
             var old = active;
             active = next;
             next = old;
             next?.Clear();
+        }
+
+        private struct JumpPointGpsEntry
+        {
+            public IMyGps Gps;
+            public long LastPublishedFrame;
         }
     }
 }

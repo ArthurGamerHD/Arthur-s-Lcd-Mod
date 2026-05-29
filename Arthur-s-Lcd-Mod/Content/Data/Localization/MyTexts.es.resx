@@ -563,4 +563,19 @@
     <data name="LcdMod_Projector_Ingots" xml:space="preserve">
     <value>Lingotes</value>
   </data>
+    <data name="LcdMod_InputOutput" xml:space="preserve">
+    <value>Entrada / Salida</value>
+  </data>
+    <data name="LcdMod_InputOutput_Input" xml:space="preserve">
+    <value>Entrada</value>
+  </data>
+    <data name="LcdMod_InputOutput_Output" xml:space="preserve">
+    <value>Salida</value>
+  </data>
+    <data name="LcdMod_InputOutput_All" xml:space="preserve">
+    <value>Todos</value>
+  </data>
+    <data name="LcdMod_InputOutput_Empty" xml:space="preserve">
+    <value>Vacío</value>
+  </data>
 </root>
