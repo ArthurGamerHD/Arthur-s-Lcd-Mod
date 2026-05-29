@@ -6,13 +6,16 @@ using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Grid;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
+using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts;
+using LcdMod.Client.Terminal.Actions;
+using LcdMod.Common.Config.Models;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 
 namespace LcdMod.Client.Apps
 {
-    internal sealed class SessionDebugApp : IApp
+    internal sealed class SessionDebugApp : AppBase
     {
         const string DEBUG_FONT = "Monospace";
         const float LINE_SCALE = 0.62f;
@@ -27,23 +30,23 @@ namespace LcdMod.Client.Apps
         readonly ScrollPanel _scrollPanel = new ScrollPanel();
         readonly List<ControlBase> _interactiveEntries = new List<ControlBase>();
 
-        public SessionDebugApp()
+        SessionDebugSurfaceScript _host;
+        
+        public SessionDebugApp(ScreenConfigInteractive appConfig, SessionDebugSurfaceScript sessionDebugSurfaceScript) : base(appConfig, sessionDebugSurfaceScript)
         {
             _scrollPanel.ManualScrollInertiaEnabled = false;
             _interactiveEntries.Add(_scrollPanel);
+            _host = sessionDebugSurfaceScript;
         }
 
-        public List<ControlBase> InteractiveEntries
-        {
-            get { return _interactiveEntries; }
-        }
+        public List<ControlBase> InteractiveEntries => _interactiveEntries;
 
-        public List<MySprite> GetSprites(SessionDebugSurfaceScript owner)
+        public override List<MySprite> GetSprites()
         {
-            var viewBox = GetViewBox(owner);
+            var viewBox = Host.ViewBox;
             var snapshot = LcdModSessionComponent.DebugSnapshot;
-            var lines = BuildDebugLines(snapshot, owner);
-            var lineHeight = owner.Surface.MeasureStringInPixels(new StringBuilder("A"), DEBUG_FONT, LINE_SCALE).Y + 2f;
+            var lines = BuildDebugLines(snapshot, _host);
+            var lineHeight = TextWrappingHelper.GetLineHeight(_host.Surface, DEBUG_FONT, LINE_SCALE, 2f);
 
             var contentViewBox = new RectangleF(
                 viewBox.X + INNER_PADDING,
@@ -93,18 +96,10 @@ namespace LcdMod.Client.Apps
             EndClip(_sprites);
 
             _scrollPanel.Render(
-                new ControlRenderContext(owner.Surface, 1f, 1f, Color.White, Color.Transparent, new Vector2(float.NaN, float.NaN)),
+                new ControlRenderContext(_host.Surface, 1f, 1f, Color.White, Color.Transparent, new Vector2(float.NaN, float.NaN)),
                 _sprites);
 
             return _sprites;
-        }
-
-        static RectangleF GetViewBox(SessionDebugSurfaceScript owner)
-        {
-            var sizeOffset = (owner.Surface.TextureSize - owner.Surface.SurfaceSize) / 2f;
-            var padding = (owner.Surface.TextPadding / 100f) * owner.Surface.SurfaceSize;
-            sizeOffset += padding / 2f;
-            return new RectangleF(sizeOffset.X, sizeOffset.Y, owner.Surface.SurfaceSize.X - padding.X, owner.Surface.SurfaceSize.Y - padding.Y);
         }
 
         static void BeginClip(List<MySprite> sprites, RectangleF bounds)
@@ -128,6 +123,7 @@ namespace LcdMod.Client.Apps
             var lines = new List<DebugLine>(64);
 
             lines.Add(new DebugLine("LcdMod Session Debug - " + owner.GetHashCode(), Color.White));
+            lines.Add(new DebugLine($"Screen Info: {owner.Surface.Name} - {owner.Surface.TextureSize} - {owner.ViewBox}", Color.White));
             lines.Add(new DebugLine("Tick: " + Fixed4(snapshot.UpdateTick), Color.White));
             lines.Add(new DebugLine("Tracked Grids: " + Fixed4(snapshot.TrackedGrids), Color.White));
             lines.Add(new DebugLine("GridLogic Entries: " + Fixed4(snapshot.TrackedGridLogic), Color.White));
@@ -188,24 +184,41 @@ namespace LcdMod.Client.Apps
             
 #if EXPERIMENTAL
             lines.Add(new DebugLine(string.Empty, Color.White));
+            lines.Add(new DebugLine("Custom Actions:", Color.White));
+
+            var sb = new StringBuilder();
+            foreach (var action in ActionHelper.CustomActions)
+            {
+                sb.Clear();
+                foreach (var type in action.Value.Types)
+                {
+                    sb.Append(type.Name + ", ");
+                }
+                
+                lines.Add(new DebugLine("   " + action.Key + $" ({action.Value.Name}) - " + action.Value.GetType().Name + " - " + sb, Color.White));
+            }
+            
+            lines.Add(new DebugLine(string.Empty, Color.White));
             lines.Add(new DebugLine("Actions:", Color.White));
 
-            foreach (var action in GridLogic.TerminalActions)
+            foreach (var action in ActionHelper.TerminalActions)
             {
-                lines.Add(new DebugLine("   " + action.Key, Color.White));
+                lines.Add(new DebugLine("   " + action.Key + " - " + action.Value.Name, Color.White));
             }
 
             lines.Add(new DebugLine(string.Empty, Color.White));
             lines.Add(new DebugLine("Properties:", Color.White));
 
-            foreach (var property in GridLogic.TerminalProperties)
+            foreach (var property in ActionHelper.TerminalProperties)
             {
-                lines.Add(new DebugLine("   " + property.Key, Color.White));
+                lines.Add(new DebugLine("   " + property.Key + " - " + property.Value.TypeName, Color.White));
             }
 #endif
             
             return lines;
         }
+
+        static bool dummy;
 
         static string ClampToWidth(string value, int width)
         {
@@ -265,17 +278,8 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        public void Update()
+        public override void Update()
         {
-        }
-
-        public void LayoutChanged()
-        {
-        }
-
-        public List<MySprite> GetSprites()
-        {
-            return new List<MySprite>();
         }
     }
 }

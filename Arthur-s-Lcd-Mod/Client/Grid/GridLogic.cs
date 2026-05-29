@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using LcdMod.Client.Helpers;
+using LcdMod.Client.Terminal.Actions;
 using LcdMod.Common.Helpers;
 
 using Sandbox.Definitions;
@@ -49,13 +50,7 @@ namespace LcdMod.Client.Grid
 
         static readonly HashSet<string> KnowSubtypes = new HashSet<string>();
         static readonly HashSet<string> KnowFarmSubtypes = new HashSet<string>();
-
-#if EXPERIMENTAL
-        public static readonly Dictionary<string, string[]> PerSubtypeActions = new Dictionary<string, string[]>();
-        public static readonly Dictionary<string, string[]> PerSubtypeProperties = new Dictionary<string, string[]>();
-        public static readonly SortedDictionary<string, ITerminalAction> TerminalActions = new SortedDictionary<string, ITerminalAction>();
-        public static readonly SortedDictionary<string, ITerminalProperty> TerminalProperties = new SortedDictionary<string, ITerminalProperty>();
-#endif
+        
 
         public readonly IMyCubeGrid Grid;
         GridGroupLogic _gridGroupResolver;
@@ -606,20 +601,7 @@ namespace LcdMod.Client.Grid
 #if EXPERIMENTAL
                 if (newBlock && myFunctionalBlock != null)
                 {
-                    List<ITerminalAction> terminalActions = new List<ITerminalAction>();
-                    List<ITerminalProperty> terminalProperties = new List<ITerminalProperty>();
-                    myFunctionalBlock.GetActions(terminalActions);
-                    myFunctionalBlock.GetProperties(terminalProperties);
-
-                    PerSubtypeActions[block.BlockDefinition.SubtypeName] = terminalActions.Select(a => a.Id).ToArray();
-                    PerSubtypeProperties[block.BlockDefinition.SubtypeName] = terminalProperties.Select(t => t.Id).ToArray();
-
-
-                    foreach (var property in terminalProperties) 
-                        TerminalProperties[property.Id] = property;
-                    
-                    foreach (var action in terminalActions) 
-                        TerminalActions[action.Id] = action;
+                    ActionHelper.RegisterNewBlock(myFunctionalBlock);
                 }
 #endif
 
