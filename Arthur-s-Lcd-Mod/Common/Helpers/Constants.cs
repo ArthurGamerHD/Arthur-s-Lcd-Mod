@@ -1,4 +1,5 @@
 using System;
+using VRageMath;
 
 namespace LcdMod.Common.Helpers
 {
@@ -85,5 +86,7 @@ namespace LcdMod.Common.Helpers
         public const string DRAGGED = "Dragged";
 
         #endregion
+
+        public static Color ColorCorrection { get; set; } = new Color(175,185,200);
     }
 }

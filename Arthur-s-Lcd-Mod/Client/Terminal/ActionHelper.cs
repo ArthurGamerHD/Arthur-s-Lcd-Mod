@@ -44,6 +44,11 @@ namespace LcdMod.Client.Terminal.Actions
 
             var type = myFunctionalBlock.GetType();
 
+            if (myFunctionalBlock is IMyTextPanel)
+            {
+                
+            }
+            
             List<ITerminalAction> terminalActions = new List<ITerminalAction>();
             List<ITerminalProperty> terminalProperties = new List<ITerminalProperty>();
             myFunctionalBlock.GetActions(terminalActions);
@@ -65,27 +70,7 @@ namespace LcdMod.Client.Terminal.Actions
                 terminalActions.RemoveAt(index);
             }
 
-            foreach (var action in Increase)
-            {
-                ICustomAction customAction;
-                if (!CustomActions.TryGetValue(action.Key, out customAction))
-                {
-                    ITerminalAction value;
-                    if (Decrease.TryGetValue(action.Key, out value))
-                    {
-                        CustomActions[action.Key] = customAction = new IncreaseDecreaseAction()
-                        {
-                            Increase = action.Value,
-                            Decrease = value,
-                            BaseId = action.Key,
-                            Name = action.Value.Name?.ToString()
-                        };
-                    }
-                }
-
-                customAction?.Types.Add(type);
-            }
-
+            
             foreach (var action in terminalActions)
             {
                 ICustomAction customAction;
@@ -114,9 +99,31 @@ namespace LcdMod.Client.Terminal.Actions
                         };
                     }
                 }
+                
+                customAction?.Types.Add(type);
+            }
+            
+            foreach (var action in Increase)
+            {
+                ICustomAction customAction;
+                if (!CustomActions.TryGetValue(action.Key, out customAction))
+                {
+                    ITerminalAction value;
+                    if (Decrease.TryGetValue(action.Key, out value))
+                    {
+                        CustomActions[action.Key] = customAction = new IncreaseDecreaseAction()
+                        {
+                            Increase = action.Value,
+                            Decrease = value,
+                            BaseId = action.Key,
+                            Name = action.Value.Name?.ToString()
+                        };
+                    }
+                }
 
                 customAction?.Types.Add(type);
             }
+
 
             foreach (var property in terminalProperties)
             {

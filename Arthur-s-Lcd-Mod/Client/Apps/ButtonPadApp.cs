@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Text;
 using LcdMod.Client.Config;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Extensions;
@@ -11,13 +13,24 @@ using LcdMod.Client.Gui.ControlsTemplates.Inputs;
 using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Helpers;
+#if EXPERIMENTAL
+using LcdMod.Client.Terminal.Actions;
+using LcdMod.Client.Terminal.Models;
+using LcdMod.Client.Terminal.Models.Actions;
+using LcdMod.Client.Terminal.Models.Property;
+using Sandbox.ModAPI.Interfaces;
+#endif
 using LcdMod.Common.Config.Models;
 using LcdMod.Common.Config.Models.Apps;
 using LcdMod.Common.Helpers;
+using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
+using VRage.Utils;
 using VRageMath;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
+using IMyBlockGroup = Sandbox.ModAPI.Ingame.IMyBlockGroup;
+using IMyIngameTerminalBlock = Sandbox.ModAPI.Ingame.IMyTerminalBlock;
 using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 using IMyTerminalBlock = Sandbox.ModAPI.IMyTerminalBlock;
 
@@ -31,6 +44,18 @@ namespace LcdMod.Client.Apps
         const float FOOTER_MIN_HEIGHT_PIXELS = 16f;
         const string NEW_LINE_TEXT = "New Line";
         const string CUSTOM_DATA_KEY = "Buttonpanel";
+        const string TYPE_BOOLEAN = "Boolean";
+        const string TYPE_INT64 = "Int64";
+        const string TYPE_SINGLE = "Single";
+        const string TYPE_INCREASE_DECREASE = "IncreaseDecrease";
+        const string BOOLEAN_ON = "on";
+        const string BOOLEAN_OFF = "off";
+        const string BOOLEAN_TOGGLE = "toggle";
+        const string CLICK_INCREASE = "increase";
+        const string CLICK_DECREASE = "decrease";
+        const string SCROLL_NONE = "none";
+        const string SCROLL_NORMAL = "normal";
+        const string SCROLL_REVERSED = "reversed";
 
         readonly List<MySprite> _sprites = new List<MySprite>();
         readonly List<ControlBase> _interactiveList = new List<ControlBase>();
@@ -38,6 +63,10 @@ namespace LcdMod.Client.Apps
         readonly List<int> _renderEntryIndices = new List<int>();
         readonly Dictionary<int, ButtonPanelEntrySettings> _entries = new Dictionary<int, ButtonPanelEntrySettings>();
         readonly ScrollPanel _scrollPanel = new ScrollPanel();
+#if EXPERIMENTAL
+        readonly List<IMyBlockGroup> _actionGroups = new List<IMyBlockGroup>();
+        readonly List<IMyIngameTerminalBlock> _actionGroupBlocks = new List<IMyIngameTerminalBlock>();
+#endif
 
         Button _newLineButton;
         ControlStyle _entryButtonStyle;
@@ -481,12 +510,16 @@ namespace LcdMod.Client.Apps
             model.Text = string.Empty;
             model.Enabled = true;
             model.Clicked = OnPadButtonClicked;
+            model.OnSecondaryClick = null;
+            model.OnScroll = null;
 
             button.SetRect(rect);
             button.SetVisible(true);
             button.SetCursor(CursorType.Hand);
             button.SetStyle(GetEntryButtonStyle());
             button.CustomRender = RenderEntryButton;
+            button.OnSecondaryClick = OnPadButtonSecondaryClicked;
+            button.OnScroll = IsEntryScrollEnabled(entry) ? (ControlScrollHandler)OnPadButtonScrolled : null;
         }
 
         void EnsureNewLineButton(RectangleF rect)
@@ -671,12 +704,46 @@ namespace LcdMod.Client.Apps
 
         void OnPadButtonClicked(ButtonModel model, object sender)
         {
+            var padModel = model as PadButtonModel;
+            var index = padModel != null ? padModel.Index : -1;
+            var initialEntry = GetEntry(index, false);
+
+            if (HasConfiguredAction(initialEntry) && TryRunEntryAction(initialEntry))
+            {
+                Host.RenderSprites();
+                return;
+            }
+
+            OpenEntryEditor(index);
+        }
+
+        void OnPadButtonSecondaryClicked(object dataContext, object sender)
+        {
+            var padModel = dataContext as PadButtonModel;
+            OpenEntryEditor(padModel != null ? padModel.Index : -1);
+        }
+
+        bool OnPadButtonScrolled(object dataContext, object sender, int delta)
+        {
+            var padModel = dataContext as PadButtonModel;
+            var entry = GetEntry(padModel != null ? padModel.Index : -1, false);
+
+            if (!IsEntryScrollEnabled(entry))
+                return false;
+
+            var handled = TryRunEntryScrollAction(entry, delta);
+            if (handled)
+                Host.RenderSprites();
+
+            return handled;
+        }
+
+        void OpenEntryEditor(int index)
+        {
             var interactiveHost = Host as InteractiveSurfaceScript;
             if (interactiveHost == null)
                 return;
 
-            var padModel = model as PadButtonModel;
-            var index = padModel != null ? padModel.Index : -1;
             var initialEntry = GetEntry(index, false);
 
             interactiveHost.ShowDialog(new ButtonPadEntryDialog(
@@ -693,6 +760,660 @@ namespace LcdMod.Client.Apps
                 Host.RenderSprites
             ));
         }
+
+        static bool HasConfiguredAction(ButtonPanelEntrySettings entry)
+        {
+            return entry != null &&
+                   entry.Target != null &&
+                   entry.Action != null &&
+                   !string.IsNullOrEmpty(entry.Action.BaseId);
+        }
+
+        static bool IsEntryScrollEnabled(ButtonPanelEntrySettings entry)
+        {
+            if (!HasConfiguredAction(entry) || entry.Action == null)
+                return false;
+
+            var scrollMode = NormalizeScrollMode(entry.Action.ScrollMode, SCROLL_NONE);
+            if (scrollMode == SCROLL_NONE)
+                return false;
+
+            return string.Equals(entry.Action.ParameterTypeName, TYPE_INCREASE_DECREASE, StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(entry.Action.ParameterTypeName, TYPE_INT64, StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(entry.Action.ParameterTypeName, TYPE_SINGLE, StringComparison.OrdinalIgnoreCase);
+        }
+
+        bool TryRunEntryAction(ButtonPanelEntrySettings entry)
+        {
+#if EXPERIMENTAL
+            return TryRunConfiguredAction(entry, false, 0);
+#else
+            return false;
+#endif
+        }
+
+        bool TryRunEntryScrollAction(ButtonPanelEntrySettings entry, int delta)
+        {
+#if EXPERIMENTAL
+            if (delta == 0)
+                return false;
+
+            return TryRunConfiguredAction(entry, true, delta);
+#else
+            return false;
+#endif
+        }
+
+        static string NormalizeBooleanMode(string value, string fallback)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return fallback;
+
+            if (string.Equals(value, BOOLEAN_ON, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(value, "true", StringComparison.OrdinalIgnoreCase))
+                return BOOLEAN_ON;
+
+            if (string.Equals(value, BOOLEAN_OFF, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(value, "false", StringComparison.OrdinalIgnoreCase))
+                return BOOLEAN_OFF;
+
+            if (string.Equals(value, BOOLEAN_TOGGLE, StringComparison.OrdinalIgnoreCase))
+                return BOOLEAN_TOGGLE;
+
+            return fallback;
+        }
+
+        static string NormalizeClickAction(string value, string fallback)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return fallback;
+
+            if (string.Equals(value, CLICK_INCREASE, StringComparison.OrdinalIgnoreCase))
+                return CLICK_INCREASE;
+
+            if (string.Equals(value, CLICK_DECREASE, StringComparison.OrdinalIgnoreCase))
+                return CLICK_DECREASE;
+
+            return fallback;
+        }
+
+        static string NormalizeScrollMode(string value, string fallback)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return fallback;
+
+            if (string.Equals(value, SCROLL_NONE, StringComparison.OrdinalIgnoreCase))
+                return SCROLL_NONE;
+
+            if (string.Equals(value, SCROLL_NORMAL, StringComparison.OrdinalIgnoreCase))
+                return SCROLL_NORMAL;
+
+            if (string.Equals(value, SCROLL_REVERSED, StringComparison.OrdinalIgnoreCase))
+                return SCROLL_REVERSED;
+
+            return fallback;
+        }
+
+#if EXPERIMENTAL
+        bool TryRunConfiguredAction(ButtonPanelEntrySettings entry, bool scroll, int delta)
+        {
+            if (!HasConfiguredAction(entry))
+                return false;
+
+            ICustomAction customAction;
+            if (!ActionHelper.CustomActions.TryGetValue(entry.Action.BaseId, out customAction) || customAction == null)
+            {
+                NotifyActionFailure("Action unavailable");
+                return true;
+            }
+
+            try
+            {
+                if (!ApplyActionToTarget(entry.Target, entry.Action, customAction, scroll, delta))
+                    NotifyActionFailure("No compatible target");
+            }
+            catch (Exception e)
+            {
+                LogHelper.Log(MyLogSeverity.Error, "Button panel action failed: " + e);
+                NotifyActionFailure("Action failed");
+            }
+
+            return true;
+        }
+
+        bool ApplyActionToTarget(
+            ButtonPanelTargetSettings target,
+            ButtonPanelActionSettings settings,
+            ICustomAction customAction,
+            bool scroll,
+            int delta)
+        {
+            if (target == null || customAction == null)
+                return false;
+
+            switch ((PickActionTargetKind)target.Kind)
+            {
+                case PickActionTargetKind.Block:
+                    return TryApplyActionToBlock(customAction, settings, FindBlock(target.Id), scroll, delta);
+                case PickActionTargetKind.Group:
+                    return ApplyActionToGroup(target.Id, customAction, settings, scroll, delta);
+                case PickActionTargetKind.BlockType:
+                    return ApplyActionToType(FindRegisteredType(target.TypeName ?? target.Id), customAction, settings, scroll, delta);
+                case PickActionTargetKind.BlockSubtype:
+                    return ApplyActionToSubtype(target.Id, customAction, settings, scroll, delta);
+                default:
+                    return false;
+            }
+        }
+
+        bool ApplyActionToGroup(
+            string groupName,
+            ICustomAction customAction,
+            ButtonPanelActionSettings settings,
+            bool scroll,
+            int delta)
+        {
+            if (Host.GridLogic == null || Host.GridLogic.Grid == null || string.IsNullOrEmpty(groupName))
+                return false;
+
+            var terminalSystem = MyAPIGateway.TerminalActionsHelper.GetTerminalSystemForGrid(Host.GridLogic.Grid);
+            if (terminalSystem == null)
+                return false;
+
+            var applied = false;
+            _actionGroups.Clear();
+            terminalSystem.GetBlockGroups(_actionGroups);
+            for (var i = 0; i < _actionGroups.Count; i++)
+            {
+                var group = _actionGroups[i];
+                if (group == null || !string.Equals(group.Name, groupName, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                _actionGroupBlocks.Clear();
+                group.GetBlocks(_actionGroupBlocks);
+                for (var blockIndex = 0; blockIndex < _actionGroupBlocks.Count; blockIndex++)
+                {
+                    if (TryApplyActionToBlock(customAction, settings, _actionGroupBlocks[blockIndex], scroll, delta))
+                        applied = true;
+                }
+            }
+
+            return applied;
+        }
+
+        bool ApplyActionToType(
+            Type targetType,
+            ICustomAction customAction,
+            ButtonPanelActionSettings settings,
+            bool scroll,
+            int delta)
+        {
+            if (Host.GridLogic == null || targetType == null)
+                return false;
+
+            var blocks = Host.GridLogic.GetTerminalBlocks<IMyTerminalBlock>();
+            if (blocks == null)
+                return false;
+
+            var applied = false;
+            for (var i = 0; i < blocks.Count; i++)
+            {
+                var block = blocks[i];
+                if (block == null || !IsTypeMatch(targetType, block.GetType()))
+                    continue;
+
+                if (TryApplyActionToBlock(customAction, settings, block, scroll, delta))
+                    applied = true;
+            }
+
+            return applied;
+        }
+
+        bool ApplyActionToSubtype(
+            string subtype,
+            ICustomAction customAction,
+            ButtonPanelActionSettings settings,
+            bool scroll,
+            int delta)
+        {
+            if (Host.GridLogic == null || string.IsNullOrEmpty(subtype))
+                return false;
+
+            var blocks = Host.GridLogic.GetTerminalBlocks<IMyTerminalBlock>();
+            if (blocks == null)
+                return false;
+
+            var applied = false;
+            for (var i = 0; i < blocks.Count; i++)
+            {
+                var block = blocks[i];
+                if (block == null)
+                    continue;
+
+                var cubeBlock = block as MyCubeBlock;
+                if (cubeBlock == null || cubeBlock.BlockDefinition == null)
+                    continue;
+
+                if (!string.Equals(cubeBlock.BlockDefinition.Id.SubtypeName, subtype, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                if (TryApplyActionToBlock(customAction, settings, block, scroll, delta))
+                    applied = true;
+            }
+
+            return applied;
+        }
+
+        IMyIngameTerminalBlock FindBlock(string id)
+        {
+            long entityId;
+            if (Host.GridLogic == null || !long.TryParse(id, out entityId))
+                return null;
+
+            var blocks = Host.GridLogic.GetTerminalBlocks<IMyTerminalBlock>();
+            if (blocks == null)
+                return null;
+
+            for (var i = 0; i < blocks.Count; i++)
+            {
+                var block = blocks[i];
+                if (block != null && block.EntityId == entityId)
+                    return block;
+            }
+
+            return null;
+        }
+
+        bool TryApplyActionToBlock(
+            ICustomAction customAction,
+            ButtonPanelActionSettings settings,
+            IMyIngameTerminalBlock block,
+            bool scroll,
+            int delta)
+        {
+            if (!IsActionCompatibleWithBlock(customAction, block))
+                return false;
+
+            return scroll
+                ? ApplyScrollActionToBlock(customAction, settings, block, delta)
+                : ApplyClickActionToBlock(customAction, settings, block);
+        }
+
+        bool ApplyClickActionToBlock(ICustomAction customAction, ButtonPanelActionSettings settings, IMyIngameTerminalBlock block)
+        {
+            var increaseDecreaseAction = customAction as IncreaseDecreaseAction;
+            if (increaseDecreaseAction != null)
+            {
+                var clickAction = NormalizeClickAction(settings == null ? null : settings.ClickAction, CLICK_INCREASE);
+                return ApplyTerminalAction(
+                    clickAction == CLICK_DECREASE ? increaseDecreaseAction.Decrease : increaseDecreaseAction.Increase,
+                    block);
+            }
+
+            var onOffAction = customAction as OnOffAction;
+            if (onOffAction != null)
+            {
+                var mode = NormalizeBooleanMode(settings == null ? null : settings.ParameterValue, BOOLEAN_TOGGLE);
+                if (mode == BOOLEAN_ON)
+                    return ApplyTerminalAction(onOffAction.On, block);
+                if (mode == BOOLEAN_OFF)
+                    return ApplyTerminalAction(onOffAction.Off, block);
+                return ApplyTerminalAction(onOffAction.Action, block);
+            }
+
+            var boolProperty = customAction as PropertyCustomAction<bool>;
+            if (boolProperty != null)
+                return SetBooleanProperty(boolProperty, settings, block);
+
+            var stringProperty = customAction as PropertyCustomAction<string>;
+            if (stringProperty != null)
+                return SetStringProperty(stringProperty, settings, block);
+
+            var stringBuilderProperty = customAction as PropertyCustomAction<StringBuilder>;
+            if (stringBuilderProperty != null)
+                return SetStringBuilderProperty(stringBuilderProperty, settings, block);
+
+            var int64Property = customAction as PropertyCustomAction<long>;
+            if (int64Property != null)
+                return SetInt64Property(int64Property, settings, block);
+
+            var singleProperty = customAction as PropertyCustomAction<float>;
+            if (singleProperty != null)
+                return SetSingleProperty(singleProperty, settings, block);
+
+            var colorProperty = customAction as PropertyCustomAction<Color>;
+            if (colorProperty != null)
+                return SetColorProperty(colorProperty, settings, block);
+
+            var terminalAction = customAction as CustomAction;
+            return terminalAction != null && ApplyTerminalAction(terminalAction.Action, block);
+        }
+
+        bool ApplyScrollActionToBlock(
+            ICustomAction customAction,
+            ButtonPanelActionSettings settings,
+            IMyIngameTerminalBlock block,
+            int delta)
+        {
+            var scrollMode = NormalizeScrollMode(settings == null ? null : settings.ScrollMode, SCROLL_NONE);
+            if (scrollMode == SCROLL_NONE || delta == 0)
+                return false;
+
+            var direction = delta > 0 ? 1 : -1;
+            if (scrollMode == SCROLL_REVERSED)
+                direction = -direction;
+
+            var increaseDecreaseAction = customAction as IncreaseDecreaseAction;
+            if (increaseDecreaseAction != null)
+                return ApplyTerminalAction(direction < 0 ? increaseDecreaseAction.Decrease : increaseDecreaseAction.Increase, block);
+
+            var int64Property = customAction as PropertyCustomAction<long>;
+            if (int64Property != null)
+                return ScrollInt64Property(int64Property, block, direction);
+
+            var singleProperty = customAction as PropertyCustomAction<float>;
+            if (singleProperty != null)
+                return ScrollSingleProperty(singleProperty, block, direction);
+
+            return false;
+        }
+
+        static bool ApplyTerminalAction(ITerminalAction action, IMyIngameTerminalBlock block)
+        {
+            if (action == null || block == null || !action.IsEnabled(block))
+                return false;
+
+            action.Apply(block);
+            return true;
+        }
+
+        static bool SetBooleanProperty(
+            PropertyCustomAction<bool> action,
+            ButtonPanelActionSettings settings,
+            IMyIngameTerminalBlock block)
+        {
+            if (action == null || action.Property == null || block == null)
+                return false;
+
+            var mode = NormalizeBooleanMode(settings == null ? null : settings.ParameterValue, BOOLEAN_TOGGLE);
+            var value = mode == BOOLEAN_TOGGLE
+                ? !action.Property.GetValue(block)
+                : mode == BOOLEAN_ON;
+
+            action.Property.SetValue(block, value);
+            return true;
+        }
+
+        static bool SetStringProperty(
+            PropertyCustomAction<string> action,
+            ButtonPanelActionSettings settings,
+            IMyIngameTerminalBlock block)
+        {
+            if (action == null || action.Property == null || block == null)
+                return false;
+
+            action.Property.SetValue(block, settings == null ? string.Empty : settings.ParameterValue ?? string.Empty);
+            return true;
+        }
+
+        static bool SetStringBuilderProperty(
+            PropertyCustomAction<StringBuilder> action,
+            ButtonPanelActionSettings settings,
+            IMyIngameTerminalBlock block)
+        {
+            if (action == null || action.Property == null || block == null)
+                return false;
+
+            action.Property.SetValue(block, new StringBuilder(settings == null ? string.Empty : settings.ParameterValue ?? string.Empty));
+            return true;
+        }
+
+        static bool SetInt64Property(
+            PropertyCustomAction<long> action,
+            ButtonPanelActionSettings settings,
+            IMyIngameTerminalBlock block)
+        {
+            if (action == null || action.Property == null || block == null)
+                return false;
+
+            long value;
+            if (settings == null ||
+                !long.TryParse(settings.ParameterValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out value))
+                return false;
+
+            action.Property.SetValue(block, Clamp(value, GetInt64Minimum(action, block), GetInt64Maximum(action, block)));
+            return true;
+        }
+
+        static bool SetSingleProperty(
+            PropertyCustomAction<float> action,
+            ButtonPanelActionSettings settings,
+            IMyIngameTerminalBlock block)
+        {
+            if (action == null || action.Property == null || block == null)
+                return false;
+
+            float value;
+            if (settings == null ||
+                !float.TryParse(settings.ParameterValue, NumberStyles.Float, CultureInfo.InvariantCulture, out value))
+                return false;
+
+            action.Property.SetValue(block, Clamp(value, GetSingleMinimum(action, block), GetSingleMaximum(action, block)));
+            return true;
+        }
+
+        static bool SetColorProperty(
+            PropertyCustomAction<Color> action,
+            ButtonPanelActionSettings settings,
+            IMyIngameTerminalBlock block)
+        {
+            if (action == null || action.Property == null || block == null || settings == null)
+                return false;
+
+            Color color;
+            if (!LcdMod.Client.Extensions.ColorExtensions.TryParseHexColor(settings.ParameterValue, out color))
+                return false;
+
+            action.Property.SetValue(block, color);
+            return true;
+        }
+
+        static bool ScrollInt64Property(PropertyCustomAction<long> action, IMyIngameTerminalBlock block, int direction)
+        {
+            if (action == null || action.Property == null || block == null)
+                return false;
+
+            var min = GetInt64Minimum(action, block);
+            var max = GetInt64Maximum(action, block);
+            var value = action.Property.GetValue(block);
+            var nextValue = direction < 0
+                ? value <= min ? min : value - 1L
+                : value >= max ? max : value + 1L;
+
+            action.Property.SetValue(block, Clamp(nextValue, min, max));
+            return true;
+        }
+
+        static bool ScrollSingleProperty(PropertyCustomAction<float> action, IMyIngameTerminalBlock block, int direction)
+        {
+            if (action == null || action.Property == null || block == null)
+                return false;
+
+            var min = GetSingleMinimum(action, block);
+            var max = GetSingleMaximum(action, block);
+            var step = GetSingleStep(min, max);
+            var value = action.Property.GetValue(block) + (direction < 0 ? -step : step);
+
+            action.Property.SetValue(block, Clamp(value, min, max));
+            return true;
+        }
+
+        bool IsActionCompatibleWithBlock(ICustomAction action, IMyIngameTerminalBlock block)
+        {
+            if (action == null || block == null)
+                return false;
+
+            return IsActionCompatibleWithType(action, block.GetType()) && action.Enabled(block);
+        }
+
+        bool IsActionCompatibleWithType(ICustomAction action, Type targetType)
+        {
+            if (action == null || targetType == null || action.Types == null)
+                return false;
+
+            foreach (var actionType in action.Types)
+            {
+                if (actionType == null)
+                    continue;
+
+                if (string.Equals(actionType.FullName, targetType.FullName, StringComparison.Ordinal))
+                    return true;
+
+                if (MyAPIGateway.Reflection.IsAssignableFrom(actionType, targetType) ||
+                    MyAPIGateway.Reflection.IsAssignableFrom(targetType, actionType))
+                    return true;
+            }
+
+            return false;
+        }
+
+        bool IsTypeMatch(Type expectedType, Type actualType)
+        {
+            if (expectedType == null || actualType == null)
+                return false;
+
+            if (string.Equals(expectedType.FullName, actualType.FullName, StringComparison.Ordinal))
+                return true;
+
+            return MyAPIGateway.Reflection.IsAssignableFrom(expectedType, actualType) ||
+                   MyAPIGateway.Reflection.IsAssignableFrom(actualType, expectedType);
+        }
+
+        Type FindRegisteredType(string typeName)
+        {
+            if (string.IsNullOrEmpty(typeName))
+                return null;
+
+            foreach (var type in ActionHelper.Types)
+            {
+                if (type == null)
+                    continue;
+
+                if (string.Equals(type.FullName, typeName, StringComparison.Ordinal) ||
+                    string.Equals(type.Name, typeName, StringComparison.Ordinal))
+                    return type;
+            }
+
+            return null;
+        }
+
+        static long GetInt64Minimum(PropertyCustomAction<long> action, IMyIngameTerminalBlock block)
+        {
+            try
+            {
+                if (action != null && action.Property != null && block != null)
+                    return action.Property.GetMinimum(block);
+            }
+            catch
+            {
+            }
+
+            return long.MinValue;
+        }
+
+        static long GetInt64Maximum(PropertyCustomAction<long> action, IMyIngameTerminalBlock block)
+        {
+            try
+            {
+                if (action != null && action.Property != null && block != null)
+                    return action.Property.GetMaximum(block);
+            }
+            catch
+            {
+            }
+
+            return long.MaxValue;
+        }
+
+        static float GetSingleMinimum(PropertyCustomAction<float> action, IMyIngameTerminalBlock block)
+        {
+            try
+            {
+                if (action != null && action.Property != null && block != null)
+                    return action.Property.GetMinimum(block);
+            }
+            catch
+            {
+            }
+
+            return float.MinValue;
+        }
+
+        static float GetSingleMaximum(PropertyCustomAction<float> action, IMyIngameTerminalBlock block)
+        {
+            try
+            {
+                if (action != null && action.Property != null && block != null)
+                    return action.Property.GetMaximum(block);
+            }
+            catch
+            {
+            }
+
+            return float.MaxValue;
+        }
+
+        static float GetSingleStep(float min, float max)
+        {
+            if (!IsReasonableFinite(min) || !IsReasonableFinite(max) || max <= min)
+                return 1f;
+
+            return Math.Max(0.001f, (max - min) / 100f);
+        }
+
+        static bool IsReasonableFinite(float value)
+        {
+            return !float.IsNaN(value) && !float.IsInfinity(value) && Math.Abs(value) < 1000000000000f;
+        }
+
+        static long Clamp(long value, long min, long max)
+        {
+            if (min > max)
+            {
+                var temp = min;
+                min = max;
+                max = temp;
+            }
+
+            if (value < min)
+                return min;
+            if (value > max)
+                return max;
+            return value;
+        }
+
+        static float Clamp(float value, float min, float max)
+        {
+            if (min > max)
+            {
+                var temp = min;
+                min = max;
+                max = temp;
+            }
+
+            if (value < min)
+                return min;
+            if (value > max)
+                return max;
+            return value;
+        }
+
+        static void NotifyActionFailure(string message)
+        {
+            if (MyAPIGateway.Utilities != null)
+                MyAPIGateway.Utilities.ShowNotification(message, 1500);
+        }
+#endif
 
         void OnScrollPanelChanged(ScrollPanel panel)
         {
@@ -1251,6 +1972,8 @@ namespace LcdMod.Client.Apps
                     return "Select Action";
                 if (_draftEntry.Action == null || string.IsNullOrEmpty(_draftEntry.Action.DisplayName))
                     return "Select Action";
+                if (!string.IsNullOrEmpty(_draftEntry.Action.ParameterDisplayValue))
+                    return "Action: " + _draftEntry.Action.DisplayName + " = " + _draftEntry.Action.ParameterDisplayValue;
                 return "Action: " + _draftEntry.Action.DisplayName;
             }
 
@@ -1325,7 +2048,47 @@ namespace LcdMod.Client.Apps
 
             void OnActionSelected(ButtonPanelActionSettings action)
             {
+                var selectedAction = action == null ? null : action.Clone();
+                if (selectedAction != null &&
+                    _draftEntry.Action != null &&
+                    string.Equals(selectedAction.BaseId, _draftEntry.Action.BaseId, StringComparison.OrdinalIgnoreCase))
+                {
+                    selectedAction.CopyParametersFrom(_draftEntry.Action);
+                }
+
+                if (selectedAction != null &&
+                    ActionConfigurationDialog.RequiresConfiguration(_gridLogic, _draftEntry.Target, selectedAction))
+                {
+                    if (_showDialog != null)
+                    {
+                        _showDialog(new ActionConfigurationDialog(
+                            ParentApp,
+                            _gridLogic,
+                            _draftEntry.Target,
+                            selectedAction,
+                            OnActionConfigured,
+                            OnActionConfigurationCancelled,
+                            _requestRedraw));
+                    }
+                    return;
+                }
+
+                _draftEntry.Action = selectedAction;
+                if (_showDialog != null)
+                    _showDialog(this);
+                _requestRedraw?.Invoke();
+            }
+
+            void OnActionConfigured(ButtonPanelActionSettings action)
+            {
                 _draftEntry.Action = action == null ? null : action.Clone();
+                if (_showDialog != null)
+                    _showDialog(this);
+                _requestRedraw?.Invoke();
+            }
+
+            void OnActionConfigurationCancelled()
+            {
                 if (_showDialog != null)
                     _showDialog(this);
                 _requestRedraw?.Invoke();

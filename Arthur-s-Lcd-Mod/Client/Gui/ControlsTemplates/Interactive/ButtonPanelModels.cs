@@ -107,6 +107,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         [ProtoMember(2)] public string DisplayName { get; set; }
         [ProtoMember(3)] public string ActionTypeName { get; set; }
         [ProtoMember(4)] public string SpriteName { get; set; }
+        [ProtoMember(5)] public string ParameterTypeName { get; set; }
+        [ProtoMember(6)] public string ParameterValue { get; set; }
+        [ProtoMember(7)] public string ParameterDisplayValue { get; set; }
+        [ProtoMember(8)] public string ClickAction { get; set; }
+        [ProtoMember(9)] public string ScrollMode { get; set; }
 
         public ButtonPanelActionSettings Clone()
         {
@@ -115,8 +120,25 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 BaseId = BaseId,
                 DisplayName = DisplayName,
                 ActionTypeName = ActionTypeName,
-                SpriteName = SpriteName
+                SpriteName = SpriteName,
+                ParameterTypeName = ParameterTypeName,
+                ParameterValue = ParameterValue,
+                ParameterDisplayValue = ParameterDisplayValue,
+                ClickAction = ClickAction,
+                ScrollMode = ScrollMode
             };
+        }
+
+        public void CopyParametersFrom(ButtonPanelActionSettings source)
+        {
+            if (source == null)
+                return;
+
+            ParameterTypeName = source.ParameterTypeName;
+            ParameterValue = source.ParameterValue;
+            ParameterDisplayValue = source.ParameterDisplayValue;
+            ClickAction = source.ClickAction;
+            ScrollMode = source.ScrollMode;
         }
 
         public override string ToString()

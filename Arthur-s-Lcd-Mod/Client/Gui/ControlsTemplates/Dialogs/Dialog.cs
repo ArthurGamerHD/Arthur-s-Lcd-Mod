@@ -265,7 +265,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 Data = "Cross",
                 Position = rect.Center,
                 Size = new Vector2(iconSize, iconSize),
-                Color = Color.White,
+                Color = Constants.ColorCorrection,
                 Alignment = TextAlignment.CENTER
             });
         }

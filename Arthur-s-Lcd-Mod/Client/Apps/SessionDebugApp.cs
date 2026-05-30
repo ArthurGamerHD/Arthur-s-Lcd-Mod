@@ -41,12 +41,22 @@ namespace LcdMod.Client.Apps
 
         public List<ControlBase> InteractiveEntries => _interactiveEntries;
 
+        float Scale => Host != null ? Host.Scale : 1f;
+
+        float FontScale => _host != null && _host.Surface != null ? Math.Max(0.1f, _host.Surface.FontSize) : 1f;
+
+        float TextScale => LINE_SCALE * Scale * FontScale;
+
         public override List<MySprite> GetSprites()
         {
             var viewBox = Host.ViewBox;
             var snapshot = LcdModSessionComponent.DebugSnapshot;
             var lines = BuildDebugLines(snapshot, _host);
-            var lineHeight = TextWrappingHelper.GetLineHeight(_host.Surface, DEBUG_FONT, LINE_SCALE, 2f);
+            var lineHeight = TextWrappingHelper.GetLineHeight(
+                _host.Surface,
+                DEBUG_FONT,
+                TextScale,
+                2f * Math.Max(0.5f, Scale * FontScale));
 
             var contentViewBox = new RectangleF(
                 viewBox.X + INNER_PADDING,
@@ -89,7 +99,7 @@ namespace LcdMod.Client.Apps
                     Color = line.Color,
                     FontId = DEBUG_FONT,
                     Alignment = TextAlignment.LEFT,
-                    RotationOrScale = LINE_SCALE
+                    RotationOrScale = TextScale
                 });
             }
 

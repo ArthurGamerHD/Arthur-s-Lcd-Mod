@@ -270,10 +270,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 Sprites.Add(new MySprite
                 {
                     Type = SpriteType.TEXTURE,
-                    Data = "Danger",
+                    Data = "MissingIcon",
                     Position = rect.Center,
                     Size = rect.Size,
-                    Color = Color.White,
+                    Color = Constants.ColorCorrection,
                     Alignment = TextAlignment.CENTER
                 });
                 return;
@@ -285,7 +285,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 Data = icon,
                 Position = rect.Center,
                 Size = rect.Size,
-                Color = Color.White,
+                Color = Constants.ColorCorrection,
                 Alignment = TextAlignment.CENTER
             });
         }
