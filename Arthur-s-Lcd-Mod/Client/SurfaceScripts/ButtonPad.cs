@@ -16,24 +16,29 @@ using VRageMath;
 using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
 using LabelSeparator = LcdMod.Client.Terminal.Controls.Filter.LabelSeparator;
 using SeparatorFilter = LcdMod.Client.Terminal.Controls.Filter.SeparatorFilter;
+using CheckboxHideEmpty = LcdMod.Client.Terminal.Controls.Generic.CheckboxHideEmpty;
 using SwitchToggleLines = LcdMod.Client.Terminal.Controls.Generic.SwitchToggleLines;
 
 namespace LcdMod.Client.SurfaceScripts
 {
-    [MyTextSurfaceScript(ID, TITLE)]
+    //[MyTextSurfaceScript(ID, TITLE)]
     public partial class ButtonPad : InteractiveSurfaceScript,
         IUsesTerminalControl<SwitchToggleLines>,
+        IUsesTerminalControl<CheckboxHideEmpty>,
         IUsesTerminalControl<SeparatorFilter>,
         IUsesTerminalControl<LabelSeparator>,
         IUsesTerminalControlGroup<BlocksFilterTerminalControlGroup>,
         IMultiDisplayMode
     {
-        protected override ConfigKind ConfigKind => ConfigKind.WithBlocks;
+        protected override ConfigKind ConfigKind => ConfigKind.ButtonPanel;
         public override IApp App => _app;
         readonly List<ControlBase> _interactiveListFallback = new List<ControlBase>();
         ButtonPadApp _app;
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
-        public override List<ControlBase> InteractiveList => _app != null ? _app.InteractiveList : _interactiveListFallback;
+
+        public override List<ControlBase> InteractiveList =>
+            _app != null ? _app.InteractiveList : _interactiveListFallback;
+
         protected override bool RendersInteractiveEntriesInGetSprites => true;
 
         public const string ID = "LcdMod_ButtonPadApp";
@@ -54,7 +59,9 @@ namespace LcdMod.Client.SurfaceScripts
         protected override void LayoutChanged()
         {
             base.LayoutChanged();
-            _app = null;
+
+            if (_app != null)
+                _app.LayoutChanged();
         }
 
         public override void SafeRun()
@@ -62,15 +69,20 @@ namespace LcdMod.Client.SurfaceScripts
             if (AppConfig == null)
                 return;
 
+            var buttonPanelConfig = AppConfig;
+            if (buttonPanelConfig == null)
+                return;
+
             base.SafeRun();
 
             if (_app == null)
-                _app = new ButtonPadApp(AppConfig, this);
+                _app = new ButtonPadApp(buttonPanelConfig, this);
 
             _app.Update();
 
             RenderSprites();
         }
+
 
         public override List<MySprite> GetSprites()
         {

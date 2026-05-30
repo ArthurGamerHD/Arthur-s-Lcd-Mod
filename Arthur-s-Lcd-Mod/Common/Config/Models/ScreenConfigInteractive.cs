@@ -9,6 +9,8 @@ namespace LcdMod.Common.Config.Models
     [XmlInclude(typeof(ScreenConfigRaycast))]
     [ProtoInclude(114, typeof(ScreenConfigRenderProxy))]
     [XmlInclude(typeof(ScreenConfigRenderProxy))]
+    [ProtoInclude(116, typeof(ScreenConfigButtonPanel))]
+    [XmlInclude(typeof(ScreenConfigButtonPanel))]
     public partial class ScreenConfigInteractive : ScreenConfigColorable
     {
         public override int Id => 14;

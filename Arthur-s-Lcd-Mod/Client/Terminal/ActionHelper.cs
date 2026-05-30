@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using LcdMod.Client.Helpers;
-using LcdMod.Client.Terminal.Actions.Models;
+using LcdMod.Client.Terminal.Models;
 using LcdMod.Client.Terminal.Models.Actions;
 using LcdMod.Client.Terminal.Models.Property;
 using LcdMod.Common.Helpers;

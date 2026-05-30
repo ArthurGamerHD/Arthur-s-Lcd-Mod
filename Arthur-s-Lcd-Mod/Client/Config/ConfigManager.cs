@@ -5,6 +5,7 @@ using Generated;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Common.Config;
 using LcdMod.Common.Config.Models;
+using LcdMod.Common.Config.Models.Apps;
 using LcdMod.Common.Helpers;
 using LcdMod.Common.Networking;
 using Sandbox.Game.EntityComponents;
@@ -170,6 +171,9 @@ namespace LcdMod.Client.Config
             }
 
             if (current.GetType() == requested.GetType())
+                return current;
+
+            if (requestedConfigKind == ConfigKind.Interactive && current is ScreenConfigButtonPanel)
                 return current;
 
             requested.Clone(current);

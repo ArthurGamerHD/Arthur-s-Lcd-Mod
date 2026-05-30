@@ -67,5 +67,35 @@
             <SpritePath>Textures/Sprites/FarmPlotMask.dds</SpritePath>
             <Selectable>false</Selectable>
         </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Custom Missing Icon Sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="MissingIcon"/>
+            <SpritePath>Textures/Sprites/MissingIcon.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Custom Boolean Input Icon Sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="BooleanInput"/>
+            <SpritePath>Textures/Sprites/BooleanInput.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Custom Color Input Icon Sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="ColorInput"/>
+            <SpritePath>Textures/Sprites/ColorInput.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Custom Number Input Icon Sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="NumberInput"/>
+            <SpritePath>Textures/Sprites/NumberInput.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Custom String Input Icon Sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="StringInput"/>
+            <SpritePath>Textures/Sprites/StringInput.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
     </LCDTextures>
 </Definitions>

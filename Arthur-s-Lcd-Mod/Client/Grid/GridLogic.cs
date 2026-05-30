@@ -49,7 +49,7 @@ namespace LcdMod.Client.Grid
         public static readonly Dictionary<MyDefinitionId, MyBlueprintDefinitionBase> PrimaryBlueprintByCreatedItem =
             new Dictionary<MyDefinitionId, MyBlueprintDefinitionBase>();
 
-        private static readonly HashSet<string> KnowSubtypes = new HashSet<string>();
+        public static readonly HashSet<string> KnowSubtypes = new HashSet<string>();
         private static readonly HashSet<string> KnowFarmSubtypes = new HashSet<string>();
 
         private static readonly string[] IngotTypeFilter = { "Ingot" };

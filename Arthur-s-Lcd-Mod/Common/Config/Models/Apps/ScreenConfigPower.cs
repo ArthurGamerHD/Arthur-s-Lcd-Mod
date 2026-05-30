@@ -6,7 +6,7 @@ using VRage.Game.ModAPI;
 namespace LcdMod.Common.Config.Models.Apps
 {
     [ProtoContract]
-    public partial class ScreenConfigPower : ScreenConfigInteractive, IGridGroupReference
+    public partial class ScreenConfigPower : ScreenConfigInteractive, IGridGroupReference, IHideEmpty
     {
         [ProtoMember(13)] public bool HideEmpty { get; set; } = true;
         [ProtoMember(18)] public int GraphWindowIndex { get; set; } = 2;
