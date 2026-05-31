@@ -618,7 +618,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 Data = string.IsNullOrEmpty(action.SpriteName) ? MISSING_ICON_PLACEHOLDER : action.SpriteName,
                 Position = iconRect.Center,
                 Size = iconRect.Size,
-                Color = new Color(180, 180, 180),
+                Color = Constants.ColorCorrection,
                 Alignment = TextAlignment.CENTER
             });
 

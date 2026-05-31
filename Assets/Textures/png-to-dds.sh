@@ -9,7 +9,7 @@ while IFS= read -r -d '' dir; do
     ( cd "$dir" || exit 0
       set -- ./*.png
       if [ -e "$1" ]; then
-        $TEXCONV_CMD ./*.png -nologo -y -f BC7_UNORM_SRGB -pmalpha 2>/dev/null || true
+        $TEXCONV_CMD ./*.png -nologo -y -f BC7_UNORM -pmalpha 2>/dev/null || true
       fi
     )
 

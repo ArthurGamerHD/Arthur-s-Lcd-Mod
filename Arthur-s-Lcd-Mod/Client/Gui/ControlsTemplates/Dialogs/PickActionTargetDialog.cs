@@ -58,7 +58,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         const float SEARCH_HEIGHT_PIXELS = 38f;
         const float ROW_HEIGHT_PIXELS = 40f;
         const float ROW_GAP_PIXELS = 3f;
-        const float ICON_SIZE_PIXELS = 32f;
+        const float ICON_SIZE_PIXELS = 46f;
         const float SCROLLER_WIDTH_PIXELS = 10f;
 
         static readonly PickActionTargetKind[] Kinds = new[]
@@ -671,7 +671,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 ? new RectangleF(rect.Center.X - iconSize * 0.5f, rect.Center.Y - iconSize * 0.5f, iconSize, iconSize)
                 : new RectangleF(rect.X + 4f * context.Scale, rect.Center.Y - iconSize * 0.5f, iconSize, iconSize);
 
-            DrawTargetIcon(target, iconRect, rowTextColor, sprites);
+            DrawTargetIcon(target, iconRect, sprites);
 
             if (iconOnly)
                 return;
@@ -693,14 +693,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             });
         }
 
-        void DrawTargetIcon(PickActionTargetResult target, RectangleF iconRect, Color color, List<MySprite> sprites)
+        void DrawTargetIcon(PickActionTargetResult target, RectangleF iconRect, List<MySprite> sprites)
         {
-            if (target.Kind == PickActionTargetKind.Group)
-            {
-                Border.CreateSpritesFromRect(iconRect, sprites, color, radiusScale: 1f);
-                return;
-            }
-
             var spriteName = string.IsNullOrEmpty(target.SpriteName) ? MISSING_ICON_PLACEHOLDER : target.SpriteName;
             sprites.Add(new MySprite
             {
@@ -708,7 +702,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 Data = spriteName,
                 Position = iconRect.Center,
                 Size = iconRect.Size,
-                Color = color,
+                Color = Constants.ColorCorrection,
                 Alignment = TextAlignment.CENTER
             });
         }
