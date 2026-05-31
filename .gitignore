@@ -5,3 +5,6 @@
 *.local.ini
 /SE.Source
 .claude/
+
+# Dev-only localization helper scripts (not part of the mod)
+Arthur-s-Lcd-Mod/Assets/

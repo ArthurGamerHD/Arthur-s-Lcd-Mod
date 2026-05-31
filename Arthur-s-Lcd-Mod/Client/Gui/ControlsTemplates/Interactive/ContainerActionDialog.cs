@@ -1,0 +1,749 @@
+using System;
+using System.Collections.Generic;
+using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.Extensions;
+using LcdMod.Client.Gui.ControlsTemplates.Panels;
+using LcdMod.Client.Helpers;
+using LcdMod.Common.Helpers;
+using LcdMod.Common.Networking;
+using Sandbox.Definitions;
+using Sandbox.ModAPI;
+using VRage.Game;
+using VRage.Game.GUI.TextPanel;
+using VRageMath;
+using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
+using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
+using MyInventoryItem = VRage.Game.ModAPI.Ingame.MyInventoryItem;
+using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
+
+namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
+{
+    /// <summary>
+    ///     Three-step dialog opened from a cargo entry: pick an action (Send / Receive / Balance),
+    ///     pick the target containers, pick the item types, then run it (server-authoritative).
+    /// </summary>
+    internal sealed class ContainerActionDialog : Dialog
+    {
+        private const int MAX_VISIBLE_ROWS = 20;
+        private readonly List<IMyTerminalBlock> _candidates = new List<IMyTerminalBlock>();
+        private readonly Action<List<string>, List<string>> _onSaveFilter;
+
+        private readonly List<RectangleControl> _pool = new List<RectangleControl>();
+
+        private readonly HashSet<long> _selectedTargets = new HashSet<long>();
+        private readonly HashSet<string> _selectedTypeKeys = new HashSet<string>();
+        private readonly HashSet<string> _selectedCategories = new HashSet<string>();
+        private readonly Action<Dialog> _showDialog;
+
+        private readonly IMyTerminalBlock _source;
+        private readonly List<TypeRow> _types = new List<TypeRow>();
+        private readonly List<DisplayRow> _displayRows = new List<DisplayRow>();
+        private TransferMode _mode;
+        private int _poolIndex;
+        private int _scroll;
+        private int _maxScroll;
+        private RectangleControl _scrollCatcher;
+        private bool _scrollRenderQueued;
+
+        private int _step;
+        private bool _typesBuilt;
+
+        public ContainerActionDialog(IApp parentApp, IMyTerminalBlock source,
+            List<IMyTerminalBlock> candidates, Action<Dialog> showDialog,
+            IEnumerable<string> savedFilter, IEnumerable<string> savedCategories,
+            Action<List<string>, List<string>> onSaveFilter)
+            : base(parentApp)
+        {
+            _source = source;
+            _showDialog = showDialog;
+            _onSaveFilter = onSaveFilter;
+
+            if (savedFilter != null)
+                foreach (var key in savedFilter)
+                    if (!string.IsNullOrEmpty(key))
+                        _selectedTypeKeys.Add(key);
+
+            if (savedCategories != null)
+                foreach (var cat in savedCategories)
+                    if (!string.IsNullOrEmpty(cat))
+                        _selectedCategories.Add(cat);
+
+            if (candidates != null)
+                for (var i = 0; i < candidates.Count; i++)
+                {
+                    var block = candidates[i];
+                    if (block != null && block != source && block.HasInventory)
+                        _candidates.Add(block);
+                }
+        }
+
+        protected override void OnDismiss()
+        {
+            if (_onSaveFilter != null)
+                _onSaveFilter(new List<string>(_selectedTypeKeys), new List<string>(_selectedCategories));
+        }
+
+        protected override void RenderCore(
+            InteractiveSurfaceScript owner,
+            RectangleF viewBox,
+            float scale,
+            float fontScale,
+            IMyTextSurface surface,
+            Color textColor,
+            Color backgroundColor,
+            Color panelColor,
+            Vector2 cursorPosition)
+        {
+            EnsureContainer(viewBox);
+            ContainerControl.ClearChildren();
+            _poolIndex = 0;
+
+            var cardColor = GetThemeColor(Constants.SURFACE_CONTAINER_HIGH);
+            var cardTextColor = GetThemeColor(Constants.ON_SURFACE);
+            var shadowColor = GetThemeColor(Constants.SHADOW);
+
+            // Dimmed backdrop.
+            Sprites.Add(new MySprite(SpriteType.TEXTURE, "SquareSimple",
+                surface.TextureSize / 2, surface.TextureSize, new Color(0, 0, 0, 128)));
+
+            var pad = 18f * scale;
+            var titleScale = 0.72f * scale * fontScale;
+            var bodyScale = 0.5f * scale * fontScale;
+            var buttonScale = 0.6f * scale * fontScale;
+
+            var cardWidth = Math.Min(viewBox.Width - 2f * pad, viewBox.Width * 0.84f);
+            var cardHeight = Math.Min(viewBox.Height - 2f * pad, viewBox.Height * 0.92f);
+            var cardRect = new RectangleF(
+                viewBox.Center.X - cardWidth * 0.5f,
+                viewBox.Center.Y - cardHeight * 0.5f,
+                cardWidth, cardHeight);
+            RegisterDialogCard(cardRect);
+
+            Border.CreateSpritesFromRect(new RectangleF(cardRect.Position + 2f, cardRect.Size), Sprites, shadowColor,
+                radiusScale: scale);
+            Border.CreateSpritesFromRect(cardRect, Sprites, cardColor, radiusScale: scale);
+
+            // Title.
+            var title = GetTitle();
+            var titleSize = FormatingHelper.GetSizeInPixel(title, "White", titleScale, surface);
+            Sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXT,
+                Data = title,
+                Position = new Vector2(cardRect.Center.X, cardRect.Y + pad),
+                Color = cardTextColor,
+                FontId = "White",
+                Alignment = TextAlignment.CENTER,
+                RotationOrScale = titleScale
+            });
+
+            var bodyTop = cardRect.Y + pad + titleSize.Y + 12f * scale;
+            var footerHeight = Math.Max(28f * scale, FormatingHelper.LineHeight(buttonScale, surface) + 14f * scale);
+            var footerTop = cardRect.Bottom - pad - footerHeight;
+            var bodyRect = new RectangleF(cardRect.X + pad, bodyTop, cardRect.Width - 2f * pad,
+                footerTop - bodyTop - 8f * scale);
+
+            var context = CreateRenderContext(surface, scale, fontScale, textColor, panelColor, cursorPosition);
+
+            if (_step == 0)
+                RenderActionStep(bodyRect, scale, buttonScale, cardTextColor, context);
+            else
+                RenderListStep(bodyRect, scale, bodyScale, cardTextColor, context, surface);
+
+            RenderFooter(cardRect, footerTop, footerHeight, pad, scale, buttonScale, context, surface);
+        }
+
+        private string GetTitle()
+        {
+            var name = SafeName(_source);
+            switch (_step)
+            {
+                case 1:
+                    return name + " - " + LocHelper.GetLoc("LcdMod_Transfer_SelectTargets");
+                case 2:
+                    return name + " - " + LocHelper.GetLoc("LcdMod_Transfer_SelectItems");
+                default:
+                    return name;
+            }
+        }
+
+        // ---- Step 0: action menu ----
+
+        private void RenderActionStep(RectangleF body, float scale, float buttonScale, Color textColor,
+            ControlRenderContext context)
+        {
+            var gap = 10f * scale;
+            var h = Math.Min(46f * scale, (body.Height - 2f * gap) / 3f);
+            var w = Math.Min(body.Width, 320f * scale);
+            var x = body.Center.X - w * 0.5f;
+            var y = body.Y + Math.Max(0f, (body.Height - (h * 3f + gap * 2f)) * 0.5f);
+
+            DrawButton(new RectangleF(x, y, w, h), LocHelper.GetLoc("LcdMod_Transfer_Send"), buttonScale, true, true,
+                delegate
+                {
+                    _mode = TransferMode.Send;
+                    GoToStep(1);
+                }, context);
+            y += h + gap;
+            DrawButton(new RectangleF(x, y, w, h), LocHelper.GetLoc("LcdMod_Transfer_Receive"), buttonScale, true, true,
+                delegate
+                {
+                    _mode = TransferMode.Receive;
+                    GoToStep(1);
+                }, context);
+            y += h + gap;
+            DrawButton(new RectangleF(x, y, w, h), LocHelper.GetLoc("LcdMod_Transfer_Balance"), buttonScale, true, true,
+                delegate
+                {
+                    _mode = TransferMode.Balance;
+                    GoToStep(1);
+                }, context);
+        }
+
+        // ---- Steps 1 & 2: scrollable toggle lists ----
+
+        private void RenderListStep(RectangleF body, float scale, float rowScale, Color textColor,
+            ControlRenderContext context, IMyTextSurface surface)
+        {
+            var rowHeight = FormatingHelper.LineHeight(rowScale, surface) + 6f * scale;
+            var rowGap = 2f * scale;
+            var total = _step == 1 ? _candidates.Count : _displayRows.Count;
+            var maxVisible = Math.Max(1,
+                Math.Min(MAX_VISIBLE_ROWS, (int)((body.Height + rowGap) / (rowHeight + rowGap))));
+            var scrollable = total > maxVisible;
+
+            var maxScroll = Math.Max(0, total - maxVisible);
+            if (_scroll > maxScroll) _scroll = maxScroll;
+            if (_scroll < 0) _scroll = 0;
+            _maxScroll = maxScroll;
+
+            // Invisible catcher over the list so the mouse wheel scrolls it (rows aren't scrollable,
+            // so hit resolution falls through to this).
+            if (_scrollCatcher == null)
+                _scrollCatcher = new RectangleControl(body, CursorType.Default, null);
+            else
+                _scrollCatcher.SetRect(body);
+            _scrollCatcher.SetOnScroll(OnListScroll);
+            _scrollCatcher.SetVisible(true);
+            ContainerControl.AddChild(_scrollCatcher);
+
+            var listWidth = scrollable ? body.Width - 30f * scale : body.Width;
+            var y = body.Y;
+            var shown = Math.Min(maxVisible, total - _scroll);
+            for (var r = 0; r < shown; r++)
+            {
+                var index = _scroll + r;
+                var rect = new RectangleF(body.X, y, listWidth, rowHeight);
+                if (_step == 1)
+                {
+                    var block = _candidates[index];
+                    var id = block.EntityId;
+                    var selected = _selectedTargets.Contains(id);
+                    DrawRow(rect, SafeName(block), rowScale, selected,
+                        delegate { Toggle(_selectedTargets, id); }, context);
+                }
+                else
+                {
+                    var row = _displayRows[index];
+                    if (row.IsGroup)
+                    {
+                        var groupKey = row.GroupKey;
+                        var selected = _selectedCategories.Contains(groupKey);
+                        DrawRow(rect, row.Label, rowScale, selected,
+                            delegate { Toggle(_selectedCategories, groupKey); }, context);
+                    }
+                    else
+                    {
+                        var key = row.Key;
+                        var selected = _selectedTypeKeys.Contains(key);
+                        DrawRow(rect, row.Label, rowScale, selected,
+                            delegate { Toggle(_selectedTypeKeys, key); }, context);
+                    }
+                }
+
+                y += rowHeight + rowGap;
+            }
+
+            if (scrollable)
+            {
+                var sx = body.Right - 26f * scale;
+                var sw = 26f * scale;
+                var sh = Math.Min(rowHeight, 30f * scale);
+                DrawButton(new RectangleF(sx, body.Y, sw, sh), "^", rowScale, false, _scroll > 0,
+                    delegate
+                    {
+                        _scroll = Math.Max(0, _scroll - 1);
+                        _showDialog?.Invoke(this);
+                    }, context);
+                DrawButton(new RectangleF(sx, body.Bottom - sh, sw, sh), "v", rowScale, false, _scroll < maxScroll,
+                    delegate
+                    {
+                        _scroll = Math.Min(maxScroll, _scroll + 1);
+                        _showDialog?.Invoke(this);
+                    }, context);
+            }
+        }
+
+        private void RenderFooter(RectangleF cardRect, float footerTop, float footerHeight, float pad, float scale,
+            float buttonScale, ControlRenderContext context, IMyTextSurface surface)
+        {
+            if (_step == 0)
+                return;
+
+            var gap = 8f * scale;
+            var btnW = Math.Min(130f * scale, (cardRect.Width - 2f * pad - 2f * gap) / 3f);
+            var x = cardRect.X + pad;
+            var y = footerTop;
+
+            DrawButton(new RectangleF(x, y, btnW, footerHeight), LocHelper.GetLoc("LcdMod_Transfer_Back"), buttonScale,
+                false, true,
+                delegate { GoToStep(_step - 1); }, context);
+
+            DrawButton(new RectangleF(x + btnW + gap, y, btnW, footerHeight), LocHelper.GetLoc("LcdMod_Transfer_All"),
+                buttonScale, false, true,
+                delegate { ToggleAll(); }, context);
+
+            var primaryRect = new RectangleF(cardRect.Right - pad - btnW, y, btnW, footerHeight);
+            if (_step == 1)
+            {
+                var ok = _selectedTargets.Count > 0;
+                DrawButton(primaryRect, LocHelper.GetLoc("LcdMod_Transfer_Next"), buttonScale, true, ok,
+                    delegate
+                    {
+                        if (_selectedTargets.Count > 0) GoToItems();
+                    }, context);
+            }
+            else
+            {
+                var ok = _selectedTypeKeys.Count > 0 || _selectedCategories.Count > 0;
+                DrawButton(primaryRect, LocHelper.GetLoc("LcdMod_Cargo_Sorter"), buttonScale, true, ok,
+                    delegate
+                    {
+                        if (_selectedTypeKeys.Count > 0 || _selectedCategories.Count > 0) Apply();
+                    }, context);
+            }
+        }
+
+        // ---- navigation / state ----
+
+        private bool OnListScroll(object dataContext, object sender, int delta)
+        {
+            if (_step == 0)
+                return false;
+
+            var newScroll = _scroll + (delta > 0 ? -1 : 1);
+            if (newScroll < 0) newScroll = 0;
+            if (newScroll > _maxScroll) newScroll = _maxScroll;
+
+            if (newScroll != _scroll)
+            {
+                _scroll = newScroll;
+                // Defer: re-rendering rebuilds the dialog's children mid-scroll-dispatch.
+                if (!_scrollRenderQueued)
+                {
+                    _scrollRenderQueued = true;
+                    LcdModClientComponent.RunNextFrame.Add(delegate
+                    {
+                        _scrollRenderQueued = false;
+                        _showDialog?.Invoke(this);
+                    });
+                }
+            }
+
+            return true;
+        }
+
+        private void GoToStep(int step)
+        {
+            if (step < 0)
+            {
+                Dismiss();
+                return;
+            }
+
+            _step = step;
+            _scroll = 0;
+            _showDialog?.Invoke(this);
+        }
+
+        private void GoToItems()
+        {
+            GatherGameTypes();
+            _step = 2;
+            _scroll = 0;
+            _showDialog?.Invoke(this);
+        }
+
+        private void ToggleAll()
+        {
+            if (_step == 1)
+            {
+                if (_selectedTargets.Count >= _candidates.Count)
+                    _selectedTargets.Clear();
+                else
+                    for (var i = 0; i < _candidates.Count; i++)
+                        _selectedTargets.Add(_candidates[i].EntityId);
+            }
+            else
+            {
+                if (_selectedTypeKeys.Count >= _types.Count)
+                    _selectedTypeKeys.Clear();
+                else
+                    for (var i = 0; i < _types.Count; i++)
+                        _selectedTypeKeys.Add(_types[i].Key);
+            }
+
+            _showDialog?.Invoke(this);
+        }
+
+        private void Toggle(HashSet<long> set, long value)
+        {
+            if (!set.Remove(value))
+                set.Add(value);
+            _showDialog?.Invoke(this);
+        }
+
+        private void Toggle(HashSet<string> set, string value)
+        {
+            if (!set.Remove(value))
+                set.Add(value);
+            _showDialog?.Invoke(this);
+        }
+
+        // Every physical item type the game knows about (like the conveyor sorter filter), not just
+        // what currently sits in the containers. Built once; the saved filter keeps any selection.
+        private void GatherGameTypes()
+        {
+            if (_typesBuilt)
+                return;
+
+            _types.Clear();
+            _displayRows.Clear();
+            var seenKeys = new HashSet<string>();
+            var seenNames = new HashSet<string>();
+            foreach (var definitionBase in MyDefinitionManager.Static.GetAllDefinitions())
+            {
+                var def = definitionBase as MyPhysicalItemDefinition;
+                if (def == null || !def.Public || !PassesWhiteList(def))
+                    continue;
+
+                var key = def.Id.TypeId.ToString() + "/" + def.Id.SubtypeName;
+                if (!seenKeys.Add(key))
+                    continue;
+
+                var name = !string.IsNullOrEmpty(def.DisplayNameText) ? def.DisplayNameText : def.Id.SubtypeName;
+                name = name ?? string.Empty;
+                int order;
+                var category = CategoryFor(def.Id.TypeId.ToString(), out order);
+
+                // Drop duplicate display names within the same category (mod/variant collisions).
+                if (!seenNames.Add(category + "" + name.ToLowerInvariant()))
+                    continue;
+
+                _types.Add(new TypeRow { Key = key, Name = name, Category = category, Order = order });
+            }
+
+            _types.Sort(delegate(TypeRow a, TypeRow b)
+            {
+                if (a.Order != b.Order)
+                    return a.Order.CompareTo(b.Order);
+                var byCategory = string.Compare(a.Category, b.Category, StringComparison.OrdinalIgnoreCase);
+                if (byCategory != 0)
+                    return byCategory;
+                return string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase);
+            });
+
+            // Same layout as the item LCD filter: the selectable category groups first, then the
+            // individual items below.
+            var groups = ItemCategoryHelper.Groups;
+            for (var i = 0; i < groups.Length; i++)
+                _displayRows.Add(new DisplayRow
+                {
+                    IsGroup = true,
+                    Label = ItemCategoryHelper.GetGroupDisplayName(groups[i]),
+                    GroupKey = groups[i],
+                    Key = null
+                });
+
+            for (var i = 0; i < _types.Count; i++)
+                _displayRows.Add(new DisplayRow { IsGroup = false, Label = _types[i].Name, Key = _types[i].Key });
+
+            _typesBuilt = true;
+        }
+
+        // Same hidden/junk items the game's item filter (ListboxItemsCandidates) skips.
+        private static bool PassesWhiteList(MyPhysicalItemDefinition def)
+        {
+            var id = def.Id.ToString();
+            return !id.Contains("_TreeObject/")
+                   && !id.Contains("GunObject/GoodAIReward")
+                   && !id.Contains("GunObject/CubePlacerItem");
+        }
+
+        // Localized category (reusing the game's conveyor-sorter group names via ItemCategoryHelper)
+        // plus a sort order; falls back to the raw type name for the few items outside those groups.
+        private static string CategoryFor(string typeId, out int order)
+        {
+            var t = typeId ?? string.Empty;
+            const string prefix = "MyObjectBuilder_";
+            if (t.StartsWith(prefix, StringComparison.Ordinal))
+                t = t.Substring(prefix.Length);
+
+            var groups = ItemCategoryHelper.Groups;
+            for (var i = 0; i < groups.Length; i++)
+                if (t.StartsWith(groups[i], StringComparison.OrdinalIgnoreCase))
+                {
+                    order = i;
+                    return ItemCategoryHelper.GetGroupDisplayName(groups[i]);
+                }
+
+            order = groups.Length + 1;
+            return string.IsNullOrEmpty(t) ? "Other" : t;
+        }
+
+        private void ExpandCategoriesToKeys(List<IMyTerminalBlock> targets, HashSet<string> keys)
+        {
+            AddCategoryItemKeys(_source, keys);
+            for (var i = 0; i < targets.Count; i++)
+                AddCategoryItemKeys(targets[i], keys);
+        }
+
+        private void AddCategoryItemKeys(IMyTerminalBlock block, HashSet<string> keys)
+        {
+            if (block == null || !block.HasInventory)
+                return;
+
+            var inv = block.GetInventory(0);
+            if (inv == null)
+                return;
+
+            var items = new List<MyInventoryItem>();
+            inv.GetItems(items);
+            for (var k = 0; k < items.Count; k++)
+            {
+                var typeId = items[k].Type.TypeId;
+                foreach (var cat in _selectedCategories)
+                    if (typeId.EndsWith(cat, StringComparison.OrdinalIgnoreCase))
+                    {
+                        keys.Add(InventoryDistributorCommon.KeyOf(items[k].Type));
+                        break;
+                    }
+            }
+        }
+
+        private void Apply()
+        {
+            try
+            {
+                var targets = new List<IMyTerminalBlock>(_selectedTargets.Count);
+                for (var i = 0; i < _candidates.Count; i++)
+                    if (_selectedTargets.Contains(_candidates[i].EntityId))
+                        targets.Add(_candidates[i]);
+
+                // Expand any selected category into the concrete item keys actually present, so the
+                // server-side helper (which matches by key) handles categories transparently.
+                var keys = new HashSet<string>(_selectedTypeKeys);
+                if (_selectedCategories.Count > 0)
+                    ExpandCategoriesToKeys(targets, keys);
+
+                if (keys.Count == 0)
+                {
+                    Dismiss();
+                    return;
+                }
+
+                if (MyAPIGateway.Session != null && MyAPIGateway.Session.IsServer)
+                {
+                    InventoryDistributorCommon.Execute(_source, targets, keys, _mode);
+                }
+                else
+                {
+                    var targetIds = new long[targets.Count];
+                    for (var i = 0; i < targets.Count; i++)
+                        targetIds[i] = targets[i].EntityId;
+
+                    var keyArr = new string[keys.Count];
+                    keys.CopyTo(keyArr);
+
+                    LcdModSessionComponent.NetworkManager.TransmitToServer(
+                        new PacketTransferItems(_source.EntityId, targetIds, keyArr, (int)_mode), false);
+                }
+            }
+            catch (Exception e)
+            {
+                ErrorHandlerHelper.LogError(e, typeof(ContainerActionDialog));
+            }
+
+            Dismiss();
+        }
+
+        // ---- rendering helpers ----
+
+        private void DrawButton(RectangleF rect, string text, float textScale, bool primary, bool enabled,
+            Action onClick, ControlRenderContext context)
+        {
+            var control = Rent(rect, enabled ? OnClickAction(onClick) : null);
+            control.SetCursor(enabled ? CursorType.Hand : CursorType.Default);
+            ContainerControl.AddChild(control);
+
+            var panelRole = enabled
+                ? primary ? Constants.PRIMARY_CONTAINER : Constants.SURFACE_CONTAINER
+                : Constants.SURFACE_CONTAINER_LOW;
+            var textRole = primary ? Constants.ON_PRIMARY_CONTAINER : Constants.ON_SURFACE;
+            var panel = GetThemeColor(panelRole);
+            var txt = GetThemeColor(textRole);
+            var label = text;
+            var btnScale = textScale;
+            var surface = context.Surface;
+
+            control.CustomRender = delegate(ControlBase ctrl, ControlRenderContext ctx, List<MySprite> sprites)
+            {
+                var r = ctrl.Bounds;
+                var hover = enabled && r.Contains(ctx.CursorPosition);
+                Border.CreateSpritesFromRect(r, sprites, hover ? panel.MulValue(1.18f) : panel, radiusScale: ctx.Scale);
+                sprites.Add(new MySprite
+                {
+                    Type = SpriteType.TEXT,
+                    Data = label,
+                    Position = new Vector2(r.Center.X,
+                        r.Center.Y - FormatingHelper.GetSizeInPixel(label, "White", btnScale, surface).Y * 0.5f),
+                    Color = txt,
+                    FontId = "White",
+                    Alignment = TextAlignment.CENTER,
+                    RotationOrScale = btnScale
+                });
+            };
+
+            control.Render(context, Sprites);
+        }
+
+        // Non-interactive category header row.
+        private void DrawRow(RectangleF rect, string text, float textScale, bool selected, Action onClick,
+            ControlRenderContext context)
+        {
+            var control = Rent(rect, OnClickAction(onClick));
+            control.SetCursor(CursorType.Hand);
+            ContainerControl.AddChild(control);
+
+            var panel = GetThemeColor(selected ? Constants.PRIMARY_CONTAINER : Constants.SURFACE_CONTAINER);
+            var txt = GetThemeColor(selected ? Constants.ON_PRIMARY_CONTAINER : Constants.ON_SURFACE);
+            var label = text;
+            var rowScale = textScale;
+            var surface = context.Surface;
+            var isSelected = selected;
+
+            control.CustomRender = delegate(ControlBase ctrl, ControlRenderContext ctx, List<MySprite> sprites)
+            {
+                var r = ctrl.Bounds;
+                var hover = r.Contains(ctx.CursorPosition);
+                Border.CreateSpritesFromRect(r, sprites, hover && !isSelected ? panel.MulValue(1.18f) : panel,
+                    radiusScale: ctx.Scale);
+
+                var pad = 10f * ctx.Scale;
+                if (isSelected)
+                    sprites.Add(new MySprite
+                    {
+                        Type = SpriteType.TEXTURE,
+                        Data = "Checkmark",
+                        Position = new Vector2(r.Right - pad - 8f * ctx.Scale, r.Center.Y),
+                        Size = new Vector2(16f * ctx.Scale),
+                        Color = txt,
+                        Alignment = TextAlignment.CENTER
+                    });
+
+                sprites.Add(new MySprite
+                {
+                    Type = SpriteType.TEXT,
+                    Data = label,
+                    Position = new Vector2(r.X + pad,
+                        r.Center.Y - FormatingHelper.GetSizeInPixel(label, "White", rowScale, surface).Y * 0.5f),
+                    Color = txt,
+                    FontId = "White",
+                    Alignment = TextAlignment.LEFT,
+                    RotationOrScale = rowScale
+                });
+            };
+
+            control.Render(context, Sprites);
+        }
+
+        private RectangleControl Rent(RectangleF rect, Action<object, object> onClick)
+        {
+            RectangleControl control;
+            if (_poolIndex < _pool.Count)
+            {
+                control = _pool[_poolIndex];
+                control.SetRect(rect);
+                control.SetOnClick(onClick);
+            }
+            else
+            {
+                control = new RectangleControl(rect, CursorType.Hand, null, onClick);
+                _pool.Add(control);
+            }
+
+            _poolIndex++;
+            control.SetVisible(true);
+            return control;
+        }
+
+        private static Action<object, object> OnClickAction(Action onClick)
+        {
+            if (onClick == null)
+                return null;
+            return delegate { onClick(); };
+        }
+
+        private static string SafeName(IMyTerminalBlock block)
+        {
+            if (block == null)
+                return "?";
+            try
+            {
+                var name = block.CustomName;
+                if (string.IsNullOrEmpty(name)) name = block.DisplayNameText;
+                if (string.IsNullOrEmpty(name)) name = block.BlockDefinition.SubtypeName;
+                return string.IsNullOrEmpty(name) ? "?" : name;
+            }
+            catch
+            {
+                return "?";
+            }
+        }
+
+        private static string GetItemName(MyItemType type)
+        {
+            try
+            {
+                MyDefinitionId id;
+                if (MyDefinitionId.TryParse(type.TypeId + "/" + type.SubtypeId, out id))
+                {
+                    var def = MyDefinitionManager.Static.GetPhysicalItemDefinition(id);
+                    if (def != null && !string.IsNullOrEmpty(def.DisplayNameText))
+                        return def.DisplayNameText;
+                }
+            }
+            catch (Exception)
+            {
+            }
+
+            return type.SubtypeId ?? string.Empty;
+        }
+
+        private struct TypeRow
+        {
+            public string Key;
+            public string Name;
+            public string Category;
+            public int Order;
+        }
+
+        private struct DisplayRow
+        {
+            public bool IsGroup;    // selectable category group (top of the list, like the item LCD)
+            public string Label;    // group display name or item name
+            public string Key;      // item key, null for groups
+            public string GroupKey; // raw category name, null for items
+        }
+    }
+}

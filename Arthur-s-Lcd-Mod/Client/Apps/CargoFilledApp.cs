@@ -2,18 +2,23 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.Config;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Grid;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
+using LcdMod.Client.Gui.ControlsTemplates.Basic;
+using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.ControlsTemplates.Progress;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Common.Config.Models.Apps;
 using LcdMod.Common.Helpers;
+using LcdMod.Common.Networking;
 using Sandbox.ModAPI;
+using VRage;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
 using VRageMath;
@@ -27,6 +32,14 @@ namespace LcdMod.Client.Apps
         const int SCROLLER_WIDTH = 8;
         const int LINE_HEIGHT = 40;
         const int SCROLL_DELAY = 12;
+        const string LOC_SORTER = "LcdMod_Cargo_Sorter";
+        const string LOC_SORT_QUANTITY = "LcdMod_Cargo_Sort_Quantity";
+        const string LOC_SORT_WEIGHT = "LcdMod_Cargo_Sort_Weight";
+        const string LOC_SORT_ALPHABETICAL = "LcdMod_Cargo_Sort_Alphabetical";
+        const string LOC_SORT_DONE = "LcdMod_Cargo_SortDone";
+        const string LOC_SORT_REQUESTED = "LcdMod_Cargo_SortRequested";
+        const float FOOTER_BUTTON_GAP = 8f;
+        const int STATUS_MESSAGE_FRAMES = 240; // ~4s on-screen confirmation
 
         readonly List<Entry> _entries = new List<Entry>();
         readonly Dictionary<long, Entry> _entryModels = new Dictionary<long, Entry>();
@@ -36,6 +49,16 @@ namespace LcdMod.Client.Apps
         readonly List<ControlBase> _interactiveList = new List<ControlBase>();
         readonly ScrollPanel _scrollPanel;
         readonly InteractiveSurfaceScript _interactiveHost;
+        readonly List<IMyTerminalBlock> _sortBlocks = new List<IMyTerminalBlock>();
+        Button _sorterButton;
+        Button _modeButton;
+        ControlStyle _sorterButtonStyle;
+        ControlStyle _modeButtonStyle;
+        int _sortMode = (int)InventorySortMode.Quantity;
+        float _footerHeight;
+        long _lastSortFrame = long.MinValue;
+        string _statusMessage;
+        long _statusUntilFrame;
         ScreenConfigWithBlocks Config => (ScreenConfigWithBlocks)AppConfig;
         public bool HasEntries => _entries.Count > 0;
         public List<ControlBase> InteractiveList => _interactiveList;
@@ -71,6 +94,7 @@ namespace LcdMod.Client.Apps
         {
             ClearInteractiveTree();
             var sprites = new List<MySprite>();
+            _footerHeight = GetSorterButtonSize().Y + 12f * Host.Scale;
             switch (Config.DisplayMode)
             {
                 case (int)DisplayMode.Grid:
@@ -81,6 +105,8 @@ namespace LcdMod.Client.Apps
                     break;
             }
 
+            DrawFooter(sprites);
+            DrawStatusMessage(sprites);
             return sprites;
         }
 
@@ -233,7 +259,7 @@ namespace LcdMod.Client.Apps
 
         void ConfigureScrollPanel(float contentTop, float rowHeight, int totalRows)
         {
-            _scrollPanel.Configure(Host.ViewBox, contentTop, 0f, rowHeight, totalRows, SCROLLER_WIDTH * Host.Scale, SCROLL_DELAY / 6f);
+            _scrollPanel.Configure(Host.ViewBox, contentTop, _footerHeight, rowHeight, totalRows, SCROLLER_WIDTH * Host.Scale, SCROLL_DELAY / 6f);
             _scrollPanel.SetScrollBarColors(
                 new Color(Host.Surface.ScriptForegroundColor.R, Host.Surface.ScriptForegroundColor.G, Host.Surface.ScriptForegroundColor.B, 127),
                 new Color(Config.HeaderColor.R, Config.HeaderColor.G, Config.HeaderColor.B, 250));
@@ -294,7 +320,7 @@ namespace LcdMod.Client.Apps
             RectangleControl control;
             if (!_entryControls.TryGetValue(dataContext.EntryId, out control) || control == null)
             {
-                control = new RectangleControl(bounds, CursorType.Default, dataContext)
+                control = new RectangleControl(bounds, CursorType.Hand, dataContext, OnEntryClicked)
                 {
                     CustomRender = RenderCargoEntryControl
                 };
@@ -304,6 +330,8 @@ namespace LcdMod.Client.Apps
             {
                 control.SetRect(bounds);
                 control.SetDataContext(dataContext);
+                control.SetCursor(CursorType.Hand);
+                control.SetOnClick(OnEntryClicked);
                 control.CustomRender = RenderCargoEntryControl;
             }
 
@@ -353,6 +381,393 @@ namespace LcdMod.Client.Apps
             return Host.TitleVisible ? Host.ViewBox.Y + (40f * Host.Scale * Host.Surface.FontSize) : Host.ViewBox.Y;
         }
 
+        void DrawFooter(List<MySprite> sprites)
+        {
+            var modeSize = GetModeButtonSize();
+            var sorterSize = GetSorterButtonSize();
+            var gap = FOOTER_BUTTON_GAP * Host.Scale;
+            var paddingY = 6f * Host.Scale;
+            var footerTop = Host.ViewBox.Bottom - _footerHeight;
+
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE,
+                Data = "SquareSimple",
+                Position = new Vector2(Host.ViewBox.Center.X, footerTop + _footerHeight * 0.5f),
+                Size = new Vector2(Host.ViewBox.Width, _footerHeight),
+                Color = new Color(Host.BackgroundColor.MulValue(0.8f), 0.5f),
+                Alignment = TextAlignment.CENTER
+            });
+
+            var totalWidth = modeSize.X + gap + sorterSize.X;
+            var startX = Host.ViewBox.X + (Host.ViewBox.Width - totalWidth) * 0.5f;
+
+            var modeRect = new RectangleF(startX, footerTop + paddingY, modeSize.X, modeSize.Y);
+            var sorterRect = new RectangleF(startX + modeSize.X + gap, footerTop + paddingY, sorterSize.X, sorterSize.Y);
+
+            var context = CreateRenderContext();
+            DrawModeButton(modeRect, context, sprites);
+            DrawSorterButton(sorterRect, context, sprites);
+        }
+
+        void DrawModeButton(RectangleF rect, ControlRenderContext context, List<MySprite> sprites)
+        {
+            if (_modeButton == null)
+                _modeButton = new Button(rect, new ButtonModel { Text = GetSortModeText(), Clicked = OnModeClicked });
+            else
+                _modeButton.SetRect(rect);
+
+            var model = _modeButton.DataContext as ButtonModel;
+            if (model != null)
+            {
+                model.Enabled = true;
+                model.Text = GetSortModeText();
+            }
+
+            _modeButton.SetVisible(true);
+            _modeButton.SetCursor(CursorType.Hand);
+            _modeButton.SetStyle(GetModeButtonStyle());
+            _modeButton.CustomRender = RenderModeButton;
+
+            if (!_interactiveList.Contains(_modeButton))
+                _interactiveList.Add(_modeButton);
+
+            _modeButton.Render(context, sprites);
+        }
+
+        void DrawSorterButton(RectangleF rect, ControlRenderContext context, List<MySprite> sprites)
+        {
+            if (_sorterButton == null)
+                _sorterButton = new Button(rect, new ButtonModel { Text = MyTexts.GetString(LOC_SORTER), Clicked = OnSorterClicked });
+            else
+                _sorterButton.SetRect(rect);
+
+            var model = _sorterButton.DataContext as ButtonModel;
+            if (model != null)
+                model.Enabled = true;
+
+            _sorterButton.SetVisible(true);
+            _sorterButton.SetCursor(CursorType.Hand);
+            _sorterButton.SetStyle(GetSorterButtonStyle());
+            _sorterButton.CustomRender = RenderSorterButton;
+
+            if (!_interactiveList.Contains(_sorterButton))
+                _interactiveList.Add(_sorterButton);
+
+            _sorterButton.Render(context, sprites);
+        }
+
+        string GetSortModeText()
+        {
+            switch ((InventorySortMode)_sortMode)
+            {
+                case InventorySortMode.Weight:
+                    return MyTexts.GetString(LOC_SORT_WEIGHT);
+                case InventorySortMode.Alphabetical:
+                    return MyTexts.GetString(LOC_SORT_ALPHABETICAL);
+                default:
+                    return MyTexts.GetString(LOC_SORT_QUANTITY);
+            }
+        }
+
+        float GetSorterButtonTextScale()
+        {
+            return 0.6f * Host.Scale * Host.Surface.FontSize;
+        }
+
+        Vector2 GetSorterButtonSize()
+        {
+            var textScale = GetSorterButtonTextScale();
+            var textSize = FormatingHelper.GetSizeInPixel(MyTexts.GetString(LOC_SORTER), "White", textScale, Host.Surface);
+            return new Vector2(
+                Math.Max(120f * Host.Scale, textSize.X + 28f * Host.Scale),
+                Math.Max(28f * Host.Scale, FormatingHelper.LineHeight(textScale, Host.Surface) + 10f * Host.Scale));
+        }
+
+        Vector2 GetModeButtonSize()
+        {
+            var textScale = GetSorterButtonTextScale();
+            // Size to the widest label so cycling the mode never reflows the footer.
+            var width = 0f;
+            width = Math.Max(width, FormatingHelper.GetSizeInPixel(MyTexts.GetString(LOC_SORT_QUANTITY), "White", textScale, Host.Surface).X);
+            width = Math.Max(width, FormatingHelper.GetSizeInPixel(MyTexts.GetString(LOC_SORT_WEIGHT), "White", textScale, Host.Surface).X);
+            width = Math.Max(width, FormatingHelper.GetSizeInPixel(MyTexts.GetString(LOC_SORT_ALPHABETICAL), "White", textScale, Host.Surface).X);
+            return new Vector2(
+                Math.Max(110f * Host.Scale, width + 28f * Host.Scale),
+                Math.Max(28f * Host.Scale, FormatingHelper.LineHeight(textScale, Host.Surface) + 10f * Host.Scale));
+        }
+
+        ControlStyle GetSorterButtonStyle()
+        {
+            if (_sorterButtonStyle == null)
+                _sorterButtonStyle = Button.CreatePrimaryButtonStyle(Theme);
+            else
+                _sorterButtonStyle.ThemeColors = Theme;
+
+            return _sorterButtonStyle;
+        }
+
+        ControlStyle GetModeButtonStyle()
+        {
+            if (_modeButtonStyle == null)
+            {
+                _modeButtonStyle = ControlStyle.FromThemeRoles(
+                    Constants.ON_SECONDARY_CONTAINER,
+                    Constants.SECONDARY_CONTAINER,
+                    Constants.SECONDARY_CONTAINER + Constants.HOVER,
+                    Constants.ON_SECONDARY_CONTAINER,
+                    Theme);
+                _modeButtonStyle.BorderRadiusPixels = Border.DEFAULT_RADIUS_PIXELS;
+            }
+            else
+            {
+                _modeButtonStyle.ThemeColors = Theme;
+            }
+
+            return _modeButtonStyle;
+        }
+
+        void RenderSorterButton(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        {
+            RenderFooterButton(control, context, sprites, MyTexts.GetString(LOC_SORTER));
+        }
+
+        void RenderModeButton(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        {
+            RenderFooterButton(control, context, sprites, GetSortModeText());
+        }
+
+        void RenderFooterButton(ControlBase control, ControlRenderContext context, List<MySprite> sprites, string text)
+        {
+            var rect = control.Bounds;
+            var hover = rect.Contains(context.CursorPosition);
+            var buttonColor = context.Style.GetPanelColor(hover);
+            var textColor = context.Style.GetTextColor(hover);
+            var textScale = GetSorterButtonTextScale();
+
+            Border.CreateSpritesFromRect(rect, sprites, buttonColor, radiusScale: context.Scale);
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXT,
+                Data = text,
+                Position = new Vector2(rect.Center.X,
+                    rect.Center.Y - FormatingHelper.GetSizeInPixel(text, "White", textScale, context.Surface).Y * 0.5f),
+                RotationOrScale = textScale,
+                Color = textColor,
+                Alignment = TextAlignment.CENTER,
+                FontId = "White"
+            });
+        }
+
+        void OnModeClicked(ButtonModel model, object sender)
+        {
+            try
+            {
+                _sortMode = (_sortMode + 1) % 3;
+                _interactiveHost.RenderSprites();
+            }
+            catch (Exception e)
+            {
+                ErrorHandlerHelper.LogError(e, Host);
+            }
+        }
+
+        void OnSorterClicked(ButtonModel model, object sender)
+        {
+            try
+            {
+                // Throttle: the consolidation is a heavy synchronous pass; ignore rapid repeat clicks.
+                // Guard the sentinel explicitly: (frame - long.MinValue) overflows and would block
+                // the very first click forever.
+                var frame = MyAPIGateway.Session != null ? MyAPIGateway.Session.GameplayFrameCounter : 0L;
+                if (_lastSortFrame != long.MinValue && frame - _lastSortFrame < 60L)
+                    return;
+                _lastSortFrame = frame;
+
+                _sortBlocks.Clear();
+                CollectFilteredContainers(_sortBlocks);
+                if (_sortBlocks.Count < 2)
+                    return;
+
+                // Single-player / listen-server host executes directly; pure clients ask the server,
+                // which is authoritative over inventory transfers in multiplayer.
+                if (MyAPIGateway.Session != null && MyAPIGateway.Session.IsServer)
+                {
+                    var moved = InventorySorterCommon.Consolidate(_sortBlocks, (InventorySortMode)_sortMode);
+                    SetStatusMessage(string.Format(MyTexts.GetString(LOC_SORT_DONE), moved));
+                }
+                else
+                {
+                    var ids = new long[_sortBlocks.Count];
+                    for (var i = 0; i < _sortBlocks.Count; i++)
+                        ids[i] = _sortBlocks[i].EntityId;
+
+                    LcdModSessionComponent.NetworkManager.TransmitToServer(new PacketSortInventory(ids, _sortMode), false);
+                    SetStatusMessage(MyTexts.GetString(LOC_SORT_REQUESTED));
+                }
+            }
+            catch (Exception e)
+            {
+                ErrorHandlerHelper.LogError(e, Host);
+            }
+        }
+
+        void SetStatusMessage(string message)
+        {
+            _statusMessage = message;
+            var frame = MyAPIGateway.Session != null ? MyAPIGateway.Session.GameplayFrameCounter : 0L;
+            _statusUntilFrame = frame + STATUS_MESSAGE_FRAMES;
+            _interactiveHost.RenderSprites();
+        }
+
+        // Transient confirmation banner drawn on the LCD itself (centered), instead of a HUD popup.
+        void DrawStatusMessage(List<MySprite> sprites)
+        {
+            if (string.IsNullOrEmpty(_statusMessage))
+                return;
+
+            var frame = MyAPIGateway.Session != null ? MyAPIGateway.Session.GameplayFrameCounter : 0L;
+            if (frame >= _statusUntilFrame)
+            {
+                _statusMessage = null;
+                return;
+            }
+
+            var textScale = 0.9f * Host.Scale * Host.Surface.FontSize;
+            var textSize = FormatingHelper.GetSizeInPixel(_statusMessage, "White", textScale, Host.Surface);
+            var padX = 20f * Host.Scale;
+            var padY = 12f * Host.Scale;
+            var rect = new RectangleF(
+                Host.ViewBox.Center.X - (textSize.X * 0.5f + padX),
+                Host.ViewBox.Center.Y - (textSize.Y * 0.5f + padY),
+                textSize.X + 2f * padX,
+                textSize.Y + 2f * padY);
+
+            Border.CreateSpritesFromRect(rect, sprites,
+                new Color(Host.BackgroundColor.MulValue(0.2f), 0.92f), radiusScale: Host.Scale);
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXT,
+                Data = _statusMessage,
+                Position = new Vector2(rect.Center.X, rect.Center.Y - textSize.Y * 0.5f),
+                RotationOrScale = textScale,
+                Color = Host.Surface.ScriptForegroundColor,
+                Alignment = TextAlignment.CENTER,
+                FontId = "White"
+            });
+        }
+
+        void OnEntryClicked(object dataContext, object sender)
+        {
+            var entry = dataContext as Entry;
+            if (entry == null)
+                return;
+
+            // Defer: opening the dialog re-renders and rebuilds the ScrollPanel children, which is
+            // unsafe to do from inside a ScrollPanel child's click dispatch.
+            var entityId = entry.EntryId;
+            LcdModClientComponent.RunNextFrame.Add(delegate { OpenActionDialog(entityId); });
+        }
+
+        void OpenActionDialog(long entityId)
+        {
+            try
+            {
+                var source = MyAPIGateway.Entities != null
+                    ? MyAPIGateway.Entities.GetEntityById(entityId) as IMyTerminalBlock
+                    : null;
+                if (source == null || !source.HasInventory)
+                    return;
+
+                var candidates = new List<IMyTerminalBlock>();
+                CollectContainerCandidates(candidates);
+
+                var dialog = new ContainerActionDialog(this, source, candidates,
+                    delegate(Dialog d) { _interactiveHost.ShowDialog(d); },
+                    Config.SortFilterKeys,
+                    Config.SortFilterCategories,
+                    SaveSortFilter);
+                _interactiveHost.ShowDialog(dialog);
+            }
+            catch (Exception e)
+            {
+                ErrorHandlerHelper.LogError(e, Host);
+            }
+        }
+
+        void SaveSortFilter(List<string> keys, List<string> categories)
+        {
+            try
+            {
+                Config.SortFilterKeys = keys != null ? keys.ToArray() : Array.Empty<string>();
+                Config.SortFilterCategories = categories != null ? categories.ToArray() : Array.Empty<string>();
+                var block = Host.Block as IMyTerminalBlock;
+                if (block != null)
+                    ConfigManager.Sync(block);
+            }
+            catch (Exception e)
+            {
+                ErrorHandlerHelper.LogError(e, Host);
+            }
+        }
+
+        void CollectContainerCandidates(List<IMyTerminalBlock> result)
+        {
+            var gridLogic = Host.GridLogic;
+            if (gridLogic == null)
+                return;
+
+            var blocks = gridLogic.GetTerminalBlocks<IMyTerminalBlock>(Config.GridLinkType);
+            if (blocks == null)
+                return;
+
+            for (var i = 0; i < blocks.Count; i++)
+            {
+                var fat = blocks[i];
+                if (fat == null || !fat.HasInventory)
+                    continue;
+
+                if (!(fat is IMyCargoContainer || fat is IMyShipConnector))
+                    continue;
+
+                if (Config.SelectedBlocks.Length > 0 && Array.IndexOf(Config.SelectedBlocks, fat.EntityId) < 0)
+                    continue;
+
+                result.Add(fat);
+            }
+        }
+
+        void CollectFilteredContainers(List<IMyTerminalBlock> result)
+        {
+            var gridLogic = Host.GridLogic;
+            if (gridLogic == null)
+                return;
+
+            // The Sorter also drains connectors, assemblers, refineries and ship tools (welder/
+            // grinder/drill) into the cargo containers, so scan every terminal block in scope and
+            // keep the inventory-bearing ones we care about. (The list itself shows only containers
+            // and refineries.)
+            var blocks = gridLogic.GetTerminalBlocks<IMyTerminalBlock>(Config.GridLinkType);
+            if (blocks == null)
+                return;
+
+            for (var i = 0; i < blocks.Count; i++)
+            {
+                var fat = blocks[i];
+                if (fat == null || !fat.HasInventory)
+                    continue;
+
+                if (!(fat is IMyCargoContainer || fat is IMyShipConnector || fat is IMyAssembler
+                      || fat is IMyRefinery || fat is IMyShipToolBase))
+                    continue;
+
+                if (Config.SelectedBlocks.Length > 0 && Array.IndexOf(Config.SelectedBlocks, fat.EntityId) < 0)
+                    continue;
+
+                result.Add(fat);
+            }
+        }
+
         RectangleF GetCellViewBox(float xStart, float xEnd, float yStart, float cellHeight, float cellPadding)
         {
             var innerLeft = xStart + cellPadding;
@@ -384,14 +799,19 @@ namespace LcdMod.Client.Apps
             if (gridLogic == null)
                 return;
 
-            var containers = gridLogic.GetTerminalBlocks<IMyCargoContainer>(Config.GridLinkType);
-            if (containers == null)
+            var blocks = gridLogic.GetTerminalBlocks<IMyTerminalBlock>(Config.GridLinkType);
+            if (blocks == null)
                 return;
 
-            for (var i = 0; i < containers.Count; i++)
+            for (var i = 0; i < blocks.Count; i++)
             {
-                var fat = containers[i];
+                var fat = blocks[i];
                 if (fat == null)
+                    continue;
+
+                // Chart cargo containers (all inventories) and refineries (input inventory only).
+                var isRefinery = fat is IMyRefinery;
+                if (!(fat is IMyCargoContainer || isRefinery))
                     continue;
 
                 var config = Config;
@@ -404,29 +824,49 @@ namespace LcdMod.Client.Apps
 
                 double localUsed = 0;
                 double localCap = 0;
-                var invCount = 0;
-                try
+                if (isRefinery)
                 {
-                    invCount = fat.InventoryCount;
+                    // Refineries: only the input inventory (index 0) is charted.
+                    var inv = fat.GetInventory(0);
+                    if (inv != null)
+                    {
+                        try
+                        {
+                            localUsed = (double)inv.CurrentVolume;
+                            localCap = (double)inv.MaxVolume;
+                        }
+                        catch (Exception e)
+                        {
+                            ErrorHandlerHelper.LogError(e, Host);
+                        }
+                    }
                 }
-                catch (Exception e)
+                else
                 {
-                    ErrorHandlerHelper.LogError(e, Host);
-                }
-
-                for (var k = 0; k < invCount; k++)
-                {
-                    var inv = fat.GetInventory(k);
-                    if (inv == null)
-                        continue;
+                    var invCount = 0;
                     try
                     {
-                        localUsed += (double)inv.CurrentVolume;
-                        localCap += (double)inv.MaxVolume;
+                        invCount = fat.InventoryCount;
                     }
                     catch (Exception e)
                     {
                         ErrorHandlerHelper.LogError(e, Host);
+                    }
+
+                    for (var k = 0; k < invCount; k++)
+                    {
+                        var inv = fat.GetInventory(k);
+                        if (inv == null)
+                            continue;
+                        try
+                        {
+                            localUsed += (double)inv.CurrentVolume;
+                            localCap += (double)inv.MaxVolume;
+                        }
+                        catch (Exception e)
+                        {
+                            ErrorHandlerHelper.LogError(e, Host);
+                        }
                     }
                 }
 

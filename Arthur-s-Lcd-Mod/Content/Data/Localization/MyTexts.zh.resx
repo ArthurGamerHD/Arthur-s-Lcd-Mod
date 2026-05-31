@@ -577,4 +577,49 @@
     <data name="LcdMod_InputOutput_Empty" xml:space="preserve">
     <value>空</value>
   </data>
+  <data name="LcdMod_Cargo_Sort_Quantity" xml:space="preserve">
+    <value>数量</value>
+  </data>
+  <data name="LcdMod_Cargo_Sort_Weight" xml:space="preserve">
+    <value>重量</value>
+  </data>
+  <data name="LcdMod_Cargo_Sort_Alphabetical" xml:space="preserve">
+    <value>字母顺序</value>
+  </data>
+  <data name="LcdMod_Cargo_SortDone" xml:space="preserve">
+    <value>已整理：移动了 {0} 个物品</value>
+  </data>
+  <data name="LcdMod_Cargo_SortRequested" xml:space="preserve">
+    <value>已请求整理</value>
+  </data>
+  <data name="LcdMod_Cargo_Sorter" xml:space="preserve">
+    <value>整理</value>
+  </data>
+  <data name="LcdMod_SubGrid" xml:space="preserve">
+    <value>子网格</value>
+  </data>
+  <data name="LcdMod_Transfer_Send" xml:space="preserve">
+    <value>发送物品</value>
+  </data>
+  <data name="LcdMod_Transfer_Receive" xml:space="preserve">
+    <value>接收物品</value>
+  </data>
+  <data name="LcdMod_Transfer_Balance" xml:space="preserve">
+    <value>平衡</value>
+  </data>
+  <data name="LcdMod_Transfer_SelectTargets" xml:space="preserve">
+    <value>选择目标</value>
+  </data>
+  <data name="LcdMod_Transfer_SelectItems" xml:space="preserve">
+    <value>选择物品</value>
+  </data>
+  <data name="LcdMod_Transfer_Back" xml:space="preserve">
+    <value>返回</value>
+  </data>
+  <data name="LcdMod_Transfer_All" xml:space="preserve">
+    <value>全部</value>
+  </data>
+  <data name="LcdMod_Transfer_Next" xml:space="preserve">
+    <value>下一步</value>
+  </data>
 </root>

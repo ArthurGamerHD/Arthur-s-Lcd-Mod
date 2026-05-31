@@ -18,6 +18,10 @@ namespace LcdMod.Common.Config.Models.Apps
         [XmlIgnore]
         public GridLinkTypeEnum GridLinkType => (GridLinkTypeEnum)GridLinkTypeInternal;
 
-        [ProtoMember(20)] public int GridLinkTypeInternal { get; set; } = (int)GridLinkTypeEnum.Mechanical;
+        [ProtoMember(20)] public int GridLinkTypeInternal { get; set; } = (int)GridLinkTypeEnum.Physical;
+
+        // Persisted item filter chosen in the container action dialog.
+        [ProtoMember(21)] public string[] SortFilterKeys { get; set; } = Array.Empty<string>();
+        [ProtoMember(22)] public string[] SortFilterCategories { get; set; } = Array.Empty<string>();
     }
 }

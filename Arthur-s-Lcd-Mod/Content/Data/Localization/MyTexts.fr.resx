@@ -578,4 +578,49 @@
     <data name="LcdMod_InputOutput_Empty" xml:space="preserve">
     <value>Vide</value>
   </data>
+  <data name="LcdMod_Cargo_Sort_Quantity" xml:space="preserve">
+    <value>Quantite</value>
+  </data>
+  <data name="LcdMod_Cargo_Sort_Weight" xml:space="preserve">
+    <value>Poids</value>
+  </data>
+  <data name="LcdMod_Cargo_Sort_Alphabetical" xml:space="preserve">
+    <value>Alphabetique</value>
+  </data>
+  <data name="LcdMod_Cargo_SortDone" xml:space="preserve">
+    <value>Trie : {0} objets deplaces</value>
+  </data>
+  <data name="LcdMod_Cargo_SortRequested" xml:space="preserve">
+    <value>Tri demande</value>
+  </data>
+  <data name="LcdMod_Cargo_Sorter" xml:space="preserve">
+    <value>Trier</value>
+  </data>
+  <data name="LcdMod_SubGrid" xml:space="preserve">
+    <value>Sous-grille</value>
+  </data>
+  <data name="LcdMod_Transfer_Send" xml:space="preserve">
+    <value>Envoyer</value>
+  </data>
+  <data name="LcdMod_Transfer_Receive" xml:space="preserve">
+    <value>Recevoir</value>
+  </data>
+  <data name="LcdMod_Transfer_Balance" xml:space="preserve">
+    <value>Equilibrer</value>
+  </data>
+  <data name="LcdMod_Transfer_SelectTargets" xml:space="preserve">
+    <value>Choisir cibles</value>
+  </data>
+  <data name="LcdMod_Transfer_SelectItems" xml:space="preserve">
+    <value>Choisir objets</value>
+  </data>
+  <data name="LcdMod_Transfer_Back" xml:space="preserve">
+    <value>Retour</value>
+  </data>
+  <data name="LcdMod_Transfer_All" xml:space="preserve">
+    <value>Tout</value>
+  </data>
+  <data name="LcdMod_Transfer_Next" xml:space="preserve">
+    <value>Suivant</value>
+  </data>
 </root>

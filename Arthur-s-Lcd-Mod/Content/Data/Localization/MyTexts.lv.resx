@@ -577,4 +577,49 @@
     <data name="LcdMod_InputOutput_Empty" xml:space="preserve">
     <value>Tukšs</value>
   </data>
+  <data name="LcdMod_Cargo_Sort_Quantity" xml:space="preserve">
+    <value>Daudzums</value>
+  </data>
+  <data name="LcdMod_Cargo_Sort_Weight" xml:space="preserve">
+    <value>Svars</value>
+  </data>
+  <data name="LcdMod_Cargo_Sort_Alphabetical" xml:space="preserve">
+    <value>Alfabetiski</value>
+  </data>
+  <data name="LcdMod_Cargo_SortDone" xml:space="preserve">
+    <value>Sakartots: parvietoti {0} prieksmeti</value>
+  </data>
+  <data name="LcdMod_Cargo_SortRequested" xml:space="preserve">
+    <value>Pieprasita kartosana</value>
+  </data>
+  <data name="LcdMod_Cargo_Sorter" xml:space="preserve">
+    <value>Kartot</value>
+  </data>
+  <data name="LcdMod_SubGrid" xml:space="preserve">
+    <value>Subgrid</value>
+  </data>
+  <data name="LcdMod_Transfer_Send" xml:space="preserve">
+    <value>Send items</value>
+  </data>
+  <data name="LcdMod_Transfer_Receive" xml:space="preserve">
+    <value>Receive items</value>
+  </data>
+  <data name="LcdMod_Transfer_Balance" xml:space="preserve">
+    <value>Balance</value>
+  </data>
+  <data name="LcdMod_Transfer_SelectTargets" xml:space="preserve">
+    <value>Select targets</value>
+  </data>
+  <data name="LcdMod_Transfer_SelectItems" xml:space="preserve">
+    <value>Select items</value>
+  </data>
+  <data name="LcdMod_Transfer_Back" xml:space="preserve">
+    <value>Back</value>
+  </data>
+  <data name="LcdMod_Transfer_All" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="LcdMod_Transfer_Next" xml:space="preserve">
+    <value>Next</value>
+  </data>
 </root>

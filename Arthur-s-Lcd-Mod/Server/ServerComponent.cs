@@ -5,6 +5,7 @@ using LcdMod.Common.Networking;
 using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
+using VRage.Game;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRageMath;
@@ -164,6 +165,68 @@ namespace LcdMod.Server
             }
 
             FactionHelperCommon.EditFaction(packet);
+        }
+
+        public void HandleSortInventory(ReceivedPacketEventArgs args)
+        {
+            var packet = args.UnWrap<PacketSortInventory>();
+            if (packet?.ContainerIds == null || packet.ContainerIds.Length < 2)
+                return;
+
+            var senderIdentity = MyAPIGateway.Players.TryGetIdentityId(args.SenderId);
+            if (senderIdentity == 0)
+                return;
+
+            var blocks = new List<IMyTerminalBlock>(packet.ContainerIds.Length);
+            for (var i = 0; i < packet.ContainerIds.Length; i++)
+            {
+                var block = MyEntities.GetEntityById(packet.ContainerIds[i]) as IMyTerminalBlock;
+                if (block == null || !block.HasInventory)
+                    continue;
+
+                // Only honour containers the requester is actually allowed to use.
+                if (block.GetUserRelationToOwner(senderIdentity) > MyRelationsBetweenPlayerAndBlock.FactionShare)
+                    continue;
+
+                blocks.Add(block);
+            }
+
+            InventorySorterCommon.Consolidate(blocks, (InventorySortMode)packet.Mode);
+        }
+
+        public void HandleTransferItems(ReceivedPacketEventArgs args)
+        {
+            var packet = args.UnWrap<PacketTransferItems>();
+            if (packet == null || packet.TypeKeys == null || packet.TypeKeys.Length == 0)
+                return;
+
+            var senderIdentity = MyAPIGateway.Players.TryGetIdentityId(args.SenderId);
+            if (senderIdentity == 0)
+                return;
+
+            var source = MyEntities.GetEntityById(packet.SourceId) as IMyTerminalBlock;
+            if (source == null || !source.HasInventory ||
+                source.GetUserRelationToOwner(senderIdentity) > MyRelationsBetweenPlayerAndBlock.FactionShare)
+                return;
+
+            var targets = new List<IMyTerminalBlock>(packet.TargetIds.Length);
+            for (var i = 0; i < packet.TargetIds.Length; i++)
+            {
+                var block = MyEntities.GetEntityById(packet.TargetIds[i]) as IMyTerminalBlock;
+                if (block == null || !block.HasInventory)
+                    continue;
+
+                if (block.GetUserRelationToOwner(senderIdentity) > MyRelationsBetweenPlayerAndBlock.FactionShare)
+                    continue;
+
+                targets.Add(block);
+            }
+
+            if (targets.Count == 0)
+                return;
+
+            var typeKeys = new HashSet<string>(packet.TypeKeys);
+            InventoryDistributorCommon.Execute(source, targets, typeKeys, (TransferMode)packet.Mode);
         }
     }
 }

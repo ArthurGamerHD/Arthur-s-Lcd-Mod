@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using Sandbox.ModAPI.Ingame;
 using Sandbox.ModAPI.Interfaces;
+using IMyTerminalBlock = Sandbox.ModAPI.Ingame.IMyTerminalBlock;
 
 namespace LcdMod.Client.Terminal.Models.Property
 {

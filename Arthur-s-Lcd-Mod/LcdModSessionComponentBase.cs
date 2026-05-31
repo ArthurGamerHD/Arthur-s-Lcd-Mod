@@ -191,6 +191,12 @@ namespace LcdMod
                     case PackageCode.PlayerInputBlacklist:
                         HandlePlayerInputBlacklist(args);
                         break;
+                    case PackageCode.SortInventory:
+                        Server?.HandleSortInventory(args);
+                        break;
+                    case PackageCode.TransferItems:
+                        Server?.HandleTransferItems(args);
+                        break;
                     default:
                         {
                             LogHelper.Log(MyLogSeverity.Error, $"Unexpected Packet Code Received");
