@@ -2457,7 +2457,7 @@ namespace LcdMod.Client.Apps
 
                 var seenSprites = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 var registeredSprites = new List<string>();
-                BlockIconHelper.GetRegisteredSpriteNames(registeredSprites);
+                TextureHelper.GetRegisteredSpriteNames(registeredSprites);
                 registeredSprites.Sort(StringComparer.OrdinalIgnoreCase);
                 AddUniqueSprites(registeredSprites, seenSprites);
 

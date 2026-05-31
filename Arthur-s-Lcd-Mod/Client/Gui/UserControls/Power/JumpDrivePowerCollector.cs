@@ -186,7 +186,7 @@ namespace LcdMod.Client.Gui.UserControls.Power
         {
             var entryId = jumpDrive.EntityId;
             var capturedJumpDrive = jumpDrive;
-            var blockIcon = BlockIconHelper.GetOrAddTextureForBlock(((MyCubeBlock)jumpDrive).BlockDefinition);
+            var blockIcon = TextureHelper.GetOrAddTextureForBlock(((MyCubeBlock)jumpDrive).BlockDefinition);
 
             PowerEntry entry;
             if (!_activeEntriesBuffer.TryGetValue(entryId, out entry) || entry == null)

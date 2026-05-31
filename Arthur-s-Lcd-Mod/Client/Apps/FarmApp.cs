@@ -337,7 +337,7 @@ namespace LcdMod.Client.Apps
             if (!MyDefinitionManager.Static.TryGetPhysicalItemDefinition(outputItem, out definition))
                 return string.Empty;
 
-            return BlockIconHelper.GetOrAddTextureForItem(definition);
+            return TextureHelper.ResolveItemSprite(definition, _surfaceHost.Surface);
         }
 
         static string ResolveOutputName(MyDefinitionId outputItem)

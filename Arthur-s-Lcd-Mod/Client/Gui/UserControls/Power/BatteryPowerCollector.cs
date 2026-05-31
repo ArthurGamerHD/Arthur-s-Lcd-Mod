@@ -207,7 +207,7 @@ namespace LcdMod.Client.Gui.UserControls.Power
         {
             var entryId = battery.EntityId;
             var capturedBattery = battery;
-            var blockIcon = BlockIconHelper.GetOrAddTextureForBlock(((MyCubeBlock)battery).BlockDefinition);
+            var blockIcon = TextureHelper.GetOrAddTextureForBlock(((MyCubeBlock)battery).BlockDefinition);
 
             PowerEntry entry;
             if (!_activeEntriesBuffer.TryGetValue(entryId, out entry) || entry == null)

@@ -11,6 +11,7 @@ using LcdMod.Common.Networking;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage;
+using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using ItemsSurfaceScriptBase = LcdMod.Client.SurfaceScripts.Abstract.ItemsSurfaceScriptBase;
@@ -39,13 +40,20 @@ namespace LcdMod.Client
             var group = CommandManager.GetOrCreateGroup("/lcdMod", new CmdGroupInitializer(6));
             group.TryAdd("FactionColor", FactionHelper.SetColor);
             group.TryAdd("Advanced", LocalConfigManager.SetAdvancedTweakablesCommand, 1);
-            group.TryAdd("PreloadTextures", _ => BlockIconHelper.PreloadAllTextures());
+            group.TryAdd("PreloadTextures", _ => TextureHelper.PreloadAllTextures());
+#if EXPERIMENTAL
+            group.TryAdd("Test", TextureHelper.LocalTexture);
+            TextureHelper.ExportConverter();
+#endif
 #if DEBUG
             group.TryAdd("DebugInteractive", LocalConfigManager.SetDebugInteractiveCommand);
             group.TryAdd("DebugSurface", LocalConfigManager.SetDebugSurfaceCommand);
             group.TryAdd("SpriteCountDebug", LocalConfigManager.SetSpriteCountDebugCommand);
             group.TryAdd("VisibleClip", LocalConfigManager.SetVisibleClipCommand);
-            group.TryAdd("TextInput", strings => TextInputHelper.SpawnForLocalPlayer(strings.FirstOrDefault(), s => MyAPIGateway.Utilities.ShowNotification("User typed: " + s), "Hello World!", strings.Length > 1 ? strings[1] : string.Empty));
+            group.TryAdd("TextInput",
+                strings => TextInputHelper.SpawnForLocalPlayer(strings.FirstOrDefault(),
+                    s => MyAPIGateway.Utilities.ShowNotification("User typed: " + s), "Hello World!",
+                    strings.Length > 1 ? strings[1] : string.Empty));
 #endif
 
             DebuggerHelper.Break();
@@ -144,7 +152,7 @@ namespace LcdMod.Client
         {
             RunNextFrameActions();
         }
-        
+
         public void UpdateAfterSimulation()
         {
             try
@@ -266,7 +274,8 @@ namespace LcdMod.Client
             var path = Path.Combine(_session.ModContext.ModPathData, "Localization");
 
             if (path.EndsWith("/Localization")) // workaround for linux-native
-                path = path.Replace("\\", "/"); // todo: remove after fix https://github.com/viktor-ferenczi/se-linux-compat
+                path = path.Replace("\\",
+                    "/"); // todo: remove after fix https://github.com/viktor-ferenczi/se-linux-compat
 
             var supportedLanguages = new HashSet<MyLanguagesEnum>();
             MyTexts.LoadSupportedLanguages(path, supportedLanguages);
@@ -300,7 +309,8 @@ namespace LcdMod.Client
             LcdModSessionComponent.RaiseLanguageChanged();
         }
 
-        public static void SetLocalPlayerUseInputBlocked(bool blocked) => SetPlayerUseInputBlocked(MyAPIGateway.Session.LocalHumanPlayer.IdentityId, blocked);
+        public static void SetLocalPlayerUseInputBlocked(bool blocked) =>
+            SetPlayerUseInputBlocked(MyAPIGateway.Session.LocalHumanPlayer.IdentityId, blocked);
 
         static void SetPlayerUseInputBlocked(long playerId, bool blocked)
         {
@@ -310,7 +320,8 @@ namespace LcdMod.Client
             if (MyAPIGateway.Multiplayer.MultiplayerActive &&
                 !MyAPIGateway.Multiplayer.IsServer &&
                 LcdModSessionComponent.NetworkManager != null)
-                LcdModSessionComponent.NetworkManager.TransmitToServer(new PacketPlayerInputBlacklist(playerId, enabled), false);
+                LcdModSessionComponent.NetworkManager.TransmitToServer(
+                    new PacketPlayerInputBlacklist(playerId, enabled), false);
         }
     }
 }

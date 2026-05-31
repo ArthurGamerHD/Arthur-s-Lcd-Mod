@@ -487,7 +487,7 @@ namespace LcdMod.Client.Gui.UserControls
                     return spriteName;
 
                 string registeredSpriteName;
-                return BlockIconHelper.TryGetOrAddTextureForBlockName(spriteName, out registeredSpriteName)
+                return TextureHelper.TryGetOrAddTextureForBlockName(spriteName, out registeredSpriteName)
                     ? registeredSpriteName
                     : spriteName;
             }

@@ -745,7 +745,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             {
                 var cubeBlock = block as MyCubeBlock;
                 if (cubeBlock != null && cubeBlock.BlockDefinition != null)
-                    return BlockIconHelper.GetOrAddTextureForBlock(cubeBlock.BlockDefinition);
+                    return TextureHelper.GetOrAddTextureForBlock(cubeBlock.BlockDefinition);
             }
             catch
             {
@@ -790,11 +790,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 if (!string.Equals(blockDefinition.Id.SubtypeName, subtype, StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                return BlockIconHelper.GetOrAddTextureForBlock(blockDefinition);
+                return TextureHelper.GetOrAddTextureForBlock(blockDefinition);
             }
 
             string textureName;
-            return BlockIconHelper.TryGetOrAddTextureForBlockName(subtype, out textureName) ? textureName : "Danger";
+            return TextureHelper.TryGetOrAddTextureForBlockName(subtype, out textureName) ? textureName : "Danger";
         }
 
         static string GetBlockDisplayName(IMyTerminalBlock block)

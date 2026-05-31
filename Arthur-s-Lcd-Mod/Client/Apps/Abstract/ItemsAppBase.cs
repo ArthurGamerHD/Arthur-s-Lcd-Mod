@@ -526,17 +526,13 @@ namespace LcdMod.Client.Apps.Abstract
             if (SpriteCache.TryGetValue(itemType, out sprite))
                 return sprite;
 
-            var reference = new List<string>();
-            var color = "ColorfulIcons_" + itemType.ToString().Substring(16);
-            const string notFound = "Textures\\FactionLogo\\Unknown.dds";
+            var itemDefinition = MyDefinitionManager.Static != null
+                ? MyDefinitionManager.Static.TryGetPhysicalItemDefinition(itemType)
+                : null;
 
-            Surface.GetSprites(reference);
-            if (reference.Contains(color))
-                sprite = color;
-            else if (reference.Contains(itemType.ToString()))
-                sprite = itemType.ToString();
-            else
-                sprite = notFound;
+            sprite = TextureHelper.ResolveItemSprite(itemDefinition, Surface);
+            if (string.IsNullOrEmpty(sprite))
+                sprite = "Textures\\FactionLogo\\Unknown.dds";
 
             AddToSpriteCache(itemType, sprite);
             return sprite;
