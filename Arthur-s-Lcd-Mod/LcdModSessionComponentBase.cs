@@ -185,6 +185,18 @@ namespace LcdMod
                         if (!args.IsFromServer)
                             Server?.HandleSyncConfig(args);
                         break;
+                    case PackageCode.RequestTexture:
+                        if (args.IsFromServer)
+                            Client?.HandleRequestTexture(args);
+                        else
+                            Server?.HandleRequestTexture(args);
+                        break;
+                    case PackageCode.SyncTexture:
+                        if (args.IsFromServer)
+                            Client?.HandleSyncTexture(args);
+                        else
+                            Server?.HandleSyncTexture(args);
+                        break;
                     case PackageCode.EditFaction:
                         Server?.HandleEditFaction(args);
                         break;

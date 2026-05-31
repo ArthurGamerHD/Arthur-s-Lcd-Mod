@@ -36,8 +36,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         const float ICON_SIZE_PIXELS = 32f;
         const float SCROLLER_WIDTH_PIXELS = 12f;
 
-        readonly List<string> _allSprites = new List<string>();
-        readonly List<string> _filteredSprites = new List<string>();
+        readonly Dictionary<string, SpriteRowModel> _spriteModelsByName =
+            new Dictionary<string, SpriteRowModel>(StringComparer.OrdinalIgnoreCase);
+        readonly List<SpriteRowModel> _allSprites = new List<SpriteRowModel>();
+        readonly List<SpriteRowModel> _filteredSprites = new List<SpriteRowModel>();
         readonly List<RectangleControl> _rowControls = new List<RectangleControl>();
         readonly ScrollPanel _scrollPanel = new ScrollPanel();
 
@@ -86,6 +88,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         public void ReloadSprites()
         {
             _spritesLoaded = false;
+            _spriteModelsByName.Clear();
             _allSprites.Clear();
             _filteredSprites.Clear();
         }
@@ -234,7 +237,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 if (!seenSprites.Add(sprite))
                     continue;
 
-                _allSprites.Add(sprite);
+                _allSprites.Add(GetOrCreateSpriteModel(sprite));
             }
         }
 
@@ -391,10 +394,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             return _rowControls[index];
         }
 
-        void ConfigureRowControl(RectangleControl control, RectangleF rect, string spriteName)
+        void ConfigureRowControl(RectangleControl control, RectangleF rect, SpriteRowModel model)
         {
             control.SetRect(rect);
-            control.SetDataContext(new SpriteRowModel(spriteName));
+            control.SetDataContext(model);
             control.SetCursor(CursorType.Hand);
             control.SetStyle(GetRowStyle());
             control.CustomRender = RenderSpriteRow;
@@ -502,11 +505,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
             for (var i = 0; i < _allSprites.Count; i++)
             {
-                var sprite = _allSprites[i];
-                if (sprite != null &&
-                    sprite.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0)
+                var model = _allSprites[i];
+                if (model != null &&
+                    model.SpriteName.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0)
                 {
-                    _filteredSprites.Add(sprite);
+                    _filteredSprites.Add(model);
                 }
             }
         }
@@ -577,6 +580,17 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         static void EndClip(List<MySprite> sprites)
         {
             sprites.Add(MySprite.CreateClearClipRect());
+        }
+
+        SpriteRowModel GetOrCreateSpriteModel(string spriteName)
+        {
+            SpriteRowModel model;
+            if (_spriteModelsByName.TryGetValue(spriteName, out model))
+                return model;
+
+            model = new SpriteRowModel(spriteName);
+            _spriteModelsByName.Add(spriteName, model);
+            return model;
         }
 
         sealed class SpriteRowModel

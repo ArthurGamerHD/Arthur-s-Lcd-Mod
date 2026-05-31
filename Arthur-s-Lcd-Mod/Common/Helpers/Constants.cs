@@ -9,7 +9,14 @@ namespace LcdMod.Common.Helpers
         public static string BuildConfiguration => Generated.Constants.BuildConfiguration;
         public static string VersionName => Generated.Constants.VersionName;
 
+        public const int MAX_TEXTURE_BYTES = 5330000; // this is the approximated size of 32 bits 1024x1024 texture in .dds
+        public const int MAX_SYNC_TEXTURE_DIMENSION = 2048;
+        
+        public const uint DDS_HEADER_SIZE = 124;
+        public const int DDS_MINIMUM_HEADER_BYTES = 20;
+        
         public const string CONFIG_FILE = "LcdMod.local.xml";
+        public const string CACHED_TEXTURES_FILE = "cached_textures.xml";
         public static Guid StorageGuid = new Guid("9a502d67-7a3c-4502-b3e5-a44e76c0acfa");
         public static Guid StorageRemapGuid = new Guid("C08C59FB-B74E-46F6-A477-26909D107E86");
 

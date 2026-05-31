@@ -297,8 +297,23 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         {
         }
 
+        protected override bool CanResolveChildren(Vector2 point, bool selfHit)
+        {
+            return true;
+        }
+
         protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
         {
+            var children = Children;
+            if (children == null || children.Count == 0)
+                return;
+
+            for (int i = 0; i < children.Count; i++)
+            {
+                var child = children[i];
+                if (child != null)
+                    child.Render(context, sprites);
+            }
         }
     }
 }

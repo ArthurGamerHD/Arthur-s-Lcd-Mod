@@ -229,7 +229,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 
         public void Render(ControlRenderContext context, List<MySprite> sprites)
         {
-            if (context == null || sprites == null)
+            if (!Visible || context == null || sprites == null)
                 return;
 
             try

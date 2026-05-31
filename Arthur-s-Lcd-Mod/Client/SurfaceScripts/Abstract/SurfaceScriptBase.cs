@@ -1383,10 +1383,42 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             for (int i = 0; i < sprites.Count; i++)
             {
                 var sprite = sprites[i];
+                if (sprite.Type == SpriteType.TEXTURE && !string.IsNullOrWhiteSpace(sprite.Data) && char.IsNumber(sprite.Data[0]))
+                {
+                    if (!TextureHelper.IsKnownTexture(sprite.Data))
+                    {
+                        if (TextureHelper.HasTextureParseFailed(sprite.Data))
+                        {
+                            ApplyMissingTextureFallback(ref sprite);
+                        }
+                        else
+                        {
+                            ulong ownerId;
+                            string textureName;
+                            if (TextureTransferHelper.TryParseTextureKey(sprite.Data, out ownerId, out textureName))
+                            {
+                                var registrationName = TextureTransferHelper.BuildTextureKey(ownerId, textureName);
+                                var isKnownTexture = TextureHelper.IsKnownTexture(registrationName);
+                                var isPendingTexture = TextureHelper.HasPendingTextureRequest(registrationName);
+
+                                if (!isKnownTexture && !isPendingTexture)
+                                    TextureHelper.TryQueueTextureRequest(ownerId, textureName, registrationName);
+
+                                if (!isKnownTexture)
+                                    ApplyMissingTextureFallback(ref sprite);
+                            }
+                            else
+                            {
+                                TextureHelper.MarkTextureParseFailed(sprite.Data);
+                                ApplyMissingTextureFallback(ref sprite);
+                            }
+                        }
+                    }
+                }
+
                 if (CanRenderSprite(sprite))
                 {
-                    if (prepared != null)
-                        prepared.Add(sprite);
+                    prepared?.Add(sprite);
                     continue;
                 }
 
@@ -1399,6 +1431,17 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             }
 
             return prepared ?? sprites;
+        }
+
+        static void ApplyMissingTextureFallback(ref MySprite sprite)
+        {
+            sprite.Data = "MissingIcon";
+            if (!sprite.Size.HasValue)
+                return;
+
+            var size = sprite.Size.Value;
+            var uniformSize = Math.Min(Math.Abs(size.X), Math.Abs(size.Y));
+            sprite.Size = new Vector2(uniformSize, uniformSize);
         }
 
         static bool CanRenderSprite(MySprite sprite)

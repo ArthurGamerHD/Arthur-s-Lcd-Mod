@@ -1,4 +1,5 @@
 using LcdMod.Client.Extensions;
+using LcdMod.Client.Helpers;
 using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 
@@ -34,6 +35,20 @@ namespace LcdMod.Client.Config
             {
                 Config = new LcdModLocalConfig();
             }
+
+            if (Config.LocalTextures == null)
+                Config.LocalTextures = new System.Collections.Generic.HashSet<string>();
+
+            foreach (var localTexture in Config.LocalTextures)
+            {
+                TextureHelper.LocalTexture(localTexture);
+            }
+
+            TextureHelper.LoadCachedTextures();
+
+            TextureHelper.Import();
+            
+            TextureHelper.ExportConverter();
         }
 
         public static void Save()

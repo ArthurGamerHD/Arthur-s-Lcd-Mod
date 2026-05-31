@@ -14,6 +14,7 @@ using VRage;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
+using VRage.Utils;
 using ItemsSurfaceScriptBase = LcdMod.Client.SurfaceScripts.Abstract.ItemsSurfaceScriptBase;
 
 namespace LcdMod.Client
@@ -37,13 +38,15 @@ namespace LcdMod.Client
             LocalConfigManager.Load();
             _session.RegisterModules();
 
-            var group = CommandManager.GetOrCreateGroup("/lcdMod", new CmdGroupInitializer(6));
+            var group = CommandManager.GetOrCreateGroup("/lcdMod", new CmdGroupInitializer(7));
             group.TryAdd("FactionColor", FactionHelper.SetColor);
             group.TryAdd("Advanced", LocalConfigManager.SetAdvancedTweakablesCommand, 1);
             group.TryAdd("PreloadTextures", _ => TextureHelper.PreloadAllTextures());
 #if EXPERIMENTAL
-            group.TryAdd("Test", TextureHelper.LocalTexture);
-            TextureHelper.ExportConverter();
+            group.TryAdd("ClearCache", TextureHelper.ClearCacheCommand);
+            group.TryAdd("ImportTextures", _ => TextureHelper.Import(true));
+            group.TryAdd("RemoveLocalTexture", TextureHelper.RemoveLocalTexture);
+            group.TryAdd("ImportLocalTexture", TextureHelper.ImportLocalTexture);
 #endif
 #if DEBUG
             group.TryAdd("DebugInteractive", LocalConfigManager.SetDebugInteractiveCommand);
@@ -94,6 +97,7 @@ namespace LcdMod.Client
             LcdModSessionComponent.ClearClientEvents();
 
             ListBoxItemHelper.PerTypeCache.Clear();
+            //TextureHelper.UnloadTextureCache();
             RunNextFrame.Clear();
             RunThisFrame.Clear();
         }
@@ -179,6 +183,91 @@ namespace LcdMod.Client
                 return;
 
             LcdModSessionComponent.ApplySyncedConfig(block, settings, packet.Config);
+        }
+
+        public void HandleRequestTexture(ReceivedPacketEventArgs args)
+        {
+            var packet = args.UnWrap<PacketRequestTexture>();
+            if (packet == null || string.IsNullOrWhiteSpace(packet.TextureName))
+                return;
+
+            HandleLocalRequestTexture(packet);
+        }
+
+        public void HandleLocalRequestTexture(PacketRequestTexture packet)
+        {
+            if (packet == null || string.IsNullOrWhiteSpace(packet.TextureName))
+                return;
+
+            var localSteamId = MyAPIGateway.Session?.Player?.SteamUserId ?? 0;
+            if (localSteamId == 0 || packet.OwnerSteamId != localSteamId)
+                return;
+
+            byte[] textureBytes;
+            string fileName;
+            string failureReason;
+            if (!TextureTransferHelper.TryReadTextureBytesForSync( packet.OwnerSteamId,
+                    packet.TextureName, out textureBytes, out fileName, out failureReason))
+            {
+                LogHelper.Log(MyLogSeverity.Warning,
+                    $"Client did not find requested texture {TextureTransferHelper.BuildTextureKey(packet.OwnerSteamId, packet.TextureName)} for requester {packet.RequesterSteamId}: {failureReason}");
+                return;
+            }
+
+            LogHelper.LogInfo(
+                $"Client found requested texture {TextureTransferHelper.BuildTextureKey(packet.OwnerSteamId, packet.TextureName)} at {fileName} for requester {packet.RequesterSteamId}");
+
+            int width;
+            int height;
+            TextureTransferHelper.TryGetDdsDimensions(textureBytes, out width, out height);
+
+            var ownerName = MyAPIGateway.Session?.Player?.DisplayName ?? string.Empty;
+            var metadata = new TextureTransferHelper.TextureMetadata
+            {
+                OwnerSteamId = localSteamId,
+                OwnerName = ownerName,
+                RegistrationName = TextureTransferHelper.BuildTextureKey(localSteamId, packet.TextureName),
+                TextureName = TextureTransferHelper.NormalizeTextureName(packet.TextureName),
+                SourceFileName = fileName,
+                Width = width,
+                Height = height,
+                LastUpdatedUtcTicks = DateTime.UtcNow.Ticks
+            };
+
+            var syncPacket = new PacketSyncTexture(packet.OwnerSteamId, packet.TextureName, packet.RequesterSteamId,
+                textureBytes, metadata);
+            LogHelper.LogInfo(
+                $"Client sending requested texture {TextureTransferHelper.BuildTextureKey(packet.OwnerSteamId, packet.TextureName)} to server ({textureBytes.Length} bytes)");
+            if (MyAPIGateway.Session.IsServer && LcdModSessionComponent.Server != null)
+            {
+                LcdModSessionComponent.Server.HandleLocalSyncTexture(syncPacket);
+                return;
+            }
+
+            LcdModSessionComponent.NetworkManager.TransmitToServer(syncPacket, false);
+        }
+
+        public void HandleSyncTexture(ReceivedPacketEventArgs args)
+        {
+            var packet = args.UnWrap<PacketSyncTexture>();
+            if (packet == null || string.IsNullOrWhiteSpace(packet.TextureName) || !TextureTransferHelper.IsValidTexturePayload(packet.Data))
+                return;
+
+            HandleLocalSyncTexture(packet);
+        }
+
+        public void HandleLocalSyncTexture(PacketSyncTexture packet)
+        {
+            if (packet == null || string.IsNullOrWhiteSpace(packet.TextureName) || !TextureTransferHelper.IsValidTexturePayload(packet.Data))
+                return;
+
+            var localSteamId = MyAPIGateway.Session?.Player?.SteamUserId ?? 0;
+            if (localSteamId != 0 && packet.RequesterSteamId != 0 && packet.RequesterSteamId != localSteamId)
+                return;
+
+            LogHelper.LogInfo(
+                $"Client received requested texture {TextureTransferHelper.BuildTextureKey(packet.OwnerSteamId, packet.TextureName)} from server ({packet.Data.Length} bytes)");
+            TextureHelper.SaveRemoteTexture(packet, false);
         }
 
         void FactionStateChanged(MyFactionStateChange change, long faction1, long faction2, long player, long client)
