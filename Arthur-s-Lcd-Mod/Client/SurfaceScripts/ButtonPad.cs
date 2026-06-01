@@ -21,7 +21,10 @@ using SwitchToggleLines = LcdMod.Client.Terminal.Controls.Generic.SwitchToggleLi
 
 namespace LcdMod.Client.SurfaceScripts
 {
+
+#if EXPERIMENTAL
     [MyTextSurfaceScript(ID, TITLE)]
+#endif
     public partial class ButtonPad : InteractiveSurfaceScript,
         IUsesTerminalControl<SwitchToggleLines>,
         IUsesTerminalControl<CheckboxHideEmpty>,

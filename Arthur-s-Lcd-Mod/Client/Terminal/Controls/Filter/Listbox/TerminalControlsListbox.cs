@@ -11,6 +11,8 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Listbox
     {
         public override IMyTerminalControl TerminalControl => _terminalControl;
         IMyTerminalControl _terminalControl;
+        long _selectionBlockId;
+        int _selectionSurfaceIndex = int.MinValue;
         string _selectionScript;
         public List<MyTerminalControlListBoxItem> Selection { get; private set; }
 
@@ -41,9 +43,11 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Listbox
 
             for (var index = 0; index < Selection.Count;)
             {
-                if (itemList.Contains(Selection[index]))
+                MyTerminalControlListBoxItem item;
+                if (TryFindSelectionItem(itemList, Selection[index], out item))
                 {
-                    selected.Add(Selection[index]);
+                    selected.Add(item);
+                    Selection[index] = item;
                     index++;
                 }
                 else
@@ -64,10 +68,24 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Listbox
 
         void UpdateSelectionContext(IMyTerminalBlock block)
         {
+            var blockId = block?.EntityId ?? 0L;
+            var surfaceIndex = block != null ? GetThisSurfaceIndex(block) : -1;
             string script = GetSelectedSurfaceScript(block);
-            if (_selectionScript == script)
-                return;
 
+            if (_selectionBlockId == blockId &&
+                _selectionSurfaceIndex == surfaceIndex &&
+                (string.IsNullOrEmpty(script) ||
+                 string.IsNullOrEmpty(_selectionScript) ||
+                 _selectionScript == script))
+            {
+                if (!string.IsNullOrEmpty(script))
+                    _selectionScript = script;
+
+                return;
+            }
+
+            _selectionBlockId = blockId;
+            _selectionSurfaceIndex = surfaceIndex;
             _selectionScript = script;
             Selection = null;
         }
@@ -83,6 +101,32 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Listbox
                 return null;
 
             return provider.GetSurface(index)?.Script;
+        }
+
+        static bool TryFindSelectionItem(
+            List<MyTerminalControlListBoxItem> itemList,
+            MyTerminalControlListBoxItem selection,
+            out MyTerminalControlListBoxItem item)
+        {
+            item = null;
+            if (itemList == null || selection == null)
+                return false;
+
+            for (var i = 0; i < itemList.Count; i++)
+            {
+                var candidate = itemList[i];
+                if (candidate == null)
+                    continue;
+
+                if (ReferenceEquals(candidate, selection) ||
+                    Equals(candidate.UserData, selection.UserData))
+                {
+                    item = candidate;
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

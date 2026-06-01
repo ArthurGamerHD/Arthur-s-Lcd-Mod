@@ -557,7 +557,9 @@
     <value>连接类型</value>
   </data>
   <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
-    <value>{0} 仅包括此舰船或空间站上的方块。&#xA;{1} 包括通过转子、铰链和活塞等机械方式连接的舰船/空间站。&#xA;{2} 包括机械连接以及使用连接器连接的舰船/空间站。</value>
+    <value>{0} 仅包括此舰船或空间站上的方块。
+{1} 包括通过转子、铰链和活塞等机械方式连接的舰船/空间站。
+{2} 包括机械连接以及使用连接器连接的舰船/空间站。</value>
   </data>
     <data name="LcdMod_Projector_Ingots" xml:space="preserve">
     <value>錠</value>
@@ -621,5 +623,36 @@
   </data>
   <data name="LcdMod_Transfer_Next" xml:space="preserve">
     <value>下一步</value>
+  </data>
+<data name="LcdMod_DigitalPictureFrames" xml:space="preserve">
+    <value>相框</value>
+  </data>
+  <data name="LcdMod_PickTexture" xml:space="preserve">
+    <value>选择纹理</value>
+  </data>
+  <data name="LcdMod_IndexConflict" xml:space="preserve">
+    <value>表面索引冲突</value>
+  </data>
+  <data name="LcdMod_IndexConflictDetails" xml:space="preserve">
+    <value>另一个脚本实例已在使用此表面索引。</value>
+  </data>
+  <data name="LcdMod_BSoD_Header" xml:space="preserve">
+    <value>你的空间站遇到问题，需要重新启动。
+我们会等待一会儿，然后为你重新启动。</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoIntro" xml:space="preserve">
+    <value>有关此问题的更多信息，</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoUrl" xml:space="preserve">
+    <value>请访问</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoQr" xml:space="preserve">
+    <value>或扫描此二维码。</value>
+  </data>
+  <data name="LcdMod_BSoD_SupportIntro" xml:space="preserve">
+    <value>如果你联系支持人员，请向他们提供以下信息：</value>
+  </data>
+  <data name="LcdMod_BSoD_ExceptionCode" xml:space="preserve">
+    <value>异常代码：</value>
   </data>
 </root>

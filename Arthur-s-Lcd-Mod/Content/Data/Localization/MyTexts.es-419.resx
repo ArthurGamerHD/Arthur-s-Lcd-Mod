@@ -557,7 +557,9 @@
     <value>Tipo de enlace</value>
   </data>
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
-    <value>{0} Incluye solo los bloques de esta nave o estación. &#xA;{1} incluye naves/estaciones conectadas mecánicamente, como las conectadas por rotores, bisagras y pistones. &#xA;{2} incluye conexiones mecánicas y naves/estaciones conectadas mediante conectores.</value>
+    <value>{0} Incluye solo los bloques de esta nave o estación. 
+{1} incluye naves/estaciones conectadas mecánicamente, como las conectadas por rotores, bisagras y pistones. 
+{2} incluye conexiones mecánicas y naves/estaciones conectadas mediante conectores.</value>
   </data>
     <data name="LcdMod_Projector_Ingots" xml:space="preserve">
     <value>Lingotes</value>
@@ -621,5 +623,36 @@
   </data>
   <data name="LcdMod_Transfer_Next" xml:space="preserve">
     <value>Siguiente</value>
+  </data>
+<data name="LcdMod_DigitalPictureFrames" xml:space="preserve">
+    <value>Marco de fotos</value>
+  </data>
+  <data name="LcdMod_PickTexture" xml:space="preserve">
+    <value>Elegir textura</value>
+  </data>
+  <data name="LcdMod_IndexConflict" xml:space="preserve">
+    <value>Conflicto de índice de superficie</value>
+  </data>
+  <data name="LcdMod_IndexConflictDetails" xml:space="preserve">
+    <value>Otra instancia del script ya está usando este índice de superficie.</value>
+  </data>
+  <data name="LcdMod_BSoD_Header" xml:space="preserve">
+    <value>Tu estación encontró un problema y necesita reiniciarse.
+Esperaremos un momento y luego la reiniciaremos por ti.</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoIntro" xml:space="preserve">
+    <value>Para obtener más información sobre este problema,</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoUrl" xml:space="preserve">
+    <value>visita</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoQr" xml:space="preserve">
+    <value>o escanea este código QR.</value>
+  </data>
+  <data name="LcdMod_BSoD_SupportIntro" xml:space="preserve">
+    <value>Si llamas a soporte, entrégales esta información:</value>
+  </data>
+  <data name="LcdMod_BSoD_ExceptionCode" xml:space="preserve">
+    <value>Código de excepción:</value>
   </data>
 </root>

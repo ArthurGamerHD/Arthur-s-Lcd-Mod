@@ -6,7 +6,9 @@ using LcdMod.Client.Gui.ControlsTemplates.Inputs;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Helpers;
 using LcdMod.Common.Helpers;
+using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
+using VRage.Input;
 using VRageMath;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
 using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
@@ -58,6 +60,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
         bool _spritesLoaded;
         string _searchText = string.Empty;
+        string _selectionAnchorSpriteName = string.Empty;
 
         public SpritePicker(IApp parentApp)
             : this(parentApp, null, null)
@@ -573,7 +576,21 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
             if (AllowMultiSelection)
             {
-                ToggleSelectedSprite(model.SpriteName);
+                if (IsShiftPressed())
+                {
+                    SelectSpriteRange(model.SpriteName);
+                }
+                else if (IsCtrlPressed())
+                {
+                    ToggleSelectedSprite(model.SpriteName);
+                    _selectionAnchorSpriteName = model.SpriteName;
+                }
+                else
+                {
+                    SetSelectedSprites(new[] { model.SpriteName });
+                    _selectionAnchorSpriteName = model.SpriteName;
+                }
+
                 if (RequestRedraw != null)
                     RequestRedraw();
 
@@ -771,6 +788,76 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 return;
 
             _selectedSpriteNames.Add(normalized);
+        }
+
+        void SelectSpriteRange(string spriteName)
+        {
+            if (string.IsNullOrWhiteSpace(spriteName))
+                return;
+
+            if (string.IsNullOrWhiteSpace(_selectionAnchorSpriteName))
+            {
+                SetSelectedSprites(new[] { spriteName });
+                _selectionAnchorSpriteName = spriteName;
+                return;
+            }
+
+            var anchorIndex = FindFilteredSpriteIndex(_selectionAnchorSpriteName);
+            var targetIndex = FindFilteredSpriteIndex(spriteName);
+            if (anchorIndex < 0 || targetIndex < 0)
+            {
+                SetSelectedSprites(new[] { spriteName });
+                _selectionAnchorSpriteName = spriteName;
+                return;
+            }
+
+            var start = Math.Min(anchorIndex, targetIndex);
+            var end = Math.Max(anchorIndex, targetIndex);
+            var range = new List<string>(end - start + 1);
+            for (var i = start; i <= end; i++)
+            {
+                var model = _filteredSprites[i];
+                if (model != null && !string.IsNullOrWhiteSpace(model.SpriteName))
+                    range.Add(model.SpriteName);
+            }
+
+            SetSelectedSprites(range);
+        }
+
+        int FindFilteredSpriteIndex(string spriteName)
+        {
+            if (string.IsNullOrWhiteSpace(spriteName))
+                return -1;
+
+            for (var i = 0; i < _filteredSprites.Count; i++)
+            {
+                var model = _filteredSprites[i];
+                if (model != null &&
+                    string.Equals(model.SpriteName, spriteName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        static bool IsCtrlPressed()
+        {
+            var input = MyAPIGateway.Input;
+            return input != null &&
+                   (input.IsKeyPress(MyKeys.Control) ||
+                    input.IsKeyPress(MyKeys.LeftControl) ||
+                    input.IsKeyPress(MyKeys.RightControl));
+        }
+
+        static bool IsShiftPressed()
+        {
+            var input = MyAPIGateway.Input;
+            return input != null &&
+                   (input.IsKeyPress(MyKeys.Shift) ||
+                    input.IsKeyPress(MyKeys.LeftShift) ||
+                    input.IsKeyPress(MyKeys.RightShift));
         }
 
         static void BeginClip(List<MySprite> sprites, RectangleF bounds)

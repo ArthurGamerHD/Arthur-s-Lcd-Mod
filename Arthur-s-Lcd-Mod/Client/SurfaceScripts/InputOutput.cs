@@ -14,7 +14,9 @@ using VRageMath;
 
 namespace LcdMod.Client.SurfaceScripts
 {
+#if EXPERIMENTAL
     [MyTextSurfaceScript(ID, "Input / Output")]
+#endif
     public partial class InputOutputLcdSurfaceScript : InteractiveSurfaceScript,
         IUsesTerminalControlGroup<BlocksFilterTerminalControlGroup>
     {

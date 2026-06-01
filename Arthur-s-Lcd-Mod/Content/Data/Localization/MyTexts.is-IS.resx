@@ -561,7 +561,9 @@
     <value>Tegund tengingar</value>
   </data>
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
-    <value>{0} Inniheldur aðeins kubba á þessu skipi eða þessari stöð. &#xA;{1} inniheldur vélrænt tengd skip/stöðvar, t.d. með snúðum, lömum og stimplum. &#xA;{2} inniheldur vélrænar tengingar og skip/stöðvar sem eru tengd með tengjum.</value>
+    <value>{0} Inniheldur aðeins kubba á þessu skipi eða þessari stöð. 
+{1} inniheldur vélrænt tengd skip/stöðvar, t.d. með snúðum, lömum og stimplum. 
+{2} inniheldur vélrænar tengingar og skip/stöðvar sem eru tengd með tengjum.</value>
   </data>
     <data name="LcdMod_Projector_Ingots" xml:space="preserve">
     <value>Stengur</value>
@@ -625,5 +627,36 @@
   </data>
   <data name="LcdMod_Transfer_Next" xml:space="preserve">
     <value>Next</value>
+  </data>
+<data name="LcdMod_DigitalPictureFrames" xml:space="preserve">
+    <value>Myndarammi</value>
+  </data>
+  <data name="LcdMod_PickTexture" xml:space="preserve">
+    <value>Velja áferð</value>
+  </data>
+  <data name="LcdMod_IndexConflict" xml:space="preserve">
+    <value>Árekstur yfirborðsvísis</value>
+  </data>
+  <data name="LcdMod_IndexConflictDetails" xml:space="preserve">
+    <value>Annað tilvik af forskriftinni notar nú þegar þennan yfirborðsvísi.</value>
+  </data>
+  <data name="LcdMod_BSoD_Header" xml:space="preserve">
+    <value>Stöðin þín lenti í vandamáli og þarf að endurræsa.
+Við bíðum í smá stund og endurræsum hana síðan fyrir þig.</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoIntro" xml:space="preserve">
+    <value>Til að fá frekari upplýsingar um þetta vandamál,</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoUrl" xml:space="preserve">
+    <value>farðu á</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoQr" xml:space="preserve">
+    <value>eða skannaðu þennan QR-kóða.</value>
+  </data>
+  <data name="LcdMod_BSoD_SupportIntro" xml:space="preserve">
+    <value>Ef þú hefur samband við þjónustuaðila skaltu gefa honum þessar upplýsingar:</value>
+  </data>
+  <data name="LcdMod_BSoD_ExceptionCode" xml:space="preserve">
+    <value>Undantekningarkóði:</value>
   </data>
 </root>

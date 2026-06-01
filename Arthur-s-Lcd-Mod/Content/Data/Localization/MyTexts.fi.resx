@@ -557,7 +557,9 @@
     <value>Linkkityyppi</value>
   </data>
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
-    <value>{0} Sisältää vain tämän aluksen tai aseman lohkot. &#xA;{1} sisältää mekaanisesti yhdistetyt alukset/asemat, kuten roottoreilla, saranoilla ja männillä yhdistetyt. &#xA;{2} sisältää mekaaniset yhteydet sekä liittimillä yhdistetyt alukset/asemat.</value>
+    <value>{0} Sisältää vain tämän aluksen tai aseman lohkot. 
+{1} sisältää mekaanisesti yhdistetyt alukset/asemat, kuten roottoreilla, saranoilla ja männillä yhdistetyt. 
+{2} sisältää mekaaniset yhteydet sekä liittimillä yhdistetyt alukset/asemat.</value>
   </data>
     <data name="LcdMod_Projector_Ingots" xml:space="preserve">
     <value>Harkot</value>
@@ -621,5 +623,36 @@
   </data>
   <data name="LcdMod_Transfer_Next" xml:space="preserve">
     <value>Seuraava</value>
+  </data>
+<data name="LcdMod_DigitalPictureFrames" xml:space="preserve">
+    <value>Kuvakehys</value>
+  </data>
+  <data name="LcdMod_PickTexture" xml:space="preserve">
+    <value>Valitse tekstuuri</value>
+  </data>
+  <data name="LcdMod_IndexConflict" xml:space="preserve">
+    <value>Pintaindeksin ristiriita</value>
+  </data>
+  <data name="LcdMod_IndexConflictDetails" xml:space="preserve">
+    <value>Toinen komentosarjan ilmentymä käyttää jo tätä pintaindeksiä.</value>
+  </data>
+  <data name="LcdMod_BSoD_Header" xml:space="preserve">
+    <value>Asemasi kohtasi ongelman ja se on käynnistettävä uudelleen.
+Odotamme hetken ja käynnistämme sen sitten uudelleen puolestasi.</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoIntro" xml:space="preserve">
+    <value>Lisätietoja tästä ongelmasta</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoUrl" xml:space="preserve">
+    <value>löydät osoitteesta</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoQr" xml:space="preserve">
+    <value>tai skannaa tämä QR-koodi.</value>
+  </data>
+  <data name="LcdMod_BSoD_SupportIntro" xml:space="preserve">
+    <value>Jos otat yhteyttä tukeen, anna heille nämä tiedot:</value>
+  </data>
+  <data name="LcdMod_BSoD_ExceptionCode" xml:space="preserve">
+    <value>Poikkeuskoodi:</value>
   </data>
 </root>

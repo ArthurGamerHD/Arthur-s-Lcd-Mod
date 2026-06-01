@@ -557,7 +557,9 @@
     <value>Тип связи</value>
   </data>
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
-    <value>{0} Включает только блоки на этом корабле или станции. &#xA;{1} включает механически соединенные корабли/станции, например через роторы, шарниры и поршни. &#xA;{2} включает механические соединения и корабли/станции, подключенные с помощью коннекторов.</value>
+    <value>{0} Включает только блоки на этом корабле или станции. 
+{1} включает механически соединенные корабли/станции, например через роторы, шарниры и поршни. 
+{2} включает механические соединения и корабли/станции, подключенные с помощью коннекторов.</value>
   </data>
     <data name="LcdMod_Projector_Ingots" xml:space="preserve">
     <value>Слитки</value>
@@ -621,5 +623,36 @@
   </data>
   <data name="LcdMod_Transfer_Next" xml:space="preserve">
     <value>Далее</value>
+  </data>
+<data name="LcdMod_DigitalPictureFrames" xml:space="preserve">
+    <value>Фоторамка</value>
+  </data>
+  <data name="LcdMod_PickTexture" xml:space="preserve">
+    <value>Выбрать текстуру</value>
+  </data>
+  <data name="LcdMod_IndexConflict" xml:space="preserve">
+    <value>Конфликт индекса поверхности</value>
+  </data>
+  <data name="LcdMod_IndexConflictDetails" xml:space="preserve">
+    <value>Другой экземпляр скрипта уже использует этот индекс поверхности.</value>
+  </data>
+  <data name="LcdMod_BSoD_Header" xml:space="preserve">
+    <value>На вашей станции возникла проблема, и ее нужно перезапустить.
+Мы немного подождем, а затем перезапустим ее для вас.</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoIntro" xml:space="preserve">
+    <value>Для получения дополнительной информации об этой проблеме</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoUrl" xml:space="preserve">
+    <value>посетите</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoQr" xml:space="preserve">
+    <value>или отсканируйте этот QR-код.</value>
+  </data>
+  <data name="LcdMod_BSoD_SupportIntro" xml:space="preserve">
+    <value>Если вы обратитесь в поддержку, сообщите им эту информацию:</value>
+  </data>
+  <data name="LcdMod_BSoD_ExceptionCode" xml:space="preserve">
+    <value>Код исключения:</value>
   </data>
 </root>

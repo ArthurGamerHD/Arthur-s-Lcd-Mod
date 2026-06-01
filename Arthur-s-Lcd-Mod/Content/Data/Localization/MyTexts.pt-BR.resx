@@ -558,7 +558,9 @@
     <value>Tipo de conexão</value>
   </data>
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
-    <value>{0} Inclui apenas blocos nesta grid. &#xA;{1} inclui grids conectadas mecanicamente, como por rotores, dobradiças e pistões. &#xA;{2} inclui conexões mecânicas e naves/estações conectadas via conectores.</value>
+    <value>{0} Inclui apenas blocos nesta grid. 
+{1} inclui grids conectadas mecanicamente, como por rotores, dobradiças e pistões. 
+{2} inclui conexões mecânicas e naves/estações conectadas via conectores.</value>
   </data>
     <data name="LcdMod_Projector_Ingots" xml:space="preserve">
     <value>Barras</value>
@@ -622,5 +624,36 @@
   </data>
   <data name="LcdMod_Transfer_Next" xml:space="preserve">
     <value>Proximo</value>
+  </data>
+<data name="LcdMod_DigitalPictureFrames" xml:space="preserve">
+    <value>Porta-retrato</value>
+  </data>
+  <data name="LcdMod_PickTexture" xml:space="preserve">
+    <value>Escolher textura</value>
+  </data>
+  <data name="LcdMod_IndexConflict" xml:space="preserve">
+    <value>Conflito de índice da superfície</value>
+  </data>
+  <data name="LcdMod_IndexConflictDetails" xml:space="preserve">
+    <value>Outra instância do script já está usando este índice de superfície.</value>
+  </data>
+  <data name="LcdMod_BSoD_Header" xml:space="preserve">
+    <value>Sua estação encontrou um problema e precisa reiniciar.
+Vamos aguardar um pouco e então reiniciá-la para você.</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoIntro" xml:space="preserve">
+    <value>Para mais informações sobre este problema,</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoUrl" xml:space="preserve">
+    <value>acesse</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoQr" xml:space="preserve">
+    <value>ou leia este código QR.</value>
+  </data>
+  <data name="LcdMod_BSoD_SupportIntro" xml:space="preserve">
+    <value>Se você chamar uma pessoa do suporte, forneça estas informações:</value>
+  </data>
+  <data name="LcdMod_BSoD_ExceptionCode" xml:space="preserve">
+    <value>Código da exceção:</value>
   </data>
 </root>

@@ -557,7 +557,9 @@
     <value>Kapcsolat típusa</value>
   </data>
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
-    <value>{0} Csak ezen a hajón vagy állomáson lévő blokkokat tartalmazza. &#xA;{1} mechanikusan kapcsolt hajókat/állomásokat tartalmaz, például rotorokkal, zsanérokkal és dugattyúkkal. &#xA;{2} mechanikai kapcsolatokat és konnektorokkal összekapcsolt hajókat/állomásokat tartalmaz.</value>
+    <value>{0} Csak ezen a hajón vagy állomáson lévő blokkokat tartalmazza. 
+{1} mechanikusan kapcsolt hajókat/állomásokat tartalmaz, például rotorokkal, zsanérokkal és dugattyúkkal. 
+{2} mechanikai kapcsolatokat és konnektorokkal összekapcsolt hajókat/állomásokat tartalmaz.</value>
   </data>
     <data name="LcdMod_Projector_Ingots" xml:space="preserve">
     <value>Öntvények</value>
@@ -621,5 +623,36 @@
   </data>
   <data name="LcdMod_Transfer_Next" xml:space="preserve">
     <value>Next</value>
+  </data>
+<data name="LcdMod_DigitalPictureFrames" xml:space="preserve">
+    <value>Képkeret</value>
+  </data>
+  <data name="LcdMod_PickTexture" xml:space="preserve">
+    <value>Textúra kiválasztása</value>
+  </data>
+  <data name="LcdMod_IndexConflict" xml:space="preserve">
+    <value>Felületindex-ütközés</value>
+  </data>
+  <data name="LcdMod_IndexConflictDetails" xml:space="preserve">
+    <value>Egy másik szkriptpéldány már használja ezt a felületindexet.</value>
+  </data>
+  <data name="LcdMod_BSoD_Header" xml:space="preserve">
+    <value>Az állomás problémába ütközött, és újra kell indítani.
+Várunk egy kicsit, majd újraindítjuk helyetted.</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoIntro" xml:space="preserve">
+    <value>További információért erről a problémáról</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoUrl" xml:space="preserve">
+    <value>keresd fel</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoQr" xml:space="preserve">
+    <value>vagy olvasd be ezt a QR-kódot.</value>
+  </data>
+  <data name="LcdMod_BSoD_SupportIntro" xml:space="preserve">
+    <value>Ha kapcsolatba lépsz az ügyfélszolgálattal, add meg nekik ezeket az adatokat:</value>
+  </data>
+  <data name="LcdMod_BSoD_ExceptionCode" xml:space="preserve">
+    <value>Kivételkód:</value>
   </data>
 </root>

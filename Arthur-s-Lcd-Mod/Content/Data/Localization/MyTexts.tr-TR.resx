@@ -557,7 +557,9 @@
     <value>Bağlantı türü</value>
   </data>
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
-    <value>{0} Yalnızca bu gemi veya istasyondaki blokları içerir. &#xA;{1} rotorlar, menteşeler ve pistonlar gibi mekanik olarak bağlı gemileri/istasyonları içerir. &#xA;{2} mekanik bağlantıları ve konektörlerle bağlanan gemileri/istasyonları içerir.</value>
+    <value>{0} Yalnızca bu gemi veya istasyondaki blokları içerir. 
+{1} rotorlar, menteşeler ve pistonlar gibi mekanik olarak bağlı gemileri/istasyonları içerir. 
+{2} mekanik bağlantıları ve konektörlerle bağlanan gemileri/istasyonları içerir.</value>
   </data>
     <data name="LcdMod_Projector_Ingots" xml:space="preserve">
     <value>Külçeler</value>
@@ -621,5 +623,36 @@
   </data>
   <data name="LcdMod_Transfer_Next" xml:space="preserve">
     <value>Ileri</value>
+  </data>
+<data name="LcdMod_DigitalPictureFrames" xml:space="preserve">
+    <value>Resim çerçevesi</value>
+  </data>
+  <data name="LcdMod_PickTexture" xml:space="preserve">
+    <value>Doku seç</value>
+  </data>
+  <data name="LcdMod_IndexConflict" xml:space="preserve">
+    <value>Yüzey dizini çakışması</value>
+  </data>
+  <data name="LcdMod_IndexConflictDetails" xml:space="preserve">
+    <value>Başka bir betik örneği zaten bu yüzey dizinini kullanıyor.</value>
+  </data>
+  <data name="LcdMod_BSoD_Header" xml:space="preserve">
+    <value>İstasyonunuz bir sorunla karşılaştı ve yeniden başlatılması gerekiyor.
+Bir süre bekleyeceğiz ve ardından sizin için yeniden başlatacağız.</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoIntro" xml:space="preserve">
+    <value>Bu sorun hakkında daha fazla bilgi için</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoUrl" xml:space="preserve">
+    <value>ziyaret edin</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoQr" xml:space="preserve">
+    <value>veya bu QR kodunu tarayın.</value>
+  </data>
+  <data name="LcdMod_BSoD_SupportIntro" xml:space="preserve">
+    <value>Destekle iletişime geçerseniz, onlara şu bilgileri verin:</value>
+  </data>
+  <data name="LcdMod_BSoD_ExceptionCode" xml:space="preserve">
+    <value>Özel durum kodu:</value>
   </data>
 </root>

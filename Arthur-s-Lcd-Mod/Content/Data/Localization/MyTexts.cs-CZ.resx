@@ -557,7 +557,9 @@
     <value>Typ propojení</value>
   </data>
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
-    <value>{0} Zahrnuje pouze bloky na této lodi nebo stanici. &#xA;{1} zahrnuje mechanicky připojené lodě/stanice, například přes rotory, závěsy a písty. &#xA;{2} zahrnuje mechanická připojení a lodě/stanice připojené pomocí konektorů.</value>
+    <value>{0} Zahrnuje pouze bloky na této lodi nebo stanici. 
+{1} zahrnuje mechanicky připojené lodě/stanice, například přes rotory, závěsy a písty. 
+{2} zahrnuje mechanická připojení a lodě/stanice připojené pomocí konektorů.</value>
   </data>
     <data name="LcdMod_Projector_Ingots" xml:space="preserve">
     <value>Ingoty</value>
@@ -621,5 +623,36 @@
   </data>
   <data name="LcdMod_Transfer_Next" xml:space="preserve">
     <value>Next</value>
+  </data>
+<data name="LcdMod_DigitalPictureFrames" xml:space="preserve">
+    <value>Rámeček obrázku</value>
+  </data>
+  <data name="LcdMod_PickTexture" xml:space="preserve">
+    <value>Vybrat texturu</value>
+  </data>
+  <data name="LcdMod_IndexConflict" xml:space="preserve">
+    <value>Konflikt indexu povrchu</value>
+  </data>
+  <data name="LcdMod_IndexConflictDetails" xml:space="preserve">
+    <value>Jiná instance skriptu už používá tento index povrchu.</value>
+  </data>
+  <data name="LcdMod_BSoD_Header" xml:space="preserve">
+    <value>Vaše stanice narazila na problém a musí se restartovat.
+Chvíli počkáme a potom ji za vás restartujeme.</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoIntro" xml:space="preserve">
+    <value>Další informace o tomto problému</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoUrl" xml:space="preserve">
+    <value>najdete na</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoQr" xml:space="preserve">
+    <value>nebo naskenujte tento QR kód.</value>
+  </data>
+  <data name="LcdMod_BSoD_SupportIntro" xml:space="preserve">
+    <value>Pokud budete kontaktovat podporu, předejte jí tyto informace:</value>
+  </data>
+  <data name="LcdMod_BSoD_ExceptionCode" xml:space="preserve">
+    <value>Kód výjimky:</value>
   </data>
 </root>

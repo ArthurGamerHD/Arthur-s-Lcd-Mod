@@ -557,7 +557,9 @@
     <value>Тип зв'язку</value>
   </data>
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
-    <value>{0} Містить лише блоки на цьому кораблі або станції. &#xA;{1} містить механічно з'єднані кораблі/станції, наприклад через ротори, шарніри та поршні. &#xA;{2} містить механічні з'єднання та кораблі/станції, з'єднані за допомогою конекторів.</value>
+    <value>{0} Містить лише блоки на цьому кораблі або станції. 
+{1} містить механічно з'єднані кораблі/станції, наприклад через ротори, шарніри та поршні. 
+{2} містить механічні з'єднання та кораблі/станції, з'єднані за допомогою конекторів.</value>
   </data>
     <data name="LcdMod_Projector_Ingots" xml:space="preserve">
     <value>Зливки</value>
@@ -621,5 +623,36 @@
   </data>
   <data name="LcdMod_Transfer_Next" xml:space="preserve">
     <value>Далі</value>
+  </data>
+<data name="LcdMod_DigitalPictureFrames" xml:space="preserve">
+    <value>Фоторамка</value>
+  </data>
+  <data name="LcdMod_PickTexture" xml:space="preserve">
+    <value>Вибрати текстуру</value>
+  </data>
+  <data name="LcdMod_IndexConflict" xml:space="preserve">
+    <value>Конфлікт індексу поверхні</value>
+  </data>
+  <data name="LcdMod_IndexConflictDetails" xml:space="preserve">
+    <value>Інший екземпляр скрипта вже використовує цей індекс поверхні.</value>
+  </data>
+  <data name="LcdMod_BSoD_Header" xml:space="preserve">
+    <value>На вашій станції виникла проблема, і її потрібно перезапустити.
+Ми трохи зачекаємо, а потім перезапустимо її для вас.</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoIntro" xml:space="preserve">
+    <value>Щоб отримати більше інформації про цю проблему,</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoUrl" xml:space="preserve">
+    <value>відвідайте</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoQr" xml:space="preserve">
+    <value>або відскануйте цей QR-код.</value>
+  </data>
+  <data name="LcdMod_BSoD_SupportIntro" xml:space="preserve">
+    <value>Якщо ви звертаєтесь до служби підтримки, надайте їм цю інформацію:</value>
+  </data>
+  <data name="LcdMod_BSoD_ExceptionCode" xml:space="preserve">
+    <value>Код винятку:</value>
   </data>
 </root>
