@@ -31,11 +31,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         const float SPACING_PIXELS = 10f;
 
         const float SEARCH_HEIGHT_PIXELS = 38f;
+        const float APPLY_BUTTON_WIDTH_PIXELS = 116f;
+        const float APPLY_BUTTON_HEIGHT_PIXELS = 36f;
         const float ROW_HEIGHT_PIXELS = 40f;
         const float ROW_GAP_PIXELS = 3f;
         const float ICON_SIZE_PIXELS = 32f;
         const float SCROLLER_WIDTH_PIXELS = 12f;
 
+        readonly List<string> _selectedSpriteNames = new List<string>();
+        readonly HashSet<string> _selectedSpriteNameSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         readonly Dictionary<string, SpriteRowModel> _spriteModelsByName =
             new Dictionary<string, SpriteRowModel>(StringComparer.OrdinalIgnoreCase);
         readonly List<SpriteRowModel> _allSprites = new List<SpriteRowModel>();
@@ -45,9 +49,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
         TextInput _searchInput;
         TextInputModel _searchInputModel;
+        Button _applyButton;
 
         ControlStyle _searchStyle;
         ControlStyle _rowStyle;
+        ControlStyle _selectedRowStyle;
+        ControlStyle _applyStyle;
 
         bool _spritesLoaded;
         string _searchText = string.Empty;
@@ -73,7 +80,23 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             _scrollPanel.ScrollChanged = OnScrollChanged;
         }
 
+        public SpritePicker(
+            IApp parentApp,
+            Action<string[]> onApplied,
+            IEnumerable<string> selectedSprites,
+            Action requestRedraw = null)
+            : this(parentApp, null, requestRedraw)
+        {
+            AllowMultiSelection = true;
+            OnApplied = onApplied;
+            SetSelectedSprites(selectedSprites);
+        }
+
         public Action<string> OnSelected { get; set; }
+
+        public Action<string[]> OnApplied { get; set; }
+
+        public bool AllowMultiSelection { get; set; }
 
         public Action RequestRedraw { get; set; }
 
@@ -162,7 +185,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 searchHeight);
 
             var listTop = searchRect.Bottom + spacing;
-            var listBottom = cardRect.Bottom - innerPadding.Y;
+            var footerButtonHeight = Math.Max(APPLY_BUTTON_HEIGHT_PIXELS * scale, FormatingHelper.LineHeight(0.54f * layoutScale, surface) + 14f * scale);
+            var footerHeight = AllowMultiSelection ? footerButtonHeight + spacing : 0f;
+            var listBottom = cardRect.Bottom - innerPadding.Y - footerHeight;
             var listRect = new RectangleF(
                 cardRect.X + innerPadding.X,
                 listTop,
@@ -176,6 +201,26 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             _searchInput.Render(renderContext, Sprites);
 
             RenderSpriteList(renderContext, listRect, scale, surface);
+
+            if (AllowMultiSelection)
+            {
+                var applyButtonWidth = Math.Min(
+                    Math.Max(APPLY_BUTTON_WIDTH_PIXELS * scale, 92f * scale),
+                    Math.Max(1f, cardRect.Width - innerPadding.X * 2f));
+                var applyRect = new RectangleF(
+                    cardRect.Right - innerPadding.X - applyButtonWidth,
+                    cardRect.Bottom - innerPadding.Y - footerButtonHeight,
+                    applyButtonWidth,
+                    footerButtonHeight);
+
+                EnsureApplyButton(applyRect);
+                ContainerControl.AddChild(_applyButton);
+                _applyButton.Render(renderContext, Sprites);
+            }
+            else if (_applyButton != null)
+            {
+                _applyButton.SetVisible(false);
+            }
         }
 
         void DrawBackground(IMyTextSurface surface, float scale, RectangleF cardRect)
@@ -396,10 +441,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
         void ConfigureRowControl(RectangleControl control, RectangleF rect, SpriteRowModel model)
         {
+            model.IsSelected = AllowMultiSelection && _selectedSpriteNameSet.Contains(model.SpriteName);
             control.SetRect(rect);
             control.SetDataContext(model);
             control.SetCursor(CursorType.Hand);
-            control.SetStyle(GetRowStyle());
+            control.SetStyle(model.IsSelected ? GetSelectedRowStyle() : GetRowStyle());
             control.CustomRender = RenderSpriteRow;
             control.SetVisible(true);
         }
@@ -412,8 +458,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
             var rect = entry.Bounds;
             var hovered = rect.Contains(context.CursorPosition);
-            var backgroundColor = context.Style.GetPanelColor(hovered);
-            var foregroundColor = context.Style.GetTextColor(hovered);
+            var selected = AllowMultiSelection && model.IsSelected;
+            var backgroundColor = selected
+                ? GetThemeColor(Constants.PRIMARY_CONTAINER)
+                : context.Style.GetPanelColor(hovered);
+            var foregroundColor = selected
+                ? GetThemeColor(Constants.ON_PRIMARY_CONTAINER)
+                : context.Style.GetTextColor(hovered);
 
             Border.CreateSpritesFromRect(
                 rect,
@@ -520,12 +571,35 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             if (model == null || string.IsNullOrEmpty(model.SpriteName))
                 return;
 
+            if (AllowMultiSelection)
+            {
+                ToggleSelectedSprite(model.SpriteName);
+                if (RequestRedraw != null)
+                    RequestRedraw();
+
+                return;
+            }
+
             var callback = OnSelected;
 
             Dismiss();
 
             if (callback != null)
                 callback(model.SpriteName);
+
+            if (RequestRedraw != null)
+                RequestRedraw();
+        }
+
+        void OnApplyClicked(ButtonModel model, object sender)
+        {
+            var callback = OnApplied;
+            var selectedSprites = _selectedSpriteNames.ToArray();
+
+            Dismiss();
+
+            if (callback != null)
+                callback(selectedSprites);
 
             if (RequestRedraw != null)
                 RequestRedraw();
@@ -566,6 +640,139 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             return _rowStyle;
         }
 
+        ControlStyle GetSelectedRowStyle()
+        {
+            if (_selectedRowStyle == null)
+            {
+                _selectedRowStyle = ControlStyle.FromThemeRoles(
+                    Constants.ON_PRIMARY_CONTAINER,
+                    Constants.PRIMARY_CONTAINER,
+                    Constants.PRIMARY_CONTAINER + Constants.HOVER,
+                    Constants.ON_PRIMARY_CONTAINER,
+                    ParentTheme);
+            }
+            else
+            {
+                _selectedRowStyle.ThemeColors = ParentTheme;
+            }
+
+            return _selectedRowStyle;
+        }
+
+        ControlStyle GetApplyStyle()
+        {
+            if (_applyStyle == null)
+                _applyStyle = Button.CreatePrimaryButtonStyle(ParentTheme);
+            else
+                _applyStyle.ThemeColors = ParentTheme;
+
+            return _applyStyle;
+        }
+
+        void EnsureApplyButton(RectangleF rect)
+        {
+            if (_applyButton == null)
+                _applyButton = new Button(rect, new ButtonModel { Text = "Apply", Clicked = OnApplyClicked });
+            else
+                _applyButton.SetRect(rect);
+
+            var model = _applyButton.DataContext as ButtonModel;
+            if (model != null)
+            {
+                model.Text = "Apply";
+                model.Enabled = true;
+                model.Clicked = OnApplyClicked;
+            }
+
+            _applyButton.SetStyle(GetApplyStyle());
+            _applyButton.CustomRender = RenderTextButton;
+            _applyButton.SetCursor(CursorType.Hand);
+            _applyButton.SetVisible(true);
+        }
+
+        void RenderTextButton(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        {
+            var rect = control.Bounds;
+            var buttonModel = control.DataContext as ButtonModel;
+            var enabled = buttonModel == null || buttonModel.Enabled;
+            var hovered = enabled && rect.Contains(context.CursorPosition);
+            Border.CreateSpritesFromRect(rect, sprites, context.Style.GetPanelColor(hovered), radiusScale: context.Scale);
+
+            var text = buttonModel == null ? string.Empty : buttonModel.Text;
+            var textScale = 0.54f * context.Scale * context.FontScale;
+            var availableWidth = Math.Max(0f, rect.Width - 12f * context.Scale);
+            var trimmed = TrimText(text, availableWidth, textScale, context.Surface);
+            var textHeight = FormatingHelper.LineHeight(textScale, context.Surface);
+
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXT,
+                Data = trimmed,
+                Position = new Vector2(rect.Center.X, rect.Center.Y - textHeight * 0.5f),
+                Color = context.Style.GetTextColor(hovered),
+                FontId = "White",
+                RotationOrScale = textScale,
+                Alignment = TextAlignment.CENTER
+            });
+        }
+
+        static string TrimText(string text, float width, float scale, IMyTextSurface surface)
+        {
+            if (string.IsNullOrEmpty(text) || width <= 0f || surface == null)
+                return string.Empty;
+
+            var size = FormatingHelper.GetSizeInPixel(text, "White", scale, surface);
+            if (size.X <= width)
+                return text;
+
+            return FormatingHelper.TrimName(text, Math.Max(1, (int)(text.Length * width / Math.Max(1f, size.X))));
+        }
+
+        void SetSelectedSprites(IEnumerable<string> spriteNames)
+        {
+            _selectedSpriteNames.Clear();
+            _selectedSpriteNameSet.Clear();
+
+            if (spriteNames == null)
+                return;
+
+            foreach (var spriteName in spriteNames)
+                AddSelectedSprite(spriteName);
+        }
+
+        void ToggleSelectedSprite(string spriteName)
+        {
+            if (string.IsNullOrWhiteSpace(spriteName))
+                return;
+
+            var normalized = spriteName.Trim();
+            if (_selectedSpriteNameSet.Contains(normalized))
+            {
+                _selectedSpriteNameSet.Remove(normalized);
+                for (var i = _selectedSpriteNames.Count - 1; i >= 0; i--)
+                {
+                    if (string.Equals(_selectedSpriteNames[i], normalized, StringComparison.OrdinalIgnoreCase))
+                        _selectedSpriteNames.RemoveAt(i);
+                }
+
+                return;
+            }
+
+            AddSelectedSprite(normalized);
+        }
+
+        void AddSelectedSprite(string spriteName)
+        {
+            if (string.IsNullOrWhiteSpace(spriteName))
+                return;
+
+            var normalized = spriteName.Trim();
+            if (!_selectedSpriteNameSet.Add(normalized))
+                return;
+
+            _selectedSpriteNames.Add(normalized);
+        }
+
         static void BeginClip(List<MySprite> sprites, RectangleF bounds)
         {
             sprites.Add(new MySprite
@@ -601,6 +808,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             }
 
             public string SpriteName { get; private set; }
+
+            public bool IsSelected { get; set; }
 
             public override string ToString()
             {

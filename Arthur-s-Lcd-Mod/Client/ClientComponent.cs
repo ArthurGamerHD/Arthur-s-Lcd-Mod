@@ -41,13 +41,12 @@ namespace LcdMod.Client
             var group = CommandManager.GetOrCreateGroup("/lcdMod", new CmdGroupInitializer(7));
             group.TryAdd("FactionColor", FactionHelper.SetColor);
             group.TryAdd("Advanced", LocalConfigManager.SetAdvancedTweakablesCommand, 1);
+            group.TryAdd("RenderUserGeneratedTextures", LocalConfigManager.RenderUserGeneratedTextures);
             group.TryAdd("PreloadTextures", _ => TextureHelper.PreloadAllTextures());
-#if EXPERIMENTAL
             group.TryAdd("ClearCache", TextureHelper.ClearCacheCommand);
             group.TryAdd("ImportTextures", _ => TextureHelper.Import(true));
             group.TryAdd("RemoveLocalTexture", TextureHelper.RemoveLocalTexture);
             group.TryAdd("ImportLocalTexture", TextureHelper.ImportLocalTexture);
-#endif
 #if DEBUG
             group.TryAdd("DebugInteractive", LocalConfigManager.SetDebugInteractiveCommand);
             group.TryAdd("DebugSurface", LocalConfigManager.SetDebugSurfaceCommand);

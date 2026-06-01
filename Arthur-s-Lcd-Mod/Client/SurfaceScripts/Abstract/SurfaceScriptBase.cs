@@ -1385,7 +1385,11 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 var sprite = sprites[i];
                 if (sprite.Type == SpriteType.TEXTURE && !string.IsNullOrWhiteSpace(sprite.Data) && char.IsNumber(sprite.Data[0]))
                 {
-                    if (!TextureHelper.IsKnownTexture(sprite.Data))
+                    if (!TextureHelper.CanRenderTexture(sprite.Data))
+                    {
+                        ApplyMissingTextureFallback(ref sprite);
+                    }
+                    else if (!TextureHelper.IsKnownTexture(sprite.Data))
                     {
                         if (TextureHelper.HasTextureParseFailed(sprite.Data))
                         {

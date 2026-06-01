@@ -10,6 +10,7 @@ namespace LcdMod.Client.Config
         public static LcdModLocalConfig Config { get; private set; } = new LcdModLocalConfig();
 
         public static bool AdvancedTweakables => Config != null && Config.AdvancedTweekables;
+        public static bool RenderOtherUserTextures => Config == null || Config.RenderOtherUserTextures;
         
 #if DEBUG
         public static bool DebugInteractive => Config != null && Config.DebugInteractive;
@@ -76,6 +77,26 @@ namespace LcdMod.Client.Config
             MyAPIGateway.Utilities.ShowMessage(
                 "lcdMod",
                 "AdvancedTweekables mode " + (AdvancedTweakables ? "enabled." : "disabled."));
+        }
+
+        public static void RenderUserGeneratedTextures(string[] args)
+        {
+            bool enabled;
+            if (!TryParseOptionalBoolean(args, RenderOtherUserTextures, out enabled))
+            {
+                MyAPIGateway.Utilities.ShowMessage("lcdMod", "Usage: /lcdmod renderusergeneratedtextures [true|false]");
+                return;
+            }
+
+            if (Config == null)
+                Config = new LcdModLocalConfig();
+
+            Config.RenderOtherUserTextures = enabled;
+            Save();
+
+            MyAPIGateway.Utilities.ShowMessage(
+                "lcdMod",
+                "Rendering textures owned by other users " + (RenderOtherUserTextures ? "enabled." : "disabled."));
         }
 
 #if DEBUG
@@ -158,16 +179,6 @@ namespace LcdMod.Client.Config
                 "lcdMod",
                 "VisibleClip mode " + (VisibleClip ? "enabled." : "disabled."));
         }
-        
-        
-        static bool TryParseOptionalBoolean(string[] args, bool currentValue, out bool result)
-        {
-            result = !currentValue;
-            if (args == null || args.Length == 0)
-                return true;
-
-            return args.Length == 1 && TryParseBoolean(args[0], out result);
-        }
 #endif
         static LcdModLocalConfig DeserializeConfig(string xml)
         {
@@ -200,6 +211,15 @@ namespace LcdMod.Client.Config
                 default:
                     return false;
             }
+        }
+
+        static bool TryParseOptionalBoolean(string[] args, bool currentValue, out bool result)
+        {
+            result = !currentValue;
+            if (args == null || args.Length == 0)
+                return true;
+
+            return args.Length == 1 && TryParseBoolean(args[0], out result);
         }
     }
 }

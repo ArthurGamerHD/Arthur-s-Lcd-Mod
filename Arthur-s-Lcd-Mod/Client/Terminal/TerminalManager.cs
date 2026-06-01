@@ -87,6 +87,15 @@ namespace LcdMod.Client.Terminal
             Controls.Add(target);
             Controls.Add(new ButtonItemRemoveFromSelection(source, target));
 
+            source = new ListboxSpriteCandidates();
+            target = new ListboxSpriteSelected();
+
+            Controls.Add(source);
+            Controls.Add(new ButtonSpriteAddToSelection(source, target));
+            Controls.Add(target);
+            Controls.Add(new ButtonSpriteRemoveFromSelection(source, target));
+            Controls.Add(new SliderImageChangeInterval());
+
             Controls.Add(new ComboboxSorting());
 
             Controls.Add(new SliderProxyX());

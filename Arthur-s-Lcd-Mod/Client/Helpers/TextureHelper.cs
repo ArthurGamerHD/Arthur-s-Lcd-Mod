@@ -26,6 +26,7 @@ namespace LcdMod.Client.Helpers
 
         static readonly object PendingTextureLock = new object();
         static readonly object FailedTextureParseLock = new object();
+
         static readonly HashSet<string> DeferredLocalTextureRegistrations =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -96,23 +97,41 @@ namespace LcdMod.Client.Helpers
             return CustomTextures.Contains(textureName);
         }
 
-        public static bool TryQueueTextureRequest(string spriteName)
+        public static bool CanRenderTexture(string textureName)
+        {
+            if (LocalConfigManager.RenderOtherUserTextures)
+                return true;
+
+            ulong ownerId;
+            string parsedTextureName;
+            return !TextureTransferHelper.TryParseTextureKey(textureName, out ownerId, out parsedTextureName) ||
+                   !IsTextureOwnedByOtherUser(ownerId);
+        }
+
+        public static bool IsTextureOwnedByOtherUser(string textureName)
         {
             ulong ownerId;
-            string textureName;
-            if (!TextureTransferHelper.TryParseTextureKey(spriteName, out ownerId, out textureName))
-            {
-                MarkTextureParseFailed(spriteName);
-                return false;
-            }
+            string parsedTextureName;
+            return TextureTransferHelper.TryParseTextureKey(textureName, out ownerId, out parsedTextureName) &&
+                   IsTextureOwnedByOtherUser(ownerId);
+        }
 
-            return TryQueueTextureRequest(ownerId, textureName);
+        static bool IsTextureOwnedByOtherUser(ulong ownerId)
+        {
+            if (ownerId == 0)
+                return false;
+
+            var localOwnerId = MyAPIGateway.Session?.Player?.SteamUserId ?? 0;
+            return ownerId != localOwnerId;
         }
 
         public static bool TryQueueTextureRequest(ulong ownerId, string textureName, string registrationName = null)
         {
             var localOwnerId = MyAPIGateway.Session?.Player?.SteamUserId ?? 0;
             if (localOwnerId == 0 || ownerId == 0 || ownerId == localOwnerId)
+                return false;
+
+            if (!LocalConfigManager.RenderOtherUserTextures)
                 return false;
 
             registrationName = string.IsNullOrWhiteSpace(registrationName)
@@ -130,7 +149,8 @@ namespace LcdMod.Client.Helpers
                     return false;
             }
 
-            LogHelper.LogInfo($"Requesting texture {registrationName} from owner {ownerId} for requester {localOwnerId}");
+            LogHelper.LogInfo(
+                $"Requesting texture {registrationName} from owner {ownerId} for requester {localOwnerId}");
 
             LcdModClientComponent.RunNextFrame.Add(delegate
             {
@@ -266,10 +286,44 @@ namespace LcdMod.Client.Helpers
                 var file = obj[0];
                 ImportTexture(file, true);
             }
+
+            if (obj.Length == 2)
+            {
+                var id = obj[1];
+                var file = obj[0];
+                ForceLoadTexture(file, id);
+            }
             else
             {
                 MyAPIGateway.Utilities.ShowNotification("Invalid argument");
             }
+        }
+
+        static void ForceLoadTexture(string path, string name)
+        {
+            if (path.Length <= 2 || path[1] != ':')
+            {
+                path = Path.Combine(MyAPIGateway.Utilities.GamePaths.UserDataPath, "Storage",
+                    MyAPIGateway.Utilities.GamePaths.ModScopeName, path);
+            }
+
+            path = path.Replace("/", "\\");
+
+            MyLCDTextureDefinition textureDefinition = new MyLCDTextureDefinition
+            {
+                Id = new MyDefinitionId((MyObjectBuilderType)typeof(MyObjectBuilder_LCDTextureDefinition),
+                    name),
+                Public = true,
+                LocalizationId = name,
+                SpritePath = path,
+                TexturePath = path,
+                Selectable = true,
+                AvailableInSurvival = true
+            };
+
+            MyDefinitionManager.Static.Definitions.AddOrReplaceDefinition(textureDefinition);
+
+            MyAPIGateway.Utilities.ShowNotification($"Force loaded texture {name} at {path}");
         }
 
         public static void RemoveLocalTexture(string[] obj)
@@ -278,9 +332,15 @@ namespace LcdMod.Client.Helpers
             {
                 var file = obj[0];
                 var baseName = Path.GetFileNameWithoutExtension(file);
-                LocalConfigManager.Config.LocalTextures.Remove(file);
-                MyAPIGateway.Utilities.ShowNotification(
-                    $"Texture {file} will not be loaded next time the game is restarted");
+                if (LocalConfigManager.Config.LocalTextures.Remove(file))
+                    MyAPIGateway.Utilities.ShowNotification(
+                        $"Texture {file} will not be loaded next time the game is restarted");
+                else
+                {
+                    MyAPIGateway.Utilities.ShowNotification(
+                        $"Texture {file} not loaded");
+                    return;
+                }
 
                 MyAPIGateway.Utilities.DeleteFileInLocalStorage(file, typeof(LcdModSessionComponent));
                 if (!string.IsNullOrEmpty(baseName))
@@ -341,7 +401,8 @@ namespace LcdMod.Client.Helpers
             var localUserId = MyAPIGateway.Session?.Player?.SteamUserId ?? 0;
             ulong inputOwnerId;
             string inputTextureName;
-            var inputIsTextureKey = TextureTransferHelper.TryParseTextureKey(id, out inputOwnerId, out inputTextureName);
+            var inputIsTextureKey =
+                TextureTransferHelper.TryParseTextureKey(id, out inputOwnerId, out inputTextureName);
 
             if (persistAsLocal && localUserId == 0 && !inputIsTextureKey)
             {
@@ -373,11 +434,15 @@ namespace LcdMod.Client.Helpers
                     : localUserId;
             var textureName = TextureTransferHelper.NormalizeTextureName(metadata.TextureName);
 
+
+            string ownerName = "local";
             ulong parsedOwnerId;
             string parsedTextureName;
             if (TextureTransferHelper.TryParseTextureKey(textureName, out parsedOwnerId, out parsedTextureName))
             {
                 ownerId = parsedOwnerId;
+                ownerName = MyAPIGateway.Players.TryGetIdentityId(MyAPIGateway.Players.TryGetIdentityId(parsedOwnerId))
+                    ?.Character?.DisplayName ?? "Unknown";
                 textureName = parsedTextureName;
             }
             else if (string.IsNullOrWhiteSpace(textureName))
@@ -429,7 +494,8 @@ namespace LcdMod.Client.Helpers
 
             if (MyAPIGateway.Utilities.FileExistsInLocalStorage(sourceFileName, typeof(LcdModClientComponent)))
             {
-                var path = Path.Combine(MyAPIGateway.Utilities.GamePaths.UserDataPath, "Storage", MyAPIGateway.Utilities.GamePaths.ModScopeName,
+                var path = Path.Combine(MyAPIGateway.Utilities.GamePaths.UserDataPath, "Storage",
+                    MyAPIGateway.Utilities.GamePaths.ModScopeName,
                     sourceFileName);
                 path = path.Replace("/", "\\");
 
@@ -438,14 +504,14 @@ namespace LcdMod.Client.Helpers
                     Id = new MyDefinitionId((MyObjectBuilderType)typeof(MyObjectBuilder_LCDTextureDefinition),
                         registrationName),
                     Public = true,
-                    LocalizationId = sourceFileName,
+                    LocalizationId = ownerName + "_" + textureName,
                     SpritePath = path,
                     TexturePath = path,
                     Selectable = true,
                     AvailableInSurvival = true
                 };
-                
-                
+
+
                 LogHelper.Log(MyLogSeverity.Info, $"Registered texture {registrationName} at path {path}");
 
                 MyDefinitionManager.Static.Definitions.AddOrReplaceDefinition(textureDefinition);
@@ -463,7 +529,7 @@ namespace LcdMod.Client.Helpers
                 metadata.RegistrationName = registrationName;
                 metadata.TextureName = textureName;
                 metadata.SourceFileName = sourceFileName;
-                TextureTransferHelper.TryWriteTextureMetadata( registrationName, metadata);
+                TextureTransferHelper.TryWriteTextureMetadata(registrationName, metadata);
 
                 if (LocalConfigManager.Config != null && LocalConfigManager.Config.LocalTextures == null)
                     LocalConfigManager.Config.LocalTextures = new HashSet<string>();
@@ -509,7 +575,7 @@ namespace LcdMod.Client.Helpers
             });
         }
 
-        public static void ImportTexture(string file, bool verbose = false)
+        public static void ImportTexture(string file, bool verbose = false, string id = null)
         {
             var sourceFile = Path.GetFileName(file);
             if (string.IsNullOrWhiteSpace(sourceFile))
@@ -521,7 +587,7 @@ namespace LcdMod.Client.Helpers
             var localUserId = MyAPIGateway.Session?.Player?.SteamUserId ?? 0;
             int width;
             int height;
-            if (!TextureTransferHelper.TryReadDdsDimensions( sourceFile, out width,
+            if (!TextureTransferHelper.TryReadDdsDimensions(sourceFile, out width,
                     out height))
             {
                 if (verbose)
@@ -531,7 +597,7 @@ namespace LcdMod.Client.Helpers
 
             long byteCount;
             if (verbose &&
-                TextureTransferHelper.TryGetBinaryFileSize( sourceFile, out byteCount))
+                TextureTransferHelper.TryGetBinaryFileSize(sourceFile, out byteCount))
             {
                 var syncWarning = TextureTransferHelper.GetMultiplayerSyncWarning(sourceFile, byteCount, width, height);
                 if (!string.IsNullOrWhiteSpace(syncWarning))
@@ -555,8 +621,8 @@ namespace LcdMod.Client.Helpers
                 Height = height,
                 LastUpdatedUtcTicks = DateTime.UtcNow.Ticks
             };
-            
-            if (!TextureTransferHelper.TryWriteTextureMetadata( registrationName, metadata))
+
+            if (!TextureTransferHelper.TryWriteTextureMetadata(registrationName, metadata))
             {
                 if (verbose)
                     MyAPIGateway.Utilities.ShowNotification($"Failed to write metadata for {sourceFile}");
@@ -647,7 +713,7 @@ namespace LcdMod.Client.Helpers
                 }
             }
 
-            TextureTransferHelper.TryWriteTextureMetadata( registrationName, metadata);
+            TextureTransferHelper.TryWriteTextureMetadata(registrationName, metadata);
 
             var localId = Path.GetFileNameWithoutExtension(fileName);
             if (string.IsNullOrWhiteSpace(localId))
@@ -693,13 +759,13 @@ namespace LcdMod.Client.Helpers
                         Height = entry.Height,
                         LastUpdatedUtcTicks = entry.LastUpdatedUtcTicks
                     };
-                    TextureTransferHelper.TryWriteTextureMetadata( localId, metadata);
+                    TextureTransferHelper.TryWriteTextureMetadata(localId, metadata);
                 }
                 else if (!string.Equals(Path.GetFileName(metadata.SourceFileName), Path.GetFileName(entry.FileName),
                              StringComparison.OrdinalIgnoreCase))
                 {
                     metadata.SourceFileName = Path.GetFileName(entry.FileName);
-                    TextureTransferHelper.TryWriteTextureMetadata( localId, metadata);
+                    TextureTransferHelper.TryWriteTextureMetadata(localId, metadata);
                 }
 
                 if (localUserId != 0 && entry.OwnerId == localUserId)
@@ -733,7 +799,7 @@ namespace LcdMod.Client.Helpers
             }
 
             byte[] bytes;
-            if (!TextureTransferHelper.TryLoadCachedTexture( ownerId, normalizedTextureName,
+            if (!TextureTransferHelper.TryLoadCachedTexture(ownerId, normalizedTextureName,
                     out bytes))
                 return false;
 
