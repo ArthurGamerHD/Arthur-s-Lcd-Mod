@@ -16,12 +16,17 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Listbox
 
         protected void CreateListbox(string id, string title)
         {
+            CreateListbox(id, title, true);
+        }
+
+        protected void CreateListbox(string id, string title, bool multiselect)
+        {
             var listbox = CreateControl<IMyTerminalControlListbox>(id);
             listbox.ListContent = Getter;
             listbox.ItemSelected = Setter;
             listbox.Visible = Visible;
             listbox.VisibleRowsCount = 8;
-            listbox.Multiselect = true;
+            listbox.Multiselect = multiselect;
             listbox.Title = MyStringId.GetOrCompute(title);
             _terminalControl = listbox;
         }

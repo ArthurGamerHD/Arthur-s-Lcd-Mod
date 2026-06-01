@@ -7,9 +7,11 @@ namespace LcdMod.Client.Config
         public LcdModLocalConfig()
         {
             LocalTextures = new HashSet<string>();
+            RenderOtherUserTextures = true;
         }
 
         public bool AdvancedTweekables { get; set; }
+        public bool RenderOtherUserTextures { get; set; }
         public bool DebugInteractive { get; set; }
         public bool DebugSurface { get; set; }
         public bool SpriteCountDebug { get; set; }

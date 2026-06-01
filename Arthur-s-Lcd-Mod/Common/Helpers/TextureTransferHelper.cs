@@ -117,7 +117,7 @@ namespace LcdMod.Common.Helpers
 
             var reasons = new List<string>();
             if (width > MAX_SYNC_TEXTURE_DIMENSION || height > MAX_SYNC_TEXTURE_DIMENSION)
-                reasons.Add("above 1024x1024");
+                reasons.Add($"above max resolution {MAX_SYNC_TEXTURE_DIMENSION}x{MAX_SYNC_TEXTURE_DIMENSION}");
             if (byteCount > MAX_TEXTURE_BYTES)
                 reasons.Add("above the size limit");
 
@@ -266,7 +266,7 @@ namespace LcdMod.Common.Helpers
 
             try
             {
-                if (typeof(LcdModSessionComponent) == null || string.IsNullOrWhiteSpace(fileName))
+                if (string.IsNullOrWhiteSpace(fileName))
                     return false;
 
                 if (!MyAPIGateway.Utilities.FileExistsInLocalStorage(fileName, typeof(LcdModSessionComponent)))
