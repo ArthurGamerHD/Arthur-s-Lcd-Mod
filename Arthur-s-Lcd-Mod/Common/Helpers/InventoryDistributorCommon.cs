@@ -64,7 +64,9 @@ namespace LcdMod.Common.Helpers
         }
 
         /// <summary>Send: spread the source's matching items across the targets, proportional to each
-        /// target's free volume.</summary>
+        /// target's free volume. Integer items are split in whole units (largest-remainder), so a
+        /// stack of 3 across two equal targets becomes 2 + 1 instead of 1.5 + 1.5 (a fractional
+        /// amount makes SE create an invalid stack that only re-syncs on reload).</summary>
         static int DistributeFrom(IMyInventory source, List<IMyInventory> targets, HashSet<string> typeKeys)
         {
             double totalFree = 0;
@@ -82,24 +84,36 @@ namespace LcdMod.Common.Helpers
 
             int moved = 0;
             var items = new List<MyInventoryItem>();
-            items.Clear();
-            source.GetItems(items);
 
-            // Reverse: transferring a (shrinking) stack at index k keeps lower indices valid.
-            for (int k = items.Count - 1; k >= 0; k--)
+            foreach (var typeKey in typeKeys)
             {
-                if (!Matches(items[k].Type, typeKeys))
+                bool integral = IsIntegralType(typeKey);
+
+                double total = TotalOfType(source, typeKey, items);
+                if (total <= 0)
                     continue;
 
-                double amount = (double)items[k].Amount;
-                for (int i = 0; i < targets.Count; i++)
+                if (integral)
                 {
-                    double share = amount * weights[i] / totalFree;
-                    if (share <= 0)
-                        continue;
-
-                    if (Transfer(source, targets[i], k, (MyFixedPoint)share))
-                        moved++;
+                    var shares = IntegerShares((long)Math.Floor(total + 0.5), weights);
+                    for (int i = 0; i < targets.Count; i++)
+                    {
+                        if (shares[i] <= 0)
+                            continue;
+                        if (TransferAmountOfType(source, targets[i], typeKey, shares[i], true))
+                            moved++;
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < targets.Count; i++)
+                    {
+                        double desired = total * weights[i] / totalFree;
+                        if (desired <= 0)
+                            continue;
+                        if (TransferAmountOfType(source, targets[i], typeKey, desired, false))
+                            moved++;
+                    }
                 }
             }
 
@@ -138,9 +152,16 @@ namespace LcdMod.Common.Helpers
             if (pool.Count < 2)
                 return 0;
 
+            // Weight each container by its capacity; index 0 is the collector and keeps its own share.
+            var weights = new double[pool.Count];
             double totalMax = 0;
             for (int i = 0; i < pool.Count; i++)
-                totalMax += (double)pool[i].MaxVolume;
+            {
+                weights[i] = (double)pool[i].MaxVolume;
+                if (weights[i] < 0)
+                    weights[i] = 0;
+                totalMax += weights[i];
+            }
             if (totalMax <= 0)
                 return 0;
 
@@ -150,6 +171,8 @@ namespace LcdMod.Common.Helpers
 
             foreach (var typeKey in typeKeys)
             {
+                bool integral = IsIntegralType(typeKey);
+
                 // 1. Gather all of this type into the collector.
                 for (int i = 1; i < pool.Count; i++)
                 {
@@ -166,27 +189,34 @@ namespace LcdMod.Common.Helpers
                 }
 
                 // 2. Total of this type now in the collector.
-                double total = 0;
-                items.Clear();
-                collector.GetItems(items);
-                for (int k = 0; k < items.Count; k++)
-                {
-                    if (KeyOf(items[k].Type) == typeKey)
-                        total += (double)items[k].Amount;
-                }
-
+                double total = TotalOfType(collector, typeKey, items);
                 if (total <= 0)
                     continue;
 
-                // 3. Hand each other container its capacity-proportional share; the collector keeps the rest.
-                for (int i = 1; i < pool.Count; i++)
+                // 3. Hand each other container its capacity-proportional share; the collector keeps the
+                // rest. Integer items use a whole-unit split (3 across two equal containers -> 2 + 1),
+                // never a fractional amount (which spawns an invalid stack that desyncs until reload).
+                if (integral)
                 {
-                    double desired = total * (double)pool[i].MaxVolume / totalMax;
-                    if (desired <= 0)
-                        continue;
-
-                    if (TransferAmountOfType(collector, pool[i], typeKey, desired))
-                        moved++;
+                    var shares = IntegerShares((long)Math.Floor(total + 0.5), weights);
+                    for (int i = 1; i < pool.Count; i++)
+                    {
+                        if (shares[i] <= 0)
+                            continue;
+                        if (TransferAmountOfType(collector, pool[i], typeKey, shares[i], true))
+                            moved++;
+                    }
+                }
+                else
+                {
+                    for (int i = 1; i < pool.Count; i++)
+                    {
+                        double desired = total * weights[i] / totalMax;
+                        if (desired <= 0)
+                            continue;
+                        if (TransferAmountOfType(collector, pool[i], typeKey, desired, false))
+                            moved++;
+                    }
                 }
             }
 
@@ -194,11 +224,13 @@ namespace LcdMod.Common.Helpers
         }
 
         /// <summary>Move up to <paramref name="amount"/> of one type from <paramref name="source"/>
-        /// into <paramref name="destination"/>.</summary>
-        static bool TransferAmountOfType(IMyInventory source, IMyInventory destination, string typeKey, double amount)
+        /// into <paramref name="destination"/>. When <paramref name="integral"/> is set the moved
+        /// amount is snapped to whole units, so no fractional sliver is ever created.</summary>
+        static bool TransferAmountOfType(IMyInventory source, IMyInventory destination, string typeKey,
+            double amount, bool integral)
         {
             bool any = false;
-            double remaining = amount;
+            double remaining = integral ? Math.Floor(amount + 0.5) : amount;
             var items = new List<MyInventoryItem>();
             items.Clear();
             source.GetItems(items);
@@ -210,6 +242,8 @@ namespace LcdMod.Common.Helpers
 
                 double avail = (double)items[k].Amount;
                 double take = Math.Min(avail, remaining);
+                if (integral)
+                    take = Math.Floor(take); // never split a single unit
                 if (take <= 0)
                     continue;
 
@@ -221,6 +255,88 @@ namespace LcdMod.Common.Helpers
             }
 
             return any;
+        }
+
+        /// <summary>Sum of one type currently in <paramref name="inventory"/>. <paramref name="scratch"/>
+        /// is a reusable buffer (no per-call allocation).</summary>
+        static double TotalOfType(IMyInventory inventory, string typeKey, List<MyInventoryItem> scratch)
+        {
+            double total = 0;
+            scratch.Clear();
+            inventory.GetItems(scratch);
+            for (int k = 0; k < scratch.Count; k++)
+            {
+                if (KeyOf(scratch[k].Type) == typeKey)
+                    total += (double)scratch[k].Amount;
+            }
+
+            return total;
+        }
+
+        /// <summary>True for item types that only exist in whole units (everything except ore and
+        /// ingot, which SE stores by mass and may legitimately be fractional).</summary>
+        static bool IsIntegralType(string typeKey)
+        {
+            if (string.IsNullOrEmpty(typeKey))
+                return true;
+
+            int slash = typeKey.IndexOf('/');
+            string typeId = slash >= 0 ? typeKey.Substring(0, slash) : typeKey;
+            return typeId != "MyObjectBuilder_Ore" && typeId != "MyObjectBuilder_Ingot";
+        }
+
+        /// <summary>Splits an integer <paramref name="total"/> across <paramref name="weights"/> with the
+        /// largest-remainder (Hamilton) method: every container gets a whole number, the shares sum back
+        /// to exactly <paramref name="total"/>, and leftover units go to the largest fractional remainders
+        /// (ties broken toward the bigger container). Index 0 is the collector.</summary>
+        static long[] IntegerShares(long total, double[] weights)
+        {
+            int n = weights.Length;
+            var result = new long[n];
+            if (total <= 0)
+                return result;
+
+            double totalWeight = 0;
+            for (int i = 0; i < n; i++)
+            {
+                if (weights[i] < 0)
+                    weights[i] = 0;
+                totalWeight += weights[i];
+            }
+            if (totalWeight <= 0)
+                return result;
+
+            var remainders = new double[n];
+            long assigned = 0;
+            for (int i = 0; i < n; i++)
+            {
+                double ideal = total * weights[i] / totalWeight;
+                long baseShare = (long)Math.Floor(ideal);
+                result[i] = baseShare;
+                remainders[i] = ideal - baseShare;
+                assigned += baseShare;
+            }
+
+            // Hand the leftover whole units (always fewer than n) to the largest remainders.
+            for (long leftover = total - assigned; leftover > 0; leftover--)
+            {
+                int best = -1;
+                for (int i = 0; i < n; i++)
+                {
+                    if (best < 0
+                        || remainders[i] > remainders[best]
+                        || (remainders[i] == remainders[best] && weights[i] > weights[best]))
+                        best = i;
+                }
+
+                if (best < 0)
+                    break;
+
+                result[best]++;
+                remainders[best] = -1; // don't pick the same container twice
+            }
+
+            return result;
         }
 
         static bool Transfer(IMyInventory source, IMyInventory destination, int sourceIndex, MyFixedPoint? amount)
