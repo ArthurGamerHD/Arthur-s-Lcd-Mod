@@ -557,7 +557,9 @@
     <value>Vrsta veze</value>
   </data>
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
-    <value>{0} Uključuje samo blokove na ovom brodu ili stanici. &#xA;{1} uključuje mehanički povezane brodove/stanice, primjerice rotorima, zglobovima i klipovima. &#xA;{2} uključuje mehaničke veze i brodove/stanice povezane konektorima.</value>
+    <value>{0} Uključuje samo blokove na ovom brodu ili stanici. 
+{1} uključuje mehanički povezane brodove/stanice, primjerice rotorima, zglobovima i klipovima. 
+{2} uključuje mehaničke veze i brodove/stanice povezane konektorima.</value>
   </data>
     <data name="LcdMod_Projector_Ingots" xml:space="preserve">
     <value>Ingoti</value>
@@ -630,5 +632,36 @@
   </data>
   <data name="LcdMod_Cargo_FillDone" xml:space="preserve">
     <value>Premješteno predmeta: {0}</value>
+  </data>
+<data name="LcdMod_DigitalPictureFrames" xml:space="preserve">
+    <value>Okvir za sliku</value>
+  </data>
+  <data name="LcdMod_PickTexture" xml:space="preserve">
+    <value>Odaberi teksturu</value>
+  </data>
+  <data name="LcdMod_IndexConflict" xml:space="preserve">
+    <value>Sukob indeksa površine</value>
+  </data>
+  <data name="LcdMod_IndexConflictDetails" xml:space="preserve">
+    <value>Druga instanca skripte već koristi ovaj indeks površine.</value>
+  </data>
+  <data name="LcdMod_BSoD_Header" xml:space="preserve">
+    <value>Vaša stanica naišla je na problem i mora se ponovno pokrenuti.
+Pričekat ćemo neko vrijeme, a zatim je ponovno pokrenuti za vas.</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoIntro" xml:space="preserve">
+    <value>Za više informacija o ovom problemu,</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoUrl" xml:space="preserve">
+    <value>posjetite</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoQr" xml:space="preserve">
+    <value>ili skenirajte ovaj QR kôd.</value>
+  </data>
+  <data name="LcdMod_BSoD_SupportIntro" xml:space="preserve">
+    <value>Ako kontaktirate podršku, dajte im ove informacije:</value>
+  </data>
+  <data name="LcdMod_BSoD_ExceptionCode" xml:space="preserve">
+    <value>Kôd iznimke:</value>
   </data>
 </root>

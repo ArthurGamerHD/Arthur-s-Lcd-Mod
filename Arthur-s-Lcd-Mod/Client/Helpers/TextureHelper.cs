@@ -286,21 +286,29 @@ namespace LcdMod.Client.Helpers
                 var file = obj[0];
                 ImportTexture(file, true);
             }
-
-            if (obj.Length == 2)
+#if DEBUG
+            else if (obj.Length == 2)
             {
                 var id = obj[1];
                 var file = obj[0];
                 ForceLoadTexture(file, id);
             }
+#endif
             else
             {
                 MyAPIGateway.Utilities.ShowNotification("Invalid argument");
             }
         }
 
+#if DEBUG
         static void ForceLoadTexture(string path, string name)
         {
+            // fun fact, you can load
+            // C:\Windows\Web\Wallpaper\Windows\img0.jpg
+            // or
+            // C:\Users\<username>\AppData\Local\Google\Chrome\User Data\Profile 1\Google Profile Picture.png
+            // here, dangerous... (but fortunately only client side)
+
             if (path.Length <= 2 || path[1] != ':')
             {
                 path = Path.Combine(MyAPIGateway.Utilities.GamePaths.UserDataPath, "Storage",
@@ -325,6 +333,7 @@ namespace LcdMod.Client.Helpers
 
             MyAPIGateway.Utilities.ShowNotification($"Force loaded texture {name} at {path}");
         }
+#endif
 
         public static void RemoveLocalTexture(string[] obj)
         {
@@ -595,6 +604,14 @@ namespace LcdMod.Client.Helpers
                 return;
             }
 
+            if (!AreDdsDimensionsBlockAligned(width, height))
+            {
+                if (verbose)
+                    MyAPIGateway.Utilities.ShowNotification(
+                        $"Refusing {sourceFile}: DDS width and height must be divisible by 4");
+                return;
+            }
+
             long byteCount;
             if (verbose &&
                 TextureTransferHelper.TryGetBinaryFileSize(sourceFile, out byteCount))
@@ -630,6 +647,14 @@ namespace LcdMod.Client.Helpers
             }
 
             LocalTexture(registrationName, verbose);
+        }
+
+        static bool AreDdsDimensionsBlockAligned(int width, int height)
+        {
+            return width > 0 &&
+                   height > 0 &&
+                   width % 4 == 0 &&
+                   height % 4 == 0;
         }
 
         public static void SaveRemoteTexture(PacketSyncTexture packet, bool verbose = false)
@@ -940,6 +965,108 @@ exit /b 0");
                     content = content.Substring(2).Replace("\\", "/");
 
                 file.WriteLine(content);
+                file.Flush();
+                file.Close();
+            }
+
+            {
+                var toolsPath = MyAPIGateway.Utilities.GamePaths.ContentPath;
+                toolsPath = toolsPath.Replace("Content", "Tools\\TexturePacking\\Tools");
+
+                var configFolderPath = Path.Combine(
+                    MyAPIGateway.Utilities.GamePaths.UserDataPath,
+                    "Storage",
+                    MyAPIGateway.Utilities.GamePaths.ModScopeName);
+
+                // Convert Wine/Proton Z: paths into readable Linux paths when applicable.
+                if (toolsPath.StartsWith("z:", StringComparison.InvariantCultureIgnoreCase))
+                    toolsPath = toolsPath.Substring(2).Replace("\\", "/");
+
+                if (configFolderPath.StartsWith("z:", StringComparison.InvariantCultureIgnoreCase))
+                    configFolderPath = configFolderPath.Substring(2).Replace("\\", "/");
+
+                var texconvExePath = toolsPath.TrimEnd('\\', '/') +
+                                     (toolsPath.IndexOf('/') >= 0
+                                         ? "/texconv.exe"
+                                         : "\\texconv.exe");
+
+                var file = MyAPIGateway.Utilities.WriteFileInLocalStorage(
+                    "readme-for-texture-import.txt",
+                    typeof(LcdModClientComponent));
+
+                file.Write(
+                    $@"Arthur's Lcd Mod Custom Texture Import
+============================
+
+Before starting, a few notes:
+
+- The image **MUST** be divisible by 4 on both it's height and width (requirement of texconv).
+- Mods can only see files inside the Storage folder (the folder you found this file), while we technically can display 
+  images outside this folder, it can only be synced in multiplayer or imported automatically while here.
+    (in your system, we think the storage folder is located at: {configFolderPath})
+- Microsoft's texconv.exe is shipped as a ""modding tool"" alongside with Space Engineers and is located at /SpaceEngineers/Tools/TexturePacking/Tools/
+    (in your system, we think texconv is located at: {texconvExePath})
+- Tested conversion parameters are '-nologo -y -f BC7_UNORM -pmalpha', but you can try other parameters if you want, as long as it is a valid .dds image
+- The mod will refuse to import texture filenames not ending with .dds or not having a valid dds header
+- Use simple texture filenames without special characters when possible to avoid issues
+- When replacing an existing texture, you need to restart the game
+- Images with dimension greater than {Constants.MAX_SYNC_TEXTURE_DIMENSION}x{Constants.MAX_SYNC_TEXTURE_DIMENSION} or size greater than {Constants.MAX_TEXTURE_BYTES/1000}kb
+will NOT be synced in multiplayer
+
+============================
+
+How to import custom textures:
+
+- Manual import of single texture:
+
+1. Convert your image into a .dds texture by running:
+   ""{texconvExePath}"" -nologo -y -f BC7_UNORM -pmalpha ""path\to\image.png""
+
+2. Copy the generated dds file into the mod ""Storage"" folder:
+   {configFolderPath}
+
+3. In game, run:
+   /lcdmod importlocaltexture image.dds
+
+
+- Manual import of multiples textures:
+
+1. Copy your .dds textures into Storage folder as you would for manual import:
+   {configFolderPath}
+
+2. Create a file named:
+   import.txt
+
+3. Add one dds texture name per line. Each filename must end with .dds. Example:
+
+   logo.dds
+   advertisements.dds
+   coolwallpaper.dds
+
+4. Save import.txt in:
+   {configFolderPath}\import.txt
+
+5. In game, either restart the current session (exit to menu, then load) or run:
+   /lcdmod importtextures
+
+
+- Automatically import multiples texture:
+
+1. Copy all png images into this config folder:
+   {configFolderPath}
+
+1b. Ensure tools_path.txt points to the correct folder containing texconv.exe
+
+2. Run png-to-dds.bat (or png-to-dds.sh if you are on linux - tools_path.txt will mostly likely be wrong but you can figure it out 🙃)
+
+2b. Ensure all png got converted and the import.txt was created with the correct .dds files
+
+3. You can delete the png files now if you want (is not required anymore)
+
+4. In game, either restart the current session (exit to menu, then load) or run:
+   /lcdmod importtextures
+");
+
                 file.Flush();
                 file.Close();
             }

@@ -557,7 +557,9 @@
     <value>Typ połączenia</value>
   </data>
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
-    <value>{0} Obejmuje tylko bloki na tym statku lub tej stacji. &#xA;{1} obejmuje mechanicznie połączone statki/stacje, np. przez rotory, zawiasy i tłoki. &#xA;{2} obejmuje połączenia mechaniczne oraz statki/stacje połączone za pomocą złączy.</value>
+    <value>{0} Obejmuje tylko bloki na tym statku lub tej stacji. 
+{1} obejmuje mechanicznie połączone statki/stacje, np. przez rotory, zawiasy i tłoki. 
+{2} obejmuje połączenia mechaniczne oraz statki/stacje połączone za pomocą złączy.</value>
   </data>
     <data name="LcdMod_Projector_Ingots" xml:space="preserve">
     <value>Sztabki</value>
@@ -630,5 +632,36 @@
   </data>
   <data name="LcdMod_Cargo_FillDone" xml:space="preserve">
     <value>Przeniesiono przedmiotów: {0}</value>
+  </data>
+<data name="LcdMod_DigitalPictureFrames" xml:space="preserve">
+    <value>Ramka na zdjęcie</value>
+  </data>
+  <data name="LcdMod_PickTexture" xml:space="preserve">
+    <value>Wybierz teksturę</value>
+  </data>
+  <data name="LcdMod_IndexConflict" xml:space="preserve">
+    <value>Konflikt indeksu powierzchni</value>
+  </data>
+  <data name="LcdMod_IndexConflictDetails" xml:space="preserve">
+    <value>Inna instancja skryptu już używa tego indeksu powierzchni.</value>
+  </data>
+  <data name="LcdMod_BSoD_Header" xml:space="preserve">
+    <value>Twoja stacja napotkała problem i musi zostać ponownie uruchomiona.
+Poczekamy chwilę, a następnie uruchomimy ją ponownie za ciebie.</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoIntro" xml:space="preserve">
+    <value>Aby uzyskać więcej informacji o tym problemie,</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoUrl" xml:space="preserve">
+    <value>odwiedź</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoQr" xml:space="preserve">
+    <value>lub zeskanuj ten kod QR.</value>
+  </data>
+  <data name="LcdMod_BSoD_SupportIntro" xml:space="preserve">
+    <value>Jeśli skontaktujesz się z pomocą techniczną, przekaż jej te informacje:</value>
+  </data>
+  <data name="LcdMod_BSoD_ExceptionCode" xml:space="preserve">
+    <value>Kod wyjątku:</value>
   </data>
 </root>

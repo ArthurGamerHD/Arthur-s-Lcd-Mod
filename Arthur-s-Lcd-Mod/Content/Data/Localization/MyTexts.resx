@@ -557,7 +557,9 @@
     <value>Link Type</value>
   </data>
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
-    <value>{0} Includes blocks on this grid only. &#xA;{1} includes mechanically connected grids, such as those connected by rotors, hinges and pistons. &#xA;{2} includes mechanical connections and grids connected using connectors.</value>
+    <value>{0} Includes blocks on this grid only. 
+{1} includes mechanically connected grids, such as those connected by rotors, hinges and pistons. 
+{2} includes mechanical connections and grids connected using connectors.</value>
   </data>
     <data name="LcdMod_Projector_Ingots" xml:space="preserve">
     <value>Ingots</value>
@@ -630,5 +632,36 @@
   </data>
   <data name="LcdMod_Cargo_FillDone" xml:space="preserve">
     <value>{0} items moved</value>
+  </data>
+<data name="LcdMod_DigitalPictureFrames" xml:space="preserve">
+    <value>Picture Frame</value>
+  </data>
+  <data name="LcdMod_PickTexture" xml:space="preserve">
+    <value>Pick texture</value>
+  </data>
+  <data name="LcdMod_IndexConflict" xml:space="preserve">
+    <value>Surface index conflict</value>
+  </data>
+  <data name="LcdMod_IndexConflictDetails" xml:space="preserve">
+    <value>Another script instance is already using this surface index.</value>
+  </data>
+  <data name="LcdMod_BSoD_Header" xml:space="preserve">
+    <value>Your Station ran into a problem and needs to restart.
+We are waiting for a while, and then we will restart it for you.</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoIntro" xml:space="preserve">
+    <value>For more information about this issue,</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoUrl" xml:space="preserve">
+    <value>visit</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoQr" xml:space="preserve">
+    <value>or scan this QR code.</value>
+  </data>
+  <data name="LcdMod_BSoD_SupportIntro" xml:space="preserve">
+    <value>If you call a support person, give them this info:</value>
+  </data>
+  <data name="LcdMod_BSoD_ExceptionCode" xml:space="preserve">
+    <value>Exception code:</value>
   </data>
 </root>

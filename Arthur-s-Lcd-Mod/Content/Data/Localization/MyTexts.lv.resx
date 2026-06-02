@@ -557,7 +557,9 @@
     <value>Saites tips</value>
   </data>
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
-    <value>{0} Iekļauj tikai blokus uz šī kuģa vai stacijas. &#xA;{1} iekļauj mehāniski savienotus kuģus/stacijas, piemēram, ar rotoriem, eņģēm un virzuļiem. &#xA;{2} iekļauj mehāniskos savienojumus un kuģus/stacijas, kas savienoti ar savienotājiem.</value>
+    <value>{0} Iekļauj tikai blokus uz šī kuģa vai stacijas. 
+{1} iekļauj mehāniski savienotus kuģus/stacijas, piemēram, ar rotoriem, eņģēm un virzuļiem. 
+{2} iekļauj mehāniskos savienojumus un kuģus/stacijas, kas savienoti ar savienotājiem.</value>
   </data>
     <data name="LcdMod_Projector_Ingots" xml:space="preserve">
     <value>Lietņi</value>
@@ -630,5 +632,36 @@
   </data>
   <data name="LcdMod_Cargo_FillDone" xml:space="preserve">
     <value>Pārvietoti {0} priekšmeti</value>
+  </data>
+<data name="LcdMod_DigitalPictureFrames" xml:space="preserve">
+    <value>Attēla rāmis</value>
+  </data>
+  <data name="LcdMod_PickTexture" xml:space="preserve">
+    <value>Izvēlēties tekstūru</value>
+  </data>
+  <data name="LcdMod_IndexConflict" xml:space="preserve">
+    <value>Virsmas indeksa konflikts</value>
+  </data>
+  <data name="LcdMod_IndexConflictDetails" xml:space="preserve">
+    <value>Cita skripta instance jau izmanto šo virsmas indeksu.</value>
+  </data>
+  <data name="LcdMod_BSoD_Header" xml:space="preserve">
+    <value>Jūsu stacijā radās problēma, un tā ir jārestartē.
+Mēs brīdi pagaidīsim un pēc tam to restartēsim jūsu vietā.</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoIntro" xml:space="preserve">
+    <value>Lai iegūtu vairāk informācijas par šo problēmu,</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoUrl" xml:space="preserve">
+    <value>apmeklējiet</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoQr" xml:space="preserve">
+    <value>vai noskenējiet šo QR kodu.</value>
+  </data>
+  <data name="LcdMod_BSoD_SupportIntro" xml:space="preserve">
+    <value>Ja sazināties ar atbalstu, sniedziet viņiem šo informāciju:</value>
+  </data>
+  <data name="LcdMod_BSoD_ExceptionCode" xml:space="preserve">
+    <value>Izņēmuma kods:</value>
   </data>
 </root>

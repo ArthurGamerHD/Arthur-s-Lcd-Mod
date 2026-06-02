@@ -1,3 +1,4 @@
+using System.IO;
 using System.Collections.Generic;
 using Generated;
 using LcdMod.Client.Apps;
@@ -79,6 +80,19 @@ namespace LcdMod.Client.SurfaceScripts
         {
             base.LayoutChanged();
             _app?.LayoutChanged();
+        }
+
+        protected override string GetDetailedInfoCustomText()
+        {
+            var utilities = MyAPIGateway.Utilities;
+            if (utilities == null)
+                return string.Empty;
+
+            return "You can add your custom textures to: " +
+                   Path.Combine(
+                       utilities.GamePaths.UserDataPath.EndsWith("Roaming\\SpaceEngineers") ? $"%Appdata%{Path.DirectorySeparatorChar}SpaceEngineers" : utilities.GamePaths.UserDataPath,
+                       "Storage",
+                       utilities.GamePaths.ModScopeName);
         }
 
         public override void SafeRun()

@@ -81,9 +81,9 @@ namespace LcdMod.Client.Apps
                 return _sprites;
 
             Host.AddBackground(_sprites);
-            Host.DrawTitle(_sprites);
             DrawBackgroundImage(config, (PictureFrameDisplayMode)config.DisplayMode);
-
+            Host.DrawTitle(_sprites);
+            
             return _sprites;
         }
 
@@ -355,6 +355,7 @@ namespace LcdMod.Client.Apps
             }
 
             var hasBackground = GetConfiguredSprites(config).Length > 0;
+            var canAccessBlock = HasLocalPlayerAccess();
             var scale = Math.Max(0.75f, Host.Scale);
             var width = Math.Min(BUTTON_WIDTH_PIXELS * scale, Math.Max(1f, Host.ViewBox.Width * 0.5f));
             var height = Math.Max(1f, BUTTON_HEIGHT_PIXELS * scale);
@@ -367,7 +368,7 @@ namespace LcdMod.Client.Apps
             _pickBackgroundButton.SetVisible(!hasBackground);
 
             _imagePickerHitbox.SetRect(Host.ViewBox);
-            _imagePickerHitbox.SetCursor(CursorType.Hand);
+            _imagePickerHitbox.SetCursor(canAccessBlock ? CursorType.Hand : CursorType.No);
             _imagePickerHitbox.SetVisible(hasBackground);
             _imagePickerHitbox.CustomRender = RenderImagePickerHitbox;
 
@@ -375,16 +376,19 @@ namespace LcdMod.Client.Apps
             if (model != null)
             {
                 model.Text = LocHelper.GetLoc("LcdMod_PickTexture");
-                model.Enabled = true;
+                model.Enabled = canAccessBlock;
                 model.Clicked = OnPickBackgroundClicked;
             }
 
-            _pickBackgroundButton.SetStyle(Button.CreatePrimaryButtonStyle(Theme));
+            _pickBackgroundButton.SetCursor(canAccessBlock ? CursorType.Hand : CursorType.No);
+            _pickBackgroundButton.SetStyle(canAccessBlock
+                ? Button.CreatePrimaryButtonStyle(Theme)
+                : Button.CreateDisabledButtonStyle(Theme));
         }
 
         void OnPickBackgroundClicked(ButtonModel model, object sender)
         {
-            if (_interactiveHost == null)
+            if (_interactiveHost == null || !HasLocalPlayerAccess())
                 return;
 
             _interactiveHost.ShowDialog(new SpritePicker(
@@ -396,11 +400,20 @@ namespace LcdMod.Client.Apps
 
         void OnImageClicked(object dataContext, object sender)
         {
+            if (!HasLocalPlayerAccess())
+                return;
+
             OnPickBackgroundClicked(null, sender);
         }
 
         static void RenderImagePickerHitbox(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
         {
+        }
+
+        bool HasLocalPlayerAccess()
+        {
+            var block = _interactiveHost != null ? _interactiveHost.Block as IMyTerminalBlock : null;
+            return block != null && block.HasLocalPlayerAccess();
         }
 
         void OnSpriteSelected(string spriteName)

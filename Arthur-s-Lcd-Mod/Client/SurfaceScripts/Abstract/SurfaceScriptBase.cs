@@ -80,7 +80,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         string _customInfo;
 
-
         public virtual string Title
         {
             get
@@ -127,8 +126,10 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             WaitForFrame = MyAPIGateway.Session.GameplayFrameCounter + 6 * 5; // minimum of 5 frames splash screen 
             Block = (IMyCubeBlock)base.Block;
             var terminalBlock = (IMyTerminalBlock)Block;
-            terminalBlock.AppendingCustomInfo += CustomInfo;
-
+            terminalBlock.AppendingCustomInfo += OnAppendingCustomInfo;
+            terminalBlock.SetDetailedInfoDirty();
+            terminalBlock.RefreshCustomInfo();
+            
             _textureSize = (Vector2I)Surface.TextureSize;
             var surfaceSize = Surface.SurfaceSize;
             _renderComp = (MyRenderComponentScreenAreas)Block.Render;
@@ -140,7 +141,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             if (Block != null) Block.OnMarkForClose += HandleBlockMarkedForClose;
             UpdateFaction(FactionHelper.GetOwnerFaction(Block as IMyTerminalBlock));
             DrawSplash();
-
             LcdModSessionComponent.OnLanguageChanged += LayoutChanged;
         }
 
@@ -256,7 +256,8 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 if (Block != null)
                 {
                     Block.OnMarkForClose -= HandleBlockMarkedForClose;
-                    ((IMyTerminalBlock)Block).AppendingCustomInfo -= CustomInfo;
+                    var terminalBlock = (IMyTerminalBlock)Block;
+                    terminalBlock.AppendingCustomInfo -= OnAppendingCustomInfo;
                 }
             }
             catch (Exception e)
@@ -417,9 +418,27 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             _init = true;
         }
 
-        void CustomInfo(IMyTerminalBlock arg1, StringBuilder arg2)
+        protected virtual string GetDetailedInfoCustomText() => string.Empty;
+
+        void OnAppendingCustomInfo(IMyTerminalBlock block, StringBuilder detailedInfo)
         {
-            arg2.AppendLine(_customInfo);
+            if (_disposed)
+                return;
+
+            if (detailedInfo.Length > 0) 
+                detailedInfo.AppendLine();
+
+            if (!(block is IMyTextPanel)) 
+                detailedInfo.AppendLine(Surface.DisplayName + ": ");
+            
+            if (!string.IsNullOrWhiteSpace(_customInfo))
+                detailedInfo.AppendLine(_customInfo);
+
+            var customText = GetDetailedInfoCustomText() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(customText))
+                return;
+
+            detailedInfo.AppendLine(customText);
         }
 
         public void OnException(Exception e)

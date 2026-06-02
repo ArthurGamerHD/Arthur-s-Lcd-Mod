@@ -557,7 +557,9 @@
     <value>Ühenduse tüüp</value>
   </data>
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
-    <value>{0} Kaasab ainult selle laeva või jaama plokid. &#xA;{1} kaasab mehaaniliselt ühendatud laevad/jaamad, näiteks rootorite, hingede ja kolbidega ühendatud. &#xA;{2} kaasab mehaanilised ühendused ning konnektoritega ühendatud laevad/jaamad.</value>
+    <value>{0} Kaasab ainult selle laeva või jaama plokid. 
+{1} kaasab mehaaniliselt ühendatud laevad/jaamad, näiteks rootorite, hingede ja kolbidega ühendatud. 
+{2} kaasab mehaanilised ühendused ning konnektoritega ühendatud laevad/jaamad.</value>
   </data>
     <data name="LcdMod_Projector_Ingots" xml:space="preserve">
     <value>Kangid</value>
@@ -630,5 +632,36 @@
   </data>
   <data name="LcdMod_Cargo_FillDone" xml:space="preserve">
     <value>{0} eset teisaldatud</value>
+  </data>
+<data name="LcdMod_DigitalPictureFrames" xml:space="preserve">
+    <value>Pildiraam</value>
+  </data>
+  <data name="LcdMod_PickTexture" xml:space="preserve">
+    <value>Vali tekstuur</value>
+  </data>
+  <data name="LcdMod_IndexConflict" xml:space="preserve">
+    <value>Pinna indeksi konflikt</value>
+  </data>
+  <data name="LcdMod_IndexConflictDetails" xml:space="preserve">
+    <value>Teine skripti eksemplar kasutab juba seda pinna indeksit.</value>
+  </data>
+  <data name="LcdMod_BSoD_Header" xml:space="preserve">
+    <value>Teie jaamas tekkis probleem ja see tuleb taaskäivitada.
+Ootame veidi ja seejärel taaskäivitame selle teie eest.</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoIntro" xml:space="preserve">
+    <value>Lisateabe saamiseks selle probleemi kohta</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoUrl" xml:space="preserve">
+    <value>külastage</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoQr" xml:space="preserve">
+    <value>või skannige see QR-kood.</value>
+  </data>
+  <data name="LcdMod_BSoD_SupportIntro" xml:space="preserve">
+    <value>Kui võtate ühendust toega, andke neile see teave:</value>
+  </data>
+  <data name="LcdMod_BSoD_ExceptionCode" xml:space="preserve">
+    <value>Erandi kood:</value>
   </data>
 </root>

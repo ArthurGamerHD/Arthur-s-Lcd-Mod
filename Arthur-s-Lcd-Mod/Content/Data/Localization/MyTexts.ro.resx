@@ -557,7 +557,9 @@
     <value>Tip de conexiune</value>
   </data>
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
-    <value>{0} Include doar blocurile de pe această navă sau stație. &#xA;{1} include nave/stații conectate mecanic, de exemplu prin rotoare, balamale și pistoane. &#xA;{2} include conexiuni mecanice și nave/stații conectate folosind conectori.</value>
+    <value>{0} Include doar blocurile de pe această navă sau stație. 
+{1} include nave/stații conectate mecanic, de exemplu prin rotoare, balamale și pistoane. 
+{2} include conexiuni mecanice și nave/stații conectate folosind conectori.</value>
   </data>
     <data name="LcdMod_Projector_Ingots" xml:space="preserve">
     <value>Lingouri</value>
@@ -630,5 +632,36 @@
   </data>
   <data name="LcdMod_Cargo_FillDone" xml:space="preserve">
     <value>{0} obiecte mutate</value>
+  </data>
+<data name="LcdMod_DigitalPictureFrames" xml:space="preserve">
+    <value>Ramă foto</value>
+  </data>
+  <data name="LcdMod_PickTexture" xml:space="preserve">
+    <value>Alege textura</value>
+  </data>
+  <data name="LcdMod_IndexConflict" xml:space="preserve">
+    <value>Conflict de index al suprafeței</value>
+  </data>
+  <data name="LcdMod_IndexConflictDetails" xml:space="preserve">
+    <value>O altă instanță a scriptului folosește deja acest index de suprafață.</value>
+  </data>
+  <data name="LcdMod_BSoD_Header" xml:space="preserve">
+    <value>Stația ta a întâmpinat o problemă și trebuie repornită.
+Vom aștepta puțin, apoi o vom reporni pentru tine.</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoIntro" xml:space="preserve">
+    <value>Pentru mai multe informații despre această problemă,</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoUrl" xml:space="preserve">
+    <value>vizitează</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoQr" xml:space="preserve">
+    <value>sau scanează acest cod QR.</value>
+  </data>
+  <data name="LcdMod_BSoD_SupportIntro" xml:space="preserve">
+    <value>Dacă apelezi la asistență, oferă-le aceste informații:</value>
+  </data>
+  <data name="LcdMod_BSoD_ExceptionCode" xml:space="preserve">
+    <value>Cod excepție:</value>
   </data>
 </root>

@@ -557,7 +557,9 @@
     <value>Koblingstype</value>
   </data>
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
-    <value>{0} Inkluderer bare blokker på dette skipet eller denne stasjonen. &#xA;{1} inkluderer mekanisk tilkoblede skip/stasjoner, for eksempel via rotorer, hengsler og stempler. &#xA;{2} inkluderer mekaniske tilkoblinger og skip/stasjoner koblet sammen med connectors.</value>
+    <value>{0} Inkluderer bare blokker på dette skipet eller denne stasjonen. 
+{1} inkluderer mekanisk tilkoblede skip/stasjoner, for eksempel via rotorer, hengsler og stempler. 
+{2} inkluderer mekaniske tilkoblinger og skip/stasjoner koblet sammen med connectors.</value>
   </data>
     <data name="LcdMod_Projector_Ingots" xml:space="preserve">
     <value>Barrer</value>
@@ -630,5 +632,36 @@
   </data>
   <data name="LcdMod_Cargo_FillDone" xml:space="preserve">
     <value>{0} gjenstander flyttet</value>
+  </data>
+<data name="LcdMod_DigitalPictureFrames" xml:space="preserve">
+    <value>Bilderamme</value>
+  </data>
+  <data name="LcdMod_PickTexture" xml:space="preserve">
+    <value>Velg tekstur</value>
+  </data>
+  <data name="LcdMod_IndexConflict" xml:space="preserve">
+    <value>Konflikt med overflateindeks</value>
+  </data>
+  <data name="LcdMod_IndexConflictDetails" xml:space="preserve">
+    <value>En annen skriptinstans bruker allerede denne overflateindeksen.</value>
+  </data>
+  <data name="LcdMod_BSoD_Header" xml:space="preserve">
+    <value>Stasjonen din støtte på et problem og må startes på nytt.
+Vi venter en stund og starter den deretter på nytt for deg.</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoIntro" xml:space="preserve">
+    <value>For mer informasjon om dette problemet,</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoUrl" xml:space="preserve">
+    <value>besøk</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoQr" xml:space="preserve">
+    <value>eller skann denne QR-koden.</value>
+  </data>
+  <data name="LcdMod_BSoD_SupportIntro" xml:space="preserve">
+    <value>Hvis du kontakter brukerstøtte, gi dem denne informasjonen:</value>
+  </data>
+  <data name="LcdMod_BSoD_ExceptionCode" xml:space="preserve">
+    <value>Unntakskode:</value>
   </data>
 </root>

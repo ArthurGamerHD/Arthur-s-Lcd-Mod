@@ -557,7 +557,9 @@
     <value>Länktyp</value>
   </data>
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
-    <value>{0} Inkluderar endast block på detta skepp eller denna station. &#xA;{1} inkluderar mekaniskt anslutna skepp/stationer, till exempel via rotorer, gångjärn och kolvar. &#xA;{2} inkluderar mekaniska anslutningar och skepp/stationer anslutna med connectors.</value>
+    <value>{0} Inkluderar endast block på detta skepp eller denna station. 
+{1} inkluderar mekaniskt anslutna skepp/stationer, till exempel via rotorer, gångjärn och kolvar. 
+{2} inkluderar mekaniska anslutningar och skepp/stationer anslutna med connectors.</value>
   </data>
     <data name="LcdMod_Projector_Ingots" xml:space="preserve">
     <value>Tackor</value>
@@ -630,5 +632,36 @@
   </data>
   <data name="LcdMod_Cargo_FillDone" xml:space="preserve">
     <value>{0} föremål flyttade</value>
+  </data>
+<data name="LcdMod_DigitalPictureFrames" xml:space="preserve">
+    <value>Bildram</value>
+  </data>
+  <data name="LcdMod_PickTexture" xml:space="preserve">
+    <value>Välj textur</value>
+  </data>
+  <data name="LcdMod_IndexConflict" xml:space="preserve">
+    <value>Konflikt för ytindex</value>
+  </data>
+  <data name="LcdMod_IndexConflictDetails" xml:space="preserve">
+    <value>En annan skriptinstans använder redan detta ytindex.</value>
+  </data>
+  <data name="LcdMod_BSoD_Header" xml:space="preserve">
+    <value>Din station stötte på ett problem och måste startas om.
+Vi väntar en stund och startar sedan om den åt dig.</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoIntro" xml:space="preserve">
+    <value>För mer information om det här problemet,</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoUrl" xml:space="preserve">
+    <value>besök</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoQr" xml:space="preserve">
+    <value>eller skanna den här QR-koden.</value>
+  </data>
+  <data name="LcdMod_BSoD_SupportIntro" xml:space="preserve">
+    <value>Om du kontaktar support, ge dem den här informationen:</value>
+  </data>
+  <data name="LcdMod_BSoD_ExceptionCode" xml:space="preserve">
+    <value>Undantagskod:</value>
   </data>
 </root>

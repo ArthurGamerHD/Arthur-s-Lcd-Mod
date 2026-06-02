@@ -558,7 +558,9 @@
     <value>リンク種別</value>
   </data>
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
-    <value>{0} この船舶またはステーション上のブロックのみを含みます。&#xA;{1} ローター、ヒンジ、ピストンなどで機械的に接続された船舶/ステーションを含みます。&#xA;{2} 機械接続と、コネクターで接続された船舶/ステーションを含みます。</value>
+    <value>{0} この船舶またはステーション上のブロックのみを含みます。
+{1} ローター、ヒンジ、ピストンなどで機械的に接続された船舶/ステーションを含みます。
+{2} 機械接続と、コネクターで接続された船舶/ステーションを含みます。</value>
   </data>
     <data name="LcdMod_Projector_Ingots" xml:space="preserve">
     <value>インゴット</value>
@@ -631,5 +633,36 @@
   </data>
   <data name="LcdMod_Cargo_FillDone" xml:space="preserve">
     <value>{0} 個のアイテムを移動しました</value>
+  </data>
+<data name="LcdMod_DigitalPictureFrames" xml:space="preserve">
+    <value>写真フレーム</value>
+  </data>
+  <data name="LcdMod_PickTexture" xml:space="preserve">
+    <value>テクスチャを選択</value>
+  </data>
+  <data name="LcdMod_IndexConflict" xml:space="preserve">
+    <value>サーフェス インデックスの競合</value>
+  </data>
+  <data name="LcdMod_IndexConflictDetails" xml:space="preserve">
+    <value>別のスクリプト インスタンスがすでにこのサーフェス インデックスを使用しています。</value>
+  </data>
+  <data name="LcdMod_BSoD_Header" xml:space="preserve">
+    <value>ステーションで問題が発生したため、再起動する必要があります。
+しばらく待ってから再起動します。</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoIntro" xml:space="preserve">
+    <value>この問題の詳細については、</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoUrl" xml:space="preserve">
+    <value>次にアクセスしてください</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoQr" xml:space="preserve">
+    <value>またはこの QR コードをスキャンしてください。</value>
+  </data>
+  <data name="LcdMod_BSoD_SupportIntro" xml:space="preserve">
+    <value>サポート担当者に連絡する場合は、次の情報を伝えてください:</value>
+  </data>
+  <data name="LcdMod_BSoD_ExceptionCode" xml:space="preserve">
+    <value>例外コード:</value>
   </data>
 </root>

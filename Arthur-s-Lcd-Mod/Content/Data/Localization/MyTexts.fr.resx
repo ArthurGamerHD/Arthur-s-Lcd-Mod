@@ -558,7 +558,9 @@
     <value>Type de liaison</value>
   </data>
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
-    <value>{0} Inclut uniquement les blocs de ce vaisseau ou de cette station. &#xA;{1} inclut les vaisseaux/stations reliés mécaniquement, par exemple via des rotors, charnières et pistons. &#xA;{2} inclut les connexions mécaniques et les vaisseaux/stations reliés par des connecteurs.</value>
+    <value>{0} Inclut uniquement les blocs de ce vaisseau ou de cette station. 
+{1} inclut les vaisseaux/stations reliés mécaniquement, par exemple via des rotors, charnières et pistons. 
+{2} inclut les connexions mécaniques et les vaisseaux/stations reliés par des connecteurs.</value>
   </data>
     <data name="LcdMod_Projector_Ingots" xml:space="preserve">
     <value>Lingots</value>
@@ -631,5 +633,36 @@
   </data>
   <data name="LcdMod_Cargo_FillDone" xml:space="preserve">
     <value>{0} objets déplacés</value>
+  </data>
+<data name="LcdMod_DigitalPictureFrames" xml:space="preserve">
+    <value>Cadre photo</value>
+  </data>
+  <data name="LcdMod_PickTexture" xml:space="preserve">
+    <value>Choisir une texture</value>
+  </data>
+  <data name="LcdMod_IndexConflict" xml:space="preserve">
+    <value>Conflit d’index de surface</value>
+  </data>
+  <data name="LcdMod_IndexConflictDetails" xml:space="preserve">
+    <value>Une autre instance du script utilise déjà cet index de surface.</value>
+  </data>
+  <data name="LcdMod_BSoD_Header" xml:space="preserve">
+    <value>Votre station a rencontré un problème et doit redémarrer.
+Nous allons patienter un moment, puis la redémarrer pour vous.</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoIntro" xml:space="preserve">
+    <value>Pour plus d’informations sur ce problème,</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoUrl" xml:space="preserve">
+    <value>consultez</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoQr" xml:space="preserve">
+    <value>ou scannez ce code QR.</value>
+  </data>
+  <data name="LcdMod_BSoD_SupportIntro" xml:space="preserve">
+    <value>Si vous contactez l’assistance, communiquez-leur ces informations :</value>
+  </data>
+  <data name="LcdMod_BSoD_ExceptionCode" xml:space="preserve">
+    <value>Code d’exception :</value>
   </data>
 </root>

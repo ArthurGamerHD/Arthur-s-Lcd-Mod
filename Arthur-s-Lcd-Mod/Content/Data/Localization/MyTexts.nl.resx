@@ -557,7 +557,9 @@
     <value>Koppelingstype</value>
   </data>
     <data name="LcdMod_LinkTypeDescription" xml:space="preserve">
-    <value>{0} Bevat alleen blokken op dit schip of station. &#xA;{1} bevat mechanisch verbonden schepen/stations, zoals via rotors, scharnieren en zuigers. &#xA;{2} bevat mechanische verbindingen en schepen/stations die via connectors zijn verbonden.</value>
+    <value>{0} Bevat alleen blokken op dit schip of station. 
+{1} bevat mechanisch verbonden schepen/stations, zoals via rotors, scharnieren en zuigers. 
+{2} bevat mechanische verbindingen en schepen/stations die via connectors zijn verbonden.</value>
   </data>
     <data name="LcdMod_Projector_Ingots" xml:space="preserve">
     <value>Staven</value>
@@ -630,5 +632,36 @@
   </data>
   <data name="LcdMod_Cargo_FillDone" xml:space="preserve">
     <value>{0} items verplaatst</value>
+  </data>
+<data name="LcdMod_DigitalPictureFrames" xml:space="preserve">
+    <value>Fotolijst</value>
+  </data>
+  <data name="LcdMod_PickTexture" xml:space="preserve">
+    <value>Textuur kiezen</value>
+  </data>
+  <data name="LcdMod_IndexConflict" xml:space="preserve">
+    <value>Conflict met oppervlakte-index</value>
+  </data>
+  <data name="LcdMod_IndexConflictDetails" xml:space="preserve">
+    <value>Een andere scriptinstantie gebruikt deze oppervlakte-index al.</value>
+  </data>
+  <data name="LcdMod_BSoD_Header" xml:space="preserve">
+    <value>Je station heeft een probleem ondervonden en moet opnieuw worden opgestart.
+We wachten even en starten het daarna voor je opnieuw op.</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoIntro" xml:space="preserve">
+    <value>Voor meer informatie over dit probleem,</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoUrl" xml:space="preserve">
+    <value>ga naar</value>
+  </data>
+  <data name="LcdMod_BSoD_InfoQr" xml:space="preserve">
+    <value>of scan deze QR-code.</value>
+  </data>
+  <data name="LcdMod_BSoD_SupportIntro" xml:space="preserve">
+    <value>Als je contact opneemt met support, geef dan deze informatie door:</value>
+  </data>
+  <data name="LcdMod_BSoD_ExceptionCode" xml:space="preserve">
+    <value>Uitzonderingscode:</value>
   </data>
 </root>
