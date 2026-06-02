@@ -622,4 +622,13 @@
   <data name="LcdMod_Transfer_Next" xml:space="preserve">
     <value>Seuraava</value>
   </data>
+  <data name="LcdMod_Cargo_FillWeapons" xml:space="preserve">
+    <value>Aseet</value>
+  </data>
+  <data name="LcdMod_Cargo_FillReactors" xml:space="preserve">
+    <value>Reaktorit</value>
+  </data>
+  <data name="LcdMod_Cargo_FillDone" xml:space="preserve">
+    <value>{0} esinettä siirretty</value>
+  </data>
 </root>

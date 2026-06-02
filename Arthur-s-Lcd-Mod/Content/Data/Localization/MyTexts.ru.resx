@@ -622,4 +622,13 @@
   <data name="LcdMod_Transfer_Next" xml:space="preserve">
     <value>Далее</value>
   </data>
+  <data name="LcdMod_Cargo_FillWeapons" xml:space="preserve">
+    <value>Оружие</value>
+  </data>
+  <data name="LcdMod_Cargo_FillReactors" xml:space="preserve">
+    <value>Реакторы</value>
+  </data>
+  <data name="LcdMod_Cargo_FillDone" xml:space="preserve">
+    <value>Перемещено предметов: {0}</value>
+  </data>
 </root>

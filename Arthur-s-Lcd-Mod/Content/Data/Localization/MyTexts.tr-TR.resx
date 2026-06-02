@@ -622,4 +622,13 @@
   <data name="LcdMod_Transfer_Next" xml:space="preserve">
     <value>Ileri</value>
   </data>
+  <data name="LcdMod_Cargo_FillWeapons" xml:space="preserve">
+    <value>Silahlar</value>
+  </data>
+  <data name="LcdMod_Cargo_FillReactors" xml:space="preserve">
+    <value>Reaktörler</value>
+  </data>
+  <data name="LcdMod_Cargo_FillDone" xml:space="preserve">
+    <value>{0} öğe taşındı</value>
+  </data>
 </root>

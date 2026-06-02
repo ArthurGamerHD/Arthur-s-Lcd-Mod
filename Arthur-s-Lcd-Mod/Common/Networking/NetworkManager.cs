@@ -315,6 +315,7 @@ namespace LcdMod.Common.Networking
         TransferItems = 5,
         RequestTexture = 6,
         SyncTexture = 7,
+        FillBlocks = 8,
         NetworkFragment = 100
     }
 

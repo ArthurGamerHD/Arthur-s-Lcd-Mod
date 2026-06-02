@@ -623,4 +623,13 @@
   <data name="LcdMod_Transfer_Next" xml:space="preserve">
     <value>Proximo</value>
   </data>
+  <data name="LcdMod_Cargo_FillWeapons" xml:space="preserve">
+    <value>Armas</value>
+  </data>
+  <data name="LcdMod_Cargo_FillReactors" xml:space="preserve">
+    <value>Reatores</value>
+  </data>
+  <data name="LcdMod_Cargo_FillDone" xml:space="preserve">
+    <value>{0} itens movidos</value>
+  </data>
 </root>

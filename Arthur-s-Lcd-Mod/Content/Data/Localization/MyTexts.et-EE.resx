@@ -622,4 +622,13 @@
   <data name="LcdMod_Transfer_Next" xml:space="preserve">
     <value>Next</value>
   </data>
+  <data name="LcdMod_Cargo_FillWeapons" xml:space="preserve">
+    <value>Relvad</value>
+  </data>
+  <data name="LcdMod_Cargo_FillReactors" xml:space="preserve">
+    <value>Reaktorid</value>
+  </data>
+  <data name="LcdMod_Cargo_FillDone" xml:space="preserve">
+    <value>{0} eset teisaldatud</value>
+  </data>
 </root>

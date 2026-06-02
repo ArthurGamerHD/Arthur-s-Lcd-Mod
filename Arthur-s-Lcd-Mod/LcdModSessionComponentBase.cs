@@ -209,6 +209,9 @@ namespace LcdMod
                     case PackageCode.TransferItems:
                         Server?.HandleTransferItems(args);
                         break;
+                    case PackageCode.FillBlocks:
+                        Server?.HandleFillBlocks(args);
+                        break;
                     default:
                         {
                             LogHelper.Log(MyLogSeverity.Error, $"Unexpected Packet Code Received");

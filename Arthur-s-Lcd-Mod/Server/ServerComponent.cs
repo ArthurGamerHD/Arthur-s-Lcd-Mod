@@ -234,6 +234,46 @@ namespace LcdMod.Server
             InventoryDistributorCommon.Execute(source, targets, typeKeys, (TransferMode)packet.Mode);
         }
 
+        public void HandleFillBlocks(ReceivedPacketEventArgs args)
+        {
+            var packet = args.UnWrap<PacketFillBlocks>();
+            if (packet == null || packet.TargetIds == null || packet.TargetIds.Length == 0)
+                return;
+
+            var senderIdentity = MyAPIGateway.Players.TryGetIdentityId(args.SenderId);
+            if (senderIdentity == 0)
+                return;
+
+            var targets = CollectOwnedBlocks(packet.TargetIds, senderIdentity);
+            if (targets.Count == 0)
+                return;
+
+            var sources = CollectOwnedBlocks(packet.SourceIds, senderIdentity);
+            BlockFillerCommon.Execute(sources, targets, (FillKind)packet.Kind);
+        }
+
+        // Resolves entity ids to inventory-bearing blocks the requester is actually allowed to use.
+        static List<IMyTerminalBlock> CollectOwnedBlocks(long[] ids, long senderIdentity)
+        {
+            var blocks = new List<IMyTerminalBlock>(ids != null ? ids.Length : 0);
+            if (ids == null)
+                return blocks;
+
+            for (var i = 0; i < ids.Length; i++)
+            {
+                var block = MyEntities.GetEntityById(ids[i]) as IMyTerminalBlock;
+                if (block == null || !block.HasInventory)
+                    continue;
+
+                if (block.GetUserRelationToOwner(senderIdentity) > MyRelationsBetweenPlayerAndBlock.FactionShare)
+                    continue;
+
+                blocks.Add(block);
+            }
+
+            return blocks;
+        }
+
         public void HandleRequestTexture(ReceivedPacketEventArgs args)
         {
             var packet = args.UnWrap<PacketRequestTexture>();

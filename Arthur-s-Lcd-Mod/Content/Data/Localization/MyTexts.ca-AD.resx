@@ -623,4 +623,13 @@
   <data name="LcdMod_Transfer_Next" xml:space="preserve">
     <value>Next</value>
   </data>
+  <data name="LcdMod_Cargo_FillWeapons" xml:space="preserve">
+    <value>Armes</value>
+  </data>
+  <data name="LcdMod_Cargo_FillReactors" xml:space="preserve">
+    <value>Reactors</value>
+  </data>
+  <data name="LcdMod_Cargo_FillDone" xml:space="preserve">
+    <value>{0} objectes moguts</value>
+  </data>
 </root>

@@ -38,6 +38,9 @@ namespace LcdMod.Client.Apps
         const string LOC_SORT_ALPHABETICAL = "LcdMod_Cargo_Sort_Alphabetical";
         const string LOC_SORT_DONE = "LcdMod_Cargo_SortDone";
         const string LOC_SORT_REQUESTED = "LcdMod_Cargo_SortRequested";
+        const string LOC_FILL_WEAPONS = "LcdMod_Cargo_FillWeapons";
+        const string LOC_FILL_REACTORS = "LcdMod_Cargo_FillReactors";
+        const string LOC_FILL_DONE = "LcdMod_Cargo_FillDone";
         const float FOOTER_BUTTON_GAP = 8f;
         const int STATUS_MESSAGE_FRAMES = 240; // ~4s on-screen confirmation
 
@@ -50,10 +53,14 @@ namespace LcdMod.Client.Apps
         readonly ScrollPanel _scrollPanel;
         readonly InteractiveSurfaceScript _interactiveHost;
         readonly List<IMyTerminalBlock> _sortBlocks = new List<IMyTerminalBlock>();
+        readonly List<IMyTerminalBlock> _fillTargets = new List<IMyTerminalBlock>();
         Button _sorterButton;
         Button _modeButton;
+        Button _weaponsButton;
+        Button _reactorsButton;
         ControlStyle _sorterButtonStyle;
         ControlStyle _modeButtonStyle;
+        ControlStyle _fillButtonStyle;
         int _sortMode = (int)InventorySortMode.Quantity;
         float _footerHeight;
         long _lastSortFrame = long.MinValue;
@@ -399,15 +406,21 @@ namespace LcdMod.Client.Apps
                 Alignment = TextAlignment.CENTER
             });
 
-            var totalWidth = modeSize.X + gap + sorterSize.X;
-            var startX = Host.ViewBox.X + (Host.ViewBox.Width - totalWidth) * 0.5f;
+            var weaponsSize = GetFillButtonSize(LOC_FILL_WEAPONS);
+            var reactorsSize = GetFillButtonSize(LOC_FILL_REACTORS);
 
-            var modeRect = new RectangleF(startX, footerTop + paddingY, modeSize.X, modeSize.Y);
-            var sorterRect = new RectangleF(startX + modeSize.X + gap, footerTop + paddingY, sorterSize.X, sorterSize.Y);
+            var totalWidth = modeSize.X + sorterSize.X + weaponsSize.X + reactorsSize.X + 3f * gap;
+            var x = Host.ViewBox.X + (Host.ViewBox.Width - totalWidth) * 0.5f;
+            var top = footerTop + paddingY;
 
             var context = CreateRenderContext();
-            DrawModeButton(modeRect, context, sprites);
-            DrawSorterButton(sorterRect, context, sprites);
+            DrawModeButton(new RectangleF(x, top, modeSize.X, modeSize.Y), context, sprites);
+            x += modeSize.X + gap;
+            DrawSorterButton(new RectangleF(x, top, sorterSize.X, sorterSize.Y), context, sprites);
+            x += sorterSize.X + gap;
+            DrawWeaponsButton(new RectangleF(x, top, weaponsSize.X, weaponsSize.Y), context, sprites);
+            x += weaponsSize.X + gap;
+            DrawReactorsButton(new RectangleF(x, top, reactorsSize.X, reactorsSize.Y), context, sprites);
         }
 
         void DrawModeButton(RectangleF rect, ControlRenderContext context, List<MySprite> sprites)
@@ -455,6 +468,172 @@ namespace LcdMod.Client.Apps
                 _interactiveList.Add(_sorterButton);
 
             _sorterButton.Render(context, sprites);
+        }
+
+        void DrawWeaponsButton(RectangleF rect, ControlRenderContext context, List<MySprite> sprites)
+        {
+            if (_weaponsButton == null)
+                _weaponsButton = new Button(rect, new ButtonModel { Text = MyTexts.GetString(LOC_FILL_WEAPONS), Clicked = OnWeaponsClicked });
+            else
+                _weaponsButton.SetRect(rect);
+
+            var model = _weaponsButton.DataContext as ButtonModel;
+            if (model != null)
+                model.Enabled = true;
+
+            _weaponsButton.SetVisible(true);
+            _weaponsButton.SetCursor(CursorType.Hand);
+            _weaponsButton.SetStyle(GetFillButtonStyle());
+            _weaponsButton.CustomRender = RenderWeaponsButton;
+
+            if (!_interactiveList.Contains(_weaponsButton))
+                _interactiveList.Add(_weaponsButton);
+
+            _weaponsButton.Render(context, sprites);
+        }
+
+        void DrawReactorsButton(RectangleF rect, ControlRenderContext context, List<MySprite> sprites)
+        {
+            if (_reactorsButton == null)
+                _reactorsButton = new Button(rect, new ButtonModel { Text = MyTexts.GetString(LOC_FILL_REACTORS), Clicked = OnReactorsClicked });
+            else
+                _reactorsButton.SetRect(rect);
+
+            var model = _reactorsButton.DataContext as ButtonModel;
+            if (model != null)
+                model.Enabled = true;
+
+            _reactorsButton.SetVisible(true);
+            _reactorsButton.SetCursor(CursorType.Hand);
+            _reactorsButton.SetStyle(GetFillButtonStyle());
+            _reactorsButton.CustomRender = RenderReactorsButton;
+
+            if (!_interactiveList.Contains(_reactorsButton))
+                _interactiveList.Add(_reactorsButton);
+
+            _reactorsButton.Render(context, sprites);
+        }
+
+        void RenderWeaponsButton(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        {
+            RenderFooterButton(control, context, sprites, MyTexts.GetString(LOC_FILL_WEAPONS));
+        }
+
+        void RenderReactorsButton(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        {
+            RenderFooterButton(control, context, sprites, MyTexts.GetString(LOC_FILL_REACTORS));
+        }
+
+        ControlStyle GetFillButtonStyle()
+        {
+            if (_fillButtonStyle == null)
+            {
+                _fillButtonStyle = ControlStyle.FromThemeRoles(
+                    Constants.ON_SECONDARY_CONTAINER,
+                    Constants.SECONDARY_CONTAINER,
+                    Constants.SECONDARY_CONTAINER + Constants.HOVER,
+                    Constants.ON_SECONDARY_CONTAINER,
+                    Theme);
+                _fillButtonStyle.BorderRadiusPixels = Border.DEFAULT_RADIUS_PIXELS;
+            }
+            else
+            {
+                _fillButtonStyle.ThemeColors = Theme;
+            }
+
+            return _fillButtonStyle;
+        }
+
+        Vector2 GetFillButtonSize(string locKey)
+        {
+            var textScale = GetSorterButtonTextScale();
+            var textSize = FormatingHelper.GetSizeInPixel(MyTexts.GetString(locKey), "White", textScale, Host.Surface);
+            return new Vector2(
+                Math.Max(110f * Host.Scale, textSize.X + 28f * Host.Scale),
+                Math.Max(28f * Host.Scale, FormatingHelper.LineHeight(textScale, Host.Surface) + 10f * Host.Scale));
+        }
+
+        void OnWeaponsClicked(ButtonModel model, object sender)
+        {
+            RunFill(FillKind.Weapons);
+        }
+
+        void OnReactorsClicked(ButtonModel model, object sender)
+        {
+            RunFill(FillKind.Reactors);
+        }
+
+        // Sources are the in-scope cargo containers/connectors; targets are every weapon (ammo) or
+        // reactor (uranium) reachable on the grid. Server-authoritative, like the sorter.
+        void RunFill(FillKind kind)
+        {
+            try
+            {
+                // Throttle: the fill pass is a heavy synchronous transfer; ignore rapid repeat clicks.
+                var frame = MyAPIGateway.Session != null ? MyAPIGateway.Session.GameplayFrameCounter : 0L;
+                if (_lastSortFrame != long.MinValue && frame - _lastSortFrame < 60L)
+                    return;
+                _lastSortFrame = frame;
+
+                _sortBlocks.Clear();
+                CollectContainerCandidates(_sortBlocks);
+                if (_sortBlocks.Count == 0)
+                    return;
+
+                _fillTargets.Clear();
+                if (kind == FillKind.Weapons)
+                    CollectFillTargets<IMyUserControllableGun>(_fillTargets);
+                else
+                    CollectFillTargets<IMyReactor>(_fillTargets);
+
+                if (_fillTargets.Count == 0)
+                    return;
+
+                if (MyAPIGateway.Session != null && MyAPIGateway.Session.IsServer)
+                {
+                    var moved = BlockFillerCommon.Execute(_sortBlocks, _fillTargets, kind);
+                    SetStatusMessage(string.Format(MyTexts.GetString(LOC_FILL_DONE), moved));
+                }
+                else
+                {
+                    LcdModSessionComponent.NetworkManager.TransmitToServer(
+                        new PacketFillBlocks(ToEntityIds(_sortBlocks), ToEntityIds(_fillTargets), (int)kind), false);
+                    SetStatusMessage(MyTexts.GetString(LOC_SORT_REQUESTED));
+                }
+            }
+            catch (Exception e)
+            {
+                ErrorHandlerHelper.LogError(e, Host);
+            }
+        }
+
+        void CollectFillTargets<T>(List<IMyTerminalBlock> result) where T : class
+        {
+            var gridLogic = Host.GridLogic;
+            if (gridLogic == null)
+                return;
+
+            var blocks = gridLogic.GetTerminalBlocks<IMyTerminalBlock>(Config.GridLinkType);
+            if (blocks == null)
+                return;
+
+            for (var i = 0; i < blocks.Count; i++)
+            {
+                var fat = blocks[i];
+                if (fat == null || !fat.HasInventory)
+                    continue;
+
+                if (fat is T)
+                    result.Add(fat);
+            }
+        }
+
+        static long[] ToEntityIds(List<IMyTerminalBlock> blocks)
+        {
+            var ids = new long[blocks.Count];
+            for (var i = 0; i < blocks.Count; i++)
+                ids[i] = blocks[i].EntityId;
+            return ids;
         }
 
         string GetSortModeText()
