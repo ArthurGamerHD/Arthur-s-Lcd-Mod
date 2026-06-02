@@ -67,9 +67,6 @@ namespace LcdMod.Client.Apps
         float _requiredX;
         float _availableX;
         bool _projectorDataInitialized;
-#if EXPERIMENTAL
-        string _projectorDiagKey;
-#endif
         Button _craftAllButton;
         ControlStyle _craftAllButtonStyle;
         ControlStyle _craftAllDisabledButtonStyle;
@@ -873,12 +870,6 @@ namespace LcdMod.Client.Apps
 
             FindProjector(grid, ref _projector);
 
-#if EXPERIMENTAL
-            if (_projector == null)
-                LogHelper.LogOnce("projector_null",
-                    "[Projector] nenhum projetor resolvido (configRef=" + AppConfig.ReferenceBlock + ")");
-#endif
-
             if (_projector == null)
                 return;
 
@@ -895,21 +886,6 @@ namespace LcdMod.Client.Apps
 
             try
             {
-#if EXPERIMENTAL
-                var diagSignature = _projector.EntityId + ":" + _totalBlocks + ":" + _remainingBlocks;
-                StringBuilder diag = null;
-                if (diagSignature != _projectorDiagKey)
-                {
-                    _projectorDiagKey = diagSignature;
-                    diag = new StringBuilder();
-                    diag.Append("[Projector] '").Append(_projector.CustomName)
-                        .Append("' projectorGrid=").Append(_projector.CubeGrid.GridSizeEnum)
-                        .Append(" projectedGrid=").Append(_projector.ProjectedGrid != null ? "yes" : "NULL")
-                        .Append(" total=").Append(_totalBlocks)
-                        .Append(" remaining=").Append(_remainingBlocks)
-                        .Append(" types=").Append(_projector.RemainingBlocksPerType.Count).Append('\n');
-                }
-#endif
                 foreach (var block in _projector.RemainingBlocksPerType)
                 {
                     var def = block.Key as MyCubeBlockDefinition;
@@ -917,9 +893,6 @@ namespace LcdMod.Client.Apps
                         continue;
 
                     AccumulateComponents(def, block.Value);
-#if EXPERIMENTAL
-                    AppendBlockDiag(diag, def, block.Value);
-#endif
                 }
 
                 // RemainingBlocksPerType comes back empty in several valid projector states (the
@@ -937,20 +910,8 @@ namespace LcdMod.Client.Apps
                             continue;
 
                         AccumulateComponents(def, 1);
-#if EXPERIMENTAL
-                        AppendBlockDiag(diag, def, 1);
-#endif
                     }
-#if EXPERIMENTAL
-                    if (diag != null)
-                        diag.Append("  (fallback ProjectedGrid: blocks=").Append(_projectorBlocks.Count).Append(")\n");
-#endif
                 }
-
-#if EXPERIMENTAL
-                if (diag != null)
-                    LogHelper.LogInfo(diag.ToString());
-#endif
             }
             catch (Exception e)
             {
@@ -998,21 +959,6 @@ namespace LcdMod.Client.Apps
             }
         }
 
-#if EXPERIMENTAL
-        void AppendBlockDiag(StringBuilder diag, MyCubeBlockDefinition def, int blockCount)
-        {
-            if (diag == null || def.Components == null)
-                return;
-
-            diag.Append("  ").Append(def.Id.SubtypeName)
-                .Append(" [").Append(def.CubeSize).Append("] x").Append(blockCount);
-            for (int c = 0; c < def.Components.Length; c++)
-                diag.Append(" | ").Append(def.Components[c].Definition.Id.SubtypeName)
-                    .Append('=').Append(def.Components[c].Count);
-            diag.Append('\n');
-        }
-#endif
-
         void PopulateActiveView(Dictionary<MyItemType, double> neededByType, Dictionary<MyItemType, double> availableByType)
         {
             long totalNeeded = 0;
@@ -1038,9 +984,10 @@ namespace LcdMod.Client.Apps
         }
 
         // Estimates the ore-bars (ingots) consumed by the still-needed components, expanding each
-        // component through its primary blueprint. Components that are only a secondary blueprint
-        // result (absent from PrimaryBlueprintByCreatedItem) are skipped, so the total is a lower-bound
-        // estimate. Only "MyObjectBuilder_Ingot" prerequisites are counted.
+        // component through its blueprint (primary, or any producer as a fallback - see GridLogic). A
+        // component that no blueprint produces as a primary result is skipped, so the total is a
+        // lower-bound estimate. Only "MyObjectBuilder_Ingot" prerequisites are counted (gravel is the
+        // Stone ingot, so reactor components now contribute it correctly).
         void BuildIngotNeeded(Dictionary<MyItemType, double> componentNeeded, Dictionary<MyItemType, double> ingotNeeded)
         {
             ingotNeeded.Clear();

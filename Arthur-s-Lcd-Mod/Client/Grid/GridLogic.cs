@@ -528,8 +528,17 @@ namespace LcdMod.Client.Grid
                         AddToSet(BlueprintsByCreatedItem, itemId, blueprint.Id);
                     }
 
-                if (blueprint.IsPrimary && results?.Length >= 1)
-                    PrimaryBlueprintByCreatedItem[results.First().Id] = blueprint;
+                // Map each produced item to the blueprint that makes it. A primary blueprint always
+                // wins; a non-primary one only fills the gap when an item has no primary blueprint at
+                // all. Vanilla's ReactorComponent ships without <IsPrimary>, so without this fallback
+                // reactor components never expand and their gravel/iron/silver vanish from the
+                // "ingots needed" estimate (the gravel is used by nothing else, so it disappears).
+                if (results != null && results.Length >= 1)
+                {
+                    var primaryResultId = results.First().Id;
+                    if (blueprint.IsPrimary || !PrimaryBlueprintByCreatedItem.ContainsKey(primaryResultId))
+                        PrimaryBlueprintByCreatedItem[primaryResultId] = blueprint;
+                }
 
                 CreatedItemsByBlueprint[blueprint.Id] = createdItems;
             }
