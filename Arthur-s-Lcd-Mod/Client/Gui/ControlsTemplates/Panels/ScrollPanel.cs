@@ -10,6 +10,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 {
     public sealed class ScrollPanel : ControlBase
     {
+        public const float DefaultScrollerWidthPixels = 8f;
         const long MANUAL_SCROLL_OVERRIDE_FRAMES = 300L;
         const float DEFAULT_MANUAL_SCROLL_PIXEL_MULTIPLIER = 0.08f;
         const float MANUAL_SCROLL_VELOCITY_IMPULSE = 0.12f;
@@ -68,7 +69,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         public RectangleF ContentBounds { get; private set; }
         public float RowHeight { get; private set; }
         public float ScrollerWidthPixels { get; private set; }
-        public float AutomaticScrollerWidthPixels { get; set; } = 12f;
+        public float AutomaticScrollerWidthPixels { get; set; } = DefaultScrollerWidthPixels;
         public float ScrollStepPixels { get; set; } = 32f;
         public float AutoScrollSecondsPerStep { get; private set; }
         public float ManualScrollPixelMultiplier { get; set; } = DEFAULT_MANUAL_SCROLL_PIXEL_MULTIPLIER;
@@ -492,6 +493,18 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             _scrollBarThumbColor = thumbColor;
             _hasCustomScrollBarColors = true;
             MarkDirty();
+        }
+
+        public void ResetScroll(bool notify = true)
+        {
+            StopScrollInertia();
+            _manualScrollPixels = 0f;
+            ScrollOffsetPixels = 0f;
+            StartRow = 0;
+            RowOffsetPixels = 0f;
+            MarkDirty();
+            if (notify)
+                ScrollChanged?.Invoke(this);
         }
 
         public void ClearScrollBarColors()

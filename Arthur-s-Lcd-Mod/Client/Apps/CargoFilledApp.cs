@@ -33,7 +33,6 @@ namespace LcdMod.Client.Apps
 {
     public sealed class CargoFilledApp : AppBase, IAppInteractive
     {
-        const int SCROLLER_WIDTH = 8;
         const int LINE_HEIGHT = 40;
         const int SCROLL_DELAY = 12;
         const string LOC_SORTER = "LcdMod_Cargo_Sorter";
@@ -317,7 +316,7 @@ namespace LcdMod.Client.Apps
             var viewportHeight = Math.Max(0f, Host.ViewBox.Bottom - contentTop - Math.Max(0f, _footerHeight));
             _scrollPanel.ConfigureAutomatic(
                 new RectangleF(Host.ViewBox.X, contentTop, Host.ViewBox.Width, viewportHeight),
-                SCROLLER_WIDTH * Host.Scale,
+                _scrollPanel.AutomaticScrollerWidthPixels * Host.Scale,
                 rowHeight,
                 SCROLL_DELAY / 6f);
             _scrollPanel.SetScrollBarColors(

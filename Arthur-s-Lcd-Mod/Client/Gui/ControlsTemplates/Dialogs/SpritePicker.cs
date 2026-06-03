@@ -40,7 +40,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         const float ROW_HEIGHT_PIXELS = 40f;
         const float ROW_GAP_PIXELS = 3f;
         const float ICON_SIZE_PIXELS = 32f;
-        const float SCROLLER_WIDTH_PIXELS = 12f;
 
         readonly List<string> _selectedSpriteNames = new List<string>();
         readonly HashSet<string> _selectedSpriteNameSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -349,7 +348,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 radiusScale: scale);
 
             var rowHeight = GetRowHeight(scale);
-            var scrollerWidth = SCROLLER_WIDTH_PIXELS * scale;
+            var scrollerWidth = _scrollPanel.AutomaticScrollerWidthPixels * scale;
 
             _scrollPanel.SetContent(_listPanel);
             _listPanel.ItemsSource = _filteredSprites;

@@ -226,7 +226,7 @@ namespace LcdMod.Client.Apps
             var viewportHeight = Math.Max(0f, ViewBox.Bottom - contentTop);
             _scroll.ConfigureAutomatic(
                 new RectangleF(ViewBox.X, contentTop, ViewBox.Width, viewportHeight),
-                SCROLLER_WIDTH * Scale,
+                _scroll.AutomaticScrollerWidthPixels * Scale,
                 rowHeight,
                 0f);
         }

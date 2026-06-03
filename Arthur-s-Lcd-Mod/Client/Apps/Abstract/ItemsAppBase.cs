@@ -140,7 +140,6 @@ namespace LcdMod.Client.Apps.Abstract
         protected const int TITLE_HEIGHT = 35;
         protected const int LINE_HEIGHT = 30;
         protected const int MINIMUM_COL_WIDTH = 220;
-        protected const int SCROLLER_WIDTH = 8;
         protected const int SCROLL_DELAY = 12;
         protected string PreviousType = "";
 
@@ -338,7 +337,7 @@ namespace LcdMod.Client.Apps.Abstract
 
             _scrollPanel.ConfigureAutomatic(
                 contentBounds,
-                SCROLLER_WIDTH * Scale,
+                _scrollPanel.AutomaticScrollerWidthPixels * Scale,
                 rowHeight,
                 SCROLL_DELAY / 6f);
             ConfigureScrollPanelBarColors(_scrollPanel);
@@ -367,7 +366,7 @@ namespace LcdMod.Client.Apps.Abstract
 
             _scrollPanel.ConfigureAutomatic(
                 contentBounds,
-                SCROLLER_WIDTH * Scale,
+                _scrollPanel.AutomaticScrollerWidthPixels * Scale,
                 rowHeight,
                 SCROLL_DELAY / 6f);
             ConfigureScrollPanelBarColors(_scrollPanel);

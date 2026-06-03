@@ -24,6 +24,15 @@ When rendering LCD sprites or creating interactive hitboxes, always account for 
 3. Before adding a hitbox for rendered text, convert the measured text size and alignment into the actual on-screen rectangle.
 4. Do not reuse a text sprite `Position` directly as a rectangle top-left corner.
 
+# Icon Fallback Instruction
+
+When resolving sprites or texture registrations for app data, never use `SquareSimple` as an icon fallback.
+
+Rules:
+
+1. Use the explicit `MissingIcon` sprite for missing, malformed, or unresolved icon data.
+2. Reserve `SquareSimple` for geometric drawing primitives such as bars, panels, lines, and backgrounds.
+3. If a specific fallback asset exists for a category, prefer that category fallback over `MissingIcon`.
 
 # Space Engineers Source Instruction
 

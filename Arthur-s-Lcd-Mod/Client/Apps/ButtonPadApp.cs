@@ -42,7 +42,6 @@ namespace LcdMod.Client.Apps
     {
         const float BUTTON_SIZE_PIXELS = 92f;
         const float BUTTON_SPACING_PIXELS = 3f;
-        const float SCROLLER_WIDTH_PIXELS = 12f;
         const string CUSTOM_DATA_KEY = "Buttonpanel";
         const string TYPE_BOOLEAN = "Boolean";
         const string TYPE_INT64 = "Int64";
@@ -157,7 +156,7 @@ namespace LcdMod.Client.Apps
 
             BuildRenderEntryIndices();
 
-            var scrollerWidth = Math.Min(SCROLLER_WIDTH_PIXELS * Scale, Math.Max(0f, ViewBox.Width * 0.25f));
+            var scrollerWidth = Math.Min(_scrollPanel.AutomaticScrollerWidthPixels * Scale, Math.Max(0f, ViewBox.Width * 0.25f));
             var layout = CreateButtonGridLayout(ViewBox.Width, availableHeight);
             var totalRows = GetRowsForEntryCount(_renderEntryIndices.Count, layout.Columns);
             var needsScroller = totalRows * layout.RowHeight > availableHeight + 0.001f;

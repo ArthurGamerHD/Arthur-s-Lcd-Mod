@@ -22,10 +22,12 @@ namespace LcdMod.Server
         readonly Dictionary<long, Dictionary<long, long>> _gridRemaps = new Dictionary<long, Dictionary<long, long>>();
         readonly Dictionary<string, HashSet<ulong>> _pendingTextureRequests = new Dictionary<string, HashSet<ulong>>(System.StringComparer.OrdinalIgnoreCase);
         readonly HashSet<IMyEntity> _entities = new HashSet<IMyEntity>();
+        readonly NpcMarketService _npcMarket;
 
         public LcdModServerComponent(LcdModSessionComponent session)
         {
             _session = session;
+            _npcMarket = new NpcMarketService(session);
         }
 
         public void LoadData()
@@ -73,6 +75,22 @@ namespace LcdMod.Server
 
             RemapHelper.PinBlocks(packet.Config);
             ScreenProviderConfigStorage.Save(block, packet.Config);
+        }
+
+        public void SaveData()
+        {
+            _npcMarket.SaveData();
+        }
+
+        public void HandleRequestNpcMarket(ReceivedPacketEventArgs args)
+        {
+            _npcMarket.HandleRequest(args.SenderId, args.UnWrap<PacketRequestNpcMarket>());
+        }
+
+        public void HandleLocalRequestNpcMarket(PacketRequestNpcMarket packet)
+        {
+            var player = MyAPIGateway.Session?.Player;
+            _npcMarket.HandleRequest(player != null ? player.SteamUserId : MyAPIGateway.Multiplayer.MyId, packet);
         }
 
         void EntityAdded(IMyEntity entity)

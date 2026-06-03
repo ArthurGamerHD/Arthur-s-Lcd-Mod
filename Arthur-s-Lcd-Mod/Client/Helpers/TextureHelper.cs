@@ -20,6 +20,8 @@ namespace LcdMod.Client.Helpers
         static readonly HashSet<string> CustomTextures = new HashSet<string>();
         static readonly HashSet<string> LocalCustomTextures = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         static readonly HashSet<string> PendingTextureRequests = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        static readonly Dictionary<string, string> RegisteredGeneratedTextures =
+            new Dictionary<string, string>(StringComparer.Ordinal);
 
         static readonly HashSet<string> FailedTextureParseRequests =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -61,6 +63,35 @@ namespace LcdMod.Client.Helpers
             var texture = CreateLcdTextureDefinition(definition);
             MyDefinitionManager.Static.Definitions.AddOrReplaceDefinition(texture);
             return texture.Id.SubtypeName;
+        }
+
+        public static string GetOrAddTextureForPath(string registrationKey, string displayName, string spritePath)
+        {
+            if (string.IsNullOrWhiteSpace(registrationKey) || string.IsNullOrWhiteSpace(spritePath) ||
+                MyDefinitionManager.Static == null)
+            {
+                return "MissingIcon";
+            }
+
+            string existing;
+            if (RegisteredGeneratedTextures.TryGetValue(registrationKey, out existing))
+                return existing;
+
+            var subtypeName = "NpcMarket_" + MakeSafeTextureSubtype(registrationKey);
+            var textureDefinition = new MyLCDTextureDefinition
+            {
+                Id = new MyDefinitionId((MyObjectBuilderType)typeof(MyObjectBuilder_LCDTextureDefinition), subtypeName),
+                Public = false,
+                LocalizationId = string.IsNullOrWhiteSpace(displayName) ? subtypeName : displayName,
+                SpritePath = spritePath,
+                TexturePath = spritePath,
+                Selectable = false
+            };
+
+            MyDefinitionManager.Static.Definitions.AddOrReplaceDefinition(textureDefinition);
+            RegisteredGeneratedTextures[registrationKey] = subtypeName;
+            LocalCustomTextures.Add(subtypeName);
+            return subtypeName;
         }
 
 
@@ -262,6 +293,43 @@ namespace LcdMod.Client.Helpers
                 return string.Empty;
 
             return "ColorfulIcons_" + itemId.Substring(prefix.Length);
+        }
+
+        static string MakeSafeTextureSubtype(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return StableFnv1a32(string.Empty).ToString("X8");
+
+            var sb = new StringBuilder(value.Length);
+            for (var i = 0; i < value.Length; i++)
+            {
+                var c = value[i];
+                sb.Append(char.IsLetterOrDigit(c) ? c : '_');
+            }
+
+            var sanitized = sb.ToString();
+            if (sanitized.Length > 72)
+                sanitized = sanitized.Substring(0, 72);
+
+            return sanitized + "_" + StableFnv1a32(value).ToString("X8");
+        }
+
+        static uint StableFnv1a32(string value)
+        {
+            unchecked
+            {
+                uint hash = 2166136261;
+                if (value != null)
+                {
+                    for (var i = 0; i < value.Length; i++)
+                    {
+                        hash ^= value[i];
+                        hash *= 16777619;
+                    }
+                }
+
+                return hash;
+            }
         }
 
         static MyLCDTextureDefinition CreateLcdTextureDefinition(MyCubeBlockDefinition blockDefinition)

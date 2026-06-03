@@ -665,4 +665,28 @@ Nous allons patienter un moment, puis la redémarrer pour vous.</value>
   <data name="LcdMod_BSoD_ExceptionCode" xml:space="preserve">
     <value>Code d’exception :</value>
   </data>
+  <data name="LcdMod_MarketApp" xml:space="preserve">
+    <value>Engineers Exchange</value>
+  </data>
+  <!-- TODO_TRANSLATION: English fallback for LcdMod_MarketApp. -->
+  <data name="LcdMod_MarketApp_Refresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <!-- TODO_TRANSLATION: English fallback for LcdMod_MarketApp_Refresh. -->
+  <data name="LcdMod_MarketApp_Loading" xml:space="preserve">
+    <value>Requesting market data...</value>
+  </data>
+  <!-- TODO_TRANSLATION: English fallback for LcdMod_MarketApp_Loading. -->
+  <data name="LcdMod_MarketApp_Empty" xml:space="preserve">
+    <value>No valid offers found.</value>
+  </data>
+  <data name="LcdMod_MarketApp_NoTrader" xml:space="preserve">
+    <value>User is not a registered trader.</value>
+  </data>
+  <!-- TODO_TRANSLATION: English fallback for LcdMod_MarketApp_NoTrader. -->
+  <!-- TODO_TRANSLATION: English fallback for LcdMod_MarketApp_Empty. -->
+  <data name="LcdMod_MarketApp_Updated" xml:space="preserve">
+    <value>Updated {0} ago</value>
+  </data>
+  <!-- TODO_TRANSLATION: English fallback for LcdMod_MarketApp_Updated. -->
 </root>

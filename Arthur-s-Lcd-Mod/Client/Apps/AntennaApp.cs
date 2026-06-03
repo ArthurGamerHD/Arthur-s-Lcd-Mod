@@ -22,7 +22,6 @@ namespace LcdMod.Client.Apps
     {
         const float LINE = 22f;
         const float MINIMUM_COL_WIDTH = 400f;
-        const float SCROLLER_WIDTH = 8f;
         const int SCROLL_DELAY = 12;
         const float GRID_CELL_LINES = 6f;
         const float LASER_ICON_SOURCE_SIZE = 190f;
@@ -157,7 +156,7 @@ namespace LcdMod.Client.Apps
             var viewportHeight = Math.Max(0f, Host.ViewBox.Bottom - contentTop - Math.Max(0f, footerHeight));
             _scrollPanel.ConfigureAutomatic(
                 new RectangleF(Host.ViewBox.X, contentTop, Host.ViewBox.Width, viewportHeight),
-                SCROLLER_WIDTH * Host.Scale,
+                _scrollPanel.AutomaticScrollerWidthPixels * Host.Scale,
                 rowHeight,
                 SCROLL_DELAY / 6f);
             _scrollPanel.SetScrollBarColors(

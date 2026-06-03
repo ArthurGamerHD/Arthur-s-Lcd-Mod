@@ -29,7 +29,6 @@ namespace LcdMod.Client.Apps
 {
     public sealed class GasApp : AppBase
     {
-        const int SCROLLER_WIDTH = 8;
         const int LINE_HEIGHT = 40;
         const int SCROLL_DELAY = 12;
 
@@ -133,7 +132,7 @@ namespace LcdMod.Client.Apps
             var viewportHeight = Math.Max(0f, Host.ViewBox.Bottom - contentTop);
             _scrollPanel.ConfigureAutomatic(
                 new RectangleF(Host.ViewBox.X, contentTop, Host.ViewBox.Width, viewportHeight),
-                SCROLLER_WIDTH * Host.Scale,
+                _scrollPanel.AutomaticScrollerWidthPixels * Host.Scale,
                 rowHeight,
                 SCROLL_DELAY / 6f);
             _scrollPanel.SetScrollBarColors(

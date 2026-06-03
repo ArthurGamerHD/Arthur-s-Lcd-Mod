@@ -59,7 +59,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         const float ROW_HEIGHT_PIXELS = 40f;
         const float ROW_GAP_PIXELS = 3f;
         const float ICON_SIZE_PIXELS = 46f;
-        const float SCROLLER_WIDTH_PIXELS = 10f;
 
         static readonly PickActionTargetKind[] Kinds = new[]
         {
@@ -563,7 +562,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             Border.CreateSpritesFromRect(listRect, Sprites, GetThemeColor(Constants.SURFACE_CONTAINER_HIGH), radiusScale: scale);
 
             var rowHeight = GetRowHeight(scale);
-            var scrollerWidth = Math.Min(SCROLLER_WIDTH_PIXELS * scale, Math.Max(0f, listRect.Width * 0.25f));
+            var scrollerWidth = Math.Min(_scrollPanel.AutomaticScrollerWidthPixels * scale, Math.Max(0f, listRect.Width * 0.25f));
 
             _scrollPanel.ClearChildren();
             _scrollPanel.Configure(listRect, listRect.Y, 0f, rowHeight, _filteredItems.Count, scrollerWidth, 0f);
