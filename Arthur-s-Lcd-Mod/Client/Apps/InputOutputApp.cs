@@ -16,6 +16,7 @@ using VRage;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
+using VisualStackPanel = LcdMod.Client.Gui.ControlsTemplates.Panels.StackPanel.StackPanel;
 
 namespace LcdMod.Client.Apps
 {
@@ -56,6 +57,7 @@ namespace LcdMod.Client.Apps
         readonly Dictionary<long, BlockUiState> _state = new Dictionary<long, BlockUiState>();
         readonly Dictionary<long, RectangleControl> _headerControls = new Dictionary<long, RectangleControl>();
         readonly Dictionary<long, RectangleControl> _modeControls = new Dictionary<long, RectangleControl>();
+        readonly List<RowControl> _rowControls = new List<RowControl>();
         readonly List<Row> _rows = new List<Row>();
         readonly List<BlockSpan> _spans = new List<BlockSpan>();
         readonly HashSet<long> _liveIds = new HashSet<long>();
@@ -66,6 +68,8 @@ namespace LcdMod.Client.Apps
         bool _refreshQueued;
         Color _itemCardColor;
         Color _itemTextColor;
+        VisualStackPanel _listPanel;
+        float _currentRowHeight;
 
         public override Dictionary<MyItemType, double> ItemSource => null;
 
@@ -78,6 +82,8 @@ namespace LcdMod.Client.Apps
             _scroll = new ScrollPanel(CursorType.Default, this);
             _scroll.ManualScrollInertiaEnabled = false;
             _scroll.ScrollChanged = OnScrollChanged;
+            _listPanel = new VisualStackPanel();
+            _listPanel.CustomRender = RenderListPanelContent;
         }
 
         public override void Update()
@@ -190,7 +196,7 @@ namespace LcdMod.Client.Apps
         {
             var sprites = new List<MySprite>();
             InteractiveList.Clear();
-            _scroll.ClearChildren();
+            HideRowControls();
 
             if (_blocks.Count == 0)
                 return sprites;
@@ -199,48 +205,49 @@ namespace LcdMod.Client.Apps
             _itemTextColor = ResolveThemeColor(Constants.ON_SECONDARY_CONTAINER, ForegroundColor);
 
             float rowHeight = LINE_HEIGHT * Scale;
-            _scroll.Configure(ViewBox, ContentTop(), 0f, rowHeight, _rows.Count, SCROLLER_WIDTH * Scale, 0f);
+            _currentRowHeight = rowHeight;
+            _scroll.SetContent(_listPanel);
+            _listPanel.RowHeight = rowHeight;
+            _listPanel.Gap = 0f;
+            SyncRowControls(_listPanel);
+            ConfigureAutomaticScroll(rowHeight);
             ConfigureScrollColors();
             _scroll.SetVisible(true);
             InteractiveList.Add(_scroll);
 
             var context = CreateItemRenderContext();
             _scroll.Render(context, sprites);
-
-            var stack = StackPanel.Create(_scroll.ContentBounds, rowHeight, _rows.Count, _scroll.GetStartIndex(1));
-            if (stack.VisibleCellCount <= 0)
-                return sprites;
-
-            BeginClip(sprites, _scroll.ContentViewportBounds);
-
-            DrawBlockCards(sprites, rowHeight, _scroll.StartRow, _scroll.StartRow + stack.VisibleCellCount);
-
-            for (int i = 0; i < stack.VisibleCellCount; i++)
-            {
-                var cell = stack.GetCell(i);
-                if (cell.ItemIndex < 0 || cell.ItemIndex >= _rows.Count)
-                    continue;
-
-                var row = _rows[cell.ItemIndex];
-                switch (row.Kind)
-                {
-                    case ROW_HEADER:
-                        RenderHeader(sprites, row, cell.Bounds);
-                        break;
-                    case ROW_COLUMNS:
-                        RenderColumnsHeader(sprites, cell.Bounds);
-                        break;
-                    default:
-                        RenderItem(sprites, row, cell.Bounds);
-                        break;
-                }
-            }
-
-            EndClip(sprites);
             return sprites;
         }
 
-        void DrawBlockCards(List<MySprite> sprites, float rowHeight, int visibleStart, int visibleEnd)
+        void ConfigureAutomaticScroll(float rowHeight)
+        {
+            var contentTop = ContentTop();
+            var viewportHeight = Math.Max(0f, ViewBox.Bottom - contentTop);
+            _scroll.ConfigureAutomatic(
+                new RectangleF(ViewBox.X, contentTop, ViewBox.Width, viewportHeight),
+                SCROLLER_WIDTH * Scale,
+                rowHeight,
+                0f);
+        }
+
+        void RenderListPanelContent(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        {
+            DrawBlockCards(sprites, _currentRowHeight);
+
+            var children = control != null ? control.Children : null;
+            if (children == null)
+                return;
+
+            for (int i = 0; i < children.Count; i++)
+            {
+                var child = children[i];
+                if (child != null)
+                    child.Render(context, sprites);
+            }
+        }
+
+        void DrawBlockCards(List<MySprite> sprites, float rowHeight)
         {
             var view = _scroll.ContentViewportBounds;
             float gap = CARD_GAP * Scale;
@@ -254,11 +261,11 @@ namespace LcdMod.Client.Apps
                     continue;
 
                 int end = span.FirstRow + span.RowCount;
-                if (span.FirstRow >= visibleEnd || end <= visibleStart)
+                float top = _scroll.ContentBounds.Y + span.FirstRow * rowHeight;
+                float height = span.RowCount * rowHeight;
+                if (top >= view.Bottom || top + height <= view.Y)
                     continue;
 
-                float top = _scroll.ContentBounds.Y + (span.FirstRow - _scroll.StartRow) * rowHeight;
-                float height = span.RowCount * rowHeight;
                 var cardRect = new RectangleF(view.X + gap, top + gap,
                     Math.Max(0f, view.Width - 2f * gap), Math.Max(0f, height - 2f * gap));
                 if (cardRect.Width <= 0f || cardRect.Height <= 0f)
@@ -270,15 +277,136 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        void RenderHeader(List<MySprite> sprites, Row row, RectangleF bounds)
+        void SyncRowControls(Panel panel)
+        {
+            if (panel == null)
+                return;
+
+            EnsureRowControlCount(_rows.Count);
+            RemoveExtraPanelChildren(panel, _rows.Count);
+
+            var children = panel.Children;
+            bool changed = false;
+            for (int i = 0; i < _rows.Count; i++)
+            {
+                var control = _rowControls[i];
+                var row = _rows[i];
+                control.Row = row;
+                control.RowIndex = i;
+                control.CustomRender = RenderRowControl;
+                control.SetVisible(true);
+
+                if (row.Kind == ROW_HEADER)
+                {
+                    var block = _blocks[row.BlockIndex];
+                    control.ClearChildren();
+                    control.SetDataContext(GetState(block.EntityId));
+                    control.SetCursor(CursorType.Hand);
+                    control.SetOnClick(OnHeaderClicked);
+                }
+                else
+                {
+                    control.SetDataContext(null);
+                    control.SetCursor(CursorType.Default);
+                    control.SetOnClick(null);
+                    control.ClearChildren();
+                }
+
+                if (!ReferenceEquals(control.Parent, panel))
+                {
+                    panel.AddChild(control);
+                    children = panel.Children;
+                    changed = true;
+                }
+
+                if (children == null || i >= children.Count || ReferenceEquals(children[i], control))
+                    continue;
+
+                int currentIndex = IndexOfChild(children, control);
+                if (currentIndex < 0)
+                    continue;
+
+                if (panel.MoveChild(control, i))
+                    changed = true;
+            }
+
+            if (changed)
+                panel.InvalidateLayout();
+        }
+
+        void EnsureRowControlCount(int count)
+        {
+            while (_rowControls.Count < count)
+                _rowControls.Add(new RowControl());
+        }
+
+        void HideRowControls()
+        {
+            for (int i = 0; i < _rowControls.Count; i++)
+            {
+                if (_rowControls[i] != null)
+                {
+                    _rowControls[i].SetVisible(false);
+                    _rowControls[i].ClearChildren();
+                }
+            }
+
+            foreach (var kv in _modeControls)
+            {
+                if (kv.Value != null)
+                    kv.Value.SetVisible(false);
+            }
+        }
+
+        void RemoveExtraPanelChildren(Panel panel, int desiredCount)
+        {
+            var children = panel.Children;
+            if (children == null)
+                return;
+
+            for (int i = children.Count - 1; i >= desiredCount; i--)
+                panel.RemoveChild(children[i]);
+        }
+
+        static int IndexOfChild(IReadOnlyList<ControlBase> children, ControlBase child)
+        {
+            if (children == null || child == null)
+                return -1;
+
+            for (int i = 0; i < children.Count; i++)
+            {
+                if (ReferenceEquals(children[i], child))
+                    return i;
+            }
+
+            return -1;
+        }
+
+        void RenderRowControl(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        {
+            var rowControl = control as RowControl;
+            if (rowControl == null)
+                return;
+
+            var row = rowControl.Row;
+            switch (row.Kind)
+            {
+                case ROW_HEADER:
+                    RenderHeader(rowControl, sprites, row, rowControl.Bounds);
+                    break;
+                case ROW_COLUMNS:
+                    RenderColumnsHeader(sprites, rowControl.Bounds);
+                    break;
+                default:
+                    RenderItem(sprites, row, rowControl.Bounds);
+                    break;
+            }
+        }
+
+        void RenderHeader(RowControl rowControl, List<MySprite> sprites, Row row, RectangleF bounds)
         {
             var block = _blocks[row.BlockIndex];
             var state = GetState(block.EntityId);
-
-            var header = GetOrCreateControl(_headerControls, block.EntityId, state, OnHeaderClicked);
-            header.SetRect(bounds);
-            header.SetVisible(true);
-            _scroll.AddChild(header);
 
             float pad = (CARD_GAP + CARD_PAD) * Scale;
 
@@ -313,7 +441,7 @@ namespace LcdMod.Client.Apps
                 var mode = GetOrCreateControl(_modeControls, block.EntityId, state, OnModeClicked);
                 mode.SetRect(modeRect);
                 mode.SetVisible(true);
-                _scroll.AddChild(mode);
+                rowControl.AddChild(mode);
 
                 nameRight = modeRect.X - 12f * Scale;
             }
@@ -543,23 +671,6 @@ namespace LcdMod.Client.Apps
             return TitleVisible ? ViewBox.Y + 40f * Scale * FontScale : ViewBox.Y;
         }
 
-        void BeginClip(List<MySprite> sprites, RectangleF bounds)
-        {
-            if (bounds.Width <= 0f || bounds.Height <= 0f)
-                return;
-
-            int x = (int)Math.Floor(bounds.X);
-            int y = (int)Math.Floor(bounds.Y);
-            int right = (int)Math.Ceiling(bounds.Right);
-            int bottom = (int)Math.Ceiling(bounds.Bottom);
-            sprites.Add(MySprite.CreateClipRect(new Rectangle(x, y, Math.Max(0, right - x), Math.Max(0, bottom - y))));
-        }
-
-        void EndClip(List<MySprite> sprites)
-        {
-            sprites.Add(MySprite.CreateClearClipRect());
-        }
-
         void OnHeaderClicked(object dataContext, object sender)
         {
             var state = dataContext as BlockUiState;
@@ -614,6 +725,17 @@ namespace LcdMod.Client.Apps
             public long EntityId;
             public bool Expanded;
             public int Mode;
+        }
+
+        sealed class RowControl : RectangleControl
+        {
+            public RowControl()
+                : base(default(RectangleF), CursorType.Default)
+            {
+            }
+
+            public int RowIndex;
+            public Row Row;
         }
 
         struct BlockSpan

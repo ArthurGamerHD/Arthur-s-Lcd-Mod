@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using LcdMod.Client;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Inputs;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
+using LcdMod.Client.Gui.ControlsTemplates.Panels.Virtualized;
 using LcdMod.Client.Helpers;
 using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
@@ -13,7 +15,7 @@ using VRageMath;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
 using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 
-namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
+namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 {
     sealed class SpritePicker : Dialog
     {
@@ -46,8 +48,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             new Dictionary<string, SpriteRowModel>(StringComparer.OrdinalIgnoreCase);
         readonly List<SpriteRowModel> _allSprites = new List<SpriteRowModel>();
         readonly List<SpriteRowModel> _filteredSprites = new List<SpriteRowModel>();
-        readonly List<RectangleControl> _rowControls = new List<RectangleControl>();
         readonly ScrollPanel _scrollPanel = new ScrollPanel();
+        readonly VirtualizedStackPanel<SpriteRowModel> _listPanel = new VirtualizedStackPanel<SpriteRowModel>();
 
         TextInput _searchInput;
         TextInputModel _searchInputModel;
@@ -59,36 +61,44 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         ControlStyle _applyStyle;
 
         bool _spritesLoaded;
+        bool _childRenderQueued;
         string _searchText = string.Empty;
         string _selectionAnchorSpriteName = string.Empty;
+        InteractiveSurfaceScript _owner;
 
         public SpritePicker(IApp parentApp)
-            : this(parentApp, null, null)
+            : this(parentApp, (Action<string>)null, null, null)
         {
         }
 
-        public SpritePicker(IApp parentApp, Action<string> onSelected, Action requestRedraw = null)
+        public SpritePicker(IApp parentApp, Action<string> onSelected, Action requestRedraw = null, Action onClosed = null)
             : base(parentApp)
         {
             OnSelected = onSelected;
             RequestRedraw = requestRedraw;
+            OnClosed = onClosed;
 
             OnClose = delegate
             {
-                if (RequestRedraw != null)
+                if (OnClosed != null)
+                    OnClosed();
+                else if (RequestRedraw != null)
                     RequestRedraw();
             };
 
             _scrollPanel.ManualScrollInertiaEnabled = false;
             _scrollPanel.ScrollChanged = OnScrollChanged;
+            _listPanel.CreateControl = CreateRowControl;
+            _listPanel.BindControl = BindRowControl;
         }
 
         public SpritePicker(
             IApp parentApp,
             Action<string[]> onApplied,
             IEnumerable<string> selectedSprites,
-            Action requestRedraw = null)
-            : this(parentApp, null, requestRedraw)
+            Action requestRedraw = null,
+            Action onClosed = null)
+            : this(parentApp, null, requestRedraw, onClosed)
         {
             AllowMultiSelection = true;
             OnApplied = onApplied;
@@ -102,6 +112,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         public bool AllowMultiSelection { get; set; }
 
         public Action RequestRedraw { get; set; }
+
+        public Action OnClosed { get; set; }
 
         public void Show(Action<string> onSelected, Action requestRedraw = null)
         {
@@ -130,6 +142,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             Color panelColor,
             Vector2 cursorPosition)
         {
+            _owner = owner;
             EnsureContainer(viewBox);
             ContainerControl.ClearChildren();
 
@@ -326,8 +339,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             float scale,
             IMyTextSurface surface)
         {
-            HideUnusedRows(0);
-
             if (listRect.Height <= 1f)
                 return;
 
@@ -340,14 +351,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             var rowHeight = GetRowHeight(scale);
             var scrollerWidth = SCROLLER_WIDTH_PIXELS * scale;
 
-            _scrollPanel.ClearChildren();
-            _scrollPanel.Configure(
+            _scrollPanel.SetContent(_listPanel);
+            _listPanel.ItemsSource = _filteredSprites;
+            _listPanel.RowHeight = rowHeight;
+            _listPanel.Gap = ROW_GAP_PIXELS * scale;
+            _scrollPanel.ConfigureAutomatic(
                 listRect,
-                listRect.Y,
-                0f,
-                rowHeight,
-                _filteredSprites.Count,
                 scrollerWidth,
+                rowHeight,
                 0f);
 
             _scrollPanel.SetScrollBarColors(
@@ -363,32 +374,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 _scrollPanel.Render(context, Sprites);
                 return;
             }
-
-            BeginClip(Sprites, _scrollPanel.ContentViewportBounds);
-
-            var usedControls = 0;
-            var startRow = _scrollPanel.StartRow;
-            var endRow = Math.Min(_filteredSprites.Count, startRow + _scrollPanel.RenderRows);
-
-            for (var spriteIndex = startRow; spriteIndex < endRow; spriteIndex++)
-            {
-                var visibleIndex = spriteIndex - startRow;
-                var rowRect = new RectangleF(
-                    _scrollPanel.ContentViewportBounds.X,
-                    _scrollPanel.ContentBounds.Y + visibleIndex * rowHeight,
-                    _scrollPanel.ContentViewportBounds.Width,
-                    Math.Max(1f, rowHeight - ROW_GAP_PIXELS * scale));
-
-                var control = GetRowControl(usedControls++);
-                ConfigureRowControl(control, rowRect, _filteredSprites[spriteIndex]);
-
-                _scrollPanel.AddChild(control);
-                control.Render(context, Sprites);
-            }
-
-            EndClip(Sprites);
-
-            HideUnusedRows(usedControls);
 
             _scrollPanel.Render(context, Sprites);
         }
@@ -425,27 +410,24 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             return Math.Max(ROW_HEIGHT_PIXELS * scale, GetIconTargetSize(scale) + 8f * Math.Max(1f, scale));
         }
 
-        RectangleControl GetRowControl(int index)
+        ControlBase CreateRowControl(SpriteRowModel model)
         {
-            while (_rowControls.Count <= index)
-            {
-                var control = new RectangleControl(
-                    default(RectangleF),
-                    CursorType.Hand,
-                    null,
-                    OnSpriteClicked);
+            var control = new RectangleControl(
+                default(RectangleF),
+                CursorType.Hand,
+                model,
+                OnSpriteClicked);
 
-                control.CustomRender = RenderSpriteRow;
-                _rowControls.Add(control);
-            }
-
-            return _rowControls[index];
+            control.CustomRender = RenderSpriteRow;
+            return control;
         }
 
-        void ConfigureRowControl(RectangleControl control, RectangleF rect, SpriteRowModel model)
+        void BindRowControl(ControlBase control, SpriteRowModel model, int index)
         {
+            if (control == null || model == null)
+                return;
+
             model.IsSelected = AllowMultiSelection && _selectedSpriteNameSet.Contains(model.SpriteName);
-            control.SetRect(rect);
             control.SetDataContext(model);
             control.SetCursor(CursorType.Hand);
             control.SetStyle(model.IsSelected ? GetSelectedRowStyle() : GetRowStyle());
@@ -460,6 +442,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 return;
 
             var rect = entry.Bounds;
+            if (rect.Height > ROW_GAP_PIXELS * context.Scale)
+            {
+                rect = new RectangleF(
+                    rect.X,
+                    rect.Y,
+                    rect.Width,
+                    Math.Max(1f, rect.Height - ROW_GAP_PIXELS * context.Scale));
+            }
             var hovered = rect.Contains(context.CursorPosition);
             var selected = AllowMultiSelection && model.IsSelected;
             var backgroundColor = selected
@@ -530,19 +520,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             });
         }
 
-        void HideUnusedRows(int usedControls)
-        {
-            for (var i = usedControls; i < _rowControls.Count; i++)
-                _rowControls[i].SetVisible(false);
-        }
-
         void OnSearchChanged(string value)
         {
             _searchText = value ?? string.Empty;
             ApplyFilter();
-
-            if (RequestRedraw != null)
-                RequestRedraw();
+            QueueChildRenderIfNeeded();
         }
 
         void ApplyFilter()
@@ -591,8 +573,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                     _selectionAnchorSpriteName = model.SpriteName;
                 }
 
-                if (RequestRedraw != null)
-                    RequestRedraw();
+                QueueChildRenderIfNeeded();
 
                 return;
             }
@@ -624,8 +605,50 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
         void OnScrollChanged(ScrollPanel panel)
         {
-            if (RequestRedraw != null)
-                RequestRedraw();
+            QueueChildRenderIfNeeded();
+        }
+
+        void QueueChildRenderIfNeeded()
+        {
+            if (_childRenderQueued || !CanSelfRender())
+                return;
+
+            _childRenderQueued = true;
+            LcdModClientComponent.RunNextFrame.Add(RunQueuedChildRender);
+        }
+
+        void RunQueuedChildRender()
+        {
+            _childRenderQueued = false;
+
+            try
+            {
+                if (!CanSelfRender())
+                    return;
+
+                _owner.RenderSprites();
+            }
+            catch (Exception e)
+            {
+                ErrorHandlerHelper.LogError(e, GetType());
+            }
+        }
+
+        bool CanSelfRender()
+        {
+            try
+            {
+                return _owner != null &&
+                       _owner.Surface != null &&
+                       _owner.Block != null &&
+                       !_owner.Block.MarkedForClose &&
+                       !_owner.Block.Closed &&
+                       !Dismissed;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         ControlStyle GetSearchStyle()
@@ -858,22 +881,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                    (input.IsKeyPress(MyKeys.Shift) ||
                     input.IsKeyPress(MyKeys.LeftShift) ||
                     input.IsKeyPress(MyKeys.RightShift));
-        }
-
-        static void BeginClip(List<MySprite> sprites, RectangleF bounds)
-        {
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.CLIP_RECT,
-                Position = bounds.Position,
-                Size = bounds.Size,
-                Alignment = TextAlignment.LEFT
-            });
-        }
-
-        static void EndClip(List<MySprite> sprites)
-        {
-            sprites.Add(MySprite.CreateClearClipRect());
         }
 
         SpriteRowModel GetOrCreateSpriteModel(string spriteName)

@@ -9,9 +9,11 @@ using LcdMod.Client.Gui;
 using LcdMod.Client.Grid;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
+using LcdMod.Client.Gui.ControlsTemplates.Dialogs;
 using LcdMod.Client.Gui.ControlsTemplates.Inputs;
 using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
+using LcdMod.Client.Gui.ControlsTemplates.Panels.Virtualized;
 using LcdMod.Client.Helpers;
 #if EXPERIMENTAL
 using LcdMod.Client.Terminal.Actions;
@@ -41,8 +43,6 @@ namespace LcdMod.Client.Apps
         const float BUTTON_SIZE_PIXELS = 92f;
         const float BUTTON_SPACING_PIXELS = 3f;
         const float SCROLLER_WIDTH_PIXELS = 12f;
-        const float FOOTER_MIN_HEIGHT_PIXELS = 16f;
-        const string NEW_LINE_TEXT = "New Line";
         const string CUSTOM_DATA_KEY = "Buttonpanel";
         const string TYPE_BOOLEAN = "Boolean";
         const string TYPE_INT64 = "Int64";
@@ -59,26 +59,24 @@ namespace LcdMod.Client.Apps
 
         readonly List<MySprite> _sprites = new List<MySprite>();
         readonly List<ControlBase> _interactiveList = new List<ControlBase>();
-        readonly List<Button> _entryButtonPool = new List<Button>();
         readonly List<int> _renderEntryIndices = new List<int>();
         readonly Dictionary<int, ButtonPanelEntrySettings> _entries = new Dictionary<int, ButtonPanelEntrySettings>();
         readonly ScrollPanel _scrollPanel = new ScrollPanel();
+        readonly VirtualizedWrapPanel<int> _entryPanel = new VirtualizedWrapPanel<int>();
 #if EXPERIMENTAL
         readonly List<IMyBlockGroup> _actionGroups = new List<IMyBlockGroup>();
         readonly List<IMyIngameTerminalBlock> _actionGroupBlocks = new List<IMyIngameTerminalBlock>();
 #endif
 
-        Button _newLineButton;
         ControlStyle _entryButtonStyle;
-        ControlStyle _footerButtonStyle;
-
-        int _entryCount;
         int _lastLayoutColumns = 1;
 
         public ButtonPadApp(ScreenConfigButtonPanel config, IAppHost host) : base(config, host)
         {
             _scrollPanel.ManualScrollInertiaEnabled = false;
             _scrollPanel.ScrollChanged = OnScrollPanelChanged;
+            _entryPanel.CreateControl = CreateEntryButton;
+            _entryPanel.BindControl = BindEntryButton;
             LoadButtonPanelSettings();
         }
 
@@ -106,17 +104,14 @@ namespace LcdMod.Client.Apps
             ClearInteractiveTree();
 
             var contentTop = GetContentTop();
-            var footerHeight = GetFooterHeight();
-
-            DrawEntries(_sprites, contentTop, footerHeight);
-            DrawFooter(_sprites, footerHeight);
+            DrawEntries(_sprites, contentTop);
 
             return _sprites;
         }
 
         public bool HasVisibleItems()
         {
-            return !AppConfig.HideEmpty || GetMinimumEntryCountForPopulatedEntries() > 0;
+            return true;
         }
 
         public void OnMouseScroll(int delta, ref bool handled)
@@ -127,83 +122,68 @@ namespace LcdMod.Client.Apps
             handled = _scrollPanel.Scroll(this, delta);
         }
 
-        int GetRenderEntryCount(bool hideEmpty)
-        {
-            BuildRenderEntryIndices(hideEmpty);
-            return hideEmpty ? _renderEntryIndices.Count : _entryCount;
-        }
-
-        void BuildRenderEntryIndices(bool hideEmpty)
+        void BuildRenderEntryIndices()
         {
             _renderEntryIndices.Clear();
 
-            if (!hideEmpty)
-            {
-                for (var i = 0; i < _entryCount; i++)
-                    _renderEntryIndices.Add(i);
-                return;
-            }
-
+            var populated = new List<int>();
             foreach (var entry in _entries)
             {
                 if (entry.Value != null && entry.Value.HasContent())
-                    _renderEntryIndices.Add(entry.Key);
+                    populated.Add(entry.Key);
             }
 
-            _renderEntryIndices.Sort();
+            populated.Sort();
+            _renderEntryIndices.AddRange(populated);
+            _renderEntryIndices.Add(GetNextEntryIndex(populated));
         }
 
-        void DrawEntries(List<MySprite> sprites, float contentTop, float footerHeight)
+        static int GetNextEntryIndex(List<int> populated)
+        {
+            if (populated == null || populated.Count == 0)
+                return 0;
+
+            return populated[populated.Count - 1] + 1;
+        }
+
+        void DrawEntries(List<MySprite> sprites, float contentTop)
         {
             if (ViewBox.Width <= 0f || ViewBox.Height <= 0f)
                 return;
 
-            var availableHeight = Math.Max(0f, ViewBox.Bottom - footerHeight - contentTop);
+            var availableHeight = Math.Max(0f, ViewBox.Bottom - contentTop);
             if (availableHeight <= 0f)
                 return;
 
-            var hideEmpty = AppConfig.HideEmpty;
+            BuildRenderEntryIndices();
+
             var scrollerWidth = Math.Min(SCROLLER_WIDTH_PIXELS * Scale, Math.Max(0f, ViewBox.Width * 0.25f));
             var layout = CreateButtonGridLayout(ViewBox.Width, availableHeight);
-            var rowsToFill = GetRowsToFill(availableHeight, layout);
-
-            if (!hideEmpty)
-            {
-                EnsureEntryCount(Math.Max(
-                    rowsToFill * layout.Columns,
-                    GetMinimumEntryCountForPopulatedEntries()));
-            }
-
-            var renderEntryCount = GetRenderEntryCount(hideEmpty);
-            var totalRows = GetRowsForEntryCount(renderEntryCount, layout.Columns);
+            var totalRows = GetRowsForEntryCount(_renderEntryIndices.Count, layout.Columns);
             var needsScroller = totalRows * layout.RowHeight > availableHeight + 0.001f;
             if (needsScroller && scrollerWidth > 0f)
             {
                 layout = CreateButtonGridLayout(Math.Max(1f, ViewBox.Width - scrollerWidth), availableHeight);
-                rowsToFill = GetRowsToFill(availableHeight, layout);
-
-                if (!hideEmpty)
-                {
-                    EnsureEntryCount(Math.Max(
-                        rowsToFill * layout.Columns,
-                        GetMinimumEntryCountForPopulatedEntries()));
-                }
-
-                renderEntryCount = GetRenderEntryCount(hideEmpty);
-                totalRows = GetRowsForEntryCount(renderEntryCount, layout.Columns);
+                totalRows = GetRowsForEntryCount(_renderEntryIndices.Count, layout.Columns);
             }
 
             _lastLayoutColumns = Math.Max(1, layout.Columns);
 
-            _scrollPanel.Configure(
-                ViewBox,
-                contentTop,
-                footerHeight,
-                layout.RowHeight,
-                totalRows,
+            var contentWidth = Math.Max(1f, needsScroller ? ViewBox.Width - scrollerWidth : ViewBox.Width);
+            var columnWidth = contentWidth / Math.Max(1, layout.Columns);
+
+            _scrollPanel.SetContent(_entryPanel);
+            _entryPanel.ItemsSource = _renderEntryIndices;
+            _entryPanel.RowHeight = layout.RowHeight;
+            _entryPanel.MinimumColumnWidth = Math.Max(1f, columnWidth - 0.01f);
+            _entryPanel.HorizontalGap = Math.Max(0f, columnWidth - layout.ButtonSize);
+            _entryPanel.VerticalGap = Math.Max(0f, layout.RowHeight - layout.ButtonSize);
+
+            _scrollPanel.ConfigureAutomatic(
+                new RectangleF(ViewBox.X, contentTop, ViewBox.Width, availableHeight),
                 scrollerWidth,
-                0f
-            );
+                layout.RowHeight,
+                0f);
 
             _scrollPanel.SetScrollBarColors(
                 GetThemeColor(Constants.SURFACE_CONTAINER_HIGH),
@@ -216,53 +196,6 @@ namespace LcdMod.Client.Apps
             var renderContext = CreateControlRenderContext(Surface, Scale, FontScale, GetCursorPosition());
 
             _scrollPanel.Render(renderContext, sprites);
-
-            BeginClip(sprites, _scrollPanel.ContentViewportBounds);
-
-            var usedButtonControls = 0;
-            var startRow = _scrollPanel.StartRow;
-            var contentWidth = Math.Max(1f, _scrollPanel.ContentViewportBounds.Width);
-            var horizontalSpacing = GetEvenSpacing(contentWidth, layout.Columns, layout.ButtonSize);
-            var startX = _scrollPanel.ContentViewportBounds.X + horizontalSpacing;
-
-            for (var renderedRow = 0; renderedRow < _scrollPanel.RenderRows; renderedRow++)
-            {
-                var row = startRow + renderedRow;
-                if (row >= totalRows)
-                    break;
-
-                var y = _scrollPanel.ContentBounds.Y + renderedRow * layout.RowHeight;
-
-                for (var column = 0; column < layout.Columns; column++)
-                {
-                    var slotIndex = row * layout.Columns + column;
-                    if (slotIndex >= renderEntryCount)
-                        break;
-
-                    var entryIndex = hideEmpty ? _renderEntryIndices[slotIndex] : slotIndex;
-                    var x = startX + column * (layout.ButtonSize + horizontalSpacing);
-                    var rect = new RectangleF(x, y, layout.ButtonSize, layout.ButtonSize);
-
-                    var button = GetEntryButton(usedButtonControls++);
-                    ConfigureEntryButton(button, rect, entryIndex, row, column);
-
-                    _scrollPanel.AddChild(button);
-                    button.Render(renderContext, sprites);
-                }
-            }
-
-            EndClip(sprites);
-
-            for (var i = usedButtonControls; i < _entryButtonPool.Count; i++)
-                _entryButtonPool[i].SetVisible(false);
-        }
-
-        int GetRowsToFill(float availableHeight, ButtonGridLayout layout)
-        {
-            if (layout.RowHeight <= 0f)
-                return 1;
-
-            return Math.Max(1, (int)Math.Floor((availableHeight + layout.VerticalSpacing) / layout.RowHeight));
         }
 
         int GetRowsForEntryCount(int entryCount, int columns)
@@ -274,25 +207,6 @@ namespace LcdMod.Client.Apps
                 return 1;
 
             return Math.Max(1, (entryCount + columns - 1) / columns);
-        }
-
-        void EnsureEntryCount(int minimumEntryCount)
-        {
-            if (_entryCount < minimumEntryCount)
-                _entryCount = minimumEntryCount;
-        }
-
-        int GetMinimumEntryCountForPopulatedEntries()
-        {
-            var count = 0;
-
-            foreach (var entry in _entries)
-            {
-                if (entry.Value != null && entry.Value.HasContent() && entry.Key >= count)
-                    count = entry.Key + 1;
-            }
-
-            return count;
         }
 
         ButtonPanelEntrySettings GetEntry(int index, bool create)
@@ -324,7 +238,6 @@ namespace LcdMod.Client.Apps
                 var copy = entry.Clone();
                 copy.Index = index;
                 _entries[index] = copy;
-                EnsureEntryCount(index + 1);
             }
 
             SaveButtonPanelSettings();
@@ -333,7 +246,6 @@ namespace LcdMod.Client.Apps
         void LoadButtonPanelSettings()
         {
             _entries.Clear();
-            _entryCount = 0;
 
             try
             {
@@ -345,8 +257,6 @@ namespace LcdMod.Client.Apps
                 if (settings == null)
                     return;
 
-                _entryCount = Math.Max(0, settings.EntryCount);
-
                 if (settings.Entries == null)
                     return;
 
@@ -357,13 +267,11 @@ namespace LcdMod.Client.Apps
                         continue;
 
                     _entries[entry.Index] = entry.Clone();
-                    EnsureEntryCount(entry.Index + 1);
                 }
             }
             catch
             {
                 _entries.Clear();
-                _entryCount = 0;
             }
         }
 
@@ -382,7 +290,7 @@ namespace LcdMod.Client.Apps
 
             var settings = new ButtonPanelSettings
             {
-                EntryCount = Math.Max(_entryCount, GetMinimumEntryCountForPopulatedEntries()),
+                EntryCount = GetSavedEntryCount(),
                 Entries = list.ToArray()
             };
 
@@ -391,6 +299,18 @@ namespace LcdMod.Client.Apps
             var terminalBlock = Host.Block as IMyTerminalBlock;
             if (terminalBlock != null)
                 ConfigManager.Sync(terminalBlock, Host.ProviderConfig);
+        }
+
+        int GetSavedEntryCount()
+        {
+            var max = -1;
+            foreach (var entry in _entries)
+            {
+                if (entry.Value != null && entry.Value.HasContent() && entry.Key > max)
+                    max = entry.Key;
+            }
+
+            return max + 1;
         }
 
         ButtonGridLayout CreateButtonGridLayout(float availableWidth, float availableHeight)
@@ -421,75 +341,37 @@ namespace LcdMod.Client.Apps
             };
         }
 
-        static float GetEvenSpacing(float availableWidth, int columns, float buttonSize)
-        {
-            if (columns <= 0)
-                return 0f;
-
-            return Math.Max(0f, (availableWidth - columns * buttonSize) / (columns + 1));
-        }
-
-        void DrawFooter(List<MySprite> sprites, float footerHeight)
-        {
-            var footerTop = ViewBox.Bottom - footerHeight;
-
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = "SquareSimple",
-                Position = new Vector2(ViewBox.Center.X, footerTop + footerHeight * 0.5f),
-                Size = new Vector2(ViewBox.Width, footerHeight),
-                Color = new Color(Host.BackgroundColor.MulValue(0.8f), 0.5f),
-                Alignment = TextAlignment.CENTER
-            });
-
-            var buttonSize = GetNewLineButtonSize();
-            var padding = 8f * Scale;
-            var buttonRect = new RectangleF(
-                ViewBox.Right - padding - buttonSize.X,
-                footerTop + (footerHeight - buttonSize.Y) * 0.5f,
-                buttonSize.X,
-                buttonSize.Y
-            );
-
-            EnsureNewLineButton(buttonRect);
-            ConfigureNewLineButton();
-
-            _interactiveList.Add(_newLineButton);
-
-            var renderContext = CreateControlRenderContext(Surface, Scale, FontScale, GetCursorPosition());
-            _newLineButton.Render(renderContext, sprites);
-        }
-
         void ClearInteractiveTree()
         {
             _interactiveList.Clear();
-
-            _scrollPanel.ClearChildren();
             _scrollPanel.SetVisible(false);
-
-            for (var i = 0; i < _entryButtonPool.Count; i++)
-                _entryButtonPool[i].SetVisible(false);
-
-            if (_newLineButton != null)
-                _newLineButton.SetVisible(false);
         }
 
-        Button GetEntryButton(int poolIndex)
+        ControlBase CreateEntryButton(int entryIndex)
         {
-            while (_entryButtonPool.Count <= poolIndex)
-            {
-                _entryButtonPool.Add(new Button(
-                    default(RectangleF),
-                    new PadButtonModel
-                    {
-                        Text = string.Empty,
-                        Clicked = OnPadButtonClicked
-                    }
-                ));
-            }
+            return new Button(
+                default(RectangleF),
+                new PadButtonModel
+                {
+                    Text = string.Empty,
+                    Clicked = OnPadButtonClicked
+                }
+            );
+        }
 
-            return _entryButtonPool[poolIndex];
+        void BindEntryButton(ControlBase control, int entryIndex, int visibleIndex)
+        {
+            var button = control as Button;
+            if (button == null)
+                return;
+
+            var columns = Math.Max(1, _lastLayoutColumns);
+            ConfigureEntryButton(
+                button,
+                default(RectangleF),
+                entryIndex,
+                visibleIndex / columns,
+                visibleIndex % columns);
         }
 
         void ConfigureEntryButton(Button button, RectangleF rect, int index, int row, int column)
@@ -522,43 +404,7 @@ namespace LcdMod.Client.Apps
             button.OnScroll = IsEntryScrollEnabled(entry) ? (ControlScrollHandler)OnPadButtonScrolled : null;
         }
 
-        void EnsureNewLineButton(RectangleF rect)
-        {
-            if (_newLineButton == null)
-            {
-                _newLineButton = new Button(
-                    rect,
-                    new ButtonModel
-                    {
-                        Text = NEW_LINE_TEXT,
-                        Clicked = OnNewLineClicked
-                    }
-                );
-            }
-            else
-            {
-                _newLineButton.SetRect(rect);
-            }
-
-            _newLineButton.SetVisible(true);
-        }
-
-        void ConfigureNewLineButton()
-        {
-            var model = _newLineButton.DataContext as ButtonModel;
-            if (model != null)
-            {
-                model.Text = NEW_LINE_TEXT;
-                model.Enabled = true;
-                model.Clicked = OnNewLineClicked;
-            }
-
-            _newLineButton.SetCursor(CursorType.Hand);
-            _newLineButton.SetStyle(GetFooterButtonStyle());
-            _newLineButton.CustomRender = RenderFooterButton;
-        }
-
-        void RenderEntryButton( ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderEntryButton(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
         {
             var rect = control.Bounds;
             var hovered = rect.Contains(context.CursorPosition);
@@ -579,7 +425,6 @@ namespace LcdMod.Client.Apps
                 panelColor,
                 radiusScale: context.Scale
             );
-
 
             var model = control.DataContext as PadButtonModel;
             var spriteName = model != null ? model.SpriteName : null;
@@ -656,50 +501,6 @@ namespace LcdMod.Client.Apps
                 Color = plusColor,
                 Alignment = TextAlignment.CENTER
             });
-        }
-
-        void RenderFooterButton(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
-        {
-            var rect = control.Bounds;
-            var hovered = rect.Contains(context.CursorPosition);
-            var panelColor = context.Style.GetPanelColor(hovered);
-            var textColor = context.Style.GetTextColor(hovered);
-            var shadowColor = GetThemeColor(Constants.SHADOW);
-            var textScale = GetFooterButtonTextScale();
-
-            Border.CreateSpritesFromRect(
-                new RectangleF(rect.Position + 1f * context.Scale, rect.Size),
-                sprites,
-                shadowColor,
-                radiusScale: context.Scale
-            );
-
-            Border.CreateSpritesFromRect(
-                rect,
-                sprites,
-                panelColor,
-                radiusScale: context.Scale
-            );
-
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXT,
-                Data = NEW_LINE_TEXT,
-                Position = rect.Center - new Vector2(0f, FormatingHelper.LineHeight(textScale, Surface) * 0.5f),
-                Color = textColor,
-                FontId = "White",
-                RotationOrScale = textScale,
-                Alignment = TextAlignment.CENTER
-            });
-        }
-
-        void OnNewLineClicked(ButtonModel model, object sender)
-        {
-            var columns = Math.Max(1, _lastLayoutColumns);
-            var rows = GetRowsForEntryCount(_entryCount, columns);
-            _entryCount = (rows + 1) * columns;
-            SaveButtonPanelSettings();
-            Host.RenderSprites();
         }
 
         void OnPadButtonClicked(ButtonModel model, object sender)
@@ -1427,30 +1228,6 @@ namespace LcdMod.Client.Apps
                 : ViewBox.Y;
         }
 
-        float GetFooterHeight()
-        {
-            return Math.Max(
-                FOOTER_MIN_HEIGHT_PIXELS * LayoutScale,
-                GetNewLineButtonSize().Y * Scale
-            );
-        }
-
-        Vector2 GetNewLineButtonSize()
-        {
-            var textScale = GetFooterButtonTextScale();
-            var textSize = FormatingHelper.GetSizeInPixel(NEW_LINE_TEXT, "White", textScale, Surface);
-
-            return new Vector2(
-                Math.Max(96f * Scale, textSize.X + 24f * Scale),
-                Math.Max(24f * Scale, FormatingHelper.LineHeight(textScale, Surface) + 10f * Scale)
-            );
-        }
-
-        float GetFooterButtonTextScale()
-        {
-            return 0.58f * LayoutScale;
-        }
-
         Vector2 GetCursorPosition()
         {
             var interactiveHost = Host as InteractiveSurfaceScript;
@@ -1468,17 +1245,6 @@ namespace LcdMod.Client.Apps
 
             return _entryButtonStyle;
         }
-
-        ControlStyle GetFooterButtonStyle()
-        {
-            if (_footerButtonStyle == null)
-                _footerButtonStyle = Button.CreatePrimaryButtonStyle(Theme);
-            else
-                _footerButtonStyle.ThemeColors = Theme;
-
-            return _footerButtonStyle;
-        }
-
 
         static string TrimText(string text, float availableWidth, float fontSize, IMyTextSurface surface)
         {
@@ -1498,21 +1264,6 @@ namespace LcdMod.Client.Apps
             public float RowHeight;
             public float VerticalSpacing;
             public int Columns;
-        }
-
-        static void BeginClip(List<MySprite> sprites, RectangleF bounds)
-        {
-            sprites.Add(MySprite.CreateClipRect(new Rectangle(
-                (int)Math.Floor(bounds.X),
-                (int)Math.Floor(bounds.Y),
-                (int)Math.Ceiling(bounds.Width),
-                (int)Math.Ceiling(bounds.Height)
-            )));
-        }
-
-        static void EndClip(List<MySprite> sprites)
-        {
-            sprites.Add(MySprite.CreateClearClipRect());
         }
 
         sealed class PadButtonModel : ButtonModel
@@ -1981,22 +1732,29 @@ namespace LcdMod.Client.Apps
             {
                 if (_showDialog == null)
                     return;
-                _showDialog(new SpritePickerDialog(ParentApp, _draftEntry.SpriteName, OnSpritePickerSelected, OnSpritePickerCancelled, _requestRedraw));
-            }
 
-            void OnSpritePickerSelected(string spriteName)
-            {
-                _draftEntry.SpriteName = spriteName;
-                if (_showDialog != null)
-                    _showDialog(this);
-                _requestRedraw?.Invoke();
-            }
+                bool restored = false;
+                Action restoreEditor = delegate
+                {
+                    if (restored)
+                        return;
 
-            void OnSpritePickerCancelled()
-            {
-                if (_showDialog != null)
-                    _showDialog(this);
-                _requestRedraw?.Invoke();
+                    restored = true;
+                    if (_showDialog != null)
+                        _showDialog(this);
+                    if (_requestRedraw != null)
+                        _requestRedraw();
+                };
+
+                _showDialog(new SpritePicker(
+                    ParentApp,
+                    delegate(string spriteName)
+                    {
+                        _draftEntry.SpriteName = spriteName;
+                        restoreEditor();
+                    },
+                    _requestRedraw,
+                    restoreEditor));
             }
 
             void OnPickTargetClicked(ButtonModel model, object sender)
@@ -2200,556 +1958,6 @@ namespace LcdMod.Client.Apps
             }
 
             sealed class SelectedSpriteButtonModel : ButtonModel
-            {
-                public string SpriteName { get; set; }
-            }
-        }
-
-        sealed class SpritePickerDialog : Dialog
-        {
-            const string SPRITE_PICKER_TITLE = "Sprite Picker";
-            const string SPRITE_SEARCH_TITLE = "Search Sprite";
-            const string SPRITE_SEARCH_PLACEHOLDER = "Search sprite";
-
-            const float SPRITE_PICKER_CARD_WIDTH_PERCENT = 0.72f;
-            const float SPRITE_PICKER_CARD_HEIGHT_PERCENT = 0.78f;
-            const float SPRITE_PICKER_MIN_WIDTH_PIXELS = 320f;
-            const float SPRITE_PICKER_MIN_HEIGHT_PIXELS = 260f;
-            const float SPRITE_SEARCH_HEIGHT_PIXELS = 38f;
-            const float SPRITE_ROW_HEIGHT_PIXELS = 40f;
-            const float SPRITE_ROW_GAP_PIXELS = 3f;
-            const float SPRITE_ICON_SIZE_PIXELS = 32f;
-            const float SPRITE_LIST_SCROLLER_WIDTH_PIXELS = 10f;
-
-            readonly Action<string> _selected;
-            readonly Action _cancelled;
-            readonly Action _requestRedraw;
-            readonly List<string> _allSprites = new List<string>();
-            readonly List<string> _filteredSprites = new List<string>();
-            readonly List<Button> _spriteButtonPool = new List<Button>();
-            readonly ScrollPanel _spriteScrollPanel = new ScrollPanel();
-
-            TextInput _spriteSearchInput;
-            TextInputModel _spriteSearchInputModel;
-
-            ControlStyle _spriteSearchStyle;
-            ControlStyle _spriteRowStyle;
-
-            string _selectedSprite;
-            string _spriteSearchText = string.Empty;
-            bool _spritesLoaded;
-
-            public SpritePickerDialog(
-                IApp parentApp,
-                string selectedSprite,
-                Action<string> selected,
-                Action cancelled,
-                Action requestRedraw) : base(parentApp)
-            {
-                _selectedSprite = selectedSprite;
-                _selected = selected;
-                _cancelled = cancelled;
-                _requestRedraw = requestRedraw;
-                OnClose = delegate
-                {
-                    if (_cancelled != null)
-                        _cancelled();
-                };
-
-                _spriteScrollPanel.ManualScrollInertiaEnabled = false;
-                _spriteScrollPanel.ScrollChanged = OnSpriteScrollChanged;
-            }
-
-            protected override void RenderCore(
-                InteractiveSurfaceScript owner,
-                RectangleF viewBox,
-                float scale,
-                float fontScale,
-                IMyTextSurface surface,
-                Color textColor,
-                Color backgroundColor,
-                Color panelColor,
-                Vector2 cursorPosition)
-            {
-                EnsureContainer(viewBox);
-                ContainerControl.ClearChildren();
-
-                EnsureSpritesLoaded(surface);
-
-                var context = CreateRenderContext(surface, scale, fontScale, textColor, panelColor, cursorPosition);
-                var layoutScale = scale * fontScale;
-                var padding = new Vector2(18f * scale, 14f * scale);
-                var spacing = 10f * scale;
-                var titleScale = 0.82f * layoutScale;
-                var titleHeight = FormatingHelper.LineHeight(titleScale, surface);
-                var searchTextScale = 0.58f * layoutScale;
-                var searchHeight = Math.Max(
-                    SPRITE_SEARCH_HEIGHT_PIXELS * scale,
-                    FormatingHelper.LineHeight(searchTextScale, surface) + 18f * scale
-                );
-                var closeSize = GetDialogCloseButtonSize(scale);
-                var headerHeight = Math.Max(titleHeight, closeSize.Y);
-
-                var maxCardWidth = Math.Max(1f, viewBox.Width - padding.X * 2f);
-                var maxCardHeight = Math.Max(1f, viewBox.Height - padding.Y * 2f);
-
-                var cardWidth = Math.Min(
-                    Math.Max(SPRITE_PICKER_MIN_WIDTH_PIXELS * scale, viewBox.Width * SPRITE_PICKER_CARD_WIDTH_PERCENT),
-                    maxCardWidth
-                );
-
-                var cardHeight = Math.Min(
-                    Math.Max(SPRITE_PICKER_MIN_HEIGHT_PIXELS * scale, viewBox.Height * SPRITE_PICKER_CARD_HEIGHT_PERCENT),
-                    maxCardHeight
-                );
-
-                var cardRect = new RectangleF(
-                    viewBox.Center.X - cardWidth * 0.5f,
-                    viewBox.Center.Y - cardHeight * 0.5f,
-                    cardWidth,
-                    cardHeight
-                );
-
-                RegisterDialogCard(cardRect);
-
-                DrawDialogBackdrop(surface, scale, cardRect, 160);
-
-                Sprites.Add(new MySprite
-                {
-                    Type = SpriteType.TEXT,
-                    Data = SPRITE_PICKER_TITLE,
-                    Position = new Vector2(cardRect.Center.X, cardRect.Y + padding.Y + (headerHeight - titleHeight) * 0.5f),
-                    Color = GetThemeColor(Constants.ON_SURFACE),
-                    FontId = "White",
-                    RotationOrScale = titleScale,
-                    Alignment = TextAlignment.CENTER
-                });
-
-                var searchRect = new RectangleF(
-                    cardRect.X + padding.X,
-                    cardRect.Y + padding.Y + headerHeight + spacing,
-                    Math.Max(1f, cardRect.Width - padding.X * 2f),
-                    searchHeight
-                );
-
-                var listRect = new RectangleF(
-                    cardRect.X + padding.X,
-                    searchRect.Bottom + spacing,
-                    Math.Max(1f, cardRect.Width - padding.X * 2f),
-                    Math.Max(0f, cardRect.Bottom - padding.Y - searchRect.Bottom - spacing)
-                );
-
-                EnsureSpriteSearchInput(searchRect);
-
-                ContainerControl.AddChild(_spriteSearchInput);
-
-                _spriteSearchInput.Render(context, Sprites);
-
-                RenderSpriteList(context, listRect, scale, surface);
-            }
-
-            void DrawDialogBackdrop(IMyTextSurface surface, float scale, RectangleF cardRect, byte overlayAlpha)
-            {
-                Sprites.Add(new MySprite
-                {
-                    Type = SpriteType.TEXTURE,
-                    Data = "SquareSimple",
-                    Position = surface.TextureSize / 2f,
-                    Size = surface.TextureSize,
-                    Color = new Color(0, 0, 0, overlayAlpha),
-                    Alignment = TextAlignment.CENTER
-                });
-
-                Border.CreateSpritesFromRect(
-                    new RectangleF(cardRect.Position + 3f * scale, cardRect.Size),
-                    Sprites,
-                    GetThemeColor(Constants.SHADOW),
-                    radiusScale: scale
-                );
-
-                Border.CreateSpritesFromRect(
-                    cardRect,
-                    Sprites,
-                    GetThemeColor(Constants.SURFACE_CONTAINER_HIGH),
-                    radiusScale: scale
-                );
-            }
-
-            void RenderSpriteList(ControlRenderContext context, RectangleF listRect, float scale, IMyTextSurface surface)
-            {
-                HideUnusedSpriteRows(0);
-
-                if (listRect.Width <= 1f || listRect.Height <= 1f)
-                    return;
-
-                Border.CreateSpritesFromRect(
-                    listRect,
-                    Sprites,
-                    GetThemeColor(Constants.SURFACE_CONTAINER_HIGH),
-                    radiusScale: scale
-                );
-
-                var rowHeight = GetSpriteRowHeight(scale);
-                var scrollerWidth = Math.Min(SPRITE_LIST_SCROLLER_WIDTH_PIXELS * scale, Math.Max(0f, listRect.Width * 0.25f));
-
-                _spriteScrollPanel.ClearChildren();
-                _spriteScrollPanel.Configure(
-                    listRect,
-                    listRect.Y,
-                    0f,
-                    rowHeight,
-                    _filteredSprites.Count,
-                    scrollerWidth,
-                    0f
-                );
-
-                _spriteScrollPanel.SetScrollBarColors(
-                    GetThemeColor(Constants.SURFACE_CONTAINER_HIGH),
-                    GetThemeColor(Constants.ON_SURFACE)
-                );
-
-                _spriteScrollPanel.SetVisible(true);
-                ContainerControl.AddChild(_spriteScrollPanel);
-
-                if (_filteredSprites.Count == 0)
-                {
-                    DrawNoSpritesMessage(listRect, scale, surface);
-                    _spriteScrollPanel.Render(context, Sprites);
-                    return;
-                }
-
-                ButtonPadApp.BeginClip(Sprites, _spriteScrollPanel.ContentViewportBounds);
-
-                var usedControls = 0;
-                var startRow = _spriteScrollPanel.StartRow;
-                var endRow = Math.Min(_filteredSprites.Count, startRow + _spriteScrollPanel.RenderRows);
-
-                for (var spriteIndex = startRow; spriteIndex < endRow; spriteIndex++)
-                {
-                    var visibleIndex = spriteIndex - startRow;
-                    var rowRect = new RectangleF(
-                        _spriteScrollPanel.ContentViewportBounds.X,
-                        _spriteScrollPanel.ContentBounds.Y + visibleIndex * rowHeight,
-                        _spriteScrollPanel.ContentViewportBounds.Width,
-                        Math.Max(1f, rowHeight - SPRITE_ROW_GAP_PIXELS * scale)
-                    );
-
-                    var button = GetSpriteRowButton(usedControls++);
-                    ConfigureSpriteRowButton(button, rowRect, _filteredSprites[spriteIndex]);
-
-                    _spriteScrollPanel.AddChild(button);
-                    button.Render(context, Sprites);
-                }
-
-                ButtonPadApp.EndClip(Sprites);
-
-                HideUnusedSpriteRows(usedControls);
-
-                _spriteScrollPanel.Render(context, Sprites);
-            }
-
-            void EnsureSpritesLoaded(IMyTextSurface surface)
-            {
-                if (_spritesLoaded)
-                    return;
-
-                _allSprites.Clear();
-
-                var seenSprites = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                var registeredSprites = new List<string>();
-                TextureHelper.GetRegisteredSpriteNames(registeredSprites);
-                registeredSprites.Sort(StringComparer.OrdinalIgnoreCase);
-                AddUniqueSprites(registeredSprites, seenSprites);
-
-                if (surface != null)
-                {
-                    var lcdSprites = new List<string>();
-                    surface.GetSprites(lcdSprites);
-                    lcdSprites.Sort(StringComparer.OrdinalIgnoreCase);
-                    AddUniqueSprites(lcdSprites, seenSprites);
-                }
-
-                _spritesLoaded = true;
-
-                ApplySpriteFilter();
-            }
-
-            void AddUniqueSprites(List<string> sprites, HashSet<string> seenSprites)
-            {
-                for (var i = 0; i < sprites.Count; i++)
-                {
-                    var sprite = sprites[i];
-                    if (string.IsNullOrEmpty(sprite))
-                        continue;
-
-                    if (!seenSprites.Add(sprite))
-                        continue;
-
-                    _allSprites.Add(sprite);
-                }
-            }
-
-            void ApplySpriteFilter()
-            {
-                _filteredSprites.Clear();
-
-                var query = (_spriteSearchText ?? string.Empty).Trim();
-                if (query.Length == 0)
-                {
-                    _filteredSprites.AddRange(_allSprites);
-                    return;
-                }
-
-                for (var i = 0; i < _allSprites.Count; i++)
-                {
-                    var sprite = _allSprites[i];
-                    if (sprite != null && sprite.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0)
-                        _filteredSprites.Add(sprite);
-                }
-            }
-
-            void EnsureSpriteSearchInput(RectangleF rect)
-            {
-                if (_spriteSearchInputModel == null)
-                {
-                    _spriteSearchInputModel = new TextInputModel
-                    {
-                        Title = SPRITE_SEARCH_TITLE,
-                        Subtitle = "Filter sprites containing this text",
-                        Placeholder = SPRITE_SEARCH_PLACEHOLDER,
-                        Value = _spriteSearchText,
-                        ValueChanged = OnSpriteSearchChanged
-                    };
-                }
-
-                _spriteSearchInputModel.Title = SPRITE_SEARCH_TITLE;
-                _spriteSearchInputModel.Subtitle = "Filter sprites containing this text";
-                _spriteSearchInputModel.Placeholder = SPRITE_SEARCH_PLACEHOLDER;
-                _spriteSearchInputModel.Value = _spriteSearchText;
-                _spriteSearchInputModel.Enabled = true;
-                _spriteSearchInputModel.ValueChanged = OnSpriteSearchChanged;
-
-                if (_spriteSearchInput == null)
-                    _spriteSearchInput = new TextInput(rect, _spriteSearchInputModel);
-                else
-                    _spriteSearchInput.SetRect(rect);
-
-                _spriteSearchInput.SetDataContext(_spriteSearchInputModel);
-                _spriteSearchInput.SetStyle(GetSpriteSearchStyle());
-                _spriteSearchInput.SetCursor(CursorType.Hand);
-                _spriteSearchInput.SetVisible(true);
-            }
-
-
-            static float GetSpriteIconTargetSize(float scale)
-            {
-                return Math.Max(SPRITE_ICON_SIZE_PIXELS, SPRITE_ICON_SIZE_PIXELS * scale);
-            }
-
-            static float GetSpriteRowHeight(float scale)
-            {
-                return Math.Max(SPRITE_ROW_HEIGHT_PIXELS * scale, GetSpriteIconTargetSize(scale) + 8f * Math.Max(1f, scale));
-            }
-
-            Button GetSpriteRowButton(int index)
-            {
-                while (_spriteButtonPool.Count <= index)
-                {
-                    var button = new Button(
-                        default(RectangleF),
-                        new SpriteButtonModel
-                        {
-                            Text = string.Empty,
-                            Clicked = OnSpriteClicked
-                        }
-                    );
-
-                    button.CustomRender = RenderSpriteRow;
-                    _spriteButtonPool.Add(button);
-                }
-
-                return _spriteButtonPool[index];
-            }
-
-            void ConfigureSpriteRowButton(Button button, RectangleF rect, string spriteName)
-            {
-                var model = button.DataContext as SpriteButtonModel;
-                if (model == null)
-                {
-                    model = new SpriteButtonModel();
-                    button.SetDataContext(model);
-                }
-
-                model.SpriteName = spriteName;
-                model.Text = string.Empty;
-                model.Enabled = true;
-                model.Clicked = OnSpriteClicked;
-
-                button.SetRect(rect);
-                button.SetStyle(GetSpriteRowStyle());
-                button.SetCursor(CursorType.Hand);
-                button.CustomRender = RenderSpriteRow;
-                button.SetVisible(true);
-            }
-
-            void HideUnusedSpriteRows(int usedControls)
-            {
-                for (var i = usedControls; i < _spriteButtonPool.Count; i++)
-                    _spriteButtonPool[i].SetVisible(false);
-            }
-
-            void RenderSpriteRow(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
-            {
-                var rect = control.Bounds;
-                var model = control.DataContext as SpriteButtonModel;
-                var spriteName = model != null ? model.SpriteName : null;
-                if (string.IsNullOrEmpty(spriteName))
-                    return;
-
-                var hovered = rect.Contains(context.CursorPosition);
-                var selected = string.Equals(spriteName, _selectedSprite, StringComparison.OrdinalIgnoreCase);
-                var panelColor = selected
-                    ? context.Style.GetPanelColor(true)
-                    : context.Style.GetPanelColor(hovered);
-                var textColor = context.Style.GetTextColor(hovered || selected);
-
-                Border.CreateSpritesFromRect(
-                    rect,
-                    sprites,
-                    panelColor,
-                    radiusScale: context.Scale
-                );
-
-                var iconTargetSize = GetSpriteIconTargetSize(context.Scale);
-                var iconSize = Math.Min(
-                    iconTargetSize,
-                    Math.Max(1f, Math.Min(rect.Height, rect.Width) - 4f * Math.Max(1f, context.Scale))
-                );
-                var textScale = 0.42f * context.Scale * context.FontScale;
-                var minimumTextWidth = 72f * context.Scale;
-                var leftIconX = rect.X + 4f * context.Scale;
-                var iconOnly = rect.Width < iconSize + 10f * context.Scale + minimumTextWidth;
-
-                var iconRect = iconOnly
-                    ? new RectangleF(
-                        rect.Center.X - iconSize * 0.5f,
-                        rect.Center.Y - iconSize * 0.5f,
-                        iconSize,
-                        iconSize
-                    )
-                    : new RectangleF(
-                        leftIconX,
-                        rect.Center.Y - iconSize * 0.5f,
-                        iconSize,
-                        iconSize
-                    );
-
-                sprites.Add(new MySprite
-                {
-                    Type = SpriteType.TEXTURE,
-                    Data = spriteName,
-                    Position = iconRect.Center,
-                    Size = iconRect.Size,
-                    Color = textColor,
-                    Alignment = TextAlignment.CENTER
-                });
-
-                if (iconOnly)
-                    return;
-
-                var textHeight = FormatingHelper.LineHeight(textScale, context.Surface);
-
-                sprites.Add(new MySprite
-                {
-                    Type = SpriteType.TEXT,
-                    Data = spriteName,
-                    Position = new Vector2(
-                        iconRect.Right + 6f * context.Scale,
-                        rect.Center.Y - textHeight * 0.5f),
-                    Color = textColor,
-                    FontId = "White",
-                    RotationOrScale = textScale,
-                    Alignment = TextAlignment.LEFT
-                });
-            }
-
-            void DrawNoSpritesMessage(RectangleF rect, float scale, IMyTextSurface surface)
-            {
-                var text = string.IsNullOrWhiteSpace(_spriteSearchText)
-                    ? "No sprites"
-                    : "No matches";
-
-                var textScale = 0.46f * scale * surface.FontSize;
-                var textHeight = FormatingHelper.LineHeight(textScale, surface);
-
-                Sprites.Add(new MySprite
-                {
-                    Type = SpriteType.TEXT,
-                    Data = text,
-                    Position = new Vector2(rect.Center.X, rect.Center.Y - textHeight * 0.5f),
-                    Color = GetThemeColor(Constants.ON_SURFACE),
-                    FontId = "White",
-                    RotationOrScale = textScale,
-                    Alignment = TextAlignment.CENTER
-                });
-            }
-
-
-            ControlStyle GetSpriteSearchStyle()
-            {
-                if (_spriteSearchStyle == null)
-                    _spriteSearchStyle = Button.CreatePrimaryButtonStyle(ParentTheme);
-                else
-                    _spriteSearchStyle.ThemeColors = ParentTheme;
-
-                return _spriteSearchStyle;
-            }
-
-            ControlStyle GetSpriteRowStyle()
-            {
-                if (_spriteRowStyle == null)
-                    _spriteRowStyle = Button.CreatePrimaryButtonStyle(ParentTheme);
-                else
-                    _spriteRowStyle.ThemeColors = ParentTheme;
-
-                return _spriteRowStyle;
-            }
-
-
-            void OnSpriteSearchChanged(string value)
-            {
-                _spriteSearchText = value ?? string.Empty;
-                ApplySpriteFilter();
-                _requestRedraw?.Invoke();
-            }
-
-            void OnSpriteClicked(ButtonModel model, object sender)
-            {
-                var spriteModel = model as SpriteButtonModel;
-                if (spriteModel == null || string.IsNullOrEmpty(spriteModel.SpriteName))
-                    return;
-
-                _selectedSprite = spriteModel.SpriteName;
-                Dismiss();
-                _selected?.Invoke(_selectedSprite);
-            }
-
-
-            void OnSpriteScrollChanged(ScrollPanel panel)
-            {
-                _requestRedraw?.Invoke();
-            }
-
-            protected override void OnDismiss()
-            {
-                base.OnDismiss();
-                _spriteScrollPanel.ClearChildren();
-
-                for (var i = 0; i < _spriteButtonPool.Count; i++)
-                    _spriteButtonPool[i].SetVisible(false);
-            }
-
-            sealed class SpriteButtonModel : ButtonModel
             {
                 public string SpriteName { get; set; }
             }

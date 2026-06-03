@@ -16,6 +16,7 @@ using VRage.Game;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 using ScreenConfigPower = LcdMod.Common.Config.Models.Apps.ScreenConfigPower;
+using VisualWrapPanel = LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel.WrapPanel;
 
 namespace LcdMod.Client.Apps
 {
@@ -211,6 +212,7 @@ namespace LcdMod.Client.Apps
         readonly HashSet<long> _activeEntryIds = new HashSet<long>();
         readonly List<long> _entryIdsToRemove = new List<long>();
         readonly ScrollPanel _scrollPanel;
+        readonly VisualWrapPanel _gridPanel;
         readonly ScreenConfigPower _config;
 
         public FarmApp(ScreenConfigPower config, IAppHost surfaceHost) : base(config, surfaceHost)
@@ -224,6 +226,7 @@ namespace LcdMod.Client.Apps
             _scrollPanel = new ScrollPanel(CursorType.Default, this);
             _scrollPanel.ScrollChanged = OnScrollPanelChanged;
             _scrollPanel.SetVisible(false);
+            _gridPanel = new VisualWrapPanel();
         }
 
         public List<ControlBase> InteractiveList
@@ -395,47 +398,25 @@ namespace LcdMod.Client.Apps
             if (count <= 0)
                 return;
 
-            int cols = Math.Min(count, Math.Max(1, (int)Math.Floor(availW / minW)));
-            int totalRows = (int)Math.Ceiling(count / (float)cols);
-            ConfigureFarmScrollPanel(owner, contentTop, minH, totalRows);
-
-            if (_scrollPanel.IsScrollable)
-            {
-                xRight -= SCROLLER_W * owner.Scale;
-                availW = xRight - xLeft;
-                cols = Math.Min(count, Math.Max(1, (int)Math.Floor(availW / minW)));
-                totalRows = (int)Math.Ceiling(count / (float)cols);
-                ConfigureFarmScrollPanel(owner, contentTop, minH, totalRows);
-            }
-
-            float slotW = availW / cols;
-            float slotH = minH;
-            int startIdx = _scrollPanel.GetStartIndex(cols);
-            int renderRows = _scrollPanel.VisibleRows + (_scrollPanel.IsScrollable ? 1 : 0);
-            int show = Math.Min(renderRows * cols, count - startIdx);
-
-            BeginScrollPanelClip(sprites);
+            _scrollPanel.SetContent(_gridPanel);
+            _gridPanel.RowHeight = minH;
+            _gridPanel.MinimumColumnWidth = minW;
+            _gridPanel.HorizontalGap = 0f;
+            _gridPanel.VerticalGap = 0f;
+            SyncFarmEntryControls(_gridPanel);
+            ConfigureFarmScrollPanel(owner, contentTop, minH);
             var renderContext = CreateRenderContext(owner);
-
-            for (int i = 0; i < show; i++)
-            {
-                int col = i % cols;
-                int row = i / cols;
-                float xStart = xLeft + col * slotW;
-                float yStart = _scrollPanel.ContentBounds.Y + row * slotH;
-                var bounds = new RectangleF(xStart, yStart, slotW, slotH);
-                var control = RegisterFarmEntryHitbox(_entries[startIdx + i], bounds);
-                if (control != null)
-                    control.Render(renderContext, sprites);
-            }
-
-            EndClip(sprites);
             _scrollPanel.Render(renderContext, sprites);
         }
 
-        void ConfigureFarmScrollPanel(IAppHost owner, float contentTop, float rowHeight, int totalRows)
+        void ConfigureFarmScrollPanel(IAppHost owner, float contentTop, float rowHeight)
         {
-            _scrollPanel.Configure(owner.ViewBox, contentTop, 0f, rowHeight, totalRows, SCROLLER_W * owner.Scale, SCROLL_TICK / 6f);
+            var viewportHeight = Math.Max(0f, owner.ViewBox.Bottom - contentTop);
+            _scrollPanel.ConfigureAutomatic(
+                new RectangleF(owner.ViewBox.X, contentTop, owner.ViewBox.Width, viewportHeight),
+                SCROLLER_W * owner.Scale,
+                rowHeight,
+                SCROLL_TICK / 6f);
             var headerColor = _config != null ? _config.HeaderColor : owner.ForegroundColor;
             _scrollPanel.SetScrollBarColors(
                 new Color(owner.Surface.ScriptForegroundColor.R, owner.Surface.ScriptForegroundColor.G, owner.Surface.ScriptForegroundColor.B, 127),
@@ -448,7 +429,6 @@ namespace LcdMod.Client.Apps
         void BeginFarmEntryHitboxFrame()
         {
             _interactiveList.Clear();
-            _scrollPanel.ClearChildren();
             _scrollPanel.SetVisible(false);
             foreach (var kv in _entryHitboxById)
                 if (kv.Value != null)
@@ -474,7 +454,28 @@ namespace LcdMod.Client.Apps
                 new Vector2(float.NaN, float.NaN));
         }
 
-        RectangleControl RegisterFarmEntryHitbox(FarmEntry entry, RectangleF bounds)
+        void SyncFarmEntryControls(Panel panel)
+        {
+            if (panel == null)
+                return;
+
+            var desiredIds = new Dictionary<long, bool>();
+            var desired = new List<ControlBase>(_entries.Count);
+            for (int i = 0; i < _entries.Count; i++)
+            {
+                var entry = _entries[i];
+                if (entry == null)
+                    continue;
+
+                desiredIds[entry.EntryId] = true;
+                desired.Add(GetOrCreateFarmEntryHitbox(entry));
+            }
+
+            RemoveStalePanelChildren(panel, desiredIds);
+            EnsurePanelChildOrder(panel, desired);
+        }
+
+        RectangleControl GetOrCreateFarmEntryHitbox(FarmEntry entry)
         {
             if (entry == null)
                 return null;
@@ -482,7 +483,7 @@ namespace LcdMod.Client.Apps
             RectangleControl hitbox;
             if (!_entryHitboxById.TryGetValue(entry.EntryId, out hitbox) || hitbox == null)
             {
-                hitbox = new RectangleControl(bounds, CursorType.Hand, entry, null, BuildFarmEntryTooltip(entry.EntryId))
+                hitbox = new RectangleControl(default(RectangleF), CursorType.Hand, entry, null, BuildFarmEntryTooltip(entry.EntryId))
                 {
                     ClickSound = AudioHelper.HudClick,
                     CustomRender = RenderFarmEntryHitbox
@@ -491,7 +492,6 @@ namespace LcdMod.Client.Apps
             }
             else
             {
-                hitbox.SetRect(bounds);
                 hitbox.SetDataContext(entry);
                 hitbox.SetCursor(CursorType.Hand);
                 hitbox.SetTooltip(BuildFarmEntryTooltip(entry.EntryId));
@@ -499,8 +499,73 @@ namespace LcdMod.Client.Apps
             }
 
             hitbox.SetVisible(true);
-            _scrollPanel.AddChild(hitbox);
             return hitbox;
+        }
+
+        static void RemoveStalePanelChildren(Panel panel, Dictionary<long, bool> desiredIds)
+        {
+            var children = panel.Children;
+            if (children == null)
+                return;
+
+            for (int i = children.Count - 1; i >= 0; i--)
+            {
+                var child = children[i];
+                var entry = child == null ? null : child.DataContext as FarmEntry;
+                if (entry == null || desiredIds.ContainsKey(entry.EntryId))
+                    continue;
+
+                panel.RemoveChild(child);
+            }
+        }
+
+        static void EnsurePanelChildOrder(Panel panel, List<ControlBase> desired)
+        {
+            if (panel == null || desired == null)
+                return;
+
+            var children = panel.Children;
+            bool changed = false;
+            for (int i = 0; i < desired.Count; i++)
+            {
+                var child = desired[i];
+                if (child == null)
+                    continue;
+
+                if (!ReferenceEquals(child.Parent, panel))
+                {
+                    panel.AddChild(child);
+                    children = panel.Children;
+                    changed = true;
+                }
+
+                if (children == null || i >= children.Count || ReferenceEquals(children[i], child))
+                    continue;
+
+                int currentIndex = IndexOfChild(children, child);
+                if (currentIndex < 0)
+                    continue;
+
+                if (panel.MoveChild(child, i))
+                    changed = true;
+            }
+
+            if (changed)
+                panel.InvalidateLayout();
+        }
+
+        static int IndexOfChild(IReadOnlyList<ControlBase> children, ControlBase child)
+        {
+            if (children == null || child == null)
+                return -1;
+
+            for (int i = 0; i < children.Count; i++)
+            {
+                if (ReferenceEquals(children[i], child))
+                    return i;
+            }
+
+            return -1;
         }
 
         void OnScrollPanelChanged(ScrollPanel panel)

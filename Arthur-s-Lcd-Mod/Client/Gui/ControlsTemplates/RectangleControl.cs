@@ -18,9 +18,17 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         public virtual void SetRect(RectangleF bounds)
         {
             Rect = bounds;
+            ValidateLayout();
+            MarkDirty();
         }
 
         public override RectangleF Bounds => Rect;
+
+        public override void Arrange(RectangleF bounds)
+        {
+            SetRect(bounds);
+        }
+
         public object RightClick { get; set; }
 
         protected override bool HitCore(Vector2 point)

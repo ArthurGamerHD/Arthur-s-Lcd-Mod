@@ -7,7 +7,7 @@ using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Inputs;
 using LcdMod.Client.Gui.ControlsTemplates.Lists;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
-using LcdMod.Client.Gui.ControlsTemplates.Panels.WrappedGrid;
+using LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel;
 using LcdMod.Client.Helpers;
 using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
@@ -19,7 +19,7 @@ using VRageMath;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
 using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
 
-namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
+namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 {
     sealed class CraftDialog : Dialog
     {
@@ -304,7 +304,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             var rowHeight = rect.Height / rows;
             rowHeight = Math.Max(1f, Math.Min(58f * scale, rowHeight));
 
-            var grid = WrappedGrid.Create(rect, rowHeight, minColumnWidth, _requests.Count);
+            var grid = WrapPanelLayout.Create(rect, rowHeight, minColumnWidth, _requests.Count);
             var visibleCount = Math.Min(grid.VisibleCellCount, _requests.Count);
             var cellPadding = 4f * scale;
             var itemBackground = GetThemeColor(Constants.SURFACE_CONTAINER);

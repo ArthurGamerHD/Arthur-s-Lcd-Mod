@@ -1,11 +1,11 @@
 using System;
 using VRageMath;
 
-namespace LcdMod.Client.Gui.ControlsTemplates.Panels.WrappedGrid
+namespace LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel
 {
-    public sealed class WrappedGrid
+    public sealed class WrapPanelLayout
     {
-        WrappedGrid()
+        WrapPanelLayout()
         {
         }
 
@@ -21,7 +21,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels.WrappedGrid
         public int StartIndex { get; private set; }
         public int VisibleCellCount { get; private set; }
 
-        public static WrappedGrid Create(
+        public static WrapPanelLayout Create(
             RectangleF contentBounds,
             float rowHeight,
             float minimumColumnWidth,
@@ -29,7 +29,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels.WrappedGrid
             int startIndex = 0,
             bool forceSingleColumn = false)
         {
-            var grid = new WrappedGrid();
+            var grid = new WrapPanelLayout();
             grid.ViewBox = contentBounds;
             grid.ContentBounds = contentBounds;
             grid.RowHeight = Math.Max(1f, rowHeight);
@@ -47,10 +47,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels.WrappedGrid
             return grid;
         }
 
-        public WrappedGridCell GetCell(int visibleIndex)
+        public WrapPanelCell GetCell(int visibleIndex)
         {
             if (VisibleCellCount <= 0)
-                return new WrappedGridCell(0, StartIndex, 0, 0, new RectangleF(ContentBounds.X, ContentBounds.Y, 0f, 0f));
+                return new WrapPanelCell(0, StartIndex, 0, 0, new RectangleF(ContentBounds.X, ContentBounds.Y, 0f, 0f));
 
             if (visibleIndex < 0)
                 visibleIndex = 0;
@@ -64,12 +64,26 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels.WrappedGrid
             float right = column == Columns - 1 ? ContentBounds.Right : x + ColumnWidth;
             float y = ContentBounds.Y + row * RowHeight;
 
-            return new WrappedGridCell(
+            return new WrapPanelCell(
                 visibleIndex,
                 itemIndex,
                 row,
                 column,
                 new RectangleF(x, y, right - x, RowHeight));
+        }
+
+        public static int CalculateTotalRows(
+            float availableWidth,
+            float minimumColumnWidth,
+            int itemCount,
+            bool forceSingleColumn = false)
+        {
+            int safeItemCount = Math.Max(0, itemCount);
+            if (safeItemCount == 0)
+                return 0;
+
+            int columns = CalculateColumns(availableWidth, minimumColumnWidth, forceSingleColumn, safeItemCount);
+            return (int)Math.Ceiling(safeItemCount / (float)columns);
         }
 
         static int CalculateColumns(float availableWidth, float minimumColumnWidth, bool forceSingleColumn, int itemCount)

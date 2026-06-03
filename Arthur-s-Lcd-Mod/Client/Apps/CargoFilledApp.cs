@@ -9,8 +9,10 @@ using LcdMod.Client.Grid;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
+using LcdMod.Client.Gui.ControlsTemplates.Dialogs;
 using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
+using LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel;
 using LcdMod.Client.Gui.ControlsTemplates.Progress;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Terminal.Controls;
@@ -24,6 +26,8 @@ using VRage.Game.ModAPI;
 using VRageMath;
 using IMyCubeGrid = VRage.Game.ModAPI.IMyCubeGrid;
 using IMySlimBlock = VRage.Game.ModAPI.IMySlimBlock;
+using VisualStackPanel = LcdMod.Client.Gui.ControlsTemplates.Panels.StackPanel.StackPanel;
+using VisualWrapPanel = LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel.WrapPanel;
 
 namespace LcdMod.Client.Apps
 {
@@ -51,6 +55,8 @@ namespace LcdMod.Client.Apps
         readonly Dictionary<long, RectangleControl> _entryControls = new Dictionary<long, RectangleControl>();
         readonly List<ControlBase> _interactiveList = new List<ControlBase>();
         readonly ScrollPanel _scrollPanel;
+        readonly VisualStackPanel _listPanel;
+        readonly VisualWrapPanel _gridPanel;
         readonly InteractiveSurfaceScript _interactiveHost;
         readonly List<IMyTerminalBlock> _sortBlocks = new List<IMyTerminalBlock>();
         readonly List<IMyTerminalBlock> _fillTargets = new List<IMyTerminalBlock>();
@@ -79,6 +85,9 @@ namespace LcdMod.Client.Apps
             _scrollPanel = new ScrollPanel(CursorType.Default, this);
             _scrollPanel.ScrollChanged = OnScrollPanelChanged;
             _scrollPanel.SetVisible(false);
+            _listPanel = new VisualStackPanel();
+            _gridPanel = new VisualWrapPanel();
+            _gridPanel.CustomRender = RenderGridPanelContent;
         }
 
         public override void Update()
@@ -121,22 +130,13 @@ namespace LcdMod.Client.Apps
         {
             var rowHeight = LINE_HEIGHT * Host.Scale;
             var contentTop = GetContentTop();
-            ConfigureScrollPanel(contentTop, rowHeight, _entries.Count);
+            _scrollPanel.SetContent(_listPanel);
+            _listPanel.RowHeight = rowHeight;
+            _listPanel.Gap = 0f;
+            SyncPanelChildren(_listPanel, _entries, false);
+            ConfigureScrollPanel(contentTop, rowHeight);
 
-            BeginScrollPanelClip(sprites);
             var renderContext = CreateRenderContext();
-
-            int start = _scrollPanel.GetStartIndex(1);
-            int renderRows = _scrollPanel.VisibleRows + (_scrollPanel.IsScrollable ? 1 : 0);
-            int showCount = Math.Min(renderRows, _entries.Count - start);
-            for (int i = 0; i < showCount; i++)
-            {
-                var bounds = GetListRowBounds(i, _scrollPanel.ContentBounds.Y, _scrollPanel.IsScrollable);
-                var control = AddInteractiveChild(bounds, _entries[start + i], false);
-                control?.Render(renderContext, sprites);
-            }
-
-            EndScrollPanelClip(sprites);
             _scrollPanel.Render(renderContext, sprites);
         }
 
@@ -144,56 +144,15 @@ namespace LcdMod.Client.Apps
         {
             var rowHeight = 2f * LINE_HEIGHT * Host.Scale;
             var contentTop = GetContentTop();
-            int maxCols = Math.Max(1, (int)Math.Round((Host.ViewBox.Width - Host.ViewBox.X) / (220f * Host.Scale) - .5, MidpointRounding.AwayFromZero));
-            int totalRows = (int)Math.Ceiling(_entries.Count / (float)maxCols);
-            ConfigureScrollPanel(contentTop, rowHeight, totalRows);
+            _scrollPanel.SetContent(_gridPanel);
+            _gridPanel.RowHeight = rowHeight;
+            _gridPanel.MinimumColumnWidth = 220f * Host.Scale;
+            _gridPanel.HorizontalGap = 0f;
+            _gridPanel.VerticalGap = 0f;
+            SyncPanelChildren(_gridPanel, _entries, true);
+            ConfigureScrollPanel(contentTop, rowHeight);
 
-            int maxRows = _scrollPanel.MaxVisibleRows;
-            int start = _scrollPanel.GetStartIndex(maxCols);
-            int renderRows = _scrollPanel.VisibleRows + (_scrollPanel.IsScrollable ? 1 : 0);
-            int showCount = Math.Min(renderRows * maxCols, _entries.Count - start);
-            float contentStart = Host.ViewBox.X;
-            float contentEnd = Host.ViewBox.Width + Host.ViewBox.X;
-            if (_scrollPanel.IsScrollable)
-                contentEnd -= SCROLLER_WIDTH * Host.Scale;
-            float columnWidth = (contentEnd - contentStart) / maxCols;
-            float gridHeight = maxRows * rowHeight;
-
-            BeginScrollPanelClip(sprites);
             var renderContext = CreateRenderContext();
-
-            if (Config.DrawLines)
-            {
-                var lineColor = Config.HeaderColor;
-                for (int row = 0; row <= maxRows; row++)
-                {
-                    var y = _scrollPanel.ContentBounds.Y + row * rowHeight;
-                    sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2((contentStart + contentEnd) / 2f, y), Size = new Vector2(contentEnd - contentStart, 2f), Color = lineColor, Alignment = TextAlignment.CENTER });
-                }
-
-                for (int col = 0; col <= maxCols; col++)
-                {
-                    var x = contentStart + col * columnWidth;
-                    sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(x, _scrollPanel.ContentViewportBounds.Y + gridHeight / 2f), Size = new Vector2(2f, gridHeight), Color = lineColor, Alignment = TextAlignment.CENTER });
-                }
-            }
-
-            for (int gridIdx = 0; gridIdx < showCount; gridIdx++)
-            {
-                int idx = start + gridIdx;
-                int col = gridIdx % maxCols;
-                int row = gridIdx / maxCols;
-                float xStart = contentStart + col * columnWidth;
-                float xEnd = (col == maxCols - 1) ? contentEnd : xStart + columnWidth;
-                float yStart = _scrollPanel.ContentBounds.Y + row * rowHeight;
-                var control = AddInteractiveChild(
-                    new RectangleF(xStart, yStart, xEnd - xStart, rowHeight),
-                    _entries[idx],
-                    true);
-                control?.Render(renderContext, sprites);
-            }
-
-            EndScrollPanelClip(sprites);
             _scrollPanel.Render(renderContext, sprites);
         }
 
@@ -203,20 +162,110 @@ namespace LcdMod.Client.Apps
             Vector2 position = bounds.Position;
 
             if (Config.DrawLines)
-                frame.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(Host.ViewBox.Center.X, position.Y), Size = new Vector2(Host.ViewBox.Width, 2f), Color = Host.ForegroundColor, Alignment = TextAlignment.CENTER });
+                frame.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(bounds.Center.X, position.Y), Size = new Vector2(bounds.Width, 2f), Color = Host.ForegroundColor, Alignment = TextAlignment.CENTER });
 
-            var clip = new Rectangle((int)position.X, (int)position.Y, (int)Math.Max(0f, bounds.Width - 145 * Host.Scale), (int)bounds.Height);
             var barMargin = 8 * Host.Scale;
-            Vector2 size = new Vector2(bounds.Width, clip.Height) - barMargin;
+            Vector2 size = new Vector2(bounds.Width, bounds.Height) - barMargin;
+            var rowClip = new RectangleF(
+                bounds.X,
+                bounds.Y,
+                Math.Max(0f, bounds.Width - 145f * Host.Scale),
+                bounds.Height);
 
-            BarPanel.CreateSprites(frame, new Vector2(clip.Location.X, clip.Location.Y + Host.Scale) + barMargin / 2f, size, Config.HeaderColor, Host.BackgroundColor.DeriveAccentColor(), pct, GetEntryUsageColor(pct));
-            frame.Add(MySprite.CreateClipRect(clip));
-            position.X += 16 * Host.Scale;
-            position.Y += 4 * Host.Scale;
-            frame.Add(new MySprite { Type = SpriteType.TEXT, Data = entry.Name, Position = position, RotationOrScale = Host.Scale, Color = Host.Surface.ScriptForegroundColor, Alignment = TextAlignment.LEFT, FontId = "White" });
-            frame.Add(MySprite.CreateClearClipRect());
+            if (BeginNestedClip(frame, rowClip))
+            {
+                var activeRowClip = Intersect(rowClip, _scrollPanel.ContentViewportBounds);
+                DrawClippedProgressBar(
+                    frame,
+                    new Vector2(position.X, position.Y + Host.Scale) + barMargin / 2f,
+                    size,
+                    pct,
+                    activeRowClip);
+                position.X += 16 * Host.Scale;
+                position.Y += 4 * Host.Scale;
+                frame.Add(new MySprite { Type = SpriteType.TEXT, Data = entry.Name, Position = position, RotationOrScale = Host.Scale, Color = Host.Surface.ScriptForegroundColor, Alignment = TextAlignment.LEFT, FontId = "White" });
+                EndNestedClipAndRestoreScrollClip(frame);
+            }
+
             position.X = bounds.Right;
             frame.Add(new MySprite { Type = SpriteType.TEXT, Data = FormatingHelper.PercentageToString(pct), Position = position, RotationOrScale = Host.Scale, Color = Host.Surface.ScriptForegroundColor, Alignment = TextAlignment.RIGHT, FontId = "White" });
+        }
+
+        void DrawClippedProgressBar(
+            List<MySprite> frame,
+            Vector2 topLeft,
+            Vector2 size,
+            float pct,
+            RectangleF rowClip)
+        {
+            var bgColor = Host.BackgroundColor.DeriveAccentColor();
+            var fillColor = Config.HeaderColor;
+            var fillOverride = GetEntryUsageColor(pct);
+
+            BarPanel.CreateSprites(frame, topLeft, size, fillColor, bgColor, 0f);
+
+            var fillWidth = MathHelper.Clamp(pct, 0f, 1f) * Math.Max(1f, size.X);
+            if (fillWidth <= 0.001f)
+                return;
+
+            var fillClip = Intersect(
+                new RectangleF(topLeft.X, topLeft.Y, fillWidth, Math.Max(1f, size.Y)),
+                rowClip);
+            if (fillClip.Width <= 0f || fillClip.Height <= 0f)
+                return;
+
+            AddClip(frame, fillClip);
+            BarPanel.CreateSprites(frame, topLeft, size, fillColor, bgColor, 1f, fillOverride);
+            EndNestedClipAndRestoreClip(frame, rowClip);
+        }
+
+        bool BeginNestedClip(List<MySprite> sprites, RectangleF bounds)
+        {
+            var clip = Intersect(bounds, _scrollPanel.ContentViewportBounds);
+            if (clip.Width <= 0f || clip.Height <= 0f)
+                return false;
+
+            AddClip(sprites, clip);
+            return true;
+        }
+
+        void EndNestedClipAndRestoreScrollClip(List<MySprite> sprites)
+        {
+            if (sprites == null)
+                return;
+
+            sprites.Add(MySprite.CreateClearClipRect());
+            AddClip(sprites, _scrollPanel.ContentViewportBounds);
+        }
+
+        static void EndNestedClipAndRestoreClip(List<MySprite> sprites, RectangleF clip)
+        {
+            if (sprites == null)
+                return;
+
+            sprites.Add(MySprite.CreateClearClipRect());
+            AddClip(sprites, clip);
+        }
+
+        static RectangleF Intersect(RectangleF a, RectangleF b)
+        {
+            float x = Math.Max(a.X, b.X);
+            float y = Math.Max(a.Y, b.Y);
+            float right = Math.Min(a.Right, b.Right);
+            float bottom = Math.Min(a.Bottom, b.Bottom);
+            return new RectangleF(x, y, Math.Max(0f, right - x), Math.Max(0f, bottom - y));
+        }
+
+        static void AddClip(List<MySprite> sprites, RectangleF bounds)
+        {
+            if (sprites == null)
+                return;
+
+            int x = (int)Math.Floor(bounds.X);
+            int y = (int)Math.Floor(bounds.Y);
+            int right = (int)Math.Ceiling(bounds.Right);
+            int bottom = (int)Math.Ceiling(bounds.Bottom);
+            sprites.Add(MySprite.CreateClipRect(new Rectangle(x, y, Math.Max(0, right - x), Math.Max(0, bottom - y))));
         }
 
         void DrawGridCell(List<MySprite> frame, Entry entry, float xStart, float xEnd, float yStart, float rowHeight)
@@ -256,7 +305,6 @@ namespace LcdMod.Client.Apps
 
         void ClearInteractiveTree()
         {
-            _scrollPanel.ClearChildren();
             _scrollPanel.SetVisible(false);
             _interactiveList.Clear();
 
@@ -264,48 +312,20 @@ namespace LcdMod.Client.Apps
                 kv.Value?.SetVisible(false);
         }
 
-        void ConfigureScrollPanel(float contentTop, float rowHeight, int totalRows)
+        void ConfigureScrollPanel(float contentTop, float rowHeight)
         {
-            _scrollPanel.Configure(Host.ViewBox, contentTop, _footerHeight, rowHeight, totalRows, SCROLLER_WIDTH * Host.Scale, SCROLL_DELAY / 6f);
+            var viewportHeight = Math.Max(0f, Host.ViewBox.Bottom - contentTop - Math.Max(0f, _footerHeight));
+            _scrollPanel.ConfigureAutomatic(
+                new RectangleF(Host.ViewBox.X, contentTop, Host.ViewBox.Width, viewportHeight),
+                SCROLLER_WIDTH * Host.Scale,
+                rowHeight,
+                SCROLL_DELAY / 6f);
             _scrollPanel.SetScrollBarColors(
                 new Color(Host.Surface.ScriptForegroundColor.R, Host.Surface.ScriptForegroundColor.G, Host.Surface.ScriptForegroundColor.B, 127),
                 new Color(Config.HeaderColor.R, Config.HeaderColor.G, Config.HeaderColor.B, 250));
             _scrollPanel.SetVisible(true);
             if (!_interactiveList.Contains(_scrollPanel))
                 _interactiveList.Add(_scrollPanel);
-        }
-
-        RectangleF GetListRowBounds(int rowIndex, float contentTop, bool showScrollBar)
-        {
-            var y = contentTop + rowIndex * LINE_HEIGHT * Host.Scale;
-            var left = Host.ViewBox.Position.X;
-            var width = Host.ViewBox.Width - left + Host.ViewBox.X;
-            if (showScrollBar)
-                width -= SCROLLER_WIDTH * Host.Scale;
-            return new RectangleF(left, y, width, LINE_HEIGHT * Host.Scale);
-        }
-
-
-        void BeginScrollPanelClip(List<MySprite> sprites)
-        {
-            if (sprites == null)
-                return;
-
-            var bounds = _scrollPanel.ContentViewportBounds;
-            if (bounds.Width <= 0f || bounds.Height <= 0f)
-                return;
-
-            int x = (int)Math.Floor(bounds.X);
-            int y = (int)Math.Floor(bounds.Y);
-            int right = (int)Math.Ceiling(bounds.Right);
-            int bottom = (int)Math.Ceiling(bounds.Bottom);
-            sprites.Add(MySprite.CreateClipRect(new Rectangle(x, y, Math.Max(0, right - x), Math.Max(0, bottom - y))));
-        }
-
-        static void EndScrollPanelClip(List<MySprite> sprites)
-        {
-            if (sprites != null)
-                sprites.Add(MySprite.CreateClearClipRect());
         }
 
         ControlRenderContext CreateRenderContext()
@@ -317,7 +337,31 @@ namespace LcdMod.Client.Apps
                 new Vector2(float.NaN, float.NaN));
         }
 
-        RectangleControl AddInteractiveChild(RectangleF bounds, Entry dataContext, bool renderAsGrid)
+        void SyncPanelChildren(Panel panel, List<Entry> entries, bool renderAsGrid)
+        {
+            if (panel == null)
+                return;
+
+            var desired = new List<ControlBase>(entries == null ? 0 : entries.Count);
+            var desiredIds = new HashSet<long>();
+            if (entries != null)
+            {
+                for (int i = 0; i < entries.Count; i++)
+                {
+                    var entry = entries[i];
+                    if (entry == null)
+                        continue;
+
+                    desiredIds.Add(entry.EntryId);
+                    desired.Add(GetOrCreateEntryControl(entry, renderAsGrid));
+                }
+            }
+
+            RemoveStalePanelChildren(panel, desiredIds);
+            EnsurePanelChildOrder(panel, desired);
+        }
+
+        RectangleControl GetOrCreateEntryControl(Entry dataContext, bool renderAsGrid)
         {
             if (dataContext == null)
                 return null;
@@ -327,7 +371,7 @@ namespace LcdMod.Client.Apps
             RectangleControl control;
             if (!_entryControls.TryGetValue(dataContext.EntryId, out control) || control == null)
             {
-                control = new RectangleControl(bounds, CursorType.Hand, dataContext, OnEntryClicked)
+                control = new RectangleControl(default(RectangleF), CursorType.Hand, dataContext, OnEntryClicked)
                 {
                     CustomRender = RenderCargoEntryControl
                 };
@@ -335,7 +379,6 @@ namespace LcdMod.Client.Apps
             }
             else
             {
-                control.SetRect(bounds);
                 control.SetDataContext(dataContext);
                 control.SetCursor(CursorType.Hand);
                 control.SetOnClick(OnEntryClicked);
@@ -343,8 +386,117 @@ namespace LcdMod.Client.Apps
             }
 
             control.SetVisible(true);
-            _scrollPanel.AddChild(control);
             return control;
+        }
+
+        void RenderGridPanelContent(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        {
+            var children = control != null ? control.Children : null;
+            if (children == null)
+                return;
+
+            if (Config.DrawLines)
+            {
+                var layout = WrapPanelLayout.Create(
+                    control.Bounds,
+                    _gridPanel.RowHeight,
+                    _gridPanel.MinimumColumnWidth,
+                    children.Count);
+                DrawGridLines(sprites, layout);
+            }
+
+            for (int i = 0; i < children.Count; i++)
+            {
+                var child = children[i];
+                if (child != null)
+                    child.Render(context, sprites);
+            }
+        }
+
+        void DrawGridLines(List<MySprite> sprites, WrapPanelLayout layout)
+        {
+            var lineColor = Config.HeaderColor;
+            var contentStart = _scrollPanel.ContentBounds.X;
+            var contentEnd = _scrollPanel.ContentBounds.Right;
+            var gridHeight = _scrollPanel.ContentBounds.Height;
+
+            for (int row = 0; row <= _scrollPanel.MaxVisibleRows; row++)
+            {
+                var y = _scrollPanel.ContentBounds.Y + row * layout.RowHeight;
+                sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2((contentStart + contentEnd) / 2f, y), Size = new Vector2(contentEnd - contentStart, 2f), Color = lineColor, Alignment = TextAlignment.CENTER });
+            }
+
+            for (int col = 0; col <= layout.Columns; col++)
+            {
+                var x = col == layout.Columns ? contentEnd : contentStart + col * layout.ColumnWidth;
+                sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(x, _scrollPanel.ContentViewportBounds.Y + gridHeight / 2f), Size = new Vector2(2f, gridHeight), Color = lineColor, Alignment = TextAlignment.CENTER });
+            }
+        }
+
+        void RemoveStalePanelChildren(Panel panel, HashSet<long> desiredIds)
+        {
+            var children = panel.Children;
+            if (children == null)
+                return;
+
+            for (int i = children.Count - 1; i >= 0; i--)
+            {
+                var child = children[i];
+                var entry = child == null ? null : child.DataContext as Entry;
+                if (entry == null || desiredIds.Contains(entry.EntryId))
+                    continue;
+
+                panel.RemoveChild(child);
+            }
+        }
+
+        static void EnsurePanelChildOrder(Panel panel, List<ControlBase> desired)
+        {
+            if (panel == null || desired == null)
+                return;
+
+            var children = panel.Children;
+            bool changed = false;
+            for (int i = 0; i < desired.Count; i++)
+            {
+                var child = desired[i];
+                if (child == null)
+                    continue;
+
+                if (!ReferenceEquals(child.Parent, panel))
+                {
+                    panel.AddChild(child);
+                    children = panel.Children;
+                    changed = true;
+                }
+
+                if (children == null || i >= children.Count || ReferenceEquals(children[i], child))
+                    continue;
+
+                int currentIndex = IndexOfChild(children, child);
+                if (currentIndex < 0)
+                    continue;
+
+                if (panel.MoveChild(child, i))
+                    changed = true;
+            }
+
+            if (changed)
+                panel.InvalidateLayout();
+        }
+
+        static int IndexOfChild(IReadOnlyList<ControlBase> children, ControlBase child)
+        {
+            if (children == null || child == null)
+                return -1;
+
+            for (int i = 0; i < children.Count; i++)
+            {
+                if (ReferenceEquals(children[i], child))
+                    return i;
+            }
+
+            return -1;
         }
 
         public bool HasVisibleItems()

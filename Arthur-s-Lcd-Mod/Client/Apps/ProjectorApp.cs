@@ -7,6 +7,7 @@ using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
+using LcdMod.Client.Gui.ControlsTemplates.Dialogs;
 using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.ControlsTemplates.Progress;
@@ -303,15 +304,15 @@ namespace LcdMod.Client.Apps
             var neededText = FormatingHelper.FormatItemQty(GetNeededQty(item.Key));
             var availableText = FormatingHelper.FormatItemQty(GetAvailableQty(item.Key, item.Value));
 
-            viewModel.PrimaryAmountText = neededText;
-            viewModel.SecondaryAmountText = availableText;
-            viewModel.AmountText = availableText + "/" + neededText;
+            viewModel.SetQuotaAmount(availableText, neededText);
             viewModel.ListTextColor = rowColor;
+            viewModel.ListAmountColor = rowColor;
             viewModel.ListIconColor = Color.White;
             viewModel.IconBackgroundColor = shortageColor.HasValue && shortageColor.Value.Equals(AppConfig.ErrorColor)
                 ? AppConfig.ErrorColor
                 : Color.White;
             viewModel.GridTextColor = useAlertText ? shortageColor.Value : panelTextColor;
+            viewModel.GridAmountColor = viewModel.GridTextColor;
             viewModel.GridIconColor = Color.White;
             viewModel.PanelColor = shortageColor ?? panelColor;
             return viewModel;
@@ -320,139 +321,6 @@ namespace LcdMod.Client.Apps
         protected override double GetDefaultCraftAmount(ItemViewModel item)
         {
             return item == null ? 1d : Math.Max(1d, Math.Ceiling(item.Amount));
-        }
-
-        protected override void DrawListItemContent(List<MySprite> frame, ItemViewModel item, RectangleF bounds)
-        {
-            var margin = 0f;
-            var xStart = bounds.X + margin;
-            var xEnd = bounds.Right - margin;
-            Vector2 position = bounds.Position;
-            position.X = xStart;
-
-            bool drawSeparatorLine = AppConfig.SortMethod == (int)SortMethod.Type && PreviousType != item.TypeId;
-
-            if (AppConfig.DrawLines || drawSeparatorLine)
-            {
-                frame.Add(new MySprite()
-                {
-                    Type = SpriteType.TEXTURE,
-                    Data = "Circle",
-                    Position = new Vector2((xStart + xEnd) / 2f, position.Y),
-                    Size = new Vector2(xEnd - xStart, 1),
-                    Color = drawSeparatorLine ? AppConfig.HeaderColor : Surface.ScriptForegroundColor,
-                    Alignment = TextAlignment.CENTER
-                });
-            }
-
-            PreviousType = item.TypeId;
-
-            DrawItemIcon(frame,
-                item.Icon,
-                position + new Vector2(20f, 15) * Scale,
-                new Vector2(LINE_HEIGHT * Scale),
-                TextAlignment.CENTER,
-                item.IconBackgroundColor);
-            position.X += (xEnd - xStart) / 8f;
-            var quantityColumnsWidth = 2f * GetQuantityColumnWidth() + GetQuantityColumnGap();
-
-            var clip = new Rectangle((int)position.X, (int)position.Y,
-                (int)(xEnd - position.X - quantityColumnsWidth),
-                (int)(position.Y + (LINE_HEIGHT + 5) * Scale));
-
-            frame.Add(MySprite.CreateClipRect(clip));
-
-            var localizedName = TrimText(item.DisplayName, clip.Width);
-
-            frame.Add(new MySprite()
-            {
-                Type = SpriteType.TEXT,
-                Data = localizedName,
-                Position = position,
-                RotationOrScale = Scale * FontScale,
-                Color = item.ListTextColor,
-                Alignment = TextAlignment.LEFT,
-                FontId = "White"
-            });
-            frame.Add(MySprite.CreateClearClipRect());
-            position.X = xEnd;
-            frame.Add(new MySprite()
-            {
-                Type = SpriteType.TEXT,
-                Data = item.PrimaryAmountText,
-                Position = position,
-                RotationOrScale = Scale * FontScale,
-                Color = item.ListTextColor,
-                Alignment = TextAlignment.RIGHT,
-                FontId = "White"
-            });
-            position.X -= GetQuantityColumnWidth() + GetQuantityColumnGap();
-            frame.Add(new MySprite()
-            {
-                Type = SpriteType.TEXT,
-                Data = item.SecondaryAmountText,
-                Position = position,
-                RotationOrScale = Scale * FontScale,
-                Color = item.ListTextColor,
-                Alignment = TextAlignment.RIGHT,
-                FontId = "White"
-            });
-        }
-
-        protected override void DrawCellContent(List<MySprite> frame, ItemViewModel item,
-            MyTuple<RectangleF, RectangleF, RectangleF> slots)
-        {
-            var iconRect = slots.Item1;
-            var numberRect = slots.Item2;
-            var nameRect = slots.Item3;
-
-            DrawItemIcon(frame,
-                item.Icon,
-                new Vector2(iconRect.X, iconRect.Y + iconRect.Height / 2f),
-                new Vector2(iconRect.Width),
-                TextAlignment.LEFT,
-                item.IconBackgroundColor);
-
-            var localizedName = TrimText(item.DisplayName, nameRect.Width);
-
-            Vector2 size = FormatingHelper.GetSizeInPixel(localizedName, "White", 1, Surface);
-            float minProportion = Math.Min(nameRect.Width / size.X, nameRect.Height / size.Y);
-            float fontSize = minProportion;
-            float renderedHeight = size.Y * fontSize * FontScale;
-            Vector2 pos = nameRect.Center;
-            pos.Y -= renderedHeight * 0.5f;
-            pos.X = nameRect.Right;
-
-            frame.Add(new MySprite(
-                SpriteType.TEXT,
-                localizedName,
-                pos,
-                null,
-                item.GridTextColor,
-                "White",
-                TextAlignment.RIGHT,
-                fontSize * .95f * FontScale
-            ));
-
-            var qty = item.AmountText;
-            size = FormatingHelper.GetSizeInPixel(qty, "White", 1, Surface);
-            minProportion = Math.Min(numberRect.Width / size.X, numberRect.Height / size.Y);
-            fontSize = minProportion;
-            renderedHeight = size.Y * fontSize * FontScale;
-            pos = numberRect.Center;
-            pos.Y -= renderedHeight * 0.5f;
-            pos.X = numberRect.Right;
-
-            frame.Add(new MySprite(
-                SpriteType.TEXT,
-                qty,
-                pos,
-                null,
-                item.GridTextColor,
-                "White",
-                TextAlignment.RIGHT,
-                fontSize * .95f * FontScale
-            ));
         }
 
         protected override void DrawCellBackground(List<MySprite> frame, ItemViewModel item,
@@ -499,17 +367,6 @@ namespace LcdMod.Client.Apps
                 return AppConfig.WarningColor;
 
             return null;
-        }
-
-        float GetQuantityColumnWidth()
-        {
-            var labelWidth = Math.Max(_requiredX, _availableX) * Scale * 1.3f * FontScale + (8f * Scale);
-            return Math.Max(100f * Scale, labelWidth);
-        }
-
-        float GetQuantityColumnGap()
-        {
-            return 20f * Scale;
         }
 
         ProjectorFooterLayout CreateFooterLayout()

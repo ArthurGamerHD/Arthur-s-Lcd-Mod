@@ -1,3 +1,9 @@
+#if EXPERIMENTAL
+using LcdMod.Client.Terminal.Actions;
+using LcdMod.Client.Terminal.Models.Actions;
+using LcdMod.Client.Terminal.Models.Property;
+using Sandbox.ModAPI.Interfaces;
+#endif
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -5,16 +11,11 @@ using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Grid;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Inputs;
+using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Terminal.Models;
 using LcdMod.Common.Helpers;
-#if EXPERIMENTAL
-using LcdMod.Client.Terminal.Actions;
-using LcdMod.Client.Terminal.Models.Actions;
-using LcdMod.Client.Terminal.Models.Property;
-using Sandbox.ModAPI.Interfaces;
-#endif
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
@@ -25,7 +26,7 @@ using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 using IMyTerminalBlock = Sandbox.ModAPI.IMyTerminalBlock;
 using IMyIngameTerminalBlock = Sandbox.ModAPI.Ingame.IMyTerminalBlock;
 
-namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
+namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 {
     sealed class SelectActionDialog : Dialog
     {

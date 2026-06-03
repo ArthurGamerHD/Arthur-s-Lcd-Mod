@@ -8,7 +8,7 @@ using VRage.Game.GUI.TextPanel;
 using VRageMath;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
 
-namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
+namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 {
     abstract class Dialog
     {

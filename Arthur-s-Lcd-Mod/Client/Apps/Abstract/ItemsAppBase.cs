@@ -6,10 +6,11 @@ using LcdMod.Client.Extensions;
 using LcdMod.Client.Grid;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
+using LcdMod.Client.Gui.ControlsTemplates.Dialogs;
 using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.ControlsTemplates.Panels.StackPanel;
-using LcdMod.Client.Gui.ControlsTemplates.Panels.WrappedGrid;
+using LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
@@ -25,6 +26,8 @@ using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRageMath;
 using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
+using VisualStackPanel = LcdMod.Client.Gui.ControlsTemplates.Panels.StackPanel.StackPanel;
+using VisualWrapPanel = LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel.WrapPanel;
 
 namespace LcdMod.Client.Apps.Abstract
 {
@@ -40,12 +43,14 @@ namespace LcdMod.Client.Apps.Abstract
         readonly Dictionary<MyItemType, double> _itemsCache = new Dictionary<MyItemType, double>();
         readonly List<ItemViewModel> _items = new List<ItemViewModel>();
         readonly Dictionary<MyItemType, ItemViewModel> _models = new Dictionary<MyItemType, ItemViewModel>();
-        readonly Dictionary<MyItemType, RectangleControl> _listItemControls =
-            new Dictionary<MyItemType, RectangleControl>();
-        readonly Dictionary<MyItemType, RectangleControl> _gridItemControls =
-            new Dictionary<MyItemType, RectangleControl>();
+        readonly Dictionary<MyItemType, ItemControl> _listItemControls =
+            new Dictionary<MyItemType, ItemControl>();
+        readonly Dictionary<MyItemType, ItemControl> _gridItemControls =
+            new Dictionary<MyItemType, ItemControl>();
         readonly List<ControlBase> _interactiveList = new List<ControlBase>();
         readonly ScrollPanel _scrollPanel;
+        readonly VisualStackPanel _listPanel;
+        readonly VisualWrapPanel _gridPanel;
         int _viewModelLayoutVersion = 1;
         bool _scrollRenderQueued;
         float _caretY;
@@ -144,6 +149,9 @@ namespace LcdMod.Client.Apps.Abstract
             _scrollPanel = new ScrollPanel(CursorType.Default, this);
             _scrollPanel.ScrollChanged = OnScrollPanelChanged;
             _scrollPanel.SetVisible(false);
+            _listPanel = new VisualStackPanel();
+            _gridPanel = new VisualWrapPanel();
+            _gridPanel.CustomRender = RenderGridPanelContent;
         }
 
 
@@ -301,10 +309,8 @@ namespace LcdMod.Client.Apps.Abstract
 
             model.Amount = amount;
             var amountText = FormatingHelper.FormatItemQty(amount);
-            model.AmountText = amountText;
-            model.PrimaryAmountText = amountText;
-            model.SecondaryAmountText = null;
             model.ListTextColor = amount == 0 ? AppConfig.ErrorColor : Surface.ScriptForegroundColor;
+            model.ListAmountColor = model.ListTextColor;
             model.ListIconColor = Color.White;
             model.IconBackgroundColor = amount == 0 ? AppConfig.ErrorColor : Color.White;
             var panelColor = AppConfig.HeaderColor;
@@ -312,82 +318,66 @@ namespace LcdMod.Client.Apps.Abstract
             model.GridTextColor = AppConfig.DrawLines && amount == 0
                 ? new Color(96, 32, 32)
                 : panelTextColor;
+            model.GridAmountColor = model.GridTextColor;
             model.GridIconColor = Color.White;
             model.PanelColor = amount == 0 ? AppConfig.ErrorColor : panelColor;
+            model.SetSimpleAmount(amountText);
         }
 
         void DrawList(List<MySprite> sprites, List<ItemViewModel> items)
         {
             var rowHeight = LINE_HEIGHT * Scale;
-            _scrollPanel.Configure(
-                ViewBox,
-                CaretY,
-                FooterHeight,
-                rowHeight,
-                items.Count,
-                SCROLLER_WIDTH * Scale,
-                SCROLL_DELAY / 6f);
-            ConfigureScrollPanelBarColors(_scrollPanel);
-            var panel = _scrollPanel;
-
-            var stack = StackPanel.Create(panel.ContentBounds, rowHeight, items.Count, panel.GetStartIndex(1));
-            if (stack.VisibleCellCount <= 0)
+            if (items.Count <= 0)
                 return;
 
-            BeginInteractiveTree(panel);
-            PreviousType = items[stack.StartIndex].TypeId;
+            var contentBounds = GetScrollPanelBounds(CaretY, FooterHeight);
+            _scrollPanel.SetContent(_listPanel);
+            _listPanel.RowHeight = rowHeight;
+            _listPanel.Gap = 0f;
+            SyncPanelChildren(_listPanel, items, _listItemControls, RenderListItemControl);
+
+            _scrollPanel.ConfigureAutomatic(
+                contentBounds,
+                SCROLLER_WIDTH * Scale,
+                rowHeight,
+                SCROLL_DELAY / 6f);
+            ConfigureScrollPanelBarColors(_scrollPanel);
+
+            BeginInteractiveTree(_scrollPanel);
+            PreviousType = items[0].TypeId;
             var renderContext = CreateItemRenderContext();
-            panel.Render(renderContext, sprites);
+            _scrollPanel.Render(renderContext, sprites);
 
-            BeginScrollPanelClip(sprites, panel);
-            for (int i = 0; i < stack.VisibleCellCount; i++)
-            {
-                var cell = stack.GetCell(i);
-                var control = CreateListItemControl(items[cell.ItemIndex], cell.Bounds);
-                AddInteractiveChild(control);
-                cell.SetControl(control);
-                cell.Render(renderContext, sprites);
-            }
-            EndScrollPanelClip(sprites);
-
-            CaretY = panel.ContentBounds.Y + panel.MaxVisibleRows * rowHeight;
+            CaretY = _scrollPanel.PanelBounds.Bottom;
         }
 
         void DrawGrid(List<MySprite> sprites, List<ItemViewModel> items)
         {
             var rowHeight = 3f * LINE_HEIGHT * Scale;
-            var panel = ConfigureGridScrollPanel(rowHeight, items.Count, SCROLL_DELAY / 6f);
-            var grid = WrappedGrid.Create(panel.ContentBounds, rowHeight, MINIMUM_COL_WIDTH * Scale, items.Count);
-            grid = WrappedGrid.Create(
-                panel.ContentBounds,
-                rowHeight,
-                MINIMUM_COL_WIDTH * Scale,
-                items.Count,
-                panel.GetStartIndex(grid.Columns));
-
-            if (grid.VisibleCellCount <= 0)
+            if (items.Count <= 0)
                 return;
 
-            BeginInteractiveTree(panel);
-            PreviousType = items[grid.StartIndex].TypeId;
+            var contentBounds = GetScrollPanelBounds(CaretY, FooterHeight);
+            _scrollPanel.SetContent(_gridPanel);
+            _gridPanel.RowHeight = rowHeight;
+            _gridPanel.MinimumColumnWidth = MINIMUM_COL_WIDTH * Scale;
+            _gridPanel.HorizontalGap = 0f;
+            _gridPanel.VerticalGap = 0f;
+            SyncPanelChildren(_gridPanel, items, _gridItemControls, RenderGridItemControl);
+
+            _scrollPanel.ConfigureAutomatic(
+                contentBounds,
+                SCROLLER_WIDTH * Scale,
+                rowHeight,
+                SCROLL_DELAY / 6f);
+            ConfigureScrollPanelBarColors(_scrollPanel);
+
+            BeginInteractiveTree(_scrollPanel);
+            PreviousType = items[0].TypeId;
             var renderContext = CreateItemRenderContext();
-            panel.Render(renderContext, sprites);
+            _scrollPanel.Render(renderContext, sprites);
 
-            BeginScrollPanelClip(sprites, panel);
-            if (AppConfig.DrawLines)
-                DrawWrappedGridLines(sprites, panel, grid);
-
-            for (int gridIdx = 0; gridIdx < grid.VisibleCellCount; gridIdx++)
-            {
-                var cell = grid.GetCell(gridIdx);
-                var control = CreateGridItemControl(items[cell.ItemIndex], cell.Bounds);
-                AddInteractiveChild(control);
-                cell.SetControl(control);
-                cell.Render(renderContext, sprites);
-            }
-            EndScrollPanelClip(sprites);
-
-            CaretY = panel.ContentBounds.Y + panel.MaxVisibleRows * rowHeight;
+            CaretY = _scrollPanel.PanelBounds.Bottom;
         }
 
         public ControlRenderContext CreateItemRenderContext()
@@ -411,57 +401,37 @@ namespace LcdMod.Client.Apps.Abstract
             panel.SetScrollBarColors(trackColor, thumbColor);
         }
 
-        void BeginScrollPanelClip(List<MySprite> sprites, ScrollPanel panel)
+        RectangleF GetScrollPanelBounds(float contentTop, float footerHeight)
         {
-            if (sprites == null || panel == null)
-                return;
-
-            var bounds = panel.ContentViewportBounds;
-            if (bounds.Width <= 0f || bounds.Height <= 0f)
-                return;
-
-            int x = (int)Math.Floor(bounds.X);
-            int y = (int)Math.Floor(bounds.Y);
-            int right = (int)Math.Ceiling(bounds.Right);
-            int bottom = (int)Math.Ceiling(bounds.Bottom);
-            sprites.Add(MySprite.CreateClipRect(new Rectangle(x, y, Math.Max(0, right - x), Math.Max(0, bottom - y))));
+            float viewportHeight = Math.Max(0f, ViewBox.Bottom - contentTop - Math.Max(0f, footerHeight));
+            return new RectangleF(ViewBox.X, contentTop, ViewBox.Width, viewportHeight);
         }
 
-        void EndScrollPanelClip(List<MySprite> sprites)
+        void RenderGridPanelContent(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
         {
-            if (sprites != null)
-                sprites.Add(MySprite.CreateClearClipRect());
-        }
+            var children = control != null ? control.Children : null;
+            if (children == null)
+                return;
 
-        ScrollPanel ConfigureGridScrollPanel(float rowHeight, int itemCount, float autoScrollSecondsPerStep)
-        {
-            _scrollPanel.Configure(
-                ViewBox,
-                CaretY,
-                FooterHeight,
-                rowHeight,
-                0,
-                SCROLLER_WIDTH * Scale,
-                autoScrollSecondsPerStep);
-
-            for (int pass = 0; pass < 3; pass++)
+            if (AppConfig.DrawLines)
             {
-                var grid = WrappedGrid.Create(_scrollPanel.ContentBounds, rowHeight, MINIMUM_COL_WIDTH * Scale, itemCount);
-                _scrollPanel.Configure(
-                    ViewBox,
-                    CaretY,
-                    FooterHeight,
-                    rowHeight,
-                    grid.TotalRows,
-                    SCROLLER_WIDTH * Scale,
-                    autoScrollSecondsPerStep);
+                var layout = WrapPanelLayout.Create(
+                    control.Bounds,
+                    3f * LINE_HEIGHT * Scale,
+                    MINIMUM_COL_WIDTH * Scale,
+                    children.Count);
+                DrawWrapPanelLines(sprites, _scrollPanel, layout);
             }
 
-            ConfigureScrollPanelBarColors(_scrollPanel);
-            return _scrollPanel;
+            for (int i = 0; i < children.Count; i++)
+            {
+                var child = children[i];
+                if (child != null)
+                    child.Render(context, sprites);
+            }
         }
 
-        void DrawWrappedGridLines(List<MySprite> sprites, ScrollPanel panel, WrappedGrid grid)
+        void DrawWrapPanelLines(List<MySprite> sprites, ScrollPanel panel, WrapPanelLayout panelLayout)
         {
             var lineColor = AppConfig.HeaderColor;
             var contentStart = panel.ContentBounds.X;
@@ -470,7 +440,7 @@ namespace LcdMod.Client.Apps.Abstract
 
             for (int row = 0; row <= panel.MaxVisibleRows; row++)
             {
-                var y = panel.ContentBounds.Y + row * grid.RowHeight;
+                var y = panel.ContentBounds.Y + row * panelLayout.RowHeight;
                 sprites.Add(new MySprite
                 {
                     Type = SpriteType.TEXTURE,
@@ -482,9 +452,9 @@ namespace LcdMod.Client.Apps.Abstract
                 });
             }
 
-            for (int col = 0; col <= grid.Columns; col++)
+            for (int col = 0; col <= panelLayout.Columns; col++)
             {
-                var x = col == grid.Columns ? contentEnd : contentStart + col * grid.ColumnWidth;
+                var x = col == panelLayout.Columns ? contentEnd : contentStart + col * panelLayout.ColumnWidth;
                 sprites.Add(new MySprite
                 {
                     Type = SpriteType.TEXTURE,
@@ -495,11 +465,6 @@ namespace LcdMod.Client.Apps.Abstract
                     Alignment = TextAlignment.CENTER
                 });
             }
-        }
-
-        ControlBase CreateGridItemControl(ItemViewModel item, RectangleF bounds)
-        {
-            return GetOrCreateItemControl(_gridItemControls, item, bounds, RenderGridItemControl);
         }
 
         void RenderGridItemControl(ControlBase control, ControlRenderContext context, List<MySprite> frame)
@@ -553,13 +518,107 @@ namespace LcdMod.Client.Apps.Abstract
             return localizedName;
         }
 
-        ControlBase CreateListItemControl(ItemViewModel item, RectangleF bounds)
+        void SyncPanelChildren(
+            Panel panel,
+            List<ItemViewModel> items,
+            Dictionary<MyItemType, ItemControl> controls,
+            InteractiveRenderHandler render)
         {
-            return GetOrCreateItemControl(_listItemControls, item, bounds, RenderListItemControl);
+            if (panel == null)
+                return;
+
+            var desired = new List<ControlBase>(items == null ? 0 : items.Count);
+            var desiredTypes = new Dictionary<MyItemType, bool>();
+            if (items != null)
+            {
+                for (int i = 0; i < items.Count; i++)
+                {
+                    var item = items[i];
+                    if (item == null)
+                        continue;
+
+                    desiredTypes[item.ItemType] = true;
+                    desired.Add(GetOrCreateItemControl(controls, item, default(RectangleF), render));
+                }
+            }
+
+            RemoveStalePanelChildren(panel, controls, desiredTypes);
+            EnsurePanelChildOrder(panel, desired);
         }
 
-        RectangleControl GetOrCreateItemControl(
-            Dictionary<MyItemType, RectangleControl> controls,
+        void RemoveStalePanelChildren(
+            Panel panel,
+            Dictionary<MyItemType, ItemControl> controls,
+            Dictionary<MyItemType, bool> desiredTypes)
+        {
+            var children = panel.Children;
+            if (children == null)
+                return;
+
+            for (int i = children.Count - 1; i >= 0; i--)
+            {
+                var child = children[i];
+                var model = child == null ? null : child.Model as ItemViewModel;
+                if (model == null || desiredTypes.ContainsKey(model.ItemType))
+                    continue;
+
+                panel.RemoveChild(child);
+                if (controls != null)
+                    controls.Remove(model.ItemType);
+            }
+        }
+
+        void EnsurePanelChildOrder(Panel panel, List<ControlBase> desired)
+        {
+            if (desired == null)
+                return;
+
+            var children = panel.Children;
+            bool changed = false;
+            for (int i = 0; i < desired.Count; i++)
+            {
+                var child = desired[i];
+                if (child == null)
+                    continue;
+
+                if (!ReferenceEquals(child.Parent, panel))
+                {
+                    panel.AddChild(child);
+                    children = panel.Children;
+                    changed = true;
+                }
+
+                if (children == null || i >= children.Count || ReferenceEquals(children[i], child))
+                    continue;
+
+                int currentIndex = IndexOfChild(children, child);
+                if (currentIndex < 0)
+                    continue;
+
+                if (panel.MoveChild(child, i))
+                    changed = true;
+            }
+
+            if (changed)
+                panel.InvalidateLayout();
+        }
+
+        static int IndexOfChild(IReadOnlyList<ControlBase> children, ControlBase child)
+        {
+            if (children == null || child == null)
+                return -1;
+
+            for (int i = 0; i < children.Count; i++)
+            {
+                if (ReferenceEquals(children[i], child))
+                    return i;
+            }
+
+            return -1;
+        }
+
+        ItemControl GetOrCreateItemControl(
+            Dictionary<MyItemType, ItemControl> controls,
             ItemViewModel item,
             RectangleF bounds,
             InteractiveRenderHandler render)
@@ -567,20 +626,15 @@ namespace LcdMod.Client.Apps.Abstract
             if (item == null)
                 return null;
 
-            RectangleControl control;
+            ItemControl control;
             if (!controls.TryGetValue(item.ItemType, out control) || control == null)
             {
-                control = new RectangleControl(bounds, CursorType.Default, item)
-                {
-                    CustomRender = render
-                };
+                control = new ItemControl(bounds, item, render);
                 controls[item.ItemType] = control;
             }
             else
             {
-                control.SetRect(bounds);
-                control.SetDataContext(item);
-                control.CustomRender = render;
+                control.UpdateItem(item, render);
             }
 
             control.SetVisible(true);
@@ -654,13 +708,9 @@ namespace LcdMod.Client.Apps.Abstract
                 item.IconBackgroundColor);
             position.X += (xEnd - xStart) / 8f;
 
-            var clip = new Rectangle((int)position.X, (int)position.Y,
-                (int)Math.Max(0, xEnd - position.X - 105 * Scale),
-                (int)(position.Y + (LINE_HEIGHT + 5) * Scale));
-
-            frame.Add(MySprite.CreateClipRect(clip));
-
-            var localizedName = TrimText(item.DisplayName, clip.Width);
+            var amountWidth = GetListAmountWidth(item);
+            var nameWidth = Math.Max(0f, xEnd - position.X - amountWidth);
+            var localizedName = TrimText(item.DisplayName, nameWidth);
 
             frame.Add(new MySprite()
             {
@@ -672,19 +722,27 @@ namespace LcdMod.Client.Apps.Abstract
                 Alignment = TextAlignment.LEFT,
                 FontId = "White"
             });
-            frame.Add(MySprite.CreateClearClipRect());
             position.X = xEnd;
             frame.Add(new MySprite()
             {
                 Type = SpriteType.TEXT,
-                Data = item.PrimaryAmountText ?? item.AmountText,
+                Data = item.AmountText,
                 Position = position,
                 RotationOrScale = Scale * FontScale,
-                Color = item.ListTextColor,
+                Color = item.ListAmountColor,
                 Alignment = TextAlignment.RIGHT,
                 FontId = "White"
             });
 
+        }
+
+        float GetListAmountWidth(ItemViewModel item)
+        {
+            if (item == null || string.IsNullOrEmpty(item.AmountText))
+                return 105f * Scale;
+
+            var size = FormatingHelper.GetSizeInPixel(item.AmountText, "White", 1, Surface);
+            return Math.Max(105f * Scale, size.X * Scale * FontScale + 8f * Scale);
         }
 
         protected virtual void DrawItemIcon(List<MySprite> frame, string icon, Vector2 position, Vector2 size,
@@ -767,7 +825,7 @@ namespace LcdMod.Client.Apps.Abstract
                 qty,
                 pos,
                 null,
-                item.GridTextColor,
+                item.GridAmountColor,
                 "White",
                 TextAlignment.RIGHT,
                 fontSize * .95f * FontScale
@@ -778,16 +836,30 @@ namespace LcdMod.Client.Apps.Abstract
         {
         }
 
+        sealed class ItemControl : RectangleControl
+        {
+            public ItemControl(RectangleF bounds, ItemViewModel item, InteractiveRenderHandler render)
+                : base(bounds, CursorType.Default, item)
+            {
+                CustomRender = render;
+            }
+
+            public void UpdateItem(ItemViewModel item, InteractiveRenderHandler render)
+            {
+                SetDataContext(item);
+                CustomRender = render;
+            }
+        }
+
         void ClearInteractiveTree()
         {
-            _scrollPanel.ClearChildren();
             _scrollPanel.SetVisible(false);
             _interactiveList.Clear();
             SetItemControlsVisible(_listItemControls, false);
             SetItemControlsVisible(_gridItemControls, false);
         }
 
-        static void SetItemControlsVisible(Dictionary<MyItemType, RectangleControl> controls, bool visible)
+        static void SetItemControlsVisible(Dictionary<MyItemType, ItemControl> controls, bool visible)
         {
             if (controls == null)
                 return;
@@ -801,12 +873,6 @@ namespace LcdMod.Client.Apps.Abstract
             panel.SetVisible(true);
             if (!_interactiveList.Contains(panel))
                 _interactiveList.Add(panel);
-        }
-
-        void AddInteractiveChild(ControlBase control)
-        {
-            if (control != null)
-                _scrollPanel.AddChild(control);
         }
 
         public bool HasVisibleItems()
@@ -965,12 +1031,37 @@ namespace LcdMod.Client.Apps.Abstract
             public string AmountText { get; set; }
             public string PrimaryAmountText { get; set; }
             public string SecondaryAmountText { get; set; }
+            public ItemAmountDisplayMode AmountDisplayMode { get; set; }
             public Color ListTextColor { get; set; }
+            public Color ListAmountColor { get; set; }
             public Color ListIconColor { get; set; }
             public Color GridTextColor { get; set; }
+            public Color GridAmountColor { get; set; }
             public Color GridIconColor { get; set; }
             public Color IconBackgroundColor { get; set; }
             public Color PanelColor { get; set; }
+
+            public void SetSimpleAmount(string amountText)
+            {
+                AmountDisplayMode = ItemAmountDisplayMode.Simple;
+                AmountText = amountText;
+                PrimaryAmountText = amountText;
+                SecondaryAmountText = null;
+            }
+
+            public void SetQuotaAmount(string hasText, string needText)
+            {
+                AmountDisplayMode = ItemAmountDisplayMode.Quota;
+                PrimaryAmountText = hasText;
+                SecondaryAmountText = needText;
+                AmountText = hasText + "/" + needText;
+            }
+        }
+
+        protected enum ItemAmountDisplayMode
+        {
+            Simple,
+            Quota
         }
     }
 

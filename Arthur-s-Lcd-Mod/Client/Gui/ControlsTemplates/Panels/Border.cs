@@ -33,6 +33,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         public static MySprite[] DrawRectangle(RectangleF rectangle, Color color, float finalScale = 1f,
             float radiusPixels = DEFAULT_RADIUS_PIXELS)
         {
+            if (color.A != 255)
+            {
+                if (color == Color.Transparent)
+                    return Array.Empty<MySprite>(); // fully transparent = nothing
+
+                throw new ArgumentException("Transparency is not supported");
+            }
+               
+
             SpritesBuffer.Clear();
             Vector2 fullSize = rectangle.Size * finalScale;
             Vector2 half = fullSize * 0.5f;

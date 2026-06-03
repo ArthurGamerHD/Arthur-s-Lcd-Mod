@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Extensions;
+using LcdMod.Client.Gui.ControlsTemplates.Panels.Virtualized;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
@@ -15,9 +16,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         const float INERTIA_DECAY_PER_FRAME = 0.88f;
         const float STOP_VELOCITY_PIXELS_PER_FRAME = 0.05f;
         const long HOVER_LIFETIME_FRAMES = 2L;
+        const float SCROLLBAR_CONTENT_MARGIN_RATIO = 0.5f;
 
         readonly ScrollBarTrackControl _scrollBarTrack;
         readonly ScrollBarThumbControl _scrollBarThumb;
+        Panel _content;
+        bool _automaticContentMode;
+        bool _manualConfigured;
+        float _contentExtentHeight;
 
         public ScrollPanel(CursorType? cursor = null, object dataContext = null)
             : base(cursor, dataContext)
@@ -28,24 +34,42 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             AddScrollBarChildren();
         }
 
-        public new void ClearChildren()
+        public ScrollPanel(ControlBase parent)
+            : this()
         {
+            AttachTo(parent);
+        }
+
+        public ScrollPanel(ControlBase parent, RectangleF bounds)
+            : this(parent)
+        {
+            SetRect(bounds);
+        }
+
+        public override void ClearChildren()
+        {
+            _content = null;
+            _automaticContentMode = false;
+            _manualConfigured = false;
             base.ClearChildren();
             AddScrollBarChildren();
         }
 
         void AddScrollBarChildren()
         {
-            AddChild(_scrollBarTrack);
-            AddChild(_scrollBarThumb);
+            base.AddChild(_scrollBarTrack);
+            base.AddChild(_scrollBarThumb);
         }
 
+        public Panel Content { get { return _content; } }
         public RectangleF ViewBox { get; private set; }
         public RectangleF PanelBounds { get; private set; }
         public RectangleF ContentViewportBounds { get; private set; }
         public RectangleF ContentBounds { get; private set; }
         public float RowHeight { get; private set; }
         public float ScrollerWidthPixels { get; private set; }
+        public float AutomaticScrollerWidthPixels { get; set; } = 12f;
+        public float ScrollStepPixels { get; set; } = 32f;
         public float AutoScrollSecondsPerStep { get; private set; }
         public float ManualScrollPixelMultiplier { get; set; } = DEFAULT_MANUAL_SCROLL_PIXEL_MULTIPLIER;
         public bool ManualScrollInertiaEnabled { get; set; } = true;
@@ -81,9 +105,91 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
         public override RectangleF Bounds => PanelBounds;
 
-        public override bool CanScroll => Visible && IsScrollable;
+        public override bool CanScroll
+        {
+            get
+            {
+                if (_automaticContentMode)
+                    EnsureAutomaticLayout();
 
-        public static ScrollPanel Create(
+                return Visible && IsScrollable;
+            }
+        }
+
+        public override void AddChild(ControlBase child)
+        {
+            var panel = child as Panel;
+            if (!_automaticContentMode && !IsManualConfigured() && panel != null)
+            {
+                SetContent(panel);
+                return;
+            }
+
+            base.AddChild(child);
+        }
+
+        public override bool RemoveChild(ControlBase child)
+        {
+            if (ReferenceEquals(child, _content))
+            {
+                _content = null;
+                _automaticContentMode = false;
+            }
+
+            return base.RemoveChild(child);
+        }
+
+        public void SetContent(Panel content)
+        {
+            if (ReferenceEquals(_content, content))
+                return;
+
+            if (_content != null)
+                base.RemoveChild(_content);
+
+            _content = content;
+            _automaticContentMode = _content != null;
+            if (_automaticContentMode)
+                _manualConfigured = false;
+
+            if (_content != null)
+                base.AddChild(_content);
+
+            InvalidateLayout();
+        }
+
+        public void SetRect(RectangleF bounds)
+        {
+            ViewBox = bounds;
+            PanelBounds = bounds;
+            InvalidateLayout();
+        }
+
+        public override void Arrange(RectangleF bounds)
+        {
+            SetRect(bounds);
+            EnsureAutomaticLayout();
+        }
+
+        public void ConfigureAutomatic(
+            RectangleF bounds,
+            float scrollerWidthPixels,
+            float scrollStepPixels,
+            float autoScrollSecondsPerStep)
+        {
+            ViewBox = bounds;
+            PanelBounds = bounds;
+            AutomaticScrollerWidthPixels = Math.Max(0f, scrollerWidthPixels);
+            ScrollStepPixels = Math.Max(1f, scrollStepPixels);
+            RowHeight = ScrollStepPixels;
+            AutoScrollSecondsPerStep = Math.Max(0f, autoScrollSecondsPerStep);
+            _automaticContentMode = _content != null;
+            _manualConfigured = false;
+            InvalidateLayout();
+            EnsureAutomaticLayout();
+        }
+
+        internal static ScrollPanel Create(
             RectangleF viewBox,
             float contentTop,
             float footerHeight,
@@ -97,7 +203,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             return panel;
         }
 
-        public void Configure(
+        internal void Configure(
             RectangleF viewBox,
             float contentTop,
             float footerHeight,
@@ -148,6 +254,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             float scrollerWidthPixels,
             Func<float, float> scrollOffsetProvider)
         {
+            _automaticContentMode = false;
+            _manualConfigured = true;
             ViewBox = viewBox;
             RowHeight = Math.Max(1f, rowHeight);
             ScrollerWidthPixels = Math.Max(0f, scrollerWidthPixels);
@@ -157,10 +265,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             MaxVisibleRows = Math.Max(1, (int)Math.Floor(viewportHeight / RowHeight));
 
             float totalContentHeight = TotalRows * RowHeight;
+            _contentExtentHeight = totalContentHeight;
             IsScrollable = totalContentHeight > viewportHeight + 0.001f;
             PanelBounds = new RectangleF(viewBox.X, contentTop, viewBox.Width, viewportHeight);
 
-            float contentWidth = Math.Max(1f, viewBox.Width - (IsScrollable ? ScrollerWidthPixels : 0f));
+            float contentGutterWidth = IsScrollable
+                ? ScrollerWidthPixels + GetScrollbarContentMarginPixels()
+                : 0f;
+            float contentWidth = Math.Max(1f, viewBox.Width - contentGutterWidth);
             ContentViewportBounds = new RectangleF(viewBox.X, contentTop, contentWidth, viewportHeight);
 
             if (!IsScrollable && TotalRows > 0)
@@ -202,9 +314,119 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
                 RenderRows * RowHeight);
         }
 
-        public int GetStartIndex(int columns)
+        void EnsureAutomaticLayout()
         {
-            return StartRow * Math.Max(1, columns);
+            if (!_automaticContentMode)
+                return;
+
+            if (!IsLayoutDirty)
+                return;
+
+            ArrangeAutomaticContent();
+        }
+
+        void ArrangeAutomaticContent()
+        {
+            ScrollerWidthPixels = Math.Max(0f, AutomaticScrollerWidthPixels);
+
+            if (_content == null)
+            {
+                ContentViewportBounds = PanelBounds;
+                ContentBounds = PanelBounds;
+                TotalRows = 0;
+                MaxVisibleRows = 0;
+                VisibleRows = 0;
+                RenderRows = 0;
+                StartRow = 0;
+                RowOffsetPixels = 0f;
+                ScrollOffsetPixels = 0f;
+                _manualScrollPixels = 0f;
+                _contentExtentHeight = 0f;
+                IsScrollable = false;
+                ValidateLayout();
+                return;
+            }
+
+            var scrollContent = _content as IScrollContent;
+            // Measure once without chrome, then again with the scrollbar gutter if content overflows.
+            // This keeps wrapping panels stable when the scrollbar changes the available width.
+            var viewport = CalculateAutomaticViewport(false);
+            var desired = scrollContent != null
+                ? scrollContent.MeasureContent(viewport.Size)
+                : _content.Measure(viewport.Size);
+            bool showScrollbar = desired.Y > viewport.Height + 0.001f;
+
+            if (showScrollbar)
+            {
+                viewport = CalculateAutomaticViewport(true);
+                desired = scrollContent != null
+                    ? scrollContent.MeasureContent(viewport.Size)
+                    : _content.Measure(viewport.Size);
+            }
+
+            ContentViewportBounds = viewport;
+            _contentExtentHeight = Math.Max(0f, desired.Y);
+            IsScrollable = _contentExtentHeight > viewport.Height + 0.001f;
+
+            if (!IsScrollable)
+            {
+                _manualScrollPixels = 0f;
+                _scrollBarThumbDragging = false;
+                _scrollBarThumbHoverFrame = long.MinValue;
+                ScrollVelocityPixelsPerFrame = 0f;
+                IsAnimating = false;
+            }
+
+            float maxScrollOffset = GetMaxScrollOffsetPixels();
+
+            if (IsScrollable)
+            {
+                _manualScrollPixels = Clamp(_manualScrollPixels, 0f, maxScrollOffset);
+                UpdateManualScrollInertia(maxScrollOffset);
+            }
+
+            ScrollOffsetPixels = IsScrollable
+                ? Clamp(GetScrollOffsetForCurrentMode(maxScrollOffset), 0f, maxScrollOffset)
+                : 0f;
+
+            RowHeight = Math.Max(1f, RowHeight);
+            StartRow = Clamp((int)Math.Floor(ScrollOffsetPixels / RowHeight), 0, GetMaxStartRow());
+            RowOffsetPixels = Math.Max(0f, ScrollOffsetPixels - StartRow * RowHeight);
+
+            TotalRows = _content.HasChildren ? _content.Children.Count : 0;
+            MaxVisibleRows = Math.Max(1, (int)Math.Floor(viewport.Height / RowHeight));
+            VisibleRows = TotalRows;
+            RenderRows = TotalRows;
+
+            ContentBounds = new RectangleF(
+                viewport.X,
+                viewport.Y - ScrollOffsetPixels,
+                viewport.Width,
+                _contentExtentHeight);
+
+            // Virtualized panels receive viewport geometry so they can bind only visible pooled controls.
+            if (scrollContent != null)
+                scrollContent.ArrangeViewport(viewport, ScrollOffsetPixels);
+            else
+                _content.Arrange(ContentBounds);
+            ValidateLayout();
+        }
+
+        RectangleF CalculateAutomaticViewport(bool showScrollbar)
+        {
+            float gutterWidth = showScrollbar
+                ? Math.Max(0f, ScrollerWidthPixels + GetScrollbarContentMarginPixels())
+                : 0f;
+            return new RectangleF(
+                PanelBounds.X,
+                PanelBounds.Y,
+                Math.Max(0f, PanelBounds.Width - gutterWidth),
+                Math.Max(0f, PanelBounds.Height));
+        }
+
+        float GetScrollbarContentMarginPixels()
+        {
+            return Math.Max(0f, ScrollerWidthPixels * SCROLLBAR_CONTENT_MARGIN_RATIO);
         }
 
         public override bool Scroll(object sender, int delta)
@@ -212,7 +434,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             if (!CanScroll)
                 return false;
 
-            float pixelDelta = GetManualScrollPixelDelta(delta);
+            float pixelDelta = _automaticContentMode
+                ? GetAutomaticScrollPixelDelta(delta)
+                : GetManualScrollPixelDelta(delta);
 
             if (Math.Abs(pixelDelta) <= 0.001f)
                 return false;
@@ -226,13 +450,29 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             if (AutoScrollSecondsPerStep > 0f)
                 _manualOverrideUntilFrame = GetFrameCounter() + MANUAL_SCROLL_OVERRIDE_FRAMES;
 
-            MarkDirty();
+            if (_automaticContentMode)
+                InvalidateLayout();
+            else
+                MarkDirty();
+
             ScrollChanged?.Invoke(this);
             return true;
         }
 
         protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
         {
+            if (_automaticContentMode)
+            {
+                EnsureAutomaticLayout();
+                // Content is clipped separately from scrollbar chrome so the scrollbar remains interactive/visible.
+                BeginClip(sprites, ContentViewportBounds);
+
+                if (_content != null)
+                    _content.Render(context, sprites);
+
+                EndClip(sprites);
+            }
+
             RenderScrollBar(sprites, GetScrollBarTrackColor(context), GetScrollBarThumbColor(context));
         }
 
@@ -290,14 +530,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         {
             metrics = new ScrollBarMetrics();
 
-            if (!IsScrollable || ScrollerWidthPixels <= 0f || TotalRows <= 0)
+            if (!IsScrollable || ScrollerWidthPixels <= 0f || GetTotalContentHeightPixels() <= 0f)
                 return false;
 
             float gutterWidth = Math.Max(1f, ScrollerWidthPixels);
             float barWidth = GetScrollBarVisualWidthPixels(gutterWidth);
             float horizontalPadding = Math.Max(0f, (gutterWidth - barWidth) * 0.5f);
             float trackHeight = Math.Max(1f, ContentViewportBounds.Height - ScrollerWidthPixels * 2f);
-            float totalContentHeight = Math.Max(1f, TotalRows * RowHeight);
+            float totalContentHeight = Math.Max(1f, GetTotalContentHeightPixels());
             float thumbHeight = Math.Max(1f, Math.Min(trackHeight, ContentViewportBounds.Height / totalContentHeight * trackHeight));
             float maxScrollOffset = GetMaxScrollOffsetPixels();
             float thumbTravel = Math.Max(0f, trackHeight - thumbHeight);
@@ -477,7 +717,19 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
         float GetMaxScrollOffsetPixels()
         {
-            return Math.Max(0f, TotalRows * RowHeight - ContentViewportBounds.Height);
+            return Math.Max(0f, GetTotalContentHeightPixels() - ContentViewportBounds.Height);
+        }
+
+        float GetTotalContentHeightPixels()
+        {
+            return _automaticContentMode
+                ? _contentExtentHeight
+                : TotalRows * RowHeight;
+        }
+
+        bool IsManualConfigured()
+        {
+            return _manualConfigured;
         }
 
         float GetManualScrollPixelDelta(int wheelDelta)
@@ -490,6 +742,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
                 : DEFAULT_MANUAL_SCROLL_PIXEL_MULTIPLIER;
 
             float pixels = Math.Abs(wheelDelta) * multiplier;
+            return wheelDelta > 0 ? -pixels : pixels;
+        }
+
+        float GetAutomaticScrollPixelDelta(int wheelDelta)
+        {
+            if (wheelDelta == 0)
+                return 0f;
+
+            float pixels = ScrollStepPixels > 0f ? ScrollStepPixels : 32f;
             return wheelDelta > 0 ? -pixels : pixels;
         }
 
@@ -622,6 +883,29 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
                 return max;
 
             return value;
+        }
+
+        static void BeginClip(List<MySprite> sprites, RectangleF bounds)
+        {
+            if (sprites == null)
+                return;
+
+            int x = (int)Math.Floor(bounds.X);
+            int y = (int)Math.Floor(bounds.Y);
+            int right = (int)Math.Ceiling(bounds.Right);
+            int bottom = (int)Math.Ceiling(bounds.Bottom);
+
+            sprites.Add(MySprite.CreateClipRect(new Rectangle(
+                x,
+                y,
+                Math.Max(0, right - x),
+                Math.Max(0, bottom - y))));
+        }
+
+        static void EndClip(List<MySprite> sprites)
+        {
+            if (sprites != null)
+                sprites.Add(MySprite.CreateClearClipRect());
         }
 
         static void DrawCapsule(List<MySprite> sprites, Vector2 center, int width, float height, Color color)

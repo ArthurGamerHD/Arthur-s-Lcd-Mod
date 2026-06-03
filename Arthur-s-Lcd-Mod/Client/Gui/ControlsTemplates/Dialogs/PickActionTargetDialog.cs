@@ -1,3 +1,6 @@
+#if EXPERIMENTAL
+using LcdMod.Client.Terminal.Actions;
+#endif
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
@@ -6,9 +9,6 @@ using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Inputs;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Helpers;
-#if EXPERIMENTAL
-using LcdMod.Client.Terminal.Actions;
-#endif
 using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
 using Sandbox.Game.Entities;
@@ -19,7 +19,7 @@ using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.Interacti
 using IMyBlockGroup = Sandbox.ModAPI.Ingame.IMyBlockGroup;
 using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 
-namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
+namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 {
     enum PickActionTargetKind
     {

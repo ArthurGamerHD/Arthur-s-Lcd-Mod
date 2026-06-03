@@ -4,8 +4,10 @@ using System.Linq;
 using System.Text;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Grid;
+using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
+using LcdMod.Client.Gui.ControlsTemplates.Panels.Virtualized;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts;
 using LcdMod.Client.Terminal.Actions;
@@ -28,6 +30,7 @@ namespace LcdMod.Client.Apps
 
         readonly List<MySprite> _sprites = new List<MySprite>();
         readonly ScrollPanel _scrollPanel = new ScrollPanel();
+        readonly VirtualizedStackPanel<DebugLine> _linePanel = new VirtualizedStackPanel<DebugLine>();
         readonly List<ControlBase> _interactiveEntries = new List<ControlBase>();
 
         SessionDebugSurfaceScript _host;
@@ -36,6 +39,8 @@ namespace LcdMod.Client.Apps
         {
             _scrollPanel.ManualScrollInertiaEnabled = false;
             _interactiveEntries.Add(_scrollPanel);
+            _linePanel.CreateControl = CreateLineControl;
+            _linePanel.BindControl = BindLineControl;
             _host = sessionDebugSurfaceScript;
         }
 
@@ -64,47 +69,20 @@ namespace LcdMod.Client.Apps
                 Math.Max(0f, viewBox.Width - INNER_PADDING * 2f),
                 Math.Max(0f, viewBox.Height - INNER_PADDING * 2f));
 
-            _scrollPanel.ClearChildren();
-            _scrollPanel.Configure(
+            _scrollPanel.SetContent(_linePanel);
+            _linePanel.ItemsSource = lines;
+            _linePanel.RowHeight = lineHeight;
+            _linePanel.Gap = 0f;
+            _scrollPanel.ConfigureAutomatic(
                 contentViewBox,
-                contentViewBox.Y,
-                0f,
-                lineHeight,
-                lines.Count,
                 SCROLLBAR_WIDTH,
+                lineHeight,
                 0f);
             _scrollPanel.SetScrollBarColors(
                 new Color(45, 45, 45, 170),
                 new Color(190, 190, 190, 230));
 
             _sprites.Clear();
-
-            BeginClip(_sprites, _scrollPanel.ContentViewportBounds);
-
-            int startRow = _scrollPanel.StartRow;
-            int endRow = Math.Min(lines.Count, startRow + _scrollPanel.RenderRows);
-
-            for (int i = startRow; i < endRow; i++)
-            {
-                var line = lines[i];
-                int visibleIndex = i - startRow;
-
-                _sprites.Add(new MySprite
-                {
-                    Type = SpriteType.TEXT,
-                    Data = line.Text,
-                    Position = new Vector2(
-                        _scrollPanel.ContentViewportBounds.X,
-                        _scrollPanel.ContentBounds.Y + visibleIndex * lineHeight),
-                    Color = line.Color,
-                    FontId = DEBUG_FONT,
-                    Alignment = TextAlignment.LEFT,
-                    RotationOrScale = TextScale
-                });
-            }
-
-            EndClip(_sprites);
-
             _scrollPanel.Render(
                 new ControlRenderContext(_host.Surface, 1f, 1f, Color.White, Color.Transparent, new Vector2(float.NaN, float.NaN)),
                 _sprites);
@@ -112,20 +90,36 @@ namespace LcdMod.Client.Apps
             return _sprites;
         }
 
-        static void BeginClip(List<MySprite> sprites, RectangleF bounds)
+        ControlBase CreateLineControl(DebugLine line)
         {
-            sprites.Add(new MySprite
+            return new RectangleControl(default(RectangleF), CursorType.Default, line)
             {
-                Type = SpriteType.CLIP_RECT,
-                Position = bounds.Position,
-                Size = bounds.Size,
-                Alignment = TextAlignment.LEFT
-            });
+                CustomRender = RenderLineControl
+            };
         }
 
-        static void EndClip(List<MySprite> sprites)
+        static void BindLineControl(ControlBase control, DebugLine line, int index)
         {
-            sprites.Add(MySprite.CreateClearClipRect());
+            if (control != null)
+                control.SetDataContext(line);
+        }
+
+        void RenderLineControl(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        {
+            if (control == null || sprites == null)
+                return;
+
+            var line = control.DataContext is DebugLine ? (DebugLine)control.DataContext : new DebugLine(string.Empty, Color.White);
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXT,
+                Data = line.Text,
+                Position = control.Bounds.Position,
+                Color = line.Color,
+                FontId = DEBUG_FONT,
+                Alignment = TextAlignment.LEFT,
+                RotationOrScale = TextScale
+            });
         }
 
         static List<DebugLine> BuildDebugLines(SessionDebugSnapshot snapshot, SessionDebugSurfaceScript owner)

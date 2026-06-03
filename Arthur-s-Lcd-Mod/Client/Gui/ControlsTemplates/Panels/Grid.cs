@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
+using ArgumentOutOfRangeException = LcdMod.Common.ArgumentOutOfRangeException;
 
 namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 {
@@ -12,6 +13,17 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
     /// </summary>
     public sealed class Grid : Panel
     {
+        sealed class GridPlacement
+        {
+            public int Column;
+            public int Row;
+            public int ColumnSpan = 1;
+            public int RowSpan = 1;
+        }
+
+        readonly Dictionary<ControlBase, GridPlacement> _placements =
+            new Dictionary<ControlBase, GridPlacement>();
+
         public Grid() : this(default(RectangleF))
         {
         }
@@ -25,6 +37,18 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             BackgroundColor = Color.Transparent;
         }
 
+        public Grid(ControlBase parent, int cols, int rows)
+            : this(default(RectangleF), CreateEqualSegments(cols), CreateEqualSegments(rows))
+        {
+            AttachTo(parent);
+        }
+
+        public Grid(ControlBase parent, RectangleF bounds, int cols, int rows)
+            : this(bounds, CreateEqualSegments(cols), CreateEqualSegments(rows))
+        {
+            AttachTo(parent);
+        }
+
         public float[] Columns { get; set; }
         public float[] Rows { get; set; }
         public string BackgroundTexture { get; set; }
@@ -33,13 +57,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         public void SetColumns(params float[] columns)
         {
             Columns = columns;
-            ArrangeChildren();
+            InvalidateLayout();
         }
 
         public void SetRows(params float[] rows)
         {
             Rows = rows;
-            ArrangeChildren();
+            InvalidateLayout();
         }
 
         public RectangleF GetCellBounds(int childIndex)
@@ -59,9 +83,59 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             return new RectangleF(x, y, Math.Max(0f, right - x), Math.Max(0f, bottom - y));
         }
 
+        public RectangleF GetCellBounds(int column, int row, int columnSpan = 1, int rowSpan = 1)
+        {
+            int columnCount = GetSegmentCount(Columns);
+            int rowCount = GetSegmentCount(Rows);
+            int safeColumn = Clamp(column, 0, columnCount - 1);
+            int safeRow = Clamp(row, 0, rowCount - 1);
+            int endColumn = Clamp(safeColumn + Math.Max(1, columnSpan) - 1, safeColumn, columnCount - 1);
+            int endRow = Clamp(safeRow + Math.Max(1, rowSpan) - 1, safeRow, rowCount - 1);
+
+            float x = GetSegmentStart(Rect.X, Rect.Width, Columns, safeColumn, columnCount);
+            float y = GetSegmentStart(Rect.Y, Rect.Height, Rows, safeRow, rowCount);
+            float right = GetSegmentEnd(Rect.X, Rect.Width, Columns, endColumn, columnCount);
+            float bottom = GetSegmentEnd(Rect.Y, Rect.Height, Rows, endRow, rowCount);
+
+            return new RectangleF(x, y, Math.Max(0f, right - x), Math.Max(0f, bottom - y));
+        }
+
+        public T Set<T>(T child, int col, int row, int colSpan = 1, int rowSpan = 1)
+            where T : ControlBase
+        {
+            if (child == null)
+                return null;
+
+            ValidatePlacement(col, row, colSpan, rowSpan);
+            AddChild(child);
+
+            _placements[child] = new GridPlacement
+            {
+                Column = col,
+                Row = row,
+                ColumnSpan = colSpan,
+                RowSpan = rowSpan
+            };
+
+            InvalidateLayout();
+            return child;
+        }
+
+        public override bool RemoveChild(ControlBase child)
+        {
+            _placements.Remove(child);
+            return base.RemoveChild(child);
+        }
+
+        public override void ClearChildren()
+        {
+            _placements.Clear();
+            base.ClearChildren();
+        }
+
         protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
         {
-            ArrangeChildren();
+            EnsureLayout();
             DrawBackground(sprites);
             RenderChildren(context, sprites);
         }
@@ -73,7 +147,19 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
                 return;
 
             for (int i = 0; i < children.Count; i++)
-                SetChildBounds(children[i], GetCellBounds(i));
+            {
+                var child = children[i];
+                ArrangeChild(child, GetChildBounds(child, i));
+            }
+        }
+
+        RectangleF GetChildBounds(ControlBase child, int childIndex)
+        {
+            GridPlacement placement;
+            if (child != null && _placements.TryGetValue(child, out placement))
+                return GetCellBounds(placement.Column, placement.Row, placement.ColumnSpan, placement.RowSpan);
+
+            return GetCellBounds(childIndex);
         }
 
         void DrawBackground(List<MySprite> sprites)
@@ -92,23 +178,53 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             });
         }
 
-        static void SetChildBounds(ControlBase child, RectangleF bounds)
+        static void ArrangeChild(ControlBase child, RectangleF bounds)
         {
             if (child == null)
                 return;
 
-            var rectangle = child as RectangleControl;
-            if (rectangle != null)
-            {
-                rectangle.SetRect(bounds);
-                return;
-            }
+            child.Arrange(bounds);
+        }
 
-            var panel = child as Panel;
-            if (panel != null)
-            {
-                panel.SetRect(bounds);
-            }
+        void ValidatePlacement(int column, int row, int columnSpan, int rowSpan)
+        {
+            if (column < 0)
+                throw new ArgumentOutOfRangeException("column");
+
+            if (row < 0)
+                throw new ArgumentOutOfRangeException("row");
+
+            if (columnSpan < 1)
+                throw new ArgumentOutOfRangeException("columnSpan");
+
+            if (rowSpan < 1)
+                throw new ArgumentOutOfRangeException("rowSpan");
+
+            int columnCount = GetSegmentCount(Columns);
+            int rowCount = GetSegmentCount(Rows);
+
+            if (column >= columnCount)
+                throw new ArgumentOutOfRangeException("column");
+
+            if (row >= rowCount)
+                throw new ArgumentOutOfRangeException("row");
+
+            if (column + columnSpan > columnCount)
+                throw new ArgumentOutOfRangeException("columnSpan");
+
+            if (row + rowSpan > rowCount)
+                throw new ArgumentOutOfRangeException("rowSpan");
+        }
+
+        static float[] CreateEqualSegments(int count)
+        {
+            int safeCount = Math.Max(1, count);
+            var values = new float[safeCount];
+
+            for (int i = 0; i < values.Length; i++)
+                values[i] = 1f;
+
+            return values;
         }
 
         static int GetSegmentCount(float[] segments)
