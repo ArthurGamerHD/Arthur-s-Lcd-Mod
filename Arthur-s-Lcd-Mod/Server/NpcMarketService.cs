@@ -416,6 +416,7 @@ namespace LcdMod.Server
                 {
                     StationId = station.StationId,
                     Name = station.Name,
+                    DisplayName = ResolveStationDisplayName(station, seller),
                     NpcFactionId = station.NpcFactionId,
                     Position = station.Position,
                     StationType = station.StationType,
@@ -441,8 +442,29 @@ namespace LcdMod.Server
 
         static int CompareStationDtos(NpcMarketStationDto x, NpcMarketStationDto y)
         {
-            var name = string.Compare(x.Name, y.Name, StringComparison.OrdinalIgnoreCase);
+            var name = string.Compare(GetStationDisplayName(x), GetStationDisplayName(y),
+                StringComparison.OrdinalIgnoreCase);
             return name != 0 ? name : x.StationId.CompareTo(y.StationId);
+        }
+
+        static string ResolveStationDisplayName(ParsedNpcStation station, ParsedNpcSellerFaction seller)
+        {
+            if (station == null || string.IsNullOrWhiteSpace(station.Name))
+                return string.Empty;
+
+            var factionTag = seller != null ? seller.Tag : string.Empty;
+            if (string.IsNullOrWhiteSpace(factionTag) ||
+                station.Name.StartsWith(factionTag + " ", StringComparison.OrdinalIgnoreCase))
+            {
+                return station.Name;
+            }
+
+            return factionTag + " " + station.Name;
+        }
+
+        static string GetStationDisplayName(NpcMarketStationDto station)
+        {
+            return !string.IsNullOrWhiteSpace(station.DisplayName) ? station.DisplayName : station.Name;
         }
 
         static NpcMarketScopeDto ToScopeDto(ParsedNpcMarketCheckpoint cache, MarketScopeDescriptor scope)

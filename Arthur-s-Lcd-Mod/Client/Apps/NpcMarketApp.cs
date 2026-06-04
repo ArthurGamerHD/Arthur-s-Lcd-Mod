@@ -5,6 +5,7 @@ using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
+using LcdMod.Client.Gui.ControlsTemplates.Dialogs;
 using LcdMod.Client.Gui.ControlsTemplates.Inputs;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Helpers;
@@ -15,6 +16,8 @@ using LcdMod.Common.Market;
 using VRage;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
+using Sandbox.ModAPI;
+using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
 
 namespace LcdMod.Client.Apps
 {
@@ -40,6 +43,8 @@ namespace LcdMod.Client.Apps
         readonly ScrollPanel _scrollPanel;
         readonly ComboBox<NpcMarketMode> _modeComboBox;
         readonly List<Button> _sortHeaderButtons = new List<Button>();
+        readonly Dictionary<string, Button> _rowButtonsByItemKey =
+            new Dictionary<string, Button>(StringComparer.Ordinal);
         readonly TextInputModel _searchInputModel;
         readonly TextInput _searchInput;
         readonly Button _searchButton;
@@ -54,6 +59,7 @@ namespace LcdMod.Client.Apps
         NpcMarketSortColumn _sortColumn = NpcMarketSortColumn.Price;
         bool _sortDescending;
         string _searchQuery = string.Empty;
+        NpcMarketAggregationResult _aggregation = new NpcMarketAggregationResult();
 
         NpcMarketClientCacheKey CacheKey =>
             new NpcMarketClientCacheKey(
@@ -61,6 +67,8 @@ namespace LcdMod.Client.Apps
                 AppConfig?.ScreenIndex ?? 0);
 
         public List<ControlBase> InteractiveList { get { return _interactiveList; } }
+        internal NpcMarketMode Mode { get { return _mode; } }
+        internal IAppHost AppHost { get { return Host; } }
 
         public NpcMarketApp(ScreenConfigInteractive config, IAppHost host) : base(config, host)
         {
@@ -151,9 +159,11 @@ namespace LcdMod.Client.Apps
                 BeginClip(sprites, _scrollPanel.ContentViewportBounds);
                 var start = _scrollPanel.StartRow;
                 var end = Math.Min(_rows.Count, start + _scrollPanel.RenderRows);
+                ConfigureVisibleRowButtons(start, end, rowHeight, _scrollPanel.ContentViewportBounds.Right);
                 for (var i = start; i < end; i++)
                 {
                     var top = _scrollPanel.ContentBounds.Y + (i - start) * rowHeight;
+                    DrawRowHoverBackground(sprites, _rows[i].ItemKey);
                     DrawRow(sprites, _rows[i], top, rowHeight, textScale, muted, _scrollPanel.ContentViewportBounds.Right);
                 }
                 sprites.Add(MySprite.CreateClearClipRect());
@@ -204,12 +214,135 @@ namespace LcdMod.Client.Apps
             if (snapshot == null)
                 return;
 
-            var rows = _aggregator.BuildRows(snapshot, Host.Surface, _mode, _sortColumn, _sortDescending);
-            for (var i = 0; i < rows.Count; i++)
+            _aggregation = _aggregator.Build(snapshot, Host.Surface, _mode, _sortColumn, _sortDescending);
+            for (var i = 0; i < _aggregation.Rows.Count; i++)
             {
-                if (MatchesSearch(rows[i]))
-                    _rows.Add(rows[i]);
+                if (MatchesSearch(_aggregation.Rows[i]))
+                    _rows.Add(_aggregation.Rows[i]);
             }
+        }
+
+        internal NpcMarketItemGroup GetItemGroup(string itemKey)
+        {
+            NpcMarketItemGroup group;
+            return !string.IsNullOrEmpty(itemKey) && _aggregation.GroupsByItemKey.TryGetValue(itemKey, out group)
+                ? group
+                : null;
+        }
+
+        internal void SetMode(NpcMarketMode mode)
+        {
+            OnModeChanged(mode);
+        }
+
+        void ConfigureVisibleRowButtons(int start, int end, float rowHeight, float contentRight)
+        {
+            foreach (var button in _rowButtonsByItemKey.Values)
+                button.SetVisible(false);
+
+            for (var rowIndex = start; rowIndex < end; rowIndex++)
+            {
+                var itemKey = _rows[rowIndex].ItemKey;
+                if (string.IsNullOrEmpty(itemKey))
+                    continue;
+
+                var rect = new RectangleF(
+                    Host.ViewBox.X,
+                    _scrollPanel.ContentBounds.Y + (rowIndex - start) * rowHeight,
+                    Math.Max(0f, contentRight - Host.ViewBox.X),
+                    rowHeight);
+                Button button;
+                if (!_rowButtonsByItemKey.TryGetValue(itemKey, out button))
+                {
+                    button = new Button(rect, CursorType.Hand, itemKey, OnMarketRowClicked);
+                    _rowButtonsByItemKey[itemKey] = button;
+                    _scrollPanel.AddChild(button);
+                }
+                else
+                {
+                    button.SetRect(rect);
+                }
+
+                button.SetVisible(true);
+            }
+        }
+
+        void DrawRowHoverBackground(List<MySprite> sprites, string itemKey)
+        {
+            Button button;
+            var interactiveHost = Host as InteractiveSurfaceScript;
+            if (string.IsNullOrEmpty(itemKey) || !_rowButtonsByItemKey.TryGetValue(itemKey, out button) ||
+                interactiveHost == null ||
+                !button.Bounds.Contains(interactiveHost.CursorPosition))
+                return;
+
+            sprites.Add(new MySprite(SpriteType.TEXTURE, "SquareSimple")
+            {
+                Position = button.Bounds.Center,
+                Size = button.Bounds.Size,
+                Color = new Color(Host.ForegroundColor, 0.10f)
+            });
+        }
+
+        void OnMarketRowClicked(object dataContext, object sender)
+        {
+            var itemKey = dataContext as string;
+            var group = GetItemGroup(itemKey);
+            if (group == null)
+                return;
+
+            Button button;
+            _rowButtonsByItemKey.TryGetValue(itemKey ?? string.Empty, out button);
+            var createGps = MyAPIGateway.Input != null && MyAPIGateway.Input.IsAnyCtrlKeyPressed();
+            if (button != null)
+                button.ClickSound = createGps ? AudioHelper.HudGps3 : AudioHelper.HudClick;
+
+            if (createGps)
+            {
+                CreateTemporaryGps(group.Summary?.BestQuote, group.DisplayName);
+                return;
+            }
+
+            var interactiveHost = Host as InteractiveSurfaceScript;
+            if (interactiveHost != null)
+                interactiveHost.ShowDialog(new NpcMarketItemDialog(this, group.ItemKey));
+        }
+
+        internal void CreateTemporaryGps(NpcMarketStationQuote quote, string itemName)
+        {
+            var session = MyAPIGateway.Session;
+            var gpsCollection = session?.GPS;
+            if (quote == null || gpsCollection == null)
+                return;
+
+            var stationName = string.IsNullOrWhiteSpace(quote.StationName)
+                ? MyTexts.GetString("TssTargetingInfo_StaticGrid")
+                : quote.StationName;
+            var modeLabel = MyTexts.GetString(_mode == NpcMarketMode.Buy
+                ? "StoreScreenBuyHeader"
+                : "StoreScreenSellHeader");
+            var description = modeLabel + " " + (itemName ?? string.Empty) + " @ " +
+                              FormatingHelper.FormatSpaceCredits(quote.PersonalizedCurrentPricePerUnit) + " SC";
+            var gps = gpsCollection.Create(stationName, description, quote.StationPosition, true, true);
+            if (gps == null)
+                return;
+
+            var discardAt = GetEconomyRefreshDiscardAt();
+            if (discardAt.HasValue)
+                gps.DiscardAt = discardAt.Value;
+
+            gpsCollection.AddLocalGps(gps);
+        }
+
+        TimeSpan? GetEconomyRefreshDiscardAt()
+        {
+            var session = MyAPIGateway.Session;
+            var snapshot = NpcMarketClientCache.GetSnapshot(CacheKey);
+            if (session == null || snapshot == null || snapshot.NextEconomyTickWorldElapsedTicks <= 0)
+                return null;
+
+            var remainingTicks = snapshot.NextEconomyTickWorldElapsedTicks - WorldTime.NowElapsedTicks();
+            return session.ElapsedPlayTime + TimeSpan.FromTicks(Math.Max(0L, remainingTicks));
         }
 
         bool MatchesSearch(NpcMarketRow row)

@@ -43,5 +43,8 @@ namespace LcdMod.Common.Market
 
         [ProtoMember(9)]
         public List<NpcMarketOfferDto> Offers;
+
+        [ProtoMember(10)]
+        public string DisplayName;
     }
 }

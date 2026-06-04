@@ -5,6 +5,7 @@ using LcdMod.Client.Helpers;
 using LcdMod.Common.Market;
 using LcdMod.Common.Networking;
 using Sandbox.Definitions;
+using Sandbox.ModAPI;
 using VRage;
 using VRage.Game;
 using VRage.Game.ObjectBuilders.Definitions;
@@ -19,17 +20,15 @@ namespace LcdMod.Client.Market
         const string OxygenIconPath = "Textures\\GUI\\Icons\\OxygenIcon.dds";
         const string HydrogenIconPath = "Textures\\GUI\\Icons\\HydrogenIcon.dds";
 
-        readonly Dictionary<string, NpcMarketRow> _bestRows = new Dictionary<string, NpcMarketRow>(StringComparer.Ordinal);
-        readonly List<NpcMarketRow> _rows = new List<NpcMarketRow>();
-
-        public List<NpcMarketRow> BuildRows(PacketSyncNpcMarket packet, IMyTextSurface surface, NpcMarketMode mode,
+        public NpcMarketAggregationResult Build(PacketSyncNpcMarket packet, IMyTextSurface surface, NpcMarketMode mode,
             NpcMarketSortColumn sortColumn, bool sortDescending)
         {
-            _bestRows.Clear();
-            _rows.Clear();
+            var result = new NpcMarketAggregationResult();
 
             if (packet == null || packet.Sellers == null)
-                return _rows;
+                return result;
+
+            var viewerPosition = GetViewerPosition();
 
             for (var sellerIndex = 0; sellerIndex < packet.Sellers.Count; sellerIndex++)
             {
@@ -44,19 +43,27 @@ namespace LcdMod.Client.Market
                         continue;
 
                     for (var offerIndex = 0; offerIndex < station.Offers.Count; offerIndex++)
-                        AddOffer(seller, station, station.Offers[offerIndex], surface, mode);
+                        AddOffer(result, seller, station, station.Offers[offerIndex], surface, mode, viewerPosition);
                 }
             }
 
-            foreach (var row in _bestRows.Values)
-                _rows.Add(row);
+            var bestComparer = new NpcMarketBestQuoteComparer(mode);
+            foreach (var group in result.GroupsByItemKey.Values)
+            {
+                group.Quotes.Sort(bestComparer);
+                if (group.Quotes.Count == 0)
+                    continue;
 
-            _rows.Sort(delegate(NpcMarketRow a, NpcMarketRow b)
+                group.Summary = CreateSummary(group, group.Quotes[0]);
+                result.Rows.Add(group.Summary);
+            }
+
+            result.Rows.Sort(delegate(NpcMarketRow a, NpcMarketRow b)
             {
                 return CompareRows(a, b, sortColumn, sortDescending);
             });
 
-            return _rows;
+            return result;
         }
 
         static int CompareRows(NpcMarketRow a, NpcMarketRow b, NpcMarketSortColumn sortColumn, bool descending)
@@ -83,8 +90,8 @@ namespace LcdMod.Client.Market
                 : string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase);
         }
 
-        void AddOffer(NpcMarketSellerFactionDto seller, NpcMarketStationDto station, NpcMarketOfferDto offer,
-            IMyTextSurface surface, NpcMarketMode mode)
+        void AddOffer(NpcMarketAggregationResult result, NpcMarketSellerFactionDto seller, NpcMarketStationDto station,
+            NpcMarketOfferDto offer, IMyTextSurface surface, NpcMarketMode mode, Vector3D viewerPosition)
         {
             if (offer == null || offer.StoreItemType != mode.ToStoreItemType())
                 return;
@@ -93,52 +100,137 @@ namespace LcdMod.Client.Market
             if (string.IsNullOrEmpty(key))
                 return;
 
-            var sellerFactionId = seller != null ? seller.FactionId : 0L;
-            var adjustedPrice = NpcMarketPricing.ApplyViewerPrice(sellerFactionId, offer.RawPricePerUnit, offer.StoreItemType);
-            NpcMarketRow existing;
-            if (_bestRows.TryGetValue(key, out existing) &&
-                !IsBetterPrice(mode, adjustedPrice, existing.PersonalizedCurrentPricePerUnit))
-                return;
+            NpcMarketItemGroup group;
+            if (!result.GroupsByItemKey.TryGetValue(key, out group))
+            {
+                var presentation = ResolvePresentation(offer, surface);
+                group = new NpcMarketItemGroup
+                {
+                    ItemKey = key,
+                    Mode = mode,
+                    DisplayName = presentation.DisplayName,
+                    SpriteName = presentation.SpriteName
+                };
+                result.GroupsByItemKey[key] = group;
+            }
 
-            var previousAdjusted = offer.PreviousRawPricePerUnit > 0
+            group.Quotes.Add(CreateQuote(key, seller, station, offer, mode, viewerPosition));
+        }
+
+        static NpcMarketStationQuote CreateQuote(string itemKey, NpcMarketSellerFactionDto seller,
+            NpcMarketStationDto station, NpcMarketOfferDto offer, NpcMarketMode mode, Vector3D viewerPosition)
+        {
+            var sellerFactionId = seller != null ? seller.FactionId : 0L;
+            var current = NpcMarketPricing.ApplyViewerPrice(sellerFactionId, offer.RawPricePerUnit, offer.StoreItemType);
+            var previous = offer.PreviousRawPricePerUnit > 0
                 ? NpcMarketPricing.ApplyViewerPrice(sellerFactionId, offer.PreviousRawPricePerUnit, offer.StoreItemType)
                 : 0;
-            var presentation = ResolvePresentation(offer, surface);
 
-            _bestRows[key] = new NpcMarketRow
+            return new NpcMarketStationQuote
             {
+                ItemKey = itemKey,
                 ItemType = offer.ItemType,
+                StoreItemType = offer.StoreItemType,
                 TypeId = offer.TypeId,
                 SubtypeId = offer.SubtypeId,
                 PrefabName = offer.PrefabName,
                 PrefabTotalPcu = offer.PrefabTotalPcu,
-                DisplayName = presentation.DisplayName,
-                SpriteName = presentation.SpriteName,
-                StoreItemType = offer.StoreItemType,
+                StationId = station != null ? station.StationId : 0L,
+                StationName = GetStationDisplayName(seller, station),
+                StationPosition = station != null ? station.Position : Vector3D.Zero,
+                SellerFactionId = sellerFactionId,
+                SellerFactionTag = seller != null ? seller.Tag : string.Empty,
+                SellerFactionName = seller != null ? seller.Name : string.Empty,
+                KnowledgeFlags = station != null ? station.KnowledgeFlags : NpcMarketStationKnowledgeFlags.None,
+                KnownByMemberCount = station != null ? station.KnownByMemberCount : 0,
                 RawPreviousPricePerUnit = offer.PreviousRawPricePerUnit,
                 RawCurrentPricePerUnit = offer.RawPricePerUnit,
-                PersonalizedPreviousPricePerUnit = previousAdjusted,
-                PersonalizedCurrentPricePerUnit = adjustedPrice,
-                PersonalizedTrendPercent = NpcMarketPercentages.GetPersonalizedTrendPercent(previousAdjusted, adjustedPrice),
-                RelationBenefitPercent = NpcMarketPercentages.GetRelationBenefitPercent(mode, offer.RawPricePerUnit, adjustedPrice),
+                PersonalizedPreviousPricePerUnit = previous,
+                PersonalizedCurrentPricePerUnit = current,
+                PersonalizedTrendPercent = NpcMarketPercentages.GetPersonalizedTrendPercent(previous, current),
+                RelationBenefitPercent = NpcMarketPercentages.GetRelationBenefitPercent(mode, offer.RawPricePerUnit, current),
                 EffectiveViewerChangePercent = NpcMarketPercentages.GetEffectiveViewerChangePercent(
-                    offer.PreviousRawPricePerUnit, adjustedPrice),
-                PricePerUnit = adjustedPrice,
-                PreviousPricePerUnit = previousAdjusted,
+                    offer.PreviousRawPricePerUnit, current),
                 Amount = offer.Amount,
-                DeltaPercent = NpcMarketPercentages.GetEffectiveViewerChangePercent(
-                    offer.PreviousRawPricePerUnit, adjustedPrice),
-                BestStationId = station != null ? station.StationId : 0L,
-                BestStationName = station != null ? station.Name : string.Empty,
-                BestStationPosition = station != null ? station.Position : Vector3D.Zero,
-                BestSellerFactionId = sellerFactionId,
-                BestSellerFactionTag = seller != null ? seller.Tag : string.Empty
+                DistanceMeters = station != null ? Vector3D.Distance(viewerPosition, station.Position) : double.MaxValue
             };
         }
 
-        static bool IsBetterPrice(NpcMarketMode mode, int candidate, int currentBest)
+        static string GetStationDisplayName(NpcMarketSellerFactionDto seller, NpcMarketStationDto station)
         {
-            return mode == NpcMarketMode.Buy ? candidate < currentBest : candidate > currentBest;
+            if (station == null)
+                return string.Empty;
+
+            var factionTag = seller != null ? seller.Tag : string.Empty;
+            var displayName = !string.IsNullOrWhiteSpace(station.DisplayName)
+                ? station.DisplayName
+                : station.Name;
+
+            if (!string.IsNullOrWhiteSpace(displayName))
+            {
+                if (string.IsNullOrWhiteSpace(factionTag) ||
+                    displayName.StartsWith(factionTag + " ", StringComparison.OrdinalIgnoreCase))
+                {
+                    return displayName;
+                }
+
+                return factionTag + " " + displayName;
+            }
+
+            var format = MyTexts.GetString("Grid_Name_Station");
+            if (!string.IsNullOrWhiteSpace(format) &&
+                !string.Equals(format, "Grid_Name_Station", StringComparison.Ordinal))
+            {
+                try
+                {
+                    return string.Format(format, factionTag, station.StationType.ToString(), station.StationId);
+                }
+                catch (FormatException)
+                {
+                    // Fall through to a stable invariant label if a modded localization string is malformed.
+                }
+            }
+
+            return (factionTag + " " + station.StationType + " " + station.StationId).Trim();
+        }
+
+        static NpcMarketRow CreateSummary(NpcMarketItemGroup group, NpcMarketStationQuote best)
+        {
+            return new NpcMarketRow
+            {
+                ItemKey = group.ItemKey,
+                BestQuote = best,
+                ItemType = best.ItemType,
+                TypeId = best.TypeId,
+                SubtypeId = best.SubtypeId,
+                PrefabName = best.PrefabName,
+                PrefabTotalPcu = best.PrefabTotalPcu,
+                DisplayName = group.DisplayName,
+                SpriteName = group.SpriteName,
+                StoreItemType = best.StoreItemType,
+                RawPreviousPricePerUnit = best.RawPreviousPricePerUnit,
+                RawCurrentPricePerUnit = best.RawCurrentPricePerUnit,
+                PersonalizedPreviousPricePerUnit = best.PersonalizedPreviousPricePerUnit,
+                PersonalizedCurrentPricePerUnit = best.PersonalizedCurrentPricePerUnit,
+                PersonalizedTrendPercent = best.PersonalizedTrendPercent,
+                RelationBenefitPercent = best.RelationBenefitPercent,
+                EffectiveViewerChangePercent = best.EffectiveViewerChangePercent,
+                PricePerUnit = best.PersonalizedCurrentPricePerUnit,
+                PreviousPricePerUnit = best.PersonalizedPreviousPricePerUnit,
+                Amount = best.Amount,
+                DeltaPercent = best.EffectiveViewerChangePercent,
+                BestStationId = best.StationId,
+                BestStationName = best.StationName,
+                BestStationPosition = best.StationPosition,
+                BestSellerFactionId = best.SellerFactionId,
+                BestSellerFactionTag = best.SellerFactionTag
+            };
+        }
+
+        static Vector3D GetViewerPosition()
+        {
+            var player = MyAPIGateway.Session?.LocalHumanPlayer;
+            return player != null ? player.GetPosition() : Vector3D.Zero;
         }
 
         static string GetOfferKey(NpcMarketOfferDto offer)

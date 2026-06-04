@@ -5,6 +5,8 @@ namespace LcdMod.Client.Market
 {
     internal sealed class NpcMarketRow
     {
+        public string ItemKey;
+        public NpcMarketStationQuote BestQuote;
         public ItemTypes ItemType;
         public string TypeId;
         public string SubtypeId;
