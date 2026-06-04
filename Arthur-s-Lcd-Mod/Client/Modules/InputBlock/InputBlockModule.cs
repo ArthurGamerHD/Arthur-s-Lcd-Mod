@@ -21,9 +21,6 @@ namespace LcdMod.Client.Modules.InputBlock
         const long ACTIVE_SURFACE_TIMEOUT_FRAMES = 30;
 
         public static Color OriginalHighlightColor = Color.Transparent;
-        public float OriginalHighlightPulse { get; set; }
-        public float OriginalContourHighlightThickness { get; set; }
-        public static Color AppHighlightColor = new Color(32,32,32);
         
         readonly HashSet<IInputBlock> _modules = new HashSet<IInputBlock>();
         readonly List<IInputBlock> _pendingModules = new List<IInputBlock>();
@@ -134,23 +131,14 @@ namespace LcdMod.Client.Modules.InputBlock
 
             if (blocked)
             {
-                if (MyDefinitionManager.Static.EnvironmentDefinition.ContourHighlightColor != AppHighlightColor)
+                if (MyDefinitionManager.Static.EnvironmentDefinition.ContourHighlightColor != Color.Transparent)
                     OriginalHighlightColor = MyDefinitionManager.Static.EnvironmentDefinition.ContourHighlightColor;
-                if (!MyDefinitionManager.Static.EnvironmentDefinition.HighlightPulseInSeconds.Equals(3600))
-                    OriginalHighlightPulse = MyDefinitionManager.Static.EnvironmentDefinition.HighlightPulseInSeconds;
-
-                if (!MyDefinitionManager.Static.EnvironmentDefinition.ContourHighlightThickness.Equals(3f))
-                    OriginalContourHighlightThickness = MyDefinitionManager.Static.EnvironmentDefinition.ContourHighlightThickness;
                 
-                MyDefinitionManager.Static.EnvironmentDefinition.ContourHighlightColor = AppHighlightColor;
-                MyDefinitionManager.Static.EnvironmentDefinition.HighlightPulseInSeconds = 3600;
-                MyDefinitionManager.Static.EnvironmentDefinition.ContourHighlightThickness = 3f;
+                MyDefinitionManager.Static.EnvironmentDefinition.ContourHighlightColor = Color.Transparent;
             }
             else
             {
                 MyDefinitionManager.Static.EnvironmentDefinition.ContourHighlightColor = OriginalHighlightColor;
-                MyDefinitionManager.Static.EnvironmentDefinition.HighlightPulseInSeconds = OriginalHighlightPulse;
-                MyDefinitionManager.Static.EnvironmentDefinition.ContourHighlightThickness = OriginalContourHighlightThickness;
             }
         }
 
