@@ -54,10 +54,10 @@ namespace LcdMod.Client.Apps
         const string LOC_FILL_REACTORS = "LcdMod_Cargo_FillReactors";
         const string LOC_FILL_DONE = "LcdMod_Cargo_FillDone";
 
-        const string ICON_CONFIG = "Configuracao";
-        const string ICON_SORTER = "Organizar";
-        const string ICON_WEAPONS = "Armas";
-        const string ICON_REACTORS = "Reatores";
+        const string ICON_CONFIG = "SettingsIcon";
+        const string ICON_SORTER = "SortIcon";
+        const string ICON_AMMO = "AmmoIcon";
+        const string ICON_REFUEL = "RefuelIcon";
 
         readonly List<ControlBase> _interactiveList = new List<ControlBase>();
         readonly List<IMyTerminalBlock> _sources = new List<IMyTerminalBlock>();
@@ -224,9 +224,9 @@ namespace LcdMod.Client.Apps
                 case ACTION_SORTER:
                     return ICON_SORTER;
                 case ACTION_WEAPONS:
-                    return ICON_WEAPONS;
+                    return ICON_AMMO;
                 default:
-                    return ICON_REACTORS;
+                    return ICON_REFUEL;
             }
         }
 

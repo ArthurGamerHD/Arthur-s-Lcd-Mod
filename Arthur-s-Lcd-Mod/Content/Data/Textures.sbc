@@ -105,26 +105,32 @@
         </LCDTextureDefinition>
 
         <LCDTextureDefinition> <!-- Cargo Actions: Settings button icon -->
-            <Id Type="LCDTextureDefinition" Subtype="Configuracao"/>
-            <SpritePath>Textures/Sprites/Configuracao.dds</SpritePath>
+            <Id Type="LCDTextureDefinition" Subtype="SettingsIcon"/>
+            <SpritePath>Textures/Sprites/Settings.dds</SpritePath>
             <Selectable>false</Selectable>
         </LCDTextureDefinition>
 
         <LCDTextureDefinition> <!-- Cargo Actions: Sorter button icon -->
-            <Id Type="LCDTextureDefinition" Subtype="Organizar"/>
-            <SpritePath>Textures/Sprites/Organizar.dds</SpritePath>
+            <Id Type="LCDTextureDefinition" Subtype="SortIcon"/>
+            <SpritePath>Textures/Sprites/Sort.dds</SpritePath>
             <Selectable>false</Selectable>
         </LCDTextureDefinition>
 
         <LCDTextureDefinition> <!-- Cargo Actions: Fill Weapons button icon -->
-            <Id Type="LCDTextureDefinition" Subtype="Armas"/>
-            <SpritePath>Textures/Sprites/Armas.dds</SpritePath>
+            <Id Type="LCDTextureDefinition" Subtype="WeaponsIcon"/>
+            <SpritePath>Textures/Sprites/Weapons.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Cargo Actions: Fill Ammo button icon -->
+            <Id Type="LCDTextureDefinition" Subtype="AmmoIcon"/>
+            <SpritePath>Textures/Sprites/Ammo.dds</SpritePath>
             <Selectable>false</Selectable>
         </LCDTextureDefinition>
 
         <LCDTextureDefinition> <!-- Cargo Actions: Fill Reactors button icon -->
-            <Id Type="LCDTextureDefinition" Subtype="Reatores"/>
-            <SpritePath>Textures/Sprites/Reatores.dds</SpritePath>
+            <Id Type="LCDTextureDefinition" Subtype="RefuelIcon"/>
+            <SpritePath>Textures/Sprites/Refuel.dds</SpritePath>
             <Selectable>false</Selectable>
         </LCDTextureDefinition>
     </LCDTextures>
