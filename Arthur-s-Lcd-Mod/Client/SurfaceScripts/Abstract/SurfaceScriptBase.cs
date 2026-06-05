@@ -448,7 +448,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 var bSoD = BSoD.ShowBSoD(this, e);
 
                 _renderComp.RenderSpritesToTexture(RotationOrSurfaceIndex, bSoD.Frame, _textureSize, _aspectRatio,
-                    Surface.ScriptBackgroundColor, (byte)255);
+                    Surface.ScriptBackgroundColor, Surface.BackgroundAlpha);
                 
                 CacheFrameForProxies(bSoD.Frame);
                 NotifyRendered();
@@ -1077,7 +1077,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 #endif
 
                 _renderComp.RenderSpritesToTexture(RotationOrSurfaceIndex, renderList, _textureSize, _aspectRatio,
-                    Surface.ScriptBackgroundColor, (byte)255);
+                    Surface.ScriptBackgroundColor, Surface.BackgroundAlpha);
             }
             catch (Exception e)
             {
