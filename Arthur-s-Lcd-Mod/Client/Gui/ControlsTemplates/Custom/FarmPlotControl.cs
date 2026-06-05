@@ -1,0 +1,208 @@
+using System;
+using System.Collections.Generic;
+using LcdMod.Client.Apps;
+using LcdMod.Client.Extensions;
+using LcdMod.Client.Gui.ControlsTemplates.Progress;
+using LcdMod.Client.Gui.Tooltip;
+using LcdMod.Client.Gui.UserControls.Power;
+using LcdMod.Client.Helpers;
+using LcdMod.Common.Config.Models.Apps;
+using VRage.Game.GUI.TextPanel;
+using VRageMath;
+using static LcdMod.Common.Helpers.Constants;
+
+namespace LcdMod.Client.Gui.ControlsTemplates.Custom
+{
+        sealed class FarmPlotControl : RectangleControl
+        {
+            const string FARM_PLOT_MASK_TEXTURE = "FarmPlotMask";
+            static readonly Color GrowthBarColor = new Color(68, 210, 92);
+            static readonly Color WaterBarColor = new Color(64, 156, 255);
+            static readonly FillableTexture FarmPlotTexture = new FillableTexture("FarmPlot", 0f, 0f, 0f, 0f, 70f);
+
+            
+            public FarmPlotControl(RectangleF bounds, FarmApp.FarmEntry entry, InteractiveTooltip tooltip)
+                : base(bounds, CursorType.Hand, entry, null, tooltip)
+            {
+                ClickSound = AudioHelper.HudClick;
+            }
+
+            public void Bind(FarmApp.FarmEntry entry, InteractiveTooltip tooltip)
+            {
+                SetDataContext(entry);
+                SetCursor(CursorType.Hand);
+                SetTooltip(tooltip);
+                SetVisible(entry != null);
+            }
+
+            protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+            {
+                var entry = DataContext as FarmApp.FarmEntry;
+                if (entry == null || context == null || sprites == null)
+                    return;
+
+                DrawFarmSlotVisual(context, sprites, entry, Bounds, GetFarmConfig());
+            }
+
+            static void DrawFarmSlotVisual(ControlRenderContext context, List<MySprite> sprites, FarmApp.FarmEntry entry, RectangleF bounds, ScreenConfigPower config)
+            {
+                float width = bounds.Width;
+                float height = bounds.Height;
+                float labelGap = Math.Max(1f, context.Scale * 2f);
+                float barHeight = Math.Max(4f, 4f * context.Scale);
+                float barGap = Math.Max(1f, 2f * context.Scale);
+                float barsHeight = barHeight * 2f + barGap;
+                float iconBarGap = Math.Max(1f, 3f * context.Scale);
+                var label = entry.RemainingText;
+                Vector2 labelRef = FormatingHelper.GetSizeInPixel(label, "White", 1f, context.Surface);
+                float labelScale = Math.Min((width * 0.82f) / Math.Max(1f, labelRef.X), (height * 0.22f) / Math.Max(1f, labelRef.Y)) *
+                                   Math.Min(context.FontScale, 1f);
+                float labelH = labelRef.Y * labelScale;
+                float iconSize = Math.Max(0f, Math.Min(width, height - labelH - labelGap - barsHeight - iconBarGap));
+                float centerX = bounds.X + width / 2f;
+                float centerY = bounds.Y + iconSize / 2f;
+                var center = new Vector2(centerX, centerY);
+
+                var backgroundColor = context.GetThemeColor(BACKGROUND);
+                var containerBackgroundColor = context.GetThemeColor(SECONDARY_CONTAINER);
+                var outlineColor = context.GetThemeColor(OUTLINE);
+                DrawFarmIcon(sprites, entry, center, iconSize, outlineColor, containerBackgroundColor);
+
+                float barWidth = Math.Max(1f, iconSize * 0.62f);
+                float barsTop = bounds.Y + iconSize + iconBarGap;
+                var barTopLeft = new Vector2(centerX - barWidth / 2f, barsTop);
+                DrawFarmLevelBars(context, sprites, entry, barTopLeft, new Vector2(barWidth, barHeight), barGap,
+                    config,
+                    backgroundColor, containerBackgroundColor);
+
+                sprites.Add(new MySprite
+                {
+                    Type = SpriteType.TEXT,
+                    Data = label,
+                    Position = new Vector2(centerX, barsTop + barsHeight + labelGap),
+                    RotationOrScale = labelScale,
+                    Color = GetStatusColor(entry, context),
+                    Alignment = TextAlignment.CENTER,
+                    FontId = "White"
+                });
+            }
+
+            static void DrawFarmIcon(
+                List<MySprite> sprites,
+                FarmApp.FarmEntry entry,
+                Vector2 center,
+                float iconSize,
+                Color foreground,
+                Color backgroundColor)
+            {
+                var frameSize = iconSize * 0.84f;
+                var itemSize = iconSize * 0.58f;
+                var itemCenter = FarmPlotTexture.GetInnerRect(center, frameSize).Center;
+
+                sprites.Add(new MySprite
+                {
+                    Type = SpriteType.TEXTURE,
+                    Data = FARM_PLOT_MASK_TEXTURE,
+                    Position = center,
+                    Size = new Vector2(frameSize),
+                    Color = backgroundColor,
+                    Alignment = TextAlignment.CENTER
+                });
+
+                sprites.Add(new MySprite
+                {
+                    Type = SpriteType.TEXTURE,
+                    Data = FarmPlotTexture.Name,
+                    Position = center,
+                    Size = new Vector2(frameSize),
+                    Color = foreground,
+                    Alignment = TextAlignment.CENTER
+                });
+
+                if (string.IsNullOrEmpty(entry.OutputSprite) || itemSize <= 0f)
+                    return;
+
+                sprites.Add(new MySprite
+                {
+                    Type = SpriteType.TEXTURE,
+                    Data = entry.OutputSprite,
+                    Position = itemCenter,
+                    Size = new Vector2(itemSize),
+                    Color = Color.White,
+                    Alignment = TextAlignment.CENTER
+                });
+            }
+
+            static void DrawFarmLevelBars(
+                ControlRenderContext context,
+                List<MySprite> sprites,
+                FarmApp.FarmEntry entry,
+                Vector2 topLeft,
+                Vector2 size,
+                float gap,
+                ScreenConfigPower config,
+                Color backgroundColor,
+                Color containerBackgroundColor)
+            {
+                var growthColor = GrowthBarColor.EnsureMinimalContrast(backgroundColor);
+                var waterColor = GetWaterBarColor(context, config, entry.WaterRatio, backgroundColor);
+
+                BarPanel.CreateSprites(
+                    sprites,
+                    topLeft,
+                    size,
+                    growthColor,
+                    containerBackgroundColor,
+                    entry.Ratio,
+                    cornerRadius: size.Y * .5f);
+
+                BarPanel.CreateSprites(
+                    sprites,
+                    new Vector2(topLeft.X, topLeft.Y + size.Y + gap),
+                    size,
+                    waterColor,
+                    containerBackgroundColor,
+                    entry.WaterRatio,
+                    cornerRadius: size.Y * .5f);
+            }
+
+            static Color GetWaterBarColor(ControlRenderContext context, ScreenConfigPower config, float waterRatio, Color backgroundColor)
+            {
+                Color color;
+                if (waterRatio < .3f)
+                    color = config != null ? config.ErrorColor : context.GetThemeColor(ERROR);
+                else if (waterRatio < .6f)
+                    // TODO: move warning/error bar colors into the theme.
+                    color = config != null ? config.WarningColor : new Color(224, 160, 16);
+                else
+                    color = WaterBarColor;
+
+                return color.EnsureMinimalContrast(backgroundColor);
+            }
+
+            ScreenConfigPower GetFarmConfig()
+            {
+                for (ControlBase node = this; node != null; node = node.Parent)
+                {
+                    var app = node.DataContext as FarmApp;
+                    if (app != null)
+                        return app.Config;
+                }
+
+                return null;
+            }
+
+            static Color GetStatusColor(FarmApp.FarmEntry entry, ControlRenderContext context)
+            {
+                var plot = entry.Plot;
+                var logic = plot != null ? plot.Logic : null;
+                if (logic == null || !logic.IsPlantPlanted)
+                    return context.GetThemeColor(ON_SURFACE);
+                if (!logic.IsAlive)
+                    return context.GetThemeColor(ERROR);
+                if (entry.Ratio >= 1f || logic.IsHarvestable)
+                    return context.GetThemeColor(PRIMARY);
+                return context.GetThemeColor(ON_SURFACE);
+            }
+        }
+}

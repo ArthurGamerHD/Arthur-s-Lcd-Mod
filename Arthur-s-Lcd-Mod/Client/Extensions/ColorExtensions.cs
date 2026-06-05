@@ -106,6 +106,37 @@ namespace LcdMod.Client.Extensions
             return hsv.HSVtoColor();
         }
 
+        public static Color EnsureMinimalContrast(
+            this Color color,
+            Color background,
+            double minContrast = 3.0)
+        {
+            if (color.ContrastRatio(background) >= minContrast)
+                return color;
+
+            var backgroundIsDark = Color.Black.ContrastRatio(background) < Color.White.ContrastRatio(background);
+            Color best = color;
+            double bestContrast = color.ContrastRatio(background);
+            for (int i = 1; i <= 12; i++)
+            {
+                var candidate = backgroundIsDark
+                    ? color.MulValue(1.0 + i * 0.18)
+                    : color.MulValue(Math.Max(0.05, 1.0 - i * 0.075));
+                var contrast = candidate.ContrastRatio(background);
+                if (contrast > bestContrast)
+                {
+                    best = candidate;
+                    bestContrast = contrast;
+                }
+
+                if (contrast >= minContrast)
+                    return candidate;
+            }
+
+            var fallback = backgroundIsDark ? Color.White : Color.Black;
+            return fallback.ContrastRatio(background) > bestContrast ? fallback : best;
+        }
+
         /// <summary>
         /// Generates a theme from this color. "Inspired" in Google's Material Design https://m3.material.io/
         /// </summary>

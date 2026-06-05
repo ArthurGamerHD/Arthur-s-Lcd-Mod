@@ -2,12 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.Farm;
 using LcdMod.Client.Grid;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
+using LcdMod.Client.Gui.ControlsTemplates.Custom;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.Tooltip;
-using LcdMod.Client.Gui.UserControls.Power;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Common.Helpers;
@@ -26,21 +27,9 @@ namespace LcdMod.Client.Apps
         const float SLOT_H = 100f;
         const float SCROLLER_W = 8f;
         const int SCROLL_TICK = 12;
-        const int REMAINING_TIME_SAMPLE_FRAMES = 18;
-        const float REMAINING_TIME_RATIO_RESET_THRESHOLD = 0.002f;
-        const string FARM_PLOT_MASK_TEXTURE = "FarmPlotMask";
-        static readonly FillableTexture FarmPlotTexture = new FillableTexture("FarmPlot", 0f, 0f, 0f, 0f, 70f);
-        static readonly FillableTexture FarmPlotMaskTexture = new FillableTexture(FARM_PLOT_MASK_TEXTURE, 0f, 0f, 0f, 63f, 9f);
-
-        sealed class FarmEntry
+        internal sealed class FarmEntry
         {
             readonly List<ITooltipLine> _details = new List<ITooltipLine>();
-            readonly float[] _remainingSecondsSamples = new float[REMAINING_TIME_SAMPLE_FRAMES];
-            int _remainingSecondsSampleIndex;
-            int _remainingSecondsSampleCount;
-            float _remainingSecondsSampleTotal;
-            float _lastRemainingSampleRatio = -1f;
-            MyDefinitionId _lastRemainingSampleOutputItem;
 
             public long EntryId { get; private set; }
             public FarmPlotEntry Plot { get; private set; }
@@ -48,6 +37,7 @@ namespace LcdMod.Client.Apps
             public string PercentText { get; private set; }
             public string RemainingText { get; private set; }
             public string WaterText { get; private set; }
+            public float WaterRatio { get; private set; }
             public string OutputSprite { get; private set; }
             public string OutputName { get; private set; }
             public Color StatusColor { get; private set; }
@@ -56,8 +46,9 @@ namespace LcdMod.Client.Apps
                 FarmPlotEntry plot,
                 float ratio,
                 string percentText,
-                float growTimeSeconds,
+                string remainingText,
                 string waterText,
+                float waterRatio,
                 string outputSprite,
                 string outputName,
                 Color statusColor)
@@ -66,81 +57,13 @@ namespace LcdMod.Client.Apps
                 EntryId = plot != null && plot.Block != null ? plot.Block.EntityId : 0L;
                 Ratio = MathHelper.Clamp(ratio, 0f, 1f);
                 PercentText = percentText ?? string.Empty;
-                RemainingText = GetStableRemainingText(plot, Ratio, growTimeSeconds, PercentText);
+                RemainingText = remainingText ?? string.Empty;
                 WaterText = waterText ?? string.Empty;
+                WaterRatio = MathHelper.Clamp(waterRatio, 0f, 1f);
                 OutputSprite = outputSprite ?? string.Empty;
                 OutputName = outputName ?? string.Empty;
                 StatusColor = statusColor;
                 RefreshDetails();
-            }
-
-            string GetStableRemainingText(FarmPlotEntry plot, float ratio, float growTimeSeconds, string percentText)
-            {
-                float remainingSeconds;
-                string fallbackText;
-                if (!TryGetRemainingSecondsEstimate(plot, ratio, growTimeSeconds, percentText,
-                        out remainingSeconds, out fallbackText))
-                {
-                    ResetRemainingSamples();
-                    return fallbackText;
-                }
-
-                var logic = plot != null ? plot.Logic : null;
-                var outputItem = logic != null ? logic.OutputItem : default(MyDefinitionId);
-                if (ShouldResetRemainingSamples(outputItem, ratio))
-                    ResetRemainingSamples();
-
-                AddRemainingSecondsSample(remainingSeconds);
-                _lastRemainingSampleRatio = ratio;
-                _lastRemainingSampleOutputItem = outputItem;
-
-                return FormatRemainingSeconds(GetAverageRemainingSeconds());
-            }
-
-            bool ShouldResetRemainingSamples(MyDefinitionId outputItem, float ratio)
-            {
-                if (_remainingSecondsSampleCount <= 0)
-                    return false;
-
-                if (!_lastRemainingSampleOutputItem.Equals(outputItem))
-                    return true;
-
-                return _lastRemainingSampleRatio >= 0f &&
-                       ratio + REMAINING_TIME_RATIO_RESET_THRESHOLD < _lastRemainingSampleRatio;
-            }
-
-            void AddRemainingSecondsSample(float remainingSeconds)
-            {
-                remainingSeconds = Math.Max(0f, remainingSeconds);
-                if (_remainingSecondsSampleCount < _remainingSecondsSamples.Length)
-                {
-                    _remainingSecondsSamples[_remainingSecondsSampleIndex] = remainingSeconds;
-                    _remainingSecondsSampleTotal += remainingSeconds;
-                    _remainingSecondsSampleCount++;
-                    _remainingSecondsSampleIndex = (_remainingSecondsSampleIndex + 1) % _remainingSecondsSamples.Length;
-                    return;
-                }
-
-                _remainingSecondsSampleTotal -= _remainingSecondsSamples[_remainingSecondsSampleIndex];
-                _remainingSecondsSamples[_remainingSecondsSampleIndex] = remainingSeconds;
-                _remainingSecondsSampleTotal += remainingSeconds;
-                _remainingSecondsSampleIndex = (_remainingSecondsSampleIndex + 1) % _remainingSecondsSamples.Length;
-            }
-
-            float GetAverageRemainingSeconds()
-            {
-                return _remainingSecondsSampleCount > 0
-                    ? _remainingSecondsSampleTotal / _remainingSecondsSampleCount
-                    : 0f;
-            }
-
-            void ResetRemainingSamples()
-            {
-                _remainingSecondsSampleIndex = 0;
-                _remainingSecondsSampleCount = 0;
-                _remainingSecondsSampleTotal = 0f;
-                _lastRemainingSampleRatio = -1f;
-                _lastRemainingSampleOutputItem = default(MyDefinitionId);
             }
 
             public IList<ITooltipLine> GetDetails()
@@ -208,12 +131,17 @@ namespace LcdMod.Client.Apps
         readonly List<ControlBase> _interactiveList = new List<ControlBase>();
         readonly Dictionary<long, FarmEntry> _entryById = new Dictionary<long, FarmEntry>();
         readonly Dictionary<long, FarmEntry> _entryModelsById = new Dictionary<long, FarmEntry>();
-        readonly Dictionary<long, RectangleControl> _entryHitboxById = new Dictionary<long, RectangleControl>();
+        readonly Dictionary<long, FarmPlotControl> _entryControlById = new Dictionary<long, FarmPlotControl>();
         readonly HashSet<long> _activeEntryIds = new HashSet<long>();
         readonly List<long> _entryIdsToRemove = new List<long>();
+        readonly FarmGrowthHelper _growthDefinitions = new FarmGrowthHelper();
         readonly ScrollPanel _scrollPanel;
         readonly VisualWrapPanel _gridPanel;
         readonly ScreenConfigPower _config;
+        internal ScreenConfigPower Config
+        {
+            get { return _config; }
+        }
 
         public FarmApp(ScreenConfigPower config, IAppHost surfaceHost) : base(config, surfaceHost)
         {
@@ -239,7 +167,7 @@ namespace LcdMod.Client.Apps
             _entries.Clear();
             _entryById.Clear();
             _entryModelsById.Clear();
-            ClearFarmEntryHitboxes();
+            ClearFarmEntryControls();
         }
 
         public override void Update()
@@ -285,7 +213,7 @@ namespace LcdMod.Client.Apps
 
         public override List<MySprite> GetSprites()
         {
-            BeginFarmEntryHitboxFrame();
+            BeginFarmEntryControlFrame();
             var sprites = new List<MySprite>();
             DrawFarmPlots(_surfaceHost, sprites);
             return sprites;
@@ -301,32 +229,42 @@ namespace LcdMod.Client.Apps
                 _entryModelsById[entryId] = entry;
             }
 
-            float growTimeSeconds;
-            var ratio = GetGrowthRatio(plot, out growTimeSeconds);
+            float growthPercent;
+            var ratio = GetGrowthRatio(plot, out growthPercent);
             var outputItem = plot.Logic.OutputItem;
             var outputSprite = ResolveOutputSprite(outputItem);
             var outputName = ResolveOutputName(outputItem);
             var percentText = FormatingHelper.PercentageToString(ratio);
+            var remainingText = GetRemainingText(plot, growthPercent, ratio, percentText);
+            var waterRatio = GetWaterRatio(plot);
 
             entry.Update(
                 plot,
                 ratio,
                 percentText,
-                growTimeSeconds,
-                GetWaterText(plot),
+                remainingText,
+                GetWaterText(waterRatio, plot),
+                waterRatio,
                 outputSprite,
                 outputName,
                 GetStatusColor(plot, ratio));
             return entry;
         }
 
-        static string GetWaterText(FarmPlotEntry plot)
+        static float GetWaterRatio(FarmPlotEntry plot)
         {
             var storage = plot != null ? plot.StorageComponent : null;
             if (storage == null)
+                return 0f;
+
+            return MathHelper.Clamp((float)storage.FilledRatio, 0f, 1f);
+        }
+
+        static string GetWaterText(float ratio, FarmPlotEntry plot)
+        {
+            if (plot == null || plot.StorageComponent == null)
                 return string.Empty;
 
-            var ratio = MathHelper.Clamp((float)storage.FilledRatio, 0f, 1f);
             return string.Format(FormatingHelper.Culture, LocHelper.GetLoc("LcdMod_Farm_Water"),
                 FormatingHelper.PercentageToString(ratio));
         }
@@ -426,22 +364,23 @@ namespace LcdMod.Client.Apps
                 _interactiveList.Add(_scrollPanel);
         }
 
-        void BeginFarmEntryHitboxFrame()
+        void BeginFarmEntryControlFrame()
         {
             _interactiveList.Clear();
             _scrollPanel.SetVisible(false);
-            foreach (var kv in _entryHitboxById)
+            foreach (var kv in _entryControlById)
                 if (kv.Value != null)
                     kv.Value.SetVisible(false);
         }
 
-        void ClearFarmEntryHitboxes()
+        void ClearFarmEntryControls()
         {
-            foreach (var kv in _entryHitboxById)
+            foreach (var kv in _entryControlById)
                 if (kv.Value != null)
                     kv.Value.SetVisible(false);
 
-            _entryHitboxById.Clear();
+            _entryControlById.Clear();
+            _gridPanel.ClearChildren();
             _interactiveList.Clear();
         }
 
@@ -468,38 +407,31 @@ namespace LcdMod.Client.Apps
                     continue;
 
                 desiredIds[entry.EntryId] = true;
-                desired.Add(GetOrCreateFarmEntryHitbox(entry));
+                desired.Add(GetOrCreateFarmPlotControl(entry));
             }
 
             RemoveStalePanelChildren(panel, desiredIds);
             EnsurePanelChildOrder(panel, desired);
         }
 
-        RectangleControl GetOrCreateFarmEntryHitbox(FarmEntry entry)
+        FarmPlotControl GetOrCreateFarmPlotControl(FarmEntry entry)
         {
             if (entry == null)
                 return null;
 
-            RectangleControl hitbox;
-            if (!_entryHitboxById.TryGetValue(entry.EntryId, out hitbox) || hitbox == null)
+            FarmPlotControl control;
+            if (!_entryControlById.TryGetValue(entry.EntryId, out control) || control == null)
             {
-                hitbox = new RectangleControl(default(RectangleF), CursorType.Hand, entry, null, BuildFarmEntryTooltip(entry.EntryId))
-                {
-                    ClickSound = AudioHelper.HudClick,
-                    CustomRender = RenderFarmEntryHitbox
-                };
-                _entryHitboxById[entry.EntryId] = hitbox;
+                control = new FarmPlotControl(default(RectangleF), entry, BuildFarmEntryTooltip(entry.EntryId));
+                _entryControlById[entry.EntryId] = control;
             }
             else
             {
-                hitbox.SetDataContext(entry);
-                hitbox.SetCursor(CursorType.Hand);
-                hitbox.SetTooltip(BuildFarmEntryTooltip(entry.EntryId));
-                hitbox.CustomRender = RenderFarmEntryHitbox;
+                control.Bind(entry, BuildFarmEntryTooltip(entry.EntryId));
             }
 
-            hitbox.SetVisible(true);
-            return hitbox;
+            control.SetVisible(true);
+            return control;
         }
 
         static void RemoveStalePanelChildren(Panel panel, Dictionary<long, bool> desiredIds)
@@ -573,22 +505,6 @@ namespace LcdMod.Client.Apps
             _interactiveHost.RenderSprites();
         }
 
-        void RenderFarmEntryHitbox(ControlBase hitbox, ControlRenderContext context, List<MySprite> sprites)
-        {
-            if (hitbox == null)
-                return;
-
-            var entry = hitbox.DataContext as FarmEntry;
-            if (entry == null)
-                return;
-
-            entry = GetFarmEntry(entry.EntryId);
-            if (entry == null)
-                return;
-
-            DrawFarmSlotVisual(_surfaceHost, sprites, entry, hitbox.Bounds);
-        }
-
         InteractiveTooltip BuildFarmEntryTooltip(long entryId)
         {
             return new InteractiveTooltip(
@@ -616,189 +532,62 @@ namespace LcdMod.Client.Apps
                 });
         }
 
-        void DrawFarmSlotVisual(IAppHost owner, List<MySprite> sprites, FarmEntry entry, RectangleF bounds)
-        {
-            float width = bounds.Width;
-            float height = bounds.Height;
-            float labelGap = Math.Max(1f, owner.Scale * 2f);
-            var label = entry.RemainingText;
-            Vector2 labelRef = FormatingHelper.GetSizeInPixel(label, "White", 1f, owner.Surface);
-            float labelScale = Math.Min((width * 0.82f) / Math.Max(1f, labelRef.X), (height * 0.22f) / Math.Max(1f, labelRef.Y)) * Math.Min(owner.Surface.FontSize, 1f);
-            float labelH = labelRef.Y * labelScale;
-            float iconSize = Math.Max(0f, Math.Min(width, height - labelH - labelGap));
-            float centerX = bounds.X + width / 2f;
-            float centerY = bounds.Y + iconSize / 2f;
-            var center = new Vector2(centerX, centerY);
-
-            DrawFarmIcon(sprites, entry, center, iconSize, owner.Surface.ScriptForegroundColor, GetHeaderColor());
-
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXT,
-                Data = label,
-                Position = new Vector2(centerX, bounds.Y + iconSize + labelGap),
-                RotationOrScale = labelScale,
-                Color = entry.StatusColor,
-                Alignment = TextAlignment.CENTER,
-                FontId = "White"
-            });
-        }
-
-        void DrawFarmIcon(List<MySprite> sprites, FarmEntry entry, Vector2 center, float iconSize, Color foreground, Color fillColor)
-        {
-            var frameSize = iconSize * 0.84f;
-            var itemSize = iconSize * 0.58f;
-            var frameColor = foreground;
-            var itemCenter = FarmPlotTexture.GetInnerRect(center, frameSize).Center;
-            var ratio = entry != null ? MathHelper.Clamp(entry.Ratio, 0f, 1f) : 0f;
-            var fillRect = FarmPlotMaskTexture.GetInnerRect(center, frameSize);
-
-            if (ratio > 0.005f && fillRect.Width > 0f && fillRect.Height > 0f)
-            {
-                float fillH = fillRect.Height * ratio;
-                var clip = new RectangleF(fillRect.X, fillRect.Bottom - fillH, fillRect.Width, fillH);
-                if (BeginLocalClip(sprites, clip))
-                {
-                    sprites.Add(new MySprite
-                    {
-                        Type = SpriteType.TEXTURE,
-                        Data = FARM_PLOT_MASK_TEXTURE,
-                        Position = center,
-                        Size = new Vector2(frameSize),
-                        Color = fillColor,
-                        Alignment = TextAlignment.CENTER
-                    });
-
-                    EndClip(sprites);
-                    BeginScrollPanelClip(sprites);
-                }
-            }
-
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = FarmPlotTexture.Name,
-                Position = center,
-                Size = new Vector2(frameSize),
-                Color = frameColor,
-                Alignment = TextAlignment.CENTER
-            });
-
-            if (entry == null || string.IsNullOrEmpty(entry.OutputSprite) || itemSize <= 0f)
-                return;
-
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = entry.OutputSprite,
-                Position = itemCenter,
-                Size = new Vector2(itemSize),
-                Color = Color.White,
-                Alignment = TextAlignment.CENTER
-            });
-        }
-
-        void BeginScrollPanelClip(List<MySprite> sprites)
-        {
-            BeginClip(sprites, _scrollPanel.ContentViewportBounds);
-        }
-
-        bool BeginLocalClip(List<MySprite> sprites, RectangleF bounds)
-        {
-            return BeginClip(sprites, Intersect(bounds, _scrollPanel.ContentViewportBounds));
-        }
-
-        static bool BeginClip(List<MySprite> sprites, RectangleF bounds)
-        {
-            if (sprites == null || bounds.Width <= 0f || bounds.Height <= 0f)
-                return false;
-
-            int x = (int)Math.Floor(bounds.X);
-            int y = (int)Math.Floor(bounds.Y);
-            int right = (int)Math.Ceiling(bounds.Right);
-            int bottom = (int)Math.Ceiling(bounds.Bottom);
-            if (right <= x || bottom <= y)
-                return false;
-
-            sprites.Add(MySprite.CreateClipRect(new Rectangle(x, y, right - x, bottom - y)));
-            return true;
-        }
-
-        static void EndClip(List<MySprite> sprites)
-        {
-            if (sprites != null)
-                sprites.Add(MySprite.CreateClearClipRect());
-        }
-
-        static RectangleF Intersect(RectangleF a, RectangleF b)
-        {
-            var x = Math.Max(a.X, b.X);
-            var y = Math.Max(a.Y, b.Y);
-            var right = Math.Min(a.Right, b.Right);
-            var bottom = Math.Min(a.Bottom, b.Bottom);
-            return new RectangleF(x, y, Math.Max(0f, right - x), Math.Max(0f, bottom - y));
-        }
-
         float GetContentTop(IAppHost owner)
         {
             return owner.TitleVisible ? owner.ViewBox.Y + (40f * owner.Scale * owner.Surface.FontSize) : owner.ViewBox.Y;
         }
 
-        static bool TryGetRemainingSecondsEstimate(
-            FarmPlotEntry plot,
-            float ratio,
-            float growTimeSeconds,
-            string percentText,
-            out float remainingSeconds,
-            out string fallbackText)
+        string GetRemainingText(FarmPlotEntry plot, float growthPercent, float ratio, string percentText)
         {
-            remainingSeconds = 0f;
-            fallbackText = LocHelper.Empty;
             var logic = plot != null ? plot.Logic : null;
             if (logic == null || !logic.IsPlantPlanted)
-                return false;
+                return LocHelper.Empty;
 
             if (!logic.IsAlive)
-            {
-                fallbackText = "--";
-                return false;
-            }
+                return "--";
 
             if (logic.IsPlantFullyGrown || logic.IsHarvestable || ratio >= 0.999f)
-            {
-                fallbackText = FormatRemainingSeconds(0f);
-                return false;
-            }
+                return FormatRemainingSeconds(0d);
 
-            if (ratio <= 0.0001f || growTimeSeconds <= 0f)
-            {
-                fallbackText = percentText ?? string.Empty;
-                return false;
-            }
-
-            remainingSeconds = growTimeSeconds * (1f - MathHelper.Clamp(ratio, 0f, 1f)) / ratio;
-            if (float.IsNaN(remainingSeconds) || float.IsInfinity(remainingSeconds))
-            {
-                fallbackText = percentText ?? string.Empty;
-                return false;
-            }
-
-            return true;
+            double remainingSeconds;
+            return TryGetRemainingSeconds(plot, growthPercent, out remainingSeconds)
+                ? FormatRemainingSeconds(remainingSeconds)
+                : percentText ?? string.Empty;
         }
 
-        static string FormatRemainingSeconds(float remainingSeconds)
+        bool TryGetRemainingSeconds(
+            FarmPlotEntry plot,
+            float growthProgressPercent,
+            out double seconds)
         {
-            return FormatingHelper.FormatTimeHours(Math.Max(0f, remainingSeconds / 3600f));
+            seconds = 0d;
+            if (FarmGrowthHelper.TryGetRuntimeRemainingSeconds(plot, out seconds))
+                return true;
+
+            FarmGrowthProfile profile;
+            return _growthDefinitions.TryResolveGrowthProfile(plot, out profile) &&
+                   FarmGrowthHelper.TryGetRemainingSeconds(profile, growthProgressPercent, out seconds);
         }
 
-        static float GetGrowthRatio(FarmPlotEntry plot, out float growTimeSeconds)
+        static string FormatRemainingSeconds(double remainingSeconds)
         {
-            growTimeSeconds = 0f;
+            if (double.IsNaN(remainingSeconds) || double.IsInfinity(remainingSeconds))
+                remainingSeconds = 0d;
+
+            return FormatingHelper.FormatTimeHours((float)Math.Max(0d, remainingSeconds / 3600d));
+        }
+
+        static float GetGrowthRatio(FarmPlotEntry plot, out float growthPercent)
+        {
+            growthPercent = 0f;
             var logic = plot != null ? plot.Logic : null;
             if (logic == null || !logic.IsPlantPlanted)
                 return 0f;
             if (logic.IsPlantFullyGrown)
+            {
+                growthPercent = 100f;
                 return 1f;
+            }
             if (!logic.IsAlive)
                 return 0f;
 
@@ -810,8 +599,8 @@ namespace LcdMod.Client.Apps
                 var detailInfo = logic.GetDetailedInfoWithoutRequiredInput();
                 if (TryParseFirstPercent(detailInfo, out percent, out percentIndex))
                 {
-                    TryParseFirstTimeAfter(detailInfo, percentIndex + 1, out growTimeSeconds);
-                    return MathHelper.Clamp(percent / 100f, 0f, 1f);
+                    growthPercent = MathHelper.Clamp(percent, 0f, 100f);
+                    return growthPercent / 100f;
                 }
             }
             catch (Exception e)
@@ -853,95 +642,5 @@ namespace LcdMod.Client.Apps
             return float.TryParse(token, NumberStyles.Float, CultureInfo.InvariantCulture, out value);
         }
 
-        static void TryParseFirstTimeAfter(string text, int startIndex, out float seconds)
-        {
-            seconds = 0f;
-            if (string.IsNullOrEmpty(text)) return;
-
-            startIndex = Math.Max(0, Math.Min(startIndex, text.Length));
-            for (int i = startIndex; i < text.Length; i++)
-            {
-                if (!char.IsDigit(text[i]))
-                    continue;
-
-                int parsedSeconds;
-                int endIndex;
-                if (TryParseTimeAt(text, i, out parsedSeconds, out endIndex))
-                {
-                    seconds = parsedSeconds;
-                    return;
-                }
-            }
-        }
-
-        static bool TryParseTimeAt(string text, int startIndex, out int seconds, out int endIndex)
-        {
-            seconds = 0;
-            endIndex = startIndex;
-
-            int index = startIndex;
-            int first;
-            if (!TryParseUnsignedInt(text, ref index, out first))
-                return false;
-
-            int days = 0;
-            if (index < text.Length && (text[index] == 'd' || text[index] == 'D'))
-            {
-                days = first;
-                index++;
-                while (index < text.Length && char.IsWhiteSpace(text[index]))
-                    index++;
-
-                if (!TryParseUnsignedInt(text, ref index, out first))
-                    return false;
-            }
-
-            if (index >= text.Length || text[index] != ':')
-                return false;
-
-            index++;
-            int second;
-            if (!TryParseFixedTimePart(text, ref index, out second))
-                return false;
-
-            if (index >= text.Length || text[index] != ':')
-                return false;
-
-            index++;
-            int third;
-            if (!TryParseFixedTimePart(text, ref index, out third))
-                return false;
-
-            if (second >= 60 || third >= 60)
-                return false;
-
-            seconds = days * 86400 + first * 3600 + second * 60 + third;
-            endIndex = index;
-            return true;
-        }
-
-        static bool TryParseUnsignedInt(string text, ref int index, out int value)
-        {
-            value = 0;
-            var start = index;
-            while (index < text.Length && char.IsDigit(text[index]))
-            {
-                value = value * 10 + (text[index] - '0');
-                index++;
-            }
-
-            return index > start;
-        }
-
-        static bool TryParseFixedTimePart(string text, ref int index, out int value)
-        {
-            value = 0;
-            if (index + 1 >= text.Length || !char.IsDigit(text[index]) || !char.IsDigit(text[index + 1]))
-                return false;
-
-            value = (text[index] - '0') * 10 + (text[index + 1] - '0');
-            index += 2;
-            return true;
-        }
     }
 }
