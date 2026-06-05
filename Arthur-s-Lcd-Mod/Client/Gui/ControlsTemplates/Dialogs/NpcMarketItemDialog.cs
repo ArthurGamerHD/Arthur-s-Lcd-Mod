@@ -280,10 +280,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var textScale = 0.56f * scale * fontScale;
             var centerY = top + height * 0.5f;
             var distanceRight = _scrollPanel.ContentViewportBounds.X + 60f * scale;
+            var priceLeft = right - 164f * scale;
             var priceRight = right - 86f * scale;
             var trendRight = right - 10f * scale;
             var stationLeft = distanceRight + 8f * scale;
-            var stationWidth = Math.Max(20f, priceRight - stationLeft - 8f * scale);
+            var stationWidth = Math.Max(0f, priceLeft - stationLeft - 8f * scale);
             DrawText(FormatingHelper.DistanceToString((float)quote.DistanceMeters), distanceRight, centerY, textScale,
                 TextAlignment.RIGHT, GetThemeColor(Constants.ON_SURFACE), surface);
             DrawText(TrimText(FormatStation(quote), stationWidth, textScale, surface), stationLeft, centerY, textScale,
