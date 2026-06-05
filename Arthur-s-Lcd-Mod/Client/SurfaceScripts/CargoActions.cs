@@ -15,7 +15,9 @@ using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
 
 namespace LcdMod.Client.SurfaceScripts
 {
+#if EXPERIMENTAL
     [MyTextSurfaceScript(ID, TITLE)]
+#endif
     public partial class CargoActionsSurfaceScript : InteractiveSurfaceScript,
         IUsesTerminalControl<ComboboxLinkType>,
         IUsesTerminalControl<SwitchShowConfigButton>
@@ -29,10 +31,14 @@ namespace LcdMod.Client.SurfaceScripts
         readonly List<ControlBase> _interactiveListFallback = new List<ControlBase>();
         CargoActionsApp _app;
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
-        public override List<ControlBase> InteractiveList => _app != null ? _app.InteractiveList : _interactiveListFallback;
+
+        public override List<ControlBase> InteractiveList =>
+            _app != null ? _app.InteractiveList : _interactiveListFallback;
+
         protected override bool RendersInteractiveEntriesInGetSprites => true;
 
-        public CargoActionsSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)
+        public CargoActionsSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface,
+            block, size)
         {
         }
 
