@@ -6,6 +6,7 @@ using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls.Cargo;
+using LcdMod.Client.Terminal.Controls.Generic;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
@@ -16,6 +17,7 @@ namespace LcdMod.Client.SurfaceScripts
 {
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class CargoActionsSurfaceScript : InteractiveSurfaceScript,
+        IUsesTerminalControl<ComboboxLinkType>,
         IUsesTerminalControl<SwitchShowConfigButton>
     {
         protected override ConfigKind ConfigKind => ConfigKind.CargoActions;

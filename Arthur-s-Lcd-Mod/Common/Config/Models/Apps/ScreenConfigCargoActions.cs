@@ -1,14 +1,18 @@
 using System;
 using System.ComponentModel;
+using LcdMod.Common.Config.Interfaces;
 using LcdMod.Common.Helpers;
 using ProtoBuf;
+using GridLinkTypeEnum = VRage.Game.ModAPI.GridLinkTypeEnum;
 
 namespace LcdMod.Common.Config.Models.Apps
 {
     [ProtoContract]
-    public partial class ScreenConfigCargoActions : ScreenConfigInteractive
+    public partial class ScreenConfigCargoActions : ScreenConfigInteractive, IGridGroupReference
     {
         public override int Id => 20;
+
+        public GridLinkTypeEnum GridLinkType => (GridLinkTypeEnum)GridLinkTypeInternal;
 
         [ProtoMember(28)] public int SortMode { get; set; }
 
@@ -24,6 +28,11 @@ namespace LcdMod.Common.Config.Models.Apps
         [ProtoMember(36)] public int SettingsRevision { get; set; }
 
         [ProtoMember(37)] [DefaultValue(true)] public bool ShowConfigButton { get; set; } = true;
+
+        // Grid-link scope of the actions (per-screen, like ShowConfigButton). Physical also picks
+        // containers on docked/connected subgrids, matching the CargoFilled default.
+        [ProtoMember(38)] [DefaultValue((int)GridLinkTypeEnum.Physical)]
+        public int GridLinkTypeInternal { get; set; } = (int)GridLinkTypeEnum.Physical;
 
         /// <summary>
         ///     Copies every user-tunable setting edited by the settings dialog (sort mode, fill

@@ -18,7 +18,6 @@ using Sandbox.ModAPI;
 using VRage;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
-using GridLinkTypeEnum = VRage.Game.ModAPI.GridLinkTypeEnum;
 
 namespace LcdMod.Client.Apps
 {
@@ -561,7 +560,7 @@ namespace LcdMod.Client.Apps
             if (gridLogic == null)
                 return null;
 
-            return gridLogic.GetTerminalBlocks<IMyTerminalBlock>(GridLinkTypeEnum.Mechanical);
+            return gridLogic.GetTerminalBlocks<IMyTerminalBlock>(Config.GridLinkType);
         }
 
         static long[] ToEntityIds(List<IMyTerminalBlock> blocks)
