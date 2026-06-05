@@ -247,7 +247,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         void RenderDialogCloseButton(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
         {
             var rect = control.Bounds;
-            var hovered = rect.Contains(context.CursorPosition);
+            var hovered = control.IsPointerOver;
             var radiusPixels = Math.Min(rect.Width, rect.Height) * 0.5f / Math.Max(0.001f, context.Scale);
 
             Border.CreateSpritesFromRect(
@@ -295,6 +295,16 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         public DialogContainerControl(RectangleF rect, IApp parentApp)
             : base(rect, CursorType.Default, parentApp)
         {
+        }
+
+        public override bool CanHover
+        {
+            get { return Visible; }
+        }
+
+        public override bool Hover(object sender)
+        {
+            return Visible;
         }
 
         protected override bool CanResolveChildren(Vector2 point, bool selfHit)

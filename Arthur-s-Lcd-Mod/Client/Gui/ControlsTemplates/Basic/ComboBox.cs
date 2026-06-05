@@ -89,17 +89,24 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
 
         protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
         {
-            RenderButton(Bounds, GetLabel(_selectedValue), true, false, context, sprites);
-            if (!IsOpen)
-                return;
-
-            for (var i = 0; i < _optionButtons.Count; i++)
-                _optionButtons[i].Render(context, sprites);
+            RenderButton(Bounds, GetLabel(_selectedValue), true, false, IsPointerOver, context, sprites);
         }
 
         protected override bool CanResolveChildren(Vector2 point, bool selfHit)
         {
             return selfHit || IsOpen;
+        }
+
+        public override void AddOverlayEntries(List<ControlBase> entries)
+        {
+            if (!Visible || entries == null || !IsOpen)
+                return;
+
+            for (var i = 0; i < _optionButtons.Count; i++)
+            {
+                if (_optionButtons[i].Visible)
+                    entries.Add(_optionButtons[i]);
+            }
         }
 
         void OnComboClicked(object dataContext, object sender)
@@ -184,13 +191,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
         {
             var model = control.DataContext as ComboBoxOptionModel<T>;
             var selected = model != null && EqualityComparer<T>.Default.Equals(_selectedValue, model.Value);
-            RenderButton(control.Bounds, model != null ? model.Text : string.Empty, false, selected, context, sprites);
+            RenderButton(control.Bounds, model != null ? model.Text : string.Empty, false, selected,
+                control.IsPointerOver, context, sprites);
         }
 
-        void RenderButton(RectangleF rect, string text, bool drawArrow, bool selected, ControlRenderContext context,
-            List<MySprite> sprites)
+        void RenderButton(RectangleF rect, string text, bool drawArrow, bool selected, bool hovered,
+            ControlRenderContext context, List<MySprite> sprites)
         {
-            var hovered = rect.Contains(context.CursorPosition);
             var active = hovered || selected;
             var panelColor = context.Style.GetPanelColor(active);
             var textColor = context.Style.GetTextColor(active);

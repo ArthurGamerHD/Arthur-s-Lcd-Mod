@@ -337,7 +337,7 @@ namespace LcdMod.Client.Apps.Abstract
 
             _scrollPanel.ConfigureAutomatic(
                 contentBounds,
-                _scrollPanel.AutomaticScrollerWidthPixels * Scale,
+                ScrollPanel.DefaultScrollerWidthPixels * Scale,
                 rowHeight,
                 SCROLL_DELAY / 6f);
             ConfigureScrollPanelBarColors(_scrollPanel);
@@ -366,7 +366,7 @@ namespace LcdMod.Client.Apps.Abstract
 
             _scrollPanel.ConfigureAutomatic(
                 contentBounds,
-                _scrollPanel.AutomaticScrollerWidthPixels * Scale,
+                ScrollPanel.DefaultScrollerWidthPixels * Scale,
                 rowHeight,
                 SCROLL_DELAY / 6f);
             ConfigureScrollPanelBarColors(_scrollPanel);

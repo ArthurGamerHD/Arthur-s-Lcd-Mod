@@ -61,21 +61,11 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 int totalSteps = Math.Max(1, entries.Count - maxRows);
                 int step = GetScrollStep(SCROLL_DELAY / 6f);
                 start = step % (totalSteps + 1);
-
-                float viewportHeight = maxRows * rowHeight - (ScrollPanel.DefaultScrollerWidthPixels * 2f * _owner.Scale);
-                float scrollBarHeight = (float)maxRows / entries.Count * viewportHeight;
-                float totalScrollableRows = entries.Count - maxRows;
-                float scrollFraction = totalScrollableRows > 0 ? start / totalScrollableRows : 0f;
-                float scrollBarTravel = viewportHeight - scrollBarHeight;
-                float scrollBarY = scrollFraction * scrollBarTravel;
-                float scrollBarCenter = scrollBarY + scrollBarHeight / 2f;
-                float initialY = _owner.CaretYInternal + ScrollPanel.DefaultScrollerWidthPixels * _owner.Scale;
-                DrawScrollBar(sprites, _owner.Scale, initialY, viewportHeight, scrollBarCenter, scrollBarHeight);
             }
 
             int showCount = Math.Min(maxRows, entries.Count - start);
             for (int i = 0; i < showCount; i++)
-                DrawRow(sprites, entries[start + i], shouldScroll);
+                DrawRow(sprites, entries[start + i]);
         }
 
         void DrawGrid(List<MySprite> sprites, List<TEntry> entries)
@@ -94,24 +84,12 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 int totalSteps = Math.Max(1, totalRows - maxRows);
                 int step = GetScrollStep(SCROLL_DELAY / 6f);
                 startRow = step % (totalSteps + 1);
-
-                float viewportHeight = maxRows * rowHeight - (ScrollPanel.DefaultScrollerWidthPixels * 2f * _owner.Scale);
-                float scrollBarHeight = (float)maxRows / totalRows * viewportHeight;
-                float totalScrollableRows = totalRows - maxRows;
-                float scrollFraction = totalScrollableRows > 0 ? startRow / totalScrollableRows : 0f;
-                float scrollBarTravel = viewportHeight - scrollBarHeight;
-                float scrollBarY = scrollFraction * scrollBarTravel;
-                float scrollBarCenter = scrollBarY + scrollBarHeight / 2f;
-                float initialY = _owner.CaretYInternal + ScrollPanel.DefaultScrollerWidthPixels * _owner.Scale;
-                DrawScrollBar(sprites, _owner.Scale, initialY, viewportHeight, scrollBarCenter, scrollBarHeight);
             }
 
             int start = startRow * maxCols;
             int showCount = Math.Min(maxVisible, entries.Count - start);
             float contentStart = _owner.ViewBox.X;
             float contentEnd = _owner.ViewBox.Width + _owner.ViewBox.X;
-            if (shouldScroll)
-                contentEnd -= ScrollPanel.DefaultScrollerWidthPixels * _owner.Scale;
             float columnWidth = (contentEnd - contentStart) / maxCols;
             float gridHeight = maxRows * rowHeight;
 
@@ -142,7 +120,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             }
         }
 
-        void DrawRow(List<MySprite> frame, TEntry entry, bool showScrollBar)
+        void DrawRow(List<MySprite> frame, TEntry entry)
         {
             Vector2 position = _owner.ViewBox.Position;
             position.Y = _owner.CaretYInternal;
@@ -153,9 +131,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
             var clip = new Rectangle((int)position.X, (int)position.Y, (int)(_owner.ViewBox.Width - position.X + _owner.ViewBox.X - 145 * _owner.Scale), (int)(LINE_HEIGHT * _owner.Scale));
             var barMargin = 8 * _owner.Scale;
-            Vector2 size = showScrollBar
-                ? new Vector2(_owner.ViewBox.Width - position.X + _owner.ViewBox.X - ScrollPanel.DefaultScrollerWidthPixels * _owner.Scale, clip.Height) - barMargin
-                : new Vector2(_owner.ViewBox.Width - position.X + _owner.ViewBox.X, clip.Height) - barMargin;
+            Vector2 size = new Vector2(_owner.ViewBox.Width - position.X + _owner.ViewBox.X, clip.Height) - barMargin;
 
             BarPanel.CreateSprites(frame, new Vector2(clip.Location.X, clip.Location.Y + _owner.Scale) + barMargin / 2f, size, _owner.GetEntryBarFillColorInternal(), _owner.GetEntryBarBackgroundColorInternal(), pct, _owner.GetEntryUsageColorInternal(pct));
             frame.Add(MySprite.CreateClipRect(clip));
@@ -163,7 +139,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             position.Y += 4 * _owner.Scale;
             frame.Add(new MySprite { Type = SpriteType.TEXT, Data = _owner.GetEntryNameInternal(entry), Position = position, RotationOrScale = _owner.Scale * _owner.FontScaleInternal, Color = _owner.SurfaceInternal.ScriptForegroundColor, Alignment = TextAlignment.LEFT, FontId = "White" });
             frame.Add(MySprite.CreateClearClipRect());
-            position.X = _owner.ViewBox.Width + _owner.ViewBox.X - (showScrollBar ? ScrollPanel.DefaultScrollerWidthPixels * _owner.Scale : 0f);
+            position.X = _owner.ViewBox.Width + _owner.ViewBox.X;
             frame.Add(new MySprite { Type = SpriteType.TEXT, Data = _owner.GetNumberInternal(pct), Position = position, RotationOrScale = _owner.Scale * _owner.FontScaleInternal, Color = _owner.SurfaceInternal.ScriptForegroundColor, Alignment = TextAlignment.RIGHT, FontId = "White" });
             _owner.CaretYInternal += LINE_HEIGHT * _owner.Scale;
         }
@@ -222,54 +198,5 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             }
         }
 
-        void DrawScrollBar(List<MySprite> frame, float scale, float initialY, float viewportHeight, float scrollBarCenter, float scrollBarHeight)
-        {
-            float barXCenter = _owner.ViewBox.X + _owner.ViewBox.Width - (ScrollPanel.DefaultScrollerWidthPixels / 2f) * scale;
-            int barWidth = (int)(ScrollPanel.DefaultScrollerWidthPixels * scale);
-
-            var trackCenter = new Vector2(barXCenter, (float)Math.Round(initialY + viewportHeight / 2f, MidpointRounding.ToEven));
-            DrawCapsule(frame, trackCenter, barWidth, viewportHeight,
-                new Color(_owner.SurfaceInternal.ScriptForegroundColor.R, _owner.SurfaceInternal.ScriptForegroundColor.G, _owner.SurfaceInternal.ScriptForegroundColor.B, 127));
-
-            var thumbCenter = new Vector2(barXCenter, (float)Math.Round(initialY + scrollBarCenter, MidpointRounding.ToEven));
-            DrawCapsule(frame, thumbCenter, barWidth, scrollBarHeight,
-                new Color(_owner.HeaderColorInternal.R, _owner.HeaderColorInternal.G, _owner.HeaderColorInternal.B, 250));
-        }
-
-        static void DrawCapsule(List<MySprite> frame, Vector2 center, int width, float height, Color color)
-        {
-            frame.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = "SquareSimple",
-                Position = center,
-                Size = new Vector2(width, height + .5f),
-                Color = color,
-                Alignment = TextAlignment.CENTER
-            });
-
-            var capsSize = new Vector2(width);
-            frame.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = "SemiCircle",
-                Position = new Vector2(center.X, center.Y - height / 2f),
-                Size = capsSize,
-                RotationOrScale = 0f,
-                Color = color,
-                Alignment = TextAlignment.CENTER
-            });
-
-            frame.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = "SemiCircle",
-                Position = new Vector2(center.X, center.Y + height / 2f),
-                Size = capsSize,
-                RotationOrScale = (float)Math.PI,
-                Color = color,
-                Alignment = TextAlignment.CENTER
-            });
-        }
     }
 }

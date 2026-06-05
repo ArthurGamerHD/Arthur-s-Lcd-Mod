@@ -6,6 +6,7 @@ using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
+using LcdMod.Client.Gui.ControlsTemplates.Panels.Virtualized;
 using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Gui.UserControls.Power;
 using LcdMod.Client.Helpers;
@@ -13,7 +14,6 @@ using VRage;
 using VRage.Game.GUI.TextPanel;
 using ScreenConfigPower = LcdMod.Common.Config.Models.Apps.ScreenConfigPower;
 using VRageMath;
-using VisualWrapPanel = LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel.WrapPanel;
 
 namespace LcdMod.Client.Apps
 {
@@ -21,7 +21,6 @@ namespace LcdMod.Client.Apps
     {
         const float BATTERY_SLOT_W = 100f;
         const float BATTERY_SLOT_H = 100f;
-        const float SCROLLER_W = 8f;
         const int SCROLL_TICK = 12;
 
         readonly IAppHost _surfaceHost;
@@ -30,9 +29,8 @@ namespace LcdMod.Client.Apps
         readonly List<PowerEntry> _entries = new List<PowerEntry>();
         readonly List<ControlBase> _interactiveList = new List<ControlBase>();
         readonly Dictionary<long, PowerEntry> _entryById = new Dictionary<long, PowerEntry>();
-        readonly Dictionary<long, RectangleControl> _entryHitboxById = new Dictionary<long, RectangleControl>();
         readonly ScrollPanel _scrollPanel;
-        readonly VisualWrapPanel _gridPanel;
+        readonly VirtualizedWrapPanel<PowerEntry> _gridPanel;
         ScreenConfigPower _config;
         
         public List<ControlBase> InteractiveList => _interactiveList;
@@ -48,7 +46,11 @@ namespace LcdMod.Client.Apps
             _scrollPanel = new ScrollPanel(CursorType.Default, this);
             _scrollPanel.ScrollChanged = OnScrollPanelChanged;
             _scrollPanel.SetVisible(false);
-            _gridPanel = new VisualWrapPanel();
+            _gridPanel = new VirtualizedWrapPanel<PowerEntry>
+            {
+                CreateControl = CreatePowerEntryHitbox,
+                BindControl = BindPowerEntryHitbox
+            };
         }
 
         public override void LayoutChanged()
@@ -56,7 +58,6 @@ namespace LcdMod.Client.Apps
             _collectors.Clear();
             _entries.Clear();
             _entryById.Clear();
-            ClearPowerEntryHitboxes();
         }
 
         public override void Update()
@@ -159,7 +160,7 @@ namespace LcdMod.Client.Apps
             _gridPanel.MinimumColumnWidth = minW;
             _gridPanel.HorizontalGap = 0f;
             _gridPanel.VerticalGap = 0f;
-            SyncPowerEntryControls(_gridPanel);
+            _gridPanel.ItemsSource = _entries;
             ConfigurePowerScrollPanel(owner, contentTop, footerHeight, minH);
             var renderContext = CreateRenderContext(owner);
             _scrollPanel.Render(renderContext, sprites);
@@ -170,7 +171,7 @@ namespace LcdMod.Client.Apps
             var viewportHeight = Math.Max(0f, owner.ViewBox.Bottom - contentTop - Math.Max(0f, footerHeight));
             _scrollPanel.ConfigureAutomatic(
                 new RectangleF(owner.ViewBox.X, contentTop, owner.ViewBox.Width, viewportHeight),
-                SCROLLER_W * owner.Scale,
+                ScrollPanel.DefaultScrollerWidthPixels * owner.Scale,
                 rowHeight,
                 SCROLL_TICK / 6f);
             _scrollPanel.SetScrollBarColors(
@@ -185,16 +186,6 @@ namespace LcdMod.Client.Apps
         {
             _interactiveList.Clear();
             _scrollPanel.SetVisible(false);
-            foreach (var kv in _entryHitboxById)
-                kv.Value?.SetVisible(false);
-        }
-
-        void ClearPowerEntryHitboxes()
-        {
-            foreach (var kv in _entryHitboxById)
-                kv.Value?.SetVisible(false);
-            _entryHitboxById.Clear();
-            _interactiveList.Clear();
         }
 
         ControlRenderContext CreateRenderContext(IAppHost owner)
@@ -206,118 +197,30 @@ namespace LcdMod.Client.Apps
                 new Vector2(float.NaN, float.NaN));
         }
 
-        void SyncPowerEntryControls(Panel panel)
+        RectangleControl CreatePowerEntryHitbox(PowerEntry entry)
         {
-            if (panel == null)
+            return new RectangleControl(
+                default(RectangleF),
+                CursorType.Hand,
+                entry,
+                null,
+                entry != null ? BuildPowerEntryTooltip(entry.EntryId) : null)
+            {
+                ClickSound = AudioHelper.HudClick,
+                CustomRender = RenderPowerEntryHitbox
+            };
+        }
+
+        void BindPowerEntryHitbox(ControlBase control, PowerEntry entry, int index)
+        {
+            if (control == null)
                 return;
 
-            var desiredIds = new Dictionary<long, bool>();
-            var desired = new List<ControlBase>(_entries.Count);
-            for (int i = 0; i < _entries.Count; i++)
-            {
-                var entry = _entries[i];
-                if (entry == null)
-                    continue;
-
-                desiredIds[entry.EntryId] = true;
-                desired.Add(GetOrCreatePowerEntryHitbox(entry));
-            }
-
-            RemoveStalePanelChildren(panel, desiredIds);
-            EnsurePanelChildOrder(panel, desired);
-        }
-
-        RectangleControl GetOrCreatePowerEntryHitbox(PowerEntry entry)
-        {
-            if (entry == null)
-                return null;
-
-            RectangleControl hitbox;
-            if (!_entryHitboxById.TryGetValue(entry.EntryId, out hitbox) || hitbox == null)
-            {
-                hitbox = new RectangleControl(default(RectangleF), CursorType.Hand, entry, null, BuildPowerEntryTooltip(entry.EntryId))
-                {
-                    ClickSound = AudioHelper.HudClick,
-                    CustomRender = RenderPowerEntryHitbox
-                };
-                _entryHitboxById[entry.EntryId] = hitbox;
-            }
-            else
-            {
-                hitbox.SetDataContext(entry);
-                hitbox.SetCursor(CursorType.Hand);
-                hitbox.SetTooltip(BuildPowerEntryTooltip(entry.EntryId));
-                hitbox.CustomRender = RenderPowerEntryHitbox;
-            }
-
-            hitbox.SetVisible(true);
-            return hitbox;
-        }
-
-        static void RemoveStalePanelChildren(Panel panel, Dictionary<long, bool> desiredIds)
-        {
-            var children = panel.Children;
-            if (children == null)
-                return;
-
-            for (int i = children.Count - 1; i >= 0; i--)
-            {
-                var child = children[i];
-                var entry = child == null ? null : child.DataContext as PowerEntry;
-                if (entry == null || desiredIds.ContainsKey(entry.EntryId))
-                    continue;
-
-                panel.RemoveChild(child);
-            }
-        }
-
-        static void EnsurePanelChildOrder(Panel panel, List<ControlBase> desired)
-        {
-            if (panel == null || desired == null)
-                return;
-
-            var children = panel.Children;
-            bool changed = false;
-            for (int i = 0; i < desired.Count; i++)
-            {
-                var child = desired[i];
-                if (child == null)
-                    continue;
-
-                if (!ReferenceEquals(child.Parent, panel))
-                {
-                    panel.AddChild(child);
-                    children = panel.Children;
-                    changed = true;
-                }
-
-                if (children == null || i >= children.Count || ReferenceEquals(children[i], child))
-                    continue;
-
-                int currentIndex = IndexOfChild(children, child);
-                if (currentIndex < 0)
-                    continue;
-
-                if (panel.MoveChild(child, i))
-                    changed = true;
-            }
-
-            if (changed)
-                panel.InvalidateLayout();
-        }
-
-        static int IndexOfChild(IReadOnlyList<ControlBase> children, ControlBase child)
-        {
-            if (children == null || child == null)
-                return -1;
-
-            for (int i = 0; i < children.Count; i++)
-            {
-                if (ReferenceEquals(children[i], child))
-                    return i;
-            }
-
-            return -1;
+            control.SetDataContext(entry);
+            control.SetCursor(CursorType.Hand);
+            control.SetTooltip(entry != null ? BuildPowerEntryTooltip(entry.EntryId) : null);
+            control.CustomRender = RenderPowerEntryHitbox;
+            control.SetVisible(entry != null);
         }
 
         void OnScrollPanelChanged(ScrollPanel panel)

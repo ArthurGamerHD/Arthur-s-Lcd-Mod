@@ -102,11 +102,32 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var listBottom = card.Bottom - padding - footerHeight;
             var listRect = new RectangleF(card.X + padding, listTop, card.Width - padding * 2f,
                 Math.Max(0f, listBottom - listTop));
+            var tableRect = new RectangleF(card.X + padding, tableHeaderTop, card.Width - padding * 2f,
+                Math.Max(0f, listBottom - tableHeaderTop));
+            var tableContentRect = InsetListContent(tableRect, scale);
+            var listContentRect = new RectangleF(tableContentRect.X, listTop,
+                tableContentRect.Width, Math.Max(0f, tableContentRect.Bottom - listTop));
 
-            ConfigureScrollPanel(listRect, rowHeight, scale);
-            DrawHeaders(tableHeaderTop, tableHeaderHeight, listRect, context, scale);
-            DrawRows(listRect, rowHeight, context, scale, fontScale, surface, cursorPosition);
+            DrawListPanel(tableRect, scale);
+            ConfigureScrollPanel(listContentRect, rowHeight, scale);
+            DrawHeaders(tableHeaderTop, tableHeaderHeight, tableContentRect, context, scale);
+            DrawRows(listContentRect, rowHeight, context, scale, fontScale, surface, cursorPosition);
 
+        }
+
+        static RectangleF InsetListContent(RectangleF rect, float scale)
+        {
+            var inset = 4f * scale;
+            return new RectangleF(rect.X + inset, rect.Y, Math.Max(0f, rect.Width - inset * 2f), rect.Height);
+        }
+
+        void DrawListPanel(RectangleF rect, float scale)
+        {
+            if (rect.Width <= 0f || rect.Height <= 0f)
+                return;
+
+            Border.CreateSpritesFromRect(rect, Sprites, GetThemeColor(Constants.SECONDARY_CONTAINER),
+                radiusScale: scale);
         }
 
         void DrawItemHeader(NpcMarketItemGroup group, RectangleF card, float top, float height, float scale,
@@ -160,7 +181,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         void DrawHeaders(float top, float height, RectangleF listRect, ControlRenderContext context, float scale)
         {
             var right = _scrollPanel.ContentViewportBounds.Right;
-            var distanceRight = listRect.X + 92f * scale;
+            var distanceRight = listRect.X + 66f * scale;
             var priceLeft = right - 164f * scale;
             var trendLeft = right - 76f * scale;
             var rects = new[]
@@ -180,6 +201,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 ContainerControl.AddChild(button);
                 button.Render(context, Sprites);
             }
+
+            Sprites.Add(new MySprite(SpriteType.TEXTURE, "SquareSimple")
+            {
+                Position = new Vector2((listRect.X + right) * 0.5f, top + height - scale),
+                Size = new Vector2(Math.Max(0f, right - listRect.X), scale),
+                Color = new Color(GetThemeColor(Constants.ON_SURFACE), 0.62f)
+            });
         }
 
         void DrawRows(RectangleF listRect, float rowHeight, ControlRenderContext context, float scale, float fontScale,
@@ -239,7 +267,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         void DrawQuote(NpcMarketStationQuote quote, float top, float height, float right, float scale, float fontScale,
             IMyTextSurface surface, Vector2 cursor, Button button)
         {
-            if (button != null && button.Bounds.Contains(cursor))
+            if (button != null && button.IsPointerOver)
             {
                 Sprites.Add(new MySprite(SpriteType.TEXTURE, "SquareSimple")
                 {
@@ -251,11 +279,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
             var textScale = 0.56f * scale * fontScale;
             var centerY = top + height * 0.5f;
-            var distanceRight = _scrollPanel.ContentViewportBounds.X + 82f * scale;
+            var distanceRight = _scrollPanel.ContentViewportBounds.X + 60f * scale;
             var priceRight = right - 86f * scale;
             var trendRight = right - 10f * scale;
-            var stationLeft = distanceRight + 12f * scale;
-            var stationWidth = Math.Max(20f, priceRight - stationLeft - 12f * scale);
+            var stationLeft = distanceRight + 8f * scale;
+            var stationWidth = Math.Max(20f, priceRight - stationLeft - 8f * scale);
             DrawText(FormatingHelper.DistanceToString((float)quote.DistanceMeters), distanceRight, centerY, textScale,
                 TextAlignment.RIGHT, GetThemeColor(Constants.ON_SURFACE), surface);
             DrawText(TrimText(FormatStation(quote), stationWidth, textScale, surface), stationLeft, centerY, textScale,
@@ -328,7 +356,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Data = text,
                 Position = new Vector2(x, y),
                 RotationOrScale = textScale,
-                Color = context.Style.GetTextColor(active || control.Bounds.Contains(context.CursorPosition)),
+                Color = context.Style.GetTextColor(active || control.IsPointerOver),
                 Alignment = alignment,
                 FontId = "White"
             });
@@ -347,7 +375,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             }
             if (!active)
                 return;
-            var triangleX = alignment == TextAlignment.LEFT ? x + size.X + 8f * context.Scale : x - size.X - 8f * context.Scale;
+            var triangleX = model.Column == NpcMarketStationSortColumn.Station
+                ? x + size.X + 8f * context.Scale
+                : control.Bounds.Right - 4f * context.Scale;
             sprites.Add(new MySprite(SpriteType.TEXTURE, "Triangle")
             {
                 Position = new Vector2(triangleX, control.Bounds.Center.Y),

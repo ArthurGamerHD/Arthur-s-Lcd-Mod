@@ -29,6 +29,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         bool _showHiddenGlobalMenu;
         long _hiddenGlobalMenuVisibleUntilFrame = long.MinValue;
         long _lastVisualContactFrame = long.MinValue;
+        ControlBase _pointerOverControl;
 
         protected override ConfigKind ConfigKind => ConfigKind.Interactive;
 
@@ -54,12 +55,15 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         readonly HiddenGlobalMenuControl _hiddenGlobalMenuControl;
 
         readonly List<ControlBase> _interactiveEntriesWithOverlay = new List<ControlBase>();
+        int _controlOverlayStartIndex = -1;
+        int _controlOverlayCount;
 
         public ICollection<ControlBase> InteractiveEntries => GetInteractiveEntries();
 
         public ICollection<ControlBase> GetInteractiveEntries(bool includeDisabled = false)
         {
             _interactiveEntriesWithOverlay.Clear();
+            ResetControlOverlayRange();
 
             if (_dialog != null)
             {
@@ -73,12 +77,39 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                         AddBaseInteractiveEntries(_interactiveEntriesWithOverlay);
 
                     _dialog.AddInteractiveEntries(_interactiveEntriesWithOverlay);
+                    AddControlOverlayEntries(_interactiveEntriesWithOverlay);
                     return _interactiveEntriesWithOverlay;
                 }
             }
 
             AddBaseInteractiveEntries(_interactiveEntriesWithOverlay);
+            AddControlOverlayEntries(_interactiveEntriesWithOverlay);
             return _interactiveEntriesWithOverlay;
+        }
+
+        void ResetControlOverlayRange()
+        {
+            _controlOverlayStartIndex = -1;
+            _controlOverlayCount = 0;
+        }
+
+        void AddControlOverlayEntries(List<ControlBase> entries)
+        {
+            if (entries == null)
+                return;
+
+            var rootCount = entries.Count;
+            _controlOverlayStartIndex = rootCount;
+            for (var i = 0; i < rootCount; i++)
+            {
+                var root = entries[i];
+                if (root != null)
+                    root.AddOverlayEntries(entries);
+            }
+
+            _controlOverlayCount = entries.Count - _controlOverlayStartIndex;
+            if (_controlOverlayCount <= 0)
+                ResetControlOverlayRange();
         }
 
         void AddBaseInteractiveEntries(List<ControlBase> entries)
@@ -695,12 +726,26 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         void UpdateCursorFromTopHit()
         {
+            if (_pointerOverControl != null)
+            {
+                _pointerOverControl.SetPointerOver(false);
+                _pointerOverControl = null;
+            }
+
             var position = HitTestCursorPosition;
             if (float.IsNaN(position.X) || float.IsNaN(position.Y) || !HasRecentVisualContact)
                 return;
 
             ControlBase entry;
-            CursorType = TryResolveHit(position, out entry) ? entry.Cursor : CursorType.Default;
+            if (TryResolveHit(position, out entry))
+            {
+                CursorType = entry.Cursor;
+                entry.SetPointerOver(true);
+                _pointerOverControl = entry;
+                return;
+            }
+
+            CursorType = CursorType.Default;
         }
 
         public virtual bool TryResolveHitAtCursor(out ControlBase entry)
@@ -839,11 +884,11 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         protected override List<MySprite> RenderFrame(Func<List<MySprite>> sprites)
         {
+            UpdateCursorFromTopHit();
+
             var spriteList = base.RenderFrame(sprites);
             if (!RendersInteractiveEntriesInGetSprites)
                 RenderInteractiveEntryVisuals(spriteList);
-
-            RenderAttachedTooltip(spriteList);
 
             if (_dialog != null && _dialog.Dismissed)
                 _dialog = null;
@@ -860,7 +905,10 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 ColorableConfig?.HeaderColor ?? BackgroundColor,
                 CursorPosition);
 
-            UpdateCursorFromTopHit();
+            if (RendersInteractiveEntriesInGetSprites)
+                RenderControlOverlayVisuals(spriteList);
+
+            RenderAttachedTooltip(spriteList);
 
             if (AppConfig?.CursorScale == 0 || CursorType == CursorType.None)
                 return spriteList;
@@ -886,7 +934,8 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         protected void RenderInteractiveEntryVisuals(List<MySprite> sprites)
         {
-            if (sprites == null || InteractiveList == null || InteractiveList.Count == 0)
+            var entries = InteractiveEntries as IList<ControlBase>;
+            if (sprites == null || entries == null || entries.Count == 0)
                 return;
 
             var themedApp = App as IThemedApp;
@@ -900,9 +949,9 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                     ColorableConfig?.HeaderColor ?? BackgroundColor,
                     CursorPosition);
 
-            for (int i = 0; i < InteractiveList.Count; i++)
+            for (int i = 0; i < entries.Count; i++)
             {
-                var entry = InteractiveList[i];
+                var entry = entries[i];
                 if (entry != null)
                 {
                     entry.Render(context, sprites);
@@ -911,6 +960,32 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                         AddDebugInteractiveBounds(entry, sprites);
 #endif
                 }
+            }
+        }
+
+        void RenderControlOverlayVisuals(List<MySprite> sprites)
+        {
+            var entries = GetInteractiveEntries() as IList<ControlBase>;
+            if (sprites == null || entries == null || _controlOverlayCount == 0)
+                return;
+
+            var themedApp = App as IThemedApp;
+            var context = themedApp != null
+                ? themedApp.CreateControlRenderContext(Surface, Scale, FontScale, CursorPosition)
+                : new ControlRenderContext(
+                    Surface,
+                    Scale,
+                    FontScale,
+                    ForegroundColor,
+                    ColorableConfig?.HeaderColor ?? BackgroundColor,
+                    CursorPosition);
+
+            var end = Math.Min(entries.Count, _controlOverlayStartIndex + _controlOverlayCount);
+            for (int i = _controlOverlayStartIndex; i < end; i++)
+            {
+                var entry = entries[i];
+                if (entry != null)
+                    entry.Render(context, sprites);
             }
         }
 

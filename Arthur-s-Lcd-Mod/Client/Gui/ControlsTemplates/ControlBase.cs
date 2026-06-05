@@ -21,6 +21,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 
         public bool Visible { get; private set; } = true;
 
+        public bool IsPointerOver { get; private set; }
+
+        internal void SetPointerOver(bool value)
+        {
+            IsPointerOver = value;
+        }
+
         public void SetVisible(bool visible)
         {
             Visible = visible;
@@ -130,6 +137,19 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 
             foreach (var child in children)
                 AddChild(child);
+        }
+
+        public virtual void AddOverlayEntries(List<ControlBase> entries)
+        {
+            if (!Visible || entries == null)
+                return;
+
+            for (int i = 0; i < _children.Count; i++)
+            {
+                var child = _children[i];
+                if (child != null)
+                    child.AddOverlayEntries(entries);
+            }
         }
 
         public virtual bool RemoveChild(ControlBase child)
@@ -383,6 +403,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             finally
             {
                 _isDirty = IsDirtyAfterRender();
+                IsPointerOver = false;
             }
         }
 
@@ -394,7 +415,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         protected virtual void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
         {
             var rect = GetViewBox();
-            var hovered = rect.Contains(context.CursorPosition);
+            var hovered = IsPointerOver;
             var fillColor = context.Style.GetPanelColor(hovered);
 
             Border.CreateSpritesFromRect(rect, sprites, fillColor,
@@ -469,7 +490,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
                 Type = SpriteType.TEXT,
                 Data = text,
                 Position = new Vector2(rect.Center.X, rect.Center.Y - textSize.Y * 0.5f),
-                Color = context.Style.GetTextColor(rect.Contains(context.CursorPosition)),
+                Color = context.Style.GetTextColor(IsPointerOver),
                 FontId = "White",
                 Alignment = TextAlignment.CENTER,
                 RotationOrScale = textScale

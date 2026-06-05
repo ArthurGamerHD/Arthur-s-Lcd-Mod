@@ -10,7 +10,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 {
     public sealed class ScrollPanel : ControlBase
     {
-        public const float DefaultScrollerWidthPixels = 8f;
+        public const float DefaultScrollerWidthPixels = 5f;
         const long MANUAL_SCROLL_OVERRIDE_FRAMES = 300L;
         const float DEFAULT_MANUAL_SCROLL_PIXEL_MULTIPLIER = 0.08f;
         const float MANUAL_SCROLL_VELOCITY_IMPULSE = 0.12f;
@@ -663,7 +663,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             return new Color(color.R, color.G, color.B, 250);
         }
 
-        static float GetScrollBarVisualWidthPixels(float gutterWidth) => gutterWidth <= 1f ? 1f : Math.Max(1f, Math.Min(gutterWidth, (float)Math.Round(gutterWidth * 0.5f, MidpointRounding.AwayFromZero)));
+        static float GetScrollBarVisualWidthPixels(float gutterWidth)
+        {
+            if (gutterWidth <= 1f)
+                return 1f;
+
+            return Math.Max(1f, (float)Math.Round(gutterWidth, MidpointRounding.AwayFromZero));
+        }
 
         Color GetThumbColor(Color thumbColor)
         {

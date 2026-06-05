@@ -156,7 +156,7 @@ namespace LcdMod.Client.Apps
 
             BuildRenderEntryIndices();
 
-            var scrollerWidth = Math.Min(_scrollPanel.AutomaticScrollerWidthPixels * Scale, Math.Max(0f, ViewBox.Width * 0.25f));
+            var scrollerWidth = Math.Min(ScrollPanel.DefaultScrollerWidthPixels * Scale, Math.Max(0f, ViewBox.Width * 0.25f));
             var layout = CreateButtonGridLayout(ViewBox.Width, availableHeight);
             var totalRows = GetRowsForEntryCount(_renderEntryIndices.Count, layout.Columns);
             var needsScroller = totalRows * layout.RowHeight > availableHeight + 0.001f;

@@ -25,7 +25,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Inputs
         protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
         {
             var rect = GetViewBox();
-            var hovered = rect.Contains(context.CursorPosition);
+            var hovered = IsPointerOver;
             var backgroundColor = context.Style.GetPanelColor(hovered);
             Border.CreateSpritesFromRect(rect, sprites, backgroundColor,
                 radiusScale: context.Scale);

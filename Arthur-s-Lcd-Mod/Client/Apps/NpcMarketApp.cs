@@ -270,10 +270,8 @@ namespace LcdMod.Client.Apps
         void DrawRowHoverBackground(List<MySprite> sprites, string itemKey)
         {
             Button button;
-            var interactiveHost = Host as InteractiveSurfaceScript;
             if (string.IsNullOrEmpty(itemKey) || !_rowButtonsByItemKey.TryGetValue(itemKey, out button) ||
-                interactiveHost == null ||
-                !button.Bounds.Contains(interactiveHost.CursorPosition))
+                !button.IsPointerOver)
                 return;
 
             sprites.Add(new MySprite(SpriteType.TEXTURE, "SquareSimple")
@@ -550,7 +548,7 @@ namespace LcdMod.Client.Apps
                 footerHeight,
                 rowHeight,
                 _rows.Count,
-                _scrollPanel.AutomaticScrollerWidthPixels * Host.Scale,
+                ScrollPanel.DefaultScrollerWidthPixels * Host.Scale,
                 0f);
             var colorable = AppConfig as ScreenConfigColorable;
             var thumbColor = colorable?.HeaderColor ?? Host.ForegroundColor;
@@ -741,7 +739,7 @@ namespace LcdMod.Client.Apps
 
         void RenderSearchButton(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
         {
-            var hovered = control.Bounds.Contains(context.CursorPosition);
+            var hovered = control.IsPointerOver;
             sprites.Add(new MySprite(SpriteType.TEXTURE, "Search")
             {
                 Position = control.Bounds.Center,
@@ -753,7 +751,7 @@ namespace LcdMod.Client.Apps
         void RenderSearchInput(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
         {
             var rect = control.Bounds;
-            var hovered = rect.Contains(context.CursorPosition);
+            var hovered = control.IsPointerOver;
             var innerPadding = Math.Max(2f, Math.Min(rect.Width, rect.Height) * 0.08f);
             var innerRect = Inset(rect, innerPadding);
             var textColor = context.GetThemeColor(Constants.ON_SECONDARY_CONTAINER);
@@ -793,7 +791,7 @@ namespace LcdMod.Client.Apps
 
         void RenderClearSearchButton(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
         {
-            var hovered = control.Bounds.Contains(context.CursorPosition);
+            var hovered = control.IsPointerOver;
             var color = context.GetThemeColor(Constants.ON_SECONDARY_CONTAINER);
             if (hovered)
                 color = context.Style.GetTextColor(true);
@@ -833,7 +831,7 @@ namespace LcdMod.Client.Apps
 
             var rect = control.Bounds;
             var active = model.Column == _sortColumn;
-            var hovered = rect.Contains(context.CursorPosition);
+            var hovered = control.IsPointerOver;
             var text = MyTexts.GetString(model.LocalizationKey);
             var textScale = 0.58f * context.Scale * context.FontScale;
             var textSize = FormatingHelper.GetSizeInPixel(text, "White", textScale, context.Surface);
@@ -902,7 +900,7 @@ namespace LcdMod.Client.Apps
             var model = control.DataContext as ButtonModel;
             var enabled = model == null || model.Enabled;
             var rect = control.Bounds;
-            var hover = enabled && rect.Contains(context.CursorPosition);
+            var hover = enabled && control.IsPointerOver;
             var color = context.Style.GetPanelColor(hover);
             var textColor = context.Style.GetTextColor(hover);
             var text = model == null || string.IsNullOrEmpty(model.Text) ? MyTexts.GetString(LOC_REFRESH) : model.Text;

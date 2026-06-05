@@ -132,7 +132,7 @@ namespace LcdMod.Client.Apps
             var viewportHeight = Math.Max(0f, Host.ViewBox.Bottom - contentTop);
             _scrollPanel.ConfigureAutomatic(
                 new RectangleF(Host.ViewBox.X, contentTop, Host.ViewBox.Width, viewportHeight),
-                _scrollPanel.AutomaticScrollerWidthPixels * Host.Scale,
+                ScrollPanel.DefaultScrollerWidthPixels * Host.Scale,
                 rowHeight,
                 SCROLL_DELAY / 6f);
             _scrollPanel.SetScrollBarColors(

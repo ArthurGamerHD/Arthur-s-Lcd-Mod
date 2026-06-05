@@ -302,16 +302,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 int step = GetScrollStep(SCROLL_DELAY / 6);
                 startRow = step % (totalSteps + 1);
 
-                float viewportHeight = maxRows * rowHeight - (ScrollPanel.DefaultScrollerWidthPixels * 2f * Scale);
-                float scrollBarHeight = (float)maxRows / totalRows * viewportHeight;
-                float totalScrollableRows = totalRows - maxRows;
-                float scrollFraction = totalScrollableRows > 0 ? startRow / totalScrollableRows : 0f;
-                float scrollBarTravel = viewportHeight - scrollBarHeight;
-                float scrollBarY = scrollFraction * scrollBarTravel;
-                float scrollBarCenter = scrollBarY + scrollBarHeight / 2f;
-                float initialY = CaretY + ScrollPanel.DefaultScrollerWidthPixels * Scale;
-
-                DrawScrollBar(sprites, Scale, initialY, viewportHeight, scrollBarCenter, scrollBarHeight);
             }
 
             int start = startRow;
@@ -320,8 +310,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             float margin = 0f;
             float contentStart = ViewBox.X + margin;
             float contentEnd = ViewBox.Width + ViewBox.X - margin;
-            if (shouldScroll)
-                contentEnd -= ScrollPanel.DefaultScrollerWidthPixels * Scale;
 
             if (AppConfig.DrawLines)
             {
@@ -370,16 +358,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 int step = GetScrollStep(SCROLL_DELAY / 6);
                 startRow = step % (totalSteps + 1);
 
-                float viewportHeight = maxRows * rowHeight - (ScrollPanel.DefaultScrollerWidthPixels * 2f * Scale);
-                float scrollBarHeight = (float)maxRows / totalRows * viewportHeight;
-                float totalScrollableRows = totalRows - maxRows;
-                float scrollFraction = totalScrollableRows > 0 ? startRow / totalScrollableRows : 0f;
-                float scrollBarTravel = viewportHeight - scrollBarHeight;
-                float scrollBarY = scrollFraction * scrollBarTravel;
-                float scrollBarCenter = scrollBarY + scrollBarHeight / 2f;
-                float initialY = CaretY + ScrollPanel.DefaultScrollerWidthPixels * Scale;
-
-                DrawScrollBar(sprites, Scale, initialY, viewportHeight, scrollBarCenter, scrollBarHeight);
             }
 
             int start = startRow * maxCols;
@@ -388,8 +366,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             float margin = 0f;
             float contentStart = ViewBox.X + margin;
             float contentEnd = ViewBox.Width + ViewBox.X - margin;
-            if (shouldScroll)
-                contentEnd -= ScrollPanel.DefaultScrollerWidthPixels * Scale;
             float columnWidth = (contentEnd - contentStart) / maxCols;
             float gridHeight = maxRows * rowHeight;
 
@@ -535,61 +511,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 _ascentColor,
                 true,
                 false);
-        }
-
-        void DrawScrollBar(List<MySprite> frame, float scale, float initialY, float viewportHeight,
-            float scrollBarCenter, float scrollBarHeight)
-        {
-            float barXCenter = ViewBox.X + ViewBox.Width - (ScrollPanel.DefaultScrollerWidthPixels / 2f) * scale;
-            int barWidth = (int)(ScrollPanel.DefaultScrollerWidthPixels * scale);
-
-            var trackCenter = new Vector2(barXCenter,
-                (float)Math.Round(initialY + viewportHeight / 2f, MidpointRounding.ToEven));
-            DrawCapsule(frame, trackCenter, barWidth, viewportHeight,
-                new Color(Surface.ScriptForegroundColor.R, Surface.ScriptForegroundColor.G,
-                    Surface.ScriptForegroundColor.B, 127));
-
-            var thumbCenter = new Vector2(barXCenter,
-                (float)Math.Round(initialY + scrollBarCenter, MidpointRounding.ToEven));
-            DrawCapsule(frame, thumbCenter, barWidth, scrollBarHeight,
-                new Color(AppConfig.HeaderColor.R, AppConfig.HeaderColor.G, AppConfig.HeaderColor.B, 250));
-        }
-
-        void DrawCapsule(List<MySprite> frame, Vector2 center, int width, float height, Color color)
-        {
-            frame.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = "SquareSimple",
-                Position = center,
-                Size = new Vector2(width, height + .5f),
-                Color = color,
-                Alignment = TextAlignment.CENTER
-            });
-
-            var capsSize = new Vector2(width);
-
-            frame.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = "SemiCircle",
-                Position = new Vector2(center.X, center.Y - height / 2f),
-                Size = capsSize,
-                RotationOrScale = 0f,
-                Color = color,
-                Alignment = TextAlignment.CENTER
-            });
-
-            frame.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = "SemiCircle",
-                Position = new Vector2(center.X, center.Y + height / 2f),
-                Size = capsSize,
-                RotationOrScale = (float)Math.PI,
-                Color = color,
-                Alignment = TextAlignment.CENTER
-            });
         }
 
         protected static double ToWatts(float powerUnit)
