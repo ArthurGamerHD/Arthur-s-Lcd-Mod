@@ -665,4 +665,46 @@ Vamos aguardar um pouco e então reiniciá-la para você.</value>
   <data name="LcdMod_BSoD_ExceptionCode" xml:space="preserve">
     <value>Código da exceção:</value>
   </data>
+  <data name="LcdMod_CargoActions_Title" xml:space="preserve">
+    <value>Ações de Carga</value>
+  </data>
+  <data name="LcdMod_CargoActions_Config" xml:space="preserve">
+    <value>Configurações</value>
+  </data>
+  <data name="LcdMod_CargoActions_ShowConfigButton" xml:space="preserve">
+    <value>Mostrar Botão de Configurações</value>
+  </data>
+  <data name="LcdMod_CargoActions_ShowConfigButton_Tooltip" xml:space="preserve">
+    <value>Mostra ou oculta o botão de configurações nesta tela.</value>
+  </data>
+  <data name="LcdMod_CargoActions_Sort" xml:space="preserve">
+    <value>Organização</value>
+  </data>
+  <data name="LcdMod_CargoActions_Uranium" xml:space="preserve">
+    <value>Urânio (kg)</value>
+  </data>
+  <data name="LcdMod_CargoActions_Ammo" xml:space="preserve">
+    <value>Munição</value>
+  </data>
+  <data name="LcdMod_CargoActions_Default" xml:space="preserve">
+    <value>Padrão</value>
+  </data>
+  <data name="LcdMod_CargoActions_GridLarge" xml:space="preserve">
+    <value>Grid grande</value>
+  </data>
+  <data name="LcdMod_CargoActions_GridSmall" xml:space="preserve">
+    <value>Grid pequeno</value>
+  </data>
+  <data name="LcdMod_CargoActions_ReactorSmall" xml:space="preserve">
+    <value>Reator pequeno</value>
+  </data>
+  <data name="LcdMod_CargoActions_ReactorLarge" xml:space="preserve">
+    <value>Reator grande</value>
+  </data>
+  <data name="LcdMod_Cargo_FillRequested" xml:space="preserve">
+    <value>Reabastecimento solicitado</value>
+  </data>
+  <data name="LcdMod_CargoActions_ActionDone" xml:space="preserve">
+    <value>{0}: {1}</value>
+  </data>
 </root>

@@ -13,6 +13,8 @@ namespace LcdMod.Common.Config.Models
     [XmlInclude(typeof(ScreenConfigButtonPanel))]
     [ProtoInclude(117, typeof(ScreenConfigDigitalPictureFrames))]
     [XmlInclude(typeof(ScreenConfigDigitalPictureFrames))]
+    [ProtoInclude(118, typeof(ScreenConfigCargoActions))]
+    [XmlInclude(typeof(ScreenConfigCargoActions))]
     public partial class ScreenConfigInteractive : ScreenConfigColorable
     {
         public override int Id => 14;

@@ -26,22 +26,23 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
     {
         private const int MAX_VISIBLE_ROWS = 20;
         private readonly List<IMyTerminalBlock> _candidates = new List<IMyTerminalBlock>();
+        private readonly List<DisplayRow> _displayRows = new List<DisplayRow>();
         private readonly Action<List<string>, List<string>> _onSaveFilter;
+        private readonly Action<string> _onStatusMessage;
 
         private readonly List<RectangleControl> _pool = new List<RectangleControl>();
+        private readonly HashSet<string> _selectedCategories = new HashSet<string>();
 
         private readonly HashSet<long> _selectedTargets = new HashSet<long>();
         private readonly HashSet<string> _selectedTypeKeys = new HashSet<string>();
-        private readonly HashSet<string> _selectedCategories = new HashSet<string>();
         private readonly Action<Dialog> _showDialog;
 
         private readonly IMyTerminalBlock _source;
         private readonly List<TypeRow> _types = new List<TypeRow>();
-        private readonly List<DisplayRow> _displayRows = new List<DisplayRow>();
+        private int _maxScroll;
         private TransferMode _mode;
         private int _poolIndex;
         private int _scroll;
-        private int _maxScroll;
         private RectangleControl _scrollCatcher;
         private bool _scrollRenderQueued;
 
@@ -51,12 +52,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         public ContainerActionDialog(IApp parentApp, IMyTerminalBlock source,
             List<IMyTerminalBlock> candidates, Action<Dialog> showDialog,
             IEnumerable<string> savedFilter, IEnumerable<string> savedCategories,
-            Action<List<string>, List<string>> onSaveFilter)
+            Action<List<string>, List<string>> onSaveFilter,
+            Action<string> onStatusMessage = null)
             : base(parentApp)
         {
             _source = source;
             _showDialog = showDialog;
             _onSaveFilter = onSaveFilter;
+            _onStatusMessage = onStatusMessage;
 
             if (savedFilter != null)
                 foreach (var key in savedFilter)
@@ -102,7 +105,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             var cardTextColor = GetThemeColor(Constants.ON_SURFACE);
             var shadowColor = GetThemeColor(Constants.SHADOW);
 
-            // Dimmed backdrop.
             Sprites.Add(new MySprite(SpriteType.TEXTURE, "SquareSimple",
                 surface.TextureSize / 2, surface.TextureSize, new Color(0, 0, 0, 128)));
 
@@ -123,7 +125,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 radiusScale: scale);
             Border.CreateSpritesFromRect(cardRect, Sprites, cardColor, radiusScale: scale);
 
-            // Title.
             var title = GetTitle();
             var titleSize = FormatingHelper.GetSizeInPixel(title, "White", titleScale, surface);
             Sprites.Add(new MySprite
@@ -167,8 +168,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             }
         }
 
-        // ---- Step 0: action menu ----
-
         private void RenderActionStep(RectangleF body, float scale, float buttonScale, Color textColor,
             ControlRenderContext context)
         {
@@ -200,8 +199,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 }, context);
         }
 
-        // ---- Steps 1 & 2: scrollable toggle lists ----
-
         private void RenderListStep(RectangleF body, float scale, float rowScale, Color textColor,
             ControlRenderContext context, IMyTextSurface surface)
         {
@@ -217,10 +214,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             if (_scroll < 0) _scroll = 0;
             _maxScroll = maxScroll;
 
-            // Invisible catcher over the list so the mouse wheel scrolls it (rows aren't scrollable,
-            // so hit resolution falls through to this).
             if (_scrollCatcher == null)
-                _scrollCatcher = new RectangleControl(body, CursorType.Default, null);
+                _scrollCatcher = new RectangleControl(body, CursorType.Default);
             else
                 _scrollCatcher.SetRect(body);
             _scrollCatcher.SetOnScroll(OnListScroll);
@@ -324,8 +319,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             }
         }
 
-        // ---- navigation / state ----
-
         private bool OnListScroll(object dataContext, object sender, int delta)
         {
             if (_step == 0)
@@ -338,7 +331,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             if (newScroll != _scroll)
             {
                 _scroll = newScroll;
-                // Defer: re-rendering rebuilds the dialog's children mid-scroll-dispatch.
                 if (!_scrollRenderQueued)
                 {
                     _scrollRenderQueued = true;
@@ -410,8 +402,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             _showDialog?.Invoke(this);
         }
 
-        // Every physical item type the game knows about (like the conveyor sorter filter), not just
-        // what currently sits in the containers. Built once; the saved filter keeps any selection.
         private void GatherGameTypes()
         {
             if (_typesBuilt)
@@ -427,7 +417,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 if (def == null || !def.Public || !PassesWhiteList(def))
                     continue;
 
-                var key = def.Id.TypeId.ToString() + "/" + def.Id.SubtypeName;
+                var key = def.Id.TypeId + "/" + def.Id.SubtypeName;
                 if (!seenKeys.Add(key))
                     continue;
 
@@ -436,7 +426,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 int order;
                 var category = CategoryFor(def.Id.TypeId.ToString(), out order);
 
-                // Drop duplicate display names within the same category (mod/variant collisions).
                 if (!seenNames.Add(category + "" + name.ToLowerInvariant()))
                     continue;
 
@@ -453,8 +442,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 return string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase);
             });
 
-            // Same layout as the item LCD filter: the selectable category groups first, then the
-            // individual items below.
             var groups = ItemCategoryHelper.Groups;
             for (var i = 0; i < groups.Length; i++)
                 _displayRows.Add(new DisplayRow
@@ -471,7 +458,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             _typesBuilt = true;
         }
 
-        // Same hidden/junk items the game's item filter (ListboxItemsCandidates) skips.
         private static bool PassesWhiteList(MyPhysicalItemDefinition def)
         {
             var id = def.Id.ToString();
@@ -480,8 +466,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                    && !id.Contains("GunObject/CubePlacerItem");
         }
 
-        // Localized category (reusing the game's conveyor-sorter group names via ItemCategoryHelper)
-        // plus a sort order; falls back to the raw type name for the few items outside those groups.
         private static string CategoryFor(string typeId, out int order)
         {
             var t = typeId ?? string.Empty;
@@ -533,6 +517,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
         private void Apply()
         {
+            string status = null;
             try
             {
                 var targets = new List<IMyTerminalBlock>(_selectedTargets.Count);
@@ -540,8 +525,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                     if (_selectedTargets.Contains(_candidates[i].EntityId))
                         targets.Add(_candidates[i]);
 
-                // Expand any selected category into the concrete item keys actually present, so the
-                // server-side helper (which matches by key) handles categories transparently.
                 var keys = new HashSet<string>(_selectedTypeKeys);
                 if (_selectedCategories.Count > 0)
                     ExpandCategoriesToKeys(targets, keys);
@@ -554,7 +537,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
                 if (MyAPIGateway.Session != null && MyAPIGateway.Session.IsServer)
                 {
-                    InventoryDistributorCommon.Execute(_source, targets, keys, _mode);
+                    var moved = InventoryDistributorCommon.Execute(_source, targets, keys, _mode);
+                    status = string.Format(LocHelper.GetLoc("LcdMod_CargoActions_ActionDone"), GetModeLabel(), moved);
                 }
                 else
                 {
@@ -567,6 +551,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
                     LcdModSessionComponent.NetworkManager.TransmitToServer(
                         new PacketTransferItems(_source.EntityId, targetIds, keyArr, (int)_mode), false);
+                    status = LocHelper.GetLoc("LcdMod_Cargo_SortRequested");
                 }
             }
             catch (Exception e)
@@ -574,10 +559,31 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 ErrorHandlerHelper.LogError(e, typeof(ContainerActionDialog));
             }
 
+            // Dismiss first, then notify: NotifyStatus triggers a synchronous render, and with the
+            // dialog still open the status banner would be drawn underneath it (visible only on the
+            // next external render).
             Dismiss();
+            NotifyStatus(status);
         }
 
-        // ---- rendering helpers ----
+        private void NotifyStatus(string message)
+        {
+            if (_onStatusMessage != null && !string.IsNullOrEmpty(message))
+                _onStatusMessage(message);
+        }
+
+        private string GetModeLabel()
+        {
+            switch (_mode)
+            {
+                case TransferMode.Send:
+                    return LocHelper.GetLoc("LcdMod_Transfer_Send");
+                case TransferMode.Receive:
+                    return LocHelper.GetLoc("LcdMod_Transfer_Receive");
+                default:
+                    return LocHelper.GetLoc("LcdMod_Transfer_Balance");
+            }
+        }
 
         private void DrawButton(RectangleF rect, string text, float textScale, bool primary, bool enabled,
             Action onClick, ControlRenderContext context)
@@ -617,7 +623,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             control.Render(context, Sprites);
         }
 
-        // Non-interactive category header row.
         private void DrawRow(RectangleF rect, string text, float textScale, bool selected, Action onClick,
             ControlRenderContext context)
         {
@@ -740,10 +745,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
         private struct DisplayRow
         {
-            public bool IsGroup;    // selectable category group (top of the list, like the item LCD)
-            public string Label;    // group display name or item name
-            public string Key;      // item key, null for groups
-            public string GroupKey; // raw category name, null for items
+            public bool IsGroup;
+            public string Label;
+            public string Key;
+            public string GroupKey;
         }
     }
 }

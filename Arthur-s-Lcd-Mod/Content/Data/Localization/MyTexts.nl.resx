@@ -664,4 +664,46 @@ We wachten even en starten het daarna voor je opnieuw op.</value>
   <data name="LcdMod_BSoD_ExceptionCode" xml:space="preserve">
     <value>Uitzonderingscode:</value>
   </data>
+  <data name="LcdMod_CargoActions_Title" xml:space="preserve">
+    <value>Vrachtacties</value>
+  </data>
+  <data name="LcdMod_CargoActions_Config" xml:space="preserve">
+    <value>Instellingen</value>
+  </data>
+  <data name="LcdMod_CargoActions_ShowConfigButton" xml:space="preserve">
+    <value>Instellingenknop weergeven</value>
+  </data>
+  <data name="LcdMod_CargoActions_ShowConfigButton_Tooltip" xml:space="preserve">
+    <value>Toont of verbergt de instellingenknop op dit scherm.</value>
+  </data>
+  <data name="LcdMod_CargoActions_Sort" xml:space="preserve">
+    <value>Sortering</value>
+  </data>
+  <data name="LcdMod_CargoActions_Uranium" xml:space="preserve">
+    <value>Uranium (kg)</value>
+  </data>
+  <data name="LcdMod_CargoActions_Ammo" xml:space="preserve">
+    <value>Munitie</value>
+  </data>
+  <data name="LcdMod_CargoActions_Default" xml:space="preserve">
+    <value>Standaard</value>
+  </data>
+  <data name="LcdMod_CargoActions_GridLarge" xml:space="preserve">
+    <value>Groot grid</value>
+  </data>
+  <data name="LcdMod_CargoActions_GridSmall" xml:space="preserve">
+    <value>Klein grid</value>
+  </data>
+  <data name="LcdMod_CargoActions_ReactorSmall" xml:space="preserve">
+    <value>Kleine reactor</value>
+  </data>
+  <data name="LcdMod_CargoActions_ReactorLarge" xml:space="preserve">
+    <value>Grote reactor</value>
+  </data>
+  <data name="LcdMod_Cargo_FillRequested" xml:space="preserve">
+    <value>Bijvullen aangevraagd</value>
+  </data>
+  <data name="LcdMod_CargoActions_ActionDone" xml:space="preserve">
+    <value>{0}: {1}</value>
+  </data>
 </root>

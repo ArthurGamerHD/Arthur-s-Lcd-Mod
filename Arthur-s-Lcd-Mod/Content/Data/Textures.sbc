@@ -97,5 +97,29 @@
             <SpritePath>Textures/Sprites/StringInput.dds</SpritePath>
             <Selectable>false</Selectable>
         </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Cargo Actions: Settings button icon -->
+            <Id Type="LCDTextureDefinition" Subtype="Configuracao"/>
+            <SpritePath>Textures/Sprites/Configuracao.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Cargo Actions: Sorter button icon -->
+            <Id Type="LCDTextureDefinition" Subtype="Organizar"/>
+            <SpritePath>Textures/Sprites/Organizar.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Cargo Actions: Fill Weapons button icon -->
+            <Id Type="LCDTextureDefinition" Subtype="Armas"/>
+            <SpritePath>Textures/Sprites/Armas.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Cargo Actions: Fill Reactors button icon -->
+            <Id Type="LCDTextureDefinition" Subtype="Reatores"/>
+            <SpritePath>Textures/Sprites/Reatores.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
     </LCDTextures>
 </Definitions>

@@ -664,4 +664,46 @@
   <data name="LcdMod_BSoD_ExceptionCode" xml:space="preserve">
     <value>异常代码：</value>
   </data>
+  <data name="LcdMod_CargoActions_Title" xml:space="preserve">
+    <value>货物操作</value>
+  </data>
+  <data name="LcdMod_CargoActions_Config" xml:space="preserve">
+    <value>设置</value>
+  </data>
+  <data name="LcdMod_CargoActions_ShowConfigButton" xml:space="preserve">
+    <value>显示设置按钮</value>
+  </data>
+  <data name="LcdMod_CargoActions_ShowConfigButton_Tooltip" xml:space="preserve">
+    <value>显示或隐藏此屏幕上的设置按钮。</value>
+  </data>
+  <data name="LcdMod_CargoActions_Sort" xml:space="preserve">
+    <value>排序</value>
+  </data>
+  <data name="LcdMod_CargoActions_Uranium" xml:space="preserve">
+    <value>铀 (kg)</value>
+  </data>
+  <data name="LcdMod_CargoActions_Ammo" xml:space="preserve">
+    <value>弹药</value>
+  </data>
+  <data name="LcdMod_CargoActions_Default" xml:space="preserve">
+    <value>默认</value>
+  </data>
+  <data name="LcdMod_CargoActions_GridLarge" xml:space="preserve">
+    <value>大型网格</value>
+  </data>
+  <data name="LcdMod_CargoActions_GridSmall" xml:space="preserve">
+    <value>小型网格</value>
+  </data>
+  <data name="LcdMod_CargoActions_ReactorSmall" xml:space="preserve">
+    <value>小型反应堆</value>
+  </data>
+  <data name="LcdMod_CargoActions_ReactorLarge" xml:space="preserve">
+    <value>大型反应堆</value>
+  </data>
+  <data name="LcdMod_Cargo_FillRequested" xml:space="preserve">
+    <value>已请求补充</value>
+  </data>
+  <data name="LcdMod_CargoActions_ActionDone" xml:space="preserve">
+    <value>{0}：{1}</value>
+  </data>
 </root>

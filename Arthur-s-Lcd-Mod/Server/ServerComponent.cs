@@ -249,10 +249,9 @@ namespace LcdMod.Server
                 return;
 
             var sources = CollectOwnedBlocks(packet.SourceIds, senderIdentity);
-            BlockFillerCommon.Execute(sources, targets, (FillKind)packet.Kind);
+            BlockFillerCommon.Execute(sources, targets, (FillKind)packet.Kind, packet.Settings);
         }
 
-        // Resolves entity ids to inventory-bearing blocks the requester is actually allowed to use.
         static List<IMyTerminalBlock> CollectOwnedBlocks(long[] ids, long senderIdentity)
         {
             var blocks = new List<IMyTerminalBlock>(ids != null ? ids.Length : 0);

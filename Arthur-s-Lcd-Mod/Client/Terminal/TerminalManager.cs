@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Terminal.Controls.Blueprint;
+using LcdMod.Client.Terminal.Controls.Cargo;
 using LcdMod.Client.Terminal.Controls.Color;
 using LcdMod.Client.Terminal.Controls.Filter;
 using LcdMod.Client.Terminal.Controls.Filter.Buttons;
@@ -102,6 +103,8 @@ namespace LcdMod.Client.Terminal
             Controls.Add(new SliderProxyY());
             Controls.Add(new SwitchProxyAutoAdjust());
             Controls.Add(new ButtonProxyAuto());
+
+            Controls.Add(new SwitchShowConfigButton());
         }
 
         public void Unload()
@@ -128,7 +131,6 @@ namespace LcdMod.Client.Terminal
 
         void CaptureTextButtonIfNeeded(List<IMyTerminalControl> controls)
         {
-            // no use for this right now, but it's a "nice to have" way to get a TextBox 
             if (CustomDataButton != null && ShowTextPanelButton != null)
                 return;
 
