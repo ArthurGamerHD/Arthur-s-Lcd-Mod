@@ -3,54 +3,91 @@ using VRageMath;
 
 namespace LcdMod.Client.Gui.ControlsTemplates.Panels.StackPanel
 {
-    public sealed class StackPanel
+    public class StackPanel : LcdMod.Client.Gui.ControlsTemplates.Panels.Panel
     {
-        StackPanel()
+        float _rowHeight = 30f;
+        float _gap;
+
+        public StackPanel()
         {
         }
 
-        public RectangleF ContentBounds { get; private set; }
-        public float RowHeight { get; private set; }
-        public int ItemCount { get; private set; }
-        public int MaxRows { get; private set; }
-        public int RenderedRows { get; private set; }
-        public int StartIndex { get; private set; }
-        public int VisibleCellCount { get; private set; }
-
-        public static StackPanel Create(
-            RectangleF contentBounds,
-            float rowHeight,
-            int itemCount,
-            int startIndex = 0)
+        public StackPanel(ControlBase parent)
         {
-            var panel = new StackPanel();
-            panel.ContentBounds = contentBounds;
-            panel.RowHeight = Math.Max(1f, rowHeight);
-            panel.ItemCount = Math.Max(0, itemCount);
-            panel.StartIndex = Math.Max(0, Math.Min(startIndex, panel.ItemCount));
-            panel.MaxRows = Math.Max(1, (int)Math.Floor(Math.Max(0f, contentBounds.Height) / panel.RowHeight));
-            panel.VisibleCellCount = Math.Min(panel.MaxRows, Math.Max(0, panel.ItemCount - panel.StartIndex));
-            panel.RenderedRows = panel.VisibleCellCount;
-            return panel;
+            AttachTo(parent);
         }
 
-        public StackPanelCell GetCell(int visibleIndex)
+        public StackPanel(ControlBase parent, RectangleF bounds)
+            : base(bounds)
         {
-            if (VisibleCellCount <= 0)
-                return new StackPanelCell(0, StartIndex, new RectangleF(ContentBounds.X, ContentBounds.Y, 0f, 0f));
+            AttachTo(parent);
+        }
 
-            if (visibleIndex < 0)
-                visibleIndex = 0;
-            else if (visibleIndex >= VisibleCellCount)
-                visibleIndex = VisibleCellCount - 1;
+        public float RowHeight
+        {
+            get { return _rowHeight; }
+            set
+            {
+                float next = Math.Max(1f, value);
+                if (_rowHeight == next)
+                    return;
 
-            int itemIndex = StartIndex + visibleIndex;
-            float y = ContentBounds.Y + visibleIndex * RowHeight;
+                _rowHeight = next;
+                InvalidateLayout();
+            }
+        }
 
-            return new StackPanelCell(
-                visibleIndex,
-                itemIndex,
-                new RectangleF(ContentBounds.X, y, ContentBounds.Width, RowHeight));
+        public float Gap
+        {
+            get { return _gap; }
+            set
+            {
+                float next = Math.Max(0f, value);
+                if (_gap == next)
+                    return;
+
+                _gap = next;
+                InvalidateLayout();
+            }
+        }
+
+        public override Vector2 Measure(Vector2 availableSize)
+        {
+            return new Vector2(
+                Math.Max(0f, availableSize.X),
+                StackPanelLayout.CalculateTotalHeight(RowHeight, Gap, Children.Count));
+        }
+
+        protected override void ArrangeChildren()
+        {
+            var children = Children;
+            if (children == null || children.Count == 0)
+                return;
+
+            float strideHeight = RowHeight + Gap;
+            float totalHeight = StackPanelLayout.CalculateTotalHeight(RowHeight, Gap, children.Count);
+            var layoutBounds = new RectangleF(Rect.X, Rect.Y, Rect.Width, totalHeight);
+
+            var layout = StackPanelLayout.Create(layoutBounds, strideHeight, children.Count, 0);
+
+            for (int i = 0; i < children.Count; i++)
+            {
+                var child = children[i];
+                if (child == null)
+                    continue;
+
+                var cell = layout.GetCell(i);
+                child.Arrange(RemoveTrailingGap(cell.Bounds));
+            }
+        }
+
+        RectangleF RemoveTrailingGap(RectangleF bounds)
+        {
+            return new RectangleF(
+                bounds.X,
+                bounds.Y,
+                bounds.Width,
+                Math.Max(0f, bounds.Height - Gap));
         }
     }
 }

@@ -316,6 +316,8 @@ namespace LcdMod.Common.Networking
         RequestTexture = 6,
         SyncTexture = 7,
         FillBlocks = 8,
+        RequestNpcMarket = 9,
+        SyncNpcMarket = 10,
         NetworkFragment = 100
     }
 

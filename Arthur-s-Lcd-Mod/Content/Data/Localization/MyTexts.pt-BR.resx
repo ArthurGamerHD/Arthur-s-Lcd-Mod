@@ -707,4 +707,22 @@ Vamos aguardar um pouco e então reiniciá-la para você.</value>
   <data name="LcdMod_CargoActions_ActionDone" xml:space="preserve">
     <value>{0}: {1}</value>
   </data>
+  <data name="LcdMod_MarketApp" xml:space="preserve">
+    <value>Engineers Exchange</value>
+  </data>
+  <data name="LcdMod_MarketApp_Refresh" xml:space="preserve">
+    <value>Atualizar</value>
+  </data>
+  <data name="LcdMod_MarketApp_Loading" xml:space="preserve">
+    <value>Solicitando dados do mercado...</value>
+  </data>
+  <data name="LcdMod_MarketApp_Empty" xml:space="preserve">
+    <value>Nenhuma oferta valida encontrada.</value>
+  </data>
+  <data name="LcdMod_MarketApp_NoTrader" xml:space="preserve">
+    <value>Usuario nao cadastrado como comerciante.</value>
+  </data>
+  <data name="LcdMod_MarketApp_Updated" xml:space="preserve">
+    <value>Atualizado há {0}</value>
+  </data>
 </root>

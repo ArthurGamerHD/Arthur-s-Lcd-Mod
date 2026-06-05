@@ -42,6 +42,17 @@ namespace LcdMod.Client.Helpers
             return input.ToString("0.##", Culture);
         }
 
+        public static string FormatSpaceCredits(long credits)
+        {
+            var absolute = Math.Abs((double)credits);
+            if (absolute >= 1000000d)
+                return (credits / 1000000d).ToString("0.##", Culture) + "M";
+            if (absolute >= 1000d)
+                return (credits / 1000d).ToString("0.##", Culture) + "K";
+
+            return credits.ToString(Culture);
+        }
+
         public static string DistanceToString(float meters, string format = "0.##")
         {
             var distance = (double)meters;

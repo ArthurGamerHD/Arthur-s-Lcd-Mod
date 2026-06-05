@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using LcdMod.Client.Market;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Config;
 using LcdMod.Client.Helpers;
@@ -96,6 +97,7 @@ namespace LcdMod.Client
             LcdModSessionComponent.ClearClientEvents();
 
             ListBoxItemHelper.PerTypeCache.Clear();
+            NpcMarketClientCache.Reset();
             //TextureHelper.UnloadTextureCache();
             RunNextFrame.Clear();
             RunThisFrame.Clear();
@@ -267,6 +269,16 @@ namespace LcdMod.Client
             LogHelper.LogInfo(
                 $"Client received requested texture {TextureTransferHelper.BuildTextureKey(packet.OwnerSteamId, packet.TextureName)} from server ({packet.Data.Length} bytes)");
             TextureHelper.SaveRemoteTexture(packet, false);
+        }
+
+        public void HandleSyncNpcMarket(ReceivedPacketEventArgs args)
+        {
+            HandleLocalSyncNpcMarket(args.UnWrap<PacketSyncNpcMarket>());
+        }
+
+        public void HandleLocalSyncNpcMarket(PacketSyncNpcMarket packet)
+        {
+            NpcMarketClientCache.HandleSync(packet);
         }
 
         void FactionStateChanged(MyFactionStateChange change, long faction1, long faction2, long player, long client)

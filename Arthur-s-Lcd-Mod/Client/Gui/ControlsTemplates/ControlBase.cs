@@ -17,6 +17,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
     public abstract class ControlBase
     {
         bool _isDirty;
+        bool _isLayoutDirty = true;
 
         public bool Visible { get; private set; } = true;
 
@@ -26,9 +27,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         }
 
         readonly List<ControlBase> _children = new List<ControlBase>();
-        public IList<ControlBase> Children => _children;
+        public IReadOnlyList<ControlBase> Children => _children;
 
         public bool HasChildren => _children.Count > 0;
+        public ControlBase Parent { get; private set; }
+
+        public bool IsLayoutDirty
+        {
+            get { return _isLayoutDirty; }
+        }
 
         public bool IsDirty
         {
@@ -52,24 +59,131 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             _isDirty = true;
         }
 
-        public void ClearChildren()
+        public void InvalidateLayout()
         {
+            _isLayoutDirty = true;
+            MarkDirty();
+
+            if (Parent != null)
+                Parent.OnChildLayoutInvalidated(this);
+        }
+
+        protected void ValidateLayout()
+        {
+            _isLayoutDirty = false;
+        }
+
+        protected virtual void OnChildLayoutInvalidated(ControlBase child)
+        {
+            InvalidateLayout();
+        }
+
+        public virtual void ClearChildren()
+        {
+            for (int i = 0; i < _children.Count; i++)
+            {
+                var child = _children[i];
+                if (child != null && ReferenceEquals(child.Parent, this))
+                    child.Parent = null;
+            }
+
             _children.Clear();
+            OnChildrenChanged();
         }
 
-        public void AddChild(ControlBase child)
+        public virtual void AddChild(ControlBase child)
         {
-            if (child != null && !_children.Contains(child))
+            if (child == null)
+                return;
+
+            if (ReferenceEquals(child, this))
+                throw new InvalidOperationException("A control cannot contain itself.");
+
+            if (WouldCreateCycle(child))
+                throw new InvalidOperationException("Adding the child would create a cycle.");
+
+            if (ReferenceEquals(child.Parent, this))
+            {
+                if (!_children.Contains(child))
+                {
+                    _children.Add(child);
+                    OnChildrenChanged();
+                }
+
+                return;
+            }
+
+            if (child.Parent != null)
+                child.Parent.RemoveChild(child);
+
+            if (!_children.Contains(child))
                 _children.Add(child);
+
+            child.Parent = this;
+            OnChildrenChanged();
         }
 
-        public void AddChildren(IEnumerable<ControlBase> children)
+        public virtual void AddChildren(IEnumerable<ControlBase> children)
         {
             if (children == null)
                 return;
 
             foreach (var child in children)
                 AddChild(child);
+        }
+
+        public virtual bool RemoveChild(ControlBase child)
+        {
+            if (child == null || !_children.Remove(child))
+                return false;
+
+            if (ReferenceEquals(child.Parent, this))
+                child.Parent = null;
+
+            OnChildrenChanged();
+            return true;
+        }
+
+        public virtual bool MoveChild(ControlBase child, int index)
+        {
+            if (child == null || !ReferenceEquals(child.Parent, this))
+                return false;
+
+            int currentIndex = _children.IndexOf(child);
+            if (currentIndex < 0)
+                return false;
+
+            int targetIndex = Math.Max(0, Math.Min(index, _children.Count - 1));
+            if (currentIndex == targetIndex)
+                return false;
+
+            _children.RemoveAt(currentIndex);
+            _children.Insert(targetIndex, child);
+            OnChildrenChanged();
+            return true;
+        }
+
+        protected void AttachTo(ControlBase parent)
+        {
+            // Derived constructors call this after local initialization so parent invalidation observes a ready child.
+            if (parent != null)
+                parent.AddChild(this);
+        }
+
+        protected virtual void OnChildrenChanged()
+        {
+            InvalidateLayout();
+        }
+
+        bool WouldCreateCycle(ControlBase child)
+        {
+            for (var parent = this; parent != null; parent = parent.Parent)
+            {
+                if (ReferenceEquals(parent, child))
+                    return true;
+            }
+
+            return false;
         }
 
         public virtual bool CanClick
@@ -207,6 +321,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         public InteractiveTooltip Tooltip { get; private set; }
 
         public ControlStyle Style { get; private set; }
+        public ControlStyleOverride StyleOverride { get; private set; }
 
         public ControlBase SetTooltip(InteractiveTooltip tooltip)
         {
@@ -217,12 +332,32 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         public ControlBase SetStyle(ControlStyle style)
         {
             Style = style;
+            StyleOverride = null;
+            MarkDirty();
+            return this;
+        }
+
+        public ControlBase SetStyleOverride(ControlStyleOverride style)
+        {
+            StyleOverride = style;
+            Style = null;
+            MarkDirty();
             return this;
         }
 
         public InteractiveRenderHandler CustomRender { get; set; }
 
         public abstract RectangleF Bounds { get; }
+
+        public virtual Vector2 Measure(Vector2 availableSize)
+        {
+            return Bounds.Size;
+        }
+
+        public virtual void Arrange(RectangleF bounds)
+        {
+            ValidateLayout();
+        }
 
         public MySoundPair ClickSound { get; set; } = AudioHelper.HudClick;
         public MySoundPair ClickFailSound { get; set; } = AudioHelper.HudUnable;
@@ -280,7 +415,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 
         ControlStyle GetLocalStyle()
         {
-            return Style;
+            if (Style != null)
+                return Style;
+
+            if (StyleOverride != null && StyleOverride.Padding.HasValue)
+                return StyleOverride.ResolveAgainst(null, null);
+
+            return null;
         }
 
         static RectangleF ApplyPadding(RectangleF bounds, Vector4 padding)
@@ -601,12 +742,21 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 
         ControlRenderContext ResolveRenderContext(ControlRenderContext context)
         {
-            var style = GetLocalStyle();
+            ControlStyle style;
 
-            if (style == null || ReferenceEquals(style, context.Style))
-                return context;
+            if (StyleOverride != null)
+            {
+                style = StyleOverride.ResolveAgainst(context.Style, context.Theme);
+            }
+            else
+            {
+                style = Style;
 
-            style = style.ResolveAgainst(context.Style, context.Theme);
+                if (style == null || ReferenceEquals(style, context.Style))
+                    return context;
+
+                style = style.ResolveAgainst(context.Style, context.Theme);
+            }
 
             return new ControlRenderContext(
                 context.Surface,

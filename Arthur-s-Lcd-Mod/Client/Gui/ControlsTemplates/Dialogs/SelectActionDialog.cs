@@ -1,3 +1,9 @@
+#if EXPERIMENTAL
+using LcdMod.Client.Terminal.Actions;
+using LcdMod.Client.Terminal.Models.Actions;
+using LcdMod.Client.Terminal.Models.Property;
+using Sandbox.ModAPI.Interfaces;
+#endif
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -5,16 +11,11 @@ using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Grid;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Inputs;
+using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Terminal.Models;
 using LcdMod.Common.Helpers;
-#if EXPERIMENTAL
-using LcdMod.Client.Terminal.Actions;
-using LcdMod.Client.Terminal.Models.Actions;
-using LcdMod.Client.Terminal.Models.Property;
-using Sandbox.ModAPI.Interfaces;
-#endif
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
@@ -25,7 +26,7 @@ using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 using IMyTerminalBlock = Sandbox.ModAPI.IMyTerminalBlock;
 using IMyIngameTerminalBlock = Sandbox.ModAPI.Ingame.IMyTerminalBlock;
 
-namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
+namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 {
     sealed class SelectActionDialog : Dialog
     {
@@ -45,7 +46,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         const float SEARCH_HEIGHT_PIXELS = 38f;
         const float ROW_HEIGHT_PIXELS = 40f;
         const float ROW_GAP_PIXELS = 3f;
-        const float SCROLLER_WIDTH_PIXELS = 10f;
 
         readonly GridLogic _gridLogic;
         readonly ButtonPanelTargetSettings _target;
@@ -516,7 +516,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             Border.CreateSpritesFromRect(listRect, Sprites, GetThemeColor(Constants.SURFACE_CONTAINER_HIGH), radiusScale: scale);
 
             var rowHeight = GetRowHeight(scale);
-            var scrollerWidth = Math.Min(SCROLLER_WIDTH_PIXELS * scale, Math.Max(0f, listRect.Width * 0.25f));
+            var scrollerWidth = Math.Min(_scrollPanel.AutomaticScrollerWidthPixels * scale, Math.Max(0f, listRect.Width * 0.25f));
             _scrollPanel.ClearChildren();
             _scrollPanel.Configure(listRect, listRect.Y, 0f, rowHeight, _filteredItems.Count, scrollerWidth, 0f);
             _scrollPanel.SetScrollBarColors(GetThemeColor(Constants.SURFACE_CONTAINER_HIGH), GetThemeColor(Constants.ON_SURFACE));

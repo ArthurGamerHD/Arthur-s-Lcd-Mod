@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using Generated;
 using LcdMod.Client.Helpers;
+using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Utility;
 using LcdMod.Common.Helpers;
@@ -89,7 +90,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         protected const int TITLE_HEIGHT = 35;
         protected const int LINE_HEIGHT = 30;
         protected const int MINIMUM_COL_WIDTH = 220;
-        protected const int SCROLLER_WIDTH = 8;
         protected const int SCROLL_DELAY = 12;
         long _clock;
         bool _hasDrawnAtLeastOnce;
@@ -250,7 +250,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
                 start = step % (totalSteps + 1);
 
-                float viewportHeight = maxRows * (LINE_HEIGHT * Scale) - (SCROLLER_WIDTH * 2 * Scale);
+                float viewportHeight = maxRows * (LINE_HEIGHT * Scale) - (ScrollPanel.DefaultScrollerWidthPixels * 2f * Scale);
                 float scrollBarHeight = (float)maxRows / items.Count * viewportHeight;
 
                 float totalScrollableRows = items.Count - maxRows;
@@ -262,7 +262,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 float scrollBarY = scrollFraction * scrollBarTravel;
                 float scrollBarCenter = scrollBarY + scrollBarHeight / 2f;
 
-                var initialY = CaretY + SCROLLER_WIDTH * Scale;
+                var initialY = CaretY + ScrollPanel.DefaultScrollerWidthPixels * Scale;
 
                 DrawScrollBar(sprites, Scale, initialY, viewportHeight, scrollBarCenter, scrollBarHeight);
             }
@@ -297,7 +297,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
                 startRow = step % (totalSteps + 1);
 
-                float viewportHeight = maxRows * rowHeight - (SCROLLER_WIDTH * 2 * Scale);
+                float viewportHeight = maxRows * rowHeight - (ScrollPanel.DefaultScrollerWidthPixels * 2f * Scale);
                 float scrollBarHeight = (float)maxRows / totalRows * viewportHeight;
 
                 float totalScrollableRows = totalRows - maxRows;
@@ -309,7 +309,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 float scrollBarY = scrollFraction * scrollBarTravel;
                 float scrollBarCenter = scrollBarY + scrollBarHeight / 2f;
 
-                var initialY = CaretY + SCROLLER_WIDTH * Scale;
+                var initialY = CaretY + ScrollPanel.DefaultScrollerWidthPixels * Scale;
 
                 DrawScrollBar(sprites, Scale, initialY, viewportHeight, scrollBarCenter, scrollBarHeight);
             }
@@ -320,7 +320,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             var contentStart = ViewBox.X + margin;
             var contentEnd = ViewBox.Width + ViewBox.X - margin;
             if (shouldScroll)
-                contentEnd -= SCROLLER_WIDTH * Scale;
+                contentEnd -= ScrollPanel.DefaultScrollerWidthPixels * Scale;
             var columnWidth = (contentEnd - contentStart) / maxCols;
             var gridHeight = maxRows * rowHeight;
 
@@ -470,7 +470,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             frame.Add(MySprite.CreateClearClipRect());
             position.X = xEnd;
             if (showScrollBar)
-                position.X -= SCROLLER_WIDTH * Scale;
+                position.X -= ScrollPanel.DefaultScrollerWidthPixels * Scale;
             frame.Add(new MySprite()
             {
                 Type = SpriteType.TEXT,
@@ -631,8 +631,8 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         protected void DrawScrollBar(List<MySprite> frame, float scale, float initialY, float viewportHeight,
             float scrollBarCenter, float scrollBarHeight)
         {
-            float barXCenter = ViewBox.X + ViewBox.Width - (SCROLLER_WIDTH / 2f) * scale;
-            int barWidth = (int)(SCROLLER_WIDTH * scale);
+            float barXCenter = ViewBox.X + ViewBox.Width - (ScrollPanel.DefaultScrollerWidthPixels / 2f) * scale;
+            int barWidth = (int)(ScrollPanel.DefaultScrollerWidthPixels * scale);
 
             var trackCenter = new Vector2(barXCenter,
                 (float)Math.Round(initialY + viewportHeight / 2f, MidpointRounding.ToEven));

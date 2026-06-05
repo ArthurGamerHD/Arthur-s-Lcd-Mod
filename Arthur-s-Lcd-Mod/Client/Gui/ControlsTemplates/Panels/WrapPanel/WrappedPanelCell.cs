@@ -2,11 +2,11 @@ using System.Collections.Generic;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 
-namespace LcdMod.Client.Gui.ControlsTemplates.Panels.WrappedGrid
+namespace LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel
 {
-    public sealed class WrappedGridCell
+    public sealed class WrapPanelCell
     {
-        internal WrappedGridCell(int visibleIndex, int itemIndex, int row, int column, RectangleF bounds)
+        internal WrapPanelCell(int visibleIndex, int itemIndex, int row, int column, RectangleF bounds)
         {
             VisibleIndex = visibleIndex;
             ItemIndex = itemIndex;
@@ -22,7 +22,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels.WrappedGrid
         public RectangleF Bounds { get; private set; }
         public ControlBase Control { get; private set; }
 
-        public WrappedGridCell SetControl(ControlBase control)
+        public WrapPanelCell SetControl(ControlBase control)
         {
             Control = control;
             return this;

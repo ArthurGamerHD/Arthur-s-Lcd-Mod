@@ -26,6 +26,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         {
             Rect = bounds;
             ArrangeChildren();
+            ValidateLayout();
+            MarkDirty();
         }
 
         public override RectangleF Bounds
@@ -33,12 +35,27 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             get { return Rect; }
         }
 
+        public override void Arrange(RectangleF bounds)
+        {
+            SetRect(bounds);
+        }
+
         protected virtual void ArrangeChildren()
         {
         }
 
+        protected void EnsureLayout()
+        {
+            if (!IsLayoutDirty)
+                return;
+
+            ArrangeChildren();
+            ValidateLayout();
+        }
+
         protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
         {
+            EnsureLayout();
             RenderChildren(context, sprites);
         }
 

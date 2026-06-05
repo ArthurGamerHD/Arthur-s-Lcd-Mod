@@ -79,6 +79,16 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             PanelColor = panelColor;
         }
 
+        public void SetTextColor(Color textColor)
+        {
+            TextColor = textColor;
+        }
+
+        public void SetPanelColor(Color panelColor)
+        {
+            PanelColor = panelColor;
+        }
+
         public Color GetPanelColor(bool hovered)
         {
             if (!hovered)
@@ -147,7 +157,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             return resolved;
         }
 
-        ControlStyle Clone()
+        public ControlStyle Clone()
         {
             return new ControlStyle(TextColor, PanelColor)
             {

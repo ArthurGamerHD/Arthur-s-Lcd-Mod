@@ -96,6 +96,12 @@
             <Id Type="LCDTextureDefinition" Subtype="StringInput"/>
             <SpritePath>Textures/Sprites/StringInput.dds</SpritePath>
             <Selectable>false</Selectable>
+        </LCDTextureDefinition> 
+        
+        <LCDTextureDefinition> <!-- Custom Search Icon Sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="Search"/>
+            <SpritePath>Textures/Sprites/Magnifying.dds</SpritePath>
+            <Selectable>false</Selectable>
         </LCDTextureDefinition>
 
         <LCDTextureDefinition> <!-- Cargo Actions: Settings button icon -->

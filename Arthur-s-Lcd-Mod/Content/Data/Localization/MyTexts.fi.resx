@@ -706,4 +706,22 @@ Odotamme hetken ja käynnistämme sen sitten uudelleen puolestasi.</value>
   <data name="LcdMod_CargoActions_ActionDone" xml:space="preserve">
     <value>{0}: {1}</value>
   </data>
+  <data name="LcdMod_MarketApp" xml:space="preserve">
+    <value>Engineers Exchange</value>
+  </data>
+  <data name="LcdMod_MarketApp_Refresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="LcdMod_MarketApp_Loading" xml:space="preserve">
+    <value>Requesting market data...</value>
+  </data>
+  <data name="LcdMod_MarketApp_Empty" xml:space="preserve">
+    <value>No valid offers found.</value>
+  </data>
+  <data name="LcdMod_MarketApp_NoTrader" xml:space="preserve">
+    <value>User is not a registered trader.</value>
+  </data>
+  <data name="LcdMod_MarketApp_Updated" xml:space="preserve">
+    <value>Updated {0} ago</value>
+  </data>
 </root>

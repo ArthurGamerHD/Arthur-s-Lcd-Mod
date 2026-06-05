@@ -1,3 +1,9 @@
+#if EXPERIMENTAL
+using LcdMod.Client.Terminal.Actions;
+using LcdMod.Client.Terminal.Models;
+using LcdMod.Client.Terminal.Models.Actions;
+using LcdMod.Client.Terminal.Models.Property;
+#endif
 using System;
 using System.Globalization;
 using System.Text;
@@ -6,15 +12,10 @@ using LcdMod.Client.Extensions;
 using LcdMod.Client.Grid;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Inputs;
+using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Helpers;
 using LcdMod.Common.Helpers;
-#if EXPERIMENTAL
-using LcdMod.Client.Terminal.Actions;
-using LcdMod.Client.Terminal.Models;
-using LcdMod.Client.Terminal.Models.Actions;
-using LcdMod.Client.Terminal.Models.Property;
-#endif
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
@@ -22,10 +23,9 @@ using VRageMath;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
 using IMyBlockGroup = Sandbox.ModAPI.Ingame.IMyBlockGroup;
 using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
-using IMyTerminalBlock = Sandbox.ModAPI.IMyTerminalBlock;
 using IMyIngameTerminalBlock = Sandbox.ModAPI.Ingame.IMyTerminalBlock;
 
-namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
+namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 {
     sealed class ActionConfigurationDialog : Dialog
     {

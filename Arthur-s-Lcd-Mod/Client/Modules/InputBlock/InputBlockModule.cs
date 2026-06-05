@@ -133,7 +133,7 @@ namespace LcdMod.Client.Modules.InputBlock
             {
                 if (MyDefinitionManager.Static.EnvironmentDefinition.ContourHighlightColor != Color.Transparent)
                     OriginalHighlightColor = MyDefinitionManager.Static.EnvironmentDefinition.ContourHighlightColor;
-
+                
                 MyDefinitionManager.Static.EnvironmentDefinition.ContourHighlightColor = Color.Transparent;
             }
             else

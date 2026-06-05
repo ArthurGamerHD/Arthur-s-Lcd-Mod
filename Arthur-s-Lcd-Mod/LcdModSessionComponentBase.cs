@@ -88,7 +88,10 @@ namespace LcdMod
         public override void SaveData()
         {
             if (MyAPIGateway.Session.IsServer)
+            {
+                Server?.SaveData();
                 return;
+            }
 
             OnSave?.Invoke();
             ConfigManager.SaveAll();
@@ -211,6 +214,13 @@ namespace LcdMod
                         break;
                     case PackageCode.FillBlocks:
                         Server?.HandleFillBlocks(args);
+                        break;
+                    case PackageCode.RequestNpcMarket:
+                        Server?.HandleRequestNpcMarket(args);
+                        break;
+                    case PackageCode.SyncNpcMarket:
+                        if (args.IsFromServer && !MyAPIGateway.Utilities.IsDedicated)
+                            Client?.HandleSyncNpcMarket(args);
                         break;
                     default:
                         {

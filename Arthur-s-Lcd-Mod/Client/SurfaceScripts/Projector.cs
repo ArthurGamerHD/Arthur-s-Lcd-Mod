@@ -5,11 +5,14 @@ using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.SurfaceScripts.Abstract;
+using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Terminal.Controls.Groups;
+using LcdMod.Client.Utility;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
+using VRage.ModAPI;
 using VRageMath;
 using LabelSeparator = LcdMod.Client.Terminal.Controls.Filter.LabelSeparator;
 using ListboxProjectorSelection = LcdMod.Client.Terminal.Controls.Blueprint.ListboxProjectorSelection;
@@ -24,7 +27,8 @@ namespace LcdMod.Client.SurfaceScripts
         IUsesTerminalControl<ListboxProjectorSelection>,
         IUsesTerminalControl<SeparatorFilter>,
         IUsesTerminalControl<LabelSeparator>,
-        IUsesTerminalControlGroup<BlocksFilterTerminalControlGroup>
+        IUsesTerminalControlGroup<BlocksFilterTerminalControlGroup>,
+        IMultiDisplayMode
     {
         protected override ConfigKind ConfigKind => ConfigKind.Projector;
         public const string ID = "ProjectorCharts";
@@ -43,6 +47,11 @@ namespace LcdMod.Client.SurfaceScripts
         public ProjectorLcdSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
             : base(surface, block, size)
         {
+        }
+
+        public List<MyTerminalControlComboBoxItem> GetDisplayModes()
+        {
+            return DisplayModes.GridAndLegacy;
         }
 
         protected override void LayoutChanged()

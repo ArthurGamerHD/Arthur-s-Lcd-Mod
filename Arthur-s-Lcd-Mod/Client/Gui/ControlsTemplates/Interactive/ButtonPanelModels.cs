@@ -1,4 +1,5 @@
 using System;
+using LcdMod.Client.Gui.ControlsTemplates.Dialogs;
 using ProtoBuf;
 
 namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
