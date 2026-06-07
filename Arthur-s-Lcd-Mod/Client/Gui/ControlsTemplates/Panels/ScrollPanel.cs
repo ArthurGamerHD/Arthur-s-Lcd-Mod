@@ -25,6 +25,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         bool _automaticContentMode;
         bool _manualConfigured;
         float _contentExtentHeight;
+        float _configuredAutomaticScrollerWidthPixels = DefaultScrollerWidthPixels;
 
         public ScrollPanel(CursorType? cursor = null, object dataContext = null)
             : base(cursor, dataContext)
@@ -180,7 +181,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         {
             ViewBox = bounds;
             PanelBounds = bounds;
-            AutomaticScrollerWidthPixels = Math.Max(0f, scrollerWidthPixels);
+            _configuredAutomaticScrollerWidthPixels = Math.Max(0f, scrollerWidthPixels);
             ScrollStepPixels = Math.Max(1f, scrollStepPixels);
             RowHeight = ScrollStepPixels;
             AutoScrollSecondsPerStep = Math.Max(0f, autoScrollSecondsPerStep);
@@ -328,7 +329,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
         void ArrangeAutomaticContent()
         {
-            ScrollerWidthPixels = Math.Max(0f, AutomaticScrollerWidthPixels);
+            ScrollerWidthPixels = Math.Max(0f, _configuredAutomaticScrollerWidthPixels);
 
             if (_content == null)
             {

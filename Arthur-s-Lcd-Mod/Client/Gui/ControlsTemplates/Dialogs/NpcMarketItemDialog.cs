@@ -505,7 +505,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         static string FormatTrend(float trend)
         {
             if (Math.Abs(trend) < 0.05f)
-                return "-";
+                return "0%";
             return (trend > 0f ? "+" : string.Empty) + trend.ToString("0.#") + "%";
         }
 

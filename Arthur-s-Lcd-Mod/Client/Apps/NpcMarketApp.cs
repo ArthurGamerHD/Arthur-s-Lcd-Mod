@@ -1091,7 +1091,7 @@ namespace LcdMod.Client.Apps
         static string FormatDelta(float delta)
         {
             if (Math.Abs(delta) < 0.05f)
-                return "-";
+                return "0%";
 
             return (delta > 0f ? "+" : string.Empty) + delta.ToString("0.#") + "%";
         }
