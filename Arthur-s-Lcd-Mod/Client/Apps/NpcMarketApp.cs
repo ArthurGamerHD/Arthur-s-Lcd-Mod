@@ -377,9 +377,10 @@ namespace LcdMod.Client.Apps
             });
 
             var nameLeft = view.X + 48f * scale;
-            var priceRight = contentRight - 88f * scale;
+            var priceLeft = contentRight - 204f * scale;
+            var priceRight = contentRight - 106f * scale;
             var deltaRight = contentRight - 14f * scale;
-            var availableNameWidth = priceRight - nameLeft - 12f * scale;
+            var availableNameWidth = priceLeft - nameLeft - 12f * scale;
             var nameWidth = Math.Max(20f, Math.Min(ITEM_NAME_MAX_WIDTH * scale, availableNameWidth));
             var secondary = row.GetSecondaryLabel();
             var displayName = string.IsNullOrEmpty(secondary)
@@ -409,14 +410,37 @@ namespace LcdMod.Client.Apps
                 FontId = "White"
             });
 
-            var deltaText = FormatDelta(row.DeltaPercent);
+            DrawTrend(sprites, row.DeltaPercent, deltaRight, centerY, textScale, muted);
+        }
+
+        void DrawTrend(List<MySprite> sprites, float delta, float right, float centerY, float textScale, Color muted)
+        {
+            var text = FormatDelta(delta);
+            var color = GetDeltaColor(delta, muted);
+            var textSize = FormatingHelper.GetSizeInPixel(text, "White", textScale, Host.Surface);
+            var iconSize = Math.Max(8f * Host.Scale, textSize.Y * 0.82f);
+            var gap = 3f * Host.Scale;
+            float rotation;
+            var sprite = GetTrendSprite(delta, _mode, out rotation);
+
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE,
+                Data = sprite,
+                Position = new Vector2(right - textSize.X - gap - iconSize * 0.5f, centerY),
+                Size = new Vector2(iconSize),
+                RotationOrScale = rotation,
+                Color = Color.White,
+                Alignment = TextAlignment.CENTER
+            });
+
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
-                Data = deltaText,
-                Position = new Vector2(deltaRight, centerY - 10f * scale),
+                Data = text,
+                Position = new Vector2(right, centerY - textSize.Y * 0.5f),
                 RotationOrScale = textScale,
-                Color = GetDeltaColor(row.DeltaPercent, muted),
+                Color = color,
                 Alignment = TextAlignment.RIGHT,
                 FontId = "White"
             });
@@ -463,8 +487,8 @@ namespace LcdMod.Client.Apps
         {
             var view = Host.ViewBox;
             var scale = Host.Scale;
-            var trendLeft = contentRight - 78f * scale;
-            var priceLeft = contentRight - 178f * scale;
+            var trendLeft = contentRight - 96f * scale;
+            var priceLeft = contentRight - 204f * scale;
             var left = view.X + 12f * scale;
             var nameLeft = view.X + 48f * scale;
             var right = Math.Max(left, contentRight);
@@ -646,6 +670,19 @@ namespace LcdMod.Client.Apps
 
             var favorable = _mode == NpcMarketMode.Buy ? delta < 0f : delta > 0f;
             return favorable ? Color.LightGreen : Color.IndianRed;
+        }
+
+        static string GetTrendSprite(float delta, NpcMarketMode mode, out float rotation)
+        {
+            rotation = mode == NpcMarketMode.Sell ? MathHelper.Pi : 0f;
+            if (Math.Abs(delta) < 0.05f)
+            {
+                rotation = 0f;
+                return mode == NpcMarketMode.Buy ? "Steady1" : "Steady2";
+            }
+
+            var favorable = mode == NpcMarketMode.Buy ? delta < 0f : delta > 0f;
+            return favorable ? "ArrowGreenDown" : "ArrowRedUp";
         }
 
         void DrawNativeWarning(List<MySprite> sprites, string message)

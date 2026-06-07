@@ -32,11 +32,13 @@ namespace LcdMod.Server
 
         public void LoadData()
         {
+            _npcMarket.LoadData();
             MyAPIGateway.Entities.OnEntityAdd += EntityAdded;
         }
 
         public void UnloadData()
         {
+            _npcMarket.UnloadData();
             MyAPIGateway.Entities.OnEntityAdd -= EntityAdded;
 
             foreach (var grid in _trackedGrids.Values)

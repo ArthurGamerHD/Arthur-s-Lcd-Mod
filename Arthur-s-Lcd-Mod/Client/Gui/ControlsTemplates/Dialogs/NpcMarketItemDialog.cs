@@ -182,8 +182,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         {
             var right = _scrollPanel.ContentViewportBounds.Right;
             var distanceRight = listRect.X + 66f * scale;
-            var priceLeft = right - 164f * scale;
-            var trendLeft = right - 76f * scale;
+            var priceLeft = right - 188f * scale;
+            var trendLeft = right - 94f * scale;
             var rects = new[]
             {
                 new RectangleF(listRect.X, top, distanceRight - listRect.X, height),
@@ -280,8 +280,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var textScale = 0.56f * scale * fontScale;
             var centerY = top + height * 0.5f;
             var distanceRight = _scrollPanel.ContentViewportBounds.X + 60f * scale;
-            var priceLeft = right - 164f * scale;
-            var priceRight = right - 86f * scale;
+            var priceLeft = right - 188f * scale;
+            var priceRight = right - 104f * scale;
             var trendRight = right - 10f * scale;
             var stationLeft = distanceRight + 8f * scale;
             var stationWidth = Math.Max(0f, priceLeft - stationLeft - 8f * scale);
@@ -291,8 +291,30 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 TextAlignment.LEFT, GetThemeColor(Constants.ON_SURFACE), surface);
             DrawText(FormatingHelper.FormatSpaceCredits(quote.PersonalizedCurrentPricePerUnit) + " SC", priceRight,
                 centerY, textScale, TextAlignment.RIGHT, GetThemeColor(Constants.ON_SURFACE), surface);
-            DrawText(FormatTrend(quote.EffectiveViewerChangePercent), trendRight, centerY, textScale,
-                TextAlignment.RIGHT, GetThemeColor(Constants.ON_SURFACE), surface);
+            DrawTrend(quote.EffectiveViewerChangePercent, trendRight, centerY, textScale, surface);
+        }
+
+        void DrawTrend(float trend, float right, float centerY, float textScale, IMyTextSurface surface)
+        {
+            var text = FormatTrend(trend);
+            var textSize = FormatingHelper.GetSizeInPixel(text, "White", textScale, surface);
+            var iconSize = Math.Max(8f * _parent.AppHost.Scale, textSize.Y * 0.82f);
+            var gap = 3f * _parent.AppHost.Scale;
+            float rotation;
+            var sprite = GetTrendSprite(trend, _parent.Mode, out rotation);
+
+            Sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE,
+                Data = sprite,
+                Position = new Vector2(right - textSize.X - gap - iconSize * 0.5f, centerY),
+                Size = new Vector2(iconSize),
+                RotationOrScale = rotation,
+                Color = Color.White,
+                Alignment = TextAlignment.CENTER
+            });
+
+            DrawText(text, right, centerY, textScale, TextAlignment.RIGHT, GetThemeColor(Constants.ON_SURFACE), surface);
         }
 
         void DrawText(string text, float x, float centerY, float scale, TextAlignment alignment, Color color,
@@ -485,6 +507,19 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             if (Math.Abs(trend) < 0.05f)
                 return "-";
             return (trend > 0f ? "+" : string.Empty) + trend.ToString("0.#") + "%";
+        }
+
+        static string GetTrendSprite(float trend, NpcMarketMode mode, out float rotation)
+        {
+            rotation = mode == NpcMarketMode.Sell ? MathHelper.Pi : 0f;
+            if (Math.Abs(trend) < 0.05f)
+            {
+                rotation = 0f;
+                return mode == NpcMarketMode.Buy ? "Steady1" : "Steady2";
+            }
+
+            var favorable = mode == NpcMarketMode.Buy ? trend < 0f : trend > 0f;
+            return favorable ? "ArrowGreenDown" : "ArrowRedUp";
         }
 
         static string TrimText(string text, float width, float scale, IMyTextSurface surface)

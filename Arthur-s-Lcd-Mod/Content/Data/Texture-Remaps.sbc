@@ -91,5 +91,29 @@
             <SpritePath>Textures/GUI/Controls/button_info_symbol_highlight.dds</SpritePath>
             <Selectable>false</Selectable>
         </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Remap of Vanilla Economy trend decrease sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="ArrowGreenDown"/>
+            <SpritePath>Textures/GUI/Contracts/ArrowGreenDown.png</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Remap of Vanilla Economy trend increase sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="ArrowRedUp"/>
+            <SpritePath>Textures/GUI/Contracts/ArrowRedUp.png</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Remap of Vanilla Economy flat buy trend sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="Steady1"/>
+            <SpritePath>Textures/GUI/Contracts/Steady1.png</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Remap of Vanilla Economy flat sell trend sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="Steady2"/>
+            <SpritePath>Textures/GUI/Contracts/Steady2.png</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
     </LCDTextures>
 </Definitions>

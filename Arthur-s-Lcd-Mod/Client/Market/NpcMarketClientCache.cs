@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using LcdMod.Common.Helpers;
 using LcdMod.Common.Market;
 using LcdMod.Common.Networking;
 using Sandbox.ModAPI;
@@ -57,22 +58,54 @@ namespace LcdMod.Client.Market
 
         public static void RequestRefresh(NpcMarketClientCacheKey key, bool noCache)
         {
+#if DEBUG
+            LogHelper.LogInfo("NPC market client refresh requested: host=" + key.HostBlockEntityId +
+                              ", surface=" + key.HostSurfaceIndex + ", noCache=" + noCache);
+#endif
             SendRequest(key, noCache, ++_nextRequestId);
         }
 
         public static void HandleSync(PacketSyncNpcMarket packet)
         {
-            if (packet == null || packet.Scope == null)
+            if (packet == null)
+            {
+#if DEBUG
+                LogHelper.LogInfo("NPC market client received null sync packet.");
+#endif
                 return;
+            }
+
+            if (packet.Scope == null)
+            {
+#if DEBUG
+                LogHelper.LogInfo("NPC market client received sync without scope: request=" + packet.RequestId +
+                                  ", version=" + packet.Version);
+#endif
+                return;
+            }
 
             var key = new NpcMarketClientCacheKey(packet.Scope.HostBlockEntityId, packet.Scope.HostSurfaceIndex);
             var entry = GetOrCreate(key);
             if (entry.Waiting && packet.RequestId != entry.ActiveRequestId)
+            {
+#if DEBUG
+                LogHelper.LogInfo("NPC market client ignored stale sync: receivedRequest=" + packet.RequestId +
+                                  ", activeRequest=" + entry.ActiveRequestId + ", host=" + key.HostBlockEntityId +
+                                  ", surface=" + key.HostSurfaceIndex + ", scope=" + packet.Scope.Mode);
+#endif
                 return;
+            }
 
             entry.Snapshot = packet;
             entry.Waiting = false;
             entry.ActiveRequestId = packet.RequestId;
+#if DEBUG
+            LogHelper.LogInfo("NPC market client accepted sync: request=" + packet.RequestId +
+                              ", host=" + key.HostBlockEntityId + ", surface=" + key.HostSurfaceIndex +
+                              ", scope=" + packet.Scope.Mode + ", sellers=" +
+                              (packet.Sellers != null ? packet.Sellers.Count : 0) + ", cache=" +
+                              packet.WasServedFromCache + ", version=" + packet.Version);
+#endif
             var updated = Updated;
             if (updated != null)
                 updated();
@@ -88,6 +121,12 @@ namespace LcdMod.Client.Market
             entry.ActiveNoCache = noCache;
             entry.Waiting = true;
             entry.NextRequestAtTicks = WorldTime.NowElapsedTicks() + RetryDelayTicks;
+#if DEBUG
+            LogHelper.LogInfo("NPC market client sending request: request=" + requestId +
+                              ", host=" + key.HostBlockEntityId + ", surface=" + key.HostSurfaceIndex +
+                              ", noCache=" + noCache + ", localServer=" +
+                              (MyAPIGateway.Session != null && MyAPIGateway.Session.IsServer));
+#endif
             var packet = new PacketRequestNpcMarket
             {
                 RequestId = requestId,

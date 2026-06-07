@@ -278,6 +278,13 @@ namespace LcdMod.Client
 
         public void HandleLocalSyncNpcMarket(PacketSyncNpcMarket packet)
         {
+#if DEBUG
+            LogHelper.LogInfo("Client received NPC market sync packet: request=" +
+                              (packet != null ? packet.RequestId.ToString() : "<null>") +
+                              ", scope=" + (packet != null && packet.Scope != null
+                                  ? packet.Scope.Mode.ToString()
+                                  : "<none>"));
+#endif
             NpcMarketClientCache.HandleSync(packet);
         }
 

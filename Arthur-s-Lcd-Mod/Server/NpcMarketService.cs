@@ -10,6 +10,7 @@ using VRage.Game.ModAPI;
 using VRage.Game.ObjectBuilders.Components;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRage.ObjectBuilders;
+using VRage.Utils;
 using VRageMath;
 using IMyTextSurfaceProvider = Sandbox.ModAPI.Ingame.IMyTextSurfaceProvider;
 
@@ -17,46 +18,135 @@ namespace LcdMod.Server
 {
     internal sealed class NpcMarketService
     {
-        enum NpcMarketHostAccessPolicy
-        {
-            RequireTerminalAccess,
-            AllowPublicDisplay
-        }
-
-        const NpcMarketHostAccessPolicy HostAccessPolicy = NpcMarketHostAccessPolicy.RequireTerminalAccess;
+        const string KNOWN_STATIONS_FILE_NAME = "economy.xml";
         static readonly long ForceRefreshMinimumAgeTicks = WorldTime.FromSeconds(30);
+        static readonly Type WorldStorageScopeType = typeof(NpcMarketService);
 
-        readonly LcdModSessionComponent _session;
         readonly Dictionary<PendingRequestKey, PendingNpcMarketRequest> _pending =
             new Dictionary<PendingRequestKey, PendingNpcMarketRequest>();
+        
+        // no need to send more than one personalized request per player
         readonly Dictionary<MarketScopeCacheKey, ScopedNpcMarketReply> _scopedReplies =
-            new Dictionary<MarketScopeCacheKey, ScopedNpcMarketReply>();
+            new Dictionary<MarketScopeCacheKey, ScopedNpcMarketReply>(); 
+        
+        readonly Dictionary<long, HashSet<long>> _knownStationIdsByPlayerId =
+            new Dictionary<long, HashSet<long>>();
+        
+        readonly Dictionary<long, string> _playerNameHintsByIdentityId = new Dictionary<long, string>();
 
         ParsedNpcMarketCheckpoint _cache;
         bool _refreshInProgress;
+        bool _knownStationLedgerDirty;
         int _saveGeneration;
         int _nextVersion;
 
         public NpcMarketService(LcdModSessionComponent session)
         {
-            _session = session;
+        }
+
+        public void LoadData()
+        {
+            if (MyAPIGateway.Session == null || !MyAPIGateway.Session.IsServer)
+                return;
+
+            _knownStationIdsByPlayerId.Clear();
+            _playerNameHintsByIdentityId.Clear();
+            _knownStationLedgerDirty = false;
+
+            var utilities = MyAPIGateway.Utilities;
+            if (utilities == null)
+                return;
+
+            // I really don't trust SE's own Economy system, so I store my own
+            if (utilities.FileExistsInWorldStorage(KNOWN_STATIONS_FILE_NAME, WorldStorageScopeType))
+            {
+                try
+                {
+                    string xml;
+                    using (var reader =
+                           utilities.ReadFileInWorldStorage(KNOWN_STATIONS_FILE_NAME, WorldStorageScopeType))
+                    {
+                        xml = reader.ReadToEnd();
+                    }
+
+                    if (string.IsNullOrWhiteSpace(xml))
+                    {
+                        LogHelper.Log(MyLogSeverity.Warning, "NPC market knowledge ledger was empty.");
+                        return;
+                    }
+
+                    var file = utilities.SerializeFromXML<EconomyKnownStationsFile>(xml);
+                    if (file != null && file.Version != 1)
+                    {
+                        LogHelper.Log(MyLogSeverity.Warning,
+                            "Unsupported NPC market knowledge ledger version: " + file.Version);
+                        return;
+                    }
+
+                    var added = NpcMarketKnownStationsStorage.MergeStorageModel(
+                        file,
+                        _knownStationIdsByPlayerId,
+                        _playerNameHintsByIdentityId);
+#if DEBUG
+                    LogHelper.LogInfo("NPC market knowledge ledger loaded: players=" +
+                                      _knownStationIdsByPlayerId.Count + ", uniquePlayerStationLinks=" +
+                                      CountKnownStations() + ", merged=" + added);
+#endif
+                }
+                catch (Exception e)
+                {
+                    ErrorHandlerHelper.LogError(e, this);
+                    LogHelper.Log(MyLogSeverity.Warning,
+                        "NPC market knowledge ledger could not be loaded; continuing with an empty ledger.");
+                    _knownStationIdsByPlayerId.Clear();
+                    _playerNameHintsByIdentityId.Clear();
+                    _knownStationLedgerDirty = false;
+                }
+            }
+            else
+            {
+#if DEBUG
+                LogHelper.LogInfo("NPC market knowledge ledger not found; starting empty.");
+#endif
+            }
         }
 
         public void HandleRequest(ulong senderSteamId, PacketRequestNpcMarket request)
         {
             if (request == null)
+            {
+#if DEBUG
+                LogHelper.LogInfo("NPC market server received null request from steam=" + senderSteamId);
+#endif
                 return;
+            }
+
+#if DEBUG
+            LogHelper.LogInfo("NPC market server received request: steam=" + senderSteamId +
+                              ", request=" + request.RequestId + ", host=" + request.HostBlockEntityId +
+                              ", surface=" + request.HostSurfaceIndex + ", noCache=" + request.NoCache);
+#endif
 
             NpcMarketScopeMode errorMode;
             PendingNpcMarketRequest resolved;
             if (!TryResolveHostBlock(senderSteamId, request, out resolved, out errorMode))
             {
+#if DEBUG
+                LogHelper.LogInfo("NPC market server rejected request: steam=" + senderSteamId +
+                                  ", request=" + request.RequestId + ", host=" + request.HostBlockEntityId +
+                                  ", reason=" + errorMode);
+#endif
                 SendEmptyScope(senderSteamId, request, errorMode);
                 return;
             }
 
             if (resolved.HostOwnerIdentityId == 0)
             {
+#if DEBUG
+                LogHelper.LogInfo("NPC market server rejected request: steam=" + senderSteamId +
+                                  ", request=" + request.RequestId + ", host=" + request.HostBlockEntityId +
+                                  ", reason=" + NpcMarketScopeMode.UnownedHostBlock);
+#endif
                 SendEmptyScope(senderSteamId, request, NpcMarketScopeMode.UnownedHostBlock);
                 return;
             }
@@ -64,12 +154,21 @@ namespace LcdMod.Server
             var now = WorldTime.NowElapsedTicks();
             if (CanServeCache(request, now))
             {
+#if DEBUG
+                LogHelper.LogInfo("NPC market server serving request from cache: steam=" + senderSteamId +
+                                  ", request=" + request.RequestId + ", version=" + _cache.Version);
+#endif
                 SendSnapshot(resolved, _cache, true);
                 return;
             }
 
             var key = new PendingRequestKey(senderSteamId, request.RequestId);
             _pending[key] = resolved;
+#if DEBUG
+            LogHelper.LogInfo("NPC market server queued request: steam=" + senderSteamId +
+                              ", request=" + request.RequestId + ", pending=" + _pending.Count +
+                              ", refreshInProgress=" + _refreshInProgress);
+#endif
 
             if (!_refreshInProgress)
                 StartRefresh();
@@ -77,9 +176,155 @@ namespace LcdMod.Server
 
         public void SaveData()
         {
+            SaveKnownStations();
             _saveGeneration++;
             _cache = null;
             _scopedReplies.Clear();
+        }
+
+        public void UnloadData()
+        {
+            SaveKnownStations();
+            _knownStationIdsByPlayerId.Clear();
+            _playerNameHintsByIdentityId.Clear();
+            _knownStationLedgerDirty = false;
+        }
+
+        void SaveKnownStations()
+        {
+            if (MyAPIGateway.Session == null || !MyAPIGateway.Session.IsServer)
+                return;
+
+            var utilities = MyAPIGateway.Utilities;
+            if (utilities == null)
+                return;
+
+            if (!_knownStationLedgerDirty &&
+                utilities.FileExistsInWorldStorage(KNOWN_STATIONS_FILE_NAME, WorldStorageScopeType))
+            {
+                return;
+            }
+
+            try
+            {
+                var file = NpcMarketKnownStationsStorage.CreateStorageModel(
+                    _knownStationIdsByPlayerId,
+                    _playerNameHintsByIdentityId);
+                var xml = utilities.SerializeToXML(file);
+                using (var writer = utilities.WriteFileInWorldStorage(KNOWN_STATIONS_FILE_NAME, WorldStorageScopeType))
+                {
+                    writer.Write(xml);
+                }
+
+                _knownStationLedgerDirty = false;
+#if DEBUG
+                LogHelper.LogInfo("NPC market knowledge ledger saved: file=" + KNOWN_STATIONS_FILE_NAME +
+                                  ", players=" + file.Players.Count + ", uniquePlayerStationLinks=" +
+                                  CountKnownStations());
+#endif
+            }
+            catch (Exception e)
+            {
+                ErrorHandlerHelper.LogError(e, this);
+                LogHelper.Log(MyLogSeverity.Warning, "NPC market knowledge ledger could not be saved.");
+            }
+        }
+
+        void MergeKnownStationsFromCheckpoint(Dictionary<long, HashSet<long>> checkpointKnownStations)
+        {
+            if (checkpointKnownStations == null) return;
+
+            var totalAdded = 0;
+            foreach (var player in checkpointKnownStations)
+            {
+                if (player.Key == 0 || player.Value == null)
+                    continue;
+
+                HashSet<long> durable = null;
+                var addedForPlayer = 0;
+                foreach (var stationId in player.Value)
+                {
+                    if (stationId == 0)
+                        continue;
+
+                    if (durable == null)
+                        durable = GetOrCreateKnownStations(player.Key);
+
+                    if (durable.Add(stationId))
+                    {
+                        addedForPlayer++;
+                        totalAdded++;
+                    }
+                }
+
+                if (addedForPlayer > 0)
+                {
+#if DEBUG
+                    LogHelper.LogInfo("NPC market knowledge ledger merge: identity=" + player.Key +
+                                      ", checkpointStations=" + player.Value.Count + ", newlyAdded=" +
+                                      addedForPlayer + ", durableStations=" + durable.Count);
+#endif
+                }
+            }
+
+            if (totalAdded > 0)
+            {
+                _knownStationLedgerDirty = true;
+                _scopedReplies.Clear();
+#if DEBUG
+                LogHelper.LogInfo("NPC market knowledge ledger merged checkpoint discoveries: " + totalAdded);
+#endif
+            }
+        }
+
+        void MergePlayerNameHintsFromCheckpoint(Dictionary<long, string> playerNameHints)
+        {
+            if (playerNameHints == null)
+                return;
+
+            foreach (var pair in playerNameHints)
+            {
+                if (pair.Key == 0 || string.IsNullOrWhiteSpace(pair.Value))
+                    continue;
+
+                string existing;
+                if (_playerNameHintsByIdentityId.TryGetValue(pair.Key, out existing) &&
+                    string.Equals(existing, pair.Value, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                _playerNameHintsByIdentityId[pair.Key] = pair.Value;
+                _knownStationLedgerDirty = true;
+            }
+        }
+
+        HashSet<long> GetOrCreateKnownStations(long playerIdentityId)
+        {
+            HashSet<long> stations;
+            if (!_knownStationIdsByPlayerId.TryGetValue(playerIdentityId, out stations))
+            {
+                stations = new HashSet<long>();
+                _knownStationIdsByPlayerId[playerIdentityId] = stations;
+            }
+
+            return stations;
+        }
+
+        int CountKnownStations()
+        {
+            var count = 0;
+            foreach (var pair in _knownStationIdsByPlayerId)
+            {
+                if (pair.Key == 0 || pair.Value == null)
+                    continue;
+
+                foreach (var stationId in pair.Value)
+                    if (stationId != 0)
+                        count++;
+            }
+
+            return count;
         }
 
         bool CanServeCache(PacketRequestNpcMarket request, long now)
@@ -121,8 +366,7 @@ namespace LcdMod.Server
             }
 
             var requestingIdentityId = MyAPIGateway.Players.TryGetIdentityId(senderSteamId);
-            if (HostAccessPolicy == NpcMarketHostAccessPolicy.RequireTerminalAccess &&
-                !terminalBlock.HasPlayerAccess(requestingIdentityId))
+            if (!terminalBlock.HasPlayerAccess(requestingIdentityId))
             {
                 errorMode = NpcMarketScopeMode.AccessDenied;
                 return false;
@@ -147,6 +391,10 @@ namespace LcdMod.Server
                 return;
 
             _refreshInProgress = true;
+#if DEBUG
+            LogHelper.LogInfo("NPC market server starting refresh: pending=" + _pending.Count +
+                              ", saveGeneration=" + _saveGeneration);
+#endif
 
             var checkpoint = MyAPIGateway.Session.GetCheckpoint(MyAPIGateway.Session.Name);
             var work = new MarketRefreshWork
@@ -181,7 +429,8 @@ namespace LcdMod.Server
                     StationsById = new Dictionary<long, ParsedNpcStation>(),
                     PlayerFactionIdByIdentityId = new Dictionary<long, long>(),
                     MemberIdentityIdsByFactionId = new Dictionary<long, HashSet<long>>(),
-                    VisitedStationIdsByIdentityId = new Dictionary<long, HashSet<long>>()
+                    VisitedStationIdsByIdentityId = new Dictionary<long, HashSet<long>>(),
+                    PlayerNameHintsByIdentityId = new Dictionary<long, string>()
                 };
 
                 ParseFactionMembership(checkpoint.Factions, result);
@@ -201,24 +450,41 @@ namespace LcdMod.Server
 
             if (work.Error != null)
             {
-                LogHelper.LogInfo("NPC market refresh failed: " + work.Error);
+                LogHelper.Log(MyLogSeverity.Error, "NPC market refresh failed: " + work.Error);
+#if DEBUG
+                LogHelper.LogInfo("NPC market server clearing pending requests after refresh failure: pending=" +
+                                  _pending.Count);
+#endif
                 _pending.Clear();
                 return;
             }
 
             if (work.SaveGenerationAtCapture != _saveGeneration)
             {
+#if DEBUG
+                LogHelper.LogInfo("NPC market server discarded refresh due to save generation change: captured=" +
+                                  work.SaveGenerationAtCapture + ", current=" + _saveGeneration +
+                                  ", pending=" + _pending.Count);
+#endif
                 if (_pending.Count > 0)
                     StartRefresh();
                 return;
             }
 
             var now = WorldTime.NowElapsedTicks();
+            MergeKnownStationsFromCheckpoint(work.Result.VisitedStationIdsByIdentityId);
+            MergePlayerNameHintsFromCheckpoint(work.Result.PlayerNameHintsByIdentityId);
             work.Result.Version = ++_nextVersion;
             work.Result.BuiltAtWorldElapsedTicks = now;
             work.Result.NextNoCacheAllowedAtWorldElapsedTicks = now + ForceRefreshMinimumAgeTicks;
             _cache = work.Result;
             _scopedReplies.Clear();
+#if DEBUG
+            LogHelper.LogInfo("NPC market server completed refresh: version=" + _cache.Version +
+                              ", sellers=" + _cache.NpcSellerFactionsById.Count +
+                              ", stations=" + _cache.StationsById.Count +
+                              ", pending=" + _pending.Count);
+#endif
 
             foreach (var request in _pending.Values)
             {
@@ -243,9 +509,18 @@ namespace LcdMod.Server
         void SendSnapshot(PendingNpcMarketRequest request, ParsedNpcMarketCheckpoint cache, bool fromCache)
         {
             if (cache == null)
+            {
+                LogHelper.Log(MyLogSeverity.Warning, "NPC market server could not send snapshot because cache is null: steam=" +
+                                  request.SenderSteamId + ", request=" + request.RequestId);
                 return;
+            }
 
             var scoped = GetOrBuildScopedReply(cache, request);
+            LogHelper.LogInfo("NPC market request processed: steam=" + request.SenderSteamId +
+                              ", request=" + request.RequestId + ", scope=" + scoped.Scope.Mode +
+                              ", sellers=" + scoped.Sellers.Count + ", stations=" +
+                              scoped.Scope.KnownStationCount + ", cache=" + fromCache + ", version=" +
+                              cache.Version);
             var packet = new PacketSyncNpcMarket
             {
                 RequestId = request.RequestId,
@@ -266,6 +541,8 @@ namespace LcdMod.Server
         void SendEmptyScope(ulong steamId, PacketRequestNpcMarket request, NpcMarketScopeMode mode)
         {
             var now = WorldTime.NowElapsedTicks();
+            LogHelper.LogInfo("NPC market request processed: steam=" + steamId +
+                              ", request=" + request.RequestId + ", scope=" + mode + ", empty=true");
             var packet = new PacketSyncNpcMarket
             {
                 RequestId = request.RequestId,
@@ -293,10 +570,18 @@ namespace LcdMod.Server
             var player = MyAPIGateway.Session != null ? MyAPIGateway.Session.Player : null;
             if (LcdModSessionComponent.Client != null && player != null && player.SteamUserId == steamId)
             {
+#if DEBUG
+                LogHelper.LogInfo("NPC market server delivering packet locally: steam=" + steamId +
+                                  ", request=" + packet.RequestId);
+#endif
                 LcdModSessionComponent.Client.HandleLocalSyncNpcMarket(packet);
                 return;
             }
 
+#if DEBUG
+            LogHelper.LogInfo("NPC market server transmitting packet to player: steam=" + steamId +
+                              ", request=" + packet.RequestId);
+#endif
             LcdModSessionComponent.NetworkManager.TransmitToPlayer(packet, steamId, false);
         }
 
@@ -336,7 +621,7 @@ namespace LcdMod.Server
             return MarketScopeDescriptor.OwnerOnly(hostOwnerIdentityId);
         }
 
-        static Dictionary<long, StationKnowledgeAccumulator> BuildKnownStationSet(
+        Dictionary<long, StationKnowledgeAccumulator> BuildKnownStationSet(
             ParsedNpcMarketCheckpoint cache,
             MarketScopeDescriptor scope)
         {
@@ -348,24 +633,23 @@ namespace LcdMod.Server
                     return known;
 
                 foreach (var memberId in memberIds)
-                    AddKnownStationsForIdentity(cache, known, memberId, memberId == scope.HostOwnerIdentityId);
+                    AddKnownStationsForIdentity(known, memberId, memberId == scope.HostOwnerIdentityId);
                 return known;
             }
 
             if (scope.Mode == NpcMarketScopeMode.OwnerOnly)
-                AddKnownStationsForIdentity(cache, known, scope.HostOwnerIdentityId, true);
+                AddKnownStationsForIdentity(known, scope.HostOwnerIdentityId, true);
 
             return known;
         }
 
-        static void AddKnownStationsForIdentity(
-            ParsedNpcMarketCheckpoint cache,
+        void AddKnownStationsForIdentity(
             Dictionary<long, StationKnowledgeAccumulator> known,
             long identityId,
             bool isHostOwner)
         {
             HashSet<long> stationIds;
-            if (!cache.VisitedStationIdsByIdentityId.TryGetValue(identityId, out stationIds))
+            if (!_knownStationIdsByPlayerId.TryGetValue(identityId, out stationIds))
                 return;
 
             foreach (var stationId in stationIds)
@@ -393,7 +677,13 @@ namespace LcdMod.Server
             {
                 ParsedNpcStation station;
                 if (!cache.StationsById.TryGetValue(known.Key, out station))
+                {
+#if DEBUG
+                    LogHelper.LogOnce("NpcMarketMissingKnownStation:" + known.Key,
+                        "NPC market ledger referenced missing station: stationId=" + known.Key);
+#endif
                     continue;
+                }
 
                 ParsedNpcSellerFaction seller;
                 if (!cache.NpcSellerFactionsById.TryGetValue(station.NpcFactionId, out seller))
@@ -536,6 +826,10 @@ namespace LcdMod.Server
                 var player = playerEntry.Value;
                 if (player == null || player.IdentityId == 0)
                     continue;
+
+                var playerName = player.DisplayName;
+                if (!string.IsNullOrWhiteSpace(playerName))
+                    cache.PlayerNameHintsByIdentityId[player.IdentityId] = playerName;
 
                 var known = GetOrCreate(cache.VisitedStationIdsByIdentityId, player.IdentityId);
                 if (player.VisitedStationIds == null)
@@ -791,6 +1085,7 @@ namespace LcdMod.Server
             public Dictionary<long, long> PlayerFactionIdByIdentityId;
             public Dictionary<long, HashSet<long>> MemberIdentityIdsByFactionId;
             public Dictionary<long, HashSet<long>> VisitedStationIdsByIdentityId;
+            public Dictionary<long, string> PlayerNameHintsByIdentityId;
         }
 
         sealed class ParsedNpcSellerFaction
