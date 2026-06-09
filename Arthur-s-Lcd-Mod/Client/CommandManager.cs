@@ -308,7 +308,7 @@ namespace LcdMod.Client
 						sb.Append('"').Append(command.Key.Replace('.', ' ')).Append("\", ");
 
 					//ExceptionHandler.SendChatMessage("Command not recognised.");
-					MyAPIGateway.Utilities.ShowMessage("LuckBox", $"Command not recognised.\n{sb.ToString().TrimEnd(',', ' ')}");
+					MyAPIGateway.Utilities.ShowMessage(nameof(LcdMod), $"Command not recognised.\n{sb.ToString().TrimEnd(',', ' ')}");
 				}
 			}
 

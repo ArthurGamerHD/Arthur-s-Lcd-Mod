@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+#if EXPERIMENTAL
+using LcdMod.Client.Audio;
+#endif
 using LcdMod.Client.Market;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Config;
@@ -27,6 +30,9 @@ namespace LcdMod.Client
 
         readonly LcdModSessionComponent _session;
         readonly TerminalManager _terminalManager;
+#if EXPERIMENTAL
+        readonly AudioPocService _audioPoc = new AudioPocService();
+#endif
 
         public LcdModClientComponent(LcdModSessionComponent session)
         {
@@ -48,6 +54,9 @@ namespace LcdMod.Client
             group.TryAdd("ImportTextures", _ => TextureHelper.Import(true));
             group.TryAdd("RemoveLocalTexture", TextureHelper.RemoveLocalTexture);
             group.TryAdd("ImportLocalTexture", TextureHelper.ImportLocalTexture);
+#if EXPERIMENTAL
+            group.TryAdd("PlayAudio", _audioPoc.PlayAudioCommand, 1);
+#endif
 #if DEBUG
             group.TryAdd("DebugInteractive", LocalConfigManager.SetDebugInteractiveCommand);
             group.TryAdd("DebugSurface", LocalConfigManager.SetDebugSurfaceCommand);
@@ -77,6 +86,9 @@ namespace LcdMod.Client
 
         public void UnloadData()
         {
+#if EXPERIMENTAL
+            _audioPoc.Unload();
+#endif
             LocalConfigManager.Save();
             _terminalManager.Unload();
             MyAPIGateway.Gui.GuiControlRemoved -= OnGuiControlRemoved;
@@ -156,6 +168,9 @@ namespace LcdMod.Client
         public void Simulate()
         {
             RunNextFrameActions();
+#if EXPERIMENTAL
+            _audioPoc.Update();
+#endif
         }
 
         public void UpdateAfterSimulation()
