@@ -93,9 +93,9 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         protected virtual string DefaultTitle => "<Title not Set>";
 
-        public float Scale { get; set; } = 1;
+        public float Proportion { get; set; } = 1;
         protected float FontScale => _userFontScale <= 0f ? 1f : _userFontScale;
-        protected float LayoutScale => Scale * FontScale;
+        protected float LayoutScale => Proportion * FontScale;
 
         float _userScale;
         float _userFontScale;
@@ -522,7 +522,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 Type = SpriteType.TEXT,
                 Data = titleText,
                 Position = position,
-                RotationOrScale = Scale * 1.3f * FontScale,
+                RotationOrScale = Proportion * 1.3f * FontScale,
                 Color = ColorableConfig.HeaderColor,
                 Alignment = TextAlignment.LEFT,
                 FontId = "White"
@@ -666,7 +666,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         protected virtual MyTuple<RectangleF, RectangleF, RectangleF> GetCellSlots(float innerLeft, float innerRight,
             float innerTop, float innerBottom, float spacing)
         {
-            var topRowHeight = spacing * Scale;
+            var topRowHeight = spacing * Proportion;
             var bottomRowTop = innerTop + topRowHeight;
             var bottomRowHeight = Math.Max(0f, innerBottom - bottomRowTop);
             var iconSize = innerBottom - innerTop;
@@ -709,13 +709,13 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 Color = color,
                 Alignment = TextAlignment.CENTER,
                 FontId = "White",
-                RotationOrScale = 1f * Scale * FontScale
+                RotationOrScale = 1f * Proportion * FontScale
             };
 
-            sprites.Add(iconSprite.Shadow(2 * Scale));
+            sprites.Add(iconSprite.Shadow(2 * Proportion));
             sprites.Add(iconSprite);
 
-            sprites.Add(textSprite.Shadow(2 * Scale));
+            sprites.Add(textSprite.Shadow(2 * Proportion));
             sprites.Add(textSprite);
         }
 
@@ -738,9 +738,9 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             var cellRect = new RectangleF(rl, rt, rr - rl, rb - rt);
             var dropShadow = new RectangleF(cellRect.Position + 2, cellRect.Size);
             Border.CreateSpritesFromRect(dropShadow, frame, a,
-                radiusScale: Scale);
+                radiusScale: Proportion);
             Border.CreateSpritesFromRect(cellRect, frame, backgroundColor,
-                radiusScale: Scale);
+                radiusScale: Proportion);
         }
 
         protected static void ParseFilter(IMyTerminalBlock lcd, out string mode, out string token)
@@ -768,7 +768,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         public void TrimText(ref StringBuilder sb, float availableWidth, float fontSize = 1)
         {
-            Vector2 textSize = Surface.MeasureStringInPixels(sb, "White", fontSize * Scale * FontScale);
+            Vector2 textSize = Surface.MeasureStringInPixels(sb, "White", fontSize * Proportion * FontScale);
 
             if (textSize.X > availableWidth)
             {
@@ -777,7 +777,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 {
                     sb.Clear();
                     sb.Append(FormatingHelper.TrimName(source, i));
-                    textSize = Surface.MeasureStringInPixels(sb, "White", fontSize * Scale * FontScale);
+                    textSize = Surface.MeasureStringInPixels(sb, "White", fontSize * Proportion * FontScale);
 
                     if (textSize.X <= availableWidth)
                         break;
@@ -845,7 +845,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             LocalizedTitleCache = string.Empty;
             TitleVisible = Config.TitleVisible;
             InvalidateTitleCache();
-            Scale = GetAutoScaleUniform();
+            Proportion = GetAutoScaleUniform();
             UpdateViewBox();
             _backgroundGrids.Clear();
             (Block as IMyTerminalBlock)?.RefreshTerminal();
@@ -918,7 +918,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 Color = Surface.ScriptForegroundColor,
                 Alignment = TextAlignment.CENTER,
                 FontId = "White",
-                RotationOrScale = Scale * FontScale
+                RotationOrScale = Proportion * FontScale
             });
         }
 

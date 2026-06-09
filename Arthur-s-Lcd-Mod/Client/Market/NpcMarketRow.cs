@@ -31,6 +31,38 @@ namespace LcdMod.Client.Market
         public Vector3D BestStationPosition;
         public long BestSellerFactionId;
         public string BestSellerFactionTag;
+        public NpcMarketStationQuote BestBuyQuote;
+        public NpcMarketStationQuote BestSellQuote;
+
+        public bool HasBuyQuote
+        {
+            get { return BestBuyQuote != null; }
+        }
+
+        public bool HasSellQuote
+        {
+            get { return BestSellQuote != null; }
+        }
+
+        public int BuyPricePerUnit
+        {
+            get { return BestBuyQuote != null ? BestBuyQuote.PersonalizedCurrentPricePerUnit : 0; }
+        }
+
+        public int SellPricePerUnit
+        {
+            get { return BestSellQuote != null ? BestSellQuote.PersonalizedCurrentPricePerUnit : 0; }
+        }
+
+        public float BuyDeltaPercent
+        {
+            get { return BestBuyQuote != null ? BestBuyQuote.EffectiveViewerChangePercent : 0f; }
+        }
+
+        public float SellDeltaPercent
+        {
+            get { return BestSellQuote != null ? BestSellQuote.EffectiveViewerChangePercent : 0f; }
+        }
 
         public string GetSecondaryLabel()
         {

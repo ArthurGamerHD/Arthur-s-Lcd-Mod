@@ -37,7 +37,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             if (_scriptForegroundColor != Surface.ScriptForegroundColor)
                 LayoutChanged();
 
-            Scale = GetAutoScaleUniform();
+            Proportion = GetAutoScaleUniform();
             UpdateViewBox();
             RenderSprites();
         }
@@ -73,7 +73,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         protected virtual int GetMaxColsFromSurface()
         {
             var max = ViewBox.Width - ViewBox.X;
-            var perCol = MINIMUM_COL_WIDTH * Scale;
+            var perCol = MINIMUM_COL_WIDTH * Proportion;
             return (int)System.Math.Max(1, System.Math.Round(max / perCol - .5, System.MidpointRounding.AwayFromZero));
         }
 

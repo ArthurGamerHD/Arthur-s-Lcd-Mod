@@ -118,7 +118,7 @@ namespace LcdMod.Client.Apps
             if (area.Width <= 0f || area.Height <= 0f)
                 return;
 
-            bool small = Host.Scale < SMALL_SURFACE_SCALE;
+            bool small = Host.Proportion < SMALL_SURFACE_SCALE;
             _visible.Clear();
             if (!small && Config.ShowConfigButton)
                 _visible.Add(ACTION_CONFIG);
@@ -136,7 +136,7 @@ namespace LcdMod.Client.Apps
             var cellMin = Math.Min(area.Width / columns, area.Height / rows);
             var gap = MathHelper.Clamp(cellMin * GAP_FRACTION, GAP_MIN, GAP_MAX);
 
-            var cap = small ? Math.Max(32f, area.Height * SMALL_HEIGHT_FRACTION) : 150f * Host.Scale;
+            var cap = small ? Math.Max(32f, area.Height * SMALL_HEIGHT_FRACTION) : 150f * Host.Proportion;
             var maxTileWidth = cap * (small ? 2f : 1.4f);
             var buttonWidth = Math.Min((area.Width - (columns - 1) * gap) / columns, maxTileWidth);
             var buttonHeight = Math.Min((area.Height - (rows - 1) * gap) / rows, cap);
@@ -247,7 +247,7 @@ namespace LcdMod.Client.Apps
 
         float GetContentTop()
         {
-            return Host.TitleVisible ? Host.ViewBox.Y + (40f * Host.Scale * Host.Surface.FontSize) : Host.ViewBox.Y;
+            return Host.TitleVisible ? Host.ViewBox.Y + (40f * Host.Proportion * Host.Surface.FontSize) : Host.ViewBox.Y;
         }
 
         ControlRenderContext CreateRenderContext()
@@ -255,7 +255,7 @@ namespace LcdMod.Client.Apps
             var cursor = _interactiveHost != null
                 ? _interactiveHost.CursorPosition
                 : new Vector2(float.NaN, float.NaN);
-            return CreateControlRenderContext(Host.Surface, Host.Scale, Host.Surface.FontSize, cursor);
+            return CreateControlRenderContext(Host.Surface, Host.Proportion, Host.Surface.FontSize, cursor);
         }
 
         ControlStyle GetPrimaryStyle()
@@ -626,8 +626,8 @@ namespace LcdMod.Client.Apps
             var textScale = PadButtonStyle.TextScaleForHeight(
                 MathHelper.Clamp(Host.ViewBox.Height * 0.05f, 12f, 20f), Host.Surface);
             var textSize = FormatingHelper.GetSizeInPixel(_statusMessage, "White", textScale, Host.Surface);
-            var padX = 20f * Host.Scale;
-            var padY = 12f * Host.Scale;
+            var padX = 20f * Host.Proportion;
+            var padY = 12f * Host.Proportion;
             var rect = new RectangleF(
                 Host.ViewBox.Center.X - (textSize.X * 0.5f + padX),
                 Host.ViewBox.Center.Y - (textSize.Y * 0.5f + padY),
@@ -635,7 +635,7 @@ namespace LcdMod.Client.Apps
                 textSize.Y + 2f * padY);
 
             Border.CreateSpritesFromRect(rect, sprites,
-                Host.BackgroundColor.MulValue(0.2f), radiusScale: Host.Scale);
+                Host.BackgroundColor.MulValue(0.2f), radiusScale: Host.Proportion);
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,

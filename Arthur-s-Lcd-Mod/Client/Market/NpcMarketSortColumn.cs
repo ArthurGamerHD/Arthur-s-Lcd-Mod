@@ -4,6 +4,10 @@ namespace LcdMod.Client.Market
     {
         Name,
         Price,
-        Trend
+        Trend,
+        BuyPrice,
+        SellPrice,
+        BuyTrend,
+        SellTrend
     }
 }

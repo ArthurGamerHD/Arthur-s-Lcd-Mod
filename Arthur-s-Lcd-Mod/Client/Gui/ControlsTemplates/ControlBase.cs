@@ -20,6 +20,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         bool _isLayoutDirty = true;
 
         public bool Visible { get; private set; } = true;
+        public bool Enabled { get; private set; } = true;
 
         public bool IsPointerOver { get; private set; }
 
@@ -31,6 +32,21 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         public void SetVisible(bool visible)
         {
             Visible = visible;
+        }
+
+        public ControlBase SetEnabled(bool enabled)
+        {
+            if (Enabled == enabled)
+                return this;
+
+            Enabled = enabled;
+            OnEnabledChanged();
+            MarkDirty();
+            return this;
+        }
+
+        protected virtual void OnEnabledChanged()
+        {
         }
 
         readonly List<ControlBase> _children = new List<ControlBase>();
@@ -216,7 +232,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             get
             {
                 var model = Model;
-                return Visible && (OnClick != null || model != null && model.CanClick);
+                return Visible && Enabled && (OnClick != null || model != null && model.CanClick);
             }
         }
 
@@ -225,7 +241,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             get
             {
                 var model = Model;
-                return Visible && (OnSecondaryClick != null || model != null && model.CanSecondaryClick);
+                return Visible && Enabled && (OnSecondaryClick != null || model != null && model.CanSecondaryClick);
             }
         }
 
@@ -234,7 +250,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             get
             {
                 var model = Model;
-                return Visible && (OnScroll != null || model != null && model.CanScroll);
+                return Visible && Enabled && (OnScroll != null || model != null && model.CanScroll);
             }
         }
 
@@ -243,13 +259,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             get
             {
                 var model = Model;
-                return Visible && (OnHover != null || model != null && model.CanHover);
+                return Visible && Enabled && (OnHover != null || model != null && model.CanHover);
             }
         }
 
         public virtual bool CanDrag
         {
-            get { return Visible && Draggable && OnDrag != null; }
+            get { return Visible && Enabled && Draggable && OnDrag != null; }
         }
 
         protected ControlBase(CursorType? cursor = null, object dataContext = null, Action<object, object> onClick = null,
@@ -499,7 +515,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 
         public bool Hit(Vector2 point)
         {
-            return Visible && HitCore(point);
+            return Visible && Enabled && HitCore(point);
         }
 
         protected abstract bool HitCore(Vector2 point);
@@ -598,7 +614,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 
         internal bool HandleClick(object sender, Action<object, object> handler, bool secondary)
         {
-            if (!Visible)
+            if (!Visible || !Enabled)
                 return false;
 
             if (handler != null)
@@ -617,7 +633,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 
         public virtual bool Scroll(object sender, int delta)
         {
-            if (!Visible)
+            if (!Visible || !Enabled)
                 return false;
 
             if (OnScroll != null)
@@ -629,7 +645,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 
         public virtual bool Hover(object sender)
         {
-            if (!Visible)
+            if (!Visible || !Enabled)
                 return false;
 
             if (OnHover != null)
@@ -666,7 +682,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 
         ControlBase ResolveHit(Vector2 point, ControlHitFilter accept)
         {
-            if (!Visible)
+            if (!Visible || !Enabled)
                 return null;
 
             bool selfHit = HitCore(point);

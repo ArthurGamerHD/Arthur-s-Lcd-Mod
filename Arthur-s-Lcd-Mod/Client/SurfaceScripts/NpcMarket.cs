@@ -5,6 +5,8 @@ using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.SurfaceScripts.Abstract;
+using LcdMod.Client.Terminal.Controls.Generic;
+using LcdMod.Common.Config.Models.Apps;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
@@ -14,9 +16,10 @@ using IMyTextSurface = Sandbox.ModAPI.IMyTextSurface;
 namespace LcdMod.Client.SurfaceScripts
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public sealed class NpcMarketSurfaceScript : InteractiveSurfaceScript
+    public sealed class NpcMarketSurfaceScript : InteractiveSurfaceScript,
+        IUsesTerminalControl<SliderNpcMarketMaxDistance>
     {
-        protected override ConfigKind ConfigKind { get { return ConfigKind.Interactive; } }
+        protected override ConfigKind ConfigKind { get { return ConfigKind.NpcMarket; } }
         public const string ID = "LcdMod_MarketApp";
         public const string TITLE = NpcMarketApp.TITLE;
 
@@ -60,7 +63,7 @@ namespace LcdMod.Client.SurfaceScripts
             base.SafeRun();
 
             if (_app == null)
-                _app = new NpcMarketApp((LcdMod.Common.Config.Models.ScreenConfigInteractive)Config, this);
+                _app = new NpcMarketApp((ScreenConfigNpcMarket)Config, this);
 
             _app.Update();
             RenderSprites();

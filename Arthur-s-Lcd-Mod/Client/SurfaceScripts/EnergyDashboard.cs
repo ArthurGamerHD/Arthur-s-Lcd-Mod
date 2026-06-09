@@ -37,7 +37,7 @@ namespace LcdMod.Client.SurfaceScripts
             if (_app == null)
                 _app = new EnergyDashboardApp(AppConfig, this);
 
-            Scale = GetAutoScaleUniform();
+            Proportion = GetAutoScaleUniform();
             UpdateViewBox();
             _app.Update();
             RenderSprites();

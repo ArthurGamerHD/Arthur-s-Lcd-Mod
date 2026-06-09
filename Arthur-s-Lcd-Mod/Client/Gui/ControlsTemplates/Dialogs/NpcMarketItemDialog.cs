@@ -36,20 +36,27 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         readonly Dictionary<string, Button> _rowButtonsByQuoteKey =
             new Dictionary<string, Button>(StringComparer.Ordinal);
         readonly List<NpcMarketStationQuote> _quotes = new List<NpcMarketStationQuote>();
+        NpcMarketMode _mode;
         NpcMarketStationSortColumn _sortColumn = NpcMarketStationSortColumn.Price;
         bool _sortDescending;
         ControlStyle _headerStyle;
         ControlStyle _comboStyle;
 
         public NpcMarketItemDialog(NpcMarketApp parent, string itemKey)
+            : this(parent, itemKey, parent != null && parent.Mode == NpcMarketMode.Sell ? NpcMarketMode.Sell : NpcMarketMode.Buy)
+        {
+        }
+
+        public NpcMarketItemDialog(NpcMarketApp parent, string itemKey, NpcMarketMode initialMode)
             : base(parent)
         {
             _parent = parent;
             _itemKey = itemKey;
+            _mode = initialMode == NpcMarketMode.Sell ? NpcMarketMode.Sell : NpcMarketMode.Buy;
             var group = parent.GetItemGroup(itemKey);
             _fallbackDisplayName = group != null ? group.DisplayName : "Market item";
             _fallbackSpriteName = group != null ? group.SpriteName : "MissingIcon";
-            _sortDescending = parent.Mode == NpcMarketMode.Sell;
+            _sortDescending = _mode == NpcMarketMode.Sell;
             _scrollPanel.ManualScrollInertiaEnabled = false;
             _scrollPanel.ScrollChanged = delegate { _parent.AppHost.RenderSprites(); };
             _modeCombo = new ComboBox<NpcMarketMode>(Modes, GetModeLabel, OnModeChanged, _parent.AppHost.RenderSprites);
@@ -90,7 +97,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var comboRect = new RectangleF(card.Right - padding - comboWidth, headerTop + 24f * scale, comboWidth,
                 comboHeight);
             _modeCombo.Configure(comboRect, scale, GetComboStyle());
-            _modeCombo.SetSelectedValue(_parent.Mode);
+            _modeCombo.SetSelectedValue(_mode);
             ContainerControl.AddChild(_modeCombo);
             _modeCombo.Render(context, Sprites);
 
@@ -163,9 +170,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         {
             _quotes.Clear();
             var group = _parent.GetItemGroup(_itemKey);
-            if (group != null)
+            if (group != null && group.Mode == NpcMarketMode.Both)
+            {
+                _quotes.AddRange(_mode == NpcMarketMode.Buy ? group.BuyQuotes : group.SellQuotes);
+            }
+            else if (group != null)
+            {
                 _quotes.AddRange(group.Quotes);
-            _quotes.Sort(new NpcMarketStationDialogComparer(_parent.Mode, _sortColumn, _sortDescending));
+            }
+            _quotes.Sort(new NpcMarketStationDialogComparer(_mode, _sortColumn, _sortDescending));
         }
 
         void ConfigureScrollPanel(RectangleF rect, float rowHeight, float scale)
@@ -298,10 +311,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         {
             var text = FormatTrend(trend);
             var textSize = FormatingHelper.GetSizeInPixel(text, "White", textScale, surface);
-            var iconSize = Math.Max(8f * _parent.AppHost.Scale, textSize.Y * 0.82f);
-            var gap = 3f * _parent.AppHost.Scale;
+            var iconSize = Math.Max(8f * _parent.AppHost.Proportion, textSize.Y * 0.82f);
+            var gap = 3f * _parent.AppHost.Proportion;
             float rotation;
-            var sprite = GetTrendSprite(trend, _parent.Mode, out rotation);
+            var sprite = GetTrendSprite(trend, _mode, out rotation);
 
             Sprites.Add(new MySprite
             {
@@ -421,7 +434,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             {
                 _sortColumn = header.Column;
                 _sortDescending = header.Column == NpcMarketStationSortColumn.Price &&
-                                  _parent.Mode == NpcMarketMode.Sell;
+                                  _mode == NpcMarketMode.Sell;
             }
             _scrollPanel.ResetScroll(false);
             _parent.AppHost.RenderSprites();
@@ -429,9 +442,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
         void OnModeChanged(NpcMarketMode mode)
         {
-            _parent.SetMode(mode);
+            _mode = mode == NpcMarketMode.Sell ? NpcMarketMode.Sell : NpcMarketMode.Buy;
+            if (_parent.Mode != NpcMarketMode.Both)
+                _parent.SetMode(_mode);
             if (_sortColumn == NpcMarketStationSortColumn.Price)
-                _sortDescending = mode == NpcMarketMode.Sell;
+                _sortDescending = _mode == NpcMarketMode.Sell;
             _scrollPanel.ResetScroll(false);
             _parent.AppHost.RenderSprites();
         }

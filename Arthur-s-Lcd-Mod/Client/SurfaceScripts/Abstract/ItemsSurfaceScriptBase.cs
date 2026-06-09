@@ -262,7 +262,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         void DrawGrid(List<MySprite> sprites, List<KeyValuePair<MyItemType, double>> items)
         {
-            var rowHeight = 3f * LINE_HEIGHT * Scale;
+            var rowHeight = 3f * LINE_HEIGHT * Proportion;
             var viewportAvailableHeight = ViewBox.Height - (CaretY - ViewBox.Y) - FooterHeight;
             int maxRows = Math.Max(1, (int)Math.Floor(viewportAvailableHeight / rowHeight));
             int maxCols = Math.Max(1, GetMaxColsFromSurface());
@@ -341,14 +341,14 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         int GetMaxColsFromSurface()
         {
             var max = ViewBox.Width - (ViewBox.X);
-            var perCol = MINIMUM_COL_WIDTH * Scale;
+            var perCol = MINIMUM_COL_WIDTH * Proportion;
             return (int)(Math.Round(max / perCol - .5, MidpointRounding.AwayFromZero));
         }
 
         int GetMaxRowsFromSurface()
         {
             var max = ViewBox.Height - (CaretY - ViewBox.Y) - FooterHeight;
-            var perLine = LINE_HEIGHT * Scale;
+            var perLine = LINE_HEIGHT * Proportion;
             return (int)(Math.Round(max / perLine - .5, MidpointRounding.AwayFromZero));
         }
 
@@ -402,15 +402,15 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
             DrawItemIcon(frame,
                 sprite,
-                position + new Vector2(20f, 15) * Scale,
-                new Vector2(LINE_HEIGHT * Scale),
+                position + new Vector2(20f, 15) * Proportion,
+                new Vector2(LINE_HEIGHT * Proportion),
                 TextAlignment.CENTER,
                 item.Value == 0 ? AppConfig.ErrorColor : Color.White);
             position.X += (xEnd - xStart) / 8f;
 
             var clip = new Rectangle((int)position.X, (int)position.Y,
-                (int)Math.Max(0, xEnd - position.X - 105 * Scale),
-                (int)(position.Y + (LINE_HEIGHT + 5) * Scale));
+                (int)Math.Max(0, xEnd - position.X - 105 * Proportion),
+                (int)(position.Y + (LINE_HEIGHT + 5) * Proportion));
 
             frame.Add(MySprite.CreateClipRect(clip));
 
@@ -430,7 +430,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 Type = SpriteType.TEXT,
                 Data = localizedName,
                 Position = position,
-                RotationOrScale = Scale * FontScale,
+                RotationOrScale = Proportion * FontScale,
                 Color = foreground,
                 Alignment = TextAlignment.LEFT,
                 FontId = "White"
@@ -442,20 +442,20 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 Type = SpriteType.TEXT,
                 Data = FormatingHelper.FormatItemQty(item.Value),
                 Position = position,
-                RotationOrScale = Scale * FontScale,
+                RotationOrScale = Proportion * FontScale,
                 Color = foreground,
                 Alignment = TextAlignment.RIGHT,
                 FontId = "White"
             });
 
-            CaretY += LINE_HEIGHT * Scale;
+            CaretY += LINE_HEIGHT * Proportion;
         }
 
         protected virtual void DrawGridCell(List<MySprite> frame,
             KeyValuePair<MyItemType, double> item, float xStart, float xEnd, bool moveToNextLine)
         {
-            var gridCellHeight = 3 * LINE_HEIGHT * Scale;
-            var cellPadding = (LINE_HEIGHT * Scale) / 2f;
+            var gridCellHeight = 3 * LINE_HEIGHT * Proportion;
+            var cellPadding = (LINE_HEIGHT * Proportion) / 2f;
             string sprite;
             var foreground = Surface.ScriptForegroundColor;
 
@@ -621,7 +621,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             position.X += ViewBox.Width / 8f;
 
             var stockText = MyTexts.Get(MyStringId.GetOrCompute("BlockPropertyTitle_Stockpile"));
-            var endSize = Surface.MeasureStringInPixels(stockText, "White", Scale * 1.3f * FontScale);
+            var endSize = Surface.MeasureStringInPixels(stockText, "White", Proportion * 1.3f * FontScale);
 
             var availableSize = new Rectangle((int)position.X, (int)position.Y,
                 (int)(ViewBox.Width - position.X + (ViewBox.X) - endSize.X - (2 * margin)),
@@ -636,7 +636,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 Type = SpriteType.TEXT,
                 Data = displayName,
                 Position = position,
-                RotationOrScale = Scale * 1.3f * FontScale,
+                RotationOrScale = Proportion * 1.3f * FontScale,
                 Color = AppConfig.HeaderColor,
                 Alignment = TextAlignment.LEFT,
                 FontId = "White"
@@ -650,7 +650,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 Type = SpriteType.TEXT,
                 Data = stockText.ToString(),
                 Position = position,
-                RotationOrScale = Scale * 1.3f * FontScale,
+                RotationOrScale = Proportion * 1.3f * FontScale,
                 Color = AppConfig.HeaderColor,
                 Alignment = TextAlignment.RIGHT,
                 FontId = "White"

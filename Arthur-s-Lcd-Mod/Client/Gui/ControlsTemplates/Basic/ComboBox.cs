@@ -81,6 +81,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
             _stateChanged?.Invoke();
         }
 
+        protected override void OnEnabledChanged()
+        {
+            if (!Enabled)
+                IsOpen = false;
+
+            SetOptionVisibility();
+        }
+
         public override void SetRect(RectangleF bounds)
         {
             base.SetRect(bounds);
@@ -89,12 +97,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
 
         protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
         {
-            RenderButton(Bounds, GetLabel(_selectedValue), true, false, IsPointerOver, context, sprites);
+            RenderButton(Bounds, GetLabel(_selectedValue), true, false, Enabled && IsPointerOver, context, sprites);
         }
 
         protected override bool CanResolveChildren(Vector2 point, bool selfHit)
         {
-            return selfHit || IsOpen;
+            return Enabled && (selfHit || IsOpen);
         }
 
         public override void AddOverlayEntries(List<ControlBase> entries)
@@ -111,6 +119,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
 
         void OnComboClicked(object dataContext, object sender)
         {
+            if (!Enabled)
+                return;
+
             IsOpen = !IsOpen;
             SetOptionVisibility();
             MarkDirty();
@@ -184,7 +195,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
         void SetOptionVisibility()
         {
             for (var i = 0; i < _optionButtons.Count; i++)
-                _optionButtons[i].SetVisible(IsOpen && i < _options.Count);
+                _optionButtons[i].SetVisible(Enabled && IsOpen && i < _options.Count);
         }
 
         void RenderOptionButton(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
@@ -198,17 +209,18 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
         void RenderButton(RectangleF rect, string text, bool drawArrow, bool selected, bool hovered,
             ControlRenderContext context, List<MySprite> sprites)
         {
+            var scale = Math.Max(0.01f, _layoutScale);
             var active = hovered || selected;
             var panelColor = context.Style.GetPanelColor(active);
             var textColor = context.Style.GetTextColor(active);
-            var textScale = 0.58f * context.Scale * context.FontScale;
+            var textScale = 0.58f * scale * context.FontScale;
 
-            Border.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: context.Scale);
+            Border.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: scale);
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
                 Data = text ?? string.Empty,
-                Position = new Vector2(rect.X + 8f * context.Scale,
+                Position = new Vector2(rect.X + 8f * scale,
                     rect.Center.Y - FormatingHelper.GetSizeInPixel(text ?? string.Empty, "White", textScale, context.Surface).Y * 0.5f),
                 RotationOrScale = textScale,
                 Color = textColor,
@@ -223,8 +235,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
             {
                 Type = SpriteType.TEXTURE,
                 Data = "Triangle",
-                Position = new Vector2(rect.Right - 10f * context.Scale, rect.Center.Y),
-                Size = new Vector2(8f * context.Scale, 6f * context.Scale),
+                Position = new Vector2(rect.Right - 10f * scale, rect.Center.Y),
+                Size = new Vector2(8f * scale, 6f * scale),
                 RotationOrScale = IsOpen ? MathHelper.Pi : 0f,
                 Color = textColor,
                 Alignment = TextAlignment.CENTER

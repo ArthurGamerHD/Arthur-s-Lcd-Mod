@@ -15,7 +15,7 @@ namespace LcdMod.Client.Apps.Abstract
         IMyCubeBlock Block { get; }
         IMyTextSurface Surface { get; }
         RectangleF ViewBox { get; }
-        float Scale { get; set; }
+        float Proportion { get; set; }
         Color ForegroundColor { get; }
         Color BackgroundColor { get; }
         bool TitleVisible { get; }

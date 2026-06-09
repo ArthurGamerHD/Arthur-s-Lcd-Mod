@@ -266,10 +266,10 @@ namespace LcdMod.Client.Apps
             float xLeft = owner.ViewBox.X;
             float xRight = owner.ViewBox.Right;
             float contentW = xRight - xLeft;
-            float gapH = 5f * owner.Scale;
-            float rowH = 21f * owner.Scale;
-            float bigBarH = 28f * owner.Scale;
-            float divH = Math.Max(1f, owner.Scale);
+            float gapH = 5f * owner.Proportion;
+            float rowH = 21f * owner.Proportion;
+            float bigBarH = 28f * owner.Proportion;
+            float divH = Math.Max(1f, owner.Proportion);
             float batH = rowH * 2.4f;
 
             int prodRows = 0;
@@ -297,7 +297,7 @@ namespace LcdMod.Client.Apps
             }
 
             float graphAreaH = yBot - y - batH - gapH - divH - gapH;
-            if (graphAreaH > 30f * owner.Scale)
+            if (graphAreaH > 30f * owner.Proportion)
             {
                 float singleH = (graphAreaH - gapH) / 2f;
                 DrawLineGraph(owner, sprites, xLeft, contentW, y, singleH, true);
@@ -315,7 +315,7 @@ namespace LcdMod.Client.Apps
         void DrawPowerBalanceSection(IAppHost owner, List<MySprite> sprites, float xLeft, float xRight, float contentW, float y, float bigBarH, float rowH)
         {
             Color fg = owner.Surface.ScriptForegroundColor;
-            float ts = owner.Scale * 0.72f * owner.Surface.FontSize;
+            float ts = owner.Proportion * 0.72f * owner.Surface.FontSize;
             string consumeLabel = FormatLoc("LcdMod_EnergyDashboard_CurrentConsumption", FormatingHelper.WattsToString(_totalConsumptionW));
             string capLabel = FormatLoc("LcdMod_EnergyDashboard_MaxCapacity", FormatingHelper.WattsToString(_totalMaxW));
             sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = consumeLabel, Position = new Vector2(xLeft, y), RotationOrScale = ts, Color = fg, Alignment = TextAlignment.LEFT, FontId = "White" });
@@ -335,7 +335,7 @@ namespace LcdMod.Client.Apps
                 sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(xLeft + fillW / 2f, barCy), Size = new Vector2(fillW, bigBarH), Color = barFill, Alignment = TextAlignment.CENTER });
             }
 
-            sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = FormatingHelper.PercentageToString(ratio), Position = new Vector2(barCx, y + bigBarH * 0.08f), RotationOrScale = owner.Scale * 0.82f * owner.Surface.FontSize, Color = fg, Alignment = TextAlignment.CENTER, FontId = "White" });
+            sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = FormatingHelper.PercentageToString(ratio), Position = new Vector2(barCx, y + bigBarH * 0.08f), RotationOrScale = owner.Proportion * 0.82f * owner.Surface.FontSize, Color = fg, Alignment = TextAlignment.CENTER, FontId = "White" });
 
             y += bigBarH;
             double totalProd = _solar.CurrentW + _wind.CurrentW + _reactor.CurrentW + _engine.CurrentW + _batteryProd.CurrentW;
@@ -361,8 +361,8 @@ namespace LcdMod.Client.Apps
         {
             float ratio = cat.MaxW > 0 ? (float)Math.Min(1.0, cat.CurrentW / cat.MaxW) : 0f;
             float rowCy = y + rowH / 2f;
-            float ts = owner.Scale * 0.68f * owner.Surface.FontSize;
-            float tsBar = owner.Scale * 0.62f * owner.Surface.FontSize;
+            float ts = owner.Proportion * 0.68f * owner.Surface.FontSize;
+            float tsBar = owner.Proportion * 0.62f * owner.Surface.FontSize;
             float barH = rowH * 0.82f;
             Color barBg = new Color(fg.R, fg.G, fg.B, 25);
             float barXLeft = xLeft + labelW;
@@ -387,7 +387,7 @@ namespace LcdMod.Client.Apps
         {
             Color fg = owner.Surface.ScriptForegroundColor;
             Color lineColor = isProduction ? _config.HeaderColor : _config.WarningColor;
-            float ts = owner.Scale * 0.62f * owner.Surface.FontSize;
+            float ts = owner.Proportion * 0.62f * owner.Surface.FontSize;
             string label = isProduction ? LocHelper.GetLoc("LcdMod_EnergyDashboard_ProductionGraph") : LocHelper.GetLoc("LcdMod_EnergyDashboard_ConsumptionGraph");
             float labelH = FormatingHelper.GetSizeInPixel(label, "White", ts, owner.Surface).Y;
 
@@ -416,11 +416,11 @@ namespace LcdMod.Client.Apps
             int numSteps = (int)Math.Round(axisMax / step);
 
             string topLabel = FormatingHelper.WattsToString(axisMax);
-            float axisW = FormatingHelper.GetSizeInPixel(topLabel, "White", ts, owner.Surface).X + 4f * owner.Scale;
+            float axisW = FormatingHelper.GetSizeInPixel(topLabel, "White", ts, owner.Surface).X + 4f * owner.Proportion;
             float plotXLeft = xLeft + axisW;
             float plotW = Math.Max(1f, contentW - axisW);
-            float plotY = y + labelH + 2f * owner.Scale;
-            float plotH = Math.Max(4f, height - labelH - 2f * owner.Scale);
+            float plotY = y + labelH + 2f * owner.Proportion;
+            float plotH = Math.Max(4f, height - labelH - 2f * owner.Proportion);
 
             Color graphBg = new Color(fg.R, fg.G, fg.B, 12);
             sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(plotXLeft + plotW / 2f, plotY + plotH / 2f), Size = new Vector2(plotW, plotH), Color = graphBg, Alignment = TextAlignment.CENTER });
@@ -437,18 +437,18 @@ namespace LcdMod.Client.Apps
                 lineY = Math.Max(plotY, Math.Min(plotY + plotH, lineY));
 
                 if (si > 0)
-                    sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(plotXLeft + plotW / 2f, lineY), Size = new Vector2(plotW, Math.Max(1f, owner.Scale * 0.5f)), Color = gridColor, Alignment = TextAlignment.CENTER });
+                    sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(plotXLeft + plotW / 2f, lineY), Size = new Vector2(plotW, Math.Max(1f, owner.Proportion * 0.5f)), Color = gridColor, Alignment = TextAlignment.CENTER });
 
                 string lbl = FormatingHelper.WattsToString(v);
                 float lblY = Math.Max(plotY, Math.Min(plotY + plotH - labelHHalf * 2f, lineY - labelHHalf));
-                sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = lbl, Position = new Vector2(xLeft + axisW - 2f * owner.Scale, lblY), RotationOrScale = ts, Color = si == 0 ? new Color(fg.R, fg.G, fg.B, 110) : axisColor, Alignment = TextAlignment.RIGHT, FontId = "White" });
+                sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = lbl, Position = new Vector2(xLeft + axisW - 2f * owner.Proportion, lblY), RotationOrScale = ts, Color = si == 0 ? new Color(fg.R, fg.G, fg.B, 110) : axisColor, Alignment = TextAlignment.RIGHT, FontId = "White" });
             }
 
             if (validCnt < 2 || maxData < 1.0) return;
 
             float prevX = 0f, prevY = 0f;
             bool hasPrev = false;
-            float lineThickness = Math.Max(1.5f, owner.Scale * 1.5f);
+            float lineThickness = Math.Max(1.5f, owner.Proportion * 1.5f);
 
             for (int i = 0; i < _sampleCount; i++)
             {
@@ -479,24 +479,24 @@ namespace LcdMod.Client.Apps
             Color fg = owner.Surface.ScriptForegroundColor;
             Color iconColor = GetBatteryIconColor(_avgBatteryCharge);
             float cy = y + sectionH / 2f;
-            float ts = owner.Scale * 0.76f * owner.Surface.FontSize;
-            float tsSmall = owner.Scale * 0.63f * owner.Surface.FontSize;
+            float ts = owner.Proportion * 0.76f * owner.Surface.FontSize;
+            float tsSmall = owner.Proportion * 0.63f * owner.Surface.FontSize;
 
             float bodyH = sectionH * 0.72f;
             float bodyW = contentW * 0.38f;
-            float iconCx = xLeft + bodyW / 2f + 2f * owner.Scale;
-            float pctScale = Math.Min(owner.Scale * 0.90f * owner.Surface.FontSize, bodyH * 0.55f / 14f);
+            float iconCx = xLeft + bodyW / 2f + 2f * owner.Proportion;
+            float pctScale = Math.Min(owner.Proportion * 0.90f * owner.Surface.FontSize, bodyH * 0.55f / 14f);
 
             DrawHorizontalBatteryIcon(sprites, owner.Surface, new Vector2(iconCx, cy), bodyW, bodyH, _avgBatteryCharge, iconColor, fg, pctScale);
 
             string stateWord = _isCharging ? LocHelper.GetLoc("LcdMod_EnergyDashboard_Charging") : LocHelper.GetLoc("LcdMod_EnergyDashboard_Discharging");
             string stateText = stateWord + " — " + _timeLabel;
             Vector2 stSz = FormatingHelper.GetSizeInPixel(stateText, "White", ts, owner.Surface);
-            sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = stateText, Position = new Vector2(xRight, cy - stSz.Y - owner.Scale), RotationOrScale = ts, Color = fg, Alignment = TextAlignment.RIGHT, FontId = "White" });
+            sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = stateText, Position = new Vector2(xRight, cy - stSz.Y - owner.Proportion), RotationOrScale = ts, Color = fg, Alignment = TextAlignment.RIGHT, FontId = "White" });
 
             int batCount = _batteries.Count;
             string countText = FormatLoc(batCount == 1 ? "LcdMod_EnergyDashboard_BatteryCountSingular" : "LcdMod_EnergyDashboard_BatteryCountPlural", batCount);
-            sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = countText, Position = new Vector2(xRight, cy + owner.Scale), RotationOrScale = tsSmall, Color = new Color(fg.R, fg.G, fg.B, 170), Alignment = TextAlignment.RIGHT, FontId = "White" });
+            sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = countText, Position = new Vector2(xRight, cy + owner.Proportion), RotationOrScale = tsSmall, Color = new Color(fg.R, fg.G, fg.B, 170), Alignment = TextAlignment.RIGHT, FontId = "White" });
         }
 
         static void DrawHorizontalBatteryIcon(List<MySprite> sprites, Sandbox.ModAPI.Ingame.IMyTextSurface surf, Vector2 center, float bodyW, float bodyH, float ratio, Color fillColor, Color borderColor, float textScale)
@@ -572,8 +572,8 @@ namespace LcdMod.Client.Apps
             {
                 Type = SpriteType.TEXTURE,
                 Data = "SquareSimple",
-                Position = new Vector2((xLeft + xRight) / 2f, y + Math.Max(1f, owner.Scale) / 2f),
-                Size = new Vector2(xRight - xLeft, Math.Max(1f, owner.Scale)),
+                Position = new Vector2((xLeft + xRight) / 2f, y + Math.Max(1f, owner.Proportion) / 2f),
+                Size = new Vector2(xRight - xLeft, Math.Max(1f, owner.Proportion)),
                 Color = new Color(fg.R, fg.G, fg.B, 80),
                 Alignment = TextAlignment.CENTER
             });
@@ -598,7 +598,7 @@ namespace LcdMod.Client.Apps
 
         float GetContentTop()
         {
-            return Host.TitleVisible ? Host.ViewBox.Y + (40f * Host.Scale * Host.Surface.FontSize) : Host.ViewBox.Y;
+            return Host.TitleVisible ? Host.ViewBox.Y + (40f * Host.Proportion * Host.Surface.FontSize) : Host.ViewBox.Y;
         }
     }
 }

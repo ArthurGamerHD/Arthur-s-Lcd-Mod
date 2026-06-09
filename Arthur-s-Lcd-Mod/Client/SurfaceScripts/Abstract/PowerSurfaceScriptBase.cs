@@ -287,7 +287,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         void DrawDefaultView(List<MySprite> sprites, List<PowerEntry> entries, string maxLabel, string currentLabel)
         {
-            var rowHeight = GRID_CELL_LINES * LINE * Scale;
+            var rowHeight = GRID_CELL_LINES * LINE * Proportion;
             var viewportAvailableHeight = ViewBox.Height - (CaretY - ViewBox.Y) - FooterHeight;
             int maxRows = Math.Max(1, (int)Math.Floor(viewportAvailableHeight / rowHeight));
 
@@ -342,7 +342,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         void DrawGridLike(List<MySprite> sprites, List<PowerEntry> entries, string maxLabel, string currentLabel,
             bool forceSingleColumn, bool drawLineSprites, bool drawVerticalLines, bool drawCellsAsLines)
         {
-            var rowHeight = GRID_CELL_LINES * LINE * Scale;
+            var rowHeight = GRID_CELL_LINES * LINE * Proportion;
             var viewportAvailableHeight = ViewBox.Height - (CaretY - ViewBox.Y) - FooterHeight;
             int maxRows = Math.Max(1, (int)Math.Floor(viewportAvailableHeight / rowHeight));
             int maxCols = forceSingleColumn ? 1 : Math.Max(1, GetMaxColsFromSurface());
@@ -420,14 +420,14 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         int GetMaxColsFromSurface()
         {
             var max = ViewBox.Width - ViewBox.X;
-            var perCol = MINIMUM_COL_WIDTH * Scale;
+            var perCol = MINIMUM_COL_WIDTH * Proportion;
             return (int)Math.Max(1, Math.Round(max / perCol - .5, MidpointRounding.AwayFromZero));
         }
 
         void DrawGridPowerCell(List<MySprite> sprites, PowerEntry entry, float xStart, float xEnd,
             float yStart, float rowHeight, string maxLabel, string currentLabel, bool drawAsLines)
         {
-            var cellPadding = (LINE * Scale) / 2f;
+            var cellPadding = (LINE * Proportion) / 2f;
             var cellView = GetCellViewBox(xStart, xEnd, yStart, rowHeight, cellPadding);
             var slots = GetCellSlots(cellView.X, cellView.Right, cellView.Y, cellView.Bottom, LINE);
 
@@ -444,9 +444,9 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                     rowHeight - cellPadding);
                 var dropShadow = new RectangleF(cellRect.Position + 2, cellRect.Size);
                 Border.CreateSpritesFromRect(dropShadow, sprites, hsv.HSVtoColor(),
-                    radiusScale: Scale);
+                    radiusScale: Proportion);
                 Border.CreateSpritesFromRect(cellRect, sprites, backgroundColor,
-                    radiusScale: Scale);
+                    radiusScale: Proportion);
             }
 
             var iconRect = slots.Item1;
@@ -470,7 +470,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 foreground,
                 "White",
                 TextAlignment.RIGHT,
-                1.1f * Scale * FontScale
+                1.1f * Proportion * FontScale
             ));
 
             var info = new StringBuilder();
@@ -491,7 +491,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 foreground,
                 "White",
                 TextAlignment.RIGHT,
-                .9f * Scale * FontScale
+                .9f * Proportion * FontScale
             ));
         }
 

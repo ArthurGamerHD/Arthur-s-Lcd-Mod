@@ -26,6 +26,9 @@ namespace LcdMod.Client.Market
         public static void Update(NpcMarketClientCacheKey key)
         {
             var entry = GetOrCreate(key);
+            if (entry.AccessDenied)
+                return;
+
             var now = WorldTime.NowElapsedTicks();
             if (entry.Waiting && now >= entry.NextRequestAtTicks)
                 SendRequest(key, entry.ActiveNoCache, entry.ActiveRequestId);
@@ -40,7 +43,7 @@ namespace LcdMod.Client.Market
         public static void EnsureRequested(NpcMarketClientCacheKey key)
         {
             var entry = GetOrCreate(key);
-            if (entry.Snapshot == null && !entry.Waiting)
+            if (!entry.AccessDenied && entry.Snapshot == null && !entry.Waiting)
                 RequestRefresh(key, false);
         }
 
@@ -52,17 +55,43 @@ namespace LcdMod.Client.Market
 
         public static bool CanForceRefresh(NpcMarketClientCacheKey key)
         {
-            var snapshot = GetSnapshot(key);
+            var entry = GetOrCreate(key);
+            if (entry.AccessDenied)
+                return false;
+
+            var snapshot = entry.Snapshot;
             return snapshot == null || WorldTime.NowElapsedTicks() >= snapshot.NextNoCacheAllowedAtWorldElapsedTicks;
         }
 
         public static void RequestRefresh(NpcMarketClientCacheKey key, bool noCache)
         {
+            if (GetOrCreate(key).AccessDenied)
+                return;
+
 #if DEBUG
             LogHelper.LogInfo("NPC market client refresh requested: host=" + key.HostBlockEntityId +
                               ", surface=" + key.HostSurfaceIndex + ", noCache=" + noCache);
 #endif
             SendRequest(key, noCache, ++_nextRequestId);
+        }
+
+        public static void MarkAccessDenied(NpcMarketClientCacheKey key)
+        {
+            var entry = GetOrCreate(key);
+            if (entry.AccessDenied)
+                return;
+
+            entry.AccessDenied = true;
+            entry.Waiting = false;
+            entry.ActiveRequestId = 0;
+            entry.Snapshot = CreateAccessDeniedSnapshot(key);
+#if DEBUG
+            LogHelper.LogInfo("NPC market client marked access denied locally: host=" +
+                              key.HostBlockEntityId + ", surface=" + key.HostSurfaceIndex);
+#endif
+            var updated = Updated;
+            if (updated != null)
+                updated();
         }
 
         public static void HandleSync(PacketSyncNpcMarket packet)
@@ -99,6 +128,7 @@ namespace LcdMod.Client.Market
             entry.Snapshot = packet;
             entry.Waiting = false;
             entry.ActiveRequestId = packet.RequestId;
+            entry.AccessDenied = packet.Scope.Mode == NpcMarketScopeMode.AccessDenied;
 #if DEBUG
             LogHelper.LogInfo("NPC market client accepted sync: request=" + packet.RequestId +
                               ", host=" + key.HostBlockEntityId + ", surface=" + key.HostSurfaceIndex +
@@ -113,6 +143,9 @@ namespace LcdMod.Client.Market
 
         static void SendRequest(NpcMarketClientCacheKey key, bool noCache, uint requestId)
         {
+            if (GetOrCreate(key).AccessDenied)
+                return;
+
             if (requestId == 0)
                 requestId = ++_nextRequestId;
 
@@ -143,6 +176,25 @@ namespace LcdMod.Client.Market
             }
 
             LcdModSessionComponent.NetworkManager.TransmitToServer(packet, false);
+        }
+
+        static PacketSyncNpcMarket CreateAccessDeniedSnapshot(NpcMarketClientCacheKey key)
+        {
+            var now = WorldTime.NowElapsedTicks();
+            return new PacketSyncNpcMarket
+            {
+                CapturedWorldElapsedTicks = now,
+                CacheBuiltAtWorldElapsedTicks = now,
+                NextEconomyTickWorldElapsedTicks = now,
+                NextNoCacheAllowedAtWorldElapsedTicks = long.MaxValue,
+                Scope = new NpcMarketScopeDto
+                {
+                    Mode = NpcMarketScopeMode.AccessDenied,
+                    HostBlockEntityId = key.HostBlockEntityId,
+                    HostSurfaceIndex = key.HostSurfaceIndex
+                },
+                Sellers = new List<NpcMarketSellerFactionDto>()
+            };
         }
 
         static NpcMarketClientEntry GetOrCreate(NpcMarketClientCacheKey key)
@@ -195,5 +247,6 @@ namespace LcdMod.Client.Market
         public long NextRequestAtTicks;
         public bool Waiting;
         public bool ActiveNoCache;
+        public bool AccessDenied;
     }
 }

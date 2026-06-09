@@ -357,7 +357,7 @@ namespace LcdMod.Client.Apps
 
             var hasBackground = GetConfiguredSprites(config).Length > 0;
             var canAccessBlock = HasLocalPlayerAccess();
-            var scale = Math.Max(0.75f, Host.Scale);
+            var scale = Math.Max(0.75f, Host.Proportion);
             var width = Math.Min(BUTTON_WIDTH_PIXELS * scale, Math.Max(1f, Host.ViewBox.Width * 0.5f));
             var height = Math.Max(1f, BUTTON_HEIGHT_PIXELS * scale);
 

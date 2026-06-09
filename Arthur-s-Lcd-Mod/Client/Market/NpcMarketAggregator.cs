@@ -21,7 +21,7 @@ namespace LcdMod.Client.Market
         const string HydrogenIconPath = "Textures\\GUI\\Icons\\HydrogenIcon.dds";
 
         public NpcMarketAggregationResult Build(PacketSyncNpcMarket packet, IMyTextSurface surface, NpcMarketMode mode,
-            NpcMarketSortColumn sortColumn, bool sortDescending)
+            NpcMarketSortColumn sortColumn, bool sortDescending, double maxDistanceMeters)
         {
             var result = new NpcMarketAggregationResult();
 
@@ -29,6 +29,7 @@ namespace LcdMod.Client.Market
                 return result;
 
             var viewerPosition = GetViewerPosition();
+            var includeBoth = mode == NpcMarketMode.Both;
 
             for (var sellerIndex = 0; sellerIndex < packet.Sellers.Count; sellerIndex++)
             {
@@ -43,17 +44,33 @@ namespace LcdMod.Client.Market
                         continue;
 
                     for (var offerIndex = 0; offerIndex < station.Offers.Count; offerIndex++)
-                        AddOffer(result, seller, station, station.Offers[offerIndex], surface, mode, viewerPosition);
+                        AddOffer(result, seller, station, station.Offers[offerIndex], surface, mode, viewerPosition,
+                            maxDistanceMeters);
                 }
             }
 
-            var bestComparer = new NpcMarketBestQuoteComparer(mode);
+            var buyComparer = new NpcMarketBestQuoteComparer(NpcMarketMode.Buy);
+            var sellComparer = new NpcMarketBestQuoteComparer(NpcMarketMode.Sell);
+            var bestComparer = includeBoth ? null : new NpcMarketBestQuoteComparer(mode);
             foreach (var group in result.GroupsByItemKey.Values)
             {
+                if (includeBoth)
+                {
+                    group.BuyQuotes.Sort(buyComparer);
+                    group.SellQuotes.Sort(sellComparer);
+                    if (group.BuyQuotes.Count == 0 && group.SellQuotes.Count == 0)
+                        continue;
+
+                    group.Summary = CreateBothSummary(group,
+                        group.BuyQuotes.Count > 0 ? group.BuyQuotes[0] : null,
+                        group.SellQuotes.Count > 0 ? group.SellQuotes[0] : null);
+                    result.Rows.Add(group.Summary);
+                    continue;
+                }
+
                 group.Quotes.Sort(bestComparer);
                 if (group.Quotes.Count == 0)
                     continue;
-
                 group.Summary = CreateSummary(group, group.Quotes[0]);
                 result.Rows.Add(group.Summary);
             }
@@ -80,6 +97,22 @@ namespace LcdMod.Client.Market
                 case NpcMarketSortColumn.Trend:
                     result = left.EffectiveViewerChangePercent.CompareTo(right.EffectiveViewerChangePercent);
                     break;
+                case NpcMarketSortColumn.BuyPrice:
+                    result = CompareOptionalInt(left.HasBuyQuote, left.BuyPricePerUnit,
+                        right.HasBuyQuote, right.BuyPricePerUnit);
+                    break;
+                case NpcMarketSortColumn.SellPrice:
+                    result = CompareOptionalInt(left.HasSellQuote, left.SellPricePerUnit,
+                        right.HasSellQuote, right.SellPricePerUnit);
+                    break;
+                case NpcMarketSortColumn.BuyTrend:
+                    result = CompareOptionalFloat(left.HasBuyQuote, left.BuyDeltaPercent,
+                        right.HasBuyQuote, right.BuyDeltaPercent);
+                    break;
+                case NpcMarketSortColumn.SellTrend:
+                    result = CompareOptionalFloat(left.HasSellQuote, left.SellDeltaPercent,
+                        right.HasSellQuote, right.SellDeltaPercent);
+                    break;
                 default:
                     result = left.PersonalizedCurrentPricePerUnit.CompareTo(right.PersonalizedCurrentPricePerUnit);
                     break;
@@ -90,10 +123,36 @@ namespace LcdMod.Client.Market
                 : string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase);
         }
 
-        void AddOffer(NpcMarketAggregationResult result, NpcMarketSellerFactionDto seller, NpcMarketStationDto station,
-            NpcMarketOfferDto offer, IMyTextSurface surface, NpcMarketMode mode, Vector3D viewerPosition)
+        static int CompareOptionalInt(bool leftHasValue, int leftValue, bool rightHasValue, int rightValue)
         {
-            if (offer == null || offer.StoreItemType != mode.ToStoreItemType())
+            if (leftHasValue != rightHasValue)
+                return leftHasValue ? -1 : 1;
+
+            return leftValue.CompareTo(rightValue);
+        }
+
+        static int CompareOptionalFloat(bool leftHasValue, float leftValue, bool rightHasValue, float rightValue)
+        {
+            if (leftHasValue != rightHasValue)
+                return leftHasValue ? -1 : 1;
+
+            return leftValue.CompareTo(rightValue);
+        }
+
+        void AddOffer(NpcMarketAggregationResult result, NpcMarketSellerFactionDto seller, NpcMarketStationDto station,
+            NpcMarketOfferDto offer, IMyTextSurface surface, NpcMarketMode mode, Vector3D viewerPosition,
+            double maxDistanceMeters)
+        {
+            if (offer == null)
+                return;
+
+            var offerMode = offer.StoreItemType == StoreItemTypes.Offer
+                ? NpcMarketMode.Buy
+                : offer.StoreItemType == StoreItemTypes.Order
+                    ? NpcMarketMode.Sell
+                    : NpcMarketMode.Both;
+
+            if (offerMode == NpcMarketMode.Both || mode != NpcMarketMode.Both && offerMode != mode)
                 return;
 
             var key = GetOfferKey(offer);
@@ -114,7 +173,28 @@ namespace LcdMod.Client.Market
                 result.GroupsByItemKey[key] = group;
             }
 
-            group.Quotes.Add(CreateQuote(key, seller, station, offer, mode, viewerPosition));
+            var quote = CreateQuote(key, seller, station, offer, offerMode, viewerPosition);
+            if (IsDistanceLimited(maxDistanceMeters) && quote.DistanceMeters > maxDistanceMeters)
+                return;
+
+            if (mode == NpcMarketMode.Both)
+            {
+                if (offerMode == NpcMarketMode.Buy)
+                    group.BuyQuotes.Add(quote);
+                else
+                    group.SellQuotes.Add(quote);
+            }
+            else
+            {
+                group.Quotes.Add(quote);
+            }
+        }
+
+        static bool IsDistanceLimited(double maxDistanceMeters)
+        {
+            return !double.IsNaN(maxDistanceMeters) &&
+                   !double.IsInfinity(maxDistanceMeters) &&
+                   maxDistanceMeters < 10000001d;
         }
 
         static NpcMarketStationQuote CreateQuote(string itemKey, NpcMarketSellerFactionDto seller,
@@ -223,7 +303,45 @@ namespace LcdMod.Client.Market
                 BestStationName = best.StationName,
                 BestStationPosition = best.StationPosition,
                 BestSellerFactionId = best.SellerFactionId,
-                BestSellerFactionTag = best.SellerFactionTag
+                BestSellerFactionTag = best.SellerFactionTag,
+                BestBuyQuote = best.StoreItemType == StoreItemTypes.Offer ? best : null,
+                BestSellQuote = best.StoreItemType == StoreItemTypes.Order ? best : null
+            };
+        }
+
+        static NpcMarketRow CreateBothSummary(NpcMarketItemGroup group, NpcMarketStationQuote buy, NpcMarketStationQuote sell)
+        {
+            var best = buy ?? sell;
+            return new NpcMarketRow
+            {
+                ItemKey = group.ItemKey,
+                BestQuote = best,
+                ItemType = best.ItemType,
+                TypeId = best.TypeId,
+                SubtypeId = best.SubtypeId,
+                PrefabName = best.PrefabName,
+                PrefabTotalPcu = best.PrefabTotalPcu,
+                DisplayName = group.DisplayName,
+                SpriteName = group.SpriteName,
+                StoreItemType = best.StoreItemType,
+                RawPreviousPricePerUnit = best.RawPreviousPricePerUnit,
+                RawCurrentPricePerUnit = best.RawCurrentPricePerUnit,
+                PersonalizedPreviousPricePerUnit = best.PersonalizedPreviousPricePerUnit,
+                PersonalizedCurrentPricePerUnit = best.PersonalizedCurrentPricePerUnit,
+                PersonalizedTrendPercent = best.PersonalizedTrendPercent,
+                RelationBenefitPercent = best.RelationBenefitPercent,
+                EffectiveViewerChangePercent = best.EffectiveViewerChangePercent,
+                PricePerUnit = best.PersonalizedCurrentPricePerUnit,
+                PreviousPricePerUnit = best.PersonalizedPreviousPricePerUnit,
+                Amount = best.Amount,
+                DeltaPercent = best.EffectiveViewerChangePercent,
+                BestStationId = best.StationId,
+                BestStationName = best.StationName,
+                BestStationPosition = best.StationPosition,
+                BestSellerFactionId = best.SellerFactionId,
+                BestSellerFactionTag = best.SellerFactionTag,
+                BestBuyQuote = buy,
+                BestSellQuote = sell
             };
         }
 

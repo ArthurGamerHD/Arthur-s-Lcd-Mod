@@ -1381,7 +1381,7 @@ namespace LcdMod.Client.SurfaceScripts
                 if (_hostResolutionUnsupported)
                 {
                     var color = AppConfig?.WarningColor ?? new Color(255, 216, 64);
-                    DrawMessage(_sprites, "Unsupported resolution", "Warning", color, 0.9f);
+                    DrawMessage(_sprites, "Unsupported resolution", "Resolution", color, 0.9f);
                 }
                 else if (_hostScriptUnsupported)
                 {

@@ -10,5 +10,7 @@ namespace LcdMod.Client.Market
         public string SpriteName;
         public NpcMarketRow Summary;
         public readonly List<NpcMarketStationQuote> Quotes = new List<NpcMarketStationQuote>();
+        public readonly List<NpcMarketStationQuote> BuyQuotes = new List<NpcMarketStationQuote>();
+        public readonly List<NpcMarketStationQuote> SellQuotes = new List<NpcMarketStationQuote>();
     }
 }
