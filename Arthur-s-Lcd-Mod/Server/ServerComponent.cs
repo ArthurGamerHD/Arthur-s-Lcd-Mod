@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+#if EXPERIMENTAL
+using LcdMod.Server.Audio;
+#endif
 using LcdMod.Common.Config;
 using LcdMod.Common.Helpers;
 using LcdMod.Common.Networking;
@@ -23,11 +26,17 @@ namespace LcdMod.Server
         readonly Dictionary<string, HashSet<ulong>> _pendingTextureRequests = new Dictionary<string, HashSet<ulong>>(System.StringComparer.OrdinalIgnoreCase);
         readonly HashSet<IMyEntity> _entities = new HashSet<IMyEntity>();
         readonly NpcMarketService _npcMarket;
+#if EXPERIMENTAL
+        readonly AudioBroadcastServerService _audioBroadcast;
+#endif
 
         public LcdModServerComponent(LcdModSessionComponent session)
         {
             _session = session;
             _npcMarket = new NpcMarketService(session);
+#if EXPERIMENTAL
+            _audioBroadcast = new AudioBroadcastServerService();
+#endif
         }
 
         public void LoadData()
@@ -38,6 +47,9 @@ namespace LcdMod.Server
 
         public void UnloadData()
         {
+#if EXPERIMENTAL
+            _audioBroadcast.Unload();
+#endif
             _npcMarket.UnloadData();
             MyAPIGateway.Entities.OnEntityAdd -= EntityAdded;
 
@@ -94,6 +106,19 @@ namespace LcdMod.Server
             var player = MyAPIGateway.Session?.Player;
             _npcMarket.HandleRequest(player != null ? player.SteamUserId : MyAPIGateway.Multiplayer.MyId, packet);
         }
+
+#if EXPERIMENTAL
+        public void HandleRequestBroadcastAudio(ReceivedPacketEventArgs args)
+        {
+            _audioBroadcast.HandleRequest(args.SenderId, args.UnWrap<PacketRequestBroadcastAudio>());
+        }
+
+        public void HandleLocalRequestBroadcastAudio(PacketRequestBroadcastAudio packet)
+        {
+            var player = MyAPIGateway.Session?.Player;
+            _audioBroadcast.HandleRequest(player != null ? player.SteamUserId : MyAPIGateway.Multiplayer.MyId, packet);
+        }
+#endif
 
         void EntityAdded(IMyEntity entity)
         {

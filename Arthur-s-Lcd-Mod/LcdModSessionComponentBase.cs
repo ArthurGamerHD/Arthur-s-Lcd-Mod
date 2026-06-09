@@ -222,6 +222,16 @@ namespace LcdMod
                         if (args.IsFromServer && !MyAPIGateway.Utilities.IsDedicated)
                             Client?.HandleSyncNpcMarket(args);
                         break;
+#if EXPERIMENTAL
+                    case PackageCode.RequestBroadcastAudio:
+                        if (!args.IsFromServer)
+                            Server?.HandleRequestBroadcastAudio(args);
+                        break;
+                    case PackageCode.SyncBroadcastAudio:
+                        if (args.IsFromServer && !MyAPIGateway.Utilities.IsDedicated)
+                            Client?.HandleSyncBroadcastAudio(args);
+                        break;
+#endif
                     default:
                         {
                             LogHelper.Log(MyLogSeverity.Error, $"Unexpected Packet Code Received");

@@ -11,6 +11,9 @@ namespace LcdMod.Common.Networking
     public class NetworkManager : IDisposable
     {
         const int MAX_WIRE_PACKET_BYTES = 96 * 1024;
+        const int MAX_FRAGMENTED_PACKET_BYTES = 32 * 1024 * 1024;
+        const int MAX_FRAGMENT_CHUNKS = 384;
+        static readonly long FRAGMENT_ASSEMBLY_EXPIRY_TICKS = TimeSpan.TicksPerSecond * 15;
 
         ushort _channelId;
         int _nextFragmentTransferId;
@@ -175,13 +178,17 @@ namespace LcdMod.Common.Networking
         bool TryAssembleFragment(PacketBase packet, ulong senderId, bool isFromServer, out byte[] raw)
         {
             raw = null;
+            ExpireFragmentAssemblies();
+
             var fragment = MyAPIGateway.Utilities.SerializeFromBinary<PacketFragment>(packet.Data);
             if (fragment == null ||
                 fragment.Data == null ||
                 fragment.TotalChunks <= 0 ||
+                fragment.TotalChunks > MAX_FRAGMENT_CHUNKS ||
                 fragment.ChunkIndex < 0 ||
                 fragment.ChunkIndex >= fragment.TotalChunks ||
-                fragment.TotalLength <= 0)
+                fragment.TotalLength <= 0 ||
+                fragment.TotalLength > MAX_FRAGMENTED_PACKET_BYTES)
             {
                 return false;
             }
@@ -193,6 +200,11 @@ namespace LcdMod.Common.Networking
                 assembly = new FragmentAssembly(fragment.TotalChunks, fragment.TotalLength);
                 _fragmentAssemblies[key] = assembly;
             }
+            else if (assembly.TotalChunks != fragment.TotalChunks || assembly.TotalLength != fragment.TotalLength)
+            {
+                _fragmentAssemblies.Remove(key);
+                return false;
+            }
 
             if (!assembly.Add(fragment))
                 return false;
@@ -203,6 +215,24 @@ namespace LcdMod.Common.Networking
                 MyLog.Default.WriteLineAndConsole(
                     $"[LcdMod] Reassembled fragmented packet {fragment.TransferId} from {senderId} ({raw.Length} bytes)");
             return raw != null;
+        }
+
+        void ExpireFragmentAssemblies()
+        {
+            if (_fragmentAssemblies.Count == 0)
+                return;
+
+            var now = DateTime.UtcNow.Ticks;
+            var expired = new List<string>();
+
+            foreach (var pair in _fragmentAssemblies)
+            {
+                if (now - pair.Value.CreatedUtcTicks > FRAGMENT_ASSEMBLY_EXPIRY_TICKS)
+                    expired.Add(pair.Key);
+            }
+
+            for (var i = 0; i < expired.Count; i++)
+                _fragmentAssemblies.Remove(expired[i]);
         }
 
         [ProtoContract]
@@ -259,13 +289,17 @@ namespace LcdMod.Common.Networking
         class FragmentAssembly
         {
             readonly byte[][] _chunks;
-            readonly int _totalLength;
+            public readonly int TotalLength;
+            public readonly int TotalChunks;
+            public readonly long CreatedUtcTicks;
             int _receivedChunks;
 
             public FragmentAssembly(int totalChunks, int totalLength)
             {
                 _chunks = new byte[totalChunks][];
-                _totalLength = totalLength;
+                TotalChunks = totalChunks;
+                TotalLength = totalLength;
+                CreatedUtcTicks = DateTime.UtcNow.Ticks;
             }
 
             public bool Add(PacketFragment fragment)
@@ -283,7 +317,7 @@ namespace LcdMod.Common.Networking
 
             public byte[] Assemble()
             {
-                var raw = new byte[_totalLength];
+                var raw = new byte[TotalLength];
                 var offset = 0;
                 for (var i = 0; i < _chunks.Length; i++)
                 {
@@ -318,6 +352,8 @@ namespace LcdMod.Common.Networking
         FillBlocks = 8,
         RequestNpcMarket = 9,
         SyncNpcMarket = 10,
+        RequestBroadcastAudio = 11,
+        SyncBroadcastAudio = 12,
         NetworkFragment = 100
     }
 

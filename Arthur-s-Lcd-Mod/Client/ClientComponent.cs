@@ -32,6 +32,8 @@ namespace LcdMod.Client
         readonly TerminalManager _terminalManager;
 #if EXPERIMENTAL
         readonly AudioPocService _audioPoc = new AudioPocService();
+        readonly AudioImportService _audioImport = new AudioImportService();
+        readonly AudioBroadcastClientService _audioBroadcast = new AudioBroadcastClientService();
 #endif
 
         public LcdModClientComponent(LcdModSessionComponent session)
@@ -56,6 +58,9 @@ namespace LcdMod.Client
             group.TryAdd("ImportLocalTexture", TextureHelper.ImportLocalTexture);
 #if EXPERIMENTAL
             group.TryAdd("PlayAudio", _audioPoc.PlayAudioCommand, 1);
+            group.TryAdd("ImportLocalAudio", _audioImport.ImportLocalAudioCommand, 1);
+            group.TryAdd("ImportAudios", _audioImport.ImportAudiosCommand);
+            group.TryAdd("StreamAudio", _audioBroadcast.StreamAudioCommand, 1);
 #endif
 #if DEBUG
             group.TryAdd("DebugInteractive", LocalConfigManager.SetDebugInteractiveCommand);
@@ -88,6 +93,7 @@ namespace LcdMod.Client
         {
 #if EXPERIMENTAL
             _audioPoc.Unload();
+            _audioBroadcast.Unload();
 #endif
             LocalConfigManager.Save();
             _terminalManager.Unload();
@@ -170,6 +176,7 @@ namespace LcdMod.Client
             RunNextFrameActions();
 #if EXPERIMENTAL
             _audioPoc.Update();
+            _audioBroadcast.Update();
 #endif
         }
 
@@ -302,6 +309,21 @@ namespace LcdMod.Client
 #endif
             NpcMarketClientCache.HandleSync(packet);
         }
+
+#if EXPERIMENTAL
+        public void HandleSyncBroadcastAudio(ReceivedPacketEventArgs args)
+        {
+            if (!args.IsFromServer)
+                return;
+
+            _audioBroadcast.HandleSync(args.UnWrap<PacketSyncBroadcastAudio>());
+        }
+
+        public void HandleLocalSyncBroadcastAudio(PacketSyncBroadcastAudio packet)
+        {
+            _audioBroadcast.HandleSync(packet);
+        }
+#endif
 
         void FactionStateChanged(MyFactionStateChange change, long faction1, long faction2, long player, long client)
         {
