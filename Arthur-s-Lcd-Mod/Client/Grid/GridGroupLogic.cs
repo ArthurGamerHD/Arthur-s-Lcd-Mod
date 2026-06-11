@@ -19,6 +19,7 @@ namespace LcdMod.Client.Grid
         readonly List<IMyCubeGrid> _mechanicalGrids = new List<IMyCubeGrid>();
         readonly List<IMyCubeGrid> _physicalGrids = new List<IMyCubeGrid>();
         readonly HashSet<long> _mechanicalGridIds = new HashSet<long>();
+        readonly HashSet<long> _dedupeGridIds = new HashSet<long>();
         readonly HashSet<long> _dedupeBlockIds = new HashSet<long>();
 
         public readonly List<GridLogic> MechanicalConnections = new List<GridLogic>();
@@ -78,6 +79,51 @@ namespace LcdMod.Client.Grid
             }
 
             _dedupeBlockIds.Clear();
+            return result;
+        }
+
+        public List<GridLogic> GetGridLogics(GridLogic requester, GridLinkTypeEnum linkType)
+        {
+            var result = new List<GridLogic>();
+            var grids = GetGrids(requester, linkType);
+            for (int i = 0; i < grids.Count; i++)
+            {
+                var logic = LcdModSessionComponent.GetOrCreateGridLogic(grids[i]);
+                if (logic != null && !result.Contains(logic))
+                    result.Add(logic);
+            }
+
+            return result;
+        }
+
+        public List<IMyCubeGrid> GetGrids(GridLogic requester, GridLinkTypeEnum linkType)
+        {
+            var result = new List<IMyCubeGrid>();
+            if (requester == null)
+                return result;
+
+            Refresh(requester);
+
+            _dedupeGridIds.Clear();
+            AddGrid(result, requester.Grid);
+
+            if (ShouldIncludeMechanical(linkType))
+            {
+                if (_owner != null && _owner != requester)
+                    AddGrid(result, _owner.Grid);
+
+                for (int i = 0; i < MechanicalConnections.Count; i++)
+                    AddGrid(result, MechanicalConnections[i] != null ? MechanicalConnections[i].Grid : null);
+            }
+
+            if (ShouldIncludePhysical(linkType))
+            {
+                for (int i = 0; i < PhysicalConnections.Count; i++)
+                    AddGrid(result, PhysicalConnections[i] != null ? PhysicalConnections[i].Grid : null);
+            }
+
+            result.Sort(CompareGridEntityId);
+            _dedupeGridIds.Clear();
             return result;
         }
 
@@ -243,6 +289,24 @@ namespace LcdMod.Client.Grid
 
                 result.Add(block);
             }
+        }
+
+        void AddGrid(List<IMyCubeGrid> result, IMyCubeGrid grid)
+        {
+            if (result == null || grid == null)
+                return;
+
+            if (!_dedupeGridIds.Add(grid.EntityId))
+                return;
+
+            result.Add(grid);
+        }
+
+        static int CompareGridEntityId(IMyCubeGrid left, IMyCubeGrid right)
+        {
+            long a = left != null ? left.EntityId : 0;
+            long b = right != null ? right.EntityId : 0;
+            return a.CompareTo(b);
         }
     }
 }

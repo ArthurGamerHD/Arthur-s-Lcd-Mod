@@ -92,6 +92,18 @@
             <Selectable>false</Selectable>
         </LCDTextureDefinition>
 
+        <LCDTextureDefinition> <!-- Remap of Vanilla right arrow control sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="RightArrow"/>
+            <SpritePath>Textures/GUI/Controls/RightArrow_highlight.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Remap of Vanilla left arrow control sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="LeftArrow"/>
+            <SpritePath>Textures/GUI/Controls/LeftArrow_highlight.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
         <LCDTextureDefinition> <!-- Remap of Vanilla Economy trend decrease sprite -->
             <Id Type="LCDTextureDefinition" Subtype="ArrowGreenDown"/>
             <SpritePath>Textures/GUI/Contracts/ArrowGreenDown.png</SpritePath>

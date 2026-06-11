@@ -6,6 +6,7 @@ using System.Linq;
 using LcdMod.Client.Audio;
 #endif
 using LcdMod.Client.Market;
+using LcdMod.Client.Modules.Power;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Config;
 using LcdMod.Client.Helpers;
@@ -42,10 +43,13 @@ namespace LcdMod.Client
             _terminalManager = new TerminalManager(session);
         }
 
+        public PowerDataModule PowerData { get; private set; }
+
         public void LoadData()
         {
             LocalConfigManager.Load();
             _session.RegisterModules();
+            PowerData = new PowerDataModule();
 
             var group = CommandManager.GetOrCreateGroup("/lcdMod", new CmdGroupInitializer(7));
             group.TryAdd("FactionColor", FactionHelper.SetColor);
@@ -96,6 +100,9 @@ namespace LcdMod.Client
             _audioBroadcast.Unload();
 #endif
             LocalConfigManager.Save();
+            if (PowerData != null)
+                PowerData.Clear();
+            PowerData = null;
             _terminalManager.Unload();
             MyAPIGateway.Gui.GuiControlRemoved -= OnGuiControlRemoved;
             MyAPIGateway.Entities.OnEntityAdd -= EntityAdded;
@@ -133,6 +140,9 @@ namespace LcdMod.Client
 
                     grid.Item2.Update();
                 }
+
+                if (PowerData != null)
+                    PowerData.Update(MyAPIGateway.Session.GameplayFrameCounter);
 
                 _session.UpdateModules();
                 UpdateDebugSnapshot();

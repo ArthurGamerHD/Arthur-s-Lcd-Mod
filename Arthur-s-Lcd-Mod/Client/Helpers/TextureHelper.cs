@@ -244,13 +244,17 @@ namespace LcdMod.Client.Helpers
             if (string.IsNullOrEmpty(blockDefinitionName))
                 return false;
 
+            string requestedType;
+            string requestedSubtype;
+            SplitDefinitionName(blockDefinitionName, out requestedType, out requestedSubtype);
             foreach (var definitionBase in MyDefinitionManager.Static.GetAllDefinitions())
             {
                 var blockDefinition = definitionBase as MyCubeBlockDefinition;
                 if (blockDefinition == null)
                     continue;
 
-                if (!string.Equals(blockDefinition.Id.ToString(), blockDefinitionName, StringComparison.Ordinal))
+                if (!string.Equals(blockDefinition.Id.ToString(), blockDefinitionName, StringComparison.Ordinal) &&
+                    !MatchesDefinitionId(blockDefinition, requestedType, requestedSubtype))
                     continue;
 
                 textureName = GetOrAddTextureForBlock(blockDefinition);
@@ -258,6 +262,33 @@ namespace LcdMod.Client.Helpers
             }
 
             return false;
+        }
+
+        static void SplitDefinitionName(string definitionName, out string typeId, out string subtypeId)
+        {
+            typeId = definitionName ?? string.Empty;
+            subtypeId = string.Empty;
+            var slash = typeId.IndexOf('/');
+            if (slash < 0)
+                return;
+
+            subtypeId = slash + 1 < typeId.Length ? typeId.Substring(slash + 1) : string.Empty;
+            typeId = typeId.Substring(0, slash);
+        }
+
+        static bool MatchesDefinitionId(MyCubeBlockDefinition blockDefinition, string typeId, string subtypeId)
+        {
+            if (blockDefinition == null || string.IsNullOrEmpty(typeId))
+                return false;
+
+            var definitionType = blockDefinition.Id.TypeId.ToString();
+            var definitionSubtype = blockDefinition.Id.SubtypeName ?? string.Empty;
+            if (!string.Equals(definitionSubtype, subtypeId ?? string.Empty, StringComparison.Ordinal))
+                return false;
+
+            return string.Equals(definitionType, typeId, StringComparison.Ordinal) ||
+                   string.Equals(definitionType, "MyObjectBuilder_" + typeId, StringComparison.Ordinal) ||
+                   definitionType.EndsWith("." + typeId, StringComparison.Ordinal);
         }
 
         public static string ResolveItemSprite(MyPhysicalItemDefinition definition, IMyTextSurface surface)

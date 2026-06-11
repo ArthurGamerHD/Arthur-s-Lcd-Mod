@@ -123,7 +123,7 @@ namespace LcdMod.Client.Apps
             NpcMarketClientCache.Updated += HandleUpdated;
         }
 
-        public void Close()
+        public override void Close()
         {
             NpcMarketClientCache.Updated -= HandleUpdated;
         }

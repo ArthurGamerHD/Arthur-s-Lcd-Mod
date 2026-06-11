@@ -100,7 +100,9 @@ namespace LcdMod.Client.Helpers
 
         public static string MegaWattHoursToString(float mwh) => WattHoursToString(mwh * MW_TO_W_CONSTANT);
 
-        public static string WattsToString(double watts)
+        public static string WattsToString(double watts) => WattsToString(watts, "0.##");
+
+        public static string WattsToString(double watts, string format)
         {
             double a = Math.Abs(watts);
             string sign = watts < 0 ? "-" : "";
@@ -108,44 +110,45 @@ namespace LcdMod.Client.Helpers
             if (a < 1e-12)
                 return "0 W";
 
-            if (a >= 1e24) return sign + (a / 1e24).ToString("0.##", Culture) + " YW";
-            if (a >= 1e21) return sign + (a / 1e21).ToString("0.##", Culture) + " ZW";
-            if (a >= 1e18) return sign + (a / 1e18).ToString("0.##", Culture) + " EW";
-            if (a >= 1e15) return sign + (a / 1e15).ToString("0.##", Culture) + " PW";
-            if (a >= 1e12) return sign + (a / 1e12).ToString("0.##", Culture) + " TW";
-            if (a >= 1e9) return sign + (a / 1e9).ToString("0.##", Culture) + " GW";
-            if (a >= 1e6) return sign + (a / 1e6).ToString("0.##", Culture) + " MW";
-            if (a >= 1e3) return sign + (a / 1e3).ToString("0.##", Culture) + " kW";
-            if (a >= 1.0) return sign + a.ToString("0.##", Culture) + " W";
-            if (a >= 1e-3) return sign + (a / 1e-3).ToString("0.##", Culture) + " mW";
-            if (a >= 1e-6) return sign + (a / 1e-6).ToString("0.##", Culture) + " uW";
-            if (a >= 1e-9) return sign + (a / 1e-9).ToString("0.##", Culture) + " nW";
-            if (a >= 1e-12) return sign + (a / 1e-12).ToString("0.##", Culture) + " pW";
-            return sign + a.ToString("0.##", Culture) + " W";
+            if (a >= 1e24) // Keep up, two more 0's to go, and you reach type-II civilization
+                return sign + (a / 1e24).ToString(format, Culture) + " YW";
+            if (a >= 1e21) return sign + (a / 1e21).ToString(format, Culture) + " ZW";
+            if (a >= 1e18) return sign + (a / 1e18).ToString(format, Culture) + " EW";
+            if (a >= 1e15) return sign + (a / 1e15).ToString(format, Culture) + " PW";
+            if (a >= 1e12) return sign + (a / 1e12).ToString(format, Culture) + " TW";
+            if (a >= 1e9) return sign + (a / 1e9).ToString(format, Culture) + " GW";
+            if (a >= 1e6) return sign + (a / 1e6).ToString(format, Culture) + " MW";
+            if (a >= 1e3) return sign + (a / 1e3).ToString(format, Culture) + " kW";
+            if (a >= 1.0) return sign + a.ToString(format, Culture) + " W";
+            if (a >= 1e-3) return sign + (a / 1e-3).ToString(format, Culture) + " mW";
+            if (a >= 1e-6) return sign + (a / 1e-6).ToString(format, Culture) + " uW";
+            return sign + a.ToString(format, Culture) + " W";
         }
 
-        public static string WattHoursToString(float wattsHour)
+        public static string WattHoursToString(float wattsHour) => WattHoursToString(wattsHour, "0.##");
+
+        public static string WattHoursToString(double wattsHour, string format)
         {
             double a = Math.Abs(wattsHour);
             string sign = wattsHour < 0 ? "-" : "";
 
             if (a < 1e-12)
-                return "0 W";
+                return "0 Wh";
 
-            if (a >= 1e24) return sign + (a / 1e24).ToString("0.##", Culture) + " YWh";
-            if (a >= 1e21) return sign + (a / 1e21).ToString("0.##", Culture) + " ZWh";
-            if (a >= 1e18) return sign + (a / 1e18).ToString("0.##", Culture) + " EWh";
-            if (a >= 1e15) return sign + (a / 1e15).ToString("0.##", Culture) + " PWh";
-            if (a >= 1e12) return sign + (a / 1e12).ToString("0.##", Culture) + " TWh";
-            if (a >= 1e9) return sign + (a / 1e9).ToString("0.##", Culture) + " GWh";
-            if (a >= 1e6) return sign + (a / 1e6).ToString("0.##", Culture) + " MWh";
-            if (a >= 1e3) return sign + (a / 1e3).ToString("0.##", Culture) + " kWh";
-            if (a >= 1.0) return sign + a.ToString("0.##", Culture) + " Wh";
-            if (a >= 1e-3) return sign + (a / 1e-3).ToString("0.##", Culture) + " mWh";
-            if (a >= 1e-6) return sign + (a / 1e-6).ToString("0.##", Culture) + " uWh";
-            if (a >= 1e-9) return sign + (a / 1e-9).ToString("0.##", Culture) + " nWh";
-            if (a >= 1e-12) return sign + (a / 1e-12).ToString("0.##", Culture) + " pWh";
-            return sign + a.ToString("0.##", Culture) + " W";
+            if (a >= 1e24) return sign + (a / 1e24).ToString(format, Culture) + " YWh";
+            if (a >= 1e21) return sign + (a / 1e21).ToString(format, Culture) + " ZWh";
+            if (a >= 1e18) return sign + (a / 1e18).ToString(format, Culture) + " EWh";
+            if (a >= 1e15) return sign + (a / 1e15).ToString(format, Culture) + " PWh";
+            if (a >= 1e12) return sign + (a / 1e12).ToString(format, Culture) + " TWh";
+            if (a >= 1e9) return sign + (a / 1e9).ToString(format, Culture) + " GWh";
+            if (a >= 1e6) return sign + (a / 1e6).ToString(format, Culture) + " MWh";
+            if (a >= 1e3) return sign + (a / 1e3).ToString(format, Culture) + " kWh";
+            if (a >= 1.0) return sign + a.ToString(format, Culture) + " Wh";
+            if (a >= 1e-3) return sign + (a / 1e-3).ToString(format, Culture) + " mWh";
+            if (a >= 1e-6)
+                // what is that? an ant size generator?
+                return sign + (a / 1e-6).ToString(format, Culture) + " uWh";
+            return sign + a.ToString(format, Culture) + " Wh";
         }
 
 

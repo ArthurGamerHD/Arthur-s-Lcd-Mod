@@ -68,6 +68,10 @@ namespace LcdMod.Client.Apps.Abstract
 
         public abstract List<MySprite> GetSprites();
 
+        public virtual void Close()
+        {
+        }
+
         protected Color GetHeaderColor()
         {
             var colorable = AppConfig as ScreenConfigColorable;

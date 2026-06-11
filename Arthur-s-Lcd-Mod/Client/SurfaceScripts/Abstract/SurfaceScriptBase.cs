@@ -253,6 +253,15 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
             try
             {
+                CloseApp(App);
+            }
+            catch (Exception e)
+            {
+                ErrorHandlerHelper.LogError(e, this);
+            }
+
+            try
+            {
                 if (Block != null)
                 {
                     Block.OnMarkForClose -= HandleBlockMarkedForClose;
@@ -286,6 +295,15 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         void HandleBlockMarkedForClose(IMyEntity entity)
         {
             Dispose();
+        }
+
+        static void CloseApp(IApp app)
+        {
+            var appBase = app as AppBase;
+            if (appBase == null)
+                return;
+
+            appBase.Close();
         }
 
         protected virtual void UpdateViewBox()

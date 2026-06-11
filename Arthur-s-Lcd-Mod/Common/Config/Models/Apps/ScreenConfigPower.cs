@@ -10,6 +10,7 @@ namespace LcdMod.Common.Config.Models.Apps
     {
         [ProtoMember(13)] public bool HideEmpty { get; set; } = true;
         [ProtoMember(18)] public int GraphWindowIndex { get; set; } = 2;
+        [ProtoMember(21)] public int PowerHistoryTier { get; set; } = -1;
         
         [XmlIgnore]
         public GridLinkTypeEnum GridLinkType => (GridLinkTypeEnum)GridLinkTypeInternal;

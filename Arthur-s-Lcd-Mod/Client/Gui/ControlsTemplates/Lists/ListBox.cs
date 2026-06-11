@@ -62,9 +62,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
 
             var listContext = CreateListRenderContext(context);
             var viewBox = GetViewBox();
-            var backgroundColor = listContext.Style.GetPanelColor(false);
+            var backgroundColor = context.Style.GetPanelColor(false);
             Border.CreateSpritesFromRect(viewBox, sprites, backgroundColor,
-                Border.ScaleRadius(listContext.Style.BorderRadiusPixels, listContext.Scale));
+                Border.ScaleRadius(context.Style.BorderRadiusPixels, context.Scale));
 
             BeginClip(sprites, _scrollPanel.ContentViewportBounds);
             RenderRows(listContext, sprites);

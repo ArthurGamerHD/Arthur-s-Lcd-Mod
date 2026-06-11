@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using LcdMod.Client.Config;
 using Sandbox.ModAPI;
@@ -30,20 +31,31 @@ namespace LcdMod.Client.Terminal.Controls.Generic
             list.Add(new MyTerminalControlComboBoxItem { Key = 2, Value = MyStringId.GetOrCompute("LcdMod_GW_30s") });
             list.Add(new MyTerminalControlComboBoxItem { Key = 3, Value = MyStringId.GetOrCompute("LcdMod_GW_1m") });
             list.Add(new MyTerminalControlComboBoxItem { Key = 4, Value = MyStringId.GetOrCompute("LcdMod_GW_5m") });
+            list.Add(new MyTerminalControlComboBoxItem { Key = 5, Value = MyStringId.GetOrCompute("LcdMod_GW_30m") });
         }
 
         long Getter(IMyTerminalBlock block)
         {
             var cfg = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigPower;
-            return cfg?.GraphWindowIndex ?? 2;
+            return GetConfiguredTier(cfg);
         }
 
         void Setter(IMyTerminalBlock block, long value)
         {
             var cfg = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigPower;
             if (cfg == null) return;
+            cfg.PowerHistoryTier = (int)value;
             cfg.GraphWindowIndex = (int)value;
             ConfigManager.Sync(block);
+        }
+
+        static int GetConfiguredTier(ScreenConfigPower cfg)
+        {
+            if (cfg == null)
+                return 2;
+
+            int value = cfg.PowerHistoryTier >= 0 ? cfg.PowerHistoryTier : cfg.GraphWindowIndex;
+            return Math.Max(0, Math.Min(value, 5));
         }
     }
 }

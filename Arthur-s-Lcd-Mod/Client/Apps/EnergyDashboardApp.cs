@@ -1,582 +1,478 @@
 using System;
 using System.Collections.Generic;
-using Generated;
 using LcdMod.Client.Apps.Abstract;
-using LcdMod.Client.Grid;
+using LcdMod.Client.Gui.ControlsTemplates;
+using LcdMod.Client.Gui.ControlsTemplates.Basic;
+using LcdMod.Client.Gui.ControlsTemplates.Custom;
+using LcdMod.Client.Gui.ControlsTemplates.Panels;
+using LcdMod.Client.Gui.ControlsTemplates.Panels.Virtualized;
 using LcdMod.Client.Helpers;
-using LcdMod.Common.Helpers;
-using Sandbox.Game.EntityComponents;
-using Sandbox.ModAPI;
-using SpaceEngineers.Game.ModAPI;
-using VRage.Game;
+using LcdMod.Client.Modules.Power;
+using LcdMod.Client.Utility;
 using VRage.Game.GUI.TextPanel;
-using VRage.Game.ModAPI;
-using VRage.Game.ObjectBuilders.Definitions;
 using VRageMath;
+using ControlGrid = LcdMod.Client.Gui.ControlsTemplates.Panels.Grid;
 using ScreenConfigPower = LcdMod.Common.Config.Models.Apps.ScreenConfigPower;
 
 namespace LcdMod.Client.Apps
 {
-    internal sealed class EnergyDashboardApp : AppBase
+    internal sealed class EnergyDashboardApp : AppBase, IAppInteractive
     {
-        static readonly MyDefinitionId ElectricityId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
-        static readonly float[] WindowOptions = { 1f, 5f, 30f, 60f, 300f };
-        const int GRAPH_POINTS = 90;
+        const int SCALE_TIER_COUNT = 6;
+        const int GRAPH_BUCKET_COUNT = 10;
+        const float LIST_COLUMN_WRAP_WIDTH_PIXELS = 220f;
+        const float PROGRESS_CELL_MARGIN_X_PIXELS = 3f;
+        const float PROGRESS_CELL_MARGIN_Y_PIXELS = 2f;
+        const float BUTTON_CELL_MARGIN_X_PIXELS = 2f;
+        const float BUTTON_CELL_MARGIN_Y_PIXELS = 2f;
+        const float PROGRESS_ROW_WEIGHT = 24f;
+        const float BUTTON_ROW_WEIGHT = 16f;
 
-        struct Sample
-        {
-            public float TimeS;
-            public double ProductionW;
-            public double ConsumptionW;
-        }
-
-        struct Category
-        {
-            public double CurrentW;
-            public double MaxW;
-        }
-
-        readonly Sample[] _samples = new Sample[GRAPH_POINTS];
-        int _sampleHead;
-        int _sampleCount;
-        float _lastSampleTime = -999f;
-        float _lastWindowSeconds = -1f;
-
-        Category _solar;
-        Category _wind;
-        Category _reactor;
-        Category _engine;
-        Category _batteryProd;
-        double _totalMaxW;
-        double _totalConsumptionW;
-        float _avgBatteryCharge;
-        bool _isCharging;
-        string _timeLabel = string.Empty;
-
-        readonly List<IMyPowerProducer> _producers = new List<IMyPowerProducer>();
-        readonly List<IMyTerminalBlock> _terminals = new List<IMyTerminalBlock>();
-        readonly List<IMyBatteryBlock> _batteries = new List<IMyBatteryBlock>();
-        ScreenConfigPower _config;
-        public ScreenConfigPower Config => _config;
+        readonly ScreenConfigPower _config;
+        readonly List<ControlBase> _interactiveList = new List<ControlBase>();
+        readonly List<EnergyDashboardPowerRow> _producerRows = new List<EnergyDashboardPowerRow>();
+        readonly List<EnergyDashboardPowerRow> _consumerRows = new List<EnergyDashboardPowerRow>();
+        readonly List<EnergyDashboardPowerRow> _chargeRows = new List<EnergyDashboardPowerRow>();
+        readonly Dictionary<string, string> _spriteCache = new Dictionary<string, string>(StringComparer.Ordinal);
+        readonly ToggleButton[] _scaleButtons = new ToggleButton[SCALE_TIER_COUNT];
+        readonly ControlGrid _rootGrid;
+        readonly EnergyStatBarControl _consumptionBar;
+        readonly EnergyStatBarControl _productionBar;
+        readonly EnergyStatBarControl _chargeBar;
+        readonly EnergySubtypeGraphControl _consumerGraph;
+        readonly EnergySubtypeGraphControl _producerGraph;
+        readonly EnergySubtypeGraphControl _chargeGraph;
+        readonly CarouselPanel _contentCarousel;
+        readonly ScrollPanel _producerScrollPanel;
+        readonly ScrollPanel _consumerScrollPanel;
+        readonly ScrollPanel _chargeScrollPanel;
+        readonly VirtualizedWrapPanel<EnergyDashboardPowerRow> _producerWrapPanel;
+        readonly VirtualizedWrapPanel<EnergyDashboardPowerRow> _consumerWrapPanel;
+        readonly VirtualizedWrapPanel<EnergyDashboardPowerRow> _chargeWrapPanel;
+        PowerDataLease _lease;
+        PowerSnapshot _latest;
 
         public EnergyDashboardApp(ScreenConfigPower config, IAppHost host) : base(config, host)
         {
             _config = config;
+            _rootGrid = new ControlGrid(default(RectangleF), new[] { 1f }, new[] { PROGRESS_ROW_WEIGHT, BUTTON_ROW_WEIGHT, 90f, 140f });
+            var progressGrid = new ControlGrid(default(RectangleF), new[] { 1f, 1f, 1f }, new[] { 1f });
+            var columns = new float[SCALE_TIER_COUNT];
+            var buttonGrid = new ControlGrid(default(RectangleF), columns, new[] { 1f });
+            _consumptionBar = new EnergyStatBarControl(host) { Label = "Consumption" };
+            _productionBar = new EnergyStatBarControl(host) { Label = "Production" };
+            _chargeBar = new EnergyStatBarControl(host) { Label = "Charge", ShowPercentage = true };
+            progressGrid.Set(CreateInsetCell(_consumptionBar, PROGRESS_CELL_MARGIN_X_PIXELS, PROGRESS_CELL_MARGIN_Y_PIXELS), 0, 0);
+            progressGrid.Set(CreateInsetCell(_productionBar, PROGRESS_CELL_MARGIN_X_PIXELS, PROGRESS_CELL_MARGIN_Y_PIXELS), 1, 0);
+            progressGrid.Set(CreateInsetCell(_chargeBar, PROGRESS_CELL_MARGIN_X_PIXELS, PROGRESS_CELL_MARGIN_Y_PIXELS), 2, 0);
+
+            
+            for (int i = 0; i < SCALE_TIER_COUNT; i++)
+            {
+                columns[i] = 1;
+                int tier = i;
+                _scaleButtons[i] = new ToggleButton(default(RectangleF), GetScaleLabel(i),
+                    delegate { return GetScaleTierIndex() == tier; },
+                    delegate { SetScaleTierIndex(tier); });
+                buttonGrid.Set(CreateInsetCell(_scaleButtons[i], BUTTON_CELL_MARGIN_X_PIXELS, BUTTON_CELL_MARGIN_Y_PIXELS), i, 0);
+                _interactiveList.Add(_scaleButtons[i]);
+            }
+
+            _consumerGraph = new EnergySubtypeGraphControl(host) { Producers = false, Title = "Consumption" };
+            _producerGraph = new EnergySubtypeGraphControl(host) { Producers = true, Title = "Production" };
+            _chargeGraph = new EnergySubtypeGraphControl(host) { Charge = true, Title = "Charge" };
+
+            _producerWrapPanel = CreatePowerWrapPanel(_producerRows);
+            _consumerWrapPanel = CreatePowerWrapPanel(_consumerRows);
+            _chargeWrapPanel = CreatePowerWrapPanel(_chargeRows);
+            _producerScrollPanel = new ScrollPanel(null, this);
+            _consumerScrollPanel = new ScrollPanel(null, this);
+            _chargeScrollPanel = new ScrollPanel(null, this);
+            _producerScrollPanel.SetContent(_producerWrapPanel);
+            _consumerScrollPanel.SetContent(_consumerWrapPanel);
+            _chargeScrollPanel.SetContent(_chargeWrapPanel);
+            _contentCarousel = new CarouselPanel();
+            _contentCarousel.AddChild(CreatePage(_consumerGraph, _consumerScrollPanel));
+            _contentCarousel.AddChild(CreatePage(_producerGraph, _producerScrollPanel));
+            _contentCarousel.AddChild(CreatePage(_chargeGraph, _chargeScrollPanel));
+            _interactiveList.Add(_contentCarousel);
+
+            _rootGrid.Set(progressGrid, 0, 0);
+            _rootGrid.Set(buttonGrid, 0, 1);
+            _rootGrid.Set(_contentCarousel, 0, 2, 1, 2);
+            CaptureLease();
+        }
+
+        InsetCellPanel CreateInsetCell(ControlBase child, float horizontalMarginPixels, float verticalMarginPixels)
+        {
+            return new InsetCellPanel(child, Host, horizontalMarginPixels, verticalMarginPixels);
+        }
+
+        static ControlGrid CreatePage(ControlBase graph, ControlBase list)
+        {
+            var page = new ControlGrid(default(RectangleF), new[] { 1f }, new[] { 90f, 140f });
+            page.Set(graph, 0, 0);
+            page.Set(list, 0, 1);
+            return page;
+        }
+
+        public List<ControlBase> InteractiveList { get { return _interactiveList; } }
+        public ScreenConfigPower Config { get { return _config; } }
+
+        public bool HasVisibleItems()
+        {
+            return true;
+        }
+
+        public void OnMouseScroll(int delta, ref bool handled)
+        {
         }
 
         public override void Update()
         {
-            CollectData(Host.GridLogic);
-            TryAddSample();
+            CaptureLease();
+            _latest = _lease != null ? _lease.Latest : new PowerSnapshot();
+            BuildRows(_latest.ProducerSubtypes, _producerRows, EnergyDashboardPowerMetrics.GetCurrentProducerTotal(_latest));
+            BuildRows(_latest.ConsumerSubtypes, _consumerRows, EnergyDashboardPowerMetrics.GetCurrentConsumerTotal(_latest));
+            BuildRows(_latest.ChargeSubtypes, _chargeRows, _latest.MaxStoredEnergyWh, true);
+            _producerWrapPanel.InvalidateLayout();
+            _consumerWrapPanel.InvalidateLayout();
+            _chargeWrapPanel.InvalidateLayout();
         }
 
         public override List<MySprite> GetSprites()
         {
             var sprites = new List<MySprite>();
-            DrawDashboard(sprites);
+            float top = GetContentTop();
+            var bounds = new RectangleF(Host.ViewBox.X, top, Host.ViewBox.Width, Math.Max(0f, Host.ViewBox.Bottom - top));
+            BindControls(GetSnapshots(_lease != null ? _lease.History : null));
+            _rootGrid.Arrange(bounds);
+            _rootGrid.Render(CreateControlRenderContext(Host.Surface, Host.Proportion, Host.Surface.FontSize, GetCursorPosition()), sprites);
             return sprites;
         }
 
-        void CollectData(GridLogic gridLogic)
+        public override void Close()
         {
-            var owner = Host;
-
-            _solar = new Category();
-            _wind = new Category();
-            _reactor = new Category();
-            _engine = new Category();
-            _batteryProd = new Category();
-            _totalConsumptionW = 0;
-
-            _producers.Clear();
-            if (gridLogic != null)
-                _producers.AddRange(gridLogic.GetTerminalBlocks<IMyPowerProducer>(Config.GridLinkType));
-
-            for (int i = 0; i < _producers.Count; i++)
+            if (_lease != null)
             {
-                var prod = _producers[i];
-                try
-                {
-                    double cur = MegaWattsToWatts(prod.CurrentOutput);
-                    double max = MegaWattsToWatts(prod.MaxOutput);
-                    if (prod is IMyBatteryBlock)
-                    {
-                        _batteryProd.CurrentW += cur; _batteryProd.MaxW += max;
-                    }
-                    else if (prod is IMySolarPanel)
-                    {
-                        _solar.CurrentW += cur; _solar.MaxW += max;
-                    }
-                    else if (prod is IMyWindTurbine)
-                    {
-                        _wind.CurrentW += cur; _wind.MaxW += max;
-                    }
-                    else if (prod is IMyReactor)
-                    {
-                        _reactor.CurrentW += cur; _reactor.MaxW += max;
-                    }
-                    else
-                    {
-                        try
-                        {
-                            var tid = prod.BlockDefinition.TypeIdString ?? string.Empty;
-                            if (tid.EndsWith("HydrogenEngine", StringComparison.OrdinalIgnoreCase))
-                            {
-                                _engine.CurrentW += cur; _engine.MaxW += max;
-                            }
-                        }
-                        catch (Exception e)
-                        {
-                            ErrorHandlerHelper.LogError(e, owner);
-                        }
-                    }
-                }
-                catch (Exception e)
-                {
-                    ErrorHandlerHelper.LogError(e, owner);
-                }
-            }
-
-            _totalMaxW = _solar.MaxW + _wind.MaxW + _reactor.MaxW + _engine.MaxW + _batteryProd.MaxW;
-
-            _terminals.Clear();
-            if (gridLogic != null)
-                _terminals.AddRange(gridLogic.GetTerminalBlocks<IMyTerminalBlock>(Config.GridLinkType));
-
-            for (int i = 0; i < _terminals.Count; i++)
-            {
-                if (_terminals[i] is IMyPowerProducer)
-                    continue;
-
-                MyResourceSinkComponent sink = null;
-                try
-                {
-                    _terminals[i].Components.TryGet(out sink);
-                }
-                catch (Exception e)
-                {
-                    ErrorHandlerHelper.LogError(e, owner);
-                }
-
-                if (sink == null)
-                    continue;
-
-                double w = 0;
-                try
-                {
-                    w = MegaWattsToWatts(sink.CurrentInputByType(ElectricityId));
-                }
-                catch (Exception e)
-                {
-                    ErrorHandlerHelper.LogError(e, owner);
-                }
-
-                if (w > 0)
-                    _totalConsumptionW += w;
-            }
-
-            _batteries.Clear();
-            if (gridLogic != null)
-                _batteries.AddRange(gridLogic.GetTerminalBlocks<IMyBatteryBlock>(Config.GridLinkType));
-
-            if (_batteries.Count > 0)
-            {
-                const float eps = 0.001f;
-                float sumRatio = 0f;
-                float totalStored = 0f;
-                float totalMax = 0f;
-                float netIn = 0f;
-                float netOut = 0f;
-
-                for (int i = 0; i < _batteries.Count; i++)
-                {
-                    var b = _batteries[i];
-                    float r = b.MaxStoredPower > 0f
-                        ? Math.Max(0f, Math.Min(1f, b.CurrentStoredPower / b.MaxStoredPower))
-                        : 0f;
-                    sumRatio += r;
-                    totalStored += b.CurrentStoredPower;
-                    totalMax += b.MaxStoredPower;
-                    netIn += b.CurrentInput;
-                    netOut += b.CurrentOutput;
-                }
-
-                _avgBatteryCharge = sumRatio / _batteries.Count;
-                _isCharging = netIn > netOut + eps;
-
-                float netRate = Math.Abs(netIn - netOut);
-                if (netRate < eps)
-                    _timeLabel = LocHelper.GetLoc("LcdMod_NotAvailable");
-                else if (_isCharging)
-                    _timeLabel = FormatingHelper.FormatTimeHours((totalMax - totalStored) / netRate);
-                else
-                    _timeLabel = FormatingHelper.FormatTimeHours(totalStored / netRate);
-            }
-            else
-            {
-                _avgBatteryCharge = 0f;
-                _isCharging = false;
-                _timeLabel = LocHelper.GetLoc("LcdMod_NotAvailable");
+                _lease.Dispose();
+                _lease = null;
             }
         }
 
-        float GetWindowSeconds()
+        void BindControls(List<PowerSnapshot> snapshots)
         {
-            if (_config == null) return 30f;
-            int idx = Math.Max(0, Math.Min(_config.GraphWindowIndex, WindowOptions.Length - 1));
-            return WindowOptions[idx];
+            double maxConsumptionW = EnergyDashboardPowerMetrics.GetMaxConsumerTotal(_latest);
+            float loadRatio = EnergyDashboardPowerMetrics.Ratio(_latest.TotalRequiredInputW, maxConsumptionW);
+            float chargeRatio = EnergyDashboardPowerMetrics.Ratio(_latest.StoredEnergyWh, _latest.MaxStoredEnergyWh);
+            _consumptionBar.Current = _latest.TotalRequiredInputW;
+            _consumptionBar.Max = maxConsumptionW;
+            _consumptionBar.FillColor = GetLoadColor(loadRatio);
+            _productionBar.Current = _latest.Producers.KnownCurrentOutputW;
+            _productionBar.Max = _latest.MaxAvailableW;
+            _productionBar.FillColor = _config.HeaderColor;
+            _chargeBar.Current = _latest.StoredEnergyWh;
+            _chargeBar.Max = _latest.MaxStoredEnergyWh;
+            _chargeBar.FillColor = GetBatteryIconColor(chargeRatio);
+
+            int selectedScale = GetScaleTierIndex();
+            bool showAll = selectedScale == SCALE_TIER_COUNT - 1;
+            _consumerGraph.WindowSeconds = showAll ? 0f : GetScaleWindowSeconds(selectedScale);
+            _producerGraph.WindowSeconds = showAll ? 0f : GetScaleWindowSeconds(selectedScale);
+            _chargeGraph.WindowSeconds = showAll ? 0f : GetScaleWindowSeconds(selectedScale);
+            _consumerGraph.UseTimeSpacing = showAll;
+            _producerGraph.UseTimeSpacing = showAll;
+            _chargeGraph.UseTimeSpacing = showAll;
+            _consumerGraph.Bind(snapshots, _consumerRows);
+            _producerGraph.Bind(snapshots, _producerRows);
+            _chargeGraph.Bind(snapshots, _chargeRows);
+            _contentCarousel.LayoutScale = Host.Proportion;
+            BindList(_consumerScrollPanel, _consumerWrapPanel);
+            BindList(_producerScrollPanel, _producerWrapPanel);
+            BindList(_chargeScrollPanel, _chargeWrapPanel);
         }
 
-        void TryAddSample()
+        void BindList(ScrollPanel scrollPanel, VirtualizedWrapPanel<EnergyDashboardPowerRow> wrapPanel)
         {
-            float windowSeconds = GetWindowSeconds();
-            if (Math.Abs(windowSeconds - _lastWindowSeconds) > 0.01f)
-            {
-                _sampleCount = 0;
-                _sampleHead = 0;
-                _lastSampleTime = -999f;
-                _lastWindowSeconds = windowSeconds;
-            }
+            float scale = Host.Proportion;
+            float rowH = 44f * scale;
+            wrapPanel.RowHeight = rowH;
+            wrapPanel.MinimumColumnWidth = LIST_COLUMN_WRAP_WIDTH_PIXELS * scale;
+            wrapPanel.HorizontalGap = 6f * scale;
+            wrapPanel.VerticalGap = 0f;
+            scrollPanel.AutomaticScrollerWidthPixels = ScrollPanel.DefaultScrollerWidthPixels * scale;
+            scrollPanel.ScrollStepPixels = rowH;
+            Color fg = Host.Surface.ScriptForegroundColor;
+            scrollPanel.SetScrollBarColors(new Color(fg.R, fg.G, fg.B, 60), fg);
+            scrollPanel.SetVisible(true);
+        }
 
-            float now;
-            try
-            {
-                var sess = MyAPIGateway.Session;
-                now = sess != null ? (float)sess.ElapsedPlayTime.TotalSeconds : 0f;
-            }
-            catch
-            {
-                return;
-            }
-
-            float interval = windowSeconds / GRAPH_POINTS;
-            if (now - _lastSampleTime < interval)
+        void CaptureLease()
+        {
+            if (_lease != null || LcdModSessionComponent.Client == null || LcdModSessionComponent.Client.PowerData == null)
                 return;
 
-            double totalProd = _solar.CurrentW + _wind.CurrentW + _reactor.CurrentW + _engine.CurrentW;
-            _samples[_sampleHead] = new Sample { TimeS = now, ProductionW = totalProd, ConsumptionW = _totalConsumptionW };
-            _sampleHead = (_sampleHead + 1) % GRAPH_POINTS;
-            if (_sampleCount < GRAPH_POINTS) _sampleCount++;
-            _lastSampleTime = now;
+            _lease = LcdModSessionComponent.Client.PowerData.Capture(Host.GridLogic, _config.GridLinkType);
         }
 
-        void DrawDashboard(List<MySprite> sprites)
+        void BuildRows(List<PowerSubtypeSnapshot> entries, List<EnergyDashboardPowerRow> rows, double ratioDenominatorW)
         {
-            var owner = Host;
-            float xLeft = owner.ViewBox.X;
-            float xRight = owner.ViewBox.Right;
-            float contentW = xRight - xLeft;
-            float gapH = 5f * owner.Proportion;
-            float rowH = 21f * owner.Proportion;
-            float bigBarH = 28f * owner.Proportion;
-            float divH = Math.Max(1f, owner.Proportion);
-            float batH = rowH * 2.4f;
-
-            int prodRows = 0;
-            if (_solar.MaxW > 0) prodRows++;
-            if (_wind.MaxW > 0) prodRows++;
-            if (_reactor.MaxW > 0) prodRows++;
-            if (_engine.MaxW > 0) prodRows++;
-            if (_batteryProd.MaxW > 0) prodRows++;
-
-            float yBot = owner.ViewBox.Bottom;
-            float y = GetContentTop() + gapH;
-            float secAh = rowH + bigBarH + rowH;
-            DrawPowerBalanceSection(owner, sprites, xLeft, xRight, contentW, y, bigBarH, rowH);
-            y += secAh + gapH;
-            DrawDivider(owner, sprites, xLeft, xRight, y);
-            y += divH + gapH;
-
-            if (prodRows > 0)
-            {
-                y += gapH;
-                DrawProductionSection(owner, sprites, xLeft, contentW, y, rowH);
-                y += prodRows * rowH + gapH;
-                DrawDivider(owner, sprites, xLeft, xRight, y);
-                y += divH + gapH;
-            }
-
-            float graphAreaH = yBot - y - batH - gapH - divH - gapH;
-            if (graphAreaH > 30f * owner.Proportion)
-            {
-                float singleH = (graphAreaH - gapH) / 2f;
-                DrawLineGraph(owner, sprites, xLeft, contentW, y, singleH, true);
-                y += singleH + gapH;
-                DrawLineGraph(owner, sprites, xLeft, contentW, y, singleH, false);
-                y += singleH + gapH;
-                DrawDivider(owner, sprites, xLeft, xRight, y);
-                y += divH + gapH;
-            }
-
-            if (y + batH <= yBot + 1f)
-                DrawBatterySection(owner, sprites, xLeft, xRight, contentW, y, batH);
+            BuildRows(entries, rows, ratioDenominatorW, false);
         }
 
-        void DrawPowerBalanceSection(IAppHost owner, List<MySprite> sprites, float xLeft, float xRight, float contentW, float y, float bigBarH, float rowH)
+        void BuildRows(List<PowerSubtypeSnapshot> entries, List<EnergyDashboardPowerRow> rows, double ratioDenominatorW, bool charge)
         {
-            Color fg = owner.Surface.ScriptForegroundColor;
-            float ts = owner.Proportion * 0.72f * owner.Surface.FontSize;
-            string consumeLabel = FormatLoc("LcdMod_EnergyDashboard_CurrentConsumption", FormatingHelper.WattsToString(_totalConsumptionW));
-            string capLabel = FormatLoc("LcdMod_EnergyDashboard_MaxCapacity", FormatingHelper.WattsToString(_totalMaxW));
-            sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = consumeLabel, Position = new Vector2(xLeft, y), RotationOrScale = ts, Color = fg, Alignment = TextAlignment.LEFT, FontId = "White" });
-            sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = capLabel, Position = new Vector2(xRight, y), RotationOrScale = ts, Color = fg, Alignment = TextAlignment.RIGHT, FontId = "White" });
-            y += rowH;
+            rows.Clear();
+            if (entries == null)
+                return;
 
-            float ratio = _totalMaxW > 0 ? (float)Math.Min(1.0, _totalConsumptionW / _totalMaxW) : 0f;
-            Color barBg = new Color(fg.R, fg.G, fg.B, 25);
-            Color barFill = GetLoadColor(ratio);
-            float barCx = xLeft + contentW / 2f;
-            float barCy = y + bigBarH / 2f;
-
-            sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(barCx, barCy), Size = new Vector2(contentW, bigBarH), Color = barBg, Alignment = TextAlignment.CENTER });
-            if (ratio > 0.005f)
+            for (int i = 0; i < entries.Count; i++)
             {
-                float fillW = contentW * ratio;
-                sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(xLeft + fillW / 2f, barCy), Size = new Vector2(fillW, bigBarH), Color = barFill, Alignment = TextAlignment.CENTER });
-            }
-
-            sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = FormatingHelper.PercentageToString(ratio), Position = new Vector2(barCx, y + bigBarH * 0.08f), RotationOrScale = owner.Proportion * 0.82f * owner.Surface.FontSize, Color = fg, Alignment = TextAlignment.CENTER, FontId = "White" });
-
-            y += bigBarH;
-            double totalProd = _solar.CurrentW + _wind.CurrentW + _reactor.CurrentW + _engine.CurrentW + _batteryProd.CurrentW;
-            sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = FormatLoc("LcdMod_EnergyDashboard_Production", FormatingHelper.WattsToString(totalProd)), Position = new Vector2(barCx, y), RotationOrScale = ts, Color = fg, Alignment = TextAlignment.CENTER, FontId = "White" });
-        }
-
-        void DrawProductionSection(IAppHost owner, List<MySprite> sprites, float xLeft, float contentW, float y, float rowH)
-        {
-            Color fg = owner.Surface.ScriptForegroundColor;
-            Color accent = _config.HeaderColor;
-            float labelW = contentW * 0.24f;
-            float barW = contentW * 0.54f;
-            float numW = contentW - labelW - barW;
-
-            if (_solar.MaxW > 0) { DrawProductionRow(owner, sprites, LocHelper.GetLoc("LcdMod_EnergyDashboard_Solar"), _solar, xLeft, y, labelW, barW, numW, rowH, fg, accent); y += rowH; }
-            if (_wind.MaxW > 0) { DrawProductionRow(owner, sprites, LocHelper.GetLoc("LcdMod_EnergyDashboard_Wind"), _wind, xLeft, y, labelW, barW, numW, rowH, fg, accent); y += rowH; }
-            if (_reactor.MaxW > 0) { DrawProductionRow(owner, sprites, LocHelper.GetLoc("LcdMod_EnergyDashboard_Reactor"), _reactor, xLeft, y, labelW, barW, numW, rowH, fg, accent); y += rowH; }
-            if (_engine.MaxW > 0) { DrawProductionRow(owner, sprites, LocHelper.GetLoc("LcdMod_EnergyDashboard_Engine"), _engine, xLeft, y, labelW, barW, numW, rowH, fg, accent); y += rowH; }
-            if (_batteryProd.MaxW > 0) DrawProductionRow(owner, sprites, LocHelper.GetLoc("LcdMod_EnergyDashboard_Battery"), _batteryProd, xLeft, y, labelW, barW, numW, rowH, fg, accent);
-        }
-
-        void DrawProductionRow(IAppHost owner, List<MySprite> sprites, string label, Category cat, float xLeft, float y, float labelW, float barW, float numW, float rowH, Color fg, Color accent)
-        {
-            float ratio = cat.MaxW > 0 ? (float)Math.Min(1.0, cat.CurrentW / cat.MaxW) : 0f;
-            float rowCy = y + rowH / 2f;
-            float ts = owner.Proportion * 0.68f * owner.Surface.FontSize;
-            float tsBar = owner.Proportion * 0.62f * owner.Surface.FontSize;
-            float barH = rowH * 0.82f;
-            Color barBg = new Color(fg.R, fg.G, fg.B, 25);
-            float barXLeft = xLeft + labelW;
-
-            Vector2 labelSz = FormatingHelper.GetSizeInPixel(label, "White", ts, owner.Surface);
-            sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = label, Position = new Vector2(xLeft, rowCy - labelSz.Y / 2f), RotationOrScale = ts, Color = fg, Alignment = TextAlignment.LEFT, FontId = "White" });
-            sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(barXLeft + barW / 2f, rowCy), Size = new Vector2(barW, barH), Color = barBg, Alignment = TextAlignment.CENTER });
-            if (ratio > 0.005f)
-            {
-                float fillW = barW * ratio;
-                sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(barXLeft + fillW / 2f, rowCy), Size = new Vector2(fillW, barH), Color = accent, Alignment = TextAlignment.CENTER });
-            }
-            string curText = FormatingHelper.WattsToString(cat.CurrentW);
-            Vector2 curSz = FormatingHelper.GetSizeInPixel(curText, "White", tsBar, owner.Surface);
-            sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = curText, Position = new Vector2(barXLeft + barW / 2f, rowCy - curSz.Y / 2f), RotationOrScale = tsBar, Color = fg, Alignment = TextAlignment.CENTER, FontId = "White" });
-            string maxText = FormatingHelper.WattsToString(cat.MaxW);
-            Vector2 maxSz = FormatingHelper.GetSizeInPixel(maxText, "White", ts, owner.Surface);
-            sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = maxText, Position = new Vector2(barXLeft + barW + numW, rowCy - maxSz.Y / 2f), RotationOrScale = ts, Color = new Color(fg.R, fg.G, fg.B, 170), Alignment = TextAlignment.RIGHT, FontId = "White" });
-        }
-
-        void DrawLineGraph(IAppHost owner, List<MySprite> sprites, float xLeft, float contentW, float y, float height, bool isProduction)
-        {
-            Color fg = owner.Surface.ScriptForegroundColor;
-            Color lineColor = isProduction ? _config.HeaderColor : _config.WarningColor;
-            float ts = owner.Proportion * 0.62f * owner.Surface.FontSize;
-            string label = isProduction ? LocHelper.GetLoc("LcdMod_EnergyDashboard_ProductionGraph") : LocHelper.GetLoc("LcdMod_EnergyDashboard_ConsumptionGraph");
-            float labelH = FormatingHelper.GetSizeInPixel(label, "White", ts, owner.Surface).Y;
-
-            float nowTime = GetCurrentTime();
-            float windowSecs = GetWindowSeconds();
-            float windowStart = nowTime - windowSecs;
-
-            double maxData = 0;
-            int validCnt = 0;
-            if (_sampleCount >= 2)
-            {
-                for (int i = 0; i < _sampleCount; i++)
-                {
-                    int idx = (_sampleHead - _sampleCount + i + GRAPH_POINTS) % GRAPH_POINTS;
-                    var s = _samples[idx];
-                    if (s.TimeS < windowStart) continue;
-                    double v = isProduction ? s.ProductionW : s.ConsumptionW;
-                    if (v > maxData) maxData = v;
-                    validCnt++;
-                }
-            }
-
-            double step = CalcNiceStep(maxData > 0 ? maxData : 1.0, 4);
-            double axisMax = Math.Ceiling(maxData / step) * step;
-            if (axisMax < step) axisMax = step;
-            int numSteps = (int)Math.Round(axisMax / step);
-
-            string topLabel = FormatingHelper.WattsToString(axisMax);
-            float axisW = FormatingHelper.GetSizeInPixel(topLabel, "White", ts, owner.Surface).X + 4f * owner.Proportion;
-            float plotXLeft = xLeft + axisW;
-            float plotW = Math.Max(1f, contentW - axisW);
-            float plotY = y + labelH + 2f * owner.Proportion;
-            float plotH = Math.Max(4f, height - labelH - 2f * owner.Proportion);
-
-            Color graphBg = new Color(fg.R, fg.G, fg.B, 12);
-            sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(plotXLeft + plotW / 2f, plotY + plotH / 2f), Size = new Vector2(plotW, plotH), Color = graphBg, Alignment = TextAlignment.CENTER });
-            sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = label, Position = new Vector2(plotXLeft, y), RotationOrScale = ts, Color = lineColor, Alignment = TextAlignment.LEFT, FontId = "White" });
-
-            Color axisColor = new Color(fg.R, fg.G, fg.B, 170);
-            Color gridColor = new Color(fg.R, fg.G, fg.B, 18);
-            float labelHHalf = FormatingHelper.GetSizeInPixel("0", "White", ts, owner.Surface).Y / 2f;
-
-            for (int si = 0; si <= numSteps; si++)
-            {
-                double v = si * step;
-                float lineY = plotY + plotH - (float)(v / axisMax) * plotH;
-                lineY = Math.Max(plotY, Math.Min(plotY + plotH, lineY));
-
-                if (si > 0)
-                    sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(plotXLeft + plotW / 2f, lineY), Size = new Vector2(plotW, Math.Max(1f, owner.Proportion * 0.5f)), Color = gridColor, Alignment = TextAlignment.CENTER });
-
-                string lbl = FormatingHelper.WattsToString(v);
-                float lblY = Math.Max(plotY, Math.Min(plotY + plotH - labelHHalf * 2f, lineY - labelHHalf));
-                sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = lbl, Position = new Vector2(xLeft + axisW - 2f * owner.Proportion, lblY), RotationOrScale = ts, Color = si == 0 ? new Color(fg.R, fg.G, fg.B, 110) : axisColor, Alignment = TextAlignment.RIGHT, FontId = "White" });
-            }
-
-            if (validCnt < 2 || maxData < 1.0) return;
-
-            float prevX = 0f, prevY = 0f;
-            bool hasPrev = false;
-            float lineThickness = Math.Max(1.5f, owner.Proportion * 1.5f);
-
-            for (int i = 0; i < _sampleCount; i++)
-            {
-                int idx = (_sampleHead - _sampleCount + i + GRAPH_POINTS) % GRAPH_POINTS;
-                var s = _samples[idx];
-                if (s.TimeS < windowStart)
-                {
-                    hasPrev = false;
+                var entry = entries[i];
+                if (entry == null || (entry.CurrentW <= 0 && entry.MaxW <= 0))
                     continue;
-                }
 
-                double val = isProduction ? s.ProductionW : s.ConsumptionW;
-                float px = plotXLeft + (s.TimeS - windowStart) / windowSecs * plotW;
-                float py = plotY + plotH - (float)(val / axisMax) * plotH;
-                py = Math.Max(plotY, Math.Min(plotY + plotH, py));
+                rows.Add(new EnergyDashboardPowerRow
+                {
+                    Entry = entry,
+                    SpriteName = ResolveSubtypeSprite(entry),
+                    CurrentW = entry.CurrentW,
+                    MaxW = entry.MaxW,
+                    RatioDenominatorW = charge ? entry.MaxW : ratioDenominatorW,
+                    IsCharge = charge
+                });
+            }
 
-                if (hasPrev)
-                    DrawLineSegment(sprites, new Vector2(prevX, prevY), new Vector2(px, py), lineThickness, lineColor);
-
-                prevX = px;
-                prevY = py;
-                hasPrev = true;
+            rows.Sort(ComparePowerRowsDescending);
+            for (int i = 0; i < rows.Count; i++)
+            {
+                var row = rows[i];
+                row.Color = ColorForSubtypeIndex(i);
+                rows[i] = row;
             }
         }
 
-        void DrawBatterySection(IAppHost owner, List<MySprite> sprites, float xLeft, float xRight, float contentW, float y, float sectionH)
+        VirtualizedWrapPanel<EnergyDashboardPowerRow> CreatePowerWrapPanel(List<EnergyDashboardPowerRow> rows)
         {
-            Color fg = owner.Surface.ScriptForegroundColor;
-            Color iconColor = GetBatteryIconColor(_avgBatteryCharge);
-            float cy = y + sectionH / 2f;
-            float ts = owner.Proportion * 0.76f * owner.Surface.FontSize;
-            float tsSmall = owner.Proportion * 0.63f * owner.Surface.FontSize;
-
-            float bodyH = sectionH * 0.72f;
-            float bodyW = contentW * 0.38f;
-            float iconCx = xLeft + bodyW / 2f + 2f * owner.Proportion;
-            float pctScale = Math.Min(owner.Proportion * 0.90f * owner.Surface.FontSize, bodyH * 0.55f / 14f);
-
-            DrawHorizontalBatteryIcon(sprites, owner.Surface, new Vector2(iconCx, cy), bodyW, bodyH, _avgBatteryCharge, iconColor, fg, pctScale);
-
-            string stateWord = _isCharging ? LocHelper.GetLoc("LcdMod_EnergyDashboard_Charging") : LocHelper.GetLoc("LcdMod_EnergyDashboard_Discharging");
-            string stateText = stateWord + " — " + _timeLabel;
-            Vector2 stSz = FormatingHelper.GetSizeInPixel(stateText, "White", ts, owner.Surface);
-            sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = stateText, Position = new Vector2(xRight, cy - stSz.Y - owner.Proportion), RotationOrScale = ts, Color = fg, Alignment = TextAlignment.RIGHT, FontId = "White" });
-
-            int batCount = _batteries.Count;
-            string countText = FormatLoc(batCount == 1 ? "LcdMod_EnergyDashboard_BatteryCountSingular" : "LcdMod_EnergyDashboard_BatteryCountPlural", batCount);
-            sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = countText, Position = new Vector2(xRight, cy + owner.Proportion), RotationOrScale = tsSmall, Color = new Color(fg.R, fg.G, fg.B, 170), Alignment = TextAlignment.RIGHT, FontId = "White" });
+            return new VirtualizedWrapPanel<EnergyDashboardPowerRow>
+            {
+                ItemsSource = rows,
+                CreateControl = CreatePowerRowControl,
+                BindControl = BindPowerRowControl
+            };
         }
 
-        static void DrawHorizontalBatteryIcon(List<MySprite> sprites, Sandbox.ModAPI.Ingame.IMyTextSurface surf, Vector2 center, float bodyW, float bodyH, float ratio, Color fillColor, Color borderColor, float textScale)
+        ControlBase CreatePowerRowControl(EnergyDashboardPowerRow row)
         {
-            const float border = 3f;
-            var emptyBg = new Color(borderColor.R, borderColor.G, borderColor.B, 40);
-            sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = center, Size = new Vector2(bodyW, bodyH), Color = emptyBg, Alignment = TextAlignment.CENTER });
-            if (ratio > 0.005f)
+            return new EnergyPowerRowControl(Host);
+        }
+
+        static void BindPowerRowControl(ControlBase control, EnergyDashboardPowerRow row, int index)
+        {
+            var rowControl = control as EnergyPowerRowControl;
+            if (rowControl != null)
+                rowControl.SetRow(row);
+        }
+
+        static int ComparePowerRowsDescending(EnergyDashboardPowerRow a, EnergyDashboardPowerRow b)
+        {
+            int current = b.CurrentW.CompareTo(a.CurrentW);
+            if (current != 0)
+                return current;
+            return string.Compare(GetRowLabel(a.Entry), GetRowLabel(b.Entry), StringComparison.OrdinalIgnoreCase);
+        }
+
+        string ResolveSubtypeSprite(PowerSubtypeSnapshot entry)
+        {
+            if (entry == null)
+                return string.Empty;
+
+            var spriteKey = !string.IsNullOrEmpty(entry.SpriteKey) ? entry.SpriteKey : entry.Key;
+            if (string.IsNullOrEmpty(spriteKey))
+                return string.Empty;
+
+            string cached;
+            if (_spriteCache.TryGetValue(spriteKey, out cached))
+                return cached;
+
+            string spriteName;
+            if (!TextureHelper.TryGetOrAddTextureForBlockName(spriteKey, out spriteName))
+                spriteName = string.Empty;
+
+            _spriteCache[spriteKey] = spriteName;
+            return spriteName;
+        }
+
+        List<PowerSnapshot> GetSnapshots(PowerHistory history)
+        {
+            if (history == null)
+                return new List<PowerSnapshot>();
+
+            int tier = GetScaleTierIndex();
+            List<PowerSnapshot> snapshots;
+            switch ((PowerHistoryTier)tier)
             {
-                float innerW = bodyW - border * 2f;
-                float fillW = innerW * ratio;
-                float fillCx = center.X - innerW / 2f + fillW / 2f;
-                sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(fillCx, center.Y), Size = new Vector2(fillW, bodyH - border * 2f), Color = fillColor, Alignment = TextAlignment.CENTER });
+                case PowerHistoryTier.Average1Second:
+                    snapshots = history.RawSamples.ToListOldestFirst();
+                    break;
+                case PowerHistoryTier.Average5Seconds:
+                    snapshots = history.Average5Seconds.ToListOldestFirst();
+                    break;
+                case PowerHistoryTier.Average30Seconds:
+                    snapshots = history.Average30Seconds.ToListOldestFirst();
+                    break;
+                case PowerHistoryTier.Average1Minute:
+                    snapshots = history.Average1Minute.ToListOldestFirst();
+                    break;
+                case PowerHistoryTier.Average5Minutes:
+                    snapshots = history.Average5Minutes.ToListOldestFirst();
+                    break;
+                default:
+                    return GetAllNonZeroSnapshots(history, _latest);
             }
-            sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(center.X + bodyW / 2f + bodyW * 0.05f, center.Y), Size = new Vector2(bodyW * 0.07f, bodyH * 0.38f), Color = borderColor, Alignment = TextAlignment.CENTER });
-            float bw = Math.Max(1f, border * 0.8f);
-            float halfW = bodyW / 2f;
-            float halfH = bodyH / 2f;
-            sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(center.X, center.Y - halfH), Size = new Vector2(bodyW, bw), Color = borderColor, Alignment = TextAlignment.CENTER });
-            sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(center.X, center.Y + halfH), Size = new Vector2(bodyW, bw), Color = borderColor, Alignment = TextAlignment.CENTER });
-            sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(center.X - halfW, center.Y), Size = new Vector2(bw, bodyH), Color = borderColor, Alignment = TextAlignment.CENTER });
-            sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(center.X + halfW, center.Y), Size = new Vector2(bw, bodyH), Color = borderColor, Alignment = TextAlignment.CENTER });
-            string pct = FormatingHelper.PercentageToString(ratio);
-            Vector2 pctSz = FormatingHelper.GetSizeInPixel(pct, "White", textScale, surf);
-            sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = pct, Position = new Vector2(center.X, center.Y - pctSz.Y / 2f), RotationOrScale = textScale, Color = borderColor, Alignment = TextAlignment.CENTER, FontId = "White" });
+
+            return PadSnapshots(snapshots, GetScaleWindowSeconds(tier), _latest);
         }
 
-        static double CalcNiceStep(double maxVal, int targetDivisions)
+        static List<PowerSnapshot> GetAllNonZeroSnapshots(PowerHistory history, PowerSnapshot latest)
         {
-            if (maxVal <= 0 || targetDivisions <= 0) return 1.0;
-            double rawStep = maxVal / targetDivisions;
-            double mag = Math.Pow(10, Math.Floor(Math.Log10(rawStep)));
-            double norm = rawStep / mag;
-            double niceNorm = norm <= 1.0 ? 1 : norm <= 2.0 ? 2 : norm <= 5.0 ? 5 : 10;
-            return niceNorm * mag;
+            var byFrame = new Dictionary<long, PowerSnapshot>();
+            AddNonZeroSnapshots(byFrame, history.Average30Minutes.ToListOldestFirst());
+            AddNonZeroSnapshots(byFrame, history.Average5Minutes.ToListOldestFirst());
+            AddNonZeroSnapshots(byFrame, history.Average1Minute.ToListOldestFirst());
+            AddNonZeroSnapshots(byFrame, history.Average30Seconds.ToListOldestFirst());
+            AddNonZeroSnapshots(byFrame, history.Average5Seconds.ToListOldestFirst());
+            AddNonZeroSnapshots(byFrame, history.RawSamples.ToListOldestFirst());
+            AddNonZeroSnapshot(byFrame, latest);
+
+            var result = new List<PowerSnapshot>(byFrame.Values);
+            result.Sort(CompareSnapshotsByFrame);
+            return result;
         }
 
-        static void DrawLineSegment(List<MySprite> sprites, Vector2 p1, Vector2 p2, float thickness, Color color)
+        static void AddNonZeroSnapshots(Dictionary<long, PowerSnapshot> byFrame, List<PowerSnapshot> snapshots)
         {
-            float dx = p2.X - p1.X;
-            float dy = p2.Y - p1.Y;
-            float len = (float)Math.Sqrt(dx * dx + dy * dy);
-            if (len < 0.5f) return;
-            sprites.Add(new MySprite
+            if (snapshots == null)
+                return;
+
+            for (int i = 0; i < snapshots.Count; i++)
+                AddNonZeroSnapshot(byFrame, snapshots[i]);
+        }
+
+        static void AddNonZeroSnapshot(Dictionary<long, PowerSnapshot> byFrame, PowerSnapshot snapshot)
+        {
+            if (!HasPowerData(snapshot))
+                return;
+
+            byFrame[snapshot.GameplayFrame] = snapshot;
+        }
+
+        static bool HasPowerData(PowerSnapshot snapshot)
+        {
+            if (snapshot.TotalRequiredInputW > 0.0 ||
+                snapshot.MaxAvailableW > 0.0 ||
+                snapshot.Producers.KnownCurrentOutputW > 0.0 ||
+                snapshot.StoredEnergyWh > 0.0 ||
+                snapshot.MaxStoredEnergyWh > 0.0)
+                return true;
+
+            return HasSubtypePowerData(snapshot.ProducerSubtypes) ||
+                   HasSubtypePowerData(snapshot.ConsumerSubtypes) ||
+                   HasSubtypePowerData(snapshot.ChargeSubtypes);
+        }
+
+        static bool HasSubtypePowerData(List<PowerSubtypeSnapshot> entries)
+        {
+            if (entries == null)
+                return false;
+
+            for (int i = 0; i < entries.Count; i++)
             {
-                Type = SpriteType.TEXTURE,
-                Data = "SquareSimple",
-                Position = new Vector2((p1.X + p2.X) / 2f, (p1.Y + p2.Y) / 2f),
-                Size = new Vector2(len, thickness),
-                RotationOrScale = (float)Math.Atan2(dy, dx),
-                Color = color,
-                Alignment = TextAlignment.CENTER
-            });
-        }
-
-        static float GetCurrentTime()
-        {
-            try
-            {
-                var sess = MyAPIGateway.Session;
-                return sess != null ? (float)sess.ElapsedPlayTime.TotalSeconds : 0f;
+                var entry = entries[i];
+                if (entry != null && (entry.CurrentW > 0.0 || entry.RequiredW > 0.0 || entry.MaxW > 0.0))
+                    return true;
             }
-            catch
+
+            return false;
+        }
+
+        static int CompareSnapshotsByFrame(PowerSnapshot a, PowerSnapshot b)
+        {
+            return a.GameplayFrame.CompareTo(b.GameplayFrame);
+        }
+
+        static List<PowerSnapshot> PadSnapshots(List<PowerSnapshot> snapshots, float windowSeconds, PowerSnapshot latest)
+        {
+            if (snapshots == null)
+                snapshots = new List<PowerSnapshot>();
+
+            if (snapshots.Count == 0 || latest.GameplayFrame > snapshots[snapshots.Count - 1].GameplayFrame)
             {
-                return 0f;
+                snapshots = new List<PowerSnapshot>(snapshots);
+                snapshots.Add(latest);
+            }
+
+            if (snapshots.Count > GRAPH_BUCKET_COUNT)
+                snapshots = snapshots.GetRange(snapshots.Count - GRAPH_BUCKET_COUNT, GRAPH_BUCKET_COUNT);
+
+            if (snapshots.Count >= GRAPH_BUCKET_COUNT)
+                return snapshots;
+
+            long endFrame = snapshots.Count > 0 ? snapshots[snapshots.Count - 1].GameplayFrame : latest.GameplayFrame;
+            long stepFrames = Math.Max(1L, (long)Math.Round(Math.Max(0.1f, windowSeconds) * 60f / GRAPH_BUCKET_COUNT));
+            var padded = new List<PowerSnapshot>(GRAPH_BUCKET_COUNT);
+            int missing = GRAPH_BUCKET_COUNT - snapshots.Count;
+
+            for (int i = missing; i > 0; i--)
+                padded.Add(PowerSnapshot.Empty(endFrame - stepFrames * i));
+
+            padded.AddRange(snapshots);
+            return padded;
+        }
+
+        PowerHistoryTier GetHistoryTier()
+        {
+            return (PowerHistoryTier)GetScaleTierIndex();
+        }
+
+        int GetScaleTierIndex()
+        {
+            int tier = _config.PowerHistoryTier >= 0 ? _config.PowerHistoryTier : _config.GraphWindowIndex;
+            return Math.Max(0, Math.Min(tier, SCALE_TIER_COUNT - 1));
+        }
+
+        void SetScaleTierIndex(int tier)
+        {
+            tier = Math.Max(0, Math.Min(tier, SCALE_TIER_COUNT - 1));
+            _config.PowerHistoryTier = tier;
+            _config.GraphWindowIndex = tier;
+            Host.RenderSprites();
+        }
+
+        static string GetScaleLabel(int index)
+        {
+            switch (index)
+            {
+                case 0: return "1s";
+                case 1: return "5s";
+                case 2: return "30s";
+                case 3: return "1m";
+                case 4: return "5m";
+                default: return "all";
             }
         }
 
-        void DrawDivider(IAppHost owner, List<MySprite> sprites, float xLeft, float xRight, float y)
+        static float GetScaleWindowSeconds(int index)
         {
-            Color fg = owner.Surface.ScriptForegroundColor;
-            sprites.Add(new MySprite
+            switch (index)
             {
-                Type = SpriteType.TEXTURE,
-                Data = "SquareSimple",
-                Position = new Vector2((xLeft + xRight) / 2f, y + Math.Max(1f, owner.Proportion) / 2f),
-                Size = new Vector2(xRight - xLeft, Math.Max(1f, owner.Proportion)),
-                Color = new Color(fg.R, fg.G, fg.B, 80),
-                Alignment = TextAlignment.CENTER
-            });
+                case 0: return 1f;
+                case 1: return 5f;
+                case 2: return 30f;
+                case 3: return 60f;
+                case 4: return 300f;
+                default: return 1800f;
+            }
         }
 
         Color GetLoadColor(float ratio)
@@ -593,12 +489,116 @@ namespace LcdMod.Client.Apps
             return _config.HeaderColor;
         }
 
-        static double MegaWattsToWatts(float megawatts) => megawatts * 1000000.0;
-        static string FormatLoc(string key, object arg) => string.Format(FormatingHelper.Culture, LocHelper.GetLoc(key), arg);
+        static Color ColorForSubtypeIndex(int index)
+        {
+            // I didn't check how factorio does, but this is similar enough for initial numbers:
+            // 240 starts at blue, then * by the prime 137 so it scales out of phase with the HUE
+            // but still deterministic based on the index
+            return HsvToColor((240 + index * 137) % 360, 0.85f, 0.75f);
+        }
+
+        static Color HsvToColor(int hueDegrees, float saturation, float value)
+        {
+            float h = ((hueDegrees % 360) + 360) % 360 / 60f;
+            float c = value * saturation;
+            float x = c * (1f - Math.Abs(h % 2f - 1f));
+            float m = value - c;
+            float r = 0f;
+            float g = 0f;
+            float b = 0f;
+
+            if (h < 1f)
+            {
+                r = c;
+                g = x;
+            }
+            else if (h < 2f)
+            {
+                r = x;
+                g = c;
+            }
+            else if (h < 3f)
+            {
+                g = c;
+                b = x;
+            }
+            else if (h < 4f)
+            {
+                g = x;
+                b = c;
+            }
+            else if (h < 5f)
+            {
+                r = x;
+                b = c;
+            }
+            else
+            {
+                r = c;
+                b = x;
+            }
+
+            return new Color(
+                (int)Math.Round((r + m) * 255f),
+                (int)Math.Round((g + m) * 255f),
+                (int)Math.Round((b + m) * 255f));
+        }
+
+        static string GetRowLabel(PowerSubtypeSnapshot entry)
+        {
+            if (entry == null)
+                return "Unknown";
+            if (!string.IsNullOrEmpty(entry.DisplayName))
+                return entry.DisplayName;
+            if (!string.IsNullOrEmpty(entry.SubtypeId))
+                return entry.SubtypeId;
+            return "Unknown";
+        }
+
+        Vector2 GetCursorPosition()
+        {
+            var interactive = Host as IEyeTracking;
+            return interactive != null ? interactive.CursorPosition : new Vector2(float.NaN, float.NaN);
+        }
 
         float GetContentTop()
         {
             return Host.TitleVisible ? Host.ViewBox.Y + (40f * Host.Proportion * Host.Surface.FontSize) : Host.ViewBox.Y;
+        }
+
+        // todo: remove this when implement style support
+        sealed class InsetCellPanel : Panel
+        {
+            readonly ControlBase _child;
+            readonly IAppHost _host;
+            readonly float _horizontalMarginPixels;
+            readonly float _verticalMarginPixels;
+
+            public InsetCellPanel(ControlBase child, IAppHost host, float horizontalMarginPixels, float verticalMarginPixels)
+                : base(default(RectangleF))
+            {
+                _child = child;
+                _host = host;
+                _horizontalMarginPixels = Math.Max(0f, horizontalMarginPixels);
+                _verticalMarginPixels = Math.Max(0f, verticalMarginPixels);
+                AddChild(child);
+            }
+
+            protected override void ArrangeChildren()
+            {
+                if (_child == null)
+                    return;
+
+                float scale = _host != null ? _host.Proportion : 1f;
+                float x = Math.Min(Rect.Width * 0.5f, _horizontalMarginPixels * scale);
+                float y = Math.Min(Rect.Height * 0.5f, _verticalMarginPixels * scale);
+
+                _child.Arrange(new RectangleF(
+                    Rect.X + x,
+                    Rect.Y + y,
+                    Math.Max(0f, Rect.Width - x * 2f),
+                    Math.Max(0f, Rect.Height - y * 2f)));
+            }
         }
     }
 }

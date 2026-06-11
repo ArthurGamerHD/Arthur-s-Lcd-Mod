@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using Generated;
 using LcdMod.Client.Apps;
 using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.Gui;
+using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
@@ -14,7 +16,7 @@ using ComboboxLinkType = LcdMod.Client.Terminal.Controls.Generic.ComboboxLinkTyp
 namespace LcdMod.Client.SurfaceScripts
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public partial class EnergyDashboardSurfaceScript : SurfaceScriptBase,
+    public partial class EnergyDashboardSurfaceScript : InteractiveSurfaceScript,
         IUsesTerminalControl<ComboboxGraphWindow>,
         IUsesTerminalControl<ComboboxLinkType>
     {
@@ -24,10 +26,22 @@ namespace LcdMod.Client.SurfaceScripts
         protected override string DefaultTitle => TITLE;
         public override IApp App => _app;
         IApp _app;
+        readonly List<ControlBase> _interactiveListFallback = new List<ControlBase>();
+        public override List<ControlBase> InteractiveList
+        {
+            get
+            {
+                var interactive = _app as IAppInteractive;
+                return interactive != null ? interactive.InteractiveList : _interactiveListFallback;
+            }
+        }
+        protected override bool RendersInteractiveEntriesInGetSprites => true;
 
         public EnergyDashboardSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)
         {
         }
+
+        public override CursorType CursorType { get; protected set; }
 
         public override void SafeRun()
         {
