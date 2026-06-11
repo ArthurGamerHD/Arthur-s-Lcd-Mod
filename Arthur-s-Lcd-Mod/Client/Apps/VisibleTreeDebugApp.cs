@@ -77,7 +77,7 @@ namespace LcdMod.Client.Apps
             float fontScale = owner.Surface != null && owner.Surface.FontSize > 0f
                 ? owner.Surface.FontSize
                 : 1f;
-            return Math.Max(0.05f, LINE_SCALE * owner.Proportion * fontScale);
+            return Math.Max(0.05f, LINE_SCALE * owner.Config.Scale * fontScale);
         }
 
         static RectangleF GetViewBox(VisibleTreeDebugSurfaceScript owner)

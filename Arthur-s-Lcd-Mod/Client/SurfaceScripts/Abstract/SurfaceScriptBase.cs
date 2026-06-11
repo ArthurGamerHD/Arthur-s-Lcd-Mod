@@ -93,9 +93,9 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         protected virtual string DefaultTitle => "<Title not Set>";
 
-        public float Proportion { get; set; } = 1;
+        public float ConfiguredScale => Config != null ? Config.Scale : 1f;
         protected float FontScale => _userFontScale <= 0f ? 1f : _userFontScale;
-        protected float LayoutScale => Proportion * FontScale;
+        protected float LayoutScale => ConfiguredScale * FontScale;
 
         float _userScale;
         float _userFontScale;
@@ -540,7 +540,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 Type = SpriteType.TEXT,
                 Data = titleText,
                 Position = position,
-                RotationOrScale = Proportion * 1.3f * FontScale,
+                RotationOrScale = ConfiguredScale * 1.3f * FontScale,
                 Color = ColorableConfig.HeaderColor,
                 Alignment = TextAlignment.LEFT,
                 FontId = "White"
@@ -684,7 +684,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         protected virtual MyTuple<RectangleF, RectangleF, RectangleF> GetCellSlots(float innerLeft, float innerRight,
             float innerTop, float innerBottom, float spacing)
         {
-            var topRowHeight = spacing * Proportion;
+            var topRowHeight = spacing * ConfiguredScale;
             var bottomRowTop = innerTop + topRowHeight;
             var bottomRowHeight = Math.Max(0f, innerBottom - bottomRowTop);
             var iconSize = innerBottom - innerTop;
@@ -727,13 +727,13 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 Color = color,
                 Alignment = TextAlignment.CENTER,
                 FontId = "White",
-                RotationOrScale = 1f * Proportion * FontScale
+                RotationOrScale = 1f * ConfiguredScale * FontScale
             };
 
-            sprites.Add(iconSprite.Shadow(2 * Proportion));
+            sprites.Add(iconSprite.Shadow(2 * ConfiguredScale));
             sprites.Add(iconSprite);
 
-            sprites.Add(textSprite.Shadow(2 * Proportion));
+            sprites.Add(textSprite.Shadow(2 * ConfiguredScale));
             sprites.Add(textSprite);
         }
 
@@ -756,9 +756,9 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             var cellRect = new RectangleF(rl, rt, rr - rl, rb - rt);
             var dropShadow = new RectangleF(cellRect.Position + 2, cellRect.Size);
             Border.CreateSpritesFromRect(dropShadow, frame, a,
-                radiusScale: Proportion);
+                radiusScale: ConfiguredScale);
             Border.CreateSpritesFromRect(cellRect, frame, backgroundColor,
-                radiusScale: Proportion);
+                radiusScale: ConfiguredScale);
         }
 
         protected static void ParseFilter(IMyTerminalBlock lcd, out string mode, out string token)
@@ -786,7 +786,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         public void TrimText(ref StringBuilder sb, float availableWidth, float fontSize = 1)
         {
-            Vector2 textSize = Surface.MeasureStringInPixels(sb, "White", fontSize * Proportion * FontScale);
+            Vector2 textSize = Surface.MeasureStringInPixels(sb, "White", fontSize * ConfiguredScale * FontScale);
 
             if (textSize.X > availableWidth)
             {
@@ -795,7 +795,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 {
                     sb.Clear();
                     sb.Append(FormatingHelper.TrimName(source, i));
-                    textSize = Surface.MeasureStringInPixels(sb, "White", fontSize * Proportion * FontScale);
+                    textSize = Surface.MeasureStringInPixels(sb, "White", fontSize * ConfiguredScale * FontScale);
 
                     if (textSize.X <= availableWidth)
                         break;
@@ -837,19 +837,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             };
         }
 
-        protected Vector2 GetAutoScale2D(float logicalWidth = 512f, float logicalHeight = 512f)
-        {
-            if (logicalWidth <= 0f) logicalWidth = 512f;
-            if (logicalHeight <= 0f) logicalHeight = 512f;
-            return new Vector2(ViewBox.Size.X / logicalWidth, ViewBox.Size.Y / logicalHeight);
-        }
-
-        protected float GetAutoScaleUniform(float logicalWidth = 512f, float logicalHeight = 512f)
-        {
-            var s = GetAutoScale2D(logicalWidth, logicalHeight);
-            return Math.Min(s.X, s.Y) * Config.Scale;
-        }
-
         protected virtual void LayoutChanged()
         {
             if(Surface == null)
@@ -863,7 +850,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             LocalizedTitleCache = string.Empty;
             TitleVisible = Config.TitleVisible;
             InvalidateTitleCache();
-            Proportion = GetAutoScaleUniform();
             UpdateViewBox();
             _backgroundGrids.Clear();
             (Block as IMyTerminalBlock)?.RefreshTerminal();
@@ -936,7 +922,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 Color = Surface.ScriptForegroundColor,
                 Alignment = TextAlignment.CENTER,
                 FontId = "White",
-                RotationOrScale = Proportion * FontScale
+                RotationOrScale = ConfiguredScale * FontScale
             });
         }
 

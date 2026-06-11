@@ -61,7 +61,6 @@ namespace LcdMod.Client.SurfaceScripts
             if (_app == null)
                 _app = new CargoFilledApp(AppConfig, this);
 
-            Proportion = GetAutoScaleUniform();
             UpdateViewBox();
             _app.Update();
 

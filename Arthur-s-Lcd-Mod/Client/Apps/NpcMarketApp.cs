@@ -161,7 +161,7 @@ namespace LcdMod.Client.Apps
 
             var key = CacheKey;
             var snapshot = NpcMarketClientCache.GetSnapshot(key);
-            var headerTop = view.Y + (Host.TitleVisible ? 48f * Host.Proportion * fontScale : 12f * scale);
+            var headerTop = view.Y + (Host.TitleVisible ? 48f * AppConfig.Scale * fontScale : 12f * scale);
             
             if (IsLocallyAccessDenied() || (snapshot != null && IsAccessDenied(snapshot)))
             {

@@ -46,7 +46,7 @@ namespace LcdMod.Client.Apps
 
         public List<ControlBase> InteractiveEntries => _interactiveEntries;
 
-        float Scale => Host != null ? Host.Proportion : 1f;
+        float Scale => Host != null ? AppConfig.Scale : 1f;
 
         float FontScale => _host != null && _host.Surface != null ? Math.Max(0.1f, _host.Surface.FontSize) : 1f;
 

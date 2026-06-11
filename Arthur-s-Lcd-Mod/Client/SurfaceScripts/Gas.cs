@@ -43,7 +43,6 @@ namespace LcdMod.Client.SurfaceScripts
             if (_app == null)
                 _app = new GasApp(AppConfig, this);
 
-            Proportion = GetAutoScaleUniform();
             UpdateViewBox();
             _app.Update();
 

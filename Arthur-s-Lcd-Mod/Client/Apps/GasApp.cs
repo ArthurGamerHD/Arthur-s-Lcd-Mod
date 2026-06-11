@@ -86,7 +86,7 @@ namespace LcdMod.Client.Apps
             if (_entries.Count <= 0)
                 return;
 
-            var rowHeight = LINE_HEIGHT * Host.Proportion;
+            var rowHeight = LINE_HEIGHT * AppConfig.Scale;
             _scrollPanel.SetContent(_listPanel);
             _listPanel.RowHeight = rowHeight;
             _listPanel.Gap = 0f;
@@ -102,7 +102,7 @@ namespace LcdMod.Client.Apps
             if (_entries.Count <= 0)
                 return;
 
-            var rowHeight = 2f * LINE_HEIGHT * Host.Proportion;
+            var rowHeight = 2f * LINE_HEIGHT * AppConfig.Scale;
             _scrollPanel.SetContent(_gridPanel);
             _gridPanel.RowHeight = rowHeight;
             _gridPanel.MinimumColumnWidth = Host.ViewBox.Width + 1f;
@@ -132,7 +132,7 @@ namespace LcdMod.Client.Apps
             var viewportHeight = Math.Max(0f, Host.ViewBox.Bottom - contentTop);
             _scrollPanel.ConfigureAutomatic(
                 new RectangleF(Host.ViewBox.X, contentTop, Host.ViewBox.Width, viewportHeight),
-                ScrollPanel.DefaultScrollerWidthPixels * Host.Proportion,
+                ScrollPanel.DefaultScrollerWidthPixels * AppConfig.Scale,
                 rowHeight,
                 SCROLL_DELAY / 6f);
             _scrollPanel.SetScrollBarColors(
@@ -145,7 +145,7 @@ namespace LcdMod.Client.Apps
         {
             return CreateControlRenderContext(
                 Host.Surface,
-                Host.Proportion,
+                AppConfig.Scale,
                 Host.Surface.FontSize,
                 new Vector2(float.NaN, float.NaN));
         }
@@ -294,12 +294,12 @@ namespace LcdMod.Client.Apps
             if (Config.DrawLines)
                 frame.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(bounds.Center.X, position.Y), Size = new Vector2(bounds.Width, 2f), Color = Host.ForegroundColor, Alignment = TextAlignment.CENTER });
 
-            var barMargin = 8 * Host.Proportion;
+            var barMargin = 8 * AppConfig.Scale;
             Vector2 size = new Vector2(bounds.Width, bounds.Height) - barMargin;
             var rowClip = new RectangleF(
                 bounds.X,
                 bounds.Y,
-                Math.Max(0f, bounds.Width - 145f * Host.Proportion),
+                Math.Max(0f, bounds.Width - 145f * AppConfig.Scale),
                 bounds.Height);
 
             if (BeginNestedClip(frame, rowClip))
@@ -307,18 +307,18 @@ namespace LcdMod.Client.Apps
                 var activeRowClip = Intersect(rowClip, _scrollPanel.ContentViewportBounds);
                 DrawClippedProgressBar(
                     frame,
-                    new Vector2(position.X, position.Y + Host.Proportion) + barMargin / 2f,
+                    new Vector2(position.X, position.Y + AppConfig.Scale) + barMargin / 2f,
                     size,
                     pct,
                     activeRowClip);
-                position.X += 16 * Host.Proportion;
-                position.Y += 4 * Host.Proportion;
-                frame.Add(new MySprite { Type = SpriteType.TEXT, Data = entry.Name, Position = position, RotationOrScale = Host.Proportion, Color = Host.Surface.ScriptForegroundColor, Alignment = TextAlignment.LEFT, FontId = "White" });
+                position.X += 16 * AppConfig.Scale;
+                position.Y += 4 * AppConfig.Scale;
+                frame.Add(new MySprite { Type = SpriteType.TEXT, Data = entry.Name, Position = position, RotationOrScale = AppConfig.Scale, Color = Host.Surface.ScriptForegroundColor, Alignment = TextAlignment.LEFT, FontId = "White" });
                 EndNestedClipAndRestoreScrollClip(frame);
             }
 
             position.X = bounds.Right;
-            frame.Add(new MySprite { Type = SpriteType.TEXT, Data = FormatingHelper.PercentageToString(pct), Position = position, RotationOrScale = Host.Proportion, Color = Host.Surface.ScriptForegroundColor, Alignment = TextAlignment.RIGHT, FontId = "White" });
+            frame.Add(new MySprite { Type = SpriteType.TEXT, Data = FormatingHelper.PercentageToString(pct), Position = position, RotationOrScale = AppConfig.Scale, Color = Host.Surface.ScriptForegroundColor, Alignment = TextAlignment.RIGHT, FontId = "White" });
         }
 
         void DrawClippedProgressBar(
@@ -400,7 +400,7 @@ namespace LcdMod.Client.Apps
 
         void DrawGridCell(List<MySprite> frame, Entry entry, float xStart, float xEnd, float yStart, float rowHeight)
         {
-            var cellPadding = (LINE_HEIGHT * Host.Proportion) / 3f;
+            var cellPadding = (LINE_HEIGHT * AppConfig.Scale) / 3f;
             var pct = MathHelper.Clamp(entry.Percentage, 0f, 1f);
             var cellView = GetCellViewBox(xStart, xEnd, yStart, rowHeight, cellPadding);
 
@@ -412,9 +412,9 @@ namespace LcdMod.Client.Apps
                 var cellRect = new RectangleF(xStart + cellPadding / 2f, yStart + cellPadding / 2f, (xEnd - xStart) - cellPadding, rowHeight - cellPadding);
                 var dropShadow = new RectangleF(cellRect.Position + 2, cellRect.Size);
                 Border.CreateSpritesFromRect(dropShadow, frame, hsv.HSVtoColor(),
-                    radiusScale: Host.Proportion);
+                    radiusScale: AppConfig.Scale);
                 Border.CreateSpritesFromRect(cellRect, frame, backgroundColor,
-                    radiusScale: Host.Proportion);
+                    radiusScale: AppConfig.Scale);
             }
 
             var nameHeight = Math.Max(0f, cellView.Height * .45f);
@@ -422,16 +422,16 @@ namespace LcdMod.Client.Apps
             var bottomRect = new RectangleF(cellView.X, nameRect.Bottom, cellView.Width, Math.Max(0f, cellView.Bottom - nameRect.Bottom));
             var name = new StringBuilder(entry.Name ?? string.Empty);
             TrimText(ref name, nameRect.Width);
-            frame.Add(new MySprite { Type = SpriteType.TEXT, Data = name.ToString(), Position = new Vector2(nameRect.X + 2f * Host.Proportion, nameRect.Y + 2f * Host.Proportion), RotationOrScale = .9f * Host.Proportion, Color = Host.Surface.ScriptForegroundColor, Alignment = TextAlignment.LEFT, FontId = "White" });
+            frame.Add(new MySprite { Type = SpriteType.TEXT, Data = name.ToString(), Position = new Vector2(nameRect.X + 2f * AppConfig.Scale, nameRect.Y + 2f * AppConfig.Scale), RotationOrScale = .9f * AppConfig.Scale, Color = Host.Surface.ScriptForegroundColor, Alignment = TextAlignment.LEFT, FontId = "White" });
 
             var barWidth = bottomRect.Width * (2f / 3f);
             var textRect = new RectangleF(bottomRect.X + barWidth, bottomRect.Y, bottomRect.Width - barWidth, bottomRect.Height);
             var barRect = new RectangleF(bottomRect.X, bottomRect.Y, barWidth, bottomRect.Height);
-            var barInnerPaddingX = 2f * Host.Proportion;
+            var barInnerPaddingX = 2f * AppConfig.Scale;
             var barInnerPaddingY = bottomRect.Height * 0.2f;
             var fillColor = Extensions.ColorExtensions.DeriveAccentColor(Config.HeaderColor, .4f, 0.5);
-            BarPanel.CreateSprites(frame, new Vector2(barRect.X + barInnerPaddingX, barRect.Y + barInnerPaddingY + (2f * Host.Proportion)), new Vector2(Math.Max(1f, barRect.Width - 2f * barInnerPaddingX), Math.Max(1f, barRect.Height - 2f * barInnerPaddingY)), fillColor, fillColor.DeriveAccentColor(.6f, 0.7), pct, GetEntryUsageColor(pct));
-            frame.Add(new MySprite { Type = SpriteType.TEXT, Data = FormatingHelper.PercentageToString(pct), Position = new Vector2(textRect.Right - (2f * Host.Proportion), textRect.Y + 2f * Host.Proportion), RotationOrScale = .95f * Host.Proportion, Color = Host.Surface.ScriptForegroundColor, Alignment = TextAlignment.RIGHT, FontId = "White" });
+            BarPanel.CreateSprites(frame, new Vector2(barRect.X + barInnerPaddingX, barRect.Y + barInnerPaddingY + (2f * AppConfig.Scale)), new Vector2(Math.Max(1f, barRect.Width - 2f * barInnerPaddingX), Math.Max(1f, barRect.Height - 2f * barInnerPaddingY)), fillColor, fillColor.DeriveAccentColor(.6f, 0.7), pct, GetEntryUsageColor(pct));
+            frame.Add(new MySprite { Type = SpriteType.TEXT, Data = FormatingHelper.PercentageToString(pct), Position = new Vector2(textRect.Right - (2f * AppConfig.Scale), textRect.Y + 2f * AppConfig.Scale), RotationOrScale = .95f * AppConfig.Scale, Color = Host.Surface.ScriptForegroundColor, Alignment = TextAlignment.RIGHT, FontId = "White" });
         }
 
         Color? GetEntryUsageColor(float pct)
@@ -445,7 +445,7 @@ namespace LcdMod.Client.Apps
 
         float GetContentTop()
         {
-            return Host.TitleVisible ? Host.ViewBox.Y + (40f * Host.Proportion * Host.Surface.FontSize) : Host.ViewBox.Y;
+            return Host.TitleVisible ? Host.ViewBox.Y + (40f * AppConfig.Scale * Host.Surface.FontSize) : Host.ViewBox.Y;
         }
 
         RectangleF GetCellViewBox(float xStart, float xEnd, float yStart, float cellHeight, float cellPadding)
@@ -459,7 +459,7 @@ namespace LcdMod.Client.Apps
 
         void TrimText(ref StringBuilder sb, float availableWidth, float fontSize = 1f)
         {
-            Vector2 textSize = Host.Surface.MeasureStringInPixels(sb, "White", fontSize * Host.Proportion);
+            Vector2 textSize = Host.Surface.MeasureStringInPixels(sb, "White", fontSize * AppConfig.Scale);
             if (textSize.X <= availableWidth)
                 return;
 
@@ -468,7 +468,7 @@ namespace LcdMod.Client.Apps
             {
                 sb.Clear();
                 sb.Append(FormatingHelper.TrimName(source, i));
-                textSize = Host.Surface.MeasureStringInPixels(sb, "White", fontSize * Host.Proportion);
+                textSize = Host.Surface.MeasureStringInPixels(sb, "White", fontSize * AppConfig.Scale);
                 if (textSize.X <= availableWidth)
                     break;
             }

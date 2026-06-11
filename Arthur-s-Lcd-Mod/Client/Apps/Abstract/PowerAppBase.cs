@@ -118,7 +118,7 @@ namespace LcdMod.Client.Apps.Abstract
         IMyCubeBlock Block => Host.Block;
         Sandbox.ModAPI.Ingame.IMyTextSurface Surface => Host.Surface;
         RectangleF ViewBox => Host.ViewBox;
-        float Scale => Host.Proportion;
+        float Scale => AppConfig.Scale;
         float FontScale => Host.Surface.FontSize;
         float LayoutScale => Scale * FontScale;
         Color ForegroundColor => Host.ForegroundColor;

@@ -164,8 +164,8 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             if (!ShouldRenderGlobalMenu())
                 return;
 
-            float reservedHeight = _globalMenu.GetReservedHeight(this, Proportion, FontScale, Surface);
-            reservedHeight += Math.Min(16 * Proportion, Surface.SurfaceSize.Y * Surface.TextPadding / 100);
+            float reservedHeight = _globalMenu.GetReservedHeight(this, ConfiguredScale, FontScale, Surface);
+            reservedHeight += Math.Min(16 * ConfiguredScale, Surface.SurfaceSize.Y * Surface.TextPadding / 100);
             
             ViewBox = new RectangleF(
                 _baseViewBox.X,
@@ -517,7 +517,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 parentEntry,
                 App,
                 ViewBox,
-                Proportion,
+                ConfiguredScale,
                 FontScale,
                 Surface,
                 textColor,
@@ -592,7 +592,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 this,
                 frame,
                 _baseViewBox,
-                Proportion,
+                ConfiguredScale,
                 FontScale,
                 Surface,
                 ForegroundColor,
@@ -897,7 +897,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 this,
                 spriteList,
                 _baseViewBox,
-                Proportion,
+                ConfiguredScale,
                 FontScale,
                 Surface,
                 ForegroundColor,
@@ -940,10 +940,10 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
             var themedApp = App as IThemedApp;
             var context = themedApp != null
-                ? themedApp.CreateControlRenderContext(Surface, Proportion, FontScale, CursorPosition)
+                ? themedApp.CreateControlRenderContext(Surface, ConfiguredScale, FontScale, CursorPosition)
                 : new ControlRenderContext(
                     Surface,
-                    Proportion,
+                    ConfiguredScale,
                     FontScale,
                     ForegroundColor,
                     ColorableConfig?.HeaderColor ?? BackgroundColor,
@@ -971,10 +971,10 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
             var themedApp = App as IThemedApp;
             var context = themedApp != null
-                ? themedApp.CreateControlRenderContext(Surface, Proportion, FontScale, CursorPosition)
+                ? themedApp.CreateControlRenderContext(Surface, ConfiguredScale, FontScale, CursorPosition)
                 : new ControlRenderContext(
                     Surface,
-                    Proportion,
+                    ConfiguredScale,
                     FontScale,
                     ForegroundColor,
                     ColorableConfig?.HeaderColor ?? BackgroundColor,

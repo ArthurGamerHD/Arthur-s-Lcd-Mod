@@ -311,8 +311,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         {
             var text = FormatTrend(trend);
             var textSize = FormatingHelper.GetSizeInPixel(text, "White", textScale, surface);
-            var iconSize = Math.Max(8f * _parent.AppHost.Proportion, textSize.Y * 0.82f);
-            var gap = 3f * _parent.AppHost.Proportion;
+            var iconSize = Math.Max(8f * _parent.AppHost.Config.Scale, textSize.Y * 0.82f);
+            var gap = 3f * _parent.AppHost.Config.Scale;
             float rotation;
             var sprite = GetTrendSprite(trend, _mode, out rotation);
 

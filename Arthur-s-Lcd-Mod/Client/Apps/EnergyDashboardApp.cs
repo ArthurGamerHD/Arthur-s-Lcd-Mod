@@ -25,8 +25,8 @@ namespace LcdMod.Client.Apps
         const float PROGRESS_CELL_MARGIN_Y_PIXELS = 2f;
         const float BUTTON_CELL_MARGIN_X_PIXELS = 2f;
         const float BUTTON_CELL_MARGIN_Y_PIXELS = 2f;
-        const float PROGRESS_ROW_WEIGHT = 24f;
-        const float BUTTON_ROW_WEIGHT = 16f;
+        const float PROGRESS_ROW_WEIGHT = 48f;
+        const float BUTTON_ROW_WEIGHT = 24f;
 
         readonly ScreenConfigPower _config;
         readonly List<ControlBase> _interactiveList = new List<ControlBase>();
@@ -146,8 +146,9 @@ namespace LcdMod.Client.Apps
             float top = GetContentTop();
             var bounds = new RectangleF(Host.ViewBox.X, top, Host.ViewBox.Width, Math.Max(0f, Host.ViewBox.Bottom - top));
             BindControls(GetSnapshots(_lease != null ? _lease.History : null));
+            _rootGrid.SetRows(CreateRootRows(bounds.Height, AppConfig.Scale));
             _rootGrid.Arrange(bounds);
-            _rootGrid.Render(CreateControlRenderContext(Host.Surface, Host.Proportion, Host.Surface.FontSize, GetCursorPosition()), sprites);
+            _rootGrid.Render(CreateControlRenderContext(Host.Surface, AppConfig.Scale, Host.Surface.FontSize, GetCursorPosition()), sprites);
             return sprites;
         }
 
@@ -186,7 +187,7 @@ namespace LcdMod.Client.Apps
             _consumerGraph.Bind(snapshots, _consumerRows);
             _producerGraph.Bind(snapshots, _producerRows);
             _chargeGraph.Bind(snapshots, _chargeRows);
-            _contentCarousel.LayoutScale = Host.Proportion;
+            _contentCarousel.LayoutScale = AppConfig.Scale;
             BindList(_consumerScrollPanel, _consumerWrapPanel);
             BindList(_producerScrollPanel, _producerWrapPanel);
             BindList(_chargeScrollPanel, _chargeWrapPanel);
@@ -194,7 +195,7 @@ namespace LcdMod.Client.Apps
 
         void BindList(ScrollPanel scrollPanel, VirtualizedWrapPanel<EnergyDashboardPowerRow> wrapPanel)
         {
-            float scale = Host.Proportion;
+            float scale = AppConfig.Scale;
             float rowH = 44f * scale;
             wrapPanel.RowHeight = rowH;
             wrapPanel.MinimumColumnWidth = LIST_COLUMN_WRAP_WIDTH_PIXELS * scale;
@@ -475,6 +476,17 @@ namespace LcdMod.Client.Apps
             }
         }
 
+        static float[] CreateRootRows(float availableHeight, float scale)
+        {
+            float progressHeight = PROGRESS_ROW_WEIGHT * scale;
+            float buttonHeight = BUTTON_ROW_WEIGHT * scale;
+            float remainingHeight = Math.Max(0f, availableHeight - progressHeight - buttonHeight);
+            float contentWeight = 90f + 140f;
+            float graphHeight = remainingHeight * 90f / contentWeight;
+            float listHeight = remainingHeight * 140f / contentWeight;
+            return new[] { progressHeight, buttonHeight, graphHeight, listHeight };
+        }
+
         Color GetLoadColor(float ratio)
         {
             if (ratio >= 0.90f) return _config.ErrorColor;
@@ -563,7 +575,7 @@ namespace LcdMod.Client.Apps
 
         float GetContentTop()
         {
-            return Host.TitleVisible ? Host.ViewBox.Y + (40f * Host.Proportion * Host.Surface.FontSize) : Host.ViewBox.Y;
+            return Host.TitleVisible ? Host.ViewBox.Y + (40f * AppConfig.Scale * Host.Surface.FontSize) : Host.ViewBox.Y;
         }
 
         // todo: remove this when implement style support
@@ -589,7 +601,7 @@ namespace LcdMod.Client.Apps
                 if (_child == null)
                     return;
 
-                float scale = _host != null ? _host.Proportion : 1f;
+                float scale = _host != null ? _host.Config.Scale : 1f;
                 float x = Math.Min(Rect.Width * 0.5f, _horizontalMarginPixels * scale);
                 float y = Math.Min(Rect.Height * 0.5f, _verticalMarginPixels * scale);
 

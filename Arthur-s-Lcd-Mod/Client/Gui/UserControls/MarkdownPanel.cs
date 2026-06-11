@@ -49,7 +49,7 @@ namespace LcdMod.Client.Gui.UserControls
             if (!context.TitleVisible)
                 return viewBox;
 
-            float layoutScale = context.Proportion * context.Surface.FontSize;
+            float layoutScale = context.Config.Scale * context.Surface.FontSize;
             float contentTop = viewBox.Y + TITLE_BAR_HEIGHT_BASE * layoutScale;
             return new RectangleF(
                 viewBox.X,
@@ -88,7 +88,7 @@ namespace LcdMod.Client.Gui.UserControls
                 _headerColor = headerColor;
                 _textColor = textColor;
                 _sprites = sprites;
-                _layoutScale = Math.Max(0.1f, _context.Proportion * _context.Surface.FontSize);
+                _layoutScale = Math.Max(0.1f, _context.Config.Scale * _context.Surface.FontSize);
             }
 
             public void Render(MarkdownDocument document)
@@ -180,7 +180,7 @@ namespace LcdMod.Client.Gui.UserControls
                 var style = new TextStyle(
                     defaultColor,
                     DEFAULT_FONT,
-                    Math.Max(0.05f, relativeScale * _context.Proportion * _context.Surface.FontSize));
+                    Math.Max(0.05f, relativeScale * _context.Config.Scale * _context.Surface.FontSize));
                 CollectRuns(inlines, style, _runs);
 
                 float x = _contentLeft + indent;
@@ -193,7 +193,7 @@ namespace LcdMod.Client.Gui.UserControls
                 var style = new TextStyle(
                     _textColor,
                     CODE_FONT,
-                    Math.Max(0.05f, 0.82f * _context.Proportion * _context.Surface.FontSize));
+                    Math.Max(0.05f, 0.82f * _context.Config.Scale * _context.Surface.FontSize));
 
                 float x = _contentLeft + indent;
                 float availableWidth = Math.Max(1f, _contentRight - x);
@@ -210,7 +210,7 @@ namespace LcdMod.Client.Gui.UserControls
 
             void RenderListBlock(ListBlock block, float indent)
             {
-                float scale = _context.Proportion * _context.Surface.FontSize;
+                float scale = _context.Config.Scale * _context.Surface.FontSize;
                 float markerWidth = GetListMarkerWidth(block, scale);
                 float markerGap = Math.Max(6f, 8f * _layoutScale);
                 float markerLeft = _contentLeft + indent ;
@@ -418,7 +418,7 @@ namespace LcdMod.Client.Gui.UserControls
             {
                 if (!_line.HasText)
                 {
-                    _cursorY += GetLineHeight(DEFAULT_FONT, _context.Proportion * _context.Surface.FontSize);
+                    _cursorY += GetLineHeight(DEFAULT_FONT, _context.Config.Scale * _context.Surface.FontSize);
                     return;
                 }
 
@@ -705,7 +705,7 @@ namespace LcdMod.Client.Gui.UserControls
             {
                 Vector2 measured = Measure(text, MONOSPACE_FONT, 1f);
                 if (measured.X <= 0f || measured.Y <= 0f)
-                    return _context.Proportion * _context.Surface.FontSize;
+                    return _context.Config.Scale * _context.Surface.FontSize;
 
                 return Math.Max(0.01f, Math.Min(imageBoxSize.X / measured.X, imageBoxSize.Y / measured.Y));
             }

@@ -325,9 +325,9 @@ namespace LcdMod.Client.Apps
 
         void DrawFarmPlots(IAppHost owner, List<MySprite> sprites)
         {
-            float minW = SLOT_W * owner.Proportion;
-            float minH = SLOT_H * owner.Proportion;
-            float contentTop = GetContentTop(owner) + 6f * owner.Proportion;
+            float minW = SLOT_W * owner.Config.Scale;
+            float minH = SLOT_H * owner.Config.Scale;
+            float contentTop = GetContentTop(owner) + 6f * owner.Config.Scale;
             float availW = owner.ViewBox.Width;
             float xLeft = owner.ViewBox.X;
             float xRight = owner.ViewBox.X + owner.ViewBox.Width;
@@ -352,7 +352,7 @@ namespace LcdMod.Client.Apps
             var viewportHeight = Math.Max(0f, owner.ViewBox.Bottom - contentTop);
             _scrollPanel.ConfigureAutomatic(
                 new RectangleF(owner.ViewBox.X, contentTop, owner.ViewBox.Width, viewportHeight),
-                SCROLLER_W * owner.Proportion,
+                SCROLLER_W * owner.Config.Scale,
                 rowHeight,
                 SCROLL_TICK / 6f);
             var headerColor = _config != null ? _config.HeaderColor : owner.ForegroundColor;
@@ -388,7 +388,7 @@ namespace LcdMod.Client.Apps
         {
             return CreateControlRenderContext(
                 owner.Surface,
-                owner.Proportion,
+                owner.Config.Scale,
                 owner.Surface.FontSize,
                 new Vector2(float.NaN, float.NaN));
         }
@@ -534,7 +534,7 @@ namespace LcdMod.Client.Apps
 
         float GetContentTop(IAppHost owner)
         {
-            return owner.TitleVisible ? owner.ViewBox.Y + (40f * owner.Proportion * owner.Surface.FontSize) : owner.ViewBox.Y;
+            return owner.TitleVisible ? owner.ViewBox.Y + (40f * owner.Config.Scale * owner.Surface.FontSize) : owner.ViewBox.Y;
         }
 
         string GetRemainingText(FarmPlotEntry plot, float growthPercent, float ratio, string percentText)

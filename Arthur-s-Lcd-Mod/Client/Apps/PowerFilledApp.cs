@@ -143,9 +143,9 @@ namespace LcdMod.Client.Apps
 
         void DrawBatteries(IAppHost owner, List<MySprite> sprites)
         {
-            float minW = BATTERY_SLOT_W * owner.Proportion;
-            float minH = BATTERY_SLOT_H * owner.Proportion;
-            float contentTop = GetContentTop(owner) + 6f * owner.Proportion;
+            float minW = BATTERY_SLOT_W * owner.Config.Scale;
+            float minH = BATTERY_SLOT_H * owner.Config.Scale;
+            float contentTop = GetContentTop(owner) + 6f * owner.Config.Scale;
             float footerHeight = GetFooterHeight(owner);
             float availW = owner.ViewBox.Width;
             float xLeft = owner.ViewBox.X;
@@ -171,7 +171,7 @@ namespace LcdMod.Client.Apps
             var viewportHeight = Math.Max(0f, owner.ViewBox.Bottom - contentTop - Math.Max(0f, footerHeight));
             _scrollPanel.ConfigureAutomatic(
                 new RectangleF(owner.ViewBox.X, contentTop, owner.ViewBox.Width, viewportHeight),
-                ScrollPanel.DefaultScrollerWidthPixels * owner.Proportion,
+                ScrollPanel.DefaultScrollerWidthPixels * owner.Config.Scale,
                 rowHeight,
                 SCROLL_TICK / 6f);
             _scrollPanel.SetScrollBarColors(
@@ -192,7 +192,7 @@ namespace LcdMod.Client.Apps
         {
             return CreateControlRenderContext(
                 owner.Surface,
-                owner.Proportion,
+                owner.Config.Scale,
                 owner.Surface.FontSize,
                 new Vector2(float.NaN, float.NaN));
         }
@@ -282,12 +282,12 @@ namespace LcdMod.Client.Apps
                 return;
             }
 
-            float rowHeight = 40f * owner.Proportion * owner.Surface.FontSize;
+            float rowHeight = 40f * owner.Config.Scale * owner.Surface.FontSize;
             float footerHeight = rowHeight * rows;
             float footerTop = owner.ViewBox.Bottom - footerHeight;
             float footerLeft = owner.ViewBox.X;
             float footerWidth = Math.Max(1f, owner.ViewBox.Width);
-            float footerPad = 6f * owner.Proportion;
+            float footerPad = 6f * owner.Config.Scale;
             float contentLeft = footerLeft + footerPad;
             float contentRight = footerLeft + footerWidth - footerPad;
             Color fg = owner.Surface.ScriptForegroundColor;
@@ -303,8 +303,8 @@ namespace LcdMod.Client.Apps
             });
 
             float iconLeft = contentLeft;
-            float textScale = owner.Proportion * 0.75f * owner.Surface.FontSize;
-            float textLeftPad = Math.Max(2f, owner.Proportion * 2f);
+            float textScale = owner.Config.Scale * 0.75f * owner.Surface.FontSize;
+            float textLeftPad = Math.Max(2f, owner.Config.Scale * 2f);
             int rowIndex = 0;
 
             for (int i = 0; i < _collectors.Count; i++)
@@ -376,7 +376,7 @@ namespace LcdMod.Client.Apps
         {
             float width = bounds.Width;
             float height = bounds.Height;
-            float labelGap = Math.Max(1f, owner.Proportion * 2f);
+            float labelGap = Math.Max(1f, owner.Config.Scale * 2f);
             Vector2 pctRef = FormatingHelper.GetSizeInPixel(slot.PercentText, "White", 1f, owner.Surface);
             float pctScale = Math.Min((width * 0.6f) / Math.Max(1f, pctRef.X), (height * 0.22f) / Math.Max(1f, pctRef.Y)) * Math.Min(owner.Surface.FontSize, 1f);
             float pctH = pctRef.Y * pctScale;
@@ -447,7 +447,7 @@ namespace LcdMod.Client.Apps
 
         float GetContentTop(IAppHost owner)
         {
-            return owner.TitleVisible ? owner.ViewBox.Y + (40f * owner.Proportion * owner.Surface.FontSize) : owner.ViewBox.Y;
+            return owner.TitleVisible ? owner.ViewBox.Y + (40f * owner.Config.Scale * owner.Surface.FontSize) : owner.ViewBox.Y;
         }
 
         float GetFooterHeight(IAppHost owner)
@@ -458,7 +458,7 @@ namespace LcdMod.Client.Apps
                     rows++;
             if (rows == 0)
                 return 0f;
-            return (40f * owner.Proportion * owner.Surface.FontSize) * rows;
+            return (40f * owner.Config.Scale * owner.Surface.FontSize) * rows;
         }
     }
 }
