@@ -80,7 +80,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             base.AddChild(_horizontalScrollBarThumb);
         }
 
-        public Panel Content { get { return _content; } }
+        public Panel Content => _content;
         public RectangleF ViewBox { get; private set; }
         public RectangleF PanelBounds { get; private set; }
         public RectangleF ContentViewportBounds { get; private set; }
@@ -93,9 +93,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         public float ManualScrollPixelMultiplier { get; set; } = DEFAULT_MANUAL_SCROLL_PIXEL_MULTIPLIER;
         public bool ManualScrollInertiaEnabled { get; set; } = true;
         public Vector2 ScrollOffsetPixels2D { get; private set; }
-        public float ScrollOffsetPixels { get { return VerticalScrollOffsetPixels; } }
-        public float HorizontalScrollOffsetPixels { get { return ScrollOffsetPixels2D.X; } }
-        public float VerticalScrollOffsetPixels { get { return ScrollOffsetPixels2D.Y; } }
+        public float ScrollOffsetPixels => VerticalScrollOffsetPixels;
+        public float HorizontalScrollOffsetPixels => ScrollOffsetPixels2D.X;
+        public float VerticalScrollOffsetPixels => ScrollOffsetPixels2D.Y;
         public float RowOffsetPixels { get; private set; }
         public float ScrollVelocityPixelsPerFrame { get { return _scrollVelocityPixelsPerFrame.Y; } private set { _scrollVelocityPixelsPerFrame.Y = value; } }
         public bool IsAnimating { get; private set; }
@@ -107,19 +107,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         public int StartRow { get; private set; }
         public bool IsHorizontallyScrollable { get; private set; }
         public bool IsVerticallyScrollable { get; private set; }
-        public bool IsScrollable { get { return IsHorizontallyScrollable || IsVerticallyScrollable; } }
+        public bool IsScrollable => IsHorizontallyScrollable || IsVerticallyScrollable;
         public ScrollAxis EnabledScrollAxes { get; private set; } = ScrollAxis.Vertical;
         public ScrollWheelRouting WheelRouting { get; set; } = ScrollWheelRouting.Vertical;
 
-        protected override bool ClipContent
-        {
-            get { return true; }
-        }
+        protected override bool ClipContent => true;
 
-        protected override RectangleF ClipContentBounds
-        {
-            get { return ContentViewportBounds; }
-        }
+        protected override RectangleF ClipContentBounds => ContentViewportBounds;
 
         long _manualOverrideUntilFrame = long.MinValue;
         long _lastInertiaFrame = long.MinValue;
@@ -726,7 +720,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             if (_hasCustomScrollBarColors)
                 return _scrollBarTrackColor;
 
-            var color = context != null ? context.TextColor : Color.White;
+            var color = context?.TextColor ?? Color.White;
             return new Color(color.R, color.G, color.B, 127);
         }
 
@@ -735,7 +729,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             if (_hasCustomScrollBarColors)
                 return _scrollBarThumbColor;
 
-            var color = context != null ? context.PanelColor : Color.White;
+            var color = context?.PanelColor ?? Color.White;
             return new Color(color.R, color.G, color.B, 250);
         }
 
@@ -1168,10 +1162,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
                 }
             }
 
-            public override bool CanPrimaryClick
-            {
-                get { return Visible && _owner != null && _owner.IsScrollableAxis(_axis); }
-            }
+            public override bool CanPrimaryClick => Visible && _owner != null && _owner.IsScrollableAxis(_axis);
 
             public override bool ClickAt(Vector2 point, object sender)
             {
@@ -1219,15 +1210,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
                 }
             }
 
-            public override bool CanHover
-            {
-                get { return Visible && _owner != null && _owner.IsScrollableAxis(_axis); }
-            }
+            public override bool CanHover => Visible && _owner != null && _owner.IsScrollableAxis(_axis);
 
-            public override bool CanDrag
-            {
-                get { return Visible && _owner != null && _owner.IsScrollableAxis(_axis) && Draggable; }
-            }
+            public override bool CanDrag => Visible && _owner != null && _owner.IsScrollableAxis(_axis) && Draggable;
 
             protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
             {

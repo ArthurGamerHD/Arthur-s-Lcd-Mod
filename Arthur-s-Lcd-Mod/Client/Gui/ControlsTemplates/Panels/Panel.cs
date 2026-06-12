@@ -30,10 +30,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             MarkDirty();
         }
 
-        public override RectangleF Bounds
-        {
-            get { return Rect; }
-        }
+        public override RectangleF Bounds => Rect;
 
         public override void Arrange(RectangleF bounds)
         {

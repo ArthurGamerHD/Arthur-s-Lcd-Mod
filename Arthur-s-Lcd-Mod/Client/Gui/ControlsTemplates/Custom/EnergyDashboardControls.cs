@@ -13,15 +13,26 @@ using GridControl = LcdMod.Client.Gui.ControlsTemplates.Panels.Grid;
 
 namespace LcdMod.Client.Gui.ControlsTemplates.Custom
 {
-    internal struct EnergyDashboardPowerRow
+    internal sealed class EnergyDashboardPowerRow
     {
         public PowerSubtypeSnapshot Entry;
+        public EnergyDashboardPowerCategory Category;
         public Color Color;
         public string SpriteName;
         public double CurrentW;
         public double MaxW;
         public double RatioDenominatorW;
         public bool IsCharge;
+        public bool Selected;
+        public bool Hover;
+        public long UpdateToken;
+    }
+
+    internal enum EnergyDashboardPowerCategory
+    {
+        Consumer,
+        Producer,
+        Charge
     }
 
     internal static class EnergyDashboardPowerMetrics
@@ -73,7 +84,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
         }
 
         public static double GetGraphMax(List<PowerSnapshot> snapshots, List<EnergyDashboardPowerRow> rows,
-            bool producers, bool charge)
+            bool producers, bool charge, EnergyDashboardPowerRow selectedRow = null)
         {
             if (charge)
                 return GetMaxChargeSubtypeCapacity(rows);
@@ -109,7 +120,31 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
                 }
             }
 
+            if (selectedRow != null)
+                AddSubtypeMax(snapshots, selectedRow, producers, false, ref max);
+
             return max;
+        }
+
+        static void AddSubtypeMax(List<PowerSnapshot> snapshots, EnergyDashboardPowerRow row,
+            bool producers, bool charge, ref double max)
+        {
+            if (row == null || row.Entry == null || string.IsNullOrEmpty(row.Entry.Key))
+                return;
+
+            if (row.CurrentW > max)
+                max = row.CurrentW;
+
+            if (snapshots == null)
+                return;
+
+            var key = row.Entry.Key;
+            for (int i = 0; i < snapshots.Count; i++)
+            {
+                double value = GetSubtypeValue(snapshots[i], key, producers, charge);
+                if (value > max)
+                    max = value;
+            }
         }
 
         static double GetMaxChargeSubtypeCapacity(List<EnergyDashboardPowerRow> rows)
@@ -270,6 +305,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
         public bool Charge { get; set; }
         public float WindowSeconds { get; set; }
         public bool UseTimeSpacing { get; set; }
+        public EnergyDashboardPowerRow SelectedRow { get; set; }
 
         public void Bind(List<PowerSnapshot> snapshots, List<EnergyDashboardPowerRow> rows)
         {
@@ -310,7 +346,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
 
             RenderTimeScale(sprites, plot, ts * 0.82f, axis);
 
-            double max = EnergyDashboardPowerMetrics.GetGraphMax(_snapshots, _rows, Producers, Charge);
+            double max = EnergyDashboardPowerMetrics.GetGraphMax(_snapshots, _rows, Producers, Charge, SelectedRow);
             if (max <= 0 || _snapshots.Count <= 0 || _rows.Count == 0)
             {
                 RenderEmptyLabel(sprites, plot, "No data");
@@ -337,7 +373,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
 
             int seriesCount = Math.Min(EnergyDashboardPowerMetrics.MaxGraphSeries, _rows.Count);
             for (int r = 0; r < seriesCount; r++)
+            {
+                if (ReferenceEquals(_rows[r], SelectedRow))
+                    continue;
+
                 RenderSeries(sprites, plot, _snapshots, _rows[r], Producers, max);
+            }
+
+            if (SelectedRow != null)
+                RenderSeries(sprites, plot, _snapshots, SelectedRow, Producers, max);
         }
 
         void RenderPlotGrid(List<MySprite> sprites, RectangleF plot, Color color)
@@ -583,8 +627,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
         readonly TextBlock _name;
         readonly ProgressBar _bar;
         readonly TextBlock _value;
+        EnergyDashboardPowerRow _row;
 
-        public EnergyPowerRowControl(IAppHost host) : base(default(RectangleF))
+        public EnergyPowerRowControl(IAppHost host) : base(default(RectangleF), CursorType.Hand)
         {
             _layout = new GridControl(default(RectangleF), new[] { 16f, 52f, 32f }, new[] { 42f, 58f })
             {
@@ -621,36 +666,84 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
             AddChild(_layout);
         }
 
+        public Action<EnergyDashboardPowerRow> RowClicked { get; set; }
+        public Action<EnergyDashboardPowerRow> RowHovered { get; set; }
+
+        public override bool CanPrimaryClick
+        {
+            get { return Visible && Enabled && _row != null && _row.Entry != null && RowClicked != null; }
+        }
+
+        public override bool CanHover
+        {
+            get { return Visible && Enabled && _row != null && _row.Entry != null && RowHovered != null; }
+        }
+
         public void SetRow(EnergyDashboardPowerRow row)
         {
-            _icon.Label = GetRowLabel(row.Entry);
-            _icon.Amount = row.Entry != null ? row.Entry.BlockCount.ToString(FormatingHelper.Culture) : "0";
-            _icon.Color = row.Color;
-            _icon.SpriteName = row.SpriteName;
-            _name.Text = GetRowLabel(row.Entry);
+            _row = row;
+            var entry = row != null ? row.Entry : null;
+            _icon.Label = GetRowLabel(entry);
+            _icon.Amount = entry != null ? entry.BlockCount.ToString(FormatingHelper.Culture) : "0";
+            _icon.Color = row != null ? row.Color : Color.White;
+            _icon.SpriteName = row != null ? row.SpriteName : string.Empty;
+            _name.Text = GetRowLabel(entry);
 
-            _bar.Fraction = EnergyDashboardPowerMetrics.Ratio(row.CurrentW, row.RatioDenominatorW);
-            _bar.FillColor = row.Color;
-            _bar.BackgroundColor = GetOpaqueBarBackground(row.Color);
+            _bar.Fraction = row != null ? EnergyDashboardPowerMetrics.Ratio(row.CurrentW, row.RatioDenominatorW) : 0f;
+            _bar.FillColor = row != null ? row.Color : Color.White;
             _bar.FillColorOverride = null;
             _bar.CornerRadius = -1f;
 
-            _value.Text = row.IsCharge ? FormatEnergy(row.CurrentW) : FormatingHelper.WattsToString(row.CurrentW);
+            _value.Text = row == null
+                ? string.Empty
+                : row.IsCharge
+                    ? FormatingHelper.WattHoursToString(row.CurrentW)
+                    : FormatingHelper.WattsToString(row.CurrentW);
         }
 
-        static string FormatEnergy(double wattHours)
+        public override bool Click(object sender)
         {
-            return (wattHours / 1000000.0).ToString("0.#", FormatingHelper.Culture) + " MWh";
+            if (!CanPrimaryClick)
+                return false;
+
+            RowClicked(_row);
+            return true;
+        }
+
+        public override bool Hover(object sender)
+        {
+            if (!CanHover)
+                return false;
+
+            RowHovered(_row);
+            return true;
+        }
+
+        protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+        {
+            _bar.BackgroundColor = context.GetThemeColor(Constants.SURFACE_CONTAINER_HIGH);
+
+            if (_row != null)
+            {
+                string panelRole = null;
+                if (_row.Selected && _row.Hover)
+                    panelRole = Constants.SECONDARY_CONTAINER + Constants.HOVER;
+                else if (_row.Selected)
+                    panelRole = Constants.SECONDARY_CONTAINER;
+                else if (_row.Hover)
+                    panelRole = Constants.SURFACE + Constants.HOVER;
+
+                if (!string.IsNullOrEmpty(panelRole))
+                    Border.CreateSpritesFromRect(Bounds, sprites, context.GetThemeColor(panelRole),
+                        radiusScale: context.Scale);
+            }
+
+            base.RenderDefault(context, sprites);
         }
 
         protected override void ArrangeChildren()
         {
             _layout.Arrange(Bounds);
-        }
-
-        static Color GetOpaqueBarBackground(Color color)
-        {
-            return new Color(Math.Max(18, color.R / 4), Math.Max(18, color.G / 4), Math.Max(18, color.B / 4));
         }
 
         static string GetRowLabel(PowerSubtypeSnapshot entry)

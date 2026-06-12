@@ -125,7 +125,7 @@ namespace LcdMod.Client.Helpers
             return sign + a.ToString(format, Culture) + " W";
         }
 
-        public static string WattHoursToString(float wattsHour) => WattHoursToString(wattsHour, "0.##");
+        public static string WattHoursToString(double wattsHour) => WattHoursToString(wattsHour, "0.##");
 
         public static string WattHoursToString(double wattsHour, string format)
         {

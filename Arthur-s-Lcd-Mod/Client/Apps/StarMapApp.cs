@@ -780,15 +780,10 @@ namespace LcdMod.Client.Apps
 
         Vector2 CursorPosition => _cursorPosition;
 
-        bool HasRecentVisualContact
-        {
-            get
-            {
-                return _lastCursorVisualContactFrame != long.MinValue &&
-                       MyAPIGateway.Session != null &&
-                       MyAPIGateway.Session.GameplayFrameCounter - _lastCursorVisualContactFrame <= 30;
-            }
-        }
+        bool HasRecentVisualContact =>
+            _lastCursorVisualContactFrame != long.MinValue &&
+            MyAPIGateway.Session != null &&
+            MyAPIGateway.Session.GameplayFrameCounter - _lastCursorVisualContactFrame <= 30;
 
         static bool MatrixNearlyEquals(MatrixD a, MatrixD b)
         {

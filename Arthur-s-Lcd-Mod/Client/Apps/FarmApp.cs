@@ -138,10 +138,7 @@ namespace LcdMod.Client.Apps
         readonly ScrollPanel _scrollPanel;
         readonly VisualWrapPanel _gridPanel;
         readonly ScreenConfigPower _config;
-        internal ScreenConfigPower Config
-        {
-            get { return _config; }
-        }
+        internal ScreenConfigPower Config => _config;
 
         public FarmApp(ScreenConfigPower config, IAppHost surfaceHost) : base(config, surfaceHost)
         {
@@ -157,10 +154,7 @@ namespace LcdMod.Client.Apps
             _gridPanel = new VisualWrapPanel();
         }
 
-        public List<ControlBase> InteractiveList
-        {
-            get { return _interactiveList; }
-        }
+        public List<ControlBase> InteractiveList => _interactiveList;
 
         public override void LayoutChanged()
         {

@@ -310,10 +310,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
                 }
             }
 
-            public override bool CanPrimaryClick
-            {
-                get { return Visible && _owner != null && _owner.CanMove(_direction); }
-            }
+            public override bool CanPrimaryClick => Visible && _owner != null && _owner.CanMove(_direction);
 
             public override bool ClickAt(Vector2 point, object sender)
             {

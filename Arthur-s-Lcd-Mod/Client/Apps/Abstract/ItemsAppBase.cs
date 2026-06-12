@@ -1020,10 +1020,7 @@ namespace LcdMod.Client.Apps.Abstract
             public MyItemType ItemType { get; private set; }
             public double Amount { get; set; }
             public int LayoutVersion { get; set; }
-            public string TypeId
-            {
-                get { return ItemType.TypeId; }
-            }
+            public string TypeId => ItemType.TypeId;
 
             public string Icon { get; set; }
             public string DisplayName { get; set; }

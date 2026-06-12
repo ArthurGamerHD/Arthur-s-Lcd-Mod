@@ -49,18 +49,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         public Func<RectangleF, int> PageProvider { get; set; }
         public RectangleF ViewBox { get; private set; }
         public RectangleF ContentViewportBounds { get; private set; }
-        public int PageCount { get { return GetPageCount(); } }
-        public bool CanNavigate { get { return _showControls && GetPageCount() > 1; } }
+        public int PageCount => GetPageCount();
+        public bool CanNavigate => _showControls && GetPageCount() > 1;
 
-        protected override bool ClipContent
-        {
-            get { return true; }
-        }
+        protected override bool ClipContent => true;
 
-        protected override RectangleF ClipContentBounds
-        {
-            get { return ContentViewportBounds; }
-        }
+        protected override RectangleF ClipContentBounds => ContentViewportBounds;
 
         static float GetNavigationHeight(float scale)
         {
@@ -368,7 +362,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             float totalWidth;
             GetIndicatorLayout(scale, pageCount, out diameter, out gap, out totalWidth);
 
-            var hostFontColor = context.Surface != null ? context.Surface.ScriptForegroundColor : context.TextColor;
+            var hostFontColor = context.Surface?.ScriptForegroundColor ?? context.TextColor;
             var primary = ResolveThemeColor(context, Constants.SECONDARY_CONTAINER, hostFontColor);
             var secondary = ResolveThemeColor(context, Constants.SECONDARY, new Color(hostFontColor.R, hostFontColor.G, hostFontColor.B, 150));
             var hollow = hostFontColor;
@@ -396,7 +390,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
                     Type = SpriteType.TEXTURE,
                     Data = "Circle",
                     Position = position,
-                    Size = new Vector2(Math.Max(1f, diameter * 0.52f)),
+                    Size = new Vector2(Math.Max(1f, diameter * 0.75f)),
                     Color = primary,
                     Alignment = TextAlignment.CENTER
                 });
@@ -561,10 +555,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
                 }
             }
 
-            public override bool CanPrimaryClick
-            {
-                get { return Visible && _owner != null && _owner.CanMove(_direction); }
-            }
+            public override bool CanPrimaryClick => Visible && _owner != null && _owner.CanMove(_direction);
 
             public override bool ClickAt(Vector2 point, object sender)
             {
@@ -599,15 +590,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
                 SetOnClick((dataContext, sender) => { });
             }
 
-            public override RectangleF Bounds
-            {
-                get { return _owner != null ? _owner._indicatorBounds : default(RectangleF); }
-            }
+            public override RectangleF Bounds => _owner?._indicatorBounds ?? default(RectangleF);
 
-            public override bool CanPrimaryClick
-            {
-                get { return Visible && _owner != null && _owner.CanSelectIndicator(); }
-            }
+            public override bool CanPrimaryClick => Visible && _owner != null && _owner.CanSelectIndicator();
 
             public override bool ClickAt(Vector2 point, object sender)
             {

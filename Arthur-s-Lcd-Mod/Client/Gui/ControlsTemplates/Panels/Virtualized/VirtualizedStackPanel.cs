@@ -87,14 +87,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels.Virtualized
 
         int GetItemCount()
         {
-            return ItemsSource == null ? 0 : ItemsSource.Count;
+            return ItemsSource?.Count ?? 0;
         }
 
         ControlBase GetPooledControl(int poolIndex, T item)
         {
             while (_pool.Count <= poolIndex)
             {
-                var control = CreateControl != null ? CreateControl(item) : null;
+                var control = CreateControl?.Invoke(item);
                 if (control == null)
                     control = new RectangleControl(default(RectangleF));
 

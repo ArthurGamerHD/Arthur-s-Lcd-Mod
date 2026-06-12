@@ -9,6 +9,7 @@ using LcdMod.Client.Gui.ControlsTemplates.Panels.Virtualized;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Modules.Power;
 using LcdMod.Client.Utility;
+using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 using ControlGrid = LcdMod.Client.Gui.ControlsTemplates.Panels.Grid;
@@ -33,6 +34,27 @@ namespace LcdMod.Client.Apps
         readonly List<EnergyDashboardPowerRow> _producerRows = new List<EnergyDashboardPowerRow>();
         readonly List<EnergyDashboardPowerRow> _consumerRows = new List<EnergyDashboardPowerRow>();
         readonly List<EnergyDashboardPowerRow> _chargeRows = new List<EnergyDashboardPowerRow>();
+        readonly Dictionary<EnergyDashboardPowerCategory, Dictionary<string, EnergyDashboardPowerRow>>
+            _rowsByCategory =
+                new Dictionary<EnergyDashboardPowerCategory, Dictionary<string, EnergyDashboardPowerRow>>
+                {
+                    {
+                        EnergyDashboardPowerCategory.Producer,
+                        new Dictionary<string, EnergyDashboardPowerRow>(StringComparer.Ordinal)
+                    },
+                    {
+                        EnergyDashboardPowerCategory.Consumer,
+                        new Dictionary<string, EnergyDashboardPowerRow>(StringComparer.Ordinal)
+                    },
+                    {
+                        EnergyDashboardPowerCategory.Charge,
+                        new Dictionary<string, EnergyDashboardPowerRow>(StringComparer.Ordinal)
+                    }
+                };
+        readonly Dictionary<EnergyDashboardPowerCategory, EnergyDashboardPowerRow> _selectedRows =
+            new Dictionary<EnergyDashboardPowerCategory, EnergyDashboardPowerRow>();
+        readonly Dictionary<EnergyDashboardPowerCategory, EnergyDashboardPowerRow> _hoverRows =
+            new Dictionary<EnergyDashboardPowerCategory, EnergyDashboardPowerRow>();
         readonly Dictionary<string, string> _spriteCache = new Dictionary<string, string>(StringComparer.Ordinal);
         readonly ToggleButton[] _scaleButtons = new ToggleButton[SCALE_TIER_COUNT];
         readonly ControlGrid _rootGrid;
@@ -49,24 +71,30 @@ namespace LcdMod.Client.Apps
         readonly VirtualizedWrapPanel<EnergyDashboardPowerRow> _producerWrapPanel;
         readonly VirtualizedWrapPanel<EnergyDashboardPowerRow> _consumerWrapPanel;
         readonly VirtualizedWrapPanel<EnergyDashboardPowerRow> _chargeWrapPanel;
+        long _powerRowUpdateToken;
+        long _hoverFrame = -1L;
         PowerDataLease _lease;
         PowerSnapshot _latest;
 
         public EnergyDashboardApp(ScreenConfigPower config, IAppHost host) : base(config, host)
         {
             _config = config;
-            _rootGrid = new ControlGrid(default(RectangleF), new[] { 1f }, new[] { PROGRESS_ROW_WEIGHT, BUTTON_ROW_WEIGHT, 90f, 140f });
+            _rootGrid = new ControlGrid(default(RectangleF), new[] { 1f },
+                new[] { PROGRESS_ROW_WEIGHT, BUTTON_ROW_WEIGHT, 90f, 140f });
             var progressGrid = new ControlGrid(default(RectangleF), new[] { 1f, 1f, 1f }, new[] { 1f });
             var columns = new float[SCALE_TIER_COUNT];
             var buttonGrid = new ControlGrid(default(RectangleF), columns, new[] { 1f });
             _consumptionBar = new EnergyStatBarControl(host) { Label = "Consumption" };
             _productionBar = new EnergyStatBarControl(host) { Label = "Production" };
             _chargeBar = new EnergyStatBarControl(host) { Label = "Charge", ShowPercentage = true };
-            progressGrid.Set(CreateInsetCell(_consumptionBar, PROGRESS_CELL_MARGIN_X_PIXELS, PROGRESS_CELL_MARGIN_Y_PIXELS), 0, 0);
-            progressGrid.Set(CreateInsetCell(_productionBar, PROGRESS_CELL_MARGIN_X_PIXELS, PROGRESS_CELL_MARGIN_Y_PIXELS), 1, 0);
-            progressGrid.Set(CreateInsetCell(_chargeBar, PROGRESS_CELL_MARGIN_X_PIXELS, PROGRESS_CELL_MARGIN_Y_PIXELS), 2, 0);
+            progressGrid.Set(
+                CreateInsetCell(_consumptionBar, PROGRESS_CELL_MARGIN_X_PIXELS, PROGRESS_CELL_MARGIN_Y_PIXELS), 0, 0);
+            progressGrid.Set(
+                CreateInsetCell(_productionBar, PROGRESS_CELL_MARGIN_X_PIXELS, PROGRESS_CELL_MARGIN_Y_PIXELS), 1, 0);
+            progressGrid.Set(CreateInsetCell(_chargeBar, PROGRESS_CELL_MARGIN_X_PIXELS, PROGRESS_CELL_MARGIN_Y_PIXELS),
+                2, 0);
 
-            
+
             for (int i = 0; i < SCALE_TIER_COUNT; i++)
             {
                 columns[i] = 1;
@@ -74,7 +102,8 @@ namespace LcdMod.Client.Apps
                 _scaleButtons[i] = new ToggleButton(default(RectangleF), GetScaleLabel(i),
                     delegate { return GetScaleTierIndex() == tier; },
                     delegate { SetScaleTierIndex(tier); });
-                buttonGrid.Set(CreateInsetCell(_scaleButtons[i], BUTTON_CELL_MARGIN_X_PIXELS, BUTTON_CELL_MARGIN_Y_PIXELS), i, 0);
+                buttonGrid.Set(
+                    CreateInsetCell(_scaleButtons[i], BUTTON_CELL_MARGIN_X_PIXELS, BUTTON_CELL_MARGIN_Y_PIXELS), i, 0);
                 _interactiveList.Add(_scaleButtons[i]);
             }
 
@@ -116,8 +145,8 @@ namespace LcdMod.Client.Apps
             return page;
         }
 
-        public List<ControlBase> InteractiveList { get { return _interactiveList; } }
-        public ScreenConfigPower Config { get { return _config; } }
+        public List<ControlBase> InteractiveList => _interactiveList;
+        public ScreenConfigPower Config => _config;
 
         public bool HasVisibleItems()
         {
@@ -132,9 +161,14 @@ namespace LcdMod.Client.Apps
         {
             CaptureLease();
             _latest = _lease != null ? _lease.Latest : new PowerSnapshot();
-            BuildRows(_latest.ProducerSubtypes, _producerRows, EnergyDashboardPowerMetrics.GetCurrentProducerTotal(_latest));
-            BuildRows(_latest.ConsumerSubtypes, _consumerRows, EnergyDashboardPowerMetrics.GetCurrentConsumerTotal(_latest));
-            BuildRows(_latest.ChargeSubtypes, _chargeRows, _latest.MaxStoredEnergyWh, true);
+            BuildRows(_latest.ProducerSubtypes, _producerRows,
+                EnergyDashboardPowerMetrics.GetCurrentProducerTotal(_latest),
+                EnergyDashboardPowerCategory.Producer, false);
+            BuildRows(_latest.ConsumerSubtypes, _consumerRows,
+                EnergyDashboardPowerMetrics.GetCurrentConsumerTotal(_latest),
+                EnergyDashboardPowerCategory.Consumer, false);
+            BuildRows(_latest.ChargeSubtypes, _chargeRows, _latest.MaxStoredEnergyWh,
+                EnergyDashboardPowerCategory.Charge, true);
             _producerWrapPanel.InvalidateLayout();
             _consumerWrapPanel.InvalidateLayout();
             _chargeWrapPanel.InvalidateLayout();
@@ -144,11 +178,14 @@ namespace LcdMod.Client.Apps
         {
             var sprites = new List<MySprite>();
             float top = GetContentTop();
-            var bounds = new RectangleF(Host.ViewBox.X, top, Host.ViewBox.Width, Math.Max(0f, Host.ViewBox.Bottom - top));
+            var bounds = new RectangleF(Host.ViewBox.X, top, Host.ViewBox.Width,
+                Math.Max(0f, Host.ViewBox.Bottom - top));
             BindControls(GetSnapshots(_lease != null ? _lease.History : null));
             _rootGrid.SetRows(CreateRootRows(bounds.Height, AppConfig.Scale));
             _rootGrid.Arrange(bounds);
-            _rootGrid.Render(CreateControlRenderContext(Host.Surface, AppConfig.Scale, Host.Surface.FontSize, GetCursorPosition()), sprites);
+            _rootGrid.Render(
+                CreateControlRenderContext(Host.Surface, AppConfig.Scale, Host.Surface.FontSize, GetCursorPosition()),
+                sprites);
             return sprites;
         }
 
@@ -184,6 +221,13 @@ namespace LcdMod.Client.Apps
             _consumerGraph.UseTimeSpacing = showAll;
             _producerGraph.UseTimeSpacing = showAll;
             _chargeGraph.UseTimeSpacing = showAll;
+            ClearExpiredHover();
+            ApplyRowColors(_consumerRows, EnergyDashboardPowerCategory.Consumer);
+            ApplyRowColors(_producerRows, EnergyDashboardPowerCategory.Producer);
+            ApplyRowColors(_chargeRows, EnergyDashboardPowerCategory.Charge);
+            _consumerGraph.SelectedRow = GetActiveSelection(EnergyDashboardPowerCategory.Consumer);
+            _producerGraph.SelectedRow = GetActiveSelection(EnergyDashboardPowerCategory.Producer);
+            _chargeGraph.SelectedRow = GetActiveSelection(EnergyDashboardPowerCategory.Charge);
             _consumerGraph.Bind(snapshots, _consumerRows);
             _producerGraph.Bind(snapshots, _producerRows);
             _chargeGraph.Bind(snapshots, _chargeRows);
@@ -210,46 +254,73 @@ namespace LcdMod.Client.Apps
 
         void CaptureLease()
         {
-            if (_lease != null || LcdModSessionComponent.Client == null || LcdModSessionComponent.Client.PowerData == null)
+            if (_lease != null || LcdModSessionComponent.Client == null ||
+                LcdModSessionComponent.Client.PowerData == null)
                 return;
 
             _lease = LcdModSessionComponent.Client.PowerData.Capture(Host.GridLogic, _config.GridLinkType);
         }
 
-        void BuildRows(List<PowerSubtypeSnapshot> entries, List<EnergyDashboardPowerRow> rows, double ratioDenominatorW)
-        {
-            BuildRows(entries, rows, ratioDenominatorW, false);
-        }
-
-        void BuildRows(List<PowerSubtypeSnapshot> entries, List<EnergyDashboardPowerRow> rows, double ratioDenominatorW, bool charge)
+        void BuildRows(List<PowerSubtypeSnapshot> entries, List<EnergyDashboardPowerRow> rows, double ratioDenominatorW,
+            EnergyDashboardPowerCategory category, bool charge)
         {
             rows.Clear();
-            if (entries == null)
-                return;
+            var rowsByKey = _rowsByCategory[category];
+            long updateToken = ++_powerRowUpdateToken;
 
-            for (int i = 0; i < entries.Count; i++)
+            if (entries != null)
             {
-                var entry = entries[i];
-                if (entry == null || (entry.CurrentW <= 0 && entry.MaxW <= 0))
-                    continue;
-
-                rows.Add(new EnergyDashboardPowerRow
+                for (int i = 0; i < entries.Count; i++)
                 {
-                    Entry = entry,
-                    SpriteName = ResolveSubtypeSprite(entry),
-                    CurrentW = entry.CurrentW,
-                    MaxW = entry.MaxW,
-                    RatioDenominatorW = charge ? entry.MaxW : ratioDenominatorW,
-                    IsCharge = charge
-                });
+                    var entry = entries[i];
+                    if (entry == null || string.IsNullOrEmpty(entry.Key) ||
+                        entry.CurrentW <= 0 && entry.MaxW <= 0)
+                        continue;
+
+                    EnergyDashboardPowerRow row;
+                    if (!rowsByKey.TryGetValue(entry.Key, out row))
+                    {
+                        row = new EnergyDashboardPowerRow();
+                        rowsByKey.Add(entry.Key, row);
+                    }
+                    else if (row.UpdateToken == updateToken)
+                    {
+                        continue;
+                    }
+
+                    row.Entry = entry;
+                    row.Category = category;
+                    row.SpriteName = ResolveSubtypeSprite(entry);
+                    row.CurrentW = entry.CurrentW;
+                    row.MaxW = entry.MaxW;
+                    row.RatioDenominatorW = charge ? entry.MaxW : ratioDenominatorW;
+                    row.IsCharge = charge;
+                    row.UpdateToken = updateToken;
+                    rows.Add(row);
+                }
             }
 
             rows.Sort(ComparePowerRowsDescending);
             for (int i = 0; i < rows.Count; i++)
+                rows[i].Color = ColorForSubtypeIndex(i);
+        }
+
+        void ApplyRowColors(List<EnergyDashboardPowerRow> rows, EnergyDashboardPowerCategory category)
+        {
+            EnsureTrackedRowExists(rows, category, _selectedRows);
+            EnsureTrackedRowExists(rows, category, _hoverRows);
+            var selected = GetTrackedRow(_selectedRows, category);
+            var hover = GetTrackedRow(_hoverRows, category);
+            var active = selected ?? hover;
+
+            for (int i = 0; rows != null && i < rows.Count; i++)
             {
                 var row = rows[i];
-                row.Color = ColorForSubtypeIndex(i);
-                rows[i] = row;
+                row.Selected = ReferenceEquals(row, selected);
+                row.Hover = ReferenceEquals(row, hover);
+                row.Color = active != null
+                    ? ColorForSubtypeIndex(i, ReferenceEquals(row, active))
+                    : ColorForSubtypeIndex(i);
             }
         }
 
@@ -265,22 +336,103 @@ namespace LcdMod.Client.Apps
 
         ControlBase CreatePowerRowControl(EnergyDashboardPowerRow row)
         {
-            return new EnergyPowerRowControl(Host);
+            return new EnergyPowerRowControl(Host)
+            {
+                RowClicked = OnPowerRowClicked,
+                RowHovered = OnPowerRowHovered
+            };
         }
 
-        static void BindPowerRowControl(ControlBase control, EnergyDashboardPowerRow row, int index)
+        void BindPowerRowControl(ControlBase control, EnergyDashboardPowerRow row, int index)
         {
             var rowControl = control as EnergyPowerRowControl;
             if (rowControl != null)
+            {
+                rowControl.RowClicked = OnPowerRowClicked;
+                rowControl.RowHovered = OnPowerRowHovered;
                 rowControl.SetRow(row);
+            }
+        }
+
+        void OnPowerRowClicked(EnergyDashboardPowerRow row)
+        {
+            if (row == null || row.Entry == null || string.IsNullOrEmpty(row.Entry.Key))
+                return;
+
+            var selected = GetTrackedRow(_selectedRows, row.Category);
+            if (ReferenceEquals(selected, row))
+                _selectedRows.Remove(row.Category);
+            else
+                _selectedRows[row.Category] = row;
+            Host.RenderSprites();
+        }
+
+        void OnPowerRowHovered(EnergyDashboardPowerRow row)
+        {
+            if (row == null || row.Entry == null || string.IsNullOrEmpty(row.Entry.Key))
+                return;
+
+            _hoverRows.Clear();
+            _hoverRows[row.Category] = row;
+            _hoverFrame = GetFrameCounter();
+            Host.RenderSprites();
         }
 
         static int ComparePowerRowsDescending(EnergyDashboardPowerRow a, EnergyDashboardPowerRow b)
         {
+            if (ReferenceEquals(a, b))
+                return 0;
+            if (a == null)
+                return 1;
+            if (b == null)
+                return -1;
+
             int current = b.CurrentW.CompareTo(a.CurrentW);
             if (current != 0)
                 return current;
             return string.Compare(GetRowLabel(a.Entry), GetRowLabel(b.Entry), StringComparison.OrdinalIgnoreCase);
+        }
+
+        EnergyDashboardPowerRow GetActiveSelection(EnergyDashboardPowerCategory category)
+        {
+            return GetTrackedRow(_selectedRows, category) ?? GetTrackedRow(_hoverRows, category);
+        }
+
+        static EnergyDashboardPowerRow GetTrackedRow(
+            Dictionary<EnergyDashboardPowerCategory, EnergyDashboardPowerRow> trackedRows,
+            EnergyDashboardPowerCategory category)
+        {
+            EnergyDashboardPowerRow row;
+            return trackedRows.TryGetValue(category, out row) ? row : null;
+        }
+
+        static void EnsureTrackedRowExists(List<EnergyDashboardPowerRow> rows, EnergyDashboardPowerCategory category,
+            Dictionary<EnergyDashboardPowerCategory, EnergyDashboardPowerRow> trackedRows)
+        {
+            var tracked = GetTrackedRow(trackedRows, category);
+            if (tracked == null || rows != null && rows.Contains(tracked))
+                return;
+
+            trackedRows.Remove(category);
+        }
+
+        void ClearExpiredHover()
+        {
+            if (IsHoverFresh())
+                return;
+
+            _hoverRows.Clear();
+        }
+
+        bool IsHoverFresh()
+        {
+            var frame = GetFrameCounter();
+            return _hoverFrame >= 0L && frame >= _hoverFrame && frame - _hoverFrame <= 10L;
+        }
+
+        static long GetFrameCounter()
+        {
+            return MyAPIGateway.Session != null ? MyAPIGateway.Session.GameplayFrameCounter : 0L;
         }
 
         string ResolveSubtypeSprite(PowerSubtypeSnapshot entry)
@@ -402,7 +554,8 @@ namespace LcdMod.Client.Apps
             return a.GameplayFrame.CompareTo(b.GameplayFrame);
         }
 
-        static List<PowerSnapshot> PadSnapshots(List<PowerSnapshot> snapshots, float windowSeconds, PowerSnapshot latest)
+        static List<PowerSnapshot> PadSnapshots(List<PowerSnapshot> snapshots, float windowSeconds,
+            PowerSnapshot latest)
         {
             if (snapshots == null)
                 snapshots = new List<PowerSnapshot>();
@@ -501,59 +654,18 @@ namespace LcdMod.Client.Apps
             return _config.HeaderColor;
         }
 
-        static Color ColorForSubtypeIndex(int index)
+        static Color ColorForSubtypeIndex(int index) => new Vector3(GetSubtypeHue(index), 0.85f, 0.75f).HSVtoColor();
+
+        static Color ColorForSubtypeIndex(int index, bool selected) => selected
+            ? ColorForSubtypeIndex(index)
+            : new Vector3(GetSubtypeHue(index), 0.4f, 0.2f).HSVtoColor();
+
+        static float GetSubtypeHue(int index)
         {
             // I didn't check how factorio does, but this is similar enough for initial numbers:
             // 240 starts at blue, then * by the prime 137 so it scales out of phase with the HUE
             // but still deterministic based on the index
-            return HsvToColor((240 + index * 137) % 360, 0.85f, 0.75f);
-        }
-
-        static Color HsvToColor(int hueDegrees, float saturation, float value)
-        {
-            float h = ((hueDegrees % 360) + 360) % 360 / 60f;
-            float c = value * saturation;
-            float x = c * (1f - Math.Abs(h % 2f - 1f));
-            float m = value - c;
-            float r = 0f;
-            float g = 0f;
-            float b = 0f;
-
-            if (h < 1f)
-            {
-                r = c;
-                g = x;
-            }
-            else if (h < 2f)
-            {
-                r = x;
-                g = c;
-            }
-            else if (h < 3f)
-            {
-                g = c;
-                b = x;
-            }
-            else if (h < 4f)
-            {
-                g = x;
-                b = c;
-            }
-            else if (h < 5f)
-            {
-                r = x;
-                b = c;
-            }
-            else
-            {
-                r = c;
-                b = x;
-            }
-
-            return new Color(
-                (int)Math.Round((r + m) * 255f),
-                (int)Math.Round((g + m) * 255f),
-                (int)Math.Round((b + m) * 255f));
+            return (240 + index * 137) % 360 / 360f;
         }
 
         static string GetRowLabel(PowerSubtypeSnapshot entry)
@@ -575,7 +687,9 @@ namespace LcdMod.Client.Apps
 
         float GetContentTop()
         {
-            return Host.TitleVisible ? Host.ViewBox.Y + (40f * AppConfig.Scale * Host.Surface.FontSize) : Host.ViewBox.Y;
+            return Host.TitleVisible
+                ? Host.ViewBox.Y + (40f * AppConfig.Scale * Host.Surface.FontSize)
+                : Host.ViewBox.Y;
         }
 
         // todo: remove this when implement style support
@@ -586,7 +700,8 @@ namespace LcdMod.Client.Apps
             readonly float _horizontalMarginPixels;
             readonly float _verticalMarginPixels;
 
-            public InsetCellPanel(ControlBase child, IAppHost host, float horizontalMarginPixels, float verticalMarginPixels)
+            public InsetCellPanel(ControlBase child, IAppHost host, float horizontalMarginPixels,
+                float verticalMarginPixels)
                 : base(default(RectangleF))
             {
                 _child = child;
