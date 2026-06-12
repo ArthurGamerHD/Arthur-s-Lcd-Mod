@@ -306,6 +306,16 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 
         public bool ClickOnPress { get; set; }
 
+        protected virtual bool ClipContent
+        {
+            get { return false; }
+        }
+
+        protected virtual RectangleF ClipContentBounds
+        {
+            get { return Bounds; }
+        }
+
         public ControlBase SetOnClick(Action<object, object> onClick)
         {
             OnClick = onClick;
@@ -701,6 +711,67 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             return selfHit && accept(this) ? this : null;
         }
 
+        ControlBase FindClipContentParent()
+        {
+            for (var parent = Parent; parent != null; parent = parent.Parent)
+            {
+                if (parent.ClipContent)
+                    return parent;
+            }
+
+            return null;
+        }
+
+        protected bool BeginContentClip(List<MySprite> sprites, RectangleF bounds)
+        {
+            RectangleF clip;
+            if (!TryResolveClip(bounds, out clip))
+                return false;
+
+            AddClip(sprites, clip);
+            return true;
+        }
+
+        protected void EndContentClip(List<MySprite> sprites)
+        {
+            if (sprites == null)
+                return;
+
+            sprites.Add(MySprite.CreateClearClipRect());
+
+            var clipParent = FindClipContentParent();
+            if (clipParent != null)
+                AddClip(sprites, clipParent.ClipContentBounds);
+        }
+
+        bool TryResolveClip(RectangleF bounds, out RectangleF clip)
+        {
+            var clipParent = FindClipContentParent();
+            clip = clipParent != null ? Intersect(bounds, clipParent.ClipContentBounds) : bounds;
+            return clip.Width > 0f && clip.Height > 0f;
+        }
+
+        static RectangleF Intersect(RectangleF a, RectangleF b)
+        {
+            float x = Math.Max(a.X, b.X);
+            float y = Math.Max(a.Y, b.Y);
+            float right = Math.Min(a.Right, b.Right);
+            float bottom = Math.Min(a.Bottom, b.Bottom);
+            return new RectangleF(x, y, Math.Max(0f, right - x), Math.Max(0f, bottom - y));
+        }
+
+        static void AddClip(List<MySprite> sprites, RectangleF bounds)
+        {
+            if (sprites == null)
+                return;
+
+            int x = (int)Math.Floor(bounds.X);
+            int y = (int)Math.Floor(bounds.Y);
+            int right = (int)Math.Ceiling(bounds.Right);
+            int bottom = (int)Math.Ceiling(bounds.Bottom);
+            sprites.Add(MySprite.CreateClipRect(new Rectangle(x, y, Math.Max(0, right - x), Math.Max(0, bottom - y))));
+        }
+
         protected virtual bool CanResolveChildren(Vector2 point, bool selfHit)
         {
             return selfHit;
@@ -795,13 +866,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
                 style = style.ResolveAgainst(context.Style, context.Theme);
             }
 
-            return new ControlRenderContext(
-                context.Surface,
-                context.Scale,
-                context.FontScale,
-                style,
-                context.Theme,
-                context.CursorPosition);
+            return context.WithStyle(style);
         }
 
         static bool IsValidDelta(Vector2 delta)

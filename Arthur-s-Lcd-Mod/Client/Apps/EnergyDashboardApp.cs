@@ -42,7 +42,7 @@ namespace LcdMod.Client.Apps
         readonly EnergySubtypeGraphControl _consumerGraph;
         readonly EnergySubtypeGraphControl _producerGraph;
         readonly EnergySubtypeGraphControl _chargeGraph;
-        readonly CarouselPanel _contentCarousel;
+        readonly PagesPanel _contentPages;
         readonly ScrollPanel _producerScrollPanel;
         readonly ScrollPanel _consumerScrollPanel;
         readonly ScrollPanel _chargeScrollPanel;
@@ -91,15 +91,15 @@ namespace LcdMod.Client.Apps
             _producerScrollPanel.SetContent(_producerWrapPanel);
             _consumerScrollPanel.SetContent(_consumerWrapPanel);
             _chargeScrollPanel.SetContent(_chargeWrapPanel);
-            _contentCarousel = new CarouselPanel();
-            _contentCarousel.AddChild(CreatePage(_consumerGraph, _consumerScrollPanel));
-            _contentCarousel.AddChild(CreatePage(_producerGraph, _producerScrollPanel));
-            _contentCarousel.AddChild(CreatePage(_chargeGraph, _chargeScrollPanel));
-            _interactiveList.Add(_contentCarousel);
+            _contentPages = new PagesPanel();
+            _contentPages.AddChild(CreatePage(_consumerGraph, _consumerScrollPanel));
+            _contentPages.AddChild(CreatePage(_producerGraph, _producerScrollPanel));
+            _contentPages.AddChild(CreatePage(_chargeGraph, _chargeScrollPanel));
+            _interactiveList.Add(_contentPages);
 
             _rootGrid.Set(progressGrid, 0, 0);
             _rootGrid.Set(buttonGrid, 0, 1);
-            _rootGrid.Set(_contentCarousel, 0, 2, 1, 2);
+            _rootGrid.Set(_contentPages, 0, 2, 1, 2);
             CaptureLease();
         }
 
@@ -187,7 +187,7 @@ namespace LcdMod.Client.Apps
             _consumerGraph.Bind(snapshots, _consumerRows);
             _producerGraph.Bind(snapshots, _producerRows);
             _chargeGraph.Bind(snapshots, _chargeRows);
-            _contentCarousel.LayoutScale = AppConfig.Scale;
+            _contentPages.LayoutScale = AppConfig.Scale;
             BindList(_consumerScrollPanel, _consumerWrapPanel);
             BindList(_producerScrollPanel, _producerWrapPanel);
             BindList(_chargeScrollPanel, _chargeWrapPanel);

@@ -352,7 +352,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
             if (tileSize <= 0f)
                 return;
 
-            AddClip(sprites, plot);
+            if (!BeginContentClip(sprites, plot))
+                return;
+
             for (float bottom = plot.Bottom; bottom > plot.Y; bottom -= tileSize)
             {
                 for (float x = plot.X; x < plot.Right; x += tileSize)
@@ -369,7 +371,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
                 }
             }
 
-            EndClip(sprites);
+            EndContentClip(sprites);
         }
 
         void RenderSeries(List<MySprite> sprites, RectangleF plot, List<PowerSnapshot> snapshots,
@@ -531,21 +533,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
                 Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(x, y + height * 0.5f),
                 Size = new Vector2(1f, height), Color = color, Alignment = TextAlignment.CENTER
             });
-        }
-
-        static void AddClip(List<MySprite> sprites, RectangleF bounds)
-        {
-            int x = (int)Math.Floor(bounds.X);
-            int y = (int)Math.Floor(bounds.Y);
-            int right = (int)Math.Ceiling(bounds.Right);
-            int bottom = (int)Math.Ceiling(bounds.Bottom);
-            sprites.Add(MySprite.CreateClipRect(new Rectangle(x, y, Math.Max(0, right - x), Math.Max(0, bottom - y))));
-        }
-
-        static void EndClip(List<MySprite> sprites)
-        {
-            if (sprites != null)
-                sprites.Add(MySprite.CreateClearClipRect());
         }
 
         float GetAxisLabelScale(double max, float baseScale, float availableWidth, bool charge)

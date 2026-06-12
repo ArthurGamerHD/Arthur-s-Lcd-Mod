@@ -17,7 +17,8 @@ namespace LcdMod.Client.SurfaceScripts
 {
     [MyTextSurfaceScript(ID, TITLE)]
     public sealed class NpcMarketSurfaceScript : InteractiveSurfaceScript,
-        IUsesTerminalControl<SliderNpcMarketMaxDistance>
+        IUsesTerminalControl<SliderNpcMarketMaxDistance>,
+        IUsesTerminalControl<SliderNpcMarketPageSwitchDelay>
     {
         protected override ConfigKind ConfigKind { get { return ConfigKind.NpcMarket; } }
         public const string ID = "LcdMod_MarketApp";

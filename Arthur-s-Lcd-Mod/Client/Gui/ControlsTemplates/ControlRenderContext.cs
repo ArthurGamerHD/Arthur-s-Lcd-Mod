@@ -57,6 +57,17 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         public Color HoverPanelColor => Style.GetPanelColor(true);
         public Vector2 CursorPosition { get; private set; }
 
+        public ControlRenderContext WithStyle(ControlStyle style)
+        {
+            return new ControlRenderContext(
+                Surface,
+                Scale,
+                FontScale,
+                style,
+                Theme,
+                CursorPosition);
+        }
+
         public Color GetThemeColor(string role)
         {
             if (Theme == null || string.IsNullOrEmpty(role))

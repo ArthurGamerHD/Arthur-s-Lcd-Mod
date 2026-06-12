@@ -111,6 +111,16 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         public ScrollAxis EnabledScrollAxes { get; private set; } = ScrollAxis.Vertical;
         public ScrollWheelRouting WheelRouting { get; set; } = ScrollWheelRouting.Vertical;
 
+        protected override bool ClipContent
+        {
+            get { return true; }
+        }
+
+        protected override RectangleF ClipContentBounds
+        {
+            get { return ContentViewportBounds; }
+        }
+
         long _manualOverrideUntilFrame = long.MinValue;
         long _lastInertiaFrame = long.MinValue;
         long _scrollBarThumbHoverFrame = long.MinValue;

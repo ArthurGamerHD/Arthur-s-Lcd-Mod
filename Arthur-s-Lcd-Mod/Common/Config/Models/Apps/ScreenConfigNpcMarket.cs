@@ -5,6 +5,8 @@ namespace LcdMod.Common.Config.Models.Apps
     [ProtoContract]
     public partial class ScreenConfigNpcMarket : ScreenConfigInteractive
     {
+        public const float DEFAULT_PAGE_SWITCH_SECONDS = 5f;
+
         public override int Id => 21;
 
         [ProtoMember(39)] public int SelectedMode { get; set; }
@@ -18,5 +20,6 @@ namespace LcdMod.Common.Config.Models.Apps
         [ProtoMember(47)] public float HorizontalScrollOffsetPixels { get; set; }
         [ProtoMember(48)] public float VerticalScrollOffsetPixels { get; set; }
         [ProtoMember(49)] public float MaxDistanceMeters { get; set; } = 10000001f;
+        [ProtoMember(50)] public float PageSwitchSeconds { get; set; } = DEFAULT_PAGE_SWITCH_SECONDS;
     }
 }

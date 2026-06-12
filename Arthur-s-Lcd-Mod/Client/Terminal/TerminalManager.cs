@@ -50,6 +50,7 @@ namespace LcdMod.Client.Terminal
             Controls.Add(new SliderFov());
             Controls.Add(new SliderRadarRange());
             Controls.Add(new SliderNpcMarketMaxDistance());
+            Controls.Add(new SliderNpcMarketPageSwitchDelay());
 
             Controls.Add(new SwitchToggleColors());
             Controls.Add(new ColorPickerAccent());

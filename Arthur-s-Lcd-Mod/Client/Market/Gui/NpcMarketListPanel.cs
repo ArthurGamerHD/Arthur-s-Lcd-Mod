@@ -50,6 +50,13 @@ namespace LcdMod.Client.Market.Gui
         public Action SearchClicked { get; set; }
         public Action<NpcMarketRowClickTarget> RowClicked { get; set; }
 
+        public override void Arrange(RectangleF bounds)
+        {
+            SetRect(bounds);
+            ConfigureHeaderButtons();
+            ConfigureRowButtons();
+        }
+
         public void Configure(
             RectangleF bounds,
             IList<NpcMarketRow> rows,

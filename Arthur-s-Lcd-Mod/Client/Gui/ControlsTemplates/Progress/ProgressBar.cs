@@ -25,16 +25,31 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Progress
             var rect = GetViewBox();
             var fill = FillColor ?? context.Style.GetTextColor(false);
             var background = BackgroundColor ?? context.Style.GetPanelColor(false);
-            BarPanel.CreateSprites(
+            BarPanel.CreateBackgroundSprites(
                 sprites,
                 new Vector2(rect.X, rect.Y),
                 rect.Size,
-                fill,
                 background,
                 Fraction,
-                FillColorOverride,
                 CornerRadius,
                 ProgressBarStyle);
+
+            var fillWidth = rect.Width * (Fraction > .99f ? 1f : MathHelper.Clamp(Fraction, 0f, 1f));
+            if (fillWidth <= 0.001f)
+                return;
+
+            var fillClip = new RectangleF(rect.X, rect.Y, fillWidth, rect.Height);
+            if (!BeginContentClip(sprites, fillClip))
+                return;
+
+            BarPanel.CreateFillSprites(
+                sprites,
+                new Vector2(rect.X, rect.Y),
+                rect.Size,
+                FillColorOverride ?? fill,
+                CornerRadius,
+                ProgressBarStyle);
+            EndContentClip(sprites);
         }
     }
     
@@ -60,30 +75,61 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Progress
             ProgressBarStyle style = ProgressBarStyle.PillBleed)
         {
             var f = fraction > .99f ? 1 : MathHelper.Clamp(fraction, 0f, 1f);
+            CreateBackgroundSprites(sprites, posTopLeft, size, bgColor, f, cornerRadius, style);
+            if (f <= 0f)
+                return;
+
+            var renderFillColor = fillColorOverride ?? fillColor;
+            CreateFillSprites(sprites, posTopLeft, new Vector2(size.X * f, size.Y), renderFillColor, cornerRadius, style);
+        }
+
+        public static void CreateBackgroundSprites(
+            List<MySprite> sprites,
+            Vector2 posTopLeft,
+            Vector2 size,
+            Color bgColor,
+            float fraction,
+            float cornerRadius = -1f,
+            ProgressBarStyle style = ProgressBarStyle.PillBleed)
+        {
+            var f = fraction > .99f ? 1 : MathHelper.Clamp(fraction, 0f, 1f);
+            if (f >= 1f)
+                return;
+
             var normalizedSize = new Vector2(MathHelper.Max(1f, size.X), MathHelper.Max(1f, size.Y));
             var normalizedPosition = new Vector2(posTopLeft.X, posTopLeft.Y + (normalizedSize.Y / 2f));
             var maxR = normalizedSize.Y * 0.5f;
             var radius = cornerRadius > 0f ? MathHelper.Min(cornerRadius, maxR) : maxR;
-            var renderFillColor = fillColorOverride ?? fillColor;
 
             if (style == ProgressBarStyle.Ellipse)
             {
-                if (f < 1f)
-                    sprites.Add(MakeTex("Circle", normalizedPosition, normalizedSize, bgColor));
-                if (f > 0f)
-                {
-                    var w = normalizedSize.X * f;
-                    sprites.Add(MakeTex("Circle", normalizedPosition, new Vector2(w, normalizedSize.Y), renderFillColor));
-                }
+                sprites.Add(MakeTex("Circle", normalizedPosition, normalizedSize, bgColor));
                 return;
             }
 
-            if (f < 1f)
-                AddPill(sprites, normalizedPosition, normalizedSize, radius, normalizedSize.X, bgColor);
+            AddPill(sprites, normalizedPosition, normalizedSize, radius, normalizedSize.X, bgColor);
+        }
 
-            var fillW = normalizedSize.X * f;
-            if (fillW > 0.001f)
-                AddPillFill(sprites, normalizedPosition, normalizedSize, radius, fillW, renderFillColor);
+        public static void CreateFillSprites(
+            List<MySprite> sprites,
+            Vector2 posTopLeft,
+            Vector2 size,
+            Color fillColor,
+            float cornerRadius = -1f,
+            ProgressBarStyle style = ProgressBarStyle.PillBleed)
+        {
+            var normalizedSize = new Vector2(MathHelper.Max(1f, size.X), MathHelper.Max(1f, size.Y));
+            var normalizedPosition = new Vector2(posTopLeft.X, posTopLeft.Y + (normalizedSize.Y / 2f));
+            var maxR = normalizedSize.Y * 0.5f;
+            var radius = cornerRadius > 0f ? MathHelper.Min(cornerRadius, maxR) : maxR;
+
+            if (style == ProgressBarStyle.Ellipse)
+            {
+                sprites.Add(MakeTex("Circle", normalizedPosition, normalizedSize, fillColor));
+                return;
+            }
+
+            AddPill(sprites, normalizedPosition, normalizedSize, radius, normalizedSize.X, fillColor);
         }
 
         static void AddPill(
@@ -116,50 +162,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Progress
             var rectW = w - 2f * r + 2f * bleed;
             if (rectW > 0.25f)
                 sprites.Add(MakeTex("SquareSimple", position + new Vector2(xOffset + rectX, 0f), new Vector2(rectW, h), color));
-        }
-
-        static void AddPillFill(
-            List<MySprite> sprites,
-            Vector2 position,
-            Vector2 size,
-            float radius,
-            float width,
-            Color color)
-        {
-            var w = MathHelper.Clamp(width, 0f, size.X);
-            var h = size.Y;
-            if (w <= 0f || h <= 0f)
-                return;
-
-            var r = radius;
-            var d = r * 2f;
-            var bleed = MathHelper.Clamp(h * 0.08f, 1f, 3f);
-            AddClip(sprites, new RectangleF(position.X, position.Y - h * 0.5f, w, h));
-            sprites.Add(MakeTex("Circle", position, new Vector2(d, h), color));
-
-            if (w > r + 0.001f)
-            {
-                if (w > d + 0.001f)
-                {
-                    var rectX = r - bleed;
-                    var rectW = w - d + 2f * bleed;
-                    if (rectW > 0.25f)
-                        sprites.Add(MakeTex("SquareSimple", position + new Vector2(rectX, 0f), new Vector2(rectW, h), color));
-                }
-
-                sprites.Add(MakeTex("Circle", position + new Vector2(w - d, 0f), new Vector2(d, h), color));
-            }
-
-            sprites.Add(MySprite.CreateClearClipRect());
-        }
-
-        static void AddClip(List<MySprite> sprites, RectangleF bounds)
-        {
-            int x = (int)System.Math.Floor(bounds.X);
-            int y = (int)System.Math.Floor(bounds.Y);
-            int right = (int)System.Math.Ceiling(bounds.Right);
-            int bottom = (int)System.Math.Ceiling(bounds.Bottom);
-            sprites.Add(MySprite.CreateClipRect(new Rectangle(x, y, System.Math.Max(0, right - x), System.Math.Max(0, bottom - y))));
         }
 
         static MySprite MakeTex(string name, Vector2 posTopLeft, Vector2 size, Color color)

@@ -45,7 +45,7 @@ namespace LcdMod.Client.Apps
         readonly NpcMarketAggregator _aggregator = new NpcMarketAggregator();
         readonly List<NpcMarketRow> _rows = new List<NpcMarketRow>();
         readonly StringBuilder _text = new StringBuilder();
-        readonly ScrollPanel _scrollPanel;
+        readonly PagesPanel _pagesPanel;
         readonly NpcMarketListStripPanel _listStripPanel;
         readonly ComboBox<NpcMarketMode> _modeComboBox;
         readonly List<Button> _sortHeaderButtons = new List<Button>();
@@ -76,7 +76,8 @@ namespace LcdMod.Client.Apps
         internal NpcMarketMode Mode => _mode;
         internal IAppHost AppHost => Host;
         readonly ScreenConfigNpcMarket _config;
-        bool _restoredScrollOffset;
+        bool _restoredPageIndex;
+        int _lastAutoPageStep = -1;
 
         public NpcMarketApp(ScreenConfigNpcMarket config, IAppHost host) : base(config, host)
         {
@@ -84,12 +85,9 @@ namespace LcdMod.Client.Apps
             _mode = NormalizeConfiguredMode(_config.SelectedMode);
             _config.SelectedMode = (int)_mode;
             LoadSortStateForMode(_mode);
-            _scrollPanel = new ScrollPanel(CursorType.Default, this)
-            {
-                ScrollChanged = OnScrollPanelChanged,
-                WheelRouting = ScrollWheelRouting.Automatic
-            };
-            _scrollPanel.SetVisible(false);
+            _pagesPanel = new PagesPanel();
+            _pagesPanel.SetVisible(false);
+            _pagesPanel.PageChanged = OnPageChanged;
             _listStripPanel = new NpcMarketListStripPanel(Host)
             {
                 HorizontalGap = 12f * GetLayoutScale(),
@@ -97,7 +95,6 @@ namespace LcdMod.Client.Apps
                 SearchClicked = OpenSearch,
                 RowClicked = OnMarketRowClicked
             };
-            _scrollPanel.SetContent(_listStripPanel);
             _modeComboBox = new ComboBox<NpcMarketMode>(MarketModes, GetModeLabel, OnModeChanged, Host.RenderSprites)
             {
                 OpenDirection = ComboBoxOpenDirection.Up
@@ -192,8 +189,8 @@ namespace LcdMod.Client.Apps
 
                 if (_rows.Count > 0)
                 {
-                    ConfigureScrollPanel(rowTop, footerHeight, headerHeight, rowHeight, textScale, muted);
-                    _scrollPanel.Render(CreateRenderContext(), sprites);
+                    ConfigurePagesPanel(rowTop, footerHeight, headerHeight, rowHeight, textScale, muted);
+                    _pagesPanel.Render(CreateRenderContext(), sprites);
                 }
             }
 
@@ -211,9 +208,10 @@ namespace LcdMod.Client.Apps
             if (handled)
                 return;
 
-            if (!_scrollPanel.Scroll(this, delta))
+            if (!_pagesPanel.Visible || !_pagesPanel.CanNavigate)
                 return;
 
+            _pagesPanel.FirstVisiblePage += delta > 0 ? -1 : 1;
             handled = true;
             Host.RenderSprites();
         }
@@ -290,7 +288,7 @@ namespace LcdMod.Client.Apps
                 if (string.IsNullOrEmpty(itemKey))
                     continue;
 
-                var top = _scrollPanel.ContentBounds.Y + (rowIndex - start) * rowHeight;
+                var top = _pagesPanel.ContentViewportBounds.Y + (rowIndex - start) * rowHeight;
                 if (_mode == NpcMarketMode.Both)
                 {
                     var layout = GetBothLayout(contentRight, GetLayoutScale());
@@ -319,7 +317,7 @@ namespace LcdMod.Client.Apps
             {
                 button = new Button(rect, CursorType.Hand, target, OnMarketRowClicked);
                 _rowButtonsByItemKey[key] = button;
-                _scrollPanel.AddChild(button);
+                _pagesPanel.AddChild(button);
             }
             else
             {
@@ -683,7 +681,7 @@ namespace LcdMod.Client.Apps
         void ClearInteractiveTree()
         {
             _interactiveList.Clear();
-            _scrollPanel.SetVisible(false);
+            _pagesPanel.SetVisible(false);
             for (var i = 0; i < _sortHeaderButtons.Count; i++)
                 _sortHeaderButtons[i].SetVisible(false);
             _searchButton.SetVisible(false);
@@ -835,7 +833,7 @@ namespace LcdMod.Client.Apps
                 _interactiveList.Add(button);
         }
 
-        void ConfigureScrollPanel(float contentTop, float footerHeight, float headerHeight, float rowHeight, float textScale, Color muted)
+        void ConfigurePagesPanel(float contentTop, float footerHeight, float headerHeight, float rowHeight, float textScale, Color muted)
         {
             if (_rows.Count <= 0)
                 return;
@@ -860,21 +858,15 @@ namespace LcdMod.Client.Apps
             _listStripPanel.MutedColor = muted;
             _listStripPanel.SortHeaderStyle = GetSortHeaderStyle();
 
-            _scrollPanel.ConfigureAutomatic(
-                bounds,
-                ScrollPanel.DefaultScrollerWidthPixels * scale,
-                Math.Max(24f * scale, 48f * scale),
-                0f,
-                ScrollAxis.Horizontal);
-            var thumbColor = _config.HeaderColor;
-            _scrollPanel.SetScrollBarColors(
-                new Color(Host.Surface.ScriptForegroundColor.R, Host.Surface.ScriptForegroundColor.G, Host.Surface.ScriptForegroundColor.B, 127),
-                new Color(thumbColor.R, thumbColor.G, thumbColor.B, 250));
-            RestoreScrollOffset();
-            SaveScrollOffset(_scrollPanel);
-            _scrollPanel.SetVisible(_rows.Count > 0);
-            if (_rows.Count > 0 && !_interactiveList.Contains(_scrollPanel))
-                _interactiveList.Add(_scrollPanel);
+            _pagesPanel.LayoutScale = scale;
+            _pagesPanel.PageProvider = viewport => _listStripPanel.ConfigurePages(_pagesPanel, viewport);
+            RestorePageIndex();
+            _pagesPanel.SetRect(bounds);
+            AdvancePageFromTimer();
+            SavePageIndex();
+            _pagesPanel.SetVisible(_rows.Count > 0);
+            if (_rows.Count > 0 && !_interactiveList.Contains(_pagesPanel))
+                _interactiveList.Add(_pagesPanel);
         }
 
         void DrawFooter(List<MySprite> sprites, float textScale, Color muted)
@@ -1307,7 +1299,7 @@ namespace LcdMod.Client.Apps
         void OnSearchChanged(string value)
         {
             _searchQuery = value ?? string.Empty;
-            ResetSavedScrollOffset();
+            ResetSavedPageIndex();
             RefreshRows();
             Host.RenderSprites();
         }
@@ -1327,7 +1319,7 @@ namespace LcdMod.Client.Apps
             _mode = mode;
             _config.SelectedMode = (int)_mode;
             LoadSortStateForMode(_mode);
-            ResetSavedScrollOffset();
+            ResetSavedPageIndex();
             RefreshRows();
             Host.RenderSprites();
         }
@@ -1352,7 +1344,7 @@ namespace LcdMod.Client.Apps
             }
 
             SaveSortStateForMode(_mode);
-            ResetSavedScrollOffset();
+            ResetSavedPageIndex();
             RefreshRows();
             Host.RenderSprites();
         }
@@ -1363,41 +1355,76 @@ namespace LcdMod.Client.Apps
             Host.RenderSprites();
         }
 
-        void OnScrollPanelChanged(ScrollPanel panel)
+        void OnPageChanged(int pageIndex)
         {
-            if (panel != null)
-                SaveScrollOffset(panel);
-
+            SavePageIndex(pageIndex);
             Host.RenderSprites();
         }
 
-        void RestoreScrollOffset()
+        void RestorePageIndex()
         {
-            if (_restoredScrollOffset)
+            if (_restoredPageIndex)
                 return;
 
-            _restoredScrollOffset = true;
-            _scrollPanel.SetScrollOffsetPixels(new Vector2(_config.HorizontalScrollOffsetPixels, _config.VerticalScrollOffsetPixels), false);
-            SaveScrollOffset(_scrollPanel);
+            _restoredPageIndex = true;
+            _pagesPanel.FirstVisiblePage = Math.Max(0, (int)Math.Round(_config.HorizontalScrollOffsetPixels));
+            SavePageIndex();
         }
 
-        void ResetSavedScrollOffset()
+        void ResetSavedPageIndex()
         {
             _config.ScrollOffsetPixels = 0f;
             _config.HorizontalScrollOffsetPixels = 0f;
             _config.VerticalScrollOffsetPixels = 0f;
-            _restoredScrollOffset = true;
-            _scrollPanel.ResetScroll(false);
+            _restoredPageIndex = true;
+            _lastAutoPageStep = -1;
+            _pagesPanel.FirstVisiblePage = 0;
         }
 
-        void SaveScrollOffset(ScrollPanel panel)
+        void SavePageIndex()
         {
-            if (panel == null)
+            SavePageIndex(_pagesPanel.FirstVisiblePage);
+        }
+
+        void SavePageIndex(int pageIndex)
+        {
+            _config.HorizontalScrollOffsetPixels = Math.Max(0, pageIndex);
+            _config.VerticalScrollOffsetPixels = 0f;
+            _config.ScrollOffsetPixels = 0f;
+        }
+
+        void AdvancePageFromTimer()
+        {
+            if (!_pagesPanel.CanNavigate)
+            {
+                _lastAutoPageStep = -1;
+                return;
+            }
+
+            var seconds = SliderNpcMarketPageSwitchDelay.ClampSeconds(_config.PageSwitchSeconds);
+            if (seconds <= 0f)
+            {
+                _lastAutoPageStep = -1;
+                return;
+            }
+
+            var session = MyAPIGateway.Session;
+            if (session == null)
                 return;
 
-            _config.HorizontalScrollOffsetPixels = panel.HorizontalScrollOffsetPixels;
-            _config.VerticalScrollOffsetPixels = panel.VerticalScrollOffsetPixels;
-            _config.ScrollOffsetPixels = panel.VerticalScrollOffsetPixels;
+            var framesPerStep = Math.Max(1, (int)Math.Round(seconds * 60f));
+            var step = (int)(session.GameplayFrameCounter / framesPerStep);
+            if (_lastAutoPageStep < 0)
+            {
+                _lastAutoPageStep = step;
+                return;
+            }
+
+            if (step == _lastAutoPageStep)
+                return;
+
+            _lastAutoPageStep = step;
+            _pagesPanel.FirstVisiblePage += 1;
         }
 
         NpcMarketMode NormalizeConfiguredMode(int value)
@@ -1600,18 +1627,6 @@ namespace LcdMod.Client.Apps
                 return seconds + "s";
 
             return (seconds / 60) + ":" + (seconds % 60).ToString("00");
-        }
-
-        static void BeginClip(List<MySprite> sprites, RectangleF bounds)
-        {
-            if (sprites == null)
-                return;
-
-            int x = (int)Math.Floor(bounds.X);
-            int y = (int)Math.Floor(bounds.Y);
-            int right = (int)Math.Ceiling(bounds.Right);
-            int bottom = (int)Math.Ceiling(bounds.Bottom);
-            sprites.Add(MySprite.CreateClipRect(new Rectangle(x, y, Math.Max(0, right - x), Math.Max(0, bottom - y))));
         }
 
         sealed class SortHeaderButtonModel : ButtonModel

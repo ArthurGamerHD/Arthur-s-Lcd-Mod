@@ -8,7 +8,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
     /// <summary>
     /// Horizontal page host. Pages are 480px scaled by default; when the bounds
     /// cannot fit all pages, only a window of pages is visible and side arrows
-    /// switch the active window.
+    /// switch the active window. The window wraps around the child list.
     /// </summary>
     public sealed class CarouselPanel : Panel
     {
@@ -62,23 +62,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
         bool MovePage(int direction)
         {
-            if (!_showArrows)
+            if (!_showArrows || GetPageCount() <= 1)
                 return false;
 
-            if (direction < 0 && _firstVisiblePage > 0)
-            {
-                FirstVisiblePage = _firstVisiblePage - 1;
-                return true;
-            }
-
-            int maxFirst = ClampFirstVisiblePage(int.MaxValue, _visiblePageCount);
-            if (direction > 0 && _firstVisiblePage < maxFirst)
-            {
-                FirstVisiblePage = _firstVisiblePage + 1;
-                return true;
-            }
-
-            return false;
+            FirstVisiblePage = _firstVisiblePage + (direction < 0 ? -1 : 1);
+            return true;
         }
 
         protected override void ArrangeChildren()
@@ -106,7 +94,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             {
                 _showArrows = false;
                 _visiblePageCount = pageCount;
-                _firstVisiblePage = 0;
+                _firstVisiblePage = NormalizePageIndex(_firstVisiblePage, pageCount);
             }
             else
             {
@@ -115,7 +103,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
                 contentX = Rect.X + arrowWidth;
                 contentWidth = Math.Max(1f, Rect.Width - arrowWidth * 2f);
                 _visiblePageCount = Math.Max(1, Math.Min(pageCount, (int)Math.Floor(contentWidth / targetPageWidth)));
-                _firstVisiblePage = ClampFirstVisiblePage(_firstVisiblePage, _visiblePageCount);
+                _firstVisiblePage = NormalizePageIndex(_firstVisiblePage, pageCount);
             }
 
             float pageWidth = allPagesFit ? contentWidth / _visiblePageCount : Math.Min(targetPageWidth, contentWidth / _visiblePageCount);
@@ -128,13 +116,17 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
                 if (child == null || IsArrowControl(child))
                     continue;
 
-                int pageIndex = GetPageIndex(child);
-                bool visible = pageIndex >= _firstVisiblePage && pageIndex < _firstVisiblePage + _visiblePageCount;
-                child.SetVisible(visible);
-                if (!visible)
+                child.SetVisible(false);
+            }
+
+            for (int visibleIndex = 0; visibleIndex < _visiblePageCount; visibleIndex++)
+            {
+                int pageIndex = NormalizePageIndex(_firstVisiblePage + visibleIndex, pageCount);
+                var child = GetPageAtIndex(pageIndex);
+                if (child == null)
                     continue;
 
-                int visibleIndex = pageIndex - _firstVisiblePage;
+                child.SetVisible(true);
                 child.Arrange(new RectangleF(startX + visibleIndex * pageWidth, Rect.Y, pageWidth, Rect.Height));
             }
 
@@ -176,8 +168,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             if (!_showArrows || sprites == null || context == null)
                 return;
 
-            RenderArrow(context, sprites, _leftArrowBounds, "LeftArrow", _firstVisiblePage > 0);
-            RenderArrow(context, sprites, _rightArrowBounds, "RightArrow", _firstVisiblePage < ClampFirstVisiblePage(int.MaxValue, _visiblePageCount));
+            RenderArrow(context, sprites, _leftArrowBounds, "LeftArrow", CanMove(-1));
+            RenderArrow(context, sprites, _rightArrowBounds, "RightArrow", CanMove(1));
         }
 
         void RenderArrow(ControlRenderContext context, List<MySprite> sprites, RectangleF rect, string texture, bool enabled)
@@ -201,13 +193,16 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
         int ClampFirstVisiblePage(int value, int visiblePageCount)
         {
-            int pageCount = GetPageCount();
-            int maxFirst = Math.Max(0, pageCount - Math.Max(1, visiblePageCount));
-            if (value < 0)
+            return NormalizePageIndex(value, GetPageCount());
+        }
+
+        static int NormalizePageIndex(int value, int pageCount)
+        {
+            if (pageCount <= 0)
                 return 0;
-            if (value > maxFirst)
-                return maxFirst;
-            return value;
+
+            int result = value % pageCount;
+            return result < 0 ? result + pageCount : result;
         }
 
         int GetPageCount()
@@ -246,6 +241,26 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             return -1;
         }
 
+        ControlBase GetPageAtIndex(int pageIndex)
+        {
+            var children = Children;
+            if (children == null || pageIndex < 0)
+                return null;
+
+            int currentPageIndex = 0;
+            for (int i = 0; i < children.Count; i++)
+            {
+                var current = children[i];
+                if (IsArrowControl(current))
+                    continue;
+                if (currentPageIndex == pageIndex)
+                    return current;
+                currentPageIndex++;
+            }
+
+            return null;
+        }
+
         static bool IsArrowControl(ControlBase control)
         {
             return control is ArrowControl;
@@ -269,13 +284,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
         bool CanMove(int direction)
         {
-            if (!_showArrows)
-                return false;
-
-            if (direction < 0)
-                return _firstVisiblePage > 0;
-
-            return _firstVisiblePage < ClampFirstVisiblePage(int.MaxValue, _visiblePageCount);
+            return _showArrows && GetPageCount() > 1;
         }
 
         sealed class ArrowControl : ControlBase

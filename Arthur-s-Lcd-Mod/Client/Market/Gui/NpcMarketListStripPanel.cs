@@ -68,6 +68,46 @@ namespace LcdMod.Client.Market.Gui
             return new Vector2(contentWidth, availableSize.Y);
         }
 
+        public int ConfigurePages(PagesPanel pagesPanel, RectangleF viewport)
+        {
+            if (pagesPanel == null)
+                return 0;
+
+            _viewportBounds = viewport;
+            _lastAvailableSize = viewport.Size;
+            RebuildPages(viewport.Size);
+            pagesPanel.PageWidthPixels = _listWidth / Math.Max(0.01f, pagesPanel.LayoutScale);
+
+            EnsureCards(_pages.Count);
+            for (var i = 0; i < _cards.Count; i++)
+            {
+                var card = _cards[i];
+                if (i >= _pages.Count)
+                {
+                    card.SetVisible(false);
+                    if (ReferenceEquals(card.Parent, pagesPanel))
+                        pagesPanel.RemoveChild(card);
+                    continue;
+                }
+
+                if (!ReferenceEquals(card.Parent, pagesPanel))
+                    pagesPanel.AddChild(card);
+
+                var page = _pages[i];
+                var rect = new RectangleF(viewport.X, viewport.Y, _listWidth, viewport.Height);
+                card.Configure(rect, _rows, page, Mode, SortColumn, SortDescending, RepeatedHeaderHeight, RowHeight,
+                    TextScale, LayoutScale, MutedColor, SortHeaderStyle);
+                card.SortClicked = SortClicked;
+                card.SearchClicked = SearchClicked;
+                card.RowClicked = RowClicked;
+                card.SetVisible(true);
+            }
+
+            FirstVisiblePageIndex = _pages.Count > 0 ? 0 : -1;
+            LastVisiblePageIndex = _pages.Count - 1;
+            return _pages.Count;
+        }
+
         public void ArrangeViewport(RectangleF viewport, Vector2 scrollOffsetPixels)
         {
             _viewportBounds = viewport;

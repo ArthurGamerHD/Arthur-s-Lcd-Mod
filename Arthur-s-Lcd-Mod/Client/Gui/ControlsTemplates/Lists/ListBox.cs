@@ -66,9 +66,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
             Border.CreateSpritesFromRect(viewBox, sprites, backgroundColor,
                 Border.ScaleRadius(context.Style.BorderRadiusPixels, context.Scale));
 
-            BeginClip(sprites, _scrollPanel.ContentViewportBounds);
+            BeginContentClip(sprites, _scrollPanel.ContentViewportBounds);
             RenderRows(listContext, sprites);
-            EndClip(sprites);
+            EndContentClip(sprites);
 
             var outline = context.GetThemeColor(Constants.OUTLINE_VARIANT);
             var primary = context.GetThemeColor(Constants.PRIMARY);
@@ -213,22 +213,5 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
             }
         }
 
-        static void BeginClip(List<MySprite> sprites, RectangleF bounds)
-        {
-            if (sprites == null)
-                return;
-
-            int x = (int)Math.Floor(bounds.X);
-            int y = (int)Math.Floor(bounds.Y);
-            int right = (int)Math.Ceiling(bounds.Right);
-            int bottom = (int)Math.Ceiling(bounds.Bottom);
-            sprites.Add(MySprite.CreateClipRect(new Rectangle(x, y, Math.Max(0, right - x), Math.Max(0, bottom - y))));
-        }
-
-        static void EndClip(List<MySprite> sprites)
-        {
-            if (sprites != null)
-                sprites.Add(MySprite.CreateClearClipRect());
-        }
     }
 }
