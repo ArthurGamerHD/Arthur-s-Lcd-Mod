@@ -6,7 +6,7 @@ using IMyCubeGrid = VRage.Game.ModAPI.IMyCubeGrid;
 using IMySlimBlock = VRage.Game.ModAPI.IMySlimBlock;
 using GridLinkTypeEnum = VRage.Game.ModAPI.GridLinkTypeEnum;
 
-namespace LcdMod.Client.Grid
+namespace LcdMod.Client.GridData
 {
     /// <summary>
     /// Resolves cross-grid block queries for a mechanical grid group.

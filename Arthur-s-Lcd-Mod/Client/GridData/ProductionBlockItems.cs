@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
 
-namespace LcdMod.Client.Grid
+namespace LcdMod.Client.GridData
 {
     /// <summary>
     /// Per-block snapshot of a refinery/assembler input (index 0) and output (index 1) inventories,

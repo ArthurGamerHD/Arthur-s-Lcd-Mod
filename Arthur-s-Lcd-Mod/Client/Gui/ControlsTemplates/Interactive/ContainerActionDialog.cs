@@ -603,7 +603,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             var btnScale = textScale;
             var surface = context.Surface;
 
-            control.CustomRender = delegate(ControlBase ctrl, ControlRenderContext ctx, List<MySprite> sprites)
+            control.CustomRender = delegate(ControlTemplate ctrl, ControlRenderContext ctx, List<MySprite> sprites)
             {
                 var r = ctrl.Bounds;
                 var hover = enabled && r.Contains(ctx.CursorPosition);
@@ -638,7 +638,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             var surface = context.Surface;
             var isSelected = selected;
 
-            control.CustomRender = delegate(ControlBase ctrl, ControlRenderContext ctx, List<MySprite> sprites)
+            control.CustomRender = delegate(ControlTemplate ctrl, ControlRenderContext ctx, List<MySprite> sprites)
             {
                 var r = ctrl.Bounds;
                 var hover = r.Contains(ctx.CursorPosition);

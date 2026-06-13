@@ -7,7 +7,7 @@ using VRageMath;
 
 namespace LcdMod.Client.Gui.ControlsTemplates.Basic
 {
-    public class Button : RectangleControl
+    public partial class Button : RectangleControl
     {
         public Button(RectangleF bounds, ButtonModel model = null)
             : base(bounds, CursorType.Hand, model ?? new ButtonModel())
@@ -23,6 +23,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
             Action<object, object> onClick = null, InteractiveTooltip tooltip = null)
             : base(bounds, cursor, dataContext, onClick, tooltip)
         {
+        }
+
+        protected override Color GetRenderBackgroundColor()
+        {
+            return base.BackgroundColor;
         }
 
         public static ControlStyle CreatePrimaryButtonStyle()

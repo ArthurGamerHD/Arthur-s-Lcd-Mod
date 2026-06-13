@@ -4,7 +4,7 @@ using ProtoBuf;
 namespace LcdMod.Common.Config.Models.Apps
 {
     [ProtoContract]
-    public partial class ScreenConfigDiagnostic : ScreenConfigColorable, IProjectorReference
+    public partial class ScreenConfigDiagnostic : ScreenConfigGeneral, IProjectorReference
     {
         public override int Id => 3;
                 

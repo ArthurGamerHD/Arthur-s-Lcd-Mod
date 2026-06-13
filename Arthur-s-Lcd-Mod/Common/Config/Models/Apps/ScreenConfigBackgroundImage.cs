@@ -4,7 +4,7 @@ using System;
 namespace LcdMod.Common.Config.Models.Apps
 {
     [ProtoContract]
-    public partial class ScreenConfigDigitalPictureFrames : ScreenConfigInteractive
+    public partial class ScreenConfigDigitalPictureFrames : ScreenConfigGeneral
     {
         public override int Id => 19;
 

@@ -4,7 +4,7 @@ using System.Text;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Config;
 using LcdMod.Client.Extensions;
-using LcdMod.Client.Grid;
+using LcdMod.Client.GridData;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Dialogs;
@@ -25,7 +25,7 @@ using VisualWrapPanel = LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel.Wra
 
 namespace LcdMod.Client.Apps
 {
-    public sealed class CargoFilledApp : AppBase, IAppInteractive
+    public sealed class CargoFilledApp : App, IApp
     {
         private const int LINE_HEIGHT = 40;
         private const int SCROLL_DELAY = 12;
@@ -42,6 +42,7 @@ namespace LcdMod.Client.Apps
         private readonly VisualWrapPanel _gridPanel;
         private string _statusMessage;
         private long _statusUntilFrame;
+        readonly List<Control> _children = new List<Control>();
 
         public CargoFilledApp(ScreenConfigWithBlocks config, IAppHost host) : base(config, host)
         {
@@ -49,7 +50,7 @@ namespace LcdMod.Client.Apps
             if (_interactiveHost == null)
                 throw new ArgumentException("CargoFilledApp requires an InteractiveSurfaceScript host.", "host");
 
-            _scrollPanel = new ScrollPanel(CursorType.Default, this);
+            _scrollPanel = AddChild(new ScrollPanel(CursorType.Default, this));
             _scrollPanel.ScrollChanged = OnScrollPanelChanged;
             _scrollPanel.SetVisible(false);
             _listPanel = new VisualStackPanel();
@@ -59,7 +60,8 @@ namespace LcdMod.Client.Apps
 
         private ScreenConfigWithBlocks Config => (ScreenConfigWithBlocks)AppConfig;
         public bool HasEntries => _entries.Count > 0;
-        public List<ControlBase> InteractiveList { get; } = new List<ControlBase>();
+
+        public override IReadOnlyList<Control> Children => _children;
 
         public override void Update()
         {
@@ -92,17 +94,11 @@ namespace LcdMod.Client.Apps
             }
 
             DrawStatusMessage(sprites);
+            ClearDirtyAfterRender();
             return sprites;
         }
 
-        public bool HasVisibleItems()
-        {
-            return HasEntries;
-        }
-
-        public void OnMouseScroll(int delta, ref bool handled)
-        {
-        }
+        public override bool HasVisibleItems() => HasEntries;
 
         private void DrawList(List<MySprite> sprites)
         {
@@ -319,7 +315,7 @@ namespace LcdMod.Client.Apps
         private void ClearInteractiveTree()
         {
             _scrollPanel.SetVisible(false);
-            InteractiveList.Clear();
+            _children.Clear();
 
             foreach (var kv in _entryControls)
                 kv.Value?.SetVisible(false);
@@ -333,13 +329,14 @@ namespace LcdMod.Client.Apps
                 ScrollPanel.DefaultScrollerWidthPixels * AppConfig.Scale,
                 rowHeight,
                 SCROLL_DELAY / 6f);
-            _scrollPanel.SetScrollBarColors(
+            _scrollPanel.ScrollBarTrackColor =
                 new Color(Host.Surface.ScriptForegroundColor.R, Host.Surface.ScriptForegroundColor.G,
-                    Host.Surface.ScriptForegroundColor.B, 127),
-                new Color(Config.HeaderColor.R, Config.HeaderColor.G, Config.HeaderColor.B, 250));
+                    Host.Surface.ScriptForegroundColor.B, 127);
+            _scrollPanel.ScrollBarThumbColor =
+                new Color(Config.HeaderColor.R, Config.HeaderColor.G, Config.HeaderColor.B, 250);
             _scrollPanel.SetVisible(true);
-            if (!InteractiveList.Contains(_scrollPanel))
-                InteractiveList.Add(_scrollPanel);
+            if (!_children.Contains(_scrollPanel))
+                _children.Add(_scrollPanel);
         }
 
         private ControlRenderContext CreateRenderContext()
@@ -384,7 +381,7 @@ namespace LcdMod.Client.Apps
             if (panel == null)
                 return;
 
-            var desired = new List<ControlBase>(entries == null ? 0 : entries.Count);
+            var desired = new List<Control>(entries == null ? 0 : entries.Count);
             var desiredIds = new HashSet<long>();
             if (entries != null)
             {
@@ -403,7 +400,7 @@ namespace LcdMod.Client.Apps
             EnsurePanelChildOrder(panel, desired);
         }
 
-        private void RenderGridPanelContent(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        private void RenderGridPanelContent(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
         {
             var children = control != null ? control.Children : null;
             if (children == null)
@@ -421,7 +418,7 @@ namespace LcdMod.Client.Apps
 
             for (var i = 0; i < children.Count; i++)
             {
-                var child = children[i];
+                var child = children[i] as ControlTemplate;
                 if (child != null)
                     child.Render(context, sprites);
             }
@@ -466,8 +463,8 @@ namespace LcdMod.Client.Apps
 
             for (var i = children.Count - 1; i >= 0; i--)
             {
-                var child = children[i];
-                var entry = child == null ? null : child.DataContext as Entry;
+                var child = children[i] as ControlTemplate;
+                var entry = child?.DataContext as Entry;
                 if (entry == null || desiredIds.Contains(entry.EntryId))
                     continue;
 
@@ -475,7 +472,7 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        private static void EnsurePanelChildOrder(Panel panel, List<ControlBase> desired)
+        private static void EnsurePanelChildOrder(Panel panel, List<Control> desired)
         {
             if (panel == null || desired == null)
                 return;
@@ -484,7 +481,7 @@ namespace LcdMod.Client.Apps
             var changed = false;
             for (var i = 0; i < desired.Count; i++)
             {
-                var child = desired[i];
+                var child = desired[i] as ControlTemplate;
                 if (child == null)
                     continue;
 
@@ -510,7 +507,7 @@ namespace LcdMod.Client.Apps
                 panel.InvalidateLayout();
         }
 
-        private static int IndexOfChild(IReadOnlyList<ControlBase> children, ControlBase child)
+        private static int IndexOfChild(IReadOnlyList<Control> children, ControlTemplate child)
         {
             if (children == null || child == null)
                 return -1;
@@ -536,7 +533,7 @@ namespace LcdMod.Client.Apps
             return null;
         }
 
-        private void RenderCargoEntryControl(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        private void RenderCargoEntryControl(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
         {
             var entry = control?.DataContext as Entry;
             if (entry == null)

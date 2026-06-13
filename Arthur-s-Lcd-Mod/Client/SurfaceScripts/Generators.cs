@@ -24,13 +24,11 @@ namespace LcdMod.Client.SurfaceScripts
         protected override ConfigKind ConfigKind => ConfigKind.Power;
         public const string ID = "GeneratorsGraph";
         public const string TITLE = "RadialMenuGroupTitle_Power";
-
-        readonly List<ControlBase> _interactiveListFallback = new List<ControlBase>();
         GeneratorsApp _app;
 
         public override IApp App => _app;
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
-        public override List<ControlBase> InteractiveList => _app != null ? _app.InteractiveList : _interactiveListFallback;
+        public override List<Control> InteractiveList => _app.Children as List<Control>;
         protected override bool RendersInteractiveEntriesInGetSprites => true;
         protected override string DefaultTitle => TITLE;
 

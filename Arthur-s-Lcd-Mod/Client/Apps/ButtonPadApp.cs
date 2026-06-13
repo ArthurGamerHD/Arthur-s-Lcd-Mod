@@ -6,7 +6,7 @@ using LcdMod.Client.Config;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui;
-using LcdMod.Client.Grid;
+using LcdMod.Client.GridData;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Dialogs;
@@ -14,6 +14,7 @@ using LcdMod.Client.Gui.ControlsTemplates.Inputs;
 using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.ControlsTemplates.Panels.Virtualized;
+using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
 #if EXPERIMENTAL
 using LcdMod.Client.Terminal.Actions;
@@ -38,7 +39,7 @@ using IMyTerminalBlock = Sandbox.ModAPI.IMyTerminalBlock;
 
 namespace LcdMod.Client.Apps
 {
-    public sealed class ButtonPadApp : AppBase, IAppInteractive
+    public sealed class ButtonPadApp : App, IApp
     {
         const float BUTTON_SIZE_PIXELS = 92f;
         const float BUTTON_SPACING_PIXELS = 3f;
@@ -57,21 +58,21 @@ namespace LcdMod.Client.Apps
         const string SCROLL_REVERSED = "reversed";
 
         readonly List<MySprite> _sprites = new List<MySprite>();
-        readonly List<ControlBase> _interactiveList = new List<ControlBase>();
+        readonly List<Control> _children = new List<Control>();
         readonly List<int> _renderEntryIndices = new List<int>();
         readonly Dictionary<int, ButtonPanelEntrySettings> _entries = new Dictionary<int, ButtonPanelEntrySettings>();
-        readonly ScrollPanel _scrollPanel = new ScrollPanel();
+        readonly ScrollPanel _scrollPanel;
         readonly VirtualizedWrapPanel<int> _entryPanel = new VirtualizedWrapPanel<int>();
 #if EXPERIMENTAL
         readonly List<IMyBlockGroup> _actionGroups = new List<IMyBlockGroup>();
         readonly List<IMyIngameTerminalBlock> _actionGroupBlocks = new List<IMyIngameTerminalBlock>();
 #endif
 
-        ControlStyle _entryButtonStyle;
         int _lastLayoutColumns = 1;
 
         public ButtonPadApp(ScreenConfigButtonPanel config, IAppHost host) : base(config, host)
         {
+            _scrollPanel = AddChild(new ScrollPanel());
             _scrollPanel.ManualScrollInertiaEnabled = false;
             _scrollPanel.ScrollChanged = OnScrollPanelChanged;
             _entryPanel.CreateControl = CreateEntryButton;
@@ -79,7 +80,7 @@ namespace LcdMod.Client.Apps
             LoadButtonPanelSettings();
         }
 
-        public List<ControlBase> InteractiveList => _interactiveList;
+        public override IReadOnlyList<Control> Children => _children;
 
         new ScreenConfigButtonPanel AppConfig => (ScreenConfigButtonPanel)base.AppConfig;
 
@@ -108,12 +109,7 @@ namespace LcdMod.Client.Apps
             return _sprites;
         }
 
-        public bool HasVisibleItems()
-        {
-            return true;
-        }
-
-        public void OnMouseScroll(int delta, ref bool handled)
+        public override void OnMouseScroll(int delta, ref bool handled)
         {
             if (handled || !_scrollPanel.CanScroll)
                 return;
@@ -184,17 +180,24 @@ namespace LcdMod.Client.Apps
                 layout.RowHeight,
                 0f);
 
-            _scrollPanel.SetScrollBarColors(
-                GetThemeColor(Constants.SURFACE_CONTAINER_HIGH),
-                GetThemeColor(Constants.ON_SURFACE)
-            );
+            Color trackColor;
+            Color thumbColor;
+            _scrollPanel.ScrollBarTrackColor =
+                ScopedResourceResolver.TryResolve(this, ThemeResources.SurfaceColor, out trackColor)
+                    ? trackColor
+                    : Color.Gray;
+            _scrollPanel.ScrollBarThumbColor =
+                ScopedResourceResolver.TryResolve(this, ThemeResources.FontColor, out thumbColor)
+                    ? thumbColor
+                    : Color.White;
 
             _scrollPanel.SetVisible(true);
-            _interactiveList.Add(_scrollPanel);
+            _children.Add(_scrollPanel);
 
             var renderContext = CreateControlRenderContext(Surface, Scale, FontScale, GetCursorPosition());
 
             _scrollPanel.Render(renderContext, sprites);
+            ClearDirtyAfterRender();
         }
 
         int GetRowsForEntryCount(int entryCount, int columns)
@@ -342,11 +345,11 @@ namespace LcdMod.Client.Apps
 
         void ClearInteractiveTree()
         {
-            _interactiveList.Clear();
+            _children.Clear();
             _scrollPanel.SetVisible(false);
         }
 
-        ControlBase CreateEntryButton(int entryIndex)
+        ControlTemplate CreateEntryButton(int entryIndex)
         {
             return new Button(
                 default(RectangleF),
@@ -358,7 +361,7 @@ namespace LcdMod.Client.Apps
             );
         }
 
-        void BindEntryButton(ControlBase control, int entryIndex, int visibleIndex)
+        void BindEntryButton(ControlTemplate control, int entryIndex, int visibleIndex)
         {
             var button = control as Button;
             if (button == null)
@@ -397,19 +400,23 @@ namespace LcdMod.Client.Apps
             button.SetRect(rect);
             button.SetVisible(true);
             button.SetCursor(CursorType.Hand);
-            button.SetStyle(GetEntryButtonStyle());
+            button.SetStyleId("Primary");
             button.CustomRender = RenderEntryButton;
             button.OnSecondaryClick = OnPadButtonSecondaryClicked;
             button.OnScroll = IsEntryScrollEnabled(entry) ? (ControlScrollHandler)OnPadButtonScrolled : null;
         }
 
-        void RenderEntryButton(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderEntryButton(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
         {
             var rect = control.Bounds;
             var hovered = rect.Contains(context.CursorPosition);
-            var panelColor = context.Style.GetPanelColor(hovered);
-            var plusColor = context.Style.GetTextColor(hovered);
-            var shadowColor = GetThemeColor(Constants.SHADOW);
+            var button = control as Button;
+            var defaultPanelColor = button != null ? button.BackgroundColor : control.BackgroundColor;
+            var panelColor = hovered
+                ? control.GetResourceColor(ThemeResources.AccentColor, defaultPanelColor)
+                : defaultPanelColor;
+            var plusColor = control.TextColor;
+            var shadowColor = control.GetResourceColor(ThemeResources.ShadowColor, new Color(0, 0, 0, 160));
 
             Border.CreateSpritesFromRect(
                 new RectangleF(rect.Position + 2f * context.Scale, rect.Size),
@@ -1235,16 +1242,6 @@ namespace LcdMod.Client.Apps
                 : new Vector2(float.NaN, float.NaN);
         }
 
-        ControlStyle GetEntryButtonStyle()
-        {
-            if (_entryButtonStyle == null)
-                _entryButtonStyle = Button.CreatePrimaryButtonStyle(Theme);
-            else
-                _entryButtonStyle.ThemeColors = Theme;
-
-            return _entryButtonStyle;
-        }
-
         static string TrimText(string text, float availableWidth, float fontSize, IMyTextSurface surface)
         {
             if (string.IsNullOrEmpty(text) || availableWidth <= 0f || surface == null)
@@ -1296,13 +1293,6 @@ namespace LcdMod.Client.Apps
             Button _selectActionButton;
             Button _applyButton;
             Button _deleteButton;
-
-            ControlStyle _spritePreviewStyle;
-            ControlStyle _pickTargetStyle;
-            ControlStyle _selectActionStyle;
-            ControlStyle _selectActionDisabledStyle;
-            ControlStyle _applyStyle;
-            ControlStyle _deleteStyle;
 
             public ButtonPadEntryDialog(
                 IApp parentApp,
@@ -1508,22 +1498,27 @@ namespace LcdMod.Client.Apps
                 model.Enabled = true;
                 model.Clicked = OnSelectedSpriteButtonClicked;
 
-                _selectedSpriteButton.SetStyle(GetSpritePreviewStyle());
+                _selectedSpriteButton.SetStyleId("Primary");
                 _selectedSpriteButton.CustomRender = RenderSelectedSprite;
                 _selectedSpriteButton.SetCursor(CursorType.Hand);
                 _selectedSpriteButton.SetVisible(true);
             }
 
-            void RenderSelectedSprite(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+            void RenderSelectedSprite(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
             {
                 var rect = control.Bounds;
                 var model = control.DataContext as SelectedSpriteButtonModel;
                 var spriteName = model != null ? model.SpriteName : null;
                 var hovered = rect.Contains(context.CursorPosition);
+                var button = control as Button;
+                var defaultPanelColor = button != null ? button.BackgroundColor : control.BackgroundColor;
+                var panelColor = hovered
+                    ? control.GetResourceColor(ThemeResources.AccentColor, defaultPanelColor)
+                    : defaultPanelColor;
 
-                Border.CreateSpritesFromRect(rect, sprites, context.Style.GetPanelColor(hovered), radiusScale: context.Scale);
+                Border.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: context.Scale);
 
-                var foregroundColor = context.Style.GetTextColor(hovered);
+                var foregroundColor = control.TextColor;
                 var iconSize = Math.Max(1f, Math.Min(rect.Width, rect.Height) * 0.74f);
                 var iconRect = new RectangleF(rect.Center.X - iconSize * 0.5f, rect.Center.Y - iconSize * 0.5f, iconSize, iconSize);
 
@@ -1593,7 +1588,7 @@ namespace LcdMod.Client.Apps
                     _titleInput.SetRect(rect);
 
                 _titleInput.SetDataContext(_titleInputModel);
-                _titleInput.SetStyle(Button.CreatePrimaryButtonStyle(ParentTheme));
+                _titleInput.SetStyleId("Primary");
                 _titleInput.SetCursor(CursorType.Hand);
                 _titleInput.SetVisible(true);
             }
@@ -1613,7 +1608,7 @@ namespace LcdMod.Client.Apps
                     model.Clicked = OnPickTargetClicked;
                 }
 
-                _pickTargetButton.SetStyle(GetPickTargetStyle());
+                _pickTargetButton.SetStyleId("Primary");
                 _pickTargetButton.CustomRender = RenderTextButton;
                 _pickTargetButton.SetCursor(_gridLogic != null ? CursorType.Hand : CursorType.Default);
                 _pickTargetButton.SetVisible(true);
@@ -1635,7 +1630,8 @@ namespace LcdMod.Client.Apps
                     model.Clicked = OnSelectActionClicked;
                 }
 
-                _selectActionButton.SetStyle(enabled ? GetSelectActionStyle() : GetSelectActionDisabledStyle());
+                _selectActionButton.SetStyleId(enabled ? "Primary" : "Disabled");
+                _selectActionButton.SetEnabled(enabled);
                 _selectActionButton.CustomRender = RenderTextButton;
                 _selectActionButton.SetCursor(enabled ? CursorType.Hand : CursorType.Default);
                 _selectActionButton.SetVisible(true);
@@ -1656,7 +1652,7 @@ namespace LcdMod.Client.Apps
                     model.Clicked = OnApplyClicked;
                 }
 
-                _applyButton.SetStyle(GetApplyStyle());
+                _applyButton.SetStyleId("Primary");
                 _applyButton.CustomRender = RenderTextButton;
                 _applyButton.SetCursor(CursorType.Hand);
                 _applyButton.SetVisible(true);
@@ -1677,19 +1673,24 @@ namespace LcdMod.Client.Apps
                     model.Clicked = OnDeleteClicked;
                 }
 
-                _deleteButton.SetStyle(GetDeleteStyle());
+                _deleteButton.SetStyleId("Danger");
                 _deleteButton.CustomRender = RenderTextButton;
                 _deleteButton.SetCursor(CursorType.Hand);
                 _deleteButton.SetVisible(true);
             }
 
-            void RenderTextButton(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+            void RenderTextButton(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
             {
                 var rect = control.Bounds;
                 var buttonModel = control.DataContext as ButtonModel;
                 var enabled = buttonModel == null || buttonModel.Enabled;
                 var hovered = enabled && rect.Contains(context.CursorPosition);
-                Border.CreateSpritesFromRect(rect, sprites, context.Style.GetPanelColor(hovered), radiusScale: context.Scale);
+                var button = control as Button;
+                var defaultPanelColor = button != null ? button.BackgroundColor : control.BackgroundColor;
+                var panelColor = hovered
+                    ? control.GetResourceColor(ThemeResources.AccentColor, defaultPanelColor)
+                    : defaultPanelColor;
+                Border.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: context.Scale);
 
                 var text = buttonModel == null ? string.Empty : buttonModel.Text;
                 var textScale = 0.52f * context.Scale * context.FontScale;
@@ -1702,7 +1703,7 @@ namespace LcdMod.Client.Apps
                     Type = SpriteType.TEXT,
                     Data = trimmed,
                     Position = new Vector2(rect.Center.X, rect.Center.Y - textHeight * 0.5f),
-                    Color = context.Style.GetTextColor(hovered),
+                    Color = control.TextColor,
                     FontId = "White",
                     RotationOrScale = textScale,
                     Alignment = TextAlignment.CENTER
@@ -1891,69 +1892,6 @@ namespace LcdMod.Client.Apps
                 if (size.X <= availableWidth)
                     return text;
                 return FormatingHelper.TrimName(text, Math.Max(1, (int)(text.Length * availableWidth / Math.Max(1f, size.X))));
-            }
-
-            ControlStyle GetSpritePreviewStyle()
-            {
-                if (_spritePreviewStyle == null)
-                    _spritePreviewStyle = Button.CreatePrimaryButtonStyle(ParentTheme);
-                else
-                    _spritePreviewStyle.ThemeColors = ParentTheme;
-                return _spritePreviewStyle;
-            }
-
-            ControlStyle GetPickTargetStyle()
-            {
-                if (_pickTargetStyle == null)
-                    _pickTargetStyle = Button.CreatePrimaryButtonStyle(ParentTheme);
-                else
-                    _pickTargetStyle.ThemeColors = ParentTheme;
-                return _pickTargetStyle;
-            }
-
-            ControlStyle GetSelectActionStyle()
-            {
-                if (_selectActionStyle == null)
-                    _selectActionStyle = Button.CreatePrimaryButtonStyle(ParentTheme);
-                else
-                    _selectActionStyle.ThemeColors = ParentTheme;
-                return _selectActionStyle;
-            }
-
-            ControlStyle GetSelectActionDisabledStyle()
-            {
-                if (_selectActionDisabledStyle == null)
-                    _selectActionDisabledStyle = Button.CreateDisabledButtonStyle(ParentTheme);
-                else
-                    _selectActionDisabledStyle.ThemeColors = ParentTheme;
-                return _selectActionDisabledStyle;
-            }
-
-            ControlStyle GetApplyStyle()
-            {
-                if (_applyStyle == null)
-                    _applyStyle = Button.CreatePrimaryButtonStyle(ParentTheme);
-                else
-                    _applyStyle.ThemeColors = ParentTheme;
-                return _applyStyle;
-            }
-
-            ControlStyle GetDeleteStyle()
-            {
-                if (_deleteStyle == null)
-                {
-                    _deleteStyle = ControlStyle.FromThemeRoles(
-                        Constants.ON_ERROR,
-                        Constants.ERROR,
-                        Constants.ERROR + Constants.HOVER,
-                        Constants.ON_ERROR,
-                        ParentTheme);
-                    _deleteStyle.BorderRadiusPixels = Border.DEFAULT_RADIUS_PIXELS;
-                }
-                else
-                    _deleteStyle.ThemeColors = ParentTheme;
-
-                return _deleteStyle;
             }
 
             sealed class SelectedSpriteButtonModel : ButtonModel

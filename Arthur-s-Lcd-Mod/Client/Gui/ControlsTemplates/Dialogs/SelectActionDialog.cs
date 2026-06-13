@@ -8,7 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using LcdMod.Client.Apps.Abstract;
-using LcdMod.Client.Grid;
+using LcdMod.Client.GridData;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Inputs;
 using LcdMod.Client.Gui.ControlsTemplates.Interactive;
@@ -593,7 +593,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             button.SetVisible(true);
         }
 
-        void RenderActionRow(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderActionRow(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
         {
             var model = control.DataContext as ActionRowButtonModel;
             var action = model == null ? null : model.Action;

@@ -9,7 +9,7 @@ using System.Globalization;
 using System.Text;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Extensions;
-using LcdMod.Client.Grid;
+using LcdMod.Client.GridData;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Inputs;
 using LcdMod.Client.Gui.ControlsTemplates.Interactive;
@@ -537,7 +537,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _applyButton.SetVisible(true);
         }
 
-        void RenderColorButton(ControlBase control, ControlRenderContext context, System.Collections.Generic.List<MySprite> sprites)
+        void RenderColorButton(ControlTemplate control, ControlRenderContext context, System.Collections.Generic.List<MySprite> sprites)
         {
             var rect = control.Bounds;
             var hovered = rect.Contains(context.CursorPosition);
@@ -615,7 +615,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             return button;
         }
 
-        void RenderBooleanModeButton(ControlBase control, ControlRenderContext context, System.Collections.Generic.List<MySprite> sprites)
+        void RenderBooleanModeButton(ControlTemplate control, ControlRenderContext context, System.Collections.Generic.List<MySprite> sprites)
         {
             var rect = control.Bounds;
             var model = control.DataContext as BooleanModeButtonModel;
@@ -693,7 +693,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             return button;
         }
 
-        void RenderClickActionButton(ControlBase control, ControlRenderContext context, System.Collections.Generic.List<MySprite> sprites)
+        void RenderClickActionButton(ControlTemplate control, ControlRenderContext context, System.Collections.Generic.List<MySprite> sprites)
         {
             var rect = control.Bounds;
             var model = control.DataContext as ClickActionButtonModel;
@@ -731,7 +731,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _scrollComboButton.SetVisible(true);
         }
 
-        void RenderScrollComboButton(ControlBase control, ControlRenderContext context, System.Collections.Generic.List<MySprite> sprites)
+        void RenderScrollComboButton(ControlTemplate control, ControlRenderContext context, System.Collections.Generic.List<MySprite> sprites)
         {
             var rect = control.Bounds;
             var hovered = rect.Contains(context.CursorPosition);
@@ -819,7 +819,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             return optionButton;
         }
 
-        void RenderScrollOptionButton(ControlBase control, ControlRenderContext context, System.Collections.Generic.List<MySprite> sprites)
+        void RenderScrollOptionButton(ControlTemplate control, ControlRenderContext context, System.Collections.Generic.List<MySprite> sprites)
         {
             var rect = control.Bounds;
             var model = control.DataContext as ScrollModeButtonModel;
@@ -853,7 +853,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             });
         }
 
-        void RenderTextButton(ControlBase control, ControlRenderContext context, System.Collections.Generic.List<MySprite> sprites)
+        void RenderTextButton(ControlTemplate control, ControlRenderContext context, System.Collections.Generic.List<MySprite> sprites)
         {
             var rect = control.Bounds;
             var buttonModel = control.DataContext as ButtonModel;

@@ -295,7 +295,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 return;
 
             control.SetStyle(Button.CreatePrimaryButtonStyle(themedParentApp?.Theme));
-            control.CustomRender = delegate(ControlBase renderEntry, ControlRenderContext context, List<MySprite> sprites)
+            control.CustomRender = delegate(ControlTemplate renderEntry, ControlRenderContext context, List<MySprite> sprites)
             {
                 DrawButton(renderEntry.Bounds, owner, sprites, text, textScale, context);
             };

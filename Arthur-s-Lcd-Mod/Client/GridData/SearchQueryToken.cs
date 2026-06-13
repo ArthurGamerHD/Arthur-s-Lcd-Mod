@@ -6,7 +6,7 @@ using GridLinkTypeEnum = VRage.Game.ModAPI.GridLinkTypeEnum;
 using ScreenConfigWithBlocks = LcdMod.Common.Config.Models.Apps.ScreenConfigWithBlocks;
 using ScreenConfigWithItems = LcdMod.Common.Config.Models.Apps.ScreenConfigWithItems;
 
-namespace LcdMod.Client.Grid
+namespace LcdMod.Client.GridData
 {
     /// <summary>
     /// Token for Caching Search Query

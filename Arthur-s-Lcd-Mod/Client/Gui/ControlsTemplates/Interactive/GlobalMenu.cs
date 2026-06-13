@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
+using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
 using LcdMod.Common.Helpers;
 using VRage.Game.GUI.TextPanel;
@@ -23,7 +24,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
         readonly List<Node> _rootNodes = new List<Node>();
         readonly List<Node> _openPath = new List<Node>();
-        readonly List<ControlBase> _interactiveEntries = new List<ControlBase>();
+        readonly List<Control> _interactiveEntries = new List<Control>();
         readonly List<MySprite> _sprites = new List<MySprite>();
         RectangleF _menuBounds;
         RectangleF _renderViewBox;
@@ -60,7 +61,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             return node;
         }
 
-        public void AddInteractiveEntries(List<ControlBase> entries)
+        public void AddInteractiveEntries(List<Control> entries)
         {
             if (!Visible || entries == null || !_hasMenuBounds)
                 return;
@@ -101,10 +102,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             SetDataContext(owner?.App);
             _renderViewBox = viewBox;
             _popupMaxWidth = owner != null ? owner.ViewBox.Width * 0.65f : viewBox.Width * 0.65f;
-            var themedApp = owner?.App as IThemedApp;
-            var renderContext = themedApp != null
-                ? themedApp.CreateControlRenderContext(surface, scale, fontScale, cursorPosition)
-                : new ControlRenderContext(surface, scale, fontScale, textColor, panelColor, cursorPosition);
+            IVisualStyleScope styleScope = owner.RequireAppStyleScope();
+            SetResources(null);
+            SetStyleParent(styleScope);
+
+            var renderContext = new ControlRenderContext(surface, scale, fontScale, cursorPosition, styleScope);
 
             base.Render(renderContext, targetSprites);
         }
@@ -120,9 +122,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             var surface = context.Surface;
             var scale = context.Scale;
             var fontScale = context.FontScale;
-            var panelColor = context.PanelColor;
+            var panelColor = ResolveColor(ThemeResources.AccentColor);
             var cursorPosition = context.CursorPosition;
-            var shadowColor = context.GetThemeColor(Constants.SHADOW);
+            var shadowColor = ResolveColor(ThemeResources.ShadowColor);
             var rootScale = 0.58f * scale * fontScale;
             var popupScale = 0.56f * scale * fontScale;
             var rootHeight = Math.Max(24f * scale, FormatingHelper.LineHeight(rootScale, surface) + 10f * scale);
@@ -163,7 +165,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 var interactiveEntry = ShowNode(node, rect, entry != null && entry.HasChildren ? CursorType.Hand : entry?.Cursor ?? CursorType.Default);
                 if (interactiveEntry != null)
                 {
-                    interactiveEntry.CustomRender = delegate(ControlBase item, ControlRenderContext context, List<MySprite> sprites)
+                    interactiveEntry.CustomRender = delegate(ControlTemplate item, ControlRenderContext context, List<MySprite> sprites)
                     {
                         DrawItemVisual(item.Bounds, entry, rootScale, context, cursorPosition, surface, true, sprites);
                     };
@@ -215,7 +217,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                     var interactiveEntry = ShowNode(childNode, rect, child != null && child.HasChildren ? CursorType.Hand : child?.Cursor ?? CursorType.Default);
                     if (interactiveEntry != null)
                     {
-                        interactiveEntry.CustomRender = delegate(ControlBase item, ControlRenderContext context, List<MySprite> sprites)
+                        interactiveEntry.CustomRender = delegate(ControlTemplate item, ControlRenderContext context, List<MySprite> sprites)
                         {
                             DrawItemVisual(item.Bounds, child, popupScale, context, cursorPosition, surface, false, sprites);
                         };
@@ -237,11 +239,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             var hover = rect.Contains(cursorPosition);
             var active = hover || entry != null && entry.Active;
             var fillColor = hover
-                ? context.GetThemeColor(Constants.PRIMARY_CONTAINER + Constants.HOVER)
+                ? context.ResolveColor(ThemeResources.AccentContainerColor)
                 : active
-                    ? context.GetThemeColor(Constants.PRIMARY_CONTAINER)
+                    ? context.ResolveColor(ThemeResources.AccentContainerColor)
                     : Color.Transparent;
-            var itemTextColor = context.GetThemeColor(active ? Constants.ON_PRIMARY_CONTAINER : Constants.ON_PRIMARY);
+            var itemTextColor = context.ResolveColor(active
+                ? ThemeResources.OnAccentContainerColor
+                : ThemeResources.OnAccentColor);
             Border.CreateSpritesFromRect(rect, sprites, fillColor,
                 radiusScale: context.Scale);
 

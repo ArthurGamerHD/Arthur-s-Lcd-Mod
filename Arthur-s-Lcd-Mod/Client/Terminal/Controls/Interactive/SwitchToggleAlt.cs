@@ -1,10 +1,11 @@
 using LcdMod.Client.Config;
+using LcdMod.Common.Config.Models;
 using Sandbox.Definitions;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
-using ScreenConfigInteractive = LcdMod.Common.Config.Models.ScreenConfigInteractive;
+
 
 namespace LcdMod.Client.Terminal.Controls.Interactive
 {
@@ -40,7 +41,7 @@ namespace LcdMod.Client.Terminal.Controls.Interactive
         void Setter(IMyTerminalBlock block, bool value)
         {
             var screen = GetThisSurfaceIndex(block);
-            var config = ConfigManager.GetConfigForScreen(block, screen) as ScreenConfigInteractive;
+            var config = ConfigManager.GetConfigForScreen(block, screen);
 
             if (config == null)
                 return;
@@ -52,7 +53,7 @@ namespace LcdMod.Client.Terminal.Controls.Interactive
 
         bool Getter(IMyTerminalBlock myTerminalBlock)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(myTerminalBlock) as ScreenConfigInteractive;
+            var config = ConfigManager.GetConfigForCurrentScreen(myTerminalBlock);
             return config != null && !config.RequiresAlt;
         }
     }

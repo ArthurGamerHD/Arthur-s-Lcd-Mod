@@ -14,7 +14,7 @@ namespace LcdMod.Client.SurfaceScripts
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class ThrustSurfaceScript : SurfaceScriptBase
     {
-        protected override ConfigKind ConfigKind => ConfigKind.Colorable;
+        protected override ConfigKind ConfigKind => ConfigKind.General;
         public const string ID = "LcdMod_Thrust";
         public const string TITLE = "HelpScreen_JoystickThrust";
 

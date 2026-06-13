@@ -4,7 +4,7 @@ using LcdMod.Client.Terminal.Actions;
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
-using LcdMod.Client.Grid;
+using LcdMod.Client.GridData;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Inputs;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
@@ -401,7 +401,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _comboButton.SetVisible(true);
         }
 
-        void RenderComboButton(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderComboButton(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
         {
             var rect = control.Bounds;
             var hovered = rect.Contains(context.CursorPosition);
@@ -490,7 +490,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             button.SetVisible(true);
         }
 
-        void RenderComboOption(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderComboOption(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
         {
             var rect = control.Bounds;
             var model = control.DataContext as ComboOptionButtonModel;
@@ -646,7 +646,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             return Math.Max(ROW_HEIGHT_PIXELS * scale, GetIconTargetSize(scale) + 8f * Math.Max(1f, scale));
         }
 
-        void RenderTargetRow(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderTargetRow(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
         {
             var rect = control.Bounds;
             var model = control.DataContext as TargetRowButtonModel;

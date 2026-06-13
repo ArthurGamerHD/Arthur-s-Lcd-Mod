@@ -22,7 +22,7 @@ using SliderFov = LcdMod.Client.Terminal.Controls.Generic.SliderFov;
 
 namespace LcdMod.Client.Apps
 {
-    public class StarMapApp : AppBase, IAppInteractive
+    public class StarMapApp : App, IApp
     {
         readonly IAppHost _host;
         new ScreenConfigStarMap AppConfig => (ScreenConfigStarMap)base.AppConfig;
@@ -33,7 +33,7 @@ namespace LcdMod.Client.Apps
         float FontScale => _host.Surface.FontSize;
         Color ForegroundColor => _host.ForegroundColor;
         Color BackgroundColor => _host.BackgroundColor;
-        public List<ControlBase> InteractiveList => _interactiveList;
+        public override IReadOnlyList<Control> Children => _children;
         public CursorType RequestedCursorType { get; private set; } = CursorType.Default;
 
         float _fov;
@@ -52,7 +52,7 @@ namespace LcdMod.Client.Apps
         readonly List<MySprite> _ringSprites = new List<MySprite>();
         readonly List<MySprite> _overlaySprites = new List<MySprite>();
         readonly List<MySprite> _sprites = new List<MySprite>();
-        readonly List<ControlBase> _interactiveList = new List<ControlBase>();
+        readonly List<Control> _children = new List<Control>();
 
         // for Static map. These sprites and hit targets only change when the
         // surface layout changes, so they are built once and reused across Run() calls.
@@ -61,7 +61,7 @@ namespace LcdMod.Client.Apps
         readonly List<MySprite> _cachedStaticBaseSprites = new List<MySprite>();
         readonly List<MySprite> _cachedStaticTitleSprites = new List<MySprite>();
         readonly List<MySprite> _cachedStaticRingSprites = new List<MySprite>();
-        readonly List<ControlBase> _cachedInteractiveEntries = new List<ControlBase>();
+        readonly List<Control> _cachedInteractiveEntries = new List<Control>();
 
         bool _dynamicMapCacheValid;
         MatrixD _cachedDynamicWorldMatrix;
@@ -297,7 +297,7 @@ namespace LcdMod.Client.Apps
 
         }
 
-        public bool HasVisibleItems()
+        public override bool HasVisibleItems()
         {
             return true;
         }
@@ -309,7 +309,7 @@ namespace LcdMod.Client.Apps
             _groundOcclusionSprites.Clear();
             _ringSprites.Clear();
             _overlaySprites.Clear();
-            InteractiveList.Clear();
+            _children.Clear();
             RequestedCursorType = GetDefaultCursorType();
             _suppressDynamicOverlays = false;
 
@@ -651,7 +651,7 @@ namespace LcdMod.Client.Apps
             groundOcclusionSprites.AddRange(_cachedDynamicGroundOcclusionSprites);
             ringSprites.AddRange(_cachedDynamicRingSprites);
             overlaySprites.AddRange(_cachedOverlaySprites);
-            InteractiveList.AddRange(_cachedInteractiveEntries);
+            _children.AddRange(_cachedInteractiveEntries);
             return true;
         }
 
@@ -692,7 +692,7 @@ namespace LcdMod.Client.Apps
             for (int i = overlayStartIndex; i < overlaySprites.Count; i++)
                 _cachedOverlaySprites.Add(overlaySprites[i]);
             _cachedInteractiveEntries.Clear();
-            _cachedInteractiveEntries.AddRange(InteractiveList);
+            _cachedInteractiveEntries.AddRange(Children);
             _dynamicMapCacheValid = true;
         }
 
@@ -2111,7 +2111,7 @@ namespace LcdMod.Client.Apps
             if (_staticOrbitCacheValid)
             {
                 ringSprites.AddRange(_cachedStaticRingSprites);
-                InteractiveList.AddRange(_cachedInteractiveEntries);
+                _children.AddRange(_cachedInteractiveEntries);
                 return true;
             }
 
@@ -2311,7 +2311,7 @@ namespace LcdMod.Client.Apps
             _cachedStaticRingSprites.Clear();
             _cachedStaticRingSprites.AddRange(ringSprites);
             _cachedInteractiveEntries.Clear();
-            _cachedInteractiveEntries.AddRange(InteractiveList);
+            _cachedInteractiveEntries.AddRange(Children);
             _staticOrbitCacheValid = true;
             return true;
         }
@@ -2694,13 +2694,14 @@ namespace LcdMod.Client.Apps
                 cursor ?? (line.IsClickable ? CursorType.Hand : CursorType.Default),
                 line.GetDataContext(),
                 line.GetOnClick());
+            AddChild(entry);
             entry.ClickSound = line.GetClickSound();
-            entry.CustomRender = delegate(ControlBase renderEntry, ControlRenderContext context, List<MySprite> targetSprites)
+            entry.CustomRender = delegate(ControlTemplate renderEntry, ControlRenderContext context, List<MySprite> targetSprites)
             {
                 if (line.IsClickable)
                     DrawTextHitboxUnderline(textRect, labelColor, targetSprites, textScale);
             };
-            InteractiveList.Add(entry);
+            _children.Add(entry);
             return rect;
         }
 
@@ -3045,7 +3046,7 @@ namespace LcdMod.Client.Apps
         {
             var center = planet.ScreenPos;
             var radius = planet.MarkerRadius;
-            var entry = new InteractiveCircleEntry(center, radius, CursorType.Hand, planet.PlanetId);
+            var entry = AddChild(new InteractiveCircleEntry(center, radius, CursorType.Hand, planet.PlanetId));
             if (AppConfig != null && AppConfig.DisplayMode == (int)DisplayMode.Legacy)
             {
                 entry.SetTooltip(new InteractiveTooltip(
@@ -3054,18 +3055,18 @@ namespace LcdMod.Client.Apps
                     () => FormatingHelper.DistanceToString((float)planet.Distance),
                     GetCursor, TooltipActivationMode.Click, TooltipActivationMode.Click));
             }
-            entry.CustomRender = delegate(ControlBase renderEntry, ControlRenderContext context, List<MySprite> targetSprites)
+            entry.CustomRender = delegate(ControlTemplate renderEntry, ControlRenderContext context, List<MySprite> targetSprites)
             {
                 DrawPlanetVisual(targetSprites, planet, renderEntry, context);
                 RestoreTextureClip(targetSprites);
             };
-            InteractiveList.Add(entry);
+            _children.Add(entry);
         }
 
         void DrawPlanetVisual(
             List<MySprite> sprites,
             PlanetProjection planet,
-            ControlBase entry,
+            ControlTemplate entry,
             ControlRenderContext context)
         {
             var circle = entry as InteractiveCircleEntry;
@@ -3299,7 +3300,7 @@ namespace LcdMod.Client.Apps
             _eyeTracking.Receive(onScreenCoordinates);
         }
 
-        public void OnMouseScroll(int delta, ref bool handled)
+        public override void OnMouseScroll(int delta, ref bool handled)
         {
             if (AppConfig == null || delta == 0 || handled)
                 return;

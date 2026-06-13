@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Extensions;
+using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Gui.ControlsTemplates.Panels.Virtualized;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
@@ -24,7 +25,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         Vertical = 2
     }
 
-    public sealed class ScrollPanel : ControlBase
+    public sealed partial class ScrollPanel : ControlTemplate
     {
         public const float DefaultScrollerWidthPixels = 5f;
         const long MANUAL_SCROLL_OVERRIDE_FRAMES = 300L;
@@ -34,6 +35,18 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         const float STOP_VELOCITY_PIXELS_PER_FRAME = 0.05f;
         const long HOVER_LIFETIME_FRAMES = 2L;
         const float SCROLLBAR_CONTENT_MARGIN_RATIO = 0.5f;
+
+        public static readonly StyleProperty<Color> ScrollBarTrackColorProperty =
+            StyleProperty.Register<ScrollPanel, Color>("ScrollBarTrackColor", (Color?)new Color(255, 255, 255, 127));
+
+        public static readonly StyleProperty<Color> ScrollBarThumbColorProperty =
+            StyleProperty.Register<ScrollPanel, Color>("ScrollBarThumbColor", (Color?)new Color(255, 255, 255, 250));
+
+        public static readonly StyleProperty<Color> ScrollBarThumbHoverColorProperty =
+            StyleProperty.Register<ScrollPanel, Color>("ScrollBarThumbHoverColor", null);
+
+        public static readonly StyleProperty<Color> ScrollBarThumbPressedColorProperty =
+            StyleProperty.Register<ScrollPanel, Color>("ScrollBarThumbPressedColor", null);
 
         readonly ScrollBarTrackControl _verticalScrollBarTrack;
         readonly ScrollBarThumbControl _verticalScrollBarThumb;
@@ -57,7 +70,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             AddScrollBarChildren();
         }
 
-        public ScrollPanel(ControlBase parent)
+        public ScrollPanel(ControlTemplate parent)
             : this()
         {
             AttachTo(parent);
@@ -120,10 +133,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         long _scrollBarThumbHoverFrame = long.MinValue;
         bool _scrollBarThumbDragging;
         ScrollAxis _scrollBarThumbDraggingAxis = ScrollAxis.Vertical;
-        bool _hasCustomScrollBarColors;
-        Color _scrollBarTrackColor;
-        Color _scrollBarThumbColor;
-
         struct ScrollBarMetrics
         {
             public ScrollAxis Axis;
@@ -147,7 +156,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             }
         }
 
-        public override void AddChild(ControlBase child)
+        public override void AddChild(ControlTemplate child)
         {
             var panel = child as Panel;
             if (!_automaticContentMode && !IsManualConfigured() && panel != null)
@@ -159,7 +168,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             base.AddChild(child);
         }
 
-        public override bool RemoveChild(ControlBase child)
+        public bool RemoveChild(ControlTemplate child)
         {
             if (ReferenceEquals(child, _content))
             {
@@ -488,7 +497,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
                 EndClip(sprites);
             }
 
-            RenderScrollBar(sprites, GetScrollBarTrackColor(context), GetScrollBarThumbColor(context));
+            RenderScrollBar(sprites, ScrollBarTrackColor, ScrollBarThumbColor);
         }
 
         protected override bool IsDirtyAfterRender()
@@ -503,10 +512,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
         public void SetScrollBarColors(Color trackColor, Color thumbColor)
         {
-            _scrollBarTrackColor = trackColor;
-            _scrollBarThumbColor = thumbColor;
-            _hasCustomScrollBarColors = true;
-            MarkDirty();
+            ScrollBarTrackColor = trackColor;
+            ScrollBarThumbColor = thumbColor;
         }
 
         public void ResetScroll(bool notify = true)
@@ -542,10 +549,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
         public void ClearScrollBarColors()
         {
-            if (!_hasCustomScrollBarColors)
+            if (!_scrollBarTrackColorValue.LocalOverride && !_scrollBarThumbColorValue.LocalOverride &&
+                !_scrollBarThumbHoverColorValue.LocalOverride && !_scrollBarThumbPressedColorValue.LocalOverride)
                 return;
 
-            _hasCustomScrollBarColors = false;
+            _scrollBarTrackColorValue.ClearLocal();
+            _scrollBarThumbColorValue.ClearLocal();
+            _scrollBarThumbHoverColorValue.ClearLocal();
+            _scrollBarThumbPressedColorValue.ClearLocal();
             MarkDirty();
         }
 
@@ -715,24 +726,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             return _scrollBarThumbHoverFrame != long.MinValue && GetFrameCounter() - _scrollBarThumbHoverFrame <= HOVER_LIFETIME_FRAMES;
         }
 
-        Color GetScrollBarTrackColor(ControlRenderContext context)
-        {
-            if (_hasCustomScrollBarColors)
-                return _scrollBarTrackColor;
-
-            var color = context?.TextColor ?? Color.White;
-            return new Color(color.R, color.G, color.B, 127);
-        }
-
-        Color GetScrollBarThumbColor(ControlRenderContext context)
-        {
-            if (_hasCustomScrollBarColors)
-                return _scrollBarThumbColor;
-
-            var color = context?.PanelColor ?? Color.White;
-            return new Color(color.R, color.G, color.B, 250);
-        }
-
         static float GetScrollBarVisualWidthPixels(float gutterWidth)
         {
             if (gutterWidth <= 1f)
@@ -744,9 +737,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         Color GetThumbColor(Color thumbColor, ScrollAxis axis)
         {
             if (_scrollBarThumbDragging && _scrollBarThumbDraggingAxis == axis)
-                return thumbColor.DeriveAccentColor().DeriveAccentColor();
+                return _scrollBarThumbPressedColorValue.LocalOverride
+                    ? ScrollBarThumbPressedColor
+                    : thumbColor.DeriveAccentColor().DeriveAccentColor();
 
-            return IsScrollBarThumbHovered() && _scrollBarThumbDraggingAxis == axis ? thumbColor.DeriveAccentColor() : thumbColor;
+            return IsScrollBarThumbHovered() && _scrollBarThumbDraggingAxis == axis
+                ? (_scrollBarThumbHoverColorValue.LocalOverride ? ScrollBarThumbHoverColor : thumbColor.DeriveAccentColor())
+                : thumbColor;
         }
 
         bool SetScrollOffsetFromThumbStart(float thumbStart, ScrollBarMetrics metrics)
@@ -1139,7 +1136,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SemiCircle", Position = new Vector2(center.X + length / 2f, center.Y), Size = horizontalCapsSize, RotationOrScale = MathHelper.PiOver2, Color = color, Alignment = TextAlignment.CENTER });
         }
 
-        sealed class ScrollBarTrackControl : ControlBase
+        sealed class ScrollBarTrackControl : ControlTemplate
         {
             readonly ScrollPanel _owner;
             readonly ScrollAxis _axis;
@@ -1180,7 +1177,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             }
         }
 
-        sealed class ScrollBarThumbControl : ControlBase
+        sealed class ScrollBarThumbControl : ControlTemplate
         {
             readonly ScrollPanel _owner;
             readonly ScrollAxis _axis;

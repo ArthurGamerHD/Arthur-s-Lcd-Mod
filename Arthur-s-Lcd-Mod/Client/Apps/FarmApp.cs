@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Farm;
-using LcdMod.Client.Grid;
+using LcdMod.Client.GridData;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Custom;
@@ -21,7 +21,7 @@ using VisualWrapPanel = LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel.Wra
 
 namespace LcdMod.Client.Apps
 {
-    internal sealed class FarmApp : AppBase, IAppInteractive
+    internal sealed class FarmApp : App, IApp
     {
         const float SLOT_W = 100f;
         const float SLOT_H = 100f;
@@ -128,7 +128,7 @@ namespace LcdMod.Client.Apps
         readonly IAppHost _surfaceHost;
         readonly InteractiveSurfaceScript _interactiveHost;
         readonly List<FarmEntry> _entries = new List<FarmEntry>();
-        readonly List<ControlBase> _interactiveList = new List<ControlBase>();
+        readonly List<Control> _children = new List<Control>();
         readonly Dictionary<long, FarmEntry> _entryById = new Dictionary<long, FarmEntry>();
         readonly Dictionary<long, FarmEntry> _entryModelsById = new Dictionary<long, FarmEntry>();
         readonly Dictionary<long, FarmPlotControl> _entryControlById = new Dictionary<long, FarmPlotControl>();
@@ -148,13 +148,13 @@ namespace LcdMod.Client.Apps
                 throw new ArgumentException("FarmApp requires an InteractiveSurfaceScript host.", "surfaceHost");
 
             _config = config;
-            _scrollPanel = new ScrollPanel(CursorType.Default, this);
+            _scrollPanel = AddChild(new ScrollPanel(CursorType.Default, this));
             _scrollPanel.ScrollChanged = OnScrollPanelChanged;
             _scrollPanel.SetVisible(false);
             _gridPanel = new VisualWrapPanel();
         }
 
-        public List<ControlBase> InteractiveList => _interactiveList;
+        public override IReadOnlyList<Control> Children => _children;
 
         public override void LayoutChanged()
         {
@@ -190,13 +190,9 @@ namespace LcdMod.Client.Apps
             RemoveStaleEntryModels();
         }
 
-        public bool HasVisibleItems()
+        public override bool HasVisibleItems()
         {
             return _entries.Count > 0;
-        }
-
-        public void OnMouseScroll(int delta, ref bool handled)
-        {
         }
 
         FarmEntry GetFarmEntry(long entryId)
@@ -350,17 +346,18 @@ namespace LcdMod.Client.Apps
                 rowHeight,
                 SCROLL_TICK / 6f);
             var headerColor = _config != null ? _config.HeaderColor : owner.ForegroundColor;
-            _scrollPanel.SetScrollBarColors(
-                new Color(owner.Surface.ScriptForegroundColor.R, owner.Surface.ScriptForegroundColor.G, owner.Surface.ScriptForegroundColor.B, 127),
-                new Color(headerColor.R, headerColor.G, headerColor.B, 250));
+            _scrollPanel.ScrollBarTrackColor =
+                new Color(owner.Surface.ScriptForegroundColor.R, owner.Surface.ScriptForegroundColor.G, owner.Surface.ScriptForegroundColor.B, 127);
+            _scrollPanel.ScrollBarThumbColor =
+                new Color(headerColor.R, headerColor.G, headerColor.B, 250);
             _scrollPanel.SetVisible(true);
-            if (!_interactiveList.Contains(_scrollPanel))
-                _interactiveList.Add(_scrollPanel);
+            if (!_children.Contains(_scrollPanel))
+                _children.Add(_scrollPanel);
         }
 
         void BeginFarmEntryControlFrame()
         {
-            _interactiveList.Clear();
+            _children.Clear();
             _scrollPanel.SetVisible(false);
             foreach (var kv in _entryControlById)
                 if (kv.Value != null)
@@ -375,7 +372,7 @@ namespace LcdMod.Client.Apps
 
             _entryControlById.Clear();
             _gridPanel.ClearChildren();
-            _interactiveList.Clear();
+            _children.Clear();
         }
 
         ControlRenderContext CreateRenderContext(IAppHost owner)
@@ -393,7 +390,7 @@ namespace LcdMod.Client.Apps
                 return;
 
             var desiredIds = new Dictionary<long, bool>();
-            var desired = new List<ControlBase>(_entries.Count);
+            var desired = new List<Control>(_entries.Count);
             for (int i = 0; i < _entries.Count; i++)
             {
                 var entry = _entries[i];
@@ -445,7 +442,7 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        static void EnsurePanelChildOrder(Panel panel, List<ControlBase> desired)
+        static void EnsurePanelChildOrder(Panel panel, List<Control> desired)
         {
             if (panel == null || desired == null)
                 return;
@@ -454,7 +451,7 @@ namespace LcdMod.Client.Apps
             bool changed = false;
             for (int i = 0; i < desired.Count; i++)
             {
-                var child = desired[i];
+                var child = desired[i] as ControlTemplate;
                 if (child == null)
                     continue;
 
@@ -480,7 +477,7 @@ namespace LcdMod.Client.Apps
                 panel.InvalidateLayout();
         }
 
-        static int IndexOfChild(IReadOnlyList<ControlBase> children, ControlBase child)
+        static int IndexOfChild(IReadOnlyList<Control> children, ControlTemplate child)
         {
             if (children == null || child == null)
                 return -1;

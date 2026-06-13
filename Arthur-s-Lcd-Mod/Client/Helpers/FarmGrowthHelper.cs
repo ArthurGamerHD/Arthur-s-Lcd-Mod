@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Farm;
-using LcdMod.Client.Grid;
+using LcdMod.Client.GridData;
 using LcdMod.Common.Helpers;
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.Common.ObjectBuilders.Definitions;

@@ -8,6 +8,7 @@ using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Dialogs;
 using LcdMod.Client.Gui.ControlsTemplates.Inputs;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
+using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Market;
 using LcdMod.Client.Market.Gui;
@@ -24,7 +25,7 @@ using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.Interacti
 
 namespace LcdMod.Client.Apps
 {
-    internal sealed class NpcMarketApp : AppBase, IAppInteractive
+    internal sealed class NpcMarketApp : App, IApp
     {
         public const string TITLE = "LcdMod_MarketApp";
         const float ITEM_NAME_MAX_WIDTH = 240f;
@@ -41,7 +42,7 @@ namespace LcdMod.Client.Apps
         const float BOTH_LIST_MIN_WIDTH = 720f;
         static readonly NpcMarketMode[] MarketModes = { NpcMarketMode.Buy, NpcMarketMode.Sell, NpcMarketMode.Both };
 
-        readonly List<ControlBase> _interactiveList = new List<ControlBase>();
+        readonly List<Control> _children = new List<Control>();
         readonly NpcMarketAggregator _aggregator = new NpcMarketAggregator();
         readonly List<NpcMarketRow> _rows = new List<NpcMarketRow>();
         readonly StringBuilder _text = new StringBuilder();
@@ -56,11 +57,6 @@ namespace LcdMod.Client.Apps
         readonly Button _searchButton;
         readonly Button _clearSearchButton;
         Button _refreshButton;
-        ControlStyle _refreshButtonStyle;
-        ControlStyle _disabledButtonStyle;
-        ControlStyle _modeButtonStyle;
-        ControlStyle _sortHeaderStyle;
-        ControlStyle _searchInputStyle;
         NpcMarketMode _mode;
         NpcMarketSortColumn _sortColumn = NpcMarketSortColumn.Price;
         bool _sortDescending;
@@ -72,7 +68,7 @@ namespace LcdMod.Client.Apps
                 Host.Block?.EntityId ?? 0L,
                 AppConfig?.ScreenIndex ?? 0);
 
-        public List<ControlBase> InteractiveList => _interactiveList;
+        public override IReadOnlyList<Control> Children => _children;
         internal NpcMarketMode Mode => _mode;
         internal IAppHost AppHost => Host;
         readonly ScreenConfigNpcMarket _config;
@@ -85,7 +81,7 @@ namespace LcdMod.Client.Apps
             _mode = NormalizeConfiguredMode(_config.SelectedMode);
             _config.SelectedMode = (int)_mode;
             LoadSortStateForMode(_mode);
-            _pagesPanel = new PagesPanel();
+            _pagesPanel = AddChild(new PagesPanel());
             _pagesPanel.SetVisible(false);
             _pagesPanel.PageChanged = OnPageChanged;
             _listStripPanel = new NpcMarketListStripPanel(Host)
@@ -95,10 +91,10 @@ namespace LcdMod.Client.Apps
                 SearchClicked = OpenSearch,
                 RowClicked = OnMarketRowClicked
             };
-            _modeComboBox = new ComboBox<NpcMarketMode>(MarketModes, GetModeLabel, OnModeChanged, Host.RenderSprites)
+            _modeComboBox = AddChild(new ComboBox<NpcMarketMode>(MarketModes, GetModeLabel, OnModeChanged, Host.RenderSprites)
             {
                 OpenDirection = ComboBoxOpenDirection.Up
-            };
+            });
             _modeComboBox.SetSelectedValue(_mode);
             _modeComboBox.SetVisible(false);
             _searchInputModel = new TextInputModel
@@ -107,13 +103,13 @@ namespace LcdMod.Client.Apps
                 Placeholder = MyTexts.GetString(LOC_SEARCH),
                 ValueChanged = OnSearchChanged
             };
-            _searchInput = new TextInput(default(RectangleF), _searchInputModel);
+            _searchInput = AddChild(new TextInput(default(RectangleF), _searchInputModel));
             _searchInput.CustomRender = RenderSearchInput;
             _searchInput.SetVisible(false);
-            _searchButton = new Button(default(RectangleF), new ButtonModel { Clicked = OnSearchClicked });
+            _searchButton = AddChild(new Button(default(RectangleF), new ButtonModel { Clicked = OnSearchClicked }));
             _searchButton.CustomRender = RenderSearchButton;
             _searchButton.SetVisible(false);
-            _clearSearchButton = new Button(default(RectangleF), new ButtonModel { Clicked = OnClearSearchClicked });
+            _clearSearchButton = AddChild(new Button(default(RectangleF), new ButtonModel { Clicked = OnClearSearchClicked }));
             _clearSearchButton.CustomRender = RenderClearSearchButton;
             _clearSearchButton.SetVisible(false);
             EnsureSortHeaderButtons();
@@ -195,15 +191,16 @@ namespace LcdMod.Client.Apps
             }
 
             DrawFooter(sprites, textScale, muted);
+            ClearDirtyAfterRender();
             return sprites;
         }
 
-        public bool HasVisibleItems()
+        public override bool HasVisibleItems()
         {
             return NpcMarketClientCache.GetSnapshot(CacheKey) != null;
         }
 
-        public void OnMouseScroll(int delta, ref bool handled)
+        void IApp.OnMouseScroll(int delta, ref bool handled)
         {
             if (handled)
                 return;
@@ -680,7 +677,7 @@ namespace LcdMod.Client.Apps
 
         void ClearInteractiveTree()
         {
-            _interactiveList.Clear();
+            _children.Clear();
             _pagesPanel.SetVisible(false);
             for (var i = 0; i < _sortHeaderButtons.Count; i++)
                 _sortHeaderButtons[i].SetVisible(false);
@@ -708,12 +705,12 @@ namespace LcdMod.Client.Apps
 
         void AddSortHeaderButton(NpcMarketSortColumn column, string localizationKey)
         {
-            var button = new Button(default(RectangleF), new SortHeaderButtonModel
+            var button = AddChild(new Button(default(RectangleF), new SortHeaderButtonModel
             {
                 Column = column,
                 LocalizationKey = localizationKey,
                 Clicked = OnSortHeaderClicked
-            });
+            }));
             button.CustomRender = RenderSortHeaderButton;
             button.SetVisible(false);
             _sortHeaderButtons.Add(button);
@@ -785,10 +782,10 @@ namespace LcdMod.Client.Apps
         void ConfigureSearchButton(RectangleF rect)
         {
             _searchButton.SetRect(rect);
-            _searchButton.SetStyle(GetSortHeaderStyle());
+            _searchButton.SetStyleId("Primary");
             _searchButton.SetVisible(rect.Width > 0f && rect.Height > 0f);
-            if (!_interactiveList.Contains(_searchButton))
-                _interactiveList.Add(_searchButton);
+            if (!_children.Contains(_searchButton))
+                _children.Add(_searchButton);
         }
 
         void DrawSearchInput(List<MySprite> sprites, float top, float height, float contentRight)
@@ -805,18 +802,18 @@ namespace LcdMod.Client.Apps
             _searchInputModel.Enabled = true;
             _searchInputModel.ValueChanged = OnSearchChanged;
             _searchInput.SetRect(rect);
-            _searchInput.SetStyle(GetSearchInputStyle());
+            _searchInput.SetStyleId("Primary");
             _searchInput.SetVisible(rect.Width > 0f && rect.Height > 0f);
-            if (!_interactiveList.Contains(_searchInput))
-                _interactiveList.Add(_searchInput);
+            if (!_children.Contains(_searchInput))
+                _children.Add(_searchInput);
             _searchInput.Render(CreateButtonRenderContext(), sprites);
 
             var clearSize = Math.Min(rect.Height, 32f * scale);
             _clearSearchButton.SetRect(new RectangleF(rect.Right - clearSize, rect.Y, clearSize, rect.Height));
-            _clearSearchButton.SetStyle(GetSearchInputStyle());
+            _clearSearchButton.SetStyleId("Primary");
             _clearSearchButton.SetVisible(true);
-            if (!_interactiveList.Contains(_clearSearchButton))
-                _interactiveList.Add(_clearSearchButton);
+            if (!_children.Contains(_clearSearchButton))
+                _children.Add(_clearSearchButton);
             _clearSearchButton.Render(CreateButtonRenderContext(), sprites);
         }
 
@@ -827,10 +824,10 @@ namespace LcdMod.Client.Apps
 
             var button = _sortHeaderButtons[index];
             button.SetRect(rect);
-            button.SetStyle(GetSortHeaderStyle());
+            button.SetStyleId("NpcMarketSortHeader");
             button.SetVisible(rect.Width > 0f && rect.Height > 0f);
-            if (!_interactiveList.Contains(button))
-                _interactiveList.Add(button);
+            if (!_children.Contains(button))
+                _children.Add(button);
         }
 
         void ConfigurePagesPanel(float contentTop, float footerHeight, float headerHeight, float rowHeight, float textScale, Color muted)
@@ -856,8 +853,6 @@ namespace LcdMod.Client.Apps
             _listStripPanel.TextScale = textScale;
             _listStripPanel.LayoutScale = scale;
             _listStripPanel.MutedColor = muted;
-            _listStripPanel.SortHeaderStyle = GetSortHeaderStyle();
-
             _pagesPanel.LayoutScale = scale;
             _pagesPanel.PageProvider = viewport => _listStripPanel.ConfigurePages(_pagesPanel, viewport);
             RestorePageIndex();
@@ -865,8 +860,8 @@ namespace LcdMod.Client.Apps
             AdvancePageFromTimer();
             SavePageIndex();
             _pagesPanel.SetVisible(_rows.Count > 0);
-            if (_rows.Count > 0 && !_interactiveList.Contains(_pagesPanel))
-                _interactiveList.Add(_pagesPanel);
+            if (_rows.Count > 0 && !_children.Contains(_pagesPanel))
+                _children.Add(_pagesPanel);
         }
 
         void DrawFooter(List<MySprite> sprites, float textScale, Color muted)
@@ -892,14 +887,14 @@ namespace LcdMod.Client.Apps
             var snapshot = NpcMarketClientCache.GetSnapshot(key);
             var modeEnabled = !IsLocallyAccessDenied() && !IsAccessDenied(snapshot);
             _modeComboBox.SetOptions(GetAvailableMarketModes());
-            _modeComboBox.Configure(modeRect, scale, GetModeButtonStyle());
+            _modeComboBox.Configure(modeRect, scale, null);
             _modeComboBox.SetSelectedValue(_mode);
             _modeComboBox.SetEnabled(modeEnabled);
-            _modeComboBox.SetStyle(modeEnabled ? GetModeButtonStyle() : GetRefreshButtonStyle(false));
-            if (!_interactiveList.Contains(_refreshButton))
-                _interactiveList.Add(_refreshButton);
-            if (!_interactiveList.Contains(_modeComboBox))
-                _interactiveList.Add(_modeComboBox);
+            _modeComboBox.SetStyleId(modeEnabled ? "Primary" : "Disabled");
+            if (!_children.Contains(_refreshButton))
+                _children.Add(_refreshButton);
+            if (!_children.Contains(_modeComboBox))
+                _children.Add(_modeComboBox);
 
             var now = WorldTime.NowElapsedTicks();
             var updated = snapshot == null ? string.Empty : string.Format(MyTexts.GetString(LOC_UPDATED),
@@ -979,7 +974,7 @@ namespace LcdMod.Client.Apps
         void EnsureRefreshButton(RectangleF rect, bool enabled, string text)
         {
             if (_refreshButton == null)
-                _refreshButton = new Button(rect, new ButtonModel { Text = text, Clicked = OnRefreshClicked });
+                _refreshButton = AddChild(new Button(rect, new ButtonModel { Text = text, Clicked = OnRefreshClicked }));
             else
                 _refreshButton.SetRect(rect);
 
@@ -992,86 +987,29 @@ namespace LcdMod.Client.Apps
 
             _refreshButton.SetVisible(true);
             _refreshButton.SetCursor(enabled ? CursorType.Hand : CursorType.Default);
-            _refreshButton.SetStyle(GetRefreshButtonStyle(enabled));
+            _refreshButton.SetStyleId(enabled ? "Primary" : "Disabled");
+            _refreshButton.SetEnabled(enabled);
             _refreshButton.CustomRender = RenderRefreshButton;
         }
 
-        ControlStyle GetRefreshButtonStyle(bool enabled)
-        {
-            if (enabled)
-            {
-                if (_refreshButtonStyle == null)
-                    _refreshButtonStyle = Button.CreatePrimaryButtonStyle(Theme);
-                else
-                    _refreshButtonStyle.ThemeColors = Theme;
-                return _refreshButtonStyle;
-            }
-
-            if (_disabledButtonStyle == null)
-                _disabledButtonStyle = Button.CreateDisabledButtonStyle(Theme);
-            else
-                _disabledButtonStyle.ThemeColors = Theme;
-            return _disabledButtonStyle;
-        }
-
-        ControlStyle GetModeButtonStyle()
-        {
-            if (_modeButtonStyle == null)
-                _modeButtonStyle = Button.CreatePrimaryButtonStyle(Theme);
-            else
-                _modeButtonStyle.ThemeColors = Theme;
-            return _modeButtonStyle;
-        }
-
-        ControlStyle GetSortHeaderStyle()
-        {
-            var hoverColor = new Color(Host.ForegroundColor, 0.12f);
-            if (_sortHeaderStyle == null)
-            {
-                _sortHeaderStyle = new ControlStyle(Host.ForegroundColor, Color.Transparent)
-                {
-                    HoverPanelColor = hoverColor,
-                    HoverTextColor = Host.ForegroundColor,
-                    BorderRadiusPixels = 0f
-                };
-            }
-            else
-            {
-                _sortHeaderStyle.SetColors(Host.ForegroundColor, Color.Transparent);
-                _sortHeaderStyle.HoverPanelColor = hoverColor;
-                _sortHeaderStyle.HoverTextColor = Host.ForegroundColor;
-            }
-
-            return _sortHeaderStyle;
-        }
-
-        ControlStyle GetSearchInputStyle()
-        {
-            if (_searchInputStyle == null)
-                _searchInputStyle = Button.CreatePrimaryButtonStyle(Theme);
-            else
-                _searchInputStyle.ThemeColors = Theme;
-            return _searchInputStyle;
-        }
-
-        void RenderSearchButton(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderSearchButton(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
         {
             var hovered = control.IsPointerOver;
             sprites.Add(new MySprite(SpriteType.TEXTURE, "Search")
             {
                 Position = control.Bounds.Center,
                 Size = new Vector2(18f * context.Scale),
-                Color = context.Style.GetTextColor(hovered)
+                Color = control.TextColor
             });
         }
 
-        void RenderSearchInput(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderSearchInput(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
         {
             var rect = control.Bounds;
             var hovered = control.IsPointerOver;
             var innerPadding = Math.Max(2f, Math.Min(rect.Width, rect.Height) * 0.08f);
             var innerRect = Inset(rect, innerPadding);
-            var textColor = context.GetThemeColor(Constants.ON_SECONDARY_CONTAINER);
+            var textColor = control.TextColor;
             var textScale = 0.58f * context.Scale * context.FontScale;
             var horizontalPadding = 10f * context.Scale;
             var iconSize = 16f * context.Scale;
@@ -1083,10 +1021,14 @@ namespace LcdMod.Client.Apps
             var text = Trim(_searchInputModel.ToString(), availableTextWidth, textScale);
             var textSize = FormatingHelper.GetSizeInPixel(text, "White", textScale, context.Surface);
 
-            Border.CreateSpritesFromRect(rect, sprites, context.Style.GetPanelColor(hovered),
+            var button = control as Button;
+            var outerColor = button != null ? button.BackgroundColor : control.BackgroundColor;
+            Border.CreateSpritesFromRect(rect, sprites, outerColor,
                 radiusScale: context.Scale);
-            Border.CreateSpritesFromRect(innerRect, sprites, context.GetThemeColor(
-                    hovered ? Constants.SECONDARY_CONTAINER + Constants.HOVER : Constants.SECONDARY_CONTAINER),
+            Border.CreateSpritesFromRect(innerRect, sprites,
+                hovered
+                    ? control.GetResourceColor(ThemeResources.AccentColor, outerColor)
+                    : control.GetResourceColor(ThemeResources.SurfaceColor, outerColor),
                 radiusScale: context.Scale);
             sprites.Add(new MySprite
             {
@@ -1106,12 +1048,10 @@ namespace LcdMod.Client.Apps
             });
         }
 
-        void RenderClearSearchButton(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderClearSearchButton(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
         {
             var hovered = control.IsPointerOver;
-            var color = context.GetThemeColor(Constants.ON_SECONDARY_CONTAINER);
-            if (hovered)
-                color = context.Style.GetTextColor(true);
+            var color = control.TextColor;
 
             var length = 11f * context.Scale;
             var thickness = Math.Max(1f, 1.5f * context.Scale);
@@ -1140,7 +1080,7 @@ namespace LcdMod.Client.Apps
                 Math.Max(0f, rect.Height - amount * 2f));
         }
 
-        void RenderSortHeaderButton(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderSortHeaderButton(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
         {
             var model = control.DataContext as SortHeaderButtonModel;
             if (model == null)
@@ -1156,7 +1096,9 @@ namespace LcdMod.Client.Apps
             var textY = rect.Center.Y - textSize.Y * 0.5f;
             var textX = GetSortHeaderTextX(model.Column, rect, context.Scale);
             var alignment = model.Column == NpcMarketSortColumn.Name ? TextAlignment.LEFT : TextAlignment.RIGHT;
-            var textColor = context.Style.GetTextColor(hovered || active);
+            var textColor = active || hovered
+                ? control.GetResourceColor(ThemeResources.AccentColor, control.TextColor)
+                : control.TextColor;
 
             sprites.Add(new MySprite
             {
@@ -1243,14 +1185,18 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        void RenderRefreshButton(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderRefreshButton(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
         {
             var model = control.DataContext as ButtonModel;
             var enabled = model == null || model.Enabled;
             var rect = control.Bounds;
             var hover = enabled && control.IsPointerOver;
-            var color = context.Style.GetPanelColor(hover);
-            var textColor = context.Style.GetTextColor(hover);
+            var button = control as Button;
+            var defaultColor = button != null ? button.BackgroundColor : control.BackgroundColor;
+            var color = hover
+                ? control.GetResourceColor(ThemeResources.AccentColor, defaultColor)
+                : defaultColor;
+            var textColor = control.TextColor;
             var text = model == null || string.IsNullOrEmpty(model.Text) ? MyTexts.GetString(LOC_REFRESH) : model.Text;
             var textScale = 0.58f * context.Scale * context.FontScale;
 

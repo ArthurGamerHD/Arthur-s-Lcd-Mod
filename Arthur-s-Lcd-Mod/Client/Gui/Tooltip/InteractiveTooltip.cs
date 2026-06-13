@@ -26,7 +26,7 @@ namespace LcdMod.Client.Gui.Tooltip
         readonly Func<string> _footerGetter;
         readonly Func<CursorType?> _getCursor;
         readonly Func<string> _iconTextureGetter;
-        readonly List<ControlBase> _interactiveEntries = new List<ControlBase>();
+        readonly List<Control> _interactiveEntries = new List<Control>();
         readonly Dictionary<ITooltipLine, TooltipLineControl> _lineEntryByLine =
             new Dictionary<ITooltipLine, TooltipLineControl>();
         readonly HashSet<ITooltipLine> _linesUsedThisFrame = new HashSet<ITooltipLine>();
@@ -112,9 +112,9 @@ namespace LcdMod.Client.Gui.Tooltip
 
         public bool HasBounds { get; private set; }
 
-        public IList<ControlBase> InteractiveEntries => _interactiveEntries;
+        public IList<Control> InteractiveEntries => _interactiveEntries;
 
-        public ControlBase TooltipContainer
+        public ControlTemplate TooltipContainer
         {
             get { return _containerControl; }
         }
@@ -167,7 +167,7 @@ namespace LcdMod.Client.Gui.Tooltip
         }
 
         public List<MySprite> Render(
-            ControlBase parentEntry,
+            ControlTemplate parentEntry,
             IApp parentApp,
             RectangleF viewBox,
             float scale,
@@ -524,7 +524,7 @@ namespace LcdMod.Client.Gui.Tooltip
         }
     }
 
-    public class InteractiveCustomEntry : ControlBase
+    public class InteractiveCustomEntry : ControlTemplate
     {
         readonly Func<Vector2, bool> _hitGetter;
         readonly Func<RectangleF> _boundsGetter;
@@ -573,7 +573,7 @@ namespace LcdMod.Client.Gui.Tooltip
         }
     }
 
-    public sealed class InteractiveCircleEntry : ControlBase
+    public sealed class InteractiveCircleEntry : ControlTemplate
     {
         public InteractiveCircleEntry(Vector2 center, float radius, CursorType? cursor = null, object dataContext = null,
             Action<object, object> onClick = null, InteractiveTooltip tooltip = null)

@@ -24,15 +24,12 @@ namespace LcdMod.Client.SurfaceScripts
         public const string ID = "LcdMod_MarketApp";
         public const string TITLE = NpcMarketApp.TITLE;
 
-        readonly List<ControlBase> _interactiveListFallback = new List<ControlBase>();
+
         NpcMarketApp _app;
 
         public override IApp App { get { return _app; } }
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
-        public override List<ControlBase> InteractiveList
-        {
-            get { return _app != null ? _app.InteractiveList : _interactiveListFallback; }
-        }
+        public override List<Control> InteractiveList => _app?.Children as List<Control>;
         protected override string DefaultTitle { get { return TITLE; } }
         protected override bool RendersInteractiveEntriesInGetSprites { get { return true; } }
 

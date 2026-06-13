@@ -27,9 +27,8 @@ namespace LcdMod.Client.SurfaceScripts
         protected override string DefaultTitle => TITLE;
 
         public override IApp App => _app;
-        IAppInteractive _app;
-        readonly List<ControlBase> _interactiveListFallback = new List<ControlBase>();
-        public override List<ControlBase> InteractiveList => _app != null ? _app.InteractiveList : _interactiveListFallback;
+        IApp _app;
+        public override List<Control> InteractiveList => _app.Children as List<Control>;
         protected override bool RendersInteractiveEntriesInGetSprites => true;
 
         public FarmSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)

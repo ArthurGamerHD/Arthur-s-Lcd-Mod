@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using LcdMod.Client.Apps.Abstract;
-using LcdMod.Client.Grid;
+using LcdMod.Client.GridData;
 using LcdMod.Client.Helpers;
 using Sandbox.ModAPI.Ingame;
 using VRage.Game.ModAPI;

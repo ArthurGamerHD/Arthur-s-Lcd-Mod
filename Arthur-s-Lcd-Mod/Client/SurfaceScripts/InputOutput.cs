@@ -23,7 +23,7 @@ namespace LcdMod.Client.SurfaceScripts
         public const string ID = "InputOutputCharts";
         public const string NAME = InputOutputApp.NAME;
 
-        private readonly List<ControlBase> _interactiveListFallback = new List<ControlBase>();
+
         private InputOutputApp _app;
 
         public InputOutputLcdSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface,
@@ -35,9 +35,8 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override IApp App => _app;
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
-
-        public override List<ControlBase> InteractiveList =>
-            _app != null ? _app.InteractiveList : _interactiveListFallback;
+        
+        public override List<Control> InteractiveList => _app.Children as List<Control>;
 
         public override string Title => _app != null ? _app.Title : base.Title;
         protected override string DefaultTitle => NAME;

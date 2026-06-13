@@ -15,7 +15,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Progress
 
         public float Fraction { get; set; }
         public Color? FillColor { get; set; }
-        public Color? BackgroundColor { get; set; }
+        public new Color? BackgroundColor { get; set; }
         public Color? FillColorOverride { get; set; }
         public float CornerRadius { get; set; }
         public ProgressBarStyle ProgressBarStyle { get; set; }
@@ -23,8 +23,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Progress
         protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
         {
             var rect = GetViewBox();
-            var fill = FillColor ?? context.Style.GetTextColor(false);
-            var background = BackgroundColor ?? context.Style.GetPanelColor(false);
+            var fill = FillColor ?? TextColor;
+            var background = BackgroundColor ?? base.BackgroundColor;
             BarPanel.CreateBackgroundSprites(
                 sprites,
                 new Vector2(rect.X, rect.Y),

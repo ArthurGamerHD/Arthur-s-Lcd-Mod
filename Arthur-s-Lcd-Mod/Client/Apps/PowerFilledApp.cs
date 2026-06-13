@@ -17,7 +17,7 @@ using VRageMath;
 
 namespace LcdMod.Client.Apps
 {
-    internal sealed class PowerFilledApp : AppBase, IAppInteractive
+    internal sealed class PowerFilledApp : App, IApp
     {
         const float BATTERY_SLOT_W = 100f;
         const float BATTERY_SLOT_H = 100f;
@@ -27,13 +27,13 @@ namespace LcdMod.Client.Apps
         readonly InteractiveSurfaceScript _interactiveHost;
         readonly List<PowerCollector> _collectors = new List<PowerCollector>();
         readonly List<PowerEntry> _entries = new List<PowerEntry>();
-        readonly List<ControlBase> _interactiveList = new List<ControlBase>();
+        readonly List<Control> _children = new List<Control>();
         readonly Dictionary<long, PowerEntry> _entryById = new Dictionary<long, PowerEntry>();
         readonly ScrollPanel _scrollPanel;
         readonly VirtualizedWrapPanel<PowerEntry> _gridPanel;
         ScreenConfigPower _config;
         
-        public List<ControlBase> InteractiveList => _interactiveList;
+        public override IReadOnlyList<Control> Children => _children;
 
         public PowerFilledApp(ScreenConfigPower config, IAppHost surfaceHost) : base(config, surfaceHost)
         {
@@ -43,7 +43,7 @@ namespace LcdMod.Client.Apps
                 throw new ArgumentException("PowerFilledApp requires an InteractiveSurfaceScript host.", "surfaceHost");
             _config = config;
 
-            _scrollPanel = new ScrollPanel(CursorType.Default, this);
+            _scrollPanel = AddChild(new ScrollPanel(CursorType.Default, this));
             _scrollPanel.ScrollChanged = OnScrollPanelChanged;
             _scrollPanel.SetVisible(false);
             _gridPanel = new VirtualizedWrapPanel<PowerEntry>
@@ -86,7 +86,7 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        public bool HasVisibleItems()
+        public override bool HasVisibleItems()
         {
             for (int i = 0; i < _collectors.Count; i++)
             {
@@ -95,10 +95,6 @@ namespace LcdMod.Client.Apps
             }
 
             return false;
-        }
-
-        public void OnMouseScroll(int delta, ref bool handled)
-        {
         }
 
         public PowerEntry GetPowerEntry(long entryId)
@@ -174,17 +170,18 @@ namespace LcdMod.Client.Apps
                 ScrollPanel.DefaultScrollerWidthPixels * owner.Config.Scale,
                 rowHeight,
                 SCROLL_TICK / 6f);
-            _scrollPanel.SetScrollBarColors(
-                new Color(owner.Surface.ScriptForegroundColor.R, owner.Surface.ScriptForegroundColor.G, owner.Surface.ScriptForegroundColor.B, 127),
-                new Color(_config.HeaderColor.R, _config.HeaderColor.G, _config.HeaderColor.B, 250));
+            _scrollPanel.ScrollBarTrackColor =
+                new Color(owner.Surface.ScriptForegroundColor.R, owner.Surface.ScriptForegroundColor.G, owner.Surface.ScriptForegroundColor.B, 127);
+            _scrollPanel.ScrollBarThumbColor =
+                new Color(_config.HeaderColor.R, _config.HeaderColor.G, _config.HeaderColor.B, 250);
             _scrollPanel.SetVisible(true);
-            if (!_interactiveList.Contains(_scrollPanel))
-                _interactiveList.Add(_scrollPanel);
+            if (!_children.Contains(_scrollPanel))
+                _children.Add(_scrollPanel);
         }
 
         void BeginPowerEntryHitboxFrame()
         {
-            _interactiveList.Clear();
+            _children.Clear();
             _scrollPanel.SetVisible(false);
         }
 
@@ -211,7 +208,7 @@ namespace LcdMod.Client.Apps
             };
         }
 
-        void BindPowerEntryHitbox(ControlBase control, PowerEntry entry, int index)
+        void BindPowerEntryHitbox(ControlTemplate control, PowerEntry entry, int index)
         {
             if (control == null)
                 return;
@@ -228,7 +225,7 @@ namespace LcdMod.Client.Apps
             _interactiveHost.RenderSprites();
         }
 
-        void RenderPowerEntryHitbox(ControlBase hitbox, ControlRenderContext context, List<MySprite> sprites)
+        void RenderPowerEntryHitbox(ControlTemplate hitbox, ControlRenderContext context, List<MySprite> sprites)
         {
             if (hitbox == null)
                 return;

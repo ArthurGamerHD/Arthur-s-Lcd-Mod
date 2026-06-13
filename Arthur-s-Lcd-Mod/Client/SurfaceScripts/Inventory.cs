@@ -37,12 +37,12 @@ namespace LcdMod.Client.SurfaceScripts
         public const string ID = "InventoryCharts";
         public const string NAME = InventoryApp.NAME;
 
-        readonly List<ControlBase> _interactiveListFallback = new List<ControlBase>();
+
         InventoryApp _app;
 
         public override IApp App => _app;
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
-        public override List<ControlBase> InteractiveList => _app != null ? _app.InteractiveList : _interactiveListFallback;
+        public override List<Control> InteractiveList => _app?.Children as List<Control>;
         public override string Title => _app != null ? _app.Title : base.Title;
         protected override string DefaultTitle => NAME;
         protected override bool RendersInteractiveEntriesInGetSprites => true;

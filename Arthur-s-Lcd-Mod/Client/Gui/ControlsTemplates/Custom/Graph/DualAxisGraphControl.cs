@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Helpers;
 using VRage.Game.GUI.TextPanel;
@@ -7,7 +8,7 @@ using VRageMath;
 
 namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Graph
 {
-    public sealed class DualAxisGraphControl : ControlBase
+    public sealed class DualAxisGraphControl : ControlTemplate
     {
         readonly List<GraphSeries> _series = new List<GraphSeries>();
         readonly List<ITooltipLine> _tooltipLines = new List<ITooltipLine>();
@@ -135,7 +136,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Graph
             if (_bounds.Width <= 0 || _bounds.Height <= 0)
                 return;
 
-            Color fg = context.TextColor;
+            Color fg = ResolveColor(ThemeResources.OnSurfaceColor);
             float ts = 0.58f * context.Scale * context.FontScale;
             float titleH = string.IsNullOrEmpty(Title) ? 0f : FormatingHelper.GetSizeInPixel(Title, "White", ts, context.Surface).Y;
             float legendH = RenderLegend(context, sprites, _bounds.X, _bounds.Y + titleH, _bounds.Width, ts);
@@ -184,7 +185,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Graph
                 }
 
                 sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(cursorX + box * 0.5f, cursorY + lineH * 0.5f), Size = new Vector2(box), Color = s.LineColor, Alignment = TextAlignment.CENTER });
-                sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = label, Position = new Vector2(cursorX + box + 4f * context.Scale, cursorY), RotationOrScale = ts, Color = context.TextColor, Alignment = TextAlignment.LEFT, FontId = "White" });
+                sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = label, Position = new Vector2(cursorX + box + 4f * context.Scale, cursorY), RotationOrScale = ts, Color = ResolveColor(ThemeResources.OnSurfaceColor), Alignment = TextAlignment.LEFT, FontId = "White" });
                 cursorX += entryW;
             }
 
@@ -245,7 +246,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Graph
 
         void RenderHover(ControlRenderContext context, List<MySprite> sprites, GraphHoverResult hover)
         {
-            Color guide = new Color(context.TextColor.R, context.TextColor.G, context.TextColor.B, 70);
+            var fg = ResolveColor(ThemeResources.OnSurfaceColor);
+            Color guide = new Color(fg.R, fg.G, fg.B, 70);
             sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(hover.ScreenX, _plotBounds.Center.Y), Size = new Vector2(Math.Max(1f, context.Scale), _plotBounds.Height), Color = guide, Alignment = TextAlignment.CENTER });
             if (hover.Values == null)
                 return;

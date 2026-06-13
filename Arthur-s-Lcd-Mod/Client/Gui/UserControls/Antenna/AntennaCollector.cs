@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using LcdMod.Client.Apps.Abstract;
-using LcdMod.Client.Grid;
+using LcdMod.Client.GridData;
 using LcdMod.Client.Helpers;
 using Sandbox.ModAPI;
 using VRageMath;

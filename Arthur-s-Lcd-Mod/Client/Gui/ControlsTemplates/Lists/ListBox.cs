@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
-using LcdMod.Common.Helpers;
+using LcdMod.Client.Gui.Styling;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 
@@ -16,20 +16,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
             new Dictionary<int, ListBoxItem<T>>();
         readonly List<int> _rowIndexesToRemove = new List<int>();
         ListBoxModel<T> _cachedListModel;
-        ControlStyle _childStyle;
-
-        public ControlStyle ChildStyle
-        {
-            get
-            {
-                return _childStyle;
-            }
-            set
-            {
-                _childStyle = value;
-                MarkDirty();
-            }
-        }
 
         public ListBox(RectangleF bounds, ListBoxModel<T> model = null)
             : base(bounds, CursorType.Default, model ?? new ListBoxModel<T>())
@@ -62,42 +48,45 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
 
             var listContext = CreateListRenderContext(context);
             var viewBox = GetViewBox();
-            var backgroundColor = context.Style.GetPanelColor(false);
+            var backgroundColor = GetRenderBackgroundColor();
             Border.CreateSpritesFromRect(viewBox, sprites, backgroundColor,
-                Border.ScaleRadius(context.Style.BorderRadiusPixels, context.Scale));
+                Border.ScaleRadius(GetRenderBorderRadiusPixels(), context.Scale));
 
             BeginContentClip(sprites, _scrollPanel.ContentViewportBounds);
             RenderRows(listContext, sprites);
             EndContentClip(sprites);
 
-            var outline = context.GetThemeColor(Constants.OUTLINE_VARIANT);
-            var primary = context.GetThemeColor(Constants.PRIMARY);
+            var outline = ResolveColor(ThemeResources.BorderVariantColor);
+            var primary = ResolveColor(ThemeResources.AccentColor);
             var trackColor = new Color(outline.R, outline.G, outline.B, 127);
             var thumbColor = new Color(primary.R, primary.G, primary.B, 250);
-            _scrollPanel.SetScrollBarColors(trackColor, thumbColor);
+            _scrollPanel.ScrollBarTrackColor = trackColor;
+            _scrollPanel.ScrollBarThumbColor = thumbColor;
             _scrollPanel.Render(listContext, sprites);
         }
 
-        static ControlRenderContext CreateListRenderContext(ControlRenderContext context)
+        ControlRenderContext CreateListRenderContext(ControlRenderContext context)
         {
-            var containerColor = context.GetThemeColor(Constants.SECONDARY_CONTAINER);
-            var hoverContainerColor = context.GetThemeColor(Constants.SECONDARY_CONTAINER + Constants.HOVER);
-            var textColor = context.GetThemeColor(Constants.ON_SECONDARY_CONTAINER);
-            var style = new ControlStyle(textColor, containerColor)
-            {
-                BorderRadiusPixels = context.Style.BorderRadiusPixels,
-                HoverPanelColor = hoverContainerColor,
-                HoverTextColor = textColor,
-                Padding = context.Style.Padding
-            };
+            var containerColor = ResolveColor(ThemeResources.SecondaryContainerColor);
+            var textColor = ResolveColor(ThemeResources.OnSecondaryContainerColor);
 
-            return new ControlRenderContext(
-                context.Surface,
-                context.Scale,
-                context.FontScale,
-                style,
-                context.Theme,
-                context.CursorPosition);
+            var children = _scrollPanel.Children;
+            if (children != null)
+            {
+                for (int i = 0; i < children.Count; i++)
+                {
+                    var item = children[i] as ControlTemplate;
+                    if (item == null)
+                        continue;
+
+                    item.BackgroundColor = containerColor;
+                    item.TextColor = textColor;
+                    item.BorderRadiusPixels = BorderRadiusPixels;
+                    item.Padding = Padding;
+                }
+            }
+
+            return context;
         }
 
         void ConfigureScrollPanel()
@@ -159,8 +148,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
                 if (!_rowControlsByIndex.TryGetValue(itemIndex, out item))
                 {
                     item = new ListBoxItem<T>(rowBounds, itemModel);
-                    if(_childStyle != Style)
-                        item.SetStyle(_childStyle);
                     _rowControlsByIndex[itemIndex] = item;
                 }
                 else
@@ -207,9 +194,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
 
             for (int i = 0; i < children.Count; i++)
             {
-                var child = children[i];
-                if (child != null)
-                    child.Render(context, sprites);
+                var child = children[i] as ControlTemplate;
+                child?.Render(context, sprites);
             }
         }
 

@@ -16,9 +16,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels.StackPanel
         public int VisibleIndex { get; private set; }
         public int ItemIndex { get; private set; }
         public RectangleF Bounds { get; private set; }
-        public ControlBase Control { get; private set; }
+        public ControlTemplate Control { get; private set; }
 
-        public StackPanelCell SetControl(ControlBase control)
+        public StackPanelCell SetControl(ControlTemplate control)
         {
             Control = control;
             return this;

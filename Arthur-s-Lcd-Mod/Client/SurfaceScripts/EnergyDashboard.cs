@@ -26,15 +26,8 @@ namespace LcdMod.Client.SurfaceScripts
         protected override string DefaultTitle => TITLE;
         public override IApp App => _app;
         IApp _app;
-        readonly List<ControlBase> _interactiveListFallback = new List<ControlBase>();
-        public override List<ControlBase> InteractiveList
-        {
-            get
-            {
-                var interactive = _app as IAppInteractive;
-                return interactive != null ? interactive.InteractiveList : _interactiveListFallback;
-            }
-        }
+
+        public override List<Control> InteractiveList => _app.Children as List<Control>;
         protected override bool RendersInteractiveEntriesInGetSprites => true;
 
         public EnergyDashboardSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)

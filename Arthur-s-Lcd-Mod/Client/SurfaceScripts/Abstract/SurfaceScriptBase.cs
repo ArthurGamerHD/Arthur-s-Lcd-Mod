@@ -7,9 +7,11 @@ using Generated;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Config;
 using LcdMod.Client.Extensions;
-using LcdMod.Client.Grid;
+using LcdMod.Client.GridData;
+using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.UserControls;
+using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.ScreenAreas;
 using LcdMod.Client.Terminal.Controls;
@@ -32,8 +34,6 @@ using IMyShipController = Sandbox.ModAPI.IMyShipController;
 using IMyTextSurfaceProvider = Sandbox.ModAPI.Ingame.IMyTextSurfaceProvider;
 using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
 using NotImplementedException = LcdMod.Common.NotImplementedException;
-using ScreenConfigColorable = LcdMod.Common.Config.Models.ScreenConfigColorable;
-using ScreenConfigGeneral = LcdMod.Common.Config.Models.ScreenConfigGeneral;
 
 namespace LcdMod.Client.SurfaceScripts.Abstract
 {
@@ -44,6 +44,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         readonly List<MySprite> _backgroundGrids = new List<MySprite>();
         readonly Dictionary<long, Vector2> _registeredProxyOffsets = new Dictionary<long, Vector2>();
         readonly List<MySprite> _cachedFrame = new List<MySprite>();
+        Grid _footerRoot;
         Color _backgroundColor;
         Color _foregroundColor;
 
@@ -109,7 +110,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         public override ScriptUpdate NeedsUpdate => ScriptUpdate.Update10;
 
         public ScreenConfigGeneral Config { get; protected set; }
-        public ScreenConfigColorable ColorableConfig => Config as ScreenConfigColorable;
+        public ScreenConfigGeneral ColorableConfig => Config;
         protected abstract ConfigKind ConfigKind { get; }
 
         public bool Dirty => _dirty;
@@ -147,6 +148,41 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         public int RotationOrSurfaceIndex => _rotationOrSurfaceIndex;
 
         public abstract IApp App { get; }
+
+        public IVisualStyleScope RequireAppStyleScope()
+        {
+            IVisualStyleScope scope = App as IVisualStyleScope;
+            if (scope == null)
+                throw new InvalidOperationException("Surface script App must implement IVisualStyleScope before drawing overlay controls.");
+
+            return scope;
+        }
+
+        protected Grid FooterRoot
+        {
+            get
+            {
+                if (_footerRoot == null)
+                    _footerRoot = new Grid(default(RectangleF));
+
+                return _footerRoot;
+            }
+        }
+
+        protected bool HasFooterRoot
+        {
+            get { return _footerRoot != null && _footerRoot.Visible && _footerRoot.HasChildren; }
+        }
+
+        protected ControlRenderContext CreateAppControlRenderContext(Vector2 cursorPosition)
+        {
+            return new ControlRenderContext(
+                Surface,
+                ConfiguredScale,
+                FontScale,
+                cursorPosition,
+                RequireAppStyleScope());
+        }
 
         protected int ResolveRotationOrSurfaceIndex()
         {
@@ -299,7 +335,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         static void CloseApp(IApp app)
         {
-            var appBase = app as AppBase;
+            var appBase = app as App;
             if (appBase == null)
                 return;
 
@@ -553,6 +589,22 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         protected virtual void DrawFooter(List<MySprite> frame)
         {
+            if (!HasFooterRoot)
+                return;
+
+            RenderFooterRoot(frame, FooterRoot.Rect);
+        }
+
+        protected void RenderFooterRoot(List<MySprite> frame, RectangleF bounds)
+        {
+            if (frame == null || _footerRoot == null || !_footerRoot.Visible)
+                return;
+
+            IVisualStyleScope scope = RequireAppStyleScope();
+            _footerRoot.SetStyleParent(scope);
+            _footerRoot.SetDataContext(App);
+            _footerRoot.SetRect(bounds);
+            _footerRoot.Render(CreateAppControlRenderContext(new Vector2(float.NaN, float.NaN)), frame);
         }
 
         protected static readonly Regex RxGroup = new Regex(@"\(\s*G\s*:\s*(.+?)\s*\)", RegexOptions.IgnoreCase);

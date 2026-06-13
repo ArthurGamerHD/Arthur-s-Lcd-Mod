@@ -409,7 +409,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             return Math.Max(ROW_HEIGHT_PIXELS * scale, GetIconTargetSize(scale) + 8f * Math.Max(1f, scale));
         }
 
-        ControlBase CreateRowControl(SpriteRowModel model)
+        ControlTemplate CreateRowControl(SpriteRowModel model)
         {
             var control = new RectangleControl(
                 default(RectangleF),
@@ -421,7 +421,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             return control;
         }
 
-        void BindRowControl(ControlBase control, SpriteRowModel model, int index)
+        void BindRowControl(ControlTemplate control, SpriteRowModel model, int index)
         {
             if (control == null || model == null)
                 return;
@@ -434,7 +434,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             control.SetVisible(true);
         }
 
-        void RenderSpriteRow(ControlBase entry, ControlRenderContext context, List<MySprite> sprites)
+        void RenderSpriteRow(ControlTemplate entry, ControlRenderContext context, List<MySprite> sprites)
         {
             var model = entry.DataContext as SpriteRowModel;
             if (model == null || string.IsNullOrEmpty(model.SpriteName))
@@ -729,7 +729,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _applyButton.SetVisible(true);
         }
 
-        void RenderTextButton(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderTextButton(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
         {
             var rect = control.Bounds;
             var buttonModel = control.DataContext as ButtonModel;

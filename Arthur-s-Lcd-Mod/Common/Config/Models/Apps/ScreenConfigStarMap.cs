@@ -3,7 +3,7 @@ using ProtoBuf;
 namespace LcdMod.Common.Config.Models.Apps
 {
     [ProtoContract]
-    public partial class ScreenConfigStarMap : ScreenConfigInteractive
+    public partial class ScreenConfigStarMap : ScreenConfigGeneral
     {
         [ProtoMember(19)] public float FoV { get; set; } = 70;
 

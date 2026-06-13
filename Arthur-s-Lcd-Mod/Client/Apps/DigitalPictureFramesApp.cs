@@ -19,7 +19,7 @@ using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.Interacti
 
 namespace LcdMod.Client.Apps
 {
-    internal sealed class DigitalPictureFramesApp : AppBase, IAppInteractive
+    internal sealed class DigitalPictureFramesApp : App, IApp
     {
         const float BUTTON_WIDTH_PIXELS = 220f;
         const float BUTTON_HEIGHT_PIXELS = 42f;
@@ -27,7 +27,7 @@ namespace LcdMod.Client.Apps
         const long TRANSITION_FRAMES = 24L;
 
         readonly List<MySprite> _sprites = new List<MySprite>();
-        readonly List<ControlBase> _interactiveList = new List<ControlBase>();
+        readonly List<Control> _children = new List<Control>();
         readonly Button _pickBackgroundButton;
         readonly RectangleControl _imagePickerHitbox;
         readonly InteractiveSurfaceScript _interactiveHost;
@@ -43,36 +43,27 @@ namespace LcdMod.Client.Apps
         {
             _interactiveHost = host;
 
-            _pickBackgroundButton = new Button(default(RectangleF), new ButtonModel
+            _pickBackgroundButton = AddChild(new Button(default(RectangleF), new ButtonModel
             {
                 Text = LocHelper.GetLoc("LcdMod_PickTexture"),
                 Clicked = OnPickBackgroundClicked
-            });
-            _imagePickerHitbox = new RectangleControl(default(RectangleF), CursorType.Hand, null, OnImageClicked)
+            }));
+            _imagePickerHitbox = AddChild(new RectangleControl(default(RectangleF), CursorType.Hand, null, OnImageClicked)
             {
                 CustomRender = RenderImagePickerHitbox
-            };
+            });
 
-            _interactiveList.Add(_pickBackgroundButton);
-            _interactiveList.Add(_imagePickerHitbox);
+            _children.Add(_pickBackgroundButton);
+            _children.Add(_imagePickerHitbox);
         }
 
-        public List<ControlBase> InteractiveList => _interactiveList;
+        public override IReadOnlyList<Control> Children => _children;
 
         public override void Update()
         {
             UpdateControls();
         }
-
-        public bool HasVisibleItems()
-        {
-            return true;
-        }
-
-        public void OnMouseScroll(int delta, ref bool handled)
-        {
-        }
-
+        
         public override List<MySprite> GetSprites()
         {
             _sprites.Clear();
@@ -84,6 +75,7 @@ namespace LcdMod.Client.Apps
             Host.AddBackground(_sprites);
             DrawBackgroundImage(config, (PictureFrameDisplayMode)config.DisplayMode);
             Host.DrawTitle(_sprites);
+            ClearDirtyAfterRender();
             
             return _sprites;
         }
@@ -382,9 +374,8 @@ namespace LcdMod.Client.Apps
             }
 
             _pickBackgroundButton.SetCursor(canAccessBlock ? CursorType.Hand : CursorType.No);
-            _pickBackgroundButton.SetStyle(canAccessBlock
-                ? Button.CreatePrimaryButtonStyle(Theme)
-                : Button.CreateDisabledButtonStyle(Theme));
+            _pickBackgroundButton.SetStyleId(canAccessBlock ? "Primary" : "Disabled");
+            _pickBackgroundButton.SetEnabled(canAccessBlock);
         }
 
         void OnPickBackgroundClicked(ButtonModel model, object sender)
@@ -407,7 +398,7 @@ namespace LcdMod.Client.Apps
             OnPickBackgroundClicked(null, sender);
         }
 
-        static void RenderImagePickerHitbox(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        static void RenderImagePickerHitbox(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
         {
         }
 

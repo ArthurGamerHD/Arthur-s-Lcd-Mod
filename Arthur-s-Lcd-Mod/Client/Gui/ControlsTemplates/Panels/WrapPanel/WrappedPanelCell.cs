@@ -20,9 +20,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel
         public int Row { get; private set; }
         public int Column { get; private set; }
         public RectangleF Bounds { get; private set; }
-        public ControlBase Control { get; private set; }
+        public ControlTemplate Control { get; private set; }
 
-        public WrapPanelCell SetControl(ControlBase control)
+        public WrapPanelCell SetControl(ControlTemplate control)
         {
             Control = control;
             return this;

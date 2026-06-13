@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using LcdMod.Client.Gui.Styling;
 using LcdMod.Common.Helpers;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
@@ -61,7 +62,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             return (CONTROL_ROW_HEIGHT_PIXELS + CONTROL_GAP_PIXELS) * Math.Max(0.01f, scale);
         }
 
-        public override void AddChild(ControlBase child)
+        public override void AddChild(ControlTemplate child)
         {
             base.AddChild(child);
             EnsureControlsZOrder();
@@ -158,7 +159,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             for (int visibleIndex = 0; visibleIndex < _visiblePageCount; visibleIndex++)
             {
                 int pageIndex = NormalizePageIndex(_firstVisiblePage + visibleIndex, pageCount);
-                var child = GetPageAtIndex(pageIndex);
+                var child = GetPageAtIndex(pageIndex) as ControlTemplate;
                 if (child == null)
                     continue;
 
@@ -303,7 +304,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             BeginContentClip(sprites, ContentViewportBounds);
             for (int i = 0; i < children.Count; i++)
             {
-                var child = children[i];
+                var child = children[i] as ControlTemplate;
                 if (child != null && !IsNavigationControl(child))
                     child.Render(context, sprites);
             }
@@ -333,7 +334,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
         void RenderArrow(ControlRenderContext context, List<MySprite> sprites, RectangleF rect, string texture, bool enabled)
         {
-            var fg = context.TextColor;
+            var fg = ResolveColor(ThemeResources.OnSurfaceColor);
             var color = enabled
                 ? new Color(fg.R, fg.G, fg.B, 180)
                 : new Color(fg.R, fg.G, fg.B, 45);
@@ -362,9 +363,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             float totalWidth;
             GetIndicatorLayout(scale, pageCount, out diameter, out gap, out totalWidth);
 
-            var hostFontColor = context.Surface?.ScriptForegroundColor ?? context.TextColor;
-            var primary = ResolveThemeColor(context, Constants.SECONDARY_CONTAINER, hostFontColor);
-            var secondary = ResolveThemeColor(context, Constants.SECONDARY, new Color(hostFontColor.R, hostFontColor.G, hostFontColor.B, 150));
+            var hostFontColor = context.Surface?.ScriptForegroundColor ?? ResolveColor(ThemeResources.OnSurfaceColor);
+            var primary = GetResourceColor(ThemeResources.SecondaryContainerColor, hostFontColor);
+            var secondary = GetResourceColor(ThemeResources.AccentColor, new Color(hostFontColor.R, hostFontColor.G, hostFontColor.B, 150));
             var hollow = hostFontColor;
             float startX = _indicatorBounds.Center.X - totalWidth * 0.5f + diameter * 0.5f;
             for (int i = 0; i < pageCount; i++)
@@ -450,19 +451,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             return false;
         }
 
-        static Color ResolveThemeColor(ControlRenderContext context, string role, Color fallback)
-        {
-            try
-            {
-                return context.GetThemeColor(role);
-            }
-            catch
-            {
-                return fallback;
-            }
-        }
-
-        ControlBase GetPageAtIndex(int pageIndex)
+        Control GetPageAtIndex(int pageIndex)
         {
             var children = Children;
             if (children == null || pageIndex < 0)
@@ -482,7 +471,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             return null;
         }
 
-        static bool IsNavigationControl(ControlBase control)
+        static bool IsNavigationControl(Control control)
         {
             return control is ArrowControl || control is IndicatorControl;
         }
@@ -532,7 +521,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             return _showControls && GetPageCount() > 1;
         }
 
-        sealed class ArrowControl : ControlBase
+        sealed class ArrowControl : ControlTemplate
         {
             readonly PagesPanel _owner;
             readonly int _direction;
@@ -578,7 +567,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             }
         }
 
-        sealed class IndicatorControl : ControlBase
+        sealed class IndicatorControl : ControlTemplate
         {
             readonly PagesPanel _owner;
 

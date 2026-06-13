@@ -3,7 +3,7 @@ using LcdMod.Common.Config.Models;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
-using ScreenConfigColorable = LcdMod.Common.Config.Models.ScreenConfigColorable;
+
 
 namespace LcdMod.Client.Terminal.Controls.Color
 {
@@ -26,13 +26,13 @@ namespace LcdMod.Client.Terminal.Controls.Color
 
         public override bool Visible(IMyTerminalBlock block)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigColorable;
+            var config = ConfigManager.GetConfigForCurrentScreen(block);
             return (config?.CustomizedColors ?? false) && base.Visible(block);
         }
 
         void Setter(IMyTerminalBlock block, VRageMath.Color color)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigColorable;
+            var config = ConfigManager.GetConfigForCurrentScreen(block);
             if (config == null)
                 return;
             config.ErrorColor = color;
@@ -41,7 +41,7 @@ namespace LcdMod.Client.Terminal.Controls.Color
 
         VRageMath.Color Getter(IMyTerminalBlock block)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigColorable;
+            var config = ConfigManager.GetConfigForCurrentScreen(block);
             return config?.ErrorColor ?? VRageMath.Color.White;
         }
     }

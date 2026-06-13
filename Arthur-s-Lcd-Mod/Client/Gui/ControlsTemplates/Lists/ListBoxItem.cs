@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
+using LcdMod.Client.Gui.Styling;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 
@@ -34,30 +35,17 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
                 return;
             }
 
-            var style = context.Style;
             var owner = model.Owner;
-            var selectedPanel = owner?.SelectedPanelColor ?? style.GetPanelColor(true);
-            var selectedText = owner?.SelectedTextColor ?? style.GetTextColor(true);
-
-            var selectedStyle = new ControlStyle(selectedText, selectedPanel)
-            {
-                BorderRadiusPixels = style.BorderRadiusPixels,
-                HoverPanelColor = selectedPanel,
-                HoverTextColor = selectedText,
-                Padding = style.Padding
-            };
-
-            var selectedContext = new ControlRenderContext(
-                context.Surface,
-                context.Scale,
-                context.FontScale,
-                selectedStyle,
-                context.Theme,
-                context.CursorPosition);
+            var selectedPanel = owner != null && owner.SelectedPanelColor.HasValue
+                ? owner.SelectedPanelColor.Value
+                : ResolveColor(ThemeResources.AccentContainerColor);
+            var selectedText = owner != null && owner.SelectedTextColor.HasValue
+                ? owner.SelectedTextColor.Value
+                : ResolveColor(ThemeResources.OnAccentContainerColor);
 
             var rect = GetViewBox();
-            Border.CreateSpritesFromRect(rect, sprites, selectedPanel,selectedStyle.BorderRadiusPixels, context.Scale);
-            RenderDefaultText(rect, selectedContext, sprites);
+            Border.CreateSpritesFromRect(rect, sprites, selectedPanel, GetRenderBorderRadiusPixels(), context.Scale);
+            RenderDefaultText(rect, context, sprites, selectedText);
         }
     }
 }

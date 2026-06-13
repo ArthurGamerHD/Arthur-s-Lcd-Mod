@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using LcdMod.Client;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Extensions;
-using LcdMod.Client.Grid;
+using LcdMod.Client.GridData;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.ControlsTemplates.Panels.StackPanel;
+using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
 using LcdMod.Common.Config.Models.Apps;
 using LcdMod.Common.Helpers;
@@ -25,7 +26,7 @@ namespace LcdMod.Client.Apps
     /// the block name and a button that cycles its own view between Input, Output and All. When a section is
     /// in "All", its items are shown in two columns (input | output). Collapsed by default.
     /// </summary>
-    internal sealed class InputOutputApp : ItemsAppBase
+    internal sealed class InputOutputApp : ItemsApp
     {
         public const string NAME = "LcdMod_InputOutput";
 
@@ -79,7 +80,7 @@ namespace LcdMod.Client.Apps
 
         public InputOutputApp(ScreenConfigWithItems config, IAppHost host) : base(config, host)
         {
-            _scroll = new ScrollPanel(CursorType.Default, this);
+            _scroll = AddChild(new ScrollPanel(CursorType.Default, this));
             _scroll.ManualScrollInertiaEnabled = false;
             _scroll.ScrollChanged = OnScrollChanged;
             _listPanel = new VisualStackPanel();
@@ -195,7 +196,7 @@ namespace LcdMod.Client.Apps
         public override List<MySprite> GetSprites()
         {
             var sprites = new List<MySprite>();
-            InteractiveList.Clear();
+            _children.Clear();
             HideRowControls();
 
             if (_blocks.Count == 0)
@@ -213,7 +214,7 @@ namespace LcdMod.Client.Apps
             ConfigureAutomaticScroll(rowHeight);
             ConfigureScrollColors();
             _scroll.SetVisible(true);
-            InteractiveList.Add(_scroll);
+            _children.Add(_scroll);
 
             var context = CreateItemRenderContext();
             _scroll.Render(context, sprites);
@@ -231,7 +232,7 @@ namespace LcdMod.Client.Apps
                 0f);
         }
 
-        void RenderListPanelContent(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderListPanelContent(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
         {
             DrawBlockCards(sprites, _currentRowHeight);
 
@@ -241,7 +242,7 @@ namespace LcdMod.Client.Apps
 
             for (int i = 0; i < children.Count; i++)
             {
-                var child = children[i];
+                var child = children[i] as ControlTemplate;
                 if (child != null)
                     child.Render(context, sprites);
             }
@@ -368,7 +369,7 @@ namespace LcdMod.Client.Apps
                 panel.RemoveChild(children[i]);
         }
 
-        static int IndexOfChild(IReadOnlyList<ControlBase> children, ControlBase child)
+        static int IndexOfChild(IReadOnlyList<Control> children, ControlTemplate child)
         {
             if (children == null || child == null)
                 return -1;
@@ -382,7 +383,7 @@ namespace LcdMod.Client.Apps
             return -1;
         }
 
-        void RenderRowControl(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderRowControl(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
         {
             var rowControl = control as RowControl;
             if (rowControl == null)
@@ -595,14 +596,13 @@ namespace LcdMod.Client.Apps
 
         Color ResolveThemeColor(string role, Color fallback)
         {
-            try
-            {
-                return GetThemeColor(role);
-            }
-            catch (Exception)
-            {
-                return fallback;
-            }
+            if (role == Constants.SECONDARY_CONTAINER)
+                return ScopedResourceResolver.TryResolve(this, ThemeResources.SurfaceColor, out fallback) ? fallback : AppConfig.HeaderColor.MulValue(0.6f);
+
+            if (role == Constants.ON_SECONDARY_CONTAINER)
+                return ScopedResourceResolver.TryResolve(this, ThemeResources.FontColor, out fallback) ? fallback : ForegroundColor;
+
+            return fallback;
         }
 
         void DrawEmpty(List<MySprite> sprites, RectangleF bounds)
@@ -638,7 +638,8 @@ namespace LcdMod.Client.Apps
         {
             var track = new Color(ForegroundColor.R, ForegroundColor.G, ForegroundColor.B, (byte)127);
             var thumb = new Color(AppConfig.HeaderColor.R, AppConfig.HeaderColor.G, AppConfig.HeaderColor.B, (byte)250);
-            _scroll.SetScrollBarColors(track, thumb);
+            _scroll.ScrollBarTrackColor = track;
+            _scroll.ScrollBarThumbColor = thumb;
         }
 
         BlockUiState GetState(long entityId)

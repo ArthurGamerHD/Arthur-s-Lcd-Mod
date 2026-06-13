@@ -6,7 +6,7 @@ namespace LcdMod.Common.Config.Models.Apps
 {
     [ProtoContract]
     [XmlInclude(typeof(ScreenConfigOreScanner))]
-    public partial class ScreenConfigRenderProxy : ScreenConfigInteractive, IConfigWithReferenceBlock
+    public partial class ScreenConfigRenderProxy : ScreenConfigGeneral, IConfigWithReferenceBlock
     {
         [ProtoMember(8)] public long ReferenceBlock { get; set; }
         [ProtoMember(16)] public virtual sbyte XAxisOffset { get; set; }

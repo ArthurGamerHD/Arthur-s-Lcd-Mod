@@ -6,7 +6,7 @@ using ScreenConfigPower = LcdMod.Common.Config.Models.Apps.ScreenConfigPower;
 
 namespace LcdMod.Client.Apps
 {
-    internal sealed class GeneratorsApp : PowerAppBase
+    internal sealed class GeneratorsApp : PowerApp
     {
         static readonly PowerEntryDefinition[] Definitions =
         {

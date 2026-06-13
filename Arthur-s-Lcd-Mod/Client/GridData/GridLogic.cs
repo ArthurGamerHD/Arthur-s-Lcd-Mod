@@ -20,7 +20,7 @@ using NotImplementedException = LcdMod.Common.NotImplementedException;
 using ScreenConfigWithBlocks = LcdMod.Common.Config.Models.Apps.ScreenConfigWithBlocks;
 using ScreenConfigWithItems = LcdMod.Common.Config.Models.Apps.ScreenConfigWithItems;
 
-namespace LcdMod.Client.Grid
+namespace LcdMod.Client.GridData
 {
     /// <summary>
     ///     Logic attached to <see cref="Grid" />

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using LcdMod.Client.Gui.Styling;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 using ArgumentOutOfRangeException = LcdMod.Common.ArgumentOutOfRangeException;
@@ -11,8 +12,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
     /// It draws a SquareSimple background using a transparent color by default,
     /// so callers can opt into a visible background by overriding BackgroundColor.
     /// </summary>
-    public sealed class Grid : Panel
+    public sealed partial class Grid : Panel
     {
+        public new static readonly StyleProperty<Color> BackgroundColorProperty =
+            StyleProperty.Register<Grid, Color>("BackgroundColor", (Color?)Color.Transparent);
+
         sealed class GridPlacement
         {
             public int Column;
@@ -21,8 +25,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             public int RowSpan = 1;
         }
 
-        readonly Dictionary<ControlBase, GridPlacement> _placements =
-            new Dictionary<ControlBase, GridPlacement>();
+        readonly Dictionary<ControlTemplate, GridPlacement> _placements =
+            new Dictionary<ControlTemplate, GridPlacement>();
 
         public Grid() : this(default(RectangleF))
         {
@@ -34,16 +38,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             Columns = columns;
             Rows = rows;
             BackgroundTexture = "SquareSimple";
-            BackgroundColor = Color.Transparent;
         }
 
-        public Grid(ControlBase parent, int cols, int rows)
+        public Grid(ControlTemplate parent, int cols, int rows)
             : this(default(RectangleF), CreateEqualSegments(cols), CreateEqualSegments(rows))
         {
             AttachTo(parent);
         }
 
-        public Grid(ControlBase parent, RectangleF bounds, int cols, int rows)
+        public Grid(ControlTemplate parent, RectangleF bounds, int cols, int rows)
             : this(bounds, CreateEqualSegments(cols), CreateEqualSegments(rows))
         {
             AttachTo(parent);
@@ -52,7 +55,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         public float[] Columns { get; set; }
         public float[] Rows { get; set; }
         public string BackgroundTexture { get; set; }
-        public Color BackgroundColor { get; set; }
+
+        protected override Color GetRenderBackgroundColor()
+        {
+            return base.BackgroundColor;
+        }
 
         public void SetColumns(params float[] columns)
         {
@@ -101,7 +108,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         }
 
         public T Set<T>(T child, int col, int row, int colSpan = 1, int rowSpan = 1)
-            where T : ControlBase
+            where T : ControlTemplate
         {
             if (child == null)
                 return null;
@@ -121,7 +128,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             return child;
         }
 
-        public override bool RemoveChild(ControlBase child)
+        public bool RemoveChild(ControlTemplate child)
         {
             _placements.Remove(child);
             return base.RemoveChild(child);
@@ -149,11 +156,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             for (int i = 0; i < children.Count; i++)
             {
                 var child = children[i];
-                ArrangeChild(child, GetChildBounds(child, i));
+                ArrangeChild(child as ControlTemplate, GetChildBounds(child as ControlTemplate, i));
             }
         }
 
-        RectangleF GetChildBounds(ControlBase child, int childIndex)
+        RectangleF GetChildBounds(ControlTemplate child, int childIndex)
         {
             GridPlacement placement;
             if (child != null && _placements.TryGetValue(child, out placement))
@@ -178,7 +185,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             });
         }
 
-        static void ArrangeChild(ControlBase child, RectangleF bounds)
+        static void ArrangeChild(ControlTemplate child, RectangleF bounds)
         {
             if (child == null)
                 return;

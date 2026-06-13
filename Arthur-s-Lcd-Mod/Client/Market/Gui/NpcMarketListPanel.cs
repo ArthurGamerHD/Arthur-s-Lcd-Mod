@@ -395,7 +395,7 @@ namespace LcdMod.Client.Market.Gui
             sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = text ?? string.Empty, Position = new Vector2(x, centerY - size.Y * 0.5f), RotationOrScale = scale, Color = color, Alignment = alignment, FontId = "White" });
         }
 
-        void RenderSortHeaderButton(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderSortHeaderButton(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
         {
             var model = control.DataContext as SortHeaderButtonModel;
             if (model == null)
@@ -421,7 +421,7 @@ namespace LcdMod.Client.Market.Gui
             }
         }
 
-        void RenderSearchButton(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderSearchButton(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
         {
             var hovered = control.IsPointerOver;
             sprites.Add(new MySprite(SpriteType.TEXTURE, "Search")

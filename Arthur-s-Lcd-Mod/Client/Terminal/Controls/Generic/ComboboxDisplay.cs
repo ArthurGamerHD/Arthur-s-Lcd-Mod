@@ -1,11 +1,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using LcdMod.Client.Config;
+using LcdMod.Common.Config.Models;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.ModAPI;
 using VRage.Utils;
-using ScreenConfigColorable = LcdMod.Common.Config.Models.ScreenConfigColorable;
+
 
 namespace LcdMod.Client.Terminal.Controls.Generic
 {
@@ -47,7 +48,7 @@ namespace LcdMod.Client.Terminal.Controls.Generic
 
         void Setter(IMyTerminalBlock block, long l)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigColorable;
+            var config = ConfigManager.GetConfigForCurrentScreen(block);
             if (config == null)
                 return;
 
@@ -57,7 +58,7 @@ namespace LcdMod.Client.Terminal.Controls.Generic
 
         long Getter(IMyTerminalBlock block)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigColorable;
+            var config = ConfigManager.GetConfigForCurrentScreen(block);
             if (config == null)
                 return 0;
 

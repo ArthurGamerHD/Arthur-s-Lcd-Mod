@@ -7,7 +7,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels.Virtualized
 {
     public class VirtualizedWrapPanel<T> : Panel, IScrollContent
     {
-        readonly List<ControlBase> _pool = new List<ControlBase>();
+        readonly List<Control> _pool = new List<Control>();
         float _rowHeight = 32f;
         float _minimumColumnWidth = 96f;
         bool _forceSingleColumn;
@@ -160,7 +160,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels.Virtualized
             return ItemsSource?.Count ?? 0;
         }
 
-        ControlBase GetPooledControl(int poolIndex, T item)
+        ControlTemplate GetPooledControl(int poolIndex, T item)
         {
             while (_pool.Count <= poolIndex)
             {
@@ -172,10 +172,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels.Virtualized
                 AddChild(control);
             }
 
-            return _pool[poolIndex];
+            return _pool[poolIndex] as ControlTemplate;
         }
 
-        void BindControlIfNeeded(ControlBase control, T item, int index)
+        void BindControlIfNeeded(ControlTemplate control, T item, int index)
         {
             if (BindControl != null)
                 BindControl(control, item, index);

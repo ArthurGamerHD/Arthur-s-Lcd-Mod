@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.UserControls;
 using LcdMod.Client.Markdown;
 using LcdMod.Common.Config.Models;
@@ -11,13 +12,16 @@ using VRageMath;
 
 namespace LcdMod.Client.Apps
 {
-    public sealed class MarkdownApp : AppBase
+    public sealed class MarkdownApp : App
     {
         readonly MarkdownParser _parser = new MarkdownParser();
         readonly List<MySprite> _cachedSprites = new List<MySprite>();
         bool _spritesLoaded;
         string _loadedText;
 
+        // todo: convert to interactive app
+        public override IReadOnlyList<Control> Children { get; } = new Control[]{};
+        
         public MarkdownApp(ScreenConfigMarkdown config, IAppHost host) : base(config, host)
         {
         }
@@ -49,7 +53,7 @@ namespace LcdMod.Client.Apps
 
             _cachedSprites.Clear();
 
-            var colorable = AppConfig as ScreenConfigColorable;
+            var colorable = AppConfig;
             Color headerColor = colorable != null ? colorable.HeaderColor : Host.ForegroundColor;
             RectangleF contentViewBox = MarkdownPanel.GetContentViewBox(Host);
             MarkdownPanel.CreateSprites(

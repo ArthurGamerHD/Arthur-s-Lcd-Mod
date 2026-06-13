@@ -27,7 +27,7 @@ namespace LcdMod.Client.Apps
     /// container/target on the (mechanically linked) construct, with no per-block selection.
     /// Server-authoritative for the inventory mutations, like the original footer.
     /// </summary>
-    public sealed class CargoActionsApp : AppBase, IAppInteractive
+    public sealed class CargoActionsApp : App, IApp
     {
         const int ACTION_CONFIG = 0;
         const int ACTION_SORTER = 1;
@@ -59,7 +59,7 @@ namespace LcdMod.Client.Apps
         const string ICON_AMMO = "AmmoIcon";
         const string ICON_REFUEL = "RefuelIcon";
 
-        readonly List<ControlBase> _interactiveList = new List<ControlBase>();
+        readonly List<Control> _children = new List<Control>();
         readonly List<IMyTerminalBlock> _sources = new List<IMyTerminalBlock>();
         readonly List<IMyTerminalBlock> _targets = new List<IMyTerminalBlock>();
         readonly Button[] _buttons = new Button[ACTION_COUNT];
@@ -69,7 +69,6 @@ namespace LcdMod.Client.Apps
         readonly List<MySprite> _sprites = new List<MySprite>();
         readonly InteractiveSurfaceScript _interactiveHost;
 
-        ControlStyle _primaryStyle;
         long _lastActionFrame = long.MinValue;
         string _statusMessage;
         long _statusUntilFrame;
@@ -80,7 +79,7 @@ namespace LcdMod.Client.Apps
             _interactiveHost = host as InteractiveSurfaceScript;
         }
 
-        public List<ControlBase> InteractiveList => _interactiveList;
+        public override IReadOnlyList<Control> Children => _children;
 
         ScreenConfigCargoActions Config => (ScreenConfigCargoActions)AppConfig;
 
@@ -89,21 +88,13 @@ namespace LcdMod.Client.Apps
             TryAdoptSharedSettings();
         }
 
-        public bool HasVisibleItems()
-        {
-            return true;
-        }
-
-        public void OnMouseScroll(int delta, ref bool handled)
-        {
-        }
-
         public override List<MySprite> GetSprites()
         {
-            _interactiveList.Clear();
+            _children.Clear();
             _sprites.Clear();
             DrawButtons(_sprites);
             DrawStatusMessage(_sprites);
+            ClearDirtyAfterRender();
             return _sprites;
         }
 
@@ -172,12 +163,12 @@ namespace LcdMod.Client.Apps
             var button = _buttons[index];
             if (button == null)
             {
-                button = new Button(rect, new PadTileModel
+                button = AddChild(new Button(rect, new PadTileModel
                 {
                     Text = GetButtonText(index),
                     SpriteName = GetButtonSprite(index),
                     Clicked = GetButtonAction(index)
-                });
+                }));
                 _buttons[index] = button;
             }
             else
@@ -193,10 +184,10 @@ namespace LcdMod.Client.Apps
 
             button.SetVisible(true);
             button.SetCursor(CursorType.Hand);
-            button.SetStyle(GetPrimaryStyle());
+            button.SetStyleId("Primary");
             button.CustomRender = PadButtonStyle.RenderLabeled;
 
-            _interactiveList.Add(button);
+            _children.Add(button);
             button.Render(context, sprites);
         }
 
@@ -256,16 +247,6 @@ namespace LcdMod.Client.Apps
                 ? _interactiveHost.CursorPosition
                 : new Vector2(float.NaN, float.NaN);
             return CreateControlRenderContext(Host.Surface, AppConfig.Scale, Host.Surface.FontSize, cursor);
-        }
-
-        ControlStyle GetPrimaryStyle()
-        {
-            if (_primaryStyle == null)
-                _primaryStyle = Button.CreatePrimaryButtonStyle(Theme);
-            else
-                _primaryStyle.ThemeColors = Theme;
-
-            return _primaryStyle;
         }
 
         void OnConfigClicked(ButtonModel model, object sender)

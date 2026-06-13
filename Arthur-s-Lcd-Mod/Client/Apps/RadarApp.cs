@@ -4,6 +4,7 @@ using System.Text;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Config;
 using LcdMod.Client.Extensions;
+using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Terminal.Controls;
@@ -34,7 +35,7 @@ namespace LcdMod.Client.Apps
         public int MissedFrames;
     }
 
-    public class RadarApp : AppBase, IAppInteractive
+    public class RadarApp : App, IApp
     {
         public const string ID = "LcdMod_Radar";
         public const string TITLE = "LcdMod_Radar";
@@ -97,7 +98,7 @@ namespace LcdMod.Client.Apps
         readonly StringBuilder _footerTextBuilder = new StringBuilder();
         readonly List<MySprite> _backgroundSprites = new List<MySprite>();
         readonly List<MySprite> _foregroundSprites = new List<MySprite>();
-        readonly List<ControlBase> _interactiveList = new List<ControlBase>();
+        readonly List<Control> _children = new List<Control>();
         long _cachedCharacterId;
         Sandbox.Game.EntityComponents.MyTargetLockingComponent _cachedCharacterTargetLocking;
         float _radarProjectionCos;
@@ -115,7 +116,7 @@ namespace LcdMod.Client.Apps
         float LayoutScale => Scale * FontScale;
         Color ForegroundColor => _host.ForegroundColor;
         Color BackgroundColor => _host.BackgroundColor;
-        public List<ControlBase> InteractiveList => _interactiveList;
+        public override IReadOnlyList<Control> Children => _children;
 
         struct TargetInfo
         {
@@ -146,11 +147,6 @@ namespace LcdMod.Client.Apps
             PurgeStaleContacts();
             BuildSortedContacts();
             UpdateFooterHeights();
-        }
-
-        public bool HasVisibleItems()
-        {
-            return true;
         }
 
         public override List<MySprite> GetSprites()
@@ -850,7 +846,7 @@ namespace LcdMod.Client.Apps
                 textScale));
         }
 
-        public void OnMouseScroll(int delta, ref bool handled)
+        public override void OnMouseScroll(int delta, ref bool handled)
         {
             var config = base.AppConfig as ScreenConfigRadar;
             if (config == null || delta == 0 || handled)

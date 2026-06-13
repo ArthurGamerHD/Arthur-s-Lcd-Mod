@@ -18,7 +18,7 @@ namespace LcdMod.Client.SurfaceScripts
 #endif
     public partial class SessionDebugSurfaceScript : InteractiveSurfaceScript
     {
-        protected override ConfigKind ConfigKind => ConfigKind.Interactive;
+        protected override ConfigKind ConfigKind => ConfigKind.General;
 
         public const string ID = "SessionDebug";
         public const string TITLE = "LcdMod Session Debug";
@@ -27,7 +27,7 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override CursorType CursorType { get; protected set; }
 
-        public override List<ControlBase> InteractiveList => _app?.InteractiveEntries ?? new List<ControlBase>();
+        public override List<Control> InteractiveList => _app?.InteractiveEntries ?? new List<Control>();
 
         public SessionDebugSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
             : base(surface, block, size)

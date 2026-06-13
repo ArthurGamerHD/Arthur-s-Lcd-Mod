@@ -34,12 +34,12 @@ namespace LcdMod.Client.SurfaceScripts
         public const string ID = "ProjectorCharts";
         public const string TITLE = ProjectorApp.TITLE;
 
-        readonly List<ControlBase> _interactiveListFallback = new List<ControlBase>();
+
         ProjectorApp _app;
 
         public override IApp App => _app;
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
-        public override List<ControlBase> InteractiveList => _app != null ? _app.InteractiveList : _interactiveListFallback;
+        public override List<Control> InteractiveList => _app?.Children as List<Control>;
         public override string Title => _app != null ? _app.Title : base.Title;
         protected override string DefaultTitle => TITLE;
         protected override bool RendersInteractiveEntriesInGetSprites => true;

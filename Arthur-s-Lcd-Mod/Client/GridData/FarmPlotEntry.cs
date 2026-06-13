@@ -1,7 +1,7 @@
 using Sandbox.ModAPI;
 using IMyFarmPlotLogic = Sandbox.ModAPI.IMyFarmPlotLogic;
 
-namespace LcdMod.Client.Grid
+namespace LcdMod.Client.GridData
 {
     public sealed class FarmPlotEntry
     {

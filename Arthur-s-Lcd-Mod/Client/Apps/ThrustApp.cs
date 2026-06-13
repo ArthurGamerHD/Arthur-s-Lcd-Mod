@@ -3,18 +3,20 @@ using System.Collections.Generic;
 using System.Text;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Extensions;
+using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
+using LcdMod.Common.Config.Models;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
 using VRage.Utils;
 using VRageMath;
 using IMyCockpit = Sandbox.ModAPI.IMyCockpit;
-using ScreenConfigColorable = LcdMod.Common.Config.Models.ScreenConfigColorable;
+
 
 namespace LcdMod.Client.Apps
 {
-    internal sealed class ThrustApp : AppBase
+    internal sealed class ThrustApp : App
     {
         const float AXIS_THICKNESS = 6f;
         const float ARROW_SIZE_MULTIPLIER = 3f;
@@ -51,7 +53,7 @@ namespace LcdMod.Client.Apps
         double _stopDistance;
         bool _hasStopEstimate;
 
-        ScreenConfigColorable Config => (ScreenConfigColorable)AppConfig;
+        ScreenConfigGeneral Config => AppConfig;
         IMyCubeBlock Block => Host.Block;
         Sandbox.ModAPI.Ingame.IMyTextSurface Surface => Host.Surface;
         RectangleF ViewBox => Host.ViewBox;
@@ -64,7 +66,7 @@ namespace LcdMod.Client.Apps
 
         public bool HasData { get; private set; }
 
-        public ThrustApp(ScreenConfigColorable config, IAppHost host)
+        public ThrustApp(ScreenConfigGeneral config, IAppHost host)
             : base(config, host)
         {
         }
@@ -774,5 +776,8 @@ namespace LcdMod.Client.Apps
                 default: return -1;
             }
         }
+
+        // todo: convert to interactive app
+        public override IReadOnlyList<Control> Children { get; } = new Control[]{};
     }
 }

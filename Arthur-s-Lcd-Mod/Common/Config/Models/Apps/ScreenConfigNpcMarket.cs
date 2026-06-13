@@ -3,7 +3,7 @@ using ProtoBuf;
 namespace LcdMod.Common.Config.Models.Apps
 {
     [ProtoContract]
-    public partial class ScreenConfigNpcMarket : ScreenConfigInteractive
+    public partial class ScreenConfigNpcMarket : ScreenConfigGeneral
     {
         public const float DEFAULT_PAGE_SWITCH_SECONDS = 5f;
 

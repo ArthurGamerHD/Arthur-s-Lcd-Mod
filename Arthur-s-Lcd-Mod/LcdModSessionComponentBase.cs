@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Generated;
 using LcdMod.Client;
 using LcdMod.Client.Config;
-using LcdMod.Client.Grid;
+using LcdMod.Client.GridData;
 using LcdMod.Client.ScreenAreas;
 using LcdMod.Common.Config.Models;
 using LcdMod.Common.Helpers;

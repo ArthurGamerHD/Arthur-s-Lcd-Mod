@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using LcdMod.Client.Apps.Abstract;
-using LcdMod.Client.Grid;
+using LcdMod.Client.GridData;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
@@ -17,7 +17,7 @@ using VRageMath;
 
 namespace LcdMod.Client.Apps
 {
-    internal sealed class SessionDebugApp : AppBase
+    internal sealed class SessionDebugApp : App
     {
         const string DEBUG_FONT = "Monospace";
         const float LINE_SCALE = 0.62f;
@@ -29,14 +29,15 @@ namespace LcdMod.Client.Apps
         static readonly Color SleepingColor = new Color(235, 210, 60);
 
         readonly List<MySprite> _sprites = new List<MySprite>();
-        readonly ScrollPanel _scrollPanel = new ScrollPanel();
+        readonly ScrollPanel _scrollPanel;
         readonly VirtualizedStackPanel<DebugLine> _linePanel = new VirtualizedStackPanel<DebugLine>();
-        readonly List<ControlBase> _interactiveEntries = new List<ControlBase>();
+        readonly List<Control> _interactiveEntries = new List<Control>();
 
         SessionDebugSurfaceScript _host;
         
-        public SessionDebugApp(ScreenConfigInteractive appConfig, SessionDebugSurfaceScript sessionDebugSurfaceScript) : base(appConfig, sessionDebugSurfaceScript)
+        public SessionDebugApp(ScreenConfigGeneral appConfig, SessionDebugSurfaceScript sessionDebugSurfaceScript) : base(appConfig, sessionDebugSurfaceScript)
         {
+            _scrollPanel = AddChild(new ScrollPanel());
             _scrollPanel.ManualScrollInertiaEnabled = false;
             _interactiveEntries.Add(_scrollPanel);
             _linePanel.CreateControl = CreateLineControl;
@@ -44,7 +45,7 @@ namespace LcdMod.Client.Apps
             _host = sessionDebugSurfaceScript;
         }
 
-        public List<ControlBase> InteractiveEntries => _interactiveEntries;
+        public List<Control> InteractiveEntries => _interactiveEntries;
 
         float Scale => Host != null ? AppConfig.Scale : 1f;
 
@@ -78,19 +79,19 @@ namespace LcdMod.Client.Apps
                 SCROLLBAR_WIDTH,
                 lineHeight,
                 0f);
-            _scrollPanel.SetScrollBarColors(
-                new Color(45, 45, 45, 170),
-                new Color(190, 190, 190, 230));
+            _scrollPanel.ScrollBarTrackColor = new Color(45, 45, 45, 170);
+            _scrollPanel.ScrollBarThumbColor = new Color(190, 190, 190, 230);
 
             _sprites.Clear();
             _scrollPanel.Render(
                 new ControlRenderContext(_host.Surface, 1f, 1f, Color.White, Color.Transparent, new Vector2(float.NaN, float.NaN)),
                 _sprites);
 
+            ClearDirtyAfterRender();
             return _sprites;
         }
 
-        ControlBase CreateLineControl(DebugLine line)
+        ControlTemplate CreateLineControl(DebugLine line)
         {
             return new RectangleControl(default(RectangleF), CursorType.Default, line)
             {
@@ -98,13 +99,13 @@ namespace LcdMod.Client.Apps
             };
         }
 
-        static void BindLineControl(ControlBase control, DebugLine line, int index)
+        static void BindLineControl(ControlTemplate control, DebugLine line, int index)
         {
             if (control != null)
                 control.SetDataContext(line);
         }
 
-        void RenderLineControl(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderLineControl(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
         {
             if (control == null || sprites == null)
                 return;
@@ -283,5 +284,8 @@ namespace LcdMod.Client.Apps
         public override void Update()
         {
         }
+
+        // hack: not needed on this app
+        public override IReadOnlyList<Control> Children { get; } = new Control[]{};
     }
 }

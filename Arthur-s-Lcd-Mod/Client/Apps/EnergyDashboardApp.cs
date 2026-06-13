@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Custom;
@@ -17,7 +18,7 @@ using ScreenConfigPower = LcdMod.Common.Config.Models.Apps.ScreenConfigPower;
 
 namespace LcdMod.Client.Apps
 {
-    internal sealed class EnergyDashboardApp : AppBase, IAppInteractive
+    internal sealed class EnergyDashboardApp : App, IApp
     {
         const int SCALE_TIER_COUNT = 6;
         const int GRAPH_BUCKET_COUNT = 10;
@@ -30,7 +31,7 @@ namespace LcdMod.Client.Apps
         const float BUTTON_ROW_WEIGHT = 24f;
 
         readonly ScreenConfigPower _config;
-        readonly List<ControlBase> _interactiveList = new List<ControlBase>();
+        readonly List<Control> _children = new List<Control>();
         readonly List<EnergyDashboardPowerRow> _producerRows = new List<EnergyDashboardPowerRow>();
         readonly List<EnergyDashboardPowerRow> _consumerRows = new List<EnergyDashboardPowerRow>();
         readonly List<EnergyDashboardPowerRow> _chargeRows = new List<EnergyDashboardPowerRow>();
@@ -58,6 +59,7 @@ namespace LcdMod.Client.Apps
         readonly Dictionary<string, string> _spriteCache = new Dictionary<string, string>(StringComparer.Ordinal);
         readonly ToggleButton[] _scaleButtons = new ToggleButton[SCALE_TIER_COUNT];
         readonly ControlGrid _rootGrid;
+        readonly ControlGrid _progressGrid;
         readonly EnergyStatBarControl _consumptionBar;
         readonly EnergyStatBarControl _productionBar;
         readonly EnergyStatBarControl _chargeBar;
@@ -65,6 +67,7 @@ namespace LcdMod.Client.Apps
         readonly EnergySubtypeGraphControl _producerGraph;
         readonly EnergySubtypeGraphControl _chargeGraph;
         readonly PagesPanel _contentPages;
+        readonly ControlTemplate _chargePage;
         readonly ScrollPanel _producerScrollPanel;
         readonly ScrollPanel _consumerScrollPanel;
         readonly ScrollPanel _chargeScrollPanel;
@@ -79,19 +82,19 @@ namespace LcdMod.Client.Apps
         public EnergyDashboardApp(ScreenConfigPower config, IAppHost host) : base(config, host)
         {
             _config = config;
-            _rootGrid = new ControlGrid(default(RectangleF), new[] { 1f },
-                new[] { PROGRESS_ROW_WEIGHT, BUTTON_ROW_WEIGHT, 90f, 140f });
-            var progressGrid = new ControlGrid(default(RectangleF), new[] { 1f, 1f, 1f }, new[] { 1f });
+            _rootGrid = AddChild(new ControlGrid(default(RectangleF), new[] { 1f },
+                new[] { PROGRESS_ROW_WEIGHT, BUTTON_ROW_WEIGHT, 90f, 140f }));
+            _progressGrid = new ControlGrid(default(RectangleF), new[] { 1f, 1f, 1f }, new[] { 1f });
             var columns = new float[SCALE_TIER_COUNT];
             var buttonGrid = new ControlGrid(default(RectangleF), columns, new[] { 1f });
             _consumptionBar = new EnergyStatBarControl(host) { Label = "Consumption" };
             _productionBar = new EnergyStatBarControl(host) { Label = "Production" };
             _chargeBar = new EnergyStatBarControl(host) { Label = "Charge", ShowPercentage = true };
-            progressGrid.Set(
+            _progressGrid.Set(
                 CreateInsetCell(_consumptionBar, PROGRESS_CELL_MARGIN_X_PIXELS, PROGRESS_CELL_MARGIN_Y_PIXELS), 0, 0);
-            progressGrid.Set(
+            _progressGrid.Set(
                 CreateInsetCell(_productionBar, PROGRESS_CELL_MARGIN_X_PIXELS, PROGRESS_CELL_MARGIN_Y_PIXELS), 1, 0);
-            progressGrid.Set(CreateInsetCell(_chargeBar, PROGRESS_CELL_MARGIN_X_PIXELS, PROGRESS_CELL_MARGIN_Y_PIXELS),
+            _progressGrid.Set(CreateInsetCell(_chargeBar, PROGRESS_CELL_MARGIN_X_PIXELS, PROGRESS_CELL_MARGIN_Y_PIXELS),
                 2, 0);
 
 
@@ -104,7 +107,7 @@ namespace LcdMod.Client.Apps
                     delegate { SetScaleTierIndex(tier); });
                 buttonGrid.Set(
                     CreateInsetCell(_scaleButtons[i], BUTTON_CELL_MARGIN_X_PIXELS, BUTTON_CELL_MARGIN_Y_PIXELS), i, 0);
-                _interactiveList.Add(_scaleButtons[i]);
+                _children.Add(_scaleButtons[i]);
             }
 
             _consumerGraph = new EnergySubtypeGraphControl(host) { Producers = false, Title = "Consumption" };
@@ -123,21 +126,22 @@ namespace LcdMod.Client.Apps
             _contentPages = new PagesPanel();
             _contentPages.AddChild(CreatePage(_consumerGraph, _consumerScrollPanel));
             _contentPages.AddChild(CreatePage(_producerGraph, _producerScrollPanel));
-            _contentPages.AddChild(CreatePage(_chargeGraph, _chargeScrollPanel));
-            _interactiveList.Add(_contentPages);
+            _chargePage = CreatePage(_chargeGraph, _chargeScrollPanel);
+            _contentPages.AddChild(_chargePage);
+            _children.Add(_contentPages);
 
-            _rootGrid.Set(progressGrid, 0, 0);
+            _rootGrid.Set(_progressGrid, 0, 0);
             _rootGrid.Set(buttonGrid, 0, 1);
             _rootGrid.Set(_contentPages, 0, 2, 1, 2);
             CaptureLease();
         }
 
-        InsetCellPanel CreateInsetCell(ControlBase child, float horizontalMarginPixels, float verticalMarginPixels)
+        InsetCellPanel CreateInsetCell(ControlTemplate child, float horizontalMarginPixels, float verticalMarginPixels)
         {
             return new InsetCellPanel(child, Host, horizontalMarginPixels, verticalMarginPixels);
         }
 
-        static ControlGrid CreatePage(ControlBase graph, ControlBase list)
+        static ControlGrid CreatePage(ControlTemplate graph, ControlTemplate list)
         {
             var page = new ControlGrid(default(RectangleF), new[] { 1f }, new[] { 90f, 140f });
             page.Set(graph, 0, 0);
@@ -145,17 +149,8 @@ namespace LcdMod.Client.Apps
             return page;
         }
 
-        public List<ControlBase> InteractiveList => _interactiveList;
-        public ScreenConfigPower Config => _config;
-
-        public bool HasVisibleItems()
-        {
-            return true;
-        }
-
-        public void OnMouseScroll(int delta, ref bool handled)
-        {
-        }
+        public override IReadOnlyList<Control> Children => _children;
+        public ScreenConfigPower Config => Host != null ? (Host.Config as ScreenConfigPower ?? _config) : _config;
 
         public override void Update()
         {
@@ -169,6 +164,7 @@ namespace LcdMod.Client.Apps
                 EnergyDashboardPowerCategory.Consumer, false);
             BuildRows(_latest.ChargeSubtypes, _chargeRows, _latest.MaxStoredEnergyWh,
                 EnergyDashboardPowerCategory.Charge, true);
+            SetChargeControlsVisible(HasChargeableDevices(_latest));
             _producerWrapPanel.InvalidateLayout();
             _consumerWrapPanel.InvalidateLayout();
             _chargeWrapPanel.InvalidateLayout();
@@ -186,16 +182,13 @@ namespace LcdMod.Client.Apps
             _rootGrid.Render(
                 CreateControlRenderContext(Host.Surface, AppConfig.Scale, Host.Surface.FontSize, GetCursorPosition()),
                 sprites);
+            ClearDirtyAfterRender();
             return sprites;
         }
 
         public override void Close()
         {
-            if (_lease != null)
-            {
-                _lease.Dispose();
-                _lease = null;
-            }
+            DisposeLease();
         }
 
         void BindControls(List<PowerSnapshot> snapshots)
@@ -208,7 +201,7 @@ namespace LcdMod.Client.Apps
             _consumptionBar.FillColor = GetLoadColor(loadRatio);
             _productionBar.Current = _latest.Producers.KnownCurrentOutputW;
             _productionBar.Max = _latest.MaxAvailableW;
-            _productionBar.FillColor = _config.HeaderColor;
+            _productionBar.FillColor = Config.HeaderColor;
             _chargeBar.Current = _latest.StoredEnergyWh;
             _chargeBar.Max = _latest.MaxStoredEnergyWh;
             _chargeBar.FillColor = GetBatteryIconColor(chargeRatio);
@@ -234,7 +227,29 @@ namespace LcdMod.Client.Apps
             _contentPages.LayoutScale = AppConfig.Scale;
             BindList(_consumerScrollPanel, _consumerWrapPanel);
             BindList(_producerScrollPanel, _producerWrapPanel);
-            BindList(_chargeScrollPanel, _chargeWrapPanel);
+            if (_chargePage.Parent != null)
+                BindList(_chargeScrollPanel, _chargeWrapPanel);
+        }
+
+        void SetChargeControlsVisible(bool visible)
+        {
+            _chargeBar.SetVisible(visible);
+            _chargeGraph.SetVisible(visible);
+            _chargeScrollPanel.SetVisible(visible);
+            _progressGrid.SetColumns(visible ? new[] { 1f, 1f, 1f } : new[] { 1f, 1f, 0f });
+
+            bool chargePageAttached = _chargePage.Parent != null;
+            if (visible)
+            {
+                if (!chargePageAttached)
+                    _contentPages.AddChild(_chargePage);
+                return;
+            }
+
+            _selectedRows.Remove(EnergyDashboardPowerCategory.Charge);
+            _hoverRows.Remove(EnergyDashboardPowerCategory.Charge);
+            if (chargePageAttached)
+                _contentPages.RemoveChild(_chargePage);
         }
 
         void BindList(ScrollPanel scrollPanel, VirtualizedWrapPanel<EnergyDashboardPowerRow> wrapPanel)
@@ -248,17 +263,36 @@ namespace LcdMod.Client.Apps
             scrollPanel.AutomaticScrollerWidthPixels = ScrollPanel.DefaultScrollerWidthPixels * scale;
             scrollPanel.ScrollStepPixels = rowH;
             Color fg = Host.Surface.ScriptForegroundColor;
-            scrollPanel.SetScrollBarColors(new Color(fg.R, fg.G, fg.B, 60), fg);
+            scrollPanel.ScrollBarTrackColor = new Color(fg.R, fg.G, fg.B, 60);
+            scrollPanel.ScrollBarThumbColor = fg;
             scrollPanel.SetVisible(true);
         }
 
         void CaptureLease()
         {
-            if (_lease != null || LcdModSessionComponent.Client == null ||
-                LcdModSessionComponent.Client.PowerData == null)
+            var client = LcdModSessionComponent.Client;
+            var powerData = client != null ? client.PowerData : null;
+            if (powerData == null)
                 return;
 
-            _lease = LcdModSessionComponent.Client.PowerData.Capture(Host.GridLogic, _config.GridLinkType);
+            var requester = Host.GridLogic;
+            var linkType = Config.GridLinkType;
+            if (_lease != null && _lease.Service != null &&
+                ReferenceEquals(_lease.Service.Requester, requester) &&
+                _lease.Service.LinkType == linkType)
+                return;
+
+            DisposeLease();
+            _lease = powerData.Capture(requester, linkType);
+        }
+
+        void DisposeLease()
+        {
+            if (_lease == null)
+                return;
+
+            _lease.Dispose();
+            _lease = null;
         }
 
         void BuildRows(List<PowerSubtypeSnapshot> entries, List<EnergyDashboardPowerRow> rows, double ratioDenominatorW,
@@ -334,7 +368,7 @@ namespace LcdMod.Client.Apps
             };
         }
 
-        ControlBase CreatePowerRowControl(EnergyDashboardPowerRow row)
+        ControlTemplate CreatePowerRowControl(EnergyDashboardPowerRow row)
         {
             return new EnergyPowerRowControl(Host)
             {
@@ -343,7 +377,7 @@ namespace LcdMod.Client.Apps
             };
         }
 
-        void BindPowerRowControl(ControlBase control, EnergyDashboardPowerRow row, int index)
+        void BindPowerRowControl(ControlTemplate control, EnergyDashboardPowerRow row, int index)
         {
             var rowControl = control as EnergyPowerRowControl;
             if (rowControl != null)
@@ -534,6 +568,25 @@ namespace LcdMod.Client.Apps
                    HasSubtypePowerData(snapshot.ChargeSubtypes);
         }
 
+        static bool HasChargeableDevices(PowerSnapshot snapshot)
+        {
+            if (snapshot.MaxStoredEnergyWh > 0.0)
+                return true;
+
+            var entries = snapshot.ChargeSubtypes;
+            if (entries == null)
+                return false;
+
+            for (int i = 0; i < entries.Count; i++)
+            {
+                var entry = entries[i];
+                if (entry != null && (entry.MaxW > 0.0 || entry.BlockCount > 0))
+                    return true;
+            }
+
+            return false;
+        }
+
         static bool HasSubtypePowerData(List<PowerSubtypeSnapshot> entries)
         {
             if (entries == null)
@@ -591,15 +644,16 @@ namespace LcdMod.Client.Apps
 
         int GetScaleTierIndex()
         {
-            int tier = _config.PowerHistoryTier >= 0 ? _config.PowerHistoryTier : _config.GraphWindowIndex;
+            var config = Config;
+            int tier = config.PowerHistoryTier >= 0 ? config.PowerHistoryTier : config.GraphWindowIndex;
             return Math.Max(0, Math.Min(tier, SCALE_TIER_COUNT - 1));
         }
 
         void SetScaleTierIndex(int tier)
         {
             tier = Math.Max(0, Math.Min(tier, SCALE_TIER_COUNT - 1));
-            _config.PowerHistoryTier = tier;
-            _config.GraphWindowIndex = tier;
+            Config.PowerHistoryTier = tier;
+            Config.GraphWindowIndex = tier;
             Host.RenderSprites();
         }
 
@@ -642,16 +696,16 @@ namespace LcdMod.Client.Apps
 
         Color GetLoadColor(float ratio)
         {
-            if (ratio >= 0.90f) return _config.ErrorColor;
-            if (ratio >= 0.70f) return _config.WarningColor;
-            return _config.HeaderColor;
+            if (ratio >= 0.90f) return Config.ErrorColor;
+            if (ratio >= 0.70f) return Config.WarningColor;
+            return Config.HeaderColor;
         }
 
         Color GetBatteryIconColor(float ratio)
         {
-            if (ratio < 0.15f) return _config.ErrorColor;
-            if (ratio < 0.35f) return _config.WarningColor;
-            return _config.HeaderColor;
+            if (ratio < 0.15f) return Config.ErrorColor;
+            if (ratio < 0.35f) return Config.WarningColor;
+            return Config.HeaderColor;
         }
 
         static Color ColorForSubtypeIndex(int index) => new Vector3(GetSubtypeHue(index), 0.85f, 0.75f).HSVtoColor();
@@ -695,12 +749,12 @@ namespace LcdMod.Client.Apps
         // todo: remove this when implement style support
         sealed class InsetCellPanel : Panel
         {
-            readonly ControlBase _child;
+            readonly ControlTemplate _child;
             readonly IAppHost _host;
             readonly float _horizontalMarginPixels;
             readonly float _verticalMarginPixels;
 
-            public InsetCellPanel(ControlBase child, IAppHost host, float horizontalMarginPixels,
+            public InsetCellPanel(ControlTemplate child, IAppHost host, float horizontalMarginPixels,
                 float verticalMarginPixels)
                 : base(default(RectangleF))
             {

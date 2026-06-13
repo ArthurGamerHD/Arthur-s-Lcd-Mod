@@ -11,6 +11,7 @@ using LcdMod.Client.Games.Chess.Enum;
 using LcdMod.Client.Games.Chess.TinyChessChallenge.Bots;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
+using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Client.Helpers;
 using LcdMod.Common.Helpers;
@@ -51,7 +52,7 @@ namespace LcdMod.Client.Games.Chess
 
         readonly Dictionary<byte, string> _textureCache = new Dictionary<byte, string>();
 
-        public List<ControlBase> Interactive { get; } = new List<ControlBase>();
+        public List<Control> Interactive { get; } = new List<Control>();
         public GameSurfaceScript.GameEnum Id => GameSurfaceScript.GameEnum.Chess;
 
         readonly GameThemeContext _themeContext;
@@ -68,6 +69,31 @@ namespace LcdMod.Client.Games.Chess
         }
 
         public Color GetThemeColor(string role) => _themeContext.GetThemeColor(role);
+
+        public IVisualStyleScope StyleParent
+        {
+            get { return _themeContext.StyleParent; }
+        }
+
+        public StyleTree Styles
+        {
+            get { return _themeContext.Styles; }
+        }
+
+        public ResourceTree Resources
+        {
+            get { return _themeContext.Resources; }
+        }
+
+        public bool IsDirty
+        {
+            get { return _themeContext.IsDirty; }
+        }
+
+        public void MarkDirty()
+        {
+            _themeContext.MarkDirty();
+        }
 
         static string UnpackTexture(string packed)
         {
@@ -836,7 +862,7 @@ namespace LcdMod.Client.Games.Chess
             {
                 _boardCellEntries[index] = new RectangleControl(_gridCells[index], CursorType.Default, index)
                 {
-                    CustomRender = delegate(ControlBase entry, ControlRenderContext context, List<MySprite> sprites)
+                    CustomRender = delegate(ControlTemplate entry, ControlRenderContext context, List<MySprite> sprites)
                     {
                         RenderBoardCell(sprites, (int)entry.DataContext);
                     }
@@ -853,7 +879,7 @@ namespace LcdMod.Client.Games.Chess
                     CursorType.Hand,
                     _overlayControlEntries.Count)
                 {
-                    CustomRender = delegate(ControlBase entry, ControlRenderContext context, List<MySprite> sprites)
+                    CustomRender = delegate(ControlTemplate entry, ControlRenderContext context, List<MySprite> sprites)
                     {
                         _overlayOverlay?.RenderBox(sprites, (int)entry.DataContext);
                     }
@@ -1031,6 +1057,17 @@ namespace LcdMod.Client.Games.Chess
         public void GameOverMessage()
         {
             _script.ShowMessageBox("Game Over!", "Play again?", "New Game", "Dismiss", (o, o1) => NewGame());
+        }
+        
+        public IReadOnlyList<Control> Children { get; set; }
+
+        public bool HasVisibleItems()
+        {
+            return true;
+        }
+
+        public void OnMouseScroll(int delta, ref bool handled)
+        {
         }
     }
 }

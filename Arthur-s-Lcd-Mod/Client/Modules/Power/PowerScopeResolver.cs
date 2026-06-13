@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using LcdMod.Client.Grid;
+using LcdMod.Client.GridData;
 using VRage.Game.ModAPI;
 
 namespace LcdMod.Client.Modules.Power

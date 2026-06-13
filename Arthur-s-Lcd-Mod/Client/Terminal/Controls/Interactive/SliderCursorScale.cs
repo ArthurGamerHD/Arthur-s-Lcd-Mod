@@ -1,10 +1,11 @@
 using System.Text;
 using LcdMod.Client.Config;
+using LcdMod.Common.Config.Models;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
-using ScreenConfigGeneral = LcdMod.Common.Config.Models.ScreenConfigGeneral;
-using ScreenConfigInteractive = LcdMod.Common.Config.Models.ScreenConfigInteractive;
+
+
 
 namespace LcdMod.Client.Terminal.Controls.Interactive
 {
@@ -32,7 +33,7 @@ namespace LcdMod.Client.Terminal.Controls.Interactive
 
         void Setter(IMyTerminalBlock block, float value)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigInteractive;
+            var config = ConfigManager.GetConfigForCurrentScreen(block);
             if (config == null)
                 return;
 
@@ -42,7 +43,7 @@ namespace LcdMod.Client.Terminal.Controls.Interactive
 
         float Getter(IMyTerminalBlock block)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigInteractive;
+            var config = ConfigManager.GetConfigForCurrentScreen(block);
             if (config == null)
                 return 1;
 

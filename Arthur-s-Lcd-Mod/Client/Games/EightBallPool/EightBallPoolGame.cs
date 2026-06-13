@@ -7,6 +7,7 @@ using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui.ControlsTemplates;
+using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
@@ -78,6 +79,31 @@ namespace LcdMod.Client.Games.EightBallPool
 
         public Color GetThemeColor(string role) => _themeContext.GetThemeColor(role);
 
+        public IVisualStyleScope StyleParent
+        {
+            get { return _themeContext.StyleParent; }
+        }
+
+        public StyleTree Styles
+        {
+            get { return _themeContext.Styles; }
+        }
+
+        public ResourceTree Resources
+        {
+            get { return _themeContext.Resources; }
+        }
+
+        public bool IsDirty
+        {
+            get { return _themeContext.IsDirty; }
+        }
+
+        public void MarkDirty()
+        {
+            _themeContext.MarkDirty();
+        }
+
         readonly Color _feltColor = new Color(24, 105, 64);
         readonly Color _railColor = new Color(82, 43, 22);
         readonly Color _bevelLight = new Color(120, 127, 135);
@@ -130,7 +156,7 @@ namespace LcdMod.Client.Games.EightBallPool
         RectangleControl _tableControl;
         readonly object _tableContext = new object();
 
-        public List<ControlBase> Interactive { get; private set; }
+        public List<Control> Interactive { get; private set; }
         public GameSurfaceScript.GameEnum Id => GameSurfaceScript.GameEnum.EightBallPool;
 
         struct Ball
@@ -146,7 +172,7 @@ namespace LcdMod.Client.Games.EightBallPool
             _panel = panel;
             _script = script;
             _themeContext = new GameThemeContext(script);
-            Interactive = new List<ControlBase>();
+            Interactive = new List<Control>();
             InitializeBallNumbers();
             ReloadProgram();
             BuildGlobalMenu();
@@ -2579,6 +2605,17 @@ namespace LcdMod.Client.Games.EightBallPool
         static string FormatLoc(string key, params object[] args)
         {
             return string.Format(Loc(key), args);
+        }
+        
+        public IReadOnlyList<Control> Children { get; set; }
+
+        public bool HasVisibleItems()
+        {
+            return true;
+        }
+
+        public void OnMouseScroll(int delta, ref bool handled)
+        {
         }
     }
 }

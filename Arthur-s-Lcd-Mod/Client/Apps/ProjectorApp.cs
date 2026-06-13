@@ -11,6 +11,7 @@ using LcdMod.Client.Gui.ControlsTemplates.Dialogs;
 using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.ControlsTemplates.Progress;
+using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
@@ -28,7 +29,7 @@ using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
 
 namespace LcdMod.Client.Apps
 {
-    internal sealed class ProjectorApp : ItemsAppBase
+    internal sealed class ProjectorApp : ItemsApp
     {
         public const string TITLE = "DisplayName_Block_Projector";
 
@@ -69,10 +70,7 @@ namespace LcdMod.Client.Apps
         float _availableX;
         bool _projectorDataInitialized;
         Button _craftAllButton;
-        ControlStyle _craftAllButtonStyle;
-        ControlStyle _craftAllDisabledButtonStyle;
         Button _toggleViewButton;
-        ControlStyle _toggleViewButtonStyle;
 
         const float PIE_RADIUS = 40;
         const string CRAFT_ALL_TEXT = "Craft all";
@@ -516,8 +514,8 @@ namespace LcdMod.Client.Apps
             EnsureCraftAllButton(layout.ButtonRect);
             ConfigureCraftAllButton(enabled);
 
-            if (!InteractiveList.Contains(_craftAllButton))
-                InteractiveList.Add(_craftAllButton);
+            if (!Children.Contains(_craftAllButton))
+                _children.Add(_craftAllButton);
 
             _craftAllButton.Render(CreateItemRenderContext(), frame);
         }
@@ -529,11 +527,11 @@ namespace LcdMod.Client.Apps
 
             if (_toggleViewButton == null)
             {
-                _toggleViewButton = new Button(layout.ToggleRect, new ButtonModel
+                _toggleViewButton = AddChild(new Button(layout.ToggleRect, new ButtonModel
                 {
                     Text = GetToggleViewButtonText(),
                     Clicked = OnToggleViewClicked
-                });
+                }));
             }
             else
             {
@@ -549,29 +547,13 @@ namespace LcdMod.Client.Apps
 
             _toggleViewButton.SetVisible(true);
             _toggleViewButton.SetCursor(CursorType.Hand);
-            _toggleViewButton.SetStyle(GetToggleViewButtonStyle());
+            _toggleViewButton.SetStyleId("Primary");
             _toggleViewButton.CustomRender = RenderCraftAllButton;
 
-            if (!InteractiveList.Contains(_toggleViewButton))
-                InteractiveList.Add(_toggleViewButton);
+            if (!Children.Contains(_toggleViewButton))
+                _children.Add(_toggleViewButton);
 
             _toggleViewButton.Render(CreateItemRenderContext(), frame);
-        }
-
-        ControlStyle GetToggleViewButtonStyle()
-        {
-            if (_toggleViewButtonStyle == null)
-                _toggleViewButtonStyle = ControlStyle.FromThemeRoles(
-                    Constants.ON_SECONDARY_CONTAINER,
-                    Constants.SECONDARY_CONTAINER,
-                    Constants.SECONDARY_CONTAINER + Constants.HOVER,
-                    Constants.ON_SECONDARY_CONTAINER,
-                    Theme);
-            else
-                _toggleViewButtonStyle.ThemeColors = Theme;
-
-            _toggleViewButtonStyle.BorderRadiusPixels = Border.DEFAULT_RADIUS_PIXELS;
-            return _toggleViewButtonStyle;
         }
 
         void OnToggleViewClicked(ButtonModel model, object sender)
@@ -592,11 +574,11 @@ namespace LcdMod.Client.Apps
         {
             if (_craftAllButton == null)
             {
-                _craftAllButton = new Button(rect, new ButtonModel
+                _craftAllButton = AddChild(new Button(rect, new ButtonModel
                 {
                     Text = CRAFT_ALL_TEXT,
                     Clicked = OnCraftAllClicked
-                });
+                }));
             }
             else
             {
@@ -616,38 +598,23 @@ namespace LcdMod.Client.Apps
             }
 
             _craftAllButton.SetCursor(enabled ? CursorType.Hand : CursorType.Default);
-            _craftAllButton.SetStyle(GetCraftAllButtonStyle(enabled));
+            _craftAllButton.SetStyleId(enabled ? "Primary" : "Disabled");
+            _craftAllButton.SetEnabled(enabled);
             _craftAllButton.CustomRender = RenderCraftAllButton;
         }
 
-        ControlStyle GetCraftAllButtonStyle(bool enabled)
-        {
-            if (enabled)
-            {
-                if (_craftAllButtonStyle == null)
-                    _craftAllButtonStyle = Button.CreatePrimaryButtonStyle(Theme);
-                else
-                    _craftAllButtonStyle.ThemeColors = Theme;
-
-                return _craftAllButtonStyle;
-            }
-
-            if (_craftAllDisabledButtonStyle == null)
-                _craftAllDisabledButtonStyle = Button.CreateDisabledButtonStyle(Theme);
-            else
-                _craftAllDisabledButtonStyle.ThemeColors = Theme;
-
-            return _craftAllDisabledButtonStyle;
-        }
-
-        void RenderCraftAllButton(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderCraftAllButton(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
         {
             var model = control.DataContext as ButtonModel;
             var enabled = model == null || model.Enabled;
             var rect = control.Bounds;
             var hover = enabled && rect.Contains(context.CursorPosition);
-            var buttonColor = context.Style.GetPanelColor(hover);
-            var textColor = context.Style.GetTextColor(hover);
+            var button = control as Button;
+            var defaultButtonColor = button != null ? button.BackgroundColor : control.BackgroundColor;
+            var buttonColor = hover
+                ? control.GetResourceColor(ThemeResources.AccentColor, defaultButtonColor)
+                : defaultButtonColor;
+            var textColor = control.TextColor;
             var text = model == null || string.IsNullOrEmpty(model.Text) ? CRAFT_ALL_TEXT : model.Text;
             var textScale = GetCraftAllButtonTextScale(context.Scale, context.FontScale);
 
@@ -853,7 +820,7 @@ namespace LcdMod.Client.Apps
 
             try
             {
-                LcdMod.Client.Grid.GridLogic.EnsureBlueprintResultDatabase();
+                LcdMod.Client.GridData.GridLogic.EnsureBlueprintResultDatabase();
 
                 foreach (var component in componentNeeded)
                 {
@@ -862,7 +829,7 @@ namespace LcdMod.Client.Apps
 
                     MyDefinitionId componentId = component.Key;
                     MyBlueprintDefinitionBase blueprint;
-                    if (!LcdMod.Client.Grid.GridLogic.PrimaryBlueprintByCreatedItem.TryGetValue(componentId, out blueprint) ||
+                    if (!LcdMod.Client.GridData.GridLogic.PrimaryBlueprintByCreatedItem.TryGetValue(componentId, out blueprint) ||
                         blueprint == null)
                         continue;
 

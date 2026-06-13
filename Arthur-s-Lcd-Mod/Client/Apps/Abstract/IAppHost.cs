@@ -1,11 +1,11 @@
 using System.Collections.Generic;
 using System.Text;
-using LcdMod.Client.Grid;
+using LcdMod.Client.GridData;
 using LcdMod.Common.Config.Models;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
 using VRageMath;
-using ScreenConfigGeneral = LcdMod.Common.Config.Models.ScreenConfigGeneral;
+
 using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 
 namespace LcdMod.Client.Apps.Abstract

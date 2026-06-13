@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
-using LcdMod.Common.Helpers;
+using LcdMod.Client.Gui.Styling;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 
@@ -26,31 +26,19 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Inputs
         {
             var rect = GetViewBox();
             var hovered = IsPointerOver;
-            var backgroundColor = context.Style.GetPanelColor(hovered);
+            var backgroundColor = GetRenderBackgroundColor();
             Border.CreateSpritesFromRect(rect, sprites, backgroundColor,
                 radiusScale: context.Scale);
 
             // inner input container using a different container role and use its matching on* text role.
             var innerRect = Inset(rect, GetInnerPadding(rect));
-            var innerContainerColor = context.GetThemeColor(
-                hovered ? Constants.SECONDARY_CONTAINER + Constants.HOVER : Constants.SECONDARY_CONTAINER);
-            var innerTextColor = context.GetThemeColor(Constants.ON_SECONDARY_CONTAINER);
+            var innerContainerColor = ResolveColor(ThemeResources.SecondaryContainerColor);
+            var innerTextColor = ResolveColor(ThemeResources.OnSecondaryContainerColor);
 
             Border.CreateSpritesFromRect(innerRect, sprites, innerContainerColor,
                 radiusScale: context.Scale);
 
-            var innerStyle = new ControlStyle(innerTextColor, innerContainerColor)
-            {
-                BorderRadiusPixels = context.Style.BorderRadiusPixels
-            };
-
-            RenderDefaultText(innerRect, new ControlRenderContext(
-                context.Surface,
-                context.Scale,
-                context.FontScale,
-                innerStyle,
-                context.Theme,
-                context.CursorPosition), sprites);
+            RenderDefaultText(innerRect, context, sprites, innerTextColor);
         }
 
         static float GetInnerPadding(RectangleF rect)

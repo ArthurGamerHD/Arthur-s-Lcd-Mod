@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
+using LcdMod.Client.Gui.Styling;
 using LcdMod.Common.Helpers;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
@@ -12,7 +13,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
     /// The state is queried while rendering so the button always reflects the
     /// current application mode without maintaining a second local copy.
     /// </summary>
-    public class ToggleButton : Button
+    public partial class ToggleButton : Button
     {
         public ToggleButton(RectangleF bounds, ButtonModel model = null)
             : base(bounds, model)
@@ -31,50 +32,24 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
         /// </summary>
         public Func<bool> GetState { get; set; }
 
-        /// <summary>
-        /// Optional selected-state style. When omitted, a themed secondary
-        /// container style is used so selected buttons remain visually distinct.
-        /// </summary>
-        public ControlStyle SelectedStyle { get; set; }
-
         public bool IsSelected
         {
             get { return GetState != null && GetState(); }
         }
 
-        public static ControlStyle CreateSelectedButtonStyle()
+        protected override StyleState GetStyleState()
         {
-            return CreateSelectedButtonStyle(null);
-        }
+            StyleState state = base.GetStyleState();
 
-        public static ControlStyle CreateSelectedButtonStyle(IReadOnlyDictionary<string, Color> theme)
-        {
-            var style = ControlStyle.FromThemeRoles(
-                Constants.ON_SECONDARY_CONTAINER,
-                Constants.SECONDARY_CONTAINER,
-                Constants.SECONDARY_CONTAINER + Constants.HOVER,
-                Constants.ON_SECONDARY_CONTAINER,
-                theme);
-            style.BorderRadiusPixels = Border.DEFAULT_RADIUS_PIXELS;
-            return style;
+            if (IsSelected)
+                state |= StyleState.Active | StyleState.Selected;
+
+            return state;
         }
 
         protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
         {
-            if (!IsSelected)
-            {
-                base.RenderDefault(context, sprites);
-                return;
-            }
-
-            var selectedContext = new ControlRenderContext(
-                context.Surface,
-                context.Scale,
-                context.FontScale,
-                SelectedStyle ?? CreateSelectedButtonStyle(context.Theme),
-                context.Theme,
-                context.CursorPosition);
-            base.RenderDefault(selectedContext, sprites);
+            base.RenderDefault(context, sprites);
         }
     }
 }

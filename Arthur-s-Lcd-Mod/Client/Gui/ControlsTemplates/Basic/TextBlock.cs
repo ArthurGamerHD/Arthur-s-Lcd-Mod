@@ -41,7 +41,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
         public bool Ellipsize { get; set; }
         public TextAlignment HorizontalAlignment { get; set; }
         public TextBlockVerticalAlignment VerticalAlignment { get; set; }
-        public Color? TextColor { get; set; }
+        public new Color? TextColor { get; set; }
 
         protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
         {
@@ -54,7 +54,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
 
             string fontId = string.IsNullOrEmpty(FontId) ? "White" : FontId;
             float scale = Math.Max(0.01f, context.Scale * context.FontScale * FontScale);
-            Color color = TextColor ?? context.Surface.ScriptForegroundColor;
+            Color color = TextColor ?? base.TextColor;
             if (Wrapping == TextBlockWrapping.Wrap)
                 RenderWrapped(rect, context, sprites, fontId, scale, color);
             else

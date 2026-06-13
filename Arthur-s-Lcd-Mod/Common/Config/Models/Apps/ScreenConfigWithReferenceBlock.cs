@@ -6,7 +6,7 @@ namespace LcdMod.Common.Config.Models.Apps
     [ProtoContract]
     [ProtoInclude(106, typeof(ScreenConfigOreScanner))]
     [XmlInclude(typeof(ScreenConfigOreScanner))]
-    public partial class ScreenConfigWithReferenceBlock : ScreenConfigColorable
+    public partial class ScreenConfigWithReferenceBlock : ScreenConfigGeneral
     {
         [ProtoMember(8)] public virtual long ReferenceBlock { get; set; }
 

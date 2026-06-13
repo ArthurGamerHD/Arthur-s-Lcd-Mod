@@ -1,9 +1,10 @@
 using System.Text;
 using LcdMod.Client.Config;
+using LcdMod.Common.Config.Models;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
-using ScreenConfigGeneral = LcdMod.Common.Config.Models.ScreenConfigGeneral;
+
 
 namespace LcdMod.Client.Terminal.Controls.Scale
 {

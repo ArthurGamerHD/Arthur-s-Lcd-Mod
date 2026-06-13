@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
+using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
@@ -43,7 +44,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
         {
             _layoutScale = Math.Max(0f, scale);
             SetRect(bounds);
-            SetStyle(style);
             ArrangeOptionButtons();
             SetVisible(true);
         }
@@ -97,7 +97,17 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
 
         protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
         {
-            RenderButton(Bounds, GetLabel(_selectedValue), true, false, Enabled && IsPointerOver, context, sprites);
+            RenderButton(this, Bounds, GetLabel(_selectedValue), true, false, Enabled && IsPointerOver, context, sprites);
+        }
+
+        protected override StyleState GetStyleState()
+        {
+            var state = base.GetStyleState();
+
+            if (IsOpen)
+                state |= StyleState.Opened;
+
+            return state;
         }
 
         protected override bool CanResolveChildren(Vector2 point, bool selfHit)
@@ -105,7 +115,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
             return Enabled && (selfHit || IsOpen);
         }
 
-        public override void AddOverlayEntries(List<ControlBase> entries)
+        public override void AddOverlayEntries(List<Control> entries)
         {
             if (!Visible || entries == null || !IsOpen)
                 return;
@@ -184,7 +194,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
                 var offset = (i + 1) * Bounds.Height + (i + 1) * gap;
                 var y = OpenDirection == ComboBoxOpenDirection.Up ? Bounds.Y - offset : Bounds.Y + offset;
                 button.SetRect(new RectangleF(Bounds.X, y, Bounds.Width, Bounds.Height));
-                button.SetStyle(Style);
                 button.SetCursor(CursorType.Hand);
                 button.CustomRender = RenderOptionButton;
             }
@@ -198,24 +207,28 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
                 _optionButtons[i].SetVisible(Enabled && IsOpen && i < _options.Count);
         }
 
-        void RenderOptionButton(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderOptionButton(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
         {
             var model = control.DataContext as ComboBoxOptionModel<T>;
             var selected = model != null && EqualityComparer<T>.Default.Equals(_selectedValue, model.Value);
-            RenderButton(control.Bounds, model != null ? model.Text : string.Empty, false, selected,
+            RenderButton(control, control.Bounds, model != null ? model.Text : string.Empty, false, selected,
                 control.IsPointerOver, context, sprites);
         }
 
-        void RenderButton(RectangleF rect, string text, bool drawArrow, bool selected, bool hovered,
+        void RenderButton(ControlTemplate control, RectangleF rect, string text, bool drawArrow, bool selected, bool hovered,
             ControlRenderContext context, List<MySprite> sprites)
         {
             var scale = Math.Max(0.01f, _layoutScale);
             var active = hovered || selected;
-            var panelColor = context.Style.GetPanelColor(active);
-            var textColor = context.Style.GetTextColor(active);
+            var panelColor = active
+                ? control.GetResourceColor(ThemeResources.AccentColor, control.BackgroundColor)
+                : control.BackgroundColor;
+            var textColor = control.TextColor;
             var textScale = 0.58f * scale * context.FontScale;
 
-            Border.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: scale);
+            Border.CreateSpritesFromRect(rect, sprites, panelColor,
+                radiusPixels: control.BorderRadiusPixels,
+                radiusScale: scale);
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,

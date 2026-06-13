@@ -116,14 +116,15 @@ namespace LcdMod.Client.Apps
                 return lines;
             }
 
-            var activeEntries = new HashSet<ControlBase>();
+            var activeEntries = new HashSet<ControlTemplate>();
             var activeEntryList = interactive.InteractiveEntries;
             if (activeEntryList != null)
             {
                 foreach (var entry in activeEntryList)
                 {
-                    if (entry != null)
-                        activeEntries.Add(entry);
+                    var control = entry as ControlTemplate;
+                    if (control != null)
+                        activeEntries.Add(control);
                 }
             }
 
@@ -141,11 +142,14 @@ namespace LcdMod.Client.Apps
             }
 
             int index = 0;
-            var visited = new HashSet<ControlBase>();
+            var visited = new HashSet<ControlTemplate>();
             foreach (var entry in entries)
             {
-                bool disabled = !activeEntries.Contains(entry);
-                AppendControl(lines, entry, index.ToString(), 0, visited, disabled);
+                var control = entry as ControlTemplate;
+                if(control == null)
+                    continue;
+                bool disabled = !activeEntries.Contains(control);
+                AppendControl(lines, control, index.ToString(), 0, visited, disabled);
                 index++;
             }
 
@@ -154,10 +158,10 @@ namespace LcdMod.Client.Apps
 
         static void AppendControl(
             List<DebugLine> lines,
-            ControlBase control,
+            ControlTemplate control,
             string path,
             int depth,
-            HashSet<ControlBase> visited,
+            HashSet<ControlTemplate> visited,
             bool disabled)
         {
             if (control == null || !control.Visible)
@@ -187,10 +191,10 @@ namespace LcdMod.Client.Apps
                 return;
 
             for (int i = 0; i < children.Count; i++)
-                AppendControl(lines, children[i], path + "." + i, depth + 1, visited, disabled);
+                AppendControl(lines, children[i] as ControlTemplate, path + "." + i, depth + 1, visited, disabled);
         }
 
-        static string BuildControlText(ControlBase control, bool disabled)
+        static string BuildControlText(ControlTemplate control, bool disabled)
         {
             var sb = new StringBuilder();
             sb.Append(control.GetType().Name);
@@ -233,7 +237,7 @@ namespace LcdMod.Client.Apps
             return sb.ToString();
         }
 
-        static string GetOverlayKind(ControlBase control)
+        static string GetOverlayKind(ControlTemplate control)
         {
             if (control == null)
                 return string.Empty;
@@ -262,7 +266,7 @@ namespace LcdMod.Client.Apps
             return terminalBlock != null ? terminalBlock.CustomName ?? string.Empty : target.Block.DisplayNameText ?? string.Empty;
         }
 
-        static string GetFlags(ControlBase control)
+        static string GetFlags(ControlTemplate control)
         {
             var sb = new StringBuilder(6);
             if (control.CanPrimaryClick)
@@ -342,6 +346,17 @@ namespace LcdMod.Client.Apps
         public List<MySprite> GetSprites()
         {
             return new List<MySprite>();
+        }
+
+        public IReadOnlyList<Control> Children { get; set; }
+
+        public bool HasVisibleItems()
+        {
+            return true;
+        }
+
+        public void OnMouseScroll(int delta, ref bool handled)
+        {
         }
     }
 }

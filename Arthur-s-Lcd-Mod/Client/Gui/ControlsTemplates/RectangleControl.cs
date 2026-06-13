@@ -4,7 +4,7 @@ using VRageMath;
 
 namespace LcdMod.Client.Gui.ControlsTemplates
 {
-    public class RectangleControl : ControlBase
+    public class RectangleControl : ControlTemplate
     {
         public RectangleControl(RectangleF bounds, CursorType? cursor = null, object dataContext = null,
             Action<object, object> onClick = null, InteractiveTooltip tooltip = null)

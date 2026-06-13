@@ -35,7 +35,7 @@ namespace LcdMod.Client.SurfaceScripts
         public const string TITLE = "LcdMod_RenderProxy";
 
         List<MySprite> _sprites = new List<MySprite>();
-        readonly List<ControlBase> _parentInteractiveEntries = new List<ControlBase>();
+        readonly List<Control> _parentInteractiveEntries = new List<Control>();
 
         protected override ConfigKind ConfigKind => ConfigKind.RenderProxy;
         protected override bool ClipToBounds => true;
@@ -43,7 +43,7 @@ namespace LcdMod.Client.SurfaceScripts
         protected override string DefaultTitle => TITLE;
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
 
-        readonly List<ControlBase> _interactiveListFallback = new List<ControlBase>();
+
         static readonly List<IMySlimBlock> AutoCascadeBlocks = new List<IMySlimBlock>();
         static readonly HashSet<long> ActiveRotationCascadeHosts = new HashSet<long>();
         static SurfaceCollection _activeInstanceCollection;
@@ -86,9 +86,9 @@ namespace LcdMod.Client.SurfaceScripts
             }
         }
 
-        IAppInteractive AppInteractive => App as IAppInteractive;
+        IApp AppInteractive => App;
 
-        public override List<ControlBase> InteractiveList
+        public override List<Control> InteractiveList
         {
             get
             {
@@ -102,10 +102,10 @@ namespace LcdMod.Client.SurfaceScripts
 
                 var appInteractive = AppInteractive;
                 if (appInteractive != null)
-                    return appInteractive.InteractiveList;
+                    return appInteractive.Children as List<Control>;
 
                 var game = App as IGame;
-                return game != null ? game.Interactive : _interactiveListFallback;
+                return game?.Interactive;
             }
         }
 
@@ -1340,7 +1340,7 @@ namespace LcdMod.Client.SurfaceScripts
             return base.HasTooltipInputAtCursor(rightClick);
         }
 
-        public override bool TryHandleTooltipActivationClick(bool rightClick, out ControlBase tooltipParent)
+        public override bool TryHandleTooltipActivationClick(bool rightClick, out ControlTemplate tooltipParent)
         {
             InteractiveSurfaceScript parentInteractive;
             if (TryGetParentInteractive(out parentInteractive))
@@ -1349,7 +1349,7 @@ namespace LcdMod.Client.SurfaceScripts
             return base.TryHandleTooltipActivationClick(rightClick, out tooltipParent);
         }
 
-        public override bool IsInsideContainer(ControlBase entry, Vector2 position)
+        public override bool IsInsideContainer(ControlTemplate entry, Vector2 position)
         {
             InteractiveSurfaceScript parentInteractive;
             if (TryGetParentInteractive(out parentInteractive))

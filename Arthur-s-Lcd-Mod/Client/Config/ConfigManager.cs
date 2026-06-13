@@ -12,7 +12,7 @@ using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
-using ScreenConfigGeneral = LcdMod.Common.Config.Models.ScreenConfigGeneral;
+
 
 namespace LcdMod.Client.Config
 {
@@ -129,7 +129,7 @@ namespace LcdMod.Client.Config
             provider = CreateSettings(block);
             screen = EnsureScreenConfigType(provider, index, requestedConfigKind);
             provider.BindRuntimeParent(block as IMyTerminalBlock);
-            (screen as ScreenConfigColorable)?.ResetDefaultColors();
+            screen?.ResetDefaultColors();
             Save(block, provider);
         }
 
@@ -173,7 +173,7 @@ namespace LcdMod.Client.Config
             if (current.GetType() == requested.GetType())
                 return current;
 
-            if (requestedConfigKind == ConfigKind.Interactive && current is ScreenConfigButtonPanel)
+            if (requestedConfigKind == ConfigKind.General && current is ScreenConfigButtonPanel)
                 return current;
 
             requested.Clone(current);

@@ -21,7 +21,7 @@ namespace LcdMod.Client.SurfaceScripts
 
         readonly List<MySprite> _sprites = new List<MySprite>();
 
-        protected override ConfigKind ConfigKind => ConfigKind.Colorable;
+        protected override ConfigKind ConfigKind => ConfigKind.General;
         protected override string DefaultTitle => TITLE;
         public override IApp App => null;
 

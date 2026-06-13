@@ -6,7 +6,7 @@ using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
 
 namespace LcdMod.Client.Apps
 {
-    internal sealed class InventoryApp : ItemsAppBase
+    internal sealed class InventoryApp : ItemsApp
     {
         public const string NAME = "Inventory";
 

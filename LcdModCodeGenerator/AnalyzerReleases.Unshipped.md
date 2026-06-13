@@ -5,4 +5,4 @@
 Rule ID | Category | Severity | Notes
 --------|----------|----------|-------
 LcdMOD004 | LcdModCodeGenerator | Warning | Client and server code must not import each other
-LcdMOD005 | LcdModCodeGenerator | Warning | Interactive app or surface config must inherit ScreenConfigInteractive
+LcdMOD005 | LcdModCodeGenerator | Warning | Interactive app or surface config must inherit ScreenConfigGeneral

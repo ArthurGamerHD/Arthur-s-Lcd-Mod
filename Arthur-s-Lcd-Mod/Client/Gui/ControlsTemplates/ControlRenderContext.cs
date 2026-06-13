@@ -1,10 +1,11 @@
 using System.Collections.Generic;
+using LcdMod.Client.Gui.Styling;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 
 namespace LcdMod.Client.Gui.ControlsTemplates
 {
-    public delegate void InteractiveRenderHandler(ControlBase entry, ControlRenderContext context, List<MySprite> sprites);
+    public delegate void InteractiveRenderHandler(ControlTemplate entry, ControlRenderContext context, List<MySprite> sprites);
     
     public sealed class ControlRenderContext
     {
@@ -12,10 +13,25 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             Sandbox.ModAPI.Ingame.IMyTextSurface surface,
             float scale,
             float fontScale,
+            Vector2 cursorPosition,
+            IVisualStyleScope styleScope)
+        {
+            Surface = surface;
+            Scale = scale;
+            FontScale = fontScale;
+            CursorPosition = cursorPosition;
+            StyleScope = styleScope;
+            Style = new ControlStyle(Color.White, Color.Transparent);
+        }
+
+        public ControlRenderContext(
+            Sandbox.ModAPI.Ingame.IMyTextSurface surface,
+            float scale,
+            float fontScale,
             Color textColor,
             Color panelColor,
             Vector2 cursorPosition)
-            : this(surface, scale, fontScale, new ControlStyle(textColor, panelColor), null, cursorPosition)
+            : this(surface, scale, fontScale, new ControlStyle(textColor, panelColor), null, cursorPosition, null)
         {
         }
 
@@ -25,7 +41,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             float fontScale,
             ControlStyle style,
             Vector2 cursorPosition)
-            : this(surface, scale, fontScale, style, null, cursorPosition)
+            : this(surface, scale, fontScale, style, null, cursorPosition, null)
         {
         }
 
@@ -36,6 +52,18 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             ControlStyle style,
             IReadOnlyDictionary<string, Color> theme,
             Vector2 cursorPosition)
+            : this(surface, scale, fontScale, style, theme, cursorPosition, null)
+        {
+        }
+
+        public ControlRenderContext(
+            Sandbox.ModAPI.Ingame.IMyTextSurface surface,
+            float scale,
+            float fontScale,
+            ControlStyle style,
+            IReadOnlyDictionary<string, Color> theme,
+            Vector2 cursorPosition,
+            IVisualStyleScope styleScope)
         {
             Surface = surface;
             Scale = scale;
@@ -44,6 +72,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             Theme = resolvedStyle.ThemeColors ?? theme;
             Style = resolvedStyle.ResolveTheme(Theme);
             CursorPosition = cursorPosition;
+            StyleScope = styleScope;
         }
 
         public Sandbox.ModAPI.Ingame.IMyTextSurface Surface { get; private set; }
@@ -51,6 +80,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         public float FontScale { get; private set; }
         public ControlStyle Style { get; private set; }
         public IReadOnlyDictionary<string, Color> Theme { get; private set; }
+        public IVisualStyleScope StyleScope { get; private set; }
         public Color TextColor => Style.GetTextColor(false);
         public Color PanelColor => Style.GetPanelColor(false);
         public Color HoverTextColor => Style.GetTextColor(true);
@@ -65,7 +95,20 @@ namespace LcdMod.Client.Gui.ControlsTemplates
                 FontScale,
                 style,
                 Theme,
-                CursorPosition);
+                CursorPosition,
+                StyleScope);
+        }
+
+        public ControlRenderContext WithStyleScope(IVisualStyleScope styleScope)
+        {
+            return new ControlRenderContext(
+                Surface,
+                Scale,
+                FontScale,
+                Style,
+                Theme,
+                CursorPosition,
+                styleScope);
         }
 
         public Color GetThemeColor(string role)
@@ -78,6 +121,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates
                 throw new ResourceKeyNotFoundException(role, "Theme");
 
             return color;
+        }
+
+        public Color ResolveColor(ResourceKey<Color> key)
+        {
+            Color value;
+            if (ScopedResourceResolver.TryResolve(StyleScope, key, out value))
+                return value;
+
+            throw new ResourceKeyNotFoundException(key.Name, "ResourceTree");
         }
     }
 }

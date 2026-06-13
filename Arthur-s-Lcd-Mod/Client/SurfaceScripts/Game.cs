@@ -62,9 +62,9 @@ namespace LcdMod.Client.SurfaceScripts
         public override IApp App => _currentGame;
         IGame _currentGame;
 
-        readonly List<ControlBase> _emptyInteractiveList = new List<ControlBase>();
+        readonly List<Control> _emptyInteractiveList = new List<Control>();
 
-        public override List<ControlBase> InteractiveList => _currentGame != null ? _currentGame.Interactive : _emptyInteractiveList;
+        public override List<Control> InteractiveList => _currentGame != null ? _currentGame.Interactive : _emptyInteractiveList;
 
         GlobalMenuEntry _rootMenu;
 
@@ -191,7 +191,7 @@ namespace LcdMod.Client.SurfaceScripts
 
     internal interface IGame : IThemedApp
     {
-        List<ControlBase> Interactive { get; }
+        List<Control> Interactive { get; }
         GameSurfaceScript.GameEnum Id { get; }
         void Save();
         void Load();

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using LcdMod.Client.Apps;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui.ControlsTemplates.Progress;
+using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Gui.UserControls.Power;
 using LcdMod.Client.Helpers;
@@ -63,9 +64,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
                 float centerY = bounds.Y + iconSize / 2f;
                 var center = new Vector2(centerX, centerY);
 
-                var backgroundColor = context.GetThemeColor(BACKGROUND);
-                var containerBackgroundColor = context.GetThemeColor(SECONDARY_CONTAINER);
-                var outlineColor = context.GetThemeColor(OUTLINE);
+                var backgroundColor = context.ResolveColor(ThemeResources.BackgroundColor);
+                var containerBackgroundColor = context.ResolveColor(ThemeResources.SecondaryContainerColor);
+                var outlineColor = context.ResolveColor(ThemeResources.BorderColor);
                 DrawFarmIcon(sprites, entry, center, iconSize, outlineColor, containerBackgroundColor);
 
                 float barWidth = Math.Max(1f, iconSize * 0.62f);
@@ -170,7 +171,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
             {
                 Color color;
                 if (waterRatio < .3f)
-                    color = config != null ? config.ErrorColor : context.GetThemeColor(ERROR);
+                    color = config != null ? config.ErrorColor : context.ResolveColor(ThemeResources.ErrorColor);
                 else if (waterRatio < .6f)
                     // TODO: move warning/error bar colors into the theme.
                     color = config != null ? config.WarningColor : new Color(224, 160, 16);
@@ -182,7 +183,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
 
             ScreenConfigPower GetFarmConfig()
             {
-                for (ControlBase node = this; node != null; node = node.Parent)
+                for (ControlTemplate node = this; node != null; node = node.Parent)
                 {
                     var app = node.DataContext as FarmApp;
                     if (app != null)
@@ -197,12 +198,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
                 var plot = entry.Plot;
                 var logic = plot != null ? plot.Logic : null;
                 if (logic == null || !logic.IsPlantPlanted)
-                    return context.GetThemeColor(ON_SURFACE);
+                    return context.ResolveColor(ThemeResources.OnSurfaceColor);
                 if (!logic.IsAlive)
-                    return context.GetThemeColor(ERROR);
+                    return context.ResolveColor(ThemeResources.ErrorColor);
                 if (entry.Ratio >= 1f || logic.IsHarvestable)
-                    return context.GetThemeColor(PRIMARY);
-                return context.GetThemeColor(ON_SURFACE);
+                    return context.ResolveColor(ThemeResources.AccentColor);
+                return context.ResolveColor(ThemeResources.OnSurfaceColor);
             }
         }
 }

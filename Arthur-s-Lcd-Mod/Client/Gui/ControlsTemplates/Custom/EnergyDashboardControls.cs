@@ -4,6 +4,7 @@ using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.ControlsTemplates.Progress;
+using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Modules.Power;
 using LcdMod.Common.Helpers;
@@ -721,20 +722,20 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
 
         protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
         {
-            _bar.BackgroundColor = context.GetThemeColor(Constants.SURFACE_CONTAINER_HIGH);
+            _bar.BackgroundColor = ResolveColor(ThemeResources.SurfaceContainerHighColor);
 
             if (_row != null)
             {
-                string panelRole = null;
+                ResourceKey<Color> panelColorKey = null;
                 if (_row.Selected && _row.Hover)
-                    panelRole = Constants.SECONDARY_CONTAINER + Constants.HOVER;
+                    panelColorKey = ThemeResources.SecondaryContainerColor;
                 else if (_row.Selected)
-                    panelRole = Constants.SECONDARY_CONTAINER;
+                    panelColorKey = ThemeResources.SecondaryContainerColor;
                 else if (_row.Hover)
-                    panelRole = Constants.SURFACE + Constants.HOVER;
+                    panelColorKey = ThemeResources.SurfaceContainerColor;
 
-                if (!string.IsNullOrEmpty(panelRole))
-                    Border.CreateSpritesFromRect(Bounds, sprites, context.GetThemeColor(panelRole),
+                if (panelColorKey != null)
+                    Border.CreateSpritesFromRect(Bounds, sprites, ResolveColor(panelColorKey),
                         radiusScale: context.Scale);
             }
 

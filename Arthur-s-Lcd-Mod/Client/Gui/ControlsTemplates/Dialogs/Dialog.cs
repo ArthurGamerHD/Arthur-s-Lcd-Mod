@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
+using LcdMod.Client.Gui.Styling;
 using LcdMod.Common.Helpers;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
@@ -10,14 +11,17 @@ using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.Interacti
 
 namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 {
-    abstract class Dialog
+    abstract class Dialog : IVisualStyleScope
     {
         readonly IApp _parentApp;
         readonly IThemedApp _themedParentApp;
         readonly List<MySprite> _sprites = new List<MySprite>();
+        IVisualStyleScope _styleParent;
+        StyleTree _styles;
+        ResourceTree _resources;
+        bool _isDirty = true;
         DialogContainerControl _containerControl;
         Button _closeButton;
-        ControlStyle _closeButtonStyle;
         RectangleF _dialogCardRect;
         bool _dialogCardRegistered;
 
@@ -28,9 +32,67 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
             _parentApp = parentApp;
             _themedParentApp = parentApp as IThemedApp;
+            _styleParent = parentApp as IVisualStyleScope;
         }
 
         public bool Dismissed { get; private set; }
+
+        public IVisualStyleScope StyleParent
+        {
+            get { return _styleParent; }
+        }
+
+        public StyleTree Styles
+        {
+            get { return _styles; }
+        }
+
+        public ResourceTree Resources
+        {
+            get { return _resources; }
+        }
+
+        public bool IsDirty
+        {
+            get { return _isDirty; }
+        }
+
+        public void MarkDirty()
+        {
+            _isDirty = true;
+        }
+
+        public Dialog SetStyles(StyleTree styles)
+        {
+            if (ReferenceEquals(_styles, styles))
+                return this;
+
+            _styles = styles;
+            MarkDirty();
+            return this;
+        }
+
+        public Dialog SetResources(ResourceTree resources)
+        {
+            if (ReferenceEquals(_resources, resources))
+                return this;
+
+            _resources = resources;
+            MarkDirty();
+            return this;
+        }
+
+        internal void SetStyleParent(IVisualStyleScope styleParent)
+        {
+            if (ReferenceEquals(_styleParent, styleParent))
+                return;
+
+            _styleParent = styleParent;
+            MarkDirty();
+
+            if (_containerControl != null)
+                _containerControl.SetStyleParent(this);
+        }
 
         protected List<MySprite> Sprites
         {
@@ -73,20 +135,28 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             Vector2 cursorPosition)
         {
             if (_themedParentApp != null)
-                return _themedParentApp.CreateControlRenderContext(surface, scale, fontScale, cursorPosition);
+                return _themedParentApp.CreateControlRenderContext(surface, scale, fontScale, cursorPosition)
+                    .WithStyleScope(this);
 
-            return new ControlRenderContext(surface, scale, fontScale, textColor, panelColor, cursorPosition);
+            return new ControlRenderContext(surface, scale, fontScale, textColor, panelColor, cursorPosition)
+                .WithStyleScope(this);
         }
 
         protected Color GetThemeColor(string role)
         {
-            if (_themedParentApp == null)
-                throw new ResourceKeyNotFoundException(role, "ParentTheme");
-
-            return _themedParentApp.GetThemeColor(role);
+            return ResolveColor(ThemeResources.FromThemeRole(role));
         }
 
-        public virtual void AddInteractiveEntries(List<ControlBase> entries)
+        protected Color ResolveColor(ResourceKey<Color> key)
+        {
+            Color value;
+            if (ScopedResourceResolver.TryResolve(this, key, out value))
+                return value;
+
+            throw new ResourceKeyNotFoundException(key.Name, "ResourceTree");
+        }
+
+        public virtual void AddInteractiveEntries(List<Control> entries)
         {
             if (Dismissed || entries == null)
                 return;
@@ -123,9 +193,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         protected DialogContainerControl EnsureContainer(RectangleF bounds)
         {
             if (_containerControl == null)
+            {
                 _containerControl = new DialogContainerControl(bounds, _parentApp);
+                _containerControl.SetStyleParent(this);
+            }
             else
+            {
                 _containerControl.SetRect(bounds);
+                _containerControl.SetStyleParent(this);
+            }
 
             _containerControl.SetDataContext(_parentApp);
             _containerControl.SetVisible(true);
@@ -218,42 +294,28 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 model.Clicked = OnDialogCloseButtonClicked;
             }
 
-            _closeButton.SetStyle(GetCloseButtonStyle());
+            _closeButton.TextColor = ResolveColor(ThemeResources.OnSurfaceColor);
+            _closeButton.BackgroundColor = ResolveColor(ThemeResources.SurfaceContainerColor);
+            _closeButton.BorderRadiusPixels = Border.DEFAULT_RADIUS_PIXELS;
+            _closeButton.SetStyleParent(this);
             _closeButton.CustomRender = RenderDialogCloseButton;
             _closeButton.SetCursor(CursorType.Hand);
             _closeButton.SetVisible(true);
         }
 
-        ControlStyle GetCloseButtonStyle()
-        {
-            if (_closeButtonStyle == null)
-            {
-                _closeButtonStyle = ControlStyle.FromThemeRoles(
-                    Constants.ON_SURFACE,
-                    Constants.SURFACE_CONTAINER,
-                    Constants.SURFACE_CONTAINER_LOW,
-                    Constants.ON_SURFACE,
-                    ParentTheme);
-                _closeButtonStyle.BorderRadiusPixels = Border.DEFAULT_RADIUS_PIXELS;
-            }
-            else
-            {
-                _closeButtonStyle.ThemeColors = ParentTheme;
-            }
-
-            return _closeButtonStyle;
-        }
-
-        void RenderDialogCloseButton(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderDialogCloseButton(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
         {
             var rect = control.Bounds;
             var hovered = control.IsPointerOver;
             var radiusPixels = Math.Min(rect.Width, rect.Height) * 0.5f / Math.Max(0.001f, context.Scale);
+            var fillColor = hovered
+                ? ResolveColor(ThemeResources.SurfaceContainerLowColor)
+                : ResolveColor(ThemeResources.SurfaceContainerColor);
 
             Border.CreateSpritesFromRect(
                 rect,
                 sprites,
-                context.Style.GetPanelColor(hovered),
+                fillColor,
                 radiusPixels: radiusPixels,
                 radiusScale: context.Scale);
 
@@ -320,7 +382,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
             for (int i = 0; i < children.Count; i++)
             {
-                var child = children[i];
+                var child = children[i] as ControlTemplate;
                 if (child != null)
                     child.Render(context, sprites);
             }

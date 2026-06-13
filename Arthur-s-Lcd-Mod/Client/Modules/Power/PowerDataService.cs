@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using LcdMod.Client.Grid;
+using LcdMod.Client.GridData;
 using LcdMod.Common.Helpers;
 using VRage.Game.ModAPI;
 
@@ -76,7 +76,7 @@ namespace LcdMod.Client.Modules.Power
             _lastSampleFrame = gameplayFrame;
             try
             {
-                AddRawSnapshot(_collector.Collect(_grids, Requester != null ? Requester.Grid : null, gameplayFrame));
+                AddRawSnapshot(_collector.Collect(_grids, gameplayFrame));
             }
             catch (Exception e)
             {

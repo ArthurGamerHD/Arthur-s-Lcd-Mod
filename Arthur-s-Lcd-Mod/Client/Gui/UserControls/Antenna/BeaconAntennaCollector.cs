@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Text;
 using LcdMod.Client.Apps.Abstract;
-using LcdMod.Client.Grid;
+using LcdMod.Client.GridData;
 using LcdMod.Client.Helpers;
 using VRage.Game.ModAPI;
 using VRageMath;

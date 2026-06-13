@@ -15,12 +15,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel
         {
         }
 
-        public WrapPanel(ControlBase parent)
+        public WrapPanel(ControlTemplate parent)
         {
             AttachTo(parent);
         }
 
-        public WrapPanel(ControlBase parent, RectangleF bounds)
+        public WrapPanel(ControlTemplate parent, RectangleF bounds)
             : base(bounds)
         {
             AttachTo(parent);
@@ -136,7 +136,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel
 
             for (int i = 0; i < children.Count; i++)
             {
-                var child = children[i];
+                var child = children[i] as ControlTemplate;
                 if (child == null)
                     continue;
 

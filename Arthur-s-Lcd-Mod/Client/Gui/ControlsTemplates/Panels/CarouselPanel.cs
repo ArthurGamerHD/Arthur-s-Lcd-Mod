@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using LcdMod.Client.Gui.Styling;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 
@@ -38,7 +39,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         public float LayoutScale { get; set; } = 1f;
         public Action<int> PageChanged { get; set; }
 
-        public override void AddChild(ControlBase child)
+        public override void AddChild(ControlTemplate child)
         {
             base.AddChild(child);
             EnsureArrowZOrder();
@@ -174,7 +175,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
         void RenderArrow(ControlRenderContext context, List<MySprite> sprites, RectangleF rect, string texture, bool enabled)
         {
-            var fg = context.TextColor;
+            var fg = ResolveColor(ThemeResources.OnSurfaceColor);
             var color = enabled
                 ? new Color(fg.R, fg.G, fg.B, 180)
                 : new Color(fg.R, fg.G, fg.B, 45);
@@ -221,7 +222,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             return count;
         }
 
-        int GetPageIndex(ControlBase child)
+        int GetPageIndex(ControlTemplate child)
         {
             var children = Children;
             if (children == null)
@@ -230,7 +231,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             int pageIndex = 0;
             for (int i = 0; i < children.Count; i++)
             {
-                var current = children[i];
+                var current = children[i] as ControlTemplate;
                 if (IsArrowControl(current))
                     continue;
                 if (ReferenceEquals(current, child))
@@ -241,7 +242,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             return -1;
         }
 
-        ControlBase GetPageAtIndex(int pageIndex)
+        ControlTemplate GetPageAtIndex(int pageIndex)
         {
             var children = Children;
             if (children == null || pageIndex < 0)
@@ -250,7 +251,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             int currentPageIndex = 0;
             for (int i = 0; i < children.Count; i++)
             {
-                var current = children[i];
+                var current = children[i] as ControlTemplate;
                 if (IsArrowControl(current))
                     continue;
                 if (currentPageIndex == pageIndex)
@@ -261,7 +262,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             return null;
         }
 
-        static bool IsArrowControl(ControlBase control)
+        static bool IsArrowControl(Control control)
         {
             return control is ArrowControl;
         }
@@ -287,7 +288,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             return _showArrows && GetPageCount() > 1;
         }
 
-        sealed class ArrowControl : ControlBase
+        sealed class ArrowControl : ControlTemplate
         {
             readonly CarouselPanel _owner;
             readonly int _direction;

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
+using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Helpers;
 using Sandbox.Game.Entities;
@@ -12,36 +13,45 @@ namespace LcdMod.Client.Gui.ControlsTemplates
     public delegate bool ControlScrollHandler(object dataContext, object sender, int delta);
     public delegate bool ControlHoverHandler(object dataContext, object sender);
     public delegate bool ControlDragHandler(object dataContext, object sender, Vector2 delta);
-    delegate bool ControlHitFilter(ControlBase control);
+    delegate bool ControlHitFilter(ControlTemplate control);
 
-    public abstract class ControlBase
+    public abstract partial class ControlTemplate : Control
     {
-        bool _isDirty;
-        bool _isLayoutDirty = true;
+        public static readonly StyleProperty<Color> TextColorProperty =
+            StyleProperty.Register<ControlTemplate, Color>("TextColor", null, true);
 
-        public bool Visible { get; private set; } = true;
-        public bool Enabled { get; private set; } = true;
+        public static readonly StyleProperty<Color> BackgroundColorProperty =
+            StyleProperty.Register<ControlTemplate, Color>("BackgroundColor", (Color?)Color.Gray);
+
+        public static readonly StyleProperty<Color> BorderColorProperty =
+            StyleProperty.Register<ControlTemplate, Color>("BorderColor", (Color?)Color.Transparent);
+
+        public static readonly StyleProperty<float> BorderRadiusPixelsProperty =
+            StyleProperty.Register<ControlTemplate, float>("BorderRadiusPixels", (float?)Border.DEFAULT_RADIUS_PIXELS);
+
+        public static readonly StyleProperty<float> BorderThicknessPixelsProperty =
+            StyleProperty.Register<ControlTemplate, float>("BorderThicknessPixels", (float?)0f);
+
+        public static readonly StyleProperty<Vector4> PaddingProperty =
+            StyleProperty.Register<ControlTemplate, Vector4>("Padding", (Vector4?)Vector4.Zero);
+        
+        bool _isLayoutDirty = true;
 
         public bool IsPointerOver { get; private set; }
 
         internal void SetPointerOver(bool value)
         {
+            if (IsPointerOver == value)
+                return;
+
             IsPointerOver = value;
-        }
-
-        public void SetVisible(bool visible)
-        {
-            Visible = visible;
-        }
-
-        public ControlBase SetEnabled(bool enabled)
-        {
-            if (Enabled == enabled)
-                return this;
-
-            Enabled = enabled;
-            OnEnabledChanged();
             MarkDirty();
+        }
+        
+        public override Control SetEnabled(bool enabled)
+        {
+            base.SetEnabled(enabled);
+            OnEnabledChanged();
             return this;
         }
 
@@ -49,18 +59,21 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         {
         }
 
-        readonly List<ControlBase> _children = new List<ControlBase>();
-        public IReadOnlyList<ControlBase> Children => _children;
+        readonly List<Control> _children = new List<Control>();
+        public override IReadOnlyList<Control> Children => _children;
 
         public bool HasChildren => _children.Count > 0;
-        public ControlBase Parent { get; private set; }
+        public ControlTemplate Parent { get; private set; }
+        public string StyleId { get; private set; }
 
-        public bool IsLayoutDirty
+        public override IVisualStyleScope StyleParent
         {
-            get { return _isLayoutDirty; }
+            get { return Parent ?? base.StyleParent; }
         }
 
-        public bool IsDirty
+        public bool IsLayoutDirty => _isLayoutDirty;
+
+        public override bool IsDirty
         {
             get
             {
@@ -76,10 +89,35 @@ namespace LcdMod.Client.Gui.ControlsTemplates
                 return false;
             }
         }
-
-        public void MarkDirty()
+        
+        public ControlTemplate SetStyleId(string styleId)
         {
-            _isDirty = true;
+            if (StyleId == styleId)
+                return this;
+
+            StyleId = styleId;
+            MarkDirty();
+            return this;
+        }
+
+        public ControlTemplate SetStyles(StyleTree styles)
+        {
+            if (ReferenceEquals(Styles, styles))
+                return this;
+
+            Styles = styles;
+            MarkDirty();
+            return this;
+        }
+
+        public ControlTemplate SetResources(ResourceTree resources)
+        {
+            if (ReferenceEquals(Resources, resources))
+                return this;
+
+            Resources = resources;
+            MarkDirty();
+            return this;
         }
 
         public void InvalidateLayout()
@@ -96,7 +134,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             _isLayoutDirty = false;
         }
 
-        protected virtual void OnChildLayoutInvalidated(ControlBase child)
+        protected virtual void OnChildLayoutInvalidated(ControlTemplate child)
         {
             InvalidateLayout();
         }
@@ -105,16 +143,19 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         {
             for (int i = 0; i < _children.Count; i++)
             {
-                var child = _children[i];
+                var child = _children[i] as ControlTemplate;
                 if (child != null && ReferenceEquals(child.Parent, this))
+                {
                     child.Parent = null;
+                    child.SetStyleParent(null);
+                }
             }
 
             _children.Clear();
             OnChildrenChanged();
         }
 
-        public virtual void AddChild(ControlBase child)
+        public virtual void AddChild(ControlTemplate child)
         {
             if (child == null)
                 return;
@@ -146,7 +187,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             OnChildrenChanged();
         }
 
-        public virtual void AddChildren(IEnumerable<ControlBase> children)
+        public virtual void AddChildren(IEnumerable<ControlTemplate> children)
         {
             if (children == null)
                 return;
@@ -155,32 +196,37 @@ namespace LcdMod.Client.Gui.ControlsTemplates
                 AddChild(child);
         }
 
-        public virtual void AddOverlayEntries(List<ControlBase> entries)
+        public virtual void AddOverlayEntries(List<Control> entries)
         {
             if (!Visible || entries == null)
                 return;
 
             for (int i = 0; i < _children.Count; i++)
             {
-                var child = _children[i];
+                var child = _children[i] as ControlTemplate;
                 if (child != null)
                     child.AddOverlayEntries(entries);
             }
         }
 
-        public virtual bool RemoveChild(ControlBase child)
+        public virtual bool RemoveChild(Control child)
         {
-            if (child == null || !_children.Remove(child))
+            
+            var childControl = child as ControlTemplate;
+            
+            if (childControl == null || !_children.Remove(child))
                 return false;
 
-            if (ReferenceEquals(child.Parent, this))
-                child.Parent = null;
+            if (ReferenceEquals(childControl.Parent, this))
+                childControl.Parent = null;
+
+            childControl.SetStyleParent(null);
 
             OnChildrenChanged();
             return true;
         }
 
-        public virtual bool MoveChild(ControlBase child, int index)
+        public virtual bool MoveChild(ControlTemplate child, int index)
         {
             if (child == null || !ReferenceEquals(child.Parent, this))
                 return false;
@@ -199,7 +245,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             return true;
         }
 
-        protected void AttachTo(ControlBase parent)
+        protected void AttachTo(ControlTemplate parent)
         {
             // Derived constructors call this after local initialization so parent invalidation observes a ready child.
             if (parent != null)
@@ -211,7 +257,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             InvalidateLayout();
         }
 
-        bool WouldCreateCycle(ControlBase child)
+        bool WouldCreateCycle(ControlTemplate child)
         {
             for (var parent = this; parent != null; parent = parent.Parent)
             {
@@ -268,7 +314,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             get { return Visible && Enabled && Draggable && OnDrag != null; }
         }
 
-        protected ControlBase(CursorType? cursor = null, object dataContext = null, Action<object, object> onClick = null,
+        protected ControlTemplate(CursorType? cursor = null, object dataContext = null, Action<object, object> onClick = null,
             InteractiveTooltip tooltip = null)
         {
             DataContext = dataContext;
@@ -279,16 +325,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 
         public CursorType Cursor { get; private set; }
 
-        public ControlBase SetCursor(CursorType cursor)
+        public ControlTemplate SetCursor(CursorType cursor)
         {
             Cursor = cursor;
             return this;
         }
 
-        public object DataContext { get; private set; }
         public ControlModelBase Model => DataContext as ControlModelBase;
 
-        public ControlBase SetDataContext(object dataContext)
+        public ControlTemplate SetDataContext(object dataContext)
         {
             DataContext = dataContext;
             ApplyModelDefaults();
@@ -316,49 +361,49 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             get { return Bounds; }
         }
 
-        public ControlBase SetOnClick(Action<object, object> onClick)
+        public ControlTemplate SetOnClick(Action<object, object> onClick)
         {
             OnClick = onClick;
             return this;
         }
 
-        public ControlBase SetOnScroll(ControlScrollHandler onScroll)
+        public ControlTemplate SetOnScroll(ControlScrollHandler onScroll)
         {
             OnScroll = onScroll;
             return this;
         }
 
-        public ControlBase SetOnHover(ControlHoverHandler onHover)
+        public ControlTemplate SetOnHover(ControlHoverHandler onHover)
         {
             OnHover = onHover;
             return this;
         }
 
-        public ControlBase SetOnDrag(ControlDragHandler onDrag)
+        public ControlTemplate SetOnDrag(ControlDragHandler onDrag)
         {
             OnDrag = onDrag;
             return this;
         }
 
-        public ControlBase SetOnBeginDrag(Action<object, object> onBeginDrag)
+        public ControlTemplate SetOnBeginDrag(Action<object, object> onBeginDrag)
         {
             OnBeginDrag = onBeginDrag;
             return this;
         }
 
-        public ControlBase SetOnEndDrag(Action<object, object> onEndDrag)
+        public ControlTemplate SetOnEndDrag(Action<object, object> onEndDrag)
         {
             OnEndDrag = onEndDrag;
             return this;
         }
 
-        public ControlBase SetDraggable(bool draggable = true)
+        public ControlTemplate SetDraggable(bool draggable = true)
         {
             Draggable = draggable;
             return this;
         }
 
-        public ControlBase SetClickOnPress(bool clickOnPress = true)
+        public ControlTemplate SetClickOnPress(bool clickOnPress = true)
         {
             ClickOnPress = clickOnPress;
             return this;
@@ -369,13 +414,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         public ControlStyle Style { get; private set; }
         public ControlStyleOverride StyleOverride { get; private set; }
 
-        public ControlBase SetTooltip(InteractiveTooltip tooltip)
+        public ControlTemplate SetTooltip(InteractiveTooltip tooltip)
         {
             Tooltip = tooltip;
             return this;
         }
 
-        public ControlBase SetStyle(ControlStyle style)
+        public ControlTemplate SetStyle(ControlStyle style)
         {
             Style = style;
             StyleOverride = null;
@@ -383,7 +428,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             return this;
         }
 
-        public ControlBase SetStyleOverride(ControlStyleOverride style)
+        public ControlTemplate SetStyleOverride(ControlStyleOverride style)
         {
             StyleOverride = style;
             Style = null;
@@ -415,6 +460,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 
             try
             {
+                if (Parent == null && context.StyleScope != null &&
+                    !ReferenceEquals(this, context.StyleScope) &&
+                    !ReferenceEquals(base.StyleParent, context.StyleScope))
+                {
+                    SetStyleParent(context.StyleScope);
+                }
+
                 var renderContext = ResolveRenderContext(context);
                 var customRender = CustomRender ?? Model?.CustomRender;
 
@@ -428,7 +480,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             }
             finally
             {
-                _isDirty = IsDirtyAfterRender();
+                bool wasPointerOver = IsPointerOver;
+                _isDirty = IsDirtyAfterRender() || wasPointerOver;
                 IsPointerOver = false;
             }
         }
@@ -438,15 +491,139 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             return false;
         }
 
+        protected virtual StyleState GetStyleState()
+        {
+            StyleState state = StyleState.None;
+
+            if (IsPointerOver)
+                state |= StyleState.Hover;
+
+            if (!Enabled)
+                state |= StyleState.Disabled;
+
+            return state;
+        }
+
+        internal StyleState GetStyleStateForResolver()
+        {
+            return GetStyleState();
+        }
+
+        protected TValue GetStyleValue<TValue>(
+            StyleProperty<TValue> property,
+            PropertyValue<TValue> value)
+            where TValue : struct
+        {
+            if (value.LocalOverride)
+                return value.Local;
+
+            if (IsDirty || HasDirtyStyleAncestor() || !value.HasCache)
+            {
+                value.Cache = ResolveStyleValue(property);
+                value.HasCache = true;
+            }
+
+            return value.Cache;
+        }
+
+
+        bool HasDirtyStyleAncestor()
+        {
+            int guard = 0;
+            for (IVisualStyleScope scope = StyleParent; scope != null && guard++ < 128;)
+            {
+                if (scope.IsDirty)
+                    return true;
+
+                IVisualStyleScope next = scope.StyleParent;
+                if (ReferenceEquals(next, scope))
+                    break;
+
+                scope = next;
+            }
+
+            return false;
+        }
+
+        protected bool TryResolveStyleValue<TValue>(
+            StyleProperty<TValue> property,
+            out TValue value)
+        {
+            int guard = 0;
+            for (IVisualStyleScope scope = this; scope != null && guard++ < 128;)
+            {
+                StyleTree styles = scope.Styles;
+                if (styles != null && styles.TryResolve(this, StyleId, GetStyleStateForResolver(), property, out value))
+                    return true;
+
+                IVisualStyleScope next = scope.StyleParent;
+                if (ReferenceEquals(next, scope))
+                    break;
+
+                scope = next;
+            }
+
+            value = default(TValue);
+            return false;
+        }
+
+        protected TValue ResolveStyleValue<TValue>(StyleProperty<TValue> property)
+        {
+            TValue value;
+
+            if (TryResolveStyleValue(property, out value))
+                return value;
+
+            if (property.Inherits && Parent != null)
+                return Parent.ResolveStyleValue(property);
+
+            if (property.HasDefaultValue)
+                return property.DefaultValue;
+
+            throw new ResourceKeyNotFoundException(
+                property.OwnerType.Name + "." + property.Name,
+                typeof(TValue).Name);
+        }
+
+        public Color GetResourceColor(ResourceKey<Color> key, Color fallback)
+        {
+            Color value;
+            return ScopedResourceResolver.TryResolve(this, key, out value) ? value : fallback;
+        }
+
+        protected Color ResolveColor(ResourceKey<Color> key)
+        {
+            Color value;
+            if (ScopedResourceResolver.TryResolve(this, key, out value))
+                return value;
+
+            throw new ResourceKeyNotFoundException(key.Name, "ResourceTree");
+        }
+
         protected virtual void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
         {
             var rect = GetViewBox();
-            var hovered = IsPointerOver;
-            var fillColor = context.Style.GetPanelColor(hovered);
+            var fillColor = GetRenderBackgroundColor();
 
             Border.CreateSpritesFromRect(rect, sprites, fillColor,
+                radiusPixels: GetRenderBorderRadiusPixels(),
                 radiusScale: context.Scale);
             RenderDefaultText(rect, context, sprites);
+        }
+
+        protected virtual Color GetRenderBackgroundColor()
+        {
+            return BackgroundColor;
+        }
+
+        protected virtual Color GetRenderTextColor()
+        {
+            return TextColor;
+        }
+
+        protected virtual float GetRenderBorderRadiusPixels()
+        {
+            return BorderRadiusPixels;
         }
 
         public RectangleF GetViewBox()
@@ -456,19 +633,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 
         protected Vector4 GetLocalPadding()
         {
-            var style = GetLocalStyle();
-            return style == null ? Vector4.Zero : style.Padding;
-        }
-
-        ControlStyle GetLocalStyle()
-        {
-            if (Style != null)
-                return Style;
-
-            if (StyleOverride != null && StyleOverride.Padding.HasValue)
-                return StyleOverride.ResolveAgainst(null, null);
-
-            return null;
+            return Padding;
         }
 
         static RectangleF ApplyPadding(RectangleF bounds, Vector4 padding)
@@ -503,6 +668,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 
         protected void RenderDefaultText(RectangleF rect, ControlRenderContext context, List<MySprite> sprites)
         {
+            RenderDefaultText(rect, context, sprites, GetRenderTextColor());
+        }
+
+        protected void RenderDefaultText(RectangleF rect, ControlRenderContext context, List<MySprite> sprites, Color color)
+        {
             string text = DataContext != null ? DataContext.ToString() : string.Empty;
 
             if (string.IsNullOrEmpty(text))
@@ -516,7 +686,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
                 Type = SpriteType.TEXT,
                 Data = text,
                 Position = new Vector2(rect.Center.X, rect.Center.Y - textSize.Y * 0.5f),
-                Color = context.Style.GetTextColor(IsPointerOver),
+                Color = color,
                 FontId = "White",
                 Alignment = TextAlignment.CENTER,
                 RotationOrScale = textScale
@@ -530,49 +700,49 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 
         protected abstract bool HitCore(Vector2 point);
 
-        public bool TryResolveHit(Vector2 point, out ControlBase hit)
+        public bool TryResolveHit(Vector2 point, out ControlTemplate hit)
         {
             hit = ResolveHit(point, AcceptAnyHit);
             return hit != null;
         }
 
-        public bool TryResolveClickable(Vector2 point, out ControlBase clickable)
+        public bool TryResolveClickable(Vector2 point, out ControlTemplate clickable)
         {
             clickable = ResolveHit(point, AcceptClickableHit);
             return clickable != null;
         }
 
-        public bool TryResolvePrimaryClickable(Vector2 point, out ControlBase clickable)
+        public bool TryResolvePrimaryClickable(Vector2 point, out ControlTemplate clickable)
         {
             clickable = ResolveHit(point, AcceptPrimaryClickableHit);
             return clickable != null;
         }
 
-        public bool TryResolveSecondaryClickable(Vector2 point, out ControlBase clickable)
+        public bool TryResolveSecondaryClickable(Vector2 point, out ControlTemplate clickable)
         {
             clickable = ResolveHit(point, AcceptSecondaryClickableHit);
             return clickable != null;
         }
 
-        public bool TryResolveScrollable(Vector2 point, out ControlBase scrollable)
+        public bool TryResolveScrollable(Vector2 point, out ControlTemplate scrollable)
         {
             scrollable = ResolveHit(point, AcceptScrollableHit);
             return scrollable != null;
         }
 
-        public bool TryResolveHoverable(Vector2 point, out ControlBase hoverable)
+        public bool TryResolveHoverable(Vector2 point, out ControlTemplate hoverable)
         {
             hoverable = ResolveHit(point, AcceptHoverableHit);
             return hoverable != null;
         }
 
-        public bool TryResolveDraggable(Vector2 point, out ControlBase draggable)
+        public bool TryResolveDraggable(Vector2 point, out ControlTemplate draggable)
         {
             draggable = ResolveHit(point, AcceptDraggableHit);
             return draggable != null;
         }
 
-        public bool TryResolveTooltipTarget(Vector2 point, out ControlBase tooltipTarget)
+        public bool TryResolveTooltipTarget(Vector2 point, out ControlTemplate tooltipTarget)
         {
             tooltipTarget = ResolveHit(point, AcceptTooltipHit);
             return tooltipTarget != null;
@@ -580,31 +750,31 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 
         public CursorType GetCursor(Vector2 point)
         {
-            ControlBase hit;
+            ControlTemplate hit;
             return TryResolveHit(point, out hit) ? hit.Cursor : CursorType.Default;
         }
 
         public bool Click(Vector2 point, object sender)
         {
-            ControlBase clickable;
+            ControlTemplate clickable;
             return TryResolvePrimaryClickable(point, out clickable) && clickable.ClickAt(point, sender);
         }
 
         public bool SecondaryClick(Vector2 point, object sender)
         {
-            ControlBase clickable;
+            ControlTemplate clickable;
             return TryResolveSecondaryClickable(point, out clickable) && clickable.SecondaryClickAt(point, sender);
         }
 
         public bool Scroll(Vector2 point, object sender, int delta)
         {
-            ControlBase scrollable;
+            ControlTemplate scrollable;
             return TryResolveScrollable(point, out scrollable) && scrollable.Scroll(sender, delta);
         }
 
         public bool Hover(Vector2 point, object sender)
         {
-            ControlBase hoverable;
+            ControlTemplate hoverable;
             return TryResolveHoverable(point, out hoverable) && hoverable.Hover(sender);
         }
 
@@ -690,7 +860,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
                 OnEndDrag(DataContext ?? this, sender);
         }
 
-        ControlBase ResolveHit(Vector2 point, ControlHitFilter accept)
+        ControlTemplate ResolveHit(Vector2 point, ControlHitFilter accept)
         {
             if (!Visible || !Enabled)
                 return null;
@@ -701,7 +871,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             {
                 for (int i = _children.Count - 1; i >= 0; i--)
                 {
-                    var childHit = _children[i].ResolveHit(point, accept);
+                    var childHit = (_children[i] as ControlTemplate)?.ResolveHit(point, accept);
 
                     if (childHit != null)
                         return childHit;
@@ -711,7 +881,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             return selfHit && accept(this) ? this : null;
         }
 
-        ControlBase FindClipContentParent()
+        ControlTemplate FindClipContentParent()
         {
             for (var parent = Parent; parent != null; parent = parent.Parent)
             {
@@ -777,42 +947,42 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             return selfHit;
         }
 
-        static bool AcceptAnyHit(ControlBase control)
+        static bool AcceptAnyHit(ControlTemplate control)
         {
             return true;
         }
 
-        static bool AcceptClickableHit(ControlBase control)
+        static bool AcceptClickableHit(ControlTemplate control)
         {
             return control.CanClick;
         }
 
-        static bool AcceptPrimaryClickableHit(ControlBase control)
+        static bool AcceptPrimaryClickableHit(ControlTemplate control)
         {
             return control.CanPrimaryClick;
         }
 
-        static bool AcceptSecondaryClickableHit(ControlBase control)
+        static bool AcceptSecondaryClickableHit(ControlTemplate control)
         {
             return control.CanSecondaryClick;
         }
 
-        static bool AcceptScrollableHit(ControlBase control)
+        static bool AcceptScrollableHit(ControlTemplate control)
         {
             return control.CanScroll;
         }
 
-        static bool AcceptHoverableHit(ControlBase control)
+        static bool AcceptHoverableHit(ControlTemplate control)
         {
             return control.CanHover;
         }
 
-        static bool AcceptDraggableHit(ControlBase control)
+        static bool AcceptDraggableHit(ControlTemplate control)
         {
             return control.CanDrag;
         }
 
-        static bool AcceptTooltipHit(ControlBase control)
+        static bool AcceptTooltipHit(ControlTemplate control)
         {
             return control.Tooltip != null;
         }

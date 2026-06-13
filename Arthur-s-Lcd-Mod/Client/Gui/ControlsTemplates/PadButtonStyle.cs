@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
+using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
-using LcdMod.Common.Helpers;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
@@ -32,26 +32,27 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         const float TEXT_SIDE_PADDING = 0.10f;     
         const float ICON_FRACTION = 0.92f;         
 
-        public static void RenderLabeled(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        public static void RenderLabeled(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
         {
             if (control == null)
                 return;
 
             var tile = control.DataContext as PadTileModel;
             var model = control.DataContext as ButtonModel;
-            RenderTile(control.Bounds,
+            RenderTile(control,
+                control.Bounds,
                 model != null ? model.Text : null,
                 tile != null ? tile.SpriteName : null,
                 context, sprites);
         }
 
-        public static void RenderTile(RectangleF rect, string label, string spriteName,
+        public static void RenderTile(ControlTemplate control, RectangleF rect, string label, string spriteName,
             ControlRenderContext context, List<MySprite> sprites)
         {
-            var hovered = rect.Contains(context.CursorPosition);
-            var panelColor = context.Style.GetPanelColor(hovered);
-            var textColor = context.Style.GetTextColor(hovered);
-            var shadowColor = context.GetThemeColor(Constants.SHADOW);
+            var button = control as Button;
+            var panelColor = button != null ? button.BackgroundColor : control.BackgroundColor;
+            var textColor = control.TextColor;
+            var shadowColor = control.GetResourceColor(ThemeResources.ShadowColor, new Color(0, 0, 0, 160));
 
             var minDim = Math.Min(rect.Width, rect.Height);
             var radius = minDim * RADIUS_FRACTION;

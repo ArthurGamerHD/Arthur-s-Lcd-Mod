@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui.ControlsTemplates;
+using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Common.Helpers;
 using VRageMath;
@@ -8,11 +9,14 @@ using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 
 namespace LcdMod.Client.Games
 {
-    internal sealed class GameThemeContext
+    internal sealed class GameThemeContext : IVisualStyleScope
     {
         readonly InteractiveSurfaceScript _script;
         readonly ControlStyle _controlStyle;
+        readonly StyleTree _styles;
         Dictionary<string, Color> _theme;
+        ResourceTree _resources;
+        bool _isDirty = true;
         Color _themeHeaderColor;
         bool _themeDark;
         bool _hasTheme;
@@ -25,6 +29,36 @@ namespace LcdMod.Client.Games
                 Constants.PRIMARY,
                 Constants.PRIMARY + Constants.HOVER,
                 Constants.ON_PRIMARY);
+            _styles = DefaultStyleBuilder.Build();
+        }
+
+        public IVisualStyleScope StyleParent
+        {
+            get { return null; }
+        }
+
+        public StyleTree Styles
+        {
+            get { return _styles; }
+        }
+
+        public ResourceTree Resources
+        {
+            get
+            {
+                GetTheme();
+                return _resources;
+            }
+        }
+
+        public bool IsDirty
+        {
+            get { return _isDirty; }
+        }
+
+        public void MarkDirty()
+        {
+            _isDirty = true;
         }
 
         public IReadOnlyDictionary<string, Color> Theme
@@ -38,13 +72,13 @@ namespace LcdMod.Client.Games
             float fontScale,
             Vector2 cursorPosition)
         {
+            GetTheme();
             return new ControlRenderContext(
                 surface,
                 scale,
                 fontScale,
-                _controlStyle,
-                Theme,
-                cursorPosition);
+                cursorPosition,
+                this);
         }
 
         public Color GetThemeColor(string role)
@@ -77,9 +111,11 @@ namespace LcdMod.Client.Games
             if (!_hasTheme || !headerColor.Equals(_themeHeaderColor) || dark != _themeDark)
             {
                 _theme = headerColor.ToTheme(dark);
+                _resources = ThemeResourceBuilder.FromThemeDictionary(_theme);
                 _themeHeaderColor = headerColor;
                 _themeDark = dark;
                 _hasTheme = true;
+                MarkDirty();
             }
 
             return _theme;

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using LcdMod.Client.Grid;
+using LcdMod.Client.GridData;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
@@ -27,7 +27,7 @@ using VisualWrapPanel = LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel.Wra
 
 namespace LcdMod.Client.Apps.Abstract
 {
-    public abstract class PowerAppBase : AppBase, IAppInteractive
+    public abstract class PowerApp : App, IApp
     {
         protected const float LINE = 22f;
         protected const float MINIMUM_COL_WIDTH = 400f;
@@ -99,7 +99,7 @@ namespace LcdMod.Client.Apps.Abstract
         readonly List<PowerEntry> _visibleEntries = new List<PowerEntry>();
         readonly List<IMyPowerProducer> _producers = new List<IMyPowerProducer>();
         readonly Dictionary<string, RectangleControl> _entryControls = new Dictionary<string, RectangleControl>();
-        readonly List<ControlBase> _interactiveList = new List<ControlBase>();
+        readonly List<Control> _children = new List<Control>();
         readonly ScrollPanel _scrollPanel;
         readonly VisualStackPanel _listPanel;
         readonly VisualWrapPanel _gridPanel;
@@ -122,17 +122,17 @@ namespace LcdMod.Client.Apps.Abstract
         float FontScale => Host.Surface.FontSize;
         float LayoutScale => Scale * FontScale;
         Color ForegroundColor => Host.ForegroundColor;
-        public List<ControlBase> InteractiveList => _interactiveList;
+        public override IReadOnlyList<Control> Children => _children;
 
         protected abstract PowerEntryDefinition[] EntryDefinitions { get; }
 
-        protected PowerAppBase(ScreenConfigPower config, IAppHost host) : base(config, host)
+        protected PowerApp(ScreenConfigPower config, IAppHost host) : base(config, host)
         {
             _interactiveHost = host as InteractiveSurfaceScript;
             if (_interactiveHost == null)
                 throw new ArgumentException("PowerAppBase requires an InteractiveSurfaceScript host.", "host");
 
-            _scrollPanel = new ScrollPanel(CursorType.Default, this);
+            _scrollPanel = AddChild(new ScrollPanel(CursorType.Default, this));
             _scrollPanel.ScrollChanged = OnScrollPanelChanged;
             _scrollPanel.SetVisible(false);
             _listPanel = new VisualStackPanel();
@@ -200,6 +200,7 @@ namespace LcdMod.Client.Apps.Abstract
                     break;
             }
 
+            ClearDirtyAfterRender();
             return sprites;
         }
 
@@ -370,7 +371,7 @@ namespace LcdMod.Client.Apps.Abstract
         void ClearInteractiveTree()
         {
             _scrollPanel.SetVisible(false);
-            _interactiveList.Clear();
+            _children.Clear();
 
             foreach (var kv in _entryControls)
                 kv.Value?.SetVisible(false);
@@ -384,12 +385,13 @@ namespace LcdMod.Client.Apps.Abstract
                 ScrollPanel.DefaultScrollerWidthPixels * Scale,
                 rowHeight,
                 SCROLL_DELAY / 6f);
-            _scrollPanel.SetScrollBarColors(
-                new Color(Surface.ScriptForegroundColor.R, Surface.ScriptForegroundColor.G, Surface.ScriptForegroundColor.B, 127),
-                new Color(AppConfig.HeaderColor.R, AppConfig.HeaderColor.G, AppConfig.HeaderColor.B, 250));
+            _scrollPanel.ScrollBarTrackColor =
+                new Color(Surface.ScriptForegroundColor.R, Surface.ScriptForegroundColor.G, Surface.ScriptForegroundColor.B, 127);
+            _scrollPanel.ScrollBarThumbColor =
+                new Color(AppConfig.HeaderColor.R, AppConfig.HeaderColor.G, AppConfig.HeaderColor.B, 250);
             _scrollPanel.SetVisible(true);
-            if (!_interactiveList.Contains(_scrollPanel))
-                _interactiveList.Add(_scrollPanel);
+            if (!_children.Contains(_scrollPanel))
+                _children.Add(_scrollPanel);
         }
 
         ControlRenderContext CreateRenderContext()
@@ -411,7 +413,7 @@ namespace LcdMod.Client.Apps.Abstract
             if (panel == null)
                 return;
 
-            var desired = new List<ControlBase>(entries == null ? 0 : entries.Count);
+            var desired = new List<Control>(entries == null ? 0 : entries.Count);
             var desiredKeys = new HashSet<string>();
             if (entries != null)
             {
@@ -460,7 +462,7 @@ namespace LcdMod.Client.Apps.Abstract
             return control;
         }
 
-        void RenderListPanelContent(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderListPanelContent(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
         {
             var children = control != null ? control.Children : null;
             if (children == null)
@@ -472,7 +474,7 @@ namespace LcdMod.Client.Apps.Abstract
             RenderPanelChildren(children, context, sprites);
         }
 
-        void RenderGridPanelContent(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderGridPanelContent(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
         {
             var children = control != null ? control.Children : null;
             if (children == null)
@@ -538,13 +540,12 @@ namespace LcdMod.Client.Apps.Abstract
             }
         }
 
-        static void RenderPanelChildren(IReadOnlyList<ControlBase> children, ControlRenderContext context, List<MySprite> sprites)
+        static void RenderPanelChildren(IReadOnlyList<Control> children, ControlRenderContext context, List<MySprite> sprites)
         {
             for (int i = 0; i < children.Count; i++)
             {
-                var child = children[i];
-                if (child != null)
-                    child.Render(context, sprites);
+                var child = children[i] as ControlTemplate;
+                child?.Render(context, sprites);
             }
         }
 
@@ -556,8 +557,8 @@ namespace LcdMod.Client.Apps.Abstract
 
             for (int i = children.Count - 1; i >= 0; i--)
             {
-                var child = children[i];
-                var entry = child == null ? null : child.DataContext as PowerEntry;
+                var child = children[i] as ControlTemplate;
+                var entry = child?.DataContext as PowerEntry;
                 if (entry == null || desiredKeys.Contains(entry.Key))
                     continue;
 
@@ -565,7 +566,7 @@ namespace LcdMod.Client.Apps.Abstract
             }
         }
 
-        static void EnsurePanelChildOrder(Panel panel, List<ControlBase> desired)
+        static void EnsurePanelChildOrder(Panel panel, List<Control> desired)
         {
             if (panel == null || desired == null)
                 return;
@@ -574,7 +575,7 @@ namespace LcdMod.Client.Apps.Abstract
             bool changed = false;
             for (int i = 0; i < desired.Count; i++)
             {
-                var child = desired[i];
+                var child = desired[i] as ControlTemplate;
                 if (child == null)
                     continue;
 
@@ -600,7 +601,7 @@ namespace LcdMod.Client.Apps.Abstract
                 panel.InvalidateLayout();
         }
 
-        static int IndexOfChild(IReadOnlyList<ControlBase> children, ControlBase child)
+        static int IndexOfChild(IReadOnlyList<Control> children, ControlTemplate child)
         {
             if (children == null || child == null)
                 return -1;
@@ -614,19 +615,9 @@ namespace LcdMod.Client.Apps.Abstract
             return -1;
         }
 
-        public bool HasVisibleItems()
-        {
-            return _visibleEntries.Count > 0;
-        }
+        public override bool HasVisibleItems() => _visibleEntries.Count > 0;
 
-        public void OnMouseScroll(int delta, ref bool handled)
-        {
-        }
-
-        void OnScrollPanelChanged(ScrollPanel panel)
-        {
-            _interactiveHost.RenderSprites();
-        }
+        void OnScrollPanelChanged(ScrollPanel panel) => _interactiveHost.RenderSprites();
 
         int GetMaxColsFromSurface()
         {
@@ -706,7 +697,7 @@ namespace LcdMod.Client.Apps.Abstract
             ));
         }
 
-        void RenderPowerEntryControl(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderPowerEntryControl(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
         {
             var entry = control?.DataContext as PowerEntry;
             if (entry == null)

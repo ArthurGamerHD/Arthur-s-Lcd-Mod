@@ -5,6 +5,7 @@ using LcdMod.Client.SurfaceScripts;
 using LcdMod.Client.Config;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
+using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Modules.EyeTracking;
@@ -84,6 +85,31 @@ namespace LcdMod.Client.Games.Minesweeper
 
         public Color GetThemeColor(string role) => _themeContext.GetThemeColor(role);
 
+        public IVisualStyleScope StyleParent
+        {
+            get { return _themeContext.StyleParent; }
+        }
+
+        public StyleTree Styles
+        {
+            get { return _themeContext.Styles; }
+        }
+
+        public ResourceTree Resources
+        {
+            get { return _themeContext.Resources; }
+        }
+
+        public bool IsDirty
+        {
+            get { return _themeContext.IsDirty; }
+        }
+
+        public void MarkDirty()
+        {
+            _themeContext.MarkDirty();
+        }
+
         readonly Color _bevelLight = new Color(120, 127, 135);
         readonly Color _bevelDark = new Color(39, 46, 53);
         readonly Color _tileFaceHidden = new Color(78, 85, 92);
@@ -126,7 +152,7 @@ namespace LcdMod.Client.Games.Minesweeper
         float _cellTextScale;
         float _displayTextScale;
 
-        public List<ControlBase> Interactive { get; }
+        public List<Control> Interactive { get; }
 
         public GameSurfaceScript.GameEnum Id => GameSurfaceScript.GameEnum.Minesweeper;
 
@@ -135,7 +161,7 @@ namespace LcdMod.Client.Games.Minesweeper
             _panel = panel;
             _script = script;
             _themeContext = new GameThemeContext(script);
-            Interactive = new List<ControlBase>();
+            Interactive = new List<Control>();
             _difficulty = MinesweeperDifficulty.Easy;
 
             ReloadProgram();
@@ -839,7 +865,7 @@ namespace LcdMod.Client.Games.Minesweeper
                     {
                         ClickSound = AudioHelper.HudClick,
                         CustomRender =
-                            delegate(ControlBase entry, ControlRenderContext context, List<MySprite> sprites)
+                            delegate(ControlTemplate entry, ControlRenderContext context, List<MySprite> sprites)
                             {
                                 DrawStatusButton(sprites);
                             }
@@ -899,7 +925,7 @@ namespace LcdMod.Client.Games.Minesweeper
                     i)
                 {
                     CustomRender =
-                        delegate(ControlBase entry, ControlRenderContext context, List<MySprite> sprites)
+                        delegate(ControlTemplate entry, ControlRenderContext context, List<MySprite> sprites)
                         {
                             RenderCell(sprites, (int)entry.DataContext);
                         }
@@ -1432,6 +1458,17 @@ namespace LcdMod.Client.Games.Minesweeper
                 Action = action;
                 Index = index;
             }
+        }
+        
+        public IReadOnlyList<Control> Children { get; set; }
+
+        public bool HasVisibleItems()
+        {
+            return true;
+        }
+
+        public void OnMouseScroll(int delta, ref bool handled)
+        {
         }
     }
 

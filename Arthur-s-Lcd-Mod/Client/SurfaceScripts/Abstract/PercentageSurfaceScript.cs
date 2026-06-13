@@ -14,7 +14,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 {
     public abstract partial class PercentageSurfaceScript<TEntry> : SurfaceScriptBase, IMultiDisplayMode
     {
-        protected override ConfigKind ConfigKind => ConfigKind.Colorable;
+        protected override ConfigKind ConfigKind => ConfigKind.General;
         protected const int LINE_HEIGHT = 40;
         protected const int MINIMUM_COL_WIDTH = 220;
         protected const int SCROLL_DELAY = 12;

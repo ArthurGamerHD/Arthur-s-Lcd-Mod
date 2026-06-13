@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Extensions;
+using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Common.Config.Models.Apps;
@@ -20,7 +21,7 @@ using MyShipConnectorStatus = Sandbox.ModAPI.Ingame.MyShipConnectorStatus;
 
 namespace LcdMod.Client.Apps
 {
-    internal sealed class DockingAlignmentApp : AppBase
+    internal sealed class DockingAlignmentApp : App
     {
         const float TARGET_SEARCH_RANGE = 100f;
         const float TARGET_SEARCH_CONE_DEGREES = 45f;
@@ -36,6 +37,9 @@ namespace LcdMod.Client.Apps
         const float MAX_TARGET_ANGLE_DEGREES = MAX_VECTOR_ANGLE_DEGREES;
         const float MAX_VELOCITY_VECTOR_METERS_PER_SECOND = 10f;
 
+        // todo: convert to interactive app
+        public override IReadOnlyList<Control> Children { get; } = new Control[]{};
+        
         static readonly List<MyTerminalControlComboBoxItem> DockingDisplayModes =
             new List<MyTerminalControlComboBoxItem>
             {
@@ -910,6 +914,5 @@ namespace LcdMod.Client.Apps
             LcdReference = 1,
             ControllerReference = 2
         }
-
     }
 }

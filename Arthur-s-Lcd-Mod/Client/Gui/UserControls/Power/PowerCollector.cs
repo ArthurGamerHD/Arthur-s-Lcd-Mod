@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using LcdMod.Client.Grid;
+using LcdMod.Client.GridData;
 using Sandbox.ModAPI;
 using VRageMath;
 using ScreenConfigPower = LcdMod.Common.Config.Models.Apps.ScreenConfigPower;

@@ -24,7 +24,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Inputs
             _buttons[0] = CreateStepButton(-1d);
 
             _textInput = new TextInput(default(RectangleF), new TextInputModel());
-            _textInput.SetStyle(ControlStyle.PaddingOnly(ButtonPadding));
+            _textInput.Padding = ButtonPadding;
             _grid.AddChild(_buttons[0]);
             _grid.AddChild(_textInput);
 
@@ -57,7 +57,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Inputs
             var model = new ButtonModel();
             model.Clicked = delegate { ApplyStep(direction); };
             var button = new Button(default(RectangleF), model);
-            button.SetStyle(ControlStyle.PaddingOnly(ButtonPadding));
+            button.Padding = ButtonPadding;
             return button;
         }
 

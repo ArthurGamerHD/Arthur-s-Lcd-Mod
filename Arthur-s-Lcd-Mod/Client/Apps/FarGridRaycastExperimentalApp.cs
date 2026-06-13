@@ -20,7 +20,7 @@ using SliderFov = LcdMod.Client.Terminal.Controls.Generic.SliderFov;
 
 namespace LcdMod.Client.Apps
 {
-    public class FarGridRaycastExperimentalApp : AppBase, IAppInteractive
+    public class FarGridRaycastExperimentalApp : App, IApp
     {
         public const string ID = "LcdMod_FarGridRaycastExperimental";
         public const string TITLE = "Far Grid Raycast Experimental";
@@ -49,7 +49,7 @@ namespace LcdMod.Client.Apps
 
         readonly IAppHost _host;
         readonly List<MySprite> _sprites = new List<MySprite>();
-        readonly List<ControlBase> _interactiveList = new List<ControlBase>();
+        readonly List<Control> _children = new List<Control>();
         readonly List<IMyEntity> _entities = new List<IMyEntity>();
         readonly List<VisibleTarget> _visibleTargets = new List<VisibleTarget>();
         readonly List<IMyCubeGrid> _tempGroupGrids = new List<IMyCubeGrid>();
@@ -105,17 +105,12 @@ namespace LcdMod.Client.Apps
         RectangleF ViewBox => _host.ViewBox;
         float FontScale => _host.Surface.FontSize;
         Color ForegroundColor => _host.ForegroundColor;
-        public List<ControlBase> InteractiveList => _interactiveList;
+        public override IReadOnlyList<Control> Children => _children;
 
         public FarGridRaycastExperimentalApp(ScreenConfigRaycast config, IAppHost host)
             : base(config, host)
         {
             _host = host;
-        }
-
-        public bool HasVisibleItems()
-        {
-            return true;
         }
 
         public override void Update()
@@ -199,7 +194,7 @@ namespace LcdMod.Client.Apps
             return _host.TryGetReferenceWorldMatrix(AppConfig?.ReferenceMode ?? (int)ReferenceMode.Auto, out world);
         }
 
-        public void OnMouseScroll(int delta, ref bool handled)
+        public override void OnMouseScroll(int delta, ref bool handled)
         {
             if (delta == 0 || handled)
                 return;
@@ -923,7 +918,7 @@ namespace LcdMod.Client.Apps
         public override List<MySprite> GetSprites()
         {
             _sprites.Clear();
-            InteractiveList.Clear();
+            _children.Clear();
 
             DrawFrame(_sprites);
             if (ShouldDrawMagnificationHud())
@@ -1564,12 +1559,13 @@ namespace LcdMod.Client.Apps
                 if (hitbox == null || !hitbox.Active || hitbox.Entry == null)
                     continue;
 
+                AddChild(hitbox.Entry);
                 hitbox.Entry.SetVisible(true);
-                InteractiveList.Add(hitbox.Entry);
+                _children.Add(hitbox.Entry);
             }
         }
 
-        void RenderDetectedGridHitbox(ControlBase entry, ControlRenderContext context, List<MySprite> sprites)
+        void RenderDetectedGridHitbox(ControlTemplate entry, ControlRenderContext context, List<MySprite> sprites)
         {
             // Intentionally invisible. These entries only export per-grid hit tests to InteractiveEntries.
         }

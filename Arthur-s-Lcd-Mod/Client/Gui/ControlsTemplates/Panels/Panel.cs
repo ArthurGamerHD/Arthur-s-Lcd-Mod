@@ -7,7 +7,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
     /// <summary>
     /// Non-visual rectangular container for child controls.
     /// </summary>
-    public class Panel : ControlBase
+    public class Panel : ControlTemplate
     {
         public Panel()
             : this(default(RectangleF))
@@ -64,7 +64,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
             for (int i = 0; i < children.Count; i++)
             {
-                var child = children[i];
+                var child = children[i] as ControlTemplate;
                 if (child != null)
                     child.Render(context, sprites);
             }

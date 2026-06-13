@@ -26,7 +26,7 @@ namespace LcdMod.Client.Modules.Power
         readonly List<IMyJumpDrive> _jumpDrives = new List<IMyJumpDrive>();
         readonly List<IMyTerminalBlock> _terminals = new List<IMyTerminalBlock>();
 
-        public PowerSnapshot Collect(IReadOnlyList<IMyCubeGrid> scopedGrids, IMyCubeGrid primaryGrid, long gameplayFrame)
+        public PowerSnapshot Collect(IReadOnlyList<IMyCubeGrid> scopedGrids, long gameplayFrame)
         {
             var snapshot = PowerSnapshot.Empty(gameplayFrame);
             ClearScratch();
@@ -34,19 +34,12 @@ namespace LcdMod.Client.Modules.Power
             if (scopedGrids == null)
                 return snapshot;
 
-            CollectDistributorTotals(primaryGrid, ref snapshot);
             CollectProducers(scopedGrids, ref snapshot);
             CollectBatteries(scopedGrids, ref snapshot);
             CollectJumpDrives(scopedGrids, ref snapshot);
             CollectTerminalConsumers(scopedGrids, ref snapshot);
 
-            snapshot.KnownCurrentInputW = snapshot.ElectricThrusterCurrentInputW +
-                                          snapshot.BatteryChargeInputW +
-                                          snapshot.Consumers.OtherCurrentInputW;
-            snapshot.TotalRequiredInputW = Math.Max(Math.Max(0, snapshot.TotalRequiredInputW), snapshot.KnownCurrentInputW);
-            snapshot.ClassifiedRequiredInputW = snapshot.ElectricThrusterRequiredInputW +
-                                                snapshot.Consumers.OtherRequiredInputW;
-            snapshot.UnclassifiedRequiredInputW = Math.Max(0, snapshot.TotalRequiredInputW - snapshot.ClassifiedRequiredInputW);
+            FinalizeScopedTotals(ref snapshot);
             return snapshot;
         }
 
@@ -64,15 +57,18 @@ namespace LcdMod.Client.Modules.Power
             _terminals.Clear();
         }
 
-        void CollectDistributorTotals(IMyCubeGrid grid, ref PowerSnapshot snapshot)
+        static void FinalizeScopedTotals(ref PowerSnapshot snapshot)
         {
-            if (grid == null || grid.ResourceDistributor == null)
-                return;
-
-            snapshot.TotalRequiredInputW = MegaWattsToWatts(
-                grid.ResourceDistributor.TotalRequiredInputByType(ElectricityId, grid));
-            snapshot.MaxAvailableW = MegaWattsToWatts(
-                grid.ResourceDistributor.MaxAvailableResourceByType(ElectricityId, grid));
+            snapshot.KnownCurrentInputW = snapshot.ElectricThrusterCurrentInputW +
+                                          snapshot.BatteryChargeInputW +
+                                          snapshot.Consumers.OtherCurrentInputW;
+            snapshot.ClassifiedRequiredInputW = snapshot.ElectricThrusterRequiredInputW +
+                                                snapshot.Consumers.OtherRequiredInputW;
+            snapshot.TotalRequiredInputW = Math.Max(snapshot.KnownCurrentInputW,
+                snapshot.ClassifiedRequiredInputW + snapshot.BatteryChargeInputW);
+            snapshot.UnclassifiedRequiredInputW = Math.Max(0,
+                snapshot.TotalRequiredInputW - snapshot.ClassifiedRequiredInputW);
+            snapshot.MaxAvailableW = snapshot.Producers.KnownMaxOutputW;
         }
 
         void CollectProducers(IReadOnlyList<IMyCubeGrid> grids, ref PowerSnapshot snapshot)

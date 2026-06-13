@@ -374,7 +374,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             }
         }
 
-        void RenderHeader(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderHeader(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
         {
             var model = control.DataContext as StationHeaderModel;
             if (model == null)

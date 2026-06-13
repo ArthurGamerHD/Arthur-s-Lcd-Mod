@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Generated;
+using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.ScreenAreas;
@@ -28,9 +29,9 @@ namespace LcdMod.Client.Modules.EyeTracking
         readonly List<IEyeTracking> _pendingModules = new List<IEyeTracking>();
 
         int _lastActiveNearbyCount;
-        ControlBase _pressedClickable;
+        ControlTemplate _pressedClickable;
         object _pressedClickableDataContext;
-        ControlBase _draggingControl;
+        ControlTemplate _draggingControl;
         IEyeTracking _draggingEntity;
         Vector2 _lastDragPosition;
         bool _suppressPrimaryReleaseClick;
@@ -95,7 +96,7 @@ namespace LcdMod.Client.Modules.EyeTracking
             }
 
             var resolvedCount = 0;
-            ControlBase hoveredClickable = null;
+            ControlTemplate hoveredClickable = null;
             IEyeTracking eyeTrackingEntity = null;
             IEyeTracking tooltipInputEntity = null;
             IEyeTracking lookingScreen = null;
@@ -162,7 +163,7 @@ namespace LcdMod.Client.Modules.EyeTracking
                         }
                     }
 
-                    ControlBase clickable;
+                    ControlTemplate clickable;
 
                     if (TryGetHoveredClickable(screen, activeClickButton, out clickable))
                     {
@@ -207,7 +208,7 @@ namespace LcdMod.Client.Modules.EyeTracking
         }
 
         void UpdateClickState(
-            ControlBase hoveredClickable,
+            ControlTemplate hoveredClickable,
             IEyeTracking eyeTrackingEntity,
             IEyeTracking lookingScreen)
         {
@@ -303,7 +304,7 @@ namespace LcdMod.Client.Modules.EyeTracking
                     var interactiveSurface = eyeTrackingEntity as InteractiveSurfaceScript;
                     var rightClick = !_primaryWasPressed && _secondaryWasPressed;
 
-                    ControlBase clickedControl;
+                    ControlTemplate clickedControl;
                     var click = !suppressReleaseClick &&
                                 _pressedClickable != null &&
                                 hoveredClickable != null &&
@@ -314,7 +315,7 @@ namespace LcdMod.Client.Modules.EyeTracking
                                         ? hoveredClickable.SecondaryClick(eyeTrackingEntity)
                                         : hoveredClickable.Click(eyeTrackingEntity));
 
-                    ControlBase tooltipParent;
+                    ControlTemplate tooltipParent;
                     click = !suppressReleaseClick &&
                             (click || TryHandleTooltipActivation(
                                 eyeTrackingEntity,
@@ -380,7 +381,7 @@ namespace LcdMod.Client.Modules.EyeTracking
 
         bool TryBeginDrag(IEyeTracking screen)
         {
-            ControlBase draggable;
+            ControlTemplate draggable;
             Vector2 position;
 
             if (!TryGetHoveredDraggable(screen, out draggable) || !TryGetHitTestCursorPosition(screen, out position))
@@ -405,7 +406,7 @@ namespace LcdMod.Client.Modules.EyeTracking
             _lastDragPosition = default(Vector2);
         }
 
-        void HandleClickOnPress(ControlBase clickedControl, IEyeTracking eyeTrackingEntity)
+        void HandleClickOnPress(ControlTemplate clickedControl, IEyeTracking eyeTrackingEntity)
         {
             if (clickedControl == null)
                 return;
@@ -438,7 +439,7 @@ namespace LcdMod.Client.Modules.EyeTracking
         static bool TryHandleTooltipActivation(
             IEyeTracking eyeTrackingEntity,
             bool rightClick,
-            out ControlBase tooltipParent)
+            out ControlTemplate tooltipParent)
         {
             tooltipParent = null;
             var interactiveSurface = eyeTrackingEntity as InteractiveSurfaceScript;
@@ -467,7 +468,7 @@ namespace LcdMod.Client.Modules.EyeTracking
             return null;
         }
 
-        static bool TryGetHoveredClickable(IEyeTracking screen, bool? secondary, out ControlBase clickable)
+        static bool TryGetHoveredClickable(IEyeTracking screen, bool? secondary, out ControlTemplate clickable)
         {
             clickable = null;
             var interactiveSurface = screen as InteractiveSurfaceScript;
@@ -488,14 +489,14 @@ namespace LcdMod.Client.Modules.EyeTracking
             if (!TryGetHitTestCursorPosition(screen, out position))
                 return false;
 
-            var list = entries as IList<ControlBase>;
+            var list = entries as IList<Control>;
 
             if (list == null)
                 return false;
 
             for (int i = list.Count - 1; i >= 0; i--)
             {
-                var entry = list[i];
+                var entry = list[i] as ControlTemplate;
 
                 if (entry == null)
                     continue;
@@ -513,7 +514,7 @@ namespace LcdMod.Client.Modules.EyeTracking
             return false;
         }
 
-        static bool TryGetHoveredDraggable(IEyeTracking screen, out ControlBase draggable)
+        static bool TryGetHoveredDraggable(IEyeTracking screen, out ControlTemplate draggable)
         {
             draggable = null;
 
@@ -529,14 +530,14 @@ namespace LcdMod.Client.Modules.EyeTracking
             if (!TryGetHitTestCursorPosition(screen, out position))
                 return false;
 
-            var list = entries as IList<ControlBase>;
+            var list = entries as IList<Control>;
 
             if (list == null)
                 return false;
 
             for (int i = list.Count - 1; i >= 0; i--)
             {
-                var entry = list[i];
+                var entry = list[i] as ControlTemplate;
 
                 if (entry != null && entry.TryResolveDraggable(position, out draggable))
                     return true;

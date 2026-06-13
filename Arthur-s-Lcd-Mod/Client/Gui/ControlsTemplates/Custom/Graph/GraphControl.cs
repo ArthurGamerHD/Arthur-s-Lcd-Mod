@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Helpers;
 using VRage.Game.GUI.TextPanel;
@@ -7,7 +8,7 @@ using VRageMath;
 
 namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Graph
 {
-    public sealed class GraphControl : ControlBase
+    public sealed class GraphControl : ControlTemplate
     {
         readonly List<GraphPoint> _points = new List<GraphPoint>();
         GraphHoverResult _lastHover;
@@ -115,7 +116,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Graph
             if (_bounds.Width <= 0 || _bounds.Height <= 0)
                 return;
 
-            Color fg = context.TextColor;
+            Color fg = ResolveColor(ThemeResources.OnSurfaceColor);
             float ts = 0.62f * context.Scale * context.FontScale;
             string title = Title ?? string.Empty;
             float titleH = string.IsNullOrEmpty(title) ? 0f : FormatingHelper.GetSizeInPixel(title, "White", ts, context.Surface).Y;

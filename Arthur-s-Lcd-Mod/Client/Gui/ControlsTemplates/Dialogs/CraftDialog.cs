@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using LcdMod.Client.Apps.Abstract;
-using LcdMod.Client.Grid;
+using LcdMod.Client.GridData;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Inputs;
 using LcdMod.Client.Gui.ControlsTemplates.Lists;
@@ -412,7 +412,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _assemblerControl.CustomRender = RenderAssemblerControl;
         }
 
-        void RenderAssemblerControl(ControlBase control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderAssemblerControl(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
         {
             var rect = control.Bounds;
             var hovered = _assemblerOptions.Count > 1 && rect.Contains(context.CursorPosition);
@@ -469,7 +469,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             button.SetStyle(enabled
                 ? Button.CreatePrimaryButtonStyle(themedParentApp?.Theme)
                 : Button.CreateDisabledButtonStyle(themedParentApp?.Theme));
-            button.CustomRender = delegate(ControlBase renderEntry, ControlRenderContext context, List<MySprite> sprites)
+            button.CustomRender = delegate(ControlTemplate renderEntry, ControlRenderContext context, List<MySprite> sprites)
             {
                 DrawButton(renderEntry.Bounds, owner, sprites, text, textScale, context, enabled);
             };

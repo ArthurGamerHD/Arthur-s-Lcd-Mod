@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Extensions;
+using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
 using LcdMod.Common.Config.Models.Apps;
 using Sandbox.ModAPI;
@@ -18,7 +19,7 @@ using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
 
 namespace LcdMod.Client.Apps
 {
-    internal sealed class IntegrityMonitorApp : AppBase
+    internal sealed class IntegrityMonitorApp : App
     {
         public static readonly List<MyTerminalControlComboBoxItem> IntegrityAxes = new List<MyTerminalControlComboBoxItem>
         {
@@ -53,6 +54,9 @@ namespace LcdMod.Client.Apps
                 Value = MyStringId.GetOrCompute("LcdMod_Axis_Z_Negative")
             }
         };
+        
+        // todo: convert to interactive app
+        public override IReadOnlyList<Control> Children { get; } = new Control[]{};
         
         const int MAP_BUILD_BATCH_SIZE = 256;
 

@@ -1,10 +1,11 @@
 using System.Collections.Generic;
 using LcdMod.Client.Config;
+using LcdMod.Common.Config.Models;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.ModAPI;
 using VRage.Utils;
-using ScreenConfigInteractive = LcdMod.Common.Config.Models.ScreenConfigInteractive;
+
 
 namespace LcdMod.Client.Terminal.Controls.Generic
 {
@@ -37,7 +38,7 @@ namespace LcdMod.Client.Terminal.Controls.Generic
 
         static void Setter(IMyTerminalBlock block, long value)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigInteractive;
+            var config = ConfigManager.GetConfigForCurrentScreen(block);
             if (config == null)
                 return;
 
@@ -47,7 +48,7 @@ namespace LcdMod.Client.Terminal.Controls.Generic
 
         static long Getter(IMyTerminalBlock block)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigInteractive;
+            var config = ConfigManager.GetConfigForCurrentScreen(block);
             return config?.ReferenceMode ?? (long)ReferenceMode.Auto;
         }
     }
