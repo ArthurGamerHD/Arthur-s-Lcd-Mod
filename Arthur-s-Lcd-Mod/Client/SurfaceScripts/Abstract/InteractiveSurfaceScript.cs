@@ -942,16 +942,12 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             if (sprites == null || entries == null || entries.Count == 0)
                 return;
 
-            var styleScope = App as IVisualStyleScope;
-            var context = styleScope != null
-                ? new ControlRenderContext(Surface, ConfiguredScale, FontScale, CursorPosition, styleScope)
-                : new ControlRenderContext(
-                    Surface,
-                    ConfiguredScale,
-                    FontScale,
-                    ForegroundColor,
-                    ColorableConfig?.HeaderColor ?? BackgroundColor,
-                    CursorPosition);
+            var context = new ControlRenderContext(
+                Surface,
+                ConfiguredScale,
+                FontScale,
+                CursorPosition,
+                RequireAppStyleScope());
 
             for (int i = 0; i < entries.Count; i++)
             {
@@ -973,16 +969,12 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             if (sprites == null || entries == null || _controlOverlayCount == 0)
                 return;
 
-            var styleScope = App as IVisualStyleScope;
-            var context = styleScope != null
-                ? new ControlRenderContext(Surface, ConfiguredScale, FontScale, CursorPosition, styleScope)
-                : new ControlRenderContext(
-                    Surface,
-                    ConfiguredScale,
-                    FontScale,
-                    ForegroundColor,
-                    ColorableConfig?.HeaderColor ?? BackgroundColor,
-                    CursorPosition);
+            var context = new ControlRenderContext(
+                Surface,
+                ConfiguredScale,
+                FontScale,
+                CursorPosition,
+                RequireAppStyleScope());
 
             var end = Math.Min(entries.Count, _controlOverlayStartIndex + _controlOverlayCount);
             for (int i = _controlOverlayStartIndex; i < end; i++)

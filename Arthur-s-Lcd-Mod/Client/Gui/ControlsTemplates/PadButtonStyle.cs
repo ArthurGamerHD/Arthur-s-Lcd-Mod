@@ -20,7 +20,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
     /// <c>6px * scale</c> radius stays visible; CargoActions renders at the auto-fit <c>Host.Scale</c>
     /// (~0.1 on a corner LCD), where the same formula collapses radius/shadow/text to zero. Proportional
     /// sizing keeps the buttons identical-looking on a 512² panel and a tiny corner LCD alike.
-    /// Pair with <see cref="Button.CreatePrimaryButtonStyle"/>.
+    /// Pair with the new StyleId-based primary button styling.
     /// </summary>
     internal static class PadButtonStyle
     {

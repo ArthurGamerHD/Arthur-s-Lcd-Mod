@@ -10,7 +10,7 @@ using VRageMath;
 
 namespace LcdMod.Client.Apps.Abstract
 {
-    public abstract class App : Control, IThemedApp, IVisualStyleScope
+    public abstract class App : Control, IApp, IVisualStyleScope
     {
         readonly List<Control> _rootControls = new List<Control>();
         StyleTree _styles;
@@ -30,15 +30,13 @@ namespace LcdMod.Client.Apps.Abstract
         protected IAppHost Host { get; private set; }
         protected ScreenConfigInteractive AppConfig { get; private set; }
 
-        public IReadOnlyDictionary<string, Color> Theme => GetTheme();
-
         public override StyleTree Styles => _styles;
 
         public override ResourceTree Resources
         {
             get
             {
-                GetTheme();
+                EnsureResources();
                 return _resources;
             }
         }
@@ -148,7 +146,7 @@ namespace LcdMod.Client.Apps.Abstract
             return Host != null ? Host.ForegroundColor : Color.White;
         }
 
-        Dictionary<string, Color> GetTheme()
+        void EnsureResources()
         {
             var headerColor = GetHeaderColor();
             bool dark = ShouldUseDarkTheme();
@@ -162,8 +160,6 @@ namespace LcdMod.Client.Apps.Abstract
                 _hasTheme = true;
                 MarkDirty();
             }
-
-            return _theme;
         }
 
         bool ShouldUseDarkTheme()

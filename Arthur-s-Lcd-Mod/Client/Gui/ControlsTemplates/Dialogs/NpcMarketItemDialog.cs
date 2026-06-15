@@ -95,7 +95,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var comboHeight = 30f * scale;
             var comboRect = new RectangleF(card.Right - padding - comboWidth, headerTop + 24f * scale, comboWidth,
                 comboHeight);
-            _modeCombo.Configure(comboRect, scale, null);
+            _modeCombo.Configure(comboRect, scale);
             _modeCombo.SetStyleId("Primary");
             _modeCombo.SetSelectedValue(_mode);
             ContainerControl.AddChild(_modeCombo);

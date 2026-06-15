@@ -1,12 +1,10 @@
 using System.Collections.Generic;
 using LcdMod.Client.Extensions;
-using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Gui.Styling.Styles;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Common.Helpers;
 using VRageMath;
-using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 
 namespace LcdMod.Client.Games
 {
@@ -56,25 +54,7 @@ namespace LcdMod.Client.Games
             _isDirty = true;
         }
 
-        public IReadOnlyDictionary<string, Color> Theme
-        {
-            get { return GetTheme(); }
-        }
 
-        public ControlRenderContext CreateControlRenderContext(
-            IMyTextSurface surface,
-            float scale,
-            float fontScale,
-            Vector2 cursorPosition)
-        {
-            GetTheme();
-            return new ControlRenderContext(
-                surface,
-                scale,
-                fontScale,
-                cursorPosition,
-                this);
-        }
 
 
         Color GetHeaderColor()

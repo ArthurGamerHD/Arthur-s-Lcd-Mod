@@ -4,7 +4,6 @@ using LcdMod.Client.Config;
 using LcdMod.Client.Games.Minesweeper;
 using LcdMod.Client.Games.EightBallPool;
 using LcdMod.Client.Gui;
-using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Client.Terminal.Controls;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
@@ -189,7 +188,7 @@ namespace LcdMod.Client.SurfaceScripts
         public List<MyTerminalControlComboBoxItem> GetDisplayModes() => GameList;
     }
 
-    internal interface IGame : IThemedApp
+    internal interface IGame : IApp
     {
         List<Control> Interactive { get; }
         GameSurfaceScript.GameEnum Id { get; }

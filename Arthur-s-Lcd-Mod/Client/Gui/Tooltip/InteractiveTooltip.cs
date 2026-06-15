@@ -565,8 +565,8 @@ namespace LcdMod.Client.Gui.Tooltip
         {
             var rect = Bounds;
             var fillColor = Hit(context.CursorPosition)
-                ? context.HoverPanelColor
-                : context.PanelColor;
+                ? context.ResolveColor(ThemeResources.SurfaceContainerColor)
+                : context.ResolveColor(ThemeResources.SurfaceColor);
 
             Border.CreateSpritesFromRect(rect, sprites, fillColor,
                 radiusScale: context.Scale);
@@ -607,8 +607,8 @@ namespace LcdMod.Client.Gui.Tooltip
         protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
         {
             var fillColor = Hit(context.CursorPosition)
-                ? context.HoverPanelColor
-                : context.PanelColor;
+                ? context.ResolveColor(ThemeResources.SurfaceContainerColor)
+                : context.ResolveColor(ThemeResources.SurfaceColor);
 
             sprites.Add(new MySprite
             {

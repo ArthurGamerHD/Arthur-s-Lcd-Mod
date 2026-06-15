@@ -72,17 +72,6 @@ namespace LcdMod.Client.Games.Minesweeper
 
         readonly GameThemeContext _themeContext;
 
-        public IReadOnlyDictionary<string, Color> Theme => _themeContext.Theme;
-
-        public ControlRenderContext CreateControlRenderContext(
-            IMyTextSurface surface,
-            float scale,
-            float fontScale,
-            Vector2 cursorPosition)
-        {
-            return _themeContext.CreateControlRenderContext(surface, scale, fontScale, cursorPosition);
-        }
-
         public IVisualStyleScope StyleParent
         {
             get { return _themeContext.StyleParent; }

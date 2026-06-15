@@ -84,7 +84,7 @@ namespace LcdMod.Client.Apps
 
             _sprites.Clear();
             _scrollPanel.Render(
-                new ControlRenderContext(_host.Surface, 1f, 1f, Color.White, Color.Transparent, new Vector2(float.NaN, float.NaN)),
+                CreateControlRenderContext(_host.Surface, 1f, 1f, new Vector2(float.NaN, float.NaN)),
                 _sprites);
 
             ClearDirtyAfterRender();

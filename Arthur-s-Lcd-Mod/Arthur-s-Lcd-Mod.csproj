@@ -72,6 +72,10 @@
       <Folder Include="Client\Config\" />
       <Folder Include="Client\Terminal\" />
     </ItemGroup>
+    
+    <ItemGroup>
+      <Compile Remove="Client\Gui\ControlsTemplates\ControlStyleOverride.cs" />
+    </ItemGroup>
 
     <Target Name="RemoveZhCnResxAlias" AfterTargets="PostBuildEvent">
         <Delete Files="$(MSBuildProjectDirectory)\Content\Data\Localization\MyTexts.zh-CN.resx" />

@@ -40,7 +40,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
         public bool IsOpen { get; private set; }
         public T SelectedValue => _selectedValue;
 
-        public void Configure(RectangleF bounds, float scale, ControlStyle style)
+        public void Configure(RectangleF bounds, float scale)
         {
             _layoutScale = Math.Max(0f, scale);
             SetRect(bounds);

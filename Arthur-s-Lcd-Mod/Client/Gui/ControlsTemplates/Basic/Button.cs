@@ -1,8 +1,6 @@
 using System;
-using System.Collections.Generic;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.Tooltip;
-using LcdMod.Common.Helpers;
 using VRageMath;
 
 namespace LcdMod.Client.Gui.ControlsTemplates.Basic
@@ -30,38 +28,5 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
             return base.BackgroundColor;
         }
 
-        public static ControlStyle CreatePrimaryButtonStyle()
-        {
-            return CreatePrimaryButtonStyle(null);
-        }
-
-        public static ControlStyle CreatePrimaryButtonStyle(IReadOnlyDictionary<string, Color> theme)
-        {
-            var style = ControlStyle.FromThemeRoles(
-                Constants.ON_PRIMARY_CONTAINER,
-                Constants.PRIMARY_CONTAINER,
-                Constants.PRIMARY_CONTAINER + Constants.HOVER,
-                Constants.ON_PRIMARY_CONTAINER,
-                theme);
-            style.BorderRadiusPixels = Border.DEFAULT_RADIUS_PIXELS;
-            return style;
-        }
-
-        public static ControlStyle CreateDisabledButtonStyle()
-        {
-            return CreateDisabledButtonStyle(null);
-        }
-
-        public static ControlStyle CreateDisabledButtonStyle(IReadOnlyDictionary<string, Color> theme)
-        {
-            var style = ControlStyle.FromThemeRoles(
-                Constants.DISABLED_FOREGROUND,
-                Constants.DISABLED_BACKGROUND,
-                Constants.DISABLED_BACKGROUND,
-                Constants.DISABLED_FOREGROUND,
-                theme);
-            style.BorderRadiusPixels = Border.DEFAULT_RADIUS_PIXELS;
-            return style;
-        }
     }
 }

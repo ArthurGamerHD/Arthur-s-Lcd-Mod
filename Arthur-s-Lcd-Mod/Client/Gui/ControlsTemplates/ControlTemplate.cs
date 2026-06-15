@@ -411,28 +411,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 
         public InteractiveTooltip Tooltip { get; private set; }
 
-        public ControlStyle Style { get; private set; }
-        public ControlStyleOverride StyleOverride { get; private set; }
-
         public ControlTemplate SetTooltip(InteractiveTooltip tooltip)
         {
             Tooltip = tooltip;
-            return this;
-        }
-
-        public ControlTemplate SetStyle(ControlStyle style)
-        {
-            Style = style;
-            StyleOverride = null;
-            MarkDirty();
-            return this;
-        }
-
-        public ControlTemplate SetStyleOverride(ControlStyleOverride style)
-        {
-            StyleOverride = style;
-            Style = null;
-            MarkDirty();
             return this;
         }
 
@@ -467,16 +448,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates
                     SetStyleParent(context.StyleScope);
                 }
 
-                var renderContext = ResolveRenderContext(context);
                 var customRender = CustomRender ?? Model?.CustomRender;
 
                 if (customRender != null)
                 {
-                    customRender(this, renderContext, sprites);
+                    customRender(this, context, sprites);
                     return;
                 }
 
-                RenderDefault(renderContext, sprites);
+                RenderDefault(context, sprites);
             }
             finally
             {
@@ -1016,27 +996,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 
             if (Cursor == CursorType.Default)
                 Cursor = GetDefaultCursor(OnClick, model);
-        }
-
-        ControlRenderContext ResolveRenderContext(ControlRenderContext context)
-        {
-            ControlStyle style;
-
-            if (StyleOverride != null)
-            {
-                style = StyleOverride.ResolveAgainst(context.Style, context.Theme);
-            }
-            else
-            {
-                style = Style;
-
-                if (style == null || ReferenceEquals(style, context.Style))
-                    return context;
-
-                style = style.ResolveAgainst(context.Style, context.Theme);
-            }
-
-            return context.WithStyle(style);
         }
 
         static bool IsValidDelta(Vector2 delta)
