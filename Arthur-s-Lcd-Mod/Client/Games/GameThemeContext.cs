@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.Styling;
+using LcdMod.Client.Gui.Styling.Styles;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Common.Helpers;
 using VRageMath;
@@ -12,7 +13,6 @@ namespace LcdMod.Client.Games
     internal sealed class GameThemeContext : IVisualStyleScope
     {
         readonly InteractiveSurfaceScript _script;
-        readonly ControlStyle _controlStyle;
         readonly StyleTree _styles;
         Dictionary<string, Color> _theme;
         ResourceTree _resources;
@@ -24,11 +24,6 @@ namespace LcdMod.Client.Games
         public GameThemeContext(InteractiveSurfaceScript script)
         {
             _script = script;
-            _controlStyle = ControlStyle.FromThemeRoles(
-                Constants.ON_PRIMARY,
-                Constants.PRIMARY,
-                Constants.PRIMARY + Constants.HOVER,
-                Constants.ON_PRIMARY);
             _styles = DefaultStyleBuilder.Build();
         }
 
@@ -81,18 +76,6 @@ namespace LcdMod.Client.Games
                 this);
         }
 
-        public Color GetThemeColor(string role)
-        {
-            var theme = Theme;
-            if (theme == null || string.IsNullOrEmpty(role))
-                throw new ResourceKeyNotFoundException(role, "Theme");
-
-            Color color;
-            if (!theme.TryGetValue(role, out color))
-                throw new ResourceKeyNotFoundException(role, "Theme");
-
-            return color;
-        }
 
         Color GetHeaderColor()
         {

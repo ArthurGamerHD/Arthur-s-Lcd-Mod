@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
+using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Helpers;
 using LcdMod.Common.Helpers;
@@ -14,11 +15,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 {
     sealed class MessageBox : Dialog
     {
-        readonly object _button1Context = new object();
-        readonly object _button2Context = new object();
-
-        RectangleControl _button1Control;
-        RectangleControl _button2Control;
+        Button _button1Control;
+        Button _button2Control;
         Action<object, object> _button1Callback;
         Action<object, object> _button2Callback;
 
@@ -52,7 +50,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _button2Callback = button2Callback;
         }
 
-        protected override void RenderCore(
+        protected override void BuildDialogControls(
             InteractiveSurfaceScript owner,
             RectangleF viewBox,
             float scale,
@@ -66,9 +64,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             EnsureContainer(viewBox);
             ContainerControl.ClearChildren();
 
-            var cardColor = GetThemeColor(Constants.SURFACE_CONTAINER_HIGH);
-            var cardTextColor = GetThemeColor(Constants.ON_SURFACE);
-            var shadowColor = GetThemeColor(Constants.SHADOW);
+            var cardColor = ResolveColor(ThemeResources.SurfaceContainerHighColor);
+            var cardTextColor = ResolveColor(ThemeResources.OnSurfaceColor);
+            var shadowColor = ResolveColor(ThemeResources.ShadowColor);
                 
             Sprites.Add(new MySprite(SpriteType.TEXTURE,
                 "SquareSimple",
@@ -201,12 +199,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 ContainerControl.AddChild(_button2Control);
 
             var renderContext = CreateRenderContext(surface, scale, fontScale, textColor, panelColor, cursorPosition);
-            ConfigureButtonRender(_button1Control, _button1, buttonScale, ThemedParentApp, owner);
+            ConfigureButton(_button1Control, _button1);
             _button1Control.Render(renderContext, Sprites);
 
             if (showButton2 && _button2Control != null)
             {
-                ConfigureButtonRender(_button2Control, _button2, buttonScale, ThemedParentApp, owner);
+                ConfigureButton(_button2Control, _button2);
                 _button2Control.Render(renderContext, Sprites);
             }
         }
@@ -223,53 +221,57 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         {
             if (_button1Control == null)
             {
-                _button1Control = new RectangleControl(
+                _button1Control = new Button(
                     button1Rect,
-                    CursorType.Hand,
-                    _button1Context,
-                    OnButton1Click);
+                    new ButtonModel
+                    {
+                        Text = _button1,
+                        Clicked = OnButton1Click
+                    });
             }
             else
             {
                 _button1Control.SetRect(button1Rect);
-                _button1Control.SetCursor(CursorType.Hand);
             }
 
             _button1Control.SetVisible(true);
+            _button1Control.SetCursor(CursorType.Hand);
 
             if (_button2Control == null)
             {
-                _button2Control = new RectangleControl(
+                _button2Control = new Button(
                     button2Rect,
-                    CursorType.Hand,
-                    _button2Context,
-                    OnButton2Click);
+                    new ButtonModel
+                    {
+                        Text = _button2,
+                        Clicked = OnButton2Click
+                    });
             }
             else
             {
                 _button2Control.SetRect(button2Rect);
-                _button2Control.SetCursor(CursorType.Hand);
             }
 
             _button2Control.SetVisible(showButton2);
+            _button2Control.SetCursor(CursorType.Hand);
         }
 
-        void OnButton1Click(object dataContext, object sender)
+        void OnButton1Click(ButtonModel model, object sender)
         {
             var callback = _button1Callback;
             Dismiss();
 
             if (callback != null)
-                callback(dataContext, sender);
+                callback(model, sender);
         }
 
-        void OnButton2Click(object dataContext, object sender)
+        void OnButton2Click(ButtonModel model, object sender)
         {
             var callback = _button2Callback;
             Dismiss();
 
             if (callback != null)
-                callback(dataContext, sender);
+                callback(model, sender);
         }
 
         protected override void OnDismiss()
@@ -284,48 +286,21 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         }
             
 
-        static void ConfigureButtonRender(
-            RectangleControl control,
-            string text,
-            float textScale,
-            IThemedApp themedParentApp,
-            InteractiveSurfaceScript owner)
+        static void ConfigureButton(Button button, string text)
         {
-            if (control == null)
+            if (button == null)
                 return;
 
-            control.SetStyle(Button.CreatePrimaryButtonStyle(themedParentApp?.Theme));
-            control.CustomRender = delegate(ControlTemplate renderEntry, ControlRenderContext context, List<MySprite> sprites)
+            var model = button.DataContext as ButtonModel;
+            if (model != null)
             {
-                DrawButton(renderEntry.Bounds, owner, sprites, text, textScale, context);
-            };
-        }
+                model.Text = text ?? string.Empty;
+                model.Enabled = true;
+            }
 
-        static void DrawButton(
-            RectangleF rect,
-            InteractiveSurfaceScript owner,
-            List<MySprite> sprites,
-            string text,
-            float textScale,
-            ControlRenderContext context)
-        {
-            var hover = rect.Contains(context.CursorPosition);
-            var buttonColor = context.Style.GetPanelColor(hover);
-            var buttonTextColor = context.Style.GetTextColor(hover);
-
-            Border.CreateSpritesFromRect(rect, sprites, buttonColor,
-                radiusScale: context.Scale);
-
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXT,
-                Data = text,
-                Position = new Vector2(rect.Center.X, rect.Center.Y - FormatingHelper.GetSizeInPixel(text, "White", textScale, owner.Surface).Y * 0.5f),
-                Color = buttonTextColor,
-                FontId = "White",
-                Alignment = TextAlignment.CENTER,
-                RotationOrScale = textScale
-            });
+            button.SetEnabled(true);
+            button.SetStyleId("Primary");
+            button.CustomRender = null;
         }
     }
 }

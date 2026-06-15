@@ -63,6 +63,8 @@ namespace LcdMod.Client.SurfaceScripts
             return block is IMyShipConnector || block is IMyShipMergeBlock;
         }
 
+        public bool TryGetReferenceBlockCandidates(List<IMyTerminalBlock> blocks) => false;
+
         protected override void LayoutChanged()
         {
             base.LayoutChanged();

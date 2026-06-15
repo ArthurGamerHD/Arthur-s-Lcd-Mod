@@ -92,21 +92,21 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         public Color GetPanelColor(bool hovered)
         {
             if (!hovered)
-                return string.IsNullOrEmpty(PanelRole) ? PanelColor : GetThemeColor(ThemeColors, PanelRole);
+                return string.IsNullOrEmpty(PanelRole) ? PanelColor : ResolveThemeColor(ThemeColors, PanelRole);
 
             return string.IsNullOrEmpty(HoverPanelRole)
                 ? HoverPanelColor ?? GetPanelColor(false).DeriveAccentColor()
-                : GetThemeColor(ThemeColors, HoverPanelRole);
+                : ResolveThemeColor(ThemeColors, HoverPanelRole);
         }
 
         public Color GetTextColor(bool hovered)
         {
             if (!hovered)
-                return string.IsNullOrEmpty(TextRole) ? TextColor : GetThemeColor(ThemeColors, TextRole);
+                return string.IsNullOrEmpty(TextRole) ? TextColor : ResolveThemeColor(ThemeColors, TextRole);
 
             return string.IsNullOrEmpty(HoverTextRole)
                 ? HoverTextColor ?? GetTextColor(false)
-                : GetThemeColor(ThemeColors, HoverTextRole);
+                : ResolveThemeColor(ThemeColors, HoverTextRole);
         }
 
         public ControlStyle ResolveAgainst(ControlStyle parent)
@@ -175,7 +175,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             };
         }
 
-        static Color GetThemeColor(IReadOnlyDictionary<string, Color> theme, string role)
+        static Color ResolveThemeColor(IReadOnlyDictionary<string, Color> theme, string role)
         {
             if (theme == null || string.IsNullOrEmpty(role))
                 throw new ResourceKeyNotFoundException(role, "ThemeColors");

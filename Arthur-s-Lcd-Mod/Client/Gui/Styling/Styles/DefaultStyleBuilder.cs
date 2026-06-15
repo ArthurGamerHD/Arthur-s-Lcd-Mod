@@ -1,9 +1,9 @@
-using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
+using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using VRageMath;
 
-namespace LcdMod.Client.Gui.Styling
+namespace LcdMod.Client.Gui.Styling.Styles
 {
     public static class DefaultStyleBuilder
     {
@@ -34,6 +34,8 @@ namespace LcdMod.Client.Gui.Styling
                 .Set(ControlTemplate.BackgroundColorProperty, ThemeResources.ErrorColor)
                 .Set(ControlTemplate.TextColorProperty, ThemeResources.OnAccentColor);
 
+            ButtonStyle.Build(styles);
+            
             return styles;
         }
     }

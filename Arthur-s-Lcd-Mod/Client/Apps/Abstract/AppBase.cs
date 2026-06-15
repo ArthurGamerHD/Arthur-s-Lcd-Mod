@@ -3,6 +3,7 @@ using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.Styling;
+using LcdMod.Client.Gui.Styling.Styles;
 using LcdMod.Common.Config.Models;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
@@ -115,18 +116,6 @@ namespace LcdMod.Client.Apps.Abstract
                 this);
         }
 
-        public Color GetThemeColor(string role)
-        {
-            var theme = Theme;
-            if (theme == null || string.IsNullOrEmpty(role))
-                throw new ResourceKeyNotFoundException(role, "Theme");
-
-            Color color;
-            if (!theme.TryGetValue(role, out color))
-                throw new ResourceKeyNotFoundException(role, "Theme");
-
-            return color;
-        }
 
         public abstract void Update();
 

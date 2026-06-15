@@ -1,3 +1,4 @@
+#if DEBUG
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -7,13 +8,14 @@ using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.SurfaceScripts;
 using LcdMod.Client.SurfaceScripts.Abstract;
+using LcdMod.Common.Config.Models.Apps;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 
 namespace LcdMod.Client.Apps
 {
-    internal sealed class VisibleTreeDebugApp : IApp
+    internal sealed class VisibleTreeDebugApp : App
     {
         const string DEBUG_FONT = "Monospace";
         const float LINE_SCALE = 0.52f;
@@ -27,6 +29,29 @@ namespace LcdMod.Client.Apps
         static readonly Color ErrorColor = new Color(230, 90, 90);
 
         readonly List<MySprite> _sprites = new List<MySprite>();
+
+        public override IReadOnlyList<Control> Children { get; } = new Control[] {};
+
+        public VisibleTreeDebugApp(ScreenConfigVisibleTreeDebug config, VisibleTreeDebugSurfaceScript host)
+            : base(config, host)
+        {
+        }
+
+        public override void Update()
+        {
+        }
+
+        public override List<MySprite> GetSprites()
+        {
+            var owner = Host as VisibleTreeDebugSurfaceScript;
+            if (owner == null)
+                return _sprites;
+
+            SurfaceScriptBase target;
+            string status;
+            owner.TryGetDebugTarget(out target, out status);
+            return GetSprites(owner, target, status);
+        }
 
         public List<MySprite> GetSprites(
             VisibleTreeDebugSurfaceScript owner,
@@ -193,16 +218,20 @@ namespace LcdMod.Client.Apps
             if (model != null)
                 sb.Append(" model=").Append(model.GetType().Name);
             else if (parentApp != null)
-                sb.Append(" parentApp=").Append(ClampToWidth(parentApp.GetType().Name, 24));
-            else if (control.DataContext != null)
-                sb.Append(" data=").Append(ClampToWidth(control.DataContext.GetType().Name, 24));
-
+                sb.Append(" datacontext=").Append(ClampToWidth(parentApp.GetType().Name, 24));
+            
+            if (control.Class != null)
+                sb.Append(" class=[").Append(ClampToWidth(control.Class, 48)).Append("]");
+            
             if (disabled)
                 sb.Append(" disabled");
 
+            else if (control.DataContext != null)
+                sb.Append(" data=").Append(ClampToWidth(control.DataContext.GetType().Name, 24));
+
+
+
             sb.Append(" flags=").Append(GetFlags(control));
-            if (control.Cursor != CursorType.Default)
-                sb.Append(" cursor=").Append(control.Cursor);
 
             var scrollPanel = control as ScrollPanel;
             if (scrollPanel != null)
@@ -320,28 +349,6 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        public void Update()
-        {
-        }
-
-        public void LayoutChanged()
-        {
-        }
-
-        public List<MySprite> GetSprites()
-        {
-            return new List<MySprite>();
-        }
-
-        public IReadOnlyList<Control> Children { get; set; }
-
-        public bool HasVisibleItems()
-        {
-            return true;
-        }
-
-        public void OnMouseScroll(int delta, ref bool handled)
-        {
-        }
     }
 }
+#endif

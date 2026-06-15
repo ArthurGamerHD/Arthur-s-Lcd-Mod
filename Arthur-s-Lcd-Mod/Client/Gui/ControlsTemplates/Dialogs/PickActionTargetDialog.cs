@@ -8,6 +8,7 @@ using LcdMod.Client.GridData;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Inputs;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
+using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
 using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
@@ -89,10 +90,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         TextInput _searchInput;
         TextInputModel _searchInputModel;
 
-        ControlStyle _comboStyle;
-        ControlStyle _comboOptionStyle;
-        ControlStyle _searchStyle;
-        ControlStyle _rowStyle;
 
         public PickActionTargetDialog(
             IApp parentApp,
@@ -121,7 +118,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _scrollPanel.ScrollChanged = OnScrollChanged;
         }
 
-        protected override void RenderCore(
+        protected override void BuildDialogControls(
             InteractiveSurfaceScript owner,
             RectangleF viewBox,
             float scale,
@@ -168,7 +165,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Type = SpriteType.TEXT,
                 Data = TITLE,
                 Position = new Vector2(cardRect.Center.X, cardRect.Y + padding.Y + (headerHeight - titleHeight) * 0.5f),
-                Color = GetThemeColor(Constants.ON_SURFACE),
+                Color = ResolveColor(ThemeResources.OnSurfaceColor),
                 FontId = "White",
                 RotationOrScale = titleScale,
                 Alignment = TextAlignment.CENTER
@@ -220,9 +217,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             });
 
             Border.CreateSpritesFromRect(new RectangleF(cardRect.Position + 3f * scale, cardRect.Size), Sprites,
-                GetThemeColor(Constants.SHADOW), radiusScale: scale);
+                ResolveColor(ThemeResources.ShadowColor), radiusScale: scale);
             Border.CreateSpritesFromRect(cardRect, Sprites,
-                GetThemeColor(Constants.SURFACE_CONTAINER_HIGH), radiusScale: scale);
+                ResolveColor(ThemeResources.SurfaceContainerHighColor), radiusScale: scale);
         }
 
         void EnsureItemsLoaded()
@@ -395,7 +392,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 model.Clicked = OnComboClicked;
             }
 
-            _comboButton.SetStyle(GetComboStyle());
+            _comboButton.SetStyleId("Primary");
+            _comboButton.SetClass("ControlBase Button Combo");
             _comboButton.CustomRender = RenderComboButton;
             _comboButton.SetCursor(CursorType.Hand);
             _comboButton.SetVisible(true);
@@ -405,12 +403,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         {
             var rect = control.Bounds;
             var hovered = rect.Contains(context.CursorPosition);
-            Border.CreateSpritesFromRect(rect, sprites, context.Style.GetPanelColor(hovered), radiusScale: context.Scale);
+            Border.CreateSpritesFromRect(rect, sprites, control.BackgroundColor, radiusScale: context.Scale);
 
             var textScale = 0.56f * context.Scale * context.FontScale;
             var label = TrimText(GetKindLabel(_kind), Math.Max(0f, rect.Width - 32f * context.Scale), textScale, context.Surface);
             var textHeight = FormatingHelper.LineHeight(textScale, context.Surface);
-            var textColor = context.Style.GetTextColor(hovered);
+            var textColor = control.TextColor;
 
             sprites.Add(new MySprite
             {
@@ -442,7 +440,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         {
             var rowHeight = comboRect.Height;
             var listRect = new RectangleF(comboRect.X, comboRect.Bottom + 2f * scale, comboRect.Width, rowHeight * Kinds.Length);
-            Border.CreateSpritesFromRect(listRect, Sprites, GetThemeColor(Constants.SURFACE_CONTAINER_HIGHEST), radiusScale: scale);
+            Border.CreateSpritesFromRect(listRect, Sprites, ResolveColor(ThemeResources.SurfaceContainerHighestColor), radiusScale: scale);
 
             for (var i = 0; i < Kinds.Length; i++)
             {
@@ -484,7 +482,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             model.Clicked = OnComboOptionClicked;
 
             button.SetRect(rect);
-            button.SetStyle(GetComboOptionStyle());
+            button.SetClass("ControlBase Button ComboOption");
+            button.SetStyleId(kind == _kind ? "Primary" : null);
             button.SetCursor(CursorType.Hand);
             button.CustomRender = RenderComboOption;
             button.SetVisible(true);
@@ -499,8 +498,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
             var selected = model.Kind == _kind;
             var hovered = rect.Contains(context.CursorPosition);
-            var panelColor = selected ? context.Style.GetPanelColor(true) : context.Style.GetPanelColor(hovered);
-            var textColor = context.Style.GetTextColor(selected || hovered);
+            control.SetStyleId(selected ? "Primary" : null);
+            var panelColor = selected
+                ? ResolveColor(ThemeResources.AccentContainerColor)
+                : control.BackgroundColor;
+            var textColor = selected
+                ? ResolveColor(ThemeResources.OnAccentContainerColor)
+                : control.TextColor;
 
             Border.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: context.Scale);
 
@@ -547,7 +551,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 _searchInput.SetRect(rect);
 
             _searchInput.SetDataContext(_searchInputModel);
-            _searchInput.SetStyle(GetSearchStyle());
+            _searchInput.SetStyleId("Primary");
             _searchInput.SetCursor(CursorType.Hand);
             _searchInput.SetVisible(true);
         }
@@ -559,14 +563,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             if (listRect.Width <= 1f || listRect.Height <= 1f)
                 return;
 
-            Border.CreateSpritesFromRect(listRect, Sprites, GetThemeColor(Constants.SURFACE_CONTAINER_HIGH), radiusScale: scale);
+            Border.CreateSpritesFromRect(listRect, Sprites, ResolveColor(ThemeResources.SurfaceContainerHighColor), radiusScale: scale);
 
             var rowHeight = GetRowHeight(scale);
             var scrollerWidth = Math.Min(_scrollPanel.AutomaticScrollerWidthPixels * scale, Math.Max(0f, listRect.Width * 0.25f));
 
             _scrollPanel.ClearChildren();
             _scrollPanel.Configure(listRect, listRect.Y, 0f, rowHeight, _filteredItems.Count, scrollerWidth, 0f);
-            _scrollPanel.SetScrollBarColors(GetThemeColor(Constants.SURFACE_CONTAINER_HIGH), GetThemeColor(Constants.ON_SURFACE));
+            _scrollPanel.SetScrollBarColors(ResolveColor(ThemeResources.SurfaceContainerHighColor), ResolveColor(ThemeResources.OnSurfaceColor));
             _scrollPanel.SetVisible(true);
             ContainerControl.AddChild(_scrollPanel);
 
@@ -629,7 +633,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             model.Clicked = OnTargetClicked;
 
             button.SetRect(rect);
-            button.SetStyle(GetRowStyle());
+            button.SetClass("ControlBase Button Row");
+            button.SetStyleId(IsSelected(item) ? "Primary" : null);
             button.SetCursor(CursorType.Hand);
             button.CustomRender = RenderTargetRow;
             button.SetVisible(true);
@@ -656,8 +661,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
             var hovered = rect.Contains(context.CursorPosition);
             var selected = IsSelected(target);
-            var panelColor = selected ? context.Style.GetPanelColor(true) : context.Style.GetPanelColor(hovered);
-            var rowTextColor = context.Style.GetTextColor(hovered || selected);
+            control.SetStyleId(selected ? "Primary" : null);
+            var panelColor = selected
+                ? ResolveColor(ThemeResources.AccentContainerColor)
+                : control.BackgroundColor;
+            var rowTextColor = selected
+                ? ResolveColor(ThemeResources.OnAccentContainerColor)
+                : control.TextColor;
 
             Border.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: context.Scale);
 
@@ -724,7 +734,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Type = SpriteType.TEXT,
                 Data = text,
                 Position = new Vector2(rect.Center.X, rect.Center.Y - textHeight * 0.5f),
-                Color = GetThemeColor(Constants.ON_SURFACE),
+                Color = ResolveColor(ThemeResources.OnSurfaceColor),
                 FontId = "White",
                 RotationOrScale = textScale,
                 Alignment = TextAlignment.CENTER
@@ -865,47 +875,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             return FormatingHelper.TrimName(text, Math.Max(1, (int)(text.Length * availableWidth / Math.Max(1f, size.X))));
         }
 
-
-        ControlStyle GetComboStyle()
-        {
-            if (_comboStyle == null)
-                _comboStyle = Button.CreatePrimaryButtonStyle(ParentTheme);
-            else
-                _comboStyle.ThemeColors = ParentTheme;
-
-            return _comboStyle;
-        }
-
-        ControlStyle GetComboOptionStyle()
-        {
-            if (_comboOptionStyle == null)
-                _comboOptionStyle = Button.CreatePrimaryButtonStyle(ParentTheme);
-            else
-                _comboOptionStyle.ThemeColors = ParentTheme;
-
-            return _comboOptionStyle;
-        }
-
-
-        ControlStyle GetSearchStyle()
-        {
-            if (_searchStyle == null)
-                _searchStyle = Button.CreatePrimaryButtonStyle(ParentTheme);
-            else
-                _searchStyle.ThemeColors = ParentTheme;
-
-            return _searchStyle;
-        }
-
-        ControlStyle GetRowStyle()
-        {
-            if (_rowStyle == null)
-                _rowStyle = Button.CreatePrimaryButtonStyle(ParentTheme);
-            else
-                _rowStyle.ThemeColors = ParentTheme;
-
-            return _rowStyle;
-        }
 
         void OnComboClicked(ButtonModel model, object sender)
         {

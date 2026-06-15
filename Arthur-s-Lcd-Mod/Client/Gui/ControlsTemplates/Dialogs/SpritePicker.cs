@@ -5,6 +5,7 @@ using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Inputs;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
+using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Gui.ControlsTemplates.Panels.Virtualized;
 using LcdMod.Client.Helpers;
 using LcdMod.Common.Helpers;
@@ -54,10 +55,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         TextInputModel _searchInputModel;
         Button _applyButton;
 
-        ControlStyle _searchStyle;
-        ControlStyle _rowStyle;
-        ControlStyle _selectedRowStyle;
-        ControlStyle _applyStyle;
 
         bool _spritesLoaded;
         bool _childRenderQueued;
@@ -130,7 +127,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _filteredSprites.Clear();
         }
 
-        protected override void RenderCore(
+        protected override void BuildDialogControls(
             InteractiveSurfaceScript owner,
             RectangleF viewBox,
             float scale,
@@ -183,7 +180,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Type = SpriteType.TEXT,
                 Data = TITLE,
                 Position = new Vector2(cardRect.Center.X, cardRect.Y + innerPadding.Y + (headerHeight - titleHeight) * 0.5f),
-                Color = GetThemeColor(Constants.ON_SURFACE),
+                Color = ResolveColor(ThemeResources.OnSurfaceColor),
                 FontId = "White",
                 Alignment = TextAlignment.CENTER,
                 RotationOrScale = titleScale
@@ -250,13 +247,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             Border.CreateSpritesFromRect(
                 new RectangleF(cardRect.Position + 3f * scale, cardRect.Size),
                 Sprites,
-                GetThemeColor(Constants.SHADOW),
+                ResolveColor(ThemeResources.ShadowColor),
                 radiusScale: scale);
 
             Border.CreateSpritesFromRect(
                 cardRect,
                 Sprites,
-                GetThemeColor(Constants.SURFACE_CONTAINER_HIGH),
+                ResolveColor(ThemeResources.SurfaceContainerHighColor),
                 radiusScale: scale);
         }
 
@@ -327,7 +324,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 _searchInput.SetRect(rect);
 
             _searchInput.SetDataContext(_searchInputModel);
-            _searchInput.SetStyle(GetSearchStyle());
+            _searchInput.SetStyleId("Primary");
             _searchInput.SetCursor(CursorType.Hand);
             _searchInput.SetVisible(true);
         }
@@ -344,7 +341,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             Border.CreateSpritesFromRect(
                 listRect,
                 Sprites,
-                GetThemeColor(Constants.SURFACE_CONTAINER),
+                ResolveColor(ThemeResources.SurfaceContainerColor),
                 radiusScale: scale);
 
             var rowHeight = GetRowHeight(scale);
@@ -361,8 +358,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 0f);
 
             _scrollPanel.SetScrollBarColors(
-                GetThemeColor(Constants.SURFACE_CONTAINER_HIGHEST),
-                GetThemeColor(Constants.ON_SURFACE));
+                ResolveColor(ThemeResources.SurfaceContainerHighestColor),
+                ResolveColor(ThemeResources.OnSurfaceColor));
 
             _scrollPanel.SetVisible(true);
             ContainerControl.AddChild(_scrollPanel);
@@ -391,7 +388,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Type = SpriteType.TEXT,
                 Data = text,
                 Position = new Vector2(listRect.Center.X, listRect.Center.Y - textHeight * 0.5f),
-                Color = GetThemeColor(Constants.ON_SURFACE_VARIANT),
+                Color = ResolveColor(ThemeResources.OnSurfaceVariantColor),
                 FontId = "White",
                 Alignment = TextAlignment.CENTER,
                 RotationOrScale = textScale
@@ -418,6 +415,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 OnSpriteClicked);
 
             control.CustomRender = RenderSpriteRow;
+            control.SetClass("ControlBase Button Row");
             return control;
         }
 
@@ -429,7 +427,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             model.IsSelected = AllowMultiSelection && _selectedSpriteNameSet.Contains(model.SpriteName);
             control.SetDataContext(model);
             control.SetCursor(CursorType.Hand);
-            control.SetStyle(model.IsSelected ? GetSelectedRowStyle() : GetRowStyle());
+            control.SetClass(model.IsSelected ? "ControlBase Button Row Selected" : "ControlBase Button Row");
+            control.SetStyleId(model.IsSelected ? "Primary" : null);
             control.CustomRender = RenderSpriteRow;
             control.SetVisible(true);
         }
@@ -452,11 +451,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var hovered = rect.Contains(context.CursorPosition);
             var selected = AllowMultiSelection && model.IsSelected;
             var backgroundColor = selected
-                ? GetThemeColor(Constants.PRIMARY_CONTAINER)
-                : context.Style.GetPanelColor(hovered);
+                ? ResolveColor(ThemeResources.AccentContainerColor)
+                : entry.BackgroundColor;
             var foregroundColor = selected
-                ? GetThemeColor(Constants.ON_PRIMARY_CONTAINER)
-                : context.Style.GetTextColor(hovered);
+                ? ResolveColor(ThemeResources.OnAccentContainerColor)
+                : entry.TextColor;
 
             Border.CreateSpritesFromRect(
                 rect,
@@ -487,7 +486,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             Border.CreateSpritesFromRect(
                 iconRect,
                 sprites,
-                GetThemeColor(Constants.SURFACE_CONTAINER_LOWEST),
+                ResolveColor(ThemeResources.SurfaceContainerLowestColor),
                 radiusScale: context.Scale);
 
             sprites.Add(new MySprite
@@ -650,64 +649,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             }
         }
 
-        ControlStyle GetSearchStyle()
-        {
-            if (_searchStyle == null)
-                _searchStyle = Button.CreatePrimaryButtonStyle(ParentTheme);
-            else
-                _searchStyle.ThemeColors = ParentTheme;
-
-            return _searchStyle;
-        }
-
-        ControlStyle GetRowStyle()
-        {
-            if (_rowStyle == null)
-            {
-                _rowStyle = ControlStyle.FromThemeRoles(
-                    Constants.ON_SURFACE,
-                    Constants.SURFACE_CONTAINER_LOW,
-                    Constants.SURFACE_CONTAINER_HIGHEST,
-                    Constants.ON_SURFACE,
-                    ParentTheme);
-            }
-            else
-            {
-                _rowStyle.ThemeColors = ParentTheme;
-            }
-
-            return _rowStyle;
-        }
-
-        ControlStyle GetSelectedRowStyle()
-        {
-            if (_selectedRowStyle == null)
-            {
-                _selectedRowStyle = ControlStyle.FromThemeRoles(
-                    Constants.ON_PRIMARY_CONTAINER,
-                    Constants.PRIMARY_CONTAINER,
-                    Constants.PRIMARY_CONTAINER + Constants.HOVER,
-                    Constants.ON_PRIMARY_CONTAINER,
-                    ParentTheme);
-            }
-            else
-            {
-                _selectedRowStyle.ThemeColors = ParentTheme;
-            }
-
-            return _selectedRowStyle;
-        }
-
-        ControlStyle GetApplyStyle()
-        {
-            if (_applyStyle == null)
-                _applyStyle = Button.CreatePrimaryButtonStyle(ParentTheme);
-            else
-                _applyStyle.ThemeColors = ParentTheme;
-
-            return _applyStyle;
-        }
-
         void EnsureApplyButton(RectangleF rect)
         {
             if (_applyButton == null)
@@ -723,7 +664,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 model.Clicked = OnApplyClicked;
             }
 
-            _applyButton.SetStyle(GetApplyStyle());
+            _applyButton.SetStyleId("Primary");
+            _applyButton.SetClass("ControlBase Button");
             _applyButton.CustomRender = RenderTextButton;
             _applyButton.SetCursor(CursorType.Hand);
             _applyButton.SetVisible(true);
@@ -735,7 +677,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var buttonModel = control.DataContext as ButtonModel;
             var enabled = buttonModel == null || buttonModel.Enabled;
             var hovered = enabled && rect.Contains(context.CursorPosition);
-            Border.CreateSpritesFromRect(rect, sprites, context.Style.GetPanelColor(hovered), radiusScale: context.Scale);
+            Border.CreateSpritesFromRect(rect, sprites, control.BackgroundColor, radiusScale: context.Scale);
 
             var text = buttonModel == null ? string.Empty : buttonModel.Text;
             var textScale = 0.54f * context.Scale * context.FontScale;
@@ -748,7 +690,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Type = SpriteType.TEXT,
                 Data = trimmed,
                 Position = new Vector2(rect.Center.X, rect.Center.Y - textHeight * 0.5f),
-                Color = context.Style.GetTextColor(hovered),
+                Color = control.TextColor,
                 FontId = "White",
                 RotationOrScale = textScale,
                 Alignment = TextAlignment.CENTER

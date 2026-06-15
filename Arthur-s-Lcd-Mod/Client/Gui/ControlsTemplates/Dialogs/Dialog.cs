@@ -14,7 +14,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
     abstract class Dialog : IVisualStyleScope
     {
         readonly IApp _parentApp;
-        readonly IThemedApp _themedParentApp;
         readonly List<MySprite> _sprites = new List<MySprite>();
         IVisualStyleScope _styleParent;
         StyleTree _styles;
@@ -31,7 +30,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 throw new ArgumentNullException("parentApp");
 
             _parentApp = parentApp;
-            _themedParentApp = parentApp as IThemedApp;
             _styleParent = parentApp as IVisualStyleScope;
         }
 
@@ -104,16 +102,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             get { return _parentApp; }
         }
 
-        protected IThemedApp ThemedParentApp
-        {
-            get { return _themedParentApp; }
-        }
-
-        protected IReadOnlyDictionary<string, Color> ParentTheme
-        {
-            get { return _themedParentApp?.Theme; }
-        }
-
         protected DialogContainerControl ContainerControl
         {
             get { return _containerControl; }
@@ -134,17 +122,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             Color panelColor,
             Vector2 cursorPosition)
         {
-            if (_themedParentApp != null)
-                return _themedParentApp.CreateControlRenderContext(surface, scale, fontScale, cursorPosition)
-                    .WithStyleScope(this);
-
-            return new ControlRenderContext(surface, scale, fontScale, textColor, panelColor, cursorPosition)
-                .WithStyleScope(this);
-        }
-
-        protected Color GetThemeColor(string role)
-        {
-            return ResolveColor(ThemeResources.FromThemeRole(role));
+            return new ControlRenderContext(surface, scale, fontScale, cursorPosition, this);
         }
 
         protected Color ResolveColor(ResourceKey<Color> key)
@@ -183,7 +161,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             if (Dismissed)
                 return;
 
-            RenderCore(owner, viewBox, scale, fontScale, surface, textColor, backgroundColor, panelColor, cursorPosition);
+            BuildDialogControls(owner, viewBox, scale, fontScale, surface, textColor, backgroundColor, panelColor, cursorPosition);
             RenderCloseButton(surface, scale, fontScale, textColor, panelColor, cursorPosition);
 
             if (targetSprites != null)
@@ -340,7 +318,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 OnClose();
         }
 
-        protected abstract void RenderCore(
+        /// <summary>
+        /// Configures the dialog visual tree for the current frame.
+        ///
+        /// New dialogs should add/update controls under <see cref="ContainerControl"/> and let those
+        /// controls render themselves. Existing migrated dialogs may still use this hook while their
+        /// internal rows/buttons are being converted to real controls.
+        /// </summary>
+        protected abstract void BuildDialogControls(
             InteractiveSurfaceScript owner,
             RectangleF viewBox,
             float scale,

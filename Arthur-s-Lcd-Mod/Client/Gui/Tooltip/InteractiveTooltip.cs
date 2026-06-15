@@ -4,6 +4,7 @@ using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
+using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
 using LcdMod.Common.Helpers;
 using VRage.Game.GUI.TextPanel;
@@ -180,12 +181,12 @@ namespace LcdMod.Client.Gui.Tooltip
             var sprites = new List<MySprite>();
             _interactiveEntries.Clear();
             _linesUsedThisFrame.Clear();
-            var themedApp = parentApp as IThemedApp;
-            if (themedApp != null)
-            {
-                textColor = themedApp.GetThemeColor(Constants.ON_SURFACE);
-                panelColor = themedApp.GetThemeColor(Constants.SURFACE_CONTAINER_HIGH);
-            }
+            var styleScope = parentApp as IVisualStyleScope;
+            Color resolvedColor;
+            if (styleScope != null && ScopedResourceResolver.TryResolve(styleScope, ThemeResources.OnSurfaceColor, out resolvedColor))
+                textColor = resolvedColor;
+            if (styleScope != null && ScopedResourceResolver.TryResolve(styleScope, ThemeResources.SurfaceContainerHighColor, out resolvedColor))
+                panelColor = resolvedColor;
 
             var tooltipLines = Lines;
             var title = GetTitle();
@@ -381,12 +382,12 @@ namespace LcdMod.Client.Gui.Tooltip
                 bool hasLineEntry = line != null && (clickables[i] || hasLineCursor);
 
                 bool lineHovered = hasLineEntry && lineBounds.Contains(cursorPosition);
-                if (lineHovered && themedApp == null)
-                    throw new ResourceKeyNotFoundException(Constants.PRIMARY, "ParentTheme");
-
-                var lineColor = lineHovered
-                    ? themedApp.GetThemeColor(Constants.PRIMARY)
-                    : textColor;
+                var lineColor = textColor;
+                if (lineHovered)
+                {
+                    if (!ScopedResourceResolver.TryResolve(styleScope, ThemeResources.AccentColor, out lineColor))
+                        throw new ResourceKeyNotFoundException(ThemeResources.AccentColor.Name, "ResourceTree");
+                }
 
                 if (hasLineEntry)
                 {

@@ -2,17 +2,17 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using LcdMod.Client.Apps.Abstract;
-using LcdMod.Client.Gui;
-using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
+using LcdMod.Client.Gui.ControlsTemplates.Templates;
+using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
+using LcdMod.Client.Market;
 using VRage;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
-using Sandbox.ModAPI;
 
-namespace LcdMod.Client.Market.Gui
+namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
 {
     internal sealed class NpcMarketListPanel : Panel
     {
@@ -20,9 +20,12 @@ namespace LcdMod.Client.Market.Gui
         static readonly Color CheckerWhite = new Color(255,255,255, 2);
         static readonly Color CheckerBlack = new Color(0,0,0, 2);
         readonly List<Button> _sortHeaderButtons = new List<Button>();
-        readonly Dictionary<string, Button> _rowButtonsByKey = new Dictionary<string, Button>(StringComparer.Ordinal);
+        readonly List<NpcMarketRowHitSlot> _rowHitSlots = new List<NpcMarketRowHitSlot>();
         readonly StringBuilder _text = new StringBuilder();
         readonly IAppHost _host;
+        readonly Grid _templateGrid;
+        readonly Panel _headerPanel;
+        readonly Repeater<NpcMarketRowHitSlot> _rowHitRepeater;
         readonly Button _searchButton;
         IList<NpcMarketRow> _rows = new List<NpcMarketRow>();
         NpcMarketListPage _page;
@@ -34,15 +37,27 @@ namespace LcdMod.Client.Market.Gui
         float _textScale;
         float _layoutScale = 1f;
         Color _muted;
-        ControlStyle _sortHeaderStyle;
 
         public NpcMarketListPanel(IAppHost host)
         {
             _host = host;
+            _templateGrid = new Grid(default(RectangleF), new[] { 1f }, new[] { 1f, 1f });
+            _headerPanel = new Panel();
+            _rowHitRepeater = new Repeater<NpcMarketRowHitSlot>()
+                .ItemTemplate(Template.For<NpcMarketRowHitSlot>(CreateRowHitControl))
+                .Bind(BindRowHitControl)
+                .ArrangeItem(ArrangeRowHitControl);
+            _rowHitRepeater.SetClass("ControlBase NpcMarketRows");
+
+            _templateGrid.Set(_headerPanel, 0, 0);
+            _templateGrid.Set(_rowHitRepeater, 0, 1);
+            AddChild(_templateGrid);
+
             _searchButton = new Button(default(RectangleF), new ButtonModel { Clicked = OnSearchClicked });
             _searchButton.CustomRender = RenderSearchButton;
+            _searchButton.SetClass("ControlBase Button Sort");
             _searchButton.SetVisible(false);
-            AddChild(_searchButton);
+            _headerPanel.AddChild(_searchButton);
             EnsureSortHeaderButtons();
         }
 
@@ -53,38 +68,27 @@ namespace LcdMod.Client.Market.Gui
         public override void Arrange(RectangleF bounds)
         {
             SetRect(bounds);
-            ConfigureHeaderButtons();
-            ConfigureRowButtons();
         }
 
-        public void Configure(
-            RectangleF bounds,
-            IList<NpcMarketRow> rows,
-            NpcMarketListPage page,
-            NpcMarketMode mode,
-            NpcMarketSortColumn sortColumn,
-            bool sortDescending,
-            float headerHeight,
-            float rowHeight,
-            float textScale,
-            float layoutScale,
-            Color muted,
-            ControlStyle sortHeaderStyle)
+        public void Configure(NpcMarketListPageContext context)
         {
-            _rows = rows ?? new List<NpcMarketRow>();
-            _page = page;
-            _mode = mode;
-            _sortColumn = sortColumn;
-            _sortDescending = sortDescending;
-            _headerHeight = headerHeight;
-            _rowHeight = rowHeight;
-            _textScale = textScale;
-            _layoutScale = Math.Max(0.01f, layoutScale);
-            _muted = muted;
-            _sortHeaderStyle = sortHeaderStyle;
-            SetRect(bounds);
-            ConfigureHeaderButtons();
-            ConfigureRowButtons();
+            if (context == null)
+                return;
+
+            _rows = context.Rows ?? new List<NpcMarketRow>();
+            _page = context.Page;
+            _mode = context.Mode;
+            _sortColumn = context.SortColumn;
+            _sortDescending = context.SortDescending;
+            _headerHeight = context.HeaderHeight;
+            _rowHeight = context.RowHeight;
+            _textScale = context.TextScale;
+            _layoutScale = Math.Max(0.01f, context.LayoutScale);
+            _muted = context.MutedColor;
+            SortClicked = context.SortClicked;
+            SearchClicked = context.SearchClicked;
+            RowClicked = context.RowClicked;
+            SetRect(new RectangleF(Bounds.X, Bounds.Y, _page != null ? _page.Width : Bounds.Width, _page != null ? _page.Height : Bounds.Height));
         }
 
         void EnsureSortHeaderButtons()
@@ -111,8 +115,19 @@ namespace LcdMod.Client.Market.Gui
             });
             button.CustomRender = RenderSortHeaderButton;
             button.SetVisible(false);
+            button.SetClass("ControlBase Button Sort");
             _sortHeaderButtons.Add(button);
-            AddChild(button);
+            _headerPanel.AddChild(button);
+        }
+
+        protected override void ArrangeChildren()
+        {
+            float safeHeaderHeight = Math.Max(1f, _headerHeight);
+            float safeBodyHeight = Math.Max(1f, Bounds.Height - safeHeaderHeight);
+            _templateGrid.SetRows(safeHeaderHeight, safeBodyHeight);
+            _templateGrid.SetRect(Bounds);
+            ConfigureHeaderButtons();
+            ConfigureRowButtons();
         }
 
         void ConfigureHeaderButtons()
@@ -157,7 +172,7 @@ namespace LcdMod.Client.Market.Gui
         void ConfigureSearchButton(RectangleF rect)
         {
             _searchButton.SetRect(rect);
-            _searchButton.SetStyle(_sortHeaderStyle);
+            _searchButton.SetClass("ControlBase Button Sort");
             _searchButton.SetVisible(rect.Width > 0f && rect.Height > 0f);
         }
 
@@ -168,17 +183,19 @@ namespace LcdMod.Client.Market.Gui
 
             var button = _sortHeaderButtons[index];
             button.SetRect(rect);
-            button.SetStyle(_sortHeaderStyle);
+            ApplySortClass(button);
             button.SetVisible(rect.Width > 0f && rect.Height > 0f);
         }
 
         void ConfigureRowButtons()
         {
-            foreach (var button in _rowButtonsByKey.Values)
-                button.SetVisible(false);
+            _rowHitSlots.Clear();
 
             if (_page == null)
+            {
+                _rowHitRepeater.Items(_rowHitSlots);
                 return;
+            }
 
             for (var i = 0; i < _page.RowCount; i++)
             {
@@ -191,35 +208,57 @@ namespace LcdMod.Client.Market.Gui
                 if (_mode == NpcMarketMode.Both)
                 {
                     var layout = GetBothLayout(Bounds, _layoutScale);
-                    ConfigureRowButton(row, NpcMarketMode.Buy, WithRow(Union(layout.BuyPriceRect, layout.BuyTrendRect), top, _rowHeight));
-                    ConfigureRowButton(row, NpcMarketMode.Sell, WithRow(Union(layout.SellPriceRect, layout.SellTrendRect), top, _rowHeight));
+                    AddRowHitSlot(row, NpcMarketMode.Buy, _page.PageIndex, rowIndex, i, WithRow(Union(layout.BuyPriceRect, layout.BuyTrendRect), top, _rowHeight));
+                    AddRowHitSlot(row, NpcMarketMode.Sell, _page.PageIndex, rowIndex, i, WithRow(Union(layout.SellPriceRect, layout.SellTrendRect), top, _rowHeight));
                     continue;
                 }
 
-                ConfigureRowButton(row, _mode, new RectangleF(Bounds.X, top, Bounds.Width, _rowHeight));
+                AddRowHitSlot(row, _mode, _page.PageIndex, rowIndex, i, new RectangleF(Bounds.X, top, Bounds.Width, _rowHeight));
             }
+
+            _rowHitRepeater.Items(_rowHitSlots);
         }
 
-        void ConfigureRowButton(NpcMarketRow row, NpcMarketMode mode, RectangleF rect)
+        void AddRowHitSlot(NpcMarketRow row, NpcMarketMode mode, int pageIndex, int rowIndex, int visibleIndex, RectangleF rect)
         {
             if (row == null || !HasQuoteForMode(row, mode) || rect.Width <= 0f || rect.Height <= 0f)
                 return;
 
-            var target = new NpcMarketRowClickTarget(row.ItemKey, mode);
-            Button button;
-            if (!_rowButtonsByKey.TryGetValue(target.Key, out button))
+            _rowHitSlots.Add(new NpcMarketRowHitSlot
             {
-                button = new Button(rect, CursorType.Hand, target, OnMarketRowClicked);
-                _rowButtonsByKey[target.Key] = button;
-                AddChild(button);
-            }
-            else
-            {
-                button.SetRect(rect);
-                button.SetDataContext(target);
-            }
+                Row = row,
+                Mode = mode,
+                PageIndex = pageIndex,
+                RowIndex = rowIndex,
+                VisibleIndex = visibleIndex,
+                Bounds = rect,
+                Target = new NpcMarketRowClickTarget(row.ItemKey, mode)
+            });
+        }
 
-            button.SetVisible(true);
+        ControlTemplate CreateRowHitControl(NpcMarketRowHitSlot slot, int index)
+        {
+            var button = new Button(default(RectangleF), CursorType.Hand, null, OnMarketRowClicked);
+            button.SetClass("ControlBase Button NpcMarketRowHit");
+            button.CustomRender = RenderRowHitButton;
+            return button;
+        }
+
+        void BindRowHitControl(ControlTemplate control, NpcMarketRowHitSlot slot, int index)
+        {
+            if (control == null || slot == null)
+                return;
+
+            control.SetDataContext(slot.Target);
+        }
+
+        void ArrangeRowHitControl(ControlTemplate control, RectangleF bounds, NpcMarketRowHitSlot slot, int index)
+        {
+            var button = control as Button;
+            if (button == null || slot == null)
+                return;
+
+            button.SetRect(slot.Bounds);
         }
 
         protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
@@ -237,9 +276,7 @@ namespace LcdMod.Client.Market.Gui
                 DrawRow(sprites, _rows[rowIndex], rect, _textScale, _muted);
             }
 
-            _searchButton.Render(context, sprites);
-            for (var i = 0; i < _sortHeaderButtons.Count; i++)
-                _sortHeaderButtons[i].Render(context, sprites);
+            _templateGrid.Render(context, sprites);
         }
 
         void DrawHeaderDivider(List<MySprite> sprites)
@@ -257,17 +294,22 @@ namespace LcdMod.Client.Market.Gui
             if (row == null || string.IsNullOrEmpty(row.ItemKey))
                 return;
 
-            foreach (var entry in _rowButtonsByKey)
+            var children = _rowHitRepeater.Children;
+            for (int i = 0; children != null && i < children.Count; i++)
             {
-                var target = entry.Value.DataContext as NpcMarketRowClickTarget;
-                if (target == null || !entry.Value.Visible || !entry.Value.IsPointerOver ||
+                var button = children[i] as Button;
+                if (button == null)
+                    continue;
+
+                var target = button.DataContext as NpcMarketRowClickTarget;
+                if (target == null || !button.Visible || !button.IsPointerOver ||
                     !string.Equals(target.ItemKey, row.ItemKey, StringComparison.Ordinal))
                     continue;
 
                 sprites.Add(new MySprite(SpriteType.TEXTURE, "SquareSimple")
                 {
-                    Position = entry.Value.Bounds.Center,
-                    Size = entry.Value.Bounds.Size,
+                    Position = button.Bounds.Center,
+                    Size = button.Bounds.Size,
                     Color = new Color(_host.ForegroundColor, 0.10f)
                 });
             }
@@ -395,6 +437,30 @@ namespace LcdMod.Client.Market.Gui
             sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = text ?? string.Empty, Position = new Vector2(x, centerY - size.Y * 0.5f), RotationOrScale = scale, Color = color, Alignment = alignment, FontId = "White" });
         }
 
+        void ApplySortClass(Button button)
+        {
+            if (button == null)
+                return;
+
+            var model = button.DataContext as SortHeaderButtonModel;
+            bool active = model != null && model.Column == _sortColumn;
+            if (!active)
+            {
+                button.SetClass("ControlBase Button Sort");
+                return;
+            }
+
+            button.SetClass(_sortDescending
+                ? "ControlBase Button Sort SortDescending"
+                : "ControlBase Button Sort SortAscending");
+        }
+
+        void RenderRowHitButton(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
+        {
+            // Row hit buttons are template-generated interaction surfaces. The row visuals are drawn
+            // once by the page panel so Both mode can keep one visual row with two click targets.
+        }
+
         void RenderSortHeaderButton(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
         {
             var model = control.DataContext as SortHeaderButtonModel;
@@ -402,7 +468,9 @@ namespace LcdMod.Client.Market.Gui
                 return;
 
             var rect = control.Bounds;
-            var active = model.Column == _sortColumn;
+            var sortAscending = control.HasStyleClass("SortAscending");
+            var sortDescending = control.HasStyleClass("SortDescending");
+            var active = sortAscending || sortDescending;
             var hovered = control.IsPointerOver;
             var textScale = 0.58f * context.Scale * context.FontScale;
             var availableTextWidth = GetSortHeaderAvailableWidth(model.Column, rect, context.Scale, active);
@@ -411,13 +479,13 @@ namespace LcdMod.Client.Market.Gui
             var textY = rect.Center.Y - textSize.Y * 0.5f;
             var textX = GetSortHeaderTextX(model.Column, rect, context.Scale);
             var alignment = model.Column == NpcMarketSortColumn.Name ? TextAlignment.LEFT : TextAlignment.RIGHT;
-            var textColor = context.Style.GetTextColor(hovered || active);
+            var textColor = control.TextColor;
             sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = text, Position = new Vector2(textX, textY), RotationOrScale = textScale, Color = textColor, Alignment = alignment, FontId = "White" });
             if (active)
             {
                 sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = text, Position = new Vector2(textX + 0.7f * context.Scale, textY), RotationOrScale = textScale, Color = textColor, Alignment = alignment, FontId = "White" });
                 var triangleX = alignment == TextAlignment.LEFT ? textX + textSize.X + 8f * context.Scale : textX - textSize.X - 8f * context.Scale;
-                sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "Triangle", Position = new Vector2(triangleX, rect.Center.Y), Size = new Vector2(8f * context.Scale, 6f * context.Scale), RotationOrScale = _sortDescending ? MathHelper.Pi : 0f, Color = textColor, Alignment = TextAlignment.CENTER });
+                sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "Triangle", Position = new Vector2(triangleX, rect.Center.Y), Size = new Vector2(8f * context.Scale, 6f * context.Scale), RotationOrScale = sortDescending ? MathHelper.Pi : 0f, Color = textColor, Alignment = TextAlignment.CENTER });
             }
         }
 
@@ -428,7 +496,7 @@ namespace LcdMod.Client.Market.Gui
             {
                 Position = control.Bounds.Center,
                 Size = new Vector2(18f * context.Scale),
-                Color = context.Style.GetTextColor(hovered)
+                Color = hovered ? control.GetResourceColor(ThemeResources.AccentColor, control.TextColor) : control.TextColor
             });
         }
 

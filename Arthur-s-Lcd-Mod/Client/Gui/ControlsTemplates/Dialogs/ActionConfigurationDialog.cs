@@ -14,6 +14,7 @@ using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Inputs;
 using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
+using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
 using LcdMod.Common.Helpers;
 using Sandbox.Game.Entities;
@@ -69,8 +70,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         Button _scrollComboButton;
         Button _applyButton;
 
-        ControlStyle _inputStyle;
-        ControlStyle _applyStyle;
 
         string _parameterTypeName;
         string _parameterTitle;
@@ -124,7 +123,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 #endif
         }
 
-        protected override void RenderCore(
+        protected override void BuildDialogControls(
             InteractiveSurfaceScript owner,
             RectangleF viewBox,
             float scale,
@@ -179,7 +178,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Type = SpriteType.TEXT,
                 Data = TITLE,
                 Position = new Vector2(cardRect.Center.X, cardRect.Y + padding.Y + (headerHeight - titleHeight) * 0.5f),
-                Color = GetThemeColor(Constants.ON_SURFACE),
+                Color = ResolveColor(ThemeResources.OnSurfaceColor),
                 FontId = "White",
                 RotationOrScale = titleScale,
                 Alignment = TextAlignment.CENTER
@@ -467,7 +466,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 _numericInput.SetRect(rect);
 
             _numericInput.SetDataContext(_numericModel);
-            _numericInput.SetStyle(GetInputStyle());
+            _numericInput.SetStyleId("Primary");
             _numericInput.SetCursor(CursorType.Hand);
             _numericInput.SetVisible(true);
         }
@@ -490,7 +489,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 _textInput.SetRect(rect);
 
             _textInput.SetDataContext(_textInputModel);
-            _textInput.SetStyle(GetInputStyle());
+            _textInput.SetStyleId("Primary");
             _textInput.SetCursor(CursorType.Hand);
             _textInput.SetVisible(true);
         }
@@ -510,7 +509,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 model.Clicked = OnColorClicked;
             }
 
-            _colorButton.SetStyle(GetInputStyle());
+            _colorButton.SetStyleId("Primary");
+            _colorButton.SetClass("ControlBase Button Input");
             _colorButton.CustomRender = RenderColorButton;
             _colorButton.SetCursor(CursorType.Hand);
             _colorButton.SetVisible(true);
@@ -531,7 +531,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 model.Clicked = OnApplyClicked;
             }
 
-            _applyButton.SetStyle(GetApplyStyle());
+            _applyButton.SetStyleId("Primary");
+            _applyButton.SetClass("ControlBase Button");
             _applyButton.CustomRender = RenderTextButton;
             _applyButton.SetCursor(CursorType.Hand);
             _applyButton.SetVisible(true);
@@ -541,7 +542,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         {
             var rect = control.Bounds;
             var hovered = rect.Contains(context.CursorPosition);
-            Border.CreateSpritesFromRect(rect, sprites, context.Style.GetPanelColor(hovered), radiusScale: context.Scale);
+            Border.CreateSpritesFromRect(rect, sprites, control.BackgroundColor, radiusScale: context.Scale);
 
             var padding = 6f * context.Scale;
             var swatchSize = Math.Max(1f, rect.Height - padding * 2f);
@@ -559,7 +560,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Type = SpriteType.TEXT,
                 Data = text,
                 Position = new Vector2(textX, rect.Center.Y - textHeight * 0.5f),
-                Color = context.Style.GetTextColor(hovered),
+                Color = control.TextColor,
                 FontId = "White",
                 RotationOrScale = textScale,
                 Alignment = TextAlignment.LEFT
@@ -608,7 +609,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             model.Enabled = true;
             model.Clicked = OnBooleanModeClicked;
 
-            button.SetStyle(GetInputStyle());
+            button.SetStyleId(string.Equals(_booleanMode, mode, StringComparison.OrdinalIgnoreCase) ? "Primary" : null);
+            button.SetClass("ControlBase Button Choice");
             button.CustomRender = RenderBooleanModeButton;
             button.SetCursor(CursorType.Hand);
             button.SetVisible(true);
@@ -622,8 +624,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var mode = model == null ? string.Empty : model.Mode;
             var selected = string.Equals(_booleanMode, mode, StringComparison.OrdinalIgnoreCase);
             var hovered = rect.Contains(context.CursorPosition);
-            var panelColor = selected ? context.Style.GetPanelColor(true) : context.Style.GetPanelColor(hovered);
-            var textColor = context.Style.GetTextColor(selected || hovered);
+            control.SetStyleId(selected ? "Primary" : null);
+            var panelColor = selected
+                ? ResolveColor(ThemeResources.AccentContainerColor)
+                : control.BackgroundColor;
+            var textColor = selected
+                ? ResolveColor(ThemeResources.OnAccentContainerColor)
+                : control.TextColor;
 
             Border.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: context.Scale);
 
@@ -686,7 +693,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             model.Enabled = true;
             model.Clicked = OnClickActionClicked;
 
-            button.SetStyle(GetInputStyle());
+            button.SetStyleId("Primary");
+            button.SetClass("ControlBase Button Choice");
             button.CustomRender = RenderClickActionButton;
             button.SetCursor(CursorType.Hand);
             button.SetVisible(true);
@@ -699,7 +707,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var model = control.DataContext as ClickActionButtonModel;
             var clickAction = model == null ? string.Empty : model.ClickAction;
             var selected = string.Equals(_clickAction, clickAction, StringComparison.OrdinalIgnoreCase);
-            RenderChoiceButton(rect, GetClickActionLabel(clickAction), selected, context, sprites);
+            RenderChoiceButton(control, rect, GetClickActionLabel(clickAction), selected, context, sprites);
         }
 
         void RenderScrollCombo(ControlRenderContext context, RectangleF rect, float scale)
@@ -725,7 +733,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 model.Clicked = OnScrollComboClicked;
             }
 
-            _scrollComboButton.SetStyle(GetInputStyle());
+            _scrollComboButton.SetStyleId("Primary");
+            _scrollComboButton.SetClass("ControlBase Button Combo");
             _scrollComboButton.CustomRender = RenderScrollComboButton;
             _scrollComboButton.SetCursor(CursorType.Hand);
             _scrollComboButton.SetVisible(true);
@@ -735,12 +744,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         {
             var rect = control.Bounds;
             var hovered = rect.Contains(context.CursorPosition);
-            Border.CreateSpritesFromRect(rect, sprites, context.Style.GetPanelColor(hovered), radiusScale: context.Scale);
+            Border.CreateSpritesFromRect(rect, sprites, control.BackgroundColor, radiusScale: context.Scale);
 
             var textScale = 0.54f * context.Scale * context.FontScale;
             var label = TrimText(GetScrollModeLabel(_scrollMode), Math.Max(0f, rect.Width - 34f * context.Scale), textScale, context.Surface);
             var textHeight = FormatingHelper.LineHeight(textScale, context.Surface);
-            var textColor = context.Style.GetTextColor(hovered);
+            var textColor = control.TextColor;
 
             sprites.Add(new MySprite
             {
@@ -775,7 +784,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
             var rowHeight = _scrollComboRect.Height;
             var listRect = new RectangleF(_scrollComboRect.X, _scrollComboRect.Bottom + 2f * scale, _scrollComboRect.Width, rowHeight * ScrollModes.Length);
-            Border.CreateSpritesFromRect(listRect, Sprites, GetThemeColor(Constants.SURFACE_CONTAINER_HIGHEST), radiusScale: scale);
+            Border.CreateSpritesFromRect(listRect, Sprites, ResolveColor(ThemeResources.SurfaceContainerHighestColor), radiusScale: scale);
 
             for (var i = 0; i < ScrollModes.Length; i++)
             {
@@ -812,7 +821,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             model.Clicked = OnScrollOptionClicked;
 
             optionButton.SetRect(rect);
-            optionButton.SetStyle(GetInputStyle());
+            optionButton.SetStyleId(string.Equals(_scrollMode, scrollMode, StringComparison.OrdinalIgnoreCase) ? "Primary" : null);
+            optionButton.SetClass("ControlBase Button Choice");
             optionButton.CustomRender = RenderScrollOptionButton;
             optionButton.SetCursor(CursorType.Hand);
             optionButton.SetVisible(true);
@@ -825,14 +835,19 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var model = control.DataContext as ScrollModeButtonModel;
             var scrollMode = model == null ? string.Empty : model.ScrollMode;
             var selected = string.Equals(_scrollMode, scrollMode, StringComparison.OrdinalIgnoreCase);
-            RenderChoiceButton(rect, GetScrollModeLabel(scrollMode), selected, context, sprites);
+            RenderChoiceButton(control, rect, GetScrollModeLabel(scrollMode), selected, context, sprites);
         }
 
-        void RenderChoiceButton(RectangleF rect, string text, bool selected, ControlRenderContext context, System.Collections.Generic.List<MySprite> sprites)
+        void RenderChoiceButton(ControlTemplate control, RectangleF rect, string text, bool selected, ControlRenderContext context, System.Collections.Generic.List<MySprite> sprites)
         {
             var hovered = rect.Contains(context.CursorPosition);
-            var panelColor = selected ? context.Style.GetPanelColor(true) : context.Style.GetPanelColor(hovered);
-            var textColor = context.Style.GetTextColor(selected || hovered);
+            control.SetStyleId(selected ? "Primary" : null);
+            var panelColor = selected
+                ? ResolveColor(ThemeResources.AccentContainerColor)
+                : control.BackgroundColor;
+            var textColor = selected
+                ? ResolveColor(ThemeResources.OnAccentContainerColor)
+                : control.TextColor;
 
             Border.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: context.Scale);
 
@@ -859,7 +874,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var buttonModel = control.DataContext as ButtonModel;
             var enabled = buttonModel == null || buttonModel.Enabled;
             var hovered = enabled && rect.Contains(context.CursorPosition);
-            Border.CreateSpritesFromRect(rect, sprites, context.Style.GetPanelColor(hovered), radiusScale: context.Scale);
+            Border.CreateSpritesFromRect(rect, sprites, control.BackgroundColor, radiusScale: context.Scale);
 
             var text = buttonModel == null ? string.Empty : buttonModel.Text;
             var textScale = 0.54f * context.Scale * context.FontScale;
@@ -872,7 +887,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Type = SpriteType.TEXT,
                 Data = trimmed,
                 Position = new Vector2(rect.Center.X, rect.Center.Y - textHeight * 0.5f),
-                Color = context.Style.GetTextColor(hovered),
+                Color = control.TextColor,
                 FontId = "White",
                 RotationOrScale = textScale,
                 Alignment = TextAlignment.CENTER
@@ -1042,9 +1057,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             });
 
             Border.CreateSpritesFromRect(new RectangleF(cardRect.Position + 3f * scale, cardRect.Size), Sprites,
-                GetThemeColor(Constants.SHADOW), radiusScale: scale);
+                ResolveColor(ThemeResources.ShadowColor), radiusScale: scale);
             Border.CreateSpritesFromRect(cardRect, Sprites,
-                GetThemeColor(Constants.SURFACE_CONTAINER_HIGH), radiusScale: scale);
+                ResolveColor(ThemeResources.SurfaceContainerHighColor), radiusScale: scale);
         }
 
         void DrawInfoText(string text, float x, float y, float width, float textScale, IMyTextSurface surface)
@@ -1055,7 +1070,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Type = SpriteType.TEXT,
                 Data = trimmed,
                 Position = new Vector2(x, y),
-                Color = GetThemeColor(Constants.ON_SURFACE),
+                Color = ResolveColor(ThemeResources.OnSurfaceColor),
                 FontId = "White",
                 RotationOrScale = textScale,
                 Alignment = TextAlignment.LEFT
@@ -1064,7 +1079,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
         void DrawMessage(RectangleF rect, float scale, IMyTextSurface surface)
         {
-            Border.CreateSpritesFromRect(rect, Sprites, GetThemeColor(Constants.SURFACE_CONTAINER), radiusScale: scale);
+            Border.CreateSpritesFromRect(rect, Sprites, ResolveColor(ThemeResources.SurfaceContainerColor), radiusScale: scale);
 
             var text = string.IsNullOrEmpty(_message) ? "No configurable parameters" : _message;
             var textScale = 0.46f * scale * surface.FontSize;
@@ -1076,7 +1091,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Type = SpriteType.TEXT,
                 Data = trimmed,
                 Position = new Vector2(rect.Center.X, rect.Center.Y - textHeight * 0.5f),
-                Color = GetThemeColor(Constants.ON_SURFACE),
+                Color = ResolveColor(ThemeResources.OnSurfaceColor),
                 FontId = "White",
                 RotationOrScale = textScale,
                 Alignment = TextAlignment.CENTER
@@ -1125,26 +1140,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             return _parameterTypeName == TYPE_INCREASE_DECREASE ||
                    _parameterTypeName == TYPE_INT64 ||
                    _parameterTypeName == TYPE_SINGLE;
-        }
-
-        ControlStyle GetInputStyle()
-        {
-            if (_inputStyle == null)
-                _inputStyle = Button.CreatePrimaryButtonStyle(ParentTheme);
-            else
-                _inputStyle.ThemeColors = ParentTheme;
-
-            return _inputStyle;
-        }
-
-        ControlStyle GetApplyStyle()
-        {
-            if (_applyStyle == null)
-                _applyStyle = Button.CreatePrimaryButtonStyle(ParentTheme);
-            else
-                _applyStyle.ThemeColors = ParentTheme;
-
-            return _applyStyle;
         }
 
         bool HasExistingParameter(string typeName)

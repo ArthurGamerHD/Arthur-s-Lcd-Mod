@@ -26,6 +26,5 @@ namespace LcdMod.Client.Apps.Abstract
             float scale,
             float fontScale,
             Vector2 cursorPosition);
-        Color GetThemeColor(string role);
     }
 }

@@ -21,5 +21,6 @@ namespace LcdMod.Common.Config.Models.Apps
         [ProtoMember(48)] public float VerticalScrollOffsetPixels { get; set; }
         [ProtoMember(49)] public float MaxDistanceMeters { get; set; } = 10000001f;
         [ProtoMember(50)] public float PageSwitchSeconds { get; set; } = DEFAULT_PAGE_SWITCH_SECONDS;
+        [ProtoMember(51)] public string SearchQuery { get; set; } = string.Empty;
     }
 }

@@ -82,6 +82,9 @@ namespace LcdMod.Client.Terminal.Controls.Generic
             _scratch.Clear();
             _grids.Clear();
 
+            if (provider.TryGetReferenceBlockCandidates(_scratch))
+                return;
+
             if (rootGrid == null)
                 return;
 

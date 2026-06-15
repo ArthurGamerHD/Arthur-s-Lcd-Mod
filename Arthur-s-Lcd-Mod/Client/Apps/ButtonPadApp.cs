@@ -1018,7 +1018,7 @@ namespace LcdMod.Client.Apps
                 return false;
 
             Color color;
-            if (!LcdMod.Client.Extensions.ColorExtensions.TryParseHexColor(settings.ParameterValue, out color))
+            if (!Extensions.ColorExtensions.TryParseHexColor(settings.ParameterValue, out color))
                 return false;
 
             action.Property.SetValue(block, color);
@@ -1317,7 +1317,7 @@ namespace LcdMod.Client.Apps
                 };
             }
 
-            protected override void RenderCore(
+            protected override void BuildDialogControls(
                 InteractiveSurfaceScript owner,
                 RectangleF viewBox,
                 float scale,
@@ -1375,7 +1375,7 @@ namespace LcdMod.Client.Apps
                     Type = SpriteType.TEXT,
                     Data = dialogTitle,
                     Position = new Vector2(cardRect.Center.X, cardRect.Y + padding.Y + (headerHeight - titleHeight) * 0.5f),
-                    Color = GetThemeColor(Constants.ON_SURFACE),
+                    Color = ResolveColor(ThemeResources.OnSurfaceColor),
                     FontId = "White",
                     RotationOrScale = titleScale,
                     Alignment = TextAlignment.CENTER
@@ -1474,9 +1474,9 @@ namespace LcdMod.Client.Apps
                 });
 
                 Border.CreateSpritesFromRect(new RectangleF(cardRect.Position + 3f * scale, cardRect.Size), Sprites,
-                    GetThemeColor(Constants.SHADOW), radiusScale: scale);
+                    ResolveColor(ThemeResources.ShadowColor), radiusScale: scale);
                 Border.CreateSpritesFromRect(cardRect, Sprites,
-                    GetThemeColor(Constants.SURFACE_CONTAINER_HIGH), radiusScale: scale);
+                    ResolveColor(ThemeResources.SurfaceContainerHighColor), radiusScale: scale);
             }
 
             void EnsureSelectedSpriteButton(RectangleF rect)

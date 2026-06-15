@@ -13,6 +13,9 @@ using LcdMod.Client.Terminal.Controls.Interactive;
 using LcdMod.Client.Terminal.Controls.Markdown;
 using LcdMod.Client.Terminal.Controls.Proxy;
 using LcdMod.Client.Terminal.Controls.Scale;
+#if DEBUG
+using LcdMod.Client.Terminal.Controls.VisibleTreeDebug;
+#endif
 using LcdMod.Common.Helpers;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
@@ -70,6 +73,10 @@ namespace LcdMod.Client.Terminal
             Controls.Add(new ComboboxReferenceMode());
             Controls.Add(new ComboboxGraphWindow());
             Controls.Add(new ListboxReferenceBlockSelection());
+#if DEBUG
+            Controls.Add(new ListboxVisibleTreeDebugBlockSelection());
+            Controls.Add(new ListboxVisibleTreeDebugScreenSelection());
+#endif
             Controls.Add(new SwitchToggleLines());
 
             Controls.Add(new ComboboxLinkType());

@@ -13,6 +13,7 @@ using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Inputs;
 using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
+using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Terminal.Models;
 using LcdMod.Common.Helpers;
@@ -62,8 +63,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
         TextInput _searchInput;
         TextInputModel _searchInputModel;
-        ControlStyle _searchStyle;
-        ControlStyle _rowStyle;
 
         string _searchText = string.Empty;
         bool _itemsLoaded;
@@ -94,7 +93,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _scrollPanel.ScrollChanged = OnScrollChanged;
         }
 
-        protected override void RenderCore(
+        protected override void BuildDialogControls(
             InteractiveSurfaceScript owner,
             RectangleF viewBox,
             float scale,
@@ -138,7 +137,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Type = SpriteType.TEXT,
                 Data = TITLE,
                 Position = new Vector2(cardRect.Center.X, cardRect.Y + padding.Y + (headerHeight - titleHeight) * 0.5f),
-                Color = GetThemeColor(Constants.ON_SURFACE),
+                Color = ResolveColor(ThemeResources.OnSurfaceColor),
                 FontId = "White",
                 RotationOrScale = titleScale,
                 Alignment = TextAlignment.CENTER
@@ -176,9 +175,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             });
 
             Border.CreateSpritesFromRect(new RectangleF(cardRect.Position + 3f * scale, cardRect.Size), Sprites,
-                GetThemeColor(Constants.SHADOW), radiusScale: scale);
+                ResolveColor(ThemeResources.ShadowColor), radiusScale: scale);
             Border.CreateSpritesFromRect(cardRect, Sprites,
-                GetThemeColor(Constants.SURFACE_CONTAINER_HIGH), radiusScale: scale);
+                ResolveColor(ThemeResources.SurfaceContainerHighColor), radiusScale: scale);
         }
 
         void EnsureItemsLoaded()
@@ -502,7 +501,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 _searchInput.SetRect(rect);
 
             _searchInput.SetDataContext(_searchInputModel);
-            _searchInput.SetStyle(GetSearchStyle());
+            _searchInput.SetStyleId("Primary");
             _searchInput.SetCursor(CursorType.Hand);
             _searchInput.SetVisible(true);
         }
@@ -513,13 +512,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             if (listRect.Width <= 1f || listRect.Height <= 1f)
                 return;
 
-            Border.CreateSpritesFromRect(listRect, Sprites, GetThemeColor(Constants.SURFACE_CONTAINER_HIGH), radiusScale: scale);
+            Border.CreateSpritesFromRect(listRect, Sprites, ResolveColor(ThemeResources.SurfaceContainerHighColor), radiusScale: scale);
 
             var rowHeight = GetRowHeight(scale);
             var scrollerWidth = Math.Min(_scrollPanel.AutomaticScrollerWidthPixels * scale, Math.Max(0f, listRect.Width * 0.25f));
             _scrollPanel.ClearChildren();
             _scrollPanel.Configure(listRect, listRect.Y, 0f, rowHeight, _filteredItems.Count, scrollerWidth, 0f);
-            _scrollPanel.SetScrollBarColors(GetThemeColor(Constants.SURFACE_CONTAINER_HIGH), GetThemeColor(Constants.ON_SURFACE));
+            _scrollPanel.SetScrollBarColors(ResolveColor(ThemeResources.SurfaceContainerHighColor), ResolveColor(ThemeResources.OnSurfaceColor));
             _scrollPanel.SetVisible(true);
             ContainerControl.AddChild(_scrollPanel);
 
@@ -587,7 +586,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             model.Clicked = OnActionClicked;
 
             button.SetRect(rect);
-            button.SetStyle(GetRowStyle());
+            button.SetClass("ControlBase Button Row");
+            button.SetStyleId(null);
             button.SetCursor(CursorType.Hand);
             button.CustomRender = RenderActionRow;
             button.SetVisible(true);
@@ -604,8 +604,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var hovered = rect.Contains(context.CursorPosition);
             var selected = _initialSelection != null &&
                            string.Equals(_initialSelection.BaseId, action.BaseId, StringComparison.OrdinalIgnoreCase);
-            var panelColor = selected ? context.Style.GetPanelColor(true) : context.Style.GetPanelColor(hovered);
-            var textColor = context.Style.GetTextColor(hovered || selected);
+            control.SetStyleId(selected ? "Primary" : null);
+            var panelColor = selected
+                ? ResolveColor(ThemeResources.AccentContainerColor)
+                : control.BackgroundColor;
+            var textColor = selected
+                ? ResolveColor(ThemeResources.OnAccentContainerColor)
+                : control.TextColor;
 
             Border.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: context.Scale);
 
@@ -656,29 +661,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Type = SpriteType.TEXT,
                 Data = text,
                 Position = new Vector2(rect.Center.X, rect.Center.Y - textHeight * 0.5f),
-                Color = GetThemeColor(Constants.ON_SURFACE),
+                Color = ResolveColor(ThemeResources.OnSurfaceColor),
                 FontId = "White",
                 RotationOrScale = textScale,
                 Alignment = TextAlignment.CENTER
             });
-        }
-
-        ControlStyle GetSearchStyle()
-        {
-            if (_searchStyle == null)
-                _searchStyle = Button.CreatePrimaryButtonStyle(ParentTheme);
-            else
-                _searchStyle.ThemeColors = ParentTheme;
-            return _searchStyle;
-        }
-
-        ControlStyle GetRowStyle()
-        {
-            if (_rowStyle == null)
-                _rowStyle = Button.CreatePrimaryButtonStyle(ParentTheme);
-            else
-                _rowStyle.ThemeColors = ParentTheme;
-            return _rowStyle;
         }
 
         void OnSearchChanged(string value)

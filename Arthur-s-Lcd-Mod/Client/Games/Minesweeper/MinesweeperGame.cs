@@ -83,8 +83,6 @@ namespace LcdMod.Client.Games.Minesweeper
             return _themeContext.CreateControlRenderContext(surface, scale, fontScale, cursorPosition);
         }
 
-        public Color GetThemeColor(string role) => _themeContext.GetThemeColor(role);
-
         public IVisualStyleScope StyleParent
         {
             get { return _themeContext.StyleParent; }

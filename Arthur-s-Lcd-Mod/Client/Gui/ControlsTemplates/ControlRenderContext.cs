@@ -111,17 +111,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates
                 styleScope);
         }
 
-        public Color GetThemeColor(string role)
-        {
-            if (Theme == null || string.IsNullOrEmpty(role))
-                throw new ResourceKeyNotFoundException(role, "Theme");
-
-            Color color;
-            if (!Theme.TryGetValue(role, out color))
-                throw new ResourceKeyNotFoundException(role, "Theme");
-
-            return color;
-        }
 
         public Color ResolveColor(ResourceKey<Color> key)
         {

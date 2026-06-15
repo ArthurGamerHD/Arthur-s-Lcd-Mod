@@ -119,6 +119,8 @@ namespace LcdMod.Client.SurfaceScripts
 
         public bool IsReferenceBlockCandidate(IMyTerminalBlock block) => IsBasicReferenceBlockCandidate(block);
 
+        public bool TryGetReferenceBlockCandidates(List<IMyTerminalBlock> blocks) => false;
+
         bool IsBasicReferenceBlockCandidate(IMyTerminalBlock block)
         {
             if (!(block is IMyTextPanel) || block.MarkedForClose || block.Equals(Block))

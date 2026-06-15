@@ -4,6 +4,7 @@ using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui.ControlsTemplates.Dialogs;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
+using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
 using LcdMod.Common.Helpers;
 using LcdMod.Common.Networking;
@@ -87,7 +88,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 _onSaveFilter(new List<string>(_selectedTypeKeys), new List<string>(_selectedCategories));
         }
 
-        protected override void RenderCore(
+        protected override void BuildDialogControls(
             InteractiveSurfaceScript owner,
             RectangleF viewBox,
             float scale,
@@ -102,9 +103,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             ContainerControl.ClearChildren();
             _poolIndex = 0;
 
-            var cardColor = GetThemeColor(Constants.SURFACE_CONTAINER_HIGH);
-            var cardTextColor = GetThemeColor(Constants.ON_SURFACE);
-            var shadowColor = GetThemeColor(Constants.SHADOW);
+            var cardColor = ResolveColor(ThemeResources.SurfaceContainerHighColor);
+            var cardTextColor = ResolveColor(ThemeResources.OnSurfaceColor);
+            var shadowColor = ResolveColor(ThemeResources.ShadowColor);
 
             Sprites.Add(new MySprite(SpriteType.TEXTURE, "SquareSimple",
                 surface.TextureSize / 2, surface.TextureSize, new Color(0, 0, 0, 128)));
@@ -593,12 +594,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             control.SetCursor(enabled ? CursorType.Hand : CursorType.Default);
             ContainerControl.AddChild(control);
 
-            var panelRole = enabled
-                ? primary ? Constants.PRIMARY_CONTAINER : Constants.SURFACE_CONTAINER
-                : Constants.SURFACE_CONTAINER_LOW;
-            var textRole = primary ? Constants.ON_PRIMARY_CONTAINER : Constants.ON_SURFACE;
-            var panel = GetThemeColor(panelRole);
-            var txt = GetThemeColor(textRole);
+            var panel = enabled
+                ? primary
+                    ? ResolveColor(ThemeResources.AccentContainerColor)
+                    : ResolveColor(ThemeResources.SurfaceContainerColor)
+                : ResolveColor(ThemeResources.SurfaceContainerLowColor);
+            var txt = primary
+                ? ResolveColor(ThemeResources.OnAccentContainerColor)
+                : ResolveColor(ThemeResources.OnSurfaceColor);
             var label = text;
             var btnScale = textScale;
             var surface = context.Surface;
@@ -631,8 +634,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             control.SetCursor(CursorType.Hand);
             ContainerControl.AddChild(control);
 
-            var panel = GetThemeColor(selected ? Constants.PRIMARY_CONTAINER : Constants.SURFACE_CONTAINER);
-            var txt = GetThemeColor(selected ? Constants.ON_PRIMARY_CONTAINER : Constants.ON_SURFACE);
+            var panel = selected
+                ? ResolveColor(ThemeResources.AccentContainerColor)
+                : ResolveColor(ThemeResources.SurfaceContainerColor);
+            var txt = selected
+                ? ResolveColor(ThemeResources.OnAccentContainerColor)
+                : ResolveColor(ThemeResources.OnSurfaceColor);
             var label = text;
             var rowScale = textScale;
             var surface = context.Surface;

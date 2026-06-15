@@ -85,58 +85,69 @@ namespace LcdMod.Client.Market
 
         static int CompareRows(NpcMarketRow a, NpcMarketRow b, NpcMarketSortColumn sortColumn, bool descending)
         {
-            var left = descending ? b : a;
-            var right = descending ? a : b;
             int result;
 
             switch (sortColumn)
             {
                 case NpcMarketSortColumn.Name:
-                    result = string.Compare(left.DisplayName, right.DisplayName, StringComparison.OrdinalIgnoreCase);
+                    result = string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase);
                     break;
                 case NpcMarketSortColumn.Trend:
-                    result = left.EffectiveViewerChangePercent.CompareTo(right.EffectiveViewerChangePercent);
+                    result = a.EffectiveViewerChangePercent.CompareTo(b.EffectiveViewerChangePercent);
                     break;
                 case NpcMarketSortColumn.BuyPrice:
-                    result = CompareOptionalInt(left.HasBuyQuote, left.BuyPricePerUnit,
-                        right.HasBuyQuote, right.BuyPricePerUnit);
+                    result = CompareOptionalInt(a.HasBuyQuote, a.BuyPricePerUnit,
+                        b.HasBuyQuote, b.BuyPricePerUnit, descending);
                     break;
                 case NpcMarketSortColumn.SellPrice:
-                    result = CompareOptionalInt(left.HasSellQuote, left.SellPricePerUnit,
-                        right.HasSellQuote, right.SellPricePerUnit);
+                    result = CompareOptionalInt(a.HasSellQuote, a.SellPricePerUnit,
+                        b.HasSellQuote, b.SellPricePerUnit, descending);
                     break;
                 case NpcMarketSortColumn.BuyTrend:
-                    result = CompareOptionalFloat(left.HasBuyQuote, left.BuyDeltaPercent,
-                        right.HasBuyQuote, right.BuyDeltaPercent);
+                    result = CompareOptionalFloat(a.HasBuyQuote, a.BuyDeltaPercent,
+                        b.HasBuyQuote, b.BuyDeltaPercent, descending);
                     break;
                 case NpcMarketSortColumn.SellTrend:
-                    result = CompareOptionalFloat(left.HasSellQuote, left.SellDeltaPercent,
-                        right.HasSellQuote, right.SellDeltaPercent);
+                    result = CompareOptionalFloat(a.HasSellQuote, a.SellDeltaPercent,
+                        b.HasSellQuote, b.SellDeltaPercent, descending);
                     break;
                 default:
-                    result = left.PersonalizedCurrentPricePerUnit.CompareTo(right.PersonalizedCurrentPricePerUnit);
+                    result = CompareOptionalInt(HasPrice(a), a.PersonalizedCurrentPricePerUnit,
+                        HasPrice(b), b.PersonalizedCurrentPricePerUnit, descending);
                     break;
             }
+
+            if ((sortColumn == NpcMarketSortColumn.Name || sortColumn == NpcMarketSortColumn.Trend) && descending)
+                result = -result;
 
             return result != 0
                 ? result
                 : string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase);
         }
 
-        static int CompareOptionalInt(bool leftHasValue, int leftValue, bool rightHasValue, int rightValue)
+        static bool HasPrice(NpcMarketRow row)
         {
-            if (leftHasValue != rightHasValue)
-                return leftHasValue ? -1 : 1;
-
-            return leftValue.CompareTo(rightValue);
+            return row != null && row.BestQuote != null && row.PersonalizedCurrentPricePerUnit > 0;
         }
 
-        static int CompareOptionalFloat(bool leftHasValue, float leftValue, bool rightHasValue, float rightValue)
+        static int CompareOptionalInt(bool leftHasValue, int leftValue, bool rightHasValue, int rightValue,
+            bool descending)
         {
             if (leftHasValue != rightHasValue)
                 return leftHasValue ? -1 : 1;
 
-            return leftValue.CompareTo(rightValue);
+            var result = leftValue.CompareTo(rightValue);
+            return descending ? -result : result;
+        }
+
+        static int CompareOptionalFloat(bool leftHasValue, float leftValue, bool rightHasValue, float rightValue,
+            bool descending)
+        {
+            if (leftHasValue != rightHasValue)
+                return leftHasValue ? -1 : 1;
+
+            var result = leftValue.CompareTo(rightValue);
+            return descending ? -result : result;
         }
 
         void AddOffer(NpcMarketAggregationResult result, NpcMarketSellerFactionDto seller, NpcMarketStationDto station,

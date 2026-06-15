@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using LcdMod.Client.Apps;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
+using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Market;
 using LcdMod.Common.Helpers;
@@ -39,8 +40,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         NpcMarketMode _mode;
         NpcMarketStationSortColumn _sortColumn = NpcMarketStationSortColumn.Price;
         bool _sortDescending;
-        ControlStyle _headerStyle;
-        ControlStyle _comboStyle;
 
         public NpcMarketItemDialog(NpcMarketApp parent, string itemKey)
             : this(parent, itemKey, parent != null && parent.Mode == NpcMarketMode.Sell ? NpcMarketMode.Sell : NpcMarketMode.Buy)
@@ -63,7 +62,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             EnsureSortButtons();
         }
 
-        protected override void RenderCore(InteractiveSurfaceScript owner, RectangleF viewBox, float scale,
+        protected override void BuildDialogControls(InteractiveSurfaceScript owner, RectangleF viewBox, float scale,
             float fontScale, IMyTextSurface surface, Color textColor, Color backgroundColor, Color panelColor,
             Vector2 cursorPosition)
         {
@@ -81,8 +80,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             Sprites.Add(new MySprite(SpriteType.TEXTURE, "SquareSimple", surface.TextureSize / 2f, surface.TextureSize,
                 new Color(0, 0, 0, 128)));
             Border.CreateSpritesFromRect(new RectangleF(card.Position + 3f * scale, card.Size), Sprites,
-                GetThemeColor(Constants.SHADOW), radiusScale: scale);
-            Border.CreateSpritesFromRect(card, Sprites, GetThemeColor(Constants.SURFACE_CONTAINER_HIGH),
+                ResolveColor(ThemeResources.ShadowColor), radiusScale: scale);
+            Border.CreateSpritesFromRect(card, Sprites, ResolveColor(ThemeResources.SurfaceContainerHighColor),
                 radiusScale: scale);
 
             var context = CreateRenderContext(surface, scale, fontScale, textColor, panelColor, cursorPosition);
@@ -96,7 +95,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var comboHeight = 30f * scale;
             var comboRect = new RectangleF(card.Right - padding - comboWidth, headerTop + 24f * scale, comboWidth,
                 comboHeight);
-            _modeCombo.Configure(comboRect, scale, GetComboStyle());
+            _modeCombo.Configure(comboRect, scale, null);
+            _modeCombo.SetStyleId("Primary");
             _modeCombo.SetSelectedValue(_mode);
             ContainerControl.AddChild(_modeCombo);
             _modeCombo.Render(context, Sprites);
@@ -133,7 +133,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             if (rect.Width <= 0f || rect.Height <= 0f)
                 return;
 
-            Border.CreateSpritesFromRect(rect, Sprites, GetThemeColor(Constants.SECONDARY_CONTAINER),
+            Border.CreateSpritesFromRect(rect, Sprites, ResolveColor(ThemeResources.SecondaryContainerColor),
                 radiusScale: scale);
         }
 
@@ -160,7 +160,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Position = new Vector2(iconCenter.X + iconSize * 0.5f + 12f * scale,
                     top + height * 0.5f - size.Y * 0.5f),
                 RotationOrScale = nameScale,
-                Color = GetThemeColor(Constants.ON_SURFACE),
+                Color = ResolveColor(ThemeResources.OnSurfaceColor),
                 Alignment = TextAlignment.LEFT,
                 FontId = "White"
             });
@@ -185,8 +185,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         {
             _scrollPanel.Configure(rect, rect.Y, 0f, rowHeight, _quotes.Count,
                 _scrollPanel.AutomaticScrollerWidthPixels * scale, 0f);
-            _scrollPanel.SetScrollBarColors(GetThemeColor(Constants.SURFACE_CONTAINER_HIGHEST),
-                GetThemeColor(Constants.ON_SURFACE));
+            _scrollPanel.SetScrollBarColors(ResolveColor(ThemeResources.SurfaceContainerHighestColor),
+                ResolveColor(ThemeResources.OnSurfaceColor));
             _scrollPanel.SetVisible(true);
             ContainerControl.AddChild(_scrollPanel);
         }
@@ -209,7 +209,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             {
                 var button = _sortButtons[i];
                 button.SetRect(rects[i]);
-                button.SetStyle(GetHeaderStyle());
+                SetSortHeaderClass(button, button.DataContext as StationHeaderModel);
                 button.SetVisible(rects[i].Width > 0f);
                 ContainerControl.AddChild(button);
                 button.Render(context, Sprites);
@@ -219,7 +219,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             {
                 Position = new Vector2((listRect.X + right) * 0.5f, top + height - scale),
                 Size = new Vector2(Math.Max(0f, right - listRect.X), scale),
-                Color = new Color(GetThemeColor(Constants.ON_SURFACE), 0.62f)
+                Color = new Color(ResolveColor(ThemeResources.OnSurfaceColor), 0.62f)
             });
         }
 
@@ -286,7 +286,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 {
                     Position = button.Bounds.Center,
                     Size = button.Bounds.Size,
-                    Color = new Color(GetThemeColor(Constants.ON_SURFACE), 0.10f)
+                    Color = new Color(ResolveColor(ThemeResources.OnSurfaceColor), 0.10f)
                 });
             }
 
@@ -299,11 +299,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var stationLeft = distanceRight + 8f * scale;
             var stationWidth = Math.Max(0f, priceLeft - stationLeft - 8f * scale);
             DrawText(FormatingHelper.DistanceToString((float)quote.DistanceMeters), distanceRight, centerY, textScale,
-                TextAlignment.RIGHT, GetThemeColor(Constants.ON_SURFACE), surface);
+                TextAlignment.RIGHT, ResolveColor(ThemeResources.OnSurfaceColor), surface);
             DrawText(TrimText(FormatStation(quote), stationWidth, textScale, surface), stationLeft, centerY, textScale,
-                TextAlignment.LEFT, GetThemeColor(Constants.ON_SURFACE), surface);
+                TextAlignment.LEFT, ResolveColor(ThemeResources.OnSurfaceColor), surface);
             DrawText(FormatingHelper.FormatSpaceCredits(quote.PersonalizedCurrentPricePerUnit) + " SC", priceRight,
-                centerY, textScale, TextAlignment.RIGHT, GetThemeColor(Constants.ON_SURFACE), surface);
+                centerY, textScale, TextAlignment.RIGHT, ResolveColor(ThemeResources.OnSurfaceColor), surface);
             DrawTrend(quote.EffectiveViewerChangePercent, trendRight, centerY, textScale, surface);
         }
 
@@ -327,7 +327,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Alignment = TextAlignment.CENTER
             });
 
-            DrawText(text, right, centerY, textScale, TextAlignment.RIGHT, GetThemeColor(Constants.ON_SURFACE), surface);
+            DrawText(text, right, centerY, textScale, TextAlignment.RIGHT, ResolveColor(ThemeResources.OnSurfaceColor), surface);
         }
 
         void DrawText(string text, float x, float centerY, float scale, TextAlignment alignment, Color color,
@@ -354,7 +354,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Data = MyTexts.GetString("MarketWatchTab_SearchMessage_NoResults"),
                 Position = new Vector2(rect.Center.X, rect.Center.Y - 10f * scale),
                 RotationOrScale = 0.5f * scale * fontScale,
-                Color = GetThemeColor(Constants.ON_SURFACE),
+                Color = ResolveColor(ThemeResources.OnSurfaceColor),
                 Alignment = TextAlignment.CENTER,
                 FontId = "White"
             });
@@ -370,6 +370,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                     Clicked = OnSortClicked
                 });
                 button.CustomRender = RenderHeader;
+                button.SetClass("ControlBase Button Sort");
                 _sortButtons.Add(button);
             }
         }
@@ -392,7 +393,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Data = text,
                 Position = new Vector2(x, y),
                 RotationOrScale = textScale,
-                Color = context.Style.GetTextColor(active || control.IsPointerOver),
+                Color = active || control.IsPointerOver
+                    ? control.GetResourceColor(ThemeResources.AccentColor, control.TextColor)
+                    : control.TextColor,
                 Alignment = alignment,
                 FontId = "White"
             });
@@ -404,7 +407,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                     Data = text,
                     Position = new Vector2(x + 0.7f * context.Scale, y),
                     RotationOrScale = textScale,
-                    Color = context.Style.GetTextColor(true),
+                    Color = control.GetResourceColor(ThemeResources.AccentColor, control.TextColor),
                     Alignment = alignment,
                     FontId = "White"
                 });
@@ -419,7 +422,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Position = new Vector2(triangleX, control.Bounds.Center.Y),
                 Size = new Vector2(8f * context.Scale, 6f * context.Scale),
                 RotationOrScale = _sortDescending ? MathHelper.Pi : 0f,
-                Color = context.Style.GetTextColor(true)
+                Color = control.GetResourceColor(ThemeResources.AccentColor, control.TextColor)
             });
         }
 
@@ -474,22 +477,16 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 : quote.ItemKey + "|" + quote.SellerFactionId + "|" + quote.StationId;
         }
 
-        ControlStyle GetHeaderStyle()
+        void SetSortHeaderClass(Button button, StationHeaderModel model)
         {
-            if (_headerStyle == null)
-                _headerStyle = new ControlStyle(GetThemeColor(Constants.ON_SURFACE), Color.Transparent);
-            else
-                _headerStyle.SetColors(GetThemeColor(Constants.ON_SURFACE), Color.Transparent);
-            return _headerStyle;
-        }
+            if (button == null)
+                return;
 
-        ControlStyle GetComboStyle()
-        {
-            if (_comboStyle == null)
-                _comboStyle = Button.CreatePrimaryButtonStyle(ParentTheme);
-            else
-                _comboStyle.ThemeColors = ParentTheme;
-            return _comboStyle;
+            string suffix = string.Empty;
+            if (model != null && model.Column == _sortColumn)
+                suffix = _sortDescending ? " SortDescending" : " SortAscending";
+
+            button.SetClass("ControlBase Button Sort" + suffix);
         }
 
         static string GetModeLabel(NpcMarketMode mode)

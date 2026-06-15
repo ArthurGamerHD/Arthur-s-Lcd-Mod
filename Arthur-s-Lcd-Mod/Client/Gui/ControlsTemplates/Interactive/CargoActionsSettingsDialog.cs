@@ -7,6 +7,7 @@ using LcdMod.Client.Gui.ControlsTemplates.Dialogs;
 using LcdMod.Client.Gui.ControlsTemplates.Inputs;
 using LcdMod.Client.Gui.ControlsTemplates.Lists;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
+using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
 using LcdMod.Common.Config.Models.Apps;
 using LcdMod.Common.Helpers;
@@ -46,7 +47,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         protected abstract void RenderContent(RectangleF contentRect, float scale, float fontScale,
             IMyTextSurface surface, ControlRenderContext context);
 
-        protected override void RenderCore(
+        protected override void BuildDialogControls(
             InteractiveSurfaceScript owner,
             RectangleF viewBox,
             float scale,
@@ -85,9 +86,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             var cardRadius = cardMin * 0.04f;
             var cardShadow = Math.Max(1f, cardMin * 0.012f);
             Border.CreateSpritesFromRect(new RectangleF(cardRect.X + cardShadow, cardRect.Y + cardShadow, cardWidth, cardHeight),
-                Sprites, GetThemeColor(Constants.SHADOW), radiusPixels: cardRadius, radiusScale: 1f);
+                Sprites, ResolveColor(ThemeResources.ShadowColor), radiusPixels: cardRadius, radiusScale: 1f);
             Border.CreateSpritesFromRect(cardRect, Sprites,
-                GetThemeColor(Constants.SURFACE_CONTAINER_HIGH), radiusPixels: cardRadius, radiusScale: 1f);
+                ResolveColor(ThemeResources.SurfaceContainerHighColor), radiusPixels: cardRadius, radiusScale: 1f);
 
             var context = CreateRenderContext(surface, scale, fontScale, textColor, panelColor, cursorPosition);
 
@@ -100,7 +101,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 Type = SpriteType.TEXT,
                 Data = titleText,
                 Position = new Vector2(cardRect.Center.X, cardRect.Y + pad),
-                Color = GetThemeColor(Constants.ON_SURFACE),
+                Color = ResolveColor(ThemeResources.OnSurfaceColor),
                 RotationOrScale = titleScale,
                 Alignment = TextAlignment.CENTER,
                 FontId = "White"
@@ -128,7 +129,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 Type = SpriteType.TEXT,
                 Data = trimmed,
                 Position = new Vector2(centerLeft.X, centerLeft.Y - height * 0.5f),
-                Color = GetThemeColor(role),
+                Color = ResolveColor(ThemeResources.FromThemeRole(role)),
                 RotationOrScale = textScale,
                 Alignment = TextAlignment.LEFT,
                 FontId = "White"
@@ -163,7 +164,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         readonly List<WeaponOption> _weapons;
 
         readonly Button[] _buttons = new Button[BUTTON_COUNT];
-        ControlStyle _buttonStyle;
 
         public CargoActionsSettingsDialog(IApp parentApp, ScreenConfigCargoActions config, Action onSaved,
             Action requestRedraw, Action<Dialog> showDialog, List<WeaponOption> weapons)
@@ -223,7 +223,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 model.Enabled = true;
             }
 
-            button.SetStyle(GetButtonStyle());
+            button.SetStyleId("Primary");
+            button.SetClass("ControlBase Button");
             button.SetCursor(CursorType.Hand);
             button.CustomRender = PadButtonStyle.RenderLabeled;
             button.SetVisible(true);
@@ -231,15 +232,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             button.Render(context, Sprites);
         }
 
-        ControlStyle GetButtonStyle()
-        {
-            if (_buttonStyle == null)
-                _buttonStyle = Button.CreatePrimaryButtonStyle(ParentTheme);
-            else
-                _buttonStyle.ThemeColors = ParentTheme;
-
-            return _buttonStyle;
-        }
 
         void CycleSort()
         {

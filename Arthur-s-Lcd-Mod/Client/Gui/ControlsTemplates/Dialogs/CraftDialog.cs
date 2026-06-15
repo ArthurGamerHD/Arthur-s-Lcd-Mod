@@ -8,6 +8,7 @@ using LcdMod.Client.Gui.ControlsTemplates.Inputs;
 using LcdMod.Client.Gui.ControlsTemplates.Lists;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel;
+using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
 using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
@@ -32,7 +33,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
         NumericUpDownModel _amountModel;
         NumericUpDown _amountControl;
-        ControlStyle _amountControlStyle;
         RectangleControl _assemblerControl;
         Button _craftButton;
 
@@ -129,7 +129,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             }
         }
 
-        protected override void RenderCore(
+        protected override void BuildDialogControls(
             InteractiveSurfaceScript owner,
             RectangleF viewBox,
             float scale,
@@ -151,8 +151,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var labelScale = 0.54f * scale * fontScale;
             var nameScale = 0.66f * scale * fontScale;
             var buttonScale = 0.58f * scale * fontScale;
-            var cardColor = GetThemeColor(Constants.SURFACE_CONTAINER_HIGH);
-            var cardTextColor = GetThemeColor(Constants.ON_SURFACE);
+            var cardColor = ResolveColor(ThemeResources.SurfaceContainerHighColor);
+            var cardTextColor = ResolveColor(ThemeResources.OnSurfaceColor);
 
             var cardWidth = _useRequestGrid
                 ? Math.Min(viewBox.Width - padding.X * 2f, Math.Max(460f * scale, viewBox.Width * 0.82f))
@@ -168,7 +168,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
             RegisterDialogCard(cardRect);
 
-            var shadowColor = GetThemeColor(Constants.SHADOW);
+            var shadowColor = ResolveColor(ThemeResources.ShadowColor);
             Border.CreateSpritesFromRect(new RectangleF(cardRect.Position + 2f, cardRect.Size), Sprites, shadowColor,
                 radiusScale: scale);
             Border.CreateSpritesFromRect(cardRect, Sprites, cardColor,
@@ -234,7 +234,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                     var amountTop = Math.Min(contentBottom - amountHeight, currentY + itemRowsHeight + spacing);
                     var amountRect = new RectangleF(cardRect.X + padding.X, amountTop, contentWidth, amountHeight);
                     EnsureAmountControl(amountRect);
-                    ConfigureAmountControlStyle();
+                    ConfigureAmountControl();
                     container.AddChild(_amountControl);
                     _amountControl.Render(renderContext, Sprites);
                 }
@@ -250,7 +250,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             container.AddChild(_craftButton);
 
             ConfigureButton(_craftButton, _useRequestGrid ? "Craft all" : Loc("LcdMod_CraftDialog_Button_Craft"),
-                buttonScale, panelColor, textColor, ThemedParentApp, owner, CanCraft());
+                buttonScale, owner, CanCraft());
             _craftButton.Render(renderContext, Sprites);
         }
 
@@ -307,8 +307,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var grid = WrapPanelLayout.Create(rect, rowHeight, minColumnWidth, _requests.Count);
             var visibleCount = Math.Min(grid.VisibleCellCount, _requests.Count);
             var cellPadding = 4f * scale;
-            var itemBackground = GetThemeColor(Constants.SURFACE_CONTAINER);
-            var amountColor = GetThemeColor(Constants.ON_SURFACE_VARIANT);
+            var itemBackground = ResolveColor(ThemeResources.SurfaceContainerColor);
+            var amountColor = ResolveColor(ThemeResources.OnSurfaceVariantColor);
             var nameScale = 0.42f * scale * fontScale;
             var amountScale = 0.36f * scale * fontScale;
 
@@ -376,22 +376,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _amountControl.SetVisible(true);
         }
 
-        void ConfigureAmountControlStyle()
+        void ConfigureAmountControl()
         {
-            if (_amountControlStyle == null)
-            {
-                _amountControlStyle = ControlStyle.FromThemeRoles(
-                    Constants.ON_PRIMARY_CONTAINER,
-                    Constants.PRIMARY_CONTAINER,
-                    Constants.PRIMARY_CONTAINER + Constants.HOVER,
-                    Constants.ON_PRIMARY_CONTAINER,
-                    ParentTheme);
-                _amountControlStyle.BorderRadiusPixels = Border.DEFAULT_RADIUS_PIXELS;
-            }
+            if (_amountControl == null)
+                return;
 
-            _amountControlStyle.ThemeColors = ParentTheme;
-
-            _amountControl.SetStyle(_amountControlStyle);
+            _amountControl.SetStyleId("Primary");
+            _amountControl.BorderRadiusPixels = Border.DEFAULT_RADIUS_PIXELS;
         }
 
         void EnsureAssemblerControl(RectangleF rect)
@@ -419,9 +410,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var label = GetAssemblerSelectionLabel();
             var textScale = 0.54f * context.Scale * context.FontScale;
             var fill = hovered
-                ? context.GetThemeColor(Constants.SURFACE + Constants.HOVER)
-                : context.GetThemeColor(Constants.SURFACE_CONTAINER);
-            var labelColor = context.GetThemeColor(Constants.ON_SURFACE);
+                ? context.ResolveColor(ThemeResources.SurfaceContainerColor)
+                : context.ResolveColor(ThemeResources.SurfaceContainerColor);
+            var labelColor = context.ResolveColor(ThemeResources.OnSurfaceColor);
 
             Border.CreateSpritesFromRect(rect, sprites, fill,
                 radiusScale: context.Scale);
@@ -452,9 +443,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             Button button,
             string text,
             float textScale,
-            Color panelColor,
-            Color textColor,
-            IThemedApp themedParentApp,
             InteractiveSurfaceScript owner,
             bool enabled)
         {
@@ -465,43 +453,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 model.Enabled = enabled;
             }
 
+            button.SetEnabled(enabled);
             button.SetCursor(enabled ? CursorType.Hand : CursorType.Default);
-            button.SetStyle(enabled
-                ? Button.CreatePrimaryButtonStyle(themedParentApp?.Theme)
-                : Button.CreateDisabledButtonStyle(themedParentApp?.Theme));
-            button.CustomRender = delegate(ControlTemplate renderEntry, ControlRenderContext context, List<MySprite> sprites)
-            {
-                DrawButton(renderEntry.Bounds, owner, sprites, text, textScale, context, enabled);
-            };
-        }
-
-        static void DrawButton(
-            RectangleF rect,
-            InteractiveSurfaceScript owner,
-            List<MySprite> sprites,
-            string text,
-            float textScale,
-            ControlRenderContext context,
-            bool enabled)
-        {
-            var hover = enabled && rect.Contains(context.CursorPosition);
-            var buttonColor = context.Style.GetPanelColor(hover);
-            var buttonTextColor = context.Style.GetTextColor(hover);
-
-            Border.CreateSpritesFromRect(rect, sprites, buttonColor,
-                radiusScale: context.Scale);
-
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXT,
-                Data = text,
-                Position = new Vector2(rect.Center.X, rect.Center.Y -
-                    FormatingHelper.GetSizeInPixel(text, "White", textScale, owner.Surface).Y * 0.5f),
-                Color = buttonTextColor,
-                FontId = "White",
-                Alignment = TextAlignment.CENTER,
-                RotationOrScale = textScale
-            });
+            button.SetStyleId(enabled ? "Primary" : "Disabled");
+            button.CustomRender = null;
         }
 
         void OnAssemblerClicked(object dataContext, object sender)
@@ -812,7 +767,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
         ListBoxModel<CraftAssemblerOption> _listModel;
         ListBox<CraftAssemblerOption> _listBox;
-        ControlStyle _listBoxStyle;
         Button _selectButton;
 
         public AssemblerSelectionDialog(
@@ -836,7 +790,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             };
         }
 
-        protected override void RenderCore(
+        protected override void BuildDialogControls(
             InteractiveSurfaceScript owner,
             RectangleF viewBox,
             float scale,
@@ -860,8 +814,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var spacing = 10f * scale;
             var titleScale = 0.78f * scale * fontScale;
             var buttonScale = 0.58f * scale * fontScale;
-            var cardColor = GetThemeColor(Constants.SURFACE_CONTAINER_HIGH);
-            var cardTextColor = GetThemeColor(Constants.ON_SURFACE);
+            var cardColor = ResolveColor(ThemeResources.SurfaceContainerHighColor);
+            var cardTextColor = ResolveColor(ThemeResources.OnSurfaceColor);
             var cardWidth = Math.Min(viewBox.Width - padding.X * 2f, Math.Max(320f * scale, viewBox.Width * 0.58f));
             var cardHeight = Math.Min(viewBox.Height - padding.Y * 2f, Math.Max(230f * scale, viewBox.Height * 0.5f));
             var cardRect = new RectangleF(
@@ -873,7 +827,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             RegisterDialogCard(cardRect);
 
             Border.CreateSpritesFromRect(new RectangleF(cardRect.Position + 2f, cardRect.Size), Sprites,
-                GetThemeColor(Constants.SHADOW), radiusScale: scale);
+                ResolveColor(ThemeResources.ShadowColor), radiusScale: scale);
             Border.CreateSpritesFromRect(cardRect, Sprites, cardColor,
                 radiusScale: scale);
 
@@ -899,22 +853,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 cardRect.Width - padding.X * 2f, Math.Max(0f, buttonTop - spacing - listTop));
 
             EnsureList(listRect, 30f * scale);
-            if (_listBoxStyle == null)
-            {
-                _listBoxStyle = ControlStyle.FromThemeRoles(
-                    Constants.ON_SECONDARY_CONTAINER,
-                    Constants.SECONDARY_CONTAINER,
-                    Constants.SECONDARY_CONTAINER + Constants.HOVER,
-                    Constants.ON_SECONDARY_CONTAINER,
-                    ParentTheme);
-                _listBoxStyle.BorderRadiusPixels = 0;
-                _listBox.SetStyle(_listBoxStyle);
-            }
-            else
-            {
-                _listBoxStyle.ThemeColors = ParentTheme;
-            }
-            
+            ConfigureListBox();
             container.AddChild(_listBox);
 
             var renderContext = CreateRenderContext(surface, scale, fontScale, textColor, panelColor, cursorPosition);
@@ -944,7 +883,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             EnsureButtons(selectRect);
 
             container.AddChild(_selectButton);
-            CraftDialog.ConfigureButton(_selectButton, LocHelper.GetLoc("LcdMod_Common_Button_Select"), buttonScale, panelColor, textColor, ThemedParentApp, owner, HasSelection());
+            CraftDialog.ConfigureButton(_selectButton, LocHelper.GetLoc("LcdMod_Common_Button_Select"), buttonScale, owner, HasSelection());
             _selectButton.Render(renderContext, Sprites);
         }
 
@@ -969,8 +908,16 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 _listBox.SetRect(rect);
             
             _listBox.SetVisible(_options.Count > 0);
-            if (_listBox.Style != null) 
-                _listBox.Style.BorderRadiusPixels = 0;
+        }
+
+        void ConfigureListBox()
+        {
+            if (_listBox == null)
+                return;
+
+            _listBox.BorderRadiusPixels = 0f;
+            _listBox.BackgroundColor = ResolveColor(ThemeResources.SecondaryContainerColor);
+            _listBox.TextColor = ResolveColor(ThemeResources.OnSecondaryContainerColor);
         }
 
         void EnsureButtons(RectangleF selectRect)

@@ -1,19 +1,19 @@
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
-using LcdMod.Client.Gui;
-using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.ControlsTemplates.Panels.Virtualized;
-using VRage.Game.GUI.TextPanel;
+using LcdMod.Client.Gui.ControlsTemplates.Templates;
+using LcdMod.Client.Market;
 using VRageMath;
 
-namespace LcdMod.Client.Market.Gui
+namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
 {
     internal sealed class NpcMarketListStripPanel : Panel, IScrollContent2D
     {
         readonly List<NpcMarketListPage> _pages = new List<NpcMarketListPage>();
-        readonly List<NpcMarketListPanel> _cards = new List<NpcMarketListPanel>();
+        readonly List<NpcMarketListPageContext> _pageContexts = new List<NpcMarketListPageContext>();
+        readonly PageRepeater<NpcMarketListPageContext, NpcMarketListPanel> _pageRepeater;
         readonly IAppHost _host;
         IList<NpcMarketRow> _rows = new List<NpcMarketRow>();
         float _listWidth;
@@ -24,6 +24,9 @@ namespace LcdMod.Client.Market.Gui
         public NpcMarketListStripPanel(IAppHost host)
         {
             _host = host;
+            _pageRepeater = new PageRepeater<NpcMarketListPageContext, NpcMarketListPanel>();
+            _pageRepeater.ItemTemplate = Template.For<NpcMarketListPageContext>(CreatePageControl);
+            _pageRepeater.BindControl = BindPageControl;
         }
 
         public IList<NpcMarketRow> Rows
@@ -46,7 +49,6 @@ namespace LcdMod.Client.Market.Gui
         public float TextScale { get; set; }
         public float LayoutScale { get; set; } = 1f;
         public Color MutedColor { get; set; }
-        public ControlStyle SortHeaderStyle { get; set; }
         public Action<NpcMarketSortColumn> SortClicked { get; set; }
         public Action SearchClicked { get; set; }
         public Action<NpcMarketRowClickTarget> RowClicked { get; set; }
@@ -78,34 +80,12 @@ namespace LcdMod.Client.Market.Gui
             RebuildPages(viewport.Size);
             pagesPanel.PageWidthPixels = _listWidth / Math.Max(0.01f, pagesPanel.LayoutScale);
 
-            EnsureCards(_pages.Count);
-            for (var i = 0; i < _cards.Count; i++)
-            {
-                var card = _cards[i];
-                if (i >= _pages.Count)
-                {
-                    card.SetVisible(false);
-                    if (ReferenceEquals(card.Parent, pagesPanel))
-                        pagesPanel.RemoveChild(card);
-                    continue;
-                }
-
-                if (!ReferenceEquals(card.Parent, pagesPanel))
-                    pagesPanel.AddChild(card);
-
-                var page = _pages[i];
-                var rect = new RectangleF(viewport.X, viewport.Y, _listWidth, viewport.Height);
-                card.Configure(rect, _rows, page, Mode, SortColumn, SortDescending, RepeatedHeaderHeight, RowHeight,
-                    TextScale, LayoutScale, MutedColor, SortHeaderStyle);
-                card.SortClicked = SortClicked;
-                card.SearchClicked = SearchClicked;
-                card.RowClicked = RowClicked;
-                card.SetVisible(true);
-            }
+            BuildPageContexts(viewport, 0, _pages.Count);
+            int pageCount = _pageRepeater.BindTo(pagesPanel, _pageContexts);
 
             FirstVisiblePageIndex = _pages.Count > 0 ? 0 : -1;
             LastVisiblePageIndex = _pages.Count - 1;
-            return _pages.Count;
+            return pageCount;
         }
 
         public void ArrangeViewport(RectangleF viewport, Vector2 scrollOffsetPixels)
@@ -115,9 +95,6 @@ namespace LcdMod.Client.Market.Gui
             SetRect(new RectangleF(viewport.X - scrollOffsetPixels.X, viewport.Y - scrollOffsetPixels.Y,
                 Math.Max(viewport.Width, _pages.Count * _listWidth + Math.Max(0, _pages.Count - 1) * HorizontalGap),
                 viewport.Height));
-
-            foreach (var card in _cards)
-                card.SetVisible(false);
 
             if (_pages.Count <= 0)
             {
@@ -133,25 +110,6 @@ namespace LcdMod.Client.Market.Gui
                 Math.Max(1, (int)Math.Ceiling((viewport.Width + remainder) / stride) + 1));
             FirstVisiblePageIndex = startPage;
             LastVisiblePageIndex = Math.Min(_pages.Count - 1, startPage + visiblePageCount - 1);
-
-            EnsureCards(visiblePageCount);
-            for (var i = 0; i < visiblePageCount; i++)
-            {
-                var pageIndex = startPage + i;
-                if (pageIndex < 0 || pageIndex >= _pages.Count)
-                    continue;
-
-                var page = _pages[pageIndex];
-                var card = _cards[i];
-                var x = viewport.X + pageIndex * stride - scrollOffsetPixels.X;
-                var rect = new RectangleF(x, viewport.Y, _listWidth, viewport.Height);
-                card.Configure(rect, _rows, page, Mode, SortColumn, SortDescending, RepeatedHeaderHeight, RowHeight,
-                    TextScale, LayoutScale, MutedColor, SortHeaderStyle);
-                card.SortClicked = SortClicked;
-                card.SearchClicked = SearchClicked;
-                card.RowClicked = RowClicked;
-                card.SetVisible(true);
-            }
         }
 
         protected override bool HitCore(Vector2 point)
@@ -161,13 +119,47 @@ namespace LcdMod.Client.Market.Gui
                 : base.HitCore(point);
         }
 
-        void EnsureCards(int count)
+        ControlTemplate CreatePageControl(NpcMarketListPageContext context, int index)
         {
-            while (_cards.Count < count)
+            return new NpcMarketListPanel(_host);
+        }
+
+        void BindPageControl(NpcMarketListPanel panel, NpcMarketListPageContext context, int index)
+        {
+            if (panel == null || context == null)
+                return;
+
+            panel.Configure(context);
+        }
+
+        void BuildPageContexts(RectangleF viewport, int startPage, int pageCount)
+        {
+            _pageContexts.Clear();
+
+            for (var i = 0; i < pageCount; i++)
             {
-                var card = new NpcMarketListPanel(_host);
-                _cards.Add(card);
-                AddChild(card);
+                var pageIndex = startPage + i;
+                if (pageIndex < 0 || pageIndex >= _pages.Count)
+                    continue;
+
+                var page = _pages[pageIndex];
+                _pageContexts.Add(new NpcMarketListPageContext
+                {
+                    Host = _host,
+                    Rows = _rows,
+                    Page = page,
+                    Mode = Mode,
+                    SortColumn = SortColumn,
+                    SortDescending = SortDescending,
+                    HeaderHeight = RepeatedHeaderHeight,
+                    RowHeight = RowHeight,
+                    TextScale = TextScale,
+                    LayoutScale = LayoutScale,
+                    MutedColor = MutedColor,
+                    SortClicked = SortClicked,
+                    SearchClicked = SearchClicked,
+                    RowClicked = RowClicked
+                });
             }
         }
 
