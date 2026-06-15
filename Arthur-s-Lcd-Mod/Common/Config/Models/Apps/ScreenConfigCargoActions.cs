@@ -8,7 +8,7 @@ using GridLinkTypeEnum = VRage.Game.ModAPI.GridLinkTypeEnum;
 namespace LcdMod.Common.Config.Models.Apps
 {
     [ProtoContract]
-    public partial class ScreenConfigCargoActions : ScreenConfigGeneral, IGridGroupReference
+    public partial class ScreenConfigCargoActions : ScreenConfigInteractive, IGridGroupReference
     {
         public override int Id => 20;
 

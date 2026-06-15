@@ -38,10 +38,9 @@ namespace LcdMod.Client.Apps
             float textScale = GetTextScale(owner);
             float lineHeight = owner.Surface.MeasureStringInPixels(new StringBuilder("A"), DEBUG_FONT, textScale).Y + 2f;
             var start = viewBox.Position + new Vector2(8f, 8f);
-            int maxLines = Math.Max(1, (int)Math.Floor((viewBox.Height - 16f) / lineHeight));
 
             _sprites.Clear();
-            for (int i = 0; i < lines.Count && i < maxLines; i++)
+            for (int i = 0; i < lines.Count; i++)
             {
                 _sprites.Add(new MySprite
                 {
@@ -49,20 +48,6 @@ namespace LcdMod.Client.Apps
                     Data = lines[i].Text,
                     Position = start + new Vector2(0f, i * lineHeight),
                     Color = lines[i].Color,
-                    FontId = DEBUG_FONT,
-                    Alignment = TextAlignment.LEFT,
-                    RotationOrScale = textScale
-                });
-            }
-
-            if (lines.Count > maxLines)
-            {
-                _sprites.Add(new MySprite
-                {
-                    Type = SpriteType.TEXT,
-                    Data = "-- More " + (lines.Count - maxLines) + " --",
-                    Position = start + new Vector2(0f, (maxLines - 1) * lineHeight),
-                    Color = WarningColor,
                     FontId = DEBUG_FONT,
                     Alignment = TextAlignment.LEFT,
                     RotationOrScale = textScale

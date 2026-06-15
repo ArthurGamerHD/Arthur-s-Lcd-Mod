@@ -3,7 +3,7 @@ using ProtoBuf;
 namespace LcdMod.Common.Config.Models.Apps
 {
     [ProtoContract]
-    public partial class ScreenConfigMarkdown : ScreenConfigGeneral
+    public partial class ScreenConfigMarkdown : ScreenConfigInteractive
     {
         public override int Id => 17;
 

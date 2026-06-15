@@ -110,7 +110,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         public override ScriptUpdate NeedsUpdate => ScriptUpdate.Update10;
 
         public ScreenConfigGeneral Config { get; protected set; }
-        public ScreenConfigGeneral ColorableConfig => Config;
+        public ScreenConfigColorable ColorableConfig => Config as ScreenConfigColorable;
         protected abstract ConfigKind ConfigKind { get; }
 
         public bool Dirty => _dirty;
@@ -243,7 +243,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             AddBackground(sprites);
             DrawTitle(sprites);
             DrawMessage(sprites, LocHelper.GetLoc("ScreenBlueprintsRew_NoBlueprints"),
-                "Warning", ColorableConfig.WarningColor, Config.Scale);
+                "Warning", GetWarningColor(), ConfiguredScale);
             DrawFooter(sprites);
         }
 
@@ -252,7 +252,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             AddBackground(sprites);
             DrawTitle(sprites);
             DrawMessage(sprites, LocHelper.Empty,
-                "Warning", ColorableConfig.WarningColor, Config.Scale);
+                "Warning", GetWarningColor(), ConfiguredScale);
             DrawFooter(sprites);
         }
 
@@ -559,7 +559,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 Data = Icon,
                 Position = position + new Vector2(20f) * headerScale,
                 Size = new Vector2(40f * headerScale),
-                Color = ColorableConfig.HeaderColor,
+                Color = GetHeaderColor(),
                 Alignment = TextAlignment.CENTER
             });
             position.X += ViewBox.Width / 8f;
@@ -577,7 +577,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 Data = titleText,
                 Position = position,
                 RotationOrScale = ConfiguredScale * 1.3f * FontScale,
-                Color = ColorableConfig.HeaderColor,
+                Color = GetHeaderColor(),
                 Alignment = TextAlignment.LEFT,
                 FontId = "White"
             });
@@ -794,6 +794,20 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             DrawLoadingFrame(sprites, scale);
         }
 
+        protected Color GetHeaderColor()
+        {
+            return ColorableConfig?.HeaderColor ?? ForegroundColor;
+        }
+
+        protected Color GetWarningColor()
+        {
+            return ColorableConfig?.WarningColor ?? new Color(224, 160, 16);
+        }
+
+        protected Color GetErrorColor()
+        {
+            return ColorableConfig?.ErrorColor ?? new Color(96, 32, 32);
+        }
 
         protected virtual void DrawCellBackground(List<MySprite> frame, KeyValuePair<MyItemType, double> item,
             float xStart, float xEnd, float yStart, float cellHeight, float cellPadding)
@@ -803,7 +817,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             var rt = yStart + cellPadding / 2;
             var rb = yStart + cellHeight - cellPadding / 2;
 
-            var backgroundColor = item.Value == 0 ? ColorableConfig.ErrorColor : ColorableConfig.HeaderColor;
+            var backgroundColor = item.Value == 0 ? GetErrorColor() : GetHeaderColor();
             var a = backgroundColor.MulValue(0.2f);
             var cellRect = new RectangleF(rl, rt, rr - rl, rb - rt);
             var dropShadow = new RectangleF(cellRect.Position + 2, cellRect.Size);

@@ -5,7 +5,7 @@ namespace LcdMod.Common.Config.Models.Apps
 {
     [ProtoContract]
     [ProtoInclude(100, typeof(ScreenConfigWithBlocks))]
-    public partial class ScreenConfigWithFilters : ScreenConfigGeneral, IHideEmpty
+    public partial class ScreenConfigWithFilters : ScreenConfigInteractive, IHideEmpty
     {
         [ProtoMember(10)] public int SortMethod { get; set; }
         [ProtoMember(13)] public bool HideEmpty { get; set; } = true;

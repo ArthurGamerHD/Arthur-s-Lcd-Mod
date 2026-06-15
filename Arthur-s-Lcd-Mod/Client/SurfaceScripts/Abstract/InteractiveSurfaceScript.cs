@@ -32,7 +32,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         long _lastVisualContactFrame = long.MinValue;
         ControlTemplate _pointerOverControl;
 
-        protected override ConfigKind ConfigKind => ConfigKind.General;
+        protected override ConfigKind ConfigKind => ConfigKind.Interactive;
 
         protected InteractiveSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
             : base(surface, block, size)

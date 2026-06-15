@@ -117,7 +117,7 @@ namespace LcdMod.Client.SurfaceScripts
             EnsureActiveInstanceChangeSubscription();
         }
 
-        public bool IsReferenceBlockCandidate(IMyTerminalBlock block) => IsBasicReferenceBlockCandidate(block) && HasMatchingResolution(block);
+        public bool IsReferenceBlockCandidate(IMyTerminalBlock block) => IsBasicReferenceBlockCandidate(block);
 
         bool IsBasicReferenceBlockCandidate(IMyTerminalBlock block)
         {
@@ -143,10 +143,8 @@ namespace LcdMod.Client.SurfaceScripts
 
         static bool SameResolution(Vector2 a, Vector2 b)
         {
-            return (Math.Abs(a.X - b.X) < 0.5f &&
-                    Math.Abs(a.Y - b.Y) < 0.5f) ||
-                   (Math.Abs(a.X - b.Y) < 0.5f &&
-                    Math.Abs(a.Y - b.X) < 0.5f);
+            return Math.Abs(a.X - b.X) < 0.5f &&
+                   Math.Abs(a.Y - b.Y) < 0.5f;
         }
 
         public bool CanApplyProxyAutoOffset()
@@ -737,16 +735,13 @@ namespace LcdMod.Client.SurfaceScripts
             var targetBlock = entity as IMyTerminalBlock;
             if (targetBlock == null ||
                 targetBlock.MarkedForClose ||
-                !IsBasicReferenceBlockCandidate(targetBlock) ||
-                !HasMatchingResolution(targetBlock))
+                !IsBasicReferenceBlockCandidate(targetBlock))
             {
                 return false;
             }
 
             hostBlock = targetBlock;
-            hostRotationIndex = Block is IMyTextPanel
-                ? GetSelectedTextPanelRotationIndex(Block)
-                : GetSelectedTextPanelRotationIndex(targetBlock);
+            hostRotationIndex = GetSelectedTextPanelRotationIndex(targetBlock);
             host = GetActiveParentInstance(SurfaceScriptBase.Instances.GetInstances(targetBlock), hostRotationIndex);
             if (host == null)
                 host = null;
@@ -1208,13 +1203,9 @@ namespace LcdMod.Client.SurfaceScripts
                 return;
             }
 
-            int targetBlockRotationIndex = GetSelectedTextPanelRotationIndex(targetBlock);
-            if (ShouldRefreshLinkedProxyMapping(targetBlock, targetBlockRotationIndex))
-                ScheduleLinkedProxyRotationUpdate(targetBlock, targetBlockRotationIndex);
-
-            int hostRotationIndex = Block is IMyTextPanel
-                ? GetSelectedTextPanelRotationIndex(Block)
-                : targetBlockRotationIndex;
+            int hostRotationIndex = GetSelectedTextPanelRotationIndex(targetBlock);
+            if (ShouldRefreshLinkedProxyMapping(targetBlock, hostRotationIndex))
+                ScheduleLinkedProxyRotationUpdate(targetBlock, hostRotationIndex);
 
             if (_parentInstances == null || _resolvedReferenceBlockId != referenceBlockId)
                 _parentInstances = SurfaceScriptBase.Instances.GetInstances(targetBlock);
@@ -1249,8 +1240,8 @@ namespace LcdMod.Client.SurfaceScripts
                 return;
             }
 
-            // Text panels keep one resident script per rotation; proxy to the host instance
-            // matching this proxy's current rotation slot.
+            // Text panels keep one resident script per rotation; proxy to the host's
+            // active rotation slot so proxy panels can use independent rotations.
             var scripts = ConfigManager.GetAppsForBlock(targetBlock).ToList();
             _parent = GetActiveParentInstance(hostRotationIndex);
 
@@ -1386,7 +1377,7 @@ namespace LcdMod.Client.SurfaceScripts
                 else if (_hostScriptUnsupported)
                 {
                     var color = AppConfig?.ErrorColor ?? new Color(220, 80, 80);
-                    DrawMessage(_sprites, "Unsuported script", "Cross", color, 0.9f);
+                    DrawMessage(_sprites, "Unsupported script", "Cross", color, 0.9f);
                 }
                 else
                 {

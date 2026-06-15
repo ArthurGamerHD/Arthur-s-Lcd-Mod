@@ -53,7 +53,7 @@ namespace LcdMod.Client.Apps
         double _stopDistance;
         bool _hasStopEstimate;
 
-        ScreenConfigGeneral Config => AppConfig;
+        ScreenConfigInteractive Config => AppConfig;
         IMyCubeBlock Block => Host.Block;
         Sandbox.ModAPI.Ingame.IMyTextSurface Surface => Host.Surface;
         RectangleF ViewBox => Host.ViewBox;
@@ -66,7 +66,7 @@ namespace LcdMod.Client.Apps
 
         public bool HasData { get; private set; }
 
-        public ThrustApp(ScreenConfigGeneral config, IAppHost host)
+        public ThrustApp(ScreenConfigInteractive config, IAppHost host)
             : base(config, host)
         {
         }

@@ -4,7 +4,7 @@ using ProtoBuf;
 namespace LcdMod.Common.Config.Models.Apps
 {
     [ProtoContract]
-    public partial class ScreenConfigDocking : ScreenConfigGeneral, IDockableBlockReference
+    public partial class ScreenConfigDocking : ScreenConfigInteractive, IDockableBlockReference
     {
         public override int Id => 13;
 

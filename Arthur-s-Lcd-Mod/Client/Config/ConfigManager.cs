@@ -129,7 +129,7 @@ namespace LcdMod.Client.Config
             provider = CreateSettings(block);
             screen = EnsureScreenConfigType(provider, index, requestedConfigKind);
             provider.BindRuntimeParent(block as IMyTerminalBlock);
-            screen?.ResetDefaultColors();
+            (screen as ScreenConfigColorable)?.ResetDefaultColors();
             Save(block, provider);
         }
 
@@ -153,8 +153,8 @@ namespace LcdMod.Client.Config
             return settings.Screens[index];
         }
 
-        public static ScreenConfigGeneral GetConfigForCurrentScreen(IMyTerminalBlock block) =>
-            GetConfigForScreen(block, GetThisSurfaceIndex(block));
+        public static ScreenConfigInteractive GetConfigForCurrentScreen(IMyTerminalBlock block) =>
+            GetConfigForScreen(block, GetThisSurfaceIndex(block)) as ScreenConfigInteractive;
 
         static ScreenConfigGeneral EnsureScreenConfigType(ScreenProviderConfig provider, int index, ConfigKind requestedConfigKind)
         {
@@ -173,7 +173,7 @@ namespace LcdMod.Client.Config
             if (current.GetType() == requested.GetType())
                 return current;
 
-            if (requestedConfigKind == ConfigKind.General && current is ScreenConfigButtonPanel)
+            if (requestedConfigKind == ConfigKind.Interactive && current is ScreenConfigInteractive)
                 return current;
 
             requested.Clone(current);

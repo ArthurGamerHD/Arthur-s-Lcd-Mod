@@ -4,7 +4,7 @@ using ProtoBuf;
 namespace LcdMod.Common.Config.Models.Apps
 {
     [ProtoContract]
-    public partial class ScreenConfigButtonPanel : ScreenConfigGeneral, IHideEmpty
+    public partial class ScreenConfigButtonPanel : ScreenConfigInteractive, IHideEmpty
     {
         public override int Id => 18;
         [ProtoMember(1001)]

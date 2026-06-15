@@ -18,7 +18,7 @@ namespace LcdMod.Client.SurfaceScripts
 #endif
     public partial class SessionDebugSurfaceScript : InteractiveSurfaceScript
     {
-        protected override ConfigKind ConfigKind => ConfigKind.General;
+        protected override ConfigKind ConfigKind => ConfigKind.Interactive;
 
         public const string ID = "SessionDebug";
         public const string TITLE = "LcdMod Session Debug";

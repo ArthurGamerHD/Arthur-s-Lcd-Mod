@@ -28,7 +28,7 @@ public sealed class ConfigKinds : IIncrementalGenerator
     static readonly DiagnosticDescriptor InteractiveAppConfigWarning = new(
         id: "LcdMOD005",
         title: "Interactive app uses non-interactive config",
-        messageFormat: "Interactive type '{0}' uses config '{1}', which does not inherit ScreenConfigGeneral",
+        messageFormat: "Interactive type '{0}' uses config '{1}', which does not inherit ScreenConfigInteractive",
         category: "LcdModCodeGenerator",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
@@ -242,7 +242,7 @@ namespace Generated
 
         var interactiveSurfaceScript =
             compilation.GetTypeByMetadataName("LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript");
-        var interactiveConfig = compilation.GetTypeByMetadataName("LcdMod.Common.Config.Models.ScreenConfigGeneral");
+        var interactiveConfig = compilation.GetTypeByMetadataName("LcdMod.Common.Config.Models.ScreenConfigInteractive");
         if (interactiveSurfaceScript == null || interactiveConfig == null)
             return;
 
@@ -267,7 +267,7 @@ namespace Generated
     {
         var interactiveApp = compilation.GetTypeByMetadataName("LcdMod.Client.Apps.Abstract.IApp");
         var generalConfig = compilation.GetTypeByMetadataName("LcdMod.Common.Config.Models.ScreenConfigGeneral");
-        var interactiveConfig = compilation.GetTypeByMetadataName("LcdMod.Common.Config.Models.ScreenConfigGeneral");
+        var interactiveConfig = compilation.GetTypeByMetadataName("LcdMod.Common.Config.Models.ScreenConfigInteractive");
         if (interactiveApp == null || generalConfig == null || interactiveConfig == null)
             return;
 

@@ -40,8 +40,7 @@ namespace LcdMod.Client.Terminal.Controls.Interactive
 
         void Setter(IMyTerminalBlock block, bool value)
         {
-            var screen = GetThisSurfaceIndex(block);
-            var config = ConfigManager.GetConfigForScreen(block, screen);
+            var config = ConfigManager.GetConfigForCurrentScreen(block);
 
             if (config == null)
                 return;

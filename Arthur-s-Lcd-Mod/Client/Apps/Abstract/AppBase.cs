@@ -19,7 +19,7 @@ namespace LcdMod.Client.Apps.Abstract
         bool _themeDark;
         bool _hasTheme;
 
-        protected App(ScreenConfigGeneral config, IAppHost host)
+        protected App(ScreenConfigInteractive config, IAppHost host)
         {
             AppConfig = config;
             Host = host;
@@ -27,7 +27,7 @@ namespace LcdMod.Client.Apps.Abstract
         }
 
         protected IAppHost Host { get; private set; }
-        protected ScreenConfigGeneral AppConfig { get; private set; }
+        protected ScreenConfigInteractive AppConfig { get; private set; }
 
         public IReadOnlyDictionary<string, Color> Theme => GetTheme();
 

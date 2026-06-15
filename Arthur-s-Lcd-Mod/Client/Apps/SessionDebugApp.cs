@@ -35,7 +35,7 @@ namespace LcdMod.Client.Apps
 
         SessionDebugSurfaceScript _host;
         
-        public SessionDebugApp(ScreenConfigGeneral appConfig, SessionDebugSurfaceScript sessionDebugSurfaceScript) : base(appConfig, sessionDebugSurfaceScript)
+        public SessionDebugApp(ScreenConfigInteractive appConfig, SessionDebugSurfaceScript sessionDebugSurfaceScript) : base(appConfig, sessionDebugSurfaceScript)
         {
             _scrollPanel = AddChild(new ScrollPanel());
             _scrollPanel.ManualScrollInertiaEnabled = false;
