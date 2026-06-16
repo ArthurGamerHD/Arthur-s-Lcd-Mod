@@ -24,6 +24,18 @@ namespace LcdMod.Client.Gui.Styling
         public static readonly ResourceKey<Color> ErrorColor =
             ResourceKey.Register<Color>("errorColor");
 
+        public static readonly ResourceKey<Color> SuccessColor =
+            ResourceKey.Register<Color>("successColor");
+
+        public static readonly ResourceKey<Color> MutedTextColor =
+            ResourceKey.Register<Color>("mutedTextColor");
+
+        public static readonly ResourceKey<Color> DividerColor =
+            ResourceKey.Register<Color>("dividerColor");
+
+        public static readonly ResourceKey<Color> DisabledColor =
+            ResourceKey.Register<Color>("disabledColor");
+
         public static readonly ResourceKey<Color> BackgroundColor =
             ResourceKey.Register<Color>("backgroundColor");
 
@@ -90,6 +102,10 @@ namespace LcdMod.Client.Gui.Styling
                     return WarningColor;
                 case Constants.ERROR:
                     return ErrorColor;
+                case Constants.SUCCESS:
+                    return SuccessColor;
+                case Constants.DISABLED_FOREGROUND:
+                    return DisabledColor;
                 case Constants.BACKGROUND:
                     return BackgroundColor;
                 case Constants.ON_BACKGROUND:
@@ -124,6 +140,8 @@ namespace LcdMod.Client.Gui.Styling
                     return BorderColor;
                 case Constants.OUTLINE_VARIANT:
                     return BorderVariantColor;
+                case Constants.DISABLED_BACKGROUND:
+                    return SurfaceContainerLowColor;
                 case Constants.SHADOW:
                     return ShadowColor;
                 default:

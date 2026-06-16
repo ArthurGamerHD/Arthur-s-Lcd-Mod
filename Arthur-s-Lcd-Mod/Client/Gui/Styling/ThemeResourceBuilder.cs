@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using LcdMod.Client.Market;
 using LcdMod.Common.Helpers;
 using VRageMath;
 
@@ -16,6 +17,10 @@ namespace LcdMod.Client.Gui.Styling
             resources.Set(ThemeResources.OnAccentContainerColor, theme[Constants.ON_PRIMARY_CONTAINER]);
             resources.Set(ThemeResources.WarningColor, theme[Constants.TERTIARY]);
             resources.Set(ThemeResources.ErrorColor, theme[Constants.ERROR]);
+            resources.Set(ThemeResources.SuccessColor, theme[Constants.SUCCESS]);
+            resources.Set(ThemeResources.MutedTextColor, theme[Constants.ON_SURFACE_VARIANT]);
+            resources.Set(ThemeResources.DividerColor, theme[Constants.OUTLINE_VARIANT]);
+            resources.Set(ThemeResources.DisabledColor, theme[Constants.DISABLED_FOREGROUND]);
             resources.Set(ThemeResources.BackgroundColor, theme[Constants.BACKGROUND]);
             resources.Set(ThemeResources.FontColor, theme[Constants.ON_BACKGROUND]);
             resources.Set(ThemeResources.SurfaceColor, theme[Constants.SURFACE]);
@@ -32,6 +37,10 @@ namespace LcdMod.Client.Gui.Styling
             resources.Set(ThemeResources.BorderColor, theme[Constants.OUTLINE]);
             resources.Set(ThemeResources.BorderVariantColor, theme[Constants.OUTLINE_VARIANT]);
             resources.Set(ThemeResources.ShadowColor, theme[Constants.SHADOW]);
+
+            resources.Set(MarketThemeResources.PriceTrendUpColor, theme[Constants.SUCCESS]);
+            resources.Set(MarketThemeResources.PriceTrendDownColor, theme[Constants.ERROR]);
+            resources.Set(MarketThemeResources.PriceTrendNeutralColor, theme[Constants.ON_SURFACE_VARIANT]);
 
             return resources;
         }

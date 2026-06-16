@@ -596,13 +596,7 @@ namespace LcdMod.Client.Apps
 
         Color ResolveThemeColor(string role, Color fallback)
         {
-            if (role == Constants.SECONDARY_CONTAINER)
-                return ScopedResourceResolver.TryResolve(this, ThemeResources.SurfaceColor, out fallback) ? fallback : AppConfig.HeaderColor.MulValue(0.6f);
-
-            if (role == Constants.ON_SECONDARY_CONTAINER)
-                return ScopedResourceResolver.TryResolve(this, ThemeResources.FontColor, out fallback) ? fallback : ForegroundColor;
-
-            return fallback;
+            return ResolveRole(role, fallback);
         }
 
         void DrawEmpty(List<MySprite> sprites, RectangleF bounds)

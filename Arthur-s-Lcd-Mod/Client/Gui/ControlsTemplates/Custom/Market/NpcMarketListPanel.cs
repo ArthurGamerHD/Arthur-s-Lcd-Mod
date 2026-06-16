@@ -17,8 +17,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
     internal sealed class NpcMarketListPanel : Panel
     {
         const float ITEM_NAME_MAX_WIDTH = 240f;
-        static readonly Color CheckerWhite = new Color(255,255,255, 2);
-        static readonly Color CheckerBlack = new Color(0,0,0, 2);
         readonly List<Button> _sortHeaderButtons = new List<Button>();
         readonly List<NpcMarketRowHitSlot> _rowHitSlots = new List<NpcMarketRowHitSlot>();
         readonly StringBuilder _text = new StringBuilder();
@@ -263,7 +261,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
 
         protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
         {
-            DrawHeaderDivider(sprites);
+            var muted = GetResourceColor(ThemeResources.MutedTextColor, _muted);
+            var textColor = GetResourceColor(ThemeResources.OnSurfaceColor, _host.ForegroundColor);
+            var dividerColor = GetResourceColor(ThemeResources.DividerColor, muted);
+
+            DrawHeaderDivider(sprites, dividerColor);
             for (var i = 0; _page != null && i < _page.RowCount; i++)
             {
                 var rowIndex = _page.StartRowIndex + i;
@@ -271,21 +273,20 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
                     continue;
 
                 var rect = new RectangleF(Bounds.X, Bounds.Y + _headerHeight + i * _rowHeight, Bounds.Width, _rowHeight);
-                DrawRowBackground(sprites, rect, _page.PageIndex, rowIndex);
                 DrawRowHoverBackground(sprites, _rows[rowIndex]);
-                DrawRow(sprites, _rows[rowIndex], rect, _textScale, _muted);
+                DrawRow(sprites, _rows[rowIndex], rect, _textScale, muted, textColor);
             }
 
             _templateGrid.Render(context, sprites);
         }
 
-        void DrawHeaderDivider(List<MySprite> sprites)
+        void DrawHeaderDivider(List<MySprite> sprites, Color dividerColor)
         {
             sprites.Add(new MySprite(SpriteType.TEXTURE, "SquareSimple")
             {
                 Position = new Vector2(Bounds.Center.X, Bounds.Y + _headerHeight - _layoutScale),
                 Size = new Vector2(Bounds.Width, _layoutScale),
-                Color = _muted
+                Color = dividerColor
             });
         }
 
@@ -310,16 +311,16 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
                 {
                     Position = button.Bounds.Center,
                     Size = button.Bounds.Size,
-                    Color = new Color(_host.ForegroundColor, 0.10f)
+                    Color = GetResourceColor(ThemeResources.SurfaceContainerColor, new Color(_host.ForegroundColor, 0.10f))
                 });
             }
         }
 
-        void DrawRow(List<MySprite> sprites, NpcMarketRow row, RectangleF rect, float textScale, Color muted)
+        void DrawRow(List<MySprite> sprites, NpcMarketRow row, RectangleF rect, float textScale, Color muted, Color textColor)
         {
             if (_mode == NpcMarketMode.Both)
             {
-                DrawBothRow(sprites, row, rect, textScale, muted);
+                DrawBothRow(sprites, row, rect, textScale, muted, textColor);
                 return;
             }
 
@@ -341,12 +342,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
             var nameWidth = Math.Max(20f, Math.Min(ITEM_NAME_MAX_WIDTH * scale, priceLeft - nameLeft - 12f * scale));
             var secondary = row.GetSecondaryLabel();
             var displayName = string.IsNullOrEmpty(secondary) ? row.DisplayName : row.DisplayName + " (" + secondary + ")";
-            DrawText(sprites, Trim(displayName, nameWidth, textScale), nameLeft, centerY, textScale, TextAlignment.LEFT, _host.ForegroundColor);
-            DrawText(sprites, FormatingHelper.FormatSpaceCredits(row.PricePerUnit) + " SC", priceRight, centerY, textScale, TextAlignment.RIGHT, _host.ForegroundColor);
+            DrawText(sprites, Trim(displayName, nameWidth, textScale), nameLeft, centerY, textScale, TextAlignment.LEFT, textColor);
+            DrawText(sprites, FormatingHelper.FormatSpaceCredits(row.PricePerUnit) + " SC", priceRight, centerY, textScale, TextAlignment.RIGHT, textColor);
             DrawTrendForMode(sprites, row.DeltaPercent, _mode, deltaRight, centerY, textScale, muted);
         }
 
-        void DrawBothRow(List<MySprite> sprites, NpcMarketRow row, RectangleF rect, float textScale, Color muted)
+        void DrawBothRow(List<MySprite> sprites, NpcMarketRow row, RectangleF rect, float textScale, Color muted, Color textColor)
         {
             var scale = _layoutScale;
             var centerY = rect.Center.Y;
@@ -360,14 +361,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
 
             var secondary = row.GetSecondaryLabel();
             var displayName = string.IsNullOrEmpty(secondary) ? row.DisplayName : row.DisplayName + " (" + secondary + ")";
-            DrawText(sprites, Trim(displayName, layout.NameWidth, textScale), layout.NameLeft, centerY, textScale, TextAlignment.LEFT, _host.ForegroundColor);
-            DrawOptionalPrice(sprites, row.BestBuyQuote, layout.BuyPriceRect.Right - 8f * scale, centerY, textScale);
+            DrawText(sprites, Trim(displayName, layout.NameWidth, textScale), layout.NameLeft, centerY, textScale, TextAlignment.LEFT, textColor);
+            DrawOptionalPrice(sprites, row.BestBuyQuote, layout.BuyPriceRect.Right - 8f * scale, centerY, textScale, textColor);
             DrawOptionalTrend(sprites, row.BestBuyQuote, NpcMarketMode.Buy, layout.BuyTrendRect.Right - 10f * scale, centerY, textScale, muted);
-            DrawOptionalPrice(sprites, row.BestSellQuote, layout.SellPriceRect.Right - 8f * scale, centerY, textScale);
+            DrawOptionalPrice(sprites, row.BestSellQuote, layout.SellPriceRect.Right - 8f * scale, centerY, textScale, textColor);
             DrawOptionalTrend(sprites, row.BestSellQuote, NpcMarketMode.Sell, layout.SellTrendRect.Right - 10f * scale, centerY, textScale, muted);
         }
 
-        void DrawOptionalPrice(List<MySprite> sprites, NpcMarketStationQuote quote, float right, float centerY, float textScale)
+        void DrawOptionalPrice(List<MySprite> sprites, NpcMarketStationQuote quote, float right, float centerY, float textScale, Color textColor)
         {
             if (quote == null)
             {
@@ -375,7 +376,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
                 return;
             }
 
-            DrawText(sprites, FormatingHelper.FormatSpaceCredits(quote.PersonalizedCurrentPricePerUnit) + " SC", right, centerY, textScale, TextAlignment.RIGHT, _host.ForegroundColor);
+            DrawText(sprites, FormatingHelper.FormatSpaceCredits(quote.PersonalizedCurrentPricePerUnit) + " SC", right, centerY, textScale, TextAlignment.RIGHT, textColor);
         }
 
         void DrawOptionalTrend(List<MySprite> sprites, NpcMarketStationQuote quote, NpcMarketMode mode, float right, float centerY, float textScale, Color muted)
@@ -412,23 +413,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
             var sprite = GetTrendSprite(delta, mode, out rotation);
             sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = sprite, Position = new Vector2(right - textSize.X - gap - iconSize * 0.5f, centerY), Size = new Vector2(iconSize), RotationOrScale = rotation, Color = Color.White, Alignment = TextAlignment.CENTER });
             DrawText(sprites, text, right, centerY, textScale, TextAlignment.RIGHT, color);
-        }
-
-        void DrawRowBackground(List<MySprite> sprites, RectangleF rect, int columnIndex, int itemIndex)
-        {
-
-            
-            var white = columnIndex % 2 == itemIndex % 2;
-            
-            if((_host.BackgroundColor == Color.White && white) || (_host.BackgroundColor == Color.Black && !white))
-                return;
-            
-            sprites.Add(new MySprite(SpriteType.TEXTURE, "SquareSimple")
-            {
-                Position = rect.Center,
-                Size = rect.Size,
-                Color = white ? CheckerWhite : CheckerBlack
-            });
         }
 
         void DrawText(List<MySprite> sprites, string text, float x, float centerY, float scale, TextAlignment alignment, Color color)
@@ -636,12 +620,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
             return Math.Max(0f, rect.Width - horizontalPadding - sortIndicatorWidth);
         }
 
-        static Color GetDeltaColor(float delta, NpcMarketMode mode, Color muted)
+        Color GetDeltaColor(float delta, NpcMarketMode mode, Color muted)
         {
             if (Math.Abs(delta) < 0.05f)
-                return muted;
+                return GetResourceColor(MarketThemeResources.PriceTrendNeutralColor, muted);
+
             var favorable = mode == NpcMarketMode.Buy ? delta < 0f : delta > 0f;
-            return favorable ? Color.LightGreen : Color.IndianRed;
+            return favorable
+                ? GetResourceColor(MarketThemeResources.PriceTrendUpColor, Color.LightGreen)
+                : GetResourceColor(MarketThemeResources.PriceTrendDownColor, Color.IndianRed);
         }
 
         static string GetTrendSprite(float delta, NpcMarketMode mode, out float rotation)

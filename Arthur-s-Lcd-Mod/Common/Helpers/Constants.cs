@@ -82,6 +82,8 @@ namespace LcdMod.Common.Helpers
         public const string SHADOW = "shadow";
         public const string SCRIM = "scrim";
 
+        public const string SUCCESS = "success";
+
         public const string DISABLED_BACKGROUND = "disabledBackground";
 
         public const string DISABLED_FOREGROUND = "disabledForeground";

@@ -146,6 +146,17 @@ namespace LcdMod.Client.Apps.Abstract
             return Host != null ? Host.ForegroundColor : Color.White;
         }
 
+        protected Color ResolveResource(ResourceKey<Color> key, Color fallback)
+        {
+            Color value;
+            return ScopedResourceResolver.TryResolve(this, key, out value) ? value : fallback;
+        }
+
+        protected Color ResolveRole(string role, Color fallback)
+        {
+            return ResolveResource(ThemeResources.FromThemeRole(role), fallback);
+        }
+
         void EnsureResources()
         {
             var headerColor = GetHeaderColor();

@@ -24,7 +24,7 @@ namespace LcdMod.Client.Gui.Styling.Styles
 
             control.State(StyleState.Disabled)
                 .Set(ControlTemplate.BackgroundColorProperty, ThemeResources.SurfaceContainerLowColor)
-                .Set(ControlTemplate.TextColorProperty, ThemeResources.OnSurfaceVariantColor);
+                .Set(ControlTemplate.TextColorProperty, ThemeResources.DisabledColor);
 
             control.SetId("Primary")
                 .Set(ControlTemplate.BackgroundColorProperty, ThemeResources.AccentContainerColor)

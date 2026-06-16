@@ -400,6 +400,7 @@ namespace LcdMod.Client.Extensions
             theme[Constants.SURFACE_TINT] = primary.Tone(40);
             theme[Constants.SHADOW] = neutral.Tone(0);
             theme[Constants.SCRIM] = neutral.Tone(0);
+            theme[Constants.SUCCESS] = new Color(46, 125, 50);
 
             theme[Constants.DISABLED_BACKGROUND] = Overlay(theme[Constants.SURFACE], theme[Constants.ON_SURFACE], 0.12);
             theme[Constants.DISABLED_FOREGROUND] = Overlay(theme[Constants.SURFACE], theme[Constants.ON_SURFACE], 0.38);
@@ -460,6 +461,7 @@ namespace LcdMod.Client.Extensions
             theme[Constants.SURFACE_TINT] = primary.Tone(80);
             theme[Constants.SHADOW] = neutral.Tone(0);
             theme[Constants.SCRIM] = neutral.Tone(0);
+            theme[Constants.SUCCESS] = new Color(129, 199, 132);
 
             theme[Constants.DISABLED_BACKGROUND] = Overlay(theme[Constants.SURFACE], theme[Constants.ON_SURFACE], 0.12);
             theme[Constants.DISABLED_FOREGROUND] = Overlay(theme[Constants.SURFACE], theme[Constants.ON_SURFACE], 0.38);

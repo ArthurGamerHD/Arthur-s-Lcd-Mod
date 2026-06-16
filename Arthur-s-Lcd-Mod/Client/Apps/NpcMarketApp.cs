@@ -181,7 +181,7 @@ namespace LcdMod.Client.Apps
             var scale = GetLayoutScale();
             var fontScale = Host.Surface.FontSize;
             var textScale = 0.72f * scale * fontScale;
-            var muted = new Color(Host.ForegroundColor, 0.68f);
+            var muted = ResolveResource(ThemeResources.MutedTextColor, new Color(Host.ForegroundColor, 0.68f));
             var footerHeight = GetFooterHeight(textScale);
 
             var key = CacheKey;
@@ -190,7 +190,8 @@ namespace LcdMod.Client.Apps
             
             if (IsLocallyAccessDenied() || (snapshot != null && IsAccessDenied(snapshot)))
             {
-                DrawNativeMessage(sprites, MyTexts.GetString("AccessDenied"), "Lock", _config.ErrorColor);
+                DrawNativeMessage(sprites, MyTexts.GetString("AccessDenied"), "Lock",
+                    ResolveResource(ThemeResources.ErrorColor, _config.ErrorColor));
             }
             else if (snapshot == null)
             {
@@ -650,7 +651,7 @@ namespace LcdMod.Client.Apps
 
         void DrawNativeMessage(List<MySprite> sprites, string message, string icon = "Warning", Color? color = null)
         {
-            color = color ?? _config.WarningColor;
+            color = color ?? ResolveResource(ThemeResources.WarningColor, _config.WarningColor);
             Host.DrawMessage(
                 sprites,
                 message,
