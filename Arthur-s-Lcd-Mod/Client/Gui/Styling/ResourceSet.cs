@@ -20,10 +20,7 @@ namespace LcdMod.Client.Gui.Styling
         public StyleProperty<TValue> Property { get; private set; }
         public StyleValue<TValue> Value { get; private set; }
 
-        StylePropertyBase IStyleValueEntry.Property
-        {
-            get { return Property; }
-        }
+        StylePropertyBase IStyleValueEntry.Property => Property;
     }
 
     public sealed class ResourceSet

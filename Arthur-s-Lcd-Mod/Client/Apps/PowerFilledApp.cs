@@ -158,8 +158,7 @@ namespace LcdMod.Client.Apps
             _gridPanel.VerticalGap = 0f;
             _gridPanel.ItemsSource = _entries;
             ConfigurePowerScrollPanel(owner, contentTop, footerHeight, minH);
-            var renderContext = CreateRenderContext(owner);
-            _scrollPanel.Render(renderContext, sprites);
+            _scrollPanel.Render(sprites);
         }
 
         void ConfigurePowerScrollPanel(IAppHost owner, float contentTop, float footerHeight, float rowHeight)
@@ -170,10 +169,6 @@ namespace LcdMod.Client.Apps
                 ScrollPanel.DefaultScrollerWidthPixels * owner.Config.Scale,
                 rowHeight,
                 SCROLL_TICK / 6f);
-            _scrollPanel.ScrollBarTrackColor =
-                new Color(owner.Surface.ScriptForegroundColor.R, owner.Surface.ScriptForegroundColor.G, owner.Surface.ScriptForegroundColor.B, 127);
-            _scrollPanel.ScrollBarThumbColor =
-                new Color(_config.HeaderColor.R, _config.HeaderColor.G, _config.HeaderColor.B, 250);
             _scrollPanel.SetVisible(true);
             if (!_children.Contains(_scrollPanel))
                 _children.Add(_scrollPanel);
@@ -183,15 +178,6 @@ namespace LcdMod.Client.Apps
         {
             _children.Clear();
             _scrollPanel.SetVisible(false);
-        }
-
-        ControlRenderContext CreateRenderContext(IAppHost owner)
-        {
-            return CreateControlRenderContext(
-                owner.Surface,
-                owner.Config.Scale,
-                owner.Surface.FontSize,
-                new Vector2(float.NaN, float.NaN));
         }
 
         RectangleControl CreatePowerEntryHitbox(PowerEntry entry)
@@ -225,7 +211,7 @@ namespace LcdMod.Client.Apps
             _interactiveHost.RenderSprites();
         }
 
-        void RenderPowerEntryHitbox(ControlTemplate hitbox, ControlRenderContext context, List<MySprite> sprites)
+        void RenderPowerEntryHitbox(ControlTemplate hitbox, List<MySprite> sprites)
         {
             if (hitbox == null)
                 return;

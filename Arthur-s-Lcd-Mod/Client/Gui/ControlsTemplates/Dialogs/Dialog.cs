@@ -114,17 +114,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             get { return true; }
         }
 
-        protected ControlRenderContext CreateRenderContext(
-            Sandbox.ModAPI.Ingame.IMyTextSurface surface,
-            float scale,
-            float fontScale,
-            Color textColor,
-            Color panelColor,
-            Vector2 cursorPosition)
-        {
-            return new ControlRenderContext(surface, scale, fontScale, cursorPosition, this);
-        }
-
         protected Color ResolveColor(ResourceKey<Color> key)
         {
             Color value;
@@ -242,9 +231,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             EnsureCloseButton(rect);
 
             _containerControl.AddChild(_closeButton);
-
-            var context = CreateRenderContext(surface, scale, fontScale, textColor, panelColor, cursorPosition);
-            _closeButton.Render(context, _sprites);
+            _closeButton.Render(_sprites);
         }
 
         void EnsureCloseButton(RectangleF rect)
@@ -281,11 +268,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _closeButton.SetVisible(true);
         }
 
-        void RenderDialogCloseButton(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderDialogCloseButton(ControlTemplate control, List<MySprite> sprites)
         {
             var rect = control.Bounds;
             var hovered = control.IsPointerOver;
-            var radiusPixels = Math.Min(rect.Width, rect.Height) * 0.5f / Math.Max(0.001f, context.Scale);
+            var radiusPixels = Math.Min(rect.Width, rect.Height) * 0.5f / Math.Max(0.001f, control.LayoutScale);
             var fillColor = hovered
                 ? ResolveColor(ThemeResources.SurfaceContainerLowColor)
                 : ResolveColor(ThemeResources.SurfaceContainerColor);
@@ -295,9 +282,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 sprites,
                 fillColor,
                 radiusPixels: radiusPixels,
-                radiusScale: context.Scale);
+                radiusScale: control.LayoutScale);
 
-            var iconSize = Math.Max(1f, Math.Min(rect.Width, rect.Height) - 10f * context.Scale);
+            var iconSize = Math.Max(1f, Math.Min(rect.Width, rect.Height) - 10f * control.LayoutScale);
 
             sprites.Add(new MySprite
             {
@@ -359,7 +346,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             return true;
         }
 
-        protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+        protected override void RenderDefault(List<MySprite> sprites)
         {
             var children = Children;
             if (children == null || children.Count == 0)
@@ -369,7 +356,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             {
                 var child = children[i] as ControlTemplate;
                 if (child != null)
-                    child.Render(context, sprites);
+                    child.Render(sprites);
             }
         }
     }

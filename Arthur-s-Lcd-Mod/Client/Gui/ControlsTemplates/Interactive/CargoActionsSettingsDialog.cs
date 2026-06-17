@@ -45,7 +45,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         protected virtual float CardMinHeight { get { return 160f; } }
 
         protected abstract void RenderContent(RectangleF contentRect, float scale, float fontScale,
-            IMyTextSurface surface, ControlRenderContext context);
+            IMyTextSurface surface);
 
         protected override void BuildDialogControls(
             InteractiveSurfaceScript owner,
@@ -90,8 +90,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             Border.CreateSpritesFromRect(cardRect, Sprites,
                 ResolveColor(ThemeResources.SurfaceContainerHighColor), radiusPixels: cardRadius, radiusScale: 1f);
 
-            var context = CreateRenderContext(surface, scale, fontScale, textColor, panelColor, cursorPosition);
-
             var titleScale = PadButtonStyle.TextScaleForHeight(
                 MathHelper.Clamp(cardRect.Height * 0.06f, 14f, 24f), surface);
             var titleHeight = FormatingHelper.LineHeight(titleScale, surface);
@@ -114,16 +112,17 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 cardRect.Width - 2f * pad,
                 Math.Max(0f, cardRect.Bottom - pad - contentTop));
 
-            RenderContent(contentRect, scale, fontScale, surface, context);
+            RenderContent(contentRect, scale, fontScale, surface);
         }
 
-        protected void DrawLeftLabel(string text, Vector2 centerLeft, float maxWidth, float rowHeight, string role,
-            ControlRenderContext context)
+        protected void DrawLeftLabel(string text, Vector2 centerLeft, float maxWidth, float rowHeight, string role)
         {
+            var provider = ParentApp as ITextSurfaceProvider;
+            var surface = provider != null ? provider.TextSurface : null;
             var textScale = PadButtonStyle.TextScaleForHeight(
-                MathHelper.Clamp(rowHeight * 0.45f, 11f, 18f), context.Surface);
-            var trimmed = PadButtonStyle.TrimToWidth(text, maxWidth, textScale, context.Surface);
-            var height = FormatingHelper.LineHeight(textScale, context.Surface);
+                MathHelper.Clamp(rowHeight * 0.45f, 11f, 18f), surface);
+            var trimmed = PadButtonStyle.TrimToWidth(text, maxWidth, textScale, surface);
+            var height = FormatingHelper.LineHeight(textScale, surface);
             Sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
@@ -186,15 +185,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         }
 
         protected override void RenderContent(RectangleF contentRect, float scale, float fontScale,
-            IMyTextSurface surface, ControlRenderContext context)
+            IMyTextSurface surface)
         {
             var gap = 10f * scale;
             var buttonHeight = Math.Min(110f * scale, (contentRect.Height - 2f * gap) / 3f);
 
             var sortText = MyTexts.GetString("LcdMod_CargoActions_Sort") + ": " + SortModeLabel(_config.SortMode);
-            RenderButton(BUTTON_SORT, Rect(contentRect, 0, buttonHeight, gap), sortText, CycleSort, context);
-            RenderButton(BUTTON_URANIUM, Rect(contentRect, 1, buttonHeight, gap), MyTexts.GetString("LcdMod_CargoActions_Uranium"), OpenUranium, context);
-            RenderButton(BUTTON_WEAPONS, Rect(contentRect, 2, buttonHeight, gap), MyTexts.GetString("LcdMod_CargoActions_Ammo"), OpenWeapons, context);
+            RenderButton(BUTTON_SORT, Rect(contentRect, 0, buttonHeight, gap), sortText, CycleSort);
+            RenderButton(BUTTON_URANIUM, Rect(contentRect, 1, buttonHeight, gap), MyTexts.GetString("LcdMod_CargoActions_Uranium"), OpenUranium);
+            RenderButton(BUTTON_WEAPONS, Rect(contentRect, 2, buttonHeight, gap), MyTexts.GetString("LcdMod_CargoActions_Ammo"), OpenWeapons);
         }
 
         static RectangleF Rect(RectangleF content, int row, float buttonHeight, float gap)
@@ -202,7 +201,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             return new RectangleF(content.X, content.Y + row * (buttonHeight + gap), content.Width, buttonHeight);
         }
 
-        void RenderButton(int index, RectangleF rect, string text, Action onClick, ControlRenderContext context)
+        void RenderButton(int index, RectangleF rect, string text, Action onClick)
         {
             var button = _buttons[index];
             if (button == null)
@@ -229,7 +228,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             button.CustomRender = PadButtonStyle.RenderLabeled;
             button.SetVisible(true);
             ContainerControl.AddChild(button);
-            button.Render(context, Sprites);
+            button.Render(Sprites);
         }
 
 
@@ -320,7 +319,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         }
 
         protected override void RenderContent(RectangleF contentRect, float scale, float fontScale,
-            IMyTextSurface surface, ControlRenderContext context)
+            IMyTextSurface surface)
         {
             var rowGap = 12f * scale;
             var rowH = Math.Min(40f * scale, (contentRect.Height - 3f * rowGap) / 4f);
@@ -328,13 +327,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             for (int i = 0; i < 4; i++)
             {
                 var rowY = contentRect.Y + i * (rowH + rowGap);
-                DrawLeftLabel(_labels[i], new Vector2(contentRect.X, rowY + rowH * 0.5f), contentRect.Width * 0.5f, rowH, Constants.ON_SURFACE, context);
+                DrawLeftLabel(_labels[i], new Vector2(contentRect.X, rowY + rowH * 0.5f), contentRect.Width * 0.5f, rowH, Constants.ON_SURFACE);
                 var stepperRect = new RectangleF(contentRect.X + contentRect.Width * 0.55f, rowY, contentRect.Width * 0.45f, rowH);
-                RenderInput(i, stepperRect, context);
+                RenderInput(i, stepperRect);
             }
         }
 
-        void RenderInput(int index, RectangleF rect, ControlRenderContext context)
+        void RenderInput(int index, RectangleF rect)
         {
             var input = _inputs[index];
             if (input == null)
@@ -361,7 +360,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
             input.SetVisible(true);
             ContainerControl.AddChild(input);
-            input.Render(context, Sprites);
+            input.Render(Sprites);
         }
 
         Action<double> MakeChanged(int index)
@@ -446,29 +445,29 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         }
 
         protected override void RenderContent(RectangleF contentRect, float scale, float fontScale,
-            IMyTextSurface surface, ControlRenderContext context)
+            IMyTextSurface surface)
         {
             var rowH = 34f * scale;
             var gap = 8f * scale;
 
             DrawLeftLabel(MyTexts.GetString("LcdMod_CargoActions_Default"),
-                new Vector2(contentRect.X, contentRect.Y + rowH * 0.5f), contentRect.Width * 0.5f, rowH, Constants.ON_SURFACE, context);
+                new Vector2(contentRect.X, contentRect.Y + rowH * 0.5f), contentRect.Width * 0.5f, rowH, Constants.ON_SURFACE);
             var defaultRect = new RectangleF(contentRect.X + contentRect.Width * 0.55f, contentRect.Y, contentRect.Width * 0.45f, rowH);
-            RenderDefaultInput(defaultRect, context);
+            RenderDefaultInput(defaultRect);
 
             var selRowY = contentRect.Bottom - rowH;
             var selName = _selected != null ? _selected.DisplayName : string.Empty;
-            DrawLeftLabel(selName, new Vector2(contentRect.X, selRowY + rowH * 0.5f), contentRect.Width * 0.5f, rowH, Constants.PRIMARY, context);
+            DrawLeftLabel(selName, new Vector2(contentRect.X, selRowY + rowH * 0.5f), contentRect.Width * 0.5f, rowH, Constants.PRIMARY);
             var selRect = new RectangleF(contentRect.X + contentRect.Width * 0.55f, selRowY, contentRect.Width * 0.45f, rowH);
-            RenderSelectedInput(selRect, context);
+            RenderSelectedInput(selRect);
 
             var listTop = contentRect.Y + rowH + gap;
             var listHeight = Math.Max(rowH, selRowY - gap - listTop);
             var listRect = new RectangleF(contentRect.X, listTop, contentRect.Width, listHeight);
-            RenderList(listRect, 28f * scale, context);
+            RenderList(listRect, 28f * scale);
         }
 
-        void RenderDefaultInput(RectangleF rect, ControlRenderContext context)
+        void RenderDefaultInput(RectangleF rect)
         {
             if (_defaultInput == null)
             {
@@ -493,7 +492,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
             _defaultInput.SetVisible(true);
             ContainerControl.AddChild(_defaultInput);
-            _defaultInput.Render(context, Sprites);
+            _defaultInput.Render(Sprites);
         }
 
         void OnDefaultChanged(double value)
@@ -502,7 +501,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             Redraw();
         }
 
-        void RenderList(RectangleF rect, float rowHeight, ControlRenderContext context)
+        void RenderList(RectangleF rect, float rowHeight)
         {
             if (_listModel == null)
             {
@@ -526,7 +525,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
             _list.SetVisible(true);
             ContainerControl.AddChild(_list);
-            _list.Render(context, Sprites);
+            _list.Render(Sprites);
         }
 
         string WeaponLabel(WeaponOption option)
@@ -544,7 +543,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             Redraw();
         }
 
-        void RenderSelectedInput(RectangleF rect, ControlRenderContext context)
+        void RenderSelectedInput(RectangleF rect)
         {
             double value = _selected != null ? GetCount(_selected.SubtypeId) : _config.AmmoDefaultPerWeapon;
 
@@ -575,7 +574,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
             _selectedInput.SetVisible(true);
             ContainerControl.AddChild(_selectedInput);
-            _selectedInput.Render(context, Sprites);
+            _selectedInput.Render(Sprites);
         }
 
         void OnSelectedChanged(double value)

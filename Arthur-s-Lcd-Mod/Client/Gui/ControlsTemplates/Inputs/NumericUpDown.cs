@@ -46,10 +46,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Inputs
             _grid.SetRect(bounds);
         }
 
-        protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+        protected override void RenderDefault(List<MySprite> sprites)
         {
             ConfigureChildModels();
-            _grid.Render(context, sprites);
+            _grid.Render(sprites);
         }
 
         Button CreateStepButton(double direction)

@@ -691,6 +691,12 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 return true;
             }
 
+            protected override void RenderDefault(List<MySprite> sprites)
+            {
+                // Hit-test surface only. Do not draw the default rectangle/text when the
+                // hidden global-menu opener is part of the interactive-entry render pass.
+            }
+
             void OnRightClick(object dataContext, object sender)
             {
                 _owner.OpenHiddenGlobalMenu();
@@ -942,19 +948,12 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             if (sprites == null || entries == null || entries.Count == 0)
                 return;
 
-            var context = new ControlRenderContext(
-                Surface,
-                ConfiguredScale,
-                FontScale,
-                CursorPosition,
-                RequireAppStyleScope());
-
             for (int i = 0; i < entries.Count; i++)
             {
                 var entry = entries[i] as ControlTemplate;
                 if (entry != null)
                 {
-                    entry.Render(context, sprites);
+                    entry.Render(sprites);
 #if DEBUG
                     if (LocalConfigManager.DebugInteractive)
                         AddDebugInteractiveBounds(entry, sprites);
@@ -969,18 +968,11 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             if (sprites == null || entries == null || _controlOverlayCount == 0)
                 return;
 
-            var context = new ControlRenderContext(
-                Surface,
-                ConfiguredScale,
-                FontScale,
-                CursorPosition,
-                RequireAppStyleScope());
-
             var end = Math.Min(entries.Count, _controlOverlayStartIndex + _controlOverlayCount);
             for (int i = _controlOverlayStartIndex; i < end; i++)
             {
                 var entry = entries[i] as ControlTemplate;
-                entry?.Render(context, sprites);
+                entry?.Render(sprites);
             }
         }
 

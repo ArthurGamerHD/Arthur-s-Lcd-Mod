@@ -1,10 +1,11 @@
 using System.Collections.Generic;
 using LcdMod.Client.Gui;
+using LcdMod.Client.Gui.Styling;
 using VRage.Game.GUI.TextPanel;
 
 namespace LcdMod.Client.Apps.Abstract
 {
-    public interface IApp
+    public interface IApp : IVisualStyleScope
     {
         void Update();
         void LayoutChanged();

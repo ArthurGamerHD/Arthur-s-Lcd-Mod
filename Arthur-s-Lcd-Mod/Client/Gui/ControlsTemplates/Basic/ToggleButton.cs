@@ -47,9 +47,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
             return state;
         }
 
-        protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+        protected override void RenderDefault(List<MySprite> sprites)
         {
-            base.RenderDefault(context, sprites);
+            base.RenderDefault(sprites);
         }
     }
 }

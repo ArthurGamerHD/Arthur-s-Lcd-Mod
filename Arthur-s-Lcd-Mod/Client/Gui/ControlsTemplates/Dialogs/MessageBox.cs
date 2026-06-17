@@ -197,15 +197,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             ContainerControl.AddChild(_button1Control);
             if (showButton2 && _button2Control != null)
                 ContainerControl.AddChild(_button2Control);
-
-            var renderContext = CreateRenderContext(surface, scale, fontScale, textColor, panelColor, cursorPosition);
             ConfigureButton(_button1Control, _button1);
-            _button1Control.Render(renderContext, Sprites);
+            _button1Control.Render(Sprites);
 
             if (showButton2 && _button2Control != null)
             {
                 ConfigureButton(_button2Control, _button2);
-                _button2Control.Render(renderContext, Sprites);
+                _button2Control.Render(Sprites);
             }
         }
 

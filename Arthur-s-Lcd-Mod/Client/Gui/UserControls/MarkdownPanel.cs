@@ -36,7 +36,7 @@ namespace LcdMod.Client.Gui.UserControls
             if (viewBox.Width <= 1f || viewBox.Height <= 1f)
                 return;
 
-            var renderer = new Renderer(context, viewBox, headerColor, textColor, sprites);
+            var renderer = new Renderer(viewBox, headerColor, textColor, sprites, context);
             renderer.Render(document);
         }
 
@@ -77,11 +77,11 @@ namespace LcdMod.Client.Gui.UserControls
             float _layoutScale;
 
             public Renderer(
-                IAppHost context,
                 RectangleF viewBox,
                 Color headerColor,
                 Color textColor,
-                List<MySprite> sprites)
+                List<MySprite> sprites,
+                IAppHost context)
             {
                 _context = context;
                 _viewBox = viewBox;

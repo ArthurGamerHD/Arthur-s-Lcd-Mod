@@ -20,7 +20,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Progress
         public float CornerRadius { get; set; }
         public ProgressBarStyle ProgressBarStyle { get; set; }
 
-        protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+        protected override void RenderDefault(List<MySprite> sprites)
         {
             var rect = GetViewBox();
             var fill = FillColor ?? TextColor;

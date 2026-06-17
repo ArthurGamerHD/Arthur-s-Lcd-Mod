@@ -32,7 +32,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         const float TEXT_SIDE_PADDING = 0.10f;     
         const float ICON_FRACTION = 0.92f;         
 
-        public static void RenderLabeled(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
+        public static void RenderLabeled(ControlTemplate control, List<MySprite> sprites)
         {
             if (control == null)
                 return;
@@ -43,11 +43,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates
                 control.Bounds,
                 model != null ? model.Text : null,
                 tile != null ? tile.SpriteName : null,
-                context, sprites);
+                sprites);
         }
 
         public static void RenderTile(ControlTemplate control, RectangleF rect, string label, string spriteName,
-            ControlRenderContext context, List<MySprite> sprites)
+            List<MySprite> sprites)
         {
             var button = control as Button;
             var panelColor = button != null ? button.BackgroundColor : control.BackgroundColor;
@@ -66,7 +66,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             if (!string.IsNullOrEmpty(spriteName))
                 DrawIcon(rect, spriteName, sprites);
             else if (!string.IsNullOrEmpty(label))
-                DrawCenteredLabel(rect, label, textColor, context.Surface, sprites);
+                DrawCenteredLabel(rect, label, textColor, control.TextFont, control.TextSurface, sprites);
         }
 
         static void DrawIcon(RectangleF rect, string spriteName, List<MySprite> sprites)
@@ -84,17 +84,17 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             });
         }
 
-        static void DrawCenteredLabel(RectangleF rect, string label, Color color, IMyTextSurface surface, List<MySprite> sprites)
+        static void DrawCenteredLabel(RectangleF rect, string label, Color color, string fontId, IMyTextSurface surface, List<MySprite> sprites)
         {
             var maxWidth = Math.Max(1f, rect.Width - rect.Width * TEXT_SIDE_PADDING * 2f);
             var targetHeight = MathHelper.Clamp(rect.Height * TEXT_HEIGHT_FRACTION, TEXT_MIN_HEIGHT, TEXT_MAX_HEIGHT);
             var textScale = TextScaleForHeight(targetHeight, surface);
-            var size = FormatingHelper.GetSizeInPixel(label, "White", textScale, surface);
+            var size = FormatingHelper.GetSizeInPixel(label, fontId, textScale, surface);
 
             if (size.X <= maxWidth)
             {
                 var lineHeight = FormatingHelper.LineHeight(textScale, surface);
-                AddLine(rect.Center.X, rect.Center.Y - lineHeight * 0.5f, label, textScale, color, sprites);
+                AddLine(rect.Center.X, rect.Center.Y - lineHeight * 0.5f, label, textScale, color, fontId, sprites);
                 return;
             }
 
@@ -103,19 +103,19 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             {
                 var twoLineScale = TextScaleForHeight(Math.Max(TEXT_MIN_HEIGHT * 0.85f, targetHeight * 0.78f), surface);
                 var lh = FormatingHelper.LineHeight(twoLineScale, surface);
-                first = TrimToWidth(first, maxWidth, twoLineScale, surface);
-                second = TrimToWidth(second, maxWidth, twoLineScale, surface);
-                AddLine(rect.Center.X, rect.Center.Y - lh, first, twoLineScale, color, sprites);
-                AddLine(rect.Center.X, rect.Center.Y, second, twoLineScale, color, sprites);
+                first = TrimToWidth(first, maxWidth, twoLineScale, fontId, surface);
+                second = TrimToWidth(second, maxWidth, twoLineScale, fontId, surface);
+                AddLine(rect.Center.X, rect.Center.Y - lh, first, twoLineScale, color, fontId, sprites);
+                AddLine(rect.Center.X, rect.Center.Y, second, twoLineScale, color, fontId, sprites);
                 return;
             }
 
-            var trimmed = TrimToWidth(label, maxWidth, textScale, surface);
+            var trimmed = TrimToWidth(label, maxWidth, textScale, fontId, surface);
             var singleLineHeight = FormatingHelper.LineHeight(textScale, surface);
-            AddLine(rect.Center.X, rect.Center.Y - singleLineHeight * 0.5f, trimmed, textScale, color, sprites);
+            AddLine(rect.Center.X, rect.Center.Y - singleLineHeight * 0.5f, trimmed, textScale, color, fontId, sprites);
         }
 
-        static void AddLine(float centerX, float topY, string text, float scale, Color color, List<MySprite> sprites)
+        static void AddLine(float centerX, float topY, string text, float scale, Color color, string fontId, List<MySprite> sprites)
         {
             sprites.Add(new MySprite
             {
@@ -123,7 +123,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
                 Data = text,
                 Position = new Vector2(centerX, topY),
                 Color = color,
-                FontId = "White",
+                FontId = fontId,
                 RotationOrScale = scale,
                 Alignment = TextAlignment.CENTER
             });
@@ -165,10 +165,18 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 
         public static string TrimToWidth(string text, float maxWidth, float scale, IMyTextSurface surface)
         {
+            return TrimToWidth(text, maxWidth, scale, "White", surface);
+        }
+
+        public static string TrimToWidth(string text, float maxWidth, float scale, string fontId, IMyTextSurface surface)
+        {
             if (string.IsNullOrEmpty(text) || maxWidth <= 0f || surface == null)
                 return text ?? string.Empty;
 
-            var size = FormatingHelper.GetSizeInPixel(text, "White", scale, surface);
+            if (string.IsNullOrEmpty(fontId))
+                fontId = "White";
+
+            var size = FormatingHelper.GetSizeInPixel(text, fontId, scale, surface);
             if (size.X <= maxWidth)
                 return text;
 

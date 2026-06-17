@@ -199,7 +199,7 @@ namespace LcdMod.Client.Games.Chess
                 this, 
                 (o, o1) => chessGame.GameOverMessage())
             {
-                CustomRender = (entry, context, sprites) => Render(sprites)
+                CustomRender = (entry, sprites) => Render(sprites)
             };
         }
 

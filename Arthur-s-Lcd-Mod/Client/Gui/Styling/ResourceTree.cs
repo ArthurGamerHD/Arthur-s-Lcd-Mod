@@ -18,10 +18,7 @@ namespace LcdMod.Client.Gui.Styling
         public ResourceKey<TValue> Key { get; private set; }
         public TValue Value { get; private set; }
 
-        ResourceKeyBase IResourceValue.Key
-        {
-            get { return Key; }
-        }
+        ResourceKeyBase IResourceValue.Key => Key;
     }
 
     public sealed class ResourceTree
@@ -35,6 +32,13 @@ namespace LcdMod.Client.Gui.Styling
             return this;
         }
 
+        public ResourceTree Set<TValue>(string key, TValue value)
+        {
+             var resourceKey = ResourceKey.Register<TValue>(key);
+            _values[resourceKey.Id] = new ResourceValue<TValue>(resourceKey, value);
+            return this;
+        }
+        
         public bool TryGet<TValue>(ResourceKey<TValue> key, out TValue value)
         {
             IResourceValue raw;

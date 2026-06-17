@@ -343,9 +343,7 @@ namespace LcdMod.Client.Apps.Abstract
             _listPanel.Gap = 0f;
             SyncPanelChildren(_listPanel, entries, maxLabel, currentLabel, true);
             ConfigureScrollPanel(_caretY, rowHeight);
-
-            var renderContext = CreateRenderContext();
-            _scrollPanel.Render(renderContext, sprites);
+            _scrollPanel.Render(sprites);
         }
 
         void DrawGridLike(List<MySprite> sprites, List<PowerEntry> entries, string maxLabel, string currentLabel,
@@ -362,9 +360,7 @@ namespace LcdMod.Client.Apps.Abstract
             _drawGridVerticalLines = drawVerticalLines;
             SyncPanelChildren(_gridPanel, entries, maxLabel, currentLabel, drawCellsAsLines);
             ConfigureScrollPanel(_caretY, rowHeight);
-
-            var renderContext = CreateRenderContext();
-            _scrollPanel.Render(renderContext, sprites);
+            _scrollPanel.Render(sprites);
         }
 
 
@@ -385,22 +381,9 @@ namespace LcdMod.Client.Apps.Abstract
                 ScrollPanel.DefaultScrollerWidthPixels * Scale,
                 rowHeight,
                 SCROLL_DELAY / 6f);
-            _scrollPanel.ScrollBarTrackColor =
-                new Color(Surface.ScriptForegroundColor.R, Surface.ScriptForegroundColor.G, Surface.ScriptForegroundColor.B, 127);
-            _scrollPanel.ScrollBarThumbColor =
-                new Color(AppConfig.HeaderColor.R, AppConfig.HeaderColor.G, AppConfig.HeaderColor.B, 250);
             _scrollPanel.SetVisible(true);
             if (!_children.Contains(_scrollPanel))
                 _children.Add(_scrollPanel);
-        }
-
-        ControlRenderContext CreateRenderContext()
-        {
-            return CreateControlRenderContext(
-                Surface,
-                Scale,
-                FontScale,
-                new Vector2(float.NaN, float.NaN));
         }
 
         void SyncPanelChildren(
@@ -462,7 +445,7 @@ namespace LcdMod.Client.Apps.Abstract
             return control;
         }
 
-        void RenderListPanelContent(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderListPanelContent(ControlTemplate control, List<MySprite> sprites)
         {
             var children = control != null ? control.Children : null;
             if (children == null)
@@ -471,10 +454,10 @@ namespace LcdMod.Client.Apps.Abstract
             if (AppConfig.DrawLines)
                 DrawHorizontalLines(sprites, ForegroundColor, "Circle", _listPanel.RowHeight);
 
-            RenderPanelChildren(children, context, sprites);
+            RenderPanelChildren(children, sprites);
         }
 
-        void RenderGridPanelContent(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderGridPanelContent(ControlTemplate control, List<MySprite> sprites)
         {
             var children = control != null ? control.Children : null;
             if (children == null)
@@ -492,7 +475,7 @@ namespace LcdMod.Client.Apps.Abstract
                 DrawWrapPanelLines(sprites, layout, _drawGridVerticalLines);
             }
 
-            RenderPanelChildren(children, context, sprites);
+            RenderPanelChildren(children, sprites);
         }
 
         void DrawHorizontalLines(List<MySprite> sprites, Color color, string texture, float rowHeight)
@@ -540,12 +523,12 @@ namespace LcdMod.Client.Apps.Abstract
             }
         }
 
-        static void RenderPanelChildren(IReadOnlyList<Control> children, ControlRenderContext context, List<MySprite> sprites)
+        static void RenderPanelChildren(IReadOnlyList<Control> children, List<MySprite> sprites)
         {
             for (int i = 0; i < children.Count; i++)
             {
                 var child = children[i] as ControlTemplate;
-                child?.Render(context, sprites);
+                child?.Render(sprites);
             }
         }
 
@@ -697,7 +680,7 @@ namespace LcdMod.Client.Apps.Abstract
             ));
         }
 
-        void RenderPowerEntryControl(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderPowerEntryControl(ControlTemplate control, List<MySprite> sprites)
         {
             var entry = control?.DataContext as PowerEntry;
             if (entry == null)

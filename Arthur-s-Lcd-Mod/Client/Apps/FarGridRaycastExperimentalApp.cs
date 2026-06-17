@@ -1565,7 +1565,7 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        void RenderDetectedGridHitbox(ControlTemplate entry, ControlRenderContext context, List<MySprite> sprites)
+        void RenderDetectedGridHitbox(ControlTemplate entry, List<MySprite> sprites)
         {
             // Intentionally invisible. These entries only export per-grid hit tests to InteractiveEntries.
         }

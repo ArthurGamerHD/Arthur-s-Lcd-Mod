@@ -79,13 +79,9 @@ namespace LcdMod.Client.Apps
                 SCROLLBAR_WIDTH,
                 lineHeight,
                 0f);
-            _scrollPanel.ScrollBarTrackColor = new Color(45, 45, 45, 170);
-            _scrollPanel.ScrollBarThumbColor = new Color(190, 190, 190, 230);
 
             _sprites.Clear();
-            _scrollPanel.Render(
-                CreateControlRenderContext(_host.Surface, 1f, 1f, new Vector2(float.NaN, float.NaN)),
-                _sprites);
+            _scrollPanel.Render(_sprites);
 
             ClearDirtyAfterRender();
             return _sprites;
@@ -105,7 +101,7 @@ namespace LcdMod.Client.Apps
                 control.SetDataContext(line);
         }
 
-        void RenderLineControl(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderLineControl(ControlTemplate control, List<MySprite> sprites)
         {
             if (control == null || sprites == null)
                 return;

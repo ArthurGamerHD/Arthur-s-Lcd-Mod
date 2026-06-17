@@ -398,7 +398,7 @@ namespace LcdMod.Client.Apps
             OnPickBackgroundClicked(null, sender);
         }
 
-        static void RenderImagePickerHitbox(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
+        static void RenderImagePickerHitbox(ControlTemplate control, List<MySprite> sprites)
         {
         }
 

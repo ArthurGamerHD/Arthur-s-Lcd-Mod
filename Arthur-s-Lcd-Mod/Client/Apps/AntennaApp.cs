@@ -117,9 +117,7 @@ namespace LcdMod.Client.Apps
             _listPanel.Gap = 0f;
             SyncPanelChildren(_listPanel, _entries, true);
             ConfigureScrollPanel(caretY, footerHeight, rowHeight);
-
-            var renderContext = CreateRenderContext();
-            _scrollPanel.Render(renderContext, sprites);
+            _scrollPanel.Render(sprites);
         }
 
         void DrawGridLike(List<MySprite> sprites, bool forceSingleColumn, bool drawLineSprites, bool drawVerticalLines, bool drawCellsAsLines)
@@ -137,9 +135,7 @@ namespace LcdMod.Client.Apps
             _drawGridVerticalLines = drawVerticalLines;
             SyncPanelChildren(_gridPanel, _entries, drawCellsAsLines);
             ConfigureScrollPanel(caretY, footerHeight, rowHeight);
-
-            var renderContext = CreateRenderContext();
-            _scrollPanel.Render(renderContext, sprites);
+            _scrollPanel.Render(sprites);
         }
 
 
@@ -160,22 +156,9 @@ namespace LcdMod.Client.Apps
                 ScrollPanel.DefaultScrollerWidthPixels * AppConfig.Scale,
                 rowHeight,
                 SCROLL_DELAY / 6f);
-            _scrollPanel.ScrollBarTrackColor =
-                new Color(Host.Surface.ScriptForegroundColor.R, Host.Surface.ScriptForegroundColor.G, Host.Surface.ScriptForegroundColor.B, 127);
-            _scrollPanel.ScrollBarThumbColor =
-                new Color(Config.HeaderColor.R, Config.HeaderColor.G, Config.HeaderColor.B, 250);
             _scrollPanel.SetVisible(true);
             if (!_children.Contains(_scrollPanel))
                 _children.Add(_scrollPanel);
-        }
-
-        ControlRenderContext CreateRenderContext()
-        {
-            return CreateControlRenderContext(
-                Host.Surface,
-                AppConfig.Scale,
-                Host.Surface.FontSize,
-                new Vector2(float.NaN, float.NaN));
         }
 
         void SyncPanelChildren(Panel panel, List<AntennaEntry> entries, bool drawAsLines)
@@ -228,7 +211,7 @@ namespace LcdMod.Client.Apps
             return control;
         }
 
-        void RenderListPanelContent(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderListPanelContent(ControlTemplate control, List<MySprite> sprites)
         {
             var children = control != null ? control.Children : null;
             if (children == null)
@@ -237,10 +220,10 @@ namespace LcdMod.Client.Apps
             if (Config.DrawLines)
                 DrawHorizontalLines(sprites, Host.ForegroundColor, "Circle", _listPanel.RowHeight);
 
-            RenderPanelChildren(children, context, sprites);
+            RenderPanelChildren(children, sprites);
         }
 
-        void RenderGridPanelContent(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderGridPanelContent(ControlTemplate control, List<MySprite> sprites)
         {
             var children = control != null ? control.Children : null;
             if (children == null)
@@ -258,7 +241,7 @@ namespace LcdMod.Client.Apps
                 DrawWrapPanelLines(sprites, layout, _drawGridVerticalLines);
             }
 
-            RenderPanelChildren(children, context, sprites);
+            RenderPanelChildren(children, sprites);
         }
 
         void DrawHorizontalLines(List<MySprite> sprites, Color color, string texture, float rowHeight)
@@ -306,12 +289,12 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        static void RenderPanelChildren(IReadOnlyList<Control> children, ControlRenderContext context, List<MySprite> sprites)
+        static void RenderPanelChildren(IReadOnlyList<Control> children, List<MySprite> sprites)
         {
             for (int i = 0; i < children.Count; i++)
             {
                 var child = children[i] as ControlTemplate;
-                child?.Render(context, sprites);
+                child?.Render(sprites);
             }
         }
 
@@ -510,7 +493,7 @@ namespace LcdMod.Client.Apps
                 TextAlignment.RIGHT, .9f * AppConfig.Scale * Host.Surface.FontSize));
         }
 
-        void RenderAntennaEntryControl(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderAntennaEntryControl(ControlTemplate control, List<MySprite> sprites)
         {
             var entry = control?.DataContext as AntennaEntry;
             if (entry == null)

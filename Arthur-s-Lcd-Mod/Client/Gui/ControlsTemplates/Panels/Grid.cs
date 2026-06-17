@@ -140,11 +140,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             base.ClearChildren();
         }
 
-        protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+        protected override void RenderDefault(List<MySprite> sprites)
         {
             EnsureLayout();
             DrawBackground(sprites);
-            RenderChildren(context, sprites);
+            RenderChildren(sprites);
         }
 
         protected override void ArrangeChildren()

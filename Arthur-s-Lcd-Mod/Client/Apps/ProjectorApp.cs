@@ -517,7 +517,7 @@ namespace LcdMod.Client.Apps
             if (!Children.Contains(_craftAllButton))
                 _children.Add(_craftAllButton);
 
-            _craftAllButton.Render(CreateItemRenderContext(), frame);
+            _craftAllButton.Render(frame);
         }
 
         void DrawToggleViewButton(List<MySprite> frame, ProjectorFooterLayout layout)
@@ -553,7 +553,7 @@ namespace LcdMod.Client.Apps
             if (!Children.Contains(_toggleViewButton))
                 _children.Add(_toggleViewButton);
 
-            _toggleViewButton.Render(CreateItemRenderContext(), frame);
+            _toggleViewButton.Render(frame);
         }
 
         void OnToggleViewClicked(ButtonModel model, object sender)
@@ -603,12 +603,12 @@ namespace LcdMod.Client.Apps
             _craftAllButton.CustomRender = RenderCraftAllButton;
         }
 
-        void RenderCraftAllButton(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderCraftAllButton(ControlTemplate control, List<MySprite> sprites)
         {
             var model = control.DataContext as ButtonModel;
             var enabled = model == null || model.Enabled;
             var rect = control.Bounds;
-            var hover = enabled && rect.Contains(context.CursorPosition);
+            var hover = enabled && rect.Contains(new Vector2(float.NaN, float.NaN));
             var button = control as Button;
             var defaultButtonColor = button != null ? button.BackgroundColor : control.BackgroundColor;
             var buttonColor = hover
@@ -616,15 +616,15 @@ namespace LcdMod.Client.Apps
                 : defaultButtonColor;
             var textColor = control.TextColor;
             var text = model == null || string.IsNullOrEmpty(model.Text) ? CRAFT_ALL_TEXT : model.Text;
-            var textScale = GetCraftAllButtonTextScale(context.Scale, context.FontScale);
+            var textScale = GetCraftAllButtonTextScale(control.LayoutScale, control.FontScale);
 
-            Border.CreateSpritesFromRect(rect, sprites, buttonColor, radiusScale: context.Scale);
+            Border.CreateSpritesFromRect(rect, sprites, buttonColor, radiusScale: control.LayoutScale);
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
                 Data = text,
                 Position = new Vector2(rect.Center.X,
-                    rect.Center.Y - FormatingHelper.GetSizeInPixel(text, "White", textScale, context.Surface).Y * 0.5f),
+                    rect.Center.Y - FormatingHelper.GetSizeInPixel(text, "White", textScale, control.TextSurface).Y * 0.5f),
                 RotationOrScale = textScale,
                 Color = textColor,
                 Alignment = TextAlignment.CENTER,

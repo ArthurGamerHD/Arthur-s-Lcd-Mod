@@ -96,9 +96,7 @@ namespace LcdMod.Client.Apps
             _listPanel.Gap = 0f;
             SyncPanelChildren(_listPanel, false);
             ConfigureScrollPanel(rowHeight);
-
-            var renderContext = CreateRenderContext();
-            _scrollPanel.Render(renderContext, sprites);
+            _scrollPanel.Render(sprites);
         }
 
         void DrawGrid(List<MySprite> sprites)
@@ -115,9 +113,7 @@ namespace LcdMod.Client.Apps
             _gridPanel.VerticalGap = 0f;
             SyncPanelChildren(_gridPanel, true);
             ConfigureScrollPanel(rowHeight);
-
-            var renderContext = CreateRenderContext();
-            _scrollPanel.Render(renderContext, sprites);
+            _scrollPanel.Render(sprites);
         }
 
         void ClearControls()
@@ -139,20 +135,7 @@ namespace LcdMod.Client.Apps
                 ScrollPanel.DefaultScrollerWidthPixels * AppConfig.Scale,
                 rowHeight,
                 SCROLL_DELAY / 6f);
-            _scrollPanel.ScrollBarTrackColor =
-                new Color(Host.Surface.ScriptForegroundColor.R, Host.Surface.ScriptForegroundColor.G, Host.Surface.ScriptForegroundColor.B, 127);
-            _scrollPanel.ScrollBarThumbColor =
-                new Color(Config.HeaderColor.R, Config.HeaderColor.G, Config.HeaderColor.B, 250);
             _scrollPanel.SetVisible(true);
-        }
-
-        ControlRenderContext CreateRenderContext()
-        {
-            return CreateControlRenderContext(
-                Host.Surface,
-                AppConfig.Scale,
-                Host.Surface.FontSize,
-                new Vector2(float.NaN, float.NaN));
         }
 
         void SyncPanelChildren(Panel panel, bool renderAsGrid)
@@ -229,7 +212,7 @@ namespace LcdMod.Client.Apps
             return -1;
         }
 
-        void RenderListEntryControl(ControlTemplate control, ControlRenderContext context, List<MySprite> frame)
+        void RenderListEntryControl(ControlTemplate control, List<MySprite> frame)
         {
             var entry = control != null ? control.DataContext as Entry : null;
             if (entry == null)
@@ -238,7 +221,7 @@ namespace LcdMod.Client.Apps
             DrawRow(frame, entry, control.Bounds);
         }
 
-        void RenderGridEntryControl(ControlTemplate control, ControlRenderContext context, List<MySprite> frame)
+        void RenderGridEntryControl(ControlTemplate control, List<MySprite> frame)
         {
             var entry = control != null ? control.DataContext as Entry : null;
             if (entry == null)
@@ -247,7 +230,7 @@ namespace LcdMod.Client.Apps
             DrawGridCell(frame, entry, control.Bounds.X, control.Bounds.Right, control.Bounds.Y, control.Bounds.Height);
         }
 
-        void RenderGridPanelContent(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderGridPanelContent(ControlTemplate control, List<MySprite> sprites)
         {
             var children = control != null ? control.Children : null;
             if (children == null)
@@ -269,7 +252,7 @@ namespace LcdMod.Client.Apps
             {
                 var child = children[i] as ControlTemplate;
                 if (child != null)
-                    child.Render(context, sprites);
+                    child.Render(sprites);
             }
         }
 

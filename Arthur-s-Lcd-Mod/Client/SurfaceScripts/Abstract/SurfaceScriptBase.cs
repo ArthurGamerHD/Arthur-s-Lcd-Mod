@@ -10,8 +10,8 @@ using LcdMod.Client.Extensions;
 using LcdMod.Client.GridData;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
-using LcdMod.Client.Gui.UserControls;
 using LcdMod.Client.Gui.Styling;
+using LcdMod.Client.Gui.UserControls;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.ScreenAreas;
 using LcdMod.Client.Terminal.Controls;
@@ -149,15 +149,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         public abstract IApp App { get; }
 
-        public IVisualStyleScope RequireAppStyleScope()
-        {
-            IVisualStyleScope scope = App as IVisualStyleScope;
-            if (scope == null)
-                throw new InvalidOperationException("Surface script App must implement IVisualStyleScope before drawing overlay controls.");
-
-            return scope;
-        }
-
         protected Grid FooterRoot
         {
             get
@@ -172,16 +163,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         protected bool HasFooterRoot
         {
             get { return _footerRoot != null && _footerRoot.Visible && _footerRoot.HasChildren; }
-        }
-
-        protected ControlRenderContext CreateAppControlRenderContext(Vector2 cursorPosition)
-        {
-            return new ControlRenderContext(
-                Surface,
-                ConfiguredScale,
-                FontScale,
-                cursorPosition,
-                RequireAppStyleScope());
         }
 
         protected int ResolveRotationOrSurfaceIndex()
@@ -600,11 +581,11 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             if (frame == null || _footerRoot == null || !_footerRoot.Visible)
                 return;
 
-            IVisualStyleScope scope = RequireAppStyleScope();
+            IVisualStyleScope scope = App;
             _footerRoot.SetStyleParent(scope);
             _footerRoot.SetDataContext(App);
             _footerRoot.SetRect(bounds);
-            _footerRoot.Render(CreateAppControlRenderContext(new Vector2(float.NaN, float.NaN)), frame);
+            _footerRoot.Render(frame);
         }
 
         protected static readonly Regex RxGroup = new Regex(@"\(\s*G\s*:\s*(.+?)\s*\)", RegexOptions.IgnoreCase);

@@ -42,7 +42,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
 
         public void Configure(RectangleF bounds, float scale)
         {
-            _layoutScale = Math.Max(0f, scale);
+            _layoutScale = Math.Max(0.01f, scale);
             SetRect(bounds);
             ArrangeOptionButtons();
             SetVisible(true);
@@ -95,9 +95,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
             ArrangeOptionButtons();
         }
 
-        protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+        protected override void RenderDefault(List<MySprite> sprites)
         {
-            RenderButton(this, Bounds, GetLabel(_selectedValue), true, false, Enabled && IsPointerOver, context, sprites);
+            UpdateLayoutScale(LayoutScale);
+            RenderButton(this, Bounds, GetLabel(_selectedValue), true, false, Enabled && IsMouseOver, sprites);
         }
 
         protected override StyleState GetStyleState()
@@ -207,38 +208,43 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
                 _optionButtons[i].SetVisible(Enabled && IsOpen && i < _options.Count);
         }
 
-        void RenderOptionButton(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderOptionButton(ControlTemplate control, List<MySprite> sprites)
         {
+            UpdateLayoutScale(LayoutScale);
+
             var model = control.DataContext as ComboBoxOptionModel<T>;
             var selected = model != null && EqualityComparer<T>.Default.Equals(_selectedValue, model.Value);
             RenderButton(control, control.Bounds, model != null ? model.Text : string.Empty, false, selected,
-                control.IsPointerOver, context, sprites);
+                control.IsMouseOver, sprites);
         }
 
         void RenderButton(ControlTemplate control, RectangleF rect, string text, bool drawArrow, bool selected, bool hovered,
-            ControlRenderContext context, List<MySprite> sprites)
+            List<MySprite> sprites)
         {
             var scale = Math.Max(0.01f, _layoutScale);
             var active = hovered || selected;
             var panelColor = active
-                ? control.GetResourceColor(ThemeResources.AccentColor, control.BackgroundColor)
-                : control.BackgroundColor;
-            var textColor = control.TextColor;
-            var textScale = 0.58f * scale * context.FontScale;
+                ? GetResourceColor(ThemeResources.AccentColor, BackgroundColor)
+                : BackgroundColor;
+            var textColor = active
+                ? GetResourceColor(ThemeResources.OnAccentColor, TextColor)
+                : TextColor;
+            var textScale = 0.58f * scale * ResolveStyleValue(ControlTemplate.FontScaleProperty);
+            var fontId = control != null ? control.TextFont : TextFont;
 
             Border.CreateSpritesFromRect(rect, sprites, panelColor,
-                radiusPixels: control.BorderRadiusPixels,
+                radiusPixels: BorderRadiusPixels,
                 radiusScale: scale);
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
                 Data = text ?? string.Empty,
                 Position = new Vector2(rect.X + 8f * scale,
-                    rect.Center.Y - FormatingHelper.GetSizeInPixel(text ?? string.Empty, "White", textScale, context.Surface).Y * 0.5f),
+                    rect.Center.Y - MeasureText(text ?? string.Empty, fontId, textScale).Y * 0.5f),
                 RotationOrScale = textScale,
                 Color = textColor,
                 Alignment = TextAlignment.LEFT,
-                FontId = "White"
+                FontId = fontId
             });
 
             if (!drawArrow)
@@ -254,6 +260,16 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
                 Color = textColor,
                 Alignment = TextAlignment.CENTER
             });
+        }
+
+        void UpdateLayoutScale(float scale)
+        {
+            var safeScale = Math.Max(0.01f, scale);
+            if (Math.Abs(_layoutScale - safeScale) <= 0.0001f)
+                return;
+
+            _layoutScale = safeScale;
+            ArrangeOptionButtons();
         }
 
         string GetLabel(T value)

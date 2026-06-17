@@ -849,7 +849,7 @@ namespace LcdMod.Client.Games.Chess
             {
                 _boardCellEntries[index] = new RectangleControl(_gridCells[index], CursorType.Default, index)
                 {
-                    CustomRender = delegate(ControlTemplate entry, ControlRenderContext context, List<MySprite> sprites)
+                    CustomRender = delegate(ControlTemplate entry, List<MySprite> sprites)
                     {
                         RenderBoardCell(sprites, (int)entry.DataContext);
                     }
@@ -866,7 +866,7 @@ namespace LcdMod.Client.Games.Chess
                     CursorType.Hand,
                     _overlayControlEntries.Count)
                 {
-                    CustomRender = delegate(ControlTemplate entry, ControlRenderContext context, List<MySprite> sprites)
+                    CustomRender = delegate(ControlTemplate entry, List<MySprite> sprites)
                     {
                         _overlayOverlay?.RenderBox(sprites, (int)entry.DataContext);
                     }

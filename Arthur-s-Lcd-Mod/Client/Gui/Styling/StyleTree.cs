@@ -8,13 +8,6 @@ namespace LcdMod.Client.Gui.Styling
     {
         readonly List<StyleNode> _roots = new List<StyleNode>();
 
-        public Style ForClass(string @class)
-        {
-            Style root = new Style(null, string.IsNullOrEmpty(@class) ? Control.DefaultStyleClass : @class);
-            _roots.Add(root);
-            return root;
-        }
-
         public Style<TControl> For<TControl>()
             where TControl : ControlTemplate
         {
@@ -33,9 +26,6 @@ namespace LcdMod.Client.Gui.Styling
             return StyleTreeWalker.TryResolve(this, target, id, state, property, out value);
         }
 
-        internal IList<StyleNode> Roots
-        {
-            get { return _roots; }
-        }
+        internal IList<StyleNode> Roots => _roots;
     }
 }

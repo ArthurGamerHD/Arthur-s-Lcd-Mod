@@ -10,7 +10,7 @@ using VRageMath;
 
 namespace LcdMod.Client.Apps.Abstract
 {
-    public abstract class App : Control, IApp, IVisualStyleScope
+    public abstract class App : Control, IApp, ITextSurfaceProvider
     {
         readonly List<Control> _rootControls = new List<Control>();
         StyleTree _styles;
@@ -18,6 +18,8 @@ namespace LcdMod.Client.Apps.Abstract
         Dictionary<string, Color> _theme;
         Color _themeHeaderColor;
         bool _themeDark;
+        float _themeLayoutScale;
+        float _themeFontScale;
         bool _hasTheme;
 
         protected App(ScreenConfigInteractive config, IAppHost host)
@@ -60,58 +62,9 @@ namespace LcdMod.Client.Apps.Abstract
             return control;
         }
 
-        protected void RemoveChild(ControlTemplate control)
+        public Sandbox.ModAPI.Ingame.IMyTextSurface TextSurface
         {
-            if (control == null || !_rootControls.Remove(control))
-                return;
-
-            control.SetStyleParent(null);
-            MarkDirty();
-        }
-
-        protected void ClearChildren()
-        {
-            for (int i = 0; i < _rootControls.Count; i++)
-            {
-                var control = _rootControls[i] as ControlTemplate;
-                if (control != null)
-                    control.SetStyleParent(null);
-            }
-
-            _rootControls.Clear();
-            MarkDirty();
-        }
-
-        protected void SetStyles(StyleTree styles)
-        {
-            if (ReferenceEquals(_styles, styles))
-                return;
-
-            _styles = styles;
-            MarkDirty();
-        }
-
-        protected void SetResources(ResourceTree resources)
-        {
-            if (ReferenceEquals(_resources, resources))
-                return;
-
-            _resources = resources;
-            MarkDirty();
-        }
-
-        public ControlRenderContext CreateControlRenderContext(
-            Sandbox.ModAPI.Ingame.IMyTextSurface surface,
-            float scale,
-            float fontScale,
-            Vector2 cursorPosition)
-        {
-            return new ControlRenderContext(
-                surface,
-                scale,
-                fontScale,
-                cursorPosition,
-                this);
+            get { return Host != null ? Host.Surface : null; }
         }
 
 
@@ -161,16 +114,38 @@ namespace LcdMod.Client.Apps.Abstract
         {
             var headerColor = GetHeaderColor();
             bool dark = ShouldUseDarkTheme();
+            float layoutScale = GetLayoutScaleResourceValue();
+            float fontScale = GetFontScaleResourceValue();
 
-            if (!_hasTheme || !headerColor.Equals(_themeHeaderColor) || dark != _themeDark)
+            if (!_hasTheme ||
+                !headerColor.Equals(_themeHeaderColor) ||
+                dark != _themeDark ||
+                !layoutScale.Equals(_themeLayoutScale) ||
+                !fontScale.Equals(_themeFontScale))
             {
                 _theme = headerColor.ToTheme(dark);
                 _resources = ThemeResourceBuilder.FromThemeDictionary(_theme);
+                _resources.Set(ThemeResources.LayoutScale, layoutScale);
+                _resources.Set(ThemeResources.FontScale, fontScale);
                 _themeHeaderColor = headerColor;
                 _themeDark = dark;
+                _themeLayoutScale = layoutScale;
+                _themeFontScale = fontScale;
                 _hasTheme = true;
                 MarkDirty();
             }
+        }
+
+        float GetLayoutScaleResourceValue()
+        {
+            float scale = AppConfig != null ? AppConfig.Scale : Host != null && Host.Config != null ? Host.Config.Scale : 1f;
+            return scale > 0f ? scale : 1f;
+        }
+
+        float GetFontScaleResourceValue()
+        {
+            float fontScale = Host != null && Host.Surface != null ? Host.Surface.FontSize : 1f;
+            return fontScale > 0f ? fontScale : 1f;
         }
 
         bool ShouldUseDarkTheme()

@@ -109,9 +109,7 @@ namespace LcdMod.Client.Apps
             _listPanel.Gap = 0f;
             SyncPanelChildren(_listPanel, _entries, false);
             ConfigureScrollPanel(contentTop, rowHeight);
-
-            var renderContext = CreateRenderContext();
-            _scrollPanel.Render(renderContext, sprites);
+            _scrollPanel.Render(sprites);
         }
 
         private void DrawGrid(List<MySprite> sprites)
@@ -125,9 +123,7 @@ namespace LcdMod.Client.Apps
             _gridPanel.VerticalGap = 0f;
             SyncPanelChildren(_gridPanel, _entries, true);
             ConfigureScrollPanel(contentTop, rowHeight);
-
-            var renderContext = CreateRenderContext();
-            _scrollPanel.Render(renderContext, sprites);
+            _scrollPanel.Render(sprites);
         }
 
         private void DrawRow(List<MySprite> frame, Entry entry, RectangleF bounds)
@@ -329,23 +325,9 @@ namespace LcdMod.Client.Apps
                 ScrollPanel.DefaultScrollerWidthPixels * AppConfig.Scale,
                 rowHeight,
                 SCROLL_DELAY / 6f);
-            _scrollPanel.ScrollBarTrackColor =
-                new Color(Host.Surface.ScriptForegroundColor.R, Host.Surface.ScriptForegroundColor.G,
-                    Host.Surface.ScriptForegroundColor.B, 127);
-            _scrollPanel.ScrollBarThumbColor =
-                new Color(Config.HeaderColor.R, Config.HeaderColor.G, Config.HeaderColor.B, 250);
             _scrollPanel.SetVisible(true);
             if (!_children.Contains(_scrollPanel))
                 _children.Add(_scrollPanel);
-        }
-
-        private ControlRenderContext CreateRenderContext()
-        {
-            return CreateControlRenderContext(
-                Host.Surface,
-                AppConfig.Scale,
-                Host.Surface.FontSize,
-                new Vector2(float.NaN, float.NaN));
         }
 
         private RectangleControl GetOrCreateEntryControl(Entry dataContext, bool renderAsGrid)
@@ -400,7 +382,7 @@ namespace LcdMod.Client.Apps
             EnsurePanelChildOrder(panel, desired);
         }
 
-        private void RenderGridPanelContent(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
+        private void RenderGridPanelContent(ControlTemplate control, List<MySprite> sprites)
         {
             var children = control != null ? control.Children : null;
             if (children == null)
@@ -420,7 +402,7 @@ namespace LcdMod.Client.Apps
             {
                 var child = children[i] as ControlTemplate;
                 if (child != null)
-                    child.Render(context, sprites);
+                    child.Render(sprites);
             }
         }
 
@@ -533,7 +515,7 @@ namespace LcdMod.Client.Apps
             return null;
         }
 
-        private void RenderCargoEntryControl(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
+        private void RenderCargoEntryControl(ControlTemplate control, List<MySprite> sprites)
         {
             var entry = control?.DataContext as Entry;
             if (entry == null)

@@ -146,14 +146,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             var bodyRect = new RectangleF(cardRect.X + pad, bodyTop, cardRect.Width - 2f * pad,
                 footerTop - bodyTop - 8f * scale);
 
-            var context = CreateRenderContext(surface, scale, fontScale, textColor, panelColor, cursorPosition);
-
             if (_step == 0)
-                RenderActionStep(bodyRect, scale, buttonScale, cardTextColor, context);
+                RenderActionStep(bodyRect, scale, buttonScale, cardTextColor);
             else
-                RenderListStep(bodyRect, scale, bodyScale, cardTextColor, context, surface);
+                RenderListStep(bodyRect, scale, bodyScale, cardTextColor, surface);
 
-            RenderFooter(cardRect, footerTop, footerHeight, pad, scale, buttonScale, context, surface);
+            RenderFooter(cardRect, footerTop, footerHeight, pad, scale, buttonScale, surface);
         }
 
         private string GetTitle()
@@ -170,8 +168,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             }
         }
 
-        private void RenderActionStep(RectangleF body, float scale, float buttonScale, Color textColor,
-            ControlRenderContext context)
+        private void RenderActionStep(RectangleF body, float scale, float buttonScale, Color textColor)
         {
             var gap = 10f * scale;
             var h = Math.Min(46f * scale, (body.Height - 2f * gap) / 3f);
@@ -184,25 +181,25 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 {
                     _mode = TransferMode.Send;
                     GoToStep(1);
-                }, context);
+                });
             y += h + gap;
             DrawButton(new RectangleF(x, y, w, h), LocHelper.GetLoc("LcdMod_Transfer_Receive"), buttonScale, true, true,
                 delegate
                 {
                     _mode = TransferMode.Receive;
                     GoToStep(1);
-                }, context);
+                });
             y += h + gap;
             DrawButton(new RectangleF(x, y, w, h), LocHelper.GetLoc("LcdMod_Transfer_Balance"), buttonScale, true, true,
                 delegate
                 {
                     _mode = TransferMode.Balance;
                     GoToStep(1);
-                }, context);
+                });
         }
 
         private void RenderListStep(RectangleF body, float scale, float rowScale, Color textColor,
-            ControlRenderContext context, IMyTextSurface surface)
+            IMyTextSurface surface)
         {
             var rowHeight = FormatingHelper.LineHeight(rowScale, surface) + 6f * scale;
             var rowGap = 2f * scale;
@@ -237,7 +234,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                     var id = block.EntityId;
                     var selected = _selectedTargets.Contains(id);
                     DrawRow(rect, SafeName(block), rowScale, selected,
-                        delegate { Toggle(_selectedTargets, id); }, context);
+                        delegate { Toggle(_selectedTargets, id); });
                 }
                 else
                 {
@@ -247,14 +244,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                         var groupKey = row.GroupKey;
                         var selected = _selectedCategories.Contains(groupKey);
                         DrawRow(rect, row.Label, rowScale, selected,
-                            delegate { Toggle(_selectedCategories, groupKey); }, context);
+                            delegate { Toggle(_selectedCategories, groupKey); });
                     }
                     else
                     {
                         var key = row.Key;
                         var selected = _selectedTypeKeys.Contains(key);
                         DrawRow(rect, row.Label, rowScale, selected,
-                            delegate { Toggle(_selectedTypeKeys, key); }, context);
+                            delegate { Toggle(_selectedTypeKeys, key); });
                     }
                 }
 
@@ -271,18 +268,18 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                     {
                         _scroll = Math.Max(0, _scroll - 1);
                         _showDialog?.Invoke(this);
-                    }, context);
+                    });
                 DrawButton(new RectangleF(sx, body.Bottom - sh, sw, sh), "v", rowScale, false, _scroll < maxScroll,
                     delegate
                     {
                         _scroll = Math.Min(maxScroll, _scroll + 1);
                         _showDialog?.Invoke(this);
-                    }, context);
+                    });
             }
         }
 
         private void RenderFooter(RectangleF cardRect, float footerTop, float footerHeight, float pad, float scale,
-            float buttonScale, ControlRenderContext context, IMyTextSurface surface)
+            float buttonScale, IMyTextSurface surface)
         {
             if (_step == 0)
                 return;
@@ -294,11 +291,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
             DrawButton(new RectangleF(x, y, btnW, footerHeight), LocHelper.GetLoc("LcdMod_Transfer_Back"), buttonScale,
                 false, true,
-                delegate { GoToStep(_step - 1); }, context);
+                delegate { GoToStep(_step - 1); });
 
             DrawButton(new RectangleF(x + btnW + gap, y, btnW, footerHeight), LocHelper.GetLoc("LcdMod_Transfer_All"),
                 buttonScale, false, true,
-                delegate { ToggleAll(); }, context);
+                delegate { ToggleAll(); });
 
             var primaryRect = new RectangleF(cardRect.Right - pad - btnW, y, btnW, footerHeight);
             if (_step == 1)
@@ -308,7 +305,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                     delegate
                     {
                         if (_selectedTargets.Count > 0) GoToItems();
-                    }, context);
+                    });
             }
             else
             {
@@ -317,7 +314,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                     delegate
                     {
                         if (_selectedTypeKeys.Count > 0 || _selectedCategories.Count > 0) Apply();
-                    }, context);
+                    });
             }
         }
 
@@ -588,7 +585,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         }
 
         private void DrawButton(RectangleF rect, string text, float textScale, bool primary, bool enabled,
-            Action onClick, ControlRenderContext context)
+            Action onClick)
         {
             var control = Rent(rect, enabled ? OnClickAction(onClick) : null);
             control.SetCursor(enabled ? CursorType.Hand : CursorType.Default);
@@ -604,13 +601,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 : ResolveColor(ThemeResources.OnSurfaceColor);
             var label = text;
             var btnScale = textScale;
-            var surface = context.Surface;
+            var surface = control.TextSurface;
 
-            control.CustomRender = delegate(ControlTemplate ctrl, ControlRenderContext ctx, List<MySprite> sprites)
+            control.CustomRender = delegate(ControlTemplate ctrl, List<MySprite> sprites)
             {
                 var r = ctrl.Bounds;
-                var hover = enabled && r.Contains(ctx.CursorPosition);
-                Border.CreateSpritesFromRect(r, sprites, hover ? panel.MulValue(1.18f) : panel, radiusScale: ctx.Scale);
+                var hover = enabled && ctrl.IsMouseOver;
+                Border.CreateSpritesFromRect(r, sprites, hover ? panel.MulValue(1.18f) : panel, radiusScale: ctrl.LayoutScale);
                 sprites.Add(new MySprite
                 {
                     Type = SpriteType.TEXT,
@@ -624,11 +621,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 });
             };
 
-            control.Render(context, Sprites);
+            control.Render(Sprites);
         }
 
-        private void DrawRow(RectangleF rect, string text, float textScale, bool selected, Action onClick,
-            ControlRenderContext context)
+        private void DrawRow(RectangleF rect, string text, float textScale, bool selected, Action onClick)
         {
             var control = Rent(rect, OnClickAction(onClick));
             control.SetCursor(CursorType.Hand);
@@ -642,24 +638,24 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 : ResolveColor(ThemeResources.OnSurfaceColor);
             var label = text;
             var rowScale = textScale;
-            var surface = context.Surface;
+            var surface = control.TextSurface;
             var isSelected = selected;
 
-            control.CustomRender = delegate(ControlTemplate ctrl, ControlRenderContext ctx, List<MySprite> sprites)
+            control.CustomRender = delegate(ControlTemplate ctrl, List<MySprite> sprites)
             {
                 var r = ctrl.Bounds;
-                var hover = r.Contains(ctx.CursorPosition);
+                var hover = ctrl.IsMouseOver;
                 Border.CreateSpritesFromRect(r, sprites, hover && !isSelected ? panel.MulValue(1.18f) : panel,
-                    radiusScale: ctx.Scale);
+                    radiusScale: ctrl.LayoutScale);
 
-                var pad = 10f * ctx.Scale;
+                var pad = 10f * ctrl.LayoutScale;
                 if (isSelected)
                     sprites.Add(new MySprite
                     {
                         Type = SpriteType.TEXTURE,
                         Data = "Checkmark",
-                        Position = new Vector2(r.Right - pad - 8f * ctx.Scale, r.Center.Y),
-                        Size = new Vector2(16f * ctx.Scale),
+                        Position = new Vector2(r.Right - pad - 8f * ctrl.LayoutScale, r.Center.Y),
+                        Size = new Vector2(16f * ctrl.LayoutScale),
                         Color = txt,
                         Alignment = TextAlignment.CENTER
                     });
@@ -677,7 +673,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 });
             };
 
-            control.Render(context, Sprites);
+            control.Render(Sprites);
         }
 
         private RectangleControl Rent(RectangleF rect, Action<object, object> onClick)

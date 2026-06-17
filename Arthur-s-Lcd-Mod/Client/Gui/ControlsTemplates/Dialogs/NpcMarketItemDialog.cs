@@ -83,8 +83,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 ResolveColor(ThemeResources.ShadowColor), radiusScale: scale);
             Border.CreateSpritesFromRect(card, Sprites, ResolveColor(ThemeResources.SurfaceContainerHighColor),
                 radiusScale: scale);
-
-            var context = CreateRenderContext(surface, scale, fontScale, textColor, panelColor, cursorPosition);
             var padding = 18f * scale;
             var headerTop = card.Y + 14f * scale;
             var headerHeight = 66f * scale;
@@ -99,7 +97,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _modeCombo.SetStyleId("Primary");
             _modeCombo.SetSelectedValue(_mode);
             ContainerControl.AddChild(_modeCombo);
-            _modeCombo.Render(context, Sprites);
+            _modeCombo.Render(Sprites);
 
             var tableHeaderTop = headerTop + headerHeight;
             var tableHeaderHeight = 28f * scale;
@@ -117,8 +115,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
             DrawListPanel(tableRect, scale);
             ConfigureScrollPanel(listContentRect, rowHeight, scale);
-            DrawHeaders(tableHeaderTop, tableHeaderHeight, tableContentRect, context, scale);
-            DrawRows(listContentRect, rowHeight, context, scale, fontScale, surface, cursorPosition);
+            DrawHeaders(tableHeaderTop, tableHeaderHeight, tableContentRect, scale);
+            DrawRows(listContentRect, rowHeight, scale, fontScale, surface, cursorPosition);
 
         }
 
@@ -191,7 +189,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             ContainerControl.AddChild(_scrollPanel);
         }
 
-        void DrawHeaders(float top, float height, RectangleF listRect, ControlRenderContext context, float scale)
+        void DrawHeaders(float top, float height, RectangleF listRect, float scale)
         {
             var right = _scrollPanel.ContentViewportBounds.Right;
             var distanceRight = listRect.X + 66f * scale;
@@ -212,7 +210,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 SetSortHeaderClass(button, button.DataContext as StationHeaderModel);
                 button.SetVisible(rects[i].Width > 0f);
                 ContainerControl.AddChild(button);
-                button.Render(context, Sprites);
+                button.Render(Sprites);
             }
 
             Sprites.Add(new MySprite(SpriteType.TEXTURE, "SquareSimple")
@@ -223,7 +221,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             });
         }
 
-        void DrawRows(RectangleF listRect, float rowHeight, ControlRenderContext context, float scale, float fontScale,
+        void DrawRows(RectangleF listRect, float rowHeight, float scale, float fontScale,
             IMyTextSurface surface, Vector2 cursorPosition)
         {
             var start = _scrollPanel.StartRow;
@@ -241,7 +239,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             }
 
             Sprites.Add(MySprite.CreateClearClipRect());
-            _scrollPanel.Render(context, Sprites);
+            _scrollPanel.Render(Sprites);
         }
 
         void ConfigureRowButtons(int start, int end, float rowHeight)
@@ -375,17 +373,17 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             }
         }
 
-        void RenderHeader(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderHeader(ControlTemplate control, List<MySprite> sprites)
         {
             var model = control.DataContext as StationHeaderModel;
             if (model == null)
                 return;
             var active = model.Column == _sortColumn;
             var text = GetHeaderLabel(model.Column);
-            var textScale = 0.54f * context.Scale * context.FontScale;
-            var size = FormatingHelper.GetSizeInPixel(text, "White", textScale, context.Surface);
+            var textScale = 0.54f * control.LayoutScale * control.FontScale;
+            var size = FormatingHelper.GetSizeInPixel(text, "White", textScale, control.TextSurface);
             var alignment = model.Column == NpcMarketStationSortColumn.Station ? TextAlignment.LEFT : TextAlignment.RIGHT;
-            var x = alignment == TextAlignment.LEFT ? control.Bounds.X + 10f * context.Scale : control.Bounds.Right - 10f * context.Scale;
+            var x = alignment == TextAlignment.LEFT ? control.Bounds.X + 10f * control.LayoutScale : control.Bounds.Right - 10f * control.LayoutScale;
             var y = control.Bounds.Center.Y - size.Y * 0.5f;
             sprites.Add(new MySprite
             {
@@ -405,7 +403,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 {
                     Type = SpriteType.TEXT,
                     Data = text,
-                    Position = new Vector2(x + 0.7f * context.Scale, y),
+                    Position = new Vector2(x + 0.7f * control.LayoutScale, y),
                     RotationOrScale = textScale,
                     Color = control.GetResourceColor(ThemeResources.AccentColor, control.TextColor),
                     Alignment = alignment,
@@ -415,12 +413,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             if (!active)
                 return;
             var triangleX = model.Column == NpcMarketStationSortColumn.Station
-                ? x + size.X + 8f * context.Scale
-                : control.Bounds.Right - 4f * context.Scale;
+                ? x + size.X + 8f * control.LayoutScale
+                : control.Bounds.Right - 4f * control.LayoutScale;
             sprites.Add(new MySprite(SpriteType.TEXTURE, "Triangle")
             {
                 Position = new Vector2(triangleX, control.Bounds.Center.Y),
-                Size = new Vector2(8f * context.Scale, 6f * context.Scale),
+                Size = new Vector2(8f * control.LayoutScale, 6f * control.LayoutScale),
                 RotationOrScale = _sortDescending ? MathHelper.Pi : 0f,
                 Color = control.GetResourceColor(ThemeResources.AccentColor, control.TextColor)
             });

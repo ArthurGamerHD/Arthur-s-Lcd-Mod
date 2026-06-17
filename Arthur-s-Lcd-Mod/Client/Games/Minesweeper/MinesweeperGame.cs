@@ -852,7 +852,7 @@ namespace LcdMod.Client.Games.Minesweeper
                     {
                         ClickSound = AudioHelper.HudClick,
                         CustomRender =
-                            delegate(ControlTemplate entry, ControlRenderContext context, List<MySprite> sprites)
+                            delegate(ControlTemplate entry, List<MySprite> sprites)
                             {
                                 DrawStatusButton(sprites);
                             }
@@ -912,7 +912,7 @@ namespace LcdMod.Client.Games.Minesweeper
                     i)
                 {
                     CustomRender =
-                        delegate(ControlTemplate entry, ControlRenderContext context, List<MySprite> sprites)
+                        delegate(ControlTemplate entry, List<MySprite> sprites)
                         {
                             RenderCell(sprites, (int)entry.DataContext);
                         }

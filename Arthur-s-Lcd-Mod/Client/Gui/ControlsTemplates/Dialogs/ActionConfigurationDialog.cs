@@ -137,8 +137,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             EnsureContainer(viewBox);
             ContainerControl.ClearChildren();
             EnsureInitialized();
-
-            var context = CreateRenderContext(surface, scale, fontScale, textColor, panelColor, cursorPosition);
             var layoutScale = scale * fontScale;
             var padding = new Vector2(18f * scale, 14f * scale);
             var spacing = 10f * scale;
@@ -191,7 +189,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var fieldRect = new RectangleF(cardRect.X + padding.X, y, contentWidth, fieldHeight);
             DrawInfoText(GetParameterCaption(), cardRect.X + padding.X, y, contentWidth, labelScale * 0.88f, surface);
             fieldRect = new RectangleF(cardRect.X + padding.X, y + labelHeight, contentWidth, fieldHeight);
-            RenderParameterControl(context, fieldRect, scale, surface);
+            RenderParameterControl(fieldRect, scale, surface);
 
             y = fieldRect.Bottom;
             if (NeedsScrollControl())
@@ -199,17 +197,17 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 y += smallSpacing;
                 DrawInfoText("Scroll", cardRect.X + padding.X, y, contentWidth, labelScale * 0.88f, surface);
                 var scrollRect = new RectangleF(cardRect.X + padding.X, y + labelHeight, contentWidth, fieldHeight);
-                RenderScrollCombo(context, scrollRect, scale);
+                RenderScrollCombo(scrollRect, scale);
                 y = scrollRect.Bottom;
             }
 
             var applyRect = new RectangleF(cardRect.X + padding.X, y + spacing, contentWidth, fieldHeight);
             EnsureApplyButton(applyRect);
             ContainerControl.AddChild(_applyButton);
-            _applyButton.Render(context, Sprites);
+            _applyButton.Render(Sprites);
 
             if (_scrollComboOpen)
-                RenderScrollComboOptions(context, scale);
+                RenderScrollComboOptions(scale);
         }
 
         void EnsureInitialized()
@@ -398,7 +396,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         }
 #endif
 
-        void RenderParameterControl(ControlRenderContext context, RectangleF fieldRect, float scale, IMyTextSurface surface)
+        void RenderParameterControl(RectangleF fieldRect, float scale, IMyTextSurface surface)
         {
             if (string.IsNullOrEmpty(_parameterTypeName))
             {
@@ -410,7 +408,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             {
                 EnsureNumericInput(fieldRect);
                 ContainerControl.AddChild(_numericInput);
-                _numericInput.Render(context, Sprites);
+                _numericInput.Render(Sprites);
                 return;
             }
 
@@ -418,7 +416,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             {
                 EnsureTextInput(fieldRect);
                 ContainerControl.AddChild(_textInput);
-                _textInput.Render(context, Sprites);
+                _textInput.Render(Sprites);
                 return;
             }
 
@@ -426,19 +424,19 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             {
                 EnsureColorButton(fieldRect);
                 ContainerControl.AddChild(_colorButton);
-                _colorButton.Render(context, Sprites);
+                _colorButton.Render(Sprites);
                 return;
             }
 
             if (_parameterTypeName == TYPE_BOOLEAN)
             {
-                RenderBooleanModeButtons(context, fieldRect, scale);
+                RenderBooleanModeButtons(fieldRect, scale);
                 return;
             }
 
             if (_parameterTypeName == TYPE_INCREASE_DECREASE)
             {
-                RenderClickActionButtons(context, fieldRect, scale);
+                RenderClickActionButtons(fieldRect, scale);
                 return;
             }
 
@@ -538,22 +536,22 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _applyButton.SetVisible(true);
         }
 
-        void RenderColorButton(ControlTemplate control, ControlRenderContext context, System.Collections.Generic.List<MySprite> sprites)
+        void RenderColorButton(ControlTemplate control, System.Collections.Generic.List<MySprite> sprites)
         {
             var rect = control.Bounds;
-            var hovered = rect.Contains(context.CursorPosition);
-            Border.CreateSpritesFromRect(rect, sprites, control.BackgroundColor, radiusScale: context.Scale);
+            var hovered = rect.Contains(new Vector2(float.NaN, float.NaN));
+            Border.CreateSpritesFromRect(rect, sprites, control.BackgroundColor, radiusScale: control.LayoutScale);
 
-            var padding = 6f * context.Scale;
+            var padding = 6f * control.LayoutScale;
             var swatchSize = Math.Max(1f, rect.Height - padding * 2f);
             var swatchRect = new RectangleF(rect.X + padding, rect.Center.Y - swatchSize * 0.5f, swatchSize, swatchSize);
-            Border.CreateSpritesFromRect(swatchRect, sprites, _colorValue, radiusScale: context.Scale);
+            Border.CreateSpritesFromRect(swatchRect, sprites, _colorValue, radiusScale: control.LayoutScale);
 
-            var textScale = 0.54f * context.Scale * context.FontScale;
-            var textHeight = FormatingHelper.LineHeight(textScale, context.Surface);
-            var textX = swatchRect.Right + 8f * context.Scale;
+            var textScale = 0.54f * control.LayoutScale * control.FontScale;
+            var textHeight = FormatingHelper.LineHeight(textScale, control.TextSurface);
+            var textX = swatchRect.Right + 8f * control.LayoutScale;
             var textWidth = Math.Max(0f, rect.Right - textX - padding);
-            var text = TrimText(_colorValue.ToHex(), textWidth, textScale, context.Surface);
+            var text = TrimText(_colorValue.ToHex(), textWidth, textScale, control.TextSurface);
 
             sprites.Add(new MySprite
             {
@@ -567,7 +565,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             });
         }
 
-        void RenderBooleanModeButtons(ControlRenderContext context, RectangleF rect, float scale)
+        void RenderBooleanModeButtons(RectangleF rect, float scale)
         {
             var gap = 4f * scale;
             var buttonWidth = Math.Max(1f, (rect.Width - gap * 2f) / 3f);
@@ -582,7 +580,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
                 var button = EnsureBooleanModeButton(i, buttonRect, BooleanModes[i]);
                 ContainerControl.AddChild(button);
-                button.Render(context, Sprites);
+                button.Render(Sprites);
             }
         }
 
@@ -617,13 +615,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             return button;
         }
 
-        void RenderBooleanModeButton(ControlTemplate control, ControlRenderContext context, System.Collections.Generic.List<MySprite> sprites)
+        void RenderBooleanModeButton(ControlTemplate control, System.Collections.Generic.List<MySprite> sprites)
         {
             var rect = control.Bounds;
             var model = control.DataContext as BooleanModeButtonModel;
             var mode = model == null ? string.Empty : model.Mode;
             var selected = string.Equals(_booleanMode, mode, StringComparison.OrdinalIgnoreCase);
-            var hovered = rect.Contains(context.CursorPosition);
+            var hovered = rect.Contains(new Vector2(float.NaN, float.NaN));
             control.SetStyleId(selected ? "Primary" : null);
             var panelColor = selected
                 ? ResolveColor(ThemeResources.AccentContainerColor)
@@ -632,12 +630,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 ? ResolveColor(ThemeResources.OnAccentContainerColor)
                 : control.TextColor;
 
-            Border.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: context.Scale);
+            Border.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: control.LayoutScale);
 
-            var textScale = 0.50f * context.Scale * context.FontScale;
-            var availableWidth = Math.Max(0f, rect.Width - 8f * context.Scale);
-            var trimmed = TrimText(GetBooleanModeLabel(mode), availableWidth, textScale, context.Surface);
-            var textHeight = FormatingHelper.LineHeight(textScale, context.Surface);
+            var textScale = 0.50f * control.LayoutScale * control.FontScale;
+            var availableWidth = Math.Max(0f, rect.Width - 8f * control.LayoutScale);
+            var trimmed = TrimText(GetBooleanModeLabel(mode), availableWidth, textScale, control.TextSurface);
+            var textHeight = FormatingHelper.LineHeight(textScale, control.TextSurface);
 
             sprites.Add(new MySprite
             {
@@ -651,7 +649,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             });
         }
 
-        void RenderClickActionButtons(ControlRenderContext context, RectangleF rect, float scale)
+        void RenderClickActionButtons(RectangleF rect, float scale)
         {
             var gap = 4f * scale;
             var buttonWidth = Math.Max(1f, (rect.Width - gap) / 2f);
@@ -666,7 +664,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
                 var button = EnsureClickActionButton(i, buttonRect, ClickActions[i]);
                 ContainerControl.AddChild(button);
-                button.Render(context, Sprites);
+                button.Render(Sprites);
             }
         }
 
@@ -701,21 +699,21 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             return button;
         }
 
-        void RenderClickActionButton(ControlTemplate control, ControlRenderContext context, System.Collections.Generic.List<MySprite> sprites)
+        void RenderClickActionButton(ControlTemplate control, System.Collections.Generic.List<MySprite> sprites)
         {
             var rect = control.Bounds;
             var model = control.DataContext as ClickActionButtonModel;
             var clickAction = model == null ? string.Empty : model.ClickAction;
             var selected = string.Equals(_clickAction, clickAction, StringComparison.OrdinalIgnoreCase);
-            RenderChoiceButton(control, rect, GetClickActionLabel(clickAction), selected, context, sprites);
+            RenderChoiceButton(control, rect, GetClickActionLabel(clickAction), selected, sprites);
         }
 
-        void RenderScrollCombo(ControlRenderContext context, RectangleF rect, float scale)
+        void RenderScrollCombo(RectangleF rect, float scale)
         {
             _scrollComboRect = rect;
             EnsureScrollComboButton(rect);
             ContainerControl.AddChild(_scrollComboButton);
-            _scrollComboButton.Render(context, Sprites);
+            _scrollComboButton.Render(Sprites);
         }
 
         void EnsureScrollComboButton(RectangleF rect)
@@ -740,31 +738,31 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _scrollComboButton.SetVisible(true);
         }
 
-        void RenderScrollComboButton(ControlTemplate control, ControlRenderContext context, System.Collections.Generic.List<MySprite> sprites)
+        void RenderScrollComboButton(ControlTemplate control, System.Collections.Generic.List<MySprite> sprites)
         {
             var rect = control.Bounds;
-            var hovered = rect.Contains(context.CursorPosition);
-            Border.CreateSpritesFromRect(rect, sprites, control.BackgroundColor, radiusScale: context.Scale);
+            var hovered = rect.Contains(new Vector2(float.NaN, float.NaN));
+            Border.CreateSpritesFromRect(rect, sprites, control.BackgroundColor, radiusScale: control.LayoutScale);
 
-            var textScale = 0.54f * context.Scale * context.FontScale;
-            var label = TrimText(GetScrollModeLabel(_scrollMode), Math.Max(0f, rect.Width - 34f * context.Scale), textScale, context.Surface);
-            var textHeight = FormatingHelper.LineHeight(textScale, context.Surface);
+            var textScale = 0.54f * control.LayoutScale * control.FontScale;
+            var label = TrimText(GetScrollModeLabel(_scrollMode), Math.Max(0f, rect.Width - 34f * control.LayoutScale), textScale, control.TextSurface);
+            var textHeight = FormatingHelper.LineHeight(textScale, control.TextSurface);
             var textColor = control.TextColor;
 
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
                 Data = label,
-                Position = new Vector2(rect.X + 10f * context.Scale, rect.Center.Y - textHeight * 0.5f),
+                Position = new Vector2(rect.X + 10f * control.LayoutScale, rect.Center.Y - textHeight * 0.5f),
                 Color = textColor,
                 FontId = "White",
                 RotationOrScale = textScale,
                 Alignment = TextAlignment.LEFT
             });
 
-            var arrowWidth = 9f * context.Scale;
-            var arrowHeight = 5f * context.Scale;
-            var arrowCenter = new Vector2(rect.Right - 14f * context.Scale, rect.Center.Y);
+            var arrowWidth = 9f * control.LayoutScale;
+            var arrowHeight = 5f * control.LayoutScale;
+            var arrowCenter = new Vector2(rect.Right - 14f * control.LayoutScale, rect.Center.Y);
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXTURE,
@@ -777,7 +775,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             });
         }
 
-        void RenderScrollComboOptions(ControlRenderContext context, float scale)
+        void RenderScrollComboOptions(float scale)
         {
             if (_scrollComboRect.Width <= 1f || _scrollComboRect.Height <= 1f)
                 return;
@@ -791,7 +789,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 var rect = new RectangleF(listRect.X, listRect.Y + i * rowHeight, listRect.Width, rowHeight);
                 var button = EnsureScrollOptionButton(i, rect, ScrollModes[i]);
                 ContainerControl.AddChild(button);
-                button.Render(context, Sprites);
+                button.Render(Sprites);
             }
 
             for (var i = ScrollModes.Length; i < _scrollOptionButtons.Count; i++)
@@ -829,18 +827,18 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             return optionButton;
         }
 
-        void RenderScrollOptionButton(ControlTemplate control, ControlRenderContext context, System.Collections.Generic.List<MySprite> sprites)
+        void RenderScrollOptionButton(ControlTemplate control, System.Collections.Generic.List<MySprite> sprites)
         {
             var rect = control.Bounds;
             var model = control.DataContext as ScrollModeButtonModel;
             var scrollMode = model == null ? string.Empty : model.ScrollMode;
             var selected = string.Equals(_scrollMode, scrollMode, StringComparison.OrdinalIgnoreCase);
-            RenderChoiceButton(control, rect, GetScrollModeLabel(scrollMode), selected, context, sprites);
+            RenderChoiceButton(control, rect, GetScrollModeLabel(scrollMode), selected, sprites);
         }
 
-        void RenderChoiceButton(ControlTemplate control, RectangleF rect, string text, bool selected, ControlRenderContext context, System.Collections.Generic.List<MySprite> sprites)
+        void RenderChoiceButton(ControlTemplate control, RectangleF rect, string text, bool selected, System.Collections.Generic.List<MySprite> sprites)
         {
-            var hovered = rect.Contains(context.CursorPosition);
+            var hovered = rect.Contains(new Vector2(float.NaN, float.NaN));
             control.SetStyleId(selected ? "Primary" : null);
             var panelColor = selected
                 ? ResolveColor(ThemeResources.AccentContainerColor)
@@ -849,12 +847,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 ? ResolveColor(ThemeResources.OnAccentContainerColor)
                 : control.TextColor;
 
-            Border.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: context.Scale);
+            Border.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: control.LayoutScale);
 
-            var textScale = 0.50f * context.Scale * context.FontScale;
-            var availableWidth = Math.Max(0f, rect.Width - 8f * context.Scale);
-            var trimmed = TrimText(text, availableWidth, textScale, context.Surface);
-            var textHeight = FormatingHelper.LineHeight(textScale, context.Surface);
+            var textScale = 0.50f * control.LayoutScale * control.FontScale;
+            var availableWidth = Math.Max(0f, rect.Width - 8f * control.LayoutScale);
+            var trimmed = TrimText(text, availableWidth, textScale, control.TextSurface);
+            var textHeight = FormatingHelper.LineHeight(textScale, control.TextSurface);
 
             sprites.Add(new MySprite
             {
@@ -868,19 +866,19 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             });
         }
 
-        void RenderTextButton(ControlTemplate control, ControlRenderContext context, System.Collections.Generic.List<MySprite> sprites)
+        void RenderTextButton(ControlTemplate control, System.Collections.Generic.List<MySprite> sprites)
         {
             var rect = control.Bounds;
             var buttonModel = control.DataContext as ButtonModel;
             var enabled = buttonModel == null || buttonModel.Enabled;
-            var hovered = enabled && rect.Contains(context.CursorPosition);
-            Border.CreateSpritesFromRect(rect, sprites, control.BackgroundColor, radiusScale: context.Scale);
+            var hovered = enabled && rect.Contains(new Vector2(float.NaN, float.NaN));
+            Border.CreateSpritesFromRect(rect, sprites, control.BackgroundColor, radiusScale: control.LayoutScale);
 
             var text = buttonModel == null ? string.Empty : buttonModel.Text;
-            var textScale = 0.54f * context.Scale * context.FontScale;
-            var availableWidth = Math.Max(0f, rect.Width - 12f * context.Scale);
-            var trimmed = TrimText(text, availableWidth, textScale, context.Surface);
-            var textHeight = FormatingHelper.LineHeight(textScale, context.Surface);
+            var textScale = 0.54f * control.LayoutScale * control.FontScale;
+            var availableWidth = Math.Max(0f, rect.Width - 12f * control.LayoutScale);
+            var trimmed = TrimText(text, availableWidth, textScale, control.TextSurface);
+            var textHeight = FormatingHelper.LineHeight(textScale, control.TextSurface);
 
             sprites.Add(new MySprite
             {

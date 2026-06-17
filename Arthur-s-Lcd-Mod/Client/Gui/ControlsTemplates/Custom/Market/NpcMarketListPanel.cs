@@ -236,7 +236,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
 
         ControlTemplate CreateRowHitControl(NpcMarketRowHitSlot slot, int index)
         {
-            var button = new Button(default(RectangleF), CursorType.Hand, null, OnMarketRowClicked);
+            var button = new Button(default(RectangleF), new RowHitButtonModel { Clicked = OnMarketRowClicked });
             button.SetClass("ControlBase Button NpcMarketRowHit");
             button.CustomRender = RenderRowHitButton;
             return button;
@@ -247,7 +247,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
             if (control == null || slot == null)
                 return;
 
-            control.SetDataContext(slot.Target);
+            var model = control.DataContext as RowHitButtonModel;
+            if (model == null)
+            {
+                model = new RowHitButtonModel();
+                control.SetDataContext(model);
+            }
+
+            model.Slot = slot;
+            model.Clicked = OnMarketRowClicked;
         }
 
         void ArrangeRowHitControl(ControlTemplate control, RectangleF bounds, NpcMarketRowHitSlot slot, int index)
@@ -259,13 +267,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
             button.SetRect(slot.Bounds);
         }
 
-        protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+        protected override void RenderDefault(List<MySprite> sprites)
         {
             var muted = GetResourceColor(ThemeResources.MutedTextColor, _muted);
             var textColor = GetResourceColor(ThemeResources.OnSurfaceColor, _host.ForegroundColor);
             var dividerColor = GetResourceColor(ThemeResources.DividerColor, muted);
 
             DrawHeaderDivider(sprites, dividerColor);
+            _rowHitRepeater.Render(sprites);
+
             for (var i = 0; _page != null && i < _page.RowCount; i++)
             {
                 var rowIndex = _page.StartRowIndex + i;
@@ -273,11 +283,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
                     continue;
 
                 var rect = new RectangleF(Bounds.X, Bounds.Y + _headerHeight + i * _rowHeight, Bounds.Width, _rowHeight);
-                DrawRowHoverBackground(sprites, _rows[rowIndex]);
                 DrawRow(sprites, _rows[rowIndex], rect, _textScale, muted, textColor);
             }
 
-            _templateGrid.Render(context, sprites);
+            _headerPanel.Render(sprites);
         }
 
         void DrawHeaderDivider(List<MySprite> sprites, Color dividerColor)
@@ -288,32 +297,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
                 Size = new Vector2(Bounds.Width, _layoutScale),
                 Color = dividerColor
             });
-        }
-
-        void DrawRowHoverBackground(List<MySprite> sprites, NpcMarketRow row)
-        {
-            if (row == null || string.IsNullOrEmpty(row.ItemKey))
-                return;
-
-            var children = _rowHitRepeater.Children;
-            for (int i = 0; children != null && i < children.Count; i++)
-            {
-                var button = children[i] as Button;
-                if (button == null)
-                    continue;
-
-                var target = button.DataContext as NpcMarketRowClickTarget;
-                if (target == null || !button.Visible || !button.IsPointerOver ||
-                    !string.Equals(target.ItemKey, row.ItemKey, StringComparison.Ordinal))
-                    continue;
-
-                sprites.Add(new MySprite(SpriteType.TEXTURE, "SquareSimple")
-                {
-                    Position = button.Bounds.Center,
-                    Size = button.Bounds.Size,
-                    Color = GetResourceColor(ThemeResources.SurfaceContainerColor, new Color(_host.ForegroundColor, 0.10f))
-                });
-            }
         }
 
         void DrawRow(List<MySprite> sprites, NpcMarketRow row, RectangleF rect, float textScale, Color muted, Color textColor)
@@ -439,13 +422,20 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
                 : "ControlBase Button Sort SortAscending");
         }
 
-        void RenderRowHitButton(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderRowHitButton(ControlTemplate control, List<MySprite> sprites)
         {
-            // Row hit buttons are template-generated interaction surfaces. The row visuals are drawn
-            // once by the page panel so Both mode can keep one visual row with two click targets.
+            if (!control.IsPointerOver)
+                return;
+
+            sprites.Add(new MySprite(SpriteType.TEXTURE, "SquareSimple")
+            {
+                Position = control.Bounds.Center,
+                Size = control.Bounds.Size,
+                Color = GetResourceColor(ThemeResources.SurfaceContainerColor, new Color(_host.ForegroundColor, 0.10f))
+            });
         }
 
-        void RenderSortHeaderButton(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderSortHeaderButton(ControlTemplate control, List<MySprite> sprites)
         {
             var model = control.DataContext as SortHeaderButtonModel;
             if (model == null)
@@ -456,30 +446,30 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
             var sortDescending = control.HasStyleClass("SortDescending");
             var active = sortAscending || sortDescending;
             var hovered = control.IsPointerOver;
-            var textScale = 0.58f * context.Scale * context.FontScale;
-            var availableTextWidth = GetSortHeaderAvailableWidth(model.Column, rect, context.Scale, active);
+            var textScale = 0.58f * control.LayoutScale * control.FontScale;
+            var availableTextWidth = GetSortHeaderAvailableWidth(model.Column, rect, control.LayoutScale, active);
             var text = Trim(GetSortHeaderLabel(model), availableTextWidth, textScale);
-            var textSize = FormatingHelper.GetSizeInPixel(text, "White", textScale, context.Surface);
+            var textSize = FormatingHelper.GetSizeInPixel(text, "White", textScale, control.TextSurface);
             var textY = rect.Center.Y - textSize.Y * 0.5f;
-            var textX = GetSortHeaderTextX(model.Column, rect, context.Scale);
+            var textX = GetSortHeaderTextX(model.Column, rect, control.LayoutScale);
             var alignment = model.Column == NpcMarketSortColumn.Name ? TextAlignment.LEFT : TextAlignment.RIGHT;
             var textColor = control.TextColor;
             sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = text, Position = new Vector2(textX, textY), RotationOrScale = textScale, Color = textColor, Alignment = alignment, FontId = "White" });
             if (active)
             {
-                sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = text, Position = new Vector2(textX + 0.7f * context.Scale, textY), RotationOrScale = textScale, Color = textColor, Alignment = alignment, FontId = "White" });
-                var triangleX = alignment == TextAlignment.LEFT ? textX + textSize.X + 8f * context.Scale : textX - textSize.X - 8f * context.Scale;
-                sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "Triangle", Position = new Vector2(triangleX, rect.Center.Y), Size = new Vector2(8f * context.Scale, 6f * context.Scale), RotationOrScale = sortDescending ? MathHelper.Pi : 0f, Color = textColor, Alignment = TextAlignment.CENTER });
+                sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = text, Position = new Vector2(textX + 0.7f * control.LayoutScale, textY), RotationOrScale = textScale, Color = textColor, Alignment = alignment, FontId = "White" });
+                var triangleX = alignment == TextAlignment.LEFT ? textX + textSize.X + 8f * control.LayoutScale : textX - textSize.X - 8f * control.LayoutScale;
+                sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "Triangle", Position = new Vector2(triangleX, rect.Center.Y), Size = new Vector2(8f * control.LayoutScale, 6f * control.LayoutScale), RotationOrScale = sortDescending ? MathHelper.Pi : 0f, Color = textColor, Alignment = TextAlignment.CENTER });
             }
         }
 
-        void RenderSearchButton(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderSearchButton(ControlTemplate control, List<MySprite> sprites)
         {
             var hovered = control.IsPointerOver;
             sprites.Add(new MySprite(SpriteType.TEXTURE, "Search")
             {
                 Position = control.Bounds.Center,
-                Size = new Vector2(18f * context.Scale),
+                Size = new Vector2(18f * control.LayoutScale),
                 Color = hovered ? control.GetResourceColor(ThemeResources.AccentColor, control.TextColor) : control.TextColor
             });
         }
@@ -498,9 +488,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
                 SortClicked(header.Column);
         }
 
-        void OnMarketRowClicked(object dataContext, object sender)
+        void OnMarketRowClicked(ButtonModel model, object sender)
         {
-            var target = dataContext as NpcMarketRowClickTarget;
+            var rowHit = model as RowHitButtonModel;
+            var target = rowHit != null && rowHit.Slot != null ? rowHit.Slot.Target : null;
             if (target != null && RowClicked != null)
                 RowClicked(target);
         }
@@ -654,6 +645,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
         {
             public NpcMarketSortColumn Column { get; set; }
             public string LocalizationKey { get; set; }
+        }
+
+        sealed class RowHitButtonModel : ButtonModel
+        {
+            public NpcMarketRowHitSlot Slot { get; set; }
         }
 
         struct BothLayout

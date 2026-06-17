@@ -341,12 +341,10 @@ namespace LcdMod.Client.Apps.Abstract
                 ScrollPanel.DefaultScrollerWidthPixels * Scale,
                 rowHeight,
                 SCROLL_DELAY / 6f);
-            ConfigureScrollPanelBarColors(_scrollPanel);
 
             BeginInteractiveTree(_scrollPanel);
             PreviousType = items[0].TypeId;
-            var renderContext = CreateItemRenderContext();
-            _scrollPanel.Render(renderContext, sprites);
+            _scrollPanel.Render(sprites);
 
             CaretY = _scrollPanel.PanelBounds.Bottom;
         }
@@ -370,36 +368,12 @@ namespace LcdMod.Client.Apps.Abstract
                 ScrollPanel.DefaultScrollerWidthPixels * Scale,
                 rowHeight,
                 SCROLL_DELAY / 6f);
-            ConfigureScrollPanelBarColors(_scrollPanel);
 
             BeginInteractiveTree(_scrollPanel);
             PreviousType = items[0].TypeId;
-            var renderContext = CreateItemRenderContext();
-            _scrollPanel.Render(renderContext, sprites);
+            _scrollPanel.Render(sprites);
 
             CaretY = _scrollPanel.PanelBounds.Bottom;
-        }
-
-        public ControlRenderContext CreateItemRenderContext()
-        {
-            return CreateControlRenderContext(
-                Surface,
-                Scale,
-                FontScale,
-                new Vector2(float.NaN, float.NaN));
-        }
-
-        void ConfigureScrollPanelBarColors(ScrollPanel panel)
-        {
-            if (panel == null)
-                return;
-
-            var trackColor = new Color(Surface.ScriptForegroundColor.R, Surface.ScriptForegroundColor.G,
-                Surface.ScriptForegroundColor.B, 127);
-            var thumbColor = new Color(AppConfig.HeaderColor.R, AppConfig.HeaderColor.G,
-                AppConfig.HeaderColor.B, 250);
-            panel.ScrollBarTrackColor = trackColor;
-            panel.ScrollBarThumbColor = thumbColor;
         }
 
         RectangleF GetScrollPanelBounds(float contentTop, float footerHeight)
@@ -408,7 +382,7 @@ namespace LcdMod.Client.Apps.Abstract
             return new RectangleF(ViewBox.X, contentTop, ViewBox.Width, viewportHeight);
         }
 
-        void RenderGridPanelContent(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderGridPanelContent(ControlTemplate control, List<MySprite> sprites)
         {
             var children = control?.Children;
             if (children == null)
@@ -427,7 +401,7 @@ namespace LcdMod.Client.Apps.Abstract
             for (int i = 0; i < children.Count; i++)
             {
                 var child = children[i] as ControlTemplate;
-                child?.Render(context, sprites);
+                child?.Render(sprites);
             }
         }
 
@@ -467,7 +441,7 @@ namespace LcdMod.Client.Apps.Abstract
             }
         }
 
-        void RenderGridItemControl(ControlTemplate control, ControlRenderContext context, List<MySprite> frame)
+        void RenderGridItemControl(ControlTemplate control, List<MySprite> frame)
         {
             var model = control.Model as ItemViewModel;
             if (model == null)
@@ -666,7 +640,7 @@ namespace LcdMod.Client.Apps.Abstract
             return 1d;
         }
 
-        void RenderListItemControl(ControlTemplate control, ControlRenderContext context, List<MySprite> frame)
+        void RenderListItemControl(ControlTemplate control, List<MySprite> frame)
         {
             var model = control.Model as ItemViewModel;
             if (model == null)

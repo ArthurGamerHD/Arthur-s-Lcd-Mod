@@ -203,7 +203,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
         public Color FillColor { get; set; }
         public bool ShowPercentage { get; set; }
 
-        protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+        protected override void RenderDefault(List<MySprite> sprites)
         {
             var rect = Bounds;
             Color fg = _host.Surface.ScriptForegroundColor;
@@ -314,7 +314,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
             _rows = rows ?? new List<EnergyDashboardPowerRow>();
         }
 
-        protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+        protected override void RenderDefault(List<MySprite> sprites)
         {
             var rect = Bounds;
             Color fg = _host.Surface.ScriptForegroundColor;
@@ -720,7 +720,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
             return true;
         }
 
-        protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+        protected override void RenderDefault(List<MySprite> sprites)
         {
             _bar.BackgroundColor = ResolveColor(ThemeResources.SurfaceContainerHighColor);
 
@@ -736,10 +736,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
 
                 if (panelColorKey != null)
                     Border.CreateSpritesFromRect(Bounds, sprites, ResolveColor(panelColorKey),
-                        radiusScale: context.Scale);
+                        radiusScale: LayoutScale);
             }
 
-            base.RenderDefault(context, sprites);
+            base.RenderDefault(sprites);
         }
 
         protected override void ArrangeChildren()
@@ -777,7 +777,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
         public string SpriteName { get; set; }
         public Color Color { get; set; }
 
-        protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+        protected override void RenderDefault(List<MySprite> sprites)
         {
             var rect = GetViewBox();
             Color fg = _host.Surface.ScriptForegroundColor;

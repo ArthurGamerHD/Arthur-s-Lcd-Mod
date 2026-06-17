@@ -138,8 +138,6 @@ namespace LcdMod.Client.Apps
 
             var gridHeight = rows * buttonHeight + (rows - 1) * gap;
             var startY = area.Y + Math.Max(0f, (area.Height - gridHeight) * 0.5f);
-
-            var context = CreateRenderContext();
             for (int i = 0; i < count; i++)
             {
                 int row = i / columns;
@@ -154,11 +152,11 @@ namespace LcdMod.Client.Apps
                     buttonWidth,
                     buttonHeight);
 
-                DrawActionButton(_visible[i], rect, context, sprites);
+                DrawActionButton(_visible[i], rect, sprites);
             }
         }
 
-        void DrawActionButton(int index, RectangleF rect, ControlRenderContext context, List<MySprite> sprites)
+        void DrawActionButton(int index, RectangleF rect, List<MySprite> sprites)
         {
             var button = _buttons[index];
             if (button == null)
@@ -188,7 +186,7 @@ namespace LcdMod.Client.Apps
             button.CustomRender = PadButtonStyle.RenderLabeled;
 
             _children.Add(button);
-            button.Render(context, sprites);
+            button.Render(sprites);
         }
 
         string GetButtonText(int index)
@@ -239,14 +237,6 @@ namespace LcdMod.Client.Apps
         float GetContentTop()
         {
             return Host.TitleVisible ? Host.ViewBox.Y + (40f * AppConfig.Scale * Host.Surface.FontSize) : Host.ViewBox.Y;
-        }
-
-        ControlRenderContext CreateRenderContext()
-        {
-            var cursor = _interactiveHost != null
-                ? _interactiveHost.CursorPosition
-                : new Vector2(float.NaN, float.NaN);
-            return CreateControlRenderContext(Host.Surface, AppConfig.Scale, Host.Surface.FontSize, cursor);
         }
 
         void OnConfigClicked(ButtonModel model, object sender)

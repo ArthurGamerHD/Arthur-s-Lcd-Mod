@@ -174,8 +174,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             Border.CreateSpritesFromRect(cardRect, Sprites, cardColor,
                 radiusScale: scale);
 
-            var renderContext = CreateRenderContext(surface, scale, fontScale, textColor, panelColor, cursorPosition);
-
             var title = _useRequestGrid ? "Craft all" : Loc("LcdMod_CraftDialog_Title");
             var titleSize = FormatingHelper.GetSizeInPixel(title, "White", titleScale, surface);
             var closeSize = GetDialogCloseButtonSize(scale);
@@ -193,7 +191,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Math.Max(24f * scale, FormatingHelper.LineHeight(labelScale, surface) + 8f * scale));
             EnsureAssemblerControl(assemblerRect);
             container.AddChild(_assemblerControl);
-            _assemblerControl.Render(renderContext, Sprites);
+            _assemblerControl.Render(Sprites);
 
             currentY = assemblerRect.Bottom + spacing;
 
@@ -236,7 +234,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                     EnsureAmountControl(amountRect);
                     ConfigureAmountControl();
                     container.AddChild(_amountControl);
-                    _amountControl.Render(renderContext, Sprites);
+                    _amountControl.Render(Sprites);
                 }
             }
 
@@ -251,7 +249,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
             ConfigureButton(_craftButton, _useRequestGrid ? "Craft all" : Loc("LcdMod_CraftDialog_Button_Craft"),
                 buttonScale, owner, CanCraft());
-            _craftButton.Render(renderContext, Sprites);
+            _craftButton.Render(Sprites);
         }
 
         void DrawBackdrop(Sandbox.ModAPI.Ingame.IMyTextSurface surface)
@@ -403,25 +401,25 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _assemblerControl.CustomRender = RenderAssemblerControl;
         }
 
-        void RenderAssemblerControl(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderAssemblerControl(ControlTemplate control, List<MySprite> sprites)
         {
             var rect = control.Bounds;
-            var hovered = _assemblerOptions.Count > 1 && rect.Contains(context.CursorPosition);
+            var hovered = _assemblerOptions.Count > 1 && rect.Contains(new Vector2(float.NaN, float.NaN));
             var label = GetAssemblerSelectionLabel();
-            var textScale = 0.54f * context.Scale * context.FontScale;
+            var textScale = 0.54f * control.LayoutScale * control.FontScale;
             var fill = hovered
-                ? context.ResolveColor(ThemeResources.SurfaceContainerColor)
-                : context.ResolveColor(ThemeResources.SurfaceContainerColor);
-            var labelColor = context.ResolveColor(ThemeResources.OnSurfaceColor);
+                ? control.ResolveColor(ThemeResources.SurfaceContainerColor)
+                : control.ResolveColor(ThemeResources.SurfaceContainerColor);
+            var labelColor = control.ResolveColor(ThemeResources.OnSurfaceColor);
 
             Border.CreateSpritesFromRect(rect, sprites, fill,
-                radiusScale: context.Scale);
+                radiusScale: control.LayoutScale);
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
-                Data = TrimText(label, rect.Width - 12f * context.Scale, textScale, context.Surface),
-                Position = new Vector2(rect.X + 6f * context.Scale, rect.Center.Y -
-                    FormatingHelper.GetSizeInPixel(label, "White", textScale, context.Surface).Y * 0.5f),
+                Data = TrimText(label, rect.Width - 12f * control.LayoutScale, textScale, control.TextSurface),
+                Position = new Vector2(rect.X + 6f * control.LayoutScale, rect.Center.Y -
+                    FormatingHelper.GetSizeInPixel(label, "White", textScale, control.TextSurface).Y * 0.5f),
                 Color = labelColor,
                 FontId = "White",
                 Alignment = TextAlignment.LEFT,
@@ -855,11 +853,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             EnsureList(listRect, 30f * scale);
             ConfigureListBox();
             container.AddChild(_listBox);
-
-            var renderContext = CreateRenderContext(surface, scale, fontScale, textColor, panelColor, cursorPosition);
             if (_options.Count > 0)
             {
-                _listBox.Render(renderContext, Sprites);
+                _listBox.Render(Sprites);
             }
             else
             {
@@ -884,7 +880,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
             container.AddChild(_selectButton);
             CraftDialog.ConfigureButton(_selectButton, LocHelper.GetLoc("LcdMod_Common_Button_Select"), buttonScale, owner, HasSelection());
-            _selectButton.Render(renderContext, Sprites);
+            _selectButton.Render(Sprites);
         }
 
         void EnsureList(RectangleF rect, float rowHeight)

@@ -36,43 +36,43 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
                 SetVisible(entry != null);
             }
 
-            protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+            protected override void RenderDefault(List<MySprite> sprites)
             {
                 var entry = DataContext as FarmApp.FarmEntry;
-                if (entry == null || context == null || sprites == null)
+                if (entry == null || sprites == null)
                     return;
 
-                DrawFarmSlotVisual(context, sprites, entry, Bounds, GetFarmConfig());
+                DrawFarmSlotVisual(sprites, entry, Bounds, GetFarmConfig());
             }
 
-            static void DrawFarmSlotVisual(ControlRenderContext context, List<MySprite> sprites, FarmApp.FarmEntry entry, RectangleF bounds, ScreenConfigPower config)
+            void DrawFarmSlotVisual(List<MySprite> sprites, FarmApp.FarmEntry entry, RectangleF bounds, ScreenConfigPower config)
             {
                 float width = bounds.Width;
                 float height = bounds.Height;
-                float labelGap = Math.Max(1f, context.Scale * 2f);
-                float barHeight = Math.Max(4f, 4f * context.Scale);
-                float barGap = Math.Max(1f, 2f * context.Scale);
+                float labelGap = Math.Max(1f, LayoutScale * 2f);
+                float barHeight = Math.Max(4f, 4f * LayoutScale);
+                float barGap = Math.Max(1f, 2f * LayoutScale);
                 float barsHeight = barHeight * 2f + barGap;
-                float iconBarGap = Math.Max(1f, 3f * context.Scale);
+                float iconBarGap = Math.Max(1f, 3f * LayoutScale);
                 var label = entry.RemainingText;
-                Vector2 labelRef = FormatingHelper.GetSizeInPixel(label, "White", 1f, context.Surface);
+                Vector2 labelRef = FormatingHelper.GetSizeInPixel(label, "White", 1f, TextSurface);
                 float labelScale = Math.Min((width * 0.82f) / Math.Max(1f, labelRef.X), (height * 0.22f) / Math.Max(1f, labelRef.Y)) *
-                                   Math.Min(context.FontScale, 1f);
+                                   Math.Min(FontScale, 1f);
                 float labelH = labelRef.Y * labelScale;
                 float iconSize = Math.Max(0f, Math.Min(width, height - labelH - labelGap - barsHeight - iconBarGap));
                 float centerX = bounds.X + width / 2f;
                 float centerY = bounds.Y + iconSize / 2f;
                 var center = new Vector2(centerX, centerY);
 
-                var backgroundColor = context.ResolveColor(ThemeResources.BackgroundColor);
-                var containerBackgroundColor = context.ResolveColor(ThemeResources.SecondaryContainerColor);
-                var outlineColor = context.ResolveColor(ThemeResources.BorderColor);
+                var backgroundColor = ResolveColor(ThemeResources.BackgroundColor);
+                var containerBackgroundColor = ResolveColor(ThemeResources.SecondaryContainerColor);
+                var outlineColor = ResolveColor(ThemeResources.BorderColor);
                 DrawFarmIcon(sprites, entry, center, iconSize, outlineColor, containerBackgroundColor);
 
                 float barWidth = Math.Max(1f, iconSize * 0.62f);
                 float barsTop = bounds.Y + iconSize + iconBarGap;
                 var barTopLeft = new Vector2(centerX - barWidth / 2f, barsTop);
-                DrawFarmLevelBars(context, sprites, entry, barTopLeft, new Vector2(barWidth, barHeight), barGap,
+                DrawFarmLevelBars(sprites, entry, barTopLeft, new Vector2(barWidth, barHeight), barGap,
                     config,
                     backgroundColor, containerBackgroundColor);
 
@@ -82,7 +82,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
                     Data = label,
                     Position = new Vector2(centerX, barsTop + barsHeight + labelGap),
                     RotationOrScale = labelScale,
-                    Color = GetStatusColor(entry, context),
+                    Color = GetStatusColor(entry),
                     Alignment = TextAlignment.CENTER,
                     FontId = "White"
                 });
@@ -134,8 +134,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
                 });
             }
 
-            static void DrawFarmLevelBars(
-                ControlRenderContext context,
+            void DrawFarmLevelBars(
                 List<MySprite> sprites,
                 FarmApp.FarmEntry entry,
                 Vector2 topLeft,
@@ -146,7 +145,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
                 Color containerBackgroundColor)
             {
                 var growthColor = GrowthBarColor.EnsureMinimalContrast(backgroundColor);
-                var waterColor = GetWaterBarColor(context, config, entry.WaterRatio, backgroundColor);
+                var waterColor = GetWaterBarColor(config, entry.WaterRatio, backgroundColor);
 
                 BarPanel.CreateSprites(
                     sprites,
@@ -167,11 +166,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
                     cornerRadius: size.Y * .5f);
             }
 
-            static Color GetWaterBarColor(ControlRenderContext context, ScreenConfigPower config, float waterRatio, Color backgroundColor)
+            Color GetWaterBarColor(ScreenConfigPower config, float waterRatio, Color backgroundColor)
             {
                 Color color;
                 if (waterRatio < .3f)
-                    color = config != null ? config.ErrorColor : context.ResolveColor(ThemeResources.ErrorColor);
+                    color = config != null ? config.ErrorColor : ResolveColor(ThemeResources.ErrorColor);
                 else if (waterRatio < .6f)
                     // TODO: move warning/error bar colors into the theme.
                     color = config != null ? config.WarningColor : new Color(224, 160, 16);
@@ -193,17 +192,17 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
                 return null;
             }
 
-            static Color GetStatusColor(FarmApp.FarmEntry entry, ControlRenderContext context)
+            Color GetStatusColor(FarmApp.FarmEntry entry)
             {
                 var plot = entry.Plot;
                 var logic = plot != null ? plot.Logic : null;
                 if (logic == null || !logic.IsPlantPlanted)
-                    return context.ResolveColor(ThemeResources.OnSurfaceColor);
+                    return ResolveColor(ThemeResources.OnSurfaceColor);
                 if (!logic.IsAlive)
-                    return context.ResolveColor(ThemeResources.ErrorColor);
+                    return ResolveColor(ThemeResources.ErrorColor);
                 if (entry.Ratio >= 1f || logic.IsHarvestable)
-                    return context.ResolveColor(ThemeResources.AccentColor);
-                return context.ResolveColor(ThemeResources.OnSurfaceColor);
+                    return ResolveColor(ThemeResources.AccentColor);
+                return ResolveColor(ThemeResources.OnSurfaceColor);
             }
         }
 }

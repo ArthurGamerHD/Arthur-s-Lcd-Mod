@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using LcdMod.Client.Gui.ControlsTemplates;
+using Sandbox.ModAPI;
 
 namespace LcdMod.Client.Gui.Styling
 {
@@ -9,11 +11,13 @@ namespace LcdMod.Client.Gui.Styling
 
         internal StyleNode(
             StyleNode parent,
+            Type targetType,
             string @class,
             string id,
             StyleState requiredState)
         {
             Parent = parent;
+            TargetType = targetType;
             Class = @class;
             Id = id;
             RequiredState = requiredState;
@@ -21,19 +25,23 @@ namespace LcdMod.Client.Gui.Styling
         }
 
         public StyleNode Parent { get; private set; }
+        public Type TargetType { get; private set; }
         public string Class { get; private set; }
         public string Id { get; private set; }
         public StyleState RequiredState { get; private set; }
         public ResourceSet Resources { get; private set; }
 
-        internal IList<StyleNode> Children
-        {
-            get { return _children; }
-        }
+        internal IList<StyleNode> Children => _children;
 
         internal bool MatchesControl(ControlTemplate control)
         {
-            return control != null && control.HasStyleClass(Class);
+            if (control == null)
+                return false;
+
+            if (TargetType != null && !MyAPIGateway.Reflection.IsAssignableFrom(TargetType, control.GetType()))
+                return false;
+
+            return string.IsNullOrEmpty(Class) || control.HasStyleClass(Class);
         }
 
         internal bool MatchesSelector(string id, StyleState state)

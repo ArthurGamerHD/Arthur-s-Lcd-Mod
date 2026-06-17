@@ -520,7 +520,7 @@ namespace LcdMod.Client.Gui.Tooltip
         {
         }
 
-        protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+        protected override void RenderDefault(List<MySprite> sprites)
         {
         }
     }
@@ -561,16 +561,16 @@ namespace LcdMod.Client.Gui.Tooltip
             return _hitGetter != null && _hitGetter(point);
         }
 
-        protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+        protected override void RenderDefault(List<MySprite> sprites)
         {
             var rect = Bounds;
-            var fillColor = Hit(context.CursorPosition)
-                ? context.ResolveColor(ThemeResources.SurfaceContainerColor)
-                : context.ResolveColor(ThemeResources.SurfaceColor);
+            var fillColor = Hit(new Vector2(float.NaN, float.NaN))
+                ? ResolveColor(ThemeResources.SurfaceContainerColor)
+                : ResolveColor(ThemeResources.SurfaceColor);
 
             Border.CreateSpritesFromRect(rect, sprites, fillColor,
-                radiusScale: context.Scale);
-            RenderDefaultText(rect, context, sprites);
+                radiusScale: LayoutScale);
+            RenderDefaultText(rect, sprites);
         }
     }
 
@@ -604,11 +604,11 @@ namespace LcdMod.Client.Gui.Tooltip
             return Vector2.DistanceSquared(point, Center) <= Radius * Radius;
         }
 
-        protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+        protected override void RenderDefault(List<MySprite> sprites)
         {
-            var fillColor = Hit(context.CursorPosition)
-                ? context.ResolveColor(ThemeResources.SurfaceContainerColor)
-                : context.ResolveColor(ThemeResources.SurfaceColor);
+            var fillColor = Hit(new Vector2(float.NaN, float.NaN))
+                ? ResolveColor(ThemeResources.SurfaceContainerColor)
+                : ResolveColor(ThemeResources.SurfaceColor);
 
             sprites.Add(new MySprite
             {
@@ -620,7 +620,7 @@ namespace LcdMod.Client.Gui.Tooltip
                 Alignment = TextAlignment.CENTER
             });
 
-            RenderDefaultText(Bounds, context, sprites);
+            RenderDefaultText(Bounds, sprites);
         }
     }
 }

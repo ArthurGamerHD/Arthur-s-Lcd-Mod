@@ -45,7 +45,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         }
 
         public float PageWidthPixels { get; set; } = DEFAULT_PAGE_WIDTH_PIXELS;
-        public float LayoutScale { get; set; } = 1f;
         public Action<int> PageChanged { get; set; }
         public Func<RectangleF, int> PageProvider { get; set; }
         public RectangleF ViewBox { get; private set; }
@@ -288,14 +287,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             }
         }
 
-        protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+        protected override void RenderDefault(List<MySprite> sprites)
         {
             EnsureLayout();
-            RenderPageChildren(context, sprites);
-            RenderControls(context, sprites);
+            RenderPageChildren(sprites);
+            RenderControls(sprites);
         }
 
-        void RenderPageChildren(ControlRenderContext context, List<MySprite> sprites)
+        void RenderPageChildren(List<MySprite> sprites)
         {
             var children = Children;
             if (children == null)
@@ -306,7 +305,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             {
                 var child = children[i] as ControlTemplate;
                 if (child != null && !IsNavigationControl(child))
-                    child.Render(context, sprites);
+                    child.Render(sprites);
             }
 
             EndContentClip(sprites);
@@ -322,23 +321,23 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             return selfHit;
         }
 
-        void RenderControls(ControlRenderContext context, List<MySprite> sprites)
+        void RenderControls(List<MySprite> sprites)
         {
-            if (!_showControls || sprites == null || context == null)
+            if (!_showControls || sprites == null)
                 return;
 
-            RenderArrow(context, sprites, _leftButtonBounds, "LeftArrow", CanMove(-1));
-            RenderIndicators(context, sprites);
-            RenderArrow(context, sprites, _rightButtonBounds, "RightArrow", CanMove(1));
+            RenderArrow(sprites, _leftButtonBounds, "LeftArrow", CanMove(-1));
+            RenderIndicators(sprites);
+            RenderArrow(sprites, _rightButtonBounds, "RightArrow", CanMove(1));
         }
 
-        void RenderArrow(ControlRenderContext context, List<MySprite> sprites, RectangleF rect, string texture, bool enabled)
+        void RenderArrow(List<MySprite> sprites, RectangleF rect, string texture, bool enabled)
         {
             var fg = ResolveColor(ThemeResources.OnSurfaceColor);
             var color = enabled
                 ? new Color(fg.R, fg.G, fg.B, 180)
                 : new Color(fg.R, fg.G, fg.B, 45);
-            float iconSize = Math.Min(Math.Min(rect.Width, rect.Height) * 0.72f, ARROW_ICON_PIXELS * context.Scale);
+            float iconSize = Math.Min(Math.Min(rect.Width, rect.Height) * 0.72f, ARROW_ICON_PIXELS * LayoutScale);
 
             sprites.Add(new MySprite
             {
@@ -351,19 +350,19 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             });
         }
 
-        void RenderIndicators(ControlRenderContext context, List<MySprite> sprites)
+        void RenderIndicators(List<MySprite> sprites)
         {
             int pageCount = GetPageCount();
             if (pageCount <= 0 || _indicatorBounds.Width <= 0f || _indicatorBounds.Height <= 0f)
                 return;
 
-            float scale = Math.Max(0.01f, context.Scale);
+            float scale = Math.Max(0.01f, LayoutScale);
             float diameter;
             float gap;
             float totalWidth;
             GetIndicatorLayout(scale, pageCount, out diameter, out gap, out totalWidth);
 
-            var hostFontColor = context.Surface?.ScriptForegroundColor ?? ResolveColor(ThemeResources.OnSurfaceColor);
+            var hostFontColor = TextSurface != null ? TextSurface.ScriptForegroundColor : ResolveColor(ThemeResources.OnSurfaceColor);
             var primary = GetResourceColor(ThemeResources.SecondaryContainerColor, hostFontColor);
             var secondary = GetResourceColor(ThemeResources.AccentColor, new Color(hostFontColor.R, hostFontColor.G, hostFontColor.B, 150));
             var hollow = hostFontColor;
@@ -556,7 +555,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
                 return _owner != null && _owner.MovePage(_direction);
             }
 
-            protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+            protected override void RenderDefault(List<MySprite> sprites)
             {
             }
 
@@ -596,7 +595,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
                 return false;
             }
 
-            protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+            protected override void RenderDefault(List<MySprite> sprites)
             {
             }
 

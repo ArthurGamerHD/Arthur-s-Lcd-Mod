@@ -22,13 +22,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Inputs
             get { return DataContext as TextInputModel; }
         }
 
-        protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+        protected override void RenderDefault(List<MySprite> sprites)
         {
             var rect = GetViewBox();
             var hovered = IsPointerOver;
             var backgroundColor = GetRenderBackgroundColor();
             Border.CreateSpritesFromRect(rect, sprites, backgroundColor,
-                radiusScale: context.Scale);
+                radiusScale: LayoutScale);
 
             // inner input container using a different container role and use its matching on* text role.
             var innerRect = Inset(rect, GetInnerPadding(rect));
@@ -36,9 +36,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Inputs
             var innerTextColor = ResolveColor(ThemeResources.OnSecondaryContainerColor);
 
             Border.CreateSpritesFromRect(innerRect, sprites, innerContainerColor,
-                radiusScale: context.Scale);
+                radiusScale: LayoutScale);
 
-            RenderDefaultText(innerRect, context, sprites, innerTextColor);
+            RenderDefaultText(innerRect, sprites, innerTextColor);
         }
 
         static float GetInnerPadding(RectangleF rect)

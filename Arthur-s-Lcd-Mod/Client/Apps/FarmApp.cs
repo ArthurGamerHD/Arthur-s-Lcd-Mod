@@ -333,8 +333,7 @@ namespace LcdMod.Client.Apps
             _gridPanel.VerticalGap = 0f;
             SyncFarmEntryControls(_gridPanel);
             ConfigureFarmScrollPanel(owner, contentTop, minH);
-            var renderContext = CreateRenderContext(owner);
-            _scrollPanel.Render(renderContext, sprites);
+            _scrollPanel.Render(sprites);
         }
 
         void ConfigureFarmScrollPanel(IAppHost owner, float contentTop, float rowHeight)
@@ -345,11 +344,6 @@ namespace LcdMod.Client.Apps
                 SCROLLER_W * owner.Config.Scale,
                 rowHeight,
                 SCROLL_TICK / 6f);
-            var headerColor = _config != null ? _config.HeaderColor : owner.ForegroundColor;
-            _scrollPanel.ScrollBarTrackColor =
-                new Color(owner.Surface.ScriptForegroundColor.R, owner.Surface.ScriptForegroundColor.G, owner.Surface.ScriptForegroundColor.B, 127);
-            _scrollPanel.ScrollBarThumbColor =
-                new Color(headerColor.R, headerColor.G, headerColor.B, 250);
             _scrollPanel.SetVisible(true);
             if (!_children.Contains(_scrollPanel))
                 _children.Add(_scrollPanel);
@@ -373,15 +367,6 @@ namespace LcdMod.Client.Apps
             _entryControlById.Clear();
             _gridPanel.ClearChildren();
             _children.Clear();
-        }
-
-        ControlRenderContext CreateRenderContext(IAppHost owner)
-        {
-            return CreateControlRenderContext(
-                owner.Surface,
-                owner.Config.Scale,
-                owner.Surface.FontSize,
-                new Vector2(float.NaN, float.NaN));
         }
 
         void SyncFarmEntryControls(Panel panel)

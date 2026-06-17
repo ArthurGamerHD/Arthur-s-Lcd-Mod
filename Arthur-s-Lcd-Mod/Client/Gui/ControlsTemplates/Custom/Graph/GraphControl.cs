@@ -111,25 +111,25 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Graph
             return true;
         }
 
-        protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+        protected override void RenderDefault(List<MySprite> sprites)
         {
             if (_bounds.Width <= 0 || _bounds.Height <= 0)
                 return;
 
             Color fg = ResolveColor(ThemeResources.OnSurfaceColor);
-            float ts = 0.62f * context.Scale * context.FontScale;
+            float ts = 0.62f * LayoutScale * FontScale;
             string title = Title ?? string.Empty;
-            float titleH = string.IsNullOrEmpty(title) ? 0f : FormatingHelper.GetSizeInPixel(title, "White", ts, context.Surface).Y;
+            float titleH = string.IsNullOrEmpty(title) ? 0f : FormatingHelper.GetSizeInPixel(title, "White", ts, TextSurface).Y;
             double maxData = GetMaxValue();
             var axis = GraphAxisScale.FromMaximum(maxData, 4);
             string topLabel = FormatValue(axis.Maximum);
-            float axisW = FormatingHelper.GetSizeInPixel(topLabel, "White", ts, context.Surface).X + 4f * context.Scale;
+            float axisW = FormatingHelper.GetSizeInPixel(topLabel, "White", ts, TextSurface).X + 4f * LayoutScale;
 
             _plotBounds = new RectangleF(
                 _bounds.X + axisW,
-                _bounds.Y + titleH + 2f * context.Scale,
+                _bounds.Y + titleH + 2f * LayoutScale,
                 Math.Max(1f, _bounds.Width - axisW),
-                Math.Max(4f, _bounds.Height - titleH - 2f * context.Scale));
+                Math.Max(4f, _bounds.Height - titleH - 2f * LayoutScale));
 
             var graphBg = new Color(fg.R, fg.G, fg.B, 12);
             sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = _plotBounds.Center, Size = _plotBounds.Size, Color = graphBg, Alignment = TextAlignment.CENTER });
@@ -137,7 +137,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Graph
             if (!string.IsNullOrEmpty(title))
                 sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = title, Position = new Vector2(_plotBounds.X, _bounds.Y), RotationOrScale = ts, Color = LineColor, Alignment = TextAlignment.LEFT, FontId = "White" });
 
-            RenderAxis(context, sprites, axis, ts, fg);
+            RenderAxis(sprites, axis, ts, fg);
 
             if (_points.Count == 0)
                 return;
@@ -145,11 +145,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Graph
             if (_points.Count == 1)
             {
                 var pos = MapPoint(0, axis.Maximum);
-                DrawPoint(sprites, pos, Math.Max(2f, context.Scale * 2f), LineColor);
+                DrawPoint(sprites, pos, Math.Max(2f, LayoutScale * 2f), LineColor);
             }
             else
             {
-                float thickness = Math.Max(1.5f, context.Scale * 1.5f);
+                float thickness = Math.Max(1.5f, LayoutScale * 1.5f);
                 var prev = MapPoint(0, axis.Maximum);
                 for (int i = 1; i < _points.Count; i++)
                 {
@@ -159,35 +159,35 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Graph
                 }
             }
 
-            _lastHover = GetHoveredPoint(context.CursorPosition);
+            _lastHover = GetHoveredPoint(new Vector2(float.NaN, float.NaN));
             if (_lastHover.HasPoint)
-                RenderHover(context, sprites, _lastHover);
+                RenderHover(sprites, _lastHover);
         }
 
-        void RenderAxis(ControlRenderContext context, List<MySprite> sprites, GraphAxisScale axis, float ts, Color fg)
+        void RenderAxis(List<MySprite> sprites, GraphAxisScale axis, float ts, Color fg)
         {
             Color axisColor = new Color(fg.R, fg.G, fg.B, 170);
             Color gridColor = new Color(fg.R, fg.G, fg.B, 18);
-            float labelHalf = FormatingHelper.GetSizeInPixel("0", "White", ts, context.Surface).Y / 2f;
+            float labelHalf = FormatingHelper.GetSizeInPixel("0", "White", ts, TextSurface).Y / 2f;
             for (int i = 0; i <= axis.Steps; i++)
             {
                 double v = i * axis.Step;
                 float lineY = _plotBounds.Y + _plotBounds.Height - (float)(v / axis.Maximum) * _plotBounds.Height;
                 lineY = Math.Max(_plotBounds.Y, Math.Min(_plotBounds.Bottom, lineY));
                 if (i > 0)
-                    sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(_plotBounds.Center.X, lineY), Size = new Vector2(_plotBounds.Width, Math.Max(1f, context.Scale * 0.5f)), Color = gridColor, Alignment = TextAlignment.CENTER });
+                    sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(_plotBounds.Center.X, lineY), Size = new Vector2(_plotBounds.Width, Math.Max(1f, LayoutScale * 0.5f)), Color = gridColor, Alignment = TextAlignment.CENTER });
 
                 string label = FormatValue(v);
                 float labelY = Math.Max(_plotBounds.Y, Math.Min(_plotBounds.Bottom - labelHalf * 2f, lineY - labelHalf));
-                sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = label, Position = new Vector2(_plotBounds.X - 2f * context.Scale, labelY), RotationOrScale = ts, Color = i == 0 ? new Color(fg.R, fg.G, fg.B, 110) : axisColor, Alignment = TextAlignment.RIGHT, FontId = "White" });
+                sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = label, Position = new Vector2(_plotBounds.X - 2f * LayoutScale, labelY), RotationOrScale = ts, Color = i == 0 ? new Color(fg.R, fg.G, fg.B, 110) : axisColor, Alignment = TextAlignment.RIGHT, FontId = "White" });
             }
         }
 
-        void RenderHover(ControlRenderContext context, List<MySprite> sprites, GraphHoverResult hover)
+        void RenderHover(List<MySprite> sprites, GraphHoverResult hover)
         {
             var guide = new Color(LineColor.R, LineColor.G, LineColor.B, 80);
-            sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(hover.ScreenX, _plotBounds.Center.Y), Size = new Vector2(Math.Max(1f, context.Scale), _plotBounds.Height), Color = guide, Alignment = TextAlignment.CENTER });
-            if (hover.Values != null && hover.Values.Count > 0) DrawPoint(sprites, hover.Values[0].ScreenPosition, Math.Max(4f, context.Scale * 4f), LineColor);
+            sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(hover.ScreenX, _plotBounds.Center.Y), Size = new Vector2(Math.Max(1f, LayoutScale), _plotBounds.Height), Color = guide, Alignment = TextAlignment.CENTER });
+            if (hover.Values != null && hover.Values.Count > 0) DrawPoint(sprites, hover.Values[0].ScreenPosition, Math.Max(4f, LayoutScale * 4f), LineColor);
         }
 
         Vector2 MapPoint(int index, double axisMax)

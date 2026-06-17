@@ -36,7 +36,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         }
 
         public float PageWidthPixels { get; set; } = DEFAULT_PAGE_WIDTH_PIXELS;
-        public float LayoutScale { get; set; } = 1f;
         public Action<int> PageChanged { get; set; }
 
         public override void AddChild(ControlTemplate child)
@@ -147,11 +146,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             _rightArrow.SetVisible(_showArrows);
         }
 
-        protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+        protected override void RenderDefault(List<MySprite> sprites)
         {
             EnsureLayout();
-            RenderChildren(context, sprites);
-            RenderArrows(context, sprites);
+            RenderChildren(sprites);
+            RenderArrows(sprites);
         }
 
         protected override bool HitCore(Vector2 point)
@@ -164,22 +163,22 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             return selfHit;
         }
 
-        void RenderArrows(ControlRenderContext context, List<MySprite> sprites)
+        void RenderArrows(List<MySprite> sprites)
         {
-            if (!_showArrows || sprites == null || context == null)
+            if (!_showArrows || sprites == null)
                 return;
 
-            RenderArrow(context, sprites, _leftArrowBounds, "LeftArrow", CanMove(-1));
-            RenderArrow(context, sprites, _rightArrowBounds, "RightArrow", CanMove(1));
+            RenderArrow(sprites, _leftArrowBounds, "LeftArrow", CanMove(-1));
+            RenderArrow(sprites, _rightArrowBounds, "RightArrow", CanMove(1));
         }
 
-        void RenderArrow(ControlRenderContext context, List<MySprite> sprites, RectangleF rect, string texture, bool enabled)
+        void RenderArrow(List<MySprite> sprites, RectangleF rect, string texture, bool enabled)
         {
             var fg = ResolveColor(ThemeResources.OnSurfaceColor);
             var color = enabled
                 ? new Color(fg.R, fg.G, fg.B, 180)
                 : new Color(fg.R, fg.G, fg.B, 45);
-            float iconSize = Math.Min(Math.Min(rect.Width, rect.Height) * 0.72f, ARROW_ICON_PIXELS * context.Scale);
+            float iconSize = Math.Min(Math.Min(rect.Width, rect.Height) * 0.72f, ARROW_ICON_PIXELS * LayoutScale);
 
             sprites.Add(new MySprite
             {
@@ -323,7 +322,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
                 return _owner != null && _owner.MovePage(_direction);
             }
 
-            protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+            protected override void RenderDefault(List<MySprite> sprites)
             {
             }
 

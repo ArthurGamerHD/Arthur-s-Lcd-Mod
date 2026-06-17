@@ -37,10 +37,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         const float SCROLLBAR_CONTENT_MARGIN_RATIO = 0.5f;
 
         public static readonly StyleProperty<Color> ScrollBarTrackColorProperty =
-            StyleProperty.Register<ScrollPanel, Color>("ScrollBarTrackColor", (Color?)new Color(255, 255, 255, 127));
+            StyleProperty.Register<ScrollPanel, Color>("ScrollBarTrackColor", null);
 
         public static readonly StyleProperty<Color> ScrollBarThumbColorProperty =
-            StyleProperty.Register<ScrollPanel, Color>("ScrollBarThumbColor", (Color?)new Color(255, 255, 255, 250));
+            StyleProperty.Register<ScrollPanel, Color>("ScrollBarThumbColor", null);
 
         public static readonly StyleProperty<Color> ScrollBarThumbHoverColorProperty =
             StyleProperty.Register<ScrollPanel, Color>("ScrollBarThumbHoverColor", null);
@@ -486,14 +486,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             }
         }
 
-        protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+        protected override void RenderDefault(List<MySprite> sprites)
         {
             if (_automaticContentMode)
             {
                 EnsureAutomaticLayout();
                 BeginClip(sprites, ContentViewportBounds);
                 if (_content != null)
-                    _content.Render(context, sprites);
+                    _content.Render(sprites);
                 EndClip(sprites);
             }
 
@@ -1166,7 +1166,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
                 return _owner != null && _owner.JumpScrollBarThumbToPoint(point, _axis);
             }
 
-            protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+            protected override void RenderDefault(List<MySprite> sprites)
             {
             }
 
@@ -1211,7 +1211,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
             public override bool CanDrag => Visible && _owner != null && _owner.IsScrollableAxis(_axis) && Draggable;
 
-            protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+            protected override void RenderDefault(List<MySprite> sprites)
             {
             }
 

@@ -2697,7 +2697,7 @@ namespace LcdMod.Client.Apps
                 line.GetOnClick());
             AddChild(entry);
             entry.ClickSound = line.GetClickSound();
-            entry.CustomRender = delegate(ControlTemplate renderEntry, ControlRenderContext context, List<MySprite> targetSprites)
+            entry.CustomRender = delegate(ControlTemplate renderEntry, List<MySprite> targetSprites)
             {
                 if (line.IsClickable)
                     DrawTextHitboxUnderline(textRect, labelColor, targetSprites, textScale);
@@ -3056,9 +3056,9 @@ namespace LcdMod.Client.Apps
                     () => FormatingHelper.DistanceToString((float)planet.Distance),
                     GetCursor, TooltipActivationMode.Click, TooltipActivationMode.Click));
             }
-            entry.CustomRender = delegate(ControlTemplate renderEntry, ControlRenderContext context, List<MySprite> targetSprites)
+            entry.CustomRender = delegate(ControlTemplate renderEntry, List<MySprite> targetSprites)
             {
-                DrawPlanetVisual(targetSprites, planet, renderEntry, context);
+                DrawPlanetVisual(targetSprites, planet, renderEntry);
                 RestoreTextureClip(targetSprites);
             };
             _children.Add(entry);
@@ -3067,8 +3067,7 @@ namespace LcdMod.Client.Apps
         void DrawPlanetVisual(
             List<MySprite> sprites,
             PlanetProjection planet,
-            ControlTemplate entry,
-            ControlRenderContext context)
+            ControlTemplate entry)
         {
             var circle = entry as InteractiveCircleEntry;
             var center = circle?.Center ?? planet.ScreenPos;
@@ -3088,8 +3087,8 @@ namespace LcdMod.Client.Apps
                     Type = SpriteType.TEXTURE,
                     Data = "Circle",
                     Position = center,
-                    Size = new Vector2(diameter + 10 * context.Scale),
-                    Color = ApplyAlpha(context.ResolveColor(ThemeResources.SurfaceColor), planet.Visibility),
+                    Size = new Vector2(diameter + 10 * entry.LayoutScale),
+                    Color = ApplyAlpha(entry.ResolveColor(ThemeResources.SurfaceColor), planet.Visibility),
                     Alignment = TextAlignment.CENTER
                 });
             }

@@ -26,12 +26,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
             return handled;
         }
 
-        protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+        protected override void RenderDefault(List<MySprite> sprites)
         {
             var model = ItemModel;
             if (model == null || !model.Selected)
             {
-                base.RenderDefault(context, sprites);
+                base.RenderDefault(sprites);
                 return;
             }
 
@@ -44,8 +44,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
                 : ResolveColor(ThemeResources.OnAccentContainerColor);
 
             var rect = GetViewBox();
-            Border.CreateSpritesFromRect(rect, sprites, selectedPanel, GetRenderBorderRadiusPixels(), context.Scale);
-            RenderDefaultText(rect, context, sprites, selectedText);
+            Border.CreateSpritesFromRect(rect, sprites, selectedPanel, GetRenderBorderRadiusPixels(), LayoutScale);
+            RenderDefaultText(rect, sprites, selectedText);
         }
     }
 }

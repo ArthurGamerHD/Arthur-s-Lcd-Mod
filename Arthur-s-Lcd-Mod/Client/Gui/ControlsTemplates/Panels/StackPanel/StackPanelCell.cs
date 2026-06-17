@@ -24,10 +24,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels.StackPanel
             return this;
         }
 
-        public void Render(ControlRenderContext context, List<MySprite> sprites)
+        public void Render(List<MySprite> sprites)
         {
             if (Control != null)
-                Control.Render(context, sprites);
+                Control.Render(sprites);
         }
     }
 }

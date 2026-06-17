@@ -179,9 +179,7 @@ namespace LcdMod.Client.Apps
             BindControls(GetSnapshots(_lease != null ? _lease.History : null));
             _rootGrid.SetRows(CreateRootRows(bounds.Height, AppConfig.Scale));
             _rootGrid.Arrange(bounds);
-            _rootGrid.Render(
-                CreateControlRenderContext(Host.Surface, AppConfig.Scale, Host.Surface.FontSize, GetCursorPosition()),
-                sprites);
+            _rootGrid.Render(sprites);
             ClearDirtyAfterRender();
             return sprites;
         }
@@ -262,9 +260,6 @@ namespace LcdMod.Client.Apps
             wrapPanel.VerticalGap = 0f;
             scrollPanel.AutomaticScrollerWidthPixels = ScrollPanel.DefaultScrollerWidthPixels * scale;
             scrollPanel.ScrollStepPixels = rowH;
-            Color fg = Host.Surface.ScriptForegroundColor;
-            scrollPanel.ScrollBarTrackColor = new Color(fg.R, fg.G, fg.B, 60);
-            scrollPanel.ScrollBarThumbColor = fg;
             scrollPanel.SetVisible(true);
         }
 

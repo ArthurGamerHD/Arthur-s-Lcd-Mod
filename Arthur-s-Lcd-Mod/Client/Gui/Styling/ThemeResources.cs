@@ -84,6 +84,27 @@ namespace LcdMod.Client.Gui.Styling
         public static readonly ResourceKey<Color> ShadowColor =
             ResourceKey.Register<Color>("shadowColor");
 
+        public static readonly ResourceKey<Color> ScrollBarTrackColor =
+            ResourceKey.Register<Color>("scrollBarTrackColor");
+
+        public static readonly ResourceKey<Color> ScrollBarThumbColor =
+            ResourceKey.Register<Color>("scrollBarThumbColor");
+
+        public static readonly ResourceKey<Color> ScrollBarThumbHoverColor =
+            ResourceKey.Register<Color>("scrollBarThumbHoverColor");
+
+        public static readonly ResourceKey<Color> ScrollBarThumbPressedColor =
+            ResourceKey.Register<Color>("scrollBarThumbPressedColor");
+
+        public static readonly ResourceKey<float> LayoutScale =
+            ResourceKey.Register<float>("layoutScale");
+
+        public static readonly ResourceKey<float> FontScale =
+            ResourceKey.Register<float>("fontScale");
+        
+        public static readonly ResourceKey<string> TextFont =
+            ResourceKey.Register<string>("textFont");
+
         public static ResourceKey<Color> FromThemeRole(string role)
         {
             switch (role)

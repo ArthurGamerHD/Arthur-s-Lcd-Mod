@@ -131,22 +131,22 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Graph
             };
         }
 
-        protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+        protected override void RenderDefault(List<MySprite> sprites)
         {
             if (_bounds.Width <= 0 || _bounds.Height <= 0)
                 return;
 
             Color fg = ResolveColor(ThemeResources.OnSurfaceColor);
-            float ts = 0.58f * context.Scale * context.FontScale;
-            float titleH = string.IsNullOrEmpty(Title) ? 0f : FormatingHelper.GetSizeInPixel(Title, "White", ts, context.Surface).Y;
-            float legendH = RenderLegend(context, sprites, _bounds.X, _bounds.Y + titleH, _bounds.Width, ts);
-            float headerH = titleH + legendH + 3f * context.Scale;
+            float ts = 0.58f * LayoutScale * FontScale;
+            float titleH = string.IsNullOrEmpty(Title) ? 0f : FormatingHelper.GetSizeInPixel(Title, "White", ts, TextSurface).Y;
+            float legendH = RenderLegend(sprites, _bounds.X, _bounds.Y + titleH, _bounds.Width, ts);
+            float headerH = titleH + legendH + 3f * LayoutScale;
 
             if (!string.IsNullOrEmpty(Title))
                 sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = Title, Position = new Vector2(_bounds.X, _bounds.Y), RotationOrScale = ts, Color = fg, Alignment = TextAlignment.LEFT, FontId = "White" });
 
-            float leftAxisW = MeasureAxisWidth(context, LeftValueFormatter, LeftAxisMaximum, ts) + 8f * context.Scale;
-            float rightAxisW = MeasureAxisWidth(context, RightValueFormatter, RightAxisMaximum, ts) + 8f * context.Scale;
+            float leftAxisW = MeasureAxisWidth(LeftValueFormatter, LeftAxisMaximum, ts) + 8f * LayoutScale;
+            float rightAxisW = MeasureAxisWidth(RightValueFormatter, RightAxisMaximum, ts) + 8f * LayoutScale;
             _plotBounds = new RectangleF(
                 _bounds.X + leftAxisW,
                 _bounds.Y + headerH,
@@ -155,20 +155,20 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Graph
 
             var graphBg = new Color(fg.R, fg.G, fg.B, 12);
             sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = _plotBounds.Center, Size = _plotBounds.Size, Color = graphBg, Alignment = TextAlignment.CENTER });
-            RenderAxes(context, sprites, ts, fg);
-            RenderSeries(context, sprites);
+            RenderAxes(sprites, ts, fg);
+            RenderSeries(sprites);
 
-            _lastHover = GetHoveredPoint(context.CursorPosition);
+            _lastHover = GetHoveredPoint(new Vector2(float.NaN, float.NaN));
             if (_lastHover.HasPoint)
-                RenderHover(context, sprites, _lastHover);
+                RenderHover(sprites, _lastHover);
         }
 
-        float RenderLegend(ControlRenderContext context, List<MySprite> sprites, float x, float y, float width, float ts)
+        float RenderLegend(List<MySprite> sprites, float x, float y, float width, float ts)
         {
             float cursorX = x;
             float cursorY = y;
-            float lineH = FormatingHelper.GetSizeInPixel("A", "White", ts, context.Surface).Y + 2f * context.Scale;
-            float box = Math.Max(5f, 7f * context.Scale);
+            float lineH = FormatingHelper.GetSizeInPixel("A", "White", ts, TextSurface).Y + 2f * LayoutScale;
+            float box = Math.Max(5f, 7f * LayoutScale);
             for (int i = 0; i < _series.Count; i++)
             {
                 var s = _series[i];
@@ -176,8 +176,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Graph
                     continue;
 
                 string label = s.Label ?? string.Empty;
-                float textW = FormatingHelper.GetSizeInPixel(label, "White", ts, context.Surface).X;
-                float entryW = box + 4f * context.Scale + textW + 12f * context.Scale;
+                float textW = FormatingHelper.GetSizeInPixel(label, "White", ts, TextSurface).X;
+                float entryW = box + 4f * LayoutScale + textW + 12f * LayoutScale;
                 if (cursorX > x && cursorX + entryW > x + width)
                 {
                     cursorX = x;
@@ -185,18 +185,18 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Graph
                 }
 
                 sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(cursorX + box * 0.5f, cursorY + lineH * 0.5f), Size = new Vector2(box), Color = s.LineColor, Alignment = TextAlignment.CENTER });
-                sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = label, Position = new Vector2(cursorX + box + 4f * context.Scale, cursorY), RotationOrScale = ts, Color = ResolveColor(ThemeResources.OnSurfaceColor), Alignment = TextAlignment.LEFT, FontId = "White" });
+                sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = label, Position = new Vector2(cursorX + box + 4f * LayoutScale, cursorY), RotationOrScale = ts, Color = ResolveColor(ThemeResources.OnSurfaceColor), Alignment = TextAlignment.LEFT, FontId = "White" });
                 cursorX += entryW;
             }
 
             return cursorY - y + lineH;
         }
 
-        void RenderAxes(ControlRenderContext context, List<MySprite> sprites, float ts, Color fg)
+        void RenderAxes(List<MySprite> sprites, float ts, Color fg)
         {
             Color axisColor = new Color(fg.R, fg.G, fg.B, 170);
             Color gridColor = new Color(fg.R, fg.G, fg.B, 20);
-            float labelH = FormatingHelper.GetSizeInPixel("0", "White", ts, context.Surface).Y;
+            float labelH = FormatingHelper.GetSizeInPixel("0", "White", ts, TextSurface).Y;
 
             sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = "MWh", Position = new Vector2(_bounds.X, _plotBounds.Y - labelH), RotationOrScale = ts, Color = axisColor, Alignment = TextAlignment.LEFT, FontId = "White" });
             sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = "MW", Position = new Vector2(_bounds.Right, _plotBounds.Y - labelH), RotationOrScale = ts, Color = axisColor, Alignment = TextAlignment.RIGHT, FontId = "White" });
@@ -206,22 +206,22 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Graph
                 double ratio = i / 4.0;
                 float y = _plotBounds.Bottom - (float)ratio * _plotBounds.Height;
                 if (i > 0)
-                    sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(_plotBounds.Center.X, y), Size = new Vector2(_plotBounds.Width, Math.Max(1f, context.Scale * 0.5f)), Color = gridColor, Alignment = TextAlignment.CENTER });
+                    sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(_plotBounds.Center.X, y), Size = new Vector2(_plotBounds.Width, Math.Max(1f, LayoutScale * 0.5f)), Color = gridColor, Alignment = TextAlignment.CENTER });
 
                 string left = FormatLeft(LeftAxisMaximum * ratio);
                 string right = FormatRight(RightAxisMaximum * ratio);
-                sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = left, Position = new Vector2(_plotBounds.X - 3f * context.Scale, y - labelH * 0.5f), RotationOrScale = ts, Color = axisColor, Alignment = TextAlignment.RIGHT, FontId = "White" });
-                sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = right, Position = new Vector2(_plotBounds.Right + 3f * context.Scale, y - labelH * 0.5f), RotationOrScale = ts, Color = axisColor, Alignment = TextAlignment.LEFT, FontId = "White" });
+                sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = left, Position = new Vector2(_plotBounds.X - 3f * LayoutScale, y - labelH * 0.5f), RotationOrScale = ts, Color = axisColor, Alignment = TextAlignment.RIGHT, FontId = "White" });
+                sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = right, Position = new Vector2(_plotBounds.Right + 3f * LayoutScale, y - labelH * 0.5f), RotationOrScale = ts, Color = axisColor, Alignment = TextAlignment.LEFT, FontId = "White" });
             }
         }
 
-        void RenderSeries(ControlRenderContext context, List<MySprite> sprites)
+        void RenderSeries(List<MySprite> sprites)
         {
             int count = GetPointCount();
             if (count <= 0)
                 return;
 
-            float thickness = Math.Max(1.5f, context.Scale * 1.5f);
+            float thickness = Math.Max(1.5f, LayoutScale * 1.5f);
             for (int i = 0; i < _series.Count; i++)
             {
                 var series = _series[i];
@@ -231,33 +231,33 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Graph
                 bool overflow;
                 var prev = MapPoint(0, series, series.Points[0].Value, out overflow);
                 if (series.Points.Count == 1)
-                    DrawPoint(sprites, prev, Math.Max(3f, context.Scale * 3f), series.LineColor);
+                    DrawPoint(sprites, prev, Math.Max(3f, LayoutScale * 3f), series.LineColor);
 
                 for (int p = 1; p < series.Points.Count; p++)
                 {
                     var next = MapPoint(p, series, series.Points[p].Value, out overflow);
                     DrawLineSegment(sprites, prev, next, thickness, series.LineColor);
                     if (overflow)
-                        DrawOverflowMarker(sprites, new Vector2(next.X, _plotBounds.Y), context.Scale, series.LineColor);
+                        DrawOverflowMarker(sprites, new Vector2(next.X, _plotBounds.Y), LayoutScale, series.LineColor);
                     prev = next;
                 }
             }
         }
 
-        void RenderHover(ControlRenderContext context, List<MySprite> sprites, GraphHoverResult hover)
+        void RenderHover(List<MySprite> sprites, GraphHoverResult hover)
         {
             var fg = ResolveColor(ThemeResources.OnSurfaceColor);
             Color guide = new Color(fg.R, fg.G, fg.B, 70);
-            sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(hover.ScreenX, _plotBounds.Center.Y), Size = new Vector2(Math.Max(1f, context.Scale), _plotBounds.Height), Color = guide, Alignment = TextAlignment.CENTER });
+            sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(hover.ScreenX, _plotBounds.Center.Y), Size = new Vector2(Math.Max(1f, LayoutScale), _plotBounds.Height), Color = guide, Alignment = TextAlignment.CENTER });
             if (hover.Values == null)
                 return;
 
             for (int i = 0; i < hover.Values.Count; i++)
             {
                 var value = hover.Values[i];
-                DrawPoint(sprites, value.ScreenPosition, Math.Max(4f, context.Scale * 4f), value.Color);
+                DrawPoint(sprites, value.ScreenPosition, Math.Max(4f, LayoutScale * 4f), value.Color);
                 if (value.Overflow)
-                    DrawOverflowMarker(sprites, new Vector2(value.ScreenPosition.X, _plotBounds.Y), context.Scale, value.Color);
+                    DrawOverflowMarker(sprites, new Vector2(value.ScreenPosition.X, _plotBounds.Y), LayoutScale, value.Color);
             }
         }
 
@@ -293,14 +293,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Graph
             return count;
         }
 
-        float MeasureAxisWidth(ControlRenderContext context, Func<double, string> formatter, double maximum, float ts)
+        float MeasureAxisWidth(Func<double, string> formatter, double maximum, float ts)
         {
             float width = 0f;
             for (int i = 0; i <= 4; i++)
             {
                 double ratio = i / 4.0;
                 string text = formatter != null ? formatter(maximum * ratio) : (maximum * ratio).ToString("0.##");
-                float w = FormatingHelper.GetSizeInPixel(text, "White", ts, context.Surface).X;
+                float w = FormatingHelper.GetSizeInPixel(text, "White", ts, TextSurface).X;
                 if (w > width)
                     width = w;
             }

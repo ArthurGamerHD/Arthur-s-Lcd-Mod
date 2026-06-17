@@ -8,10 +8,11 @@ namespace LcdMod.Client.Gui.Styling
     {
         internal Style(
             StyleNode parent,
+            Type targetType,
             string @class,
             string id = null,
             StyleState requiredState = StyleState.None)
-            : base(parent, string.IsNullOrEmpty(@class) ? Control.DefaultStyleClass : @class, id, requiredState)
+            : base(parent, targetType, @class, id, requiredState)
         {
         }
 
@@ -33,21 +34,27 @@ namespace LcdMod.Client.Gui.Styling
 
         public Style State(StyleState state)
         {
-            Style child = new Style(this, Class, null, state);
+            Style child = new Style(this, TargetType, Class, null, state);
             Children.Add(child);
             return child;
         }
 
         public Style SetId(string id)
         {
-            Style child = new Style(this, Class, id, StyleState.None);
+            Style child = new Style(this, TargetType, Class, id, StyleState.None);
             Children.Add(child);
             return child;
         }
 
         public Style ClassSelector(string @class)
         {
-            Style child = new Style(this, @class, null, StyleState.None);
+            Style child = new Style(
+                this,
+                TargetType,
+                string.IsNullOrEmpty(@class) ? Control.DefaultStyleClass : @class,
+                null,
+                StyleState.None);
+
             Children.Add(child);
             return child;
         }
@@ -60,14 +67,8 @@ namespace LcdMod.Client.Gui.Styling
             StyleNode parent = null,
             string id = null,
             StyleState requiredState = StyleState.None)
-            : base(parent, GetDefaultClass(), id, requiredState)
+            : base(parent, typeof(TControl), null, id, requiredState)
         {
-        }
-
-        static string GetDefaultClass()
-        {
-            Type type = typeof(TControl);
-            return type == typeof(ControlTemplate) ? Control.DefaultStyleClass : type.Name;
         }
 
         public new Style<TControl> Set<TValue>(

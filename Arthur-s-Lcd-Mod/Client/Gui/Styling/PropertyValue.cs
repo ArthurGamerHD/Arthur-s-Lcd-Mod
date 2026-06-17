@@ -1,7 +1,6 @@
 namespace LcdMod.Client.Gui.Styling
 {
     public sealed class PropertyValue<TValue>
-        where TValue : struct
     {
         public TValue Cache;
         public bool HasCache;

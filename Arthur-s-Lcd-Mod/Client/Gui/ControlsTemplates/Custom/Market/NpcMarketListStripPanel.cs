@@ -47,7 +47,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
         public float RepeatedHeaderHeight { get; set; }
         public float RowHeight { get; set; }
         public float TextScale { get; set; }
-        public float LayoutScale { get; set; } = 1f;
         public Color MutedColor { get; set; }
         public Action<NpcMarketSortColumn> SortClicked { get; set; }
         public Action SearchClicked { get; set; }

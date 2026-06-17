@@ -133,8 +133,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             ContainerControl.ClearChildren();
 
             EnsureItemsLoaded();
-
-            var context = CreateRenderContext(surface, scale, fontScale, textColor, panelColor, cursorPosition);
             var layoutScale = scale * fontScale;
             var padding = new Vector2(18f * scale, 14f * scale);
             var spacing = 10f * scale;
@@ -195,13 +193,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             ContainerControl.AddChild(_comboButton);
             ContainerControl.AddChild(_searchInput);
 
-            _comboButton.Render(context, Sprites);
-            _searchInput.Render(context, Sprites);
+            _comboButton.Render(Sprites);
+            _searchInput.Render(Sprites);
 
-            RenderTargetList(context, listRect, scale, surface);
+            RenderTargetList(listRect, scale, surface);
 
             if (_comboOpen)
-                RenderComboOptions(context, comboRect, scale);
+                RenderComboOptions(comboRect, scale);
         }
 
         void DrawBackdrop(IMyTextSurface surface, float scale, RectangleF cardRect)
@@ -399,31 +397,31 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _comboButton.SetVisible(true);
         }
 
-        void RenderComboButton(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderComboButton(ControlTemplate control, List<MySprite> sprites)
         {
             var rect = control.Bounds;
-            var hovered = rect.Contains(context.CursorPosition);
-            Border.CreateSpritesFromRect(rect, sprites, control.BackgroundColor, radiusScale: context.Scale);
+            var hovered = rect.Contains(new Vector2(float.NaN, float.NaN));
+            Border.CreateSpritesFromRect(rect, sprites, control.BackgroundColor, radiusScale: control.LayoutScale);
 
-            var textScale = 0.56f * context.Scale * context.FontScale;
-            var label = TrimText(GetKindLabel(_kind), Math.Max(0f, rect.Width - 32f * context.Scale), textScale, context.Surface);
-            var textHeight = FormatingHelper.LineHeight(textScale, context.Surface);
+            var textScale = 0.56f * control.LayoutScale * control.FontScale;
+            var label = TrimText(GetKindLabel(_kind), Math.Max(0f, rect.Width - 32f * control.LayoutScale), textScale, control.TextSurface);
+            var textHeight = FormatingHelper.LineHeight(textScale, control.TextSurface);
             var textColor = control.TextColor;
 
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
                 Data = label,
-                Position = new Vector2(rect.X + 10f * context.Scale, rect.Center.Y - textHeight * 0.5f),
+                Position = new Vector2(rect.X + 10f * control.LayoutScale, rect.Center.Y - textHeight * 0.5f),
                 Color = textColor,
                 FontId = "White",
                 RotationOrScale = textScale,
                 Alignment = TextAlignment.LEFT
             });
 
-            var arrowWidth = 9f * context.Scale;
-            var arrowHeight = 5f * context.Scale;
-            var arrowCenter = new Vector2(rect.Right - 14f * context.Scale, rect.Center.Y);
+            var arrowWidth = 9f * control.LayoutScale;
+            var arrowHeight = 5f * control.LayoutScale;
+            var arrowCenter = new Vector2(rect.Right - 14f * control.LayoutScale, rect.Center.Y);
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXTURE,
@@ -436,7 +434,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             });
         }
 
-        void RenderComboOptions(ControlRenderContext context, RectangleF comboRect, float scale)
+        void RenderComboOptions(RectangleF comboRect, float scale)
         {
             var rowHeight = comboRect.Height;
             var listRect = new RectangleF(comboRect.X, comboRect.Bottom + 2f * scale, comboRect.Width, rowHeight * Kinds.Length);
@@ -448,7 +446,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 var button = GetComboOptionButton(i);
                 ConfigureComboOptionButton(button, rect, Kinds[i]);
                 ContainerControl.AddChild(button);
-                button.Render(context, Sprites);
+                button.Render(Sprites);
             }
 
             for (var i = Kinds.Length; i < _comboOptionButtons.Count; i++)
@@ -489,7 +487,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             button.SetVisible(true);
         }
 
-        void RenderComboOption(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderComboOption(ControlTemplate control, List<MySprite> sprites)
         {
             var rect = control.Bounds;
             var model = control.DataContext as ComboOptionButtonModel;
@@ -497,7 +495,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 return;
 
             var selected = model.Kind == _kind;
-            var hovered = rect.Contains(context.CursorPosition);
+            var hovered = rect.Contains(new Vector2(float.NaN, float.NaN));
             control.SetStyleId(selected ? "Primary" : null);
             var panelColor = selected
                 ? ResolveColor(ThemeResources.AccentContainerColor)
@@ -506,17 +504,17 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 ? ResolveColor(ThemeResources.OnAccentContainerColor)
                 : control.TextColor;
 
-            Border.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: context.Scale);
+            Border.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: control.LayoutScale);
 
-            var textScale = 0.52f * context.Scale * context.FontScale;
-            var textHeight = FormatingHelper.LineHeight(textScale, context.Surface);
-            var text = TrimText(GetKindLabel(model.Kind), Math.Max(0f, rect.Width - 16f * context.Scale), textScale, context.Surface);
+            var textScale = 0.52f * control.LayoutScale * control.FontScale;
+            var textHeight = FormatingHelper.LineHeight(textScale, control.TextSurface);
+            var text = TrimText(GetKindLabel(model.Kind), Math.Max(0f, rect.Width - 16f * control.LayoutScale), textScale, control.TextSurface);
 
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
                 Data = text,
-                Position = new Vector2(rect.X + 8f * context.Scale, rect.Center.Y - textHeight * 0.5f),
+                Position = new Vector2(rect.X + 8f * control.LayoutScale, rect.Center.Y - textHeight * 0.5f),
                 Color = textColor,
                 FontId = "White",
                 RotationOrScale = textScale,
@@ -556,7 +554,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _searchInput.SetVisible(true);
         }
 
-        void RenderTargetList(ControlRenderContext context, RectangleF listRect, float scale, IMyTextSurface surface)
+        void RenderTargetList(RectangleF listRect, float scale, IMyTextSurface surface)
         {
             HideUnusedRows(0);
 
@@ -577,7 +575,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             if (_filteredItems.Count == 0)
             {
                 DrawEmptyMessage(listRect, scale, surface);
-                _scrollPanel.Render(context, Sprites);
+                _scrollPanel.Render(Sprites);
                 return;
             }
 
@@ -598,12 +596,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 var button = GetRowButton(usedControls++);
                 ConfigureRowButton(button, rowRect, _filteredItems[itemIndex]);
                 _scrollPanel.AddChild(button);
-                button.Render(context, Sprites);
+                button.Render(Sprites);
             }
 
             EndClip(Sprites);
             HideUnusedRows(usedControls);
-            _scrollPanel.Render(context, Sprites);
+            _scrollPanel.Render(Sprites);
         }
 
         Button GetRowButton(int index)
@@ -651,7 +649,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             return Math.Max(ROW_HEIGHT_PIXELS * scale, GetIconTargetSize(scale) + 8f * Math.Max(1f, scale));
         }
 
-        void RenderTargetRow(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderTargetRow(ControlTemplate control, List<MySprite> sprites)
         {
             var rect = control.Bounds;
             var model = control.DataContext as TargetRowButtonModel;
@@ -659,7 +657,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             if (target == null)
                 return;
 
-            var hovered = rect.Contains(context.CursorPosition);
+            var hovered = rect.Contains(new Vector2(float.NaN, float.NaN));
             var selected = IsSelected(target);
             control.SetStyleId(selected ? "Primary" : null);
             var panelColor = selected
@@ -669,26 +667,26 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 ? ResolveColor(ThemeResources.OnAccentContainerColor)
                 : control.TextColor;
 
-            Border.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: context.Scale);
+            Border.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: control.LayoutScale);
 
-            var iconTargetSize = GetIconTargetSize(context.Scale);
-            var iconSize = Math.Min(iconTargetSize, Math.Max(1f, Math.Min(rect.Height, rect.Width) - 4f * Math.Max(1f, context.Scale)));
-            var textScale = 0.42f * context.Scale * context.FontScale;
-            var minimumTextWidth = 72f * context.Scale;
-            var iconOnly = rect.Width < iconSize + 10f * context.Scale + minimumTextWidth;
+            var iconTargetSize = GetIconTargetSize(control.LayoutScale);
+            var iconSize = Math.Min(iconTargetSize, Math.Max(1f, Math.Min(rect.Height, rect.Width) - 4f * Math.Max(1f, control.LayoutScale)));
+            var textScale = 0.42f * control.LayoutScale * control.FontScale;
+            var minimumTextWidth = 72f * control.LayoutScale;
+            var iconOnly = rect.Width < iconSize + 10f * control.LayoutScale + minimumTextWidth;
             var iconRect = iconOnly
                 ? new RectangleF(rect.Center.X - iconSize * 0.5f, rect.Center.Y - iconSize * 0.5f, iconSize, iconSize)
-                : new RectangleF(rect.X + 4f * context.Scale, rect.Center.Y - iconSize * 0.5f, iconSize, iconSize);
+                : new RectangleF(rect.X + 4f * control.LayoutScale, rect.Center.Y - iconSize * 0.5f, iconSize, iconSize);
 
             DrawTargetIcon(target, iconRect, sprites);
 
             if (iconOnly)
                 return;
 
-            var textHeight = FormatingHelper.LineHeight(textScale, context.Surface);
-            var textX = iconRect.Right + 6f * context.Scale;
-            var textWidth = Math.Max(0f, rect.Right - textX - 6f * context.Scale);
-            var displayName = TrimText(target.DisplayName, textWidth, textScale, context.Surface);
+            var textHeight = FormatingHelper.LineHeight(textScale, control.TextSurface);
+            var textX = iconRect.Right + 6f * control.LayoutScale;
+            var textWidth = Math.Max(0f, rect.Right - textX - 6f * control.LayoutScale);
+            var displayName = TrimText(target.DisplayName, textWidth, textScale, control.TextSurface);
 
             sprites.Add(new MySprite
             {

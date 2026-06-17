@@ -107,8 +107,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             EnsureContainer(viewBox);
             ContainerControl.ClearChildren();
             EnsureItemsLoaded();
-
-            var context = CreateRenderContext(surface, scale, fontScale, textColor, panelColor, cursorPosition);
             var layoutScale = scale * fontScale;
             var padding = new Vector2(18f * scale, 14f * scale);
             var spacing = 10f * scale;
@@ -157,9 +155,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
             EnsureSearchInput(searchRect);
             ContainerControl.AddChild(_searchInput);
-            _searchInput.Render(context, Sprites);
+            _searchInput.Render(Sprites);
 
-            RenderActionList(context, listRect, scale, surface);
+            RenderActionList(listRect, scale, surface);
         }
 
         void DrawBackdrop(IMyTextSurface surface, float scale, RectangleF cardRect)
@@ -506,7 +504,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _searchInput.SetVisible(true);
         }
 
-        void RenderActionList(ControlRenderContext context, RectangleF listRect, float scale, IMyTextSurface surface)
+        void RenderActionList(RectangleF listRect, float scale, IMyTextSurface surface)
         {
             HideUnusedRows(0);
             if (listRect.Width <= 1f || listRect.Height <= 1f)
@@ -525,7 +523,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             if (_filteredItems.Count == 0)
             {
                 DrawEmptyMessage(listRect, scale, surface);
-                _scrollPanel.Render(context, Sprites);
+                _scrollPanel.Render(Sprites);
                 return;
             }
 
@@ -546,12 +544,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 var button = GetRowButton(usedControls++);
                 ConfigureRowButton(button, rowRect, _filteredItems[itemIndex]);
                 _scrollPanel.AddChild(button);
-                button.Render(context, Sprites);
+                button.Render(Sprites);
             }
 
             EndClip(Sprites);
             HideUnusedRows(usedControls);
-            _scrollPanel.Render(context, Sprites);
+            _scrollPanel.Render(Sprites);
         }
 
         static float GetRowHeight(float scale)
@@ -593,7 +591,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             button.SetVisible(true);
         }
 
-        void RenderActionRow(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderActionRow(ControlTemplate control, List<MySprite> sprites)
         {
             var model = control.DataContext as ActionRowButtonModel;
             var action = model == null ? null : model.Action;
@@ -601,7 +599,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 return;
 
             var rect = control.Bounds;
-            var hovered = rect.Contains(context.CursorPosition);
+            var hovered = rect.Contains(new Vector2(float.NaN, float.NaN));
             var selected = _initialSelection != null &&
                            string.Equals(_initialSelection.BaseId, action.BaseId, StringComparison.OrdinalIgnoreCase);
             control.SetStyleId(selected ? "Primary" : null);
@@ -612,11 +610,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 ? ResolveColor(ThemeResources.OnAccentContainerColor)
                 : control.TextColor;
 
-            Border.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: context.Scale);
+            Border.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: control.LayoutScale);
 
-            var iconSize = Math.Min(64f, Math.Max(1f, rect.Height - 1f * Math.Max(1f, context.Scale)));
+            var iconSize = Math.Min(64f, Math.Max(1f, rect.Height - 1f * Math.Max(1f, control.LayoutScale)));
             iconSize = Math.Max(1f, Math.Min(iconSize, rect.Width));
-            var iconRect = new RectangleF(rect.X + 4f * context.Scale, rect.Center.Y - iconSize * 0.5f, iconSize, iconSize);
+            var iconRect = new RectangleF(rect.X + 4f * control.LayoutScale, rect.Center.Y - iconSize * 0.5f, iconSize, iconSize);
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXTURE,
@@ -627,11 +625,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Alignment = TextAlignment.CENTER
             });
 
-            var textScale = 0.46f * context.Scale * context.FontScale;
-            var textHeight = FormatingHelper.LineHeight(textScale, context.Surface);
-            var textX = iconRect.Right + 8f * context.Scale;
-            var textWidth = Math.Max(0f, rect.Right - textX - 6f * context.Scale);
-            var displayName = TrimText(action.DisplayName ?? action.BaseId, textWidth, textScale, context.Surface);
+            var textScale = 0.46f * control.LayoutScale * control.FontScale;
+            var textHeight = FormatingHelper.LineHeight(textScale, control.TextSurface);
+            var textX = iconRect.Right + 8f * control.LayoutScale;
+            var textWidth = Math.Max(0f, rect.Right - textX - 6f * control.LayoutScale);
+            var displayName = TrimText(action.DisplayName ?? action.BaseId, textWidth, textScale, control.TextSurface);
 
             sprites.Add(new MySprite
             {

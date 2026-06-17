@@ -219,7 +219,7 @@ namespace LcdMod.Client.Apps
                 if (_rows.Count > 0)
                 {
                     ConfigurePagesPanel(rowTop, footerHeight, headerHeight, rowHeight, textScale, muted);
-                    _pagesPanel.Render(CreateRenderContext(), sprites);
+                    _pagesPanel.Render(sprites);
                 }
             }
 
@@ -533,7 +533,7 @@ namespace LcdMod.Client.Apps
             _searchInput.SetVisible(rect.Width > 0f && rect.Height > 0f);
             if (!_children.Contains(_searchInput))
                 _children.Add(_searchInput);
-            _searchInput.Render(CreateButtonRenderContext(), sprites);
+            _searchInput.Render(sprites);
 
             var clearSize = Math.Min(rect.Height, 32f * scale);
             _clearSearchButton.SetRect(new RectangleF(rect.Right - clearSize, rect.Y, clearSize, rect.Height));
@@ -541,7 +541,7 @@ namespace LcdMod.Client.Apps
             _clearSearchButton.SetVisible(true);
             if (!_children.Contains(_clearSearchButton))
                 _children.Add(_clearSearchButton);
-            _clearSearchButton.Render(CreateButtonRenderContext(), sprites);
+            _clearSearchButton.Render(sprites);
         }
 
         void ConfigurePagesPanel(float contentTop, float footerHeight, float headerHeight, float rowHeight, float textScale, Color muted)
@@ -610,7 +610,7 @@ namespace LcdMod.Client.Apps
             if (!_children.Contains(_footerGrid))
                 _children.Add(_footerGrid);
 
-            _footerGrid.Render(CreateButtonRenderContext(), sprites);
+            _footerGrid.Render(sprites);
         }
 
         void ConfigureFooterGrid(Vector2 refreshButtonSize, Vector2 modeButtonSize)
@@ -675,43 +675,43 @@ namespace LcdMod.Client.Apps
             _refreshButton.SetEnabled(enabled);
         }
 
-        void RenderSearchButton(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderSearchButton(ControlTemplate control, List<MySprite> sprites)
         {
             sprites.Add(new MySprite(SpriteType.TEXTURE, "Search")
             {
                 Position = control.Bounds.Center,
-                Size = new Vector2(18f * context.Scale),
+                Size = new Vector2(18f * control.LayoutScale),
                 Color = control.TextColor
             });
         }
 
-        void RenderSearchInput(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderSearchInput(ControlTemplate control, List<MySprite> sprites)
         {
             var rect = control.Bounds;
             var hovered = control.IsPointerOver;
             var innerPadding = Math.Max(2f, Math.Min(rect.Width, rect.Height) * 0.08f);
             var innerRect = Inset(rect, innerPadding);
             var textColor = control.TextColor;
-            var textScale = 0.58f * context.Scale * context.FontScale;
-            var horizontalPadding = 10f * context.Scale;
-            var iconSize = 16f * context.Scale;
+            var textScale = 0.58f * control.LayoutScale * control.FontScale;
+            var horizontalPadding = 10f * control.LayoutScale;
+            var iconSize = 16f * control.LayoutScale;
             var iconCenter = new Vector2(innerRect.X + horizontalPadding + iconSize * 0.5f, innerRect.Center.Y);
             var textLeft = iconCenter.X + iconSize * 0.5f + horizontalPadding;
-            var clearSpace = 28f * context.Scale;
+            var clearSpace = 28f * control.LayoutScale;
             var availableTextWidth = Math.Max(0f,
                 innerRect.Right - clearSpace - horizontalPadding - textLeft);
             var text = Trim(_searchInputModel.ToString(), availableTextWidth, textScale);
-            var textSize = FormatingHelper.GetSizeInPixel(text, "White", textScale, context.Surface);
+            var textSize = FormatingHelper.GetSizeInPixel(text, "White", textScale, control.TextSurface);
 
             var button = control as Button;
             var outerColor = button?.BackgroundColor ?? control.BackgroundColor;
             Border.CreateSpritesFromRect(rect, sprites, outerColor,
-                radiusScale: context.Scale);
+                radiusScale: control.LayoutScale);
             Border.CreateSpritesFromRect(innerRect, sprites,
                 hovered
                     ? control.GetResourceColor(ThemeResources.AccentColor, outerColor)
                     : control.GetResourceColor(ThemeResources.SurfaceColor, outerColor),
-                radiusScale: context.Scale);
+                radiusScale: control.LayoutScale);
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
@@ -730,12 +730,12 @@ namespace LcdMod.Client.Apps
             });
         }
 
-        void RenderClearSearchButton(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderClearSearchButton(ControlTemplate control, List<MySprite> sprites)
         {
             var color = control.TextColor;
 
-            var length = 11f * context.Scale;
-            var thickness = Math.Max(1f, 1.5f * context.Scale);
+            var length = 11f * control.LayoutScale;
+            var thickness = Math.Max(1f, 1.5f * control.LayoutScale);
             sprites.Add(new MySprite(SpriteType.TEXTURE, "SquareSimple")
             {
                 Position = control.Bounds.Center,
@@ -761,7 +761,7 @@ namespace LcdMod.Client.Apps
                 Math.Max(0f, rect.Height - amount * 2f));
         }
 
-        void RenderSortHeaderButton(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderSortHeaderButton(ControlTemplate control, List<MySprite> sprites)
         {
             var model = control.DataContext as SortHeaderButtonModel;
             if (model == null)
@@ -772,12 +772,12 @@ namespace LcdMod.Client.Apps
             var sortDescending = control.HasStyleClass("SortDescending");
             var active = sortAscending || sortDescending;
             var hovered = control.IsPointerOver;
-            var textScale = 0.58f * context.Scale * context.FontScale;
-            var availableTextWidth = GetSortHeaderAvailableWidth(model.Column, rect, context.Scale, active);
+            var textScale = 0.58f * control.LayoutScale * control.FontScale;
+            var availableTextWidth = GetSortHeaderAvailableWidth(model.Column, rect, control.LayoutScale, active);
             var text = Trim(GetSortHeaderLabel(model), availableTextWidth, textScale);
-            var textSize = FormatingHelper.GetSizeInPixel(text, "White", textScale, context.Surface);
+            var textSize = FormatingHelper.GetSizeInPixel(text, "White", textScale, control.TextSurface);
             var textY = rect.Center.Y - textSize.Y * 0.5f;
-            var textX = GetSortHeaderTextX(model.Column, rect, context.Scale);
+            var textX = GetSortHeaderTextX(model.Column, rect, control.LayoutScale);
             var alignment = model.Column == NpcMarketSortColumn.Name ? TextAlignment.LEFT : TextAlignment.RIGHT;
             var textColor = active || hovered
                 ? control.GetResourceColor(ThemeResources.AccentColor, control.TextColor)
@@ -799,7 +799,7 @@ namespace LcdMod.Client.Apps
                 {
                     Type = SpriteType.TEXT,
                     Data = text,
-                    Position = new Vector2(textX + 0.7f * context.Scale, textY),
+                    Position = new Vector2(textX + 0.7f * control.LayoutScale, textY),
                     RotationOrScale = textScale,
                     Color = textColor,
                     Alignment = alignment,
@@ -811,14 +811,14 @@ namespace LcdMod.Client.Apps
                 return;
 
             var triangleX = alignment == TextAlignment.LEFT
-                ? textX + textSize.X + 8f * context.Scale
-                : textX - textSize.X - 8f * context.Scale;
+                ? textX + textSize.X + 8f * control.LayoutScale
+                : textX - textSize.X - 8f * control.LayoutScale;
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXTURE,
                 Data = "Triangle",
                 Position = new Vector2(triangleX, rect.Center.Y),
-                Size = new Vector2(8f * context.Scale, 6f * context.Scale),
+                Size = new Vector2(8f * control.LayoutScale, 6f * control.LayoutScale),
                 RotationOrScale = sortDescending ? MathHelper.Pi : 0f,
                 Color = textColor,
                 Alignment = TextAlignment.CENTER
@@ -868,7 +868,7 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        void RenderRefreshButton(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderRefreshButton(ControlTemplate control, List<MySprite> sprites)
         {
             var model = control.DataContext as ButtonModel;
             var enabled = model == null || model.Enabled;
@@ -881,15 +881,15 @@ namespace LcdMod.Client.Apps
                 : defaultColor;
             var textColor = control.TextColor;
             var text = model == null || string.IsNullOrEmpty(model.Text) ? MyTexts.GetString(LOC_REFRESH) : model.Text;
-            var textScale = 0.58f * context.Scale * context.FontScale;
+            var textScale = 0.58f * control.LayoutScale * control.FontScale;
 
-            Border.CreateSpritesFromRect(rect, sprites, color, radiusScale: context.Scale);
+            Border.CreateSpritesFromRect(rect, sprites, color, radiusScale: control.LayoutScale);
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
                 Data = text,
                 Position = new Vector2(rect.Center.X,
-                    rect.Center.Y - FormatingHelper.GetSizeInPixel(text, "White", textScale, context.Surface).Y * 0.5f),
+                    rect.Center.Y - FormatingHelper.GetSizeInPixel(text, "White", textScale, control.TextSurface).Y * 0.5f),
                 RotationOrScale = textScale,
                 Color = textColor,
                 Alignment = TextAlignment.CENTER,
@@ -1167,19 +1167,6 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        ControlRenderContext CreateRenderContext()
-        {
-            return CreateControlRenderContext(
-                Host.Surface,
-                GetLayoutScale(),
-                Host.Surface.FontSize,
-                new Vector2(float.NaN, float.NaN));
-        }
-
-        ControlRenderContext CreateButtonRenderContext()
-        {
-            return CreateControlRenderContext(Host.Surface, GetLayoutScale(), Host.Surface.FontSize, Vector2.Zero);
-        }
 
         Vector2 GetRefreshButtonSize(string text, float textScale)
         {

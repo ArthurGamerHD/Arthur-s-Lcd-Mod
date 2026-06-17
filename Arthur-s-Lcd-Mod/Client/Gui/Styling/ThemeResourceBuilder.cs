@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using LcdMod.Client.Extensions;
 using LcdMod.Client.Market;
 using LcdMod.Common.Helpers;
 using VRageMath;
@@ -37,7 +38,14 @@ namespace LcdMod.Client.Gui.Styling
             resources.Set(ThemeResources.BorderColor, theme[Constants.OUTLINE]);
             resources.Set(ThemeResources.BorderVariantColor, theme[Constants.OUTLINE_VARIANT]);
             resources.Set(ThemeResources.ShadowColor, theme[Constants.SHADOW]);
+            var scrollBarThumbColor = new Color(theme[Constants.PRIMARY], 250);
+            resources.Set(ThemeResources.ScrollBarTrackColor, new Color(theme[Constants.OUTLINE_VARIANT], 127));
+            resources.Set(ThemeResources.ScrollBarThumbColor, scrollBarThumbColor);
+            resources.Set(ThemeResources.ScrollBarThumbHoverColor, scrollBarThumbColor.DeriveAccentColor());
+            resources.Set(ThemeResources.ScrollBarThumbPressedColor, scrollBarThumbColor.DeriveAccentColor().DeriveAccentColor());
 
+            resources.Set(ThemeResources.TextFont, "White");
+            
             resources.Set(MarketThemeResources.PriceTrendUpColor, theme[Constants.SUCCESS]);
             resources.Set(MarketThemeResources.PriceTrendDownColor, theme[Constants.ERROR]);
             resources.Set(MarketThemeResources.PriceTrendNeutralColor, theme[Constants.ON_SURFACE_VARIANT]);

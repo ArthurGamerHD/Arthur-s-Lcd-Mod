@@ -50,13 +50,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             ValidateLayout();
         }
 
-        protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+        protected override void RenderDefault(List<MySprite> sprites)
         {
             EnsureLayout();
-            RenderChildren(context, sprites);
+            RenderChildren(sprites);
         }
 
-        protected void RenderChildren(ControlRenderContext context, List<MySprite> sprites)
+        protected void RenderChildren(List<MySprite> sprites)
         {
             var children = Children;
             if (children == null)
@@ -66,7 +66,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             {
                 var child = children[i] as ControlTemplate;
                 if (child != null)
-                    child.Render(context, sprites);
+                    child.Render(sprites);
             }
         }
 

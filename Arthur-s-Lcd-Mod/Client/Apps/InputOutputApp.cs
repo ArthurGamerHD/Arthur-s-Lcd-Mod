@@ -212,12 +212,9 @@ namespace LcdMod.Client.Apps
             _listPanel.Gap = 0f;
             SyncRowControls(_listPanel);
             ConfigureAutomaticScroll(rowHeight);
-            ConfigureScrollColors();
             _scroll.SetVisible(true);
             _children.Add(_scroll);
-
-            var context = CreateItemRenderContext();
-            _scroll.Render(context, sprites);
+            _scroll.Render(sprites);
             return sprites;
         }
 
@@ -232,7 +229,7 @@ namespace LcdMod.Client.Apps
                 0f);
         }
 
-        void RenderListPanelContent(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderListPanelContent(ControlTemplate control, List<MySprite> sprites)
         {
             DrawBlockCards(sprites, _currentRowHeight);
 
@@ -244,7 +241,7 @@ namespace LcdMod.Client.Apps
             {
                 var child = children[i] as ControlTemplate;
                 if (child != null)
-                    child.Render(context, sprites);
+                    child.Render(sprites);
             }
         }
 
@@ -383,7 +380,7 @@ namespace LcdMod.Client.Apps
             return -1;
         }
 
-        void RenderRowControl(ControlTemplate control, ControlRenderContext context, List<MySprite> sprites)
+        void RenderRowControl(ControlTemplate control, List<MySprite> sprites)
         {
             var rowControl = control as RowControl;
             if (rowControl == null)
@@ -626,14 +623,6 @@ namespace LcdMod.Client.Apps
             }
 
             return control;
-        }
-
-        void ConfigureScrollColors()
-        {
-            var track = new Color(ForegroundColor.R, ForegroundColor.G, ForegroundColor.B, (byte)127);
-            var thumb = new Color(AppConfig.HeaderColor.R, AppConfig.HeaderColor.G, AppConfig.HeaderColor.B, (byte)250);
-            _scroll.ScrollBarTrackColor = track;
-            _scroll.ScrollBarThumbColor = thumb;
         }
 
         BlockUiState GetState(long entityId)

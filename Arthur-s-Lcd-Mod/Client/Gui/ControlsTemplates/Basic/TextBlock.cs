@@ -24,7 +24,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
         public TextBlock(RectangleF bounds) : base(bounds)
         {
             Text = string.Empty;
-            FontId = "White";
+            FontId = null;
             FontScale = 0.58f;
             LineSpacingPixels = 0f;
             Wrapping = TextBlockWrapping.NoWrap;
@@ -35,7 +35,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
 
         public string Text { get; set; }
         public string FontId { get; set; }
-        public float FontScale { get; set; }
         public float LineSpacingPixels { get; set; }
         public TextBlockWrapping Wrapping { get; set; }
         public bool Ellipsize { get; set; }
@@ -43,32 +42,33 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
         public TextBlockVerticalAlignment VerticalAlignment { get; set; }
         public new Color? TextColor { get; set; }
 
-        protected override void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+        protected override void RenderDefault(List<MySprite> sprites)
         {
-            if (string.IsNullOrEmpty(Text) || context == null || context.Surface == null)
+            if (string.IsNullOrEmpty(Text) || TextSurface == null)
                 return;
 
             var rect = GetViewBox();
             if (rect.Width <= 0f || rect.Height <= 0f)
                 return;
 
-            string fontId = string.IsNullOrEmpty(FontId) ? "White" : FontId;
-            float scale = Math.Max(0.01f, context.Scale * context.FontScale * FontScale);
+            string fontId = string.IsNullOrEmpty(FontId) ? TextFont : FontId;
+            float styledFontScale = ResolveStyleValue(ControlTemplate.FontScaleProperty);
+            float scale = Math.Max(0.01f, LayoutScale * styledFontScale * FontScale);
             Color color = TextColor ?? base.TextColor;
             if (Wrapping == TextBlockWrapping.Wrap)
-                RenderWrapped(rect, context, sprites, fontId, scale, color);
+                RenderWrapped(rect, sprites, fontId, scale, color);
             else
-                RenderSingleLine(rect, context, sprites, fontId, scale, color);
+                RenderSingleLine(rect, sprites, fontId, scale, color);
         }
 
-        void RenderSingleLine(RectangleF rect, ControlRenderContext context, List<MySprite> sprites, string fontId, float scale, Color color)
+        void RenderSingleLine(RectangleF rect, List<MySprite> sprites, string fontId, float scale, Color color)
         {
-            string text = ResolveSingleLineText(rect, context, fontId, scale);
+            string text = ResolveSingleLineText(rect, fontId, scale);
 
             if (string.IsNullOrEmpty(text))
                 return;
 
-            Vector2 size = MeasureText(context, text, fontId, scale);
+            Vector2 size = MeasureTextSafe(text, fontId, scale);
             float y = GetTextY(rect, size.Y, 0f);
             sprites.Add(new MySprite
             {
@@ -82,62 +82,62 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
             });
         }
 
-        string ResolveSingleLineText(RectangleF rect, ControlRenderContext context, string fontId, float scale)
+        string ResolveSingleLineText(RectangleF rect, string fontId, float scale)
         {
             string text = Text ?? string.Empty;
-            if (MeasureText(context, text, fontId, scale).X <= rect.Width)
+            if (MeasureTextSafe(text, fontId, scale).X <= rect.Width)
                 return text;
 
             return Ellipsize
-                ? EllipsizeToWidth(text, context, fontId, scale, rect.Width)
-                : TrimToWidth(text, context, fontId, scale, rect.Width);
+                ? EllipsizeToWidth(text, fontId, scale, rect.Width)
+                : TrimToWidth(text, fontId, scale, rect.Width);
         }
 
-        static string EllipsizeToWidth(string text, ControlRenderContext context, string fontId, float scale, float maxWidth)
+        string EllipsizeToWidth(string text, string fontId, float scale, float maxWidth)
         {
             if (string.IsNullOrEmpty(text) || maxWidth <= 0f)
                 return string.Empty;
 
             string suffix = FormatingHelper.ELLIPSIS.ToString();
-            if (MeasureText(context, suffix, fontId, scale).X > maxWidth)
-                return TrimToWidth(text, context, fontId, scale, maxWidth);
+            if (MeasureTextSafe(suffix, fontId, scale).X > maxWidth)
+                return TrimToWidth(text, fontId, scale, maxWidth);
 
             string trimmed = text.TrimEnd();
-            while (trimmed.Length > 0 && MeasureText(context, trimmed + suffix, fontId, scale).X > maxWidth)
+            while (trimmed.Length > 0 && MeasureTextSafe(trimmed + suffix, fontId, scale).X > maxWidth)
                 trimmed = trimmed.Substring(0, trimmed.Length - 1).TrimEnd();
 
             return trimmed.Length > 0 ? trimmed + suffix : string.Empty;
         }
 
-        static string TrimToWidth(string text, ControlRenderContext context, string fontId, float scale, float maxWidth)
+        string TrimToWidth(string text, string fontId, float scale, float maxWidth)
         {
             if (string.IsNullOrEmpty(text) || maxWidth <= 0f)
                 return string.Empty;
 
             string trimmed = text;
-            while (trimmed.Length > 0 && MeasureText(context, trimmed, fontId, scale).X > maxWidth)
+            while (trimmed.Length > 0 && MeasureTextSafe(trimmed, fontId, scale).X > maxWidth)
                 trimmed = trimmed.Substring(0, trimmed.Length - 1);
 
             return trimmed;
         }
 
-        static Vector2 MeasureText(ControlRenderContext context, string text, string fontId, float scale)
+        Vector2 MeasureTextSafe(string text, string fontId, float scale)
         {
-            if (context == null || context.Surface == null || string.IsNullOrEmpty(text))
+            if (TextSurface == null || string.IsNullOrEmpty(text))
                 return Vector2.Zero;
 
-            var measured = FormatingHelper.GetSizeInPixel(text, fontId, scale, context.Surface);
+            var measured = FormatingHelper.GetSizeInPixel(text, fontId, scale, TextSurface);
             float height = measured.Y > 0f ? measured.Y : Math.Max(1f, 30f * Math.Max(0.01f, scale));
             return new Vector2(Math.Max(0f, measured.X), height);
         }
 
-        void RenderWrapped(RectangleF rect, ControlRenderContext context, List<MySprite> sprites, string fontId, float scale, Color color)
+        void RenderWrapped(RectangleF rect, List<MySprite> sprites, string fontId, float scale, Color color)
         {
-            var lines = TextWrappingHelper.WrapText(Text, context.Surface, fontId, scale, rect.Width, rect.Height, LineSpacingPixels * context.Scale, Ellipsize);
+            var lines = TextWrappingHelper.WrapText(Text, TextSurface, fontId, scale, rect.Width, rect.Height, LineSpacingPixels * LayoutScale, Ellipsize);
             if (lines == null || lines.Count == 0)
                 return;
 
-            float lineHeight = TextWrappingHelper.GetLineHeight(context.Surface, fontId, scale, LineSpacingPixels * context.Scale);
+            float lineHeight = TextWrappingHelper.GetLineHeight(TextSurface, fontId, scale, LineSpacingPixels * LayoutScale);
             float totalHeight = lineHeight * lines.Count;
             float y = GetTextY(rect, totalHeight, 0f);
             for (int i = 0; i < lines.Count; i++)

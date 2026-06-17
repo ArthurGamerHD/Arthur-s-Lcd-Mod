@@ -7,6 +7,7 @@ using LcdMod.Client.Helpers;
 using Sandbox.Game.Entities;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
+using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 
 namespace LcdMod.Client.Gui.ControlsTemplates
 {
@@ -15,10 +16,26 @@ namespace LcdMod.Client.Gui.ControlsTemplates
     public delegate bool ControlDragHandler(object dataContext, object sender, Vector2 delta);
     delegate bool ControlHitFilter(ControlTemplate control);
 
+    public delegate void InteractiveRenderHandler(ControlTemplate entry, List<MySprite> sprites);
+
+    public interface ITextSurfaceProvider
+    {
+        IMyTextSurface TextSurface { get; }
+    }
+
     public abstract partial class ControlTemplate : Control
     {
         public static readonly StyleProperty<Color> TextColorProperty =
-            StyleProperty.Register<ControlTemplate, Color>("TextColor", null, true);
+            StyleProperty.Register<ControlTemplate, Color>("TextColor", null);
+
+        public static readonly StyleProperty<string> TextFontProperty =
+            StyleProperty.Register<ControlTemplate, string>("TextFont", "White");
+
+        public static readonly StyleProperty<float> LayoutScaleProperty =
+            StyleProperty.Register<ControlTemplate, float>("LayoutScale", 1f);
+
+        public static readonly StyleProperty<float> FontScaleProperty =
+            StyleProperty.Register<ControlTemplate, float>("FontScale", 1f);
 
         public static readonly StyleProperty<Color> BackgroundColorProperty =
             StyleProperty.Register<ControlTemplate, Color>("BackgroundColor", (Color?)Color.Gray);
@@ -37,15 +54,26 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         
         bool _isLayoutDirty = true;
 
-        public bool IsPointerOver { get; private set; }
+        public bool WasMouseOver { get; private set; }
+        public bool IsMouseOver { get; private set; }
+
+        public bool IsPointerOver
+        {
+            get { return IsMouseOver; }
+        }
+
+        internal void SetMouseOver(bool value)
+        {
+            if (IsMouseOver == value)
+                return;
+
+            IsMouseOver = value;
+            MarkDirty();
+        }
 
         internal void SetPointerOver(bool value)
         {
-            if (IsPointerOver == value)
-                return;
-
-            IsPointerOver = value;
-            MarkDirty();
+            SetMouseOver(value);
         }
         
         public override Control SetEnabled(bool enabled)
@@ -434,36 +462,37 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         public MySoundPair ClickSound { get; set; } = AudioHelper.HudClick;
         public MySoundPair ClickFailSound { get; set; } = AudioHelper.HudUnable;
 
-        public void Render(ControlRenderContext context, List<MySprite> sprites)
+        public void Render(List<MySprite> sprites)
         {
-            if (!Visible || context == null || sprites == null)
+            if (!Visible || sprites == null)
                 return;
 
             try
             {
-                if (Parent == null && context.StyleScope != null &&
-                    !ReferenceEquals(this, context.StyleScope) &&
-                    !ReferenceEquals(base.StyleParent, context.StyleScope))
-                {
-                    SetStyleParent(context.StyleScope);
-                }
-
                 var customRender = CustomRender ?? Model?.CustomRender;
 
                 if (customRender != null)
                 {
-                    customRender(this, context, sprites);
+                    customRender(this, sprites);
                     return;
                 }
 
-                RenderDefault(context, sprites);
+                RenderDefault(sprites);
             }
             finally
             {
-                bool wasPointerOver = IsPointerOver;
-                _isDirty = IsDirtyAfterRender() || wasPointerOver;
-                IsPointerOver = false;
+                CompleteRenderState();
             }
+        }
+
+        void CompleteRenderState()
+        {
+            bool wasMouseOver = IsMouseOver;
+            bool changed = WasMouseOver != wasMouseOver || IsMouseOver;
+
+            WasMouseOver = wasMouseOver;
+            IsMouseOver = false;
+            _isDirty = IsDirtyAfterRender() || changed;
         }
 
         protected virtual bool IsDirtyAfterRender()
@@ -475,7 +504,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         {
             StyleState state = StyleState.None;
 
-            if (IsPointerOver)
+            if (IsMouseOver)
                 state |= StyleState.Hover;
 
             if (!Enabled)
@@ -492,7 +521,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         protected TValue GetStyleValue<TValue>(
             StyleProperty<TValue> property,
             PropertyValue<TValue> value)
-            where TValue : struct
         {
             if (value.LocalOverride)
                 return value.Local;
@@ -554,7 +582,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             if (TryResolveStyleValue(property, out value))
                 return value;
 
-            if (property.Inherits && Parent != null)
+            if (Parent != null)
                 return Parent.ResolveStyleValue(property);
 
             if (property.HasDefaultValue)
@@ -571,7 +599,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             return ScopedResourceResolver.TryResolve(this, key, out value) ? value : fallback;
         }
 
-        protected Color ResolveColor(ResourceKey<Color> key)
+        public Color ResolveColor(ResourceKey<Color> key)
         {
             Color value;
             if (ScopedResourceResolver.TryResolve(this, key, out value))
@@ -580,15 +608,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             throw new ResourceKeyNotFoundException(key.Name, "ResourceTree");
         }
 
-        protected virtual void RenderDefault(ControlRenderContext context, List<MySprite> sprites)
+        protected virtual void RenderDefault(List<MySprite> sprites)
         {
             var rect = GetViewBox();
             var fillColor = GetRenderBackgroundColor();
 
             Border.CreateSpritesFromRect(rect, sprites, fillColor,
                 radiusPixels: GetRenderBorderRadiusPixels(),
-                radiusScale: context.Scale);
-            RenderDefaultText(rect, context, sprites);
+                radiusScale: LayoutScale);
+            RenderDefaultText(rect, sprites);
         }
 
         protected virtual Color GetRenderBackgroundColor()
@@ -599,6 +627,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         protected virtual Color GetRenderTextColor()
         {
             return TextColor;
+        }
+
+        protected virtual string GetRenderTextFont()
+        {
+            return TextFont;
         }
 
         protected virtual float GetRenderBorderRadiusPixels()
@@ -646,20 +679,21 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             return value;
         }
 
-        protected void RenderDefaultText(RectangleF rect, ControlRenderContext context, List<MySprite> sprites)
+        protected void RenderDefaultText(RectangleF rect, List<MySprite> sprites)
         {
-            RenderDefaultText(rect, context, sprites, GetRenderTextColor());
+            RenderDefaultText(rect, sprites, GetRenderTextColor());
         }
 
-        protected void RenderDefaultText(RectangleF rect, ControlRenderContext context, List<MySprite> sprites, Color color)
+        protected void RenderDefaultText(RectangleF rect, List<MySprite> sprites, Color color)
         {
             string text = DataContext != null ? DataContext.ToString() : string.Empty;
 
             if (string.IsNullOrEmpty(text))
                 return;
 
-            float textScale = 0.58f * context.Scale * context.FontScale;
-            var textSize = FormatingHelper.GetSizeInPixel(text, "White", textScale, context.Surface);
+            string fontId = GetRenderTextFont();
+            float textScale = 0.58f * LayoutScale * FontScale;
+            var textSize = MeasureText(text, fontId, textScale);
 
             sprites.Add(new MySprite
             {
@@ -667,10 +701,49 @@ namespace LcdMod.Client.Gui.ControlsTemplates
                 Data = text,
                 Position = new Vector2(rect.Center.X, rect.Center.Y - textSize.Y * 0.5f),
                 Color = color,
-                FontId = "White",
+                FontId = fontId,
                 Alignment = TextAlignment.CENTER,
                 RotationOrScale = textScale
             });
+        }
+
+        public IMyTextSurface TextSurface
+        {
+            get { return ResolveTextSurface(); }
+        }
+
+        public Vector2 MeasureText(string text, string fontId, float scale)
+        {
+            var surface = TextSurface;
+            if (surface == null || string.IsNullOrEmpty(text))
+                return Vector2.Zero;
+
+            return FormatingHelper.GetSizeInPixel(text, fontId, scale, surface);
+        }
+
+        public float GetLineHeight(float scale, string fontId = "White")
+        {
+            var surface = TextSurface;
+            return surface != null ? FormatingHelper.LineHeight(scale, surface, fontId) : 0f;
+        }
+
+        IMyTextSurface ResolveTextSurface()
+        {
+            int guard = 0;
+            for (IVisualStyleScope scope = this; scope != null && guard++ < 128;)
+            {
+                var provider = scope as ITextSurfaceProvider;
+                if (provider != null && provider.TextSurface != null)
+                    return provider.TextSurface;
+
+                IVisualStyleScope next = scope.StyleParent;
+                if (ReferenceEquals(next, scope))
+                    break;
+
+                scope = next;
+            }
+
+            return null;
         }
 
         public bool Hit(Vector2 point)
