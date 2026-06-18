@@ -6,6 +6,7 @@ using LcdMod.Common.Helpers;
 using VRage.Collections;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
+using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.Gui.UserControls
 {
@@ -40,14 +41,14 @@ namespace LcdMod.Client.Gui.UserControls
             DrawRectangle(viewBox.Center, new Vector2(viewBox.Width, viewBox.Height), blue);
 
             string headerText = GetLocalizedText(
-                "LcdMod_BSoD_Header", Constants.BSOD_TITLE_FALLBACK);
-            var infoText = GetLocalizedText("LcdMod_BSoD_InfoIntro", Constants.BSOD_INFO1_FALLBACK) + " " +
-                           GetLocalizedText("LcdMod_BSoD_InfoUrl", Constants.BSOD_INFO2_FALLBACK) + Constants.GITHUB + " " +
-                           GetLocalizedText("LcdMod_BSoD_InfoQr", Constants.BSOD_INFO3_FALLBACK);
+                MOD_PREFIX + "BSoD_Header", BSOD_TITLE_FALLBACK);
+            var infoText = GetLocalizedText(MOD_PREFIX + "BSoD_InfoIntro", BSOD_INFO1_FALLBACK) + " " +
+                           GetLocalizedText(MOD_PREFIX + "BSoD_InfoUrl", BSOD_INFO2_FALLBACK) + GITHUB + " " +
+                           GetLocalizedText(MOD_PREFIX + "BSoD_InfoQr", BSOD_INFO3_FALLBACK);
             var exceptionText = 
-                GetLocalizedText("LcdMod_BSoD_SupportIntro", Constants.BSOD_INFO4_FALLBACK) +
+                GetLocalizedText(MOD_PREFIX + "BSoD_SupportIntro", BSOD_INFO4_FALLBACK) +
                 "\n" +
-                GetLocalizedText("LcdMod_BSoD_ExceptionCode", Constants.BSOD_INFO5_FALLBACK) + "\n" + exception;
+                GetLocalizedText(MOD_PREFIX + "BSoD_ExceptionCode", BSOD_INFO5_FALLBACK) + "\n" + exception;
 
             float layoutScale = Math.Max(0.45f, Math.Min(viewBox.Width, viewBox.Height) / 512f);
             float titleGap = RoundToPixel(8f * layoutScale);

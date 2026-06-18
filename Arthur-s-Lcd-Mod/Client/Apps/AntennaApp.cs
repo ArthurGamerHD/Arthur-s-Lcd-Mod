@@ -473,7 +473,7 @@ namespace LcdMod.Client.Apps
             var titlePos = numberRect.Center;
             titlePos.X = numberRect.Right;
             titlePos.Y -= numberRect.Height * 0.5f;
-            sprites.Add(new MySprite(SpriteType.TEXT, titleSb.ToString(), titlePos, null, foreground, "White",
+            sprites.Add(new MySprite(SpriteType.TEXT, titleSb.ToString(), titlePos, null, foreground, TextFont,
                 TextAlignment.RIGHT, 1.1f * AppConfig.Scale * Host.Surface.FontSize));
 
             var info = new StringBuilder();
@@ -489,7 +489,7 @@ namespace LcdMod.Client.Apps
             var infoPos = nameRect.Center;
             infoPos.X = nameRect.Right;
             infoPos.Y -= nameRect.Height * 0.4f;
-            sprites.Add(new MySprite(SpriteType.TEXT, info.ToString(), infoPos, null, foreground, "White",
+            sprites.Add(new MySprite(SpriteType.TEXT, info.ToString(), infoPos, null, foreground, TextFont,
                 TextAlignment.RIGHT, .9f * AppConfig.Scale * Host.Surface.FontSize));
         }
 
@@ -512,7 +512,7 @@ namespace LcdMod.Client.Apps
 
         void TrimText(StringBuilder sb, float availableWidth, float fontSize = 1f)
         {
-            var textSize = Host.Surface.MeasureStringInPixels(sb, "White", fontSize * AppConfig.Scale * Host.Surface.FontSize);
+            var textSize = Host.Surface.MeasureStringInPixels(sb, TextFont, fontSize * AppConfig.Scale * Host.Surface.FontSize);
             if (textSize.X <= availableWidth)
                 return;
 
@@ -521,7 +521,7 @@ namespace LcdMod.Client.Apps
             {
                 sb.Clear();
                 sb.Append(FormatingHelper.TrimName(source, i));
-                textSize = Host.Surface.MeasureStringInPixels(sb, "White", fontSize * AppConfig.Scale * Host.Surface.FontSize);
+                textSize = Host.Surface.MeasureStringInPixels(sb, TextFont, fontSize * AppConfig.Scale * Host.Surface.FontSize);
                 if (textSize.X <= availableWidth)
                     break;
             }

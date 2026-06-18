@@ -8,7 +8,6 @@ using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Dialogs;
-using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.ControlsTemplates.Progress;
 using LcdMod.Client.Gui.Styling;
@@ -26,6 +25,7 @@ using VRage.Game.ModAPI;
 using VRage.Utils;
 using VRageMath;
 using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
+using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.Apps
 {
@@ -75,7 +75,7 @@ namespace LcdMod.Client.Apps
         const float PIE_RADIUS = 40;
         const string CRAFT_ALL_TEXT = "Craft all";
         const string INGOT_TYPE_ID = "MyObjectBuilder_Ingot";
-        const string LOC_INGOTS_LABEL = "LcdMod_Projector_Ingots";
+        const string LOC_INGOTS_LABEL = MOD_PREFIX + "Projector_Ingots";
         const string LOC_COMPONENTS_LABEL = "DisplayName_InventoryConstraint_Components";
 
         public bool IsLoading { get; private set; }
@@ -110,8 +110,8 @@ namespace LcdMod.Client.Apps
                 _available = raA.Last().Trim();
             }
 
-            _requiredX = Surface.MeasureStringInPixels(new StringBuilder(_required), "White", 1).X;
-            _availableX = Surface.MeasureStringInPixels(new StringBuilder(_available), "White", 1).X;
+            _requiredX = Surface.MeasureStringInPixels(new StringBuilder(_required), TextFont, 1).X;
+            _availableX = Surface.MeasureStringInPixels(new StringBuilder(_available), TextFont, 1).X;
         }
 
         protected override void DrawFooter(List<MySprite> frame)
@@ -172,7 +172,7 @@ namespace LcdMod.Client.Apps
                 RotationOrScale = textScale,
                 Color = Surface.ScriptForegroundColor,
                 Alignment = TextAlignment.LEFT,
-                FontId = "White"
+                FontId = TextFont
             });
 
             pos.Y += lineSpacer;
@@ -195,7 +195,7 @@ namespace LcdMod.Client.Apps
                 RotationOrScale = textScale,
                 Color = Surface.ScriptForegroundColor,
                 Alignment = TextAlignment.LEFT,
-                FontId = "White"
+                FontId = TextFont
             });
 
             pos.X -= legendSize.X + legendTextSpacing;
@@ -438,17 +438,17 @@ namespace LcdMod.Client.Apps
         Vector2 GetCraftAllButtonSize()
         {
             var textScale = GetCraftAllButtonTextScale(Scale, FontScale);
-            var textSize = FormatingHelper.GetSizeInPixel(CRAFT_ALL_TEXT, "White", textScale, Surface);
+            var textSize = FormatingHelper.GetSizeInPixel(CRAFT_ALL_TEXT, TextFont, textScale, Surface);
             return new Vector2(
                 Math.Max(112f * Scale, textSize.X + 24f * Scale),
-                Math.Max(28f * Scale, FormatingHelper.LineHeight(textScale, Surface) + 10f * Scale));
+                Math.Max(28f * Scale, MeasureLineHeight(textScale) + 10f * Scale));
         }
 
         Vector2 GetToggleViewButtonSize()
         {
             var textScale = GetCraftAllButtonTextScale(Scale, FontScale);
-            var ingotsSize = FormatingHelper.GetSizeInPixel(MyTexts.GetString(LOC_INGOTS_LABEL), "White", textScale, Surface);
-            var componentsSize = FormatingHelper.GetSizeInPixel(MyTexts.GetString(LOC_COMPONENTS_LABEL), "White", textScale, Surface);
+            var ingotsSize = FormatingHelper.GetSizeInPixel(MyTexts.GetString(LOC_INGOTS_LABEL), TextFont, textScale, Surface);
+            var componentsSize = FormatingHelper.GetSizeInPixel(MyTexts.GetString(LOC_COMPONENTS_LABEL), TextFont, textScale, Surface);
             var textWidth = Math.Max(ingotsSize.X, componentsSize.X);
             return new Vector2(
                 Math.Max(112f * Scale, textWidth + 24f * Scale),
@@ -624,11 +624,11 @@ namespace LcdMod.Client.Apps
                 Type = SpriteType.TEXT,
                 Data = text,
                 Position = new Vector2(rect.Center.X,
-                    rect.Center.Y - FormatingHelper.GetSizeInPixel(text, "White", textScale, control.TextSurface).Y * 0.5f),
+                    rect.Center.Y - FormatingHelper.GetSizeInPixel(text, control, textScale, control.TextSurface).Y * 0.5f),
                 RotationOrScale = textScale,
                 Color = textColor,
                 Alignment = TextAlignment.CENTER,
-                FontId = "White"
+                FontId = control.TextFont
             });
         }
 

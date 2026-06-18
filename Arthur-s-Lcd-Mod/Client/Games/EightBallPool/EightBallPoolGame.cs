@@ -13,6 +13,7 @@ using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
+using static LcdMod.Common.Helpers.Constants;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
 using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 
@@ -172,14 +173,14 @@ namespace LcdMod.Client.Games.EightBallPool
 
         void BuildGlobalMenu()
         {
-            _script.SetGlobalMenu(new GlobalMenuEntry("LcdMod_EightBallPool", new List<GlobalMenuEntry>
+            _script.SetGlobalMenu(new GlobalMenuEntry(MOD_PREFIX + "EightBallPool", new List<GlobalMenuEntry>
             {
-                new GlobalMenuEntry("LcdMod_NewGame", delegate { ShowNewGameMessageBox(); }),
-                new GlobalMenuEntry("LcdMod_RackBalls", delegate { RackObjectBalls(); ResetMatchState(true); Save(); }),
-                new GlobalMenuEntry("LcdMod_ResetCueBall", delegate { ResetCueBall(); Save(); }),
+                new GlobalMenuEntry(MOD_PREFIX + "NewGame", delegate { ShowNewGameMessageBox(); }),
+                new GlobalMenuEntry(MOD_PREFIX + "RackBalls", delegate { RackObjectBalls(); ResetMatchState(true); Save(); }),
+                new GlobalMenuEntry(MOD_PREFIX + "ResetCueBall", delegate { ResetCueBall(); Save(); }),
                 new GlobalMenuEntry
                 {
-                    MenuItem = Loc(_cheatMode ? "LcdMod_EightBallPool_CheatModeOn" : "LcdMod_EightBallPool_CheatModeOff"),
+                    MenuItem = Loc(_cheatMode ? MOD_PREFIX + "EightBallPool_CheatModeOn" : MOD_PREFIX + "EightBallPool_CheatModeOff"),
                     OnClick = delegate
                     {
                         _cheatMode = !_cheatMode;
@@ -192,8 +193,8 @@ namespace LcdMod.Client.Games.EightBallPool
 
         void ShowNewGameMessageBox()
         {
-            _script.ShowMessageBox(Loc("LcdMod_NewGame"), Loc("LcdMod_EightBallPool_NewGamePrompt"),
-                Loc("LcdMod_NewGame"), Loc("LcdMod_EightBallPool_Dismiss"), delegate
+            _script.ShowMessageBox(Loc(MOD_PREFIX + "NewGame"), Loc(MOD_PREFIX + "EightBallPool_NewGamePrompt"),
+                Loc(MOD_PREFIX + "NewGame"), Loc(MOD_PREFIX + "EightBallPool_Dismiss"), delegate
             {
                 NewGame();
                 Save();
@@ -1315,7 +1316,7 @@ namespace LcdMod.Client.Games.EightBallPool
             _lastPlayer = PLAYER_ONE;
             for (var i = 0; i < BALL_COUNT; i++) _shotStartPocketed[i] = _balls[i].Pocketed;
             _shotPocketedBalls.Clear();
-            _lastStatusMessage = FormatLoc("LcdMod_EightBallPool_PlayerBreak", PLAYER_ONE);
+            _lastStatusMessage = FormatLoc(MOD_PREFIX + "EightBallPool_PlayerBreak", PLAYER_ONE);
         }
 
         void LoadCaptureOrder(int[] savedOrder)
@@ -1411,7 +1412,7 @@ namespace LcdMod.Client.Games.EightBallPool
             if (_shotCueBallPocketed || _balls[CUE_BALL].Pocketed)
             {
                 foul = true;
-                foulReason = Loc("LcdMod_EightBallPool_Scratch");
+                foulReason = Loc(MOD_PREFIX + "EightBallPool_Scratch");
             }
             else foulReason = null;
 
@@ -1438,7 +1439,7 @@ namespace LcdMod.Client.Games.EightBallPool
                 else if (owner == opponent)
                 {
                     foul = true;
-                    if (string.IsNullOrEmpty(foulReason)) foulReason = FormatLoc("LcdMod_EightBallPool_PocketedOpponentBall", ball);
+                    if (string.IsNullOrEmpty(foulReason)) foulReason = FormatLoc(MOD_PREFIX + "EightBallPool_PocketedOpponentBall", ball);
                 }
 
                 if (owner == PLAYER_ONE || owner == PLAYER_TWO) RegisterCapturedBall(ball, owner);
@@ -1449,9 +1450,9 @@ namespace LcdMod.Client.Games.EightBallPool
             if (capturedEightBall)
             {
                 if (!foul && PlayerHasClearedGroup(shooter))
-                    SetGameOver(shooter, FormatLoc("LcdMod_EightBallPool_WinEightBall", shooter));
+                    SetGameOver(shooter, FormatLoc(MOD_PREFIX + "EightBallPool_WinEightBall", shooter));
                 else
-                    SetGameOver(opponent, FormatLoc("LcdMod_EightBallPool_WinEarlyEightBall", opponent, shooter));
+                    SetGameOver(opponent, FormatLoc(MOD_PREFIX + "EightBallPool_WinEarlyEightBall", opponent, shooter));
 
                 _needsSaveWhenIdle = true;
                 _shotPocketedBalls.Clear();
@@ -1463,8 +1464,8 @@ namespace LcdMod.Client.Games.EightBallPool
                 _currentPlayer = opponent;
                 if (_playerOneGroup == GROUP_OPEN)
                 {
-                    _lastStatusMessage = FormatLoc("LcdMod_EightBallPool_FoulOpen",
-                        string.IsNullOrEmpty(foulReason) ? Loc("LcdMod_EightBallPool_IllegalShot") : foulReason,
+                    _lastStatusMessage = FormatLoc(MOD_PREFIX + "EightBallPool_FoulOpen",
+                        string.IsNullOrEmpty(foulReason) ? Loc(MOD_PREFIX + "EightBallPool_IllegalShot") : foulReason,
                         _currentPlayer);
                 }
                 else
@@ -1473,12 +1474,12 @@ namespace LcdMod.Client.Games.EightBallPool
                     ReconcileCapturedBalls();
                     if (awarded <= 0)
                     {
-                        SetGameOver(opponent, FormatLoc("LcdMod_EightBallPool_WinNoFreeBall", opponent));
+                        SetGameOver(opponent, FormatLoc(MOD_PREFIX + "EightBallPool_WinNoFreeBall", opponent));
                     }
                     else
                     {
-                        _lastStatusMessage = FormatLoc("LcdMod_EightBallPool_FoulAward",
-                            string.IsNullOrEmpty(foulReason) ? Loc("LcdMod_EightBallPool_IllegalShot") : foulReason,
+                        _lastStatusMessage = FormatLoc(MOD_PREFIX + "EightBallPool_FoulAward",
+                            string.IsNullOrEmpty(foulReason) ? Loc(MOD_PREFIX + "EightBallPool_IllegalShot") : foulReason,
                             BuildAwardText(awarded),
                             _currentPlayer);
                     }
@@ -1487,12 +1488,12 @@ namespace LcdMod.Client.Games.EightBallPool
             else if (capturedOwnBall)
             {
                 _currentPlayer = shooter;
-                _lastStatusMessage = FormatLoc("LcdMod_EightBallPool_PlayerShootsAgain", shooter);
+                _lastStatusMessage = FormatLoc(MOD_PREFIX + "EightBallPool_PlayerShootsAgain", shooter);
             }
             else
             {
                 _currentPlayer = opponent;
-                _lastStatusMessage = FormatLoc("LcdMod_EightBallPool_NoBallPocketed", _currentPlayer);
+                _lastStatusMessage = FormatLoc(MOD_PREFIX + "EightBallPool_NoBallPocketed", _currentPlayer);
             }
 
             _shotPocketedBalls.Clear();
@@ -1525,7 +1526,7 @@ namespace LcdMod.Client.Games.EightBallPool
             reason = null;
             if (_firstHitBall <= 0)
             {
-                reason = Loc("LcdMod_EightBallPool_NoObjectBallHit");
+                reason = Loc(MOD_PREFIX + "EightBallPool_NoObjectBallHit");
                 return true;
             }
 
@@ -1534,7 +1535,7 @@ namespace LcdMod.Client.Games.EightBallPool
             {
                 if (_firstHitBall == 8 && RemainingObjectBalls() > 1)
                 {
-                    reason = Loc("LcdMod_EightBallPool_HitEightBallBeforeGroups");
+                    reason = Loc(MOD_PREFIX + "EightBallPool_HitEightBallBeforeGroups");
                     return true;
                 }
                 return false;
@@ -1543,15 +1544,15 @@ namespace LcdMod.Client.Games.EightBallPool
             if (PlayerHasClearedGroup(shooter))
             {
                 if (_firstHitBall == 8) return false;
-                reason = Loc("LcdMod_EightBallPool_HitOpponentBeforeEight");
+                reason = Loc(MOD_PREFIX + "EightBallPool_HitOpponentBeforeEight");
                 return true;
             }
 
             if (GetBallGroup(_firstHitBall) != playerGroup)
             {
                 reason = Loc(_firstHitBall == 8
-                    ? "LcdMod_EightBallPool_HitEightBallBeforeClearing"
-                    : "LcdMod_EightBallPool_HitOpponentFirst");
+                    ? MOD_PREFIX + "EightBallPool_HitEightBallBeforeClearing"
+                    : MOD_PREFIX + "EightBallPool_HitOpponentFirst");
                 return true;
             }
 
@@ -1597,8 +1598,8 @@ namespace LcdMod.Client.Games.EightBallPool
 
         string BuildAwardText(int awardedBall)
         {
-            if (awardedBall > 0) return FormatLoc("LcdMod_EightBallPool_AwardFreeBall", _currentPlayer, BallName(awardedBall));
-            return Loc("LcdMod_EightBallPool_NoFreeBallAvailable");
+            if (awardedBall > 0) return FormatLoc(MOD_PREFIX + "EightBallPool_AwardFreeBall", _currentPlayer, BallName(awardedBall));
+            return Loc(MOD_PREFIX + "EightBallPool_NoFreeBallAvailable");
         }
 
         void SetGameOver(int winner, string message)
@@ -1614,7 +1615,7 @@ namespace LcdMod.Client.Games.EightBallPool
         {
             if (!IsObjectGroup(group) || _playerOneGroup != GROUP_OPEN) return;
             _playerOneGroup = player == PLAYER_ONE ? group : OppositeGroup(group);
-            _lastStatusMessage = FormatLoc("LcdMod_EightBallPool_PlayerGroupsAssigned",
+            _lastStatusMessage = FormatLoc(MOD_PREFIX + "EightBallPool_PlayerGroupsAssigned",
                 GroupLabel(GetPlayerGroup(PLAYER_ONE)),
                 GroupLabel(GetPlayerGroup(PLAYER_TWO)));
         }
@@ -1674,8 +1675,8 @@ namespace LcdMod.Client.Games.EightBallPool
 
         string BuildTurnStatus()
         {
-            if (_gameOver) return FormatLoc("LcdMod_EightBallPool_GameOverWinner", _winner);
-            return FormatLoc("LcdMod_EightBallPool_PlayerToShoot", _currentPlayer);
+            if (_gameOver) return FormatLoc(MOD_PREFIX + "EightBallPool_GameOverWinner", _winner);
+            return FormatLoc(MOD_PREFIX + "EightBallPool_PlayerToShoot", _currentPlayer);
         }
 
         bool AreBallsMoving()
@@ -2197,16 +2198,16 @@ namespace LcdMod.Client.Games.EightBallPool
         {
             var headerY = _headerRect.Y + 2f;
             DrawTextWithShadow(sprites, GetStatusText(), new Vector2(_headerRect.X, headerY), TextAlignment.LEFT, _fontScale * 0.86f, _textColor);
-            DrawTextWithShadow(sprites, FormatLoc("LcdMod_EightBallPool_Shots", _shotCount), new Vector2(_headerRect.Right, headerY), TextAlignment.RIGHT, _fontScale, _textColor);
+            DrawTextWithShadow(sprites, FormatLoc(MOD_PREFIX + "EightBallPool_Shots", _shotCount), new Vector2(_headerRect.Right, headerY), TextAlignment.RIGHT, _fontScale, _textColor);
             DrawPowerMeter(sprites);
         }
 
         string GetStatusText()
         {
-            if (_gameOver) return FormatLoc("LcdMod_EightBallPool_GameOverNewGameHint", _lastStatusMessage);
-            if (AreBallsMoving()) return Loc("LcdMod_EightBallPool_BallsRolling");
-            if (_cueBallInHand || _balls[CUE_BALL].Pocketed) return FormatLoc("LcdMod_EightBallPool_CueBallInHand", _currentPlayer);
-            if (RemainingObjectBalls() == 0) return Loc("LcdMod_EightBallPool_TableClearedNewRack");
+            if (_gameOver) return FormatLoc(MOD_PREFIX + "EightBallPool_GameOverNewGameHint", _lastStatusMessage);
+            if (AreBallsMoving()) return Loc(MOD_PREFIX + "EightBallPool_BallsRolling");
+            if (_cueBallInHand || _balls[CUE_BALL].Pocketed) return FormatLoc(MOD_PREFIX + "EightBallPool_CueBallInHand", _currentPlayer);
+            if (RemainingObjectBalls() == 0) return Loc(MOD_PREFIX + "EightBallPool_TableClearedNewRack");
             if (!string.IsNullOrEmpty(_lastStatusMessage)) return _lastStatusMessage;
             return BuildTurnStatus();
         }
@@ -2223,10 +2224,10 @@ namespace LcdMod.Client.Games.EightBallPool
 
         string BallName(int number)
         {
-            if (number == 8) return Loc("LcdMod_EightBallPool_BallNameEight");
-            if (number > 8) return FormatLoc("LcdMod_EightBallPool_BallNameStripe", number);
-            if (number > 0) return FormatLoc("LcdMod_EightBallPool_BallNameSolid", number);
-            return FormatLoc("LcdMod_EightBallPool_BallNameGeneric", number);
+            if (number == 8) return Loc(MOD_PREFIX + "EightBallPool_BallNameEight");
+            if (number > 8) return FormatLoc(MOD_PREFIX + "EightBallPool_BallNameStripe", number);
+            if (number > 0) return FormatLoc(MOD_PREFIX + "EightBallPool_BallNameSolid", number);
+            return FormatLoc(MOD_PREFIX + "EightBallPool_BallNameGeneric", number);
         }
 
         void DrawFooter(List<MySprite> sprites)
@@ -2262,9 +2263,9 @@ namespace LcdMod.Client.Games.EightBallPool
             if (active || winner)
                 sprites.Add(RectSprite(Inset(panelRect, 1.5f), new Color(playerColor.R, playerColor.G, playerColor.B, winner ? (byte)92 : (byte)54)));
 
-            var label = FormatLoc("LcdMod_EightBallPool_FooterPlayerLabel", player, GroupLabel(GetPlayerGroup(player)));
+            var label = FormatLoc(MOD_PREFIX + "EightBallPool_FooterPlayerLabel", player, GroupLabel(GetPlayerGroup(player)));
             if (active) label = "> " + label;
-            if (winner) label += "  " + Loc("LcdMod_EightBallPool_Winner");
+            if (winner) label += "  " + Loc(MOD_PREFIX + "EightBallPool_Winner");
 
             var labelScale = MathHelper.Clamp(_fontScale * (verticalLayout ? 0.58f : 0.62f), 0.25f, 0.56f);
             var labelSize = _panel.MeasureStringInPixels(new StringBuilder(label), "White", labelScale);
@@ -2359,7 +2360,7 @@ namespace LcdMod.Client.Games.EightBallPool
 
         void DrawNoBallsText(List<MySprite> sprites, RectangleF panelRect, bool leftSide, float y, float labelScale, float horizontalPadding)
         {
-            var empty = Loc("LcdMod_EightBallPool_NoBalls");
+            var empty = Loc(MOD_PREFIX + "EightBallPool_NoBalls");
             var emptySize = _panel.MeasureStringInPixels(new StringBuilder(empty), "White", labelScale * 0.86f);
             var emptyPos = leftSide
                 ? new Vector2(panelRect.X + horizontalPadding, y - emptySize.Y * 0.5f)
@@ -2425,9 +2426,9 @@ namespace LcdMod.Client.Games.EightBallPool
 
         string GroupLabel(int group)
         {
-            if (group == GROUP_SOLIDS) return Loc("LcdMod_EightBallPool_GroupSolids");
-            if (group == GROUP_STRIPES) return Loc("LcdMod_EightBallPool_GroupStripes");
-            return Loc("LcdMod_EightBallPool_GroupOpen");
+            if (group == GROUP_SOLIDS) return Loc(MOD_PREFIX + "EightBallPool_GroupSolids");
+            if (group == GROUP_STRIPES) return Loc(MOD_PREFIX + "EightBallPool_GroupStripes");
+            return Loc(MOD_PREFIX + "EightBallPool_GroupOpen");
         }
 
         Color GetPlayerColor(int player)

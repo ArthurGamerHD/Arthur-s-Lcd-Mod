@@ -16,6 +16,7 @@ using Sandbox.Definitions;
 using VRage.Game;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
+using static LcdMod.Common.Helpers.Constants;
 using ScreenConfigPower = LcdMod.Common.Config.Models.Apps.ScreenConfigPower;
 using VisualWrapPanel = LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel.WrapPanel;
 
@@ -86,7 +87,7 @@ namespace LcdMod.Client.Apps
                 {
                     var amount = logic.OutputItemAmount;
                     _details.Add(new StaticTooltipLine(amount > 0
-                        ? string.Format(FormatingHelper.Culture, LocHelper.GetLoc("LcdMod_Farm_OutputAmount"),
+                        ? string.Format(FormatingHelper.Culture, LocHelper.GetLoc(MOD_PREFIX + "Farm_OutputAmount"),
                             OutputName, amount)
                         : OutputName));
                 }
@@ -255,7 +256,7 @@ namespace LcdMod.Client.Apps
             if (plot == null || plot.StorageComponent == null)
                 return string.Empty;
 
-            return string.Format(FormatingHelper.Culture, LocHelper.GetLoc("LcdMod_Farm_Water"),
+            return string.Format(FormatingHelper.Culture, LocHelper.GetLoc(MOD_PREFIX + "Farm_Water"),
                 FormatingHelper.PercentageToString(ratio));
         }
 

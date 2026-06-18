@@ -85,7 +85,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 return 24f * scale;
 
             var rootScale = 0.58f * scale * fontScale;
-            return Math.Max(24f * scale, FormatingHelper.LineHeight(rootScale, surface) + 10f * scale);
+            return Math.Max(24f * scale, FormatingHelper.LineHeight(rootScale, this, surface) + 10f * scale);
         }
 
         static Node CreateNode(GlobalMenuEntry entry, int level)
@@ -128,8 +128,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             var shadowColor = ResolveColor(ThemeResources.ShadowColor);
             var rootScale = 0.58f * scale * fontScale;
             var popupScale = 0.56f * scale * fontScale;
-            var rootHeight = Math.Max(24f * scale, FormatingHelper.LineHeight(rootScale, surface) + 10f * scale);
-            var itemHeight = Math.Max(22f * scale, FormatingHelper.LineHeight(rootScale, surface) + 8f * scale);
+            var rootHeight = Math.Max(24f * scale, FormatingHelper.LineHeight(rootScale, this, surface) + 10f * scale);
+            var itemHeight = Math.Max(22f * scale, FormatingHelper.LineHeight(rootScale, this, surface) + 8f * scale);
             var rootPaddingX = 12f * scale;
 
             DrawRootBar(viewBox, scale, rootScale, rootHeight, rootPaddingX, panelColor, fontId, cursorPosition, surface, sprites);

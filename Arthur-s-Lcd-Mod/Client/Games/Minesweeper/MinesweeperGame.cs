@@ -15,6 +15,7 @@ using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI.Ingame.Utilities;
 using VRageMath;
+using static LcdMod.Common.Helpers.Constants;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
 using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 
@@ -159,14 +160,14 @@ namespace LcdMod.Client.Games.Minesweeper
         void BuildGlobalMenu()
         {
             _script.SetGlobalMenu(
-                new GlobalMenuEntry("LcdMod_Minesweeper", new List<GlobalMenuEntry>
+                new GlobalMenuEntry(MOD_PREFIX + "Minesweeper", new List<GlobalMenuEntry>
                 {
-                    new GlobalMenuEntry("LcdMod_NewGame", delegate
+                    new GlobalMenuEntry(MOD_PREFIX + "NewGame", delegate
                     {
                         NewGame();
                         Save();
                     }),
-                    new GlobalMenuEntry("LcdMod_FlagMode", delegate { ToggleFlagMode(); }),
+                    new GlobalMenuEntry(MOD_PREFIX + "FlagMode", delegate { ToggleFlagMode(); }),
                     new GlobalMenuEntry("Difficulty", new List<GlobalMenuEntry>
                     {
                         new GlobalMenuEntry(LocHelper.GetLoc("DifficultyEasy") + " - 9x9 10",
@@ -191,7 +192,7 @@ namespace LcdMod.Client.Games.Minesweeper
             ini.SetComment(CUSTOM_DATA_KEY, "Width", $"2-{MAX_SIZE}");
             ini.SetComment(CUSTOM_DATA_KEY, "Height", $"2-{MAX_SIZE}");
             ini.SetComment(CUSTOM_DATA_KEY, "Mines", $"1-{MAX_BOMB}");
-            TextInputHelper.SpawnForLocalPlayer(LocHelper.GetLoc("LcdMod_Minesweeper"), LoadDifficultyIni,
+            TextInputHelper.SpawnForLocalPlayer(LocHelper.GetLoc(MOD_PREFIX + "Minesweeper"), LoadDifficultyIni,
                 ini.ToString());
         }
 
@@ -481,10 +482,10 @@ namespace LcdMod.Client.Games.Minesweeper
 
             LayoutHeaderControls();
 
-            var cellMeasure = _panel.MeasureStringInPixels(new StringBuilder("8"), "LcdMod_Monospace", 1f);
+            var cellMeasure = _panel.MeasureStringInPixels(new StringBuilder("8"), MOD_PREFIX + "Monospace", 1f);
             _cellTextScale = cellSize * 0.7f / cellMeasure.Y;
 
-            var displayMeasure = _panel.MeasureStringInPixels(new StringBuilder("888"), "LcdMod_Monospace", 1f);
+            var displayMeasure = _panel.MeasureStringInPixels(new StringBuilder("888"), MOD_PREFIX + "Monospace", 1f);
             float displayScaleX = displayMeasure.X <= 0 ? 0.6f : _bombDisplayRect.Width * 0.82f / displayMeasure.X;
             float displayScaleY = displayMeasure.Y <= 0 ? 0.6f : _bombDisplayRect.Height * 0.62f / displayMeasure.Y;
             _displayTextScale = Math.Max(0.35f, Math.Min(displayScaleX, displayScaleY));
@@ -554,14 +555,14 @@ namespace LcdMod.Client.Games.Minesweeper
             DrawTileFrame(frame, rect, border, true, _displayBackground);
 
             string text = FormatThreeDigits(value);
-            Vector2 size = _panel.MeasureStringInPixels(new StringBuilder(text), "LcdMod_Monospace", _displayTextScale);
+            Vector2 size = _panel.MeasureStringInPixels(new StringBuilder(text), MOD_PREFIX + "Monospace", _displayTextScale);
             frame.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
                 Data = text,
                 Position = new Vector2(rect.Center.X, rect.Center.Y - size.Y * 0.5f),
                 Color = _displayRed,
-                FontId = "LcdMod_Monospace",
+                FontId = MOD_PREFIX + "Monospace",
                 Alignment = TextAlignment.CENTER,
                 RotationOrScale = _displayTextScale
             });
@@ -607,7 +608,7 @@ namespace LcdMod.Client.Games.Minesweeper
                     Position = new Vector2(iconRect.Center.X, iconRect.Center.Y - iconRect.Size.Y * 0.18f),
                     Color = Color.Black,
                     Alignment = TextAlignment.CENTER,
-                    FontId = "LcdMod_Monospace",
+                    FontId = MOD_PREFIX + "Monospace",
                     RotationOrScale = .055f * _displayTextScale
                 });
             }
@@ -676,14 +677,14 @@ namespace LcdMod.Client.Games.Minesweeper
 
         void DrawCenteredText(List<MySprite> frame, string text, RectangleF rect, Color color)
         {
-            Vector2 size = _panel.MeasureStringInPixels(new StringBuilder(text), "LcdMod_Monospace", _cellTextScale);
+            Vector2 size = _panel.MeasureStringInPixels(new StringBuilder(text), MOD_PREFIX + "Monospace", _cellTextScale);
             frame.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
                 Data = text,
                 Position = new Vector2(rect.Center.X, rect.Center.Y - size.Y * 0.5f),
                 Color = color,
-                FontId = "LcdMod_Monospace",
+                FontId = MOD_PREFIX + "Monospace",
                 Alignment = TextAlignment.CENTER,
                 RotationOrScale = _cellTextScale
             });

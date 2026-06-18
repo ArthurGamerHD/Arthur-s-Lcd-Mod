@@ -724,4 +724,10 @@ We are waiting for a while, and then we will restart it for you.</value>
   <data name="LcdMod_MarketApp_Updated" xml:space="preserve">
     <value>Updated {0} ago</value>
   </data>
+  <data name="LcdMod_Search_Script" xml:space="preserve">
+    <value>Search App</value>
+  </data>
+  <data name="LcdMod_Search_Script_Tooltip" xml:space="preserve">
+    <value>Search for specific app</value>
+  </data>
 </root>

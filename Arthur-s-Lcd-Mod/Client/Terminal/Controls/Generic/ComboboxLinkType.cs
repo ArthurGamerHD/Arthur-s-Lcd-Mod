@@ -2,11 +2,13 @@ using System.Collections.Generic;
 using LcdMod.Client.Config;
 using LcdMod.Client.Helpers;
 using LcdMod.Common.Config.Interfaces;
+using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.Utils;
+using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.Terminal.Controls.Generic
 {
@@ -21,12 +23,12 @@ namespace LcdMod.Client.Terminal.Controls.Generic
             combo.Setter = Setter;
             combo.ComboBoxContent = Content;
             combo.Visible = Visible;
-            combo.Title = MyStringId.GetOrCompute("LcdMod_LinkType");
+            combo.Title = MyStringId.GetOrCompute(MOD_PREFIX + "LinkType");
             combo.Tooltip = MyStringId.GetOrCompute(string.Format(
-                LocHelper.GetLoc("LcdMod_LinkTypeDescription"),
-                LocHelper.GetLoc("LcdMod_LocalGrid"),
-                LocHelper.GetLoc("LcdMod_MechanicalConnection"),
-                LocHelper.GetLoc("LcdMod_PhysicalConnection")
+                LocHelper.GetLoc(MOD_PREFIX + "LinkTypeDescription"),
+                LocHelper.GetLoc(MOD_PREFIX + "LocalGrid"),
+                LocHelper.GetLoc(MOD_PREFIX + "MechanicalConnection"),
+                LocHelper.GetLoc(MOD_PREFIX + "PhysicalConnection")
             ));
             TerminalControl = combo;
         }
@@ -35,17 +37,17 @@ namespace LcdMod.Client.Terminal.Controls.Generic
         {
             list.Add(new MyTerminalControlComboBoxItem
             {
-                Key = 0, Value = MyStringId.GetOrCompute("LcdMod_LocalGrid")
+                Key = 0, Value = MyStringId.GetOrCompute(MOD_PREFIX + "LocalGrid")
             });
             list.Add(new MyTerminalControlComboBoxItem
             {
                 Key = ToId(GridLinkTypeEnum.Mechanical),
-                Value = MyStringId.GetOrCompute("LcdMod_MechanicalConnection")
+                Value = MyStringId.GetOrCompute(MOD_PREFIX + "MechanicalConnection")
             });
             list.Add(new MyTerminalControlComboBoxItem
             {
                 Key = ToId(GridLinkTypeEnum.Physical),
-                Value = MyStringId.GetOrCompute("LcdMod_PhysicalConnection")
+                Value = MyStringId.GetOrCompute(MOD_PREFIX + "PhysicalConnection")
             });
         }
 

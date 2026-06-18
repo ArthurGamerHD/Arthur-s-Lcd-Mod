@@ -211,7 +211,7 @@ namespace LcdMod.Client.Gui.Tooltip
                 lineTexts[i] = line != null ? line.GetText() : string.Empty;
                 clickables[i] = line != null && line.IsClickable;
                 lineCursors[i] = line?.GetCursor();
-                lineSizes[i] = FormatingHelper.GetSizeInPixel(lineTexts[i], "White", lineScale, surface);
+                lineSizes[i] = FormatingHelper.GetSizeInPixel(lineTexts[i], parentEntry, lineScale, surface);
 
                 if (lineSizes[i].X > maxLineWidth)
                     maxLineWidth = lineSizes[i].X;
@@ -224,12 +224,12 @@ namespace LcdMod.Client.Gui.Tooltip
             float titleScale = 0.72f * scale * fontScale;
             float footerScale = 0.62f * scale * fontScale;
 
-            var titleSize = FormatingHelper.GetSizeInPixel(title, "White", titleScale, surface);
+            var titleSize = FormatingHelper.GetSizeInPixel(title, parentEntry, titleScale, surface);
             var footerSize = string.IsNullOrEmpty(footer)
                 ? Vector2.Zero
-                : FormatingHelper.GetSizeInPixel(footer, "White", footerScale, surface);
+                : FormatingHelper.GetSizeInPixel(footer, parentEntry, footerScale, surface);
 
-            float lineStep = FormatingHelper.LineHeight(lineScale, surface) + 2f;
+            float lineStep = FormatingHelper.LineHeight(lineScale, parentEntry, surface) + 2f;
 
             bool hasIcon = !string.IsNullOrEmpty(iconTexture);
 
@@ -333,7 +333,7 @@ namespace LcdMod.Client.Gui.Tooltip
                 Data = title,
                 Position = new Vector2(contentCenterX, currentY),
                 Color = textColor,
-                FontId = "White",
+                FontId = parentEntry.TextFont,
                 Alignment = TextAlignment.CENTER,
                 RotationOrScale = titleScale
             };
@@ -420,7 +420,7 @@ namespace LcdMod.Client.Gui.Tooltip
                     Data = lineTexts[i],
                     Position = position,
                     Color = lineColor,
-                    FontId = "White",
+                    FontId = parentEntry.TextFont,
                     Alignment = TextAlignment.LEFT,
                     RotationOrScale = lineScale
                 });
@@ -453,7 +453,7 @@ namespace LcdMod.Client.Gui.Tooltip
                     Data = footer,
                     Position = new Vector2(contentCenterX, currentY),
                     Color = textColor,
-                    FontId = "White",
+                    FontId = parentEntry.TextFont,
                     Alignment = TextAlignment.CENTER,
                     RotationOrScale = footerScale
                 };

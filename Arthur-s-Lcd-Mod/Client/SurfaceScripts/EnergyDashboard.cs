@@ -12,6 +12,7 @@ using VRageMath;
 using ComboboxGraphWindow = LcdMod.Client.Terminal.Controls.Generic.ComboboxGraphWindow;
 using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
 using ComboboxLinkType = LcdMod.Client.Terminal.Controls.Generic.ComboboxLinkType;
+using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.SurfaceScripts
 {
@@ -21,8 +22,8 @@ namespace LcdMod.Client.SurfaceScripts
         IUsesTerminalControl<ComboboxLinkType>
     {
         protected override ConfigKind ConfigKind => ConfigKind.Power;
-        public const string ID = "LcdMod_EnergyDashboard";
-        public const string TITLE = "LcdMod_EnergyDashboard";
+        public const string ID = MOD_PREFIX + "EnergyDashboard";
+        public const string TITLE = MOD_PREFIX + "EnergyDashboard";
         protected override string DefaultTitle => TITLE;
         public override IApp App => _app;
         IApp _app;

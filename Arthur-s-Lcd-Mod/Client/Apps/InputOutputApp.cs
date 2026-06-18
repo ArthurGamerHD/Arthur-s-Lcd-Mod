@@ -7,8 +7,6 @@ using LcdMod.Client.GridData;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
-using LcdMod.Client.Gui.ControlsTemplates.Panels.StackPanel;
-using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
 using LcdMod.Common.Config.Models.Apps;
 using LcdMod.Common.Helpers;
@@ -18,6 +16,7 @@ using VRage.Game.GUI.TextPanel;
 using VRageMath;
 using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
 using VisualStackPanel = LcdMod.Client.Gui.ControlsTemplates.Panels.StackPanel.StackPanel;
+using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.Apps
 {
@@ -28,7 +27,7 @@ namespace LcdMod.Client.Apps
     /// </summary>
     internal sealed class InputOutputApp : ItemsApp
     {
-        public const string NAME = "LcdMod_InputOutput";
+        public const string NAME = MOD_PREFIX + "InputOutput";
 
         const int MODE_INPUT = 0;
         const int MODE_OUTPUT = 1;
@@ -47,10 +46,10 @@ namespace LcdMod.Client.Apps
         const float ITEM_INSET_BOTTOM = 7f;
         const float ITEM_PAD = 10f;        
 
-        const string LOC_INPUT = "LcdMod_InputOutput_Input";
-        const string LOC_OUTPUT = "LcdMod_InputOutput_Output";
-        const string LOC_ALL = "LcdMod_InputOutput_All";
-        const string LOC_EMPTY = "LcdMod_InputOutput_Empty";
+        const string LOC_INPUT = MOD_PREFIX + "InputOutput_Input";
+        const string LOC_OUTPUT = MOD_PREFIX + "InputOutput_Output";
+        const string LOC_ALL = MOD_PREFIX + "InputOutput_All";
+        const string LOC_EMPTY = MOD_PREFIX + "InputOutput_Empty";
 
         static readonly List<ProductionBlockItems> EmptyBlocks = new List<ProductionBlockItems>();
 
@@ -409,14 +408,14 @@ namespace LcdMod.Client.Apps
             float pad = (CARD_GAP + CARD_PAD) * Scale;
 
             float textScale = Scale * FontScale;
-            float lineH = FormatingHelper.LineHeight(textScale, Surface);
+            float lineH = MeasureLineHeight(textScale);
             float centeredY = bounds.Y + (bounds.Height - lineH) * 0.5f;
 
             float nameRight = bounds.Right - pad;
             if (state.Expanded)
             {
                 string modeLabel = ModeLabel(state.Mode);
-                float modeTextW = FormatingHelper.GetSizeInPixel(modeLabel, "White", textScale * 0.85f, Surface).X;
+                float modeTextW = FormatingHelper.GetSizeInPixel(modeLabel, TextFont, textScale * 0.85f, Surface).X;
                 float modeW = Math.Max(82f * Scale, modeTextW + 28f * Scale);
                 float modeH = Math.Min(bounds.Height - (2f * CARD_GAP + 6f) * Scale, lineH + 10f * Scale);
                 var modeRect = new RectangleF(
@@ -433,7 +432,7 @@ namespace LcdMod.Client.Apps
                     RotationOrScale = textScale * 0.85f,
                     Color = ForegroundColor,
                     Alignment = TextAlignment.CENTER,
-                    FontId = "White"
+                    FontId = TextFont
                 });
 
                 var mode = GetOrCreateControl(_modeControls, block.EntityId, state, OnModeClicked);
@@ -467,14 +466,14 @@ namespace LcdMod.Client.Apps
                 RotationOrScale = textScale,
                 Color = ForegroundColor,
                 Alignment = TextAlignment.LEFT,
-                FontId = "White"
+                FontId = TextFont
             });
         }
 
         void RenderColumnsHeader(List<MySprite> sprites, RectangleF bounds)
         {
             float textScale = Scale * FontScale * 0.75f;
-            float lineH = FormatingHelper.LineHeight(textScale, Surface);
+            float lineH = MeasureLineHeight(textScale);
             float centeredY = bounds.Y + (bounds.Height - lineH) * 0.5f;
             float indent = (ITEM_INSET + ITEM_PAD) * Scale;
             float mid = bounds.X + bounds.Width * 0.5f;
@@ -488,7 +487,7 @@ namespace LcdMod.Client.Apps
                 RotationOrScale = textScale,
                 Color = labelColor,
                 Alignment = TextAlignment.LEFT,
-                FontId = "White"
+                FontId = TextFont
             });
             sprites.Add(new MySprite
             {
@@ -498,7 +497,7 @@ namespace LcdMod.Client.Apps
                 RotationOrScale = textScale,
                 Color = labelColor,
                 Alignment = TextAlignment.LEFT,
-                FontId = "White"
+                FontId = TextFont
             });
         }
 
@@ -560,11 +559,11 @@ namespace LcdMod.Client.Apps
             DrawItemIcon(sprites, ResolveSprite(type), iconPos, new Vector2(iconSize), TextAlignment.CENTER, Color.White);
 
             float textScale = Scale * FontScale * 0.85f;
-            float lineH = FormatingHelper.LineHeight(textScale, Surface);
+            float lineH = MeasureLineHeight(textScale);
             float centeredY = card.Y + (card.Height - lineH) * 0.5f;
 
             string qty = FormatingHelper.FormatItemQty(amount);
-            float qtyW = FormatingHelper.GetSizeInPixel(qty, "White", textScale, Surface).X;
+            float qtyW = FormatingHelper.GetSizeInPixel(qty, TextFont, textScale, Surface).X;
             float nameLeft = card.X + pad + iconSize + 8f * Scale;
             float nameRight = card.Right - qtyW - (pad + 6f * Scale);
             string name = TrimText(ResolveDisplayName(type), Math.Max(10f, nameRight - nameLeft), 0.85f);
@@ -577,7 +576,7 @@ namespace LcdMod.Client.Apps
                 RotationOrScale = textScale,
                 Color = _itemTextColor,
                 Alignment = TextAlignment.LEFT,
-                FontId = "White"
+                FontId = TextFont
             });
             sprites.Add(new MySprite
             {
@@ -587,7 +586,7 @@ namespace LcdMod.Client.Apps
                 RotationOrScale = textScale,
                 Color = _itemTextColor,
                 Alignment = TextAlignment.RIGHT,
-                FontId = "White"
+                FontId = TextFont
             });
         }
 
@@ -599,7 +598,7 @@ namespace LcdMod.Client.Apps
         void DrawEmpty(List<MySprite> sprites, RectangleF bounds)
         {
             float textScale = Scale * FontScale * 0.8f;
-            float lineH = FormatingHelper.LineHeight(textScale, Surface);
+            float lineH = MeasureLineHeight(textScale);
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
@@ -608,7 +607,7 @@ namespace LcdMod.Client.Apps
                 RotationOrScale = textScale,
                 Color = ForegroundColor,
                 Alignment = TextAlignment.CENTER,
-                FontId = "White"
+                FontId = TextFont
             });
         }
 

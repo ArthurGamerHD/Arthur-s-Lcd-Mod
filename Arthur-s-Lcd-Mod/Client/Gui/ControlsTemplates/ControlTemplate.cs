@@ -23,7 +23,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         IMyTextSurface TextSurface { get; }
     }
 
-    public abstract partial class ControlTemplate : Control
+    public abstract partial class ControlTemplate : Control, ITextStyleProvider
     {
         public static readonly StyleProperty<Color> TextColorProperty =
             StyleProperty.Register<ControlTemplate, Color>("TextColor", null);
@@ -634,6 +634,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             return TextFont;
         }
 
+        string ITextStyleProvider.ResolvedTextFont
+        {
+            get { return GetRenderTextFont(); }
+        }
+
         protected virtual float GetRenderBorderRadiusPixels()
         {
             return BorderRadiusPixels;
@@ -693,7 +698,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 
             string fontId = GetRenderTextFont();
             float textScale = 0.58f * LayoutScale * FontScale;
-            var textSize = MeasureText(text, fontId, textScale);
+            var textSize = MeasureText(text, textScale);
 
             sprites.Add(new MySprite
             {
@@ -712,6 +717,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             get { return ResolveTextSurface(); }
         }
 
+        public Vector2 MeasureText(string text, float scale)
+        {
+            var surface = TextSurface;
+            return surface != null ? FormatingHelper.GetSizeInPixel(text, this, scale, surface) : Vector2.Zero;
+        }
+
         public Vector2 MeasureText(string text, string fontId, float scale)
         {
             var surface = TextSurface;
@@ -721,7 +732,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             return FormatingHelper.GetSizeInPixel(text, fontId, scale, surface);
         }
 
-        public float GetLineHeight(float scale, string fontId = "White")
+        public float GetLineHeight(float scale)
+        {
+            var surface = TextSurface;
+            return surface != null ? FormatingHelper.LineHeight(scale, this, surface) : 0f;
+        }
+
+        public float GetLineHeight(float scale, string fontId)
         {
             var surface = TextSurface;
             return surface != null ? FormatingHelper.LineHeight(scale, surface, fontId) : 0f;

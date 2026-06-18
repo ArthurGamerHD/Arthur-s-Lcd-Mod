@@ -17,12 +17,13 @@ using VRage.Game.Models;
 using VRage.ModAPI;
 using VRageMath;
 using SliderFov = LcdMod.Client.Terminal.Controls.Generic.SliderFov;
+using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.Apps
 {
     public class FarGridRaycastExperimentalApp : App, IApp
     {
-        public const string ID = "LcdMod_FarGridRaycastExperimental";
+        public const string ID = MOD_PREFIX + "FarGridRaycastExperimental";
         public const string TITLE = "Far Grid Raycast Experimental";
 
         const float REFERENCE_FONT_SCALE = 0.1f;
@@ -39,7 +40,7 @@ namespace LcdMod.Client.Apps
         const double TARGET_SEARCH_DISTANCE = 3600d;
 
         const long MAGNIFICATION_HUD_VISIBLE_FRAMES = 300L;
-        const string FONT = "LcdMod_Monospace";
+        const string FONT = MOD_PREFIX + "Monospace";
         const string MISS_GLYPH = "";
         const int COLOR_GLYPH_BASE = 0xE100;
 
@@ -1658,7 +1659,7 @@ namespace LcdMod.Client.Apps
             const float textScale = 0.55f;
             float magnification = SliderFov.FovToMagnification(_horizontalFovDegrees);
             string text = "MAG: " + magnification.ToString("0.##", FormatingHelper.Culture) + "x";
-            var textSize = FormatingHelper.GetSizeInPixel(text, "White", textScale, Surface);
+            var textSize = FormatingHelper.GetSizeInPixel(text, TextFont, textScale, Surface);
             const float margin = 8f;
             var pos = new Vector2(
                 MathHelper.Clamp(ViewBox.Right - margin - textSize.X * 0.5f, ViewBox.X + textSize.X * 0.5f,
@@ -1672,7 +1673,7 @@ namespace LcdMod.Client.Apps
                 Data = text,
                 Position = pos,
                 Color = ForegroundColor,
-                FontId = "White",
+                FontId = TextFont,
                 Alignment = TextAlignment.CENTER,
                 RotationOrScale = textScale
             });

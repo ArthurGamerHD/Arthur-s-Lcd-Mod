@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using LcdMod.Common.Helpers;
 using LcdMod.Common.Networking;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.ModAPI;
 using VRageMath;
+using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.Helpers
 {
@@ -58,7 +60,7 @@ namespace LcdMod.Client.Helpers
             var faction = GetPlayerFaction(MyAPIGateway.Session.LocalHumanPlayer.IdentityId);
             if (faction == null)
             {
-                MyAPIGateway.Utilities.ShowMessage("lcdMod", LocHelper.GetLoc("LcdMod_FactionColor_NoFaction"));
+                MyAPIGateway.Utilities.ShowMessage("lcdMod", LocHelper.GetLoc(MOD_PREFIX + "FactionColor_NoFaction"));
                 return;
             }
 
@@ -77,7 +79,7 @@ namespace LcdMod.Client.Helpers
             else
                 LcdModSessionComponent.NetworkManager.TransmitToServer(packet, false);
 
-            MyAPIGateway.Utilities.ShowMessage("lcdMod", LocHelper.GetLoc("LcdMod_FactionColor_Updated"));
+            MyAPIGateway.Utilities.ShowMessage("lcdMod", LocHelper.GetLoc(MOD_PREFIX + "FactionColor_Updated"));
         }
 
         static bool TryParseFactionColor(string[] args, out Vector3 factionColor, out string error)
@@ -86,7 +88,7 @@ namespace LcdMod.Client.Helpers
             var tokens = NormalizeArgs(args);
             if (tokens.Length == 0)
             {
-                error = "LcdMod_FactionColor_Usage";
+                error = MOD_PREFIX + "FactionColor_Usage";
                 return false;
             }
 
@@ -105,7 +107,7 @@ namespace LcdMod.Client.Helpers
                     !float.TryParse(tokens[2], NumberStyles.Float, CultureInfo.InvariantCulture, out s) ||
                     !float.TryParse(tokens[3], NumberStyles.Float, CultureInfo.InvariantCulture, out v))
                 {
-                    error = "LcdMod_FactionColor_HsvFormat";
+                    error = MOD_PREFIX + "FactionColor_HsvFormat";
                     return false;
                 }
 
@@ -114,7 +116,7 @@ namespace LcdMod.Client.Helpers
 
                 if (h < 0f || h > 1f || s < 0f || s > 1f || v < 0f || v > 1f)
                 {
-                    error = "LcdMod_FactionColor_HsvRange";
+                    error = MOD_PREFIX + "FactionColor_HsvRange";
                     return false;
                 }
 
@@ -141,7 +143,7 @@ namespace LcdMod.Client.Helpers
                 }
             }
 
-            error = "LcdMod_FactionColor_Invalid";
+            error = MOD_PREFIX + "FactionColor_Invalid";
             return false;
         }
 

@@ -1,16 +1,18 @@
+using System;
 using System.Collections.Generic;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Gui.Styling.Styles;
+using LcdMod.Client.Helpers;
 using LcdMod.Common.Config.Models;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.Abstract
 {
-    public abstract class App : Control, IApp, ITextSurfaceProvider
+    public abstract class App : Control, IApp, ITextSurfaceProvider, ITextStyleProvider
     {
         readonly List<Control> _rootControls = new List<Control>();
         StyleTree _styles;
@@ -20,6 +22,7 @@ namespace LcdMod.Client.Apps.Abstract
         bool _themeDark;
         float _themeLayoutScale;
         float _themeFontScale;
+        string _themeTextFont;
         bool _hasTheme;
 
         protected App(ScreenConfigInteractive config, IAppHost host)
@@ -65,6 +68,35 @@ namespace LcdMod.Client.Apps.Abstract
         public Sandbox.ModAPI.Ingame.IMyTextSurface TextSurface
         {
             get { return Host != null ? Host.Surface : null; }
+        }
+
+        public string TextFont
+        {
+            get
+            {
+                string value;
+                return ScopedResourceResolver.TryResolve(this, ThemeResources.TextFont, out value) &&
+                       !string.IsNullOrEmpty(value)
+                    ? value
+                    : "White";
+            }
+        }
+
+        string ITextStyleProvider.ResolvedTextFont
+        {
+            get { return TextFont; }
+        }
+
+        protected Vector2 MeasureText(string text, float scale)
+        {
+            var surface = TextSurface;
+            return surface != null ? FormatingHelper.GetSizeInPixel(text, this, scale, surface) : Vector2.Zero;
+        }
+
+        protected float MeasureLineHeight(float scale, string probe = "Ag")
+        {
+            var surface = TextSurface;
+            return surface != null ? FormatingHelper.LineHeight(scale, this, surface, probe) : 0f;
         }
 
 
@@ -116,21 +148,25 @@ namespace LcdMod.Client.Apps.Abstract
             bool dark = ShouldUseDarkTheme();
             float layoutScale = GetLayoutScaleResourceValue();
             float fontScale = GetFontScaleResourceValue();
+            string textFont = GetTextFontResourceValue();
 
             if (!_hasTheme ||
                 !headerColor.Equals(_themeHeaderColor) ||
                 dark != _themeDark ||
                 !layoutScale.Equals(_themeLayoutScale) ||
-                !fontScale.Equals(_themeFontScale))
+                !fontScale.Equals(_themeFontScale) ||
+                !string.Equals(textFont, _themeTextFont, StringComparison.Ordinal))
             {
                 _theme = headerColor.ToTheme(dark);
                 _resources = ThemeResourceBuilder.FromThemeDictionary(_theme);
                 _resources.Set(ThemeResources.LayoutScale, layoutScale);
                 _resources.Set(ThemeResources.FontScale, fontScale);
+                _resources.Set(ThemeResources.TextFont, textFont);
                 _themeHeaderColor = headerColor;
                 _themeDark = dark;
                 _themeLayoutScale = layoutScale;
                 _themeFontScale = fontScale;
+                _themeTextFont = textFont;
                 _hasTheme = true;
                 MarkDirty();
             }
@@ -146,6 +182,12 @@ namespace LcdMod.Client.Apps.Abstract
         {
             float fontScale = Host != null && Host.Surface != null ? Host.Surface.FontSize : 1f;
             return fontScale > 0f ? fontScale : 1f;
+        }
+
+        string GetTextFontResourceValue()
+        {
+            string font = Host != null && Host.Surface != null ? Host.Surface.Font : null;
+            return string.IsNullOrEmpty(font) ? "White" : font;
         }
 
         bool ShouldUseDarkTheme()

@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using LcdMod.Common.Helpers;
 using VRage.Game;
 using VRageMath;
+using static LcdMod.Common.Helpers.Constants;
 using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 
 namespace LcdMod.Client.Helpers
@@ -27,6 +29,20 @@ namespace LcdMod.Client.Helpers
             size = surface.MeasureStringInPixels(StringBuilderBuffer, font, fontSize);
             FontSizeCache[key] = size;
             return size;
+        }
+
+        /// <summary>
+        /// Measures UI text with the font resolved by the supplied control's style.
+        /// The string-font overload remains available for non-UI callers such as games.
+        /// </summary>
+        public static Vector2 GetSizeInPixel(string text, ITextStyleProvider styleSource, float fontSize,
+            IMyTextSurface surface)
+        {
+            if (styleSource == null)
+                throw new ArgumentNullException("styleSource");
+
+            var font = styleSource.ResolvedTextFont;
+            return GetSizeInPixel(text, string.IsNullOrEmpty(font) ? "White" : font, fontSize, surface);
         }
 
         public static string FormatItemQty(double input)
@@ -90,7 +106,7 @@ namespace LcdMod.Client.Helpers
         public static string TemperatureToString(MyTemperatureLevel? level)
         {
             if (!level.HasValue)
-                return LocHelper.GetLoc("LcdMod_NotAvailable");
+                return LocHelper.GetLoc(MOD_PREFIX + "NotAvailable");
             return LocHelper.GetLoc("Temperature" + level.Value);
         }
 
@@ -229,7 +245,14 @@ namespace LcdMod.Client.Helpers
             return ts.TotalSeconds > 60 ? $"{ts.Minutes:D2}:{ts.Seconds:D2}" : $"{ts.Seconds}s";
         }
 
-        public static float LineHeight(float scale, IMyTextSurface surface, string font = "White", string probe = "Ag") 
+        public static float LineHeight(float scale, IMyTextSurface surface, string font = "White", string probe = "Ag")
             => GetSizeInPixel(probe, font, scale, surface).Y;
+
+        /// <summary>
+        /// Measures a UI line with the font resolved by the supplied control's style.
+        /// </summary>
+        public static float LineHeight(float scale, ITextStyleProvider styleSource, IMyTextSurface surface,
+            string probe = "Ag")
+            => GetSizeInPixel(probe, styleSource, scale, surface).Y;
     }
 }

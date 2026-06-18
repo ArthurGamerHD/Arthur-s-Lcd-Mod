@@ -1,8 +1,10 @@
 using LcdMod.Client.Config;
 using LcdMod.Common.Config.Models.Apps;
+using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
+using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.Terminal.Controls.Cargo
 {
@@ -19,8 +21,8 @@ namespace LcdMod.Client.Terminal.Controls.Cargo
             slider.Getter = Getter;
             slider.Setter = Setter;
             slider.Visible = Visible;
-            slider.Title = MyStringId.GetOrCompute("LcdMod_CargoActions_ShowConfigButton");
-            slider.Tooltip = MyStringId.GetOrCompute("LcdMod_CargoActions_ShowConfigButton_Tooltip");
+            slider.Title = MyStringId.GetOrCompute(MOD_PREFIX + "CargoActions_ShowConfigButton");
+            slider.Tooltip = MyStringId.GetOrCompute(MOD_PREFIX + "CargoActions_ShowConfigButton_Tooltip");
             slider.OnText = MyStringId.GetOrCompute("HudInfoOn");
             slider.OffText = MyStringId.GetOrCompute("HudInfoOff");
 

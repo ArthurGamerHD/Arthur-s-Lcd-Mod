@@ -1,10 +1,12 @@
 using LcdMod.Client.Config;
 using LcdMod.Common.Config.Models;
+using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
+using static LcdMod.Common.Helpers.Constants;
 
 
 namespace LcdMod.Client.Terminal.Controls.Interactive
@@ -19,8 +21,8 @@ namespace LcdMod.Client.Terminal.Controls.Interactive
             slider.Getter = Getter;
             slider.Setter = Setter;
             slider.Visible = Visible;
-            slider.Title = MyStringId.GetOrCompute("LcdMod_AlwaysActive");
-            slider.Tooltip = MyStringId.GetOrCompute("LcdMod_AlwaysActive_Tooltip");
+            slider.Title = MyStringId.GetOrCompute(MOD_PREFIX + "AlwaysActive");
+            slider.Tooltip = MyStringId.GetOrCompute(MOD_PREFIX + "AlwaysActive_Tooltip");
 
             slider.OnText = MyStringId.GetOrCompute("HudInfoOn");
             slider.OffText = MyStringId.GetOrCompute("HudInfoOff");

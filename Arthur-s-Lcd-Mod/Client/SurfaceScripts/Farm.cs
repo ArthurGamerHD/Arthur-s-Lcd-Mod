@@ -10,6 +10,7 @@ using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
 using VRageMath;
+using static LcdMod.Common.Helpers.Constants;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
 using IMyTextSurface = Sandbox.ModAPI.IMyTextSurface;
 
@@ -21,8 +22,8 @@ namespace LcdMod.Client.SurfaceScripts
     {
         protected override ConfigKind ConfigKind => ConfigKind.Power;
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
-        public const string ID = "LcdMod_Farm";
-        public const string TITLE = "LcdMod_Farm";
+        public const string ID = MOD_PREFIX + "Farm";
+        public const string TITLE = MOD_PREFIX + "Farm";
 
         protected override string DefaultTitle => TITLE;
 

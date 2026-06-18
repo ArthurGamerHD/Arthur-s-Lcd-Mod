@@ -3,7 +3,6 @@ using Generated;
 using LcdMod.Client.Apps;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Gui;
-using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls.Generic;
 using LcdMod.Common.Config.Models.Apps;
@@ -12,6 +11,7 @@ using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
 using VRageMath;
 using IMyTextSurface = Sandbox.ModAPI.IMyTextSurface;
+using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.SurfaceScripts
 {
@@ -21,7 +21,7 @@ namespace LcdMod.Client.SurfaceScripts
         IUsesTerminalControl<SliderNpcMarketPageSwitchDelay>
     {
         protected override ConfigKind ConfigKind { get { return ConfigKind.NpcMarket; } }
-        public const string ID = "LcdMod_MarketApp";
+        public const string ID = MOD_PREFIX + "MarketApp";
         public const string TITLE = NpcMarketApp.TITLE;
 
 

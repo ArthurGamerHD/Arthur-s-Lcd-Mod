@@ -29,6 +29,8 @@ using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.Utils;
 using VRageMath;
+using static LcdMod.Common.Helpers.Constants;
+using Constants = LcdMod.Common.Helpers.Constants;
 using IMyCockpit = Sandbox.ModAPI.IMyCockpit;
 using IMyShipController = Sandbox.ModAPI.IMyShipController;
 using IMyTextSurfaceProvider = Sandbox.ModAPI.Ingame.IMyTextSurfaceProvider;
@@ -100,6 +102,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         float _userScale;
         float _userFontScale;
+        string _userFont;
         protected float _userPadding;
         string _cachedTitleSource;
         string _cachedTitleText;
@@ -399,6 +402,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             if (Math.Abs(_userPadding - Surface.TextPadding) > .01f ||
                 Math.Abs(_userScale - Config.Scale) > .001f ||
                 Math.Abs(_userFontScale - Surface.FontSize) > .001f ||
+                !string.Equals(_userFont, Surface.Font, StringComparison.Ordinal) ||
                 BackgroundColor != _backgroundColor ||
                 ForegroundColor != _foregroundColor ||
                 TitleVisible != Config.TitleVisible)
@@ -442,9 +446,9 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             if (panel != null && Instances.GetInstance(panel, _rotationOrSurfaceIndex) != null)
             {
                 _cachedFrame.Clear();
-                _customInfo = LocHelper.GetLoc("LcdMod_IndexConflict");
+                _customInfo = LocHelper.GetLoc(MOD_PREFIX + "IndexConflict");
                 DrawMessage(_cachedFrame, _customInfo, "Warning", Color.Red);
-                _customInfo += "\n" + LocHelper.GetLoc("LcdMod_IndexConflictDetails");
+                _customInfo += "\n" + LocHelper.GetLoc(MOD_PREFIX + "IndexConflictDetails");
                 panel.RefreshCustomInfo();
                 return;
             }
@@ -892,6 +896,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             _userPadding = Surface.TextPadding;
             _userScale = Config.Scale;
             _userFontScale = Surface.FontSize;
+            _userFont = Surface.Font;
             _backgroundColor = BackgroundColor;
             _foregroundColor = ForegroundColor;
             LocalizedTitleCache = string.Empty;

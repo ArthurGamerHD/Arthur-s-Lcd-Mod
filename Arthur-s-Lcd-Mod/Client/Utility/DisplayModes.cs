@@ -1,6 +1,8 @@
 using System.Collections.Generic;
+using LcdMod.Common.Helpers;
 using VRage.ModAPI;
 using VRage.Utils;
+using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.Utility
 {
@@ -12,12 +14,12 @@ namespace LcdMod.Client.Utility
                 new MyTerminalControlComboBoxItem
                 {
                     Key = 0,
-                    Value = MyStringId.GetOrCompute("LcdMod_Grid")
+                    Value = MyStringId.GetOrCompute(MOD_PREFIX + "Grid")
                 },
                 new MyTerminalControlComboBoxItem
                 {
                     Key = 1,
-                    Value = MyStringId.GetOrCompute("LcdMod_List")
+                    Value = MyStringId.GetOrCompute(MOD_PREFIX + "List")
                 }
             };
     }

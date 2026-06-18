@@ -13,6 +13,7 @@ using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
 using VRageMath;
+using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.SurfaceScripts
 {
@@ -24,7 +25,7 @@ namespace LcdMod.Client.SurfaceScripts
         IUsesTerminalControl<SliderRaysPerTick>,
         IUsesTerminalControl<ComboboxReferenceMode>
     {
-        public const string ID = "LcdMod_FarGridRaycastExperimental";
+        public const string ID = MOD_PREFIX + "FarGridRaycastExperimental";
         public const string TITLE = "Far Grid Raycast Experimental";
 
         protected override ConfigKind ConfigKind => ConfigKind.Raycast;

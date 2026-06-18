@@ -12,6 +12,7 @@ using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRageMath;
+using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.SurfaceScripts
 {
@@ -20,7 +21,7 @@ namespace LcdMod.Client.SurfaceScripts
     {
         protected override ConfigKind ConfigKind => ConfigKind.WithBlocks;
         public const string ID = "GasGraph";
-        public const string TITLE = "LcdMod_GasFilled";
+        public const string TITLE = MOD_PREFIX + "GasFilled";
         protected override string DefaultTitle => TITLE;
         
         public override IApp App => _app;

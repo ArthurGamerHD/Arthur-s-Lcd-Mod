@@ -88,12 +88,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         {
             var maxWidth = Math.Max(1f, rect.Width - rect.Width * TEXT_SIDE_PADDING * 2f);
             var targetHeight = MathHelper.Clamp(rect.Height * TEXT_HEIGHT_FRACTION, TEXT_MIN_HEIGHT, TEXT_MAX_HEIGHT);
-            var textScale = TextScaleForHeight(targetHeight, surface);
+            var textScale = TextScaleForHeight(targetHeight, fontId, surface);
             var size = FormatingHelper.GetSizeInPixel(label, fontId, textScale, surface);
 
             if (size.X <= maxWidth)
             {
-                var lineHeight = FormatingHelper.LineHeight(textScale, surface);
+                var lineHeight = FormatingHelper.LineHeight(textScale, surface, fontId);
                 AddLine(rect.Center.X, rect.Center.Y - lineHeight * 0.5f, label, textScale, color, fontId, sprites);
                 return;
             }
@@ -101,8 +101,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             string first, second;
             if (TrySplitAtMiddleSpace(label, out first, out second))
             {
-                var twoLineScale = TextScaleForHeight(Math.Max(TEXT_MIN_HEIGHT * 0.85f, targetHeight * 0.78f), surface);
-                var lh = FormatingHelper.LineHeight(twoLineScale, surface);
+                var twoLineScale = TextScaleForHeight(Math.Max(TEXT_MIN_HEIGHT * 0.85f, targetHeight * 0.78f), fontId, surface);
+                var lh = FormatingHelper.LineHeight(twoLineScale, surface, fontId);
                 first = TrimToWidth(first, maxWidth, twoLineScale, fontId, surface);
                 second = TrimToWidth(second, maxWidth, twoLineScale, fontId, surface);
                 AddLine(rect.Center.X, rect.Center.Y - lh, first, twoLineScale, color, fontId, sprites);
@@ -111,7 +111,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             }
 
             var trimmed = TrimToWidth(label, maxWidth, textScale, fontId, surface);
-            var singleLineHeight = FormatingHelper.LineHeight(textScale, surface);
+            var singleLineHeight = FormatingHelper.LineHeight(textScale, surface, fontId);
             AddLine(rect.Center.X, rect.Center.Y - singleLineHeight * 0.5f, trimmed, textScale, color, fontId, sprites);
         }
 
@@ -156,10 +156,18 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 
         public static float TextScaleForHeight(float targetHeight, IMyTextSurface surface)
         {
+            return TextScaleForHeight(targetHeight, "White", surface);
+        }
+
+        public static float TextScaleForHeight(float targetHeight, string fontId, IMyTextSurface surface)
+        {
             if (surface == null)
                 return 0.05f;
 
-            var line = FormatingHelper.LineHeight(1f, surface);
+            if (string.IsNullOrEmpty(fontId))
+                fontId = "White";
+
+            var line = FormatingHelper.LineHeight(1f, surface, fontId);
             return Math.Max(0.05f, targetHeight / Math.Max(1f, line));
         }
 

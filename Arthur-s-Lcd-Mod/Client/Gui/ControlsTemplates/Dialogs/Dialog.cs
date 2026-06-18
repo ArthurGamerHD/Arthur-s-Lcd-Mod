@@ -4,6 +4,7 @@ using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.Styling;
+using LcdMod.Client.Helpers;
 using LcdMod.Common.Helpers;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
@@ -11,7 +12,7 @@ using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.Interacti
 
 namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 {
-    abstract class Dialog : IVisualStyleScope
+    abstract class Dialog : IVisualStyleScope, ITextStyleProvider
     {
         readonly IApp _parentApp;
         readonly List<MySprite> _sprites = new List<MySprite>();
@@ -121,6 +122,39 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 return value;
 
             throw new ResourceKeyNotFoundException(key.Name, "ResourceTree");
+        }
+
+        protected string TextFont
+        {
+            get
+            {
+                if (_containerControl != null)
+                    return _containerControl.TextFont;
+
+                string value;
+                if (ScopedResourceResolver.TryResolve(this, ThemeResources.TextFont, out value) &&
+                    !string.IsNullOrEmpty(value))
+                    return value;
+
+                return "White";
+            }
+        }
+
+        string ITextStyleProvider.ResolvedTextFont
+        {
+            get { return TextFont; }
+        }
+
+        protected Vector2 MeasureText(string text, float scale,
+            Sandbox.ModAPI.Ingame.IMyTextSurface surface)
+        {
+            return FormatingHelper.GetSizeInPixel(text, this, scale, surface);
+        }
+
+        protected float MeasureLineHeight(float scale,
+            Sandbox.ModAPI.Ingame.IMyTextSurface surface, string probe = "Ag")
+        {
+            return FormatingHelper.LineHeight(scale, this, surface, probe);
         }
 
         public virtual void AddInteractiveEntries(List<Control> entries)

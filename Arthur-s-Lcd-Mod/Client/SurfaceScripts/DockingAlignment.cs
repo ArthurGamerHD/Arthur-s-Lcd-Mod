@@ -12,6 +12,7 @@ using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.Utils;
 using VRageMath;
+using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.SurfaceScripts
 {
@@ -21,7 +22,7 @@ namespace LcdMod.Client.SurfaceScripts
         IMultiDisplayMode
     {
         public const string ID = "DockingAlignment";
-        public const string TITLE = "LcdMod_DockingAlignment";
+        public const string TITLE = MOD_PREFIX + "DockingAlignment";
 
         static readonly List<MyTerminalControlComboBoxItem> DockingDisplayModes =
             new List<MyTerminalControlComboBoxItem>
@@ -29,17 +30,17 @@ namespace LcdMod.Client.SurfaceScripts
                 new MyTerminalControlComboBoxItem
                 {
                     Key = 0,
-                    Value = MyStringId.GetOrCompute("LcdMod_DockingAlignment_DisplayMode_Default")
+                    Value = MyStringId.GetOrCompute(MOD_PREFIX + "DockingAlignment_DisplayMode_Default")
                 },
                 new MyTerminalControlComboBoxItem
                 {
                     Key = 1,
-                    Value = MyStringId.GetOrCompute("LcdMod_DockingAlignment_DisplayMode_LcdReference")
+                    Value = MyStringId.GetOrCompute(MOD_PREFIX + "DockingAlignment_DisplayMode_LcdReference")
                 },
                 new MyTerminalControlComboBoxItem
                 {
                     Key = 2,
-                    Value = MyStringId.GetOrCompute("LcdMod_DockingAlignment_DisplayMode_ControllerReference")
+                    Value = MyStringId.GetOrCompute(MOD_PREFIX + "DockingAlignment_DisplayMode_ControllerReference")
                 }
             };
 

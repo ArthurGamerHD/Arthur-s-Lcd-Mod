@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using LcdMod.Common.Helpers;
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.Definitions;
 using Sandbox.Game.Entities;
@@ -12,6 +13,7 @@ using VRage.Game.ObjectBuilders.ComponentSystem;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
 using VRageMath;
+using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.Helpers
 {
@@ -193,7 +195,7 @@ namespace LcdMod.Client.Helpers
                     return;
                 }
 
-                grid.CustomName = "LCDMod_TextInputGrid";
+                grid.CustomName = MOD_PREFIX + "TextInputGrid";
 
                 onSpawned(new TextInputModel(grid, grid.GetCubeBlock(Vector3I.Zero)?.FatBlock as MyCockpit));
             });

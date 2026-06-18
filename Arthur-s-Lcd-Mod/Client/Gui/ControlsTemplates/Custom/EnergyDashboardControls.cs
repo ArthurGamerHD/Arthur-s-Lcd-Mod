@@ -213,7 +213,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
             float titleTs = scale * 0.52f * _host.Surface.FontSize;
             float valueTs = scale * 0.56f * _host.Surface.FontSize;
             string title = string.IsNullOrEmpty(Label) ? string.Empty : Label + ":";
-            Vector2 titleSz = FormatingHelper.GetSizeInPixel(string.IsNullOrEmpty(title) ? " " : title, "White",
+            Vector2 titleSz = FormatingHelper.GetSizeInPixel(string.IsNullOrEmpty(title) ? " " : title, this,
                 titleTs, _host.Surface);
             float titleGap = 2f * scale;
             float barY = Math.Min(rect.Bottom, rect.Y + titleSz.Y + titleGap);
@@ -224,7 +224,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
                 {
                     Type = SpriteType.TEXT, Data = title, Position = new Vector2(rect.X, rect.Y),
                     RotationOrScale = titleTs, Color = new Color(fg.R, fg.G, fg.B, 180), Alignment = TextAlignment.LEFT,
-                    FontId = "White"
+                    FontId = TextFont
                 });
 
             sprites.Add(new MySprite
@@ -246,18 +246,18 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
             string value = FormatCurrentAndMax(ratio);
             valueTs = GetFittedTextScale(value, valueTs, Math.Max(1f, bar.Width - 8f * scale),
                 Math.Max(1f, bar.Height - 2f * scale));
-            Vector2 valueSz = FormatingHelper.GetSizeInPixel(value, "White", valueTs, _host.Surface);
+            Vector2 valueSz = FormatingHelper.GetSizeInPixel(value, this, valueTs, _host.Surface);
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT, Data = value,
                 Position = new Vector2(bar.Right - 4f * scale, bar.Center.Y - valueSz.Y * 0.5f),
-                RotationOrScale = valueTs, Color = fg, Alignment = TextAlignment.RIGHT, FontId = "White"
+                RotationOrScale = valueTs, Color = fg, Alignment = TextAlignment.RIGHT, FontId = TextFont
             });
         }
 
         float GetFittedTextScale(string text, float baseScale, float availableWidth, float availableHeight)
         {
-            Vector2 size = FormatingHelper.GetSizeInPixel(text ?? string.Empty, "White", baseScale, _host.Surface);
+            Vector2 size = FormatingHelper.GetSizeInPixel(text ?? string.Empty, this, baseScale, _host.Surface);
             if (size.X <= 0f || size.Y <= 0f || (size.X <= availableWidth && size.Y <= availableHeight))
                 return baseScale;
 
@@ -321,9 +321,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
             float scale = _host.Config.Scale;
             float ts = scale * 0.56f * _host.Surface.FontSize;
             float titleTs = ts * 1.08f;
-            float labelH = FormatingHelper.GetSizeInPixel("0", "White", ts, _host.Surface).Y;
+            float labelH = FormatingHelper.GetSizeInPixel("0", this, ts, _host.Surface).Y;
             float titleH = FormatingHelper
-                .GetSizeInPixel(string.IsNullOrEmpty(Title) ? " " : Title, "White", titleTs, _host.Surface).Y;
+                .GetSizeInPixel(string.IsNullOrEmpty(Title) ? " " : Title, this, titleTs, _host.Surface).Y;
             float headerH = titleH + 6f * scale;
             float timeScaleH = labelH + 5f * scale;
             float axisW = 43f * scale;
@@ -342,7 +342,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
                 {
                     Type = SpriteType.TEXT, Data = Title,
                     Position = new Vector2(rect.X + 4f * scale, rect.Y + 2f * scale), RotationOrScale = titleTs,
-                    Color = fg, Alignment = TextAlignment.LEFT, FontId = "White"
+                    Color = fg, Alignment = TextAlignment.LEFT, FontId = TextFont
                 });
 
             RenderTimeScale(sprites, plot, ts * 0.82f, axis);
@@ -363,12 +363,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
                 string label = Charge
                     ? FormatingHelper.WattHoursToString(max * ratio, "0.#")
                     : FormatingHelper.WattsToString(max * ratio, "0.#");
-                float axisLabelH = FormatingHelper.GetSizeInPixel(label, "White", axisLabelScale, _host.Surface).Y;
+                float axisLabelH = FormatingHelper.GetSizeInPixel(label, this, axisLabelScale, _host.Surface).Y;
                 sprites.Add(new MySprite
                 {
                     Type = SpriteType.TEXT, Data = label,
                     Position = new Vector2(plot.X - 3f * scale, yy - axisLabelH * 0.5f),
-                    RotationOrScale = axisLabelScale, Color = axis, Alignment = TextAlignment.RIGHT, FontId = "White"
+                    RotationOrScale = axisLabelScale, Color = axis, Alignment = TextAlignment.RIGHT, FontId = TextFont
                 });
             }
 
@@ -469,11 +469,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
             float ts = _host.Config.Scale * 0.56f * _host.Surface.FontSize;
             Color fg = new Color(_host.Surface.ScriptForegroundColor.R, _host.Surface.ScriptForegroundColor.G,
                 _host.Surface.ScriptForegroundColor.B, 140);
-            Vector2 sz = FormatingHelper.GetSizeInPixel(text, "White", ts, _host.Surface);
+            Vector2 sz = FormatingHelper.GetSizeInPixel(text, this, ts, _host.Surface);
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT, Data = text, Position = new Vector2(plot.Center.X, plot.Center.Y - sz.Y * 0.5f),
-                RotationOrScale = ts, Color = fg, Alignment = TextAlignment.CENTER, FontId = "White"
+                RotationOrScale = ts, Color = fg, Alignment = TextAlignment.CENTER, FontId = TextFont
             });
         }
 
@@ -502,17 +502,17 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT, Data = left, Position = new Vector2(plot.X, labelY),
-                RotationOrScale = textScale, Color = color, Alignment = TextAlignment.LEFT, FontId = "White"
+                RotationOrScale = textScale, Color = color, Alignment = TextAlignment.LEFT, FontId = TextFont
             });
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT, Data = middle, Position = new Vector2(plot.Center.X, labelY),
-                RotationOrScale = textScale, Color = color, Alignment = TextAlignment.CENTER, FontId = "White"
+                RotationOrScale = textScale, Color = color, Alignment = TextAlignment.CENTER, FontId = TextFont
             });
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT, Data = right, Position = new Vector2(plot.Right, labelY),
-                RotationOrScale = textScale, Color = color, Alignment = TextAlignment.RIGHT, FontId = "White"
+                RotationOrScale = textScale, Color = color, Alignment = TextAlignment.RIGHT, FontId = TextFont
             });
         }
 
@@ -560,10 +560,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
         float GetTimeLabelScale(float baseScale, float availableWidth, string left, string middle, string right)
         {
             float widest = Math.Max(
-                FormatingHelper.GetSizeInPixel(left, "White", baseScale, _host.Surface).X,
+                FormatingHelper.GetSizeInPixel(left, this, baseScale, _host.Surface).X,
                 Math.Max(
-                    FormatingHelper.GetSizeInPixel(middle, "White", baseScale, _host.Surface).X,
-                    FormatingHelper.GetSizeInPixel(right, "White", baseScale, _host.Surface).X));
+                    FormatingHelper.GetSizeInPixel(middle, this, baseScale, _host.Surface).X,
+                    FormatingHelper.GetSizeInPixel(right, this, baseScale, _host.Surface).X));
 
             if (widest <= 0f || widest <= availableWidth)
                 return baseScale;
@@ -588,7 +588,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
                 string label = charge
                     ? FormatingHelper.WattHoursToString(max * (i / 3.0), "0.#")
                     : FormatingHelper.WattsToString(max * (i / 3.0), "0.#");
-                float width = FormatingHelper.GetSizeInPixel(label, "White", baseScale, _host.Surface).X;
+                float width = FormatingHelper.GetSizeInPixel(label, this, baseScale, _host.Surface).X;
                 if (width > widest)
                     widest = width;
             }
@@ -798,25 +798,25 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
             {
                 string glyph = GetInitial(Label);
                 float ts = scale * 0.72f * _host.Surface.FontSize;
-                Vector2 sz = FormatingHelper.GetSizeInPixel(glyph, "White", ts, _host.Surface);
+                Vector2 sz = FormatingHelper.GetSizeInPixel(glyph, this, ts, _host.Surface);
                 sprites.Add(new MySprite
                 {
                     Type = SpriteType.TEXT, Data = glyph,
                     Position = new Vector2(iconRect.Center.X, iconRect.Center.Y - sz.Y * 0.5f), RotationOrScale = ts,
-                    Color = Color, Alignment = TextAlignment.CENTER, FontId = "White"
+                    Color = Color, Alignment = TextAlignment.CENTER, FontId = TextFont
                 });
             }
 
             if (!string.IsNullOrEmpty(Amount))
             {
                 float miniTs = scale * 0.42f * _host.Surface.FontSize;
-                Vector2 amountSz = FormatingHelper.GetSizeInPixel(Amount, "White", miniTs, _host.Surface);
+                Vector2 amountSz = FormatingHelper.GetSizeInPixel(Amount, this, miniTs, _host.Surface);
                 var pos = new Vector2(iconRect.Right - amountSz.X * 0.5f - 1f * scale,
                     iconRect.Bottom - amountSz.Y - 1f * scale);
                 sprites.Add(new MySprite
                 {
                     Type = SpriteType.TEXT, Data = Amount, Position = pos, RotationOrScale = miniTs, Color = fg,
-                    Alignment = TextAlignment.CENTER, FontId = "White"
+                    Alignment = TextAlignment.CENTER, FontId = TextFont
                 });
             }
         }

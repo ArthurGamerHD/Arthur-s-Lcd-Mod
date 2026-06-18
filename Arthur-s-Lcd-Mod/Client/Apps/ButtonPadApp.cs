@@ -435,7 +435,7 @@ namespace LcdMod.Client.Apps
             if (hasTitle)
             {
                 var titleScale = 0.34f * control.LayoutScale * control.FontScale;
-                var titleHeight = FormatingHelper.LineHeight(titleScale, control.TextSurface);
+                var titleHeight = FormatingHelper.LineHeight(titleScale, control, control.TextSurface);
                 var trimmedTitle = TrimText(title, Math.Max(0f, rect.Width - 8f * control.LayoutScale), titleScale, control.TextSurface);
 
                 sprites.Add(new MySprite
@@ -444,7 +444,7 @@ namespace LcdMod.Client.Apps
                     Data = trimmedTitle,
                     Position = new Vector2(rect.Center.X, rect.Y + Math.Max(1f, (titleAreaHeight - titleHeight) * 0.5f)),
                     Color = plusColor,
-                    FontId = "White",
+                    FontId = TextFont,
                     RotationOrScale = titleScale,
                     Alignment = TextAlignment.CENTER
                 });
@@ -1229,12 +1229,12 @@ namespace LcdMod.Client.Apps
                 : new Vector2(float.NaN, float.NaN);
         }
 
-        static string TrimText(string text, float availableWidth, float fontSize, IMyTextSurface surface)
+        string TrimText(string text, float availableWidth, float fontSize, IMyTextSurface surface)
         {
             if (string.IsNullOrEmpty(text) || availableWidth <= 0f || surface == null)
                 return string.Empty;
 
-            var size = FormatingHelper.GetSizeInPixel(text, "White", fontSize, surface);
+            var size = FormatingHelper.GetSizeInPixel(text, TextFont, fontSize, surface);
             if (size.X <= availableWidth)
                 return text;
 
@@ -1325,8 +1325,8 @@ namespace LcdMod.Client.Apps
                 var spacing = 10f * scale;
                 var smallSpacing = 6f * scale;
 
-                var titleHeight = FormatingHelper.LineHeight(titleScale, surface);
-                var fieldHeight = Math.Max(34f * scale, FormatingHelper.LineHeight(fieldTextScale, surface) + 18f * scale);
+                var titleHeight = MeasureLineHeight(titleScale, surface);
+                var fieldHeight = Math.Max(34f * scale, MeasureLineHeight(fieldTextScale, surface) + 18f * scale);
                 var closeIconSize = GetDialogCloseButtonSize(scale);
                 var headerHeight = Math.Max(titleHeight, closeIconSize.Y);
                 var previewSize = GetSpritePreviewTargetSize(scale);
@@ -1363,7 +1363,7 @@ namespace LcdMod.Client.Apps
                     Data = dialogTitle,
                     Position = new Vector2(cardRect.Center.X, cardRect.Y + padding.Y + (headerHeight - titleHeight) * 0.5f),
                     Color = ResolveColor(ThemeResources.OnSurfaceColor),
-                    FontId = "White",
+                    FontId = TextFont,
                     RotationOrScale = titleScale,
                     Alignment = TextAlignment.CENTER
                 });
@@ -1681,7 +1681,7 @@ namespace LcdMod.Client.Apps
                 var textScale = 0.52f * control.LayoutScale * control.FontScale;
                 var availableWidth = Math.Max(0f, rect.Width - 12f * control.LayoutScale);
                 var trimmed = TrimText(text, availableWidth, textScale, control.TextSurface);
-                var textHeight = FormatingHelper.LineHeight(textScale, control.TextSurface);
+                var textHeight = FormatingHelper.LineHeight(textScale, control, control.TextSurface);
 
                 sprites.Add(new MySprite
                 {
@@ -1689,7 +1689,7 @@ namespace LcdMod.Client.Apps
                     Data = trimmed,
                     Position = new Vector2(rect.Center.X, rect.Center.Y - textHeight * 0.5f),
                     Color = control.TextColor,
-                    FontId = "White",
+                    FontId = TextFont,
                     RotationOrScale = textScale,
                     Alignment = TextAlignment.CENTER
                 });
@@ -1869,11 +1869,11 @@ namespace LcdMod.Client.Apps
                 return Math.Max(32f, SPRITE_PREVIEW_SIZE_PIXELS * scale);
             }
 
-            static string TrimText(string text, float availableWidth, float fontSize, IMyTextSurface surface)
+            string TrimText(string text, float availableWidth, float fontSize, IMyTextSurface surface)
             {
                 if (string.IsNullOrEmpty(text) || availableWidth <= 0f || surface == null)
                     return string.Empty;
-                var size = FormatingHelper.GetSizeInPixel(text, "White", fontSize, surface);
+                var size = FormatingHelper.GetSizeInPixel(text, TextFont, fontSize, surface);
                 if (size.X <= availableWidth)
                     return text;
                 return FormatingHelper.TrimName(text, Math.Max(1, (int)(text.Length * availableWidth / Math.Max(1f, size.X))));

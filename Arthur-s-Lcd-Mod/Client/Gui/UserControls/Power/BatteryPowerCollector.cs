@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using LcdMod.Client.GridData;
 using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Helpers;
+using LcdMod.Common.Helpers;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI.Ingame;
 using VRageMath;
+using static LcdMod.Common.Helpers.Constants;
 using IMyBatteryBlock = Sandbox.ModAPI.IMyBatteryBlock;
 using ScreenConfigPower = LcdMod.Common.Config.Models.Apps.ScreenConfigPower;
 
@@ -334,7 +336,7 @@ namespace LcdMod.Client.Gui.UserControls.Power
 
         static string FormatLabelWithColon(string label)
         {
-            return string.Format(FormatingHelper.Culture, LocHelper.GetLoc("LcdMod_Common_Label_WithColon"), label);
+            return string.Format(FormatingHelper.Culture, LocHelper.GetLoc(MOD_PREFIX + "Common_Label_WithColon"), label);
         }
 
         string GetStatusText()

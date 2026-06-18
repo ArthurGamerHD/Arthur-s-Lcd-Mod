@@ -7,6 +7,7 @@ using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
 using LcdMod.Common.Config.Models.Apps;
+using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using SpaceEngineers.Game.ModAPI;
 using VRage.Game.GUI.TextPanel;
@@ -14,6 +15,7 @@ using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.Utils;
 using VRageMath;
+using static LcdMod.Common.Helpers.Constants;
 using ColorExtensions = LcdMod.Client.Extensions.ColorExtensions;
 using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
 
@@ -26,32 +28,32 @@ namespace LcdMod.Client.Apps
             new MyTerminalControlComboBoxItem
             {
                 Key = 0,
-                Value = MyStringId.GetOrCompute("LcdMod_Axis_X_Positive")
+                Value = MyStringId.GetOrCompute(MOD_PREFIX + "Axis_X_Positive")
             },
             new MyTerminalControlComboBoxItem
             {
                 Key = 1,
-                Value = MyStringId.GetOrCompute("LcdMod_Axis_X_Negative")
+                Value = MyStringId.GetOrCompute(MOD_PREFIX + "Axis_X_Negative")
             },
             new MyTerminalControlComboBoxItem
             {
                 Key = 2,
-                Value = MyStringId.GetOrCompute("LcdMod_Axis_Y_Positive")
+                Value = MyStringId.GetOrCompute(MOD_PREFIX + "Axis_Y_Positive")
             },
             new MyTerminalControlComboBoxItem
             {
                 Key = 3,
-                Value = MyStringId.GetOrCompute("LcdMod_Axis_Y_Negative")
+                Value = MyStringId.GetOrCompute(MOD_PREFIX + "Axis_Y_Negative")
             },
             new MyTerminalControlComboBoxItem
             {
                 Key = 4,
-                Value = MyStringId.GetOrCompute("LcdMod_Axis_Z_Positive")
+                Value = MyStringId.GetOrCompute(MOD_PREFIX + "Axis_Z_Positive")
             },
             new MyTerminalControlComboBoxItem
             {
                 Key = 5,
-                Value = MyStringId.GetOrCompute("LcdMod_Axis_Z_Negative")
+                Value = MyStringId.GetOrCompute(MOD_PREFIX + "Axis_Z_Negative")
             }
         };
         
@@ -303,7 +305,7 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        static MySprite MakeText(Sandbox.ModAPI.Ingame.IMyTextSurface surface, string text, Vector2 position,
+        MySprite MakeText(Sandbox.ModAPI.Ingame.IMyTextSurface surface, string text, Vector2 position,
             float scale, TextAlignment alignment)
         {
             return new MySprite
@@ -313,7 +315,7 @@ namespace LcdMod.Client.Apps
                 Position = position,
                 Color = surface.ScriptForegroundColor,
                 Alignment = alignment,
-                FontId = "White",
+                FontId = TextFont,
                 RotationOrScale = scale * surface.FontSize
             };
         }
@@ -631,7 +633,7 @@ namespace LcdMod.Client.Apps
             var captionSb = new StringBuilder(caption ?? string.Empty);
             Host.TrimText(ref captionSb, availableTextWidth, 0.75f);
             string trimmedCaption = captionSb.ToString();
-            float textHeight = FormatingHelper.GetSizeInPixel(trimmedCaption, "White", textScale, Surface).Y;
+            float textHeight = FormatingHelper.GetSizeInPixel(trimmedCaption, TextFont, textScale, Surface).Y;
 
             sprites.Add(new MySprite
             {
@@ -650,7 +652,7 @@ namespace LcdMod.Client.Apps
                 Position = new Vector2(labelX, y + squareSize * 0.5f - textHeight * 0.5f),
                 Color = Surface.ScriptForegroundColor,
                 Alignment = TextAlignment.LEFT,
-                FontId = "White",
+                FontId = TextFont,
                 RotationOrScale = textScale
             });
         }

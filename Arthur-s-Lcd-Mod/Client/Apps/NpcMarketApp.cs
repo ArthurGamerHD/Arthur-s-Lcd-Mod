@@ -21,16 +21,17 @@ using VRage.Game.ObjectBuilders.Definitions;
 using VRageMath;
 using Sandbox.ModAPI;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
+using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.Apps
 {
     internal sealed class NpcMarketApp : App, IApp
     {
-        public const string TITLE = "LcdMod_MarketApp";
-        const string LOC_REFRESH = "LcdMod_MarketApp_Refresh";
-        const string LOC_EMPTY = "LcdMod_MarketApp_Empty";
-        const string LOC_NO_TRADER = "LcdMod_MarketApp_NoTrader";
-        const string LOC_UPDATED = "LcdMod_MarketApp_Updated";
+        public const string TITLE = MOD_PREFIX + "MarketApp";
+        const string LOC_REFRESH = MOD_PREFIX + "MarketApp_Refresh";
+        const string LOC_EMPTY = MOD_PREFIX + "MarketApp_Empty";
+        const string LOC_NO_TRADER = MOD_PREFIX + "MarketApp_NoTrader";
+        const string LOC_UPDATED = MOD_PREFIX + "MarketApp_Updated";
         const string LOC_NEXT_RESTOCK = "StoreBlockView_TimeRemainingEconomyUpdate";
         const string LOC_COLUMN_NAME = "StoreBlock_Column_Name";
         const string LOC_COLUMN_PRICE = "StoreBlock_Column_PricePerUnit";
@@ -701,7 +702,7 @@ namespace LcdMod.Client.Apps
             var availableTextWidth = Math.Max(0f,
                 innerRect.Right - clearSpace - horizontalPadding - textLeft);
             var text = Trim(_searchInputModel.ToString(), availableTextWidth, textScale);
-            var textSize = FormatingHelper.GetSizeInPixel(text, "White", textScale, control.TextSurface);
+            var textSize = FormatingHelper.GetSizeInPixel(text, control, textScale, control.TextSurface);
 
             var button = control as Button;
             var outerColor = button?.BackgroundColor ?? control.BackgroundColor;
@@ -720,7 +721,7 @@ namespace LcdMod.Client.Apps
                 RotationOrScale = textScale,
                 Color = textColor,
                 Alignment = TextAlignment.LEFT,
-                FontId = "White"
+                FontId = control.TextFont
             });
             sprites.Add(new MySprite(SpriteType.TEXTURE, "Search")
             {
@@ -775,7 +776,7 @@ namespace LcdMod.Client.Apps
             var textScale = 0.58f * control.LayoutScale * control.FontScale;
             var availableTextWidth = GetSortHeaderAvailableWidth(model.Column, rect, control.LayoutScale, active);
             var text = Trim(GetSortHeaderLabel(model), availableTextWidth, textScale);
-            var textSize = FormatingHelper.GetSizeInPixel(text, "White", textScale, control.TextSurface);
+            var textSize = FormatingHelper.GetSizeInPixel(text, control, textScale, control.TextSurface);
             var textY = rect.Center.Y - textSize.Y * 0.5f;
             var textX = GetSortHeaderTextX(model.Column, rect, control.LayoutScale);
             var alignment = model.Column == NpcMarketSortColumn.Name ? TextAlignment.LEFT : TextAlignment.RIGHT;
@@ -791,7 +792,7 @@ namespace LcdMod.Client.Apps
                 RotationOrScale = textScale,
                 Color = textColor,
                 Alignment = alignment,
-                FontId = "White"
+                FontId = control.TextFont
             });
             if (active)
             {
@@ -803,7 +804,7 @@ namespace LcdMod.Client.Apps
                     RotationOrScale = textScale,
                     Color = textColor,
                     Alignment = alignment,
-                    FontId = "White"
+                    FontId = control.TextFont
                 });
             }
 
@@ -889,11 +890,11 @@ namespace LcdMod.Client.Apps
                 Type = SpriteType.TEXT,
                 Data = text,
                 Position = new Vector2(rect.Center.X,
-                    rect.Center.Y - FormatingHelper.GetSizeInPixel(text, "White", textScale, control.TextSurface).Y * 0.5f),
+                    rect.Center.Y - FormatingHelper.GetSizeInPixel(text, control, textScale, control.TextSurface).Y * 0.5f),
                 RotationOrScale = textScale,
                 Color = textColor,
                 Alignment = TextAlignment.CENTER,
-                FontId = "White"
+                FontId = control.TextFont
             });
         }
 
@@ -1170,7 +1171,7 @@ namespace LcdMod.Client.Apps
 
         Vector2 GetRefreshButtonSize(string text, float textScale)
         {
-            var textSize = FormatingHelper.GetSizeInPixel(text, "White", textScale, Host.Surface);
+            var textSize = FormatingHelper.GetSizeInPixel(text, TextFont, textScale, Host.Surface);
             var scale = GetLayoutScale();
             return new Vector2(Math.Max(96f * scale, textSize.X + 24f * scale),
                 Math.Max(28f * scale, textSize.Y + 10f * scale));
@@ -1178,9 +1179,9 @@ namespace LcdMod.Client.Apps
 
         Vector2 GetModeButtonSize(float textScale)
         {
-            var buy = FormatingHelper.GetSizeInPixel(GetModeLabel(NpcMarketMode.Buy), "White", textScale, Host.Surface);
-            var sell = FormatingHelper.GetSizeInPixel(GetModeLabel(NpcMarketMode.Sell), "White", textScale, Host.Surface);
-            var both = FormatingHelper.GetSizeInPixel(GetModeLabel(NpcMarketMode.Both), "White", textScale, Host.Surface);
+            var buy = FormatingHelper.GetSizeInPixel(GetModeLabel(NpcMarketMode.Buy), TextFont, textScale, Host.Surface);
+            var sell = FormatingHelper.GetSizeInPixel(GetModeLabel(NpcMarketMode.Sell), TextFont, textScale, Host.Surface);
+            var both = FormatingHelper.GetSizeInPixel(GetModeLabel(NpcMarketMode.Both), TextFont, textScale, Host.Surface);
             var maxWidth = Math.Max(Math.Max(buy.X, sell.X), both.X);
             var maxHeight = Math.Max(Math.Max(buy.Y, sell.Y), both.Y);
             var scale = GetLayoutScale();
@@ -1212,7 +1213,7 @@ namespace LcdMod.Client.Apps
             if (width <= 0f)
                 return string.Empty;
 
-            if (FormatingHelper.GetSizeInPixel(_text.ToString(), "White", scale, Host.Surface).X <= width)
+            if (FormatingHelper.GetSizeInPixel(_text.ToString(), TextFont, scale, Host.Surface).X <= width)
                 return _text.ToString();
 
             while (_text.Length > 0)
@@ -1220,7 +1221,7 @@ namespace LcdMod.Client.Apps
                 _text.Length--;
                 var contentLength = _text.Length;
                 _text.Append(FormatingHelper.ELLIPSIS);
-                if (FormatingHelper.GetSizeInPixel(_text.ToString(), "White", scale, Host.Surface).X <= width)
+                if (FormatingHelper.GetSizeInPixel(_text.ToString(), TextFont, scale, Host.Surface).X <= width)
                     return _text.ToString();
 
                 _text.Length = contentLength;

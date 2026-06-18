@@ -9,6 +9,7 @@ using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Helpers;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
+using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.Gui.UserControls
 {
@@ -19,7 +20,7 @@ namespace LcdMod.Client.Gui.UserControls
         const string DEFAULT_ITALIC_FONT = "White-Italic";
         const string DEFAULT_BOLD_ITALIC_FONT = "White-Bold-Italic";
         const string CODE_FONT = "DEBUG";
-        const string MONOSPACE_FONT = "LcdMod_Monospace";
+        const string MONOSPACE_FONT = MOD_PREFIX + "Monospace";
         const float TITLE_BAR_HEIGHT_BASE = 40f;
 
         public static void CreateSprites(

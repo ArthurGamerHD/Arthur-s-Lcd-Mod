@@ -55,7 +55,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
                 float barsHeight = barHeight * 2f + barGap;
                 float iconBarGap = Math.Max(1f, 3f * LayoutScale);
                 var label = entry.RemainingText;
-                Vector2 labelRef = FormatingHelper.GetSizeInPixel(label, "White", 1f, TextSurface);
+                Vector2 labelRef = FormatingHelper.GetSizeInPixel(label, this, 1f, TextSurface);
                 float labelScale = Math.Min((width * 0.82f) / Math.Max(1f, labelRef.X), (height * 0.22f) / Math.Max(1f, labelRef.Y)) *
                                    Math.Min(FontScale, 1f);
                 float labelH = labelRef.Y * labelScale;
@@ -84,7 +84,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
                     RotationOrScale = labelScale,
                     Color = GetStatusColor(entry),
                     Alignment = TextAlignment.CENTER,
-                    FontId = "White"
+                    FontId = TextFont
                 });
             }
 

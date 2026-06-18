@@ -1,9 +1,11 @@
 using LcdMod.Client.Config;
 using LcdMod.Common.Config.Interfaces;
+using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Game.ModAPI;
 using VRage.Utils;
+using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.Terminal.Controls.Generic
 {
@@ -23,9 +25,9 @@ namespace LcdMod.Client.Terminal.Controls.Generic
             toggle.Getter = Getter;
             toggle.Setter = Setter;
             toggle.Visible = Visible;
-            toggle.Title = MyStringId.GetOrCompute("LcdMod_SubGrid");
-            toggle.OnText = MyStringId.GetOrCompute("LcdMod_PhysicalConnection");
-            toggle.OffText = MyStringId.GetOrCompute("LcdMod_MechanicalConnection");
+            toggle.Title = MyStringId.GetOrCompute(MOD_PREFIX + "SubGrid");
+            toggle.OnText = MyStringId.GetOrCompute(MOD_PREFIX + "PhysicalConnection");
+            toggle.OffText = MyStringId.GetOrCompute(MOD_PREFIX + "MechanicalConnection");
 
             TerminalControl = toggle;
         }

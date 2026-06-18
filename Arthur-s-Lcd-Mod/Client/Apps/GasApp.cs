@@ -301,12 +301,12 @@ namespace LcdMod.Client.Apps
                     activeRowClip);
                 position.X += 16 * AppConfig.Scale;
                 position.Y += 4 * AppConfig.Scale;
-                frame.Add(new MySprite { Type = SpriteType.TEXT, Data = entry.Name, Position = position, RotationOrScale = AppConfig.Scale, Color = Host.Surface.ScriptForegroundColor, Alignment = TextAlignment.LEFT, FontId = "White" });
+                frame.Add(new MySprite { Type = SpriteType.TEXT, Data = entry.Name, Position = position, RotationOrScale = AppConfig.Scale, Color = Host.Surface.ScriptForegroundColor, Alignment = TextAlignment.LEFT, FontId = TextFont });
                 EndNestedClipAndRestoreScrollClip(frame);
             }
 
             position.X = bounds.Right;
-            frame.Add(new MySprite { Type = SpriteType.TEXT, Data = FormatingHelper.PercentageToString(pct), Position = position, RotationOrScale = AppConfig.Scale, Color = Host.Surface.ScriptForegroundColor, Alignment = TextAlignment.RIGHT, FontId = "White" });
+            frame.Add(new MySprite { Type = SpriteType.TEXT, Data = FormatingHelper.PercentageToString(pct), Position = position, RotationOrScale = AppConfig.Scale, Color = Host.Surface.ScriptForegroundColor, Alignment = TextAlignment.RIGHT, FontId = TextFont });
         }
 
         void DrawClippedProgressBar(
@@ -410,7 +410,7 @@ namespace LcdMod.Client.Apps
             var bottomRect = new RectangleF(cellView.X, nameRect.Bottom, cellView.Width, Math.Max(0f, cellView.Bottom - nameRect.Bottom));
             var name = new StringBuilder(entry.Name ?? string.Empty);
             TrimText(ref name, nameRect.Width);
-            frame.Add(new MySprite { Type = SpriteType.TEXT, Data = name.ToString(), Position = new Vector2(nameRect.X + 2f * AppConfig.Scale, nameRect.Y + 2f * AppConfig.Scale), RotationOrScale = .9f * AppConfig.Scale, Color = Host.Surface.ScriptForegroundColor, Alignment = TextAlignment.LEFT, FontId = "White" });
+            frame.Add(new MySprite { Type = SpriteType.TEXT, Data = name.ToString(), Position = new Vector2(nameRect.X + 2f * AppConfig.Scale, nameRect.Y + 2f * AppConfig.Scale), RotationOrScale = .9f * AppConfig.Scale, Color = Host.Surface.ScriptForegroundColor, Alignment = TextAlignment.LEFT, FontId = TextFont });
 
             var barWidth = bottomRect.Width * (2f / 3f);
             var textRect = new RectangleF(bottomRect.X + barWidth, bottomRect.Y, bottomRect.Width - barWidth, bottomRect.Height);
@@ -419,7 +419,7 @@ namespace LcdMod.Client.Apps
             var barInnerPaddingY = bottomRect.Height * 0.2f;
             var fillColor = Extensions.ColorExtensions.DeriveAccentColor(Config.HeaderColor, .4f, 0.5);
             BarPanel.CreateSprites(frame, new Vector2(barRect.X + barInnerPaddingX, barRect.Y + barInnerPaddingY + (2f * AppConfig.Scale)), new Vector2(Math.Max(1f, barRect.Width - 2f * barInnerPaddingX), Math.Max(1f, barRect.Height - 2f * barInnerPaddingY)), fillColor, fillColor.DeriveAccentColor(.6f, 0.7), pct, GetEntryUsageColor(pct));
-            frame.Add(new MySprite { Type = SpriteType.TEXT, Data = FormatingHelper.PercentageToString(pct), Position = new Vector2(textRect.Right - (2f * AppConfig.Scale), textRect.Y + 2f * AppConfig.Scale), RotationOrScale = .95f * AppConfig.Scale, Color = Host.Surface.ScriptForegroundColor, Alignment = TextAlignment.RIGHT, FontId = "White" });
+            frame.Add(new MySprite { Type = SpriteType.TEXT, Data = FormatingHelper.PercentageToString(pct), Position = new Vector2(textRect.Right - (2f * AppConfig.Scale), textRect.Y + 2f * AppConfig.Scale), RotationOrScale = .95f * AppConfig.Scale, Color = Host.Surface.ScriptForegroundColor, Alignment = TextAlignment.RIGHT, FontId = TextFont });
         }
 
         Color? GetEntryUsageColor(float pct)
@@ -447,7 +447,7 @@ namespace LcdMod.Client.Apps
 
         void TrimText(ref StringBuilder sb, float availableWidth, float fontSize = 1f)
         {
-            Vector2 textSize = Host.Surface.MeasureStringInPixels(sb, "White", fontSize * AppConfig.Scale);
+            Vector2 textSize = Host.Surface.MeasureStringInPixels(sb, TextFont, fontSize * AppConfig.Scale);
             if (textSize.X <= availableWidth)
                 return;
 
@@ -456,7 +456,7 @@ namespace LcdMod.Client.Apps
             {
                 sb.Clear();
                 sb.Append(FormatingHelper.TrimName(source, i));
-                textSize = Host.Surface.MeasureStringInPixels(sb, "White", fontSize * AppConfig.Scale);
+                textSize = Host.Surface.MeasureStringInPixels(sb, TextFont, fontSize * AppConfig.Scale);
                 if (textSize.X <= availableWidth)
                     break;
             }

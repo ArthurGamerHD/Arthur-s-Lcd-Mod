@@ -2,9 +2,11 @@ using System;
 using System.Text;
 using LcdMod.Client.Config;
 using LcdMod.Common.Config.Models.Apps;
+using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
+using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.Terminal.Controls.Proxy
 {
@@ -20,7 +22,7 @@ namespace LcdMod.Client.Terminal.Controls.Proxy
             slider.Visible = Visible;
             slider.SetLimits(-16, 16);
             slider.Writer = Writer;
-            slider.Title = MyStringId.GetOrCompute("LcdMod_ProxyOffsetX");
+            slider.Title = MyStringId.GetOrCompute(MOD_PREFIX + "ProxyOffsetX");
 
             TerminalControl = slider;
         }

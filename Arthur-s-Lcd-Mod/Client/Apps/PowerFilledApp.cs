@@ -317,11 +317,11 @@ namespace LcdMod.Client.Apps
             {
                 Type = SpriteType.TEXT,
                 Data = avgText,
-                Position = new Vector2(textLeft, bandCy - FormatingHelper.GetSizeInPixel(avgText, "White", textScale, owner.Surface).Y / 2f),
+                Position = new Vector2(textLeft, bandCy - FormatingHelper.GetSizeInPixel(avgText, this, textScale, owner.Surface).Y / 2f),
                 RotationOrScale = textScale,
                 Color = fg,
                 Alignment = TextAlignment.LEFT,
-                FontId = "White"
+                FontId = TextFont
             });
 
             if (!string.IsNullOrEmpty(collector.StatusText))
@@ -330,11 +330,11 @@ namespace LcdMod.Client.Apps
                 {
                     Type = SpriteType.TEXT,
                     Data = collector.StatusText,
-                    Position = new Vector2(owner.ViewBox.Center.X, bandCy - FormatingHelper.GetSizeInPixel(collector.StatusText, "White", textScale, owner.Surface).Y / 2f),
+                    Position = new Vector2(owner.ViewBox.Center.X, bandCy - FormatingHelper.GetSizeInPixel(collector.StatusText, this, textScale, owner.Surface).Y / 2f),
                     RotationOrScale = textScale,
                     Color = collector.StatusColor,
                     Alignment = TextAlignment.CENTER,
-                    FontId = "White"
+                    FontId = TextFont
                 });
             }
 
@@ -342,7 +342,7 @@ namespace LcdMod.Client.Apps
                 return;
 
             var rightText = collector.RightSideText;
-            var size = FormatingHelper.GetSizeInPixel(rightText, "White", textScale, owner.Surface);
+            var size = FormatingHelper.GetSizeInPixel(rightText, this, textScale, owner.Surface);
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
@@ -351,7 +351,7 @@ namespace LcdMod.Client.Apps
                 RotationOrScale = textScale,
                 Color = collector.RightSideColor,
                 Alignment = TextAlignment.RIGHT,
-                FontId = "White"
+                FontId = TextFont
             });
         }
 
@@ -360,7 +360,7 @@ namespace LcdMod.Client.Apps
             float width = bounds.Width;
             float height = bounds.Height;
             float labelGap = Math.Max(1f, owner.Config.Scale * 2f);
-            Vector2 pctRef = FormatingHelper.GetSizeInPixel(slot.PercentText, "White", 1f, owner.Surface);
+            Vector2 pctRef = FormatingHelper.GetSizeInPixel(slot.PercentText, this, 1f, owner.Surface);
             float pctScale = Math.Min((width * 0.6f) / Math.Max(1f, pctRef.X), (height * 0.22f) / Math.Max(1f, pctRef.Y)) * Math.Min(owner.Surface.FontSize, 1f);
             float pctH = pctRef.Y * pctScale;
             float iconSize = Math.Max(0f, Math.Min(width, height - pctH - labelGap));
@@ -378,7 +378,7 @@ namespace LcdMod.Client.Apps
                 RotationOrScale = pctScale,
                 Color = owner.Surface.ScriptForegroundColor,
                 Alignment = TextAlignment.CENTER,
-                FontId = "White"
+                FontId = TextFont
             });
         }
 

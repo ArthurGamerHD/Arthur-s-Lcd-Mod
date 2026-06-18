@@ -150,7 +150,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             });
 
             var nameScale = 0.78f * scale * fontScale;
-            var size = FormatingHelper.GetSizeInPixel(name, "White", nameScale, surface);
+            var size = MeasureText(name, nameScale, surface);
             Sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
@@ -160,7 +160,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 RotationOrScale = nameScale,
                 Color = ResolveColor(ThemeResources.OnSurfaceColor),
                 Alignment = TextAlignment.LEFT,
-                FontId = "White"
+                FontId = TextFont
             });
         }
 
@@ -308,7 +308,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         void DrawTrend(float trend, float right, float centerY, float textScale, IMyTextSurface surface)
         {
             var text = FormatTrend(trend);
-            var textSize = FormatingHelper.GetSizeInPixel(text, "White", textScale, surface);
+            var textSize = MeasureText(text, textScale, surface);
             var iconSize = Math.Max(8f * _parent.AppHost.Config.Scale, textSize.Y * 0.82f);
             var gap = 3f * _parent.AppHost.Config.Scale;
             float rotation;
@@ -331,7 +331,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         void DrawText(string text, float x, float centerY, float scale, TextAlignment alignment, Color color,
             IMyTextSurface surface)
         {
-            var size = FormatingHelper.GetSizeInPixel(text, "White", scale, surface);
+            var size = MeasureText(text, scale, surface);
             Sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
@@ -340,7 +340,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 RotationOrScale = scale,
                 Color = color,
                 Alignment = alignment,
-                FontId = "White"
+                FontId = TextFont
             });
         }
 
@@ -354,7 +354,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 RotationOrScale = 0.5f * scale * fontScale,
                 Color = ResolveColor(ThemeResources.OnSurfaceColor),
                 Alignment = TextAlignment.CENTER,
-                FontId = "White"
+                FontId = TextFont
             });
         }
 
@@ -381,7 +381,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var active = model.Column == _sortColumn;
             var text = GetHeaderLabel(model.Column);
             var textScale = 0.54f * control.LayoutScale * control.FontScale;
-            var size = FormatingHelper.GetSizeInPixel(text, "White", textScale, control.TextSurface);
+            var size = FormatingHelper.GetSizeInPixel(text, control, textScale, control.TextSurface);
             var alignment = model.Column == NpcMarketStationSortColumn.Station ? TextAlignment.LEFT : TextAlignment.RIGHT;
             var x = alignment == TextAlignment.LEFT ? control.Bounds.X + 10f * control.LayoutScale : control.Bounds.Right - 10f * control.LayoutScale;
             var y = control.Bounds.Center.Y - size.Y * 0.5f;
@@ -395,7 +395,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                     ? control.GetResourceColor(ThemeResources.AccentColor, control.TextColor)
                     : control.TextColor,
                 Alignment = alignment,
-                FontId = "White"
+                FontId = control.TextFont
             });
             if (active)
             {
@@ -407,7 +407,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                     RotationOrScale = textScale,
                     Color = control.GetResourceColor(ThemeResources.AccentColor, control.TextColor),
                     Alignment = alignment,
-                    FontId = "White"
+                    FontId = control.TextFont
                 });
             }
             if (!active)
@@ -532,12 +532,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             return favorable ? "ArrowGreenDown" : "ArrowRedUp";
         }
 
-        static string TrimText(string text, float width, float scale, IMyTextSurface surface)
+        string TrimText(string text, float width, float scale, IMyTextSurface surface)
         {
             var value = text ?? string.Empty;
             if (width <= 0f)
                 return string.Empty;
-            while (value.Length > 0 && FormatingHelper.GetSizeInPixel(value, "White", scale, surface).X > width)
+            while (value.Length > 0 && MeasureText(value, scale, surface).X > width)
                 value = value.Substring(0, value.Length - 1);
             return value == text ? value : value + FormatingHelper.ELLIPSIS;
         }

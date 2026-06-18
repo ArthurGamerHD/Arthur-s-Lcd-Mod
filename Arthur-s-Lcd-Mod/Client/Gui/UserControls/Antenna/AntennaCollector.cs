@@ -3,8 +3,10 @@ using System.Linq;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.GridData;
 using LcdMod.Client.Helpers;
+using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using VRageMath;
+using static LcdMod.Common.Helpers.Constants;
 using ScreenConfigWithBlocks = LcdMod.Common.Config.Models.Apps.ScreenConfigWithBlocks;
 
 namespace LcdMod.Client.Gui.UserControls.Antenna
@@ -43,7 +45,7 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
 
         protected string FormatLabelWithColon(string label)
         {
-            return string.Format(FormatingHelper.Culture, GetLocCached("LcdMod_Common_Label_WithColon"), label);
+            return string.Format(FormatingHelper.Culture, GetLocCached(MOD_PREFIX + "Common_Label_WithColon"), label);
         }
 
         protected AntennaEntry GetOrCreateEntry(

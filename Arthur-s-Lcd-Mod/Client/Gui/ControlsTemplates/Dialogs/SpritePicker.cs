@@ -171,7 +171,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             DrawBackground(surface, scale, cardRect);
 
             var titleScale = 0.82f * layoutScale;
-            var titleHeight = FormatingHelper.LineHeight(titleScale, surface);
+            var titleHeight = MeasureLineHeight(titleScale, surface);
             var closeSize = GetDialogCloseButtonSize(scale);
             var headerHeight = Math.Max(titleHeight, closeSize.Y);
 
@@ -181,14 +181,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Data = TITLE,
                 Position = new Vector2(cardRect.Center.X, cardRect.Y + innerPadding.Y + (headerHeight - titleHeight) * 0.5f),
                 Color = ResolveColor(ThemeResources.OnSurfaceColor),
-                FontId = "White",
+                FontId = TextFont,
                 Alignment = TextAlignment.CENTER,
                 RotationOrScale = titleScale
             });
 
             var searchHeight = Math.Max(
                 SEARCH_HEIGHT_PIXELS * scale,
-                FormatingHelper.LineHeight(0.58f * layoutScale, surface) + 18f * scale);
+                MeasureLineHeight(0.58f * layoutScale, surface) + 18f * scale);
 
             var searchRect = new RectangleF(
                 cardRect.X + innerPadding.X,
@@ -197,7 +197,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 searchHeight);
 
             var listTop = searchRect.Bottom + spacing;
-            var footerButtonHeight = Math.Max(APPLY_BUTTON_HEIGHT_PIXELS * scale, FormatingHelper.LineHeight(0.54f * layoutScale, surface) + 14f * scale);
+            var footerButtonHeight = Math.Max(APPLY_BUTTON_HEIGHT_PIXELS * scale, MeasureLineHeight(0.54f * layoutScale, surface) + 14f * scale);
             var footerHeight = AllowMultiSelection ? footerButtonHeight + spacing : 0f;
             var listBottom = cardRect.Bottom - innerPadding.Y - footerHeight;
             var listRect = new RectangleF(
@@ -378,7 +378,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 : "No sprites match \"" + _searchText + "\"";
 
             var textScale = 0.58f * scale * surface.FontSize;
-            var textHeight = FormatingHelper.LineHeight(textScale, surface);
+            var textHeight = MeasureLineHeight(textScale, surface);
 
             Sprites.Add(new MySprite
             {
@@ -386,7 +386,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Data = text,
                 Position = new Vector2(listRect.Center.X, listRect.Center.Y - textHeight * 0.5f),
                 Color = ResolveColor(ThemeResources.OnSurfaceVariantColor),
-                FontId = "White",
+                FontId = TextFont,
                 Alignment = TextAlignment.CENTER,
                 RotationOrScale = textScale
             });
@@ -499,7 +499,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             if (iconOnly)
                 return;
 
-            var textHeight = FormatingHelper.LineHeight(textScale, entry.TextSurface);
+            var textHeight = FormatingHelper.LineHeight(textScale, entry, entry.TextSurface);
 
             sprites.Add(new MySprite
             {
@@ -509,7 +509,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                     iconRect.Right + 10f * entry.LayoutScale,
                     rect.Center.Y - textHeight * 0.5f),
                 Color = foregroundColor,
-                FontId = "White",
+                FontId = entry.TextFont,
                 Alignment = TextAlignment.LEFT,
                 RotationOrScale = textScale
             });
@@ -680,7 +680,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var textScale = 0.54f * control.LayoutScale * control.FontScale;
             var availableWidth = Math.Max(0f, rect.Width - 12f * control.LayoutScale);
             var trimmed = TrimText(text, availableWidth, textScale, control.TextSurface);
-            var textHeight = FormatingHelper.LineHeight(textScale, control.TextSurface);
+            var textHeight = FormatingHelper.LineHeight(textScale, control, control.TextSurface);
 
             sprites.Add(new MySprite
             {
@@ -688,18 +688,18 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Data = trimmed,
                 Position = new Vector2(rect.Center.X, rect.Center.Y - textHeight * 0.5f),
                 Color = control.TextColor,
-                FontId = "White",
+                FontId = control.TextFont,
                 RotationOrScale = textScale,
                 Alignment = TextAlignment.CENTER
             });
         }
 
-        static string TrimText(string text, float width, float scale, IMyTextSurface surface)
+        string TrimText(string text, float width, float scale, IMyTextSurface surface)
         {
             if (string.IsNullOrEmpty(text) || width <= 0f || surface == null)
                 return string.Empty;
 
-            var size = FormatingHelper.GetSizeInPixel(text, "White", scale, surface);
+            var size = MeasureText(text, scale, surface);
             if (size.X <= width)
                 return text;
 

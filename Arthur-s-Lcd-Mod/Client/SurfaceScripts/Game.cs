@@ -6,6 +6,7 @@ using LcdMod.Client.Games.EightBallPool;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Client.Terminal.Controls;
+using LcdMod.Common.Helpers;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
@@ -15,6 +16,7 @@ using VRage.Utils;
 using VRageMath;
 using ChessGame = LcdMod.Client.Games.Chess.ChessGame;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
+using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.SurfaceScripts
 {
@@ -29,8 +31,8 @@ namespace LcdMod.Client.SurfaceScripts
             EightBallPool
         }
         
-        public const string ID = "LcdMod_GameSurfaceScript";
-        public const string TITLE = "LcdMod_Games";
+        public const string ID = MOD_PREFIX + "GameSurfaceScript";
+        public const string TITLE = MOD_PREFIX + "Games";
         protected override string DefaultTitle => TITLE;
         
         static readonly List<MyTerminalControlComboBoxItem> GameList =
@@ -39,7 +41,7 @@ namespace LcdMod.Client.SurfaceScripts
                 new MyTerminalControlComboBoxItem
                 {
                     Key = (long)GameEnum.Chess,
-                    Value = MyStringId.GetOrCompute("LcdMod_Chess")
+                    Value = MyStringId.GetOrCompute(MOD_PREFIX + "Chess")
                 }/*,
                 new MyTerminalControlComboBoxItem
                 {
@@ -49,12 +51,12 @@ namespace LcdMod.Client.SurfaceScripts
                 new MyTerminalControlComboBoxItem
                 {
                 Key = (long)GameEnum.Minesweeper,
-                Value = MyStringId.GetOrCompute("LcdMod_Minesweeper")
+                Value = MyStringId.GetOrCompute(MOD_PREFIX + "Minesweeper")
                 },
                 new MyTerminalControlComboBoxItem
                 {
                     Key = (long)GameEnum.EightBallPool,
-                    Value = MyStringId.GetOrCompute("LcdMod_EightBallPool")
+                    Value = MyStringId.GetOrCompute(MOD_PREFIX + "EightBallPool")
                 }
             };
 

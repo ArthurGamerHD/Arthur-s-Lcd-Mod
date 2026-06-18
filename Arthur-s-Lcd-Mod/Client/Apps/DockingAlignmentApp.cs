@@ -7,6 +7,7 @@ using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Common.Config.Models.Apps;
+using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
 using SpaceEngineers.Game.ModAPI;
@@ -15,6 +16,7 @@ using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.Utils;
 using VRageMath;
+using static LcdMod.Common.Helpers.Constants;
 using ColorExtensions = VRageMath.ColorExtensions;
 using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
 using MyShipConnectorStatus = Sandbox.ModAPI.Ingame.MyShipConnectorStatus;
@@ -46,17 +48,17 @@ namespace LcdMod.Client.Apps
                 new MyTerminalControlComboBoxItem
                 {
                     Key = (long)DockingDisplayMode.Default,
-                    Value = MyStringId.GetOrCompute("LcdMod_DockingAlignment_DisplayMode_Default")
+                    Value = MyStringId.GetOrCompute(MOD_PREFIX + "DockingAlignment_DisplayMode_Default")
                 },
                 new MyTerminalControlComboBoxItem
                 {
                     Key = (long)DockingDisplayMode.LcdReference,
-                    Value = MyStringId.GetOrCompute("LcdMod_DockingAlignment_DisplayMode_LcdReference")
+                    Value = MyStringId.GetOrCompute(MOD_PREFIX + "DockingAlignment_DisplayMode_LcdReference")
                 },
                 new MyTerminalControlComboBoxItem
                 {
                     Key = (long)DockingDisplayMode.ControllerReference,
-                    Value = MyStringId.GetOrCompute("LcdMod_DockingAlignment_DisplayMode_ControllerReference")
+                    Value = MyStringId.GetOrCompute(MOD_PREFIX + "DockingAlignment_DisplayMode_ControllerReference")
                 }
             };
 
@@ -125,10 +127,10 @@ namespace LcdMod.Client.Apps
             _yawLabel = LocHelper.GetLoc("BlockPropertyTitle_ProjectionRotationY");
             _rollLabel = LocHelper.GetLoc("BlockPropertyTitle_ProjectionRotationZ");
             _selectReferenceMessage = string.Format(
-                LocHelper.GetLoc("LcdMod_DockingAlignment_SelectReference"),
+                LocHelper.GetLoc(MOD_PREFIX + "DockingAlignment_SelectReference"),
                 LocHelper.GetLoc("DisplayName_Block_Connector"),
                 LocHelper.GetLoc("DisplayName_Block_MergeBlock"));
-            _noTargetMessage = LocHelper.GetLoc("LcdMod_DockingAlignment_NoTarget");
+            _noTargetMessage = LocHelper.GetLoc(MOD_PREFIX + "DockingAlignment_NoTarget");
             _noCockpitMessage = LocHelper.GetLoc("TssTargetingInfo_NoMainCockpit");
         }
 
@@ -651,7 +653,7 @@ namespace LcdMod.Client.Apps
         void DrawReferenceNames(float footerHeight, float referenceTextMargin, Color foreground, float font,
             string yawValue, float yawFont)
         {
-            var textOffsetY = FormatingHelper.GetSizeInPixel("A", "White", font, Surface).Y * 0.5f;
+            var textOffsetY = FormatingHelper.GetSizeInPixel("A", TextFont, font, Surface).Y * 0.5f;
             var y = ViewBox.Bottom - FOOTER_HEIGHT - footerHeight - referenceTextMargin - 8f * LayoutScale - textOffsetY;
             var targetGridName = FormatingHelper.TrimName(_targetBlock.CubeGrid?.CustomName);
             var labels = new[]
@@ -663,7 +665,7 @@ namespace LcdMod.Client.Apps
 
             var columnWidth = ViewBox.Width * 0.5f;
             var margin = 8f * LayoutScale;
-            var yawReservedWidth = FormatingHelper.GetSizeInPixel(yawValue, "White", yawFont, Surface).X + margin * 2f;
+            var yawReservedWidth = FormatingHelper.GetSizeInPixel(yawValue, TextFont, yawFont, Surface).X + margin * 2f;
             var centerLeft = ViewBox.Center.X - yawReservedWidth * 0.5f;
             var centerRight = ViewBox.Center.X + yawReservedWidth * 0.5f;
             for (int i = 0; i < labels.Length; i++)
@@ -704,7 +706,7 @@ namespace LcdMod.Client.Apps
             var row1Y = footerTop + footerHeight * 0.36f;
             var row2Y = footerTop + footerHeight * 0.78f;
             var footerTextScale = Math.Max(0.36f, 0.52f * Scale) * FontScale;
-            var footerTextOffsetY = FormatingHelper.GetSizeInPixel("A", "White", footerTextScale, Surface).Y * 0.5f;
+            var footerTextOffsetY = FormatingHelper.GetSizeInPixel("A", TextFont, footerTextScale, Surface).Y * 0.5f;
             var closingDistance = GetClosingDistanceRate(dockingAxisDistance);
 
             var labels = new[]
@@ -890,7 +892,7 @@ namespace LcdMod.Client.Apps
                 RotationOrScale = scale,
                 Color = color,
                 Alignment = alignment,
-                FontId = "White"
+                FontId = TextFont
             });
         }
 

@@ -4,7 +4,6 @@ using LcdMod.Client.Apps;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Gui;
-using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Terminal.Controls.Generic;
 using LcdMod.Common.Config.Models.Apps;
@@ -15,6 +14,7 @@ using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRageMath;
 using SliderFov = LcdMod.Client.Terminal.Controls.Generic.SliderFov;
+using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.SurfaceScripts
 {
@@ -24,8 +24,8 @@ namespace LcdMod.Client.SurfaceScripts
         IMultiDisplayMode,
         IUsesTerminalControl<ComboboxReferenceMode>
     {
-        public const string ID = "LcdMod_StarMapSurface";
-        public const string TITLE = "LcdMod_StarMapSurface";
+        public const string ID = MOD_PREFIX + "StarMapSurface";
+        public const string TITLE = MOD_PREFIX + "StarMapSurface";
 
         protected override ConfigKind ConfigKind => ConfigKind.StarMap;
         protected override string DefaultTitle => TITLE;

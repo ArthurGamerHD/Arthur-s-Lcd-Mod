@@ -14,6 +14,7 @@ using LcdMod.Common.Helpers;
 using VRage;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
+using static LcdMod.Common.Helpers.Constants;
 using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
 
@@ -91,9 +92,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 ResolveColor(ThemeResources.SurfaceContainerHighColor), radiusPixels: cardRadius, radiusScale: 1f);
 
             var titleScale = PadButtonStyle.TextScaleForHeight(
-                MathHelper.Clamp(cardRect.Height * 0.06f, 14f, 24f), surface);
-            var titleHeight = FormatingHelper.LineHeight(titleScale, surface);
-            var titleText = PadButtonStyle.TrimToWidth(MyTexts.GetString(TitleKey), cardRect.Width - 2f * pad, titleScale, surface);
+                MathHelper.Clamp(cardRect.Height * 0.06f, 14f, 24f), TextFont, surface);
+            var titleHeight = MeasureLineHeight(titleScale, surface);
+            var titleText = PadButtonStyle.TrimToWidth(MyTexts.GetString(TitleKey), cardRect.Width - 2f * pad, titleScale, TextFont, surface);
             Sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
@@ -102,7 +103,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 Color = ResolveColor(ThemeResources.OnSurfaceColor),
                 RotationOrScale = titleScale,
                 Alignment = TextAlignment.CENTER,
-                FontId = "White"
+                FontId = TextFont
             });
 
             var contentTop = cardRect.Y + pad + titleHeight + 10f * scale;
@@ -120,9 +121,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             var provider = ParentApp as ITextSurfaceProvider;
             var surface = provider != null ? provider.TextSurface : null;
             var textScale = PadButtonStyle.TextScaleForHeight(
-                MathHelper.Clamp(rowHeight * 0.45f, 11f, 18f), surface);
-            var trimmed = PadButtonStyle.TrimToWidth(text, maxWidth, textScale, surface);
-            var height = FormatingHelper.LineHeight(textScale, surface);
+                MathHelper.Clamp(rowHeight * 0.45f, 11f, 18f), TextFont, surface);
+            var trimmed = PadButtonStyle.TrimToWidth(text, maxWidth, textScale, TextFont, surface);
+            var height = MeasureLineHeight(textScale, surface);
             Sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
@@ -131,7 +132,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 Color = ResolveColor(ThemeResources.FromThemeRole(role)),
                 RotationOrScale = textScale,
                 Alignment = TextAlignment.LEFT,
-                FontId = "White"
+                FontId = TextFont
             });
         }
 
@@ -140,11 +141,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             switch ((InventorySortMode)mode)
             {
                 case InventorySortMode.Weight:
-                    return MyTexts.GetString("LcdMod_Cargo_Sort_Weight");
+                    return MyTexts.GetString(MOD_PREFIX + "Cargo_Sort_Weight");
                 case InventorySortMode.Alphabetical:
-                    return MyTexts.GetString("LcdMod_Cargo_Sort_Alphabetical");
+                    return MyTexts.GetString(MOD_PREFIX + "Cargo_Sort_Alphabetical");
                 default:
-                    return MyTexts.GetString("LcdMod_Cargo_Sort_Quantity");
+                    return MyTexts.GetString(MOD_PREFIX + "Cargo_Sort_Quantity");
             }
         }
     }
@@ -175,7 +176,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             _weapons = weapons ?? new List<WeaponOption>();
         }
 
-        protected override string TitleKey { get { return "LcdMod_CargoActions_Config"; } }
+        protected override string TitleKey { get { return MOD_PREFIX + "CargoActions_Config"; } }
         protected override float CardHeightFraction { get { return 0.72f; } }
 
         void BackToMenu()
@@ -190,10 +191,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             var gap = 10f * scale;
             var buttonHeight = Math.Min(110f * scale, (contentRect.Height - 2f * gap) / 3f);
 
-            var sortText = MyTexts.GetString("LcdMod_CargoActions_Sort") + ": " + SortModeLabel(_config.SortMode);
+            var sortText = MyTexts.GetString(MOD_PREFIX + "CargoActions_Sort") + ": " + SortModeLabel(_config.SortMode);
             RenderButton(BUTTON_SORT, Rect(contentRect, 0, buttonHeight, gap), sortText, CycleSort);
-            RenderButton(BUTTON_URANIUM, Rect(contentRect, 1, buttonHeight, gap), MyTexts.GetString("LcdMod_CargoActions_Uranium"), OpenUranium);
-            RenderButton(BUTTON_WEAPONS, Rect(contentRect, 2, buttonHeight, gap), MyTexts.GetString("LcdMod_CargoActions_Ammo"), OpenWeapons);
+            RenderButton(BUTTON_URANIUM, Rect(contentRect, 1, buttonHeight, gap), MyTexts.GetString(MOD_PREFIX + "CargoActions_Uranium"), OpenUranium);
+            RenderButton(BUTTON_WEAPONS, Rect(contentRect, 2, buttonHeight, gap), MyTexts.GetString(MOD_PREFIX + "CargoActions_Ammo"), OpenWeapons);
         }
 
         static RectangleF Rect(RectangleF content, int row, float buttonHeight, float gap)
@@ -278,17 +279,17 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             _backToMenu = backToMenu;
             OnClose = backToMenu;
 
-            var gridLarge = MyTexts.GetString("LcdMod_CargoActions_GridLarge");
-            var gridSmall = MyTexts.GetString("LcdMod_CargoActions_GridSmall");
-            var reactorSmall = MyTexts.GetString("LcdMod_CargoActions_ReactorSmall");
-            var reactorLarge = MyTexts.GetString("LcdMod_CargoActions_ReactorLarge");
+            var gridLarge = MyTexts.GetString(MOD_PREFIX + "CargoActions_GridLarge");
+            var gridSmall = MyTexts.GetString(MOD_PREFIX + "CargoActions_GridSmall");
+            var reactorSmall = MyTexts.GetString(MOD_PREFIX + "CargoActions_ReactorSmall");
+            var reactorLarge = MyTexts.GetString(MOD_PREFIX + "CargoActions_ReactorLarge");
             _labels[0] = gridLarge + " / " + reactorSmall;
             _labels[1] = gridLarge + " / " + reactorLarge;
             _labels[2] = gridSmall + " / " + reactorSmall;
             _labels[3] = gridSmall + " / " + reactorLarge;
         }
 
-        protected override string TitleKey { get { return "LcdMod_CargoActions_Uranium"; } }
+        protected override string TitleKey { get { return MOD_PREFIX + "CargoActions_Uranium"; } }
 
         protected override void OnDismiss()
         {
@@ -327,7 +328,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             for (int i = 0; i < 4; i++)
             {
                 var rowY = contentRect.Y + i * (rowH + rowGap);
-                DrawLeftLabel(_labels[i], new Vector2(contentRect.X, rowY + rowH * 0.5f), contentRect.Width * 0.5f, rowH, Constants.ON_SURFACE);
+                DrawLeftLabel(_labels[i], new Vector2(contentRect.X, rowY + rowH * 0.5f), contentRect.Width * 0.5f, rowH, ON_SURFACE);
                 var stepperRect = new RectangleF(contentRect.X + contentRect.Width * 0.55f, rowY, contentRect.Width * 0.45f, rowH);
                 RenderInput(i, stepperRect);
             }
@@ -345,7 +346,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                     MaxValue = 100000,
                     Step = 1,
                     Format = "0",
-                    Title = MyTexts.GetString("LcdMod_CargoActions_Uranium"),
+                    Title = MyTexts.GetString(MOD_PREFIX + "CargoActions_Uranium"),
                     ValueChanged = MakeChanged(index)
                 };
                 input = new NumericUpDown(rect, model);
@@ -412,7 +413,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             }
         }
 
-        protected override string TitleKey { get { return "LcdMod_CargoActions_Ammo"; } }
+        protected override string TitleKey => MOD_PREFIX + "CargoActions_Ammo";
 
         protected override void OnDismiss()
         {
@@ -450,14 +451,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             var rowH = 34f * scale;
             var gap = 8f * scale;
 
-            DrawLeftLabel(MyTexts.GetString("LcdMod_CargoActions_Default"),
-                new Vector2(contentRect.X, contentRect.Y + rowH * 0.5f), contentRect.Width * 0.5f, rowH, Constants.ON_SURFACE);
+            DrawLeftLabel(MyTexts.GetString(MOD_PREFIX + "CargoActions_Default"),
+                new Vector2(contentRect.X, contentRect.Y + rowH * 0.5f), contentRect.Width * 0.5f, rowH, ON_SURFACE);
             var defaultRect = new RectangleF(contentRect.X + contentRect.Width * 0.55f, contentRect.Y, contentRect.Width * 0.45f, rowH);
             RenderDefaultInput(defaultRect);
 
             var selRowY = contentRect.Bottom - rowH;
             var selName = _selected != null ? _selected.DisplayName : string.Empty;
-            DrawLeftLabel(selName, new Vector2(contentRect.X, selRowY + rowH * 0.5f), contentRect.Width * 0.5f, rowH, Constants.PRIMARY);
+            DrawLeftLabel(selName, new Vector2(contentRect.X, selRowY + rowH * 0.5f), contentRect.Width * 0.5f, rowH, PRIMARY);
             var selRect = new RectangleF(contentRect.X + contentRect.Width * 0.55f, selRowY, contentRect.Width * 0.45f, rowH);
             RenderSelectedInput(selRect);
 
@@ -478,7 +479,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                     MaxValue = 100000,
                     Step = 1,
                     Format = "0",
-                    Title = MyTexts.GetString("LcdMod_CargoActions_Default"),
+                    Title = MyTexts.GetString(MOD_PREFIX + "CargoActions_Default"),
                     ValueChanged = OnDefaultChanged
                 };
                 _defaultInput = new NumericUpDown(rect, model);
@@ -556,7 +557,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                     MaxValue = 100000,
                     Step = 1,
                     Format = "0",
-                    Title = MyTexts.GetString("LcdMod_CargoActions_Ammo"),
+                    Title = MyTexts.GetString(MOD_PREFIX + "CargoActions_Ammo"),
                     Enabled = _selected != null,
                     ValueChanged = OnSelectedChanged
                 };

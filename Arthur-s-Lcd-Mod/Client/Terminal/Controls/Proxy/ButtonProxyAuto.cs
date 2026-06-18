@@ -2,9 +2,11 @@ using System.Linq;
 using LcdMod.Client.Config;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Utility;
+using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
+using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.Terminal.Controls.Proxy
 {
@@ -18,8 +20,8 @@ namespace LcdMod.Client.Terminal.Controls.Proxy
             button.Action = Apply;
             button.Enabled = Enabled;
             button.Visible = Visible;
-            button.Title = MyStringId.GetOrCompute("LcdMod_AutoOffset");
-            button.Tooltip = MyStringId.GetOrCompute("LcdMod_AutoOffset_Tooltip");
+            button.Title = MyStringId.GetOrCompute(MOD_PREFIX + "AutoOffset");
+            button.Tooltip = MyStringId.GetOrCompute(MOD_PREFIX + "AutoOffset_Tooltip");
 
             TerminalControl = button;
         }

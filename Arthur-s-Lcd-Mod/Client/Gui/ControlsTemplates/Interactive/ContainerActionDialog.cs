@@ -13,6 +13,7 @@ using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
+using static LcdMod.Common.Helpers.Constants;
 using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
 using MyInventoryItem = VRage.Game.ModAPI.Ingame.MyInventoryItem;
@@ -128,20 +129,20 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             Border.CreateSpritesFromRect(cardRect, Sprites, cardColor, radiusScale: scale);
 
             var title = GetTitle();
-            var titleSize = FormatingHelper.GetSizeInPixel(title, "White", titleScale, surface);
+            var titleSize = MeasureText(title, titleScale, surface);
             Sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
                 Data = title,
                 Position = new Vector2(cardRect.Center.X, cardRect.Y + pad),
                 Color = cardTextColor,
-                FontId = "White",
+                FontId = TextFont,
                 Alignment = TextAlignment.CENTER,
                 RotationOrScale = titleScale
             });
 
             var bodyTop = cardRect.Y + pad + titleSize.Y + 12f * scale;
-            var footerHeight = Math.Max(28f * scale, FormatingHelper.LineHeight(buttonScale, surface) + 14f * scale);
+            var footerHeight = Math.Max(28f * scale, MeasureLineHeight(buttonScale, surface) + 14f * scale);
             var footerTop = cardRect.Bottom - pad - footerHeight;
             var bodyRect = new RectangleF(cardRect.X + pad, bodyTop, cardRect.Width - 2f * pad,
                 footerTop - bodyTop - 8f * scale);
@@ -160,9 +161,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             switch (_step)
             {
                 case 1:
-                    return name + " - " + LocHelper.GetLoc("LcdMod_Transfer_SelectTargets");
+                    return name + " - " + LocHelper.GetLoc(MOD_PREFIX + "Transfer_SelectTargets");
                 case 2:
-                    return name + " - " + LocHelper.GetLoc("LcdMod_Transfer_SelectItems");
+                    return name + " - " + LocHelper.GetLoc(MOD_PREFIX + "Transfer_SelectItems");
                 default:
                     return name;
             }
@@ -176,21 +177,21 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             var x = body.Center.X - w * 0.5f;
             var y = body.Y + Math.Max(0f, (body.Height - (h * 3f + gap * 2f)) * 0.5f);
 
-            DrawButton(new RectangleF(x, y, w, h), LocHelper.GetLoc("LcdMod_Transfer_Send"), buttonScale, true, true,
+            DrawButton(new RectangleF(x, y, w, h), LocHelper.GetLoc(MOD_PREFIX + "Transfer_Send"), buttonScale, true, true,
                 delegate
                 {
                     _mode = TransferMode.Send;
                     GoToStep(1);
                 });
             y += h + gap;
-            DrawButton(new RectangleF(x, y, w, h), LocHelper.GetLoc("LcdMod_Transfer_Receive"), buttonScale, true, true,
+            DrawButton(new RectangleF(x, y, w, h), LocHelper.GetLoc(MOD_PREFIX + "Transfer_Receive"), buttonScale, true, true,
                 delegate
                 {
                     _mode = TransferMode.Receive;
                     GoToStep(1);
                 });
             y += h + gap;
-            DrawButton(new RectangleF(x, y, w, h), LocHelper.GetLoc("LcdMod_Transfer_Balance"), buttonScale, true, true,
+            DrawButton(new RectangleF(x, y, w, h), LocHelper.GetLoc(MOD_PREFIX + "Transfer_Balance"), buttonScale, true, true,
                 delegate
                 {
                     _mode = TransferMode.Balance;
@@ -201,7 +202,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         private void RenderListStep(RectangleF body, float scale, float rowScale, Color textColor,
             IMyTextSurface surface)
         {
-            var rowHeight = FormatingHelper.LineHeight(rowScale, surface) + 6f * scale;
+            var rowHeight = MeasureLineHeight(rowScale, surface) + 6f * scale;
             var rowGap = 2f * scale;
             var total = _step == 1 ? _candidates.Count : _displayRows.Count;
             var maxVisible = Math.Max(1,
@@ -289,11 +290,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             var x = cardRect.X + pad;
             var y = footerTop;
 
-            DrawButton(new RectangleF(x, y, btnW, footerHeight), LocHelper.GetLoc("LcdMod_Transfer_Back"), buttonScale,
+            DrawButton(new RectangleF(x, y, btnW, footerHeight), LocHelper.GetLoc(MOD_PREFIX + "Transfer_Back"), buttonScale,
                 false, true,
                 delegate { GoToStep(_step - 1); });
 
-            DrawButton(new RectangleF(x + btnW + gap, y, btnW, footerHeight), LocHelper.GetLoc("LcdMod_Transfer_All"),
+            DrawButton(new RectangleF(x + btnW + gap, y, btnW, footerHeight), LocHelper.GetLoc(MOD_PREFIX + "Transfer_All"),
                 buttonScale, false, true,
                 delegate { ToggleAll(); });
 
@@ -301,7 +302,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             if (_step == 1)
             {
                 var ok = _selectedTargets.Count > 0;
-                DrawButton(primaryRect, LocHelper.GetLoc("LcdMod_Transfer_Next"), buttonScale, true, ok,
+                DrawButton(primaryRect, LocHelper.GetLoc(MOD_PREFIX + "Transfer_Next"), buttonScale, true, ok,
                     delegate
                     {
                         if (_selectedTargets.Count > 0) GoToItems();
@@ -310,7 +311,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             else
             {
                 var ok = _selectedTypeKeys.Count > 0 || _selectedCategories.Count > 0;
-                DrawButton(primaryRect, LocHelper.GetLoc("LcdMod_Cargo_Sorter"), buttonScale, true, ok,
+                DrawButton(primaryRect, LocHelper.GetLoc(MOD_PREFIX + "Cargo_Sorter"), buttonScale, true, ok,
                     delegate
                     {
                         if (_selectedTypeKeys.Count > 0 || _selectedCategories.Count > 0) Apply();
@@ -537,7 +538,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 if (MyAPIGateway.Session != null && MyAPIGateway.Session.IsServer)
                 {
                     var moved = InventoryDistributorCommon.Execute(_source, targets, keys, _mode);
-                    status = string.Format(LocHelper.GetLoc("LcdMod_CargoActions_ActionDone"), GetModeLabel(), moved);
+                    status = string.Format(LocHelper.GetLoc(MOD_PREFIX + "CargoActions_ActionDone"), GetModeLabel(), moved);
                 }
                 else
                 {
@@ -550,7 +551,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
                     LcdModSessionComponent.NetworkManager.TransmitToServer(
                         new PacketTransferItems(_source.EntityId, targetIds, keyArr, (int)_mode), false);
-                    status = LocHelper.GetLoc("LcdMod_Cargo_SortRequested");
+                    status = LocHelper.GetLoc(MOD_PREFIX + "Cargo_SortRequested");
                 }
             }
             catch (Exception e)
@@ -576,11 +577,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             switch (_mode)
             {
                 case TransferMode.Send:
-                    return LocHelper.GetLoc("LcdMod_Transfer_Send");
+                    return LocHelper.GetLoc(MOD_PREFIX + "Transfer_Send");
                 case TransferMode.Receive:
-                    return LocHelper.GetLoc("LcdMod_Transfer_Receive");
+                    return LocHelper.GetLoc(MOD_PREFIX + "Transfer_Receive");
                 default:
-                    return LocHelper.GetLoc("LcdMod_Transfer_Balance");
+                    return LocHelper.GetLoc(MOD_PREFIX + "Transfer_Balance");
             }
         }
 
@@ -613,9 +614,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                     Type = SpriteType.TEXT,
                     Data = label,
                     Position = new Vector2(r.Center.X,
-                        r.Center.Y - FormatingHelper.GetSizeInPixel(label, "White", btnScale, surface).Y * 0.5f),
+                        r.Center.Y - FormatingHelper.GetSizeInPixel(label, ctrl, btnScale, surface).Y * 0.5f),
                     Color = txt,
-                    FontId = "White",
+                    FontId = ctrl.TextFont,
                     Alignment = TextAlignment.CENTER,
                     RotationOrScale = btnScale
                 });
@@ -665,9 +666,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                     Type = SpriteType.TEXT,
                     Data = label,
                     Position = new Vector2(r.X + pad,
-                        r.Center.Y - FormatingHelper.GetSizeInPixel(label, "White", rowScale, surface).Y * 0.5f),
+                        r.Center.Y - FormatingHelper.GetSizeInPixel(label, ctrl, rowScale, surface).Y * 0.5f),
                     Color = txt,
-                    FontId = "White",
+                    FontId = ctrl.TextFont,
                     Alignment = TextAlignment.LEFT,
                     RotationOrScale = rowScale
                 });

@@ -694,7 +694,7 @@ namespace LcdMod.Client.Apps.Abstract
                 RotationOrScale = Scale * FontScale,
                 Color = item.ListTextColor,
                 Alignment = TextAlignment.LEFT,
-                FontId = "White"
+                FontId = TextFont
             });
             position.X = xEnd;
             frame.Add(new MySprite()
@@ -705,7 +705,7 @@ namespace LcdMod.Client.Apps.Abstract
                 RotationOrScale = Scale * FontScale,
                 Color = item.ListAmountColor,
                 Alignment = TextAlignment.RIGHT,
-                FontId = "White"
+                FontId = TextFont
             });
 
         }
@@ -715,7 +715,7 @@ namespace LcdMod.Client.Apps.Abstract
             if (item == null || string.IsNullOrEmpty(item.AmountText))
                 return 105f * Scale;
 
-            var size = FormatingHelper.GetSizeInPixel(item.AmountText, "White", 1, Surface);
+            var size = FormatingHelper.GetSizeInPixel(item.AmountText, TextFont, 1, Surface);
             return Math.Max(105f * Scale, size.X * Scale * FontScale + 8f * Scale);
         }
 
@@ -766,7 +766,7 @@ namespace LcdMod.Client.Apps.Abstract
 
             var localizedName = TrimText(item.DisplayName, nameRect.Width);
 
-            Vector2 size = FormatingHelper.GetSizeInPixel(localizedName, "White", 1, Surface);
+            Vector2 size = FormatingHelper.GetSizeInPixel(localizedName, TextFont, 1, Surface);
             float minProportion = Math.Min(nameRect.Width / size.X, nameRect.Height / size.Y);
             float fontSize = minProportion;
             float renderedHeight = size.Y * fontSize * FontScale;
@@ -780,13 +780,13 @@ namespace LcdMod.Client.Apps.Abstract
                 pos,
                 null,
                 item.GridTextColor,
-                "White",
+                TextFont,
                 TextAlignment.RIGHT,
                 fontSize * .95f * FontScale
             ));
 
             var qty = item.AmountText;
-            size = FormatingHelper.GetSizeInPixel(qty, "White", 1, Surface);
+            size = FormatingHelper.GetSizeInPixel(qty, TextFont, 1, Surface);
             minProportion = Math.Min(numberRect.Width / size.X, numberRect.Height / size.Y);
             fontSize = minProportion;
             renderedHeight = size.Y * fontSize * FontScale;
@@ -800,7 +800,7 @@ namespace LcdMod.Client.Apps.Abstract
                 pos,
                 null,
                 item.GridAmountColor,
-                "White",
+                TextFont,
                 TextAlignment.RIGHT,
                 fontSize * .95f * FontScale
             ));
@@ -934,7 +934,7 @@ namespace LcdMod.Client.Apps.Abstract
 
         protected void TrimText(ref StringBuilder sb, float availableWidth, float fontSize = 1)
         {
-            Vector2 textSize = Surface.MeasureStringInPixels(sb, "White", fontSize * Scale * FontScale);
+            Vector2 textSize = Surface.MeasureStringInPixels(sb, TextFont, fontSize * Scale * FontScale);
 
             if (textSize.X <= availableWidth)
                 return;
@@ -944,7 +944,7 @@ namespace LcdMod.Client.Apps.Abstract
             {
                 sb.Clear();
                 sb.Append(FormatingHelper.TrimName(source, i));
-                textSize = Surface.MeasureStringInPixels(sb, "White", fontSize * Scale * FontScale);
+                textSize = Surface.MeasureStringInPixels(sb, TextFont, fontSize * Scale * FontScale);
 
                 if (textSize.X <= availableWidth)
                     break;

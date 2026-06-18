@@ -20,6 +20,7 @@ using VRageMath;
 using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
 using IMyCubeGrid = VRage.Game.ModAPI.IMyCubeGrid;
 using SliderRadarRange = LcdMod.Client.Terminal.Controls.Generic.SliderRadarRange;
+using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.Apps
 {
@@ -37,15 +38,15 @@ namespace LcdMod.Client.Apps
 
     public class RadarApp : App, IApp
     {
-        public const string ID = "LcdMod_Radar";
-        public const string TITLE = "LcdMod_Radar";
+        public const string ID = MOD_PREFIX + "Radar";
+        public const string TITLE = MOD_PREFIX + "Radar";
 
         // Fixed ring distances (meters) drawn regardless of dynamic range
         const float RING_1_M = 800f;
         const float RING_2_M = 1400f;
         const float RING_3_M = 2000f;
         const float DEFAULT_RANGE = 3000f;
-        const string LONG_RANGE_WARNING_KEY = "LcdMod_Radar_AntennaRangeWarning";
+        const string LONG_RANGE_WARNING_KEY = MOD_PREFIX + "Radar_AntennaRangeWarning";
 
         const float LOCK_ANIM_DISTANCE = 20f;
 
@@ -810,7 +811,7 @@ namespace LcdMod.Client.Apps
                                            + " (" + (_debugLockedTargetPercent * 100f).ToString("F0") + "%)";
                 float debugScale = 0.5f * radarScale * FontScale;
                 float debugOffsetY =
-                    Surface.MeasureStringInPixels(new StringBuilder(debugText), "White", debugScale).Y * 0.5f;
+                    Surface.MeasureStringInPixels(new StringBuilder(debugText), TextFont, debugScale).Y * 0.5f;
                 var debugColor = _debugLockedTargetPercent >= 0.99f ? AppConfig.ErrorColor : AppConfig.WarningColor;
                 sprites.Add(new MySprite(
                     SpriteType.TEXT,
@@ -818,7 +819,7 @@ namespace LcdMod.Client.Apps
                     radarCenterPos + new Vector2(0f, radarPlaneSize.Y * 0.5f + 12f * radarScale + debugOffsetY),
                     null,
                     new Color(debugColor, 0.85f),
-                    "White",
+                    TextFont,
                     TextAlignment.CENTER,
                     debugScale));
             }
@@ -832,7 +833,7 @@ namespace LcdMod.Client.Apps
             float textScale = 0.42f * scale * FontScale;
             float textHeight = Surface.MeasureStringInPixels(
                 new StringBuilder(LocHelper.GetLoc(LONG_RANGE_WARNING_KEY)),
-                "White",
+                TextFont,
                 textScale).Y;
             float y = areaBottom - textHeight * 0.5f;
             sprites.Add(new MySprite(
@@ -841,7 +842,7 @@ namespace LcdMod.Client.Apps
                 new Vector2(ViewBox.Center.X, y),
                 null,
                 new Color(AppConfig.WarningColor, 0.9f),
-                "White",
+                TextFont,
                 TextAlignment.CENTER,
                 textScale));
         }
@@ -1044,7 +1045,7 @@ namespace LcdMod.Client.Apps
                 radarScreenCenter - halfVertical - new Vector2(0f, labelMargin) + angleLabelOffset,
                 null,
                 angleColor,
-                "White",
+                TextFont,
                 TextAlignment.CENTER,
                 angleTextSize));
             sprites.Add(new MySprite(
@@ -1054,7 +1055,7 @@ namespace LcdMod.Client.Apps
                 angleLabelOffset,
                 null,
                 angleColor,
-                "White",
+                TextFont,
                 TextAlignment.LEFT,
                 angleTextSize));
             sprites.Add(new MySprite(
@@ -1063,7 +1064,7 @@ namespace LcdMod.Client.Apps
                 radarScreenCenter + halfVertical + new Vector2(0f, labelMargin) + angleLabelOffset,
                 null,
                 angleColor,
-                "White",
+                TextFont,
                 TextAlignment.CENTER,
                 angleTextSize));
             sprites.Add(new MySprite(
@@ -1073,7 +1074,7 @@ namespace LcdMod.Client.Apps
                 angleLabelOffset,
                 null,
                 angleColor,
-                "White",
+                TextFont,
                 TextAlignment.RIGHT,
                 angleTextSize));
         }
@@ -1348,23 +1349,23 @@ namespace LcdMod.Client.Apps
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
-                Data = LocHelper.GetLoc("LcdMod_Radar_DetectedEntities"),
+                Data = LocHelper.GetLoc(MOD_PREFIX + "Radar_DetectedEntities"),
                 Position = new Vector2(left + pad, top + 1f * Scale),
                 Color = new Color(ForegroundColor, 0.75f),
                 Alignment = TextAlignment.LEFT,
-                FontId = "White",
+                FontId = TextFont,
                 RotationOrScale = 0.55f * Scale * FontScale
             });
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
-                Data = string.Format(FormatingHelper.Culture, LocHelper.GetLoc("LcdMod_Common_Label_WithColon"),
+                Data = string.Format(FormatingHelper.Culture, LocHelper.GetLoc(MOD_PREFIX + "Common_Label_WithColon"),
                            MyTexts.GetString("BlockPropertyTitle_OreDetectorRange")) + " " +
                        FormatingHelper.DistanceToString(_maxRange),
                 Position = new Vector2(left + width - pad, top + 1f * Scale),
                 Color = new Color(ForegroundColor, 0.75f),
                 Alignment = TextAlignment.RIGHT,
-                FontId = "White",
+                FontId = TextFont,
                 RotationOrScale = 0.55f * Scale * FontScale
             });
 
@@ -1401,7 +1402,7 @@ namespace LcdMod.Client.Apps
                 string dist =
                     FormatingHelper.DistanceToString((float)Vector3D.Distance(contact.WorldPosition, shipPos));
                 float distanceScale = 0.48f * Scale * FontScale;
-                float distanceWidth = Surface.MeasureStringInPixels(new StringBuilder(dist), "White", distanceScale).X;
+                float distanceWidth = Surface.MeasureStringInPixels(new StringBuilder(dist), TextFont, distanceScale).X;
                 float colRight = left + (col + 1) * drawColWidth - pad;
 
                 sprites.Add(new MySprite
@@ -1411,7 +1412,7 @@ namespace LcdMod.Client.Apps
                     Position = new Vector2(colRight, y),
                     Color = new Color(ForegroundColor, 0.75f),
                     Alignment = TextAlignment.RIGHT,
-                    FontId = "White",
+                    FontId = TextFont,
                     RotationOrScale = distanceScale
                 });
 
@@ -1430,7 +1431,7 @@ namespace LcdMod.Client.Apps
                     Position = new Vector2(x + iconSize + 6f * Scale, y),
                     Color = ForegroundColor,
                     Alignment = TextAlignment.LEFT,
-                    FontId = "White",
+                    FontId = TextFont,
                     RotationOrScale = 0.5f * Scale * FontScale
                 });
             }
@@ -1544,7 +1545,7 @@ namespace LcdMod.Client.Apps
 
         void TrimText(ref StringBuilder sb, float availableWidth, float fontSize = 1f)
         {
-            Vector2 textSize = Surface.MeasureStringInPixels(sb, "White", fontSize * Scale * FontScale);
+            Vector2 textSize = Surface.MeasureStringInPixels(sb, TextFont, fontSize * Scale * FontScale);
             if (textSize.X <= availableWidth)
                 return;
 
@@ -1553,7 +1554,7 @@ namespace LcdMod.Client.Apps
             {
                 sb.Clear();
                 sb.Append(FormatingHelper.TrimName(source, i));
-                textSize = Surface.MeasureStringInPixels(sb, "White", fontSize * Scale * FontScale);
+                textSize = Surface.MeasureStringInPixels(sb, TextFont, fontSize * Scale * FontScale);
                 if (textSize.X <= availableWidth)
                     break;
             }

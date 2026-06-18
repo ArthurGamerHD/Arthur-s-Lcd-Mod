@@ -11,6 +11,7 @@ using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
+using static LcdMod.Common.Helpers.Constants;
 using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
 
 namespace LcdMod.Client.SurfaceScripts
@@ -24,7 +25,7 @@ namespace LcdMod.Client.SurfaceScripts
     {
         protected override ConfigKind ConfigKind => ConfigKind.CargoActions;
         public const string ID = "CargoActions";
-        public const string TITLE = "LcdMod_CargoActions_Title";
+        public const string TITLE = MOD_PREFIX + "CargoActions_Title";
         protected override string DefaultTitle => TITLE;
 
         public override IApp App => _app;

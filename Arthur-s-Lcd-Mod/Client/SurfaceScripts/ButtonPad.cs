@@ -13,6 +13,7 @@ using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRage.ModAPI;
 using VRageMath;
+using static LcdMod.Common.Helpers.Constants;
 using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
 using LabelSeparator = LcdMod.Client.Terminal.Controls.Filter.LabelSeparator;
 using SeparatorFilter = LcdMod.Client.Terminal.Controls.Filter.SeparatorFilter;
@@ -42,8 +43,8 @@ namespace LcdMod.Client.SurfaceScripts
 
         protected override bool RendersInteractiveEntriesInGetSprites => true;
 
-        public const string ID = "LcdMod_ButtonPadApp";
-        public const string TITLE = "LcdMod_ButtonPad";
+        public const string ID = MOD_PREFIX + "ButtonPadApp";
+        public const string TITLE = MOD_PREFIX + "ButtonPad";
 
         protected override string DefaultTitle => TITLE;
 

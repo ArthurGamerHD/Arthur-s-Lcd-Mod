@@ -16,6 +16,7 @@ using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.Utils;
 using VRageMath;
+using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.SurfaceScripts
 {
@@ -54,8 +55,8 @@ namespace LcdMod.Client.SurfaceScripts
                 }
             };
 
-        public const string ID = "LcdMod_DigitalPictureFrames";
-        public const string TITLE = "LcdMod_DigitalPictureFrames";
+        public const string ID = MOD_PREFIX + "DigitalPictureFrames";
+        public const string TITLE = MOD_PREFIX + "DigitalPictureFrames";
 
 
         DigitalPictureFramesApp _app;

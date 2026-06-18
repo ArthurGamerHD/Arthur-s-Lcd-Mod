@@ -14,7 +14,9 @@ namespace LcdMod.Common.Helpers
         
         public const uint DDS_HEADER_SIZE = 124;
         public const int DDS_MINIMUM_HEADER_BYTES = 20;
-        
+
+        public const string MOD_PREFIX = "LcdMod_";
+
         public const string CONFIG_FILE = "LcdMod.local.xml";
         public const string CACHED_TEXTURES_FILE = "cached_textures.xml";
         public static Guid StorageGuid = new Guid("9a502d67-7a3c-4502-b3e5-a44e76c0acfa");

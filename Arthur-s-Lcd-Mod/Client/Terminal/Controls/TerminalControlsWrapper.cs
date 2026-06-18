@@ -4,6 +4,8 @@ using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Game.GUI.TextPanel;
+using static LcdMod.Common.Helpers.Constants;
+using Constants = LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.Terminal.Controls
 {
@@ -17,11 +19,6 @@ namespace LcdMod.Client.Terminal.Controls
         ///     Controls to be displayed on the Terminal
         /// </summary>
         public abstract IMyTerminalControl TerminalControl { get; }
-
-        /// <summary>
-        ///     Prefix for ID of every control
-        /// </summary>
-        protected virtual string IdPrefix { get; } = "Space_Engineers_Lcd_MOD_";
 
         protected virtual bool RequiresAdvancedTweakables => false;
 
@@ -77,7 +74,7 @@ namespace LcdMod.Client.Terminal.Controls
         protected TControlType CreateControl<TControlType>(string id)
         {
             return MyAPIGateway.TerminalControls.CreateControl<TControlType, IMyTerminalBlock>(
-                IdPrefix + id);
+                MOD_PREFIX + id);
         }
     }
 }

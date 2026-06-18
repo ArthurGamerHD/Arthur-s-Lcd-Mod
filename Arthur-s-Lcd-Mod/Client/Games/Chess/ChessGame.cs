@@ -20,6 +20,7 @@ using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
+using static LcdMod.Common.Helpers.Constants;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
 using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 
@@ -207,7 +208,7 @@ namespace LcdMod.Client.Games.Chess
 
             float cellSize = _gridCells[0].Width;
             var sb = new StringBuilder(GetTextureFromId(0x01));
-            Vector2 measuredSize = _panel.MeasureStringInPixels(sb, "LcdMod_Monospace", 1);
+            Vector2 measuredSize = _panel.MeasureStringInPixels(sb, MOD_PREFIX + "Monospace", 1);
             Scale = cellSize * .8f / measuredSize.X;
             Padding = cellSize * .1f;
         }
@@ -295,7 +296,7 @@ namespace LcdMod.Client.Games.Chess
 
             frame.Add(new MySprite(SpriteType.TEXT, data,
                 new Vector2(grid.Center.X, grid.Position.Y + Padding),
-                fontId: "LcdMod_Monospace", rotation: Scale));
+                fontId: MOD_PREFIX + "Monospace", rotation: Scale));
         }
 
         void RenderBoardCellCoordinates(List<MySprite> frame, int index, RectangleF gridCell)
@@ -380,15 +381,15 @@ namespace LcdMod.Client.Games.Chess
 
         void BuildGlobalMenu()
         {
-            var selected = LocHelper.GetLoc("LcdMod_Selected");
+            var selected = LocHelper.GetLoc(MOD_PREFIX + "Selected");
             _script.SetGlobalMenu(
-                new GlobalMenuEntry("LcdMod_Chess", new List<GlobalMenuEntry>
+                new GlobalMenuEntry(MOD_PREFIX + "Chess", new List<GlobalMenuEntry>
                 {
-                    new GlobalMenuEntry("LcdMod_NewGame", (ctx, sender) => NewGame()),
-                    new GlobalMenuEntry("LcdMod_Export", (ctx, sender) => ExportPgnData()),
-                    new GlobalMenuEntry(_playingAsBlack ? "LcdMod_PlayAsWhite" : "LcdMod_PlayAsBlack",
+                    new GlobalMenuEntry(MOD_PREFIX + "NewGame", (ctx, sender) => NewGame()),
+                    new GlobalMenuEntry(MOD_PREFIX + "Export", (ctx, sender) => ExportPgnData()),
+                    new GlobalMenuEntry(_playingAsBlack ? MOD_PREFIX + "PlayAsWhite" : MOD_PREFIX + "PlayAsBlack",
                         (ctx, sender) => SwitchSide()),
-                    new GlobalMenuEntry(_showDangers ? "LcdMod_HideDangerousTiles" : "LcdMod_ShowDangerousTiles",
+                    new GlobalMenuEntry(_showDangers ? MOD_PREFIX + "HideDangerousTiles" : MOD_PREFIX + "ShowDangerousTiles",
                         (ctx, sender) => SwitchDanger()),
                     new GlobalMenuEntry("Difficulty", new List<GlobalMenuEntry>
                     {

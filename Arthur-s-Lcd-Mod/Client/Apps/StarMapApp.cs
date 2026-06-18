@@ -20,6 +20,7 @@ using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRageMath;
 using SliderFov = LcdMod.Client.Terminal.Controls.Generic.SliderFov;
+using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.Apps
 {
@@ -137,8 +138,8 @@ namespace LcdMod.Client.Apps
             public float SortHeight;
         }
 
-        public const string ID = "LcdMod_StarMapSurface";
-        public const string TITLE = "LcdMod_StarMapSurface";
+        public const string ID = MOD_PREFIX + "StarMapSurface";
+        public const string TITLE = MOD_PREFIX + "StarMapSurface";
         const float SHADE_MUL = 0.75f;
         const float OVERLAY_GROW_RATIO = 0.05f; // relative to diameter
         const float OVERLAY_OFFSET_RATIO = 0.25f; // relative to radius
@@ -233,7 +234,7 @@ namespace LcdMod.Client.Apps
             _propertyLabelCache[name] = LocHelper.GetLoc(BuildPropertyLocKey(name));
         }
 
-        string BuildPropertyLocKey(string name) => "LcdMod_" + name + (AppConfig != null && AppConfig.DisplayMode == (int)DisplayMode.Grid ? "_Short" : string.Empty);
+        string BuildPropertyLocKey(string name) => MOD_PREFIX + "" + name + (AppConfig != null && AppConfig.DisplayMode == (int)DisplayMode.Grid ? "_Short" : string.Empty);
 
         string FormatPropertyLine(string name, object value)
         {
@@ -388,7 +389,7 @@ namespace LcdMod.Client.Apps
             double currentHalfFov = MathHelper.ToRadians(Math.Max(0.1f, fovDeg)) * 0.5;
             double magnification = Math.Tan(baseHalfFov) / Math.Tan(currentHalfFov);
             string text = "MAG: " + magnification.ToString("0.##", FormatingHelper.Culture) + "x";
-            var textSize = FormatingHelper.GetSizeInPixel(text, "White", textScale, Surface);
+            var textSize = FormatingHelper.GetSizeInPixel(text, TextFont, textScale, Surface);
             const float margin = 8f;
             var pos = new Vector2(
                 MathHelper.Clamp(ViewBox.Right - margin - textSize.X * 0.5f, ViewBox.X + textSize.X * 0.5f,
@@ -402,7 +403,7 @@ namespace LcdMod.Client.Apps
                 Data = text,
                 Position = pos,
                 Color = ForegroundColor,
-                FontId = "White",
+                FontId = TextFont,
                 Alignment = TextAlignment.CENTER,
                 RotationOrScale = textScale
             });
@@ -1406,7 +1407,7 @@ namespace LcdMod.Client.Apps
                 Position = position,
                 Size = size,
                 Color = color ?? ForegroundColor,
-                FontId = "White",
+                FontId = TextFont,
                 Alignment = alignment,
                 RotationOrScale = textScale
             });
@@ -2410,7 +2411,7 @@ namespace LcdMod.Client.Apps
                 return;
 
             float nameScale = 0.65f * Scale * FontScale;
-            var nameSize = FormatingHelper.GetSizeInPixel(planet.Name, "White", nameScale, Surface);
+            var nameSize = FormatingHelper.GetSizeInPixel(planet.Name, TextFont, nameScale, Surface);
             float nameOffset = planet.MarkerRadius + 12f + nameSize.Y;
 
             if (!planet.ShouldDisplayInfo)
@@ -2433,7 +2434,7 @@ namespace LcdMod.Client.Apps
                 Data = planet.Name,
                 Position = namePos,
                 Color = labelColor,
-                FontId = "White",
+                FontId = TextFont,
                 Alignment = TextAlignment.CENTER,
                 RotationOrScale = nameScale
             });
@@ -2442,7 +2443,7 @@ namespace LcdMod.Client.Apps
             float distanceScale = 0.6f * Scale * FontScale;
             float distanceOffset = planet.MarkerRadius + 10f;
             string distanceText = FormatingHelper.DistanceToString((float)planet.Distance);
-            var distanceSize = FormatingHelper.GetSizeInPixel(distanceText, "White", distanceScale, Surface);
+            var distanceSize = FormatingHelper.GetSizeInPixel(distanceText, TextFont, distanceScale, Surface);
             var distancePos = planet.ScreenPos + new Vector2(0f, distanceOffset);
             distancePos.X = MathHelper.Clamp(
                 distancePos.X,
@@ -2459,7 +2460,7 @@ namespace LcdMod.Client.Apps
                 Data = distanceText,
                 Position = distancePos,
                 Color = labelColor,
-                FontId = "White",
+                FontId = TextFont,
                 Alignment = TextAlignment.CENTER,
                 RotationOrScale = distanceScale
             });
@@ -2483,7 +2484,7 @@ namespace LcdMod.Client.Apps
             float maxLineHeight = 0f;
             for (int i = 0; i < count; i++)
             {
-                lineSizes[i] = FormatingHelper.GetSizeInPixel(lineTexts[i], "White", sideInfoScale, Surface);
+                lineSizes[i] = FormatingHelper.GetSizeInPixel(lineTexts[i], TextFont, sideInfoScale, Surface);
                 if (lineSizes[i].X > maxLineWidth)
                     maxLineWidth = lineSizes[i].X;
                 if (lineSizes[i].Y > maxLineHeight)
@@ -2491,7 +2492,7 @@ namespace LcdMod.Client.Apps
             }
 
             bool placeOnRight = planet.ScreenPos.X <= ViewBox.Center.X;
-            float lineStep = FormatingHelper.LineHeight(sideInfoScale, Surface) + 2f;
+            float lineStep = MeasureLineHeight(sideInfoScale) + 2f;
             float requiredHeight = (count - 1) * lineStep + maxLineHeight;
             float availableHeight = planet.MarkerRadius * 2f;
             float availableWidth = planet.MarkerRadius * 2f;
@@ -2674,7 +2675,7 @@ namespace LcdMod.Client.Apps
                 Data = text,
                 Position = textPosition,
                 Color = labelColor,
-                FontId = "White",
+                FontId = TextFont,
                 Alignment = alignment,
                 RotationOrScale = textScale
             });
@@ -2835,7 +2836,7 @@ namespace LcdMod.Client.Apps
         DynamicTooltipLine GetJumpTooltipLine(PlanetProjection planet)
         {
             Vector3D jumpPoint = Vector3D.Zero;
-            string jumpText = FormatPropertyLine("Jump", LocHelper.GetLoc("LcdMod_NotAvailable"));
+            string jumpText = FormatPropertyLine("Jump", LocHelper.GetLoc(MOD_PREFIX + "NotAvailable"));
             bool jumpClickable = false;
             long lastRun = long.MinValue;
 
@@ -2894,7 +2895,7 @@ namespace LcdMod.Client.Apps
             var jumpDrives = _host.GridLogic?.GetTerminalBlocks<IMyJumpDrive>(GridLinkTypeEnum.Physical);
             if (jumpDrives == null || jumpDrives.Count == 0)
             {
-                text = FormatPropertyLine("Jump", LocHelper.GetLoc("LcdMod_NotAvailable"));
+                text = FormatPropertyLine("Jump", LocHelper.GetLoc(MOD_PREFIX + "NotAvailable"));
                 return false;
             }
 
@@ -2918,7 +2919,7 @@ namespace LcdMod.Client.Apps
                 return true;
             }
 
-            text = FormatPropertyLine("Jump", LocHelper.GetLoc("LcdMod_NotAvailable"));
+            text = FormatPropertyLine("Jump", LocHelper.GetLoc(MOD_PREFIX + "NotAvailable"));
             return false;
         }
 
@@ -3341,7 +3342,7 @@ namespace LcdMod.Client.Apps
                 Position = new Vector2(center.X, center.Y + iconSize / 2f),
                 Color = color,
                 Alignment = TextAlignment.CENTER,
-                FontId = "White",
+                FontId = TextFont,
                 RotationOrScale = scale * Scale * FontScale
             });
         }

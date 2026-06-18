@@ -653,7 +653,7 @@ namespace LcdMod.Client.Apps.Abstract
                 titlePos,
                 null,
                 foreground,
-                "White",
+                TextFont,
                 TextAlignment.RIGHT,
                 1.1f * Scale * FontScale
             ));
@@ -674,7 +674,7 @@ namespace LcdMod.Client.Apps.Abstract
                 infoPos,
                 null,
                 foreground,
-                "White",
+                TextFont,
                 TextAlignment.RIGHT,
                 .9f * Scale * FontScale
             ));
@@ -749,7 +749,7 @@ namespace LcdMod.Client.Apps.Abstract
 
         void TrimText(ref StringBuilder sb, float availableWidth, float fontSize = 1)
         {
-            Vector2 textSize = Surface.MeasureStringInPixels(sb, "White", fontSize * Scale * FontScale);
+            Vector2 textSize = Surface.MeasureStringInPixels(sb, TextFont, fontSize * Scale * FontScale);
 
             if (textSize.X <= availableWidth)
                 return;
@@ -759,7 +759,7 @@ namespace LcdMod.Client.Apps.Abstract
             {
                 sb.Clear();
                 sb.Append(FormatingHelper.TrimName(source, i));
-                textSize = Surface.MeasureStringInPixels(sb, "White", fontSize * Scale * FontScale);
+                textSize = Surface.MeasureStringInPixels(sb, TextFont, fontSize * Scale * FontScale);
 
                 if (textSize.X <= availableWidth)
                     break;

@@ -1,9 +1,11 @@
 using System.Text;
 using LcdMod.Client.Config;
 using LcdMod.Common.Config.Models.Apps;
+using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
+using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.Terminal.Controls.Scale
 {
@@ -20,7 +22,7 @@ namespace LcdMod.Client.Terminal.Controls.Scale
             slider.Visible = Visible;
             slider.SetLimits(.1f, 1);
             slider.Writer = Writer;
-            slider.Title = MyStringId.GetOrCompute("LcdMod_RenderScale");
+            slider.Title = MyStringId.GetOrCompute(MOD_PREFIX + "RenderScale");
 
             TerminalControl = slider;
         }

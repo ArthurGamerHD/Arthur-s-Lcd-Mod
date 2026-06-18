@@ -8,6 +8,7 @@ using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
 using VRageMath;
+using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.SurfaceScripts
 {
@@ -15,7 +16,7 @@ namespace LcdMod.Client.SurfaceScripts
     public partial class ThrustSurfaceScript : SurfaceScriptBase
     {
         protected override ConfigKind ConfigKind => ConfigKind.Interactive;
-        public const string ID = "LcdMod_Thrust";
+        public const string ID = MOD_PREFIX + "Thrust";
         public const string TITLE = "HelpScreen_JoystickThrust";
 
         ThrustApp _app;

@@ -389,7 +389,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
         {
             var text = FormatDelta(delta);
             var color = GetDeltaColor(delta, mode, muted);
-            var textSize = FormatingHelper.GetSizeInPixel(text, "White", textScale, _host.Surface);
+            var textSize = FormatingHelper.GetSizeInPixel(text, this, textScale, _host.Surface);
             var iconSize = Math.Max(8f * _layoutScale, textSize.Y * 0.82f);
             var gap = 3f * _layoutScale;
             float rotation;
@@ -400,8 +400,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
 
         void DrawText(List<MySprite> sprites, string text, float x, float centerY, float scale, TextAlignment alignment, Color color)
         {
-            var size = FormatingHelper.GetSizeInPixel(text ?? string.Empty, "White", scale, _host.Surface);
-            sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = text ?? string.Empty, Position = new Vector2(x, centerY - size.Y * 0.5f), RotationOrScale = scale, Color = color, Alignment = alignment, FontId = "White" });
+            var size = FormatingHelper.GetSizeInPixel(text ?? string.Empty, this, scale, _host.Surface);
+            sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = text ?? string.Empty, Position = new Vector2(x, centerY - size.Y * 0.5f), RotationOrScale = scale, Color = color, Alignment = alignment, FontId = TextFont });
         }
 
         void ApplySortClass(Button button)
@@ -449,15 +449,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
             var textScale = 0.58f * control.LayoutScale * control.FontScale;
             var availableTextWidth = GetSortHeaderAvailableWidth(model.Column, rect, control.LayoutScale, active);
             var text = Trim(GetSortHeaderLabel(model), availableTextWidth, textScale);
-            var textSize = FormatingHelper.GetSizeInPixel(text, "White", textScale, control.TextSurface);
+            var textSize = FormatingHelper.GetSizeInPixel(text, control, textScale, control.TextSurface);
             var textY = rect.Center.Y - textSize.Y * 0.5f;
             var textX = GetSortHeaderTextX(model.Column, rect, control.LayoutScale);
             var alignment = model.Column == NpcMarketSortColumn.Name ? TextAlignment.LEFT : TextAlignment.RIGHT;
             var textColor = control.TextColor;
-            sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = text, Position = new Vector2(textX, textY), RotationOrScale = textScale, Color = textColor, Alignment = alignment, FontId = "White" });
+            sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = text, Position = new Vector2(textX, textY), RotationOrScale = textScale, Color = textColor, Alignment = alignment, FontId = control.TextFont });
             if (active)
             {
-                sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = text, Position = new Vector2(textX + 0.7f * control.LayoutScale, textY), RotationOrScale = textScale, Color = textColor, Alignment = alignment, FontId = "White" });
+                sprites.Add(new MySprite { Type = SpriteType.TEXT, Data = text, Position = new Vector2(textX + 0.7f * control.LayoutScale, textY), RotationOrScale = textScale, Color = textColor, Alignment = alignment, FontId = control.TextFont });
                 var triangleX = alignment == TextAlignment.LEFT ? textX + textSize.X + 8f * control.LayoutScale : textX - textSize.X - 8f * control.LayoutScale;
                 sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "Triangle", Position = new Vector2(triangleX, rect.Center.Y), Size = new Vector2(8f * control.LayoutScale, 6f * control.LayoutScale), RotationOrScale = sortDescending ? MathHelper.Pi : 0f, Color = textColor, Alignment = TextAlignment.CENTER });
             }
@@ -501,14 +501,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
             _text.Clear().Append(value ?? string.Empty);
             if (width <= 0f)
                 return string.Empty;
-            if (FormatingHelper.GetSizeInPixel(_text.ToString(), "White", scale, _host.Surface).X <= width)
+            if (FormatingHelper.GetSizeInPixel(_text.ToString(), this, scale, _host.Surface).X <= width)
                 return _text.ToString();
             while (_text.Length > 0)
             {
                 _text.Length--;
                 var contentLength = _text.Length;
                 _text.Append(FormatingHelper.ELLIPSIS);
-                if (FormatingHelper.GetSizeInPixel(_text.ToString(), "White", scale, _host.Surface).X <= width)
+                if (FormatingHelper.GetSizeInPixel(_text.ToString(), this, scale, _host.Surface).X <= width)
                     return _text.ToString();
                 _text.Length = contentLength;
             }

@@ -20,6 +20,7 @@ using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRageMath;
+using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.SurfaceScripts
 {
@@ -31,8 +32,8 @@ namespace LcdMod.Client.SurfaceScripts
         IReferenceBlockSelection,
         IProxyAutoOffset
     {
-        public const string ID = "LcdMod_RenderProxy";
-        public const string TITLE = "LcdMod_RenderProxy";
+        public const string ID = MOD_PREFIX + "RenderProxy";
+        public const string TITLE = MOD_PREFIX + "RenderProxy";
 
         List<MySprite> _sprites = new List<MySprite>();
         readonly List<Control> _parentInteractiveEntries = new List<Control>();

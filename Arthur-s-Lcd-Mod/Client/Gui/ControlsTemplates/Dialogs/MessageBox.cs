@@ -9,6 +9,7 @@ using LcdMod.Client.Helpers;
 using LcdMod.Common.Helpers;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
+using static LcdMod.Common.Helpers.Constants;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
 
 namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
@@ -42,7 +43,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         {
             _title = title ?? string.Empty;
             _content = content ?? string.Empty;
-            _button1 = string.IsNullOrEmpty(button1) ? LocHelper.GetLoc("LcdMod_Common_Button_OK") : button1;
+            _button1 = string.IsNullOrEmpty(button1) ? LocHelper.GetLoc(MOD_PREFIX + "Common_Button_OK") : button1;
             _button2 = button2 ?? string.Empty;
             _icon = icon;
 
@@ -81,21 +82,21 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var padding = new Vector2(18f, 14f) * scale;
             var spacing = 10f * scale;
             var buttonSpacing = 10f * scale;
-            var buttonHeight = Math.Max(24f * scale, FormatingHelper.LineHeight(buttonScale, surface) + 10f * scale);
+            var buttonHeight = Math.Max(24f * scale, MeasureLineHeight(buttonScale, surface) + 10f * scale);
             var minButtonWidth = 78f * scale;
 
-            var titleSize = FormatingHelper.GetSizeInPixel(_title, "White", titleScale, surface);
+            var titleSize = MeasureText(_title, titleScale, surface);
             var closeSize = GetDialogCloseButtonSize(scale);
             var headerHeight = Math.Max(titleSize.Y, closeSize.Y);
             var contentLines = SplitLines(_content);
             if (contentLines.Length == 0)
                 contentLines = new[] { string.Empty };
 
-            var lineStep = FormatingHelper.LineHeight(contentScale, surface) + 2f * scale;
+            var lineStep = MeasureLineHeight(contentScale, surface) + 2f * scale;
             var maxContentWidth = 0f;
             for (var i = 0; i < contentLines.Length; i++)
             {
-                var size = FormatingHelper.GetSizeInPixel(contentLines[i], "White", contentScale, surface);
+                var size = MeasureText(contentLines[i], contentScale, surface);
                 if (size.X > maxContentWidth)
                     maxContentWidth = size.X;
             }
@@ -105,8 +106,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var iconGap = hasIcon ? 12f * scale : 0f;
             var contentBlockWidth = maxContentWidth + iconSize + iconGap;
 
-            var button1Size = FormatingHelper.GetSizeInPixel(_button1, "White", buttonScale, surface);
-            var button2Size = FormatingHelper.GetSizeInPixel(_button2, "White", buttonScale, surface);
+            var button1Size = MeasureText(_button1, buttonScale, surface);
+            var button2Size = MeasureText(_button2, buttonScale, surface);
             var button1Width = Math.Max(minButtonWidth, button1Size.X + 28f * scale);
             var showButton2 = _button2Callback != null || !string.IsNullOrWhiteSpace(_button2);
             var button2Width = showButton2 ? Math.Max(minButtonWidth, button2Size.X + 28f * scale) : 0f;
@@ -140,7 +141,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Data = _title,
                 Position = new Vector2(cardRect.Center.X, currentY + (headerHeight - titleSize.Y) * 0.5f),
                 Color = cardTextColor,
-                FontId = "White",
+                FontId = TextFont,
                 Alignment = TextAlignment.CENTER,
                 RotationOrScale = titleScale
             };
@@ -177,7 +178,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                     Data = contentLines[i],
                     Position = new Vector2(textX, currentY),
                     Color = cardTextColor,
-                    FontId = "White",
+                    FontId = TextFont,
                     Alignment = TextAlignment.LEFT,
                     RotationOrScale = contentScale
                 });

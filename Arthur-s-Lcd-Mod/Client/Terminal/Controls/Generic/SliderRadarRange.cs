@@ -1,10 +1,12 @@
 using System.Text;
 using LcdMod.Client.Config;
 using LcdMod.Client.Helpers;
+using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
 using VRageMath;
+using static LcdMod.Common.Helpers.Constants;
 using ScreenConfigRadar = LcdMod.Common.Config.Models.Apps.ScreenConfigRadar;
 
 namespace LcdMod.Client.Terminal.Controls.Generic
@@ -26,7 +28,7 @@ namespace LcdMod.Client.Terminal.Controls.Generic
             slider.Visible = Visible;
             slider.SetLimits(MIN_SCALE, MAX_SCALE);
             slider.Writer = Writer;
-            slider.Title = MyStringId.GetOrCompute("LcdMod_Magnification");
+            slider.Title = MyStringId.GetOrCompute(MOD_PREFIX + "Magnification");
 
             TerminalControl = slider;
         }

@@ -17,6 +17,7 @@ using VRage.Game;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
 using VRageMath;
+using static LcdMod.Common.Helpers.Constants;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
 using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
 
@@ -101,7 +102,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                     MaxValue = 1000000d,
                     Format = "0",
                     Step = 1d,
-                    Title = Loc("LcdMod_CraftDialog_Title"),
+                    Title = Loc(MOD_PREFIX + "CraftDialog_Title"),
                     Subtitle = request.Name
                 };
             }
@@ -174,8 +175,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             Border.CreateSpritesFromRect(cardRect, Sprites, cardColor,
                 radiusScale: scale);
 
-            var title = _useRequestGrid ? "Craft all" : Loc("LcdMod_CraftDialog_Title");
-            var titleSize = FormatingHelper.GetSizeInPixel(title, "White", titleScale, surface);
+            var title = _useRequestGrid ? "Craft all" : Loc(MOD_PREFIX + "CraftDialog_Title");
+            var titleSize = MeasureText(title, titleScale, surface);
             var closeSize = GetDialogCloseButtonSize(scale);
             var headerHeight = Math.Max(titleSize.Y, closeSize.Y);
             var currentY = cardRect.Y + padding.Y;
@@ -188,14 +189,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             currentY += headerHeight + spacing * 0.7f;
 
             var assemblerRect = new RectangleF(cardRect.X + padding.X, currentY, cardRect.Width - padding.X * 2f,
-                Math.Max(24f * scale, FormatingHelper.LineHeight(labelScale, surface) + 8f * scale));
+                Math.Max(24f * scale, MeasureLineHeight(labelScale, surface) + 8f * scale));
             EnsureAssemblerControl(assemblerRect);
             container.AddChild(_assemblerControl);
             _assemblerControl.Render(Sprites);
 
             currentY = assemblerRect.Bottom + spacing;
 
-            var buttonHeight = Math.Max(26f * scale, FormatingHelper.LineHeight(buttonScale, surface) + 10f * scale);
+            var buttonHeight = Math.Max(26f * scale, MeasureLineHeight(buttonScale, surface) + 10f * scale);
             var buttonsTop = cardRect.Bottom - padding.Y - buttonHeight;
             var contentBottom = buttonsTop - spacing;
             var contentHeight = Math.Max(0f, contentBottom - currentY);
@@ -211,7 +212,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 var amountHeight = Math.Max(30f * scale, Math.Min(42f * scale, contentHeight * 0.35f));
                 var itemRowsHeight = Math.Max(0f, contentHeight - amountHeight - spacing);
                 itemRowsHeight = Math.Min(itemRowsHeight,
-                    Math.Max(56f * scale, FormatingHelper.LineHeight(nameScale, surface) * 2f + 4f * scale));
+                    Math.Max(56f * scale, MeasureLineHeight(nameScale, surface) * 2f + 4f * scale));
 
                 var iconSize = Math.Min(Math.Max(44f * scale, itemRowsHeight), 72f * scale);
                 var iconRect = new RectangleF(cardRect.X + padding.X, currentY + (itemRowsHeight - iconSize) * 0.5f,
@@ -224,7 +225,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
                 var nameText = TrimText(request.Name, rightWidth, nameScale, surface);
                 var nameY = currentY + Math.Max(0f,
-                    (nameHeight - FormatingHelper.GetSizeInPixel(nameText, "White", nameScale, surface).Y) * 0.5f);
+                    (nameHeight - MeasureText(nameText, nameScale, surface).Y) * 0.5f);
                 DrawText(nameText, new Vector2(rightX, nameY), nameScale, cardTextColor, TextAlignment.LEFT);
 
                 if (_amountModel != null)
@@ -247,7 +248,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
             container.AddChild(_craftButton);
 
-            ConfigureButton(_craftButton, _useRequestGrid ? "Craft all" : Loc("LcdMod_CraftDialog_Button_Craft"),
+            ConfigureButton(_craftButton, _useRequestGrid ? "Craft all" : Loc(MOD_PREFIX + "CraftDialog_Button_Craft"),
                 buttonScale, owner, CanCraft());
             _craftButton.Render(Sprites);
         }
@@ -271,7 +272,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                     Data = "MissingIcon",
                     Position = rect.Center,
                     Size = rect.Size,
-                    Color = Constants.ColorCorrection,
+                    Color = ColorCorrection,
                     Alignment = TextAlignment.CENTER
                 });
                 return;
@@ -283,7 +284,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Data = icon,
                 Position = rect.Center,
                 Size = rect.Size,
-                Color = Constants.ColorCorrection,
+                Color = ColorCorrection,
                 Alignment = TextAlignment.CENTER
             });
         }
@@ -341,8 +342,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 var textWidth = Math.Max(0f, cellRect.Right - textX - 6f * scale);
                 var name = TrimText(request.Name, textWidth, nameScale, surface);
                 var amount = TrimText("x " + FormatingHelper.FormatItemQty(request.Amount), textWidth, amountScale, surface);
-                var nameHeight = FormatingHelper.LineHeight(nameScale, surface);
-                var amountHeight = FormatingHelper.LineHeight(amountScale, surface);
+                var nameHeight = MeasureLineHeight(nameScale, surface);
+                var amountHeight = MeasureLineHeight(amountScale, surface);
                 var textTop = cellRect.Center.Y - (nameHeight + amountHeight) * 0.5f;
 
                 DrawText(name, new Vector2(textX, textTop), nameScale, textColor, TextAlignment.LEFT);
@@ -358,7 +359,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Data = text ?? string.Empty,
                 Position = position,
                 Color = color,
-                FontId = "White",
+                FontId = TextFont,
                 Alignment = alignment,
                 RotationOrScale = scale
             });
@@ -419,9 +420,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Type = SpriteType.TEXT,
                 Data = TrimText(label, rect.Width - 12f * control.LayoutScale, textScale, control.TextSurface),
                 Position = new Vector2(rect.X + 6f * control.LayoutScale, rect.Center.Y -
-                    FormatingHelper.GetSizeInPixel(label, "White", textScale, control.TextSurface).Y * 0.5f),
+                    FormatingHelper.GetSizeInPixel(label, control, textScale, control.TextSurface).Y * 0.5f),
                 Color = labelColor,
-                FontId = "White",
+                FontId = control.TextFont,
                 Alignment = TextAlignment.LEFT,
                 RotationOrScale = textScale
             });
@@ -664,12 +665,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         string GetAssemblerSelectionLabel()
         {
             if (_selectedAssemblers.Count == 0)
-                return Loc("LcdMod_CraftDialog_Assemblers_None");
+                return Loc(MOD_PREFIX + "CraftDialog_Assemblers_None");
 
             if (_selectedAssemblers.Count == 1)
-                return FormatLoc("LcdMod_CraftDialog_Assemblers_Single", _selectedAssemblers[0].DisplayName);
+                return FormatLoc(MOD_PREFIX + "CraftDialog_Assemblers_Single", _selectedAssemblers[0].DisplayName);
 
-            return FormatLoc("LcdMod_CraftDialog_Assemblers_SelectedCount", _selectedAssemblers.Count);
+            return FormatLoc(MOD_PREFIX + "CraftDialog_Assemblers_SelectedCount", _selectedAssemblers.Count);
         }
 
         static int CompareAssemblerOptions(CraftAssemblerOption a, CraftAssemblerOption b)
@@ -704,7 +705,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             }
 
             var subtype = GridLogic.GetAssemblerSubtype(assembler);
-            return string.IsNullOrEmpty(subtype) ? Loc("LcdMod_CraftDialog_Assembler_FallbackName") : subtype;
+            return string.IsNullOrEmpty(subtype) ? Loc(MOD_PREFIX + "CraftDialog_Assembler_FallbackName") : subtype;
         }
 
         static bool IsAssemblerIdle(IMyAssembler assembler)
@@ -732,13 +733,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             }
         }
 
-        static string TrimText(string text, float availableWidth, float fontSize,
+        string TrimText(string text, float availableWidth, float fontSize,
             Sandbox.ModAPI.Ingame.IMyTextSurface surface)
         {
             if (string.IsNullOrEmpty(text) || availableWidth <= 0f || surface == null)
                 return string.Empty;
 
-            var size = FormatingHelper.GetSizeInPixel(text, "White", fontSize, surface);
+            var size = MeasureText(text, fontSize, surface);
             if (size.X <= availableWidth)
                 return text;
 
@@ -829,8 +830,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             Border.CreateSpritesFromRect(cardRect, Sprites, cardColor,
                 radiusScale: scale);
 
-            var title = LocHelper.GetLoc("LcdMod_CraftDialog_AssemblerSelection_Title");
-            var titleSize = FormatingHelper.GetSizeInPixel(title, "White", titleScale, surface);
+            var title = LocHelper.GetLoc(MOD_PREFIX + "CraftDialog_AssemblerSelection_Title");
+            var titleSize = MeasureText(title, titleScale, surface);
             var closeSize = GetDialogCloseButtonSize(scale);
             var headerHeight = Math.Max(titleSize.Y, closeSize.Y);
             Sprites.Add(new MySprite
@@ -839,12 +840,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Data = title,
                 Position = new Vector2(cardRect.Center.X, cardRect.Y + padding.Y + (headerHeight - titleSize.Y) * 0.5f),
                 Color = cardTextColor,
-                FontId = "White",
+                FontId = TextFont,
                 Alignment = TextAlignment.CENTER,
                 RotationOrScale = titleScale
             });
 
-            var buttonHeight = Math.Max(26f * scale, FormatingHelper.LineHeight(buttonScale, surface) + 10f * scale);
+            var buttonHeight = Math.Max(26f * scale, MeasureLineHeight(buttonScale, surface) + 10f * scale);
             var listTop = cardRect.Y + padding.Y + headerHeight + spacing;
             var buttonTop = cardRect.Bottom - padding.Y - buttonHeight;
             var listRect = new RectangleF(cardRect.X + padding.X, listTop,
@@ -862,10 +863,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Sprites.Add(new MySprite
                 {
                     Type = SpriteType.TEXT,
-                    Data = LocHelper.GetLoc("LcdMod_CraftDialog_AssemblerSelection_Empty"),
+                    Data = LocHelper.GetLoc(MOD_PREFIX + "CraftDialog_AssemblerSelection_Empty"),
                     Position = new Vector2(listRect.Center.X, listRect.Center.Y - titleSize.Y * 0.5f),
                     Color = cardTextColor,
-                    FontId = "White",
+                    FontId = TextFont,
                     Alignment = TextAlignment.CENTER,
                     RotationOrScale = 0.58f * scale * fontScale
                 });
@@ -879,7 +880,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             EnsureButtons(selectRect);
 
             container.AddChild(_selectButton);
-            CraftDialog.ConfigureButton(_selectButton, LocHelper.GetLoc("LcdMod_Common_Button_Select"), buttonScale, owner, HasSelection());
+            CraftDialog.ConfigureButton(_selectButton, LocHelper.GetLoc(MOD_PREFIX + "Common_Button_Select"), buttonScale, owner, HasSelection());
             _selectButton.Render(Sprites);
         }
 
@@ -933,9 +934,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
             var speedText = option.Speed.ToString("0.##", FormatingHelper.Culture);
             return option.Idle
-                ? string.Format(FormatingHelper.Culture, LocHelper.GetLoc("LcdMod_CraftDialog_AssemblerOption_WithStatus"),
-                    option.DisplayName, LocHelper.GetLoc("LcdMod_CraftDialog_Assembler_Status_Idle"), speedText)
-                : string.Format(FormatingHelper.Culture, LocHelper.GetLoc("LcdMod_CraftDialog_AssemblerOption"),
+                ? string.Format(FormatingHelper.Culture, LocHelper.GetLoc(MOD_PREFIX + "CraftDialog_AssemblerOption_WithStatus"),
+                    option.DisplayName, LocHelper.GetLoc(MOD_PREFIX + "CraftDialog_Assembler_Status_Idle"), speedText)
+                : string.Format(FormatingHelper.Culture, LocHelper.GetLoc(MOD_PREFIX + "CraftDialog_AssemblerOption"),
                     option.DisplayName, speedText);
         }
 

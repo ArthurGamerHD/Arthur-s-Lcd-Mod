@@ -162,7 +162,7 @@ namespace LcdMod.Client.Apps
                 frame.Add(new MySprite
                 {
                     Type = SpriteType.TEXT, Data = entry.Name, Position = position, RotationOrScale = AppConfig.Scale,
-                    Color = Host.Surface.ScriptForegroundColor, Alignment = TextAlignment.LEFT, FontId = "White"
+                    Color = Host.Surface.ScriptForegroundColor, Alignment = TextAlignment.LEFT, FontId = TextFont
                 });
                 EndNestedClipAndRestoreScrollClip(frame);
             }
@@ -172,7 +172,7 @@ namespace LcdMod.Client.Apps
             {
                 Type = SpriteType.TEXT, Data = FormatingHelper.PercentageToString(pct), Position = position,
                 RotationOrScale = AppConfig.Scale, Color = Host.Surface.ScriptForegroundColor,
-                Alignment = TextAlignment.RIGHT, FontId = "White"
+                Alignment = TextAlignment.RIGHT, FontId = TextFont
             });
         }
 
@@ -283,7 +283,7 @@ namespace LcdMod.Client.Apps
                 Type = SpriteType.TEXT, Data = name.ToString(),
                 Position = new Vector2(nameRect.X + 2f * AppConfig.Scale, nameRect.Y + 2f * AppConfig.Scale),
                 RotationOrScale = .9f * AppConfig.Scale, Color = Host.Surface.ScriptForegroundColor,
-                Alignment = TextAlignment.LEFT, FontId = "White"
+                Alignment = TextAlignment.LEFT, FontId = TextFont
             });
 
             var barWidth = bottomRect.Width * (2f / 3f);
@@ -303,7 +303,7 @@ namespace LcdMod.Client.Apps
                 Type = SpriteType.TEXT, Data = FormatingHelper.PercentageToString(pct),
                 Position = new Vector2(textRect.Right - 2f * AppConfig.Scale, textRect.Y + 2f * AppConfig.Scale),
                 RotationOrScale = .95f * AppConfig.Scale, Color = Host.Surface.ScriptForegroundColor,
-                Alignment = TextAlignment.RIGHT, FontId = "White"
+                Alignment = TextAlignment.RIGHT, FontId = TextFont
             });
         }
 
@@ -607,7 +607,7 @@ namespace LcdMod.Client.Apps
             }
 
             var textScale = 0.9f * AppConfig.Scale * Host.Surface.FontSize;
-            var textSize = FormatingHelper.GetSizeInPixel(_statusMessage, "White", textScale, Host.Surface);
+            var textSize = FormatingHelper.GetSizeInPixel(_statusMessage, TextFont, textScale, Host.Surface);
             var padX = 20f * AppConfig.Scale;
             var padY = 12f * AppConfig.Scale;
             var rect = new RectangleF(
@@ -626,7 +626,7 @@ namespace LcdMod.Client.Apps
                 RotationOrScale = textScale,
                 Color = Host.Surface.ScriptForegroundColor,
                 Alignment = TextAlignment.CENTER,
-                FontId = "White"
+                FontId = TextFont
             });
         }
 
@@ -667,7 +667,7 @@ namespace LcdMod.Client.Apps
 
         private void TrimText(ref StringBuilder sb, float availableWidth, float fontSize = 1f)
         {
-            var textSize = Host.Surface.MeasureStringInPixels(sb, "White", fontSize * AppConfig.Scale);
+            var textSize = Host.Surface.MeasureStringInPixels(sb, TextFont, fontSize * AppConfig.Scale);
             if (textSize.X <= availableWidth)
                 return;
 
@@ -676,7 +676,7 @@ namespace LcdMod.Client.Apps
             {
                 sb.Clear();
                 sb.Append(FormatingHelper.TrimName(source, i));
-                textSize = Host.Surface.MeasureStringInPixels(sb, "White", fontSize * AppConfig.Scale);
+                textSize = Host.Surface.MeasureStringInPixels(sb, TextFont, fontSize * AppConfig.Scale);
                 if (textSize.X <= availableWidth)
                     break;
             }

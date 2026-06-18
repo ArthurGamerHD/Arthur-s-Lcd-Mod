@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Config;
+using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.ModAPI;
 using VRage.Utils;
+using static LcdMod.Common.Helpers.Constants;
 using ScreenConfigPower = LcdMod.Common.Config.Models.Apps.ScreenConfigPower;
 
 namespace LcdMod.Client.Terminal.Controls.Generic
@@ -20,18 +22,18 @@ namespace LcdMod.Client.Terminal.Controls.Generic
             combo.Setter = Setter;
             combo.ComboBoxContent = Content;
             combo.Visible = Visible;
-            combo.Title = MyStringId.GetOrCompute("LcdMod_GraphWindow");
+            combo.Title = MyStringId.GetOrCompute(MOD_PREFIX + "GraphWindow");
             TerminalControl = combo;
         }
 
         static void Content(List<MyTerminalControlComboBoxItem> list)
         {
-            list.Add(new MyTerminalControlComboBoxItem { Key = 0, Value = MyStringId.GetOrCompute("LcdMod_GW_1s") });
-            list.Add(new MyTerminalControlComboBoxItem { Key = 1, Value = MyStringId.GetOrCompute("LcdMod_GW_5s") });
-            list.Add(new MyTerminalControlComboBoxItem { Key = 2, Value = MyStringId.GetOrCompute("LcdMod_GW_30s") });
-            list.Add(new MyTerminalControlComboBoxItem { Key = 3, Value = MyStringId.GetOrCompute("LcdMod_GW_1m") });
-            list.Add(new MyTerminalControlComboBoxItem { Key = 4, Value = MyStringId.GetOrCompute("LcdMod_GW_5m") });
-            list.Add(new MyTerminalControlComboBoxItem { Key = 5, Value = MyStringId.GetOrCompute("LcdMod_GW_30m") });
+            list.Add(new MyTerminalControlComboBoxItem { Key = 0, Value = MyStringId.GetOrCompute(MOD_PREFIX + "GW_1s") });
+            list.Add(new MyTerminalControlComboBoxItem { Key = 1, Value = MyStringId.GetOrCompute(MOD_PREFIX + "GW_5s") });
+            list.Add(new MyTerminalControlComboBoxItem { Key = 2, Value = MyStringId.GetOrCompute(MOD_PREFIX + "GW_30s") });
+            list.Add(new MyTerminalControlComboBoxItem { Key = 3, Value = MyStringId.GetOrCompute(MOD_PREFIX + "GW_1m") });
+            list.Add(new MyTerminalControlComboBoxItem { Key = 4, Value = MyStringId.GetOrCompute(MOD_PREFIX + "GW_5m") });
+            list.Add(new MyTerminalControlComboBoxItem { Key = 5, Value = MyStringId.GetOrCompute(MOD_PREFIX + "GW_30m") });
         }
 
         long Getter(IMyTerminalBlock block)

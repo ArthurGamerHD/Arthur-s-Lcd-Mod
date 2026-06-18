@@ -4,7 +4,6 @@ using LcdMod.Client.Apps;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Gui;
-using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Terminal.Controls.Generic;
 using LcdMod.Common.Config.Models.Apps;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
@@ -13,6 +12,7 @@ using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
 using VRageMath;
 using SliderRadarRange = LcdMod.Client.Terminal.Controls.Generic.SliderRadarRange;
+using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.SurfaceScripts
 {
@@ -21,8 +21,8 @@ namespace LcdMod.Client.SurfaceScripts
         IUsesTerminalControl<SliderRadarRange>,
         IUsesTerminalControl<ComboboxReferenceMode>
     {
-        public const string ID = "LcdMod_Radar";
-        public const string TITLE = "LcdMod_Radar";
+        public const string ID = MOD_PREFIX + "Radar";
+        public const string TITLE = MOD_PREFIX + "Radar";
 
         protected override ConfigKind ConfigKind => ConfigKind.Radar;
         protected override string DefaultTitle => TITLE;

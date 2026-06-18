@@ -1,10 +1,11 @@
 using System.Text;
 using LcdMod.Client.Config;
 using LcdMod.Common.Config.Models;
+using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
-
+using static LcdMod.Common.Helpers.Constants;
 
 
 namespace LcdMod.Client.Terminal.Controls.Interactive
@@ -21,7 +22,7 @@ namespace LcdMod.Client.Terminal.Controls.Interactive
             slider.Visible = Visible;
             slider.SetLimits(0, ScreenConfigGeneral.MAX_SCALE);
             slider.Writer = Writer;
-            slider.Title = MyStringId.GetOrCompute("LcdMod_CursorScale");
+            slider.Title = MyStringId.GetOrCompute(MOD_PREFIX + "CursorScale");
 
             TerminalControl = slider;
         }

@@ -4,7 +4,6 @@ using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Apps;
 using LcdMod.Client.Apps.Abstract;
-using LcdMod.Client.Gui.ControlsTemplates;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
@@ -12,6 +11,7 @@ using VRage.Game.ModAPI;
 using VRageMath;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
 using ComboboxLinkType = LcdMod.Client.Terminal.Controls.Generic.ComboboxLinkType;
+using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.SurfaceScripts
 {
@@ -22,7 +22,7 @@ namespace LcdMod.Client.SurfaceScripts
         protected override ConfigKind ConfigKind => ConfigKind.Power;
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
         public const string ID = "BatteryGraph";
-        public const string TITLE = "LcdMod_PowerFilled";
+        public const string TITLE = MOD_PREFIX + "PowerFilled";
 
         protected override string DefaultTitle => TITLE;
 

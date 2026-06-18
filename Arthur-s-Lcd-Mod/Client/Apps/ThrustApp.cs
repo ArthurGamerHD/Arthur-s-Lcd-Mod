@@ -6,11 +6,13 @@ using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
 using LcdMod.Common.Config.Models;
+using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
 using VRage.Utils;
 using VRageMath;
+using static LcdMod.Common.Helpers.Constants;
 using IMyCockpit = Sandbox.ModAPI.IMyCockpit;
 
 
@@ -266,7 +268,7 @@ namespace LcdMod.Client.Apps
                 if (!visibleThisTick) return;
 
                 DrawMessage(sprites,
-                    string.Format(LocHelper.GetLoc("LcdMod_Critical"), LocHelper.GetLoc("LcdMod_Thrust_GravityLoad")),
+                    string.Format(LocHelper.GetLoc(MOD_PREFIX + "Critical"), LocHelper.GetLoc(MOD_PREFIX + "Thrust_GravityLoad")),
                     BoostAlertColor(Config.ErrorColor),
                     0.7f * Config.Scale);
                 return;
@@ -275,7 +277,7 @@ namespace LcdMod.Client.Apps
             if (gravityLoad >= GRAVITY_LOAD_WARN_THRESHOLD)
             {
                 DrawMessage(sprites,
-                    string.Format(LocHelper.GetLoc("LcdMod_Warning"), LocHelper.GetLoc("LcdMod_Thrust_GravityLoad")),
+                    string.Format(LocHelper.GetLoc(MOD_PREFIX + "Warning"), LocHelper.GetLoc(MOD_PREFIX + "Thrust_GravityLoad")),
                     BoostAlertColor(Config.WarningColor),
                     0.7f * Config.Scale);
             }
@@ -289,7 +291,7 @@ namespace LcdMod.Client.Apps
         void DrawMessage(List<MySprite> sprites, string message, Color color, float scale)
         {
             var textScale = Math.Max(0.1f, scale) * FontScale;
-            var size = Surface.MeasureStringInPixels(new StringBuilder(message), "White", textScale);
+            var size = Surface.MeasureStringInPixels(new StringBuilder(message), TextFont, textScale);
             var center = new Vector2(ViewBox.Center.X, (ContentTop + ViewBox.Bottom) * 0.5f);
             sprites.Add(new MySprite
             {
@@ -299,7 +301,7 @@ namespace LcdMod.Client.Apps
                 RotationOrScale = textScale,
                 Color = color,
                 Alignment = TextAlignment.CENTER,
-                FontId = "White"
+                FontId = TextFont
             });
         }
 
@@ -595,7 +597,7 @@ namespace LcdMod.Client.Apps
             var boxSize = new Vector2(89f, 32f) * hudScale;
             var rightCenter = rect.Center + new Vector2(boxSize.X * 0.5f, 0f);
             var valueText = TrimText(value, boxSize.X - textOffset - 4f * hudScale, valueScale);
-            var valueSize = FormatingHelper.GetSizeInPixel(valueText, "White", valueScale, Surface);
+            var valueSize = FormatingHelper.GetSizeInPixel(valueText, TextFont, valueScale, Surface);
 
             var color = _stopSpeed > 1 ? ForegroundColor : new Color(ForegroundColor, (float)_stopSpeed);
             
@@ -617,7 +619,7 @@ namespace LcdMod.Client.Apps
                 Size = boxSize,
                 Color = color,
                 Alignment = TextAlignment.RIGHT,
-                FontId = "White",
+                FontId = TextFont,
                 RotationOrScale = valueScale
             });
         }
@@ -627,7 +629,7 @@ namespace LcdMod.Client.Apps
             if (string.IsNullOrEmpty(value) || availableWidth <= 0f || Surface == null)
                 return string.Empty;
 
-            var size = FormatingHelper.GetSizeInPixel(value, "White", textScale, Surface);
+            var size = FormatingHelper.GetSizeInPixel(value, TextFont, textScale, Surface);
             if (size.X <= availableWidth)
                 return value;
 
@@ -635,26 +637,26 @@ namespace LcdMod.Client.Apps
                 Math.Max(1, (int)(value.Length * availableWidth / Math.Max(1f, size.X))));
         }
 
-        string FormatStopDistance() => _hasStopEstimate ? FormatingHelper.DistanceToString((float)_stopDistance, "0") : LocHelper.GetLoc("LcdMod_Common_Value_Unavailable");
+        string FormatStopDistance() => _hasStopEstimate ? FormatingHelper.DistanceToString((float)_stopDistance, "0") : LocHelper.GetLoc(MOD_PREFIX + "Common_Value_Unavailable");
 
-        string FormatStopTimeValue() => _hasStopEstimate ? FormatStopTime(_stopSeconds) : LocHelper.GetLoc("LcdMod_Common_Value_Unavailable");
+        string FormatStopTimeValue() => _hasStopEstimate ? FormatStopTime(_stopSeconds) : LocHelper.GetLoc(MOD_PREFIX + "Common_Value_Unavailable");
 
-        string FormatStopForce() => _hasStopEstimate ? FormatingHelper.NewtonForceToString(_stopNetForce, "0") : LocHelper.GetLoc("LcdMod_Common_Value_Unavailable");
+        string FormatStopForce() => _hasStopEstimate ? FormatingHelper.NewtonForceToString(_stopNetForce, "0") : LocHelper.GetLoc(MOD_PREFIX + "Common_Value_Unavailable");
         
         static string FormatStopTime(double seconds)
         {
             if (double.IsNaN(seconds) || double.IsInfinity(seconds) || seconds < 0d)
-                return LocHelper.GetLoc("LcdMod_Common_Value_Unavailable");
+                return LocHelper.GetLoc(MOD_PREFIX + "Common_Value_Unavailable");
 
             if (seconds <= 0d)
-                return LocHelper.GetLoc("LcdMod_Common_Time_ZeroSeconds");
+                return LocHelper.GetLoc(MOD_PREFIX + "Common_Time_ZeroSeconds");
 
             return seconds < 1d
-                ? LocHelper.GetLoc("LcdMod_Common_Time_LessThanOneSecond")
+                ? LocHelper.GetLoc(MOD_PREFIX + "Common_Time_LessThanOneSecond")
                 : FormatingHelper.FormatTimeHours((float)(seconds / 3600d));
         }
 
-        static void DrawLegendCell(List<MySprite> sprites, float x, float y, float w, float h, float padX,
+        void DrawLegendCell(List<MySprite> sprites, float x, float y, float w, float h, float padX,
             string label, double maxValue, Color markerColor, Color textColor, float textScale)
         {
             float yPos = y + (h - 14f * textScale) * 0.5f;
@@ -676,11 +678,11 @@ namespace LcdMod.Client.Apps
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
-                Data = string.Format(FormatingHelper.Culture, LocHelper.GetLoc("LcdMod_Common_Label_WithColon"), label),
+                Data = string.Format(FormatingHelper.Culture, LocHelper.GetLoc(MOD_PREFIX + "Common_Label_WithColon"), label),
                 Position = new Vector2(textLeftX, yPos),
                 Color = textColor,
                 Alignment = TextAlignment.LEFT,
-                FontId = "White",
+                FontId = TextFont,
                 RotationOrScale = textScale
             });
 
@@ -691,7 +693,7 @@ namespace LcdMod.Client.Apps
                 Position = new Vector2(x + w - padX, yPos),
                 Color = textColor,
                 Alignment = TextAlignment.RIGHT,
-                FontId = "White",
+                FontId = TextFont,
                 RotationOrScale = textScale
             });
         }

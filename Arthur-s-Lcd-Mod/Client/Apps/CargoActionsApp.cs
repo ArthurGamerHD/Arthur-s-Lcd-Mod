@@ -18,6 +18,7 @@ using Sandbox.ModAPI;
 using VRage;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
+using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.Apps
 {
@@ -45,14 +46,14 @@ namespace LcdMod.Client.Apps
         const long ADOPT_RECHECK_FRAMES = 300L;    // periodic revision re-check (~5s): late edits on sibling screens must still propagate
         const int STATUS_MESSAGE_FRAMES = 240;
 
-        const string LOC_CONFIG = "LcdMod_CargoActions_Config";
-        const string LOC_SORTER = "LcdMod_Cargo_Sorter";
-        const string LOC_SORT_DONE = "LcdMod_Cargo_SortDone";
-        const string LOC_SORT_REQUESTED = "LcdMod_Cargo_SortRequested";
-        const string LOC_FILL_REQUESTED = "LcdMod_Cargo_FillRequested";
-        const string LOC_FILL_WEAPONS = "LcdMod_Cargo_FillWeapons";
-        const string LOC_FILL_REACTORS = "LcdMod_Cargo_FillReactors";
-        const string LOC_FILL_DONE = "LcdMod_Cargo_FillDone";
+        const string LOC_CONFIG = MOD_PREFIX + "CargoActions_Config";
+        const string LOC_SORTER = MOD_PREFIX + "Cargo_Sorter";
+        const string LOC_SORT_DONE = MOD_PREFIX + "Cargo_SortDone";
+        const string LOC_SORT_REQUESTED = MOD_PREFIX + "Cargo_SortRequested";
+        const string LOC_FILL_REQUESTED = MOD_PREFIX + "Cargo_FillRequested";
+        const string LOC_FILL_WEAPONS = MOD_PREFIX + "Cargo_FillWeapons";
+        const string LOC_FILL_REACTORS = MOD_PREFIX + "Cargo_FillReactors";
+        const string LOC_FILL_DONE = MOD_PREFIX + "Cargo_FillDone";
 
         const string ICON_CONFIG = "SettingsIcon";
         const string ICON_SORTER = "SortIcon";
@@ -596,7 +597,7 @@ namespace LcdMod.Client.Apps
 
             var textScale = PadButtonStyle.TextScaleForHeight(
                 MathHelper.Clamp(Host.ViewBox.Height * 0.05f, 12f, 20f), Host.Surface);
-            var textSize = FormatingHelper.GetSizeInPixel(_statusMessage, "White", textScale, Host.Surface);
+            var textSize = FormatingHelper.GetSizeInPixel(_statusMessage, TextFont, textScale, Host.Surface);
             var padX = 20f * AppConfig.Scale;
             var padY = 12f * AppConfig.Scale;
             var rect = new RectangleF(
@@ -615,7 +616,7 @@ namespace LcdMod.Client.Apps
                 RotationOrScale = textScale,
                 Color = Host.Surface.ScriptForegroundColor,
                 Alignment = TextAlignment.CENTER,
-                FontId = "White"
+                FontId = TextFont
             });
         }
     }

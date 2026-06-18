@@ -15,6 +15,7 @@ using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
 using VRageMath;
+using static LcdMod.Common.Helpers.Constants;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
 
 namespace LcdMod.Client.Apps
@@ -45,7 +46,7 @@ namespace LcdMod.Client.Apps
 
             _pickBackgroundButton = AddChild(new Button(default(RectangleF), new ButtonModel
             {
-                Text = LocHelper.GetLoc("LcdMod_PickTexture"),
+                Text = LocHelper.GetLoc(MOD_PREFIX + "PickTexture"),
                 Clicked = OnPickBackgroundClicked
             }));
             _imagePickerHitbox = AddChild(new RectangleControl(default(RectangleF), CursorType.Hand, null, OnImageClicked)
@@ -368,7 +369,7 @@ namespace LcdMod.Client.Apps
             var model = _pickBackgroundButton.DataContext as ButtonModel;
             if (model != null)
             {
-                model.Text = LocHelper.GetLoc("LcdMod_PickTexture");
+                model.Text = LocHelper.GetLoc(MOD_PREFIX + "PickTexture");
                 model.Enabled = canAccessBlock;
                 model.Clicked = OnPickBackgroundClicked;
             }
