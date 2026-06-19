@@ -33,6 +33,8 @@ namespace LcdMod.Common.Config.Models
     [XmlInclude(typeof(ScreenConfigCargoActions))]
     [ProtoInclude(119, typeof(ScreenConfigNpcMarket))]
     [XmlInclude(typeof(ScreenConfigNpcMarket))]
+    [ProtoInclude(121, typeof(ScreenConfigClockDashboard))]
+    [XmlInclude(typeof(ScreenConfigClockDashboard))]
 #if DEBUG
     [ProtoInclude(120, typeof(ScreenConfigVisibleTreeDebug))]
     [XmlInclude(typeof(ScreenConfigVisibleTreeDebug))]

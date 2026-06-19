@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Gui.Styling;
-using LcdMod.Common.Helpers;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 
@@ -362,7 +361,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             float totalWidth;
             GetIndicatorLayout(scale, pageCount, out diameter, out gap, out totalWidth);
 
-            var hostFontColor = TextSurface != null ? TextSurface.ScriptForegroundColor : ResolveColor(ThemeResources.OnSurfaceColor);
+            var hostFontColor = TextSurface?.ScriptForegroundColor ?? ResolveColor(ThemeResources.OnSurfaceColor);
             var primary = GetResourceColor(ThemeResources.SecondaryContainerColor, hostFontColor);
             var secondary = GetResourceColor(ThemeResources.AccentColor, new Color(hostFontColor.R, hostFontColor.G, hostFontColor.B, 150));
             var hollow = hostFontColor;

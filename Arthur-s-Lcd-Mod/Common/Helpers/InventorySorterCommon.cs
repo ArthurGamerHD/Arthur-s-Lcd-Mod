@@ -190,7 +190,7 @@ namespace LcdMod.Common.Helpers
         static double GetTotalWeight(MyItemType type, double amount)
         {
             var def = GetDefinition(type);
-            return def != null ? amount * def.Mass : 0d;
+            return amount * def?.Mass ?? 0d;
         }
 
         static string GetDisplayName(MyItemType type)

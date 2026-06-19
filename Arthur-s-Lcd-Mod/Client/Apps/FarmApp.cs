@@ -75,7 +75,7 @@ namespace LcdMod.Client.Apps
             {
                 _details.Clear();
 
-                var logic = Plot != null ? Plot.Logic : null;
+                var logic = Plot?.Logic;
                 if (logic == null)
                 {
                     _details.Add(new StaticTooltipLine(PercentText));
@@ -243,7 +243,7 @@ namespace LcdMod.Client.Apps
 
         static float GetWaterRatio(FarmPlotEntry plot)
         {
-            var storage = plot != null ? plot.StorageComponent : null;
+            var storage = plot?.StorageComponent;
             if (storage == null)
                 return 0f;
 
@@ -318,9 +318,6 @@ namespace LcdMod.Client.Apps
             float minW = SLOT_W * owner.Config.Scale;
             float minH = SLOT_H * owner.Config.Scale;
             float contentTop = GetContentTop(owner) + 6f * owner.Config.Scale;
-            float availW = owner.ViewBox.Width;
-            float xLeft = owner.ViewBox.X;
-            float xRight = owner.ViewBox.X + owner.ViewBox.Width;
 
             int count = _entries.Count;
             if (count <= 0)
@@ -418,7 +415,7 @@ namespace LcdMod.Client.Apps
             for (int i = children.Count - 1; i >= 0; i--)
             {
                 var child = children[i];
-                var entry = child == null ? null : child.DataContext as FarmEntry;
+                var entry = child?.DataContext as FarmEntry;
                 if (entry == null || desiredIds.ContainsKey(entry.EntryId))
                     continue;
 
@@ -514,7 +511,7 @@ namespace LcdMod.Client.Apps
 
         string GetRemainingText(FarmPlotEntry plot, float growthPercent, float ratio, string percentText)
         {
-            var logic = plot != null ? plot.Logic : null;
+            var logic = plot?.Logic;
             if (logic == null || !logic.IsPlantPlanted)
                 return LocHelper.Empty;
 
@@ -555,7 +552,7 @@ namespace LcdMod.Client.Apps
         static float GetGrowthRatio(FarmPlotEntry plot, out float growthPercent)
         {
             growthPercent = 0f;
-            var logic = plot != null ? plot.Logic : null;
+            var logic = plot?.Logic;
             if (logic == null || !logic.IsPlantPlanted)
                 return 0f;
             if (logic.IsPlantFullyGrown)

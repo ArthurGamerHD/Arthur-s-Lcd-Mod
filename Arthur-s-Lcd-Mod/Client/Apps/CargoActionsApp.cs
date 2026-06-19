@@ -606,7 +606,7 @@ namespace LcdMod.Client.Apps
                 textSize.X + 2f * padX,
                 textSize.Y + 2f * padY);
 
-            Border.CreateSpritesFromRect(rect, sprites,
+            BorderRenderer.CreateSpritesFromRect(rect, sprites,
                 Host.BackgroundColor.MulValue(0.2f), radiusScale: AppConfig.Scale);
             sprites.Add(new MySprite
             {

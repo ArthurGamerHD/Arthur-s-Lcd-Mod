@@ -6,7 +6,6 @@ using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.GridData;
 using LcdMod.Client.Helpers;
 using Sandbox.ModAPI.Ingame;
-using VRage.Game.ModAPI;
 using VRageMath;
 using IMyLaserAntenna = Sandbox.ModAPI.IMyLaserAntenna;
 

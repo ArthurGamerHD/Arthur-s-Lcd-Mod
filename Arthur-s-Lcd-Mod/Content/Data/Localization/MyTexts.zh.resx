@@ -724,4 +724,68 @@
   <data name="LcdMod_MarketApp_Updated" xml:space="preserve">
     <value>Updated {0} ago</value>
   </data>
+
+  <data name="LcdMod_InGameClockDashboard" xml:space="preserve">
+    <value>游戏内时钟</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DeepSpace" xml:space="preserve">
+    <value>深空</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_UnknownPlanet" xml:space="preserve">
+    <value>未知行星</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_Weather_Clear" xml:space="preserve">
+    <value>晴朗</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_Weather_Unknown" xml:space="preserve">
+    <value>天气</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DayMoment_Unknown" xml:space="preserve">
+    <value>未知</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DayMoment_Night" xml:space="preserve">
+    <value>夜晚</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DayMoment_Dawn" xml:space="preserve">
+    <value>黎明</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DayMoment_Morning" xml:space="preserve">
+    <value>早晨</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DayMoment_Noon" xml:space="preserve">
+    <value>正午</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DayMoment_Afternoon" xml:space="preserve">
+    <value>下午</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DayMoment_Dusk" xml:space="preserve">
+    <value>黄昏</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DayMoment_NoLocalDay" xml:space="preserve">
+    <value>无当地白昼</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DayMoment_PolarDay" xml:space="preserve">
+    <value>极昼</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_Control_24Hour" xml:space="preserve">
+    <value>时钟：24 小时制</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_Control_Temperature" xml:space="preserve">
+    <value>时钟：温度</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_Control_Temperature_Tooltip" xml:space="preserve">
+    <value>温度值根据游戏的标准化温标估算，采用 270 K 至 320 K 的范围，然后转换为所选单位。</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_Temperature_Fuzzy" xml:space="preserve">
+    <value>模糊</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_Temperature_Celsius" xml:space="preserve">
+    <value>摄氏度 (°C)</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_Temperature_Kelvin" xml:space="preserve">
+    <value>开尔文 (K)</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_Temperature_Fahrenheit" xml:space="preserve">
+    <value>华氏度 (°F)</value>
+  </data>
 </root>

@@ -35,7 +35,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Templates
             if (host == null)
                 return 0;
 
-            int count = items == null ? 0 : items.Count;
+            int count = items?.Count ?? 0;
             EnsureRealized(count, items);
 
             for (int i = 0; i < _realized.Count; i++)

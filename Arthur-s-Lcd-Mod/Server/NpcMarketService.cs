@@ -6,10 +6,8 @@ using LcdMod.Common.Networking;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game;
-using VRage.Game.ModAPI;
 using VRage.Game.ObjectBuilders.Components;
 using VRage.Game.ObjectBuilders.Definitions;
-using VRage.ObjectBuilders;
 using VRage.Utils;
 using VRageMath;
 using IMyTextSurfaceProvider = Sandbox.ModAPI.Ingame.IMyTextSurfaceProvider;
@@ -424,7 +422,7 @@ namespace LcdMod.Server
                 {
                     CapturedWorldElapsedTicks = capturedTicks,
                     NextEconomyTickWorldElapsedTicks = nextTick,
-                    EconomyTickSeconds = checkpoint.Settings != null ? checkpoint.Settings.EconomyTickInSeconds : 0,
+                    EconomyTickSeconds = checkpoint.Settings?.EconomyTickInSeconds ?? 0,
                     NpcSellerFactionsById = new Dictionary<long, ParsedNpcSellerFaction>(),
                     StationsById = new Dictionary<long, ParsedNpcStation>(),
                     PlayerFactionIdByIdentityId = new Dictionary<long, long>(),
@@ -546,13 +544,13 @@ namespace LcdMod.Server
             var packet = new PacketSyncNpcMarket
             {
                 RequestId = request.RequestId,
-                Version = _cache != null ? _cache.Version : _nextVersion,
+                Version = _cache?.Version ?? _nextVersion,
                 WasServedFromCache = _cache != null,
-                CapturedWorldElapsedTicks = _cache != null ? _cache.CapturedWorldElapsedTicks : now,
-                CacheBuiltAtWorldElapsedTicks = _cache != null ? _cache.BuiltAtWorldElapsedTicks : now,
-                NextEconomyTickWorldElapsedTicks = _cache != null ? _cache.NextEconomyTickWorldElapsedTicks : now,
-                NextNoCacheAllowedAtWorldElapsedTicks = _cache != null ? _cache.NextNoCacheAllowedAtWorldElapsedTicks : now + ForceRefreshMinimumAgeTicks,
-                EconomyTickSeconds = _cache != null ? _cache.EconomyTickSeconds : 0,
+                CapturedWorldElapsedTicks = _cache?.CapturedWorldElapsedTicks ?? now,
+                CacheBuiltAtWorldElapsedTicks = _cache?.BuiltAtWorldElapsedTicks ?? now,
+                NextEconomyTickWorldElapsedTicks = _cache?.NextEconomyTickWorldElapsedTicks ?? now,
+                NextNoCacheAllowedAtWorldElapsedTicks = _cache?.NextNoCacheAllowedAtWorldElapsedTicks ?? now + ForceRefreshMinimumAgeTicks,
+                EconomyTickSeconds = _cache?.EconomyTickSeconds ?? 0,
                 Scope = new NpcMarketScopeDto
                 {
                     Mode = mode,

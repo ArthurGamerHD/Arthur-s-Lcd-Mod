@@ -164,7 +164,7 @@ namespace LcdMod.Client.Apps
             if (panel == null)
                 return;
 
-            var desired = new List<Control>(entries == null ? 0 : entries.Count);
+            var desired = new List<Control>(entries?.Count ?? 0);
             var desiredIds = new HashSet<long>();
             if (entries != null)
             {
@@ -211,7 +211,7 @@ namespace LcdMod.Client.Apps
 
         void RenderListPanelContent(ControlTemplate control, List<MySprite> sprites)
         {
-            var children = control != null ? control.Children : null;
+            var children = control?.Children;
             if (children == null)
                 return;
 
@@ -223,7 +223,7 @@ namespace LcdMod.Client.Apps
 
         void RenderGridPanelContent(ControlTemplate control, List<MySprite> sprites)
         {
-            var children = control != null ? control.Children : null;
+            var children = control?.Children;
             if (children == null)
                 return;
 
@@ -438,8 +438,8 @@ namespace LcdMod.Client.Apps
                     (xEnd - xStart) - cellPadding,
                     rowHeight - cellPadding);
                 var dropShadow = new RectangleF(cellRect.Position + 2, cellRect.Size);
-                Border.CreateSpritesFromRect(dropShadow, sprites, hsv.HSVtoColor(), radiusScale: AppConfig.Scale);
-                Border.CreateSpritesFromRect(cellRect, sprites, backgroundColor,radiusScale: AppConfig.Scale);
+                BorderRenderer.CreateSpritesFromRect(dropShadow, sprites, hsv.HSVtoColor(), radiusScale: AppConfig.Scale);
+                BorderRenderer.CreateSpritesFromRect(cellRect, sprites, backgroundColor,radiusScale: AppConfig.Scale);
             }
 
             var foreground = drawAsLines ? entry.StatusColor : Host.Surface.ScriptForegroundColor;

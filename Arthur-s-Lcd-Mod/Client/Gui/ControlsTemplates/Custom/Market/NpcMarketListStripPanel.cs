@@ -170,7 +170,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
             _rowsPerPage = ResolveRowsPerPage(availableSize.Y, RepeatedHeaderHeight, RowHeight);
             _pages.Clear();
 
-            var rowCount = _rows == null ? 0 : _rows.Count;
+            var rowCount = _rows?.Count ?? 0;
             if (rowCount <= 0)
                 return;
 

@@ -16,7 +16,6 @@ using LcdMod.Common.Networking;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage;
-using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.Utils;
@@ -28,6 +27,14 @@ namespace LcdMod.Client
     {
         public static readonly List<Action> RunNextFrame = new List<Action>();
         static readonly List<Action> RunThisFrame = new List<Action>();
+        sealed class ScheduledOnePerFrameAction
+        {
+            public Action Action;
+            public long DueFrame;
+        }
+
+        static readonly List<ScheduledOnePerFrameAction> RunOnePerFrame =
+            new List<ScheduledOnePerFrameAction>();
 
         readonly LcdModSessionComponent _session;
         readonly TerminalManager _terminalManager;
@@ -126,6 +133,7 @@ namespace LcdMod.Client
             //TextureHelper.UnloadTextureCache();
             RunNextFrame.Clear();
             RunThisFrame.Clear();
+            RunOnePerFrame.Clear();
         }
 
         public void UpdateBeforeSimulation()
@@ -181,9 +189,68 @@ namespace LcdMod.Client
             RunThisFrame.Clear();
         }
 
+
+        public static void ScheduleOnePerFrame(Action action)
+        {
+            ScheduleOnePerFrame(action, 0);
+        }
+
+        public static void ScheduleOnePerFrame(Action action, int delayTicks)
+        {
+            if (action == null)
+                return;
+
+            long currentFrame = MyAPIGateway.Session != null
+                ? MyAPIGateway.Session.GameplayFrameCounter
+                : 0L;
+            RunOnePerFrame.Add(new ScheduledOnePerFrameAction
+            {
+                Action = action,
+                DueFrame = currentFrame + Math.Max(0, delayTicks)
+            });
+        }
+
+        static void RunOnePerFrameAction()
+        {
+            if (RunOnePerFrame.Count == 0)
+                return;
+
+            long currentFrame = MyAPIGateway.Session != null
+                ? MyAPIGateway.Session.GameplayFrameCounter
+                : long.MaxValue;
+            int scheduledIndex = -1;
+            for (int i = 0; i < RunOnePerFrame.Count; i++)
+            {
+                if (RunOnePerFrame[i].DueFrame > currentFrame)
+                    continue;
+
+                scheduledIndex = i;
+                break;
+            }
+
+            if (scheduledIndex < 0)
+                return;
+
+            var scheduled = RunOnePerFrame[scheduledIndex];
+            RunOnePerFrame.RemoveAt(scheduledIndex);
+            var action = scheduled.Action;
+            if (action == null)
+                return;
+
+            try
+            {
+                action();
+            }
+            catch (Exception e)
+            {
+                ErrorHandlerHelper.LogError(e, nameof(RunOnePerFrameAction));
+            }
+        }
+
         public void Simulate()
         {
             RunNextFrameActions();
+            RunOnePerFrameAction();
 #if EXPERIMENTAL
             _audioPoc.Update();
             _audioBroadcast.Update();

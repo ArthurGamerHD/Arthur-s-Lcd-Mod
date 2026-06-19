@@ -7,7 +7,6 @@ using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
 using LcdMod.Common.Config.Models.Apps;
-using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using SpaceEngineers.Game.ModAPI;
 using VRage.Game.GUI.TextPanel;

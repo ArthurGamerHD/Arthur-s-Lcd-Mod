@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.Styling;
-using LcdMod.Client.Helpers;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 
@@ -232,7 +231,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
             var textScale = 0.58f * scale * ResolveStyleValue(ControlTemplate.FontScaleProperty);
             var fontId = control != null ? control.TextFont : TextFont;
 
-            Border.CreateSpritesFromRect(rect, sprites, panelColor,
+            BorderRenderer.CreateSpritesFromRect(rect, sprites, panelColor,
                 radiusPixels: BorderRadiusPixels,
                 radiusScale: scale);
             sprites.Add(new MySprite

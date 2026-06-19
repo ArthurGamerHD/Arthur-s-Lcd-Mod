@@ -2,7 +2,6 @@
 using LcdMod.Client.Terminal.Actions;
 using LcdMod.Client.Terminal.Models.Actions;
 using LcdMod.Client.Terminal.Models.Property;
-using Sandbox.ModAPI.Interfaces;
 #endif
 using System;
 using System.Collections.Generic;
@@ -78,8 +77,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             : base(parentApp)
         {
             _gridLogic = gridLogic;
-            _target = target == null ? null : target.Clone();
-            _initialSelection = initialSelection == null ? null : initialSelection.Clone();
+            _target = target?.Clone();
+            _initialSelection = initialSelection?.Clone();
             _selectedCallback = selectedCallback;
             _cancelCallback = cancelCallback;
             _requestRedraw = requestRedraw;
@@ -172,9 +171,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Alignment = TextAlignment.CENTER
             });
 
-            Border.CreateSpritesFromRect(new RectangleF(cardRect.Position + 3f * scale, cardRect.Size), Sprites,
+            BorderRenderer.CreateSpritesFromRect(new RectangleF(cardRect.Position + 3f * scale, cardRect.Size), Sprites,
                 ResolveColor(ThemeResources.ShadowColor), radiusScale: scale);
-            Border.CreateSpritesFromRect(cardRect, Sprites,
+            BorderRenderer.CreateSpritesFromRect(cardRect, Sprites,
                 ResolveColor(ThemeResources.SurfaceContainerHighColor), radiusScale: scale);
         }
 
@@ -510,7 +509,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             if (listRect.Width <= 1f || listRect.Height <= 1f)
                 return;
 
-            Border.CreateSpritesFromRect(listRect, Sprites, ResolveColor(ThemeResources.SurfaceContainerHighColor), radiusScale: scale);
+            BorderRenderer.CreateSpritesFromRect(listRect, Sprites, ResolveColor(ThemeResources.SurfaceContainerHighColor), radiusScale: scale);
 
             var rowHeight = GetRowHeight(scale);
             var scrollerWidth = Math.Min(_scrollPanel.AutomaticScrollerWidthPixels * scale, Math.Max(0f, listRect.Width * 0.25f));
@@ -594,12 +593,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         void RenderActionRow(ControlTemplate control, List<MySprite> sprites)
         {
             var model = control.DataContext as ActionRowButtonModel;
-            var action = model == null ? null : model.Action;
+            var action = model?.Action;
             if (action == null)
                 return;
 
             var rect = control.Bounds;
-            var hovered = rect.Contains(new Vector2(float.NaN, float.NaN));
+            rect.Contains(new Vector2(float.NaN, float.NaN));
             var selected = _initialSelection != null &&
                            string.Equals(_initialSelection.BaseId, action.BaseId, StringComparison.OrdinalIgnoreCase);
             control.SetStyleId(selected ? "Primary" : null);
@@ -610,7 +609,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 ? ResolveColor(ThemeResources.OnAccentContainerColor)
                 : control.TextColor;
 
-            Border.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: control.LayoutScale);
+            BorderRenderer.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: control.LayoutScale);
 
             var iconSize = Math.Min(64f, Math.Max(1f, rect.Height - 1f * Math.Max(1f, control.LayoutScale)));
             iconSize = Math.Max(1f, Math.Min(iconSize, rect.Width));

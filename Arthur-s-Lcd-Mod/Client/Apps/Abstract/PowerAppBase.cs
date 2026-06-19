@@ -21,7 +21,6 @@ using VRage.ModAPI;
 using VRage.Utils;
 using VRageMath;
 using ColorExtensions = LcdMod.Client.Extensions.ColorExtensions;
-using IMyCubeGrid = VRage.Game.ModAPI.IMyCubeGrid;
 using VisualStackPanel = LcdMod.Client.Gui.ControlsTemplates.Panels.StackPanel.StackPanel;
 using VisualWrapPanel = LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel.WrapPanel;
 
@@ -394,7 +393,7 @@ namespace LcdMod.Client.Apps.Abstract
             if (panel == null)
                 return;
 
-            var desired = new List<Control>(entries == null ? 0 : entries.Count);
+            var desired = new List<Control>(entries?.Count ?? 0);
             var desiredKeys = new HashSet<string>();
             if (entries != null)
             {
@@ -445,7 +444,7 @@ namespace LcdMod.Client.Apps.Abstract
 
         void RenderListPanelContent(ControlTemplate control, List<MySprite> sprites)
         {
-            var children = control != null ? control.Children : null;
+            var children = control?.Children;
             if (children == null)
                 return;
 
@@ -457,7 +456,7 @@ namespace LcdMod.Client.Apps.Abstract
 
         void RenderGridPanelContent(ControlTemplate control, List<MySprite> sprites)
         {
-            var children = control != null ? control.Children : null;
+            var children = control?.Children;
             if (children == null)
                 return;
 
@@ -626,9 +625,9 @@ namespace LcdMod.Client.Apps.Abstract
                     (xEnd - xStart) - cellPadding,
                     rowHeight - cellPadding);
                 var dropShadow = new RectangleF(cellRect.Position + 2, cellRect.Size);
-                Border.CreateSpritesFromRect(dropShadow, sprites, hsv.HSVtoColor(),
+                BorderRenderer.CreateSpritesFromRect(dropShadow, sprites, hsv.HSVtoColor(),
                     radiusScale: Scale);
-                Border.CreateSpritesFromRect(cellRect, sprites, backgroundColor,
+                BorderRenderer.CreateSpritesFromRect(cellRect, sprites, backgroundColor,
                     radiusScale: Scale);
             }
 

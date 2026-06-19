@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.Styling;
-using LcdMod.Common.Helpers;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 

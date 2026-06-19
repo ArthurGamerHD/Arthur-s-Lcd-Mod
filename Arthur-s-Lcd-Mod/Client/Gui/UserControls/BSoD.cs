@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts.Abstract;
-using LcdMod.Common.Helpers;
 using VRage.Collections;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;

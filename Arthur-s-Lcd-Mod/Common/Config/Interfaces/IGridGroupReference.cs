@@ -1,5 +1,4 @@
 using Generated;
-using VRage.Game.ModAPI;
 
 namespace LcdMod.Common.Config.Interfaces
 {

@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using LcdMod.Common.Helpers;
 using VRage.ModAPI;
 using VRage.Utils;
 using static LcdMod.Common.Helpers.Constants;

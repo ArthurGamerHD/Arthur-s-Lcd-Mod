@@ -724,4 +724,68 @@ Vi venter en stund og starter den deretter på nytt for deg.</value>
   <data name="LcdMod_MarketApp_Updated" xml:space="preserve">
     <value>Updated {0} ago</value>
   </data>
+
+  <data name="LcdMod_InGameClockDashboard" xml:space="preserve">
+    <value>Klokke i spillet</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DeepSpace" xml:space="preserve">
+    <value>Dyprom</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_UnknownPlanet" xml:space="preserve">
+    <value>Ukjent planet</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_Weather_Clear" xml:space="preserve">
+    <value>Klart</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_Weather_Unknown" xml:space="preserve">
+    <value>Vær</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DayMoment_Unknown" xml:space="preserve">
+    <value>Ukjent</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DayMoment_Night" xml:space="preserve">
+    <value>Natt</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DayMoment_Dawn" xml:space="preserve">
+    <value>Daggry</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DayMoment_Morning" xml:space="preserve">
+    <value>Morgen</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DayMoment_Noon" xml:space="preserve">
+    <value>Middag</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DayMoment_Afternoon" xml:space="preserve">
+    <value>Ettermiddag</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DayMoment_Dusk" xml:space="preserve">
+    <value>Skumring</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DayMoment_NoLocalDay" xml:space="preserve">
+    <value>Ingen lokal dag</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DayMoment_PolarDay" xml:space="preserve">
+    <value>Polardag</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_Control_24Hour" xml:space="preserve">
+    <value>Klokke: 24-timersformat</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_Control_Temperature" xml:space="preserve">
+    <value>Klokke: temperatur</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_Control_Temperature_Tooltip" xml:space="preserve">
+    <value>Temperaturverdiene anslås ut fra spillets normaliserte temperaturskala i området 270 K til 320 K, og konverteres deretter til den valgte enheten.</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_Temperature_Fuzzy" xml:space="preserve">
+    <value>Omtrentlig</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_Temperature_Celsius" xml:space="preserve">
+    <value>Celsius (°C)</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_Temperature_Kelvin" xml:space="preserve">
+    <value>Kelvin (K)</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_Temperature_Fahrenheit" xml:space="preserve">
+    <value>Fahrenheit (°F)</value>
+  </data>
 </root>

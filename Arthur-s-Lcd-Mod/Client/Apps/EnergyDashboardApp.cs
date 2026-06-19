@@ -155,7 +155,7 @@ namespace LcdMod.Client.Apps
         public override void Update()
         {
             CaptureLease();
-            _latest = _lease != null ? _lease.Latest : new PowerSnapshot();
+            _latest = _lease?.Latest ?? new PowerSnapshot();
             BuildRows(_latest.ProducerSubtypes, _producerRows,
                 EnergyDashboardPowerMetrics.GetCurrentProducerTotal(_latest),
                 EnergyDashboardPowerCategory.Producer, false);
@@ -176,7 +176,7 @@ namespace LcdMod.Client.Apps
             float top = GetContentTop();
             var bounds = new RectangleF(Host.ViewBox.X, top, Host.ViewBox.Width,
                 Math.Max(0f, Host.ViewBox.Bottom - top));
-            BindControls(GetSnapshots(_lease != null ? _lease.History : null));
+            BindControls(GetSnapshots(_lease?.History));
             _rootGrid.SetRows(CreateRootRows(bounds.Height, AppConfig.Scale));
             _rootGrid.Arrange(bounds);
             _rootGrid.Render(sprites);
@@ -266,7 +266,7 @@ namespace LcdMod.Client.Apps
         void CaptureLease()
         {
             var client = LcdModSessionComponent.Client;
-            var powerData = client != null ? client.PowerData : null;
+            var powerData = client?.PowerData;
             if (powerData == null)
                 return;
 
@@ -731,7 +731,7 @@ namespace LcdMod.Client.Apps
         Vector2 GetCursorPosition()
         {
             var interactive = Host as IEyeTracking;
-            return interactive != null ? interactive.CursorPosition : new Vector2(float.NaN, float.NaN);
+            return interactive?.CursorPosition ?? new Vector2(float.NaN, float.NaN);
         }
 
         float GetContentTop()

@@ -7,13 +7,10 @@ using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Dialogs;
-using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Client.Helpers;
 using LcdMod.Common.Config.Models.Apps;
-using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
-using VRage.Game.ModAPI;
 using VRageMath;
 using static LcdMod.Common.Helpers.Constants;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
@@ -302,7 +299,7 @@ namespace LcdMod.Client.Apps
         float GetImageScale()
         {
             var config = AppConfig;
-            return config != null ? config.Scale : 1f;
+            return config?.Scale ?? 1f;
         }
 
         static bool TryGetSourceSize(string spriteName, out Vector2 size)
@@ -405,7 +402,7 @@ namespace LcdMod.Client.Apps
 
         bool HasLocalPlayerAccess()
         {
-            var block = _interactiveHost != null ? _interactiveHost.Block as IMyTerminalBlock : null;
+            var block = _interactiveHost?.Block as IMyTerminalBlock;
             return block != null && block.HasLocalPlayerAccess();
         }
 

@@ -1,4 +1,3 @@
-using System;
 using LcdMod.Client.Gui.ControlsTemplates.Dialogs;
 using ProtoBuf;
 
@@ -27,8 +26,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 Index = Index,
                 Title = Title,
                 SpriteName = SpriteName,
-                Target = Target == null ? null : Target.Clone(),
-                Action = Action == null ? null : Action.Clone()
+                Target = Target?.Clone(),
+                Action = Action?.Clone()
             };
         }
 

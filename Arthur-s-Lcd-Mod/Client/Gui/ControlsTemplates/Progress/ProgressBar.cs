@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using LcdMod.Client.Gui.Styling;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 
@@ -6,6 +7,21 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Progress
 {
     public sealed class ProgressBar : RectangleControl
     {
+        public static readonly StyleProperty<float> HeightRatioProperty =
+            StyleProperty.Register<ProgressBar, float>("HeightRatio", 1f);
+
+        public static readonly StyleProperty<float> MinHeightPixelsProperty =
+            StyleProperty.Register<ProgressBar, float>("MinHeightPixels", 0f);
+
+        public static readonly StyleProperty<float> MaxHeightPixelsProperty =
+            StyleProperty.Register<ProgressBar, float>("MaxHeightPixels", 0f);
+
+        public static readonly StyleProperty<float> HorizontalInsetRatioProperty =
+            StyleProperty.Register<ProgressBar, float>("HorizontalInsetRatio", 0f);
+
+        public static readonly StyleProperty<float> MaxHorizontalInsetPixelsProperty =
+            StyleProperty.Register<ProgressBar, float>("MaxHorizontalInsetPixels", 0f);
+
         public ProgressBar(RectangleF bounds) : base(bounds, null, null)
         {
             Fraction = 0f;
@@ -19,6 +35,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Progress
         public Color? FillColorOverride { get; set; }
         public float CornerRadius { get; set; }
         public ProgressBarStyle ProgressBarStyle { get; set; }
+
+        public override void Arrange(RectangleF bounds)
+        {
+            base.Arrange(GetStyledBarBounds(bounds));
+        }
 
         protected override void RenderDefault(List<MySprite> sprites)
         {
@@ -50,6 +71,32 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Progress
                 CornerRadius,
                 ProgressBarStyle);
             EndContentClip(sprites);
+        }
+
+        RectangleF GetStyledBarBounds(RectangleF bounds)
+        {
+            float layoutScale = LayoutScale;
+            float heightRatio = MathHelper.Clamp(ResolveStyleValue(HeightRatioProperty), 0f, 1f);
+            float minHeight = MathHelper.Max(0f, ResolveStyleValue(MinHeightPixelsProperty) * layoutScale);
+            float maxHeight = MathHelper.Max(0f, ResolveStyleValue(MaxHeightPixelsProperty) * layoutScale);
+            float height = bounds.Height * heightRatio;
+            if (maxHeight > 0f)
+                height = MathHelper.Min(height, maxHeight);
+            height = MathHelper.Max(minHeight, height);
+            height = MathHelper.Clamp(height, 0f, bounds.Height);
+
+            float insetRatio = MathHelper.Clamp(ResolveStyleValue(HorizontalInsetRatioProperty), 0f, 0.49f);
+            float maxInset = MathHelper.Max(0f, ResolveStyleValue(MaxHorizontalInsetPixelsProperty) * layoutScale);
+            float horizontalInset = bounds.Width * insetRatio;
+            if (maxInset > 0f)
+                horizontalInset = MathHelper.Min(horizontalInset, maxInset);
+            horizontalInset = MathHelper.Clamp(horizontalInset, 0f, bounds.Width * 0.49f);
+
+            return new RectangleF(
+                bounds.X + horizontalInset,
+                bounds.Center.Y - height * 0.5f,
+                MathHelper.Max(1f, bounds.Width - horizontalInset * 2f),
+                MathHelper.Max(1f, height));
         }
     }
     

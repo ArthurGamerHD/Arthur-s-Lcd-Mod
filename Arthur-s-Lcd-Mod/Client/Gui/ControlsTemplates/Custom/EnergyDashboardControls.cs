@@ -7,7 +7,6 @@ using LcdMod.Client.Gui.ControlsTemplates.Progress;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Modules.Power;
-using LcdMod.Common.Helpers;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 using GridControl = LcdMod.Client.Gui.ControlsTemplates.Panels.Grid;
@@ -103,7 +102,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
                 }
             }
 
-            int seriesCount = Math.Min(MaxGraphSeries, rows == null ? 0 : rows.Count);
+            int seriesCount = Math.Min(MaxGraphSeries, rows?.Count ?? 0);
             for (int r = 0; r < seriesCount; r++)
             {
                 var row = rows[r];
@@ -451,7 +450,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
 
         static float GetTimeSpacedX(RectangleF plot, List<PowerSnapshot> snapshots, int index)
         {
-            int count = snapshots != null ? snapshots.Count : 0;
+            int count = snapshots?.Count ?? 0;
             if (count <= 1)
                 return plot.X;
 
@@ -518,7 +517,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
 
         long GetInterpolatedFrame(float ratio)
         {
-            int count = _snapshots != null ? _snapshots.Count : 0;
+            int count = _snapshots?.Count ?? 0;
             if (count <= 0)
                 return 0L;
             if (count == 1)
@@ -531,7 +530,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
 
         string FormatRelativeTime(long frame)
         {
-            int count = _snapshots != null ? _snapshots.Count : 0;
+            int count = _snapshots?.Count ?? 0;
             if (count <= 1)
                 return "now";
 
@@ -677,15 +676,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
         public void SetRow(EnergyDashboardPowerRow row)
         {
             _row = row;
-            var entry = row != null ? row.Entry : null;
+            var entry = row?.Entry;
             _icon.Label = GetRowLabel(entry);
             _icon.Amount = entry != null ? entry.BlockCount.ToString(FormatingHelper.Culture) : "0";
-            _icon.Color = row != null ? row.Color : Color.White;
+            _icon.Color = row?.Color ?? Color.White;
             _icon.SpriteName = row != null ? row.SpriteName : string.Empty;
             _name.Text = GetRowLabel(entry);
 
             _bar.Fraction = row != null ? EnergyDashboardPowerMetrics.Ratio(row.CurrentW, row.RatioDenominatorW) : 0f;
-            _bar.FillColor = row != null ? row.Color : Color.White;
+            _bar.FillColor = row?.Color ?? Color.White;
             _bar.FillColorOverride = null;
             _bar.CornerRadius = -1f;
 
@@ -729,7 +728,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
                     panelColorKey = ThemeResources.SurfaceContainerColor;
 
                 if (panelColorKey != null)
-                    Border.CreateSpritesFromRect(Bounds, sprites, ResolveColor(panelColorKey),
+                    BorderRenderer.CreateSpritesFromRect(Bounds, sprites, ResolveColor(panelColorKey),
                         radiusScale: LayoutScale);
             }
 

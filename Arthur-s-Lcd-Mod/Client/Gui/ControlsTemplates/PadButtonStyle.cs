@@ -41,8 +41,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             var model = control.DataContext as ButtonModel;
             RenderTile(control,
                 control.Bounds,
-                model != null ? model.Text : null,
-                tile != null ? tile.SpriteName : null,
+                model?.Text,
+                tile?.SpriteName,
                 sprites);
         }
 
@@ -50,7 +50,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             List<MySprite> sprites)
         {
             var button = control as Button;
-            var panelColor = button != null ? button.BackgroundColor : control.BackgroundColor;
+            var panelColor = button?.BackgroundColor ?? control.BackgroundColor;
             var textColor = control.TextColor;
             var shadowColor = control.GetResourceColor(ThemeResources.ShadowColor, new Color(0, 0, 0, 160));
 
@@ -58,10 +58,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             var radius = minDim * RADIUS_FRACTION;
             var shadowOffset = Math.Max(1f, minDim * SHADOW_FRACTION);
 
-            Border.CreateSpritesFromRect(
+            BorderRenderer.CreateSpritesFromRect(
                 new RectangleF(rect.X + shadowOffset, rect.Y + shadowOffset, rect.Width, rect.Height),
                 sprites, shadowColor, radiusPixels: radius, radiusScale: 1f);
-            Border.CreateSpritesFromRect(rect, sprites, panelColor, radiusPixels: radius, radiusScale: 1f);
+            BorderRenderer.CreateSpritesFromRect(rect, sprites, panelColor, radiusPixels: radius, radiusScale: 1f);
 
             if (!string.IsNullOrEmpty(spriteName))
                 DrawIcon(rect, spriteName, sprites);

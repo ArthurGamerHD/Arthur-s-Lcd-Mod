@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using LcdMod.Client.Helpers;
 using LcdMod.Common.Market;
@@ -9,7 +8,6 @@ using Sandbox.ModAPI;
 using VRage;
 using VRage.Game;
 using VRage.Game.ObjectBuilders.Definitions;
-using VRage.Utils;
 using VRageMath;
 using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 
@@ -211,7 +209,7 @@ namespace LcdMod.Client.Market
         static NpcMarketStationQuote CreateQuote(string itemKey, NpcMarketSellerFactionDto seller,
             NpcMarketStationDto station, NpcMarketOfferDto offer, NpcMarketMode mode, Vector3D viewerPosition)
         {
-            var sellerFactionId = seller != null ? seller.FactionId : 0L;
+            var sellerFactionId = seller?.FactionId ?? 0L;
             var current = NpcMarketPricing.ApplyViewerPrice(sellerFactionId, offer.RawPricePerUnit, offer.StoreItemType);
             var previous = offer.PreviousRawPricePerUnit > 0
                 ? NpcMarketPricing.ApplyViewerPrice(sellerFactionId, offer.PreviousRawPricePerUnit, offer.StoreItemType)
@@ -226,14 +224,14 @@ namespace LcdMod.Client.Market
                 SubtypeId = offer.SubtypeId,
                 PrefabName = offer.PrefabName,
                 PrefabTotalPcu = offer.PrefabTotalPcu,
-                StationId = station != null ? station.StationId : 0L,
+                StationId = station?.StationId ?? 0L,
                 StationName = GetStationDisplayName(seller, station),
-                StationPosition = station != null ? station.Position : Vector3D.Zero,
+                StationPosition = station?.Position ?? Vector3D.Zero,
                 SellerFactionId = sellerFactionId,
                 SellerFactionTag = seller != null ? seller.Tag : string.Empty,
                 SellerFactionName = seller != null ? seller.Name : string.Empty,
-                KnowledgeFlags = station != null ? station.KnowledgeFlags : NpcMarketStationKnowledgeFlags.None,
-                KnownByMemberCount = station != null ? station.KnownByMemberCount : 0,
+                KnowledgeFlags = station?.KnowledgeFlags ?? NpcMarketStationKnowledgeFlags.None,
+                KnownByMemberCount = station?.KnownByMemberCount ?? 0,
                 RawPreviousPricePerUnit = offer.PreviousRawPricePerUnit,
                 RawCurrentPricePerUnit = offer.RawPricePerUnit,
                 PersonalizedPreviousPricePerUnit = previous,
@@ -359,7 +357,7 @@ namespace LcdMod.Client.Market
         static Vector3D GetViewerPosition()
         {
             var player = MyAPIGateway.Session?.LocalHumanPlayer;
-            return player != null ? player.GetPosition() : Vector3D.Zero;
+            return player?.GetPosition() ?? Vector3D.Zero;
         }
 
         static string GetOfferKey(NpcMarketOfferDto offer)

@@ -124,9 +124,7 @@ namespace LcdMod.Client.Helpers
                 if (defaultComponent == null || defaultComponent.BuilderType != farmLogicType)
                     continue;
 
-                var componentSubtype = defaultComponent.SubtypeId.HasValue
-                    ? defaultComponent.SubtypeId.Value
-                    : MyStringHash.NullOrEmpty;
+                var componentSubtype = defaultComponent.SubtypeId ?? MyStringHash.NullOrEmpty;
 
                 MyComponentDefinitionBase component;
                 if (!MyDefinitionManager.Static.TryGetComponentDefinition(farmLogicType, componentSubtype, out component))
@@ -244,14 +242,14 @@ namespace LcdMod.Client.Helpers
         public static bool TryGetRuntimeRemainingSeconds(FarmPlotEntry plot, out double remainingSeconds)
         {
             remainingSeconds = 0d;
-            var block = plot != null ? plot.Block : null;
+            var block = plot?.Block;
             if (block == null || plot.Logic == null || !plot.Logic.IsPlantPlanted)
                 return false;
 
             try
             {
-                var container = block.Components != null ? block.Components.Serialize(false) : null;
-                var components = container != null ? container.Components : null;
+                var container = block.Components?.Serialize(false);
+                var components = container?.Components;
                 if (components == null)
                     return false;
 

@@ -10,7 +10,6 @@ using LcdMod.Client.Helpers;
 using LcdMod.Common.Config.Models.Apps;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
-using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.Gui.ControlsTemplates.Custom
 {
@@ -170,10 +169,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
             {
                 Color color;
                 if (waterRatio < .3f)
-                    color = config != null ? config.ErrorColor : ResolveColor(ThemeResources.ErrorColor);
+                    color = config?.ErrorColor ?? ResolveColor(ThemeResources.ErrorColor);
                 else if (waterRatio < .6f)
                     // TODO: move warning/error bar colors into the theme.
-                    color = config != null ? config.WarningColor : new Color(224, 160, 16);
+                    color = config?.WarningColor ?? new Color(224, 160, 16);
                 else
                     color = WaterBarColor;
 
@@ -195,7 +194,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
             Color GetStatusColor(FarmApp.FarmEntry entry)
             {
                 var plot = entry.Plot;
-                var logic = plot != null ? plot.Logic : null;
+                var logic = plot?.Logic;
                 if (logic == null || !logic.IsPlantPlanted)
                     return ResolveColor(ThemeResources.OnSurfaceColor);
                 if (!logic.IsAlive)

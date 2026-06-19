@@ -38,13 +38,13 @@ namespace LcdMod.Client.Market
 
         public bool HasSellQuote => BestSellQuote != null;
 
-        public int BuyPricePerUnit => BestBuyQuote != null ? BestBuyQuote.PersonalizedCurrentPricePerUnit : 0;
+        public int BuyPricePerUnit => BestBuyQuote?.PersonalizedCurrentPricePerUnit ?? 0;
 
-        public int SellPricePerUnit => BestSellQuote != null ? BestSellQuote.PersonalizedCurrentPricePerUnit : 0;
+        public int SellPricePerUnit => BestSellQuote?.PersonalizedCurrentPricePerUnit ?? 0;
 
-        public float BuyDeltaPercent => BestBuyQuote != null ? BestBuyQuote.EffectiveViewerChangePercent : 0f;
+        public float BuyDeltaPercent => BestBuyQuote?.EffectiveViewerChangePercent ?? 0f;
 
-        public float SellDeltaPercent => BestSellQuote != null ? BestSellQuote.EffectiveViewerChangePercent : 0f;
+        public float SellDeltaPercent => BestSellQuote?.EffectiveViewerChangePercent ?? 0f;
 
         public string GetSecondaryLabel()
         {

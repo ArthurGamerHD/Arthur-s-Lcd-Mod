@@ -85,6 +85,8 @@ namespace LcdMod.Client.Terminal
             Controls.Add(new SliderRadarRange());
             Controls.Add(new SliderNpcMarketMaxDistance());
             Controls.Add(new SliderNpcMarketPageSwitchDelay());
+            Controls.Add(new SwitchClockDashboard24Hour());
+            Controls.Add(new ComboboxClockDashboardTemperatureMode());
             Controls.Add(new SliderAutoScrollStep());
 
             Controls.Add(new SwitchToggleColors());
@@ -236,7 +238,7 @@ namespace LcdMod.Client.Terminal
 
         void CaptureSurfaceControl(IMyTerminalControl control)
         {
-            string controlId = NormalizeSurfaceControlId(control != null ? control.Id : null);
+            string controlId = NormalizeSurfaceControlId(control?.Id);
             if (control == null || string.IsNullOrEmpty(controlId) || SurfaceControls.ContainsKey(control))
                 return;
 

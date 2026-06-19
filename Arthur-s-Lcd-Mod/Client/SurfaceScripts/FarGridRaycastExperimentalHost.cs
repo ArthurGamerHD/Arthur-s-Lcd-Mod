@@ -4,7 +4,6 @@ using LcdMod.Client.Apps;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Gui;
-using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Terminal.Controls.Generic;
 using LcdMod.Client.Terminal.Controls.Scale;
 using LcdMod.Common.Config.Models.Apps;

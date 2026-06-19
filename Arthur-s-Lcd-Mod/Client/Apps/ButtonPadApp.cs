@@ -4,7 +4,6 @@ using System.Globalization;
 using System.Text;
 using LcdMod.Client.Config;
 using LcdMod.Client.Apps.Abstract;
-using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui;
 using LcdMod.Client.GridData;
 using LcdMod.Client.Gui.ControlsTemplates;
@@ -23,7 +22,6 @@ using LcdMod.Client.Terminal.Models.Actions;
 using LcdMod.Client.Terminal.Models.Property;
 using Sandbox.ModAPI.Interfaces;
 #endif
-using LcdMod.Common.Config.Models;
 using LcdMod.Common.Config.Models.Apps;
 using LcdMod.Common.Helpers;
 using Sandbox.Game.Entities;
@@ -376,8 +374,8 @@ namespace LcdMod.Client.Apps
             model.Row = row;
             model.Column = column;
             var entry = GetEntry(index, false);
-            model.SpriteName = entry != null ? entry.SpriteName : null;
-            model.Title = entry != null ? entry.Title : null;
+            model.SpriteName = entry?.SpriteName;
+            model.Title = entry?.Title;
             model.Text = string.Empty;
             model.Enabled = true;
             model.Clicked = OnPadButtonClicked;
@@ -398,21 +396,21 @@ namespace LcdMod.Client.Apps
             var rect = control.Bounds;
             var hovered = rect.Contains(new Vector2(float.NaN, float.NaN));
             var button = control as Button;
-            var defaultPanelColor = button != null ? button.BackgroundColor : control.BackgroundColor;
+            var defaultPanelColor = button?.BackgroundColor ?? control.BackgroundColor;
             var panelColor = hovered
                 ? control.GetResourceColor(ThemeResources.AccentColor, defaultPanelColor)
                 : defaultPanelColor;
             var plusColor = control.TextColor;
             var shadowColor = control.GetResourceColor(ThemeResources.ShadowColor, new Color(0, 0, 0, 160));
 
-            Border.CreateSpritesFromRect(
+            BorderRenderer.CreateSpritesFromRect(
                 new RectangleF(rect.Position + 2f * control.LayoutScale, rect.Size),
                 sprites,
                 shadowColor,
                 radiusScale: control.LayoutScale
             );
 
-            Border.CreateSpritesFromRect(
+            BorderRenderer.CreateSpritesFromRect(
                 rect,
                 sprites,
                 panelColor,
@@ -420,8 +418,8 @@ namespace LcdMod.Client.Apps
             );
 
             var model = control.DataContext as PadButtonModel;
-            var spriteName = model != null ? model.SpriteName : null;
-            var title = model != null ? model.Title : null;
+            var spriteName = model?.SpriteName;
+            var title = model?.Title;
 
             var hasTitle = !string.IsNullOrWhiteSpace(title);
             var titleAreaHeight = hasTitle ? Math.Max(12f, rect.Height * 0.24f) : 0f;
@@ -499,7 +497,7 @@ namespace LcdMod.Client.Apps
         void OnPadButtonClicked(ButtonModel model, object sender)
         {
             var padModel = model as PadButtonModel;
-            var index = padModel != null ? padModel.Index : -1;
+            var index = padModel?.Index ?? -1;
             var initialEntry = GetEntry(index, false);
 
             if (HasConfiguredAction(initialEntry) && TryRunEntryAction(initialEntry))
@@ -514,13 +512,13 @@ namespace LcdMod.Client.Apps
         void OnPadButtonSecondaryClicked(object dataContext, object sender)
         {
             var padModel = dataContext as PadButtonModel;
-            OpenEntryEditor(padModel != null ? padModel.Index : -1);
+            OpenEntryEditor(padModel?.Index ?? -1);
         }
 
         bool OnPadButtonScrolled(object dataContext, object sender, int delta)
         {
             var padModel = dataContext as PadButtonModel;
-            var entry = GetEntry(padModel != null ? padModel.Index : -1, false);
+            var entry = GetEntry(padModel?.Index ?? -1, false);
 
             if (!IsEntryScrollEnabled(entry))
                 return false;
@@ -544,7 +542,7 @@ namespace LcdMod.Client.Apps
                 this,
                 Host.GridLogic,
                 index,
-                initialEntry == null ? null : initialEntry.Clone(),
+                initialEntry?.Clone(),
                 entry =>
                 {
                     ApplyEntry(index, entry);
@@ -838,7 +836,7 @@ namespace LcdMod.Client.Apps
             var increaseDecreaseAction = customAction as IncreaseDecreaseAction;
             if (increaseDecreaseAction != null)
             {
-                var clickAction = NormalizeClickAction(settings == null ? null : settings.ClickAction, CLICK_INCREASE);
+                var clickAction = NormalizeClickAction(settings?.ClickAction, CLICK_INCREASE);
                 return ApplyTerminalAction(
                     clickAction == CLICK_DECREASE ? increaseDecreaseAction.Decrease : increaseDecreaseAction.Increase,
                     block);
@@ -847,7 +845,7 @@ namespace LcdMod.Client.Apps
             var onOffAction = customAction as OnOffAction;
             if (onOffAction != null)
             {
-                var mode = NormalizeBooleanMode(settings == null ? null : settings.ParameterValue, BOOLEAN_TOGGLE);
+                var mode = NormalizeBooleanMode(settings?.ParameterValue, BOOLEAN_TOGGLE);
                 if (mode == BOOLEAN_ON)
                     return ApplyTerminalAction(onOffAction.On, block);
                 if (mode == BOOLEAN_OFF)
@@ -889,7 +887,7 @@ namespace LcdMod.Client.Apps
             IMyIngameTerminalBlock block,
             int delta)
         {
-            var scrollMode = NormalizeScrollMode(settings == null ? null : settings.ScrollMode, SCROLL_NONE);
+            var scrollMode = NormalizeScrollMode(settings?.ScrollMode, SCROLL_NONE);
             if (scrollMode == SCROLL_NONE || delta == 0)
                 return false;
 
@@ -929,7 +927,7 @@ namespace LcdMod.Client.Apps
             if (action == null || action.Property == null || block == null)
                 return false;
 
-            var mode = NormalizeBooleanMode(settings == null ? null : settings.ParameterValue, BOOLEAN_TOGGLE);
+            var mode = NormalizeBooleanMode(settings?.ParameterValue, BOOLEAN_TOGGLE);
             var value = mode == BOOLEAN_TOGGLE
                 ? !action.Property.GetValue(block)
                 : mode == BOOLEAN_ON;
@@ -1224,9 +1222,7 @@ namespace LcdMod.Client.Apps
         Vector2 GetCursorPosition()
         {
             var interactiveHost = Host as InteractiveSurfaceScript;
-            return interactiveHost != null
-                ? interactiveHost.CursorPosition
-                : new Vector2(float.NaN, float.NaN);
+            return interactiveHost?.CursorPosition ?? new Vector2(float.NaN, float.NaN);
         }
 
         string TrimText(string text, float availableWidth, float fontSize, IMyTextSurface surface)
@@ -1458,9 +1454,9 @@ namespace LcdMod.Client.Apps
                     Alignment = TextAlignment.CENTER
                 });
 
-                Border.CreateSpritesFromRect(new RectangleF(cardRect.Position + 3f * scale, cardRect.Size), Sprites,
+                BorderRenderer.CreateSpritesFromRect(new RectangleF(cardRect.Position + 3f * scale, cardRect.Size), Sprites,
                     ResolveColor(ThemeResources.ShadowColor), radiusScale: scale);
-                Border.CreateSpritesFromRect(cardRect, Sprites,
+                BorderRenderer.CreateSpritesFromRect(cardRect, Sprites,
                     ResolveColor(ThemeResources.SurfaceContainerHighColor), radiusScale: scale);
             }
 
@@ -1493,15 +1489,15 @@ namespace LcdMod.Client.Apps
             {
                 var rect = control.Bounds;
                 var model = control.DataContext as SelectedSpriteButtonModel;
-                var spriteName = model != null ? model.SpriteName : null;
+                var spriteName = model?.SpriteName;
                 var hovered = rect.Contains(new Vector2(float.NaN, float.NaN));
                 var button = control as Button;
-                var defaultPanelColor = button != null ? button.BackgroundColor : control.BackgroundColor;
+                var defaultPanelColor = button?.BackgroundColor ?? control.BackgroundColor;
                 var panelColor = hovered
                     ? control.GetResourceColor(ThemeResources.AccentColor, defaultPanelColor)
                     : defaultPanelColor;
 
-                Border.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: control.LayoutScale);
+                BorderRenderer.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: control.LayoutScale);
 
                 var foregroundColor = control.TextColor;
                 var iconSize = Math.Max(1f, Math.Min(rect.Width, rect.Height) * 0.74f);
@@ -1671,11 +1667,11 @@ namespace LcdMod.Client.Apps
                 var enabled = buttonModel == null || buttonModel.Enabled;
                 var hovered = enabled && rect.Contains(new Vector2(float.NaN, float.NaN));
                 var button = control as Button;
-                var defaultPanelColor = button != null ? button.BackgroundColor : control.BackgroundColor;
+                var defaultPanelColor = button?.BackgroundColor ?? control.BackgroundColor;
                 var panelColor = hovered
                     ? control.GetResourceColor(ThemeResources.AccentColor, defaultPanelColor)
                     : defaultPanelColor;
-                Border.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: control.LayoutScale);
+                BorderRenderer.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: control.LayoutScale);
 
                 var text = buttonModel == null ? string.Empty : buttonModel.Text;
                 var textScale = 0.52f * control.LayoutScale * control.FontScale;
@@ -1749,7 +1745,7 @@ namespace LcdMod.Client.Apps
                 _showDialog(new PickActionTargetDialog(
                     ParentApp,
                     _gridLogic,
-                    _draftEntry.Target == null ? null : _draftEntry.Target.ToPickResult(),
+                    _draftEntry.Target?.ToPickResult(),
                     OnPickTargetSelected,
                     OnPickTargetCancelled,
                     _requestRedraw));
@@ -1757,9 +1753,9 @@ namespace LcdMod.Client.Apps
 
             void OnPickTargetSelected(PickActionTargetResult target)
             {
-                var oldKey = _draftEntry.Target == null ? null : _draftEntry.Target.CompatibilityKey;
+                var oldKey = _draftEntry.Target?.CompatibilityKey;
                 _draftEntry.Target = ButtonPanelTargetSettings.FromPickResult(target);
-                var newKey = _draftEntry.Target == null ? null : _draftEntry.Target.CompatibilityKey;
+                var newKey = _draftEntry.Target?.CompatibilityKey;
                 if (!string.Equals(oldKey, newKey, StringComparison.OrdinalIgnoreCase))
                     _draftEntry.Action = null;
 
@@ -1791,7 +1787,7 @@ namespace LcdMod.Client.Apps
 
             void OnActionSelected(ButtonPanelActionSettings action)
             {
-                var selectedAction = action == null ? null : action.Clone();
+                var selectedAction = action?.Clone();
                 if (selectedAction != null &&
                     _draftEntry.Action != null &&
                     string.Equals(selectedAction.BaseId, _draftEntry.Action.BaseId, StringComparison.OrdinalIgnoreCase))
@@ -1824,7 +1820,7 @@ namespace LcdMod.Client.Apps
 
             void OnActionConfigured(ButtonPanelActionSettings action)
             {
-                _draftEntry.Action = action == null ? null : action.Clone();
+                _draftEntry.Action = action?.Clone();
                 if (_showDialog != null)
                     _showDialog(this);
                 _requestRedraw?.Invoke();

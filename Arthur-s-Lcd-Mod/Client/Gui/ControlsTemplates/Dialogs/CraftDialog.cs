@@ -170,9 +170,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             RegisterDialogCard(cardRect);
 
             var shadowColor = ResolveColor(ThemeResources.ShadowColor);
-            Border.CreateSpritesFromRect(new RectangleF(cardRect.Position + 2f, cardRect.Size), Sprites, shadowColor,
+            BorderRenderer.CreateSpritesFromRect(new RectangleF(cardRect.Position + 2f, cardRect.Size), Sprites, shadowColor,
                 radiusScale: scale);
-            Border.CreateSpritesFromRect(cardRect, Sprites, cardColor,
+            BorderRenderer.CreateSpritesFromRect(cardRect, Sprites, cardColor,
                 radiusScale: scale);
 
             var title = _useRequestGrid ? "Craft all" : Loc(MOD_PREFIX + "CraftDialog_Title");
@@ -327,7 +327,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 if (cellRect.Width <= 0f || cellRect.Height <= 0f)
                     continue;
 
-                Border.CreateSpritesFromRect(cellRect, Sprites, itemBackground, radiusScale: scale);
+                BorderRenderer.CreateSpritesFromRect(cellRect, Sprites, itemBackground, radiusScale: scale);
 
                 var iconSize = Math.Max(0f, Math.Min(30f * scale, cellRect.Height - 8f * scale));
                 var iconRect = new RectangleF(
@@ -381,7 +381,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 return;
 
             _amountControl.SetStyleId("Primary");
-            _amountControl.BorderRadiusPixels = Border.DEFAULT_RADIUS_PIXELS;
+            _amountControl.BorderRadiusPixels = BorderRenderer.DEFAULT_RADIUS_PIXELS;
         }
 
         void EnsureAssemblerControl(RectangleF rect)
@@ -413,7 +413,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 : control.ResolveColor(ThemeResources.SurfaceContainerColor);
             var labelColor = control.ResolveColor(ThemeResources.OnSurfaceColor);
 
-            Border.CreateSpritesFromRect(rect, sprites, fill,
+            BorderRenderer.CreateSpritesFromRect(rect, sprites, fill,
                 radiusScale: control.LayoutScale);
             sprites.Add(new MySprite
             {
@@ -825,9 +825,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
             RegisterDialogCard(cardRect);
 
-            Border.CreateSpritesFromRect(new RectangleF(cardRect.Position + 2f, cardRect.Size), Sprites,
+            BorderRenderer.CreateSpritesFromRect(new RectangleF(cardRect.Position + 2f, cardRect.Size), Sprites,
                 ResolveColor(ThemeResources.ShadowColor), radiusScale: scale);
-            Border.CreateSpritesFromRect(cardRect, Sprites, cardColor,
+            BorderRenderer.CreateSpritesFromRect(cardRect, Sprites, cardColor,
                 radiusScale: scale);
 
             var title = LocHelper.GetLoc(MOD_PREFIX + "CraftDialog_AssemblerSelection_Title");

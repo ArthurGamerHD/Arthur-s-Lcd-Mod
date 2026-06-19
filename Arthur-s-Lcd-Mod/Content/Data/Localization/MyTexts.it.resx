@@ -725,4 +725,68 @@ Attenderemo un momento e poi la riavvieremo per te.</value>
   <data name="LcdMod_MarketApp_Updated" xml:space="preserve">
     <value>Updated {0} ago</value>
   </data>
+
+  <data name="LcdMod_InGameClockDashboard" xml:space="preserve">
+    <value>Orologio di gioco</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DeepSpace" xml:space="preserve">
+    <value>Spazio profondo</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_UnknownPlanet" xml:space="preserve">
+    <value>Pianeta sconosciuto</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_Weather_Clear" xml:space="preserve">
+    <value>Sereno</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_Weather_Unknown" xml:space="preserve">
+    <value>Meteo</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DayMoment_Unknown" xml:space="preserve">
+    <value>Sconosciuto</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DayMoment_Night" xml:space="preserve">
+    <value>Notte</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DayMoment_Dawn" xml:space="preserve">
+    <value>Alba</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DayMoment_Morning" xml:space="preserve">
+    <value>Mattina</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DayMoment_Noon" xml:space="preserve">
+    <value>Mezzogiorno</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DayMoment_Afternoon" xml:space="preserve">
+    <value>Pomeriggio</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DayMoment_Dusk" xml:space="preserve">
+    <value>Crepuscolo</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DayMoment_NoLocalDay" xml:space="preserve">
+    <value>Nessun giorno locale</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DayMoment_PolarDay" xml:space="preserve">
+    <value>Giorno polare</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_Control_24Hour" xml:space="preserve">
+    <value>Orologio: formato 24 ore</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_Control_Temperature" xml:space="preserve">
+    <value>Orologio: temperatura</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_Control_Temperature_Tooltip" xml:space="preserve">
+    <value>I valori della temperatura sono stimati in base alla scala di temperatura normalizzata del gioco, utilizzando un intervallo da 270 K a 320 K, e quindi convertiti nell'unità selezionata.</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_Temperature_Fuzzy" xml:space="preserve">
+    <value>Approssimativa</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_Temperature_Celsius" xml:space="preserve">
+    <value>Celsius (°C)</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_Temperature_Kelvin" xml:space="preserve">
+    <value>Kelvin (K)</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_Temperature_Fahrenheit" xml:space="preserve">
+    <value>Fahrenheit (°F)</value>
+  </data>
 </root>

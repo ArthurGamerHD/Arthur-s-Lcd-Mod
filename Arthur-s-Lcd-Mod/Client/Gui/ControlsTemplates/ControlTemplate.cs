@@ -37,6 +37,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         public static readonly StyleProperty<float> FontScaleProperty =
             StyleProperty.Register<ControlTemplate, float>("FontScale", 1f);
 
+        public static readonly StyleProperty<float> OpacityProperty =
+            StyleProperty.Register<ControlTemplate, float>("Opacity", 1f);
+
         public static readonly StyleProperty<Color> BackgroundColorProperty =
             StyleProperty.Register<ControlTemplate, Color>("BackgroundColor", (Color?)Color.Gray);
 
@@ -44,7 +47,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             StyleProperty.Register<ControlTemplate, Color>("BorderColor", (Color?)Color.Transparent);
 
         public static readonly StyleProperty<float> BorderRadiusPixelsProperty =
-            StyleProperty.Register<ControlTemplate, float>("BorderRadiusPixels", (float?)Border.DEFAULT_RADIUS_PIXELS);
+            StyleProperty.Register<ControlTemplate, float>("BorderRadiusPixels", (float?)BorderRenderer.DEFAULT_RADIUS_PIXELS);
 
         public static readonly StyleProperty<float> BorderThicknessPixelsProperty =
             StyleProperty.Register<ControlTemplate, float>("BorderThicknessPixels", (float?)0f);
@@ -595,7 +598,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             var rect = GetViewBox();
             var fillColor = GetRenderBackgroundColor();
 
-            Border.CreateSpritesFromRect(rect, sprites, fillColor,
+            BorderRenderer.CreateSpritesFromRect(rect, sprites, fillColor,
                 radiusPixels: GetRenderBorderRadiusPixels(),
                 radiusScale: LayoutScale);
             RenderDefaultText(rect, sprites);
@@ -604,6 +607,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         protected virtual Color GetRenderBackgroundColor()
         {
             return BackgroundColor;
+        }
+
+        protected Color ApplyOpacity(Color color)
+        {
+            float opacity = MathHelper.Clamp(Opacity, 0f, 1f);
+            byte alpha = (byte)Math.Round(color.A * opacity);
+            return new Color(color.R, color.G, color.B, alpha);
         }
 
         protected virtual Color GetRenderTextColor()

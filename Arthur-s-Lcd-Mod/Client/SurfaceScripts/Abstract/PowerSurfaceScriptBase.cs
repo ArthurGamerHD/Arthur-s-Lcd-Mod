@@ -443,9 +443,9 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                     (xEnd - xStart) - cellPadding,
                     rowHeight - cellPadding);
                 var dropShadow = new RectangleF(cellRect.Position + 2, cellRect.Size);
-                Border.CreateSpritesFromRect(dropShadow, sprites, hsv.HSVtoColor(),
+                BorderRenderer.CreateSpritesFromRect(dropShadow, sprites, hsv.HSVtoColor(),
                     radiusScale: ConfiguredScale);
-                Border.CreateSpritesFromRect(cellRect, sprites, backgroundColor,
+                BorderRenderer.CreateSpritesFromRect(cellRect, sprites, backgroundColor,
                     radiusScale: ConfiguredScale);
             }
 

@@ -26,7 +26,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
         public Color? SelectedPanelColor { get; set; }
         public Color? SelectedTextColor { get; set; }
 
-        public int Count => Items == null ? 0 : Items.Count;
+        public int Count => Items?.Count ?? 0;
 
         public T GetItem(int index)
         {

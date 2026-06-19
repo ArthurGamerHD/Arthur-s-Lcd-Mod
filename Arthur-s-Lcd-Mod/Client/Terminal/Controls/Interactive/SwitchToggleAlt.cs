@@ -1,6 +1,4 @@
 using LcdMod.Client.Config;
-using LcdMod.Common.Config.Models;
-using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;

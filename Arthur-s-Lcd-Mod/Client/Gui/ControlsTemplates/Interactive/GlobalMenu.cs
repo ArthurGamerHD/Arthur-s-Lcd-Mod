@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.Styling;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
@@ -57,7 +56,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             if (!Visible || targetSprites == null || _menu == null || !_menu.Visible)
                 return;
 
-            IVisualStyleScope styleScope = owner != null ? owner.App : null;
+            IVisualStyleScope styleScope = owner?.App;
             if (styleScope == null)
                 return;
 

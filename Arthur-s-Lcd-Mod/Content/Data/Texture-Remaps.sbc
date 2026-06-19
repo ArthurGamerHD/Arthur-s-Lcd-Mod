@@ -38,6 +38,12 @@
             <Selectable>false</Selectable>
         </LCDTextureDefinition>
 
+        <LCDTextureDefinition> <!-- Remap of Vanilla temperature sprite typo -->
+            <Id Type="LCDTextureDefinition" Subtype="IconTemperature"/>
+            <SpritePath>Textures/GUI/Icons/HUD 2017/OusideTemp.png</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
         <LCDTextureDefinition> <!-- Remap of Vanilla "Search" sprite -->
             <Id Type="LCDTextureDefinition" Subtype="Search"/>
             <SpritePath>Textures/GUI/Icons/HUD 2017/F1Icon.png</SpritePath>

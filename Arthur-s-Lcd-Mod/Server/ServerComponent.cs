@@ -104,7 +104,7 @@ namespace LcdMod.Server
         public void HandleLocalRequestNpcMarket(PacketRequestNpcMarket packet)
         {
             var player = MyAPIGateway.Session?.Player;
-            _npcMarket.HandleRequest(player != null ? player.SteamUserId : MyAPIGateway.Multiplayer.MyId, packet);
+            _npcMarket.HandleRequest(player?.SteamUserId ?? MyAPIGateway.Multiplayer.MyId, packet);
         }
 
 #if EXPERIMENTAL
@@ -116,7 +116,7 @@ namespace LcdMod.Server
         public void HandleLocalRequestBroadcastAudio(PacketRequestBroadcastAudio packet)
         {
             var player = MyAPIGateway.Session?.Player;
-            _audioBroadcast.HandleRequest(player != null ? player.SteamUserId : MyAPIGateway.Multiplayer.MyId, packet);
+            _audioBroadcast.HandleRequest(player?.SteamUserId ?? MyAPIGateway.Multiplayer.MyId, packet);
         }
 #endif
 
@@ -299,7 +299,7 @@ namespace LcdMod.Server
 
         static List<IMyTerminalBlock> CollectOwnedBlocks(long[] ids, long senderIdentity)
         {
-            var blocks = new List<IMyTerminalBlock>(ids != null ? ids.Length : 0);
+            var blocks = new List<IMyTerminalBlock>(ids?.Length ?? 0);
             if (ids == null)
                 return blocks;
 

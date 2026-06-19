@@ -334,8 +334,8 @@ namespace LcdMod.Client.Apps
             a.Z *= 0.2f;
             var cellRect = new RectangleF(rl, rt, rr - rl, rb - rt);
             var dropShadow = new RectangleF(cellRect.Position + 2, cellRect.Size);
-            Border.CreateSpritesFromRect(dropShadow, frame, a.HSVtoColor(), radiusScale: Scale);
-            Border.CreateSpritesFromRect(cellRect, frame, backgroundColor, radiusScale: Scale);
+            BorderRenderer.CreateSpritesFromRect(dropShadow, frame, a.HSVtoColor(), radiusScale: Scale);
+            BorderRenderer.CreateSpritesFromRect(cellRect, frame, backgroundColor, radiusScale: Scale);
         }
 
         double GetNeededQty(MyItemType itemType)
@@ -610,7 +610,7 @@ namespace LcdMod.Client.Apps
             var rect = control.Bounds;
             var hover = enabled && rect.Contains(new Vector2(float.NaN, float.NaN));
             var button = control as Button;
-            var defaultButtonColor = button != null ? button.BackgroundColor : control.BackgroundColor;
+            var defaultButtonColor = button?.BackgroundColor ?? control.BackgroundColor;
             var buttonColor = hover
                 ? control.GetResourceColor(ThemeResources.AccentColor, defaultButtonColor)
                 : defaultButtonColor;
@@ -618,7 +618,7 @@ namespace LcdMod.Client.Apps
             var text = model == null || string.IsNullOrEmpty(model.Text) ? CRAFT_ALL_TEXT : model.Text;
             var textScale = GetCraftAllButtonTextScale(control.LayoutScale, control.FontScale);
 
-            Border.CreateSpritesFromRect(rect, sprites, buttonColor, radiusScale: control.LayoutScale);
+            BorderRenderer.CreateSpritesFromRect(rect, sprites, buttonColor, radiusScale: control.LayoutScale);
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,

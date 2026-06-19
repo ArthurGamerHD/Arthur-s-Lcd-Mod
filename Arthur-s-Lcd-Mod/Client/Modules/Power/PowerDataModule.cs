@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using LcdMod.Client.GridData;
 using VRage.Game.ModAPI;

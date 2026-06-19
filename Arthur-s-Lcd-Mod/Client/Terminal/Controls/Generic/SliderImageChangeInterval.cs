@@ -43,7 +43,7 @@ namespace LcdMod.Client.Terminal.Controls.Generic
         float Getter(IMyTerminalBlock block)
         {
             var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigDigitalPictureFrames;
-            return config != null ? config.ImageChangeInterval : 0f;
+            return config?.ImageChangeInterval ?? 0f;
         }
     }
 }

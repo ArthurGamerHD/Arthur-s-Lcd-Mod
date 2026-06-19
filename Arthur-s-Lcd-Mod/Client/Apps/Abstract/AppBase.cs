@@ -19,6 +19,7 @@ namespace LcdMod.Client.Apps.Abstract
         ResourceTree _resources;
         Dictionary<string, Color> _theme;
         Color _themeHeaderColor;
+        Color _themeForegroundColor;
         bool _themeDark;
         float _themeLayoutScale;
         float _themeFontScale;
@@ -66,7 +67,7 @@ namespace LcdMod.Client.Apps.Abstract
             return control;
         }
 
-        public Sandbox.ModAPI.Ingame.IMyTextSurface TextSurface => Host != null ? Host.Surface : null;
+        public Sandbox.ModAPI.Ingame.IMyTextSurface TextSurface => Host?.Surface;
 
         public string TextFont
         {
@@ -123,7 +124,12 @@ namespace LcdMod.Client.Apps.Abstract
             if (colorable != null)
                 return colorable.HeaderColor;
 
-            return Host != null ? Host.ForegroundColor : Color.White;
+            return Host?.ForegroundColor ?? Color.White;
+        }
+
+        protected Color GetForegroundColor()
+        {
+            return Host?.ForegroundColor ?? Color.White;
         }
 
         protected Color ResolveResource(ResourceKey<Color> key, Color fallback)
@@ -140,6 +146,7 @@ namespace LcdMod.Client.Apps.Abstract
         void EnsureResources()
         {
             var headerColor = GetHeaderColor();
+            var foregroundColor = GetForegroundColor();
             bool dark = ShouldUseDarkTheme();
             float layoutScale = GetLayoutScaleResourceValue();
             float fontScale = GetFontScaleResourceValue();
@@ -147,6 +154,7 @@ namespace LcdMod.Client.Apps.Abstract
 
             if (!_hasTheme ||
                 !headerColor.Equals(_themeHeaderColor) ||
+                !foregroundColor.Equals(_themeForegroundColor) ||
                 dark != _themeDark ||
                 !layoutScale.Equals(_themeLayoutScale) ||
                 !fontScale.Equals(_themeFontScale) ||
@@ -155,11 +163,13 @@ namespace LcdMod.Client.Apps.Abstract
             {
                 _theme = headerColor.ToTheme(dark);
                 _resources = ThemeResourceBuilder.FromThemeDictionary(_theme);
+                _resources.Set(ThemeResources.FontColor, foregroundColor);
                 _resources.Set(ThemeResources.LayoutScale, layoutScale);
                 _resources.Set(ThemeResources.FontScale, fontScale);
                 _resources.Set(ThemeResources.AutoScrollSecondsPerStep, AppConfig.AutoScrollStep);
                 _resources.Set(ThemeResources.TextFont, textFont);
                 _themeHeaderColor = headerColor;
+                _themeForegroundColor = foregroundColor;
                 _themeDark = dark;
                 _themeLayoutScale = layoutScale;
                 _themeFontScale = fontScale;
@@ -172,7 +182,7 @@ namespace LcdMod.Client.Apps.Abstract
 
         float GetLayoutScaleResourceValue()
         {
-            float scale = AppConfig != null ? AppConfig.Scale : Host != null && Host.Config != null ? Host.Config.Scale : 1f;
+            float scale = AppConfig?.Scale ?? (Host != null && Host.Config != null ? Host.Config.Scale : 1f);
             return scale > 0f ? scale : 1f;
         }
 

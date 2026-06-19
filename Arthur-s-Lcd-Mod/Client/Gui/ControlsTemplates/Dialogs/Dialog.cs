@@ -268,7 +268,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
             _closeButton.TextColor = ResolveColor(ThemeResources.OnSurfaceColor);
             _closeButton.BackgroundColor = ResolveColor(ThemeResources.SurfaceContainerColor);
-            _closeButton.BorderRadiusPixels = Border.DEFAULT_RADIUS_PIXELS;
+            _closeButton.BorderRadiusPixels = BorderRenderer.DEFAULT_RADIUS_PIXELS;
             _closeButton.SetStyleParent(this);
             _closeButton.CustomRender = RenderDialogCloseButton;
             _closeButton.SetCursor(CursorType.Hand);
@@ -284,7 +284,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 ? ResolveColor(ThemeResources.SurfaceContainerLowColor)
                 : ResolveColor(ThemeResources.SurfaceContainerColor);
 
-            Border.CreateSpritesFromRect(
+            BorderRenderer.CreateSpritesFromRect(
                 rect,
                 sprites,
                 fillColor,

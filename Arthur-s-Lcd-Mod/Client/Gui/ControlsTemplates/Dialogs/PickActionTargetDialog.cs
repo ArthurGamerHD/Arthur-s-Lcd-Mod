@@ -214,9 +214,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Alignment = TextAlignment.CENTER
             });
 
-            Border.CreateSpritesFromRect(new RectangleF(cardRect.Position + 3f * scale, cardRect.Size), Sprites,
+            BorderRenderer.CreateSpritesFromRect(new RectangleF(cardRect.Position + 3f * scale, cardRect.Size), Sprites,
                 ResolveColor(ThemeResources.ShadowColor), radiusScale: scale);
-            Border.CreateSpritesFromRect(cardRect, Sprites,
+            BorderRenderer.CreateSpritesFromRect(cardRect, Sprites,
                 ResolveColor(ThemeResources.SurfaceContainerHighColor), radiusScale: scale);
         }
 
@@ -400,8 +400,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         void RenderComboButton(ControlTemplate control, List<MySprite> sprites)
         {
             var rect = control.Bounds;
-            var hovered = rect.Contains(new Vector2(float.NaN, float.NaN));
-            Border.CreateSpritesFromRect(rect, sprites, control.BackgroundColor, radiusScale: control.LayoutScale);
+            rect.Contains(new Vector2(float.NaN, float.NaN));
+            BorderRenderer.CreateSpritesFromRect(rect, sprites, control.BackgroundColor, radiusScale: control.LayoutScale);
 
             var textScale = 0.56f * control.LayoutScale * control.FontScale;
             var label = TrimText(GetKindLabel(_kind), Math.Max(0f, rect.Width - 32f * control.LayoutScale), textScale, control.TextSurface);
@@ -438,7 +438,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         {
             var rowHeight = comboRect.Height;
             var listRect = new RectangleF(comboRect.X, comboRect.Bottom + 2f * scale, comboRect.Width, rowHeight * Kinds.Length);
-            Border.CreateSpritesFromRect(listRect, Sprites, ResolveColor(ThemeResources.SurfaceContainerHighestColor), radiusScale: scale);
+            BorderRenderer.CreateSpritesFromRect(listRect, Sprites, ResolveColor(ThemeResources.SurfaceContainerHighestColor), radiusScale: scale);
 
             for (var i = 0; i < Kinds.Length; i++)
             {
@@ -495,7 +495,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 return;
 
             var selected = model.Kind == _kind;
-            var hovered = rect.Contains(new Vector2(float.NaN, float.NaN));
+            rect.Contains(new Vector2(float.NaN, float.NaN));
             control.SetStyleId(selected ? "Primary" : null);
             var panelColor = selected
                 ? ResolveColor(ThemeResources.AccentContainerColor)
@@ -504,7 +504,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 ? ResolveColor(ThemeResources.OnAccentContainerColor)
                 : control.TextColor;
 
-            Border.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: control.LayoutScale);
+            BorderRenderer.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: control.LayoutScale);
 
             var textScale = 0.52f * control.LayoutScale * control.FontScale;
             var textHeight = FormatingHelper.LineHeight(textScale, control, control.TextSurface);
@@ -561,7 +561,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             if (listRect.Width <= 1f || listRect.Height <= 1f)
                 return;
 
-            Border.CreateSpritesFromRect(listRect, Sprites, ResolveColor(ThemeResources.SurfaceContainerHighColor), radiusScale: scale);
+            BorderRenderer.CreateSpritesFromRect(listRect, Sprites, ResolveColor(ThemeResources.SurfaceContainerHighColor), radiusScale: scale);
 
             var rowHeight = GetRowHeight(scale);
             var scrollerWidth = Math.Min(_scrollPanel.AutomaticScrollerWidthPixels * scale, Math.Max(0f, listRect.Width * 0.25f));
@@ -653,11 +653,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         {
             var rect = control.Bounds;
             var model = control.DataContext as TargetRowButtonModel;
-            var target = model != null ? model.Target : null;
+            var target = model?.Target;
             if (target == null)
                 return;
 
-            var hovered = rect.Contains(new Vector2(float.NaN, float.NaN));
+            rect.Contains(new Vector2(float.NaN, float.NaN));
             var selected = IsSelected(target);
             control.SetStyleId(selected ? "Primary" : null);
             var panelColor = selected
@@ -667,7 +667,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 ? ResolveColor(ThemeResources.OnAccentContainerColor)
                 : control.TextColor;
 
-            Border.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: control.LayoutScale);
+            BorderRenderer.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: control.LayoutScale);
 
             var iconTargetSize = GetIconTargetSize(control.LayoutScale);
             var iconSize = Math.Min(iconTargetSize, Math.Max(1f, Math.Min(rect.Height, rect.Width) - 4f * Math.Max(1f, control.LayoutScale)));

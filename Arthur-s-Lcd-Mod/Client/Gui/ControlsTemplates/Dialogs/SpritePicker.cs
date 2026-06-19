@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using LcdMod.Client;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Inputs;
@@ -63,7 +62,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         InteractiveSurfaceScript _owner;
 
         public SpritePicker(IApp parentApp)
-            : this(parentApp, (Action<string>)null, null, null)
+            : this(parentApp, null)
         {
         }
 
@@ -242,13 +241,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 surface.TextureSize,
                 new Color(0, 0, 0, 128)));
 
-            Border.CreateSpritesFromRect(
+            BorderRenderer.CreateSpritesFromRect(
                 new RectangleF(cardRect.Position + 3f * scale, cardRect.Size),
                 Sprites,
                 ResolveColor(ThemeResources.ShadowColor),
                 radiusScale: scale);
 
-            Border.CreateSpritesFromRect(
+            BorderRenderer.CreateSpritesFromRect(
                 cardRect,
                 Sprites,
                 ResolveColor(ThemeResources.SurfaceContainerHighColor),
@@ -335,7 +334,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             if (listRect.Height <= 1f)
                 return;
 
-            Border.CreateSpritesFromRect(
+            BorderRenderer.CreateSpritesFromRect(
                 listRect,
                 Sprites,
                 ResolveColor(ThemeResources.SurfaceContainerColor),
@@ -361,12 +360,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _scrollPanel.SetVisible(true);
             ContainerControl.AddChild(_scrollPanel);
 
-            if (_filteredSprites.Count == 0)
-            {
+            if (_filteredSprites.Count == 0) 
                 DrawEmptyListMessage(listRect, scale, surface);
-                _scrollPanel.Render(Sprites);
-                return;
-            }
 
             _scrollPanel.Render(Sprites);
         }
@@ -445,7 +440,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                     rect.Width,
                     Math.Max(1f, rect.Height - ROW_GAP_PIXELS * entry.LayoutScale));
             }
-            var hovered = entry.IsMouseOver;
+
             var selected = AllowMultiSelection && model.IsSelected;
             var backgroundColor = selected
                 ? ResolveColor(ThemeResources.AccentContainerColor)
@@ -454,7 +449,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 ? ResolveColor(ThemeResources.OnAccentContainerColor)
                 : entry.TextColor;
 
-            Border.CreateSpritesFromRect(
+            BorderRenderer.CreateSpritesFromRect(
                 rect,
                 sprites,
                 backgroundColor,
@@ -480,7 +475,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                     iconSize,
                     iconSize);
 
-            Border.CreateSpritesFromRect(
+            BorderRenderer.CreateSpritesFromRect(
                 iconRect,
                 sprites,
                 ResolveColor(ThemeResources.SurfaceContainerLowestColor),
@@ -673,8 +668,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var rect = control.Bounds;
             var buttonModel = control.DataContext as ButtonModel;
             var enabled = buttonModel == null || buttonModel.Enabled;
-            var hovered = enabled && rect.Contains(new Vector2(float.NaN, float.NaN));
-            Border.CreateSpritesFromRect(rect, sprites, control.BackgroundColor, radiusScale: control.LayoutScale);
+            BorderRenderer.CreateSpritesFromRect(rect, sprites, control.BackgroundColor, radiusScale: control.LayoutScale);
 
             var text = buttonModel == null ? string.Empty : buttonModel.Text;
             var textScale = 0.54f * control.LayoutScale * control.FontScale;

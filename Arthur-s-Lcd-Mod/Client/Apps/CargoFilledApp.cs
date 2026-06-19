@@ -267,8 +267,8 @@ namespace LcdMod.Client.Apps
                 var cellRect = new RectangleF(xStart + cellPadding / 2f, yStart + cellPadding / 2f,
                     xEnd - xStart - cellPadding, rowHeight - cellPadding);
                 var dropShadow = new RectangleF(cellRect.Position + 2, cellRect.Size);
-                Border.CreateSpritesFromRect(dropShadow, frame, hsv.HSVtoColor(), radiusScale: AppConfig.Scale);
-                Border.CreateSpritesFromRect(cellRect, frame, backgroundColor, radiusScale: AppConfig.Scale);
+                BorderRenderer.CreateSpritesFromRect(dropShadow, frame, hsv.HSVtoColor(), radiusScale: AppConfig.Scale);
+                BorderRenderer.CreateSpritesFromRect(cellRect, frame, backgroundColor, radiusScale: AppConfig.Scale);
             }
 
             var nameHeight = Math.Max(0f, cellView.Height * .45f);
@@ -361,7 +361,7 @@ namespace LcdMod.Client.Apps
             if (panel == null)
                 return;
 
-            var desired = new List<Control>(entries == null ? 0 : entries.Count);
+            var desired = new List<Control>(entries?.Count ?? 0);
             var desiredIds = new HashSet<long>();
             if (entries != null)
             {
@@ -382,7 +382,7 @@ namespace LcdMod.Client.Apps
 
         private void RenderGridPanelContent(ControlTemplate control, List<MySprite> sprites)
         {
-            var children = control != null ? control.Children : null;
+            var children = control?.Children;
             if (children == null)
                 return;
 
@@ -614,7 +614,7 @@ namespace LcdMod.Client.Apps
                 textSize.X + 2f * padX,
                 textSize.Y + 2f * padY);
 
-            Border.CreateSpritesFromRect(rect, sprites,
+            BorderRenderer.CreateSpritesFromRect(rect, sprites,
                 Host.BackgroundColor.MulValue(0.2f), radiusScale: AppConfig.Scale);
             sprites.Add(new MySprite
             {

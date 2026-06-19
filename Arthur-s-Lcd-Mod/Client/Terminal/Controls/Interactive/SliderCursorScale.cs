@@ -1,7 +1,6 @@
 using System.Text;
 using LcdMod.Client.Config;
 using LcdMod.Common.Config.Models;
-using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;

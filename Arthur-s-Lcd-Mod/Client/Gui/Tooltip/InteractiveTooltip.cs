@@ -6,7 +6,6 @@ using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
-using LcdMod.Common.Helpers;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 
@@ -286,9 +285,9 @@ namespace LcdMod.Client.Gui.Tooltip
             _containerControl.ClearChildren();
             _interactiveEntries.Add(_containerControl);
 
-            Border.CreateSpritesFromRect(shadowRect, sprites, shadowColor,
+            BorderRenderer.CreateSpritesFromRect(shadowRect, sprites, shadowColor,
                 radiusScale: scale);
-            Border.CreateSpritesFromRect(cardRect, sprites, panelColor,
+            BorderRenderer.CreateSpritesFromRect(cardRect, sprites, panelColor,
                 radiusScale: scale);
 
             if (_cardControl == null)
@@ -565,7 +564,7 @@ namespace LcdMod.Client.Gui.Tooltip
                 ? ResolveColor(ThemeResources.SurfaceContainerColor)
                 : ResolveColor(ThemeResources.SurfaceColor);
 
-            Border.CreateSpritesFromRect(rect, sprites, fillColor,
+            BorderRenderer.CreateSpritesFromRect(rect, sprites, fillColor,
                 radiusScale: LayoutScale);
             RenderDefaultText(rect, sprites);
         }

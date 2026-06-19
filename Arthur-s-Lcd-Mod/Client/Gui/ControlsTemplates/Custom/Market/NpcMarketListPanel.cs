@@ -86,7 +86,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
             SortClicked = context.SortClicked;
             SearchClicked = context.SearchClicked;
             RowClicked = context.RowClicked;
-            SetRect(new RectangleF(Bounds.X, Bounds.Y, _page != null ? _page.Width : Bounds.Width, _page != null ? _page.Height : Bounds.Height));
+            SetRect(new RectangleF(Bounds.X, Bounds.Y, _page?.Width ?? Bounds.Width, _page?.Height ?? Bounds.Height));
         }
 
         void EnsureSortHeaderButtons()
@@ -445,7 +445,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
             var sortAscending = control.HasStyleClass("SortAscending");
             var sortDescending = control.HasStyleClass("SortDescending");
             var active = sortAscending || sortDescending;
-            var hovered = control.IsPointerOver;
             var textScale = 0.58f * control.LayoutScale * control.FontScale;
             var availableTextWidth = GetSortHeaderAvailableWidth(model.Column, rect, control.LayoutScale, active);
             var text = Trim(GetSortHeaderLabel(model), availableTextWidth, textScale);

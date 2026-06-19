@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using LcdMod.Client.GridData;
 using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Helpers;
-using LcdMod.Common.Helpers;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI.Ingame;
 using VRageMath;

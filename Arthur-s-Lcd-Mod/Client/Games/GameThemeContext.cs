@@ -3,7 +3,6 @@ using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Gui.Styling.Styles;
 using LcdMod.Client.SurfaceScripts.Abstract;
-using LcdMod.Common.Helpers;
 using VRageMath;
 
 namespace LcdMod.Client.Games
@@ -16,6 +15,7 @@ namespace LcdMod.Client.Games
         ResourceTree _resources;
         bool _isDirty = true;
         Color _themeHeaderColor;
+        Color _themeForegroundColor;
         bool _themeDark;
         string _themeTextFont;
         bool _hasTheme;
@@ -51,28 +51,37 @@ namespace LcdMod.Client.Games
 
         Color GetHeaderColor()
         {
-            var colorableConfig = _script == null ? null : _script.ColorableConfig;
+            var colorableConfig = _script?.ColorableConfig;
             if (colorableConfig != null)
                 return colorableConfig.HeaderColor;
 
-            return _script == null ? Color.White : _script.ForegroundColor;
+            return _script?.ForegroundColor ?? Color.White;
+        }
+
+        Color GetForegroundColor()
+        {
+            return _script?.ForegroundColor ?? Color.White;
         }
 
         Dictionary<string, Color> GetTheme()
         {
             var headerColor = GetHeaderColor();
+            var foregroundColor = GetForegroundColor();
             bool dark = ShouldUseDarkTheme();
             string textFont = GetTextFontResourceValue();
 
             if (!_hasTheme ||
                 !headerColor.Equals(_themeHeaderColor) ||
+                !foregroundColor.Equals(_themeForegroundColor) ||
                 dark != _themeDark ||
                 !string.Equals(textFont, _themeTextFont, System.StringComparison.Ordinal))
             {
                 _theme = headerColor.ToTheme(dark);
                 _resources = ThemeResourceBuilder.FromThemeDictionary(_theme);
+                _resources.Set(ThemeResources.FontColor, foregroundColor);
                 _resources.Set(ThemeResources.TextFont, textFont);
                 _themeHeaderColor = headerColor;
+                _themeForegroundColor = foregroundColor;
                 _themeDark = dark;
                 _themeTextFont = textFont;
                 _hasTheme = true;
@@ -90,7 +99,7 @@ namespace LcdMod.Client.Games
 
         bool ShouldUseDarkTheme()
         {
-            var foregroundColor = _script == null ? Color.White : _script.ForegroundColor;
+            var foregroundColor = _script?.ForegroundColor ?? Color.White;
             return foregroundColor.ContrastRatio(Color.Black) >=
                    foregroundColor.ContrastRatio(Color.White);
         }

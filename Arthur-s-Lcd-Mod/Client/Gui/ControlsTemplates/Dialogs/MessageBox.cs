@@ -1,12 +1,10 @@
 using System;
-using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Helpers;
-using LcdMod.Common.Helpers;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 using static LcdMod.Common.Helpers.Constants;
@@ -130,8 +128,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             RegisterDialogCard(cardRect);
 
             var shadowRect = new RectangleF(cardRect.Position + 2f, cardRect.Size);
-            Border.CreateSpritesFromRect(shadowRect, Sprites, shadowColor, radiusScale: scale);
-            Border.CreateSpritesFromRect(cardRect, Sprites, cardColor, radiusScale: scale);
+            BorderRenderer.CreateSpritesFromRect(shadowRect, Sprites, shadowColor, radiusScale: scale);
+            BorderRenderer.CreateSpritesFromRect(cardRect, Sprites, cardColor, radiusScale: scale);
 
             var currentY = cardRect.Y + padding.Y;
 

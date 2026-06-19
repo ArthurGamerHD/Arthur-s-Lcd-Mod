@@ -142,9 +142,6 @@ namespace LcdMod.Client.Apps
             float minH = BATTERY_SLOT_H * owner.Config.Scale;
             float contentTop = GetContentTop(owner) + 6f * owner.Config.Scale;
             float footerHeight = GetFooterHeight(owner);
-            float availW = owner.ViewBox.Width;
-            float xLeft = owner.ViewBox.X;
-            float xRight = owner.ViewBox.X + owner.ViewBox.Width;
 
             int count = _entries.Count;
             if (count <= 0)

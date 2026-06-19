@@ -7,9 +7,7 @@ using LcdMod.Client.GridData;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Dialogs;
-using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
-using LcdMod.Client.Gui.ControlsTemplates.Panels.StackPanel;
 using LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts.Abstract;
@@ -498,7 +496,7 @@ namespace LcdMod.Client.Apps.Abstract
             if (panel == null)
                 return;
 
-            var desired = new List<Control>(items == null ? 0 : items.Count);
+            var desired = new List<Control>(items?.Count ?? 0);
             var desiredTypes = new Dictionary<MyItemType, bool>();
             if (items != null)
             {
@@ -967,9 +965,9 @@ namespace LcdMod.Client.Apps.Abstract
             var accent = backgroundColor.MulValue(0.2f);
             var cellRect = new RectangleF(rl, rt, rr - rl, rb - rt);
             var dropShadow = new RectangleF(cellRect.Position + 2, cellRect.Size);
-            Border.CreateSpritesFromRect(dropShadow, frame, accent,
+            BorderRenderer.CreateSpritesFromRect(dropShadow, frame, accent,
                 radiusScale: Scale);
-            Border.CreateSpritesFromRect(cellRect, frame, backgroundColor,
+            BorderRenderer.CreateSpritesFromRect(cellRect, frame, backgroundColor,
                 radiusScale: Scale);
         }
 

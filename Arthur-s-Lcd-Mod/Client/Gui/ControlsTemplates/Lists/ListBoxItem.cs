@@ -41,7 +41,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
                 : ResolveColor(ThemeResources.OnAccentContainerColor);
 
             var rect = GetViewBox();
-            Border.CreateSpritesFromRect(rect, sprites, selectedPanel, GetRenderBorderRadiusPixels(), LayoutScale);
+            BorderRenderer.CreateSpritesFromRect(rect, sprites, selectedPanel, GetRenderBorderRadiusPixels(), LayoutScale);
             RenderDefaultText(rect, sprites, selectedText);
         }
     }

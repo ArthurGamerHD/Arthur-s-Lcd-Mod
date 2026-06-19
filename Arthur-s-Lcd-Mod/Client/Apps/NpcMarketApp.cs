@@ -706,9 +706,9 @@ namespace LcdMod.Client.Apps
 
             var button = control as Button;
             var outerColor = button?.BackgroundColor ?? control.BackgroundColor;
-            Border.CreateSpritesFromRect(rect, sprites, outerColor,
+            BorderRenderer.CreateSpritesFromRect(rect, sprites, outerColor,
                 radiusScale: control.LayoutScale);
-            Border.CreateSpritesFromRect(innerRect, sprites,
+            BorderRenderer.CreateSpritesFromRect(innerRect, sprites,
                 hovered
                     ? control.GetResourceColor(ThemeResources.AccentColor, outerColor)
                     : control.GetResourceColor(ThemeResources.SurfaceColor, outerColor),
@@ -884,7 +884,7 @@ namespace LcdMod.Client.Apps
             var text = model == null || string.IsNullOrEmpty(model.Text) ? MyTexts.GetString(LOC_REFRESH) : model.Text;
             var textScale = 0.58f * control.LayoutScale * control.FontScale;
 
-            Border.CreateSpritesFromRect(rect, sprites, color, radiusScale: control.LayoutScale);
+            BorderRenderer.CreateSpritesFromRect(rect, sprites, color, radiusScale: control.LayoutScale);
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,

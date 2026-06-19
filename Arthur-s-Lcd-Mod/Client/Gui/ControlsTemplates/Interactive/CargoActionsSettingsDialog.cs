@@ -1,14 +1,12 @@
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
-using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Dialogs;
 using LcdMod.Client.Gui.ControlsTemplates.Inputs;
 using LcdMod.Client.Gui.ControlsTemplates.Lists;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.Styling;
-using LcdMod.Client.Helpers;
 using LcdMod.Common.Config.Models.Apps;
 using LcdMod.Common.Helpers;
 using VRage;
@@ -86,9 +84,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             var cardMin = Math.Min(cardWidth, cardHeight);
             var cardRadius = cardMin * 0.04f;
             var cardShadow = Math.Max(1f, cardMin * 0.012f);
-            Border.CreateSpritesFromRect(new RectangleF(cardRect.X + cardShadow, cardRect.Y + cardShadow, cardWidth, cardHeight),
+            BorderRenderer.CreateSpritesFromRect(new RectangleF(cardRect.X + cardShadow, cardRect.Y + cardShadow, cardWidth, cardHeight),
                 Sprites, ResolveColor(ThemeResources.ShadowColor), radiusPixels: cardRadius, radiusScale: 1f);
-            Border.CreateSpritesFromRect(cardRect, Sprites,
+            BorderRenderer.CreateSpritesFromRect(cardRect, Sprites,
                 ResolveColor(ThemeResources.SurfaceContainerHighColor), radiusPixels: cardRadius, radiusScale: 1f);
 
             var titleScale = PadButtonStyle.TextScaleForHeight(
@@ -119,7 +117,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         protected void DrawLeftLabel(string text, Vector2 centerLeft, float maxWidth, float rowHeight, string role)
         {
             var provider = ParentApp as ITextSurfaceProvider;
-            var surface = provider != null ? provider.TextSurface : null;
+            var surface = provider?.TextSurface;
             var textScale = PadButtonStyle.TextScaleForHeight(
                 MathHelper.Clamp(rowHeight * 0.45f, 11f, 18f), TextFont, surface);
             var trimmed = PadButtonStyle.TrimToWidth(text, maxWidth, textScale, TextFont, surface);

@@ -3,7 +3,6 @@ using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.UserControls;
 using LcdMod.Client.Markdown;
-using LcdMod.Common.Config.Models;
 using LcdMod.Common.Config.Models.Apps;
 using LcdMod.Common.Helpers;
 using VRage.Game.GUI.TextPanel;
@@ -54,7 +53,7 @@ namespace LcdMod.Client.Apps
             _cachedSprites.Clear();
 
             var colorable = AppConfig;
-            Color headerColor = colorable != null ? colorable.HeaderColor : Host.ForegroundColor;
+            Color headerColor = colorable?.HeaderColor ?? Host.ForegroundColor;
             RectangleF contentViewBox = MarkdownPanel.GetContentViewBox(Host);
             MarkdownPanel.CreateSprites(
                 Document,

@@ -80,9 +80,7 @@ namespace LcdMod.Client.Terminal.Controls.VisibleTreeDebug
 
         static string GetScreenName(SurfaceScriptBase instance)
         {
-            string surfaceName = instance.Surface != null
-                ? instance.Surface.DisplayName
-                : null;
+            string surfaceName = instance.Surface?.DisplayName;
             if (string.IsNullOrEmpty(surfaceName))
                 surfaceName = "Screen " + instance.RotationOrSurfaceIndex;
 

@@ -304,8 +304,8 @@ namespace LcdMod.Client.GridData
 
         static int CompareGridEntityId(IMyCubeGrid left, IMyCubeGrid right)
         {
-            long a = left != null ? left.EntityId : 0;
-            long b = right != null ? right.EntityId : 0;
+            long a = left?.EntityId ?? 0;
+            long b = right?.EntityId ?? 0;
             return a.CompareTo(b);
         }
     }

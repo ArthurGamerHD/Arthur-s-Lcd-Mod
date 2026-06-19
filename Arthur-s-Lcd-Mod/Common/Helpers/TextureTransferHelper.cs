@@ -707,8 +707,8 @@ namespace LcdMod.Common.Helpers
                 existing.TextureName = normalizedTextureName;
                 existing.FileName = fileName;
                 existing.SizeBytes = byteCount;
-                existing.Width = metadata != null ? metadata.Width : 0;
-                existing.Height = metadata != null ? metadata.Height : 0;
+                existing.Width = metadata?.Width ?? 0;
+                existing.Height = metadata?.Height ?? 0;
                 existing.LastUpdatedUtcTicks = DateTime.UtcNow.Ticks;
 
                 SaveCacheIndex(index);

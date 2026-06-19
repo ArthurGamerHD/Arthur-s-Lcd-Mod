@@ -133,7 +133,7 @@ namespace LcdMod.Client.Market
             LogHelper.LogInfo("NPC market client accepted sync: request=" + packet.RequestId +
                               ", host=" + key.HostBlockEntityId + ", surface=" + key.HostSurfaceIndex +
                               ", scope=" + packet.Scope.Mode + ", sellers=" +
-                              (packet.Sellers != null ? packet.Sellers.Count : 0) + ", cache=" +
+                              (packet.Sellers?.Count ?? 0) + ", cache=" +
                               packet.WasServedFromCache + ", version=" + packet.Version);
 #endif
             var updated = Updated;

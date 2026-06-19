@@ -724,4 +724,68 @@ We wachten even en starten het daarna voor je opnieuw op.</value>
   <data name="LcdMod_MarketApp_Updated" xml:space="preserve">
     <value>Updated {0} ago</value>
   </data>
+
+  <data name="LcdMod_InGameClockDashboard" xml:space="preserve">
+    <value>Klok in het spel</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DeepSpace" xml:space="preserve">
+    <value>Diepe ruimte</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_UnknownPlanet" xml:space="preserve">
+    <value>Onbekende planeet</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_Weather_Clear" xml:space="preserve">
+    <value>Helder</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_Weather_Unknown" xml:space="preserve">
+    <value>Weer</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DayMoment_Unknown" xml:space="preserve">
+    <value>Onbekend</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DayMoment_Night" xml:space="preserve">
+    <value>Nacht</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DayMoment_Dawn" xml:space="preserve">
+    <value>Dageraad</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DayMoment_Morning" xml:space="preserve">
+    <value>Ochtend</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DayMoment_Noon" xml:space="preserve">
+    <value>Middag</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DayMoment_Afternoon" xml:space="preserve">
+    <value>Namiddag</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DayMoment_Dusk" xml:space="preserve">
+    <value>Schemering</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DayMoment_NoLocalDay" xml:space="preserve">
+    <value>Geen lokale dag</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_DayMoment_PolarDay" xml:space="preserve">
+    <value>Pooldag</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_Control_24Hour" xml:space="preserve">
+    <value>Klok: 24-uursnotatie</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_Control_Temperature" xml:space="preserve">
+    <value>Klok: temperatuur</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_Control_Temperature_Tooltip" xml:space="preserve">
+    <value>Temperatuurwaarden worden geschat op basis van de genormaliseerde temperatuurschaal van het spel, met een bereik van 270 K tot 320 K, en vervolgens omgerekend naar de geselecteerde eenheid.</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_Temperature_Fuzzy" xml:space="preserve">
+    <value>Bij benadering</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_Temperature_Celsius" xml:space="preserve">
+    <value>Celsius (°C)</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_Temperature_Kelvin" xml:space="preserve">
+    <value>Kelvin (K)</value>
+  </data>
+  <data name="LcdMod_ClockDashboard_Temperature_Fahrenheit" xml:space="preserve">
+    <value>Fahrenheit (°F)</value>
+  </data>
 </root>

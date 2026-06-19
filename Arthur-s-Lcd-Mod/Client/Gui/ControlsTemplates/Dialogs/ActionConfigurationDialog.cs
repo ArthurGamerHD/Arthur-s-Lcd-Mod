@@ -16,7 +16,6 @@ using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
-using LcdMod.Common.Helpers;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
@@ -99,8 +98,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             : base(parentApp)
         {
             _gridLogic = gridLogic;
-            _target = target == null ? null : target.Clone();
-            _action = action == null ? null : action.Clone();
+            _target = target?.Clone();
+            _action = action?.Clone();
             _selectedCallback = selectedCallback;
             _cancelCallback = cancelCallback;
             _requestRedraw = requestRedraw;
@@ -315,8 +314,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         void InitializeIncreaseDecreaseAction()
         {
             _parameterTypeName = TYPE_INCREASE_DECREASE;
-            _clickAction = NormalizeClickAction(_action == null ? null : _action.ClickAction, CLICK_INCREASE);
-            _scrollMode = NormalizeScrollMode(_action == null ? null : _action.ScrollMode, SCROLL_NONE);
+            _clickAction = NormalizeClickAction(_action?.ClickAction, CLICK_INCREASE);
+            _scrollMode = NormalizeScrollMode(_action?.ScrollMode, SCROLL_NONE);
         }
 
         void InitializeString(PropertyCustomAction<string> action, IMyIngameTerminalBlock block)
@@ -338,7 +337,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         void InitializeInt64(PropertyCustomAction<long> action, IMyIngameTerminalBlock block)
         {
             _parameterTypeName = TYPE_INT64;
-            _scrollMode = NormalizeScrollMode(_action == null ? null : _action.ScrollMode, SCROLL_NONE);
+            _scrollMode = NormalizeScrollMode(_action?.ScrollMode, SCROLL_NONE);
             _numberFormat = "0";
             _numberStep = 1d;
 
@@ -361,7 +360,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         void InitializeSingle(PropertyCustomAction<float> action, IMyIngameTerminalBlock block)
         {
             _parameterTypeName = TYPE_SINGLE;
-            _scrollMode = NormalizeScrollMode(_action == null ? null : _action.ScrollMode, SCROLL_NONE);
+            _scrollMode = NormalizeScrollMode(_action?.ScrollMode, SCROLL_NONE);
             _numberFormat = "0.###";
 
             var min = GetSingleMinimum(action, block, float.MinValue);
@@ -539,13 +538,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         void RenderColorButton(ControlTemplate control, System.Collections.Generic.List<MySprite> sprites)
         {
             var rect = control.Bounds;
-            var hovered = rect.Contains(new Vector2(float.NaN, float.NaN));
-            Border.CreateSpritesFromRect(rect, sprites, control.BackgroundColor, radiusScale: control.LayoutScale);
+            rect.Contains(new Vector2(float.NaN, float.NaN));
+            BorderRenderer.CreateSpritesFromRect(rect, sprites, control.BackgroundColor, radiusScale: control.LayoutScale);
 
             var padding = 6f * control.LayoutScale;
             var swatchSize = Math.Max(1f, rect.Height - padding * 2f);
             var swatchRect = new RectangleF(rect.X + padding, rect.Center.Y - swatchSize * 0.5f, swatchSize, swatchSize);
-            Border.CreateSpritesFromRect(swatchRect, sprites, _colorValue, radiusScale: control.LayoutScale);
+            BorderRenderer.CreateSpritesFromRect(swatchRect, sprites, _colorValue, radiusScale: control.LayoutScale);
 
             var textScale = 0.54f * control.LayoutScale * control.FontScale;
             var textHeight = FormatingHelper.LineHeight(textScale, control, control.TextSurface);
@@ -621,7 +620,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var model = control.DataContext as BooleanModeButtonModel;
             var mode = model == null ? string.Empty : model.Mode;
             var selected = string.Equals(_booleanMode, mode, StringComparison.OrdinalIgnoreCase);
-            var hovered = rect.Contains(new Vector2(float.NaN, float.NaN));
+            rect.Contains(new Vector2(float.NaN, float.NaN));
             control.SetStyleId(selected ? "Primary" : null);
             var panelColor = selected
                 ? ResolveColor(ThemeResources.AccentContainerColor)
@@ -630,7 +629,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 ? ResolveColor(ThemeResources.OnAccentContainerColor)
                 : control.TextColor;
 
-            Border.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: control.LayoutScale);
+            BorderRenderer.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: control.LayoutScale);
 
             var textScale = 0.50f * control.LayoutScale * control.FontScale;
             var availableWidth = Math.Max(0f, rect.Width - 8f * control.LayoutScale);
@@ -741,8 +740,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         void RenderScrollComboButton(ControlTemplate control, System.Collections.Generic.List<MySprite> sprites)
         {
             var rect = control.Bounds;
-            var hovered = rect.Contains(new Vector2(float.NaN, float.NaN));
-            Border.CreateSpritesFromRect(rect, sprites, control.BackgroundColor, radiusScale: control.LayoutScale);
+            rect.Contains(new Vector2(float.NaN, float.NaN));
+            BorderRenderer.CreateSpritesFromRect(rect, sprites, control.BackgroundColor, radiusScale: control.LayoutScale);
 
             var textScale = 0.54f * control.LayoutScale * control.FontScale;
             var label = TrimText(GetScrollModeLabel(_scrollMode), Math.Max(0f, rect.Width - 34f * control.LayoutScale), textScale, control.TextSurface);
@@ -782,7 +781,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
             var rowHeight = _scrollComboRect.Height;
             var listRect = new RectangleF(_scrollComboRect.X, _scrollComboRect.Bottom + 2f * scale, _scrollComboRect.Width, rowHeight * ScrollModes.Length);
-            Border.CreateSpritesFromRect(listRect, Sprites, ResolveColor(ThemeResources.SurfaceContainerHighestColor), radiusScale: scale);
+            BorderRenderer.CreateSpritesFromRect(listRect, Sprites, ResolveColor(ThemeResources.SurfaceContainerHighestColor), radiusScale: scale);
 
             for (var i = 0; i < ScrollModes.Length; i++)
             {
@@ -838,7 +837,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
         void RenderChoiceButton(ControlTemplate control, RectangleF rect, string text, bool selected, System.Collections.Generic.List<MySprite> sprites)
         {
-            var hovered = rect.Contains(new Vector2(float.NaN, float.NaN));
+            rect.Contains(new Vector2(float.NaN, float.NaN));
             control.SetStyleId(selected ? "Primary" : null);
             var panelColor = selected
                 ? ResolveColor(ThemeResources.AccentContainerColor)
@@ -847,7 +846,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 ? ResolveColor(ThemeResources.OnAccentContainerColor)
                 : control.TextColor;
 
-            Border.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: control.LayoutScale);
+            BorderRenderer.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: control.LayoutScale);
 
             var textScale = 0.50f * control.LayoutScale * control.FontScale;
             var availableWidth = Math.Max(0f, rect.Width - 8f * control.LayoutScale);
@@ -871,8 +870,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var rect = control.Bounds;
             var buttonModel = control.DataContext as ButtonModel;
             var enabled = buttonModel == null || buttonModel.Enabled;
-            var hovered = enabled && rect.Contains(new Vector2(float.NaN, float.NaN));
-            Border.CreateSpritesFromRect(rect, sprites, control.BackgroundColor, radiusScale: control.LayoutScale);
+            BorderRenderer.CreateSpritesFromRect(rect, sprites, control.BackgroundColor, radiusScale: control.LayoutScale);
 
             var text = buttonModel == null ? string.Empty : buttonModel.Text;
             var textScale = 0.54f * control.LayoutScale * control.FontScale;
@@ -1054,9 +1052,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Alignment = TextAlignment.CENTER
             });
 
-            Border.CreateSpritesFromRect(new RectangleF(cardRect.Position + 3f * scale, cardRect.Size), Sprites,
+            BorderRenderer.CreateSpritesFromRect(new RectangleF(cardRect.Position + 3f * scale, cardRect.Size), Sprites,
                 ResolveColor(ThemeResources.ShadowColor), radiusScale: scale);
-            Border.CreateSpritesFromRect(cardRect, Sprites,
+            BorderRenderer.CreateSpritesFromRect(cardRect, Sprites,
                 ResolveColor(ThemeResources.SurfaceContainerHighColor), radiusScale: scale);
         }
 
@@ -1077,7 +1075,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
         void DrawMessage(RectangleF rect, float scale, IMyTextSurface surface)
         {
-            Border.CreateSpritesFromRect(rect, Sprites, ResolveColor(ThemeResources.SurfaceContainerColor), radiusScale: scale);
+            BorderRenderer.CreateSpritesFromRect(rect, Sprites, ResolveColor(ThemeResources.SurfaceContainerColor), radiusScale: scale);
 
             var text = string.IsNullOrEmpty(_message) ? "No configurable parameters" : _message;
             var textScale = 0.46f * scale * surface.FontSize;

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
-using LcdMod.Common.Helpers;
+using LcdMod.Common.Config.Models.Apps;
 using VRage.Game;
 using VRageMath;
 using static LcdMod.Common.Helpers.Constants;
@@ -108,6 +108,36 @@ namespace LcdMod.Client.Helpers
             if (!level.HasValue)
                 return LocHelper.GetLoc(MOD_PREFIX + "NotAvailable");
             return LocHelper.GetLoc("Temperature" + level.Value);
+        }
+
+        public static string TemperatureToString(
+            float normalizedTemperature,
+            MyTemperatureLevel fuzzyLevel,
+            ClockDashboardTemperatureMode mode,
+            string format = "0.#")
+        {
+            if (mode == ClockDashboardTemperatureMode.Fuzzy)
+                return LocHelper.GetTemperatureLevelText(fuzzyLevel);
+
+            float normalized = MathHelper.Clamp(
+                float.IsNaN(normalizedTemperature) || float.IsInfinity(normalizedTemperature)
+                    ? 0f
+                    : normalizedTemperature,
+                0f,
+                1f);
+            float kelvin = 270f + normalized * 50f;
+            float celsius = kelvin - 273.15f;
+            string prefix = normalizedTemperature <= 0f ? "<" : normalizedTemperature >= 1f ? ">" : "";
+
+            switch (mode)
+            {
+                case ClockDashboardTemperatureMode.Kelvin:
+                    return prefix + kelvin.ToString(format, Culture) + "K";
+                case ClockDashboardTemperatureMode.Fahrenheit:
+                    return prefix + (celsius * 9f / 5f + 32f).ToString(format, Culture) + "°F";
+                default:
+                    return prefix + celsius.ToString(format, Culture) + "°C";
+            }
         }
 
         const float MW_TO_W_CONSTANT = 1000000.0f;

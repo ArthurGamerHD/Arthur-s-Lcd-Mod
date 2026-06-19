@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using Generated;
 using LcdMod.Client.Helpers;
-using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Utility;
 using LcdMod.Common.Helpers;

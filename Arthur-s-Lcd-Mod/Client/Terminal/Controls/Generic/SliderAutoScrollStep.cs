@@ -58,6 +58,9 @@ namespace LcdMod.Client.Terminal.Controls.Generic
         float Getter(IMyTerminalBlock block)
         {
             ScreenConfigInteractive config = ConfigManager.GetConfigForCurrentScreen(block);
+            if (config == null)
+                return 0f;
+
             return config.AutoScrollStep;
         }
         

@@ -6,8 +6,6 @@ using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Market;
-using LcdMod.Common.Helpers;
-using Sandbox.ModAPI;
 using VRage;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
@@ -79,9 +77,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
             Sprites.Add(new MySprite(SpriteType.TEXTURE, "SquareSimple", surface.TextureSize / 2f, surface.TextureSize,
                 new Color(0, 0, 0, 128)));
-            Border.CreateSpritesFromRect(new RectangleF(card.Position + 3f * scale, card.Size), Sprites,
+            BorderRenderer.CreateSpritesFromRect(new RectangleF(card.Position + 3f * scale, card.Size), Sprites,
                 ResolveColor(ThemeResources.ShadowColor), radiusScale: scale);
-            Border.CreateSpritesFromRect(card, Sprites, ResolveColor(ThemeResources.SurfaceContainerHighColor),
+            BorderRenderer.CreateSpritesFromRect(card, Sprites, ResolveColor(ThemeResources.SurfaceContainerHighColor),
                 radiusScale: scale);
             var padding = 18f * scale;
             var headerTop = card.Y + 14f * scale;
@@ -105,8 +103,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var rowHeight = 34f * scale;
             var listTop = tableHeaderTop + tableHeaderHeight;
             var listBottom = card.Bottom - padding - footerHeight;
-            var listRect = new RectangleF(card.X + padding, listTop, card.Width - padding * 2f,
-                Math.Max(0f, listBottom - listTop));
             var tableRect = new RectangleF(card.X + padding, tableHeaderTop, card.Width - padding * 2f,
                 Math.Max(0f, listBottom - tableHeaderTop));
             var tableContentRect = InsetListContent(tableRect, scale);
@@ -131,7 +127,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             if (rect.Width <= 0f || rect.Height <= 0f)
                 return;
 
-            Border.CreateSpritesFromRect(rect, Sprites, ResolveColor(ThemeResources.SecondaryContainerColor),
+            BorderRenderer.CreateSpritesFromRect(rect, Sprites, ResolveColor(ThemeResources.SecondaryContainerColor),
                 radiusScale: scale);
         }
 

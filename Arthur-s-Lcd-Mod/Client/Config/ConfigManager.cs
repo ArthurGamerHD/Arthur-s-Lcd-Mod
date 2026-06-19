@@ -5,7 +5,6 @@ using Generated;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Common.Config;
 using LcdMod.Common.Config.Models;
-using LcdMod.Common.Config.Models.Apps;
 using LcdMod.Common.Helpers;
 using LcdMod.Common.Networking;
 using Sandbox.Game.EntityComponents;

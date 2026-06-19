@@ -268,9 +268,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
         void UpdateResolvedAutoScrollSecondsPerStep()
         {
-            float secondsPerStep = _localAutoScrollSecondsPerStep.HasValue
-                ? _localAutoScrollSecondsPerStep.Value
-                : GetResourceAutoScrollSecondsPerStep();
+            float secondsPerStep = _localAutoScrollSecondsPerStep ?? GetResourceAutoScrollSecondsPerStep();
 
             if (Math.Abs(_resolvedAutoScrollSecondsPerStep - secondsPerStep) <= 0.0001f)
                 return;

@@ -4,7 +4,6 @@ using IAutoScroll = LcdMod.Client.Terminal.Controls.Generic.IAutoScroll;
 using LcdMod.Client.Apps;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Gui;
-using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Terminal.Controls.Generic;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;

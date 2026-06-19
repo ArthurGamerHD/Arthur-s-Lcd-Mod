@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using LcdMod.Client.Apps.Abstract;
-using LcdMod.Client.GridData;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
@@ -106,7 +105,7 @@ namespace LcdMod.Client.Apps
             if (control == null || sprites == null)
                 return;
 
-            var line = control.DataContext is DebugLine ? (DebugLine)control.DataContext : new DebugLine(string.Empty, Color.White);
+            var line = control.DataContext as DebugLine? ?? new DebugLine(string.Empty, Color.White);
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,

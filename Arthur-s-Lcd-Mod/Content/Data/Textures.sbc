@@ -145,5 +145,83 @@
             <SpritePath>Textures/Sprites/Refuel.dds</SpritePath>
             <Selectable>false</Selectable>
         </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Clock Dashboard: Sun sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="WeatherSun"/>
+            <SpritePath>Textures/Sprites/Weather/Sun.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Clock Dashboard: Moon sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="WeatherMoon"/>
+            <SpritePath>Textures/Sprites/Weather/Moon.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Clock Dashboard: Sunrise sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="WeatherSunRise"/>
+            <SpritePath>Textures/Sprites/Weather/SunRise.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Clock Dashboard: Sunset sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="WeatherSunSet"/>
+            <SpritePath>Textures/Sprites/Weather/SunSet.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Clock Dashboard: Dust storm sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="WeatherDustStorm"/>
+            <SpritePath>Textures/Sprites/Weather/DustStorm.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Clock Dashboard: Fog sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="WeatherFog"/>
+            <SpritePath>Textures/Sprites/Weather/Fog.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Clock Dashboard: Hailstorm sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="WeatherHailstorm"/>
+            <SpritePath>Textures/Sprites/Weather/Hailstorm.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Clock Dashboard: Heat wave sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="WeatherHeatWave"/>
+            <SpritePath>Textures/Sprites/Weather/HeatWave.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Clock Dashboard: Heavy wind sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="WeatherHeavyWind"/>
+            <SpritePath>Textures/Sprites/Weather/HeavyWind.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Clock Dashboard: Rain sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="WeatherRain"/>
+            <SpritePath>Textures/Sprites/Weather/Rain.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Clock Dashboard: Snow sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="WeatherSnow"/>
+            <SpritePath>Textures/Sprites/Weather/Snow.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Clock Dashboard: Thunderstorm sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="WeatherThunderStorm"/>
+            <SpritePath>Textures/Sprites/Weather/ThunderStorm.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Clock Dashboard: Toxic rain sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="WeatherToxicRain"/>
+            <SpritePath>Textures/Sprites/Weather/ToxicRain.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
     </LCDTextures>
 </Definitions>

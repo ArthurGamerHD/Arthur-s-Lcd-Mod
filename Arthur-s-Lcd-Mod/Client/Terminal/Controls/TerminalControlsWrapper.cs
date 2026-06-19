@@ -5,7 +5,6 @@ using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Game.GUI.TextPanel;
 using static LcdMod.Common.Helpers.Constants;
-using Constants = LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.Terminal.Controls
 {

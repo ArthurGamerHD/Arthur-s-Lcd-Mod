@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using Generated;
 using LcdMod.Client.Gui;
-using LcdMod.Client.Gui.ControlsTemplates;
 using VRageMath;
 using SliderCursorScale = LcdMod.Client.Terminal.Controls.Interactive.SliderCursorScale;
 using SwitchToggleAlt = LcdMod.Client.Terminal.Controls.Interactive.SwitchToggleAlt;

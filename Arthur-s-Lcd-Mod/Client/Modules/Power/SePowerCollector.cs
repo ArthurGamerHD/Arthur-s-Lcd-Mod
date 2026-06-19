@@ -5,7 +5,6 @@ using Sandbox.ModAPI;
 using SpaceEngineers.Game.ModAPI;
 using VRage.Game;
 using VRage.Game.ModAPI;
-using VRage.Game.ObjectBuilders.Definitions;
 using MyObjectBuilder_GasProperties = VRage.Game.ObjectBuilders.Definitions.MyObjectBuilder_GasProperties;
 
 namespace LcdMod.Client.Modules.Power
@@ -261,7 +260,7 @@ namespace LcdMod.Client.Modules.Power
                     TypeId = typeId,
                     SubtypeId = subtypeId,
                     DisplayName = displayName,
-                    RepresentativeBlockEntityId = block != null ? block.EntityId : 0,
+                    RepresentativeBlockEntityId = block?.EntityId ?? 0,
                     BlockCount = 0
                 };
                 entries.Add(entry);

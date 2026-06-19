@@ -6,7 +6,6 @@ using LcdMod.Client.Games.EightBallPool;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Client.Terminal.Controls;
-using LcdMod.Common.Helpers;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;

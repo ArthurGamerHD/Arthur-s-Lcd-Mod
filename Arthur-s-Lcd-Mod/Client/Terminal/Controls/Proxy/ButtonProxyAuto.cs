@@ -2,7 +2,6 @@ using System.Linq;
 using LcdMod.Client.Config;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Utility;
-using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;

@@ -6,7 +6,6 @@ using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
 using LcdMod.Common.Config.Models;
-using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
@@ -363,7 +362,7 @@ namespace LcdMod.Client.Apps
 
         void UpdateStopEstimate(double[] maxThrust)
         {
-            var grid = Block == null ? null : Block.CubeGrid;
+            var grid = Block?.CubeGrid;
             if (grid == null) return;
 
             Vector3D velocity = grid.LinearVelocity;
@@ -412,7 +411,7 @@ namespace LcdMod.Client.Apps
                 return gravity.LengthSquared() > 1e-8;
             }
 
-            var grid = Block == null ? null : Block.CubeGrid;
+            var grid = Block?.CubeGrid;
             if (grid == null)
                 return false;
 
@@ -433,7 +432,7 @@ namespace LcdMod.Client.Apps
 
             if (mass <= 0d)
             {
-                var grid = Block == null ? null : Block.CubeGrid;
+                var grid = Block?.CubeGrid;
                 if (grid != null && grid.Physics != null)
                     mass = grid.Physics.Mass;
             }
@@ -448,7 +447,7 @@ namespace LcdMod.Client.Apps
             if (maxThrust == null || maxThrust.Length < 6 || desiredWorldDirection.LengthSquared() <= 1e-8)
                 return 0d;
 
-            var grid = Block == null ? null : Block.CubeGrid;
+            var grid = Block?.CubeGrid;
             if (grid == null) return 0d;
 
             desiredWorldDirection.Normalize();

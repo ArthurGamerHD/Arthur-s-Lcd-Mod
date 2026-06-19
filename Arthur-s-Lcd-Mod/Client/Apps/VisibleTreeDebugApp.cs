@@ -139,7 +139,7 @@ namespace LcdMod.Client.Apps
             }
 
             var entries = interactive.GetInteractiveEntries(true);
-            int rootCount = entries != null ? entries.Count : 0;
+            int rootCount = entries?.Count ?? 0;
             lines.Add(new DebugLine("Cursor: " + FormatVector(interactive.CursorPosition) +
                                     "  Root Controls: " + Fixed4(rootCount) +
                                     "  Include Disabled", HeaderColor));
@@ -245,7 +245,7 @@ namespace LcdMod.Client.Apps
                     sb.Append(" auto=").Append(scrollPanel.AutoScrollSecondsPerStep.ToString("0.##"));
             }
 
-            sb.Append(" children=").Append(control.Children != null ? control.Children.Count : 0);
+            sb.Append(" children=").Append(control.Children?.Count ?? 0);
             sb.Append(" bounds=").Append(FormatRect(control.Bounds));
 
             return sb.ToString();

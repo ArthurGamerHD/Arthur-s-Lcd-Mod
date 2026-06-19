@@ -3,7 +3,6 @@ using System.Linq;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.GridData;
 using LcdMod.Client.Helpers;
-using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using VRageMath;
 using static LcdMod.Common.Helpers.Constants;

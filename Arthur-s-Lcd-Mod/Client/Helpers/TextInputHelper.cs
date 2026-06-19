@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using LcdMod.Common.Helpers;
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.Definitions;
 using Sandbox.Game.Entities;

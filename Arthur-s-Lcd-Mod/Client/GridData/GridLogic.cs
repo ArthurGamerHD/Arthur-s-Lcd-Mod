@@ -25,7 +25,7 @@ namespace LcdMod.Client.GridData
     /// <summary>
     ///     Logic attached to <see cref="Grid" />
     /// </summary>
-    public class GridLogic
+    public partial class GridLogic
     {
         private const int DELAY = 120;
         private const int REQUEST_TTL_TICKS = 120;

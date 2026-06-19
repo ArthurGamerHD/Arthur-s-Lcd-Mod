@@ -18,7 +18,6 @@ using Sandbox.ModAPI;
 using VRage;
 using VRage.Game;
 using VRage.Game.GUI.TextPanel;
-using VRage.Game.ModAPI;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRageMath;
 using IMyTerminalBlock = Sandbox.ModAPI.IMyTerminalBlock;
@@ -212,7 +211,7 @@ namespace LcdMod.Client.Apps
 
         void RenderListEntryControl(ControlTemplate control, List<MySprite> frame)
         {
-            var entry = control != null ? control.DataContext as Entry : null;
+            var entry = control?.DataContext as Entry;
             if (entry == null)
                 return;
 
@@ -221,7 +220,7 @@ namespace LcdMod.Client.Apps
 
         void RenderGridEntryControl(ControlTemplate control, List<MySprite> frame)
         {
-            var entry = control != null ? control.DataContext as Entry : null;
+            var entry = control?.DataContext as Entry;
             if (entry == null)
                 return;
 
@@ -230,7 +229,7 @@ namespace LcdMod.Client.Apps
 
         void RenderGridPanelContent(ControlTemplate control, List<MySprite> sprites)
         {
-            var children = control != null ? control.Children : null;
+            var children = control?.Children;
             if (children == null)
                 return;
 
@@ -397,9 +396,9 @@ namespace LcdMod.Client.Apps
                 hsv.Z *= 0.2f;
                 var cellRect = new RectangleF(xStart + cellPadding / 2f, yStart + cellPadding / 2f, (xEnd - xStart) - cellPadding, rowHeight - cellPadding);
                 var dropShadow = new RectangleF(cellRect.Position + 2, cellRect.Size);
-                Border.CreateSpritesFromRect(dropShadow, frame, hsv.HSVtoColor(),
+                BorderRenderer.CreateSpritesFromRect(dropShadow, frame, hsv.HSVtoColor(),
                     radiusScale: AppConfig.Scale);
-                Border.CreateSpritesFromRect(cellRect, frame, backgroundColor,
+                BorderRenderer.CreateSpritesFromRect(cellRect, frame, backgroundColor,
                     radiusScale: AppConfig.Scale);
             }
 

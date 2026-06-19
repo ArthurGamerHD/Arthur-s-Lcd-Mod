@@ -263,7 +263,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Graph
 
         Vector2 MapPoint(int index, GraphSeries series, double value, out bool overflow)
         {
-            int count = series.Points != null ? series.Points.Count : 0;
+            int count = series.Points?.Count ?? 0;
             float x = MapX(index, count);
             double max = series.Axis == GraphAxisSide.Left ? LeftAxisMaximum : RightAxisMaximum;
             double normalized = max > 0 ? value / max : 0;

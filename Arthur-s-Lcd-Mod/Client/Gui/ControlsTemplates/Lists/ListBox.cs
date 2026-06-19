@@ -43,8 +43,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
             ApplyListStyleScope();
             var viewBox = GetViewBox();
             var backgroundColor = GetRenderBackgroundColor();
-            Border.CreateSpritesFromRect(viewBox, sprites, backgroundColor,
-                Border.ScaleRadius(GetRenderBorderRadiusPixels(), LayoutScale));
+            BorderRenderer.CreateSpritesFromRect(viewBox, sprites, backgroundColor,
+                BorderRenderer.ScaleRadius(GetRenderBorderRadiusPixels(), LayoutScale));
 
             BeginContentClip(sprites, _scrollPanel.ContentViewportBounds);
             RenderRows(sprites);
@@ -80,7 +80,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
             var model = ListModel;
             float rowHeight = model != null && model.RowHeight > 0f ? model.RowHeight : 32f;
             float scrollerWidth = model != null && model.ScrollerWidthPixels > 0f ? model.ScrollerWidthPixels : 6f;
-            int count = model == null ? 0 : model.Count;
+            int count = model?.Count ?? 0;
 
             var viewBox = GetViewBox();
             _scrollPanel.Configure(viewBox, viewBox.Y, 0f, rowHeight, count, scrollerWidth, 0f);

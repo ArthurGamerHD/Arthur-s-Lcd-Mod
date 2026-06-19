@@ -910,10 +910,10 @@ namespace LcdMod.Client.Gui.UserControls
                 Text = image == null ? string.Empty : image.Source ?? string.Empty;
                 Style = style;
                 LineBreak = false;
-                ImageKind = image == null ? ImageType.Unknown : image.Kind;
-                ImageWidth = image == null ? 0f : image.Width;
-                ImageHeight = image == null ? 0f : image.Height;
-                ImageSizeType = image == null ? SizeType.Pixel : image.SizeType;
+                ImageKind = image?.Kind ?? ImageType.Unknown;
+                ImageWidth = image?.Width ?? 0f;
+                ImageHeight = image?.Height ?? 0f;
+                ImageSizeType = image?.SizeType ?? SizeType.Pixel;
                 IsImage = true;
             }
 

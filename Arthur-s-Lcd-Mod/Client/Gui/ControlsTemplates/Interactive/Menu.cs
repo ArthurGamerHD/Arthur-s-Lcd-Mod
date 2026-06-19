@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
-using LcdMod.Common.Helpers;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
@@ -145,7 +144,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             List<MySprite> sprites)
         {
             var barRect = new RectangleF(viewBox.X, viewBox.Y, viewBox.Width, rootHeight);
-            Border.CreateSpritesFromRect(barRect, sprites, panelColor,
+            BorderRenderer.CreateSpritesFromRect(barRect, sprites, panelColor,
                 radiusScale: surface.TextPadding == 0 ? 0 : scale);
 
             var x = viewBox.X;
@@ -159,7 +158,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 var rect = new RectangleF(x, viewBox.Y, width, rootHeight);
 
                 var interactiveEntry = ShowNode(node, rect,
-                    entry != null && entry.HasChildren ? CursorType.Hand : entry != null ? entry.Cursor : CursorType.Default,
+                    entry != null && entry.HasChildren ? CursorType.Hand : entry?.Cursor ?? CursorType.Default,
                     cursorPosition,
                     true);
 
@@ -206,9 +205,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 popupRect.Y = MathHelper.Clamp(popupRect.Y, viewBox.Y, viewBox.Bottom - popupRect.Height);
 
                 var shadowRect = new RectangleF(popupRect.Position + 2f * scale, popupRect.Size);
-                Border.CreateSpritesFromRect(shadowRect, sprites, shadowColor,
+                BorderRenderer.CreateSpritesFromRect(shadowRect, sprites, shadowColor,
                     radiusScale: scale);
-                Border.CreateSpritesFromRect(popupRect, sprites, panelColor,
+                BorderRenderer.CreateSpritesFromRect(popupRect, sprites, panelColor,
                     radiusScale: scale);
 
                 for (var i = 0; i < children.Count; i++)
@@ -217,7 +216,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                     var child = childNode.Entry;
                     var rect = new RectangleF(popupRect.X, popupRect.Y + itemHeight * i, popupRect.Width, itemHeight);
                     var interactiveEntry = ShowNode(childNode, rect,
-                        child != null && child.HasChildren ? CursorType.Hand : child != null ? child.Cursor : CursorType.Default,
+                        child != null && child.HasChildren ? CursorType.Hand : child?.Cursor ?? CursorType.Default,
                         cursorPosition,
                         false);
 
@@ -252,7 +251,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
             if (fillColor.A > 0)
             {
-                Border.CreateSpritesFromRect(rect, sprites, fillColor,
+                BorderRenderer.CreateSpritesFromRect(rect, sprites, fillColor,
                     radiusScale: control.LayoutScale);
             }
 
@@ -265,7 +264,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 sprites.Add(new MySprite
                 {
                     Type = SpriteType.TEXTURE,
-                    Data = entry != null ? entry.Icon : null,
+                    Data = entry?.Icon,
                     Position = new Vector2(rect.X + rect.Height * 0.5f, rect.Center.Y),
                     Size = new Vector2(rect.Height * 0.62f),
                     Color = itemTextColor,
@@ -441,7 +440,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             for (int i = 0; i < nodes.Count; i++)
             {
                 var node = nodes[i];
-                var entry = node != null ? node.Entry : null;
+                var entry = node?.Entry;
                 if (entry == null)
                     continue;
 

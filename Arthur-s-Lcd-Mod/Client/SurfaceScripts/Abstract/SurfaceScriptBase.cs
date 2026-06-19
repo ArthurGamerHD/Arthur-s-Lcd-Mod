@@ -8,7 +8,6 @@ using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Config;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.GridData;
-using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Gui.UserControls;
@@ -30,7 +29,6 @@ using VRage.ModAPI;
 using VRage.Utils;
 using VRageMath;
 using static LcdMod.Common.Helpers.Constants;
-using Constants = LcdMod.Common.Helpers.Constants;
 using IMyCockpit = Sandbox.ModAPI.IMyCockpit;
 using IMyShipController = Sandbox.ModAPI.IMyShipController;
 using IMyTextSurfaceProvider = Sandbox.ModAPI.Ingame.IMyTextSurfaceProvider;
@@ -96,7 +94,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         protected virtual string DefaultTitle => "<Title not Set>";
 
-        public float ConfiguredScale => Config != null ? Config.Scale : 1f;
+        public float ConfiguredScale => Config?.Scale ?? 1f;
         protected float FontScale => _userFontScale <= 0f ? 1f : _userFontScale;
         protected float LayoutScale => ConfiguredScale * FontScale;
 
@@ -803,9 +801,9 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             var a = backgroundColor.MulValue(0.2f);
             var cellRect = new RectangleF(rl, rt, rr - rl, rb - rt);
             var dropShadow = new RectangleF(cellRect.Position + 2, cellRect.Size);
-            Border.CreateSpritesFromRect(dropShadow, frame, a,
+            BorderRenderer.CreateSpritesFromRect(dropShadow, frame, a,
                 radiusScale: ConfiguredScale);
-            Border.CreateSpritesFromRect(cellRect, frame, backgroundColor,
+            BorderRenderer.CreateSpritesFromRect(cellRect, frame, backgroundColor,
                 radiusScale: ConfiguredScale);
         }
 

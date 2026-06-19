@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.Styling;
 
 namespace LcdMod.Client.Gui

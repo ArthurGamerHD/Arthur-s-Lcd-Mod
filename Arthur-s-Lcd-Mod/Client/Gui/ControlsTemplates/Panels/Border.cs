@@ -1,121 +1,123 @@
 using System;
 using System.Collections.Generic;
+using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 
-namespace LcdMod.Client.Gui.ControlsTemplates.Panels
+namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Clock
 {
-    public static class Border
+    internal sealed class Border : RectangleControl
     {
-        public const float DEFAULT_RADIUS_PIXELS = 6f;
+        readonly ControlTemplate _content;
 
-        public static List<MySprite> SpritesBuffer = new List<MySprite>(16);
-
-        public static float ScaleRadius(float radiusPixels, float scale)
+        public Border(ControlTemplate content)
+            : base(default(RectangleF))
         {
-            var size = radiusPixels * Math.Max(0f, scale);
-            return size < 1f ? 0f : (int)size;
+            _content = content;
+            if (_content != null)
+                AddChild(_content);
+            
+            CornerRadiusPixels = 10f;
+            StrokeThicknessPixels = 0f;
+            ContentPaddingPixels = 8f;
+            OuterInsetPixels = Vector4.Zero;
         }
 
-        public static void CreateSpritesFromRect(RectangleF rect, List<MySprite> sprites, Color? color = null, float radiusPixels = DEFAULT_RADIUS_PIXELS, float radiusScale = 1f)
+        public float CornerRadiusPixels { get; set; }
+        public float StrokeThicknessPixels { get; set; }
+        public float ContentPaddingPixels { get; set; }
+        public Vector4 OuterInsetPixels { get; set; }
+
+        public override void Arrange(RectangleF bounds)
         {
-            radiusPixels = ScaleRadius(radiusPixels, radiusScale);
-
-            if (color == null)
-                color = Color.Gray;
-
-            if (radiusPixels <= 0)
-                sprites.Add(new MySprite(0, "SquareSimple", rect.Center, rect.Size, color));
-            else
-                sprites.AddRange(DrawRectangle(rect, color.Value, 1f, radiusPixels));
+            base.Arrange(bounds);
+            ArrangeContent();
         }
 
-        public static MySprite[] DrawRectangle(RectangleF rectangle, Color color, float finalScale = 1f,
-            float radiusPixels = DEFAULT_RADIUS_PIXELS)
+        protected override void RenderDefault(List<MySprite> sprites)
         {
-            if (color.A != 255)
+            RectangleF cardRect = GetCardRect();
+            if (cardRect.Width <= 0f || cardRect.Height <= 0f)
+                return;
+
+            // The translucent rounded-rectangle builder uses temporary corner
+            // clips. Bracket the complete card render so those clips are reset
+            // and the ancestor clip is restored before a sibling card renders.
+            if (!BeginContentClip(sprites, cardRect))
+                return;
+
+            try
             {
-                if (color == Color.Transparent)
-                    return Array.Empty<MySprite>(); // fully transparent = nothing
+                float radius = Math.Max(0f, CornerRadiusPixels * LayoutScale);
+                float border = MathHelper.Clamp(
+                    StrokeThicknessPixels * LayoutScale,
+                    0f,
+                    Math.Min(cardRect.Width, cardRect.Height) * 0.5f);
 
-                throw new ArgumentException("Transparency is not supported");
+                Color borderColor = ApplyOpacity(BorderColor);
+                Color backgroundColor = ApplyOpacity(BackgroundColor);
+
+                BorderRenderer.CreateSpritesFromRect(
+                    cardRect,
+                    sprites,
+                    backgroundColor,
+                    radiusPixels: radius,
+                    radiusScale: 1f,
+                    strokeColor: borderColor,
+                    strokeThicknessPixels: border);
+
+                // Border restores its own rectangular clip after drawing the
+                // four corner slices. Resolve the control clip again so an
+                // intersecting ancestor clip remains in effect for content.
+                BeginContentClip(sprites, cardRect);
+
+                ArrangeContent();
+                _content?.Render(sprites);
             }
-               
-
-            SpritesBuffer.Clear();
-            Vector2 fullSize = rectangle.Size * finalScale;
-            Vector2 half = fullSize * 0.5f;
-
-            float r = Math.Min(radiusPixels * finalScale, Math.Min(fullSize.X, fullSize.Y) * 0.5f);
-            Vector2 coreSize = new Vector2(
-                fullSize.X - 2f * r,
-                fullSize.Y - 2f * r
-            );
-
-            MySprite tx = new MySprite(0, "SquareSimple", rectangle.Center, coreSize, color);
-
-            SpritesBuffer.Add(tx);
-
-            Vector2 cornerSize = new Vector2(r * 2f, r * 2f);
-
-            Vector2 center = rectangle.Center;
-
-            MySprite corner = tx;
-            corner.Data = "Circle";
-            corner.Size = cornerSize;
-
-            // corners
-            corner.Position = center + new Vector2(-half.X + r, -half.Y + r);
-            SpritesBuffer.Add(corner);
-
-            corner.Position = center + new Vector2(half.X - r, -half.Y + r);
-            SpritesBuffer.Add(corner);
-
-            corner.Position = center + new Vector2(-half.X + r, half.Y - r);
-            SpritesBuffer.Add(corner);
-
-            corner.Position = center + new Vector2(half.X - r, half.Y - r);
-            SpritesBuffer.Add(corner);
-
-            // edges
-            MySprite edge = tx;
-            edge.Data = tx.Data;
-
-            Vector2 horizontalEdgeSize = new Vector2(fullSize.X - 2f * r, 2f * r);
-            Vector2 verticalEdgeSize = new Vector2(2f * r, fullSize.Y - 2f * r);
-
-            // top
-            edge.Size = horizontalEdgeSize;
-            edge.Position = center + new Vector2(0, -half.Y + r);
-            SpritesBuffer.Add(edge);
-
-            // bottom
-            edge.Position = center + new Vector2(0, half.Y - r);
-            SpritesBuffer.Add(edge);
-
-            // left
-            edge.Size = verticalEdgeSize;
-            edge.Position = center + new Vector2(-half.X + r, 0);
-            SpritesBuffer.Add(edge);
-
-            // Right
-            edge.Position = center + new Vector2(half.X - r, 0);
-            SpritesBuffer.Add(edge);
-
-#if LAYOUT_DEBUG
-            // debug draw
-            SpritesBuffer.Add(new MySprite
+            finally
             {
-                Type = SpriteType.TEXTURE,
-                Data = "SquareHollow",
-                Position = center,
-                Size = fullSize,
-                Color = Color.Red,
-                Alignment = TextAlignment.CENTER
-            });
-#endif
+                EndContentClip(sprites);
+            }
+        }
 
-            return SpritesBuffer.ToArray();
+        void ArrangeContent()
+        {
+            if (_content == null)
+                return;
+
+            RectangleF cardRect = GetCardRect();
+            float inset = Math.Max(0f, (StrokeThicknessPixels + ContentPaddingPixels) * LayoutScale);
+            _content.Arrange(Inset(cardRect, inset));
+        }
+
+        RectangleF GetCardRect()
+        {
+            float scale = Math.Max(0f, LayoutScale);
+            return Inset(
+                Bounds,
+                OuterInsetPixels.X * scale,
+                OuterInsetPixels.Y * scale,
+                OuterInsetPixels.Z * scale,
+                OuterInsetPixels.W * scale);
+        }
+
+        static RectangleF Inset(RectangleF rect, float amount)
+        {
+            return Inset(rect, amount, amount, amount, amount);
+        }
+
+        static RectangleF Inset(
+            RectangleF rect,
+            float left,
+            float top,
+            float right,
+            float bottom)
+        {
+            float x = rect.X + Math.Max(0f, left);
+            float y = rect.Y + Math.Max(0f, top);
+            float width = Math.Max(0f, rect.Width - Math.Max(0f, left) - Math.Max(0f, right));
+            float height = Math.Max(0f, rect.Height - Math.Max(0f, top) - Math.Max(0f, bottom));
+            return new RectangleF(x, y, width, height);
         }
     }
 }

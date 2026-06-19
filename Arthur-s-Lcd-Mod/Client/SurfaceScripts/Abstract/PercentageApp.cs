@@ -157,9 +157,9 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 hsv.Z *= 0.2f;
                 var cellRect = new RectangleF(xStart + cellPadding / 2f, yStart + cellPadding / 2f, (xEnd - xStart) - cellPadding, rowHeight - cellPadding);
                 var dropShadow = new RectangleF(cellRect.Position + 2, cellRect.Size);
-                Border.CreateSpritesFromRect(dropShadow, frame, hsv.HSVtoColor(),
+                BorderRenderer.CreateSpritesFromRect(dropShadow, frame, hsv.HSVtoColor(),
                     radiusScale: _owner.Config.Scale);
-                Border.CreateSpritesFromRect(cellRect, frame, backgroundColor,
+                BorderRenderer.CreateSpritesFromRect(cellRect, frame, backgroundColor,
                     radiusScale: _owner.Config.Scale);
             }
 

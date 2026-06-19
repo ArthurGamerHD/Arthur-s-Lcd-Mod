@@ -22,9 +22,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Inputs
         protected override void RenderDefault(List<MySprite> sprites)
         {
             var rect = GetViewBox();
-            var hovered = IsPointerOver;
             var backgroundColor = GetRenderBackgroundColor();
-            Border.CreateSpritesFromRect(rect, sprites, backgroundColor,
+            BorderRenderer.CreateSpritesFromRect(rect, sprites, backgroundColor,
                 radiusScale: LayoutScale);
 
             // inner input container using a different container role and use its matching on* text role.
@@ -32,7 +31,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Inputs
             var innerContainerColor = ResolveColor(ThemeResources.SecondaryContainerColor);
             var innerTextColor = ResolveColor(ThemeResources.OnSecondaryContainerColor);
 
-            Border.CreateSpritesFromRect(innerRect, sprites, innerContainerColor,
+            BorderRenderer.CreateSpritesFromRect(innerRect, sprites, innerContainerColor,
                 radiusScale: LayoutScale);
 
             RenderDefaultText(innerRect, sprites, innerTextColor);

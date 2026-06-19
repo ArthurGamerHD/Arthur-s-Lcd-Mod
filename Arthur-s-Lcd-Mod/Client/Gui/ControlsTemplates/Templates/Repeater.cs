@@ -63,7 +63,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Templates
                 return;
             }
 
-            int count = _items == null ? 0 : _items.Count;
+            int count = _items?.Count ?? 0;
             EnsureRealized(count);
 
             for (int i = 0; i < _realized.Count; i++)

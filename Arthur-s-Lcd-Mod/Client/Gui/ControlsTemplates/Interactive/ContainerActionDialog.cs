@@ -124,9 +124,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 cardWidth, cardHeight);
             RegisterDialogCard(cardRect);
 
-            Border.CreateSpritesFromRect(new RectangleF(cardRect.Position + 2f, cardRect.Size), Sprites, shadowColor,
+            BorderRenderer.CreateSpritesFromRect(new RectangleF(cardRect.Position + 2f, cardRect.Size), Sprites, shadowColor,
                 radiusScale: scale);
-            Border.CreateSpritesFromRect(cardRect, Sprites, cardColor, radiusScale: scale);
+            BorderRenderer.CreateSpritesFromRect(cardRect, Sprites, cardColor, radiusScale: scale);
 
             var title = GetTitle();
             var titleSize = MeasureText(title, titleScale, surface);
@@ -608,7 +608,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             {
                 var r = ctrl.Bounds;
                 var hover = enabled && ctrl.IsMouseOver;
-                Border.CreateSpritesFromRect(r, sprites, hover ? panel.MulValue(1.18f) : panel, radiusScale: ctrl.LayoutScale);
+                BorderRenderer.CreateSpritesFromRect(r, sprites, hover ? panel.MulValue(1.18f) : panel, radiusScale: ctrl.LayoutScale);
                 sprites.Add(new MySprite
                 {
                     Type = SpriteType.TEXT,
@@ -646,7 +646,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             {
                 var r = ctrl.Bounds;
                 var hover = ctrl.IsMouseOver;
-                Border.CreateSpritesFromRect(r, sprites, hover && !isSelected ? panel.MulValue(1.18f) : panel,
+                BorderRenderer.CreateSpritesFromRect(r, sprites, hover && !isSelected ? panel.MulValue(1.18f) : panel,
                     radiusScale: ctrl.LayoutScale);
 
                 var pad = 10f * ctrl.LayoutScale;

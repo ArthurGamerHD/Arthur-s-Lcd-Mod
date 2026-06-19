@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using LcdMod.Client;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.GridData;
@@ -232,7 +231,7 @@ namespace LcdMod.Client.Apps
         {
             DrawBlockCards(sprites, _currentRowHeight);
 
-            var children = control != null ? control.Children : null;
+            var children = control?.Children;
             if (children == null)
                 return;
 
@@ -257,7 +256,6 @@ namespace LcdMod.Client.Apps
                 if (span.RowCount <= 0)
                     continue;
 
-                int end = span.FirstRow + span.RowCount;
                 float top = _scroll.ContentBounds.Y + span.FirstRow * rowHeight;
                 float height = span.RowCount * rowHeight;
                 if (top >= view.Bottom || top + height <= view.Y)
@@ -269,8 +267,8 @@ namespace LcdMod.Client.Apps
                     continue;
 
                 var dropShadow = new RectangleF(cardRect.Position + 2f, cardRect.Size);
-                Border.CreateSpritesFromRect(dropShadow, sprites, shadowColor, radiusScale: Scale);
-                Border.CreateSpritesFromRect(cardRect, sprites, panelColor, radiusScale: Scale);
+                BorderRenderer.CreateSpritesFromRect(dropShadow, sprites, shadowColor, radiusScale: Scale);
+                BorderRenderer.CreateSpritesFromRect(cardRect, sprites, panelColor, radiusScale: Scale);
             }
         }
 
@@ -423,7 +421,7 @@ namespace LcdMod.Client.Apps
                     bounds.Y + (bounds.Height - modeH) * 0.5f,
                     modeW,
                     modeH);
-                Border.CreateSpritesFromRect(modeRect, sprites, AppConfig.HeaderColor.MulValue(0.45f), radiusScale: Scale);
+                BorderRenderer.CreateSpritesFromRect(modeRect, sprites, AppConfig.HeaderColor.MulValue(0.45f), radiusScale: Scale);
                 sprites.Add(new MySprite
                 {
                     Type = SpriteType.TEXT,
@@ -551,7 +549,7 @@ namespace LcdMod.Client.Apps
             if (card.Width <= 0f || card.Height <= 0f)
                 return;
 
-            Border.CreateSpritesFromRect(card, sprites, _itemCardColor, radiusScale: Scale);
+            BorderRenderer.CreateSpritesFromRect(card, sprites, _itemCardColor, radiusScale: Scale);
 
             float pad = ITEM_PAD * Scale;
             float iconSize = card.Height * 0.66f;
