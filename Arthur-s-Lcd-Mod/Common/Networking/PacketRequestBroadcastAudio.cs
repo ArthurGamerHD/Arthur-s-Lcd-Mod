@@ -10,7 +10,7 @@ namespace LcdMod.Common.Networking
         [ProtoMember(1)] public AudioBroadcastMetadata Metadata;
         [ProtoMember(2)] public byte[] RuntimeWaveBytes;
 
-        public override PackageCode Code { get { return PackageCode.RequestBroadcastAudio; } }
+        public override PackageCode Code => PackageCode.RequestBroadcastAudio;
 
         public PacketRequestBroadcastAudio()
         {

@@ -348,11 +348,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _listPanel.ItemsSource = _filteredSprites;
             _listPanel.RowHeight = rowHeight;
             _listPanel.Gap = ROW_GAP_PIXELS * scale;
+            _scrollPanel.AutoScrollSecondsPerStep = 0f;
             _scrollPanel.ConfigureAutomatic(
                 listRect,
                 scrollerWidth,
-                rowHeight,
-                0f);
+                rowHeight);
 
             _scrollPanel.SetScrollBarColors(
                 ResolveColor(ThemeResources.SurfaceContainerHighestColor),

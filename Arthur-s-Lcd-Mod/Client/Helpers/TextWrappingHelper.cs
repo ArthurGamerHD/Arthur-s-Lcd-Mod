@@ -250,10 +250,7 @@ namespace LcdMod.Client.Helpers
                 _ellipsizeWhenTruncated = ellipsizeWhenTruncated;
             }
 
-            public bool HasText
-            {
-                get { return _line.Length > 0; }
-            }
+            public bool HasText => _line.Length > 0;
 
             public void AppendToken(string token)
             {

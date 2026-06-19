@@ -101,19 +101,14 @@ namespace LcdMod.Common.Audio
                 }
             }
 
-            public bool IsCanonicalRuntimeFormat
-            {
-                get
-                {
-                    return FormatTag == WaveFormatPcm &&
-                           SampleRate == TargetSampleRate &&
-                           Channels == TargetChannels &&
-                           BitsPerSample == TargetBitsPerSample &&
-                           BlockAlign == 2 &&
-                           PcmBytes != null &&
-                           PcmBytes.Length % 2 == 0;
-                }
-            }
+            public bool IsCanonicalRuntimeFormat =>
+                FormatTag == WaveFormatPcm &&
+                SampleRate == TargetSampleRate &&
+                Channels == TargetChannels &&
+                BitsPerSample == TargetBitsPerSample &&
+                BlockAlign == 2 &&
+                PcmBytes != null &&
+                PcmBytes.Length % 2 == 0;
 
             public float[] DecodeToMonoFloat()
             {
@@ -293,7 +288,7 @@ namespace LcdMod.Common.Audio
             readonly byte[] _bytes;
 
             public int Position;
-            public int Length { get { return _bytes.Length; } }
+            public int Length => _bytes.Length;
 
             public ByteReader(byte[] bytes)
             {

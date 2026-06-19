@@ -9,7 +9,7 @@ namespace LcdMod.Client.Modules.Power
         int _weight;
         long _lastFrame;
 
-        public int Count { get { return _weight; } }
+        public int Count => _weight;
 
         public void Add(PowerSnapshot snapshot)
         {

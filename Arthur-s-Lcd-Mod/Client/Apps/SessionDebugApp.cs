@@ -74,11 +74,11 @@ namespace LcdMod.Client.Apps
             _linePanel.ItemsSource = lines;
             _linePanel.RowHeight = lineHeight;
             _linePanel.Gap = 0f;
+            _scrollPanel.AutoScrollSecondsPerStep = 0f;
             _scrollPanel.ConfigureAutomatic(
                 contentViewBox,
                 SCROLLBAR_WIDTH,
-                lineHeight,
-                0f);
+                lineHeight);
 
             _sprites.Clear();
             _scrollPanel.Render(_sprites);

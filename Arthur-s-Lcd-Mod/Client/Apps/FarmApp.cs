@@ -27,7 +27,6 @@ namespace LcdMod.Client.Apps
         const float SLOT_W = 100f;
         const float SLOT_H = 100f;
         const float SCROLLER_W = 8f;
-        const int SCROLL_TICK = 12;
         internal sealed class FarmEntry
         {
             readonly List<ITooltipLine> _details = new List<ITooltipLine>();
@@ -343,8 +342,7 @@ namespace LcdMod.Client.Apps
             _scrollPanel.ConfigureAutomatic(
                 new RectangleF(owner.ViewBox.X, contentTop, owner.ViewBox.Width, viewportHeight),
                 SCROLLER_W * owner.Config.Scale,
-                rowHeight,
-                SCROLL_TICK / 6f);
+                rowHeight);
             _scrollPanel.SetVisible(true);
             if (!_children.Contains(_scrollPanel))
                 _children.Add(_scrollPanel);

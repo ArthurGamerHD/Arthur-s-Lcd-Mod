@@ -670,15 +670,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
         public Action<EnergyDashboardPowerRow> RowClicked { get; set; }
         public Action<EnergyDashboardPowerRow> RowHovered { get; set; }
 
-        public override bool CanPrimaryClick
-        {
-            get { return Visible && Enabled && _row != null && _row.Entry != null && RowClicked != null; }
-        }
+        public override bool CanPrimaryClick => Visible && Enabled && _row != null && _row.Entry != null && RowClicked != null;
 
-        public override bool CanHover
-        {
-            get { return Visible && Enabled && _row != null && _row.Entry != null && RowHovered != null; }
-        }
+        public override bool CanHover => Visible && Enabled && _row != null && _row.Entry != null && RowHovered != null;
 
         public void SetRow(EnergyDashboardPowerRow row)
         {

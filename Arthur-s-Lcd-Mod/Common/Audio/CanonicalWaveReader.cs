@@ -173,7 +173,7 @@ namespace LcdMod.Common.Audio
         {
             readonly byte[] _bytes;
             public int Position;
-            public int Length { get { return _bytes.Length; } }
+            public int Length => _bytes.Length;
 
             public ByteReader(byte[] bytes)
             {

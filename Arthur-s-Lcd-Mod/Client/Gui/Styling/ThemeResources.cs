@@ -101,6 +101,9 @@ namespace LcdMod.Client.Gui.Styling
 
         public static readonly ResourceKey<float> FontScale =
             ResourceKey.Register<float>("fontScale");
+
+        public static readonly ResourceKey<float> AutoScrollSecondsPerStep =
+            ResourceKey.Register<float>("autoScrollSecondsPerStep");
         
         public static readonly ResourceKey<string> TextFont =
             ResourceKey.Register<string>("textFont");

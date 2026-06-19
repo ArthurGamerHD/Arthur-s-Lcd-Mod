@@ -163,10 +163,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             }
         }
 
-        protected bool HasFooterRoot
-        {
-            get { return _footerRoot != null && _footerRoot.Visible && _footerRoot.HasChildren; }
-        }
+        protected bool HasFooterRoot => _footerRoot != null && _footerRoot.Visible && _footerRoot.HasChildren;
 
         protected int ResolveRotationOrSurfaceIndex()
         {

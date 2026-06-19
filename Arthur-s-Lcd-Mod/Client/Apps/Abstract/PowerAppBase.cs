@@ -31,7 +31,6 @@ namespace LcdMod.Client.Apps.Abstract
     {
         protected const float LINE = 22f;
         protected const float MINIMUM_COL_WIDTH = 400f;
-        protected const int SCROLL_DELAY = 12;
         protected const float GRID_CELL_LINES = 6f;
 
         protected struct PowerEntryDefinition
@@ -379,8 +378,7 @@ namespace LcdMod.Client.Apps.Abstract
             _scrollPanel.ConfigureAutomatic(
                 new RectangleF(ViewBox.X, contentTop, ViewBox.Width, viewportHeight),
                 ScrollPanel.DefaultScrollerWidthPixels * Scale,
-                rowHeight,
-                SCROLL_DELAY / 6f);
+                rowHeight);
             _scrollPanel.SetVisible(true);
             if (!_children.Contains(_scrollPanel))
                 _children.Add(_scrollPanel);

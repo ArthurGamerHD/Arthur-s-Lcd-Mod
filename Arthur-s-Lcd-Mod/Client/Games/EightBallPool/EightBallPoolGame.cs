@@ -67,25 +67,13 @@ namespace LcdMod.Client.Games.EightBallPool
 
         readonly GameThemeContext _themeContext;
 
-        public IVisualStyleScope StyleParent
-        {
-            get { return _themeContext.StyleParent; }
-        }
+        public IVisualStyleScope StyleParent => _themeContext.StyleParent;
 
-        public StyleTree Styles
-        {
-            get { return _themeContext.Styles; }
-        }
+        public StyleTree Styles => _themeContext.Styles;
 
-        public ResourceTree Resources
-        {
-            get { return _themeContext.Resources; }
-        }
+        public ResourceTree Resources => _themeContext.Resources;
 
-        public bool IsDirty
-        {
-            get { return _themeContext.IsDirty; }
-        }
+        public bool IsDirty => _themeContext.IsDirty;
 
         public void MarkDirty()
         {

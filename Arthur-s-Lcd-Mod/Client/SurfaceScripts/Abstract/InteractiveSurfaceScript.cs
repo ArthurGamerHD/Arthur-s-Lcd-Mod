@@ -42,15 +42,9 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         public Vector2 CursorPosition { get; protected set; } = new Vector2(float.NaN, float.NaN);
 
-        public virtual Vector2 HitTestOffset
-        {
-            get { return Vector2.Zero; }
-        }
+        public virtual Vector2 HitTestOffset => Vector2.Zero;
 
-        protected Vector2 HitTestCursorPosition
-        {
-            get { return CursorPosition + HitTestOffset; }
-        }
+        protected Vector2 HitTestCursorPosition => CursorPosition + HitTestOffset;
 
         RectangleF _baseViewBox;
         readonly HiddenGlobalMenuControl _hiddenGlobalMenuControl;
@@ -231,15 +225,10 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         protected bool CursorInsideTooltipKeepOpenArea =>
             _hasTooltipBounds && _tooltipKeepOpenRect.Contains(HitTestCursorPosition);
 
-        protected bool HasRecentVisualContact
-        {
-            get
-            {
-                return _lastVisualContactFrame != long.MinValue &&
-                       MyAPIGateway.Session.GameplayFrameCounter - _lastVisualContactFrame <=
-                       CURSOR_VISUAL_CONTACT_TIMEOUT_FRAMES;
-            }
-        }
+        protected bool HasRecentVisualContact =>
+            _lastVisualContactFrame != long.MinValue &&
+            MyAPIGateway.Session.GameplayFrameCounter - _lastVisualContactFrame <=
+            CURSOR_VISUAL_CONTACT_TIMEOUT_FRAMES;
 
         protected void ClearTooltip()
         {
@@ -937,10 +926,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             return spriteList;
         }
 
-        protected virtual bool RendersInteractiveEntriesInGetSprites
-        {
-            get { return false; }
-        }
+        protected virtual bool RendersInteractiveEntriesInGetSprites => false;
 
         protected void RenderInteractiveEntryVisuals(List<MySprite> sprites)
         {

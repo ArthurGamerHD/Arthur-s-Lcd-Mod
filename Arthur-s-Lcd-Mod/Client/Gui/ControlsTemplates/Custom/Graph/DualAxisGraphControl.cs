@@ -27,8 +27,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Graph
             SetTooltip(new InteractiveTooltip(GetTooltipTitle, GetTooltipLines));
         }
 
-        public override RectangleF Bounds { get { return _bounds; } }
-        public IReadOnlyList<GraphSeries> Series { get { return _series; } }
+        public override RectangleF Bounds => _bounds;
+        public IReadOnlyList<GraphSeries> Series => _series;
         public string Title { get; set; }
         public double LeftAxisMaximum { get; set; }
         public double RightAxisMaximum { get; set; }
@@ -60,7 +60,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Graph
             return _lastHover.HasPoint;
         }
 
-        public override bool CanHover { get { return Visible && Enabled; } }
+        public override bool CanHover => Visible && Enabled;
 
         public override bool Hover(object sender)
         {

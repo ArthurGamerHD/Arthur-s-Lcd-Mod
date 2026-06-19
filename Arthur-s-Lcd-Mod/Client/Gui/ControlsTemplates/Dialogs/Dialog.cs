@@ -36,25 +36,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
         public bool Dismissed { get; private set; }
 
-        public IVisualStyleScope StyleParent
-        {
-            get { return _styleParent; }
-        }
+        public IVisualStyleScope StyleParent => _styleParent;
 
-        public StyleTree Styles
-        {
-            get { return _styles; }
-        }
+        public StyleTree Styles => _styles;
 
-        public ResourceTree Resources
-        {
-            get { return _resources; }
-        }
+        public ResourceTree Resources => _resources;
 
-        public bool IsDirty
-        {
-            get { return _isDirty; }
-        }
+        public bool IsDirty => _isDirty;
 
         public void MarkDirty()
         {
@@ -93,27 +81,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 _containerControl.SetStyleParent(this);
         }
 
-        protected List<MySprite> Sprites
-        {
-            get { return _sprites; }
-        }
+        protected List<MySprite> Sprites => _sprites;
 
-        protected IApp ParentApp
-        {
-            get { return _parentApp; }
-        }
+        protected IApp ParentApp => _parentApp;
 
-        protected DialogContainerControl ContainerControl
-        {
-            get { return _containerControl; }
-        }
+        protected DialogContainerControl ContainerControl => _containerControl;
 
         protected Action OnClose { get; set; }
 
-        protected virtual bool ShowCloseButton
-        {
-            get { return true; }
-        }
+        protected virtual bool ShowCloseButton => true;
 
         protected Color ResolveColor(ResourceKey<Color> key)
         {
@@ -140,10 +116,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             }
         }
 
-        string ITextStyleProvider.ResolvedTextFont
-        {
-            get { return TextFont; }
-        }
+        string ITextStyleProvider.ResolvedTextFont => TextFont;
 
         protected Vector2 MeasureText(string text, float scale,
             Sandbox.ModAPI.Ingame.IMyTextSurface surface)
@@ -365,10 +338,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         {
         }
 
-        public override bool CanHover
-        {
-            get { return Visible; }
-        }
+        public override bool CanHover => Visible;
 
         public override bool Hover(object sender)
         {

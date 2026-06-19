@@ -52,11 +52,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
         public Action SearchClicked { get; set; }
         public Action<NpcMarketRowClickTarget> RowClicked { get; set; }
 
-        public int PageCount { get { return _pages.Count; } }
-        public int RowsPerPage { get { return _rowsPerPage; } }
+        public int PageCount => _pages.Count;
+        public int RowsPerPage => _rowsPerPage;
         public int FirstVisiblePageIndex { get; private set; }
         public int LastVisiblePageIndex { get; private set; }
-        public float ListWidth { get { return _listWidth; } }
+        public float ListWidth => _listWidth;
 
         public Vector2 MeasureContent(Vector2 availableSize)
         {

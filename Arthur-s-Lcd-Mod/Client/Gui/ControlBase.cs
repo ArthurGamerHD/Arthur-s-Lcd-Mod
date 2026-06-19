@@ -11,19 +11,13 @@ namespace LcdMod.Client.Gui
         IVisualStyleScope _styleParent;
         string _class = DefaultStyleClass;
 
-        public virtual IVisualStyleScope StyleParent
-        {
-            get { return _styleParent; }
-        }
+        public virtual IVisualStyleScope StyleParent => _styleParent;
 
         public virtual StyleTree Styles { get; protected set; }
 
         public virtual ResourceTree Resources { get; protected set; }
 
-        public virtual string Class
-        {
-            get { return _class; }
-        }
+        public virtual string Class => _class;
 
         internal bool _isDirty;
         public virtual bool IsDirty => _isDirty;

@@ -27,14 +27,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Graph
                 GetTooltipLines));
         }
 
-        public override RectangleF Bounds { get { return _bounds; } }
-        public IReadOnlyList<GraphPoint> Points { get { return _points; } }
+        public override RectangleF Bounds => _bounds;
+        public IReadOnlyList<GraphPoint> Points => _points;
         public string Title { get; set; }
         public Color LineColor { get; set; }
         public Func<double, string> ValueFormatter { get; set; }
         public Func<GraphPoint, string> TooltipFormatter { get; set; }
         public float PointHoverThreshold { get; set; } = 12f;
-        public RectangleF PlotBounds { get { return _plotBounds; } }
+        public RectangleF PlotBounds => _plotBounds;
 
         public void SetPoints(IEnumerable<GraphPoint> points)
         {
@@ -103,7 +103,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Graph
             return _lastHover.HasPoint;
         }
 
-        public override bool CanHover { get { return Visible && Enabled; } }
+        public override bool CanHover => Visible && Enabled;
 
         public override bool Hover(object sender)
         {

@@ -14,8 +14,8 @@ namespace LcdMod.Client.Modules.Power
             _items = new T[Math.Max(1, capacity)];
         }
 
-        public int Capacity { get { return _items.Length; } }
-        public int Count { get { return _count; } }
+        public int Capacity => _items.Length;
+        public int Count => _count;
 
         public void Add(T item)
         {

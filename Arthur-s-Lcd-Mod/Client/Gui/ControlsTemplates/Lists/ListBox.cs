@@ -26,15 +26,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
             ConfigureScrollPanel();
         }
 
-        public ListBoxModel<T> ListModel
-        {
-            get { return DataContext as ListBoxModel<T>; }
-        }
+        public ListBoxModel<T> ListModel => DataContext as ListBoxModel<T>;
 
-        public ScrollPanel ScrollPanel
-        {
-            get { return _scrollPanel; }
-        }
+        public ScrollPanel ScrollPanel => _scrollPanel;
 
         public override void SetRect(RectangleF bounds)
         {

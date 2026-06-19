@@ -28,7 +28,6 @@ namespace LcdMod.Client.Apps
     public sealed class CargoFilledApp : App, IApp
     {
         private const int LINE_HEIGHT = 40;
-        private const int SCROLL_DELAY = 12;
         private const int STATUS_MESSAGE_FRAMES = 240;
         private readonly HashSet<long> _activeEntryIds = new HashSet<long>();
 
@@ -323,8 +322,7 @@ namespace LcdMod.Client.Apps
             _scrollPanel.ConfigureAutomatic(
                 new RectangleF(Host.ViewBox.X, contentTop, Host.ViewBox.Width, viewportHeight),
                 ScrollPanel.DefaultScrollerWidthPixels * AppConfig.Scale,
-                rowHeight,
-                SCROLL_DELAY / 6f);
+                rowHeight);
             _scrollPanel.SetVisible(true);
             if (!_children.Contains(_scrollPanel))
                 _children.Add(_scrollPanel);

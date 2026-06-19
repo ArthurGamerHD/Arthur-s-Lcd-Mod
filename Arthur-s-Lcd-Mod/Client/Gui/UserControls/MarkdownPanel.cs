@@ -929,12 +929,12 @@ namespace LcdMod.Client.Gui.UserControls
                 IsImage = false;
             }
 
-            public Color Color { get { return Style.Color; } }
-            public bool ColorExplicit { get { return Style.ColorExplicit; } }
-            public string FontId { get { return Style.FontId; } }
-            public float Scale { get { return Style.Scale; } }
-            public bool Underline { get { return Style.Underline; } }
-            public bool Strikethrough { get { return Style.Strikethrough; } }
+            public Color Color => Style.Color;
+            public bool ColorExplicit => Style.ColorExplicit;
+            public string FontId => Style.FontId;
+            public float Scale => Style.Scale;
+            public bool Underline => Style.Underline;
+            public bool Strikethrough => Style.Strikethrough;
 
             public static TextRun Break(TextStyle style)
             {
@@ -961,7 +961,7 @@ namespace LcdMod.Client.Gui.UserControls
             public float AvailableWidth;
             public float Width;
             public float Height;
-            public bool HasText { get { return Runs.Count > 0; } }
+            public bool HasText => Runs.Count > 0;
 
             public void Reset(float x, float availableWidth)
             {

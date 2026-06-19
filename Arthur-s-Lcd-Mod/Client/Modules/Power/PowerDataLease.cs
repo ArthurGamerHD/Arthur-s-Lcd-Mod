@@ -14,8 +14,8 @@ namespace LcdMod.Client.Modules.Power
         }
 
         public PowerDataService Service { get; private set; }
-        public PowerSnapshot Latest { get { return Service != null ? Service.Latest : new PowerSnapshot(); } }
-        public PowerHistory History { get { return Service != null ? Service.History : null; } }
+        public PowerSnapshot Latest => Service != null ? Service.Latest : new PowerSnapshot();
+        public PowerHistory History => Service != null ? Service.History : null;
 
         public void Dispose()
         {

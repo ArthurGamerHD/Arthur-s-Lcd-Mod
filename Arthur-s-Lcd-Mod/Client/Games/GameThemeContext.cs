@@ -26,15 +26,9 @@ namespace LcdMod.Client.Games
             _styles = DefaultStyleBuilder.Build();
         }
 
-        public IVisualStyleScope StyleParent
-        {
-            get { return null; }
-        }
+        public IVisualStyleScope StyleParent => null;
 
-        public StyleTree Styles
-        {
-            get { return _styles; }
-        }
+        public StyleTree Styles => _styles;
 
         public ResourceTree Resources
         {
@@ -45,10 +39,7 @@ namespace LcdMod.Client.Games
             }
         }
 
-        public bool IsDirty
-        {
-            get { return _isDirty; }
-        }
+        public bool IsDirty => _isDirty;
 
         public void MarkDirty()
         {

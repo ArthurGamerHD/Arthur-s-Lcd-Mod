@@ -174,11 +174,11 @@ namespace LcdMod.Client.Apps
             _entryPanel.HorizontalGap = Math.Max(0f, columnWidth - layout.ButtonSize);
             _entryPanel.VerticalGap = Math.Max(0f, layout.RowHeight - layout.ButtonSize);
 
+            _scrollPanel.AutoScrollSecondsPerStep = 0f;
             _scrollPanel.ConfigureAutomatic(
                 new RectangleF(ViewBox.X, contentTop, ViewBox.Width, availableHeight),
                 scrollerWidth,
-                layout.RowHeight,
-                0f);
+                layout.RowHeight);
 
             _scrollPanel.SetVisible(true);
             _children.Add(_scrollPanel);

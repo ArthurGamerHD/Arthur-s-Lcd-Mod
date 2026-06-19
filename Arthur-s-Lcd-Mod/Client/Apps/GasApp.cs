@@ -30,7 +30,6 @@ namespace LcdMod.Client.Apps
     public sealed class GasApp : App
     {
         const int LINE_HEIGHT = 40;
-        const int SCROLL_DELAY = 12;
 
         readonly Dictionary<string, string> _gasDisplayNameCache =
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -133,8 +132,7 @@ namespace LcdMod.Client.Apps
             _scrollPanel.ConfigureAutomatic(
                 new RectangleF(Host.ViewBox.X, contentTop, Host.ViewBox.Width, viewportHeight),
                 ScrollPanel.DefaultScrollerWidthPixels * AppConfig.Scale,
-                rowHeight,
-                SCROLL_DELAY / 6f);
+                rowHeight);
             _scrollPanel.SetVisible(true);
         }
 

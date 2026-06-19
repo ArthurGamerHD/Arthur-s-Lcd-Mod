@@ -57,10 +57,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         public bool WasMouseOver { get; private set; }
         public bool IsMouseOver { get; private set; }
 
-        public bool IsPointerOver
-        {
-            get { return IsMouseOver; }
-        }
+        public bool IsPointerOver => IsMouseOver;
 
         internal void SetMouseOver(bool value)
         {
@@ -94,10 +91,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         public ControlTemplate Parent { get; private set; }
         public string StyleId { get; private set; }
 
-        public override IVisualStyleScope StyleParent
-        {
-            get { return Parent ?? base.StyleParent; }
-        }
+        public override IVisualStyleScope StyleParent => Parent ?? base.StyleParent;
 
         public bool IsLayoutDirty => _isLayoutDirty;
 
@@ -296,10 +290,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             return false;
         }
 
-        public virtual bool CanClick
-        {
-            get { return CanPrimaryClick || CanSecondaryClick; }
-        }
+        public virtual bool CanClick => CanPrimaryClick || CanSecondaryClick;
 
         public virtual bool CanPrimaryClick
         {
@@ -337,10 +328,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             }
         }
 
-        public virtual bool CanDrag
-        {
-            get { return Visible && Enabled && Draggable && OnDrag != null; }
-        }
+        public virtual bool CanDrag => Visible && Enabled && Draggable && OnDrag != null;
 
         protected ControlTemplate(CursorType? cursor = null, object dataContext = null, Action<object, object> onClick = null,
             InteractiveTooltip tooltip = null)
@@ -379,15 +367,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 
         public bool ClickOnPress { get; set; }
 
-        protected virtual bool ClipContent
-        {
-            get { return false; }
-        }
+        protected virtual bool ClipContent => false;
 
-        protected virtual RectangleF ClipContentBounds
-        {
-            get { return Bounds; }
-        }
+        protected virtual RectangleF ClipContentBounds => Bounds;
 
         public ControlTemplate SetOnClick(Action<object, object> onClick)
         {
@@ -634,10 +616,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             return TextFont;
         }
 
-        string ITextStyleProvider.ResolvedTextFont
-        {
-            get { return GetRenderTextFont(); }
-        }
+        string ITextStyleProvider.ResolvedTextFont => GetRenderTextFont();
 
         protected virtual float GetRenderBorderRadiusPixels()
         {
@@ -712,10 +691,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             });
         }
 
-        public IMyTextSurface TextSurface
-        {
-            get { return ResolveTextSurface(); }
-        }
+        public IMyTextSurface TextSurface => ResolveTextSurface();
 
         public Vector2 MeasureText(string text, float scale)
         {

@@ -22,6 +22,7 @@ namespace LcdMod.Client.Apps.Abstract
         bool _themeDark;
         float _themeLayoutScale;
         float _themeFontScale;
+        float _themeAutoScrollSecondsPerStep;
         string _themeTextFont;
         bool _hasTheme;
 
@@ -65,10 +66,7 @@ namespace LcdMod.Client.Apps.Abstract
             return control;
         }
 
-        public Sandbox.ModAPI.Ingame.IMyTextSurface TextSurface
-        {
-            get { return Host != null ? Host.Surface : null; }
-        }
+        public Sandbox.ModAPI.Ingame.IMyTextSurface TextSurface => Host != null ? Host.Surface : null;
 
         public string TextFont
         {
@@ -82,10 +80,7 @@ namespace LcdMod.Client.Apps.Abstract
             }
         }
 
-        string ITextStyleProvider.ResolvedTextFont
-        {
-            get { return TextFont; }
-        }
+        string ITextStyleProvider.ResolvedTextFont => TextFont;
 
         protected Vector2 MeasureText(string text, float scale)
         {
@@ -155,17 +150,20 @@ namespace LcdMod.Client.Apps.Abstract
                 dark != _themeDark ||
                 !layoutScale.Equals(_themeLayoutScale) ||
                 !fontScale.Equals(_themeFontScale) ||
+                ! AppConfig.AutoScrollStep.Equals(_themeAutoScrollSecondsPerStep) ||
                 !string.Equals(textFont, _themeTextFont, StringComparison.Ordinal))
             {
                 _theme = headerColor.ToTheme(dark);
                 _resources = ThemeResourceBuilder.FromThemeDictionary(_theme);
                 _resources.Set(ThemeResources.LayoutScale, layoutScale);
                 _resources.Set(ThemeResources.FontScale, fontScale);
+                _resources.Set(ThemeResources.AutoScrollSecondsPerStep, AppConfig.AutoScrollStep);
                 _resources.Set(ThemeResources.TextFont, textFont);
                 _themeHeaderColor = headerColor;
                 _themeDark = dark;
                 _themeLayoutScale = layoutScale;
                 _themeFontScale = fontScale;
+                _themeAutoScrollSecondsPerStep = AppConfig.AutoScrollStep;
                 _themeTextFont = textFont;
                 _hasTheme = true;
                 MarkDirty();

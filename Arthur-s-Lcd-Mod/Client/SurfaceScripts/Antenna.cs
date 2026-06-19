@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Generated;
+using IAutoScroll = LcdMod.Client.Terminal.Controls.Generic.IAutoScroll;
 using LcdMod.Client.Apps;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Gui;
@@ -26,6 +27,7 @@ namespace LcdMod.Client.SurfaceScripts
         IUsesTerminalControl<SeparatorFilter>,
         IUsesTerminalControl<LabelSeparator>,
         IUsesTerminalControlGroup<BlocksFilterTerminalControlGroup>,
+        IAutoScroll,
         IMultiDisplayMode
     {
         protected override ConfigKind ConfigKind => ConfigKind.WithBlocks;

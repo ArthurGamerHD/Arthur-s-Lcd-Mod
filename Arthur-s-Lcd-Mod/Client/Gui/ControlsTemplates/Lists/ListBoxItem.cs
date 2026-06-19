@@ -12,10 +12,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
             : base(bounds, CursorType.Hand, model)
         { }
 
-        public ListBoxItemModel<T> ItemModel
-        {
-            get { return DataContext as ListBoxItemModel<T>; }
-        }
+        public ListBoxItemModel<T> ItemModel => DataContext as ListBoxItemModel<T>;
 
         public override bool Click(object sender)
         {

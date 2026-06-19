@@ -730,4 +730,10 @@ We are waiting for a while, and then we will restart it for you.</value>
   <data name="LcdMod_Search_Script_Tooltip" xml:space="preserve">
     <value>Search for specific app</value>
   </data>
+  <data name="LcdMod_AutoScroll" xml:space="preserve">
+    <value>Auto Scroll</value>
+  </data>
+  <data name="LcdMod_AutoScroll_Tooltip" xml:space="preserve">
+    <value>Set a delay for the scroll step (Set to 0 to disable)</value>
+  </data>
 </root>

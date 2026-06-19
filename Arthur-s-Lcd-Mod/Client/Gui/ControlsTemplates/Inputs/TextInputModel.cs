@@ -17,10 +17,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Inputs
         public bool Enabled { get; set; } = true;
         public Action<string> ValueChanged { get; set; }
 
-        public override bool CanClick
-        {
-            get { return Enabled; }
-        }
+        public override bool CanClick => Enabled;
 
         public override bool Click(object sender)
         {

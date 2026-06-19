@@ -11,10 +11,7 @@ namespace LcdMod.Client.Market
             Mode = mode == NpcMarketMode.Sell ? NpcMarketMode.Sell : NpcMarketMode.Buy;
         }
 
-        public string Key
-        {
-            get { return ItemKey + "|" + Mode; }
-        }
+        public string Key => ItemKey + "|" + Mode;
 
         public override bool Equals(object obj)
         {

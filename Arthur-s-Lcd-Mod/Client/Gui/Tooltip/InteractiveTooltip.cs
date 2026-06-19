@@ -115,10 +115,7 @@ namespace LcdMod.Client.Gui.Tooltip
 
         public IList<Control> InteractiveEntries => _interactiveEntries;
 
-        public ControlTemplate TooltipContainer
-        {
-            get { return _containerControl; }
-        }
+        public ControlTemplate TooltipContainer => _containerControl;
 
         public string GetTitle()
         {

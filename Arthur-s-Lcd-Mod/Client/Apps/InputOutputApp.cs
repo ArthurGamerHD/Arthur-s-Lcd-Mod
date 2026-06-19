@@ -221,11 +221,11 @@ namespace LcdMod.Client.Apps
         {
             var contentTop = ContentTop();
             var viewportHeight = Math.Max(0f, ViewBox.Bottom - contentTop);
+            _scroll.AutoScrollSecondsPerStep = 0f;
             _scroll.ConfigureAutomatic(
                 new RectangleF(ViewBox.X, contentTop, ViewBox.Width, viewportHeight),
                 ScrollPanel.DefaultScrollerWidthPixels * Scale,
-                rowHeight,
-                0f);
+                rowHeight);
         }
 
         void RenderListPanelContent(ControlTemplate control, List<MySprite> sprites)

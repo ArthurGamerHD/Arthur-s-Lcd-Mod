@@ -59,6 +59,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         Vector2 _manualScrollOffsetPixels;
         Vector2 _scrollVelocityPixelsPerFrame;
         float _configuredAutomaticScrollerWidthPixels = DefaultScrollerWidthPixels;
+        float? _localAutoScrollSecondsPerStep;
+        float _resolvedAutoScrollSecondsPerStep;
 
         public ScrollPanel(CursorType? cursor = null, object dataContext = null)
             : base(cursor, dataContext)
@@ -102,7 +104,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         public float ScrollerWidthPixels { get; private set; }
         public float AutomaticScrollerWidthPixels { get; set; } = DefaultScrollerWidthPixels;
         public float ScrollStepPixels { get; set; } = 32f;
-        public float AutoScrollSecondsPerStep { get; private set; }
+        public float AutoScrollSecondsPerStep
+        {
+            get
+            {
+                UpdateResolvedAutoScrollSecondsPerStep();
+                return _resolvedAutoScrollSecondsPerStep;
+            }
+            set { SetAutoScrollSecondsPerStep(value); }
+        }
         public float ManualScrollPixelMultiplier { get; set; } = DEFAULT_MANUAL_SCROLL_PIXEL_MULTIPLIER;
         public bool ManualScrollInertiaEnabled { get; set; } = true;
         public Vector2 ScrollOffsetPixels2D { get; private set; }
@@ -211,19 +221,19 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             EnsureAutomaticLayout();
         }
 
-        public void ConfigureAutomatic(RectangleF bounds, float scrollerWidthPixels, float scrollStepPixels, float autoScrollSecondsPerStep)
+        public void ConfigureAutomatic(RectangleF bounds, float scrollerWidthPixels, float scrollStepPixels)
         {
-            ConfigureAutomatic(bounds, scrollerWidthPixels, scrollStepPixels, autoScrollSecondsPerStep, ScrollAxis.Vertical);
+            ConfigureAutomatic(bounds, scrollerWidthPixels, scrollStepPixels, ScrollAxis.Vertical);
         }
 
-        public void ConfigureAutomatic(RectangleF bounds, float scrollerWidthPixels, float scrollStepPixels, float autoScrollSecondsPerStep, ScrollAxis enabledAxis)
+        public void ConfigureAutomatic(RectangleF bounds, float scrollerWidthPixels, float scrollStepPixels, ScrollAxis enabledAxis)
         {
             ViewBox = bounds;
             PanelBounds = bounds;
             _configuredAutomaticScrollerWidthPixels = Math.Max(0f, scrollerWidthPixels);
             ScrollStepPixels = Math.Max(1f, scrollStepPixels);
             RowHeight = ScrollStepPixels;
-            AutoScrollSecondsPerStep = Math.Max(0f, autoScrollSecondsPerStep);
+            UpdateResolvedAutoScrollSecondsPerStep();
             SetEnabledScrollAxes(enabledAxis);
             _automaticContentMode = _content != null;
             _manualConfigured = false;
@@ -240,14 +250,56 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
         internal void Configure(RectangleF viewBox, float contentTop, float footerHeight, float rowHeight, int totalRows, float scrollerWidthPixels, float autoScrollSecondsPerStep)
         {
-            AutoScrollSecondsPerStep = Math.Max(0f, autoScrollSecondsPerStep);
+            SetAutoScrollSecondsPerStep(autoScrollSecondsPerStep);
             ConfigureCore(viewBox, contentTop, footerHeight, rowHeight, totalRows, scrollerWidthPixels, GetVerticalScrollOffsetForCurrentMode);
         }
 
         void Configure(RectangleF viewBox, float contentTop, float footerHeight, float rowHeight, int totalRows, float scrollerWidthPixels, int autoScrollStep)
         {
-            AutoScrollSecondsPerStep = 0f;
+            SetAutoScrollSecondsPerStep(0f);
             ConfigureCore(viewBox, contentTop, footerHeight, rowHeight, totalRows, scrollerWidthPixels, maxScrollOffset => GetRowOffsetFromStep(autoScrollStep, maxScrollOffset));
+        }
+
+        public void SetAutoScrollSecondsPerStep(float secondsPerStep)
+        {
+            _localAutoScrollSecondsPerStep = NormalizeAutoScrollSecondsPerStep(secondsPerStep);
+            UpdateResolvedAutoScrollSecondsPerStep();
+        }
+
+        void UpdateResolvedAutoScrollSecondsPerStep()
+        {
+            float secondsPerStep = _localAutoScrollSecondsPerStep.HasValue
+                ? _localAutoScrollSecondsPerStep.Value
+                : GetResourceAutoScrollSecondsPerStep();
+
+            if (Math.Abs(_resolvedAutoScrollSecondsPerStep - secondsPerStep) <= 0.0001f)
+                return;
+
+            if (_resolvedAutoScrollSecondsPerStep > 0f && secondsPerStep <= 0f)
+                _manualScrollOffsetPixels = ScrollOffsetPixels2D;
+
+            _resolvedAutoScrollSecondsPerStep = secondsPerStep;
+
+            if (_automaticContentMode)
+                InvalidateLayout();
+            else
+                MarkDirty();
+        }
+
+        float GetResourceAutoScrollSecondsPerStep()
+        {
+            float value;
+            return ScopedResourceResolver.TryResolve(this, ThemeResources.AutoScrollSecondsPerStep, out value)
+                ? NormalizeAutoScrollSecondsPerStep(value)
+                : 0f;
+        }
+
+        static float NormalizeAutoScrollSecondsPerStep(float secondsPerStep)
+        {
+            if (float.IsNaN(secondsPerStep) || float.IsInfinity(secondsPerStep))
+                return 0f;
+
+            return Math.Max(0f, secondsPerStep);
         }
 
         void ConfigureCore(RectangleF viewBox, float contentTop, float footerHeight, float rowHeight, int totalRows, float scrollerWidthPixels, Func<float, float> scrollOffsetProvider)

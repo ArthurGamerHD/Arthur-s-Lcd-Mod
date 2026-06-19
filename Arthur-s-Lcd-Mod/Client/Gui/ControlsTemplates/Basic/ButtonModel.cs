@@ -13,10 +13,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
         public bool Enabled { get; set; } = true;
         public Action<ButtonModel, object> Clicked { get; set; }
 
-        public override bool CanClick
-        {
-            get { return Enabled && (Clicked != null || base.CanClick); }
-        }
+        public override bool CanClick => Enabled && (Clicked != null || base.CanClick);
 
         public override bool Click(object sender)
         {

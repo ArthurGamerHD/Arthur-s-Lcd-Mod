@@ -158,10 +158,7 @@ namespace LcdMod.Client.Utility
                 _instancesByIndex.Remove(emptyIndexes[i]);
         }
 
-        internal bool IsEmpty
-        {
-            get { return _instancesByIndex.Count == 0; }
-        }
+        internal bool IsEmpty => _instancesByIndex.Count == 0;
     }
 
     /// <summary>

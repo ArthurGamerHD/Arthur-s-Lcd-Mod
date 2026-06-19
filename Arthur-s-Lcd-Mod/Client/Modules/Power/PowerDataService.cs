@@ -44,7 +44,7 @@ namespace LcdMod.Client.Modules.Power
         public int CaptureCount { get; private set; }
         public long ReleasedFrame { get; private set; }
 
-        public bool HasCaptures { get { return CaptureCount > 0; } }
+        public bool HasCaptures => CaptureCount > 0;
 
         internal void AddCapture(GridLogic requester)
         {

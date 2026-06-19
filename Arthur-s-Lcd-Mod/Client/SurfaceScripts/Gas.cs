@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Generated;
+using IAutoScroll = LcdMod.Client.Terminal.Controls.Generic.IAutoScroll;
 using LcdMod.Client.Apps;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.SurfaceScripts.Abstract;
@@ -17,7 +18,7 @@ using static LcdMod.Common.Helpers.Constants;
 namespace LcdMod.Client.SurfaceScripts
 {
     [MyTextSurfaceScript(ID, TITLE)]
-    public partial class GasSurfaceScript : SurfaceScriptBase, IMultiDisplayMode, IUsesTerminalControl<ComboboxLinkType>
+    public partial class GasSurfaceScript : SurfaceScriptBase, IAutoScroll, IMultiDisplayMode, IUsesTerminalControl<ComboboxLinkType>
     {
         protected override ConfigKind ConfigKind => ConfigKind.WithBlocks;
         public const string ID = "GasGraph";

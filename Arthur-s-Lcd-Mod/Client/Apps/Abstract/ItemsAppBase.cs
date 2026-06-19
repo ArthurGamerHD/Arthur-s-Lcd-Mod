@@ -140,7 +140,6 @@ namespace LcdMod.Client.Apps.Abstract
         protected const int TITLE_HEIGHT = 35;
         protected const int LINE_HEIGHT = 30;
         protected const int MINIMUM_COL_WIDTH = 220;
-        protected const int SCROLL_DELAY = 12;
         protected string PreviousType = "";
 
         protected ItemsApp(ScreenConfigWithItems config, IAppHost host) : base(config, host)
@@ -339,8 +338,7 @@ namespace LcdMod.Client.Apps.Abstract
             _scrollPanel.ConfigureAutomatic(
                 contentBounds,
                 ScrollPanel.DefaultScrollerWidthPixels * Scale,
-                rowHeight,
-                SCROLL_DELAY / 6f);
+                rowHeight);
 
             BeginInteractiveTree(_scrollPanel);
             PreviousType = items[0].TypeId;
@@ -366,8 +364,7 @@ namespace LcdMod.Client.Apps.Abstract
             _scrollPanel.ConfigureAutomatic(
                 contentBounds,
                 ScrollPanel.DefaultScrollerWidthPixels * Scale,
-                rowHeight,
-                SCROLL_DELAY / 6f);
+                rowHeight);
 
             BeginInteractiveTree(_scrollPanel);
             PreviousType = items[0].TypeId;

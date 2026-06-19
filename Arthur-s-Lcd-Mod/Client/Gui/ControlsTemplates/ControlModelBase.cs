@@ -18,25 +18,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         public Func<object, int, bool> OnScroll { get; set; }
         public Func<object, bool> OnHover { get; set; }
 
-        public virtual bool CanClick
-        {
-            get { return OnClick != null; }
-        }
+        public virtual bool CanClick => OnClick != null;
 
-        public virtual bool CanSecondaryClick
-        {
-            get { return OnSecondaryClick != null; }
-        }
+        public virtual bool CanSecondaryClick => OnSecondaryClick != null;
 
-        public virtual bool CanScroll
-        {
-            get { return OnScroll != null; }
-        }
+        public virtual bool CanScroll => OnScroll != null;
 
-        public virtual bool CanHover
-        {
-            get { return OnHover != null; }
-        }
+        public virtual bool CanHover => OnHover != null;
 
         public virtual bool Click(object sender)
         {

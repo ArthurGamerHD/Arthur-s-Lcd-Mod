@@ -21,7 +21,6 @@ namespace LcdMod.Client.Apps
     {
         const float BATTERY_SLOT_W = 100f;
         const float BATTERY_SLOT_H = 100f;
-        const int SCROLL_TICK = 12;
 
         readonly IAppHost _surfaceHost;
         readonly InteractiveSurfaceScript _interactiveHost;
@@ -167,8 +166,7 @@ namespace LcdMod.Client.Apps
             _scrollPanel.ConfigureAutomatic(
                 new RectangleF(owner.ViewBox.X, contentTop, owner.ViewBox.Width, viewportHeight),
                 ScrollPanel.DefaultScrollerWidthPixels * owner.Config.Scale,
-                rowHeight,
-                SCROLL_TICK / 6f);
+                rowHeight);
             _scrollPanel.SetVisible(true);
             if (!_children.Contains(_scrollPanel))
                 _children.Add(_scrollPanel);

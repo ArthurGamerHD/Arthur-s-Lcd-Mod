@@ -1,6 +1,7 @@
 using System;
 using System.Text;
 using LcdMod.Client.Config;
+using LcdMod.Client.Helpers;
 using LcdMod.Common.Config.Models.Apps;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
@@ -32,7 +33,7 @@ namespace LcdMod.Client.Terminal.Controls.Generic
             var seconds = Getter(block);
             if (seconds <= 0f)
             {
-                text.Append("Disabled");
+                text.Append(LocHelper.Disabled);
                 return;
             }
 

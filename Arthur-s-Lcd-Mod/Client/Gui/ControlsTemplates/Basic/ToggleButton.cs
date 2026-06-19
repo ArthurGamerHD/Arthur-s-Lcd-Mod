@@ -32,10 +32,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
         /// </summary>
         public Func<bool> GetState { get; set; }
 
-        public bool IsSelected
-        {
-            get { return GetState != null && GetState(); }
-        }
+        public bool IsSelected => GetState != null && GetState();
 
         protected override StyleState GetStyleState()
         {

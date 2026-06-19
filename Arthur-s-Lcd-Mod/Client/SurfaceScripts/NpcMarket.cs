@@ -20,18 +20,18 @@ namespace LcdMod.Client.SurfaceScripts
         IUsesTerminalControl<SliderNpcMarketMaxDistance>,
         IUsesTerminalControl<SliderNpcMarketPageSwitchDelay>
     {
-        protected override ConfigKind ConfigKind { get { return ConfigKind.NpcMarket; } }
+        protected override ConfigKind ConfigKind => ConfigKind.NpcMarket;
         public const string ID = MOD_PREFIX + "MarketApp";
         public const string TITLE = NpcMarketApp.TITLE;
 
 
         NpcMarketApp _app;
 
-        public override IApp App { get { return _app; } }
+        public override IApp App => _app;
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
         public override List<Control> InteractiveList => _app?.Children as List<Control>;
-        protected override string DefaultTitle { get { return TITLE; } }
-        protected override bool RendersInteractiveEntriesInGetSprites { get { return true; } }
+        protected override string DefaultTitle => TITLE;
+        protected override bool RendersInteractiveEntriesInGetSprites => true;
 
         public NpcMarketSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
             : base(surface, block, size)

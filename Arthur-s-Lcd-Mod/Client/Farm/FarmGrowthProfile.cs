@@ -10,15 +10,9 @@ namespace LcdMod.Client.Farm
         public MyDefinitionId OutputItemId;
         public float SeedGrowthTimeMultiplier;
 
-        public float TotalGrowthFrames
-        {
-            get { return PlotGrowthMinutes * 3600f * SeedGrowthTimeMultiplier; }
-        }
+        public float TotalGrowthFrames => PlotGrowthMinutes * 3600f * SeedGrowthTimeMultiplier;
 
-        public float TotalGrowthSeconds
-        {
-            get { return TotalGrowthFrames / 60f; }
-        }
+        public float TotalGrowthSeconds => TotalGrowthFrames / 60f;
     }
 
     internal sealed class FarmSeedGrowthProfile

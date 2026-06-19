@@ -17,10 +17,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Inputs
         {
         }
 
-        public TextInputModel TextModel
-        {
-            get { return DataContext as TextInputModel; }
-        }
+        public TextInputModel TextModel => DataContext as TextInputModel;
 
         protected override void RenderDefault(List<MySprite> sprites)
         {

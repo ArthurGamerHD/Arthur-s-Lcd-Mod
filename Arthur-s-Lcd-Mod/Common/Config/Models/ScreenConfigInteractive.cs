@@ -44,5 +44,6 @@ namespace LcdMod.Common.Config.Models
         [ProtoMember(22)] public float CursorScale { get; set; } = 1f;
         [ProtoMember(23)] public bool RequiresAlt { get; set; } = true;
         [ProtoMember(27)] public int ReferenceMode { get; set; } = 0;
+        [ProtoMember(98)] public float AutoScrollStep { get; set; } = 2f;
     }
 }

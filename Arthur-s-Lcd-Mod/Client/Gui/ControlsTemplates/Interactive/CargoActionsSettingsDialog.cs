@@ -40,10 +40,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         }
 
         protected abstract string TitleKey { get; }
-        protected virtual float CardWidthFraction { get { return 0.9f; } }
-        protected virtual float CardHeightFraction { get { return 0.9f; } }
-        protected virtual float CardMinWidth { get { return 220f; } }
-        protected virtual float CardMinHeight { get { return 160f; } }
+        protected virtual float CardWidthFraction => 0.9f;
+        protected virtual float CardHeightFraction => 0.9f;
+        protected virtual float CardMinWidth => 220f;
+        protected virtual float CardMinHeight => 160f;
 
         protected abstract void RenderContent(RectangleF contentRect, float scale, float fontScale,
             IMyTextSurface surface);
@@ -176,8 +176,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             _weapons = weapons ?? new List<WeaponOption>();
         }
 
-        protected override string TitleKey { get { return MOD_PREFIX + "CargoActions_Config"; } }
-        protected override float CardHeightFraction { get { return 0.72f; } }
+        protected override string TitleKey => MOD_PREFIX + "CargoActions_Config";
+        protected override float CardHeightFraction => 0.72f;
 
         void BackToMenu()
         {
@@ -289,7 +289,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             _labels[3] = gridSmall + " / " + reactorLarge;
         }
 
-        protected override string TitleKey { get { return MOD_PREFIX + "CargoActions_Uranium"; } }
+        protected override string TitleKey => MOD_PREFIX + "CargoActions_Uranium";
 
         protected override void OnDismiss()
         {

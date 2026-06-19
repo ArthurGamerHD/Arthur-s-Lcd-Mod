@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Generated;
+using IAutoScroll = LcdMod.Client.Terminal.Controls.Generic.IAutoScroll;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Apps;
@@ -17,6 +18,7 @@ namespace LcdMod.Client.SurfaceScripts
 {
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class PowerFilledSurfaceScript : InteractiveSurfaceScript,
+        IAutoScroll,
         IUsesTerminalControl<ComboboxLinkType>
     {
         protected override ConfigKind ConfigKind => ConfigKind.Power;

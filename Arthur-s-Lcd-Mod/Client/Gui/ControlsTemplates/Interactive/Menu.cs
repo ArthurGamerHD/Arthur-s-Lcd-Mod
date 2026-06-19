@@ -50,15 +50,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             SetVisible(_rootNodes.Count > 0);
         }
 
-        public bool HasMenuBounds
-        {
-            get { return _hasMenuBounds; }
-        }
+        public bool HasMenuBounds => _hasMenuBounds;
 
-        public RectangleF MenuBounds
-        {
-            get { return _menuBounds; }
-        }
+        public RectangleF MenuBounds => _menuBounds;
 
         public void Configure(
             RectangleF viewBox,

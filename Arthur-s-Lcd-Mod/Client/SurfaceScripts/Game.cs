@@ -69,11 +69,8 @@ namespace LcdMod.Client.SurfaceScripts
 
         GlobalMenuEntry _rootMenu;
 
-        protected override bool RendersInteractiveEntriesInGetSprites
-        {
-            get { return true; }
-        }
-        
+        protected override bool RendersInteractiveEntriesInGetSprites => true;
+
         public GameSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)
         {
             BuildGlobalMenu();

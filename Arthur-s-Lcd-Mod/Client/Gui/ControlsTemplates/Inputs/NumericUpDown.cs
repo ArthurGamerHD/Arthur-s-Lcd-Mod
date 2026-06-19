@@ -35,10 +35,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Inputs
             _grid.SetRect(bounds);
         }
 
-        public NumericUpDownModel NumericModel
-        {
-            get { return DataContext as NumericUpDownModel; }
-        }
+        public NumericUpDownModel NumericModel => DataContext as NumericUpDownModel;
 
         public override void SetRect(RectangleF bounds)
         {

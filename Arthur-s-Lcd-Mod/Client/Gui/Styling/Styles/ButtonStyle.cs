@@ -7,11 +7,19 @@ namespace LcdMod.Client.Gui.Styling.Styles
     {
         public static void Build(StyleTree styles)
         {
-            Style button = styles.For<Button>();
+            Style<Button> button = styles.For<Button>();
             
             button.State(StyleState.Hover)
                 .Set(ControlTemplate.BackgroundColorProperty, ThemeResources.SurfaceContainerHighColor)
                 .Set(ControlTemplate.TextColorProperty, ThemeResources.OnSurfaceColor);
+
+            Style<ToggleButton> toggleButton = button.For<ToggleButton>()
+                .Set(ControlTemplate.BackgroundColorProperty, ThemeResources.AccentContainerColor)
+                .Set(ControlTemplate.TextColorProperty, ThemeResources.OnAccentContainerColor);
+
+            toggleButton.State(StyleState.Active)
+                .Set(ControlTemplate.BackgroundColorProperty, ThemeResources.AccentColor)
+                .Set(ControlTemplate.TextColorProperty, ThemeResources.OnAccentColor);
 
             Style sort = button.ClassSelector("Sort")
                 .Set(ControlTemplate.BackgroundColorProperty, ThemeResources.SurfaceColor)

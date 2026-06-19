@@ -4,9 +4,6 @@ namespace LcdMod.Client.Terminal.Controls.Generic
 {
     public sealed partial class TextSurfaceControlsVisibility : TerminalControlsWrapper
     {
-        public override IMyTerminalControl TerminalControl
-        {
-            get { return null; }
-        }
+        public override IMyTerminalControl TerminalControl => null;
     }
 }

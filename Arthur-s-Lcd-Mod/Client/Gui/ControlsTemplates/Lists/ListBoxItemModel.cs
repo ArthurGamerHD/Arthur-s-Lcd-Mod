@@ -19,15 +19,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
             Index = index;
         }
 
-        public bool Selected
-        {
-            get { return Owner != null && Owner.IsSelected(Item); }
-        }
+        public bool Selected => Owner != null && Owner.IsSelected(Item);
 
-        public override bool CanClick
-        {
-            get { return Owner != null; }
-        }
+        public override bool CanClick => Owner != null;
 
         public override bool Click(object sender)
         {

@@ -8,6 +8,7 @@ namespace LcdMod.Client.Helpers
     public static class LocHelper
     {
         public static string Empty => GetLoc(MOD_PREFIX + "Empty");
+        public static string Disabled => GetLoc("Disabled");
 
         public static string GetLoc(string key) => MyTexts.Get(MyStringId.GetOrCompute(key)).ToString();
     }
