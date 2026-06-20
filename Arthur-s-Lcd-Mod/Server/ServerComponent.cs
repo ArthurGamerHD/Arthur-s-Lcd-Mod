@@ -7,6 +7,7 @@ using LcdMod.Server.Audio;
 using LcdMod.Common.Config;
 using LcdMod.Common.Helpers;
 using LcdMod.Common.Networking;
+using LcdMod.Server.Modules.RoomEnvironment;
 using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
@@ -34,10 +35,13 @@ namespace LcdMod.Server
         {
             _session = session;
             _npcMarket = new NpcMarketService(session);
+            RoomEnvironment = new GridRoomEnvironmentServerModule();
 #if EXPERIMENTAL
             _audioBroadcast = new AudioBroadcastServerService();
 #endif
         }
+
+        public GridRoomEnvironmentServerModule RoomEnvironment { get; }
 
         public void LoadData()
         {
@@ -51,6 +55,7 @@ namespace LcdMod.Server
             _audioBroadcast.Unload();
 #endif
             _npcMarket.UnloadData();
+            RoomEnvironment.Unload();
             MyAPIGateway.Entities.OnEntityAdd -= EntityAdded;
 
             foreach (var grid in _trackedGrids.Values)

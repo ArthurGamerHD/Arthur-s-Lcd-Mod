@@ -13,16 +13,6 @@ namespace LcdMod.Client.Helpers
 {
     internal sealed class ClockEnvironmentReader
     {
-        static readonly Vector3I[] AdjacentGridDirections =
-        {
-            new Vector3I(-1, 0, 0),
-            new Vector3I(1, 0, 0),
-            new Vector3I(0, 1, 0),
-            new Vector3I(0, -1, 0),
-            new Vector3I(0, 0, -1),
-            new Vector3I(0, 0, 1)
-        };
-
         bool _sunRotationAxisInitialized;
         Vector3D _sunRotationAxis;
         public ClockDashboardSnapshot Read(
@@ -47,7 +37,7 @@ namespace LcdMod.Client.Helpers
             ReadWeather(position, planet, snapshot);
             ReadWind(position, planet, snapshot);
             ReadTemperature(position, planet, snapshot);
-            ReadGridRoomEnvironment(block, position, previous, snapshot);
+            ReadGridRoomEnvironment(block, gridLogic, previous, snapshot);
 
             if (planet == null)
             {
@@ -399,7 +389,7 @@ namespace LcdMod.Client.Helpers
 
         static void ReadGridRoomEnvironment(
             IMyCubeBlock block,
-            Vector3D position,
+            GridLogic gridLogic,
             ClockDashboardSnapshot previous,
             ClockDashboardSnapshot snapshot)
         {
@@ -412,92 +402,48 @@ namespace LcdMod.Client.Helpers
             snapshot.InteriorTemperatureLevel = TemperatureToLevel(ambientTemperature);
             snapshot.HasInteriorTemperature = snapshot.HasAmbientTemperature;
 
-            try
-            {
-                var grid = block?.CubeGrid;
-                var gasSystem = grid?.GasSystem;
-                var room = gasSystem == null || gasSystem.IsProcessingData ? null : FindGridRoom(block, position);
-
-                if (room == null || !room.IsAirtight)
-                {
-                    if (!TrySetWorldOxygen(position, snapshot))
-                        RestorePreviousGridRoomEnvironment(previous, snapshot);
-                    return;
-                }
-
-                snapshot.OxygenRatio = room.OxygenLevel(grid.GridSize);
-
-                // Space Engineers moves effective character temperature toward Cozy
-                // in proportion to the oxygen level of an airtight room.
-                float pressurization = room.IsAirtight ? snapshot.OxygenRatio : 0f;
-                float interiorTemperature = MathHelper.Lerp(
-                    ambientTemperature,
-                    0.5f,
-                    pressurization);
-                snapshot.InteriorTemperatureNormalized = MathHelper.Clamp(interiorTemperature, 0f, 1f);
-                snapshot.InteriorTemperatureLevel = TemperatureToLevel(
-                    snapshot.InteriorTemperatureNormalized);
-                snapshot.HasInteriorTemperature = snapshot.HasAmbientTemperature || pressurization >= 1f;
-            }
-            catch
+            GridRoomEnvironmentSample roomSample;
+            if (gridLogic == null ||
+                !gridLogic.TryGetGridRoomEnvironment(block, out roomSample))
             {
                 RestorePreviousGridRoomEnvironment(previous, snapshot);
+                return;
             }
+
+            float sealedOxygen = MathHelper.Clamp(roomSample.OxygenRatio, 0f, 1f);
+            float environmentOxygen = ReadEnvironmentOxygen(block.GetPosition());
+            snapshot.OxygenRatio = roomSample.IsSealed
+                ? sealedOxygen
+                : environmentOxygen;
+
+            // Space Engineers moves effective character temperature toward Cozy
+            // only in a sealed room, using the authoritative internal oxygen level.
+            float pressurization = roomSample.IsSealed ? sealedOxygen : 0f;
+            float interiorTemperature = MathHelper.Lerp(
+                ambientTemperature,
+                0.5f,
+                pressurization);
+            snapshot.InteriorTemperatureNormalized = MathHelper.Clamp(interiorTemperature, 0f, 1f);
+            snapshot.InteriorTemperatureLevel = TemperatureToLevel(
+                snapshot.InteriorTemperatureNormalized);
+            snapshot.HasInteriorTemperature = snapshot.HasAmbientTemperature || pressurization >= 1f;
         }
 
-        static bool TrySetWorldOxygen(Vector3D position, ClockDashboardSnapshot snapshot)
+        static float ReadEnvironmentOxygen(Vector3D position)
         {
             try
             {
-                snapshot.OxygenRatio = MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(position);
+                var oxygenProvider = MyAPIGateway.Session != null
+                    ? MyAPIGateway.Session.OxygenProviderSystem
+                    : null;
+                return oxygenProvider != null
+                    ? MathHelper.Clamp(oxygenProvider.GetOxygenInPoint(position), 0f, 1f)
+                    : 0f;
             }
             catch
             {
-                snapshot.OxygenRatio = 0;
-                return false;
+                return 0f;
             }
-            
-            return true;
-        }
-
-        static IMyOxygenRoom FindGridRoom(IMyCubeBlock block, Vector3D position)
-        {
-            var grid = block?.CubeGrid;
-            var gasSystem = grid?.GasSystem;
-            if (gasSystem == null)
-                return null;
-
-            var oxygenBlock = gasSystem.GetOxygenBlock(position);
-            if (oxygenBlock?.Room != null)
-                return oxygenBlock.Room;
-
-            Vector3I origin = block.Position;
-            IMyOxygenRoom bestRoom = null;
-            float bestLevel = -1f;
-            bool bestIsAirtight = false;
-
-            for (int i = 0; i < AdjacentGridDirections.Length; i++)
-            {
-                Vector3I adjacent = origin + AdjacentGridDirections[i];
-                IMyOxygenRoom room = gasSystem.GetOxygenRoomForCubeGridPosition(ref adjacent);
-                if (room == null)
-                    continue;
-
-                float level = room.IsAirtight
-                    ? room.OxygenLevel(grid.GridSize)
-                    : room.EnvironmentOxygen;
-                bool isBetter = bestRoom == null ||
-                                (room.IsAirtight && !bestIsAirtight) ||
-                                (room.IsAirtight == bestIsAirtight && level > bestLevel);
-                if (!isBetter)
-                    continue;
-
-                bestRoom = room;
-                bestLevel = level;
-                bestIsAirtight = room.IsAirtight;
-            }
-
-            return bestRoom;
         }
 
         static void RestorePreviousGridRoomEnvironment(

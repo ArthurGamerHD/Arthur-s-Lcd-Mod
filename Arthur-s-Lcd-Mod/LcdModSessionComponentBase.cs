@@ -222,6 +222,14 @@ namespace LcdMod
                         if (args.IsFromServer && !MyAPIGateway.Utilities.IsDedicated)
                             Client?.HandleSyncNpcMarket(args);
                         break;
+                    case PackageCode.RequestGridRoomEnvironment:
+                        if (!args.IsFromServer)
+                            Server?.RoomEnvironment.HandleRequestGridRoomEnvironment(args);
+                        break;
+                    case PackageCode.SyncGridRoomEnvironment:
+                        if (args.IsFromServer && !MyAPIGateway.Utilities.IsDedicated)
+                            Client?.RoomEnvironment.HandleSyncGridRoomEnvironment(args);
+                        break;
 #if EXPERIMENTAL
                     case PackageCode.RequestBroadcastAudio:
                         if (!args.IsFromServer)

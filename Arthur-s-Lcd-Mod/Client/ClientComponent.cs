@@ -7,6 +7,7 @@ using LcdMod.Client.Audio;
 #endif
 using LcdMod.Client.Market;
 using LcdMod.Client.Modules.Power;
+using LcdMod.Client.Modules.RoomEnvironment;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Config;
 using LcdMod.Client.Helpers;
@@ -48,9 +49,11 @@ namespace LcdMod.Client
         {
             _session = session;
             _terminalManager = new TerminalManager(session);
+            RoomEnvironment = new GridRoomEnvironmentClientModule();
         }
 
         public PowerDataModule PowerData { get; private set; }
+        public GridRoomEnvironmentClientModule RoomEnvironment { get; }
 
         public void LoadData()
         {

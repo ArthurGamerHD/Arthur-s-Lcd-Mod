@@ -354,6 +354,8 @@ namespace LcdMod.Common.Networking
         SyncNpcMarket = 10,
         RequestBroadcastAudio = 11,
         SyncBroadcastAudio = 12,
+        RequestGridRoomEnvironment = 13,
+        SyncGridRoomEnvironment = 14,
         NetworkFragment = 100
     }
 
