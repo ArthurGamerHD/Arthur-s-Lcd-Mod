@@ -45,6 +45,7 @@ namespace LcdMod.Common.Config.Models
 
         [ProtoMember(9)] public bool DrawLines { get; set; }
         [ProtoMember(12)] public int DisplayMode { get; set; }
+        [ProtoMember(52)] public OptionalValue<byte> BackgroundAlpha { get; set; } = new OptionalValue<byte>();
 
         [ProtoMember(99)]
         [XmlIgnore]

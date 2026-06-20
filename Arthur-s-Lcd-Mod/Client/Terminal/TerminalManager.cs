@@ -74,6 +74,7 @@ namespace LcdMod.Client.Terminal
             MyAPIGateway.TerminalControls.CustomControlGetter += CustomControlGetter;
             SearchScriptTextBox = CreateSearchScriptTextBox();
             
+            Controls.Add(new SliderBrightness());
             Controls.Add(new ButtonShowConfig());
             Controls.Add(new ButtonEditMarkdown());
 

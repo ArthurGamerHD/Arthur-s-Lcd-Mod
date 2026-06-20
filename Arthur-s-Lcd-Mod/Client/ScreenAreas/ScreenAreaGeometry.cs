@@ -824,6 +824,19 @@ namespace LcdMod.Client.ScreenAreas
             return result;
         }
 
+        public static bool IsTransparentScreenArea(IMyCubeBlock block, int surfaceIndex)
+        {
+            var definition = block?.SlimBlock?.BlockDefinition as MyFunctionalBlockDefinition;
+            var screenAreas = definition?.ScreenAreas;
+
+            if (screenAreas == null || surfaceIndex < 0 || surfaceIndex >= screenAreas.Count)
+                return false;
+
+            var material = screenAreas[surfaceIndex].Name;
+            return !string.IsNullOrEmpty(material) &&
+                   material.IndexOf("TransparentScreenArea", StringComparison.Ordinal) >= 0;
+        }
+
         static void AddMaterialCandidate(List<string> materials, string material)
         {
             if (materials == null || string.IsNullOrWhiteSpace(material))

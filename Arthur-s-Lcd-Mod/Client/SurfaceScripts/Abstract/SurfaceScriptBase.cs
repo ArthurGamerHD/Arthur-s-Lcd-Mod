@@ -1128,13 +1128,23 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 #endif
 
                 _renderComp.RenderSpritesToTexture(RotationOrSurfaceIndex, renderList, _textureSize, _aspectRatio,
-                    Surface.ScriptBackgroundColor, Surface.BackgroundAlpha);
+                    Surface.ScriptBackgroundColor, GetRenderOpacity());
             }
             catch (Exception e)
             {
                 OnException(e);
             }
         }
+
+        byte GetRenderOpacity()
+        {
+            if (ScreenAreaGeometry.IsTransparentScreenArea(Block, RotationOrSurfaceIndex))
+                return GetDefaultOpacity();
+
+            return Config.BackgroundAlpha.Get(GetDefaultOpacity);
+        }
+
+        byte GetDefaultOpacity() => Surface.BackgroundAlpha;
 
         void NotifyRendered()
         {

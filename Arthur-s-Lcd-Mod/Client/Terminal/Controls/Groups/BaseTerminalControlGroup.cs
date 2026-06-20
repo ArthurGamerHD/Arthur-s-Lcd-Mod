@@ -7,7 +7,8 @@ namespace LcdMod.Client.Terminal.Controls.Groups
         IContainsTerminalControlGroup<ColorsTerminalControlGroup>,
         IContainsTerminalControl<TextSurfaceControlsVisibility>,
         IContainsTerminalControl<SwitchToggleHeader>,
-        IContainsTerminalControl<Scale.SliderScale>
+        IContainsTerminalControl<Scale.SliderScale>,
+        IContainsTerminalControl<SliderBrightness>
 
     {
     }
