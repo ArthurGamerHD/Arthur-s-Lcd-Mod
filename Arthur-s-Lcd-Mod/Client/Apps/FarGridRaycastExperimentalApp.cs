@@ -6,8 +6,10 @@ using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Helpers;
+using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Common.Config.Models.Apps;
+using LcdMod.Common.Helpers;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game;
@@ -101,11 +103,19 @@ namespace LcdMod.Client.Apps
         bool _frameBuildWorkerRunning;
         bool _frameBuildQueued;
 
-        IMyCubeBlock Block => _host.Block;
-        Sandbox.ModAPI.Ingame.IMyTextSurface Surface => _host.Surface;
-        RectangleF ViewBox => _host.ViewBox;
-        float FontScale => _host.Surface.FontSize;
-        Color ForegroundColor => _host.ForegroundColor;
+        IMyCubeBlock Block => _host?.Block;
+        Sandbox.ModAPI.Ingame.IMyTextSurface Surface => _host?.Surface;
+        RectangleF ViewBox => _host?.ViewBox ?? default(RectangleF);
+        float FontScale
+        {
+            get
+            {
+                var surface = Surface;
+                return surface != null ? surface.FontSize : 1f;
+            }
+        }
+
+        Color ForegroundColor => _host?.ForegroundColor ?? Color.White;
         public override IReadOnlyList<Control> Children => _children;
 
         public FarGridRaycastExperimentalApp(ScreenConfigRaycast config, IAppHost host)
@@ -1119,14 +1129,26 @@ namespace LcdMod.Client.Apps
             _frameBuildWorkerRunning = true;
             MyAPIGateway.Parallel.Start(
                 () => BuildFrameRowsWorker(data),
-                () => ApplyFrameRows(data));
+                () => ApplyFrameRowsSafe(data));
+        }
+
+        void ApplyFrameRowsSafe(FrameBuildData data)
+        {
+            try
+            {
+                ApplyFrameRows(data);
+            }
+            catch (Exception e)
+            {
+                HandleFrameCacheBuildException(e);
+            }
         }
 
         void ApplyFrameRows(FrameBuildData data)
         {
             _frameBuildWorkerRunning = false;
 
-            if (data == null || data.Exception != null)
+            if (data == null)
             {
                 if (_frameBuildQueued)
                 {
@@ -1136,6 +1158,15 @@ namespace LcdMod.Client.Apps
 
                 return;
             }
+
+            if (data.Exception != null)
+            {
+                HandleFrameCacheBuildException(data.Exception);
+                return;
+            }
+
+            if (!IsHostRenderable())
+                return;
 
             if (data.RebuildAllRows || _cachedColorFrameRows.Length != data.Rows ||
                 _cachedVoxelFrameRows.Length != data.Rows)
@@ -1175,6 +1206,34 @@ namespace LcdMod.Client.Apps
                 _frameBuildQueued = false;
                 RequestFrameCacheRebuild();
             }
+        }
+
+        bool IsHostRenderable()
+        {
+            var surface = Surface;
+            var block = Block;
+            return surface != null &&
+                   block != null &&
+                   !block.MarkedForClose &&
+                   ViewBox.Width > 0f &&
+                   ViewBox.Height > 0f;
+        }
+
+        void HandleFrameCacheBuildException(Exception error)
+        {
+            _frameBuildWorkerRunning = false;
+            _frameBuildPending = false;
+            _frameBuildQueued = false;
+            _frameCacheValid = false;
+
+            var surfaceScript = _host as SurfaceScriptBase;
+            if (surfaceScript != null)
+            {
+                surfaceScript.OnException(error);
+                return;
+            }
+
+            ErrorHandlerHelper.LogError(error, typeof(FarGridRaycastExperimentalApp));
         }
 
         Dictionary<BlockColorCacheKey, Color> SnapshotBlockColorCache()
