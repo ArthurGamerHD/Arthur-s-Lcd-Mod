@@ -416,25 +416,20 @@ namespace LcdMod.Client.Helpers
             {
                 var grid = block?.CubeGrid;
                 var gasSystem = grid?.GasSystem;
-                if (gasSystem == null || gasSystem.IsProcessingData)
+                var room = gasSystem == null || gasSystem.IsProcessingData ? null : FindGridRoom(block, position);
+
+                if (room == null || !room.IsAirtight)
                 {
-                    RestorePreviousGridRoomEnvironment(previous, snapshot);
+                    if (!TrySetWorldOxygen(position, snapshot))
+                        RestorePreviousGridRoomEnvironment(previous, snapshot);
                     return;
                 }
 
-                IMyOxygenRoom room = FindGridRoom(block, position);
-                if (room == null)
-                    return;
-
-                float roomOxygen = room.IsAirtight
-                    ? room.OxygenLevel(grid.GridSize)
-                    : room.EnvironmentOxygen;
-                roomOxygen = MathHelper.Clamp(roomOxygen, 0f, 1f);
-                snapshot.OxygenRatio = roomOxygen;
+                snapshot.OxygenRatio = room.OxygenLevel(grid.GridSize);
 
                 // Space Engineers moves effective character temperature toward Cozy
                 // in proportion to the oxygen level of an airtight room.
-                float pressurization = room.IsAirtight ? roomOxygen : 0f;
+                float pressurization = room.IsAirtight ? snapshot.OxygenRatio : 0f;
                 float interiorTemperature = MathHelper.Lerp(
                     ambientTemperature,
                     0.5f,
@@ -448,6 +443,21 @@ namespace LcdMod.Client.Helpers
             {
                 RestorePreviousGridRoomEnvironment(previous, snapshot);
             }
+        }
+
+        static bool TrySetWorldOxygen(Vector3D position, ClockDashboardSnapshot snapshot)
+        {
+            try
+            {
+                snapshot.OxygenRatio = MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(position);
+            }
+            catch
+            {
+                snapshot.OxygenRatio = 0;
+                return false;
+            }
+            
+            return true;
         }
 
         static IMyOxygenRoom FindGridRoom(IMyCubeBlock block, Vector3D position)
