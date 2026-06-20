@@ -805,14 +805,22 @@ namespace LcdMod.Client.ScreenAreas
                 $"Scale: {block.Model.ScaleFactor}x " +
                 $"Size: {block.Model.BoundingBoxSize}");
 
-            if (surfaceIndex >= definition.ScreenAreas.Count)
+            var screenAreas = definition.ScreenAreas;
+            if (screenAreas == null || screenAreas.Count == 0)
             {
-                LogHelper.LogOnce("skip:index-out-of-range:" + block.EntityId,
-                    $"no matching surface {surfaceIndex} for block {block.BlockDefinition}, (range from 0 to {definition.ScreenAreas.Count}");
+                LogHelper.LogOnce("skip:no-screen-areas:" + block.EntityId,
+                    $"no screen areas defined for block {block.BlockDefinition}");
                 return result;
             }
 
-            AddMaterialCandidate(result, definition.ScreenAreas[surfaceIndex].Name);
+            if (surfaceIndex < 0 || surfaceIndex >= screenAreas.Count)
+            {
+                LogHelper.LogOnce("skip:index-out-of-range:" + block.EntityId + ":" + surfaceIndex,
+                    $"no matching surface {surfaceIndex} for block {block.BlockDefinition}, (range from 0 to {screenAreas.Count - 1})");
+                return result;
+            }
+
+            AddMaterialCandidate(result, screenAreas[surfaceIndex].Name);
             return result;
         }
 
