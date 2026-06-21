@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using LcdMod.Client.GridData;
 using LcdMod.Common.Helpers;
+using Sandbox.ModAPI.Ingame;
 using VRage.Game.ModAPI;
+using VRageMath;
 
 namespace LcdMod.Client.Modules.Power
 {

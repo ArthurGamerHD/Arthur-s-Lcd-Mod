@@ -41,6 +41,8 @@ namespace LcdMod
 
         public static Dictionary<long, GridLogic> Components = new Dictionary<long, GridLogic>();
 
+        public static VRage.Game.MyObjectBuilder_Checkpoint.ModItem? ModItem => _instance?.ModContext?.ModItem;
+
         internal static void RaiseLanguageChanged()
         {
             OnLanguageChanged?.Invoke();
