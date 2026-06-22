@@ -37,6 +37,7 @@ namespace LcdMod.Client.Terminal
         public readonly List<TerminalControlsWrapper> Controls = new List<TerminalControlsWrapper>();
 
         readonly LcdModSessionComponent _session;
+        readonly SettingsClipboard _settingsClipboard = new SettingsClipboard();
         readonly TextSurfaceControlsVisibility _textSurfaceControlsVisibility = new TextSurfaceControlsVisibility();
         readonly TextAlignmentControlVisibility _textAlignmentControlVisibility = new TextAlignmentControlVisibility();
         
@@ -76,6 +77,9 @@ namespace LcdMod.Client.Terminal
             
             Controls.Add(new SliderBrightness());
             Controls.Add(new ButtonShowConfig());
+            var pasteSettings = new ButtonPasteSettings(_settingsClipboard);
+            Controls.Add(new ButtonCopySettings(_settingsClipboard, pasteSettings));
+            Controls.Add(pasteSettings);
             Controls.Add(new ButtonEditMarkdown());
 
 
@@ -159,6 +163,7 @@ namespace LcdMod.Client.Terminal
             ScriptControls.Clear();
             SearchScriptTextBox = null;
             SearchQuery = string.Empty;
+            _settingsClipboard.Clear();
         }
 
         void CustomControlGetter(IMyTerminalBlock block, List<IMyTerminalControl> controls)

@@ -57,6 +57,8 @@ namespace LcdMod.Client.Config
 
         public static void Sync(IMyEntity storageEntity, ScreenProviderConfig providerConfig)
         {
+            providerConfig?.CaptureRuntimeScreens();
+
             foreach (var app in GetAppsForBlock(storageEntity as IMyTerminalBlock))
                 app.UseProviderConfig(providerConfig);
 
@@ -157,27 +159,7 @@ namespace LcdMod.Client.Config
 
         static ScreenConfigGeneral EnsureScreenConfigType(ScreenProviderConfig provider, int index, ConfigKind requestedConfigKind)
         {
-            var current = provider.Screens[index];
-            var requested = ConfigGenerator.GenerateConfig(requestedConfigKind) as ScreenConfigGeneral;
-
-            if (requested == null)
-                return current;
-
-            if (current == null)
-            {
-                provider.Screens[index] = requested;
-                return requested;
-            }
-
-            if (current.GetType() == requested.GetType())
-                return current;
-
-            if (requestedConfigKind == ConfigKind.Interactive && current is ScreenConfigInteractive)
-                return current;
-
-            requested.Clone(current);
-            provider.Screens[index] = requested;
-            return requested;
+            return provider.EnsureScreenConfigType(index, requestedConfigKind);
         }
 
         public static int GetThisSurfaceIndex(IMyTerminalBlock block)

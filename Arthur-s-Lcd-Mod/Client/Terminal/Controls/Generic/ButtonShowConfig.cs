@@ -41,6 +41,9 @@ namespace LcdMod.Client.Terminal.Controls.Generic
                     return;
                 }
 
+                // The inherited Screens collection is only a runtime compatibility facade.
+                // Capture it into the component graph before producing the debug XML.
+                config.CaptureRuntimeScreens();
                 var text = MyAPIGateway.Utilities.SerializeToXML(config);
                 TextInputHelper.SpawnForLocalPlayer(
                     "LCD Mod Block Config",

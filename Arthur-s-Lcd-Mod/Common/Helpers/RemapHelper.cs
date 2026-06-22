@@ -121,8 +121,16 @@ namespace LcdMod.Common.Helpers
                     if (entity == null || entity.Storage == null)
                         continue;
 
-                    string value;
-                    if (!entity.Storage.TryGetValue(Constants.StorageGuid, out value) || string.IsNullOrEmpty(value))
+                    string currentValue;
+                    string legacyValue;
+                    bool hasCurrentConfig =
+                        entity.Storage.TryGetValue(Constants.StorageGuid, out currentValue)
+                        && !string.IsNullOrEmpty(currentValue);
+                    bool hasLegacyConfig =
+                        entity.Storage.TryGetValue(Constants.V0StorageGuid, out legacyValue)
+                        && !string.IsNullOrEmpty(legacyValue);
+
+                    if (!hasCurrentConfig && !hasLegacyConfig)
                         continue;
 
                     var providerConfig = ScreenProviderConfigStorage.TryLoad(entity);

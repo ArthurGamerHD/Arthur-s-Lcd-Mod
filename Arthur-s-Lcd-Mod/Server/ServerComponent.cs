@@ -92,6 +92,9 @@ namespace LcdMod.Server
             if (block == null)
                 return;
 
+            // The network payload serializes the component graph. Remapping still works through
+            // the temporary inherited facade, so materialize it before PinBlocks inspects it.
+            packet.Config?.EnsureRuntimeScreens();
             RemapHelper.PinBlocks(packet.Config);
             ScreenProviderConfigStorage.Save(block, packet.Config);
         }

@@ -70,7 +70,6 @@
     
     <ItemGroup>
       <Folder Include="Client\Config\" />
-      <Folder Include="Client\Terminal\" />
     </ItemGroup>
     
     <ItemGroup>

@@ -135,7 +135,7 @@ namespace LcdMod.Common.Helpers
 
             try
             {
-                if (typeof(LcdModSessionComponent) == null || string.IsNullOrWhiteSpace(fileName))
+                if (string.IsNullOrWhiteSpace(fileName))
                     return false;
 
                 if (!MyAPIGateway.Utilities.FileExistsInLocalStorage(fileName, typeof(LcdModSessionComponent)))
