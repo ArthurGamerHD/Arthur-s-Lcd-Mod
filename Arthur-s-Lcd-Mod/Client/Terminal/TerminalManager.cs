@@ -75,6 +75,11 @@ namespace LcdMod.Client.Terminal
             SearchScriptTextBox = CreateSearchScriptTextBox();
             
             Controls.Add(new SliderBrightness());
+            Controls.Add(new SliderDoomSfxVolume());
+            Controls.Add(new SliderDoomMusicVolume());
+            Controls.Add(new ListboxDoomCockpitSelection());
+            Controls.Add(new SliderDoomKeyboardTurnSensitivity());
+            Controls.Add(new SwitchDoomMouseTurning());
             Controls.Add(new ButtonShowConfig());
             Controls.Add(new ButtonEditMarkdown());
 

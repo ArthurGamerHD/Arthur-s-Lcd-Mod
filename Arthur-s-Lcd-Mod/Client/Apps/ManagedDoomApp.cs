@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.Audio;
 using LcdMod.Client.Gui;
 using LcdMod.Common.Config.Models;
 using LcdMod.Common.Helpers;
 using ManagedDoom;
 using ManagedDoom.Audio;
 using ManagedDoom.SE;
-using ManagedDoom.UserInput;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.GUI.TextPanel;
@@ -22,10 +22,21 @@ namespace LcdMod.Client.Apps
     {
         const string DoomWadDisplayPath = "Data/DOOM1.WAD";
         const string DoomWadRootPath = "DOOM1.WAD";
-        const string DoomFont = Constants.MOD_PREFIX + "Monospace";
+        const string DoomFont = Constants.MOD_PREFIX + "DoomChannel";
         const int SpaceEngineersSimulationRate = 60;
-        const byte MiddleLayerAlpha = 227; // 8 / 9
-        const byte HighLayerAlpha = 224;   // 448 / 511
+
+        // The RGB components intentionally remain non-zero while alpha is zero.
+        // With Space Engineers' premultiplied source-over LCD blend state this
+        // makes each channel pass additive instead of attenuating prior passes.
+
+        static readonly Color RedChannelTint =
+            new Color(255, 0, 0, 254);
+
+        static readonly Color GreenChannelTint =
+            new Color(0, 255, 0, 128);
+
+        static readonly Color BlueChannelTint =
+            new Color(0, 0, 255, 85);
 
         static byte[] _cachedWadBytes;
 
@@ -43,6 +54,9 @@ namespace LcdMod.Client.Apps
         DoomConfig _doomConfig;
         GameContent _content;
         SEVideoToTextSprite _video;
+        SESurfaceSound _sound;
+        SESurfaceMusic _music;
+        SECockpitUserInput _input;
         Doom _doom;
         string _frameText;
         string _middleFrameText;
@@ -58,6 +72,8 @@ namespace LcdMod.Client.Apps
         int _frameTextWidth;
         int _frameTextHeight;
         int _ticAccumulator;
+        int _appliedSfxVolume = -1;
+        int _appliedMusicVolume = -1;
 
         public ManagedDoomApp(ScreenConfigInteractive config, IAppHost host) : base(config, host)
         {
@@ -82,6 +98,8 @@ namespace LcdMod.Client.Apps
                 }
             }
 
+            ApplyAudioVolumes();
+
             // Space Engineers calls this once per 60 Hz simulation frame, but
             // Doom's game logic runs at 35 tics per second. Accumulating 35
             // against 60 spreads the updates evenly instead of running Doom at
@@ -93,12 +111,17 @@ namespace LcdMod.Client.Apps
             {
                 _ticAccumulator -= SpaceEngineersSimulationRate;
 
+                _input.UpdateEvents(_doom);
+
                 if (_doom.Update() == UpdateResult.Completed)
                 {
                     _completed = true;
                     _statusMessage = "Doom completed.";
                 }
             }
+
+            if (_music != null)
+                _music.Update();
 
             // Render on every Space Engineers frame. ManagedDoom uses this
             // fraction to interpolate between the previous and next 35 Hz tic.
@@ -136,18 +159,18 @@ namespace LcdMod.Client.Apps
                 (int)viewBox.Width,
                 (int)viewBox.Height)));
 
-            // The font encodes one RGB333 digit per glyph. Rendering three
-            // base-8 digit planes with these source-over alpha weights
-            // reconstructs approximately RGB888 while keeping the same font.
-            AddFrameSprite(_frameText, 255);
-            AddFrameSprite(_middleFrameText, MiddleLayerAlpha);
-            AddFrameSprite(_highFrameText, HighLayerAlpha);
+            // Each glyph contains one 8-bit grayscale channel value. The
+            // three zero-alpha tints route those values to R, G and B while
+            // leaving the destination multiplier at one for additive assembly.
+            AddFrameSprite(_frameText, RedChannelTint);
+            AddFrameSprite(_middleFrameText, GreenChannelTint);
+            AddFrameSprite(_highFrameText, BlueChannelTint);
 
             _sprites.Add(MySprite.CreateClearClipRect());
             return _sprites;
         }
 
-        void AddFrameSprite(string text, byte alpha)
+        void AddFrameSprite(string text, Color channelTint)
         {
             _sprites.Add(new MySprite
             {
@@ -155,11 +178,7 @@ namespace LcdMod.Client.Apps
                 Data = text,
                 Position = _textPosition,
                 RotationOrScale = _textScale,
-                // The sprite renderer uses premultiplied-alpha blending for
-                // FontDataPA fonts. Premultiply the white tint by the layer
-                // alpha; using (255,255,255,alpha) makes the RGB contribution
-                // remain full strength and causes colored halos/tints.
-                Color = new Color(alpha, alpha, alpha, alpha),
+                Color = channelTint,
                 Alignment = TextAlignment.LEFT,
                 FontId = DoomFont
             });
@@ -167,14 +186,51 @@ namespace LcdMod.Client.Apps
 
         public override void Close()
         {
+            if (_music != null)
+            {
+                _music.Dispose();
+                _music = null;
+            }
+
+            if (_sound != null)
+            {
+                _sound.Dispose();
+                _sound = null;
+            }
+
             if (_content != null)
             {
                 _content.Dispose();
                 _content = null;
             }
 
+            if (_input != null)
+            {
+                _input.Dispose();
+                _input = null;
+            }
+
             _doom = null;
             _video = null;
+            _appliedSfxVolume = -1;
+            _appliedMusicVolume = -1;
+        }
+
+        void ApplyAudioVolumes()
+        {
+            var sfxVolume = DoomAudioSettings.GetSfxVolume(AppConfig);
+            if (_sound != null && sfxVolume != _appliedSfxVolume)
+            {
+                _sound.Volume = sfxVolume;
+                _appliedSfxVolume = sfxVolume;
+            }
+
+            var musicVolume = DoomAudioSettings.GetMusicVolume(AppConfig);
+            if (_music != null && musicVolume != _appliedMusicVolume)
+            {
+                _music.Volume = musicVolume;
+                _appliedMusicVolume = musicVolume;
+            }
         }
 
         bool TryInitialize()
@@ -185,7 +241,6 @@ namespace LcdMod.Client.Apps
                 {
                     "-skill",
                     "3",
-                    "-nosound",
                     "-nomouse",
                     "-nodeh"
                 });
@@ -199,14 +254,25 @@ namespace LcdMod.Client.Apps
 
                 _content = GameContent.FromWadBytes("doom1", LoadWad(), _doomArgs);
                 _video = new SEVideoToTextSprite(_doomConfig, _content);
+                _sound = new SESurfaceSound(_content, Host.Block);
+                _music = new SESurfaceMusic(_content, Host.Block);
+                _input = new SECockpitUserInput(Host);
+
+                // Apply the persisted surface settings before Doom's
+                // constructor starts the title music or any startup SFX.
+                _appliedSfxVolume = DoomAudioSettings.GetSfxVolume(AppConfig);
+                _appliedMusicVolume = DoomAudioSettings.GetMusicVolume(AppConfig);
+                _sound.Volume = _appliedSfxVolume;
+                _music.Volume = _appliedMusicVolume;
+
                 _doom = new Doom(
                     _doomArgs,
                     _doomConfig,
                     _content,
                     _video,
-                    NullSound.GetInstance(),
-                    NullMusic.GetInstance(),
-                    NullUserInput.GetInstance());
+                    _sound,
+                    _music,
+                    _input);
 
                 _ticAccumulator = 0;
                 _statusMessage = null;
@@ -270,21 +336,21 @@ namespace LcdMod.Client.Apps
             var height = _video.Height;
 
             _frameText = BuildLayerText(
-                _video.LowFrameBuffer,
+                _video.RedFrameBuffer,
                 _frameBuilder,
                 ref _frameRow,
                 width,
                 height);
 
             _middleFrameText = BuildLayerText(
-                _video.MiddleFrameBuffer,
+                _video.GreenFrameBuffer,
                 _middleFrameBuilder,
                 ref _middleFrameRow,
                 width,
                 height);
 
             _highFrameText = BuildLayerText(
-                _video.HighFrameBuffer,
+                _video.BlueFrameBuffer,
                 _highFrameBuilder,
                 ref _highFrameRow,
                 width,

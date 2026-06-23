@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <Fonts>
+        <!-- Experimental per-channel RGB888 font used only by Managed Doom. -->
+        <Font>
+            <Id>
+                <TypeId>FontDefinition</TypeId>
+                <SubtypeId>LcdMod_DoomChannel</SubtypeId>
+            </Id>
+            <Public>false</Public>
+            <Path>Fonts\doom_channel\FontDataPA_DoomChannel.xml</Path>
+        </Font>
+    </Fonts>
+</Definitions>

@@ -37,8 +37,7 @@ namespace ManagedDoom.SE
 
             if (output != null)
             {
-                // Preserve the old diagnostic output behavior by writing the
-                // most significant layer.
+                // Preserve diagnostic output by writing the blue-channel layer.
                 output.Write(highFrameBuffer, 0, highFrameBuffer.Length);
                 output.Flush();
             }
@@ -79,6 +78,30 @@ namespace ManagedDoom.SE
         }
 
         public char[] HighFrameBuffer
+        {
+            get
+            {
+                return highFrameBuffer;
+            }
+        }
+
+        public char[] RedFrameBuffer
+        {
+            get
+            {
+                return lowFrameBuffer;
+            }
+        }
+
+        public char[] GreenFrameBuffer
+        {
+            get
+            {
+                return middleFrameBuffer;
+            }
+        }
+
+        public char[] BlueFrameBuffer
         {
             get
             {

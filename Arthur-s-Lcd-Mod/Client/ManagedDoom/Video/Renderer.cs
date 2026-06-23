@@ -23,17 +23,6 @@ namespace ManagedDoom.Video
     {
         private const float BitScale = 255.0F / 7.0F;
 
-        // These must match ManagedDoomApp's byte alpha values. Space
-        // Engineers loads GUI/font textures as sRGB and blends their decoded
-        // linear values. A direct base-8 split is exact only in gamma-encoded
-        // space, so use a tiny lookup optimized for the real blend path.
-        private const double MiddleLayerAlpha = 227.0 / 255.0;
-        private const double HighLayerAlpha = 224.0 / 255.0;
-
-        private static readonly byte[] lowDigitBySrgb = new byte[256];
-        private static readonly byte[] middleDigitBySrgb = new byte[256];
-        private static readonly byte[] highDigitBySrgb = new byte[256];
-
         private static double[] gammaCorrectionParameters = new double[]
         {
             1.00,
@@ -70,14 +59,9 @@ namespace ManagedDoom.Video
         private int wipeHeight;
         private byte[] wipeBuffer;
 
-        private char[] lowColorLookup = new char[256];
-        private char[] middleColorLookup = new char[256];
-        private char[] highColorLookup = new char[256];
-
-        static Renderer()
-        {
-            BuildLayerDigitLookup();
-        }
+        private char[] redChannelLookup = new char[256];
+        private char[] greenChannelLookup = new char[256];
+        private char[] blueChannelLookup = new char[256];
 
         public Renderer(Config config, GameContent content)
         {
@@ -301,14 +285,14 @@ namespace ManagedDoom.Video
 
         public void Render(
             Doom doom,
-            char[] lowDestination,
-            char[] middleDestination,
-            char[] highDestination,
+            char[] redDestination,
+            char[] greenDestination,
+            char[] blueDestination,
             Fixed frameFrac)
         {
             if (doom.Wiping)
             {
-                RenderWipe(doom, lowDestination, middleDestination, highDestination);
+                RenderWipe(doom, redDestination, greenDestination, blueDestination);
                 return;
             }
 
@@ -316,9 +300,9 @@ namespace ManagedDoom.Video
             RenderMenu(doom);
             WriteLayeredCharData(
                 GetCurrentPalette(doom),
-                lowDestination,
-                middleDestination,
-                highDestination);
+                redDestination,
+                greenDestination,
+                blueDestination);
         }
 
         private void RenderWipe(Doom doom, char[] destination)
@@ -353,9 +337,9 @@ namespace ManagedDoom.Video
 
         private void RenderWipe(
             Doom doom,
-            char[] lowDestination,
-            char[] middleDestination,
-            char[] highDestination)
+            char[] redDestination,
+            char[] greenDestination,
+            char[] blueDestination)
         {
             RenderDoom(doom, Fixed.One);
 
@@ -384,9 +368,9 @@ namespace ManagedDoom.Video
             RenderMenu(doom);
             WriteLayeredCharData(
                 palette[0],
-                lowDestination,
-                middleDestination,
-                highDestination);
+                redDestination,
+                greenDestination,
+                blueDestination);
         }
 
         private uint[] GetCurrentPalette(Doom doom)
@@ -427,13 +411,13 @@ namespace ManagedDoom.Video
 
         private void WriteLayeredCharData(
             uint[] colors,
-            char[] lowDestination,
-            char[] middleDestination,
-            char[] highDestination)
+            char[] redDestination,
+            char[] greenDestination,
+            char[] blueDestination)
         {
-            // Convert each palette entry once, then use the 8-bit screen data
-            // as a lookup index. This avoids doing RGB888/base-8 conversion
-            // for all 64,000 pixels on every rendered frame.
+            // Convert each Doom palette entry once, then use the 8-bit screen
+            // data as a lookup index. Each private-use glyph stores one exact
+            // 8-bit grayscale intensity for a single output channel.
             for (var i = 0; i < colors.Length; i++)
             {
                 var color = colors[i];
@@ -441,18 +425,18 @@ namespace ManagedDoom.Video
                     (byte)(color & 0xFF),
                     (byte)((color >> 8) & 0xFF),
                     (byte)((color >> 16) & 0xFF),
-                    out lowColorLookup[i],
-                    out middleColorLookup[i],
-                    out highColorLookup[i]);
+                    out redChannelLookup[i],
+                    out greenChannelLookup[i],
+                    out blueChannelLookup[i]);
             }
 
             var screenData = screen.Data;
             for (var i = 0; i < screenData.Length; i++)
             {
                 var paletteIndex = screenData[i];
-                lowDestination[i] = lowColorLookup[paletteIndex];
-                middleDestination[i] = middleColorLookup[paletteIndex];
-                highDestination[i] = highColorLookup[paletteIndex];
+                redDestination[i] = redChannelLookup[paletteIndex];
+                greenDestination[i] = greenChannelLookup[paletteIndex];
+                blueDestination[i] = blueChannelLookup[paletteIndex];
             }
         }
 
@@ -467,88 +451,18 @@ namespace ManagedDoom.Video
             byte r,
             byte g,
             byte b,
-            out char low,
-            out char middle,
-            out char high)
+            out char red,
+            out char green,
+            out char blue)
         {
-            low = ColorDigitsToChar(
-                lowDigitBySrgb[r],
-                lowDigitBySrgb[g],
-                lowDigitBySrgb[b]);
-
-            middle = ColorDigitsToChar(
-                middleDigitBySrgb[r],
-                middleDigitBySrgb[g],
-                middleDigitBySrgb[b]);
-
-            high = ColorDigitsToChar(
-                highDigitBySrgb[r],
-                highDigitBySrgb[g],
-                highDigitBySrgb[b]);
+            red = IntensityToChar(r);
+            green = IntensityToChar(g);
+            blue = IntensityToChar(b);
         }
 
-        private static void BuildLayerDigitLookup()
+        public static char IntensityToChar(byte intensity)
         {
-            var lowWeight = (1.0 - MiddleLayerAlpha) * (1.0 - HighLayerAlpha);
-            var middleWeight = MiddleLayerAlpha * (1.0 - HighLayerAlpha);
-            var highWeight = HighLayerAlpha;
-
-            var digitLinear = new double[8];
-            for (var digit = 0; digit < digitLinear.Length; digit++)
-            {
-                digitLinear[digit] = SrgbToLinear(digit / 7.0);
-            }
-
-            for (var value = 0; value < 256; value++)
-            {
-                var target = SrgbToLinear(value / 255.0);
-                var bestError = double.MaxValue;
-                byte bestLow = 0;
-                byte bestMiddle = 0;
-                byte bestHigh = 0;
-
-                for (byte high = 0; high < 8; high++)
-                {
-                    for (byte middle = 0; middle < 8; middle++)
-                    {
-                        for (byte low = 0; low < 8; low++)
-                        {
-                            var blended =
-                                digitLinear[low] * lowWeight +
-                                digitLinear[middle] * middleWeight +
-                                digitLinear[high] * highWeight;
-                            var error = Math.Abs(blended - target);
-
-                            if (error < bestError)
-                            {
-                                bestError = error;
-                                bestLow = low;
-                                bestMiddle = middle;
-                                bestHigh = high;
-                            }
-                        }
-                    }
-                }
-
-                lowDigitBySrgb[value] = bestLow;
-                middleDigitBySrgb[value] = bestMiddle;
-                highDigitBySrgb[value] = bestHigh;
-            }
-        }
-
-        private static double SrgbToLinear(double value)
-        {
-            if (value <= 0.04045)
-            {
-                return value / 12.92;
-            }
-
-            return Math.Pow((value + 0.055) / 1.055, 2.4);
-        }
-
-        private static char ColorDigitsToChar(int r, int g, int b)
-        {
-            return (char)(0xe100 + (r << 6) + (g << 3) + b);
+            return (char)(0xe100 + intensity);
         }
 
         private static int GetPaletteNumber(Player player)
