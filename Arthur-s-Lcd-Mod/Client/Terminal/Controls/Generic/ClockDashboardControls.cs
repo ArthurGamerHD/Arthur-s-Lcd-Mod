@@ -9,36 +9,6 @@ using VRage.Utils;
 
 namespace LcdMod.Client.Terminal.Controls.Generic
 {
-    public sealed partial class SwitchClockDashboard24Hour : TerminalControlsWrapper
-    {
-        public override IMyTerminalControl TerminalControl { get; }
-
-        public SwitchClockDashboard24Hour()
-        {
-            var control = CreateControl<IMyTerminalControlOnOffSwitch>("ClockDashboard24Hour");
-            control.Getter = Getter;
-            control.Setter = Setter;
-            control.Visible = Visible;
-            control.Title = MyStringId.GetOrCompute(ClockDashboardLocalization.CONTROL_24_HOUR_TITLE_KEY);
-            control.OnText = MyStringId.GetOrCompute("HudInfoOn");
-            control.OffText = MyStringId.GetOrCompute("HudInfoOff");
-            TerminalControl = control;
-        }
-
-        void Setter(IMyTerminalBlock block, bool value)
-        {
-            ConfigManager.ModifyComponentForTerminalApp<ClockDashboardConfigComponent>(
-                block,
-                config => config.Use24HourClock = value);
-        }
-
-        bool Getter(IMyTerminalBlock block)
-        {
-            var config = ConfigManager.GetComponentForTerminalApp<ClockDashboardConfigComponent>(block);
-            return config == null || config.Use24HourClock;
-        }
-    }
-
     public sealed partial class ComboboxClockDashboardTemperatureMode : TerminalControlsWrapper
     {
         public override IMyTerminalControl TerminalControl { get; }

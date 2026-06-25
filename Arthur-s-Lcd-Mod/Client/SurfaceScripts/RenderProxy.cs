@@ -28,9 +28,6 @@ namespace LcdMod.Client.SurfaceScripts
     [LcdSurface(typeof(LcdMod.Client.Apps.RenderProxyApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class RenderProxySurfaceScript : InteractiveSurfaceScript,
-        IUsesTerminalControl<SliderProxyX>,
-        IUsesTerminalControl<SliderProxyY>,
-        IUsesTerminalControl<SwitchProxyAutoAdjust>,
         IReferenceBlockSelection,
         IProxyAutoOffset
     {

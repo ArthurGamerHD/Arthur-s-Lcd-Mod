@@ -55,7 +55,16 @@ namespace LcdMod.Client.Terminal.Controls
 
             var sf = ((IMyTextSurfaceProvider)block).GetSurface(GetThisSurfaceIndex(block));
             return !string.IsNullOrEmpty(sf?.Script) && sf.ContentType == ContentType.SCRIPT &&
-                   VisibleForScript(sf.Script);
+                   VisibleForScript(sf.Script) && IsAvailableForCurrentConfig(block);
+        }
+
+        /// <summary>
+        /// Allows schema-driven controls to require an exact component and slot while preserving
+        /// the existing script-interface visibility of handwritten controls.
+        /// </summary>
+        protected virtual bool IsAvailableForCurrentConfig(IMyTerminalBlock block)
+        {
+            return true;
         }
 
         public virtual bool VisibleForScript(string script)

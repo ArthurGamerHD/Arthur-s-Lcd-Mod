@@ -5,8 +5,11 @@ using System.Linq;
 using System.Xml.Serialization;
 using ProtoBuf;
 using LcdMod.Common.Config;
+using LcdMod.Common.Config.Generation;
+using LcdMod.Common.Helpers;
 using VRage.Game.ModAPI;
 using VRageMath;
+using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Common.Config.Components
 {
@@ -359,7 +362,14 @@ namespace LcdMod.Common.Config.Components
     [ProtoContract]
     public sealed class GeneralConfigComponent : ConfigComponent
     {
-        [ProtoMember(1)] public bool TitleVisible { get; set; } = true;
+        [ProtoMember(1)]
+        [TerminalControl_Switch(
+            2600,
+            "TitleSwitch",
+            "BlockPropertyTitle_TextPanelPublicTitle",
+            Slot = GENERAL,
+            TitleSuffix = "RadialMenuAction_Hud_Visible")]
+        public bool TitleVisible { get; set; } = true;
         [ProtoMember(2)] public float InternalScale { get; set; } = 1f;
         [ProtoMember(3)] public bool DrawLines { get; set; }
         [ProtoMember(4)] public int DisplayMode { get; set; }
@@ -437,10 +447,39 @@ namespace LcdMod.Common.Config.Components
     [ProtoContract]
     public sealed class ColorConfigComponent : ConfigComponent
     {
-        [ProtoMember(1)] public OptionalValue<Color> HeaderColor { get; set; } = new OptionalValue<Color>();
-        [ProtoMember(2)] public OptionalValue<Color> ErrorColor { get; set; } = new OptionalValue<Color>();
-        [ProtoMember(3)] public OptionalValue<Color> WarningColor { get; set; } = new OptionalValue<Color>();
-        [ProtoMember(4)] public bool CustomizedColors { get; set; }
+        [ProtoMember(1)]
+        [TerminalControl_Color(
+            2300,
+            "HeaderColor",
+            "BlockPropertyTitle_TextPanelPublicTitle",
+            Slot = COLORS,
+            RequiresCustomColor = true)]
+        public OptionalValue<Color> HeaderColor { get; set; } = new OptionalValue<Color>();
+        [ProtoMember(2)]
+        [TerminalControl_Color(
+            2500,
+            "ErrorColor",
+            "ContractScreen_Aministration_CreatinResultCaption_Error",
+            Slot = COLORS,
+            RequiresCustomColor = true)]
+        public OptionalValue<Color> ErrorColor { get; set; } = new OptionalValue<Color>();
+        [ProtoMember(3)]
+        [TerminalControl_Color(
+            2400,
+            "WarningColor",
+            "SalvageService_InventoryWarning_Title",
+            Slot = COLORS,
+            RequiresCustomColor = true)]
+        public OptionalValue<Color> WarningColor { get; set; } = new OptionalValue<Color>();
+        [ProtoMember(4)]
+        [TerminalControl_Switch(
+            2200,
+            "SwitchToggleCustomColors",
+            "WorldSettings_ViewDistance_Custom",
+            Slot = COLORS,
+            TitleSuffix = "ScreenAdmin_Safezone_ColorLabel",
+            RefreshTerminalOnSet = true)]
+        public bool CustomizedColors { get; set; }
 
         public override ConfigComponent Clone()
         {
@@ -457,7 +496,16 @@ namespace LcdMod.Common.Config.Components
     [ProtoContract]
     public sealed class InteractiveConfigComponent : ConfigComponent
     {
-        [ProtoMember(1)] public float CursorScale { get; set; } = 1f;
+        [ProtoMember(1)]
+        [TerminalControl_Slider(
+            2800,
+            "CursorScaleSlider",
+            MOD_PREFIX + "CursorScale",
+            0f,
+            GeneralConfigComponentExtensions.MAX_SCALE,
+            "0.000",
+            Slot = INTERACTION)]
+        public float CursorScale { get; set; } = 1f;
         [ProtoMember(2)] public bool RequiresAlt { get; set; } = true;
         [ProtoMember(3)] public int ReferenceMode { get; set; }
         [ProtoMember(4)] public float AutoScrollStep { get; set; } = 2f;
@@ -581,7 +629,17 @@ namespace LcdMod.Common.Config.Components
     {
         [ProtoMember(1)] public int RelationOverlay { get; set; } = 1;
         [ProtoMember(2)] public float RenderScale { get; set; } = .2f;
-        [ProtoMember(3)] public int RaysPerTick { get; set; } = 32;
+        [ProtoMember(3)]
+        [TerminalControl_Slider(
+            3100,
+            "RaysPerTickSlider",
+            MOD_PREFIX + "RaysPerTick",
+            2f,
+            256f,
+            "0",
+            Slot = APP,
+            RequiresAdvancedTweakables = true)]
+        public int RaysPerTick { get; set; } = 32;
 
         public override ConfigComponent Clone()
         {
@@ -597,9 +655,34 @@ namespace LcdMod.Common.Config.Components
     [ProtoContract]
     public sealed class RenderProxyConfigComponent : ConfigComponent
     {
-        [ProtoMember(1)] public sbyte XAxisOffset { get; set; }
-        [ProtoMember(2)] public sbyte YAxisOffset { get; set; }
-        [ProtoMember(3)] public bool EnableAutoAdjust { get; set; } = true;
+        [ProtoMember(1)]
+        [TerminalControl_Slider(
+            5700,
+            "SliderProxyX",
+            MOD_PREFIX + "ProxyOffsetX",
+            -16f,
+            16f,
+            "0",
+            Slot = APP)]
+        public sbyte XAxisOffset { get; set; }
+        [ProtoMember(2)]
+        [TerminalControl_Slider(
+            5800,
+            "SliderProxyY",
+            MOD_PREFIX + "ProxyOffsetY",
+            -16f,
+            16f,
+            "0",
+            Slot = APP)]
+        public sbyte YAxisOffset { get; set; }
+        [ProtoMember(3)]
+        [TerminalControl_Switch(
+            5900,
+            "ProxyAutoAdjustSwitch",
+            MOD_PREFIX + "EnableAutoAdjust",
+            Slot = APP,
+            Tooltip = MOD_PREFIX + "EnableAutoAdjust_Tooltip")]
+        public bool EnableAutoAdjust { get; set; } = true;
 
         public override ConfigComponent Clone()
         {
@@ -653,7 +736,17 @@ Click [color:#0000FF]""[loc]BlockPropertyTitle_TextPanelShowTextPanel[/loc]""[/c
     {
         [ProtoMember(1)] public string BackgroundSprite { get; set; } = string.Empty;
         [ProtoMember(2)] public string[] SelectedSprites { get; set; } = Array.Empty<string>();
-        [ProtoMember(3)] public float ImageChangeInterval { get; set; }
+        [ProtoMember(3)]
+        [TerminalControl_Slider(
+            5500,
+            "ImageChangeIntervalSlider",
+            "BlockPropertyTitle_LCDScreenRefreshInterval",
+            0f,
+            30f,
+            "0.000",
+            Slot = APP,
+            WriterSuffix = " s")]
+        public float ImageChangeInterval { get; set; }
 
         public override ConfigComponent Clone()
         {
@@ -678,7 +771,14 @@ Click [color:#0000FF]""[loc]BlockPropertyTitle_TextPanelShowTextPanel[/loc]""[/c
         [ProtoMember(7)] public string[] WeaponOverrideKeys { get; set; } = Array.Empty<string>();
         [ProtoMember(8)] public int[] WeaponOverrideCounts { get; set; } = Array.Empty<int>();
         [ProtoMember(9)] public int SettingsRevision { get; set; }
-        [ProtoMember(10)] public bool ShowConfigButton { get; set; } = true;
+        [ProtoMember(10)]
+        [TerminalControl_Switch(
+            6100,
+            "CargoActionsShowConfigButton",
+            MOD_PREFIX + "CargoActions_ShowConfigButton",
+            Slot = APP,
+            Tooltip = MOD_PREFIX + "CargoActions_ShowConfigButton_Tooltip")]
+        public bool ShowConfigButton { get; set; } = true;
         [ProtoMember(11)] public int GridLinkTypeInternal { get; set; } = 1;
 
         public override ConfigComponent Clone()
@@ -741,7 +841,13 @@ Click [color:#0000FF]""[loc]BlockPropertyTitle_TextPanelShowTextPanel[/loc]""[/c
     [ProtoContract]
     public sealed class ClockDashboardConfigComponent : ConfigComponent
     {
-        [ProtoMember(1)] public bool Use24HourClock { get; set; } = true;
+        [ProtoMember(1)]
+        [TerminalControl_Switch(
+            1900,
+            "ClockDashboard24Hour",
+            MOD_PREFIX + "ClockDashboard_Control_24Hour",
+            Slot = APP)]
+        public bool Use24HourClock { get; set; } = true;
         [ProtoMember(2)] public int TemperatureModeInternal { get; set; }
 
         public override ConfigComponent Clone()

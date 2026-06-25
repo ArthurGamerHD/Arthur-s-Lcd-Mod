@@ -21,3 +21,16 @@ LCDCFG017 | LcdModCodeGenerator | Error | Semantic block references require expl
 LCDCFG020 | LcdModCodeGenerator | Error | Surface metadata targets must be supported partial surface classes
 LCDCFG021 | LcdModCodeGenerator | Error | Surfaces must reference a concrete registered app
 LCDCFG022 | LcdModCodeGenerator | Error | Surface construction must agree with its declared app
+LCDTERM101 | LcdModCodeGenerator | Error | Terminal setting attributes must target writable ConfigComponent properties
+LCDTERM102 | LcdModCodeGenerator | Error | Terminal registration IDs must be positive
+LCDTERM103 | LcdModCodeGenerator | Error | Generated terminal registration IDs must be unique
+LCDTERM104 | LcdModCodeGenerator | Error | Generated terminal control IDs must be non-empty
+LCDTERM105 | LcdModCodeGenerator | Error | Generated terminal control IDs must be unique
+LCDTERM106 | LcdModCodeGenerator | Error | Terminal settings must resolve to a valid component slot
+LCDTERM107 | LcdModCodeGenerator | Error | Slider properties must use a supported numeric type
+LCDTERM108 | LcdModCodeGenerator | Error | Slider limits must be finite, ordered, and fit the property type
+LCDTERM109 | LcdModCodeGenerator | Error | Switch properties must use bool
+LCDTERM110 | LcdModCodeGenerator | Error | Slider quantum must be finite and non-negative
+LCDTERM111 | LcdModCodeGenerator | Error | Color properties must use Color or OptionalValue<Color>
+LCDTERM112 | LcdModCodeGenerator | Error | Optional color properties require one compile-time resolver
+LCDTERM113 | LcdModCodeGenerator | Error | RequiresCustomColor requires a public bool CustomizedColors property

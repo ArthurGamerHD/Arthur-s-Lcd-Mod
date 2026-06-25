@@ -4,7 +4,6 @@ using LcdMod.Client.Apps;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Gui;
 using LcdMod.Client.SurfaceScripts.Abstract;
-using LcdMod.Client.Terminal.Controls.Cargo;
 using LcdMod.Client.Terminal.Controls.Generic;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
@@ -21,8 +20,7 @@ namespace LcdMod.Client.SurfaceScripts
     [MyTextSurfaceScript(ID, TITLE)]
 #endif
     public partial class CargoActionsSurfaceScript : InteractiveSurfaceScript,
-        IUsesTerminalControl<ComboboxLinkType>,
-        IUsesTerminalControl<SwitchShowConfigButton>
+        IUsesTerminalControl<ComboboxLinkType>
     {
         public const string ID = "CargoActions";
         public const string TITLE = MOD_PREFIX + "CargoActions_Title";

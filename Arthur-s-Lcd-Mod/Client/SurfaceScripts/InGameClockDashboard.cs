@@ -20,7 +20,6 @@ namespace LcdMod.Client.SurfaceScripts
     [LcdSurface(typeof(LcdMod.Client.Apps.InGameClockDashboardApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public sealed partial class InGameClockDashboardSurfaceScript : InteractiveSurfaceScript,
-        IUsesTerminalControl<SwitchClockDashboard24Hour>,
         IUsesTerminalControl<ComboboxClockDashboardTemperatureMode>
     {
         public const string ID = MOD_PREFIX + "InGameClockDashboard";

@@ -25,6 +25,7 @@
     <Compile Include="..\Arthur-s-Lcd-Mod\Client\Markdown\**\*.cs" LinkBase="MarkdownSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Config\OptionalValue.cs" LinkBase="ConfigSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Config\Generation\ConfigMetadataAttributes.cs" LinkBase="ConfigSource" />
+    <Compile Include="..\Arthur-s-Lcd-Mod\Common\Config\Generation\TerminalControlMetadataAttributes.cs" LinkBase="ConfigSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Config\Components\ConfigComponentModels.cs" LinkBase="ConfigSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Config\Components\GeneralConfigComponentExtensions.cs" LinkBase="ConfigSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Config\Components\ComponentConfigEntityReferences.cs" LinkBase="ConfigSource" />

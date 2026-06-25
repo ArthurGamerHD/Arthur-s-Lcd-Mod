@@ -1,3 +1,4 @@
+using Generated;
 using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
@@ -6,8 +7,6 @@ using System.Text;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Terminal.Controls.Blueprint;
-using LcdMod.Client.Terminal.Controls.Cargo;
-using LcdMod.Client.Terminal.Controls.Color;
 using LcdMod.Client.Terminal.Controls.Filter;
 using LcdMod.Client.Terminal.Controls.Filter.Buttons;
 using LcdMod.Client.Terminal.Controls.Filter.Listbox;
@@ -75,85 +74,105 @@ namespace LcdMod.Client.Terminal
         {
             MyAPIGateway.TerminalControls.CustomControlGetter += CustomControlGetter;
             SearchScriptTextBox = CreateSearchScriptTextBox();
-            
-            Controls.Add(new SliderBrightness());
-            Controls.Add(new ButtonShowConfig());
-            var pasteSettings = new ButtonPasteSettings(_settingsClipboard);
-            Controls.Add(new ButtonCopySettings(_settingsClipboard, pasteSettings));
-            Controls.Add(pasteSettings);
-            Controls.Add(new ButtonEditMarkdown());
 
+            var registrations = new List<TerminalControlRegistration>();
+            AddHandwrittenRegistrations(registrations);
+            GeneratedTerminalControlRegistry.AddTo(registrations);
+            ValidateAndSortRegistrations(registrations);
+
+            Controls.Clear();
+            Controls.AddRange(registrations.Select(registration => registration.Control));
+        }
+
+        void AddHandwrittenRegistrations(List<TerminalControlRegistration> registrations)
+        {
+            AddRegistration(registrations, 1000, new SliderBrightness());
+            AddRegistration(registrations, 1100, new ButtonShowConfig());
+            var pasteSettings = new ButtonPasteSettings(_settingsClipboard);
+            AddRegistration(registrations, 1200, new ButtonCopySettings(_settingsClipboard, pasteSettings));
+            AddRegistration(registrations, 1300, pasteSettings);
+            AddRegistration(registrations, 1400, new ButtonEditMarkdown());
 
             TerminalControlsListbox source = new ListboxBlockCandidates();
             TerminalControlsListbox target = new ListboxBlockSelected();
 
-            Controls.Add(new SliderFov());
-            Controls.Add(new SliderRadarRange());
-            Controls.Add(new SliderNpcMarketMaxDistance());
-            Controls.Add(new SliderNpcMarketPageSwitchDelay());
-            Controls.Add(new SwitchClockDashboard24Hour());
-            Controls.Add(new ComboboxClockDashboardTemperatureMode());
-            Controls.Add(new SliderAutoScrollStep());
+            AddRegistration(registrations, 1500, new SliderFov());
+            AddRegistration(registrations, 1600, new SliderRadarRange());
+            AddRegistration(registrations, 1700, new SliderNpcMarketMaxDistance());
+            AddRegistration(registrations, 1800, new SliderNpcMarketPageSwitchDelay());
+            AddRegistration(registrations, 2000, new ComboboxClockDashboardTemperatureMode());
+            AddRegistration(registrations, 2100, new SliderAutoScrollStep());
 
-            Controls.Add(new SwitchToggleColors());
-            Controls.Add(new ColorPickerAccent());
-            Controls.Add(new ColorPickerWarning());
-            Controls.Add(new ColorPickerError());
+            AddRegistration(registrations, 2700, new SliderScale());
+            AddRegistration(registrations, 2900, new SwitchToggleAlt());
+            AddRegistration(registrations, 3000, new SliderRotation());
 
-            Controls.Add(new SwitchToggleHeader());
-            Controls.Add(new SliderScale());
-            Controls.Add(new SliderCursorScale());
-            Controls.Add(new SwitchToggleAlt());
-            Controls.Add(new SliderRotation());
+            AddRegistration(registrations, 3200, new SliderRenderScale());
 
-            Controls.Add(new SliderRaysPerTick());
-            Controls.Add(new SliderRenderScale());
-
-            Controls.Add(new ComboboxDisplayMode());
-            Controls.Add(new ComboboxReferenceMode());
-            Controls.Add(new ComboboxGraphWindow());
-            Controls.Add(new ListboxReferenceBlockSelection());
+            AddRegistration(registrations, 3300, new ComboboxDisplayMode());
+            AddRegistration(registrations, 3400, new ComboboxReferenceMode());
+            AddRegistration(registrations, 3500, new ComboboxGraphWindow());
+            AddRegistration(registrations, 3600, new ListboxReferenceBlockSelection());
 #if DEBUG
-            Controls.Add(new ListboxVisibleTreeDebugBlockSelection());
-            Controls.Add(new ListboxVisibleTreeDebugScreenSelection());
+            AddRegistration(registrations, 3650, new ListboxVisibleTreeDebugBlockSelection());
+            AddRegistration(registrations, 3660, new ListboxVisibleTreeDebugScreenSelection());
 #endif
-            Controls.Add(new SwitchToggleLines());
+            AddRegistration(registrations, 3700, new SwitchToggleLines());
 
-            Controls.Add(new ComboboxLinkType());
-            Controls.Add(new ListboxProjectorSelection());
-            Controls.Add(new CheckboxHideEmpty());
-            Controls.Add(new SeparatorFilter());
-            Controls.Add(new LabelSeparator());
-            Controls.Add(source);
-            Controls.Add(new ButtonBlockAddToSelection(source, target));
-            Controls.Add(target);
-            Controls.Add(new ButtonBlockRemoveFromSelection(source, target));
+            AddRegistration(registrations, 3800, new ComboboxLinkType());
+            AddRegistration(registrations, 3900, new ListboxProjectorSelection());
+            AddRegistration(registrations, 4000, new CheckboxHideEmpty());
+            AddRegistration(registrations, 4100, new SeparatorFilter());
+            AddRegistration(registrations, 4200, new LabelSeparator());
+            AddRegistration(registrations, 4300, source);
+            AddRegistration(registrations, 4400, new ButtonBlockAddToSelection(source, target));
+            AddRegistration(registrations, 4500, target);
+            AddRegistration(registrations, 4600, new ButtonBlockRemoveFromSelection(source, target));
 
             source = new ListboxItemsCandidates();
             target = new ListboxItemsSelected();
 
-            Controls.Add(source);
-            Controls.Add(new ButtonItemAddToSelection(source, target));
-            Controls.Add(target);
-            Controls.Add(new ButtonItemRemoveFromSelection(source, target));
+            AddRegistration(registrations, 4700, source);
+            AddRegistration(registrations, 4800, new ButtonItemAddToSelection(source, target));
+            AddRegistration(registrations, 4900, target);
+            AddRegistration(registrations, 5000, new ButtonItemRemoveFromSelection(source, target));
 
             source = new ListboxSpriteCandidates();
             target = new ListboxSpriteSelected();
 
-            Controls.Add(source);
-            Controls.Add(new ButtonSpriteAddToSelection(source, target));
-            Controls.Add(target);
-            Controls.Add(new ButtonSpriteRemoveFromSelection(source, target));
-            Controls.Add(new SliderImageChangeInterval());
+            AddRegistration(registrations, 5100, source);
+            AddRegistration(registrations, 5200, new ButtonSpriteAddToSelection(source, target));
+            AddRegistration(registrations, 5300, target);
+            AddRegistration(registrations, 5400, new ButtonSpriteRemoveFromSelection(source, target));
 
-            Controls.Add(new ComboboxSorting());
+            AddRegistration(registrations, 5600, new ComboboxSorting());
+            AddRegistration(registrations, 6000, new ButtonProxyAuto());
+        }
 
-            Controls.Add(new SliderProxyX());
-            Controls.Add(new SliderProxyY());
-            Controls.Add(new SwitchProxyAutoAdjust());
-            Controls.Add(new ButtonProxyAuto());
+        static void AddRegistration(
+            List<TerminalControlRegistration> registrations,
+            int registrationId,
+            TerminalControlsWrapper control)
+        {
+            registrations.Add(new TerminalControlRegistration(registrationId, control));
+        }
 
-            Controls.Add(new SwitchShowConfigButton());
+        static void ValidateAndSortRegistrations(List<TerminalControlRegistration> registrations)
+        {
+            var registrationIds = new HashSet<int>();
+            foreach (var registration in registrations)
+            {
+                if (registration == null || registration.Control == null || registration.Control.TerminalControl == null)
+                    throw new Exception("Terminal control registration contains a null control.");
+                if (registration.RegistrationId <= 0 || !registrationIds.Add(registration.RegistrationId))
+                    throw new Exception("Duplicate or invalid terminal RegistrationId: " + registration.RegistrationId);
+            }
+
+            registrations.Sort((left, right) =>
+            {
+                int order = left.RegistrationId.CompareTo(right.RegistrationId);
+                return order != 0 ? order : string.CompareOrdinal(left.ControlId, right.ControlId);
+            });
         }
 
         public void Unload()
@@ -374,7 +393,7 @@ namespace LcdMod.Client.Terminal
 
             var visibleControls = string.IsNullOrEmpty(script)
                 ? Enumerable.Empty<TerminalControlsWrapper>()
-                : Controls.Where(c => c.VisibleForScript(script));
+                : Controls.Where(control => control.Visible(block));
 
             if (provider is IMyTextPanel)
             {

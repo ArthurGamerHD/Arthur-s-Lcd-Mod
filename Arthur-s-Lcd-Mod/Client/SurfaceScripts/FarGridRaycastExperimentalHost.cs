@@ -23,7 +23,6 @@ namespace LcdMod.Client.SurfaceScripts
 #endif
     public sealed partial class FarGridRaycastExperimentalSurfaceScript : InteractiveSurfaceScript,
         IUsesTerminalControl<SliderRenderScale>,
-        IUsesTerminalControl<SliderRaysPerTick>,
         IUsesTerminalControl<ComboboxReferenceMode>
     {
         public const string ID = MOD_PREFIX + "FarGridRaycastExperimental";
