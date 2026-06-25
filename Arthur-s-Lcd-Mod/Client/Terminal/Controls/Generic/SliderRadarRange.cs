@@ -1,12 +1,12 @@
 using System.Text;
 using LcdMod.Client.Config;
 using LcdMod.Client.Helpers;
+using LcdMod.Common.Config.Components;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
 using VRageMath;
 using static LcdMod.Common.Helpers.Constants;
-using ScreenConfigRadar = LcdMod.Common.Config.Models.Apps.ScreenConfigRadar;
 
 namespace LcdMod.Client.Terminal.Controls.Generic
 {
@@ -43,17 +43,14 @@ namespace LcdMod.Client.Terminal.Controls.Generic
 
         void Setter(IMyTerminalBlock block, float value)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigRadar;
-            if (config == null)
-                return;
-
-            config.RangeScale = ClampRangeScale(value);
-            ConfigManager.Sync(block);
+            ConfigManager.ModifyComponentForTerminalApp<RadarConfigComponent>(
+                block,
+                config => config.RangeScale = ClampRangeScale(value));
         }
 
         float Getter(IMyTerminalBlock block)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigRadar;
+            var config = ConfigManager.GetComponentForTerminalApp<RadarConfigComponent>(block);
             if (config == null)
                 return DEFAULT_SCALE;
 

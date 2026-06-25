@@ -41,9 +41,6 @@ namespace LcdMod.Client.Terminal.Controls.Generic
                     return;
                 }
 
-                // The inherited Screens collection is only a runtime compatibility facade.
-                // Capture it into the component graph before producing the debug XML.
-                config.CaptureRuntimeScreens();
                 var text = MyAPIGateway.Utilities.SerializeToXML(config);
                 TextInputHelper.SpawnForLocalPlayer(
                     "LCD Mod Block Config",
@@ -81,8 +78,9 @@ namespace LcdMod.Client.Terminal.Controls.Generic
                 var config = MyAPIGateway.Utilities.SerializeFromXML<ScreenProviderConfig>(xml);
                 if (config == null)
                     throw new Exception("Empty config.");
+                if (!config.NormalizeComponentSchema())
+                    throw new Exception("This config uses a newer component schema and is read-only in this build.");
 
-                config.BindRuntimeParent(block);
                 ConfigManager.Sync(block, config);
                 MyAPIGateway.Utilities.ShowMessage("lcdMod", "Block config updated.");
             }

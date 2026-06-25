@@ -6,13 +6,19 @@ using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Gui.Styling.Styles;
 using LcdMod.Client.Helpers;
-using LcdMod.Common.Config.Models;
+using LcdMod.Common.Config.Components;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 
+using LcdMod.Common.Config.Generation;
+using LcdMod.Common.Helpers;
+
 namespace LcdMod.Client.Apps.Abstract
 {
-    public abstract class App : Control, IApp, ITextSurfaceProvider, ITextStyleProvider
+    [ConfigComponent(Constants.GENERAL, typeof(GeneralConfigComponent), PropertyName = "GeneralComponent")]
+    [ConfigComponent(Constants.COLORS, typeof(ColorConfigComponent), PropertyName = "ColorComponent")]
+    [ConfigComponent(Constants.INTERACTION, typeof(InteractiveConfigComponent), PropertyName = "InteractionComponent")]
+    public abstract partial class App : Control, IApp, ITextSurfaceProvider, ITextStyleProvider
     {
         readonly List<Control> _rootControls = new List<Control>();
         StyleTree _styles;
@@ -27,15 +33,17 @@ namespace LcdMod.Client.Apps.Abstract
         string _themeTextFont;
         bool _hasTheme;
 
-        protected App(ScreenConfigInteractive config, IAppHost host)
+        protected App(IAppHost host)
         {
-            AppConfig = config;
             Host = host;
+            if (Host == null)
+                throw new ArgumentNullException(nameof(host));
+
             _styles = DefaultStyleBuilder.Build();
         }
 
         protected IAppHost Host { get; private set; }
-        protected ScreenConfigInteractive AppConfig { get; private set; }
+        protected IComponentContainer Config => Host.Config;
 
         public override StyleTree Styles => _styles;
 
@@ -67,7 +75,7 @@ namespace LcdMod.Client.Apps.Abstract
             return control;
         }
 
-        public Sandbox.ModAPI.Ingame.IMyTextSurface TextSurface => Host?.Surface;
+        public Sandbox.ModAPI.Ingame.IMyTextSurface TextSurface => Host.Surface;
 
         public string TextFont
         {
@@ -85,14 +93,12 @@ namespace LcdMod.Client.Apps.Abstract
 
         protected Vector2 MeasureText(string text, float scale)
         {
-            var surface = TextSurface;
-            return surface != null ? FormatingHelper.GetSizeInPixel(text, this, scale, surface) : Vector2.Zero;
+            return FormatingHelper.GetSizeInPixel(text, this, scale, TextSurface);
         }
 
         protected float MeasureLineHeight(float scale, string probe = "Ag")
         {
-            var surface = TextSurface;
-            return surface != null ? FormatingHelper.LineHeight(scale, this, surface, probe) : 0f;
+            return FormatingHelper.LineHeight(scale, this, TextSurface, probe);
         }
 
 
@@ -120,16 +126,12 @@ namespace LcdMod.Client.Apps.Abstract
 
         protected Color GetHeaderColor()
         {
-            var colorable = AppConfig;
-            if (colorable != null)
-                return colorable.HeaderColor;
-
-            return Host?.ForegroundColor ?? Color.White;
+            return ColorComponent.ResolveHeaderColor(Host.Block as Sandbox.ModAPI.IMyTerminalBlock);
         }
 
         protected Color GetForegroundColor()
         {
-            return Host?.ForegroundColor ?? Color.White;
+            return Host.ForegroundColor;
         }
 
         protected Color ResolveResource(ResourceKey<Color> key, Color fallback)
@@ -158,7 +160,7 @@ namespace LcdMod.Client.Apps.Abstract
                 dark != _themeDark ||
                 !layoutScale.Equals(_themeLayoutScale) ||
                 !fontScale.Equals(_themeFontScale) ||
-                ! AppConfig.AutoScrollStep.Equals(_themeAutoScrollSecondsPerStep) ||
+                !InteractionComponent.AutoScrollStep.Equals(_themeAutoScrollSecondsPerStep) ||
                 !string.Equals(textFont, _themeTextFont, StringComparison.Ordinal))
             {
                 _theme = headerColor.ToTheme(dark);
@@ -166,14 +168,14 @@ namespace LcdMod.Client.Apps.Abstract
                 _resources.Set(ThemeResources.FontColor, foregroundColor);
                 _resources.Set(ThemeResources.LayoutScale, layoutScale);
                 _resources.Set(ThemeResources.FontScale, fontScale);
-                _resources.Set(ThemeResources.AutoScrollSecondsPerStep, AppConfig.AutoScrollStep);
+                _resources.Set(ThemeResources.AutoScrollSecondsPerStep, InteractionComponent.AutoScrollStep);
                 _resources.Set(ThemeResources.TextFont, textFont);
                 _themeHeaderColor = headerColor;
                 _themeForegroundColor = foregroundColor;
                 _themeDark = dark;
                 _themeLayoutScale = layoutScale;
                 _themeFontScale = fontScale;
-                _themeAutoScrollSecondsPerStep = AppConfig.AutoScrollStep;
+                _themeAutoScrollSecondsPerStep = InteractionComponent.AutoScrollStep;
                 _themeTextFont = textFont;
                 _hasTheme = true;
                 MarkDirty();
@@ -182,25 +184,25 @@ namespace LcdMod.Client.Apps.Abstract
 
         float GetLayoutScaleResourceValue()
         {
-            float scale = AppConfig?.Scale ?? (Host != null && Host.Config != null ? Host.Config.Scale : 1f);
+            float scale = GeneralComponent.GetScale();
             return scale > 0f ? scale : 1f;
         }
 
         float GetFontScaleResourceValue()
         {
-            float fontScale = Host != null && Host.Surface != null ? Host.Surface.FontSize : 1f;
+            float fontScale = Host.Surface.FontSize;
             return fontScale > 0f ? fontScale : 1f;
         }
 
         string GetTextFontResourceValue()
         {
-            string font = Host != null && Host.Surface != null ? Host.Surface.Font : null;
+            string font = Host.Surface.Font;
             return string.IsNullOrEmpty(font) ? "White" : font;
         }
 
         bool ShouldUseDarkTheme()
         {
-            var backgroundColor = Host?.ForegroundColor ?? Color.White;
+            var backgroundColor = Host.ForegroundColor;
             return backgroundColor.ContrastRatio(Color.Black) >=
                    backgroundColor.ContrastRatio(Color.White);
         }

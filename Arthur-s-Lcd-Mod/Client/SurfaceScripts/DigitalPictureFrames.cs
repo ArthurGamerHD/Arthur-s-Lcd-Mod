@@ -1,3 +1,4 @@
+using LcdMod.Common.Config.Components;
 using System.IO;
 using System.Collections.Generic;
 using Generated;
@@ -7,7 +8,6 @@ using LcdMod.Client.Gui;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Terminal.Controls.Groups;
-using LcdMod.Common.Config.Models.Apps;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
@@ -17,10 +17,12 @@ using VRage.Utils;
 using VRageMath;
 using static LcdMod.Common.Helpers.Constants;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
+    [LcdSurface(typeof(LcdMod.Client.Apps.DigitalPictureFramesApp))]
     [MyTextSurfaceScript(ID, TITLE)]
-    public sealed class DigitalPictureFramesSurfaceScript : InteractiveSurfaceScript,
+    public sealed partial class DigitalPictureFramesSurfaceScript : InteractiveSurfaceScript,
         IMultiDisplayMode,
         IUsesTerminalControlGroup<SpriteSelectorTerminalControlGroup>
     {
@@ -59,8 +61,6 @@ namespace LcdMod.Client.SurfaceScripts
 
 
         DigitalPictureFramesApp _app;
-
-        protected override ConfigKind ConfigKind => ConfigKind.DigitalPictureFrames;
         protected override string DefaultTitle => TITLE;
         public override IApp App => _app;
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
@@ -99,12 +99,8 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override void SafeRun()
         {
-            var appConfig = Config as ScreenConfigDigitalPictureFrames;
-            if (appConfig == null)
-                return;
-
             if (_app == null)
-                _app = new DigitalPictureFramesApp(appConfig, this);
+                _app = new DigitalPictureFramesApp(this);
 
             _app.Update();
             RenderSprites();
@@ -113,7 +109,7 @@ namespace LcdMod.Client.SurfaceScripts
         public override List<MySprite> GetSprites()
         {
             var sprites = new List<MySprite>();
-            if (_app == null || Config == null)
+            if (_app == null)
                 return sprites;
 
             AddBackground(sprites);

@@ -1,3 +1,4 @@
+using LcdMod.Common.Config.Components;
 using System.Collections.Generic;
 using Generated;
 using LcdMod.Client.Apps;
@@ -6,7 +7,6 @@ using LcdMod.Client.ClockDashboard;
 using LcdMod.Client.Gui;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls.Generic;
-using LcdMod.Common.Config.Models.Apps;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
@@ -14,8 +14,10 @@ using VRageMath;
 using IMyTextSurface = Sandbox.ModAPI.IMyTextSurface;
 using static LcdMod.Common.Helpers.Constants;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
+    [LcdSurface(typeof(LcdMod.Client.Apps.InGameClockDashboardApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public sealed partial class InGameClockDashboardSurfaceScript : InteractiveSurfaceScript,
         IUsesTerminalControl<SwitchClockDashboard24Hour>,
@@ -25,8 +27,6 @@ namespace LcdMod.Client.SurfaceScripts
         public const string TITLE = ClockDashboardLocalization.TITLE_KEY;
 
         InGameClockDashboardApp _app;
-
-        protected override ConfigKind ConfigKind => ConfigKind.ClockDashboard;
         protected override string DefaultTitle => TITLE;
         protected override bool RendersInteractiveEntriesInGetSprites => true;
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
@@ -47,13 +47,10 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override void SafeRun()
         {
-            if (AppConfig == null)
-                return;
-
             base.SafeRun();
 
             if (_app == null)
-                _app = new InGameClockDashboardApp((ScreenConfigClockDashboard)AppConfig, this);
+                _app = new InGameClockDashboardApp(this);
 
             UpdateViewBox();
             _app.Update();
@@ -63,7 +60,7 @@ namespace LcdMod.Client.SurfaceScripts
         public override List<MySprite> GetSprites()
         {
             var sprites = new List<MySprite>();
-            if (_app == null || AppConfig == null)
+            if (_app == null)
                 return sprites;
 
             AddBackground(sprites);

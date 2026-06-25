@@ -1,3 +1,4 @@
+using LcdMod.Common.Config.Components;
 using Generated;
 using System.Collections.Generic;
 using LcdMod.Client.Apps;
@@ -6,7 +7,6 @@ using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Terminal.Controls.Generic;
 using LcdMod.Client.Terminal.Controls.Scale;
-using LcdMod.Common.Config.Models.Apps;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
@@ -14,20 +14,20 @@ using VRage.Game.ModAPI;
 using VRageMath;
 using static LcdMod.Common.Helpers.Constants;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
+    [LcdSurface(typeof(LcdMod.Client.Apps.FarGridRaycastExperimentalApp))]
 #if EXPERIMENTAL
     [MyTextSurfaceScript(ID, TITLE)]
 #endif
-    public sealed class FarGridRaycastExperimentalSurfaceScript : InteractiveSurfaceScript,
+    public sealed partial class FarGridRaycastExperimentalSurfaceScript : InteractiveSurfaceScript,
         IUsesTerminalControl<SliderRenderScale>,
         IUsesTerminalControl<SliderRaysPerTick>,
         IUsesTerminalControl<ComboboxReferenceMode>
     {
         public const string ID = MOD_PREFIX + "FarGridRaycastExperimental";
         public const string TITLE = "Far Grid Raycast Experimental";
-
-        protected override ConfigKind ConfigKind => ConfigKind.Raycast;
         protected override string DefaultTitle => TITLE;
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
 
@@ -43,12 +43,8 @@ public override List<Control> InteractiveList => _app.Children as List<Control>;
 
         public override void SafeRun()
         {
-            var appConfig = Config as ScreenConfigRaycast;
-            if (appConfig == null)
-                return;
-
             if (_app == null)
-                _app = new FarGridRaycastExperimentalApp(appConfig, this);
+                _app = new FarGridRaycastExperimentalApp(this);
 
             _app.Update();
             RenderSprites();

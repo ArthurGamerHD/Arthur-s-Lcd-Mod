@@ -1,3 +1,4 @@
+using LcdMod.Common.Config.Components;
 using System.Collections.Generic;
 using Generated;
 using LcdMod.Client.Apps;
@@ -5,7 +6,6 @@ using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Gui;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls.Generic;
-using LcdMod.Common.Config.Models.Apps;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
@@ -13,14 +13,15 @@ using VRageMath;
 using IMyTextSurface = Sandbox.ModAPI.IMyTextSurface;
 using static LcdMod.Common.Helpers.Constants;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
+    [LcdSurface(typeof(LcdMod.Client.Apps.NpcMarketApp))]
     [MyTextSurfaceScript(ID, TITLE)]
-    public sealed class NpcMarketSurfaceScript : InteractiveSurfaceScript,
+    public sealed partial class NpcMarketSurfaceScript : InteractiveSurfaceScript,
         IUsesTerminalControl<SliderNpcMarketMaxDistance>,
         IUsesTerminalControl<SliderNpcMarketPageSwitchDelay>
     {
-        protected override ConfigKind ConfigKind => ConfigKind.NpcMarket;
         public const string ID = MOD_PREFIX + "MarketApp";
         public const string TITLE = NpcMarketApp.TITLE;
 
@@ -55,13 +56,10 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override void SafeRun()
         {
-            if (Config == null)
-                return;
-
             base.SafeRun();
 
             if (_app == null)
-                _app = new NpcMarketApp((ScreenConfigNpcMarket)Config, this);
+                _app = new NpcMarketApp(this);
 
             _app.Update();
             RenderSprites();
@@ -70,7 +68,7 @@ namespace LcdMod.Client.SurfaceScripts
         public override List<MySprite> GetSprites()
         {
             var sprites = new List<MySprite>();
-            if (_app == null || Config == null)
+            if (_app == null)
                 return sprites;
 
             AddBackground(sprites);

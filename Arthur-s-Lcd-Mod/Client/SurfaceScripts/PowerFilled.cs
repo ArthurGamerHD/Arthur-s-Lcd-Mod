@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using LcdMod.Common.Config.Components;
 using Generated;
 using IAutoScroll = LcdMod.Client.Terminal.Controls.Generic.IAutoScroll;
 using LcdMod.Client.Gui;
@@ -14,14 +15,15 @@ using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.Interacti
 using ComboboxLinkType = LcdMod.Client.Terminal.Controls.Generic.ComboboxLinkType;
 using static LcdMod.Common.Helpers.Constants;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
+    [LcdSurface(typeof(LcdMod.Client.Apps.PowerFilledApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class PowerFilledSurfaceScript : InteractiveSurfaceScript,
         IAutoScroll,
         IUsesTerminalControl<ComboboxLinkType>
     {
-        protected override ConfigKind ConfigKind => ConfigKind.Power;
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
         public const string ID = "BatteryGraph";
         public const string TITLE = MOD_PREFIX + "PowerFilled";
@@ -47,13 +49,10 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override void SafeRun()
         {
-            if (AppConfig == null)
-                return;
-
             base.SafeRun();
 
             if (_app == null)
-                _app = new PowerFilledApp(AppConfig, this);
+                _app = new PowerFilledApp(this);
 
             _app.Update();
             RenderSprites();
@@ -65,7 +64,7 @@ namespace LcdMod.Client.SurfaceScripts
             AddBackground(sprites);
             DrawTitle(sprites);
             if (!_app.HasVisibleItems())
-                DrawMessage(sprites, LocHelper.Empty, "Warning", AppConfig.WarningColor, AppConfig.Scale);
+                DrawMessage(sprites, LocHelper.Empty, "Warning", ColorComponent.ResolveWarningColor(), GeneralComponent.GetScale());
             else
                 sprites.AddRange(_app.GetSprites());
             return sprites;

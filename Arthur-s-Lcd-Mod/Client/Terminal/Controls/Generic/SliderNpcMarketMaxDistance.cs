@@ -2,7 +2,7 @@ using System;
 using System.Text;
 using LcdMod.Client.Config;
 using LcdMod.Client.Helpers;
-using LcdMod.Common.Config.Models.Apps;
+using LcdMod.Common.Config.Components;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
@@ -45,17 +45,14 @@ namespace LcdMod.Client.Terminal.Controls.Generic
 
         void Setter(IMyTerminalBlock block, float value)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigNpcMarket;
-            if (config == null)
-                return;
-
-            config.MaxDistanceMeters = ClampDistanceMeters(value);
-            ConfigManager.Sync(block);
+            ConfigManager.ModifyComponentForTerminalApp<NpcMarketConfigComponent>(
+                block,
+                config => config.MaxDistanceMeters = ClampDistanceMeters(value));
         }
 
         float Getter(IMyTerminalBlock block)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigNpcMarket;
+            var config = ConfigManager.GetComponentForTerminalApp<NpcMarketConfigComponent>(block);
             return config != null ? GetSliderValue(config.MaxDistanceMeters) : UNLIMITED_DISTANCE_METERS;
         }
 

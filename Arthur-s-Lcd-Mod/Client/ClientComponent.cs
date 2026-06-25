@@ -275,7 +275,7 @@ namespace LcdMod.Client
 
         public void HandleSyncConfig(ReceivedPacketEventArgs args)
         {
-            var packet = args.UnWrap<NetworkPackageSyncScreenConfig>();
+            var packet = args.UnWrap<NetworkPackageSyncComponentConfig>();
             var block = MyEntities.GetEntityById(packet.BlockId) as IMyFunctionalBlock;
             if (block == null)
                 return;

@@ -1,7 +1,7 @@
 using System.Linq;
 using LcdMod.Client.Config;
 using LcdMod.Client.Terminal.Controls.Filter.Listbox;
-using LcdMod.Common.Config.Models.Apps;
+using LcdMod.Common.Config.Components;
 using Sandbox.ModAPI;
 
 namespace LcdMod.Client.Terminal.Controls.Filter.Buttons
@@ -21,10 +21,10 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Buttons
 
             var index = GetThisSurfaceIndex(block);
             var settings = ConfigManager.GetConfigForBlock(block);
-            if (settings == null || settings.Screens.Count <= index)
+            var surface = settings == null ? null : settings.GetSurfaceConfig(index);
+            if (settings == null || !settings.CanWriteConfig(surface))
                 return;
-
-            var config = settings.Screens[index] as ScreenConfigDigitalPictureFrames;
+            var config = ConfigManager.GetComponentForTerminalApp<DigitalPictureFramesConfigComponent>(block);
             if (config == null)
                 return;
 
@@ -50,7 +50,7 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Buttons
             ConfigManager.Sync(block, settings);
         }
 
-        static string[] GetSelectedSprites(ScreenConfigDigitalPictureFrames config)
+        static string[] GetSelectedSprites(DigitalPictureFramesConfigComponent config)
         {
             if (config.SelectedSprites != null && config.SelectedSprites.Length > 0)
                 return config.SelectedSprites.Where(s => !string.IsNullOrWhiteSpace(s)).ToArray();

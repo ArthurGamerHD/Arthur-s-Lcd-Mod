@@ -1,9 +1,10 @@
 using System.Linq;
 using LcdMod.Client.Config;
 using LcdMod.Client.Terminal.Controls.Filter.Listbox;
+using LcdMod.Common.Config.Components;
+using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using VRage.Game;
-using ScreenConfigWithItems = LcdMod.Common.Config.Models.Apps.ScreenConfigWithItems;
 
 namespace LcdMod.Client.Terminal.Controls.Filter.Buttons
 {
@@ -23,11 +24,13 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Buttons
 
             var index = GetThisSurfaceIndex(block);
             var settings = ConfigManager.GetConfigForBlock(block);
-
-            if (settings == null || settings.Screens.Count <= index)
+            var surface = settings == null ? null : settings.GetSurfaceConfig(index);
+            if (settings == null || !settings.CanWriteConfig(surface))
+                return;
+            var config = surface == null ? null : surface.TryGet<ItemSelectionConfigComponent>(Constants.ITEMS);
+            if (config == null)
                 return;
 
-            var config = settings.Screens[index] as ScreenConfigWithItems;
             RemoveGroups(config);
             RemoveBlocks(config);
             SourceList.TerminalControl.UpdateVisual();
@@ -35,24 +38,24 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Buttons
             ConfigManager.Sync(block, settings);
         }
 
-        void RemoveGroups(ScreenConfigWithItems config)
+        void RemoveGroups(ItemSelectionConfigComponent config)
         {
             var groups = TargetList.Selection
                 .Where(a => a.UserData is string)
                 .Select(a => (string)a.UserData);
 
-            if (config.SelectedCategories.Length > 0)
+            if (config.SelectedCategories != null && config.SelectedCategories.Length > 0)
                 config.SelectedCategories = config.SelectedCategories.Where(a => !groups.Contains(a)).ToArray();
         }
 
-        void RemoveBlocks(ScreenConfigWithItems config)
+        void RemoveBlocks(ItemSelectionConfigComponent config)
         {
             var ids = TargetList.Selection
                 .Where(a => a.UserData is MyDefinitionId)
-                .Select(a => (MyDefinitionId)a.UserData);
+                .Select(a => ((MyDefinitionId)a.UserData).ToString());
 
-            if (config.SelectedItems.Length > 0)
-                config.SelectedItems = config.SelectedItems.Where(a => !ids.Contains(a)).ToArray();
+            if (config.SelectedDefinition != null && config.SelectedDefinition.Length > 0)
+                config.SelectedDefinition = config.SelectedDefinition.Where(a => !ids.Contains(a)).ToArray();
         }
     }
 }

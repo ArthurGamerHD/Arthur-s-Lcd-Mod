@@ -9,6 +9,7 @@ using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Gui.ControlsTemplates.Interactive;
+using LcdMod.Common.Config.Components;
 using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
@@ -240,7 +241,7 @@ namespace LcdMod.Client.Games.EightBallPool
                 var terminalBlock = _script.Block as IMyTerminalBlock;
                 if (terminalBlock == null || terminalBlock.MarkedForClose || terminalBlock.Closed) return;
 
-                _script.Config.SetCustomData(CUSTOM_DATA_KEY, MyAPIGateway.Utilities.SerializeToBinary(BuildConfig()));
+                _script.GeneralComponent.SetCustomData(CUSTOM_DATA_KEY, MyAPIGateway.Utilities.SerializeToBinary(BuildConfig()));
                 ConfigManager.Sync(terminalBlock, _script.ProviderConfig);
             }
             catch (Exception e)
@@ -329,7 +330,7 @@ namespace LcdMod.Client.Games.EightBallPool
 
         EightBallPoolGameConfig LoadConfig()
         {
-            var data = _script.Config.GetCustomData(CUSTOM_DATA_KEY);
+            var data = _script.GeneralComponent.GetCustomData(CUSTOM_DATA_KEY);
             if (data == null || data.Length == 0) throw new Exception("Missing 8-ball pool config.");
             return MyAPIGateway.Utilities.SerializeFromBinary<EightBallPoolGameConfig>(data);
         }
@@ -2421,17 +2422,19 @@ namespace LcdMod.Client.Games.EightBallPool
 
         Color GetPlayerColor(int player)
         {
-            var colorConfig = _script?.ColorableConfig;
+            var colors = _script?.ColorComponent;
             if (player == PLAYER_ONE)
-                return colorConfig?.HeaderColor ?? new Color(86, 151, 255);
+                return colors == null
+                    ? new Color(86, 151, 255)
+                    : colors.ResolveHeaderColor(_script.Block as IMyTerminalBlock);
 
-            return colorConfig?.ErrorColor ?? new Color(160, 48, 48);
+            return colors == null ? new Color(160, 48, 48) : colors.ResolveErrorColor();
         }
 
         Color GetWarningColor(byte alpha)
         {
-            var colorConfig = _script?.ColorableConfig;
-            var warning = colorConfig?.WarningColor ?? new Color(224, 160, 16);
+            var colors = _script?.ColorComponent;
+            var warning = colors == null ? new Color(224, 160, 16) : colors.ResolveWarningColor();
             return new Color(warning.R, warning.G, warning.B, alpha);
         }
 

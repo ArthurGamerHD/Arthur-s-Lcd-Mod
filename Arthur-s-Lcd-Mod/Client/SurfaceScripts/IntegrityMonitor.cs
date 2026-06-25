@@ -13,15 +13,16 @@ using VRageMath;
 using ListboxProjectorSelection = LcdMod.Client.Terminal.Controls.Blueprint.ListboxProjectorSelection;
 using SliderRotation = LcdMod.Client.Terminal.Controls.Generic.SliderRotation;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
+    [LcdSurface(typeof(LcdMod.Client.Apps.IntegrityMonitorApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class IntegrityMonitorSurfaceScript : SurfaceScriptBase,
         IUsesTerminalControl<SliderRotation>,
         IUsesTerminalControl<ListboxProjectorSelection>,
         IMultiDisplayMode
     {
-        protected override ConfigKind ConfigKind => ConfigKind.Diagnostic;
         public const string ID = "PreviewCharts";
         public const string TITLE = IntegrityMonitorApp.TITLE;
 
@@ -50,13 +51,9 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override void SafeRun()
         {
-            var appConfig = AppConfig;
-            if (appConfig == null)
-                return;
-
             if (_app == null)
             {
-                _app = new IntegrityMonitorApp(appConfig, this);
+                _app = new IntegrityMonitorApp(this);
                 _app.LayoutChanged();
             }
 

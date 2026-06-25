@@ -29,8 +29,6 @@ namespace LcdMod.Client.Terminal
             if (textSurface == null)
                 return false;
 
-            config.CaptureRuntimeScreen(surfaceIndex);
-
             var surface = config.GetSurfaceConfig(surfaceIndex);
             if (surface == null)
                 return false;
@@ -54,25 +52,16 @@ namespace LcdMod.Client.Terminal
             if (textSurface == null)
                 return false;
 
-            config.EnsureRuntimeScreens();
-
-            if (surfaceIndex < 0 || config.Screens == null || surfaceIndex >= config.Screens.Count)
+            if (surfaceIndex < 0)
                 return false;
-
-            // Capture terminal/runtime edits before modifying the component source of truth.
-            config.CaptureRuntimeScreen(surfaceIndex);
 
             var target = config.GetSurfaceConfig(surfaceIndex);
-            if (target == null)
+            if (!config.CanWriteConfig(target))
                 return false;
 
-            // Keep the target app kind. Only slots present in both component schemas are copied.
+            // Keep the target AppType identity. Only exact matching slots and component types are copied.
             target.CopyCompatibleFrom(_copiedSettings);
 
-            // Replace the compatibility facade before Sync(), otherwise Sync() would capture the
-            // old runtime object and overwrite the pasted component values.
-            config.Screens[surfaceIndex] = ComponentConfigAdapter.ToRuntime(target, surfaceIndex);
-            config.BindRuntimeParent(block);
             ConfigManager.Sync(block, config);
 
             // These properties belong to the Space Engineers text surface rather than the LCD Mod

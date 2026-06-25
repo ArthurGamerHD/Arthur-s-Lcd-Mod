@@ -16,7 +16,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
     /// (auto-wrapped, trimmed) label.
     ///
     /// Everything visual is sized in PROPORTION to the button itself (radius, shadow offset, text), NOT
-    /// to the surface auto-fit scale. ButtonPadApp renders at <c>AppConfig.Scale</c> (~1) so a fixed
+    /// to the surface auto-fit scale. ButtonPadApp renders at <c>GeneralConfigComponent scale</c> (~1) so a fixed
     /// <c>6px * scale</c> radius stays visible; CargoActions renders at the auto-fit <c>Host.Scale</c>
     /// (~0.1 on a corner LCD), where the same formula collapses radius/shadow/text to zero. Proportional
     /// sizing keeps the buttons identical-looking on a 512² panel and a tiny corner LCD alike.

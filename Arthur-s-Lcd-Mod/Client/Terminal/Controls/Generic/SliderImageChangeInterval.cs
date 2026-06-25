@@ -1,7 +1,7 @@
 using System;
 using System.Text;
 using LcdMod.Client.Config;
-using LcdMod.Common.Config.Models.Apps;
+using LcdMod.Common.Config.Components;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
@@ -32,17 +32,14 @@ namespace LcdMod.Client.Terminal.Controls.Generic
 
         void Setter(IMyTerminalBlock block, float value)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigDigitalPictureFrames;
-            if (config == null)
-                return;
-
-            config.ImageChangeInterval = Math.Max(0f, value);
-            ConfigManager.Sync(block);
+            ConfigManager.ModifyComponentForTerminalApp<DigitalPictureFramesConfigComponent>(
+                block,
+                config => config.ImageChangeInterval = Math.Max(0f, value));
         }
 
         float Getter(IMyTerminalBlock block)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigDigitalPictureFrames;
+            var config = ConfigManager.GetComponentForTerminalApp<DigitalPictureFramesConfigComponent>(block);
             return config?.ImageChangeInterval ?? 0f;
         }
     }

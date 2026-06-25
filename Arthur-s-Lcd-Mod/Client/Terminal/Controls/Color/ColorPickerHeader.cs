@@ -1,5 +1,6 @@
 using LcdMod.Client.Config;
-using LcdMod.Common.Config.Models;
+using LcdMod.Common.Config.Components;
+using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
@@ -8,7 +9,7 @@ using VRage.Utils;
 namespace LcdMod.Client.Terminal.Controls.Color
 {
     /// <summary>
-    /// Color picker for Header for many Scripts using <see cref="ScreenConfigGeneral"/> 
+    /// Color picker for Header for many Scripts.
     /// </summary>
     public sealed partial class ColorPickerAccent : TerminalControlsWrapper
     {
@@ -26,23 +27,23 @@ namespace LcdMod.Client.Terminal.Controls.Color
 
         public override bool Visible(IMyTerminalBlock block)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block);
+            var config = ConfigManager.GetComponentForCurrentSurface<ColorConfigComponent>(block, Constants.COLORS);
             return (config?.CustomizedColors ?? false) && base.Visible(block);
         }
 
         void Setter(IMyTerminalBlock block, VRageMath.Color color)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block);
-            if (config == null)
-                return;
-            config.HeaderColor = color;
-            ConfigManager.Sync(block);
+            ConfigManager.ModifyComponentForCurrentSurface<ColorConfigComponent>(
+                block,
+                Constants.COLORS,
+                config => config.HeaderColor.Set(color));
         }
 
         VRageMath.Color Getter(IMyTerminalBlock block)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block);
-            return config?.HeaderColor ?? VRageMath.Color.White;
+            return ConfigManager
+                .GetComponentForCurrentSurface<ColorConfigComponent>(block, Constants.COLORS)
+                .ResolveHeaderColor(block);
         }
     }
 }

@@ -1,5 +1,5 @@
 using LcdMod.Client.Config;
-using LcdMod.Common.Config.Models.Apps;
+using LcdMod.Common.Config.Components;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
@@ -27,17 +27,14 @@ namespace LcdMod.Client.Terminal.Controls.Proxy
 
         void Setter(IMyTerminalBlock block, bool value)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigRenderProxy;
-            if (config == null)
-                return;
-
-            config.EnableAutoAdjust = value;
-            ConfigManager.Sync(block);
+            ConfigManager.ModifyComponentForTerminalApp<RenderProxyConfigComponent>(
+                block,
+                config => config.EnableAutoAdjust = value);
         }
 
         bool Getter(IMyTerminalBlock block)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigRenderProxy;
+            var config = ConfigManager.GetComponentForTerminalApp<RenderProxyConfigComponent>(block);
             return config != null && config.EnableAutoAdjust;
         }
     }

@@ -16,4 +16,4 @@ LcdMOD001 | LcdModCodeGenerator | Warning | App implements interface containing 
 Rule ID | Category | Severity | Notes
 --------|----------|----------|--------------------
 LcdMOD002 | LcdModCodeGenerator | Warning | Duplicate screen config Id detected across IScreenConfig implementations
-LcdMOD003 | LcdModCodeGenerator | Warning | Surface script uses Config where generated AppConfig is available
+LcdMOD003 | LcdModCodeGenerator | Warning | Surface script should use generated component properties instead of raw Config access

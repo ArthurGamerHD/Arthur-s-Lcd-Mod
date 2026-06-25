@@ -1,5 +1,6 @@
 using LcdMod.Client.Config;
-using LcdMod.Common.Config.Interfaces;
+using LcdMod.Common.Config.Components;
+using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
@@ -28,23 +29,56 @@ namespace LcdMod.Client.Terminal.Controls.Generic
             if (!base.Visible(block))
                 return false;
 
-            return (ConfigManager.GetConfigForCurrentScreen(block) as IHideEmpty) != null;
+            return GetButtonPanel(block) != null
+                   || GetPower(block) != null
+                   || GetFilters(block) != null;
         }
 
         void Setter(IMyTerminalBlock block, bool value)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as IHideEmpty;
-            if (config == null)
+            if (ConfigManager.ModifyComponentForTerminalApp<ButtonPanelConfigComponent>(
+                    block,
+                    config => config.HideEmpty = value))
                 return;
 
-            config.HideEmpty = value;
-            ConfigManager.Sync(block);
+            if (ConfigManager.ModifyComponentForTerminalApp<PowerConfigComponent>(
+                    block,
+                    config => config.HideEmpty = value))
+                return;
+
+            ConfigManager.ModifyComponentForCurrentSurface<FilterConfigComponent>(
+                block,
+                Constants.FILTERS,
+                config => config.HideEmpty = value);
         }
 
         bool Getter(IMyTerminalBlock myTerminalBlock)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(myTerminalBlock) as IHideEmpty;
-            return config != null && config.HideEmpty;
+            var buttonPanel = GetButtonPanel(myTerminalBlock);
+            if (buttonPanel != null)
+                return buttonPanel.HideEmpty;
+
+            var power = GetPower(myTerminalBlock);
+            if (power != null)
+                return power.HideEmpty;
+
+            var filters = GetFilters(myTerminalBlock);
+            return filters != null && filters.HideEmpty;
+        }
+
+        static ButtonPanelConfigComponent GetButtonPanel(IMyTerminalBlock block)
+        {
+            return ConfigManager.GetComponentForTerminalApp<ButtonPanelConfigComponent>(block);
+        }
+
+        static PowerConfigComponent GetPower(IMyTerminalBlock block)
+        {
+            return ConfigManager.GetComponentForTerminalApp<PowerConfigComponent>(block);
+        }
+
+        static FilterConfigComponent GetFilters(IMyTerminalBlock block)
+        {
+            return ConfigManager.GetComponentForCurrentSurface<FilterConfigComponent>(block, Constants.FILTERS);
         }
     }
 }

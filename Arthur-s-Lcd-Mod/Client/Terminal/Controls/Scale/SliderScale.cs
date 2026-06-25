@@ -1,6 +1,7 @@
 using System.Text;
 using LcdMod.Client.Config;
-using LcdMod.Common.Config.Models;
+using LcdMod.Common.Config.Components;
+using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
@@ -18,7 +19,7 @@ namespace LcdMod.Client.Terminal.Controls.Scale
             slider.Getter = Getter;
             slider.Setter = Setter;
             slider.Visible = Visible;
-            slider.SetLimits(ScreenConfigGeneral.MIN_SCALE, ScreenConfigGeneral.MAX_SCALE);
+            slider.SetLimits(GeneralConfigComponentExtensions.MIN_SCALE, GeneralConfigComponentExtensions.MAX_SCALE);
             slider.Writer = Writer;
             slider.Title = MyStringId.GetOrCompute("BlockPropertyTitle_Scale");
 
@@ -32,21 +33,17 @@ namespace LcdMod.Client.Terminal.Controls.Scale
 
         void Setter(IMyTerminalBlock block, float value)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block);
-            if (config == null)
-                return;
-
-            config.Scale = value;
-            ConfigManager.Sync(block);
+            ConfigManager.ModifyComponentForCurrentSurface<GeneralConfigComponent>(
+                block,
+                Constants.GENERAL,
+                config => config.SetScale(value));
         }
 
         float Getter(IMyTerminalBlock block)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block);
-            if (config == null)
-                return 1;
-
-            return config.Scale;
+            return ConfigManager
+                .GetComponentForCurrentSurface<GeneralConfigComponent>(block, Constants.GENERAL)
+                .GetScale();
         }
     }
 }

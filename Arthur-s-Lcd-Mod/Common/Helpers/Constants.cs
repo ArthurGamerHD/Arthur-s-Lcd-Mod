@@ -103,6 +103,25 @@ namespace LcdMod.Common.Helpers
 
         #endregion
 
+        #region Config
+
+        public const string GENERAL = "core.general";
+        public const string COLORS = "core.colors";
+        public const string INTERACTION = "core.interaction";
+        public const string FILTERS = "data.filters";
+        public const string BLOCKS = "data.blocks";
+        public const string ITEMS = "data.items";
+        public const string APP = "app.settings";
+        public const string TABS = "app.tabs";
+
+        // The slot, not the component CLR type, identifies the semantic use of a reference.
+        public const string PROJECTOR_REFERENCE = "reference.projector";
+        public const string DOCKABLE_REFERENCE = "reference.dockable";
+        public const string RENDER_PROXY_REFERENCE = "reference.render-proxy-source";
+        public const string VISIBLE_TREE_REFERENCE = "reference.visible-tree";
+
+        #endregion
+        
         public static Color ColorCorrection { get; set; } = new Color(175,185,200);
     }
 }

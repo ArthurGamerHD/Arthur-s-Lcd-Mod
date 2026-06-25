@@ -13,8 +13,10 @@ using VRageMath;
 using static LcdMod.Common.Helpers.Constants;
 using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
+    [LcdSurface(typeof(LcdMod.Client.Apps.CargoActionsApp))]
 #if EXPERIMENTAL
     [MyTextSurfaceScript(ID, TITLE)]
 #endif
@@ -22,7 +24,6 @@ namespace LcdMod.Client.SurfaceScripts
         IUsesTerminalControl<ComboboxLinkType>,
         IUsesTerminalControl<SwitchShowConfigButton>
     {
-        protected override ConfigKind ConfigKind => ConfigKind.CargoActions;
         public const string ID = "CargoActions";
         public const string TITLE = MOD_PREFIX + "CargoActions_Title";
         protected override string DefaultTitle => TITLE;
@@ -42,13 +43,10 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override void SafeRun()
         {
-            if (AppConfig == null)
-                return;
-
             base.SafeRun();
 
             if (_app == null)
-                _app = new CargoActionsApp(AppConfig, this);
+                _app = new CargoActionsApp(this);
 
             UpdateViewBox();
             _app.Update();

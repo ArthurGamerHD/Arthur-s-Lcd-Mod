@@ -13,8 +13,10 @@ using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRageMath;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
+    [LcdSurface(typeof(LcdMod.Client.Apps.VisibleTreeDebugApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class VisibleTreeDebugSurfaceScript : InteractiveSurfaceScript,
         IUsesTerminalControl<ListboxVisibleTreeDebugBlockSelection>,
@@ -25,8 +27,6 @@ namespace LcdMod.Client.SurfaceScripts
 
         readonly List<Control> _interactiveList = new List<Control>();
         VisibleTreeDebugApp _app;
-
-        protected override ConfigKind ConfigKind => ConfigKind.VisibleTreeDebug;
         protected override string DefaultTitle => TITLE;
         public override ScriptUpdate NeedsUpdate => ScriptUpdate.Update10;
         public override IApp App => _app;
@@ -39,55 +39,6 @@ namespace LcdMod.Client.SurfaceScripts
             LcdModSessionComponent.OnAfterSimulationUpdate += HandleAfterSimulationUpdate;
         }
 
-        public bool TryGetDebugTarget(out SurfaceScriptBase target, out string status)
-        {
-            target = null;
-            status = null;
-
-            var config = AppConfig;
-            if (config == null)
-            {
-                status = "Missing reference config";
-                return false;
-            }
-
-            if (config.ReferenceBlock == 0L)
-            {
-                status = "Screen Not Linked";
-                return false;
-            }
-
-            IMyEntity entity;
-            if (!MyAPIGateway.Entities.TryGetEntityById(config.ReferenceBlock, out entity))
-            {
-                status = "Reference block not found";
-                return false;
-            }
-
-            var targetBlock = entity as IMyTerminalBlock;
-            if (targetBlock == null || targetBlock.MarkedForClose)
-            {
-                status = "Invalid reference block";
-                return false;
-            }
-
-            var instances = SurfaceScriptBase.Instances.GetInstances(targetBlock);
-            if (instances == null)
-            {
-                status = "No LcdMod script instance";
-                return false;
-            }
-
-            target = instances.GetInstance(config.ReferenceScreenIndex);
-            if (target == null)
-            {
-                status = "No active script for screen " + config.ReferenceScreenIndex;
-                return false;
-            }
-
-            return true;
-        }
-
         void HandleAfterSimulationUpdate()
         {
             if (Surface == null)
@@ -98,24 +49,21 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override List<MySprite> GetSprites()
         {
-            SurfaceScriptBase target;
-            string status;
-            TryGetDebugTarget(out target, out status);
             if (_app == null)
                 return new List<MySprite>();
+
+            SurfaceScriptBase target;
+            string status;
+            _app.TryGetDebugTarget(out target, out status);
             return _app.GetSprites(this, target, status);
         }
 
         public override void SafeRun()
         {
-            var appConfig = AppConfig;
-            if (appConfig == null)
-                return;
-
             base.SafeRun();
 
             if (_app == null)
-                _app = new VisibleTreeDebugApp(appConfig, this);
+                _app = new VisibleTreeDebugApp(this);
 
             _app.Update();
             RenderSprites();

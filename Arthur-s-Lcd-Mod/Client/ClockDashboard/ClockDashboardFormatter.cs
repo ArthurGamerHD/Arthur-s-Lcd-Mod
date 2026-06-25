@@ -1,7 +1,7 @@
+using LcdMod.Common.Config.Components;
 using System;
 using System.Globalization;
 using System.Text;
-using LcdMod.Common.Config.Models.Apps;
 
 namespace LcdMod.Client.ClockDashboard
 {
@@ -47,7 +47,7 @@ namespace LcdMod.Client.ClockDashboard
             return SpaceEngineersGameDateEpoch.AddDays(localDayIndex).AddSeconds(totalSeconds);
         }
 
-        public static string FormatCompactTime(DateTime value, ScreenConfigClockDashboard config)
+        public static string FormatCompactTime(DateTime value, ClockDashboardConfigComponent config)
         {
             bool use24 = config == null || config.Use24HourClock;
             return use24
@@ -57,7 +57,7 @@ namespace LcdMod.Client.ClockDashboard
 
         public static string FormatSolarEventTime(
             double localSolarHour,
-            ScreenConfigClockDashboard config)
+            ClockDashboardConfigComponent config)
         {
             if (double.IsNaN(localSolarHour) || double.IsInfinity(localSolarHour))
                 return ClockDashboardLocalization.Unavailable;
@@ -114,7 +114,7 @@ namespace LcdMod.Client.ClockDashboard
 
         public static string FormatIncomingArrival(
             ClockDashboardSnapshot snapshot,
-            ScreenConfigClockDashboard config)
+            ClockDashboardConfigComponent config)
         {
             DateTime arrival = BuildIncomingArrivalDateTime(snapshot);
             return arrival == DateTime.MinValue

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using LcdMod.Client.Config;
 using LcdMod.Client.Helpers;
-using LcdMod.Common.Config.Models.Apps;
+using LcdMod.Common.Config.Components;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
 using VRage;
@@ -21,7 +21,7 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Listbox
         protected override void Getter(IMyTerminalBlock b, List<MyTerminalControlListBoxItem> itemList,
             List<MyTerminalControlListBoxItem> selected)
         {
-            var screenSettings = ConfigManager.GetConfigForCurrentScreen(b) as ScreenConfigDigitalPictureFrames;
+            var screenSettings = ConfigManager.GetComponentForTerminalApp<DigitalPictureFramesConfigComponent>(b);
             if (screenSettings == null)
                 return;
 
@@ -29,7 +29,7 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Listbox
             base.Getter(b, itemList, selected);
         }
 
-        static string[] GetSelectedSprites(ScreenConfigDigitalPictureFrames config)
+        static string[] GetSelectedSprites(DigitalPictureFramesConfigComponent config)
         {
             if (config.SelectedSprites != null && config.SelectedSprites.Length > 0)
                 return config.SelectedSprites.Where(s => !string.IsNullOrWhiteSpace(s)).ToArray();

@@ -15,12 +15,13 @@ using VRage.ModAPI;
 using VRageMath;
 using static LcdMod.Common.Helpers.Constants;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
+    [LcdSurface(typeof(LcdMod.Client.Apps.GasApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class GasSurfaceScript : SurfaceScriptBase, IAutoScroll, IMultiDisplayMode, IUsesTerminalControl<ComboboxLinkType>
     {
-        protected override ConfigKind ConfigKind => ConfigKind.WithBlocks;
         public const string ID = "GasGraph";
         public const string TITLE = MOD_PREFIX + "GasFilled";
         protected override string DefaultTitle => TITLE;
@@ -39,11 +40,8 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override void SafeRun()
         {
-            if (AppConfig == null)
-                return;
-
             if (_app == null)
-                _app = new GasApp(AppConfig, this);
+                _app = new GasApp(this);
 
             UpdateViewBox();
             _app.Update();

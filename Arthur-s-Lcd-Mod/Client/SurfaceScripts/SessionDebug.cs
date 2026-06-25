@@ -10,15 +10,15 @@ using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
 using VRageMath;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
+    [LcdSurface(typeof(LcdMod.Client.Apps.SessionDebugApp))]
 #if DEBUG
     [MyTextSurfaceScript(ID, TITLE)]
 #endif
     public partial class SessionDebugSurfaceScript : InteractiveSurfaceScript
     {
-        protected override ConfigKind ConfigKind => ConfigKind.Interactive;
-
         public const string ID = "SessionDebug";
         public const string TITLE = "LcdMod Session Debug";
 
@@ -57,7 +57,7 @@ namespace LcdMod.Client.SurfaceScripts
         {
             base.SafeRun();
 
-            if (_app == null && AppConfig != null) _app = new SessionDebugApp(AppConfig, this);
+            if (_app == null) _app = new SessionDebugApp(this);
         }
     }
 }

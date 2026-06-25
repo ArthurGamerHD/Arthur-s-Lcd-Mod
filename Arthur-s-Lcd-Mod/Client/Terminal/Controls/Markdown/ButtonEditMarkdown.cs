@@ -1,6 +1,6 @@
 using LcdMod.Client.Config;
 using LcdMod.Client.Helpers;
-using LcdMod.Common.Config.Models.Apps;
+using LcdMod.Common.Config.Components;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage;
@@ -26,7 +26,7 @@ namespace LcdMod.Client.Terminal.Controls.Markdown
 
         static void EditText(IMyTerminalBlock block)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigMarkdown;
+            var config = GetConfig(block);
             if (config == null)
                 return;
 
@@ -47,12 +47,14 @@ namespace LcdMod.Client.Terminal.Controls.Markdown
             if (text == (oldText ?? string.Empty))
                 return;
 
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigMarkdown;
-            if (config == null)
-                return;
+            ConfigManager.ModifyComponentForTerminalApp<MarkdownConfigComponent>(
+                block,
+                config => config.RawText = text);
+        }
 
-            config.RawText = text;
-            ConfigManager.Sync(block);
+        static MarkdownConfigComponent GetConfig(IMyTerminalBlock block)
+        {
+            return ConfigManager.GetComponentForTerminalApp<MarkdownConfigComponent>(block);
         }
     }
 }

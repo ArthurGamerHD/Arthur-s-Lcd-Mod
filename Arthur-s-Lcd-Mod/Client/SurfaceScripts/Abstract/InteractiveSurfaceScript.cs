@@ -8,6 +8,7 @@ using LcdMod.Client.Gui.ControlsTemplates.Dialogs;
 using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Utility;
+using LcdMod.Common.Config.Components;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game.Entity;
@@ -29,9 +30,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         long _hiddenGlobalMenuVisibleUntilFrame = long.MinValue;
         long _lastVisualContactFrame = long.MinValue;
         ControlTemplate _pointerOverControl;
-
-        protected override ConfigKind ConfigKind => ConfigKind.Interactive;
-
         protected InteractiveSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
             : base(surface, block, size)
         {
@@ -499,7 +497,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
             var tooltip = parentEntry.Tooltip;
             var textColor = ForegroundColor;
-            var panelColor = ColorableConfig?.HeaderColor ?? BackgroundColor;
+            var panelColor = ColorComponent.ResolveHeaderColor(Block as IMyTerminalBlock);
 
             var tooltipSprites = tooltip.Render(
                 parentEntry,
@@ -584,7 +582,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 FontScale,
                 Surface,
                 ForegroundColor,
-                ColorableConfig?.HeaderColor ?? BackgroundColor,
+                ColorComponent.ResolveHeaderColor(Block as IMyTerminalBlock),
                 CursorPosition);
         }
 
@@ -899,7 +897,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 Surface,
                 ForegroundColor,
                 BackgroundColor,
-                ColorableConfig?.HeaderColor ?? BackgroundColor,
+                ColorComponent.ResolveHeaderColor(Block as IMyTerminalBlock),
                 CursorPosition);
 
             if (RendersInteractiveEntriesInGetSprites)
@@ -907,7 +905,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
             RenderAttachedTooltip(spriteList);
 
-            if (AppConfig?.CursorScale == 0 || CursorType == CursorType.None)
+            if (InteractionComponent.CursorScale == 0 || CursorType == CursorType.None)
                 return spriteList;
 
             var cursor = CursorType;
@@ -919,7 +917,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 cursor,
                 position,
                 new Vector2(32), // hardcoded size
-                AppConfig?.CursorScale ?? 1f);
+                InteractionComponent.CursorScale);
 
             return spriteList;
         }
@@ -982,7 +980,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
 
         public MyEntity3DSoundEmitter SoundEmitter { get; set; }
-        public bool RequiresAlt => AppConfig?.RequiresAlt ?? true;
+        public bool RequiresAlt => InteractionComponent.RequiresAlt;
 
         public void PlaySounds(MySoundPair sound, bool playIn2D = false)
         {

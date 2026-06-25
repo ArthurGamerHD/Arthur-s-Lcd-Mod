@@ -1,21 +1,23 @@
+using LcdMod.Common.Config.Components;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
-using LcdMod.Common.Config.Models.Apps;
 using Sandbox.ModAPI;
 using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.Apps
 {
-    internal sealed class InventoryApp : ItemsApp
+    [LcdApp(4)]
+    internal sealed partial class InventoryApp : ItemsApp
     {
         public const string NAME = "Inventory";
 
         public override Dictionary<MyItemType, double> ItemSource =>
-            AppConfig == null ? null : Host.GridLogic?.GetItems(AppConfig, Host.Block as IMyTerminalBlock);
+            Host.GridLogic?.GetItems(BlockSelectionComponent, ItemSelectionComponent, Host.Block as IMyTerminalBlock);
 
         protected override string DefaultTitle => NAME;
 
-        public InventoryApp(ScreenConfigWithItems config, IAppHost host) : base(config, host)
+        public InventoryApp(IAppHost host) : base(host)
         {
         }
     }

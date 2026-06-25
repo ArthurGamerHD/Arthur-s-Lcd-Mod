@@ -1,9 +1,10 @@
 using System.Linq;
 using LcdMod.Client.Config;
 using LcdMod.Client.Terminal.Controls.Filter.Listbox;
+using LcdMod.Common.Config.Components;
+using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using VRage.Game;
-using ScreenConfigWithItems = LcdMod.Common.Config.Models.Apps.ScreenConfigWithItems;
 
 namespace LcdMod.Client.Terminal.Controls.Filter.Buttons
 {
@@ -23,24 +24,27 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Buttons
 
             var index = GetThisSurfaceIndex(block);
             var settings = ConfigManager.GetConfigForBlock(block);
-
-            if (settings == null || settings.Screens.Count <= index)
+            var surface = settings == null ? null : settings.GetSurfaceConfig(index);
+            if (settings == null || !settings.CanWriteConfig(surface))
+                return;
+            var config = surface == null ? null : surface.TryGet<ItemSelectionConfigComponent>(Constants.ITEMS);
+            if (config == null)
                 return;
 
-            AddBlocks(settings.Screens[index] as ScreenConfigWithItems);
-            AddGroups(settings.Screens[index] as ScreenConfigWithItems);
+            AddBlocks(config);
+            AddGroups(config);
 
             SourceList.TerminalControl.UpdateVisual();
             TargetList.TerminalControl.UpdateVisual();
             ConfigManager.Sync(block, settings);
         }
 
-        void AddGroups(ScreenConfigWithItems config)
+        void AddGroups(ItemSelectionConfigComponent config)
         {
             var groups = SourceList.Selection.Where(a => a.UserData is string)
                 .Select(a => (string)a.UserData);
 
-            if (config.SelectedCategories.Length > 0)
+            if (config.SelectedCategories != null && config.SelectedCategories.Length > 0)
             {
                 var list = config.SelectedCategories.ToList();
                 list.AddRange(groups);
@@ -52,21 +56,21 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Buttons
             }
         }
 
-        void AddBlocks(ScreenConfigWithItems config)
+        void AddBlocks(ItemSelectionConfigComponent config)
         {
             var ids = SourceList.Selection
                 .Where(a => a.UserData is MyDefinitionId)
-                .Select(a => ((MyDefinitionId)a.UserData));
+                .Select(a => ((MyDefinitionId)a.UserData).ToString());
 
-            if (config.SelectedItems.Length > 0)
+            if (config.SelectedDefinition != null && config.SelectedDefinition.Length > 0)
             {
-                var list = config.SelectedItems.ToList();
+                var list = config.SelectedDefinition.ToList();
                 list.AddRange(ids);
-                config.SelectedItems = list.ToArray();
+                config.SelectedDefinition = list.ToArray();
             }
             else
             {
-                config.SelectedItems = ids.ToArray();
+                config.SelectedDefinition = ids.ToArray();
             }
         }
     }

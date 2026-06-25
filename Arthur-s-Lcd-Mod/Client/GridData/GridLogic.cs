@@ -1,4 +1,5 @@
-﻿using System;
+using LcdMod.Common.Config.Components;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,9 +18,6 @@ using IMyFunctionalBlock = Sandbox.ModAPI.IMyFunctionalBlock;
 using IMySlimBlock = VRage.Game.ModAPI.IMySlimBlock;
 using IngameItem = VRage.Game.ModAPI.Ingame.MyInventoryItem;
 using NotImplementedException = LcdMod.Common.NotImplementedException;
-using ScreenConfigWithBlocks = LcdMod.Common.Config.Models.Apps.ScreenConfigWithBlocks;
-using ScreenConfigWithItems = LcdMod.Common.Config.Models.Apps.ScreenConfigWithItems;
-
 namespace LcdMod.Client.GridData
 {
     /// <summary>
@@ -352,45 +350,45 @@ namespace LcdMod.Client.GridData
         }
 
 
-        public Dictionary<MyItemType, double> GetItems(ScreenConfigWithItems config, IMyTerminalBlock referenceBlock,
+        public Dictionary<MyItemType, double> GetItems(BlockSelectionConfigComponent blocksConfig, ItemSelectionConfigComponent itemsConfig, IMyTerminalBlock referenceBlock,
             string[] types = null)
         {
-            return GetItemsCore(config, referenceBlock, types, _queryCache, false);
+            return GetItemsCore(blocksConfig, itemsConfig, referenceBlock, types, _queryCache, false);
         }
 
-        public Dictionary<MyItemType, double> GetIngots(ScreenConfigWithItems config, IMyTerminalBlock referenceBlock)
+        public Dictionary<MyItemType, double> GetIngots(BlockSelectionConfigComponent blocksConfig, ItemSelectionConfigComponent itemsConfig, IMyTerminalBlock referenceBlock)
         {
-            return GetItemsCore(config, referenceBlock, IngotTypeFilter, _ingotQueryCache, true);
+            return GetItemsCore(blocksConfig, itemsConfig, referenceBlock, IngotTypeFilter, _ingotQueryCache, true);
         }
 
-        private Dictionary<MyItemType, double> GetItemsCore(ScreenConfigWithItems config,
+        private Dictionary<MyItemType, double> GetItemsCore(BlockSelectionConfigComponent blocksConfig, ItemSelectionConfigComponent itemsConfig,
             IMyTerminalBlock referenceBlock,
             string[] types, Dictionary<SearchQueryToken, Dictionary<MyItemType, double>> cache, bool forceTypes)
         {
             try
             {
-                var linkType = config.GridLinkType;
-                var queryToken = SearchQueryToken.GetToken(config);
+                var linkType = (GridLinkTypeEnum)blocksConfig.GridLinkTypeInternal;
+                var queryToken = SearchQueryToken.GetToken(blocksConfig, itemsConfig);
                 Dictionary<MyItemType, double> dictionary;
                 if (!cache.TryGetValue(queryToken, out dictionary))
                 {
                     dictionary = new Dictionary<MyItemType, double>();
 
                     var blocks =
-                        config.SelectedBlocks.Length == 0 && config.SelectedGroups.Length == 0
+                        blocksConfig.SelectedBlocks.Length == 0 && blocksConfig.SelectedGroups.Length == 0
                             ? GetInventories(linkType)
                             : new List<IMyTerminalBlock>();
 
-                    blocks.AddRange(config.SelectedBlocks.Select(id => MyAPIGateway.Entities.GetEntityById(id))
+                    blocks.AddRange(blocksConfig.SelectedBlocks.Select(id => MyAPIGateway.Entities.GetEntityById(id))
                         .Select(entity => entity as IMyTerminalBlock)
                         .Where(block =>
                             block != null && block.HasInventory &&
                             IsBlockInGridLinkScope(block, referenceBlock, linkType)));
 
-                    if (config.SelectedGroups.Any())
+                    if (blocksConfig.SelectedGroups.Any())
                     {
                         var blockFromGroups = new List<IMyTerminalBlock>();
-                        foreach (var groupName in config.SelectedGroups)
+                        foreach (var groupName in blocksConfig.SelectedGroups)
                         {
                             blockFromGroups.Clear();
                             GridTerminalSystem.GetBlockGroupWithName(groupName)?
@@ -403,8 +401,8 @@ namespace LcdMod.Client.GridData
                         }
                     }
 
-                    var aggregateTypes = forceTypes ? types : types ?? config.SelectedCategories;
-                    AggregateItems(blocks, dictionary, aggregateTypes, config.SelectedItems);
+                    var aggregateTypes = forceTypes ? types : types ?? itemsConfig.SelectedCategories;
+                    AggregateItems(blocks, dictionary, aggregateTypes, itemsConfig.GetSelectedItems());
 
                     cache[queryToken] = dictionary;
                 }
@@ -885,19 +883,19 @@ namespace LcdMod.Client.GridData
         ///     Per-block input/output snapshot of the grid's refineries and assemblers, respecting
         ///     block/group selection. Cached by query token and rebuilt on the batched refresh cycle.
         /// </summary>
-        public List<ProductionBlockItems> GetProductionBlockItems(ScreenConfigWithBlocks config,
+        public List<ProductionBlockItems> GetProductionBlockItems(BlockSelectionConfigComponent blocksConfig, ItemSelectionConfigComponent itemsConfig,
             IMyTerminalBlock referenceBlock)
         {
             try
             {
-                var token = SearchQueryToken.GetToken(config);
+                var token = SearchQueryToken.GetToken(blocksConfig, itemsConfig);
 
                 List<ProductionBlockItems> cached;
                 if (_productionByBlockCache.TryGetValue(token, out cached))
                     return cached;
 
                 var blocks = new List<IMyTerminalBlock>();
-                BuildProductionBlockList(config, referenceBlock, blocks);
+                BuildProductionBlockList(blocksConfig, referenceBlock, blocks);
 
                 var result = new List<ProductionBlockItems>(blocks.Count);
                 var scratchItems = new List<IngameItem>();
@@ -931,14 +929,14 @@ namespace LcdMod.Client.GridData
         /// <summary>
         ///     Builds the list of refinery/assembler blocks honouring SelectedBlocks / SelectedGroups / GridLinkType.
         /// </summary>
-        private void BuildProductionBlockList(ScreenConfigWithBlocks config, IMyTerminalBlock referenceBlock,
+        private void BuildProductionBlockList(BlockSelectionConfigComponent blocksConfig, IMyTerminalBlock referenceBlock,
             List<IMyTerminalBlock> blocks)
         {
             blocks.Clear();
 
-            if (config.SelectedBlocks.Length == 0 && config.SelectedGroups.Length == 0)
+            if (blocksConfig.SelectedBlocks.Length == 0 && blocksConfig.SelectedGroups.Length == 0)
             {
-                var all = GetInventories(config.GridLinkType);
+                var all = GetInventories((GridLinkTypeEnum)blocksConfig.GridLinkTypeInternal);
                 for (var i = 0; i < all.Count; i++)
                     if (all[i] is IMyRefinery || all[i] is IMyAssembler)
                         blocks.Add(all[i]);
@@ -946,22 +944,22 @@ namespace LcdMod.Client.GridData
                 return;
             }
 
-            blocks.AddRange(config.SelectedBlocks
+            blocks.AddRange(blocksConfig.SelectedBlocks
                 .Select(id => MyAPIGateway.Entities.GetEntityById(id) as IMyTerminalBlock)
                 .Where(b => (b is IMyRefinery || b is IMyAssembler) &&
-                            IsBlockInGridLinkScope(b, referenceBlock, config.GridLinkType)));
+                            IsBlockInGridLinkScope(b, referenceBlock, (GridLinkTypeEnum)blocksConfig.GridLinkTypeInternal)));
 
-            if (config.SelectedGroups.Length > 0 && referenceBlock != null)
+            if (blocksConfig.SelectedGroups.Length > 0 && referenceBlock != null)
             {
                 var groupBlocks = new List<IMyTerminalBlock>();
-                foreach (var groupName in config.SelectedGroups)
+                foreach (var groupName in blocksConfig.SelectedGroups)
                 {
                     groupBlocks.Clear();
                     GridTerminalSystem.GetBlockGroupWithName(groupName)?
                         .GetBlocks(groupBlocks, b => (b is IMyRefinery || b is IMyAssembler) &&
                                                      b.GetUserRelationToOwner(referenceBlock.OwnerId)
                                                      <= MyRelationsBetweenPlayerAndBlock.FactionShare &&
-                                                     IsBlockInGridLinkScope(b, referenceBlock, config.GridLinkType) &&
+                                                     IsBlockInGridLinkScope(b, referenceBlock, (GridLinkTypeEnum)blocksConfig.GridLinkTypeInternal) &&
                                                      !blocks.Contains(b));
                     blocks.AddRange(groupBlocks);
                 }

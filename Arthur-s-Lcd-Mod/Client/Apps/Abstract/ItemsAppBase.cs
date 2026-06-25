@@ -1,3 +1,4 @@
+using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,7 +14,6 @@ using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Utility;
-using LcdMod.Common.Config.Models.Apps;
 using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
@@ -27,11 +27,15 @@ using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
 using VisualStackPanel = LcdMod.Client.Gui.ControlsTemplates.Panels.StackPanel.StackPanel;
 using VisualWrapPanel = LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel.WrapPanel;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.Apps.Abstract
 {
-    public abstract class ItemsApp : App, IApp
+    [ConfigComponent(Constants.FILTERS, typeof(FilterConfigComponent), PropertyName = "FilterComponent")]
+    [ConfigComponent(Constants.BLOCKS, typeof(BlockSelectionConfigComponent), PropertyName = "BlockSelectionComponent")]
+    [ConfigComponent(Constants.ITEMS, typeof(ItemSelectionConfigComponent), PropertyName = "ItemSelectionComponent")]
+    public abstract partial class ItemsApp : App, IApp
     {
-        protected virtual SortMethod SortMethod => (SortMethod)AppConfig.SortMethod;
+        protected virtual SortMethod SortMethod => (SortMethod)FilterComponent.SortMethod;
 
         public static Dictionary<MyItemType, string> SpriteCache =
             new Dictionary<MyItemType, string>();
@@ -57,12 +61,10 @@ namespace LcdMod.Client.Apps.Abstract
 
         public abstract Dictionary<MyItemType, double> ItemSource { get; }
         protected virtual string DefaultTitle => "<Title not Set>";
-
-        protected new ScreenConfigWithItems AppConfig => (ScreenConfigWithItems)base.AppConfig;
         protected IMyCubeBlock Block => Host.Block;
         protected Sandbox.ModAPI.Ingame.IMyTextSurface Surface => Host.Surface;
         protected RectangleF ViewBox => Host.ViewBox;
-        protected float Scale => AppConfig.Scale;
+        protected float Scale => GeneralComponent.GetScale();
         protected float FontScale => Host.Surface.FontSize;
         protected float LayoutScale => Scale * FontScale;
         protected Color ForegroundColor => Host.ForegroundColor;
@@ -108,17 +110,17 @@ namespace LcdMod.Client.Apps.Abstract
         {
             get
             {
-                if (_selectedCategories != AppConfig?.SelectedCategories)
+                if (_selectedCategories != ItemSelectionComponent.SelectedCategories)
                     LocalizedTitleCache = string.Empty;
 
                 if (!string.IsNullOrEmpty(LocalizedTitleCache))
                     return LocalizedTitleCache;
 
-                if (AppConfig?.SelectedCategories != null)
+                if (ItemSelectionComponent.SelectedCategories != null)
                 {
-                    _selectedCategories = AppConfig.SelectedCategories;
+                    _selectedCategories = ItemSelectionComponent.SelectedCategories;
                     var sb = new StringBuilder();
-                    foreach (var item in AppConfig.SelectedCategories)
+                    foreach (var item in ItemSelectionComponent.SelectedCategories)
                         sb.Append(ItemCategoryHelper.GetGroupDisplayName(item) + ", ");
 
                     if (sb.Length != 0)
@@ -140,7 +142,7 @@ namespace LcdMod.Client.Apps.Abstract
         protected const int MINIMUM_COL_WIDTH = 220;
         protected string PreviousType = "";
 
-        protected ItemsApp(ScreenConfigWithItems config, IAppHost host) : base(config, host)
+        protected ItemsApp(IAppHost host) : base(host)
         {
             _scrollPanel = AddChild(new ScrollPanel(CursorType.Default, this));
             _scrollPanel.ScrollChanged = OnScrollPanelChanged;
@@ -153,7 +155,7 @@ namespace LcdMod.Client.Apps.Abstract
 
         protected virtual List<KeyValuePair<MyItemType, double>> ReadItems(IMyTerminalBlock lcd)
         {
-            if (AppConfig.HideEmpty || AppConfig.SelectedItems.Any())
+            if (FilterComponent.HideEmpty || ItemSelectionComponent.GetSelectedItems().Any())
                 _itemsCache.Clear();
 
             if (lcd == null || ItemSource == null)
@@ -167,9 +169,9 @@ namespace LcdMod.Client.Apps.Abstract
             }
 
 
-            if (!AppConfig.HideEmpty)
+            if (!FilterComponent.HideEmpty)
             {
-                foreach (var configSelectedItem in AppConfig.SelectedItems)
+                foreach (var configSelectedItem in ItemSelectionComponent.GetSelectedItems())
                 {
                     MyItemType type;
                     if (!TypeCache.TryGetValue(configSelectedItem, out type))
@@ -220,18 +222,15 @@ namespace LcdMod.Client.Apps.Abstract
             _items.Clear();
             ClearInteractiveTree();
             
-            if (AppConfig == null)
-                return;
-
             try
             {
                 var items = ReadItems(Block as IMyTerminalBlock);
                 for (int i = 0; i < items.Count; i++)
                     _items.Add(GetOrCreateItemViewModel(items[i]));
 
-                HasFilters = AppConfig.SelectedCategories.Any() || AppConfig.SelectedBlocks.Any() ||
-                             AppConfig.SelectedItems.Any() || AppConfig.SelectedGroups.Any() ||
-                             AppConfig.SelectedDefinition.Any();
+                HasFilters = ItemSelectionComponent.SelectedCategories.Any() || BlockSelectionComponent.SelectedBlocks.Any() ||
+                             ItemSelectionComponent.GetSelectedItems().Any() || BlockSelectionComponent.SelectedGroups.Any() ||
+                             ItemSelectionComponent.SelectedDefinition.Any();
             }
             catch (Exception e)
             {
@@ -255,7 +254,7 @@ namespace LcdMod.Client.Apps.Abstract
             _footerHeight = 0f;
             DrawFooter(sprites);
 
-            switch (AppConfig.DisplayMode)
+            switch (GeneralComponent.DisplayMode)
             {
                 case (int)DisplayMode.Legacy:
                     DrawList(sprites, _items);
@@ -306,18 +305,18 @@ namespace LcdMod.Client.Apps.Abstract
 
             model.Amount = amount;
             var amountText = FormatingHelper.FormatItemQty(amount);
-            model.ListTextColor = amount == 0 ? AppConfig.ErrorColor : Surface.ScriptForegroundColor;
+            model.ListTextColor = amount == 0 ? ColorComponent.ResolveErrorColor() : Surface.ScriptForegroundColor;
             model.ListAmountColor = model.ListTextColor;
             model.ListIconColor = Color.White;
-            model.IconBackgroundColor = amount == 0 ? AppConfig.ErrorColor : Color.White;
-            var panelColor = AppConfig.HeaderColor;
+            model.IconBackgroundColor = amount == 0 ? ColorComponent.ResolveErrorColor() : Color.White;
+            var panelColor = GetHeaderColor();
             var panelTextColor = Surface.ScriptForegroundColor;
-            model.GridTextColor = AppConfig.DrawLines && amount == 0
+            model.GridTextColor = GeneralComponent.DrawLines && amount == 0
                 ? new Color(96, 32, 32)
                 : panelTextColor;
             model.GridAmountColor = model.GridTextColor;
             model.GridIconColor = Color.White;
-            model.PanelColor = amount == 0 ? AppConfig.ErrorColor : panelColor;
+            model.PanelColor = amount == 0 ? ColorComponent.ResolveErrorColor() : panelColor;
             model.SetSimpleAmount(amountText);
         }
 
@@ -383,7 +382,7 @@ namespace LcdMod.Client.Apps.Abstract
             if (children == null)
                 return;
 
-            if (AppConfig.DrawLines)
+            if (GeneralComponent.DrawLines)
             {
                 var layout = WrapPanelLayout.Create(
                     control.Bounds,
@@ -402,7 +401,7 @@ namespace LcdMod.Client.Apps.Abstract
 
         void DrawWrapPanelLines(List<MySprite> sprites, ScrollPanel panel, WrapPanelLayout panelLayout)
         {
-            var lineColor = AppConfig.HeaderColor;
+            var lineColor = GetHeaderColor();
             var contentStart = panel.ContentBounds.X;
             var contentEnd = panel.ContentBounds.Right;
             var gridHeight = panel.ContentBounds.Height;
@@ -446,7 +445,7 @@ namespace LcdMod.Client.Apps.Abstract
             var cellPadding = (LINE_HEIGHT * Scale) / 2f;
             var cellViewBox = GetCellViewBox(rect.X, rect.Right, rect.Y, rect.Height, cellPadding);
 
-            if (!AppConfig.DrawLines)
+            if (!GeneralComponent.DrawLines)
                 DrawCellBackground(frame, model, rect.X, rect.Right, rect.Y, rect.Height, cellPadding);
 
             PreviousType = model.TypeId;
@@ -652,9 +651,9 @@ namespace LcdMod.Client.Apps.Abstract
             Vector2 position = bounds.Position;
             position.X = xStart;
 
-            bool drawSeparatorLine = AppConfig.SortMethod == (int)SortMethod.Type && PreviousType != item.TypeId;
+            bool drawSeparatorLine = FilterComponent.SortMethod == (int)SortMethod.Type && PreviousType != item.TypeId;
 
-            if (AppConfig.DrawLines || drawSeparatorLine)
+            if (GeneralComponent.DrawLines || drawSeparatorLine)
             {
                 frame.Add(new MySprite()
                 {
@@ -662,7 +661,7 @@ namespace LcdMod.Client.Apps.Abstract
                     Data = "Circle",
                     Position = new Vector2((xStart + xEnd) / 2f, position.Y),
                     Size = new Vector2(xEnd - xStart, 1),
-                    Color = drawSeparatorLine ? AppConfig.HeaderColor : Surface.ScriptForegroundColor,
+                    Color = drawSeparatorLine ? GetHeaderColor() : Surface.ScriptForegroundColor,
                     Alignment = TextAlignment.CENTER
                 });
             }

@@ -1,5 +1,6 @@
 using LcdMod.Client.Config;
-using LcdMod.Common.Config.Interfaces;
+using LcdMod.Common.Config.Components;
+using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Game.ModAPI;
@@ -11,7 +12,7 @@ namespace LcdMod.Client.Terminal.Controls.Generic
     /// <summary>
     /// Quick toggle for the grid-link scope: ON = Physical (also picks docked/subgrid containers),
     /// OFF = Mechanical (rotor/piston/hinge subgrids only). Defaults to ON (Physical), matching the
-    /// <c>ScreenConfigWithBlocks</c> default. Writes the same <c>GridLinkTypeInternal</c> field as
+    /// block-selection default. Writes the same <c>GridLinkTypeInternal</c> field as
     /// <see cref="ComboboxLinkType"/>, so the two stay in sync.
     /// </summary>
     public partial class SwitchSubGrid : TerminalControlsWrapper
@@ -33,21 +34,40 @@ namespace LcdMod.Client.Terminal.Controls.Generic
 
         void Setter(IMyTerminalBlock block, bool value)
         {
-            var cfg = ConfigManager.GetConfigForCurrentScreen(block) as IGridGroupReference;
-            if (cfg == null)
+            var gridLinkType = (int)(value ? GridLinkTypeEnum.Physical : GridLinkTypeEnum.Mechanical);
+            if (ConfigManager.ModifyComponentForCurrentSurface<BlockSelectionConfigComponent>(
+                    block,
+                    Constants.BLOCKS,
+                    config => config.GridLinkTypeInternal = gridLinkType))
                 return;
 
-            cfg.GridLinkTypeInternal = (int)(value ? GridLinkTypeEnum.Physical : GridLinkTypeEnum.Mechanical);
-            ConfigManager.Sync(block);
+            if (ConfigManager.ModifyComponentForTerminalApp<PowerConfigComponent>(
+                    block,
+                    config => config.GridLinkTypeInternal = gridLinkType))
+                return;
+
+            ConfigManager.ModifyComponentForTerminalApp<CargoActionsConfigComponent>(
+                block,
+                config => config.GridLinkTypeInternal = gridLinkType);
         }
 
         bool Getter(IMyTerminalBlock block)
         {
-            var cfg = ConfigManager.GetConfigForCurrentScreen(block) as IGridGroupReference;
-            if (cfg == null)
-                return true; // default ON = Physical
+            var blocks = ConfigManager.GetComponentForCurrentSurface<BlockSelectionConfigComponent>(
+                block,
+                Constants.BLOCKS);
+            if (blocks != null)
+                return blocks.GridLinkTypeInternal == (int)GridLinkTypeEnum.Physical;
 
-            return cfg.GridLinkTypeInternal == (int)GridLinkTypeEnum.Physical;
+            var power = ConfigManager.GetComponentForTerminalApp<PowerConfigComponent>(block);
+            if (power != null)
+                return power.GridLinkTypeInternal == (int)GridLinkTypeEnum.Physical;
+
+            var cargo = ConfigManager.GetComponentForTerminalApp<CargoActionsConfigComponent>(block);
+            if (cargo == null)
+                return true;
+
+            return cargo.GridLinkTypeInternal == (int)GridLinkTypeEnum.Physical;
         }
     }
 }

@@ -1,3 +1,4 @@
+using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -11,7 +12,6 @@ using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Utility;
-using LcdMod.Common.Config.Models.Apps;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game;
@@ -22,16 +22,20 @@ using VRageMath;
 using SliderFov = LcdMod.Client.Terminal.Controls.Generic.SliderFov;
 using static LcdMod.Common.Helpers.Constants;
 
+using LcdMod.Common.Config.Generation;
+using LcdMod.Common.Helpers;
+
 namespace LcdMod.Client.Apps
 {
-    public class StarMapApp : App, IApp
+    [LcdApp(13)]
+    [ConfigComponent(APP, typeof(StarMapConfigComponent), PropertyName = "StarMapComponent")]
+    public partial class StarMapApp : App, IApp
     {
         readonly IAppHost _host;
-        new ScreenConfigStarMap AppConfig => (ScreenConfigStarMap)base.AppConfig;
         IMyCubeBlock Block => _host.Block;
         Sandbox.ModAPI.Ingame.IMyTextSurface Surface => _host.Surface;
         RectangleF ViewBox => _host.ViewBox;
-        float Scale => _host.Config.Scale;
+        float Scale => _host.ConfiguredScale;
         float FontScale => _host.Surface.FontSize;
         Color ForegroundColor => _host.ForegroundColor;
         Color BackgroundColor => _host.BackgroundColor;
@@ -192,8 +196,8 @@ namespace LcdMod.Client.Apps
                 }
             };
 
-        public StarMapApp(ScreenConfigStarMap config, IAppHost host)
-            : base(config, host)
+        public StarMapApp(IAppHost host)
+            : base(host)
         {
             _host = host;
         }
@@ -207,7 +211,7 @@ namespace LcdMod.Client.Apps
         {
             _fov = GetEffectiveVerticalFovDeg();
             _halfFovY = MathHelper.ToRadians(_fov) * 0.5;
-            _lastKnownConfigFov = AppConfig?.FoV ?? MAP_VERTICAL_FOV_DEFAULT_DEG;
+            _lastKnownConfigFov = StarMapComponent.FoV;
             InvalidateStaticOrbitCache();
             InvalidateDynamicMapCache();
             RebuildPropertyLabelCache();
@@ -234,7 +238,7 @@ namespace LcdMod.Client.Apps
             _propertyLabelCache[name] = LocHelper.GetLoc(BuildPropertyLocKey(name));
         }
 
-        string BuildPropertyLocKey(string name) => MOD_PREFIX + "" + name + (AppConfig != null && AppConfig.DisplayMode == (int)DisplayMode.Grid ? "_Short" : string.Empty);
+        string BuildPropertyLocKey(string name) => MOD_PREFIX + "" + name + (GeneralComponent.DisplayMode == (int)DisplayMode.Grid ? "_Short" : string.Empty);
 
         string FormatPropertyLine(string name, object value)
         {
@@ -250,7 +254,7 @@ namespace LcdMod.Client.Apps
 
         CursorType GetDefaultCursorType()
         {
-            return AppConfig != null && AppConfig.DisplayMode == (int)DisplayMode.Legacy
+            return GeneralComponent.DisplayMode == (int)DisplayMode.Legacy
                 ? CursorType.Default
                 : CursorType.None;
         }
@@ -277,8 +281,6 @@ namespace LcdMod.Client.Apps
         
         public override void Update()
         {
-            if (AppConfig == null)
-                return;
             _jumpPointRunCounter++;
 
             if (_syncConfigNextRun)
@@ -289,7 +291,7 @@ namespace LcdMod.Client.Apps
             }
 
             bool hadKnownFov = !float.IsNaN(_lastKnownConfigFov);
-            if (!hadKnownFov || Math.Abs(_lastKnownConfigFov - AppConfig.FoV) > 0.001f)
+            if (!hadKnownFov || Math.Abs(_lastKnownConfigFov - StarMapComponent.FoV) > 0.001f)
             {
                 if (hadKnownFov)
                     _lastFovChangedFrame = GetCurrentGameFrame();
@@ -315,7 +317,7 @@ namespace LcdMod.Client.Apps
             RequestedCursorType = GetDefaultCursorType();
             _suppressDynamicOverlays = false;
 
-            bool staticMode = AppConfig.DisplayMode == (int)DisplayMode.Legacy;
+            bool staticMode = GeneralComponent.DisplayMode == (int)DisplayMode.Legacy;
             bool hasPlanets;
 
             if (staticMode && _staticOrbitCacheValid)
@@ -348,7 +350,7 @@ namespace LcdMod.Client.Apps
             }
             else
             {
-                DrawMessage(_overlaySprites, LocHelper.Empty, "Warning", AppConfig.WarningColor, AppConfig.Scale);
+                DrawMessage(_overlaySprites, LocHelper.Empty, "Warning", ColorComponent.ResolveWarningColor(), GeneralComponent.GetScale());
             }
 
             _sprites.Clear();
@@ -420,7 +422,7 @@ namespace LcdMod.Client.Apps
                 return false;
             bool hasDetectedPlanets = false;
 
-            bool staticMode = AppConfig != null && AppConfig.DisplayMode == (int)DisplayMode.Legacy;
+            bool staticMode = GeneralComponent.DisplayMode == (int)DisplayMode.Legacy;
             if (staticMode)
                 return DrawStaticOrbitMap(ringSprites, planets);
 
@@ -1198,7 +1200,7 @@ namespace LcdMod.Client.Apps
                 LocHelper.GetLoc("DisplayName_TSS_ArtificialHorizon_AltitudeWarning"),
                 "Warning",
                 GetArtificialHorizonWarningColor(),
-                AppConfig?.Scale ?? Scale);
+                GeneralComponent.GetScale());
         }
 
         void DrawArtificialHorizonAltimeter(List<MySprite> sprites, int radarAltitude, float hudScale)
@@ -1415,12 +1417,12 @@ namespace LcdMod.Client.Apps
 
         Color GetArtificialHorizonWarningColor()
         {
-            return AppConfig?.WarningColor ?? ForegroundColor;
+            return ColorComponent.ResolveWarningColor();
         }
 
         Color GetArtificialHorizonErrorColor()
         {
-            return (AppConfig?.ErrorColor ?? ForegroundColor)
+            return ColorComponent.ResolveErrorColor()
                 .MulValue(2f)
                 .MulSaturation(2f);
         }
@@ -2394,7 +2396,7 @@ namespace LcdMod.Client.Apps
 
         float GetEffectiveVerticalFovDeg()
         {
-            float configuredFov = AppConfig?.FoV ?? MAP_VERTICAL_FOV_DEFAULT_DEG;
+            float configuredFov = StarMapComponent.FoV;
             return MathHelper.Clamp(
                 configuredFov > 0f ? configuredFov : MAP_VERTICAL_FOV_DEFAULT_DEG,
                 0.1f, 120f);
@@ -2913,7 +2915,7 @@ namespace LcdMod.Client.Apps
                     planet.Radius,
                     planet.GravityRange,
                     out jumpPoint,
-                    AppConfig.DisplayMode == 0))
+                    GeneralComponent.DisplayMode == 0))
             {
                 text = FormatPropertyLine("Jump", FormatingHelper.FormatBearing(GetReferenceMatrix(), jumpPoint));
                 return true;
@@ -2946,7 +2948,7 @@ namespace LcdMod.Client.Apps
 
         bool TryGetReferenceWorldMatrix(out MatrixD world)
         {
-            return _host.TryGetReferenceWorldMatrix(AppConfig?.ReferenceMode ?? (int)ReferenceMode.Auto, out world);
+            return _host.TryGetReferenceWorldMatrix(InteractionComponent.ReferenceMode, out world);
         }
 
         void ClickOnGps(string planetName, Vector3D position, Color color)
@@ -3049,7 +3051,7 @@ namespace LcdMod.Client.Apps
             var center = planet.ScreenPos;
             var radius = planet.MarkerRadius;
             var entry = AddChild(new InteractiveCircleEntry(center, radius, CursorType.Hand, planet.PlanetId));
-            if (AppConfig != null && AppConfig.DisplayMode == (int)DisplayMode.Legacy)
+            if (GeneralComponent.DisplayMode == (int)DisplayMode.Legacy)
             {
                 entry.SetTooltip(new InteractiveTooltip(
                     () => planet.Name,
@@ -3303,18 +3305,18 @@ namespace LcdMod.Client.Apps
 
         public override void OnMouseScroll(int delta, ref bool handled)
         {
-            if (AppConfig == null || delta == 0 || handled)
+            if (delta == 0 || handled)
                 return;
 
-            float magnification = SliderFov.FovToMagnification(AppConfig.FoV);
+            float magnification = SliderFov.FovToMagnification(StarMapComponent.FoV);
             float step = delta > 0 ? 1.1f : 1f / 1.1f;
             float nextMagnification = magnification * step;
             float nextFov = SliderFov.MagnificationToFov(nextMagnification);
 
-            if (Math.Abs(AppConfig.FoV - nextFov) <= 0.001f)
+            if (Math.Abs(StarMapComponent.FoV - nextFov) <= 0.001f)
                 return;
 
-            AppConfig.FoV = nextFov;
+            StarMapComponent.FoV = nextFov;
             _lastFovChangedFrame = GetCurrentGameFrame();
             _lastKnownConfigFov = float.NaN;
             _syncConfigNextRun = true;

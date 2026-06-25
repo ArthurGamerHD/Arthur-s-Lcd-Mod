@@ -2,7 +2,8 @@ using System.Collections.Generic;
 using System.Linq;
 using LcdMod.Client.Config;
 using LcdMod.Client.Helpers;
-using LcdMod.Common.Config.Interfaces;
+using LcdMod.Client.SurfaceScripts;
+using LcdMod.Common.Config.Components;
 using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
@@ -34,24 +35,33 @@ namespace LcdMod.Client.Terminal.Controls.Generic
 
         void Setter(IMyTerminalBlock block, List<MyTerminalControlListBoxItem> selection)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as IConfigWithReferenceBlock;
-            if (config == null)
+            var provider = GetReferenceBlockProvider(block);
+            var slot = GetReferenceSlot(provider);
+            if (slot == null)
                 return;
 
-            config.ReferenceBlock = ListBoxItemHelper.GetLongUserData(selection.FirstOrDefault());
-            RemapHelper.PinBlock(config.ReferenceBlock);
-            ConfigManager.Sync(block);
+            var selectedBlockId = ListBoxItemHelper.GetLongUserData(selection.FirstOrDefault());
+            if (!ConfigManager.ModifyComponentForCurrentSurface<BlockReferenceConfigComponent>(
+                    block,
+                    slot,
+                    config => config.EntityId = selectedBlockId))
+                return;
+
+            RemapHelper.PinBlock(selectedBlockId);
         }
 
         void Getter(IMyTerminalBlock block, List<MyTerminalControlListBoxItem> blockList,
             List<MyTerminalControlListBoxItem> selected)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as IConfigWithReferenceBlock;
-            if (config == null)
-                return;
-
             var provider = GetReferenceBlockProvider(block);
             if (provider == null)
+                return;
+
+            var slot = GetReferenceSlot(provider);
+            var reference = slot == null
+                ? null
+                : ConfigManager.GetComponentForCurrentSurface<BlockReferenceConfigComponent>(block, slot);
+            if (reference == null)
                 return;
 
             blockList.Add(new MyTerminalControlListBoxItem(
@@ -70,9 +80,9 @@ namespace LcdMod.Client.Terminal.Controls.Generic
                     referenceBlock.EntityId));
             }
 
-            AddConfiguredReferenceIfMissing(blockList, provider, config.ReferenceBlock);
+            AddConfiguredReferenceIfMissing(blockList, provider, reference.EntityId);
 
-            var selection = blockList.FirstOrDefault(a => ListBoxItemHelper.GetLongUserData(a) == config.ReferenceBlock);
+            var selection = blockList.FirstOrDefault(a => ListBoxItemHelper.GetLongUserData(a) == reference.EntityId);
             if (selection != null)
                 selected.Add(selection);
         }
@@ -140,6 +150,17 @@ namespace LcdMod.Client.Terminal.Controls.Generic
             var surfaceIndex = GetThisSurfaceIndex(block);
             return ConfigManager.GetAppsForBlock(block)
                 .FirstOrDefault(app => app.RotationOrSurfaceIndex == surfaceIndex) as IReferenceBlockSelection;
+        }
+
+        static string GetReferenceSlot(IReferenceBlockSelection provider)
+        {
+            if (provider is DockingAlignment)
+                return Constants.DOCKABLE_REFERENCE;
+
+            if (provider is RenderProxySurfaceScript)
+                return Constants.RENDER_PROXY_REFERENCE;
+
+            return null;
         }
     }
 }

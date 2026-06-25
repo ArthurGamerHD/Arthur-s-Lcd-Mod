@@ -1,3 +1,4 @@
+using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
@@ -12,13 +13,17 @@ using LcdMod.Client.Modules.Power;
 using LcdMod.Client.Utility;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
+using VRage.Game.ModAPI;
 using VRageMath;
 using ControlGrid = LcdMod.Client.Gui.ControlsTemplates.Panels.Grid;
-using ScreenConfigPower = LcdMod.Common.Config.Models.Apps.ScreenConfigPower;
+using LcdMod.Common.Config.Generation;
+using LcdMod.Common.Helpers;
 
 namespace LcdMod.Client.Apps
 {
-    internal sealed class EnergyDashboardApp : App, IApp
+    [LcdApp(7)]
+    [ConfigComponent(Constants.APP, typeof(PowerConfigComponent), PropertyName = "PowerComponent")]
+    internal sealed partial class EnergyDashboardApp : App, IApp
     {
         const int SCALE_TIER_COUNT = 6;
         const int GRAPH_BUCKET_COUNT = 10;
@@ -30,7 +35,6 @@ namespace LcdMod.Client.Apps
         const float PROGRESS_ROW_WEIGHT = 48f;
         const float BUTTON_ROW_WEIGHT = 24f;
 
-        readonly ScreenConfigPower _config;
         readonly List<Control> _children = new List<Control>();
         readonly List<EnergyDashboardPowerRow> _producerRows = new List<EnergyDashboardPowerRow>();
         readonly List<EnergyDashboardPowerRow> _consumerRows = new List<EnergyDashboardPowerRow>();
@@ -79,9 +83,8 @@ namespace LcdMod.Client.Apps
         PowerDataLease _lease;
         PowerSnapshot _latest;
 
-        public EnergyDashboardApp(ScreenConfigPower config, IAppHost host) : base(config, host)
+        public EnergyDashboardApp(IAppHost host) : base(host)
         {
-            _config = config;
             _rootGrid = AddChild(new ControlGrid(default(RectangleF), new[] { 1f },
                 new[] { PROGRESS_ROW_WEIGHT, BUTTON_ROW_WEIGHT, 90f, 140f }));
             _progressGrid = new ControlGrid(default(RectangleF), new[] { 1f, 1f, 1f }, new[] { 1f });
@@ -138,7 +141,7 @@ namespace LcdMod.Client.Apps
 
         InsetCellPanel CreateInsetCell(ControlTemplate child, float horizontalMarginPixels, float verticalMarginPixels)
         {
-            return new InsetCellPanel(child, Host, horizontalMarginPixels, verticalMarginPixels);
+            return new InsetCellPanel(child, () => GeneralComponent.GetScale(), horizontalMarginPixels, verticalMarginPixels);
         }
 
         static ControlGrid CreatePage(ControlTemplate graph, ControlTemplate list)
@@ -150,7 +153,6 @@ namespace LcdMod.Client.Apps
         }
 
         public override IReadOnlyList<Control> Children => _children;
-        public ScreenConfigPower Config => Host != null ? (Host.Config as ScreenConfigPower ?? _config) : _config;
 
         public override void Update()
         {
@@ -177,7 +179,7 @@ namespace LcdMod.Client.Apps
             var bounds = new RectangleF(Host.ViewBox.X, top, Host.ViewBox.Width,
                 Math.Max(0f, Host.ViewBox.Bottom - top));
             BindControls(GetSnapshots(_lease?.History));
-            _rootGrid.SetRows(CreateRootRows(bounds.Height, AppConfig.Scale));
+            _rootGrid.SetRows(CreateRootRows(bounds.Height, GeneralComponent.GetScale()));
             _rootGrid.Arrange(bounds);
             _rootGrid.Render(sprites);
             ClearDirtyAfterRender();
@@ -199,7 +201,7 @@ namespace LcdMod.Client.Apps
             _consumptionBar.FillColor = GetLoadColor(loadRatio);
             _productionBar.Current = _latest.Producers.KnownCurrentOutputW;
             _productionBar.Max = _latest.MaxAvailableW;
-            _productionBar.FillColor = Config.HeaderColor;
+            _productionBar.FillColor = GetHeaderColor();
             _chargeBar.Current = _latest.StoredEnergyWh;
             _chargeBar.Max = _latest.MaxStoredEnergyWh;
             _chargeBar.FillColor = GetBatteryIconColor(chargeRatio);
@@ -222,7 +224,7 @@ namespace LcdMod.Client.Apps
             _consumerGraph.Bind(snapshots, _consumerRows);
             _producerGraph.Bind(snapshots, _producerRows);
             _chargeGraph.Bind(snapshots, _chargeRows);
-            _contentPages.LayoutScale = AppConfig.Scale;
+            _contentPages.LayoutScale = GeneralComponent.GetScale();
             BindList(_consumerScrollPanel, _consumerWrapPanel);
             BindList(_producerScrollPanel, _producerWrapPanel);
             if (_chargePage.Parent != null)
@@ -252,7 +254,7 @@ namespace LcdMod.Client.Apps
 
         void BindList(ScrollPanel scrollPanel, VirtualizedWrapPanel<EnergyDashboardPowerRow> wrapPanel)
         {
-            float scale = AppConfig.Scale;
+            float scale = GeneralComponent.GetScale();
             float rowH = 44f * scale;
             wrapPanel.RowHeight = rowH;
             wrapPanel.MinimumColumnWidth = LIST_COLUMN_WRAP_WIDTH_PIXELS * scale;
@@ -271,7 +273,7 @@ namespace LcdMod.Client.Apps
                 return;
 
             var requester = Host.GridLogic;
-            var linkType = Config.GridLinkType;
+            var linkType = (GridLinkTypeEnum)PowerComponent.GridLinkTypeInternal;
             if (_lease != null && _lease.Service != null &&
                 ReferenceEquals(_lease.Service.Requester, requester) &&
                 _lease.Service.LinkType == linkType)
@@ -639,16 +641,15 @@ namespace LcdMod.Client.Apps
 
         int GetScaleTierIndex()
         {
-            var config = Config;
-            int tier = config.PowerHistoryTier >= 0 ? config.PowerHistoryTier : config.GraphWindowIndex;
+            int tier = PowerComponent.PowerHistoryTier >= 0 ? PowerComponent.PowerHistoryTier : PowerComponent.GraphWindowIndex;
             return Math.Max(0, Math.Min(tier, SCALE_TIER_COUNT - 1));
         }
 
         void SetScaleTierIndex(int tier)
         {
             tier = Math.Max(0, Math.Min(tier, SCALE_TIER_COUNT - 1));
-            Config.PowerHistoryTier = tier;
-            Config.GraphWindowIndex = tier;
+            PowerComponent.PowerHistoryTier = tier;
+            PowerComponent.GraphWindowIndex = tier;
             Host.RenderSprites();
         }
 
@@ -691,16 +692,16 @@ namespace LcdMod.Client.Apps
 
         Color GetLoadColor(float ratio)
         {
-            if (ratio >= 0.90f) return Config.ErrorColor;
-            if (ratio >= 0.70f) return Config.WarningColor;
-            return Config.HeaderColor;
+            if (ratio >= 0.90f) return ColorComponent.ResolveErrorColor();
+            if (ratio >= 0.70f) return ColorComponent.ResolveWarningColor();
+            return GetHeaderColor();
         }
 
         Color GetBatteryIconColor(float ratio)
         {
-            if (ratio < 0.15f) return Config.ErrorColor;
-            if (ratio < 0.35f) return Config.WarningColor;
-            return Config.HeaderColor;
+            if (ratio < 0.15f) return ColorComponent.ResolveErrorColor();
+            if (ratio < 0.35f) return ColorComponent.ResolveWarningColor();
+            return GetHeaderColor();
         }
 
         static Color ColorForSubtypeIndex(int index) => new Vector3(GetSubtypeHue(index), 0.85f, 0.75f).HSVtoColor();
@@ -737,7 +738,7 @@ namespace LcdMod.Client.Apps
         float GetContentTop()
         {
             return Host.TitleVisible
-                ? Host.ViewBox.Y + (40f * AppConfig.Scale * Host.Surface.FontSize)
+                ? Host.ViewBox.Y + (40f * GeneralComponent.GetScale() * Host.Surface.FontSize)
                 : Host.ViewBox.Y;
         }
 
@@ -745,16 +746,16 @@ namespace LcdMod.Client.Apps
         sealed class InsetCellPanel : Panel
         {
             readonly ControlTemplate _child;
-            readonly IAppHost _host;
+            readonly Func<float> _getScale;
             readonly float _horizontalMarginPixels;
             readonly float _verticalMarginPixels;
 
-            public InsetCellPanel(ControlTemplate child, IAppHost host, float horizontalMarginPixels,
+            public InsetCellPanel(ControlTemplate child, Func<float> getScale, float horizontalMarginPixels,
                 float verticalMarginPixels)
                 : base(default(RectangleF))
             {
                 _child = child;
-                _host = host;
+                _getScale = getScale;
                 _horizontalMarginPixels = Math.Max(0f, horizontalMarginPixels);
                 _verticalMarginPixels = Math.Max(0f, verticalMarginPixels);
                 AddChild(child);
@@ -765,7 +766,7 @@ namespace LcdMod.Client.Apps
                 if (_child == null)
                     return;
 
-                float scale = _host != null ? _host.Config.Scale : 1f;
+                float scale = _getScale != null ? _getScale() : 1f;
                 float x = Math.Min(Rect.Width * 0.5f, _horizontalMarginPixels * scale);
                 float y = Math.Min(Rect.Height * 0.5f, _verticalMarginPixels * scale);
 

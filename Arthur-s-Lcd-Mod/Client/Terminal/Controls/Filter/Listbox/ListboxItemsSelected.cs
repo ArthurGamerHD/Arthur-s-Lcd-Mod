@@ -2,11 +2,13 @@ using System.Collections.Generic;
 using System.Linq;
 using LcdMod.Client.Config;
 using LcdMod.Client.Helpers;
+using LcdMod.Common.Config.Components;
+using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
 using VRage;
+using VRage.Game;
 using VRage.ModAPI;
-using ScreenConfigWithItems = LcdMod.Common.Config.Models.Apps.ScreenConfigWithItems;
 
 namespace LcdMod.Client.Terminal.Controls.Filter.Listbox
 {
@@ -20,16 +22,25 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Listbox
         protected override void Getter(IMyTerminalBlock b, List<MyTerminalControlListBoxItem> itemList,
             List<MyTerminalControlListBoxItem> selected)
         {
-            var screenSettings = ConfigManager.GetConfigForCurrentScreen(b) as ScreenConfigWithItems;
+            var settings = ConfigManager.GetConfigForBlock(b);
+            var surface = settings == null ? null : settings.GetSurfaceConfig(GetThisSurfaceIndex(b));
+            var screenSettings = surface == null ? null : surface.TryGet<ItemSelectionConfigComponent>(Constants.ITEMS);
 
             if (screenSettings == null)
                 return;
 
-            itemList.AddRange(screenSettings.SelectedCategories
+            var selectedCategories = screenSettings.SelectedCategories ?? new string[0];
+            var selectedDefinitions = screenSettings.SelectedDefinition ?? new string[0];
+
+            itemList.AddRange(selectedCategories
                 .Select(g => ListBoxItemHelper.GetOrComputeListBoxItem(ItemCategoryHelper.GetGroupName(g), string.Empty, g)));
 
-            foreach (var item in screenSettings.SelectedItems)
+            foreach (var selectedDefinition in selectedDefinitions)
             {
+                MyDefinitionId item;
+                if (!MyDefinitionId.TryParse(selectedDefinition, out item))
+                    continue;
+
                 MyTerminalControlListBoxItem listBoxItem;
                 if (!ListBoxItemHelper.TryGetListBoxItem(item, out listBoxItem))
                 {

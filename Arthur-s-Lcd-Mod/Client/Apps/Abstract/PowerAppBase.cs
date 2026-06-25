@@ -1,3 +1,4 @@
+using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -11,7 +12,6 @@ using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Utility;
-using LcdMod.Common.Config.Models.Apps;
 using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using VRage;
@@ -24,9 +24,11 @@ using ColorExtensions = LcdMod.Client.Extensions.ColorExtensions;
 using VisualStackPanel = LcdMod.Client.Gui.ControlsTemplates.Panels.StackPanel.StackPanel;
 using VisualWrapPanel = LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel.WrapPanel;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.Apps.Abstract
 {
-    public abstract class PowerApp : App, IApp
+    [ConfigComponent(Constants.APP, typeof(PowerConfigComponent), PropertyName = "PowerComponent")]
+    public abstract partial class PowerApp : App, IApp
     {
         protected const float LINE = 22f;
         protected const float MINIMUM_COL_WIDTH = 400f;
@@ -111,12 +113,10 @@ namespace LcdMod.Client.Apps.Abstract
         bool _drawGridLineSprites;
         bool _drawGridVerticalLines;
         const float FOOTER_HEIGHT = 0f;
-
-        protected new ScreenConfigPower AppConfig => (ScreenConfigPower)base.AppConfig;
         IMyCubeBlock Block => Host.Block;
         Sandbox.ModAPI.Ingame.IMyTextSurface Surface => Host.Surface;
         RectangleF ViewBox => Host.ViewBox;
-        float Scale => AppConfig.Scale;
+        float Scale => GeneralComponent.GetScale();
         float FontScale => Host.Surface.FontSize;
         float LayoutScale => Scale * FontScale;
         Color ForegroundColor => Host.ForegroundColor;
@@ -124,7 +124,7 @@ namespace LcdMod.Client.Apps.Abstract
 
         protected abstract PowerEntryDefinition[] EntryDefinitions { get; }
 
-        protected PowerApp(ScreenConfigPower config, IAppHost host) : base(config, host)
+        protected PowerApp(IAppHost host) : base(host)
         {
             _interactiveHost = host as InteractiveSurfaceScript;
             if (_interactiveHost == null)
@@ -147,7 +147,7 @@ namespace LcdMod.Client.Apps.Abstract
         public override void LayoutChanged()
         {
             base.LayoutChanged();
-            _ascentColor = ColorExtensions.DeriveAccentColor(AppConfig.HeaderColor, .4f, 0.5);
+            _ascentColor = ColorExtensions.DeriveAccentColor(GetHeaderColor(), .4f, 0.5);
 
             RefreshEntryLabels();
             _maxLabelCache = string.Empty;
@@ -156,9 +156,6 @@ namespace LcdMod.Client.Apps.Abstract
 
         public override void Update()
         {
-            if (AppConfig == null)
-                return;
-
             SumPowerSources(Host.GridLogic, _totalsByKey);
             UpdateEntryValues();
             BuildVisibleEntries();
@@ -176,7 +173,7 @@ namespace LcdMod.Client.Apps.Abstract
             var sprites = new List<MySprite>();
             _caretY = ContentTop();
 
-            switch (AppConfig.DisplayMode)
+            switch (GeneralComponent.DisplayMode)
             {
                 case (int)DisplayMode.Grid:
                     DrawGridLike(
@@ -185,9 +182,9 @@ namespace LcdMod.Client.Apps.Abstract
                         _maxLabelCache,
                         _currentLabelCache,
                         false,
-                        AppConfig.DrawLines,
-                        AppConfig.DrawLines,
-                        AppConfig.DrawLines);
+                        GeneralComponent.DrawLines,
+                        GeneralComponent.DrawLines,
+                        GeneralComponent.DrawLines);
                     break;
                 default:
                     DrawDefaultView(
@@ -277,7 +274,7 @@ namespace LcdMod.Client.Apps.Abstract
         void BuildVisibleEntries()
         {
             _visibleEntries.Clear();
-            var hideEmpty = AppConfig == null || AppConfig.HideEmpty;
+            var hideEmpty = PowerComponent.HideEmpty;
             for (int i = 0; i < _entriesOrdered.Length; i++)
             {
                 if (!hideEmpty || _entriesOrdered[i].DetectedBlocks > 0)
@@ -303,7 +300,7 @@ namespace LcdMod.Client.Apps.Abstract
                 return;
 
             _producers.Clear();
-            _producers.AddRange(gridLogic.GetTerminalBlocks<IMyPowerProducer>(AppConfig.GridLinkType));
+            _producers.AddRange(gridLogic.GetTerminalBlocks<IMyPowerProducer>((GridLinkTypeEnum)PowerComponent.GridLinkTypeInternal));
 
             for (int i = 0; i < _producers.Count; i++)
             {
@@ -448,7 +445,7 @@ namespace LcdMod.Client.Apps.Abstract
             if (children == null)
                 return;
 
-            if (AppConfig.DrawLines)
+            if (GeneralComponent.DrawLines)
                 DrawHorizontalLines(sprites, ForegroundColor, "Circle", _listPanel.RowHeight);
 
             RenderPanelChildren(children, sprites);
@@ -496,7 +493,7 @@ namespace LcdMod.Client.Apps.Abstract
 
         void DrawWrapPanelLines(List<MySprite> sprites, WrapPanelLayout layout, bool drawVerticalLines)
         {
-            var lineColor = new Color(AppConfig.HeaderColor.R, AppConfig.HeaderColor.G, AppConfig.HeaderColor.B);
+            var lineColor = new Color(GetHeaderColor().R, GetHeaderColor().G, GetHeaderColor().B);
             DrawHorizontalLines(sprites, lineColor, "SquareSimple", layout.RowHeight);
 
             if (!drawVerticalLines)
@@ -615,7 +612,7 @@ namespace LcdMod.Client.Apps.Abstract
 
             if (!drawAsLines)
             {
-                var backgroundColor = entry.Current <= 0 ? AppConfig.ErrorColor : AppConfig.HeaderColor;
+                var backgroundColor = entry.Current <= 0 ? ColorComponent.ResolveErrorColor() : GetHeaderColor();
                 var hsv = VRageMath.ColorExtensions.ColorToHSV(backgroundColor);
                 hsv.Z *= 0.2f;
 
@@ -634,7 +631,7 @@ namespace LcdMod.Client.Apps.Abstract
             var iconRect = slots.Item1;
             var numberRect = slots.Item2;
             var nameRect = slots.Item3;
-            var foreground = entry.Current <= 0 && drawAsLines ? AppConfig.ErrorColor : Surface.ScriptForegroundColor;
+            var foreground = entry.Current <= 0 && drawAsLines ? ColorComponent.ResolveErrorColor() : Surface.ScriptForegroundColor;
 
             DrawCellPie(sprites, iconRect, entry.Usage);
 

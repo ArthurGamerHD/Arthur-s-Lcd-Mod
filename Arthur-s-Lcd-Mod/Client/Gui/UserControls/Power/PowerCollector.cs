@@ -1,10 +1,11 @@
+using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
+using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.GridData;
 using Sandbox.ModAPI;
 using VRageMath;
-using ScreenConfigPower = LcdMod.Common.Config.Models.Apps.ScreenConfigPower;
-
+using VRage.Game.ModAPI;
 namespace LcdMod.Client.Gui.UserControls.Power
 {
     internal abstract class PowerCollector
@@ -25,16 +26,33 @@ namespace LcdMod.Client.Gui.UserControls.Power
             public float Velocity;
         }
 
-        protected readonly ScreenConfigPower ScreenConfigPower;
+        readonly IAppHost _host;
+        readonly Func<PowerConfigComponent> _getPower;
+        readonly Func<ColorConfigComponent> _getColors;
 
-        protected PowerCollector(ScreenConfigPower screenConfig)
+        protected PowerCollector(
+            IAppHost host,
+            Func<PowerConfigComponent> getPower,
+            Func<ColorConfigComponent> getColors)
         {
-            ScreenConfigPower = screenConfig;
+            _host = host;
+            if (getPower == null) throw new ArgumentNullException(nameof(getPower));
+            if (getColors == null) throw new ArgumentNullException(nameof(getColors));
+            _getPower = getPower;
+            _getColors = getColors;
         }
+
+        protected PowerConfigComponent PowerComponent => _getPower();
+        ColorConfigComponent Colors => _getColors();
+        IMyTerminalBlock ParentBlock => _host.Block as IMyTerminalBlock;
 
         public abstract void Collect(GridLogic grid, List<PowerEntry> entries);
 
-        protected bool HideEmpty => ScreenConfigPower == null || ScreenConfigPower.HideEmpty;
+        protected bool HideEmpty => PowerComponent.HideEmpty;
+        protected GridLinkTypeEnum GridLinkType => (GridLinkTypeEnum)PowerComponent.GridLinkTypeInternal;
+        protected Color HeaderColor => Colors == null ? Color.White : Colors.ResolveHeaderColor(ParentBlock);
+        protected Color WarningColor => Colors == null ? new Color(224, 160, 16) : Colors.ResolveWarningColor();
+        protected Color ErrorColor => Colors == null ? new Color(96, 32, 32) : Colors.ResolveErrorColor();
 
         public abstract string FooterPrefix { get; }
         public abstract FillableTexture FillableTexture { get; }

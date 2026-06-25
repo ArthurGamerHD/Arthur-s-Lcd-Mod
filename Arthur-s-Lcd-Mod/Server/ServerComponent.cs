@@ -87,14 +87,11 @@ namespace LcdMod.Server
 
         public void HandleSyncConfig(ReceivedPacketEventArgs args)
         {
-            var packet = args.UnWrap<NetworkPackageSyncScreenConfig>();
+            var packet = args.UnWrap<NetworkPackageSyncComponentConfig>();
             var block = MyEntities.GetEntityById(packet.BlockId) as IMyFunctionalBlock;
             if (block == null)
                 return;
 
-            // The network payload serializes the component graph. Remapping still works through
-            // the temporary inherited facade, so materialize it before PinBlocks inspects it.
-            packet.Config?.EnsureRuntimeScreens();
             RemapHelper.PinBlocks(packet.Config);
             ScreenProviderConfigStorage.Save(block, packet.Config);
         }

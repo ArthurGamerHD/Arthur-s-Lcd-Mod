@@ -1,3 +1,4 @@
+using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Apps;
@@ -7,7 +8,6 @@ using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Gui.UserControls.Power;
 using LcdMod.Client.Helpers;
-using LcdMod.Common.Config.Models.Apps;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 
@@ -41,10 +41,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
                 if (entry == null || sprites == null)
                     return;
 
-                DrawFarmSlotVisual(sprites, entry, Bounds, GetFarmConfig());
+                DrawFarmSlotVisual(sprites, entry, Bounds, GetFarmColors());
             }
 
-            void DrawFarmSlotVisual(List<MySprite> sprites, FarmApp.FarmEntry entry, RectangleF bounds, ScreenConfigPower config)
+            void DrawFarmSlotVisual(List<MySprite> sprites, FarmApp.FarmEntry entry, RectangleF bounds, ColorConfigComponent colors)
             {
                 float width = bounds.Width;
                 float height = bounds.Height;
@@ -72,7 +72,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
                 float barsTop = bounds.Y + iconSize + iconBarGap;
                 var barTopLeft = new Vector2(centerX - barWidth / 2f, barsTop);
                 DrawFarmLevelBars(sprites, entry, barTopLeft, new Vector2(barWidth, barHeight), barGap,
-                    config,
+                    colors,
                     backgroundColor, containerBackgroundColor);
 
                 sprites.Add(new MySprite
@@ -139,12 +139,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
                 Vector2 topLeft,
                 Vector2 size,
                 float gap,
-                ScreenConfigPower config,
+                ColorConfigComponent colors,
                 Color backgroundColor,
                 Color containerBackgroundColor)
             {
                 var growthColor = GrowthBarColor.EnsureMinimalContrast(backgroundColor);
-                var waterColor = GetWaterBarColor(config, entry.WaterRatio, backgroundColor);
+                var waterColor = GetWaterBarColor(colors, entry.WaterRatio, backgroundColor);
 
                 BarPanel.CreateSprites(
                     sprites,
@@ -165,27 +165,27 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
                     cornerRadius: size.Y * .5f);
             }
 
-            Color GetWaterBarColor(ScreenConfigPower config, float waterRatio, Color backgroundColor)
+            Color GetWaterBarColor(ColorConfigComponent colors, float waterRatio, Color backgroundColor)
             {
                 Color color;
                 if (waterRatio < .3f)
-                    color = config?.ErrorColor ?? ResolveColor(ThemeResources.ErrorColor);
+                    color = colors == null ? ResolveColor(ThemeResources.ErrorColor) : colors.ResolveErrorColor();
                 else if (waterRatio < .6f)
                     // TODO: move warning/error bar colors into the theme.
-                    color = config?.WarningColor ?? new Color(224, 160, 16);
+                    color = colors == null ? new Color(224, 160, 16) : colors.ResolveWarningColor();
                 else
                     color = WaterBarColor;
 
                 return color.EnsureMinimalContrast(backgroundColor);
             }
 
-            ScreenConfigPower GetFarmConfig()
+            ColorConfigComponent GetFarmColors()
             {
                 for (ControlTemplate node = this; node != null; node = node.Parent)
                 {
                     var app = node.DataContext as FarmApp;
                     if (app != null)
-                        return app.Config;
+                        return app.FarmColors;
                 }
 
                 return null;

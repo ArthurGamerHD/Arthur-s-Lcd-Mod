@@ -9,8 +9,10 @@ using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
 using VRageMath;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
+    [LcdSurface(typeof(LcdMod.Client.Apps.BSoDTestApp))]
 #if DEBUG
     [MyTextSurfaceScript(ID, TITLE)]
 #endif
@@ -20,8 +22,6 @@ namespace LcdMod.Client.SurfaceScripts
         public const string TITLE = "LcdMod BSoD Test";
 
         readonly List<MySprite> _sprites = new List<MySprite>();
-
-        protected override ConfigKind ConfigKind => ConfigKind.General;
         protected override string DefaultTitle => TITLE;
         public override IApp App => null;
 

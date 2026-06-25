@@ -1,12 +1,12 @@
 using System;
 using System.Text;
 using LcdMod.Client.Config;
+using LcdMod.Common.Config.Components;
 
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
 using VRageMath;
-using ScreenConfigStarMap = LcdMod.Common.Config.Models.Apps.ScreenConfigStarMap;
 
 namespace LcdMod.Client.Terminal.Controls.Generic
 {
@@ -39,18 +39,15 @@ namespace LcdMod.Client.Terminal.Controls.Generic
 
         void Setter(IMyTerminalBlock block, float value)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigStarMap;
-            if (config == null)
-                return;
-
             float mag = MathHelper.Clamp(value, MIN_MAG, MAX_MAG);
-            config.FoV = MagnificationToFov(mag);
-            ConfigManager.Sync(block);
+            ConfigManager.ModifyComponentForTerminalApp<StarMapConfigComponent>(
+                block,
+                config => config.FoV = MagnificationToFov(mag));
         }
 
         float Getter(IMyTerminalBlock block)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigStarMap;
+            var config = ConfigManager.GetComponentForTerminalApp<StarMapConfigComponent>(block);
             if (config == null)
                 return 1f;
 

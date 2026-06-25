@@ -11,8 +11,10 @@ using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
 using VRageMath;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
+    [LcdSurface(typeof(LcdMod.Client.Apps.InputOutputApp))]
 #if EXPERIMENTAL
     [MyTextSurfaceScript(ID, "Input / Output")]
 #endif
@@ -29,9 +31,6 @@ namespace LcdMod.Client.SurfaceScripts
             block, size)
         {
         }
-
-        protected override ConfigKind ConfigKind => ConfigKind.WithItems;
-
         public override IApp App => _app;
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
         
@@ -43,13 +42,10 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override void SafeRun()
         {
-            if (AppConfig == null)
-                return;
-
             base.SafeRun();
 
             if (_app == null)
-                _app = new InputOutputApp(AppConfig, this);
+                _app = new InputOutputApp(this);
 
             _app.Update();
 

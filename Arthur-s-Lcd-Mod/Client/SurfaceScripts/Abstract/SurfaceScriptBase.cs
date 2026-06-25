@@ -16,6 +16,7 @@ using LcdMod.Client.ScreenAreas;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Terminal.Controls.Groups;
 using LcdMod.Client.Utility;
+using LcdMod.Common.Config.Components;
 using LcdMod.Common.Config.Models;
 using LcdMod.Common.Helpers;
 using Sandbox.Game.Entities;
@@ -94,7 +95,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         protected virtual string DefaultTitle => "<Title not Set>";
 
-        public float ConfiguredScale => Config?.Scale ?? 1f;
+        public float ConfiguredScale => GeneralComponent.GetScale();
         protected float FontScale => _userFontScale <= 0f ? 1f : _userFontScale;
         protected float LayoutScale => ConfiguredScale * FontScale;
 
@@ -110,9 +111,12 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         public bool TitleVisible { get; private set; } = true;
         public override ScriptUpdate NeedsUpdate => ScriptUpdate.Update10;
 
-        public ScreenConfigGeneral Config { get; protected set; }
-        public ScreenConfigColorable ColorableConfig => Config as ScreenConfigColorable;
-        protected abstract ConfigKind ConfigKind { get; }
+        public SurfaceConfig Config { get; protected set; }
+        IComponentContainer IAppHost.Config => Config;
+        public GeneralConfigComponent GeneralComponent => Config.GetComponent<GeneralConfigComponent>();
+        public ColorConfigComponent ColorComponent => Config.GetComponent<ColorConfigComponent>();
+        public InteractiveConfigComponent InteractionComponent => Config.GetComponent<InteractiveConfigComponent>();
+        protected abstract AppType AppType { get; }
 
         public bool Dirty => _dirty;
         bool _dirty;
@@ -147,6 +151,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         }
 
         public int RotationOrSurfaceIndex => _rotationOrSurfaceIndex;
+        public int SurfaceIndex => Config.SurfaceIndex;
 
         public abstract IApp App { get; }
 
@@ -250,14 +255,18 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
             ProviderConfig = providerConfig;
 
-            if (Config == null)
+            var index = Config == null ? RotationOrSurfaceIndex : Config.SurfaceIndex;
+            if (index < 0)
                 return;
 
-            var index = Config.ScreenIndex;
-            if (index < 0 || providerConfig.Screens == null || index >= providerConfig.Screens.Count)
+            providerConfig.EnsureSurfaceApp(index, AppType);
+            var persistedSurface = providerConfig.GetSurfaceConfig(index);
+            if (persistedSurface == null)
                 return;
 
-            Config = providerConfig.Screens[index];
+            Config = providerConfig.CanWriteConfig(persistedSurface)
+                ? persistedSurface
+                : persistedSurface.Clone();
         }
 
         public override void Dispose()
@@ -383,9 +392,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             if (!_init)
                 Init();
 
-            if (_init)
-                Instances.RefreshActiveInstance(this);
-
             IsScreenReadyToRender = false;
 
             if (Config == null)
@@ -393,14 +399,17 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 GetSettings((IMyTextSurface)Surface, Block);
                 return;
             }
+            
+            if (_init)
+                Instances.RefreshActiveInstance(this);
 
             if (Math.Abs(_userPadding - Surface.TextPadding) > .01f ||
-                Math.Abs(_userScale - Config.Scale) > .001f ||
+                Math.Abs(_userScale - GeneralComponent.GetScale()) > .001f ||
                 Math.Abs(_userFontScale - Surface.FontSize) > .001f ||
                 !string.Equals(_userFont, Surface.Font, StringComparison.Ordinal) ||
                 BackgroundColor != _backgroundColor ||
                 ForegroundColor != _foregroundColor ||
-                TitleVisible != Config.TitleVisible)
+                TitleVisible != GeneralComponent.TitleVisible)
                 LayoutChanged();
 
             if (GridLogic == null)
@@ -417,7 +426,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
             if (GridLogic == null)
             {
-                DrawLoadingScreen(Config.Scale);
+                DrawLoadingScreen(GeneralComponent.GetScale());
                 return;
             }
 
@@ -504,9 +513,9 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             {
                 if (surface.Equals(surfaceProvider.GetSurface(index)))
                 {
-                    ScreenConfigGeneral config;
+                    SurfaceConfig config;
                     var providerConfig = ProviderConfig;
-                    ConfigManager.LoadSettings(block, index, ConfigKind, ref providerConfig, out config);
+                    ConfigManager.LoadSettings(block, index, AppType, ref providerConfig, out config);
                     ProviderConfig = providerConfig;
                     Config = config;
                     return;
@@ -776,17 +785,17 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         protected Color GetHeaderColor()
         {
-            return ColorableConfig?.HeaderColor ?? ForegroundColor;
+            return ColorComponent.ResolveHeaderColor(Block as IMyTerminalBlock);
         }
 
         protected Color GetWarningColor()
         {
-            return ColorableConfig?.WarningColor ?? new Color(224, 160, 16);
+            return ColorComponent.ResolveWarningColor();
         }
 
         protected Color GetErrorColor()
         {
-            return ColorableConfig?.ErrorColor ?? new Color(96, 32, 32);
+            return ColorComponent.ResolveErrorColor();
         }
 
         protected virtual void DrawCellBackground(List<MySprite> frame, KeyValuePair<MyItemType, double> item,
@@ -889,13 +898,13 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 return; // we got disposed
 
             _userPadding = Surface.TextPadding;
-            _userScale = Config.Scale;
+            _userScale = GeneralComponent.GetScale();
             _userFontScale = Surface.FontSize;
             _userFont = Surface.Font;
             _backgroundColor = BackgroundColor;
             _foregroundColor = ForegroundColor;
             LocalizedTitleCache = string.Empty;
-            TitleVisible = Config.TitleVisible;
+            TitleVisible = GeneralComponent.TitleVisible;
             InvalidateTitleCache();
             UpdateViewBox();
             _backgroundGrids.Clear();
@@ -916,7 +925,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         protected void AddLoadingScreenSprites(List<MySprite> sprites, float scale = 1f, bool drawTitle = true)
         {
             AddBackground(sprites);
-            if (drawTitle && Config != null)
+            if (drawTitle)
                 DrawTitle(sprites);
             DrawLoadingFrame(sprites, scale);
         }
@@ -1141,7 +1150,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             if (ScreenAreaGeometry.IsTransparentScreenArea(Block, RotationOrSurfaceIndex))
                 return GetDefaultOpacity();
 
-            return Config.BackgroundAlpha.Get(GetDefaultOpacity);
+            return GeneralComponent.BackgroundAlpha.Get(GetDefaultOpacity);
         }
 
         byte GetDefaultOpacity() => Surface.BackgroundAlpha;

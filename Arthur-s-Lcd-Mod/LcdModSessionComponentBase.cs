@@ -281,11 +281,11 @@ namespace LcdMod
         internal static void ApplySyncedConfig(IMyFunctionalBlock block, ScreenProviderConfig settings, ScreenProviderConfig source)
         {
             settings.CopyFrom(source);
-            settings.BindRuntimeParent(block);
-            ConfigManager.Save(block, settings);
 
             foreach (var app in ConfigManager.GetAppsForBlock(block))
                 app.UseProviderConfig(settings);
+
+            ConfigManager.Save(block, settings);
 
             foreach (var app in ConfigManager.GetAppsForBlock(block))
                 app.RequestRedraw();

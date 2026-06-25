@@ -1,12 +1,13 @@
+using LcdMod.Common.Config.Components;
 using System;
 using LcdMod.Client.Apps.Abstract;
 using Sandbox.ModAPI;
 using SpaceEngineers.Game.ModAPI;
-using ScreenConfigPower = LcdMod.Common.Config.Models.Apps.ScreenConfigPower;
-
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.Apps
 {
-    internal sealed class GeneratorsApp : PowerApp
+    [LcdApp(6)]
+    internal sealed partial class GeneratorsApp : PowerApp
     {
         static readonly PowerEntryDefinition[] Definitions =
         {
@@ -19,7 +20,7 @@ namespace LcdMod.Client.Apps
 
         protected override PowerEntryDefinition[] EntryDefinitions => Definitions;
 
-        public GeneratorsApp(ScreenConfigPower config, IAppHost host) : base(config, host)
+        public GeneratorsApp(IAppHost host) : base(host)
         {
             InitializeEntries();
         }

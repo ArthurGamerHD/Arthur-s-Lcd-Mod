@@ -1,8 +1,8 @@
+using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
-using LcdMod.Common.Config.Models.Apps;
 using VRage.Game;
 using VRageMath;
 using static LcdMod.Common.Helpers.Constants;

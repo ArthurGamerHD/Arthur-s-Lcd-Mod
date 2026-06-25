@@ -1,3 +1,4 @@
+using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,7 +7,6 @@ using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
-using LcdMod.Common.Config.Models.Apps;
 using Sandbox.ModAPI;
 using SpaceEngineers.Game.ModAPI;
 using VRage.Game.GUI.TextPanel;
@@ -18,9 +18,15 @@ using static LcdMod.Common.Helpers.Constants;
 using ColorExtensions = LcdMod.Client.Extensions.ColorExtensions;
 using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
 
+using LcdMod.Common.Config.Generation;
+using LcdMod.Common.Helpers;
+
 namespace LcdMod.Client.Apps
 {
-    internal sealed class IntegrityMonitorApp : App
+    [LcdApp(10)]
+    [ConfigComponent(APP, typeof(DiagnosticConfigComponent), PropertyName = "DiagnosticComponent")]
+    [ConfigComponent(PROJECTOR_REFERENCE, typeof(BlockReferenceConfigComponent), PropertyName = "ProjectorReferenceComponent")]
+    internal sealed partial class IntegrityMonitorApp : App
     {
         public static readonly List<MyTerminalControlComboBoxItem> IntegrityAxes = new List<MyTerminalControlComboBoxItem>
         {
@@ -95,11 +101,10 @@ namespace LcdMod.Client.Apps
 
         IMyProjector _projector;
 
-        new ScreenConfigDiagnostic AppConfig => (ScreenConfigDiagnostic)base.AppConfig;
         IMyCubeBlock Block => Host.Block;
         Sandbox.ModAPI.Ingame.IMyTextSurface Surface => Host.Surface;
         RectangleF ViewBox => Host.ViewBox;
-        float Scale => AppConfig.Scale;
+        float Scale => GeneralComponent.GetScale();
         float FontScale => Host.Surface.FontSize;
         Color BackgroundColor => Host.BackgroundColor;
         float FooterHeight
@@ -114,7 +119,7 @@ namespace LcdMod.Client.Apps
 
         public string Title => _customTitle ?? TITLE;
 
-        public IntegrityMonitorApp(ScreenConfigDiagnostic config, IAppHost host) : base(config, host)
+        public IntegrityMonitorApp(IAppHost host) : base(host)
         {
         }
 
@@ -133,10 +138,7 @@ namespace LcdMod.Client.Apps
             _legendHasMissing = false;
             _legendHasDamaged = false;
 
-            if (AppConfig == null)
-                return;
-
-            if (AppConfig.ReferenceBlock == 0)
+            if (ProjectorReferenceComponent.EntityId == 0)
             {
                 DrawEmptyWithFilters();
                 return;
@@ -147,7 +149,7 @@ namespace LcdMod.Client.Apps
             FindProjector(grid, ref _projector);
 
             if ((_projector == null || !_projector.IsFunctional || _projector.Closed)
-                && AppConfig.ReferenceBlock != 0
+                && ProjectorReferenceComponent.EntityId != 0
                 && _depthCache != null)
             {
                 int blinkStep = GetTimeStep(0.5f);
@@ -158,7 +160,7 @@ namespace LcdMod.Client.Apps
                 if (!_frameBuffer.Any())
                 {
                     DrawDepthMap(_frameBuffer, (DepthMap2D)_depthCache, _view,
-                        MathHelper.ToRadians(AppConfig.Rotation), AppConfig.Scale);
+                        MathHelper.ToRadians(DiagnosticComponent.Rotation), GeneralComponent.GetScale());
                     DrawFooter(_frameBuffer);
                 }
 
@@ -172,8 +174,8 @@ namespace LcdMod.Client.Apps
                                 ? "SignalConnectivity_State_NotOperational"
                                 : "SignalConnectivity_State_NoLaserLink"),
                             LocHelper.GetLoc("DisplayName_Block_Projector")), "Warning",
-                        ColorExtensions.MulValue(AppConfig.ErrorColor, 2).MulSaturation(2),
-                        AppConfig.Scale);
+                        ColorExtensions.MulValue(ColorComponent.ResolveErrorColor(), 2).MulSaturation(2),
+                        GeneralComponent.GetScale());
 
                 return;
             }
@@ -187,7 +189,7 @@ namespace LcdMod.Client.Apps
                 Host.DrawTitle(_sprites);
                 Host.DrawMessage(_sprites,
                     (_projector.CustomName ?? string.Empty) + " " + LocHelper.GetLoc("AssemblerState_Disabled"),
-                    "GridPower", AppConfig.WarningColor, AppConfig.Scale);
+                    "GridPower", ColorComponent.ResolveWarningColor(), GeneralComponent.GetScale());
                 DrawFooter(_sprites);
                 return;
             }
@@ -219,7 +221,7 @@ namespace LcdMod.Client.Apps
                     _sprites.Clear();
                     Host.AddBackground(_sprites);
                     Host.DrawTitle(_sprites);
-                    Host.DrawLoading(_sprites, AppConfig.Scale);
+                    Host.DrawLoading(_sprites, GeneralComponent.GetScale());
                     DrawFooter(_sprites);
                     return;
                 }
@@ -235,12 +237,12 @@ namespace LcdMod.Client.Apps
 
                 CachedVersion = map3D.LastUpdate;
 
-                _view = (View)AppConfig.DisplayMode;
+                _view = (View)GeneralComponent.DisplayMode;
                 var depth = BuildDepthMap(map3D.Cells, map3D.DamagedCells, map3D.MissingCells, map3D.CellTypes, _view);
                 _depthCache = depth;
 
                 _frameBuffer.Clear();
-                DrawDepthMap(_frameBuffer, depth, _view, MathHelper.ToRadians(AppConfig.Rotation), AppConfig.Scale);
+                DrawDepthMap(_frameBuffer, depth, _view, MathHelper.ToRadians(DiagnosticComponent.Rotation), GeneralComponent.GetScale());
                 DrawFooter(_frameBuffer);
 
                 _sprites.Clear();
@@ -254,7 +256,7 @@ namespace LcdMod.Client.Apps
                 Host.AddBackground(_sprites);
                 Host.DrawTitle(_sprites);
                 Host.DrawMessage(_sprites, LocHelper.GetLoc("ScreenDebugOfficial_ErrorLogCaption") + "\n" + e.Message,
-                    "Warning", AppConfig.ErrorColor, AppConfig.Scale);
+                    "Warning", ColorComponent.ResolveErrorColor(), GeneralComponent.GetScale());
                 DrawFooter(_sprites);
             }
         }
@@ -272,7 +274,7 @@ namespace LcdMod.Client.Apps
             Host.AddBackground(_sprites);
             Host.DrawTitle(_sprites);
             Host.DrawMessage(_sprites, LocHelper.GetLoc("ScreenBlueprintsRew_NoBlueprints"),
-                "Warning", AppConfig.WarningColor, AppConfig.Scale);
+                "Warning", ColorComponent.ResolveWarningColor(), GeneralComponent.GetScale());
         }
 
         void DrawEmpty()
@@ -280,7 +282,7 @@ namespace LcdMod.Client.Apps
             _sprites.Clear();
             Host.AddBackground(_sprites);
             Host.DrawTitle(_sprites);
-            Host.DrawMessage(_sprites, LocHelper.Empty, "Warning", AppConfig.WarningColor, AppConfig.Scale);
+            Host.DrawMessage(_sprites, LocHelper.Empty, "Warning", ColorComponent.ResolveWarningColor(), GeneralComponent.GetScale());
         }
 
         static int GetTimeStep(float secondsPerStep)
@@ -1049,16 +1051,16 @@ namespace LcdMod.Client.Apps
 
         void FindProjector(IMyCubeGrid grid, ref IMyProjector projector)
         {
-            if (AppConfig.ReferenceBlock == 0)
+            if (ProjectorReferenceComponent.EntityId == 0)
             {
                 projector = null;
                 return;
             }
 
-            if (projector != null && projector.EntityId == AppConfig.ReferenceBlock)
+            if (projector != null && projector.EntityId == ProjectorReferenceComponent.EntityId)
                 return;
 
-            var entity = MyAPIGateway.Entities.GetEntityById(AppConfig.ReferenceBlock) as IMyProjector;
+            var entity = MyAPIGateway.Entities.GetEntityById(ProjectorReferenceComponent.EntityId) as IMyProjector;
             projector = entity?.CubeGrid.IsInSameLogicalGroupAs(grid) ?? false ? entity : null;
         }
 

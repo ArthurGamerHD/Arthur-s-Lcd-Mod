@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using LcdMod.Common.Config;
 using LcdMod.Common.Config.Components;
 using LcdMod.Common.Config.Models;
+using LcdMod.Common.Helpers;
 using LcdMod.Migration.Legacy.V0;
+using VRage.Game.ModAPI;
 
 namespace LcdMod.Migration
 {
@@ -30,7 +32,6 @@ namespace LcdMod.Migration
                 }
             }
 
-            result.EnsureRuntimeScreens();
             return result;
         }
 
@@ -39,11 +40,12 @@ namespace LcdMod.Migration
             var app = new SurfaceConfig
             {
                 SurfaceIndex = source.ScreenIndex,
-                AppKind = GetAppKind(source),
+                LegacyAppKind = GetAppKind(source),
+                AppTypeId = 0,
                 Components = new List<ConfigComponentEntry>()
             };
 
-            app.Set(ConfigSlots.General, new GeneralConfigComponent
+            app.Set(Constants.GENERAL, new GeneralConfigComponent
             {
                 TitleVisible = source.TitleVisible,
                 InternalScale = source.InternalScale,
@@ -56,7 +58,7 @@ namespace LcdMod.Migration
             var colorable = source as LegacyScreenConfigColorable;
             if (colorable != null)
             {
-                app.Set(ConfigSlots.Colors, new ColorConfigComponent
+                app.Set(Constants.COLORS, new ColorConfigComponent
                 {
                     HeaderColor = Copy(colorable.HeaderColorInternal),
                     ErrorColor = Copy(colorable.ErrorColorInternal),
@@ -68,7 +70,7 @@ namespace LcdMod.Migration
             var interactive = source as LegacyScreenConfigInteractive;
             if (interactive != null)
             {
-                app.Set(ConfigSlots.Interaction, new InteractiveConfigComponent
+                app.Set(Constants.INTERACTION, new InteractiveConfigComponent
                 {
                     CursorScale = interactive.CursorScale,
                     RequiresAlt = interactive.RequiresAlt,
@@ -80,7 +82,7 @@ namespace LcdMod.Migration
             var filters = source as LegacyScreenConfigWithFilters;
             if (filters != null)
             {
-                app.Set(ConfigSlots.Filters, new FilterConfigComponent
+                app.Set(Constants.FILTERS, new FilterConfigComponent
                 {
                     SortMethod = filters.SortMethod,
                     HideEmpty = filters.HideEmpty
@@ -90,7 +92,7 @@ namespace LcdMod.Migration
             var blocks = source as LegacyScreenConfigWithBlocks;
             if (blocks != null)
             {
-                app.Set(ConfigSlots.Blocks, new BlockSelectionConfigComponent
+                app.Set(Constants.BLOCKS, new BlockSelectionConfigComponent
                 {
                     SelectedBlocks = Copy(blocks.SelectedBlocks),
                     SelectedGroups = Copy(blocks.SelectedGroups),
@@ -103,7 +105,7 @@ namespace LcdMod.Migration
             var items = source as LegacyScreenConfigWithItems;
             if (items != null)
             {
-                app.Set(ConfigSlots.Items, new ItemSelectionConfigComponent
+                app.Set(Constants.ITEMS, new ItemSelectionConfigComponent
                 {
                     SelectedDefinition = Copy(items.SelectedDefinition),
                     SelectedCategories = Copy(items.SelectedCategories)
@@ -117,82 +119,80 @@ namespace LcdMod.Migration
 
         static int GetAppKind(LegacyScreenConfigGeneral source)
         {
-            if (source is LegacyScreenConfigProjector) return 2;
-            if (source is LegacyScreenConfigDiagnostic) return 3;
-            if (source is LegacyScreenConfigOreScanner) return 9;
-            if (source is LegacyScreenConfigRadar) return 8;
-            if (source is LegacyScreenConfigPower) return 10;
-            if (source is LegacyScreenConfigStarMap) return 11;
-            if (source is LegacyScreenConfigDocking) return 13;
-            if (source is LegacyScreenConfigRaycast) return 15;
-            if (source is LegacyScreenConfigRenderProxy) return 16;
-            if (source is LegacyScreenConfigMarkdown) return 17;
-            if (source is LegacyScreenConfigButtonPanel) return 18;
-            if (source is LegacyScreenConfigDigitalPictureFrames) return 19;
-            if (source is LegacyScreenConfigCargoActions) return 20;
-            if (source is LegacyScreenConfigNpcMarket) return 21;
-            if (source is LegacyScreenConfigVisibleTreeDebug) return 22;
-            if (source is LegacyScreenConfigClockDashboard) return 23;
-            if (source.GetType() == typeof(LegacyScreenConfigWithItems)) return 12;
-            if (source.GetType() == typeof(LegacyScreenConfigWithBlocks)) return 1;
-            if (source.GetType() == typeof(LegacyScreenConfigWithFilters)) return 7;
-            if (source.GetType() == typeof(LegacyScreenConfigWithReferenceBlock)) return 6;
-            if (source.GetType() == typeof(LegacyScreenConfigInteractive)) return 14;
-            if (source.GetType() == typeof(LegacyScreenConfigColorable)) return 5;
-            return 4;
+            if (source is LegacyScreenConfigProjector) return (int)LegacyConfigKind.Projector;
+            if (source is LegacyScreenConfigDiagnostic) return (int)LegacyConfigKind.Diagnostic;
+            if (source is LegacyScreenConfigOreScanner) return (int)LegacyConfigKind.OreScanner;
+            if (source is LegacyScreenConfigRadar) return (int)LegacyConfigKind.Radar;
+            if (source is LegacyScreenConfigPower) return (int)LegacyConfigKind.Power;
+            if (source is LegacyScreenConfigStarMap) return (int)LegacyConfigKind.StarMap;
+            if (source is LegacyScreenConfigDocking) return (int)LegacyConfigKind.Docking;
+            if (source is LegacyScreenConfigRaycast) return (int)LegacyConfigKind.Raycast;
+            if (source is LegacyScreenConfigRenderProxy) return (int)LegacyConfigKind.RenderProxy;
+            if (source is LegacyScreenConfigMarkdown) return (int)LegacyConfigKind.Markdown;
+            if (source is LegacyScreenConfigButtonPanel) return (int)LegacyConfigKind.ButtonPanel;
+            if (source is LegacyScreenConfigDigitalPictureFrames) return (int)LegacyConfigKind.DigitalPictureFrames;
+            if (source is LegacyScreenConfigCargoActions) return (int)LegacyConfigKind.CargoActions;
+            if (source is LegacyScreenConfigNpcMarket) return (int)LegacyConfigKind.NpcMarket;
+            if (source is LegacyScreenConfigVisibleTreeDebug) return (int)LegacyConfigKind.VisibleTreeDebug;
+            if (source is LegacyScreenConfigClockDashboard) return (int)LegacyConfigKind.ClockDashboard;
+            if (source.GetType() == typeof(LegacyScreenConfigWithItems)) return (int)LegacyConfigKind.WithItems;
+            if (source.GetType() == typeof(LegacyScreenConfigWithBlocks)) return (int)LegacyConfigKind.WithBlocks;
+            if (source.GetType() == typeof(LegacyScreenConfigWithFilters)) return (int)LegacyConfigKind.WithFilters;
+            if (source.GetType() == typeof(LegacyScreenConfigWithReferenceBlock)) return (int)LegacyConfigKind.WithReferenceBlock;
+            if (source.GetType() == typeof(LegacyScreenConfigInteractive)) return (int)LegacyConfigKind.Interactive;
+            if (source.GetType() == typeof(LegacyScreenConfigColorable)) return (int)LegacyConfigKind.Colorable;
+            return (int)LegacyConfigKind.General;
         }
 
-        static void AddReference(IComponentConfig app, LegacyScreenConfigGeneral source)
+        static void AddReference(IComponentContainer app, LegacyScreenConfigGeneral source)
         {
             var projector = source as LegacyScreenConfigProjector;
             if (projector != null)
             {
-                app.Set(ConfigSlots.ProjectorReference, new BlockReferenceConfigComponent { EntityId = projector.ReferenceBlock });
+                app.Set(Constants.PROJECTOR_REFERENCE, new BlockReferenceConfigComponent { EntityId = projector.ReferenceBlock });
                 return;
             }
 
             var diagnostic = source as LegacyScreenConfigDiagnostic;
             if (diagnostic != null)
             {
-                app.Set(ConfigSlots.ProjectorReference, new BlockReferenceConfigComponent { EntityId = diagnostic.ReferenceBlock });
+                app.Set(Constants.PROJECTOR_REFERENCE, new BlockReferenceConfigComponent { EntityId = diagnostic.ReferenceBlock });
                 return;
             }
 
             var docking = source as LegacyScreenConfigDocking;
             if (docking != null)
             {
-                app.Set(ConfigSlots.DockableReference, new BlockReferenceConfigComponent { EntityId = docking.ReferenceBlock });
+                app.Set(Constants.DOCKABLE_REFERENCE, new BlockReferenceConfigComponent { EntityId = docking.ReferenceBlock });
                 return;
             }
 
             var proxy = source as LegacyScreenConfigRenderProxy;
             if (proxy != null)
             {
-                app.Set(ConfigSlots.RenderProxyReference, new BlockReferenceConfigComponent { EntityId = proxy.ReferenceBlock });
+                app.Set(Constants.RENDER_PROXY_REFERENCE, new BlockReferenceConfigComponent { EntityId = proxy.ReferenceBlock });
                 return;
             }
 
             var visibleTree = source as LegacyScreenConfigVisibleTreeDebug;
             if (visibleTree != null)
             {
-                app.Set(ConfigSlots.VisibleTreeReference, new BlockReferenceConfigComponent { EntityId = visibleTree.ReferenceBlock });
+                app.Set(Constants.VISIBLE_TREE_REFERENCE, new BlockReferenceConfigComponent { EntityId = visibleTree.ReferenceBlock });
                 return;
             }
-
-            var reference = source as LegacyScreenConfigWithReferenceBlock;
-            if (reference != null)
-                app.Set(ConfigSlots.OreScannerReference, new BlockReferenceConfigComponent { EntityId = reference.ReferenceBlock });
         }
 
-        static void AddAppSettings(IComponentConfig app, LegacyScreenConfigGeneral source)
+        static void AddAppSettings(IComponentContainer app, LegacyScreenConfigGeneral source)
         {
             var power = source as LegacyScreenConfigPower;
             if (power != null)
             {
-                app.Set(ConfigSlots.App, new PowerConfigComponent
+                app.Set(Constants.APP, new PowerConfigComponent
                 {
                     HideEmpty = power.HideEmpty,
-                    GraphWindowIndex = power.GraphWindowIndex
+                    GraphWindowIndex = power.GraphWindowIndex,
+                    PowerHistoryTier = -1,
+                    GridLinkTypeInternal = (int)GridLinkTypeEnum.Mechanical
                 });
                 return;
             }
@@ -200,28 +200,28 @@ namespace LcdMod.Migration
             var radar = source as LegacyScreenConfigRadar;
             if (radar != null)
             {
-                app.Set(ConfigSlots.App, new RadarConfigComponent { RangeScale = radar.RangeScale });
+                app.Set(Constants.APP, new RadarConfigComponent { RangeScale = radar.RangeScale });
                 return;
             }
 
             var starMap = source as LegacyScreenConfigStarMap;
             if (starMap != null)
             {
-                app.Set(ConfigSlots.App, new StarMapConfigComponent { FoV = starMap.FoV });
+                app.Set(Constants.APP, new StarMapConfigComponent { FoV = starMap.FoV });
                 return;
             }
 
             var diagnostic = source as LegacyScreenConfigDiagnostic;
             if (diagnostic != null)
             {
-                app.Set(ConfigSlots.App, new DiagnosticConfigComponent { Rotation = diagnostic.Rotation });
+                app.Set(Constants.APP, new DiagnosticConfigComponent { Rotation = diagnostic.Rotation });
                 return;
             }
 
             var raycast = source as LegacyScreenConfigRaycast;
             if (raycast != null)
             {
-                app.Set(ConfigSlots.App, new RaycastConfigComponent
+                app.Set(Constants.APP, new RaycastConfigComponent
                 {
                     RelationOverlay = raycast.RelationOverlay,
                     RenderScale = raycast.RenderScale,
@@ -233,7 +233,7 @@ namespace LcdMod.Migration
             var proxy = source as LegacyScreenConfigRenderProxy;
             if (proxy != null)
             {
-                app.Set(ConfigSlots.App, new RenderProxyConfigComponent
+                app.Set(Constants.APP, new RenderProxyConfigComponent
                 {
                     XAxisOffset = proxy.XAxisOffset,
                     YAxisOffset = proxy.YAxisOffset,
@@ -245,21 +245,21 @@ namespace LcdMod.Migration
             var markdown = source as LegacyScreenConfigMarkdown;
             if (markdown != null)
             {
-                app.Set(ConfigSlots.App, new MarkdownConfigComponent { RawText = markdown.RawText });
+                app.Set(Constants.APP, new MarkdownConfigComponent { RawText = markdown.RawText });
                 return;
             }
 
             var buttonPanel = source as LegacyScreenConfigButtonPanel;
             if (buttonPanel != null)
             {
-                app.Set(ConfigSlots.App, new ButtonPanelConfigComponent { HideEmpty = buttonPanel.HideEmpty });
+                app.Set(Constants.APP, new ButtonPanelConfigComponent { HideEmpty = buttonPanel.HideEmpty });
                 return;
             }
 
             var pictureFrames = source as LegacyScreenConfigDigitalPictureFrames;
             if (pictureFrames != null)
             {
-                app.Set(ConfigSlots.App, new DigitalPictureFramesConfigComponent
+                app.Set(Constants.APP, new DigitalPictureFramesConfigComponent
                 {
                     BackgroundSprite = pictureFrames.BackgroundSprite,
                     SelectedSprites = Copy(pictureFrames.SelectedSprites),
@@ -271,7 +271,7 @@ namespace LcdMod.Migration
             var cargoActions = source as LegacyScreenConfigCargoActions;
             if (cargoActions != null)
             {
-                app.Set(ConfigSlots.App, new CargoActionsConfigComponent
+                app.Set(Constants.APP, new CargoActionsConfigComponent
                 {
                     SortMode = cargoActions.SortMode,
                     UraniumLargeGridSmallReactor = cargoActions.UraniumLargeGridSmallReactor,
@@ -291,7 +291,7 @@ namespace LcdMod.Migration
             var npcMarket = source as LegacyScreenConfigNpcMarket;
             if (npcMarket != null)
             {
-                app.Set(ConfigSlots.App, new NpcMarketConfigComponent
+                app.Set(Constants.APP, new NpcMarketConfigComponent
                 {
                     SelectedMode = npcMarket.SelectedMode,
                     ScrollOffsetPixels = npcMarket.ScrollOffsetPixels,
@@ -313,7 +313,7 @@ namespace LcdMod.Migration
             var clock = source as LegacyScreenConfigClockDashboard;
             if (clock != null)
             {
-                app.Set(ConfigSlots.App, new ClockDashboardConfigComponent
+                app.Set(Constants.APP, new ClockDashboardConfigComponent
                 {
                     Use24HourClock = clock.Use24HourClock,
                     TemperatureModeInternal = clock.TemperatureModeInternal
@@ -323,7 +323,7 @@ namespace LcdMod.Migration
 
             var visibleTree = source as LegacyScreenConfigVisibleTreeDebug;
             if (visibleTree != null)
-                app.Set(ConfigSlots.App, new VisibleTreeDebugConfigComponent { ReferenceScreenIndex = visibleTree.ReferenceScreenIndex });
+                app.Set(Constants.APP, new VisibleTreeDebugConfigComponent { ReferenceScreenIndex = visibleTree.ReferenceScreenIndex });
         }
 
         static OptionalValue<T> Copy<T>(LegacyOptionalValue<T> value)

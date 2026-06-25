@@ -1,17 +1,20 @@
+using LcdMod.Common.Config.Components;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.UserControls;
 using LcdMod.Client.Markdown;
-using LcdMod.Common.Config.Models.Apps;
 using LcdMod.Common.Helpers;
 using VRage.Game.GUI.TextPanel;
 using VRage.Utils;
 using VRageMath;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.Apps
 {
-    public sealed class MarkdownApp : App
+    [LcdApp(14)]
+    [ConfigComponent(Constants.APP, typeof(MarkdownConfigComponent), PropertyName = "MarkdownComponent")]
+    public sealed partial class MarkdownApp : App
     {
         readonly MarkdownParser _parser = new MarkdownParser();
         readonly List<MySprite> _cachedSprites = new List<MySprite>();
@@ -21,11 +24,9 @@ namespace LcdMod.Client.Apps
         // todo: convert to interactive app
         public override IReadOnlyList<Control> Children { get; } = new Control[]{};
         
-        public MarkdownApp(ScreenConfigMarkdown config, IAppHost host) : base(config, host)
+        public MarkdownApp(IAppHost host) : base(host)
         {
         }
-
-        ScreenConfigMarkdown Config => (ScreenConfigMarkdown)AppConfig;
 
         public MarkdownDocument Document { get; private set; }
 
@@ -52,8 +53,7 @@ namespace LcdMod.Client.Apps
 
             _cachedSprites.Clear();
 
-            var colorable = AppConfig;
-            Color headerColor = colorable?.HeaderColor ?? Host.ForegroundColor;
+            Color headerColor = GetHeaderColor();
             RectangleF contentViewBox = MarkdownPanel.GetContentViewBox(Host);
             MarkdownPanel.CreateSprites(
                 Document,
@@ -69,7 +69,7 @@ namespace LcdMod.Client.Apps
 
         void EnsureDocument()
         {
-            var text = Config.RawText ?? string.Empty;
+            var text = MarkdownComponent.RawText ?? string.Empty;
             if (_loadedText == text)
                 return;
 

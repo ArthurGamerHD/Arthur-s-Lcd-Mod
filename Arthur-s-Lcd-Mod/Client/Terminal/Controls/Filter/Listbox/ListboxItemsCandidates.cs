@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using LcdMod.Client.Config;
 using LcdMod.Client.Helpers;
+using LcdMod.Common.Config.Components;
+using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
 using VRage.ModAPI;
-using ScreenConfigWithItems = LcdMod.Common.Config.Models.Apps.ScreenConfigWithItems;
 
 namespace LcdMod.Client.Terminal.Controls.Filter.Listbox
 {
@@ -20,15 +21,23 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Listbox
         protected override void Getter(IMyTerminalBlock b, List<MyTerminalControlListBoxItem> itemList,
             List<MyTerminalControlListBoxItem> selected)
         {
-            var screenSettings = ConfigManager.GetConfigForCurrentScreen(b) as ScreenConfigWithItems;
+            var settings = ConfigManager.GetConfigForBlock(b);
+            var surface = settings == null ? null : settings.GetSurfaceConfig(GetThisSurfaceIndex(b));
+            var screenSettings = surface == null ? null : surface.TryGet<ItemSelectionConfigComponent>(Constants.ITEMS);
 
             if (screenSettings == null)
                 return;
             
-            itemList.AddRange(ItemCategoryHelper.Groups.Where(g => !screenSettings.SelectedCategories.Contains(g))
+            var selectedCategories = screenSettings.SelectedCategories ?? new string[0];
+            var selectedDefinitions = screenSettings.SelectedDefinition ?? new string[0];
+
+            itemList.AddRange(ItemCategoryHelper.Groups.Where(g => !selectedCategories.Contains(g))
                 .Select(g => ListBoxItemHelper.GetOrComputeListBoxItem(ItemCategoryHelper.GetGroupName(g), string.Empty, g)));
             
-            var allItems = MyDefinitionManager.Static.GetAllDefinitions().Where(WhiteList).Where(a => !screenSettings.SelectedItems.Contains(a.Id)).ToList();
+            var allItems = MyDefinitionManager.Static.GetAllDefinitions()
+                .Where(WhiteList)
+                .Where(a => !selectedDefinitions.Contains(a.Id.ToString()))
+                .ToList();
 
             itemList.AddRange(allItems.Select(a => ListBoxItemHelper.GetOrComputeListBoxItem(a.DisplayNameText,a.DescriptionText, a.Id)));
 

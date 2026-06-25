@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using LcdMod.Common.Config.Components;
 using Generated;
 using IAutoScroll = LcdMod.Client.Terminal.Controls.Generic.IAutoScroll;
 using LcdMod.Client.Apps;
@@ -14,14 +15,14 @@ using static LcdMod.Common.Helpers.Constants;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
 using IMyTextSurface = Sandbox.ModAPI.IMyTextSurface;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
+    [LcdSurface(typeof(LcdMod.Client.Apps.FarmApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class FarmSurfaceScript : InteractiveSurfaceScript,
-        IAutoScroll,
-        IUsesTerminalControl<ComboboxLinkType>
+        IAutoScroll
     {
-        protected override ConfigKind ConfigKind => ConfigKind.Power;
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
         public const string ID = MOD_PREFIX + "Farm";
         public const string TITLE = MOD_PREFIX + "Farm";
@@ -46,13 +47,10 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override void SafeRun()
         {
-            if (AppConfig == null)
-                return;
-
             base.SafeRun();
 
             if (_app == null)
-                _app = new FarmApp(AppConfig, this);
+                _app = new FarmApp(this);
 
             _app.Update();
             RenderSprites();
@@ -64,7 +62,7 @@ namespace LcdMod.Client.SurfaceScripts
             AddBackground(sprites);
             DrawTitle(sprites);
             if (!_app.HasVisibleItems())
-                DrawMessage(sprites, LocHelper.Empty, "Warning", AppConfig.WarningColor, AppConfig.Scale);
+                DrawMessage(sprites, LocHelper.Empty, "Warning", ColorComponent.ResolveWarningColor(), GeneralComponent.GetScale());
             else
                 sprites.AddRange(_app.GetSprites());
             return sprites;

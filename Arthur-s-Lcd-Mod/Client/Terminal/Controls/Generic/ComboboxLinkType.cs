@@ -1,7 +1,8 @@
 using System.Collections.Generic;
 using LcdMod.Client.Config;
 using LcdMod.Client.Helpers;
-using LcdMod.Common.Config.Interfaces;
+using LcdMod.Common.Config.Components;
+using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Game.ModAPI;
@@ -52,16 +53,26 @@ namespace LcdMod.Client.Terminal.Controls.Generic
 
         long Getter(IMyTerminalBlock block)
         {
-            var cfg = ConfigManager.GetConfigForCurrentScreen(block) as IGridGroupReference;
-            return ToId((GridLinkTypeEnum)(cfg?.GridLinkTypeInternal ?? 3));
+            return ToId((GridLinkTypeEnum)GetGridLinkTypeInternal(block, 3));
         }
 
         void Setter(IMyTerminalBlock block, long value)
         {
-            var cfg = ConfigManager.GetConfigForCurrentScreen(block) as IGridGroupReference;
-            if (cfg == null) return;
-            cfg.GridLinkTypeInternal = FromId(value);
-            ConfigManager.Sync(block);
+            var gridLinkType = FromId(value);
+            if (ConfigManager.ModifyComponentForCurrentSurface<BlockSelectionConfigComponent>(
+                    block,
+                    Constants.BLOCKS,
+                    config => config.GridLinkTypeInternal = gridLinkType))
+                return;
+
+            if (ConfigManager.ModifyComponentForTerminalApp<PowerConfigComponent>(
+                    block,
+                    config => config.GridLinkTypeInternal = gridLinkType))
+                return;
+
+            ConfigManager.ModifyComponentForTerminalApp<CargoActionsConfigComponent>(
+                block,
+                config => config.GridLinkTypeInternal = gridLinkType);
         }
 
         static long ToId(GridLinkTypeEnum enumValue)
@@ -88,6 +99,22 @@ namespace LcdMod.Client.Terminal.Controls.Generic
             }
 
             return -1;
+        }
+
+        static int GetGridLinkTypeInternal(IMyTerminalBlock block, int defaultValue)
+        {
+            var blocks = ConfigManager.GetComponentForCurrentSurface<BlockSelectionConfigComponent>(
+                block,
+                Constants.BLOCKS);
+            if (blocks != null)
+                return blocks.GridLinkTypeInternal;
+
+            var power = ConfigManager.GetComponentForTerminalApp<PowerConfigComponent>(block);
+            if (power != null)
+                return power.GridLinkTypeInternal;
+
+            var cargo = ConfigManager.GetComponentForTerminalApp<CargoActionsConfigComponent>(block);
+            return cargo != null ? cargo.GridLinkTypeInternal : defaultValue;
         }
     }
 }

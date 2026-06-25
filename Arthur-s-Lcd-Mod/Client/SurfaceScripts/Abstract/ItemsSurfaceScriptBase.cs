@@ -6,6 +6,7 @@ using Generated;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Utility;
+using LcdMod.Common.Config.Components;
 using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
@@ -22,8 +23,10 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 {
     public abstract partial class ItemsSurfaceScriptBase : SurfaceScriptBase, IMultiDisplayMode
     {
-        protected override ConfigKind ConfigKind => ConfigKind.WithItems;
-        protected override SortMethod SortMethod => (SortMethod)AppConfig.SortMethod;
+        protected FilterConfigComponent FilterComponent => Config.GetComponent<FilterConfigComponent>();
+        protected BlockSelectionConfigComponent BlockSelectionComponent => Config.GetComponent<BlockSelectionConfigComponent>();
+        protected ItemSelectionConfigComponent ItemSelectionComponent => Config.GetComponent<ItemSelectionConfigComponent>();
+        protected override SortMethod SortMethod => (SortMethod)FilterComponent.SortMethod;
 
         public static Dictionary<MyItemType, string> SpriteCache =
             new Dictionary<MyItemType, string>();
@@ -59,17 +62,17 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         {
             get
             {
-                if (_selectedCategories != AppConfig?.SelectedCategories)
+                if (_selectedCategories != ItemSelectionComponent.SelectedCategories)
                     LocalizedTitleCache = string.Empty;
 
                 if (!string.IsNullOrEmpty(LocalizedTitleCache))
                     return LocalizedTitleCache;
 
-                if (AppConfig?.SelectedCategories != null)
+                if (ItemSelectionComponent.SelectedCategories != null)
                 {
-                    _selectedCategories = AppConfig.SelectedCategories;
+                    _selectedCategories = ItemSelectionComponent.SelectedCategories;
                     var sb = new StringBuilder();
-                    foreach (var item in AppConfig.SelectedCategories)
+                    foreach (var item in ItemSelectionComponent.SelectedCategories)
                         sb.Append(ItemCategoryHelper.GetGroupDisplayName(item) + ", ");
 
                     if (sb.Length != 0)
@@ -103,7 +106,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         protected virtual List<KeyValuePair<MyItemType, double>> ReadItems(IMyTerminalBlock lcd)
         {
-            if (AppConfig.HideEmpty || AppConfig.SelectedItems.Any())
+            if (FilterComponent.HideEmpty || ItemSelectionComponent.GetSelectedItems().Any())
                 _itemsCache.Clear();
 
             if (lcd == null || ItemSource == null)
@@ -117,9 +120,9 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             }
 
 
-            if (!AppConfig.HideEmpty)
+            if (!FilterComponent.HideEmpty)
             {
-                foreach (var configSelectedItem in AppConfig.SelectedItems)
+                foreach (var configSelectedItem in ItemSelectionComponent.GetSelectedItems())
                 {
                     MyItemType type;
                     if (!TypeCache.TryGetValue(configSelectedItem, out type))
@@ -174,9 +177,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             if (_hasDrawnAtLeastOnce && _clock % SCROLL_DELAY != 0 && !Dirty && !_needsImmediateDraw)
                 return;
 
-            if (AppConfig == null)
-                return;
-
             try
             {
                 RenderSprites();
@@ -204,8 +204,8 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
             if (items.Count == 0)
             {
-                if (AppConfig.SelectedCategories.Any() || AppConfig.SelectedBlocks.Any() || AppConfig.SelectedItems.Any() ||
-                    AppConfig.SelectedGroups.Any() || AppConfig.SelectedDefinition.Any() )
+                if (ItemSelectionComponent.SelectedCategories.Any() || BlockSelectionComponent.SelectedBlocks.Any() ||
+                    BlockSelectionComponent.SelectedGroups.Any() || ItemSelectionComponent.SelectedDefinition.Any() )
                     AddEmptyWithFiltersSprites(sprites);
                 else
                     AddEmptySprites(sprites);
@@ -217,7 +217,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             DrawTitle(sprites);
             DrawFooter(sprites);
 
-            switch (AppConfig.DisplayMode)
+            switch (GeneralComponent.DisplayMode)
             {
                 case (int)DisplayMode.Legacy:
                     DrawList(sprites, items);
@@ -291,9 +291,9 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             var columnWidth = (contentEnd - contentStart) / maxCols;
             var gridHeight = maxRows * rowHeight;
 
-            if (AppConfig.DrawLines)
+            if (GeneralComponent.DrawLines)
             {
-                var lineColor = AppConfig.HeaderColor;
+                var lineColor = ColorComponent.ResolveHeaderColor(Block as IMyTerminalBlock);
 
                 for (int row = 0; row <= maxRows; row++)
                 {
@@ -357,7 +357,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             string sprite;
             string localizedName;
 
-            var foreground = item.Value == 0 ? AppConfig.ErrorColor : Surface.ScriptForegroundColor;
+            var foreground = item.Value == 0 ? ColorComponent.ResolveErrorColor() : Surface.ScriptForegroundColor;
 
             if (!SpriteCache.TryGetValue(item.Key, out sprite))
             {
@@ -382,9 +382,9 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             position.X = xStart;
             position.Y = CaretY;
 
-            bool drawSeparatorLine = AppConfig.SortMethod == (int)SortMethod.Type && PreviousType != item.Key.TypeId;
+            bool drawSeparatorLine = FilterComponent.SortMethod == (int)SortMethod.Type && PreviousType != item.Key.TypeId;
 
-            if (AppConfig.DrawLines || drawSeparatorLine)
+            if (GeneralComponent.DrawLines || drawSeparatorLine)
             {
                 frame.Add(new MySprite()
                 {
@@ -392,7 +392,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                     Data = "Circle",
                     Position = new Vector2((xStart + xEnd) / 2f, position.Y),
                     Size = new Vector2(xEnd - xStart, 1),
-                    Color = drawSeparatorLine ? AppConfig.HeaderColor : Surface.ScriptForegroundColor,
+                    Color = drawSeparatorLine ? ColorComponent.ResolveHeaderColor(Block as IMyTerminalBlock) : Surface.ScriptForegroundColor,
                     Alignment = TextAlignment.CENTER
                 });
             }
@@ -404,7 +404,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 position + new Vector2(20f, 15) * ConfiguredScale,
                 new Vector2(LINE_HEIGHT * ConfiguredScale),
                 TextAlignment.CENTER,
-                item.Value == 0 ? AppConfig.ErrorColor : Color.White);
+                item.Value == 0 ? ColorComponent.ResolveErrorColor() : Color.White);
             position.X += (xEnd - xStart) / 8f;
 
             var clip = new Rectangle((int)position.X, (int)position.Y,
@@ -479,7 +479,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             position.Y = CaretY;
             var cellViewBox = GetCellViewBox(xStart, xEnd, position.Y, gridCellHeight, cellPadding);
 
-            if (!AppConfig.DrawLines)
+            if (!GeneralComponent.DrawLines)
             {
                 DrawCellBackground(frame, item, xStart, xEnd, position.Y, gridCellHeight, cellPadding);
             }
@@ -540,7 +540,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 new Vector2(iconRect.X, iconRect.Y + iconRect.Height / 2f),
                 new Vector2(iconRect.Width),
                 TextAlignment.LEFT,
-                item.Value == 0 ? AppConfig.ErrorColor : Color.White);
+                item.Value == 0 ? ColorComponent.ResolveErrorColor() : Color.White);
 
             if (!LocKeysCache.TryGetValue(item.Key, out localizedName))
             {
@@ -614,7 +614,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 Data = Icon,
                 Position = position + new Vector2(20f) * headerScale,
                 Size = new Vector2(40f * headerScale),
-                Color = AppConfig.HeaderColor,
+                Color = ColorComponent.ResolveHeaderColor(Block as IMyTerminalBlock),
                 Alignment = TextAlignment.CENTER
             });
             position.X += ViewBox.Width / 8f;
@@ -636,7 +636,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 Data = displayName,
                 Position = position,
                 RotationOrScale = ConfiguredScale * 1.3f * FontScale,
-                Color = AppConfig.HeaderColor,
+                Color = ColorComponent.ResolveHeaderColor(Block as IMyTerminalBlock),
                 Alignment = TextAlignment.LEFT,
                 FontId = "White"
             });
@@ -650,7 +650,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 Data = stockText.ToString(),
                 Position = position,
                 RotationOrScale = ConfiguredScale * 1.3f * FontScale,
-                Color = AppConfig.HeaderColor,
+                Color = ColorComponent.ResolveHeaderColor(Block as IMyTerminalBlock),
                 Alignment = TextAlignment.RIGHT,
                 FontId = "White"
             });

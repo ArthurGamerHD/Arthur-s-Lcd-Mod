@@ -1,14 +1,13 @@
 using System;
 using System.Collections.Generic;
 using LcdMod.Common.Config;
-using LcdMod.Common.Config.Interfaces;
+using LcdMod.Common.Config.Components;
 using LcdMod.Common.Config.Models;
 
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
-using ScreenConfigWithBlocks = LcdMod.Common.Config.Models.Apps.ScreenConfigWithBlocks;
 
 namespace LcdMod.Common.Helpers
 {
@@ -59,23 +58,14 @@ namespace LcdMod.Common.Helpers
 
         public static void PinBlocks(ScreenProviderConfig providerConfig)
         {
-            if (providerConfig == null || providerConfig.Screens == null)
+            if (providerConfig == null || providerConfig.Surfaces == null)
                 return;
 
-            for (int i = 0; i < providerConfig.Screens.Count; i++)
-            {
-                var screen = providerConfig.Screens[i];
-                if (screen == null)
-                    continue;
-                
-                var withBlocks = screen as ScreenConfigWithBlocks;
-                if (withBlocks != null)
-                    PinBlocks(withBlocks.SelectedBlocks);
+            var entityIds = new List<long>();
+            for (int i = 0; i < providerConfig.Surfaces.Count; i++)
+                ComponentConfigEntityReferences.CollectPinnedEntityIds(providerConfig.Surfaces[i], entityIds);
 
-                var withReference = screen as IConfigWithReferenceBlock;
-                if (withReference != null && withReference.ReferenceBlock != 0)
-                    PinBlock(withReference.ReferenceBlock);
-            }
+            PinBlocks(entityIds);
         }
 
         public static void RemapGrid(IMyCubeGrid grid)
@@ -180,77 +170,13 @@ namespace LcdMod.Common.Helpers
                 changed = true;
             }
 
-            if (providerConfig.Screens == null)
+            if (providerConfig.Surfaces == null)
                 return changed;
 
-            for (int i = 0; i < providerConfig.Screens.Count; i++)
-            {
-                var screen = providerConfig.Screens[i];
-                if (screen == null)
-                    continue;
-
-                var withBlocks = screen as ScreenConfigWithBlocks;
-                if (withBlocks != null)
-                {
-                    var selectedBlocks = withBlocks.SelectedBlocks;
-                    if (RemapArray(ref selectedBlocks, remap))
-                    {
-                        withBlocks.SelectedBlocks = selectedBlocks;
-                        changed = true;
-                    }
-                }
-
-                var withReference = screen as IConfigWithReferenceBlock;
-                if (withReference != null)
-                {
-                    long referenceBlock = withReference.ReferenceBlock;
-                    if (TryRemap(referenceBlock, remap, out referenceBlock))
-                    {
-                        withReference.ReferenceBlock = referenceBlock;
-                        changed = true;
-                    }
-                }
-            }
+            for (int i = 0; i < providerConfig.Surfaces.Count; i++)
+                changed |= ComponentConfigEntityReferences.RemapEntityReferences(providerConfig.Surfaces[i], remap);
 
             return changed;
-        }
-
-        static bool RemapArray(ref long[] values, Dictionary<long, long> remap)
-        {
-            if (values == null || values.Length == 0)
-                return false;
-
-            bool changed = false;
-            var remapped = new List<long>(values.Length);
-
-            for (int i = 0; i < values.Length; i++)
-            {
-                long value = values[i];
-                long mapped;
-                if (TryRemap(value, remap, out mapped))
-                {
-                    value = mapped;
-                    changed = true;
-                }
-
-                if (value != 0 && !remapped.Contains(value))
-                    remapped.Add(value);
-            }
-
-            if (!changed && remapped.Count == values.Length)
-                return false;
-
-            values = remapped.ToArray();
-            return true;
-        }
-
-        static bool TryRemap(long value, Dictionary<long, long> remap, out long mapped)
-        {
-            if (value != 0 && remap != null && remap.TryGetValue(value, out mapped))
-                return true;
-
-            mapped = value;
-            return false;
         }
     }
 }

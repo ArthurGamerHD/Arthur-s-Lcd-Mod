@@ -1,3 +1,4 @@
+using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,16 +9,20 @@ using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Dialogs;
 using LcdMod.Client.Helpers;
-using LcdMod.Common.Config.Models.Apps;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 using static LcdMod.Common.Helpers.Constants;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
 
+using LcdMod.Common.Config.Generation;
+using LcdMod.Common.Helpers;
+
 namespace LcdMod.Client.Apps
 {
-    internal sealed class DigitalPictureFramesApp : App, IApp
+    [LcdApp(16)]
+    [ConfigComponent(APP, typeof(DigitalPictureFramesConfigComponent), PropertyName = "DigitalPictureFramesComponent")]
+    internal sealed partial class DigitalPictureFramesApp : App, IApp
     {
         const float BUTTON_WIDTH_PIXELS = 220f;
         const float BUTTON_HEIGHT_PIXELS = 42f;
@@ -34,10 +39,8 @@ namespace LcdMod.Client.Apps
         long _transitionStartFrame = long.MinValue;
         bool _redrawQueued;
 
-        new ScreenConfigDigitalPictureFrames AppConfig => (ScreenConfigDigitalPictureFrames)base.AppConfig;
-
-        public DigitalPictureFramesApp(ScreenConfigDigitalPictureFrames config, InteractiveSurfaceScript host)
-            : base(config, host)
+        public DigitalPictureFramesApp(InteractiveSurfaceScript host)
+            : base(host)
         {
             _interactiveHost = host;
 
@@ -66,19 +69,19 @@ namespace LcdMod.Client.Apps
         {
             _sprites.Clear();
 
-            var config = AppConfig;
+            var config = DigitalPictureFramesComponent;
             if (config == null)
                 return _sprites;
 
             Host.AddBackground(_sprites);
-            DrawBackgroundImage(config, (PictureFrameDisplayMode)config.DisplayMode);
+            DrawBackgroundImage(config, (PictureFrameDisplayMode)GeneralComponent.DisplayMode);
             Host.DrawTitle(_sprites);
             ClearDirtyAfterRender();
             
             return _sprites;
         }
 
-        void DrawBackgroundImage(ScreenConfigDigitalPictureFrames config, PictureFrameDisplayMode displayMode)
+        void DrawBackgroundImage(DigitalPictureFramesConfigComponent config, PictureFrameDisplayMode displayMode)
         {
             var spriteName = GetCurrentSprite(config);
             UpdateTransition(spriteName);
@@ -110,7 +113,7 @@ namespace LcdMod.Client.Apps
             _sprites.Add(MySprite.CreateClearClipRect());
         }
 
-        string GetCurrentSprite(ScreenConfigDigitalPictureFrames config)
+        string GetCurrentSprite(DigitalPictureFramesConfigComponent config)
         {
             var sprites = GetConfiguredSprites(config);
             if (sprites.Length == 0)
@@ -126,7 +129,7 @@ namespace LcdMod.Client.Apps
             return sprites[index];
         }
 
-        static string[] GetConfiguredSprites(ScreenConfigDigitalPictureFrames config)
+        static string[] GetConfiguredSprites(DigitalPictureFramesConfigComponent config)
         {
             if (config == null)
                 return new string[0];
@@ -298,8 +301,7 @@ namespace LcdMod.Client.Apps
 
         float GetImageScale()
         {
-            var config = AppConfig;
-            return config?.Scale ?? 1f;
+            return GeneralComponent.GetScale();
         }
 
         static bool TryGetSourceSize(string spriteName, out Vector2 size)
@@ -337,7 +339,7 @@ namespace LcdMod.Client.Apps
 
         void UpdateControls()
         {
-            var config = AppConfig;
+            var config = DigitalPictureFramesComponent;
             if (config == null)
             {
                 _pickBackgroundButton.SetVisible(false);
@@ -347,7 +349,7 @@ namespace LcdMod.Client.Apps
 
             var hasBackground = GetConfiguredSprites(config).Length > 0;
             var canAccessBlock = HasLocalPlayerAccess();
-            var scale = Math.Max(0.75f, AppConfig.Scale);
+            var scale = Math.Max(0.75f, GeneralComponent.GetScale());
             var width = Math.Min(BUTTON_WIDTH_PIXELS * scale, Math.Max(1f, Host.ViewBox.Width * 0.5f));
             var height = Math.Max(1f, BUTTON_HEIGHT_PIXELS * scale);
 
@@ -384,7 +386,7 @@ namespace LcdMod.Client.Apps
             _interactiveHost.ShowDialog(new SpritePicker(
                 this,
                 OnSpritesSelected,
-                GetConfiguredSprites(AppConfig),
+                GetConfiguredSprites(DigitalPictureFramesComponent),
                 _interactiveHost.RequestRedraw));
         }
 
@@ -415,7 +417,7 @@ namespace LcdMod.Client.Apps
 
         void OnSpritesSelected(string[] spriteNames)
         {
-            var config = AppConfig;
+            var config = DigitalPictureFramesComponent;
             if (config == null)
                 return;
 

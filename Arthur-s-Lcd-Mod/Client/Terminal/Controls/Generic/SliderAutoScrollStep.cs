@@ -2,7 +2,8 @@ using System;
 using System.Text;
 using LcdMod.Client.Config;
 using LcdMod.Client.Helpers;
-using LcdMod.Common.Config.Models;
+using LcdMod.Common.Config.Components;
+using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
@@ -47,17 +48,17 @@ namespace LcdMod.Client.Terminal.Controls.Generic
 
         void Setter(IMyTerminalBlock block, float value)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block);
-            if (config == null)
-                return;
-
-            config.AutoScrollStep = Normalize(value);
-            ConfigManager.Sync(block);
+            ConfigManager.ModifyComponentForCurrentSurface<InteractiveConfigComponent>(
+                block,
+                Constants.INTERACTION,
+                config => config.AutoScrollStep = Normalize(value));
         }
 
         float Getter(IMyTerminalBlock block)
         {
-            ScreenConfigInteractive config = ConfigManager.GetConfigForCurrentScreen(block);
+            var config = ConfigManager.GetComponentForCurrentSurface<InteractiveConfigComponent>(
+                block,
+                Constants.INTERACTION);
             if (config == null)
                 return 0f;
 

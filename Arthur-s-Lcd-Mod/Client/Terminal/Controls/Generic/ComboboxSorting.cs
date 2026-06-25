@@ -1,11 +1,11 @@
 using System.Collections.Generic;
 using LcdMod.Client.Config;
-
+using LcdMod.Common.Config.Components;
+using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.ModAPI;
 using VRage.Utils;
-using ScreenConfigWithFilters = LcdMod.Common.Config.Models.Apps.ScreenConfigWithFilters;
 
 namespace LcdMod.Client.Terminal.Controls.Generic
 {
@@ -42,17 +42,17 @@ namespace LcdMod.Client.Terminal.Controls.Generic
 
         void Setter(IMyTerminalBlock block, long l)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigWithFilters;
-            if (config == null)
-                return;
-
-            config.SortMethod = (int)l;
-            ConfigManager.Sync(block);
+            ConfigManager.ModifyComponentForCurrentSurface<FilterConfigComponent>(
+                block,
+                Constants.FILTERS,
+                config => config.SortMethod = (int)l);
         }
 
         long Getter(IMyTerminalBlock block)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigWithFilters;
+            var config = ConfigManager.GetComponentForCurrentSurface<FilterConfigComponent>(
+                block,
+                Constants.FILTERS);
             if (config == null)
                 return 1;
 

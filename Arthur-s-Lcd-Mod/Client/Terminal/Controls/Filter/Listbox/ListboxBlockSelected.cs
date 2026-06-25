@@ -2,14 +2,14 @@ using System.Collections.Generic;
 using System.Linq;
 using LcdMod.Client.Config;
 using LcdMod.Client.Helpers;
-
+using LcdMod.Common.Config.Components;
+using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using VRage;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.Utils;
 using AntennaSurfaceScript = LcdMod.Client.SurfaceScripts.AntennaSurfaceScript;
-using ScreenConfigWithBlocks = LcdMod.Common.Config.Models.Apps.ScreenConfigWithBlocks;
 
 namespace LcdMod.Client.Terminal.Controls.Filter.Listbox
 {
@@ -23,22 +23,27 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Listbox
         protected override void Getter(IMyTerminalBlock b, List<MyTerminalControlListBoxItem> blockList,
             List<MyTerminalControlListBoxItem> selected)
         {
-            var screenSettings = ConfigManager.GetConfigForCurrentScreen(b) as ScreenConfigWithBlocks;
+            var settings = ConfigManager.GetConfigForBlock(b);
+            var surface = settings == null ? null : settings.GetSurfaceConfig(GetThisSurfaceIndex(b));
+            var screenSettings = surface == null ? null : surface.TryGet<BlockSelectionConfigComponent>(Constants.BLOCKS);
 
             if (screenSettings == null)
                 return;
             
             var script = ((IMyTextSurfaceProvider)b).GetSurface(GetThisSurfaceIndex(b)).Script;
+            var selectedGroups = screenSettings.SelectedGroups ?? new string[0];
+            var selectedBlocks = screenSettings.SelectedBlocks ?? new long[0];
+
             if (script != AntennaSurfaceScript.ID) // antenna does not support groups
-                blockList.AddRange(screenSettings.SelectedGroups.Select(a => ListBoxItemHelper.GetOrComputeListBoxItem(
+                blockList.AddRange(selectedGroups.Select(a => ListBoxItemHelper.GetOrComputeListBoxItem(
                     $"*{a}*",
                     $"{MyTexts.GetString("Terminal_GroupTitle")} {a}",
                     a)));
 
-            if (!screenSettings.SelectedBlocks.Any())
+            if (!selectedBlocks.Any())
                 return;
 
-            foreach (var id in screenSettings.SelectedBlocks)
+            foreach (var id in selectedBlocks)
             {
                 var block = MyAPIGateway.Entities.GetEntityById(id) as IMyCubeBlock;
 

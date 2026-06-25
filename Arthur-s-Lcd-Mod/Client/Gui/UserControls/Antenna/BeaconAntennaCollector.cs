@@ -1,3 +1,5 @@
+using LcdMod.Common.Config.Components;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using LcdMod.Client.Apps.Abstract;
@@ -10,7 +12,11 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
 {
     internal sealed class BeaconCollector : AntennaCollector
     {
-        public BeaconCollector(IAppHost antennaSurfaceScript) : base(antennaSurfaceScript)
+        public BeaconCollector(
+            IAppHost antennaSurfaceScript,
+            Func<BlockSelectionConfigComponent> getConfig,
+            Func<ColorConfigComponent> getColors)
+            : base(antennaSurfaceScript, getConfig, getColors)
         {
             
         }
@@ -21,7 +27,7 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
             Dictionary<long, AntennaEntry> models,
             HashSet<long> activeEntryIds)
         {
-            var beacons = grid.GetTerminalBlocks<IMyBeacon>(ScreenConfigGeneral.GridLinkType);
+            var beacons = grid.GetTerminalBlocks<IMyBeacon>(GridLinkType);
 
             for (int i = 0; i < beacons.Count; i++)
             {

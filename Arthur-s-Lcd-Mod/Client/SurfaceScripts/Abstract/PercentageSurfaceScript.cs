@@ -4,6 +4,7 @@ using LcdMod.Client.Extensions;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Utility;
+using LcdMod.Common.Config.Components;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
@@ -14,7 +15,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 {
     public abstract partial class PercentageSurfaceScript<TEntry> : SurfaceScriptBase, IMultiDisplayMode
     {
-        protected override ConfigKind ConfigKind => ConfigKind.Interactive;
         protected const int LINE_HEIGHT = 40;
         protected const int MINIMUM_COL_WIDTH = 220;
         protected const int SCROLL_DELAY = 12;
@@ -31,9 +31,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         public override void SafeRun()
         {
-            if (AppConfig == null)
-                return;
-
             if (_scriptForegroundColor != Surface.ScriptForegroundColor)
                 LayoutChanged();
 
@@ -66,7 +63,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         protected virtual Color? GetEntryUsageColor(float pct) => null;
         protected virtual string GetNumber(float pct) => FormatingHelper.PercentageToString(pct);
-        protected virtual Color GetEntryBarFillColor() => AppConfig.HeaderColor;
+        protected virtual Color GetEntryBarFillColor() => ColorComponent.ResolveHeaderColor(Block as IMyTerminalBlock);
         protected virtual Color GetEntryBarBackgroundColor() => BackgroundColor.DeriveAccentColor();
 
         protected virtual int GetMaxColsFromSurface()
@@ -100,9 +97,9 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             GetCellViewBox(xStart, xEnd, yStart, cellHeight, cellPadding);
         internal void TrimTextInternal(ref System.Text.StringBuilder sb, float availableWidth, float fontSize = 1f) =>
             TrimText(ref sb, availableWidth, fontSize);
-        internal int DisplayModeInternal => AppConfig.DisplayMode;
-        internal bool DrawLinesInternal => AppConfig.DrawLines;
-        internal Color HeaderColorInternal => AppConfig.HeaderColor;
+        internal int DisplayModeInternal => GeneralComponent.DisplayMode;
+        internal bool DrawLinesInternal => GeneralComponent.DrawLines;
+        internal Color HeaderColorInternal => ColorComponent.ResolveHeaderColor(Block as IMyTerminalBlock);
         internal float FontScaleInternal => FontScale;
     }
 }

@@ -19,8 +19,10 @@ using SeparatorFilter = LcdMod.Client.Terminal.Controls.Filter.SeparatorFilter;
 using SwitchToggleLines = LcdMod.Client.Terminal.Controls.Generic.SwitchToggleLines;
 using SwitchSubGrid = LcdMod.Client.Terminal.Controls.Generic.SwitchSubGrid;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
+    [LcdSurface(typeof(LcdMod.Client.Apps.CargoFilledApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class CargoFilledSurfaceScript : InteractiveSurfaceScript,
         IUsesTerminalControl<SwitchToggleLines>,
@@ -31,7 +33,6 @@ namespace LcdMod.Client.SurfaceScripts
         IAutoScroll,
         IMultiDisplayMode
     {
-        protected override ConfigKind ConfigKind => ConfigKind.WithBlocks;
         public const string ID = "ContainerCharts";
         public const string TITLE = "DisplayName_CargoFilledEntityComponent";
         protected override string DefaultTitle => TITLE;
@@ -54,13 +55,10 @@ public override List<Control> InteractiveList => _app.Children as List<Control>;
 
         public override void SafeRun()
         {
-            if (AppConfig == null)
-                return;
-
             base.SafeRun();
 
             if (_app == null)
-                _app = new CargoFilledApp(AppConfig, this);
+                _app = new CargoFilledApp(this);
 
             UpdateViewBox();
             _app.Update();

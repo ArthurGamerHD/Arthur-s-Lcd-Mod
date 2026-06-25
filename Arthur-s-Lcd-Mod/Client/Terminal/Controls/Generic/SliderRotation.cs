@@ -1,9 +1,9 @@
 using System.Text;
 using LcdMod.Client.Config;
+using LcdMod.Common.Config.Components;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
-using ScreenConfigDiagnostic = LcdMod.Common.Config.Models.Apps.ScreenConfigDiagnostic;
 
 namespace LcdMod.Client.Terminal.Controls.Generic
 {
@@ -30,17 +30,14 @@ namespace LcdMod.Client.Terminal.Controls.Generic
 
         void Setter(IMyTerminalBlock block, float value)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigDiagnostic;
-            if (config == null)
-                return;
-
-            config.Rotation = (int)(value/5) * 5;
-            ConfigManager.Sync(block);
+            ConfigManager.ModifyComponentForTerminalApp<DiagnosticConfigComponent>(
+                block,
+                config => config.Rotation = (int)(value/5) * 5);
         }
 
         float Getter(IMyTerminalBlock block)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigDiagnostic;
+            var config = ConfigManager.GetComponentForTerminalApp<DiagnosticConfigComponent>(block);
             if (config == null)
                 return 1;
 

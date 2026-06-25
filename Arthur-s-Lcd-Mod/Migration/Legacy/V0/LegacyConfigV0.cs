@@ -9,6 +9,33 @@ namespace LcdMod.Migration.Legacy.V0
     // Frozen data-only snapshot of the config schema stored under Constants.V0StorageGuid.
     // Do not add runtime methods, generator interfaces, XML projections, or conversions here.
 
+    internal enum LegacyConfigKind
+    {
+        WithBlocks = 1,
+        Projector = 2,
+        Diagnostic = 3,
+        General = 4,
+        Colorable = 5,
+        WithReferenceBlock = 6,
+        WithFilters = 7,
+        Radar = 8,
+        OreScanner = 9,
+        Power = 10,
+        StarMap = 11,
+        WithItems = 12,
+        Docking = 13,
+        Interactive = 14,
+        Raycast = 15,
+        RenderProxy = 16,
+        Markdown = 17,
+        ButtonPanel = 18,
+        DigitalPictureFrames = 19,
+        CargoActions = 20,
+        NpcMarket = 21,
+        VisibleTreeDebug = 22,
+        ClockDashboard = 23,
+    }
+    
     [ProtoContract]
     public sealed class LegacyScreenProviderConfig
     {

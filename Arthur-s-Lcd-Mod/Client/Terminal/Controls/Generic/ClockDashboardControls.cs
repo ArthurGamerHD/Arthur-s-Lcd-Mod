@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using LcdMod.Client.ClockDashboard;
 using LcdMod.Client.Config;
-using LcdMod.Common.Config.Models.Apps;
+using LcdMod.Common.Config.Components;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.ModAPI;
@@ -27,17 +27,14 @@ namespace LcdMod.Client.Terminal.Controls.Generic
 
         void Setter(IMyTerminalBlock block, bool value)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigClockDashboard;
-            if (config == null)
-                return;
-
-            config.Use24HourClock = value;
-            ConfigManager.Sync(block);
+            ConfigManager.ModifyComponentForTerminalApp<ClockDashboardConfigComponent>(
+                block,
+                config => config.Use24HourClock = value);
         }
 
         bool Getter(IMyTerminalBlock block)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigClockDashboard;
+            var config = ConfigManager.GetComponentForTerminalApp<ClockDashboardConfigComponent>(block);
             return config == null || config.Use24HourClock;
         }
     }
@@ -84,18 +81,17 @@ namespace LcdMod.Client.Terminal.Controls.Generic
 
         static void Setter(IMyTerminalBlock block, long value)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigClockDashboard;
-            if (config == null)
-                return;
-
-            config.TemperatureModeInternal = (int)value;
-            ConfigManager.Sync(block);
+            ConfigManager.ModifyComponentForTerminalApp<ClockDashboardConfigComponent>(
+                block,
+                config => config.TemperatureModeInternal = (int)value);
         }
 
         static long Getter(IMyTerminalBlock block)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigClockDashboard;
-            return (long)(config != null ? config.TemperatureMode : ClockDashboardTemperatureMode.Fuzzy);
+            var config = ConfigManager.GetComponentForTerminalApp<ClockDashboardConfigComponent>(block);
+            return config != null
+                ? config.TemperatureModeInternal
+                : (long)ClockDashboardTemperatureMode.Fuzzy;
         }
     }
 }

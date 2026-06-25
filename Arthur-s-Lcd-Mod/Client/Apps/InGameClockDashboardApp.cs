@@ -1,3 +1,4 @@
+using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
@@ -9,14 +10,18 @@ using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.ControlsTemplates.Progress;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
-using LcdMod.Common.Config.Models.Apps;
 using VRage.Game;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 
+using LcdMod.Common.Config.Generation;
+using LcdMod.Common.Helpers;
+
 namespace LcdMod.Client.Apps
 {
-    internal sealed class InGameClockDashboardApp : App, IApp
+    [LcdApp(20, Name = "ClockDashboard")]
+    [ConfigComponent(Constants.APP, typeof(ClockDashboardConfigComponent), PropertyName = "ClockDashboardComponent")]
+    internal sealed partial class InGameClockDashboardApp : App, IApp
     {
         const float MIN_CONTENT_HEIGHT = 40f;
         const float TINY_HEIGHT_TO_WIDTH_RATIO = 0.2f;
@@ -29,7 +34,6 @@ namespace LcdMod.Client.Apps
             Tiny
         }
 
-        readonly ScreenConfigClockDashboard _config;
         readonly ClockEnvironmentReader _reader = new ClockEnvironmentReader();
         
         // ReSharper disable once CollectionNeverUpdated.Local interactivity not implemented yet
@@ -74,10 +78,9 @@ namespace LcdMod.Client.Apps
         bool _layoutConfigured;
         ClockDashboardLayoutMode _layoutMode;
 
-        public InGameClockDashboardApp(ScreenConfigClockDashboard config, IAppHost host)
-            : base(config, host)
+        public InGameClockDashboardApp(IAppHost host)
+            : base(host)
         {
-            _config = config;
             _rootGrid = AddChild(new Grid());
             _clockProgressBarStyles = BuildClockProgressBarStyles();
 
@@ -169,13 +172,11 @@ namespace LcdMod.Client.Apps
 
         public override IReadOnlyList<Control> Children => _interactiveChildren;
 
-        ScreenConfigClockDashboard Config => Host != null ? Host.Config as ScreenConfigClockDashboard ?? _config : _config;
-
         public override void Update()
         {
             _snapshot = _reader.Read(
-                Host?.Block,
-                Host?.GridLogic,
+                Host.Block,
+                Host.GridLogic,
                 _snapshot);
             BindSnapshot();
         }
@@ -189,9 +190,6 @@ namespace LcdMod.Client.Apps
         public override List<MySprite> GetSprites()
         {
             var sprites = new List<MySprite>();
-            if (Host == null)
-                return sprites;
-
             var bounds = GetContentBounds();
             if (bounds.Width <= 5f || bounds.Height <= 5f)
                 return sprites;
@@ -226,7 +224,7 @@ namespace LcdMod.Client.Apps
         RectangleF GetContentBounds()
         {
             RectangleF view = Host.ViewBox;
-            float scale = Config?.Scale ?? 1f;
+            float scale = GeneralComponent.GetScale();
             float topInset = Host.TitleVisible ? 48f * scale : 0f;
             float top = view.Y + topInset;
             float height = Math.Max(MIN_CONTENT_HEIGHT, view.Bottom - top);
@@ -426,7 +424,7 @@ namespace LcdMod.Client.Apps
 
         void BindSnapshot()
         {
-            if (_snapshot == null || Host == null)
+            if (_snapshot == null)
                 return;
 
             string weatherName = _snapshot.WeatherDisplayName ?? ClockDashboardLocalization.Unavailable;
@@ -434,11 +432,11 @@ namespace LcdMod.Client.Apps
                 ? FormatingHelper.TemperatureToString(
                     _snapshot.AmbientTemperatureNormalized,
                     _snapshot.AmbientTemperatureLevel,
-                    Config.TemperatureMode)
+                    (ClockDashboardTemperatureMode)ClockDashboardComponent.TemperatureModeInternal)
                 : ClockDashboardLocalization.Unavailable;
 
             _squareWeatherTemperatureText.Text = weatherName + ", " + compactTemperature;
-            _squareTimeText.Text = ClockDashboardFormatter.FormatCompactTime(_snapshot.DisplayDateTime, Config);
+            _squareTimeText.Text = ClockDashboardFormatter.FormatCompactTime(_snapshot.DisplayDateTime, ClockDashboardComponent);
             _squareDateText.Text = ClockDashboardFormatter.FormatShortWeekday(_snapshot.DisplayDateTime) + ", " +
                                    ClockDashboardFormatter.FormatCompactDate(_snapshot.DisplayDateTime);
 
@@ -462,11 +460,11 @@ namespace LcdMod.Client.Apps
                                   _snapshot.HasLocalSolarTime;
             _squareSunriseValue.IconTint = Color.White;
             _squareSunriseValue.Text = hasSolarEvents && _snapshot.HasTerrainSunrise
-                ? ClockDashboardFormatter.FormatSolarEventTime(_snapshot.TerrainSunriseHour, Config)
+                ? ClockDashboardFormatter.FormatSolarEventTime(_snapshot.TerrainSunriseHour, ClockDashboardComponent)
                 : ClockDashboardLocalization.Unavailable;
             _squareSunsetValue.IconTint = Color.White;
             _squareSunsetValue.Text = hasSolarEvents && _snapshot.HasTerrainSunset
-                ? ClockDashboardFormatter.FormatSolarEventTime(_snapshot.TerrainSunsetHour, Config)
+                ? ClockDashboardFormatter.FormatSolarEventTime(_snapshot.TerrainSunsetHour, ClockDashboardComponent)
                 : ClockDashboardLocalization.Unavailable;
 
             if (_snapshot.HasIncomingWeather)
@@ -475,7 +473,7 @@ namespace LcdMod.Client.Apps
                 _squareForecast.Title = _snapshot.IncomingWeatherDisplayName ?? ClockDashboardLocalization.UnknownWeather;
                 _squareForecast.Arrival = ClockDashboardFormatter.FormatIncomingArrival(
                     _snapshot,
-                    Config);
+                    ClockDashboardComponent);
             }
             else
             {
@@ -492,7 +490,7 @@ namespace LcdMod.Client.Apps
                 ? FormatingHelper.TemperatureToString(
                     _snapshot.InteriorTemperatureNormalized,
                     _snapshot.InteriorTemperatureLevel,
-                    Config.TemperatureMode)
+                    (ClockDashboardTemperatureMode)ClockDashboardComponent.TemperatureModeInternal)
                 : ClockDashboardLocalization.Unavailable;
             _squareTemperatureText.Text = interiorTemperature;
             _squareTemperatureBar.Fraction = _snapshot.HasInteriorTemperature
@@ -503,7 +501,7 @@ namespace LcdMod.Client.Apps
 
         void ConfigureResponsiveText(RectangleF bounds)
         {
-            float configScale = Config?.Scale ?? 1f;
+            float configScale = GeneralComponent.GetScale();
             float timeScale = MathHelper.Clamp(configScale *
                                                Math.Max(0.55f, Math.Min(bounds.Width / 512f, bounds.Height / 256f)),
                 0.45f, 2.5f);

@@ -7,18 +7,13 @@ using LcdMod.Common.Config.Components;
 using ProtoBuf;
 using Sandbox.ModAPI;
 using VRage.Game.ModAPI;
-using VRage.Utils;
-using ScreenConfigWithBlocks = LcdMod.Common.Config.Models.Apps.ScreenConfigWithBlocks;
 
 namespace LcdMod.Common.Config.Models
 {
     [ProtoContract]
     public class ScreenProviderConfig
     {
-        static readonly IConfigGenerator ConfigGenerator = new ConfigGenerator();
-
         public const int COMPONENT_SCHEMA_VERSION = 1;
-        public static Version CurrentVersion => new Version(0, 2);
 
         public ScreenProviderConfig()
         {
@@ -29,12 +24,14 @@ namespace LcdMod.Common.Config.Models
         {
             Parent = parent.CubeGrid.EntityId;
             SchemaVersion = COMPONENT_SCHEMA_VERSION;
-
             for (var index = 0; index < surfaceCount; index++)
             {
-                var runtime = new ScreenConfigGeneral(index, parent);
-                Screens.Add(runtime);
-                Surfaces.Add(ComponentConfigAdapter.FromRuntimeSurface(runtime, index));
+                Surfaces.Add(new SurfaceConfig
+                {
+                    SurfaceIndex = index,
+                    AppTypeId = 0,
+                    Components = new List<ConfigComponentEntry>()
+                });
             }
         }
 
@@ -47,79 +44,13 @@ namespace LcdMod.Common.Config.Models
         [XmlArrayItem("Surface")]
         public List<SurfaceConfig> Surfaces { get; set; } = new List<SurfaceConfig>();
 
-        /// <summary>
-        /// Transitional runtime facade for apps that still consume the inherited config classes.
-        /// It is reconstructed from, and captured back into, <see cref="Surfaces"/>.
-        /// </summary>
         [ProtoIgnore]
         [XmlIgnore]
-        public List<ScreenConfigGeneral> Screens { get; set; } = new List<ScreenConfigGeneral>();
+        public bool IsReadOnly { get; private set; }
 
-        public void EnsureRuntimeScreens()
-        {
-            if (Surfaces == null)
-                Surfaces = new List<SurfaceConfig>();
-
-            if (Surfaces.Count == 0)
-            {
-                if (Screens == null)
-                    Screens = new List<ScreenConfigGeneral>();
-                return;
-            }
-
-            var maxIndex = -1;
-            foreach (var surface in Surfaces)
-            {
-                if (surface != null && surface.SurfaceIndex > maxIndex)
-                    maxIndex = surface.SurfaceIndex;
-            }
-
-            // Existing apps keep references to these runtime facade objects. Only rebuild after
-            // protobuf/network deserialization (where Screens is empty), not on every access.
-            if (Screens != null && Screens.Count > maxIndex)
-                return;
-
-            var rebuilt = new List<ScreenConfigGeneral>(Math.Max(0, maxIndex + 1));
-            for (var index = 0; index <= maxIndex; index++)
-                rebuilt.Add(new ScreenConfigGeneral { ScreenIndex = index });
-
-            foreach (var surface in Surfaces)
-            {
-                if (surface == null || surface.SurfaceIndex < 0)
-                    continue;
-
-                while (rebuilt.Count <= surface.SurfaceIndex)
-                    rebuilt.Add(new ScreenConfigGeneral { ScreenIndex = rebuilt.Count });
-
-                rebuilt[surface.SurfaceIndex] =
-                    ComponentConfigAdapter.ToRuntime(surface, surface.SurfaceIndex);
-            }
-
-            Screens = rebuilt;
-        }
-
-        public void CaptureRuntimeScreens()
-        {
-            if (Screens == null)
-                return;
-
-            if (Surfaces == null)
-                Surfaces = new List<SurfaceConfig>();
-
-            for (var index = 0; index < Screens.Count; index++)
-                CaptureRuntimeScreen(index);
-
-            SchemaVersion = COMPONENT_SCHEMA_VERSION;
-        }
-
-        public void CaptureRuntimeScreen(int index)
-        {
-            if (Screens == null || index < 0 || index >= Screens.Count)
-                return;
-
-            var surface = GetOrCreateSurface(index);
-            ComponentConfigAdapter.CaptureRuntime(Screens[index], surface);
-        }
+        [ProtoIgnore]
+        [XmlIgnore]
+        public bool CanWrite => !IsReadOnly && SchemaVersion <= COMPONENT_SCHEMA_VERSION;
 
         public SurfaceConfig GetSurfaceConfig(int surfaceIndex)
         {
@@ -127,50 +58,110 @@ namespace LcdMod.Common.Config.Models
                 candidate != null && candidate.SurfaceIndex == surfaceIndex);
         }
 
-        public ScreenConfigGeneral EnsureScreenConfigType(int index, ConfigKind requestedConfigKind)
+        public SurfaceConfig GetOrCreateSurfaceConfig(int index)
         {
-            EnsureRuntimeScreens();
+            var surface = GetSurfaceConfig(index);
+            if (surface != null || IsReadOnly)
+                return surface;
 
-            if (index < 0 || index >= Screens.Count)
-                return null;
+            if (Surfaces == null)
+                Surfaces = new List<SurfaceConfig>();
 
-            var current = Screens[index];
-            var requested = ConfigGenerator.GenerateConfig(requestedConfigKind) as ScreenConfigGeneral;
-
-            if (requested == null)
-                return current;
-
-            requested.ScreenIndex = index;
-
-            if (current != null && current.GetType() == requested.GetType())
-                return current;
-
-            if (requestedConfigKind == ConfigKind.Interactive && current is ScreenConfigInteractive)
-                return current;
-
-            CaptureRuntimeScreen(index);
-            var sourceSurface = GetOrCreateSurface(index);
-            var targetSurface = ComponentConfigAdapter.FromRuntimeSurface(requested, index);
-            targetSurface.CopyCompatibleFrom(sourceSurface);
-
-            // Keep the surface object stable; only its selected app schema and components change.
-            sourceSurface.AppKind = targetSurface.AppKind;
-            sourceSurface.Components = targetSurface.Components;
-
-            var materialized = ComponentConfigAdapter.ToRuntime(sourceSurface, index);
-            Screens[index] = materialized;
-            return materialized;
+            surface = new SurfaceConfig
+            {
+                SurfaceIndex = index,
+                AppTypeId = 0,
+                Components = new List<ConfigComponentEntry>()
+            };
+            Surfaces.Add(surface);
+            return surface;
         }
 
-        public void BindRuntimeParent(IMyTerminalBlock block)
+        public void EnsureSurfaceApp(int index, AppType requestedAppType)
         {
-            EnsureRuntimeScreens();
+            if (IsReadOnly)
+                return;
 
-            foreach (var providerScreen in Screens)
+            var surface = GetOrCreateSurfaceConfig(index);
+            if (surface == null)
+                return;
+
+            if (surface.AppTypeId == 0)
             {
-                if (providerScreen != null)
-                    providerScreen.ParentBlock = block;
+                // Bind-time migration: the concrete surface script supplies the identity that old
+                // shared legacy schema-kind values could not encode.
+                AppSchemaRegistry.ChangeApp(surface, requestedAppType);
+                return;
             }
+
+            AppType existingAppType;
+            if (!AppSchemaRegistry.TryNormalizeAppType(surface.AppTypeId, out existingAppType))
+            {
+                // Unknown future/extension app identities are opaque to this build.
+                return;
+            }
+
+            if (existingAppType == requestedAppType)
+            {
+                AppSchemaRegistry.EnsureSchema(surface, requestedAppType);
+                surface.LegacyAppKind = 0;
+                return;
+            }
+
+            AppSchemaRegistry.ChangeApp(surface, requestedAppType);
+        }
+
+        public bool CanWriteConfig(IAppConfig config)
+        {
+            return CanWrite && config != null && AppSchemaRegistry.IsKnownAppType(config.AppTypeId);
+        }
+
+        /// <summary>
+        /// Repairs component-schema V1 configurations understood by this build. Public V0 storage
+        /// is migrated separately, and its surfaces remain unresolved until their concrete surface
+        /// script binds an AppType.
+        /// </summary>
+        public bool NormalizeComponentSchema()
+        {
+            IsReadOnly = false;
+            if (SchemaVersion > COMPONENT_SCHEMA_VERSION)
+            {
+                IsReadOnly = true;
+                return false;
+            }
+
+            // Component storage starts at V1. Public V0 uses a different storage GUID and
+            // is converted by LegacyV0Migrator before reaching this normalization path.
+            if (SchemaVersion <= 0)
+                SchemaVersion = COMPONENT_SCHEMA_VERSION;
+
+            if (Surfaces == null)
+                Surfaces = new List<SurfaceConfig>();
+
+            var seenSurfaceIndexes = new HashSet<int>();
+            for (var i = Surfaces.Count - 1; i >= 0; i--)
+            {
+                var surface = Surfaces[i];
+                if (surface == null)
+                {
+                    Surfaces.RemoveAt(i);
+                    continue;
+                }
+
+                if (surface.SurfaceIndex < 0)
+                    surface.SurfaceIndex = i;
+
+                if (!seenSurfaceIndexes.Add(surface.SurfaceIndex))
+                {
+                    Surfaces.RemoveAt(i);
+                    continue;
+                }
+
+                NormalizeSurface(surface);
+            }
+
+            Surfaces.Sort((left, right) => left.SurfaceIndex.CompareTo(right.SurfaceIndex));
+            return true;
         }
 
         public ScreenProviderConfig CopyFrom(ScreenProviderConfig other)
@@ -178,75 +169,81 @@ namespace LcdMod.Common.Config.Models
             if (other == null)
                 return this;
 
-            other.EnsureRuntimeScreens();
-            EnsureRuntimeScreens();
-
             Parent = other.Parent;
             SchemaVersion = other.SchemaVersion;
-
-            if (Screens.Count != other.Screens.Count)
-            {
-                MyLog.Default.WriteLine(
-                    $"[LcdMod] CopyFrom: Screens count mismatch ({Screens.Count} vs {other.Screens.Count}), rebuilding list.");
-                Screens.Clear();
-                for (var index = 0; index < other.Screens.Count; index++)
-                    Screens.Add(new ScreenConfigGeneral());
-            }
-
-            for (var index = 0; index < Screens.Count; index++)
-            {
-                var source = other.Screens[index];
-                var target = Screens[index];
-
-                if (source == null)
-                {
-                    Screens[index] = new ScreenConfigGeneral { ScreenIndex = index };
-                    continue;
-                }
-
-                if (target == null || target.GetType() != source.GetType())
-                    target = ConfigGenerator.GenerateConfig((ConfigKind)source.Id) as ScreenConfigGeneral;
-
-                if (target == null)
-                    continue;
-
-                target.Clone(source);
-                target.ScreenIndex = index;
-                Screens[index] = target;
-            }
-
             Surfaces = other.Surfaces == null
                 ? new List<SurfaceConfig>()
                 : other.Surfaces.Where(surface => surface != null).Select(surface => surface.Clone()).ToList();
-
-            SchemaVersion = COMPONENT_SCHEMA_VERSION;
+            NormalizeComponentSchema();
             return this;
         }
 
         public void SetParent(IMyCubeBlock block)
         {
+            if (block == null || IsReadOnly)
+                return;
+
             Parent = block.CubeGrid.EntityId;
-            BindRuntimeParent((IMyTerminalBlock)block);
-            foreach (var screen in Screens.OfType<ScreenConfigWithBlocks>())
-                screen.SelectedBlocks = Array.Empty<long>();
-            CaptureRuntimeScreens();
+            ClearSelectedBlocks(Surfaces);
         }
 
-        SurfaceConfig GetOrCreateSurface(int index)
+        static void ClearSelectedBlocks(List<SurfaceConfig> surfaces)
         {
-            if (Surfaces == null)
-                Surfaces = new List<SurfaceConfig>();
+            if (surfaces == null)
+                return;
 
-            var surface = Surfaces.FirstOrDefault(candidate =>
-                candidate != null && candidate.SurfaceIndex == index);
-            if (surface != null)
-                return surface;
-
-            surface = new SurfaceConfig { SurfaceIndex = index };
-            Surfaces.Add(surface);
-            return surface;
+            foreach (var surface in surfaces)
+            {
+                if (surface == null)
+                    continue;
+                if (surface.AppTypeId != 0 && !AppSchemaRegistry.IsKnownAppType(surface.AppTypeId))
+                    continue;
+                ClearSelectedBlocks(surface);
+            }
         }
 
+        static void ClearSelectedBlocks(IComponentContainer config)
+        {
+            if (config == null || config.Components == null)
+                return;
 
+            foreach (var entry in config.Components)
+            {
+                var blocks = entry == null ? null : entry.Value as BlockSelectionConfigComponent;
+                if (blocks != null)
+                    blocks.SelectedBlocks = Array.Empty<long>();
+
+                var tabs = entry == null ? null : entry.Value as TabContainerConfigComponent;
+                if (tabs == null || tabs.Apps == null)
+                    continue;
+
+                foreach (var app in tabs.Apps)
+                    ClearSelectedBlocks(app);
+            }
+        }
+
+        static void NormalizeSurface(SurfaceConfig surface)
+        {
+            AppType appType = default(AppType);
+            var hasKnownAppType = surface.AppTypeId != 0;
+            if (hasKnownAppType && !AppSchemaRegistry.TryNormalizeAppType(surface.AppTypeId, out appType))
+                return;
+
+            if (surface.Components == null)
+                surface.Components = new List<ConfigComponentEntry>();
+
+            if (hasKnownAppType)
+                AppSchemaRegistry.EnsureSchema(surface, appType);
+
+            // Nested app execution/identity remains deferred. Preserve its data and only repair the
+            // container's stable instance IDs.
+            foreach (var entry in surface.Components)
+            {
+                var tabs = entry == null ? null : entry.Value as TabContainerConfigComponent;
+                if (tabs == null)
+                    continue;
+                tabs.NormalizeAppInstanceIds();
+            }
+        }
     }
 }

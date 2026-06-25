@@ -1,3 +1,4 @@
+using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -12,13 +13,17 @@ using LcdMod.Client.Helpers;
 using LcdMod.Client.Terminal.Controls;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
-using ScreenConfigWithBlocks = LcdMod.Common.Config.Models.Apps.ScreenConfigWithBlocks;
 using VisualStackPanel = LcdMod.Client.Gui.ControlsTemplates.Panels.StackPanel.StackPanel;
 using VisualWrapPanel = LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel.WrapPanel;
 
+using LcdMod.Common.Config.Generation;
+using LcdMod.Common.Helpers;
+
 namespace LcdMod.Client.Apps
 {
-    public sealed class AntennaApp : App, IApp
+    [LcdApp(1)]
+    [ConfigComponent(Constants.BLOCKS, typeof(BlockSelectionConfigComponent), PropertyName = "BlockSelectionComponent")]
+    public sealed partial class AntennaApp : App, IApp
     {
         const float LINE = 22f;
         const float MINIMUM_COL_WIDTH = 400f;
@@ -26,8 +31,6 @@ namespace LcdMod.Client.Apps
         const float LASER_ICON_SOURCE_SIZE = 190f;
         const float LASER_ICON_TOP_PADDING = 64f;
         const float LASER_ICON_BOTTOM_PADDING = 22f;
-
-        public ScreenConfigWithBlocks Config => (ScreenConfigWithBlocks)AppConfig;
         readonly List<AntennaEntry> _entries = new List<AntennaEntry>();
         readonly Dictionary<long, AntennaEntry> _entryModels = new Dictionary<long, AntennaEntry>();
         readonly HashSet<long> _activeEntryIds = new HashSet<long>();
@@ -44,7 +47,7 @@ namespace LcdMod.Client.Apps
         public bool HasEntries => _entries.Count > 0;
         public override IReadOnlyList<Control> Children => _children;
 
-        public AntennaApp(ScreenConfigWithBlocks config, IAppHost script) : base(config, script)
+        public AntennaApp(IAppHost script) : base(script)
         {
             _interactiveHost = script as InteractiveSurfaceScript;
             if (_interactiveHost == null)
@@ -85,10 +88,10 @@ namespace LcdMod.Client.Apps
             ClearInteractiveTree();
             var sprites = new List<MySprite>();
 
-            switch (Config.DisplayMode)
+            switch (GeneralComponent.DisplayMode)
             {
                 case (int)DisplayMode.Grid:
-                    DrawGridLike(sprites, false, Config.DrawLines, Config.DrawLines, Config.DrawLines);
+                    DrawGridLike(sprites, false, GeneralComponent.DrawLines, GeneralComponent.DrawLines, GeneralComponent.DrawLines);
                     break;
                 default:
                     DrawDefaultView(sprites);
@@ -101,14 +104,14 @@ namespace LcdMod.Client.Apps
 
         void BuildCollectors()
         {
-            _collectors.Add(new LaserAntennaCollector(Host));
-            _collectors.Add(new RadioAntennaCollector(Host));
-            _collectors.Add(new BeaconCollector(Host));
+            _collectors.Add(new LaserAntennaCollector(Host, () => BlockSelectionComponent, () => ColorComponent));
+            _collectors.Add(new RadioAntennaCollector(Host, () => BlockSelectionComponent, () => ColorComponent));
+            _collectors.Add(new BeaconCollector(Host, () => BlockSelectionComponent, () => ColorComponent));
         }
 
         void DrawDefaultView(List<MySprite> sprites)
         {
-            var rowHeight = GRID_CELL_LINES * LINE * AppConfig.Scale;
+            var rowHeight = GRID_CELL_LINES * LINE * GeneralComponent.GetScale();
             float caretY = GetContentTop();
             float footerHeight = GetFooterHeight();
             _scrollPanel.SetContent(_listPanel);
@@ -121,12 +124,12 @@ namespace LcdMod.Client.Apps
 
         void DrawGridLike(List<MySprite> sprites, bool forceSingleColumn, bool drawLineSprites, bool drawVerticalLines, bool drawCellsAsLines)
         {
-            var rowHeight = GRID_CELL_LINES * LINE * AppConfig.Scale;
+            var rowHeight = GRID_CELL_LINES * LINE * GeneralComponent.GetScale();
             float caretY = GetContentTop();
             float footerHeight = GetFooterHeight();
             _scrollPanel.SetContent(_gridPanel);
             _gridPanel.RowHeight = rowHeight;
-            _gridPanel.MinimumColumnWidth = MINIMUM_COL_WIDTH * AppConfig.Scale;
+            _gridPanel.MinimumColumnWidth = MINIMUM_COL_WIDTH * GeneralComponent.GetScale();
             _gridPanel.ForceSingleColumn = forceSingleColumn;
             _gridPanel.HorizontalGap = 0f;
             _gridPanel.VerticalGap = 0f;
@@ -152,7 +155,7 @@ namespace LcdMod.Client.Apps
             var viewportHeight = Math.Max(0f, Host.ViewBox.Bottom - contentTop - Math.Max(0f, footerHeight));
             _scrollPanel.ConfigureAutomatic(
                 new RectangleF(Host.ViewBox.X, contentTop, Host.ViewBox.Width, viewportHeight),
-                ScrollPanel.DefaultScrollerWidthPixels * AppConfig.Scale,
+                ScrollPanel.DefaultScrollerWidthPixels * GeneralComponent.GetScale(),
                 rowHeight);
             _scrollPanel.SetVisible(true);
             if (!_children.Contains(_scrollPanel))
@@ -215,7 +218,7 @@ namespace LcdMod.Client.Apps
             if (children == null)
                 return;
 
-            if (Config.DrawLines)
+            if (GeneralComponent.DrawLines)
                 DrawHorizontalLines(sprites, Host.ForegroundColor, "Circle", _listPanel.RowHeight);
 
             RenderPanelChildren(children, sprites);
@@ -263,7 +266,7 @@ namespace LcdMod.Client.Apps
 
         void DrawWrapPanelLines(List<MySprite> sprites, WrapPanelLayout layout, bool drawVerticalLines)
         {
-            var lineColor = new Color(Config.HeaderColor.R, Config.HeaderColor.G, Config.HeaderColor.B);
+            var lineColor = new Color(GetHeaderColor().R, GetHeaderColor().G, GetHeaderColor().B);
             DrawHorizontalLines(sprites, lineColor, "SquareSimple", layout.RowHeight);
 
             if (!drawVerticalLines)
@@ -393,7 +396,7 @@ namespace LcdMod.Client.Apps
         int GetMaxColsFromSurface()
         {
             var max = Host.ViewBox.Width - Host.ViewBox.X;
-            var perCol = MINIMUM_COL_WIDTH * AppConfig.Scale;
+            var perCol = MINIMUM_COL_WIDTH * GeneralComponent.GetScale();
             return (int)Math.Max(1, Math.Round(max / perCol - .5, MidpointRounding.AwayFromZero));
         }
 
@@ -402,7 +405,7 @@ namespace LcdMod.Client.Apps
             if (!Host.TitleVisible)
                 return Host.ViewBox.Y;
 
-            float layoutScale = AppConfig.Scale * Host.Surface.FontSize;
+            float layoutScale = GeneralComponent.GetScale() * Host.Surface.FontSize;
             return Host.ViewBox.Y + (40f * layoutScale);
         }
 
@@ -410,12 +413,12 @@ namespace LcdMod.Client.Apps
 
         void DrawAntennaCell(List<MySprite> sprites, AntennaEntry entry, float xStart, float xEnd, float yStart, float rowHeight, bool drawAsLines)
         {
-            var cellPadding = LINE * AppConfig.Scale / 2f;
+            var cellPadding = LINE * GeneralComponent.GetScale() / 2f;
             var innerLeft = xStart + cellPadding;
             var innerRight = xEnd - cellPadding;
             var innerTop = yStart + cellPadding;
             var innerBottom = yStart + rowHeight - cellPadding;
-            var topRowHeight = LINE * AppConfig.Scale;
+            var topRowHeight = LINE * GeneralComponent.GetScale();
             var bottomRowTop = innerTop + topRowHeight;
             var bottomRowHeight = Math.Max(0f, innerBottom - bottomRowTop);
             var iconSize = innerBottom - innerTop;
@@ -428,7 +431,7 @@ namespace LcdMod.Client.Apps
 
             if (!drawAsLines)
             {
-                var backgroundColor = !entry.IsFunctional ? Config.ErrorColor : Config.HeaderColor;
+                var backgroundColor = !entry.IsFunctional ? ColorComponent.ResolveErrorColor() : GetHeaderColor();
                 var hsv = ColorExtensions.ColorToHSV(backgroundColor);
                 hsv.Z *= 0.2f;
 
@@ -438,8 +441,8 @@ namespace LcdMod.Client.Apps
                     (xEnd - xStart) - cellPadding,
                     rowHeight - cellPadding);
                 var dropShadow = new RectangleF(cellRect.Position + 2, cellRect.Size);
-                BorderRenderer.CreateSpritesFromRect(dropShadow, sprites, hsv.HSVtoColor(), radiusScale: AppConfig.Scale);
-                BorderRenderer.CreateSpritesFromRect(cellRect, sprites, backgroundColor,radiusScale: AppConfig.Scale);
+                BorderRenderer.CreateSpritesFromRect(dropShadow, sprites, hsv.HSVtoColor(), radiusScale: GeneralComponent.GetScale());
+                BorderRenderer.CreateSpritesFromRect(cellRect, sprites, backgroundColor,radiusScale: GeneralComponent.GetScale());
             }
 
             var foreground = drawAsLines ? entry.StatusColor : Host.Surface.ScriptForegroundColor;
@@ -467,16 +470,16 @@ namespace LcdMod.Client.Apps
             });
 
             var titleSb = new StringBuilder(entry.Name ?? string.Empty);
-            TrimText(titleSb, Math.Max(0f, numberRect.Width - (4f * AppConfig.Scale)), 1.1f);
+            TrimText(titleSb, Math.Max(0f, numberRect.Width - (4f * GeneralComponent.GetScale())), 1.1f);
             var titlePos = numberRect.Center;
             titlePos.X = numberRect.Right;
             titlePos.Y -= numberRect.Height * 0.5f;
             sprites.Add(new MySprite(SpriteType.TEXT, titleSb.ToString(), titlePos, null, foreground, TextFont,
-                TextAlignment.RIGHT, 1.1f * AppConfig.Scale * Host.Surface.FontSize));
+                TextAlignment.RIGHT, 1.1f * GeneralComponent.GetScale() * Host.Surface.FontSize));
 
             var info = new StringBuilder();
             var lines = (entry.StatusText ?? string.Empty).Split('\n');
-            var infoTrimWidth = Math.Max(0f, nameRect.Width - (6f * AppConfig.Scale));
+            var infoTrimWidth = Math.Max(0f, nameRect.Width - (6f * GeneralComponent.GetScale()));
             for (int i = 0; i < lines.Length; i++)
             {
                 var lineSb = new StringBuilder(lines[i].TrimEnd('\r'));
@@ -488,7 +491,7 @@ namespace LcdMod.Client.Apps
             infoPos.X = nameRect.Right;
             infoPos.Y -= nameRect.Height * 0.4f;
             sprites.Add(new MySprite(SpriteType.TEXT, info.ToString(), infoPos, null, foreground, TextFont,
-                TextAlignment.RIGHT, .9f * AppConfig.Scale * Host.Surface.FontSize));
+                TextAlignment.RIGHT, .9f * GeneralComponent.GetScale() * Host.Surface.FontSize));
         }
 
         void RenderAntennaEntryControl(ControlTemplate control, List<MySprite> sprites)
@@ -510,7 +513,7 @@ namespace LcdMod.Client.Apps
 
         void TrimText(StringBuilder sb, float availableWidth, float fontSize = 1f)
         {
-            var textSize = Host.Surface.MeasureStringInPixels(sb, TextFont, fontSize * AppConfig.Scale * Host.Surface.FontSize);
+            var textSize = Host.Surface.MeasureStringInPixels(sb, TextFont, fontSize * GeneralComponent.GetScale() * Host.Surface.FontSize);
             if (textSize.X <= availableWidth)
                 return;
 
@@ -519,7 +522,7 @@ namespace LcdMod.Client.Apps
             {
                 sb.Clear();
                 sb.Append(FormatingHelper.TrimName(source, i));
-                textSize = Host.Surface.MeasureStringInPixels(sb, TextFont, fontSize * AppConfig.Scale * Host.Surface.FontSize);
+                textSize = Host.Surface.MeasureStringInPixels(sb, TextFont, fontSize * GeneralComponent.GetScale() * Host.Surface.FontSize);
                 if (textSize.X <= availableWidth)
                     break;
             }

@@ -1,9 +1,11 @@
 using System;
+using System.ComponentModel;
 using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Serialization;
 using ProtoBuf;
 using LcdMod.Common.Config;
+using VRage.Game.ModAPI;
 using VRageMath;
 
 namespace LcdMod.Common.Config.Components
@@ -56,25 +58,6 @@ namespace LcdMod.Common.Config.Components
         public abstract ConfigComponent Clone();
     }
 
-    public static class ConfigSlots
-    {
-        public const string General = "core.general";
-        public const string Colors = "core.colors";
-        public const string Interaction = "core.interaction";
-        public const string Filters = "data.filters";
-        public const string Blocks = "data.blocks";
-        public const string Items = "data.items";
-        public const string App = "app.settings";
-        public const string Tabs = "app.tabs";
-
-        // The slot, not the component CLR type, identifies the semantic use of a reference.
-        public const string ProjectorReference = "reference.projector";
-        public const string DockableReference = "reference.dockable";
-        public const string RenderProxyReference = "reference.render-proxy-source";
-        public const string OreScannerReference = "reference.ore-scanner";
-        public const string VisibleTreeReference = "reference.visible-tree";
-    }
-
     [ProtoContract]
     public sealed class ConfigComponentEntry
     {
@@ -97,19 +80,21 @@ namespace LcdMod.Common.Config.Components
         }
     }
 
-    /// <summary>
-    /// Common component-bearing shape. A normal surface implements this directly; app instances
-    /// are reserved for the nested entries owned by the tab-container component.
-    /// </summary>
-    public interface IComponentConfig
+    /// <summary>Common component-bearing shape shared by top-level and deferred nested configs.</summary>
+    public interface IComponentContainer
     {
-        int AppKind { get; set; }
         List<ConfigComponentEntry> Components { get; set; }
+    }
+
+    /// <summary>A top-level persisted app configuration with a concrete generated app identity.</summary>
+    public interface IAppConfig : IComponentContainer
+    {
+        int AppTypeId { get; set; }
     }
 
     public static class ComponentConfigExtensions
     {
-        public static T TryGet<T>(this IComponentConfig config, string slot) where T : ConfigComponent
+        public static T TryGet<T>(this IComponentContainer config, string slot) where T : ConfigComponent
         {
             if (config == null || config.Components == null)
                 return null;
@@ -119,16 +104,54 @@ namespace LcdMod.Common.Config.Components
             return entry == null ? null : entry.Value as T;
         }
 
-        public static T Get<T>(this IComponentConfig config, string slot) where T : ConfigComponent
+        public static T Get<T>(this IComponentContainer config, string slot) where T : ConfigComponent
         {
             var component = config.TryGet<T>(slot);
             if (component == null)
                 throw new InvalidOperationException(
-                    $"Missing config component '{slot}' ({typeof(T).Name}) for app {config?.AppKind}.");
+                    $"Missing config component '{slot}' ({typeof(T).Name}) for app {GetAppIdentity(config)}.");
             return component;
         }
 
-        public static void Set(this IComponentConfig config, string slot, ConfigComponent component)
+        public static T TryGetComponent<T>(this IComponentContainer config) where T : ConfigComponent
+        {
+            if (config == null || config.Components == null)
+                return null;
+
+            T result = null;
+            foreach (var entry in config.Components)
+            {
+                var component = entry == null ? null : entry.Value as T;
+                if (component == null)
+                    continue;
+                if (result != null)
+                    throw new InvalidOperationException(
+                        $"Multiple {typeof(T).Name} components exist for app {GetAppIdentity(config)}; use the slot overload.");
+                result = component;
+            }
+            return result;
+        }
+
+        public static T GetComponent<T>(this IComponentContainer config) where T : ConfigComponent
+        {
+            var component = config.TryGetComponent<T>();
+            if (component == null)
+                throw new InvalidOperationException(
+                    $"Missing {typeof(T).Name} component for app {GetAppIdentity(config)}.");
+            return component;
+        }
+
+        public static T TryGetComponent<T>(this IComponentContainer config, string slot) where T : ConfigComponent
+        {
+            return config.TryGet<T>(slot);
+        }
+
+        public static T GetComponent<T>(this IComponentContainer config, string slot) where T : ConfigComponent
+        {
+            return config.Get<T>(slot);
+        }
+
+        public static void Set(this IComponentContainer config, string slot, ConfigComponent component)
         {
             if (config == null)
                 throw new ArgumentNullException(nameof(config));
@@ -147,7 +170,7 @@ namespace LcdMod.Common.Config.Components
         /// Copies only slots that exist in both schemas and have the same component data shape.
         /// Reference components therefore copy only when their semantic slot also matches.
         /// </summary>
-        public static void CopyCompatibleFrom(this IComponentConfig targetConfig, IComponentConfig sourceConfig)
+        public static void CopyCompatibleFrom(this IComponentContainer targetConfig, IComponentContainer sourceConfig)
         {
             if (sourceConfig?.Components == null || targetConfig?.Components == null)
                 return;
@@ -167,20 +190,30 @@ namespace LcdMod.Common.Config.Components
             }
         }
 
-        public static List<ConfigComponentEntry> CloneComponents(this IComponentConfig config)
+        public static List<ConfigComponentEntry> CloneComponents(this IComponentContainer config)
         {
             return config?.Components == null
                 ? new List<ConfigComponentEntry>()
                 : config.Components.Where(entry => entry != null).Select(entry => entry.Clone()).ToList();
         }
+
+        static int GetAppIdentity(IComponentContainer config)
+        {
+            var appConfig = config as IAppConfig;
+            if (appConfig != null)
+                return appConfig.AppTypeId;
+
+            var nested = config as AppInstanceConfig;
+            return nested == null ? 0 : nested.AppKind;
+        }
     }
 
     /// <summary>
-    /// An independently addressable child app. This is intentionally not used for ordinary
-    /// surfaces; only the tab-container component owns a collection of these instances.
+    /// Deferred nested-app data. Its legacy AppKind is intentionally preserved until nested app
+    /// identity and factories are designed in a later migration.
     /// </summary>
     [ProtoContract]
-    public sealed class AppInstanceConfig : IComponentConfig
+    public sealed class AppInstanceConfig : IComponentContainer
     {
         [ProtoMember(1)] public ulong InstanceId { get; set; }
         [ProtoMember(2)] public int AppKind { get; set; }
@@ -200,21 +233,29 @@ namespace LcdMod.Common.Config.Components
     }
 
     [ProtoContract]
-    public sealed class SurfaceConfig : IComponentConfig
+    public sealed class SurfaceConfig : IAppConfig
     {
         [ProtoMember(1)] public int SurfaceIndex { get; set; }
-        [ProtoMember(2)] public int AppKind { get; set; }
+
+        // Public V0 migration hint. Migration-only; never write new AppType values here.
+        [ProtoMember(2)]
+        [XmlElement("AppKind")]
+        public int LegacyAppKind { get; set; }
 
         [ProtoMember(3)]
         [XmlArrayItem("Component")]
         public List<ConfigComponentEntry> Components { get; set; } = new List<ConfigComponentEntry>();
+
+        // Component-schema V1 concrete app identity generated from [LcdApp].
+        [ProtoMember(4)] public int AppTypeId { get; set; }
 
         public SurfaceConfig Clone()
         {
             return new SurfaceConfig
             {
                 SurfaceIndex = SurfaceIndex,
-                AppKind = AppKind,
+                LegacyAppKind = LegacyAppKind,
+                AppTypeId = AppTypeId,
                 Components = this.CloneComponents()
             };
         }
@@ -222,7 +263,7 @@ namespace LcdMod.Common.Config.Components
 
     /// <summary>
     /// The only component that owns multiple independently configured app instances. Ordinary
-    /// surface scripts store AppKind and Components directly on SurfaceConfig.
+    /// surface scripts store AppTypeId and Components directly on SurfaceConfig.
     /// </summary>
     [ProtoContract]
     public sealed class TabContainerConfigComponent : ConfigComponent
@@ -262,22 +303,44 @@ namespace LcdMod.Common.Config.Components
             NormalizeNextAppInstanceId();
         }
 
-        public void NormalizeNextAppInstanceId()
+        public void NormalizeAppInstanceIds()
         {
-            ulong max = 0;
-            if (Apps != null)
+            if (Apps == null)
+                Apps = new List<AppInstanceConfig>();
+
+            for (var i = Apps.Count - 1; i >= 0; i--)
+                if (Apps[i] == null)
+                    Apps.RemoveAt(i);
+
+            var used = new HashSet<ulong>();
+            ulong next = NextAppInstanceId == 0 ? 1 : NextAppInstanceId;
+            foreach (var app in Apps)
             {
-                foreach (var app in Apps)
+                if (app.InstanceId != 0 && used.Add(app.InstanceId))
                 {
-                    if (app != null && app.InstanceId > max)
-                        max = app.InstanceId;
+                    if (app.InstanceId >= next)
+                        next = app.InstanceId + 1;
+                    continue;
                 }
+
+                while (next == 0 || used.Contains(next))
+                    next++;
+                app.InstanceId = next;
+                used.Add(next);
+                next++;
             }
 
-            if (NextAppInstanceId <= max)
-                NextAppInstanceId = max + 1;
-            if (NextAppInstanceId == 0)
-                NextAppInstanceId = 1;
+            if (Apps.Count == 0)
+                ActiveAppInstanceId = 0;
+            else if (ActiveAppInstanceId == 0 || !used.Contains(ActiveAppInstanceId))
+                ActiveAppInstanceId = Apps[0].InstanceId;
+
+            NextAppInstanceId = next == 0 ? 1 : next;
+        }
+
+        public void NormalizeNextAppInstanceId()
+        {
+            NormalizeAppInstanceIds();
         }
 
         public override ConfigComponent Clone()
@@ -475,12 +538,20 @@ namespace LcdMod.Common.Config.Components
     [ProtoContract]
     public sealed class PowerConfigComponent : ConfigComponent
     {
-        [ProtoMember(1)] public bool HideEmpty { get; set; } = true;
-        [ProtoMember(2)] public int GraphWindowIndex { get; set; } = 2;
+        [ProtoMember(1), DefaultValue(true)] public bool HideEmpty { get; set; } = true;
+        [ProtoMember(2), DefaultValue(2)] public int GraphWindowIndex { get; set; } = 2;
+        [ProtoMember(3), DefaultValue(-1)] public int PowerHistoryTier { get; set; } = -1;
+        [ProtoMember(4), DefaultValue((int)GridLinkTypeEnum.Mechanical)] public int GridLinkTypeInternal { get; set; } = (int)GridLinkTypeEnum.Mechanical;
 
         public override ConfigComponent Clone()
         {
-            return new PowerConfigComponent { HideEmpty = HideEmpty, GraphWindowIndex = GraphWindowIndex };
+            return new PowerConfigComponent
+            {
+                HideEmpty = HideEmpty,
+                GraphWindowIndex = GraphWindowIndex,
+                PowerHistoryTier = PowerHistoryTier,
+                GridLinkTypeInternal = GridLinkTypeInternal
+            };
         }
     }
 
@@ -544,7 +615,29 @@ namespace LcdMod.Common.Config.Components
     [ProtoContract]
     public sealed class MarkdownConfigComponent : ConfigComponent
     {
-        [ProtoMember(1)] public string RawText { get; set; }
+        public const string DEFAULT_TEXT = @"# This is a Title
+
+This is a paragraph with **bold**, *italic*, and [color:#00FF00]colored text[/color].
+
+---
+
+## This is a List
+
+1. This is the first item
+2. This item uses [font:""monospace""]monospace text[/font]
+3. This item uses [color:#FF0000][font:""monospace""]red monospace text[/font][/color]
+
+---
+
+![Connector](sprite:MyObjectBuilder_ShipConnector/LargeBlockInsetConnector) ![Arrow](sprite:Arrow) ![Danger](sprite:Danger) Images from Sprites.
+
+---
+
+###### This is a Small Heading
+
+Click [color:#0000FF]""[loc]BlockPropertyTitle_TextPanelShowTextPanel[/loc]""[/color] to edit this text";
+
+        [ProtoMember(1)] public string RawText { get; set; } = DEFAULT_TEXT;
         public override ConfigComponent Clone() => new MarkdownConfigComponent { RawText = RawText };
     }
 

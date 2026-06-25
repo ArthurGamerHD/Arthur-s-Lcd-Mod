@@ -11,15 +11,15 @@ using VRage.Game.GUI.TextPanel;
 using VRageMath;
 using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
+    [LcdSurface(typeof(LcdMod.Client.Apps.MarkdownApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class MarkdownSurfaceScript : SurfaceScriptBase,
         IUsesTerminalControl<ButtonEditMarkdown>, IInputBlock
     {
         List<MySprite> _sprites = new List<MySprite>();
-        
-        protected override ConfigKind ConfigKind => ConfigKind.Markdown;
         public override IApp App => _app;
         MarkdownApp _app;
 
@@ -41,11 +41,8 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override void SafeRun()
         {
-            if (AppConfig == null)
-                return;
-
             if (_app == null)
-                _app = new MarkdownApp(AppConfig, this);
+                _app = new MarkdownApp(this);
 
             _app.Update();
             RenderSprites();

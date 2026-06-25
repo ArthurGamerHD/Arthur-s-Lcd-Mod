@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using LcdMod.Client.Config;
+using LcdMod.Common.Config.Components;
+using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.ModAPI;
@@ -37,17 +39,17 @@ namespace LcdMod.Client.Terminal.Controls.Generic
 
         static void Setter(IMyTerminalBlock block, long value)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block);
-            if (config == null)
-                return;
-
-            config.ReferenceMode = (int)value;
-            ConfigManager.Sync(block);
+            ConfigManager.ModifyComponentForCurrentSurface<InteractiveConfigComponent>(
+                block,
+                Constants.INTERACTION,
+                config => config.ReferenceMode = (int)value);
         }
 
         static long Getter(IMyTerminalBlock block)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block);
+            var config = ConfigManager.GetComponentForCurrentSurface<InteractiveConfigComponent>(
+                block,
+                Constants.INTERACTION);
             return config?.ReferenceMode ?? (long)ReferenceMode.Auto;
         }
     }

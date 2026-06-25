@@ -1,4 +1,6 @@
 using LcdMod.Client.Config;
+using LcdMod.Common.Config.Components;
+using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
@@ -40,19 +42,17 @@ namespace LcdMod.Client.Terminal.Controls.Interactive
 
         void Setter(IMyTerminalBlock block, bool value)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block);
-
-            if (config == null)
-                return;
-
-            config.RequiresAlt = !value;
-
-            ConfigManager.Sync(block);
+            ConfigManager.ModifyComponentForCurrentSurface<InteractiveConfigComponent>(
+                block,
+                Constants.INTERACTION,
+                config => config.RequiresAlt = !value);
         }
 
         bool Getter(IMyTerminalBlock myTerminalBlock)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(myTerminalBlock);
+            var config = ConfigManager.GetComponentForCurrentSurface<InteractiveConfigComponent>(
+                myTerminalBlock,
+                Constants.INTERACTION);
             return config != null && !config.RequiresAlt;
         }
     }

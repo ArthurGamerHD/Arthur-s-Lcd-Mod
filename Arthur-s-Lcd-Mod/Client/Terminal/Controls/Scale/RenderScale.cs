@@ -1,6 +1,6 @@
 using System.Text;
 using LcdMod.Client.Config;
-using LcdMod.Common.Config.Models.Apps;
+using LcdMod.Common.Config.Components;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
@@ -38,17 +38,14 @@ namespace LcdMod.Client.Terminal.Controls.Scale
 
         void Setter(IMyTerminalBlock block, float value)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigRaycast;
-            if (config == null)
-                return;
-
-            config.RenderScale = value;
-            ConfigManager.Sync(block);
+            ConfigManager.ModifyComponentForTerminalApp<RaycastConfigComponent>(
+                block,
+                config => config.RenderScale = value);
         }
 
         float Getter(IMyTerminalBlock block)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigRaycast;
+            var config = ConfigManager.GetComponentForTerminalApp<RaycastConfigComponent>(block);
             if (config == null)
                 return 1;
 

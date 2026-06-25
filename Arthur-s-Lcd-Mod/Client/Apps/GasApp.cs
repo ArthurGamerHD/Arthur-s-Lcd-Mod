@@ -1,3 +1,4 @@
+using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -11,22 +12,25 @@ using LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel;
 using LcdMod.Client.Gui.ControlsTemplates.Progress;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Terminal.Controls;
-using LcdMod.Common.Config.Models.Apps;
 using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
 using VRage;
 using VRage.Game;
 using VRage.Game.GUI.TextPanel;
+using VRage.Game.ModAPI;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRageMath;
 using IMyTerminalBlock = Sandbox.ModAPI.IMyTerminalBlock;
 using VisualStackPanel = LcdMod.Client.Gui.ControlsTemplates.Panels.StackPanel.StackPanel;
 using VisualWrapPanel = LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel.WrapPanel;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.Apps
 {
-    public sealed class GasApp : App
+    [LcdApp(3)]
+    [ConfigComponent(Constants.BLOCKS, typeof(BlockSelectionConfigComponent), PropertyName = "BlockSelectionComponent")]
+    public sealed partial class GasApp : App
     {
         const int LINE_HEIGHT = 40;
 
@@ -40,11 +44,9 @@ namespace LcdMod.Client.Apps
 
         // todo: convert to interactive app
         public override IReadOnlyList<Control> Children { get; } = new Control[]{};
-        
-        ScreenConfigWithBlocks Config => (ScreenConfigWithBlocks)AppConfig;
         public bool HasEntries => _entries.Count > 0;
 
-        public GasApp(ScreenConfigWithBlocks config, IAppHost host) : base(config, host)
+        public GasApp(IAppHost host) : base(host)
         {
             _scrollPanel = AddChild(new ScrollPanel(CursorType.Default, this));
             _scrollPanel.SetVisible(false);
@@ -69,7 +71,7 @@ namespace LcdMod.Client.Apps
         {
             var sprites = new List<MySprite>();
             ClearControls();
-            switch (Config.DisplayMode)
+            switch (GeneralComponent.DisplayMode)
             {
                 case (int)DisplayMode.Grid:
                     DrawGrid(sprites);
@@ -88,7 +90,7 @@ namespace LcdMod.Client.Apps
             if (_entries.Count <= 0)
                 return;
 
-            var rowHeight = LINE_HEIGHT * AppConfig.Scale;
+            var rowHeight = LINE_HEIGHT * GeneralComponent.GetScale();
             _scrollPanel.SetContent(_listPanel);
             _listPanel.RowHeight = rowHeight;
             _listPanel.Gap = 0f;
@@ -102,7 +104,7 @@ namespace LcdMod.Client.Apps
             if (_entries.Count <= 0)
                 return;
 
-            var rowHeight = 2f * LINE_HEIGHT * AppConfig.Scale;
+            var rowHeight = 2f * LINE_HEIGHT * GeneralComponent.GetScale();
             _scrollPanel.SetContent(_gridPanel);
             _gridPanel.RowHeight = rowHeight;
             _gridPanel.MinimumColumnWidth = Host.ViewBox.Width + 1f;
@@ -130,7 +132,7 @@ namespace LcdMod.Client.Apps
             var viewportHeight = Math.Max(0f, Host.ViewBox.Bottom - contentTop);
             _scrollPanel.ConfigureAutomatic(
                 new RectangleF(Host.ViewBox.X, contentTop, Host.ViewBox.Width, viewportHeight),
-                ScrollPanel.DefaultScrollerWidthPixels * AppConfig.Scale,
+                ScrollPanel.DefaultScrollerWidthPixels * GeneralComponent.GetScale(),
                 rowHeight);
             _scrollPanel.SetVisible(true);
         }
@@ -233,7 +235,7 @@ namespace LcdMod.Client.Apps
             if (children == null)
                 return;
 
-            if (Config.DrawLines)
+            if (GeneralComponent.DrawLines)
             {
                 var layout = WrapPanelLayout.Create(
                     control.Bounds,
@@ -255,7 +257,7 @@ namespace LcdMod.Client.Apps
 
         void DrawGridLines(List<MySprite> sprites, WrapPanelLayout layout)
         {
-            var lineColor = Config.HeaderColor;
+            var lineColor = GetHeaderColor();
             var contentStart = _scrollPanel.ContentBounds.X;
             var contentEnd = _scrollPanel.ContentBounds.Right;
             var gridHeight = _scrollPanel.ContentBounds.Height;
@@ -276,15 +278,15 @@ namespace LcdMod.Client.Apps
             var pct = MathHelper.Clamp(entry.Percentage, 0f, 1f);
             Vector2 position = bounds.Position;
 
-            if (Config.DrawLines)
+            if (GeneralComponent.DrawLines)
                 frame.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "SquareSimple", Position = new Vector2(bounds.Center.X, position.Y), Size = new Vector2(bounds.Width, 2f), Color = Host.ForegroundColor, Alignment = TextAlignment.CENTER });
 
-            var barMargin = 8 * AppConfig.Scale;
+            var barMargin = 8 * GeneralComponent.GetScale();
             Vector2 size = new Vector2(bounds.Width, bounds.Height) - barMargin;
             var rowClip = new RectangleF(
                 bounds.X,
                 bounds.Y,
-                Math.Max(0f, bounds.Width - 145f * AppConfig.Scale),
+                Math.Max(0f, bounds.Width - 145f * GeneralComponent.GetScale()),
                 bounds.Height);
 
             if (BeginNestedClip(frame, rowClip))
@@ -292,18 +294,18 @@ namespace LcdMod.Client.Apps
                 var activeRowClip = Intersect(rowClip, _scrollPanel.ContentViewportBounds);
                 DrawClippedProgressBar(
                     frame,
-                    new Vector2(position.X, position.Y + AppConfig.Scale) + barMargin / 2f,
+                    new Vector2(position.X, position.Y + GeneralComponent.GetScale()) + barMargin / 2f,
                     size,
                     pct,
                     activeRowClip);
-                position.X += 16 * AppConfig.Scale;
-                position.Y += 4 * AppConfig.Scale;
-                frame.Add(new MySprite { Type = SpriteType.TEXT, Data = entry.Name, Position = position, RotationOrScale = AppConfig.Scale, Color = Host.Surface.ScriptForegroundColor, Alignment = TextAlignment.LEFT, FontId = TextFont });
+                position.X += 16 * GeneralComponent.GetScale();
+                position.Y += 4 * GeneralComponent.GetScale();
+                frame.Add(new MySprite { Type = SpriteType.TEXT, Data = entry.Name, Position = position, RotationOrScale = GeneralComponent.GetScale(), Color = Host.Surface.ScriptForegroundColor, Alignment = TextAlignment.LEFT, FontId = TextFont });
                 EndNestedClipAndRestoreScrollClip(frame);
             }
 
             position.X = bounds.Right;
-            frame.Add(new MySprite { Type = SpriteType.TEXT, Data = FormatingHelper.PercentageToString(pct), Position = position, RotationOrScale = AppConfig.Scale, Color = Host.Surface.ScriptForegroundColor, Alignment = TextAlignment.RIGHT, FontId = TextFont });
+            frame.Add(new MySprite { Type = SpriteType.TEXT, Data = FormatingHelper.PercentageToString(pct), Position = position, RotationOrScale = GeneralComponent.GetScale(), Color = Host.Surface.ScriptForegroundColor, Alignment = TextAlignment.RIGHT, FontId = TextFont });
         }
 
         void DrawClippedProgressBar(
@@ -314,7 +316,7 @@ namespace LcdMod.Client.Apps
             RectangleF rowClip)
         {
             var bgColor = Host.BackgroundColor.DeriveAccentColor();
-            var fillColor = Config.HeaderColor;
+            var fillColor = GetHeaderColor();
             var fillOverride = GetEntryUsageColor(pct);
 
             BarPanel.CreateSprites(frame, topLeft, size, fillColor, bgColor, 0f);
@@ -385,21 +387,21 @@ namespace LcdMod.Client.Apps
 
         void DrawGridCell(List<MySprite> frame, Entry entry, float xStart, float xEnd, float yStart, float rowHeight)
         {
-            var cellPadding = (LINE_HEIGHT * AppConfig.Scale) / 3f;
+            var cellPadding = (LINE_HEIGHT * GeneralComponent.GetScale()) / 3f;
             var pct = MathHelper.Clamp(entry.Percentage, 0f, 1f);
             var cellView = GetCellViewBox(xStart, xEnd, yStart, rowHeight, cellPadding);
 
-            if (!Config.DrawLines)
+            if (!GeneralComponent.DrawLines)
             {
-                var backgroundColor = Config.HeaderColor;
+                var backgroundColor = GetHeaderColor();
                 var hsv = VRageMath.ColorExtensions.ColorToHSV(backgroundColor);
                 hsv.Z *= 0.2f;
                 var cellRect = new RectangleF(xStart + cellPadding / 2f, yStart + cellPadding / 2f, (xEnd - xStart) - cellPadding, rowHeight - cellPadding);
                 var dropShadow = new RectangleF(cellRect.Position + 2, cellRect.Size);
                 BorderRenderer.CreateSpritesFromRect(dropShadow, frame, hsv.HSVtoColor(),
-                    radiusScale: AppConfig.Scale);
+                    radiusScale: GeneralComponent.GetScale());
                 BorderRenderer.CreateSpritesFromRect(cellRect, frame, backgroundColor,
-                    radiusScale: AppConfig.Scale);
+                    radiusScale: GeneralComponent.GetScale());
             }
 
             var nameHeight = Math.Max(0f, cellView.Height * .45f);
@@ -407,30 +409,30 @@ namespace LcdMod.Client.Apps
             var bottomRect = new RectangleF(cellView.X, nameRect.Bottom, cellView.Width, Math.Max(0f, cellView.Bottom - nameRect.Bottom));
             var name = new StringBuilder(entry.Name ?? string.Empty);
             TrimText(ref name, nameRect.Width);
-            frame.Add(new MySprite { Type = SpriteType.TEXT, Data = name.ToString(), Position = new Vector2(nameRect.X + 2f * AppConfig.Scale, nameRect.Y + 2f * AppConfig.Scale), RotationOrScale = .9f * AppConfig.Scale, Color = Host.Surface.ScriptForegroundColor, Alignment = TextAlignment.LEFT, FontId = TextFont });
+            frame.Add(new MySprite { Type = SpriteType.TEXT, Data = name.ToString(), Position = new Vector2(nameRect.X + 2f * GeneralComponent.GetScale(), nameRect.Y + 2f * GeneralComponent.GetScale()), RotationOrScale = .9f * GeneralComponent.GetScale(), Color = Host.Surface.ScriptForegroundColor, Alignment = TextAlignment.LEFT, FontId = TextFont });
 
             var barWidth = bottomRect.Width * (2f / 3f);
             var textRect = new RectangleF(bottomRect.X + barWidth, bottomRect.Y, bottomRect.Width - barWidth, bottomRect.Height);
             var barRect = new RectangleF(bottomRect.X, bottomRect.Y, barWidth, bottomRect.Height);
-            var barInnerPaddingX = 2f * AppConfig.Scale;
+            var barInnerPaddingX = 2f * GeneralComponent.GetScale();
             var barInnerPaddingY = bottomRect.Height * 0.2f;
-            var fillColor = Extensions.ColorExtensions.DeriveAccentColor(Config.HeaderColor, .4f, 0.5);
-            BarPanel.CreateSprites(frame, new Vector2(barRect.X + barInnerPaddingX, barRect.Y + barInnerPaddingY + (2f * AppConfig.Scale)), new Vector2(Math.Max(1f, barRect.Width - 2f * barInnerPaddingX), Math.Max(1f, barRect.Height - 2f * barInnerPaddingY)), fillColor, fillColor.DeriveAccentColor(.6f, 0.7), pct, GetEntryUsageColor(pct));
-            frame.Add(new MySprite { Type = SpriteType.TEXT, Data = FormatingHelper.PercentageToString(pct), Position = new Vector2(textRect.Right - (2f * AppConfig.Scale), textRect.Y + 2f * AppConfig.Scale), RotationOrScale = .95f * AppConfig.Scale, Color = Host.Surface.ScriptForegroundColor, Alignment = TextAlignment.RIGHT, FontId = TextFont });
+            var fillColor = Extensions.ColorExtensions.DeriveAccentColor(GetHeaderColor(), .4f, 0.5);
+            BarPanel.CreateSprites(frame, new Vector2(barRect.X + barInnerPaddingX, barRect.Y + barInnerPaddingY + (2f * GeneralComponent.GetScale())), new Vector2(Math.Max(1f, barRect.Width - 2f * barInnerPaddingX), Math.Max(1f, barRect.Height - 2f * barInnerPaddingY)), fillColor, fillColor.DeriveAccentColor(.6f, 0.7), pct, GetEntryUsageColor(pct));
+            frame.Add(new MySprite { Type = SpriteType.TEXT, Data = FormatingHelper.PercentageToString(pct), Position = new Vector2(textRect.Right - (2f * GeneralComponent.GetScale()), textRect.Y + 2f * GeneralComponent.GetScale()), RotationOrScale = .95f * GeneralComponent.GetScale(), Color = Host.Surface.ScriptForegroundColor, Alignment = TextAlignment.RIGHT, FontId = TextFont });
         }
 
         Color? GetEntryUsageColor(float pct)
         {
             if (pct <= .10f)
-                return Config.ErrorColor;
+                return ColorComponent.ResolveErrorColor();
             if (pct <= .25f)
-                return Config.WarningColor;
+                return ColorComponent.ResolveWarningColor();
             return null;
         }
 
         float GetContentTop()
         {
-            return Host.TitleVisible ? Host.ViewBox.Y + (40f * AppConfig.Scale * Host.Surface.FontSize) : Host.ViewBox.Y;
+            return Host.TitleVisible ? Host.ViewBox.Y + (40f * GeneralComponent.GetScale() * Host.Surface.FontSize) : Host.ViewBox.Y;
         }
 
         RectangleF GetCellViewBox(float xStart, float xEnd, float yStart, float cellHeight, float cellPadding)
@@ -444,7 +446,7 @@ namespace LcdMod.Client.Apps
 
         void TrimText(ref StringBuilder sb, float availableWidth, float fontSize = 1f)
         {
-            Vector2 textSize = Host.Surface.MeasureStringInPixels(sb, TextFont, fontSize * AppConfig.Scale);
+            Vector2 textSize = Host.Surface.MeasureStringInPixels(sb, TextFont, fontSize * GeneralComponent.GetScale());
             if (textSize.X <= availableWidth)
                 return;
 
@@ -453,7 +455,7 @@ namespace LcdMod.Client.Apps
             {
                 sb.Clear();
                 sb.Append(FormatingHelper.TrimName(source, i));
-                textSize = Host.Surface.MeasureStringInPixels(sb, TextFont, fontSize * AppConfig.Scale);
+                textSize = Host.Surface.MeasureStringInPixels(sb, TextFont, fontSize * GeneralComponent.GetScale());
                 if (textSize.X <= availableWidth)
                     break;
             }
@@ -473,7 +475,7 @@ namespace LcdMod.Client.Apps
             if (gridLogic == null)
                 return;
 
-            var tanks = gridLogic.GetTerminalBlocks<IMyGasTank>(Config.GridLinkType);
+            var tanks = gridLogic.GetTerminalBlocks<IMyGasTank>((GridLinkTypeEnum)BlockSelectionComponent.GridLinkTypeInternal);
             if (tanks == null)
                 return;
 

@@ -14,8 +14,10 @@ using VRage.Utils;
 using VRageMath;
 using static LcdMod.Common.Helpers.Constants;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
+    [LcdSurface(typeof(LcdMod.Client.Apps.DockingAlignmentApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class DockingAlignment : SurfaceScriptBase,
         IReferenceBlockSelection,
@@ -45,8 +47,6 @@ namespace LcdMod.Client.SurfaceScripts
             };
 
         DockingAlignmentApp _app;
-
-        protected override ConfigKind ConfigKind => ConfigKind.Docking;
         public override IApp App => _app;
         protected override string DefaultTitle => TITLE;
 
@@ -75,13 +75,9 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override void SafeRun()
         {
-            var appConfig = AppConfig;
-            if (appConfig == null)
-                return;
-
             if (_app == null)
             {
-                _app = new DockingAlignmentApp(appConfig, this);
+                _app = new DockingAlignmentApp(this);
                 _app.LayoutChanged();
             }
 

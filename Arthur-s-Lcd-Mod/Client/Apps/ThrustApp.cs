@@ -1,3 +1,4 @@
+using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -15,9 +16,11 @@ using static LcdMod.Common.Helpers.Constants;
 using IMyCockpit = Sandbox.ModAPI.IMyCockpit;
 
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.Apps
 {
-    internal sealed class ThrustApp : App
+    [LcdApp(22)]
+    internal sealed partial class ThrustApp : App
     {
         const float AXIS_THICKNESS = 6f;
         const float ARROW_SIZE_MULTIPLIER = 3f;
@@ -54,11 +57,10 @@ namespace LcdMod.Client.Apps
         double _stopDistance;
         bool _hasStopEstimate;
 
-        ScreenConfigInteractive Config => AppConfig;
         IMyCubeBlock Block => Host.Block;
         Sandbox.ModAPI.Ingame.IMyTextSurface Surface => Host.Surface;
         RectangleF ViewBox => Host.ViewBox;
-        float Scale => AppConfig.Scale;
+        float Scale => GeneralComponent.GetScale();
         float FontScale => Host.Surface.FontSize;
         float LayoutScale => Scale * FontScale;
         Color ForegroundColor => Host.ForegroundColor;
@@ -67,8 +69,8 @@ namespace LcdMod.Client.Apps
 
         public bool HasData { get; private set; }
 
-        public ThrustApp(ScreenConfigInteractive config, IAppHost host)
-            : base(config, host)
+        public ThrustApp(IAppHost host)
+            : base(host)
         {
         }
 
@@ -85,9 +87,6 @@ namespace LcdMod.Client.Apps
             _stopSeconds = 0d;
             _stopDistance = 0d;
 
-            if (Config == null)
-                return;
-            
             try
             {
                 var grid = Block?.CubeGrid;
@@ -213,9 +212,9 @@ namespace LcdMod.Client.Apps
                         float gravityStrength = (float)Math.Sqrt(gLenSq);
                         float normalizedStrength = MathHelper.Clamp(gravityStrength / GRAVITY_NORMALIZE_MPS2, 0f, 1f);
                         Color gravityColor = gravityLoad >= GRAVITY_LOAD_CRITICAL_THRESHOLD
-                            ? BoostAlertColor(Config.ErrorColor)
+                            ? BoostAlertColor(ColorComponent.ResolveErrorColor())
                             : gravityLoad >= GRAVITY_LOAD_WARN_THRESHOLD
-                                ? BoostAlertColor(Config.WarningColor)
+                                ? BoostAlertColor(ColorComponent.ResolveWarningColor())
                                 : ForegroundColor;
                         DrawAxisRay(sprites, origin, projected,
                             axisLength * GRAVITY_ARROW_LENGTH_FACTOR * normalizedStrength,
@@ -268,8 +267,8 @@ namespace LcdMod.Client.Apps
 
                 DrawMessage(sprites,
                     string.Format(LocHelper.GetLoc(MOD_PREFIX + "Critical"), LocHelper.GetLoc(MOD_PREFIX + "Thrust_GravityLoad")),
-                    BoostAlertColor(Config.ErrorColor),
-                    0.7f * Config.Scale);
+                    BoostAlertColor(ColorComponent.ResolveErrorColor()),
+                    0.7f * GeneralComponent.GetScale());
                 return;
             }
 
@@ -277,8 +276,8 @@ namespace LcdMod.Client.Apps
             {
                 DrawMessage(sprites,
                     string.Format(LocHelper.GetLoc(MOD_PREFIX + "Warning"), LocHelper.GetLoc(MOD_PREFIX + "Thrust_GravityLoad")),
-                    BoostAlertColor(Config.WarningColor),
-                    0.7f * Config.Scale);
+                    BoostAlertColor(ColorComponent.ResolveWarningColor()),
+                    0.7f * GeneralComponent.GetScale());
             }
         }
 

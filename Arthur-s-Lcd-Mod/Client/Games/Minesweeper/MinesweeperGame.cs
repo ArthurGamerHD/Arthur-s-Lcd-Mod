@@ -9,6 +9,7 @@ using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Modules.EyeTracking;
+using LcdMod.Common.Config.Components;
 using LcdMod.Common.Helpers;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
@@ -329,13 +330,13 @@ namespace LcdMod.Client.Games.Minesweeper
 
         public void Save()
         {
-            _script.Config.SetCustomData(CUSTOM_DATA_KEY, MyAPIGateway.Utilities.SerializeToBinary(BuildConfig()));
+            _script.GeneralComponent.SetCustomData(CUSTOM_DATA_KEY, MyAPIGateway.Utilities.SerializeToBinary(BuildConfig()));
             ConfigManager.Sync((IMyTerminalBlock)_script.Block, _script.ProviderConfig);
         }
 
         MinesweeperGameConfig LoadConfig()
         {
-            var data = _script.Config.GetCustomData(CUSTOM_DATA_KEY);
+            var data = _script.GeneralComponent.GetCustomData(CUSTOM_DATA_KEY);
             if (data == null || data.Length == 0)
                 throw new Exception("Missing minesweeper config.");
 

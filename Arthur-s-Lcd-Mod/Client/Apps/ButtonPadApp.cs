@@ -1,3 +1,4 @@
+using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -22,7 +23,6 @@ using LcdMod.Client.Terminal.Models.Actions;
 using LcdMod.Client.Terminal.Models.Property;
 using Sandbox.ModAPI.Interfaces;
 #endif
-using LcdMod.Common.Config.Models.Apps;
 using LcdMod.Common.Helpers;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
@@ -35,9 +35,12 @@ using IMyIngameTerminalBlock = Sandbox.ModAPI.Ingame.IMyTerminalBlock;
 using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 using IMyTerminalBlock = Sandbox.ModAPI.IMyTerminalBlock;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.Apps
 {
-    public sealed class ButtonPadApp : App, IApp
+    [LcdApp(23, Name = "ButtonPanel")]
+    [ConfigComponent(Constants.APP, typeof(ButtonPanelConfigComponent), PropertyName = "ButtonPanelComponent")]
+    public sealed partial class ButtonPadApp : App, IApp
     {
         const float BUTTON_SIZE_PIXELS = 92f;
         const float BUTTON_SPACING_PIXELS = 3f;
@@ -68,7 +71,7 @@ namespace LcdMod.Client.Apps
 
         int _lastLayoutColumns = 1;
 
-        public ButtonPadApp(ScreenConfigButtonPanel config, IAppHost host) : base(config, host)
+        public ButtonPadApp(IAppHost host) : base(host)
         {
             _scrollPanel = AddChild(new ScrollPanel());
             _scrollPanel.ManualScrollInertiaEnabled = false;
@@ -80,9 +83,7 @@ namespace LcdMod.Client.Apps
 
         public override IReadOnlyList<Control> Children => _children;
 
-        new ScreenConfigButtonPanel AppConfig => (ScreenConfigButtonPanel)base.AppConfig;
-
-        float Scale => AppConfig.Scale;
+        float Scale => GeneralComponent.GetScale();
 
         float FontScale => Host.Surface.FontSize;
 
@@ -236,7 +237,7 @@ namespace LcdMod.Client.Apps
 
             try
             {
-                var data = AppConfig.GetCustomData(CUSTOM_DATA_KEY);
+                var data = GeneralComponent.GetCustomData(CUSTOM_DATA_KEY);
                 if (data == null || data.Length == 0)
                     return;
 
@@ -281,7 +282,7 @@ namespace LcdMod.Client.Apps
                 Entries = list.ToArray()
             };
 
-            AppConfig.SetCustomData(CUSTOM_DATA_KEY, MyAPIGateway.Utilities.SerializeToBinary(settings));
+            GeneralComponent.SetCustomData(CUSTOM_DATA_KEY, MyAPIGateway.Utilities.SerializeToBinary(settings));
 
             var terminalBlock = Host.Block as IMyTerminalBlock;
             if (terminalBlock != null)

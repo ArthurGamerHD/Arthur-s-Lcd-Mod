@@ -4,7 +4,7 @@ using System.Linq;
 using LcdMod.Client.Config;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts.Abstract;
-using LcdMod.Common.Config.Models.Apps;
+using LcdMod.Common.Config.Components;
 using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
@@ -33,26 +33,33 @@ namespace LcdMod.Client.Terminal.Controls.VisibleTreeDebug
 
         void Setter(IMyTerminalBlock block, List<MyTerminalControlListBoxItem> selection)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigVisibleTreeDebug;
-            if (config == null)
+            var settings = ConfigManager.GetConfigForBlock(block);
+            var surface = settings == null ? null : settings.GetSurfaceConfig(GetThisSurfaceIndex(block));
+            if (settings == null || !settings.CanWriteConfig(surface))
+                return;
+            var reference = surface?.TryGet<BlockReferenceConfigComponent>(Constants.VisibleTreeReference);
+            var app = surface?.TryGet<VisibleTreeDebugConfigComponent>(Constants.APP);
+            if (settings == null || reference == null || app == null)
                 return;
 
             long selectedBlockId = ListBoxItemHelper.GetLongUserData(selection.FirstOrDefault());
-            if (config.ReferenceBlock != selectedBlockId)
+            if (reference.EntityId != selectedBlockId)
             {
-                config.ReferenceBlock = selectedBlockId;
-                config.ReferenceScreenIndex = GetFirstScreenIndex(selectedBlockId);
+                reference.EntityId = selectedBlockId;
+                app.ReferenceScreenIndex = GetFirstScreenIndex(selectedBlockId);
             }
 
-            RemapHelper.PinBlock(config.ReferenceBlock);
-            ConfigManager.Sync(block);
+            RemapHelper.PinBlock(reference.EntityId);
+            ConfigManager.Sync(block, settings);
         }
 
         void Getter(IMyTerminalBlock block, List<MyTerminalControlListBoxItem> blockList,
             List<MyTerminalControlListBoxItem> selected)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigVisibleTreeDebug;
-            if (config == null)
+            var reference = ConfigManager.GetComponentForCurrentSurface<BlockReferenceConfigComponent>(
+                block,
+                Constants.VisibleTreeReference);
+            if (reference == null)
                 return;
 
             blockList.Add(new MyTerminalControlListBoxItem(
@@ -70,9 +77,9 @@ namespace LcdMod.Client.Terminal.Controls.VisibleTreeDebug
                     candidate.EntityId));
             }
 
-            AddConfiguredReferenceIfMissing(blockList, config.ReferenceBlock);
+            AddConfiguredReferenceIfMissing(blockList, reference.EntityId);
 
-            var selection = blockList.FirstOrDefault(a => ListBoxItemHelper.GetLongUserData(a) == config.ReferenceBlock);
+            var selection = blockList.FirstOrDefault(a => ListBoxItemHelper.GetLongUserData(a) == reference.EntityId);
             if (selection != null)
                 selected.Add(selection);
         }

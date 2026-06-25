@@ -1,3 +1,4 @@
+using LcdMod.Common.Config.Components;
 using Generated;
 using System.Collections.Generic;
 using LcdMod.Client.Apps;
@@ -6,7 +7,6 @@ using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Terminal.Controls.Generic;
-using LcdMod.Common.Config.Models.Apps;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
@@ -16,18 +16,18 @@ using VRageMath;
 using SliderFov = LcdMod.Client.Terminal.Controls.Generic.SliderFov;
 using static LcdMod.Common.Helpers.Constants;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
+    [LcdSurface(typeof(LcdMod.Client.Apps.StarMapApp))]
     [MyTextSurfaceScript(ID, TITLE)]
-    public sealed class StarMapSurfaceScript : InteractiveSurfaceScript,
+    public sealed partial class StarMapSurfaceScript : InteractiveSurfaceScript,
         IUsesTerminalControl<SliderFov>,
         IMultiDisplayMode,
         IUsesTerminalControl<ComboboxReferenceMode>
     {
         public const string ID = MOD_PREFIX + "StarMapSurface";
         public const string TITLE = MOD_PREFIX + "StarMapSurface";
-
-        protected override ConfigKind ConfigKind => ConfigKind.StarMap;
         protected override string DefaultTitle => TITLE;
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
         protected override bool RendersInteractiveEntriesInGetSprites => true;
@@ -57,13 +57,9 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override void SafeRun()
         {
-            var appConfig = Config as ScreenConfigStarMap;
-            if (appConfig == null)
-                return;
-
             if (_app == null)
             {
-                _app = new StarMapApp(appConfig, this);
+                _app = new StarMapApp(this);
                 _app.LayoutChanged();
             }
 

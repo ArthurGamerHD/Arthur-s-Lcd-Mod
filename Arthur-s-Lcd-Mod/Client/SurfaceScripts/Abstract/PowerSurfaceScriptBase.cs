@@ -7,6 +7,7 @@ using LcdMod.Client.Gui.ControlsTemplates.Progress;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Utility;
+using LcdMod.Common.Config.Components;
 using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using VRage;
@@ -22,7 +23,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 {
     public abstract partial class PowerSurfaceScriptBase : SurfaceScriptBase, IMultiDisplayMode
     {
-        protected override ConfigKind ConfigKind => ConfigKind.Power;
+        protected PowerConfigComponent PowerComponent => Config.GetComponent<PowerConfigComponent>();
         protected const float LINE = 22f;
         protected const float MINIMUM_COL_WIDTH = 400f;
         protected const int SCROLL_DELAY = 12;
@@ -96,7 +97,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         protected override void LayoutChanged()
         {
             base.LayoutChanged();
-            _ascentColor = ColorExtensions.DeriveAccentColor(AppConfig.HeaderColor, .4f, 0.5);
+            _ascentColor = ColorExtensions.DeriveAccentColor(ColorComponent.ResolveHeaderColor(Block as IMyTerminalBlock), .4f, 0.5);
 
             RefreshEntryLabels();
             _maxLabelCache = string.Empty;
@@ -105,9 +106,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         public override void SafeRun()
         {
-            if (AppConfig == null)
-                return;
-
             RenderSprites();
         }
 
@@ -128,7 +126,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 _currentLabelCache = MyTexts.Get(MyStringId.GetOrCompute("BlockPropertyProperties_CurrentOutput"))
                     .ToString();
 
-            switch (AppConfig.DisplayMode)
+            switch (GeneralComponent.DisplayMode)
             {
                 case (int)DisplayMode.Grid:
                     DrawGridLike(
@@ -137,9 +135,9 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                         _maxLabelCache,
                         _currentLabelCache,
                         false,
-                        AppConfig.DrawLines,
-                        AppConfig.DrawLines,
-                        AppConfig.DrawLines);
+                        GeneralComponent.DrawLines,
+                        GeneralComponent.DrawLines,
+                        GeneralComponent.DrawLines);
                     break;
                 default:
                     DrawDefaultView(
@@ -229,7 +227,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         void BuildVisibleEntries()
         {
             _visibleEntries.Clear();
-            var hideEmpty = AppConfig == null || AppConfig.HideEmpty;
+            var hideEmpty = PowerComponent.HideEmpty;
             for (int i = 0; i < _entriesOrdered.Length; i++)
             {
                 if (!hideEmpty || _entriesOrdered[i].DetectedBlocks > 0)
@@ -311,7 +309,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             float contentStart = ViewBox.X + margin;
             float contentEnd = ViewBox.Width + ViewBox.X - margin;
 
-            if (AppConfig.DrawLines)
+            if (GeneralComponent.DrawLines)
             {
                 for (int row = 0; row <= maxRows; row++)
                 {
@@ -371,7 +369,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
             if (drawLineSprites)
             {
-                var lineColor = new Color(AppConfig.HeaderColor.R, AppConfig.HeaderColor.G, AppConfig.HeaderColor.B);
+                var lineColor = new Color(ColorComponent.ResolveHeaderColor(Block as IMyTerminalBlock).R, ColorComponent.ResolveHeaderColor(Block as IMyTerminalBlock).G, ColorComponent.ResolveHeaderColor(Block as IMyTerminalBlock).B);
                 for (int row = 0; row <= maxRows; row++)
                 {
                     var y = CaretY + row * rowHeight;
@@ -433,7 +431,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
             if (!drawAsLines)
             {
-                var backgroundColor = entry.Current <= 0 ? AppConfig.ErrorColor : AppConfig.HeaderColor;
+                var backgroundColor = entry.Current <= 0 ? ColorComponent.ResolveErrorColor() : ColorComponent.ResolveHeaderColor(Block as IMyTerminalBlock);
                 var hsv = VRageMath.ColorExtensions.ColorToHSV(backgroundColor);
                 hsv.Z *= 0.2f;
 
@@ -452,7 +450,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             var iconRect = slots.Item1;
             var numberRect = slots.Item2;
             var nameRect = slots.Item3;
-            var foreground = entry.Current <= 0 && drawAsLines ? AppConfig.ErrorColor : Surface.ScriptForegroundColor;
+            var foreground = entry.Current <= 0 && drawAsLines ? ColorComponent.ResolveErrorColor() : Surface.ScriptForegroundColor;
 
             DrawCellPie(sprites, iconRect, entry.Usage);
 

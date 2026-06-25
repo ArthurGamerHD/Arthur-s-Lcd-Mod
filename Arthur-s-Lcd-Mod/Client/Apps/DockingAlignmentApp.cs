@@ -1,3 +1,4 @@
+using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -6,7 +7,6 @@ using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Terminal.Controls;
-using LcdMod.Common.Config.Models.Apps;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
 using SpaceEngineers.Game.ModAPI;
@@ -20,9 +20,14 @@ using ColorExtensions = VRageMath.ColorExtensions;
 using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
 using MyShipConnectorStatus = Sandbox.ModAPI.Ingame.MyShipConnectorStatus;
 
+using LcdMod.Common.Config.Generation;
+using LcdMod.Common.Helpers;
+
 namespace LcdMod.Client.Apps
 {
-    internal sealed class DockingAlignmentApp : App
+    [LcdApp(11)]
+    [ConfigComponent(DOCKABLE_REFERENCE, typeof(BlockReferenceConfigComponent), PropertyName = "DockableReferenceComponent")]
+    internal sealed partial class DockingAlignmentApp : App
     {
         const float TARGET_SEARCH_RANGE = 100f;
         const float TARGET_SEARCH_CONE_DEGREES = 45f;
@@ -89,17 +94,16 @@ namespace LcdMod.Client.Apps
         double _lastDockingAxisDistance = double.NaN;
         long _lastDockingAxisDistanceFrame = -1L;
 
-        new ScreenConfigDocking AppConfig => (ScreenConfigDocking)base.AppConfig;
         IMyCubeBlock Block => Host.Block;
         Sandbox.ModAPI.Ingame.IMyTextSurface Surface => Host.Surface;
         RectangleF ViewBox => Host.ViewBox;
-        float Scale => AppConfig.Scale;
+        float Scale => GeneralComponent.GetScale();
         float FontScale => Host.Surface.FontSize;
         float LayoutScale => Scale * FontScale;
         Color BackgroundColor => Host.BackgroundColor;
         const float FOOTER_HEIGHT = 0f;
 
-        public DockingAlignmentApp(ScreenConfigDocking config, IAppHost host) : base(config, host)
+        public DockingAlignmentApp(IAppHost host) : base(host)
         {
         }
 
@@ -135,9 +139,6 @@ namespace LcdMod.Client.Apps
 
         public override void Update()
         {
-            if (AppConfig == null)
-                return;
-
             EnsureStaticSprites();
 
             _sprites.Clear();
@@ -145,8 +146,8 @@ namespace LcdMod.Client.Apps
 
             if (!ResolveReferenceAndTarget())
             {
-                Host.DrawMessage(_sprites, _dockingFailureMessage, "Warning", AppConfig.WarningColor,
-                    AppConfig.Scale);
+                Host.DrawMessage(_sprites, _dockingFailureMessage, "Warning", ColorComponent.ResolveWarningColor(),
+                    GeneralComponent.GetScale());
                 return;
             }
 
@@ -163,8 +164,8 @@ namespace LcdMod.Client.Apps
                 _targetBlock = null;
                 _sprites.Clear();
                 AddStaticChromeSprites();
-                Host.DrawMessage(_sprites, _noTargetMessage, "Warning", AppConfig.WarningColor,
-                    AppConfig.Scale);
+                Host.DrawMessage(_sprites, _noTargetMessage, "Warning", ColorComponent.ResolveWarningColor(),
+                    GeneralComponent.GetScale());
                 return;
             }
 
@@ -183,10 +184,10 @@ namespace LcdMod.Client.Apps
 
         IMyTerminalBlock GetConfiguredReferenceBlock()
         {
-            if (AppConfig.ReferenceBlock == 0L)
+            if (DockableReferenceComponent.EntityId == 0L)
                 return null;
 
-            var entity = MyAPIGateway.Entities.GetEntityById(AppConfig.ReferenceBlock) as IMyTerminalBlock;
+            var entity = MyAPIGateway.Entities.GetEntityById(DockableReferenceComponent.EntityId) as IMyTerminalBlock;
             if (entity == null || entity.MarkedForClose || !IsReferenceBlockCandidate(entity))
                 return null;
 
@@ -206,7 +207,7 @@ namespace LcdMod.Client.Apps
                 return _targetBlock != null;
             }
 
-            if (AppConfig.ReferenceBlock != 0L)
+            if (DockableReferenceComponent.EntityId != 0L)
                 return false;
 
             _dockingFailureMessage = _noTargetMessage;
@@ -500,7 +501,7 @@ namespace LcdMod.Client.Apps
         bool TryGetDisplayReferenceRotation(out MatrixD displayRotation)
         {
             displayRotation = MatrixD.Identity;
-            switch ((DockingDisplayMode)AppConfig.DisplayMode)
+            switch ((DockingDisplayMode)GeneralComponent.DisplayMode)
             {
                 case DockingDisplayMode.LcdReference:
                     displayRotation = Block.WorldMatrix;
@@ -509,8 +510,8 @@ namespace LcdMod.Client.Apps
                 case DockingDisplayMode.ControllerReference:
                     if (!Host.TryGetReferenceWorldMatrix((int)ReferenceMode.Controller, out displayRotation))
                     {
-                        Host.DrawMessage(_sprites, _noCockpitMessage, "Warning", AppConfig.WarningColor,
-                            AppConfig.Scale);
+                        Host.DrawMessage(_sprites, _noCockpitMessage, "Warning", ColorComponent.ResolveWarningColor(),
+                            GeneralComponent.GetScale());
                         return false;
                     }
                     
@@ -534,7 +535,7 @@ namespace LcdMod.Client.Apps
 
             _layout = CalculateLayoutMetrics();
 
-            var accent = AppConfig.HeaderColor;
+            var accent = GetHeaderColor();
             var mutedAccent = ColorExtensions.Alpha(accent, 0.66f);
 
             DrawAlignmentTicks(_staticSprites, _layout.Square, mutedAccent);
@@ -618,7 +619,7 @@ namespace LcdMod.Client.Apps
                 MathHelper.Clamp(-(float)positionOffset.X * 0.025f, -0.36f, 0.36f),
                 MathHelper.Clamp((float)positionOffset.Y * 0.025f, -0.36f, 0.36f));
             AddTexture(_sprites, "AH_VelocityVector", NormalizedToSquare(_layout.Square, positionVector.X, positionVector.Y),
-                new Vector2(_layout.MarkerSize * GetVectorTextureScale(positionOffset.Z)), AppConfig.ErrorColor, 0f);
+                new Vector2(_layout.MarkerSize * GetVectorTextureScale(positionOffset.Z)), ColorComponent.ResolveErrorColor(), 0f);
 
             var velocityVector = new Vector2(
                 MathHelper.Clamp(-(float)velocityOffset.X / MAX_VELOCITY_VECTOR_METERS_PER_SECOND, -1f, 1f) * 0.36f,
@@ -850,13 +851,13 @@ namespace LcdMod.Client.Apps
         {
             var connector = _referenceBlock as IMyShipConnector;
             if (connector == null)
-                return AppConfig.HeaderColor;
+                return GetHeaderColor();
 
             if (connector.Status == MyShipConnectorStatus.Connectable)
-                return AppConfig.WarningColor;
+                return ColorComponent.ResolveWarningColor();
 
             if (connector.Status == MyShipConnectorStatus.Connected)
-                return AppConfig.HeaderColor;
+                return GetHeaderColor();
 
             return Surface.ScriptForegroundColor;
         }

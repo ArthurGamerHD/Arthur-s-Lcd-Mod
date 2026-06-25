@@ -1,3 +1,5 @@
+using LcdMod.Common.Config.Components;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using LcdMod.Client.Apps.Abstract;
@@ -5,17 +7,20 @@ using LcdMod.Client.GridData;
 using LcdMod.Client.Helpers;
 using Sandbox.ModAPI;
 using VRageMath;
+using VRage.Game.ModAPI;
 using static LcdMod.Common.Helpers.Constants;
-using ScreenConfigWithBlocks = LcdMod.Common.Config.Models.Apps.ScreenConfigWithBlocks;
-
 namespace LcdMod.Client.Gui.UserControls.Antenna
 {
     internal abstract class AntennaCollector
     {
-        protected readonly Color ForegroundColor;
-        protected readonly Color WarningColor;
-        protected readonly ScreenConfigWithBlocks ScreenConfigGeneral;
+        readonly IAppHost _host;
+        readonly Func<BlockSelectionConfigComponent> _getConfig;
+        readonly Func<ColorConfigComponent> _getColors;
         readonly Dictionary<string, string> _locCache = new Dictionary<string, string>();
+
+        protected Color ForegroundColor => _host.ForegroundColor;
+        protected Color WarningColor => _getColors().ResolveWarningColor();
+        protected BlockSelectionConfigComponent AntennaConfig => _getConfig();
         
         public abstract void Collect(
             GridLogic grid,
@@ -23,12 +28,16 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
             Dictionary<long, AntennaEntry> models,
             HashSet<long> activeEntryIds);
 
-        protected AntennaCollector(IAppHost antennaSurfaceScript)
+        protected AntennaCollector(
+            IAppHost antennaSurfaceScript,
+            Func<BlockSelectionConfigComponent> getConfig,
+            Func<ColorConfigComponent> getColors)
         {
-            var appConfig = (ScreenConfigWithBlocks)antennaSurfaceScript.Config;
-            ForegroundColor = antennaSurfaceScript.ForegroundColor;
-            WarningColor = appConfig.WarningColor;
-            ScreenConfigGeneral = appConfig;
+            _host = antennaSurfaceScript;
+            if (getConfig == null) throw new ArgumentNullException(nameof(getConfig));
+            if (getColors == null) throw new ArgumentNullException(nameof(getColors));
+            _getConfig = getConfig;
+            _getColors = getColors;
         }
         
         protected string GetLocCached(string key)
@@ -70,6 +79,8 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
             return entry;
         }
         
-        protected bool IsValid(IMyTerminalBlock block) => block != null && !block.Closed && (!ScreenConfigGeneral.SelectedBlocks.Any() || ScreenConfigGeneral.SelectedBlocks.Contains(block.EntityId));
+        protected GridLinkTypeEnum GridLinkType => (GridLinkTypeEnum)AntennaConfig.GridLinkTypeInternal;
+
+        protected bool IsValid(IMyTerminalBlock block) => block != null && !block.Closed && (!AntennaConfig.SelectedBlocks.Any() || AntennaConfig.SelectedBlocks.Contains(block.EntityId));
     }
 }

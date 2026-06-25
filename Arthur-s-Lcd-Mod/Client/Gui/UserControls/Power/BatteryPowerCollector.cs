@@ -1,5 +1,7 @@
+using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
+using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.GridData;
 using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Helpers;
@@ -8,8 +10,6 @@ using Sandbox.ModAPI.Ingame;
 using VRageMath;
 using static LcdMod.Common.Helpers.Constants;
 using IMyBatteryBlock = Sandbox.ModAPI.IMyBatteryBlock;
-using ScreenConfigPower = LcdMod.Common.Config.Models.Apps.ScreenConfigPower;
-
 namespace LcdMod.Client.Gui.UserControls.Power
 {
     internal sealed class BatteryPowerCollector : PowerCollector
@@ -32,7 +32,11 @@ namespace LcdMod.Client.Gui.UserControls.Power
         string _timeLabel = "--:--";
         bool _isCharging;
 
-        public BatteryPowerCollector(ScreenConfigPower screenConfig) : base(screenConfig)
+        public BatteryPowerCollector(
+            IAppHost host,
+            Func<PowerConfigComponent> getPower,
+            Func<ColorConfigComponent> getColors)
+            : base(host, getPower, getColors)
         {
         }
 
@@ -56,7 +60,7 @@ namespace LcdMod.Client.Gui.UserControls.Power
             _averageCharge = 0f;
             _statusText = string.Empty;
             _rightSideText = string.Empty;
-            _rightSideColor = ScreenConfigPower.HeaderColor;
+            _rightSideColor = HeaderColor;
             _statusKind = PowerStatusKind.None;
             _statusColor = Color.White;
             _timeLabel = "--:--";
@@ -70,7 +74,7 @@ namespace LcdMod.Client.Gui.UserControls.Power
                 return;
             }
 
-            var batteries = grid.GetTerminalBlocks<IMyBatteryBlock>(ScreenConfigPower.GridLinkType);
+            var batteries = grid.GetTerminalBlocks<IMyBatteryBlock>(GridLinkType);
             const float eps = 0.001f;
             float totalIn = 0f;
             float totalOut = 0f;
@@ -140,37 +144,37 @@ namespace LcdMod.Client.Gui.UserControls.Power
             if (_visible.Count > 0 && fullCount == _visible.Count)
             {
                 _statusKind = PowerStatusKind.Full;
-                _statusColor = ScreenConfigPower.HeaderColor;
+                _statusColor = HeaderColor;
                 _isCharging = true;
             }
             else if (hasRechargingBattery || totalIn > totalOut + eps)
             {
                 _statusKind = PowerStatusKind.Charging;
-                _statusColor = ScreenConfigPower.WarningColor;
+                _statusColor = WarningColor;
                 _isCharging = true;
             }
             else if (isTrendingCharging)
             {
                 _statusKind = PowerStatusKind.Charging;
-                _statusColor = ScreenConfigPower.WarningColor;
+                _statusColor = WarningColor;
                 _isCharging = true;
             }
             else if (totalOut > totalIn + eps)
             {
                 _statusKind = PowerStatusKind.Discharging;
-                _statusColor = ScreenConfigPower.ErrorColor;
+                _statusColor = ErrorColor;
                 _isCharging = false;
             }
             else if (isTrendingDischarging)
             {
                 _statusKind = PowerStatusKind.Discharging;
-                _statusColor = ScreenConfigPower.ErrorColor;
+                _statusColor = ErrorColor;
                 _isCharging = false;
             }
             else
             {
                 _statusKind = PowerStatusKind.None;
-                _statusColor = ScreenConfigPower.HeaderColor;
+                _statusColor = HeaderColor;
             }
 
             if (_visible.Count == 0)
@@ -183,18 +187,18 @@ namespace LcdMod.Client.Gui.UserControls.Power
             if (netRate < eps)
             {
                 _timeLabel = "--:--";
-                SetRightSideText(_timeLabel, ScreenConfigPower.HeaderColor);
+                SetRightSideText(_timeLabel, HeaderColor);
             }
             else if (_isCharging)
             {
                 _timeLabel = _statusKind == PowerStatusKind.Full ? "00:00" : FormatingHelper.FormatTimeHours((totalMax - totalStored) / netRate);
-                SetRightSideText(_timeLabel, _statusKind == PowerStatusKind.Full ? ScreenConfigPower.HeaderColor : ScreenConfigPower.WarningColor);
+                SetRightSideText(_timeLabel, _statusKind == PowerStatusKind.Full ? HeaderColor : WarningColor);
             }
             else
             {
                 float hours = totalStored / netRate;
                 _timeLabel = FormatingHelper.FormatTimeHours(hours);
-                Color timeColor = hours <= 5f / 60f ? ScreenConfigPower.ErrorColor : ScreenConfigPower.WarningColor;
+                Color timeColor = hours <= 5f / 60f ? ErrorColor : WarningColor;
                 SetRightSideText(_timeLabel, timeColor);
             }
         }
@@ -262,9 +266,9 @@ namespace LcdMod.Client.Gui.UserControls.Power
         
         Color GetBatteryIconColor(float ratio)
         {
-            if (ratio < 0.15f) return ScreenConfigPower.ErrorColor;
-            if (ratio < 0.35f) return ScreenConfigPower.WarningColor;
-            return ScreenConfigPower.HeaderColor;
+            if (ratio < 0.15f) return ErrorColor;
+            if (ratio < 0.35f) return WarningColor;
+            return HeaderColor;
         }
 
         static readonly Dictionary<long, DynamicTooltipLine> ToggleModeCache = new Dictionary<long, DynamicTooltipLine>();

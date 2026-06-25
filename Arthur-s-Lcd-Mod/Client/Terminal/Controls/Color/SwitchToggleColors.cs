@@ -1,5 +1,7 @@
 using LcdMod.Client.Config;
 using LcdMod.Client.Extensions;
+using LcdMod.Common.Config.Components;
+using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage;
@@ -30,19 +32,18 @@ namespace LcdMod.Client.Terminal.Controls.Color
 
         void Setter(IMyTerminalBlock block, bool value)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block);
-
-            if (config == null)
-                return;
-
-            config.CustomizedColors = value;
-            ConfigManager.Sync(block);
-            block.RefreshTerminal();
+            if (ConfigManager.ModifyComponentForCurrentSurface<ColorConfigComponent>(
+                    block,
+                    Constants.COLORS,
+                    config => config.CustomizedColors = value))
+                block.RefreshTerminal();
         }
 
         bool Getter(IMyTerminalBlock myTerminalBlock)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(myTerminalBlock);
+            var config = ConfigManager.GetComponentForCurrentSurface<ColorConfigComponent>(
+                myTerminalBlock,
+                Constants.COLORS);
             return config != null && config.CustomizedColors;
         }
     }

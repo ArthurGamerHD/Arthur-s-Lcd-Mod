@@ -1,3 +1,5 @@
+using LcdMod.Common.Config.Components;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using LcdMod.Client.Apps.Abstract;
@@ -10,7 +12,11 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
 {
     internal sealed class RadioAntennaCollector : AntennaCollector
     {
-        public RadioAntennaCollector(IAppHost antennaSurfaceScript): base(antennaSurfaceScript)
+        public RadioAntennaCollector(
+            IAppHost antennaSurfaceScript,
+            Func<BlockSelectionConfigComponent> getConfig,
+            Func<ColorConfigComponent> getColors)
+            : base(antennaSurfaceScript, getConfig, getColors)
         {
         }
         
@@ -20,7 +26,7 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
             Dictionary<long, AntennaEntry> models,
             HashSet<long> activeEntryIds)
         {
-            var radios = grid.GetTerminalBlocks<IMyRadioAntenna>(ScreenConfigGeneral.GridLinkType);
+            var radios = grid.GetTerminalBlocks<IMyRadioAntenna>(GridLinkType);
 
             for (int i = 0; i < radios.Count; i++)
             {

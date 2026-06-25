@@ -1,10 +1,11 @@
+using System;
 using System.Linq;
 using LcdMod.Client.Config;
 using LcdMod.Client.Terminal.Controls.Filter.Listbox;
+using LcdMod.Common.Config.Components;
 using LcdMod.Common.Helpers;
 
 using Sandbox.ModAPI;
-using ScreenConfigWithBlocks = LcdMod.Common.Config.Models.Apps.ScreenConfigWithBlocks;
 
 namespace LcdMod.Client.Terminal.Controls.Filter.Buttons
 {
@@ -24,24 +25,27 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Buttons
 
             var index = GetThisSurfaceIndex(block);
             var settings = ConfigManager.GetConfigForBlock(block);
-
-            if (settings == null || settings.Screens.Count <= index) 
+            var surface = settings == null ? null : settings.GetSurfaceConfig(index);
+            if (settings == null || !settings.CanWriteConfig(surface))
+                return;
+            var config = surface == null ? null : surface.TryGet<BlockSelectionConfigComponent>(Constants.BLOCKS);
+            if (config == null)
                 return;
 
-            AddBlocks(settings.Screens[index] as ScreenConfigWithBlocks);
-            AddGroups(settings.Screens[index] as ScreenConfigWithBlocks);
+            AddBlocks(config);
+            AddGroups(config);
                 
             SourceList.TerminalControl.UpdateVisual();
             TargetList.TerminalControl.UpdateVisual();
             ConfigManager.Sync(block, settings);
         }
 
-        void AddGroups(ScreenConfigWithBlocks config)
+        void AddGroups(BlockSelectionConfigComponent config)
         {
             var groups = SourceList.Selection.Where(a => a.UserData is string)
                 .Select(a => (string)a.UserData);
 
-            if (config.SelectedGroups.Length > 0)
+            if (config.SelectedGroups != null && config.SelectedGroups.Length > 0)
             {
                 var list = config.SelectedGroups.ToList();
                 list.AddRange(groups);
@@ -53,7 +57,7 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Buttons
             }
         }
 
-        void AddBlocks(ScreenConfigWithBlocks config)
+        void AddBlocks(BlockSelectionConfigComponent config)
         {
             var ids = SourceList.Selection
                 .Where(a => a.UserData is long)
@@ -62,7 +66,7 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Buttons
 
             RemapHelper.PinBlocks(ids);
 
-            if (config.SelectedBlocks.Length > 0)
+            if (config.SelectedBlocks != null && config.SelectedBlocks.Length > 0)
             {
                 var list = config.SelectedBlocks.ToList();
                 list.AddRange(ids);

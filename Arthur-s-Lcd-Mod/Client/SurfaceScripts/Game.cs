@@ -17,8 +17,10 @@ using ChessGame = LcdMod.Client.Games.Chess.ChessGame;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
 using static LcdMod.Common.Helpers.Constants;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
+    [LcdSurface(typeof(LcdMod.Client.Apps.GamesConfigApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class GameSurfaceScript : InteractiveSurfaceScript, IMultiDisplayMode
     {
@@ -93,7 +95,7 @@ namespace LcdMod.Client.SurfaceScripts
 
         void SetGame(long entryValue)
         {
-            AppConfig.DisplayMode = (int)entryValue;
+            GeneralComponent.DisplayMode = (int)entryValue;
             Sync();
         }
 
@@ -102,11 +104,8 @@ namespace LcdMod.Client.SurfaceScripts
         public override void SafeRun()
         {
             
-            if(AppConfig == null)
-                return;
-            
             if(_currentGame == null)
-                InitGame((GameEnum)AppConfig.DisplayMode);
+                InitGame((GameEnum)GeneralComponent.DisplayMode);
 
             _currentGame?.Update();
             
@@ -162,7 +161,7 @@ namespace LcdMod.Client.SurfaceScripts
             if(_currentGame == null)
                 return;
             
-            if ((GameEnum)AppConfig.DisplayMode != _currentGame.Id)
+            if ((GameEnum)GeneralComponent.DisplayMode != _currentGame.Id)
             {
                 var old = _currentGame;
                 LcdModSessionComponent.OnSave -= old.Save;

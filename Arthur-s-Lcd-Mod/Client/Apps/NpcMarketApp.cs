@@ -1,3 +1,4 @@
+using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -13,7 +14,6 @@ using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Market;
 using LcdMod.Client.Terminal.Controls.Generic;
-using LcdMod.Common.Config.Models.Apps;
 using LcdMod.Common.Market;
 using VRage;
 using VRage.Game.GUI.TextPanel;
@@ -23,9 +23,14 @@ using Sandbox.ModAPI;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
 using static LcdMod.Common.Helpers.Constants;
 
+using LcdMod.Common.Config.Generation;
+using LcdMod.Common.Helpers;
+
 namespace LcdMod.Client.Apps
 {
-    internal sealed class NpcMarketApp : App, IApp
+    [LcdApp(19)]
+    [ConfigComponent(APP, typeof(NpcMarketConfigComponent), PropertyName = "NpcMarketComponent")]
+    internal sealed partial class NpcMarketApp : App, IApp
     {
         public const string TITLE = MOD_PREFIX + "MarketApp";
         const string LOC_REFRESH = MOD_PREFIX + "MarketApp_Refresh";
@@ -66,22 +71,20 @@ namespace LcdMod.Client.Apps
         NpcMarketClientCacheKey CacheKey =>
             new NpcMarketClientCacheKey(
                 Host.Block?.EntityId ?? 0L,
-                AppConfig?.ScreenIndex ?? 0);
+                Host.SurfaceIndex);
 
         public override IReadOnlyList<Control> Children => _children;
         internal NpcMarketMode Mode => _mode;
         internal IAppHost AppHost => Host;
-        readonly ScreenConfigNpcMarket _config;
         bool _restoredPageIndex;
         int _lastAutoPageStep = -1;
 
-        public NpcMarketApp(ScreenConfigNpcMarket config, IAppHost host) : base(config, host)
+        public NpcMarketApp(IAppHost host) : base(host)
         {
-            _config = config;
-            _mode = NormalizeConfiguredMode(_config.SelectedMode);
-            _config.SelectedMode = (int)_mode;
-            _searchQuery = _config.SearchQuery ?? string.Empty;
-            _config.SearchQuery = _searchQuery;
+            _mode = NormalizeConfiguredMode(NpcMarketComponent.SelectedMode);
+            NpcMarketComponent.SelectedMode = (int)_mode;
+            _searchQuery = NpcMarketComponent.SearchQuery ?? string.Empty;
+            NpcMarketComponent.SearchQuery = _searchQuery;
             LoadSortStateForMode(_mode);
             _pagesPanel = AddChild(new PagesPanel());
             _pagesPanel.SetVisible(false);
@@ -187,16 +190,16 @@ namespace LcdMod.Client.Apps
 
             var key = CacheKey;
             var snapshot = NpcMarketClientCache.GetSnapshot(key);
-            var headerTop = view.Y + (Host.TitleVisible ? 48f * AppConfig.Scale * fontScale : 12f * scale);
+            var headerTop = view.Y + (Host.TitleVisible ? 48f * GeneralComponent.GetScale() * fontScale : 12f * scale);
             
             if (IsLocallyAccessDenied() || (snapshot != null && IsAccessDenied(snapshot)))
             {
                 DrawNativeMessage(sprites, MyTexts.GetString("AccessDenied"), "Lock",
-                    ResolveResource(ThemeResources.ErrorColor, _config.ErrorColor));
+                    ResolveResource(ThemeResources.ErrorColor, ColorComponent.ResolveErrorColor()));
             }
             else if (snapshot == null)
             {
-                Host.DrawLoading(sprites, _config.Scale);
+                Host.DrawLoading(sprites, GeneralComponent.GetScale());
             }
             else if (ShouldShowNoTraderWarning(snapshot))
             {
@@ -339,7 +342,7 @@ namespace LcdMod.Client.Apps
             var stationName = string.IsNullOrWhiteSpace(quote.StationName)
                 ? MyTexts.GetString("TssTargetingInfo_StaticGrid")
                 : quote.StationName;
-            var modeLabel = MyTexts.GetString(quote.StoreItemType == VRage.Game.ObjectBuilders.Definitions.StoreItemTypes.Offer
+            var modeLabel = MyTexts.GetString(quote.StoreItemType == StoreItemTypes.Offer
                 ? "StoreScreenBuyHeader"
                 : "StoreScreenSellHeader");
             var description = modeLabel + " " + (itemName ?? string.Empty) + " @ " +
@@ -384,7 +387,7 @@ namespace LcdMod.Client.Apps
 
         double GetMaxDistanceMeters()
         {
-            var value = _config?.MaxDistanceMeters ?? SliderNpcMarketMaxDistance.UNLIMITED_DISTANCE_METERS;
+            var value = NpcMarketComponent.MaxDistanceMeters;
             if (SliderNpcMarketMaxDistance.IsUnlimited(value))
                 return double.PositiveInfinity;
 
@@ -465,9 +468,9 @@ namespace LcdMod.Client.Apps
             switch (mode)
             {
                 case NpcMarketMode.Buy:
-                    return row.BestBuyQuote ?? (row.StoreItemType == VRage.Game.ObjectBuilders.Definitions.StoreItemTypes.Offer ? row.BestQuote : null);
+                    return row.BestBuyQuote ?? (row.StoreItemType == StoreItemTypes.Offer ? row.BestQuote : null);
                 case NpcMarketMode.Sell:
-                    return row.BestSellQuote ?? (row.StoreItemType == VRage.Game.ObjectBuilders.Definitions.StoreItemTypes.Order ? row.BestQuote : null);
+                    return row.BestSellQuote ?? (row.StoreItemType == StoreItemTypes.Order ? row.BestQuote : null);
                 default:
                     return row.BestQuote;
             }
@@ -652,13 +655,13 @@ namespace LcdMod.Client.Apps
 
         void DrawNativeMessage(List<MySprite> sprites, string message, string icon = "Warning", Color? color = null)
         {
-            color = color ?? ResolveResource(ThemeResources.WarningColor, _config.WarningColor);
+            color = color ?? ResolveResource(ThemeResources.WarningColor, ColorComponent.ResolveWarningColor());
             Host.DrawMessage(
                 sprites,
                 message,
                 icon,
                 color.Value,
-                AppConfig.Scale);
+                GeneralComponent.GetScale());
         }
 
         void ConfigureRefreshButton(bool enabled, string text)
@@ -929,7 +932,7 @@ namespace LcdMod.Client.Apps
         void OnSearchChanged(string value)
         {
             _searchQuery = value ?? string.Empty;
-            _config.SearchQuery = _searchQuery;
+            NpcMarketComponent.SearchQuery = _searchQuery;
             ResetSavedPageIndex();
             RefreshRows();
             Host.RenderSprites();
@@ -948,7 +951,7 @@ namespace LcdMod.Client.Apps
 
             SaveSortStateForMode(_mode);
             _mode = mode;
-            _config.SelectedMode = (int)_mode;
+            NpcMarketComponent.SelectedMode = (int)_mode;
             LoadSortStateForMode(_mode);
             ResetSavedPageIndex();
             RefreshRows();
@@ -998,15 +1001,15 @@ namespace LcdMod.Client.Apps
                 return;
 
             _restoredPageIndex = true;
-            _pagesPanel.FirstVisiblePage = Math.Max(0, (int)Math.Round(_config.HorizontalScrollOffsetPixels));
+            _pagesPanel.FirstVisiblePage = Math.Max(0, (int)Math.Round(NpcMarketComponent.HorizontalScrollOffsetPixels));
             SavePageIndex();
         }
 
         void ResetSavedPageIndex()
         {
-            _config.ScrollOffsetPixels = 0f;
-            _config.HorizontalScrollOffsetPixels = 0f;
-            _config.VerticalScrollOffsetPixels = 0f;
+            NpcMarketComponent.ScrollOffsetPixels = 0f;
+            NpcMarketComponent.HorizontalScrollOffsetPixels = 0f;
+            NpcMarketComponent.VerticalScrollOffsetPixels = 0f;
             _restoredPageIndex = true;
             _lastAutoPageStep = -1;
             _pagesPanel.FirstVisiblePage = 0;
@@ -1019,9 +1022,9 @@ namespace LcdMod.Client.Apps
 
         void SavePageIndex(int pageIndex)
         {
-            _config.HorizontalScrollOffsetPixels = Math.Max(0, pageIndex);
-            _config.VerticalScrollOffsetPixels = 0f;
-            _config.ScrollOffsetPixels = 0f;
+            NpcMarketComponent.HorizontalScrollOffsetPixels = Math.Max(0, pageIndex);
+            NpcMarketComponent.VerticalScrollOffsetPixels = 0f;
+            NpcMarketComponent.ScrollOffsetPixels = 0f;
         }
 
         void AdvancePageFromTimer()
@@ -1032,7 +1035,7 @@ namespace LcdMod.Client.Apps
                 return;
             }
 
-            var seconds = SliderNpcMarketPageSwitchDelay.ClampSeconds(_config.PageSwitchSeconds);
+            var seconds = SliderNpcMarketPageSwitchDelay.ClampSeconds(NpcMarketComponent.PageSwitchSeconds);
             if (seconds <= 0f)
             {
                 _lastAutoPageStep = -1;
@@ -1090,43 +1093,43 @@ namespace LcdMod.Client.Apps
         {
             if (mode == NpcMarketMode.Sell)
             {
-                _sortColumn = NormalizeSortColumn(_config.SellSortColumn, mode);
-                _sortDescending = _config.SellSortDescending;
-                _config.SellSortColumn = (int)_sortColumn;
+                _sortColumn = NormalizeSortColumn(NpcMarketComponent.SellSortColumn, mode);
+                _sortDescending = NpcMarketComponent.SellSortDescending;
+                NpcMarketComponent.SellSortColumn = (int)_sortColumn;
                 return;
             }
 
             if (mode == NpcMarketMode.Both)
             {
-                _sortColumn = NormalizeSortColumn(_config.BothSortColumn, mode);
-                _sortDescending = _config.BothSortDescending;
-                _config.BothSortColumn = (int)_sortColumn;
+                _sortColumn = NormalizeSortColumn(NpcMarketComponent.BothSortColumn, mode);
+                _sortDescending = NpcMarketComponent.BothSortDescending;
+                NpcMarketComponent.BothSortColumn = (int)_sortColumn;
                 return;
             }
 
-            _sortColumn = NormalizeSortColumn(_config.BuySortColumn, mode);
-            _sortDescending = _config.BuySortDescending;
-            _config.BuySortColumn = (int)_sortColumn;
+            _sortColumn = NormalizeSortColumn(NpcMarketComponent.BuySortColumn, mode);
+            _sortDescending = NpcMarketComponent.BuySortDescending;
+            NpcMarketComponent.BuySortColumn = (int)_sortColumn;
         }
 
         void SaveSortStateForMode(NpcMarketMode mode)
         {
             if (mode == NpcMarketMode.Sell)
             {
-                _config.SellSortColumn = (int)_sortColumn;
-                _config.SellSortDescending = _sortDescending;
+                NpcMarketComponent.SellSortColumn = (int)_sortColumn;
+                NpcMarketComponent.SellSortDescending = _sortDescending;
                 return;
             }
 
             if (mode == NpcMarketMode.Both)
             {
-                _config.BothSortColumn = (int)_sortColumn;
-                _config.BothSortDescending = _sortDescending;
+                NpcMarketComponent.BothSortColumn = (int)_sortColumn;
+                NpcMarketComponent.BothSortDescending = _sortDescending;
                 return;
             }
 
-            _config.BuySortColumn = (int)_sortColumn;
-            _config.BuySortDescending = _sortDescending;
+            NpcMarketComponent.BuySortColumn = (int)_sortColumn;
+            NpcMarketComponent.BuySortDescending = _sortDescending;
         }
 
         static NpcMarketSortColumn NormalizeSortColumn(int value, NpcMarketMode mode)
@@ -1191,7 +1194,7 @@ namespace LcdMod.Client.Apps
 
         float GetLayoutScale()
         {
-            return _config != null && _config.Scale > 0f ? _config.Scale : 1f;
+            return GeneralComponent.GetScale();
         }
 
         static string GetModeLabel(NpcMarketMode mode)

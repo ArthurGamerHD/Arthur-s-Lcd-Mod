@@ -1,5 +1,5 @@
 using LcdMod.Client.Config;
-using LcdMod.Common.Config.Models.Apps;
+using LcdMod.Common.Config.Components;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
@@ -30,17 +30,14 @@ namespace LcdMod.Client.Terminal.Controls.Cargo
 
         void Setter(IMyTerminalBlock block, bool value)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigCargoActions;
-            if (config == null)
-                return;
-
-            config.ShowConfigButton = value;
-            ConfigManager.Sync(block);
+            ConfigManager.ModifyComponentForTerminalApp<CargoActionsConfigComponent>(
+                block,
+                config => config.ShowConfigButton = value);
         }
 
         bool Getter(IMyTerminalBlock block)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigCargoActions;
+            var config = ConfigManager.GetComponentForTerminalApp<CargoActionsConfigComponent>(block);
             return config != null && config.ShowConfigButton;
         }
     }

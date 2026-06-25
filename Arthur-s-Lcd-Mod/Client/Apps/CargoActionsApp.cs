@@ -1,3 +1,5 @@
+using Generated;
+using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
@@ -11,14 +13,17 @@ using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts.Abstract;
-using LcdMod.Common.Config.Models.Apps;
 using LcdMod.Common.Helpers;
 using LcdMod.Common.Networking;
 using Sandbox.ModAPI;
 using VRage;
 using VRage.Game.GUI.TextPanel;
+using VRage.Game.ModAPI;
 using VRageMath;
 using static LcdMod.Common.Helpers.Constants;
+
+using LcdMod.Common.Config.Generation;
+using Constants = LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.Apps
 {
@@ -28,7 +33,9 @@ namespace LcdMod.Client.Apps
     /// container/target on the (mechanically linked) construct, with no per-block selection.
     /// Server-authoritative for the inventory mutations, like the original footer.
     /// </summary>
-    public sealed class CargoActionsApp : App, IApp
+    [LcdApp(18)]
+    [ConfigComponent(APP, typeof(CargoActionsConfigComponent), PropertyName = "CargoActionsComponent")]
+    public sealed partial class CargoActionsApp : App, IApp
     {
         const int ACTION_CONFIG = 0;
         const int ACTION_SORTER = 1;
@@ -75,14 +82,13 @@ namespace LcdMod.Client.Apps
         long _statusUntilFrame;
         long _nextAdoptAttemptFrame;
 
-        public CargoActionsApp(ScreenConfigCargoActions config, IAppHost host) : base(config, host)
+        public CargoActionsApp(IAppHost host) : base(host)
         {
             _interactiveHost = host as InteractiveSurfaceScript;
         }
 
         public override IReadOnlyList<Control> Children => _children;
 
-        ScreenConfigCargoActions Config => (ScreenConfigCargoActions)AppConfig;
 
         public override void Update()
         {
@@ -110,9 +116,9 @@ namespace LcdMod.Client.Apps
             if (area.Width <= 0f || area.Height <= 0f)
                 return;
 
-            bool small = AppConfig.Scale < SMALL_SURFACE_SCALE;
+            bool small = GeneralComponent.GetScale() < SMALL_SURFACE_SCALE;
             _visible.Clear();
-            if (!small && Config.ShowConfigButton)
+            if (!small && CargoActionsComponent.ShowConfigButton)
                 _visible.Add(ACTION_CONFIG);
             _visible.Add(ACTION_SORTER);
             _visible.Add(ACTION_WEAPONS);
@@ -128,7 +134,7 @@ namespace LcdMod.Client.Apps
             var cellMin = Math.Min(area.Width / columns, area.Height / rows);
             var gap = MathHelper.Clamp(cellMin * GAP_FRACTION, GAP_MIN, GAP_MAX);
 
-            var cap = small ? Math.Max(32f, area.Height * SMALL_HEIGHT_FRACTION) : 150f * AppConfig.Scale;
+            var cap = small ? Math.Max(32f, area.Height * SMALL_HEIGHT_FRACTION) : 150f * GeneralComponent.GetScale();
             var maxTileWidth = cap * (small ? 2f : 1.4f);
             var buttonWidth = Math.Min((area.Width - (columns - 1) * gap) / columns, maxTileWidth);
             var buttonHeight = Math.Min((area.Height - (rows - 1) * gap) / rows, cap);
@@ -237,7 +243,7 @@ namespace LcdMod.Client.Apps
 
         float GetContentTop()
         {
-            return Host.TitleVisible ? Host.ViewBox.Y + (40f * AppConfig.Scale * Host.Surface.FontSize) : Host.ViewBox.Y;
+            return Host.TitleVisible ? Host.ViewBox.Y + (40f * GeneralComponent.GetScale() * Host.Surface.FontSize) : Host.ViewBox.Y;
         }
 
         void OnConfigClicked(ButtonModel model, object sender)
@@ -247,7 +253,7 @@ namespace LcdMod.Client.Apps
                 if (_interactiveHost == null)
                     return;
 
-                _interactiveHost.ShowDialog(new CargoActionsSettingsDialog(this, Config, OnSettingsSaved,
+                _interactiveHost.ShowDialog(new CargoActionsSettingsDialog(this, () => CargoActionsComponent, OnSettingsSaved,
                     Host.RenderSprites, delegate(Dialog d) { _interactiveHost.ShowDialog(d); }, CollectWeaponTypes()));
             }
             catch (Exception e)
@@ -260,7 +266,7 @@ namespace LcdMod.Client.Apps
         {
             try
             {
-                var config = Config;
+                var config = CargoActionsComponent;
                 config.SettingsRevision = config.SettingsRevision + 1;
                 PropagateSettingsToConstruct(config);
 
@@ -294,14 +300,15 @@ namespace LcdMod.Client.Apps
                 // SettingsRevision at any time and there is no server-side rebroadcast to rely on.
                 _nextAdoptAttemptFrame = frame + ADOPT_RECHECK_FRAMES;
 
-                var mine = Config;
+                var mine = CargoActionsComponent;
                 CollectConstructGridIds(blocks);
 
-                ScreenConfigCargoActions newest = null;
+                CargoActionsConfigComponent newest = null;
                 foreach (var screen in SurfaceScriptBase.Instances)
                 {
-                    var other = screen.Config as ScreenConfigCargoActions;
-                    if (other == null || ReferenceEquals(other, mine) || screen.Block == null)
+                    var otherSurface = screen.Config;
+                    var other = otherSurface?.TryGetComponent<CargoActionsConfigComponent>();
+                    if (other == null || otherSurface.AppTypeId != (int)AppType.CargoActions || ReferenceEquals(other, mine) || screen.Block == null)
                         continue;
                     if (!_constructGridIds.Contains(screen.Block.CubeGrid.EntityId))
                         continue;
@@ -326,7 +333,7 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        void PropagateSettingsToConstruct(ScreenConfigCargoActions source)
+        void PropagateSettingsToConstruct(CargoActionsConfigComponent source)
         {
             var blocks = GetGridBlocks();
             if (blocks == null || blocks.Count == 0)
@@ -338,8 +345,9 @@ namespace LcdMod.Client.Apps
             var ownBlock = Host.Block;
             foreach (var screen in SurfaceScriptBase.Instances)
             {
-                var other = screen.Config as ScreenConfigCargoActions;
-                if (other == null || ReferenceEquals(other, source) || screen.Block == null)
+                var otherSurface = screen.Config;
+                var other = otherSurface?.TryGetComponent<CargoActionsConfigComponent>();
+                if (other == null || otherSurface.AppTypeId != (int)AppType.CargoActions || ReferenceEquals(other, source) || screen.Block == null)
                     continue;
                 if (!_constructGridIds.Contains(screen.Block.CubeGrid.EntityId))
                     continue;
@@ -396,7 +404,7 @@ namespace LcdMod.Client.Apps
                 if (_sources.Count < 2)
                     return;
 
-                var sortMode = Config.SortMode;
+                var sortMode = CargoActionsComponent.SortMode;
                 if (MyAPIGateway.Session != null && MyAPIGateway.Session.IsServer)
                 {
                     var moved = InventorySorterCommon.Consolidate(_sources, (InventorySortMode)sortMode);
@@ -446,7 +454,7 @@ namespace LcdMod.Client.Apps
                 if (_targets.Count == 0)
                     return;
 
-                var settings = Config.ToFillSettings();
+                var settings = CargoActionsComponent.ToFillSettings();
                 if (MyAPIGateway.Session != null && MyAPIGateway.Session.IsServer)
                 {
                     var moved = BlockFillerCommon.Execute(_sources, _targets, kind, settings);
@@ -532,7 +540,7 @@ namespace LcdMod.Client.Apps
             if (gridLogic == null)
                 return null;
 
-            return gridLogic.GetTerminalBlocks<IMyTerminalBlock>(Config.GridLinkType);
+            return gridLogic.GetTerminalBlocks<IMyTerminalBlock>((GridLinkTypeEnum)CargoActionsComponent.GridLinkTypeInternal);
         }
 
         static long[] ToEntityIds(List<IMyTerminalBlock> blocks)
@@ -598,8 +606,8 @@ namespace LcdMod.Client.Apps
             var textScale = PadButtonStyle.TextScaleForHeight(
                 MathHelper.Clamp(Host.ViewBox.Height * 0.05f, 12f, 20f), Host.Surface);
             var textSize = FormatingHelper.GetSizeInPixel(_statusMessage, TextFont, textScale, Host.Surface);
-            var padX = 20f * AppConfig.Scale;
-            var padY = 12f * AppConfig.Scale;
+            var padX = 20f * GeneralComponent.GetScale();
+            var padY = 12f * GeneralComponent.GetScale();
             var rect = new RectangleF(
                 Host.ViewBox.Center.X - (textSize.X * 0.5f + padX),
                 Host.ViewBox.Center.Y - (textSize.Y * 0.5f + padY),
@@ -607,7 +615,7 @@ namespace LcdMod.Client.Apps
                 textSize.Y + 2f * padY);
 
             BorderRenderer.CreateSpritesFromRect(rect, sprites,
-                Host.BackgroundColor.MulValue(0.2f), radiusScale: AppConfig.Scale);
+                Host.BackgroundColor.MulValue(0.2f), radiusScale: GeneralComponent.GetScale());
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,

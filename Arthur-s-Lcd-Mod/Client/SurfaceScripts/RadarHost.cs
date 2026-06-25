@@ -1,3 +1,4 @@
+using LcdMod.Common.Config.Components;
 using Generated;
 using System.Collections.Generic;
 using LcdMod.Client.Apps;
@@ -5,7 +6,6 @@ using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Terminal.Controls.Generic;
-using LcdMod.Common.Config.Models.Apps;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
@@ -14,17 +14,17 @@ using VRageMath;
 using SliderRadarRange = LcdMod.Client.Terminal.Controls.Generic.SliderRadarRange;
 using static LcdMod.Common.Helpers.Constants;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
+    [LcdSurface(typeof(LcdMod.Client.Apps.RadarApp))]
     [MyTextSurfaceScript(ID, TITLE)]
-    public sealed class RadarSurfaceScript : InteractiveSurfaceScript,
+    public sealed partial class RadarSurfaceScript : InteractiveSurfaceScript,
         IUsesTerminalControl<SliderRadarRange>,
         IUsesTerminalControl<ComboboxReferenceMode>
     {
         public const string ID = MOD_PREFIX + "Radar";
         public const string TITLE = MOD_PREFIX + "Radar";
-
-        protected override ConfigKind ConfigKind => ConfigKind.Radar;
         protected override string DefaultTitle => TITLE;
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
 
@@ -39,12 +39,8 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override void SafeRun()
         {
-            var appConfig = Config as ScreenConfigRadar;
-            if (appConfig == null)
-                return;
-
             if (_app == null)
-                _app = new RadarApp(appConfig, this);
+                _app = new RadarApp(this);
 
             _app.Update();
             RenderSprites();

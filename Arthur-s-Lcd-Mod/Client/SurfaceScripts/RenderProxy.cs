@@ -10,9 +10,9 @@ using LcdMod.Client.ScreenAreas;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Terminal.Controls.Proxy;
+using LcdMod.Common.Config.Components;
 using LcdMod.Common.Config.Models;
 using LcdMod.Client.Utility;
-using LcdMod.Common.Config.Models.Apps;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces;
@@ -22,8 +22,10 @@ using VRage.ModAPI;
 using VRageMath;
 using static LcdMod.Common.Helpers.Constants;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
+    [LcdSurface(typeof(LcdMod.Client.Apps.RenderProxyApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class RenderProxySurfaceScript : InteractiveSurfaceScript,
         IUsesTerminalControl<SliderProxyX>,
@@ -37,8 +39,9 @@ namespace LcdMod.Client.SurfaceScripts
 
         List<MySprite> _sprites = new List<MySprite>();
         readonly List<Control> _parentInteractiveEntries = new List<Control>();
-
-        protected override ConfigKind ConfigKind => ConfigKind.RenderProxy;
+        RenderProxyConfigComponent RenderProxyComponent => Config.GetComponent<RenderProxyConfigComponent>();
+        BlockReferenceConfigComponent RenderProxyReferenceComponent =>
+            Config.GetComponent<BlockReferenceConfigComponent>(RENDER_PROXY_REFERENCE);
         protected override bool ClipToBounds => true;
 
         protected override string DefaultTitle => TITLE;
@@ -165,20 +168,16 @@ namespace LcdMod.Client.SurfaceScripts
 
         bool TryApplyProxyAutoOffset(bool cascade)
         {
-            var appConfig = AppConfig;
-            if (appConfig == null)
-                return false;
-
             sbyte x;
             sbyte y;
             ProxyAutoContext context;
             if (!TryCalculateAutoOffset(out x, out y, out context))
                 return false;
 
-            if (appConfig.XAxisOffset != x || appConfig.YAxisOffset != y)
+            if (RenderProxyComponent.XAxisOffset != x || RenderProxyComponent.YAxisOffset != y)
             {
-                appConfig.XAxisOffset = x;
-                appConfig.YAxisOffset = y;
+                RenderProxyComponent.XAxisOffset = x;
+                RenderProxyComponent.YAxisOffset = y;
 
                 var terminalBlock = Block as IMyTerminalBlock;
                 if (terminalBlock != null)
@@ -228,7 +227,7 @@ namespace LcdMod.Client.SurfaceScripts
 
         void ScheduleInitialAutoAdjust()
         {
-            if (AppConfig != null && !AppConfig.EnableAutoAdjust)
+            if (!RenderProxyComponent.EnableAutoAdjust)
                 return;
 
             if (_initialAutoAdjustAttempts >= INITIAL_AUTO_ADJUST_MAX_ATTEMPTS)
@@ -243,13 +242,7 @@ namespace LcdMod.Client.SurfaceScripts
             if (Block == null || Block.MarkedForClose)
                 return;
 
-            if (AppConfig == null)
-            {
-                ScheduleInitialAutoAdjust();
-                return;
-            }
-
-            if (!AppConfig.EnableAutoAdjust)
+            if (!RenderProxyComponent.EnableAutoAdjust)
                 return;
 
             if (!TryApplyProxyAutoOffset(false))
@@ -480,28 +473,21 @@ namespace LcdMod.Client.SurfaceScripts
             var providerConfig = ConfigManager.GetConfigForBlock(panel) ??
                                  ConfigManager.TryLoad(panel) ??
                                  ConfigManager.CreateSettings(panel);
-            if (providerConfig.Screens == null)
-                providerConfig.Screens = new List<ScreenConfigGeneral>();
+            if (!providerConfig.CanWrite)
+                return;
 
-            while (providerConfig.Screens.Count < 1)
-                providerConfig.Screens.Add(new ScreenConfigGeneral());
+            providerConfig.EnsureSurfaceApp(0, AppType.RenderProxy);
+            var surface = providerConfig.GetSurfaceConfig(0);
+            if (!providerConfig.CanWriteConfig(surface))
+                return;
+            var reference = surface?.TryGet<BlockReferenceConfigComponent>(RENDER_PROXY_REFERENCE);
+            var proxyConfig = surface?.TryGetComponent<RenderProxyConfigComponent>();
+            if (reference == null || proxyConfig == null)
+                return;
 
-            var existing = providerConfig.Screens[0];
-            var proxyConfig = existing as ScreenConfigRenderProxy;
-            if (proxyConfig == null)
-            {
-                proxyConfig = ConfigManager.GenerateConfig((int)ConfigKind.RenderProxy) as ScreenConfigRenderProxy ??
-                              new ScreenConfigRenderProxy();
-                if (existing != null)
-                    proxyConfig.Clone(existing);
-            }
-
-            proxyConfig.ScreenIndex = 0;
-            proxyConfig.ReferenceBlock = hostId;
+            reference.EntityId = hostId;
             proxyConfig.XAxisOffset = x;
             proxyConfig.YAxisOffset = y;
-            providerConfig.Screens[0] = proxyConfig;
-            providerConfig.BindRuntimeParent(panel);
 
             ConfigManager.Sync(panel, providerConfig);
 
@@ -608,9 +594,10 @@ namespace LcdMod.Client.SurfaceScripts
                 }
 
                 ScreenProviderConfig providerConfig;
-                ScreenConfigRenderProxy proxyConfig;
-                if (!TryGetLinkedProxyConfig(panel, out providerConfig, out proxyConfig) ||
-                    proxyConfig.ReferenceBlock != context.HostId)
+                RenderProxyConfigComponent proxyConfig;
+                BlockReferenceConfigComponent proxyReference;
+                if (!TryGetLinkedProxyConfig(panel, out providerConfig, out proxyConfig, out proxyReference) ||
+                    proxyReference.EntityId != context.HostId)
                 {
                     continue;
                 }
@@ -646,20 +633,27 @@ namespace LcdMod.Client.SurfaceScripts
         static bool TryGetLinkedProxyConfig(
             IMyTextPanel panel,
             out ScreenProviderConfig providerConfig,
-            out ScreenConfigRenderProxy proxyConfig)
+            out RenderProxyConfigComponent proxyConfig,
+            out BlockReferenceConfigComponent proxyReference)
         {
             providerConfig = null;
             proxyConfig = null;
+            proxyReference = null;
 
             if (panel == null)
                 return false;
 
             providerConfig = ConfigManager.GetConfigForBlock(panel) ?? ConfigManager.TryLoad(panel);
-            if (providerConfig == null || providerConfig.Screens == null || providerConfig.Screens.Count == 0)
+            if (providerConfig == null)
                 return false;
 
-            proxyConfig = providerConfig.Screens[0] as ScreenConfigRenderProxy;
-            return proxyConfig != null;
+            var surface = providerConfig.GetSurfaceConfig(0);
+            if (surface == null || surface.AppTypeId != (int)AppType.RenderProxy)
+                return false;
+
+            proxyConfig = surface.TryGetComponent<RenderProxyConfigComponent>();
+            proxyReference = surface.TryGet<BlockReferenceConfigComponent>(RENDER_PROXY_REFERENCE);
+            return proxyConfig != null && proxyReference != null;
         }
 
         static void ScheduleLinkedProxyRotationTargets(List<ProxyAutoTarget> targets, int index, long scheduleKey)
@@ -683,9 +677,10 @@ namespace LcdMod.Client.SurfaceScripts
                 return;
 
             ScreenProviderConfig providerConfig;
-            ScreenConfigRenderProxy proxyConfig;
-            if (!TryGetLinkedProxyConfig(target.Block, out providerConfig, out proxyConfig) ||
-                proxyConfig.ReferenceBlock != target.HostId)
+            RenderProxyConfigComponent proxyConfig;
+            BlockReferenceConfigComponent proxyReference;
+            if (!TryGetLinkedProxyConfig(target.Block, out providerConfig, out proxyConfig, out proxyReference) ||
+                proxyReference.EntityId != target.HostId)
             {
                 return;
             }
@@ -727,12 +722,11 @@ namespace LcdMod.Client.SurfaceScripts
             hostRotationIndex = -1;
             host = null;
 
-            var appConfig = AppConfig;
-            if (appConfig == null || appConfig.ReferenceBlock == 0L)
+            if (RenderProxyReferenceComponent.EntityId == 0L)
                 return false;
 
             IMyEntity entity;
-            if (!MyAPIGateway.Entities.TryGetEntityById(appConfig.ReferenceBlock, out entity))
+            if (!MyAPIGateway.Entities.TryGetEntityById(RenderProxyReferenceComponent.EntityId, out entity))
                 return false;
 
             var targetBlock = entity as IMyTerminalBlock;
@@ -1006,11 +1000,10 @@ namespace LcdMod.Client.SurfaceScripts
         {
             var panel = Block as IMyTextPanel;
             var hostPanel = hostBlock as IMyTextPanel;
-            var appConfig = AppConfig;
-            if (panel == null || hostPanel == null || appConfig == null)
+            if (panel == null || hostPanel == null)
                 return false;
 
-            return appConfig.EnableAutoAdjust && GetSelectedTextPanelRotationIndex(panel) != hostRotationIndex;
+            return RenderProxyComponent.EnableAutoAdjust && GetSelectedTextPanelRotationIndex(panel) != hostRotationIndex;
         }
 
         long GetProxyRegistrationId()
@@ -1026,9 +1019,8 @@ namespace LcdMod.Client.SurfaceScripts
 
         Vector2 GetCurrentProxyOffset()
         {
-            var appConfig = AppConfig;
-            float xOffset = appConfig?.XAxisOffset ?? 0f;
-            float yOffset = appConfig?.YAxisOffset ?? 0f;
+            float xOffset = RenderProxyComponent.XAxisOffset;
+            float yOffset = RenderProxyComponent.YAxisOffset;
             return GetProxyPixelOffset(xOffset, yOffset);
         }
 
@@ -1084,8 +1076,8 @@ namespace LcdMod.Client.SurfaceScripts
                 return;
             }
 
-            float x = AppConfig?.XAxisOffset ?? (float)0;
-            float y = AppConfig?.YAxisOffset ?? (float)0;
+            float x = RenderProxyComponent.XAxisOffset;
+            float y = RenderProxyComponent.YAxisOffset;
             long proxyKey = GetProxyRegistrationId();
 
             if (_registeredParent == _parent &&
@@ -1159,18 +1151,7 @@ namespace LcdMod.Client.SurfaceScripts
                 return;
             }
 
-            if (AppConfig == null)
-            {
-                _parent = null;
-                _parentInstances = null;
-                _resolvedReferenceBlockId = 0L;
-                _resolvedHostRotationIndex = -1;
-                _hostScriptUnsupported = false;
-                _hostResolutionUnsupported = false;
-                return;
-            }
-
-            long referenceBlockId = AppConfig.ReferenceBlock;
+            long referenceBlockId = RenderProxyReferenceComponent.EntityId;
             if (referenceBlockId == 0L)
             {
                 _parent = null;
@@ -1262,10 +1243,9 @@ namespace LcdMod.Client.SurfaceScripts
 
         void UpdateRebindCooldown()
         {
-            var appConfig = AppConfig;
-            long referenceId = appConfig?.ReferenceBlock ?? 0L;
-            float x = appConfig?.XAxisOffset ?? 0f;
-            float y = appConfig?.YAxisOffset ?? 0f;
+            long referenceId = RenderProxyReferenceComponent.EntityId;
+            float x = RenderProxyComponent.XAxisOffset;
+            float y = RenderProxyComponent.YAxisOffset;
 
             bool changed = !_hasObservedConfig ||
                            _lastObservedReferenceId != referenceId ||
@@ -1283,9 +1263,6 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override void SafeRun()
         {
-            if (AppConfig == null)
-                return;
-
             base.SafeRun();
             UpdateRebindCooldown();
             ResolveParentFromConfig();
@@ -1299,9 +1276,6 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override void RequestRedraw()
         {
-            if (AppConfig == null)
-                return;
-
             base.RequestRedraw();
         }
 
@@ -1365,7 +1339,7 @@ namespace LcdMod.Client.SurfaceScripts
 
             if (!(Block is IMyTextPanel))
             {
-                var color = AppConfig?.ErrorColor ?? new Color(220, 80, 80);
+                var color = ColorComponent.ResolveErrorColor();
                 DrawMessage(_sprites, "Unsupported Screen", "Cross", color, 0.9f);
                 return _sprites;
             }
@@ -1374,17 +1348,17 @@ namespace LcdMod.Client.SurfaceScripts
             {
                 if (_hostResolutionUnsupported)
                 {
-                    var color = AppConfig?.WarningColor ?? new Color(255, 216, 64);
+                    var color = ColorComponent.ResolveWarningColor();
                     DrawMessage(_sprites, "Unsupported resolution", "Resolution", color, 0.9f);
                 }
                 else if (_hostScriptUnsupported)
                 {
-                    var color = AppConfig?.ErrorColor ?? new Color(220, 80, 80);
+                    var color = ColorComponent.ResolveErrorColor();
                     DrawMessage(_sprites, "Unsupported script", "Cross", color, 0.9f);
                 }
                 else
                 {
-                    var color = AppConfig?.WarningColor ?? new Color(255, 216, 64);
+                    var color = ColorComponent.ResolveWarningColor();
                     DrawMessage(_sprites, "Screen Not Linked", "Warning", color, 0.9f);
                 }
 
@@ -1393,7 +1367,7 @@ namespace LcdMod.Client.SurfaceScripts
 
             if (!IsParentAlive(_parent))
             {
-                var color = AppConfig?.ErrorColor ?? new Color(220, 80, 80);
+                var color = ColorComponent.ResolveErrorColor();
                 DrawMessage(_sprites, "Unsuported script", "Cross", color, 0.9f);
                 return _sprites;
             }
@@ -1406,7 +1380,7 @@ namespace LcdMod.Client.SurfaceScripts
             }
             catch
             {
-                var color = AppConfig?.ErrorColor ?? new Color(220, 80, 80);
+                var color = ColorComponent.ResolveErrorColor();
                 DrawMessage(_sprites, "Unsuported script", "Cross", color, 0.9f);
                 return _sprites;
             }

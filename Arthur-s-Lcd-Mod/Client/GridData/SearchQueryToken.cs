@@ -1,11 +1,9 @@
+using LcdMod.Common.Config.Components;
 using System;
 using System.Linq;
 
 using VRage.Game;
 using GridLinkTypeEnum = VRage.Game.ModAPI.GridLinkTypeEnum;
-using ScreenConfigWithBlocks = LcdMod.Common.Config.Models.Apps.ScreenConfigWithBlocks;
-using ScreenConfigWithItems = LcdMod.Common.Config.Models.Apps.ScreenConfigWithItems;
-
 namespace LcdMod.Client.GridData
 {
     /// <summary>
@@ -26,26 +24,15 @@ namespace LcdMod.Client.GridData
         readonly int _itemsHash;
         readonly int _categoriesHash;
 
-        SearchQueryToken(ScreenConfigWithBlocks config)
+        SearchQueryToken(BlockSelectionConfigComponent blocks, ItemSelectionConfigComponent items)
         {
-            _storages = config.SelectedBlocks;
-            _groups = config.SelectedGroups;
-            _linkType = config.GridLinkType;
-            var items = config as ScreenConfigWithItems;
-            if (items != null)
-            {
-                _items = items.SelectedItems;
-                _categories = items.SelectedCategories;
-                _itemsHash = ComputeArrayHash(_items);
-                _categoriesHash = ComputeArrayHash(_categories);
-            }
-            else
-            {
-                _items = new MyDefinitionId[] { };
-                _categories = new string[] { };
-                _itemsHash = 0;
-                _categoriesHash = 0;
-            }
+            _storages = blocks?.SelectedBlocks ?? Array.Empty<long>();
+            _groups = blocks?.SelectedGroups ?? Array.Empty<string>();
+            _linkType = blocks == null ? GridLinkTypeEnum.Mechanical : (GridLinkTypeEnum)blocks.GridLinkTypeInternal;
+            _items = items.GetSelectedItems();
+            _categories = items?.SelectedCategories ?? Array.Empty<string>();
+            _itemsHash = ComputeArrayHash(_items);
+            _categoriesHash = ComputeArrayHash(_categories);
             
             _storagesHash = ComputeArrayHash(_storages);
             _groupsHash = ComputeArrayHash(_groups);
@@ -106,17 +93,21 @@ namespace LcdMod.Client.GridData
             }
         }
 
-        public static SearchQueryToken GetToken(ScreenConfigWithBlocks config)
+        public static SearchQueryToken GetToken(BlockSelectionConfigComponent blocks, ItemSelectionConfigComponent items)
         {
-            var inv = config as ScreenConfigWithItems;
-            
-            if (config.GridLinkType == GridLinkTypeEnum.Logical
-                && !config.SelectedBlocks.Any()
-                && !config.SelectedGroups.Any()
-                && (inv == null || (!inv.SelectedItems.Any() && !inv.SelectedCategories.Any())))
+            var selectedBlocks = blocks?.SelectedBlocks ?? Array.Empty<long>();
+            var selectedGroups = blocks?.SelectedGroups ?? Array.Empty<string>();
+            var selectedItems = items.GetSelectedItems();
+            var selectedCategories = items?.SelectedCategories ?? Array.Empty<string>();
+            var linkType = blocks == null ? GridLinkTypeEnum.Mechanical : (GridLinkTypeEnum)blocks.GridLinkTypeInternal;
+            if (linkType == GridLinkTypeEnum.Logical
+                && !selectedBlocks.Any()
+                && !selectedGroups.Any()
+                && !selectedItems.Any()
+                && !selectedCategories.Any())
                 return Empty;
 
-            return new SearchQueryToken(config);
+            return new SearchQueryToken(blocks, items);
         }
     }
 }

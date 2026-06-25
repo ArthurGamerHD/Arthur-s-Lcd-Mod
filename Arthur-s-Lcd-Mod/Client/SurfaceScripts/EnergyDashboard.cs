@@ -13,14 +13,15 @@ using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
 using ComboboxLinkType = LcdMod.Client.Terminal.Controls.Generic.ComboboxLinkType;
 using static LcdMod.Common.Helpers.Constants;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
+    [LcdSurface(typeof(LcdMod.Client.Apps.EnergyDashboardApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class EnergyDashboardSurfaceScript : InteractiveSurfaceScript,
         IUsesTerminalControl<ComboboxGraphWindow>,
         IUsesTerminalControl<ComboboxLinkType>
     {
-        protected override ConfigKind ConfigKind => ConfigKind.Power;
         public const string ID = MOD_PREFIX + "EnergyDashboard";
         public const string TITLE = MOD_PREFIX + "EnergyDashboard";
         protected override string DefaultTitle => TITLE;
@@ -38,11 +39,8 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override void SafeRun()
         {
-            if (AppConfig == null)
-                return;
-
             if (_app == null)
-                _app = new EnergyDashboardApp(AppConfig, this);
+                _app = new EnergyDashboardApp(this);
 
             UpdateViewBox();
             _app.Update();

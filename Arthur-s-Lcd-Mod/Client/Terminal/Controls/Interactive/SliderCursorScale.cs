@@ -1,6 +1,7 @@
 using System.Text;
 using LcdMod.Client.Config;
-using LcdMod.Common.Config.Models;
+using LcdMod.Common.Config.Components;
+using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
@@ -19,7 +20,7 @@ namespace LcdMod.Client.Terminal.Controls.Interactive
             slider.Getter = Getter;
             slider.Setter = Setter;
             slider.Visible = Visible;
-            slider.SetLimits(0, ScreenConfigGeneral.MAX_SCALE);
+            slider.SetLimits(0, GeneralConfigComponentExtensions.MAX_SCALE);
             slider.Writer = Writer;
             slider.Title = MyStringId.GetOrCompute(MOD_PREFIX + "CursorScale");
 
@@ -33,17 +34,17 @@ namespace LcdMod.Client.Terminal.Controls.Interactive
 
         void Setter(IMyTerminalBlock block, float value)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block);
-            if (config == null)
-                return;
-
-            config.CursorScale = value;
-            ConfigManager.Sync(block);
+            ConfigManager.ModifyComponentForCurrentSurface<InteractiveConfigComponent>(
+                block,
+                Constants.INTERACTION,
+                config => config.CursorScale = value);
         }
 
         float Getter(IMyTerminalBlock block)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block);
+            var config = ConfigManager.GetComponentForCurrentSurface<InteractiveConfigComponent>(
+                block,
+                Constants.INTERACTION);
             if (config == null)
                 return 1;
 

@@ -1,5 +1,7 @@
+using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
+using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.GridData;
 using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Helpers;
@@ -9,8 +11,6 @@ using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRageMath;
-using ScreenConfigPower = LcdMod.Common.Config.Models.Apps.ScreenConfigPower;
-
 namespace LcdMod.Client.Gui.UserControls.Power
 {
     internal sealed class JumpDrivePowerCollector : PowerCollector
@@ -40,7 +40,11 @@ namespace LcdMod.Client.Gui.UserControls.Power
         PowerStatusKind _statusKind = PowerStatusKind.None;
         Color _statusColor = Color.White;
 
-        public JumpDrivePowerCollector(ScreenConfigPower screenConfig) : base(screenConfig)
+        public JumpDrivePowerCollector(
+            IAppHost host,
+            Func<PowerConfigComponent> getPower,
+            Func<ColorConfigComponent> getColors)
+            : base(host, getPower, getColors)
         {
         }
 
@@ -64,7 +68,7 @@ namespace LcdMod.Client.Gui.UserControls.Power
             _averageCharge = 0f;
             _statusText = string.Empty;
             _rightSideText = string.Empty;
-            _rightSideColor = ScreenConfigPower.HeaderColor;
+            _rightSideColor = HeaderColor;
             _statusKind = PowerStatusKind.None;
             _statusColor = Color.White;
             _standbyEntriesBuffer.Clear();
@@ -75,7 +79,7 @@ namespace LcdMod.Client.Gui.UserControls.Power
                 return;
             }
 
-            var jumpDrives = grid.GetTerminalBlocks<IMyJumpDrive>(ScreenConfigPower.GridLinkType);
+            var jumpDrives = grid.GetTerminalBlocks<IMyJumpDrive>(GridLinkType);
             int fullCount = 0;
             int notFullCount = 0;
             BeginCenterIconSpinFrame();
@@ -144,42 +148,42 @@ namespace LcdMod.Client.Gui.UserControls.Power
             {
                 _statusKind = PowerStatusKind.Ready;
                 _statusText = ReadyLabel;
-                _statusColor = ScreenConfigPower.HeaderColor;
+                _statusColor = HeaderColor;
             }
             else if (fullCount == 0)
             {
                 _statusKind = PowerStatusKind.NotReady;
                 _statusText = NotReadyLabel;
-                _statusColor = ScreenConfigPower.ErrorColor;
+                _statusColor = ErrorColor;
             }
             else
             {
                 _statusKind = PowerStatusKind.Charging;
                 _statusText = ChargingLabel;
-                _statusColor = ScreenConfigPower.WarningColor;
+                _statusColor = WarningColor;
             }
 
             if (notFullCount == 0)
             {
-                SetRightSideText("00:00", ScreenConfigPower.HeaderColor);
+                SetRightSideText("00:00", HeaderColor);
             }
             else if (hasChargingTime)
             {
-                Color timeColor = fullCount == 0 ? ScreenConfigPower.ErrorColor : ScreenConfigPower.WarningColor;
+                Color timeColor = fullCount == 0 ? ErrorColor : WarningColor;
                 SetRightSideText(FormatingHelper.FormatTimeHours(timeToFullHours), timeColor);
             }
             else
             {
-                Color timeColor = fullCount == 0 ? ScreenConfigPower.ErrorColor : ScreenConfigPower.WarningColor;
+                Color timeColor = fullCount == 0 ? ErrorColor : WarningColor;
                 SetRightSideText("--:--", timeColor);
             }
         }
 
         Color GetJumpDriveIconColor(float ratio)
         {
-            if (ratio < 0.15f) return ScreenConfigPower.ErrorColor;
-            if (ratio < FULL_THRESHOLD) return ScreenConfigPower.WarningColor;
-            return ScreenConfigPower.HeaderColor;
+            if (ratio < 0.15f) return ErrorColor;
+            if (ratio < FULL_THRESHOLD) return WarningColor;
+            return HeaderColor;
         }
 
         PowerEntry GetOrUpdateJumpDriveEntry(IMyJumpDrive jumpDrive, float ratio, float centerRotation)

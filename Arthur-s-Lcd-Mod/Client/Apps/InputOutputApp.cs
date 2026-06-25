@@ -1,3 +1,4 @@
+using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
@@ -7,7 +8,6 @@ using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Helpers;
-using LcdMod.Common.Config.Models.Apps;
 using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using VRage;
@@ -17,6 +17,7 @@ using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
 using VisualStackPanel = LcdMod.Client.Gui.ControlsTemplates.Panels.StackPanel.StackPanel;
 using static LcdMod.Common.Helpers.Constants;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.Apps
 {
     /// <summary>
@@ -24,7 +25,8 @@ namespace LcdMod.Client.Apps
     /// the block name and a button that cycles its own view between Input, Output and All. When a section is
     /// in "All", its items are shown in two columns (input | output). Collapsed by default.
     /// </summary>
-    internal sealed class InputOutputApp : ItemsApp
+    [LcdApp(5)]
+    internal sealed partial class InputOutputApp : ItemsApp
     {
         public const string NAME = MOD_PREFIX + "InputOutput";
 
@@ -76,7 +78,7 @@ namespace LcdMod.Client.Apps
 
         public bool HasBlocks => _blocks != null && _blocks.Count > 0;
 
-        public InputOutputApp(ScreenConfigWithItems config, IAppHost host) : base(config, host)
+        public InputOutputApp(IAppHost host) : base(host)
         {
             _scroll = AddChild(new ScrollPanel(CursorType.Default, this));
             _scroll.ManualScrollInertiaEnabled = false;
@@ -89,7 +91,7 @@ namespace LcdMod.Client.Apps
         {
             try
             {
-                _blocks = GridLogic?.GetProductionBlockItems(AppConfig, Block as IMyTerminalBlock) ?? EmptyBlocks;
+                _blocks = GridLogic?.GetProductionBlockItems(BlockSelectionComponent, ItemSelectionComponent, Block as IMyTerminalBlock) ?? EmptyBlocks;
 
                 if (!ReferenceEquals(_blocks, _lastPrunedBlocks))
                 {
@@ -200,8 +202,8 @@ namespace LcdMod.Client.Apps
             if (_blocks.Count == 0)
                 return sprites;
 
-            _itemCardColor = ResolveThemeColor(Constants.SECONDARY_CONTAINER, AppConfig.HeaderColor.MulValue(0.6f));
-            _itemTextColor = ResolveThemeColor(Constants.ON_SECONDARY_CONTAINER, ForegroundColor);
+            _itemCardColor = ResolveThemeColor(SECONDARY_CONTAINER, GetHeaderColor().MulValue(0.6f));
+            _itemTextColor = ResolveThemeColor(ON_SECONDARY_CONTAINER, ForegroundColor);
 
             float rowHeight = LINE_HEIGHT * Scale;
             _currentRowHeight = rowHeight;
@@ -247,8 +249,8 @@ namespace LcdMod.Client.Apps
         {
             var view = _scroll.ContentViewportBounds;
             float gap = CARD_GAP * Scale;
-            var panelColor = AppConfig.HeaderColor;
-            var shadowColor = AppConfig.HeaderColor.MulValue(0.2f);
+            var panelColor = GetHeaderColor();
+            var shadowColor = GetHeaderColor().MulValue(0.2f);
 
             for (int s = 0; s < _spans.Count; s++)
             {
@@ -421,7 +423,7 @@ namespace LcdMod.Client.Apps
                     bounds.Y + (bounds.Height - modeH) * 0.5f,
                     modeW,
                     modeH);
-                BorderRenderer.CreateSpritesFromRect(modeRect, sprites, AppConfig.HeaderColor.MulValue(0.45f), radiusScale: Scale);
+                BorderRenderer.CreateSpritesFromRect(modeRect, sprites, GetHeaderColor().MulValue(0.45f), radiusScale: Scale);
                 sprites.Add(new MySprite
                 {
                     Type = SpriteType.TEXT,
@@ -512,7 +514,7 @@ namespace LcdMod.Client.Apps
                     Data = "SquareSimple",
                     Position = new Vector2(mid, dividerTop + dividerHeight * 0.5f),
                     Size = new Vector2(1f, dividerHeight),
-                    Color = AppConfig.HeaderColor.MulValue(0.5f),
+                    Color = GetHeaderColor().MulValue(0.5f),
                     Alignment = TextAlignment.CENTER
                 });
 

@@ -18,8 +18,10 @@ using LabelSeparator = LcdMod.Client.Terminal.Controls.Filter.LabelSeparator;
 using SeparatorFilter = LcdMod.Client.Terminal.Controls.Filter.SeparatorFilter;
 using SwitchToggleLines = LcdMod.Client.Terminal.Controls.Generic.SwitchToggleLines;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
+    [LcdSurface(typeof(LcdMod.Client.Apps.AntennaApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class AntennaSurfaceScript : InteractiveSurfaceScript,
         IUsesTerminalControl<SwitchToggleLines>,
@@ -29,7 +31,6 @@ namespace LcdMod.Client.SurfaceScripts
         IAutoScroll,
         IMultiDisplayMode
     {
-        protected override ConfigKind ConfigKind => ConfigKind.WithBlocks;
         public override IApp App => _app;
         AntennaApp _app;
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
@@ -59,13 +60,10 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override void SafeRun()
         {
-            if (AppConfig == null)
-                return;
-
             base.SafeRun();
 
             if (_app == null)
-                _app = new AntennaApp(AppConfig, this);
+                _app = new AntennaApp(this);
 
             _app.Update();
 

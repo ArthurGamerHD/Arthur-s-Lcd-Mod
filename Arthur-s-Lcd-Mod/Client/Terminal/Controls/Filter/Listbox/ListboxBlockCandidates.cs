@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using LcdMod.Client.Config;
 using LcdMod.Client.Helpers;
-
+using LcdMod.Common.Config.Components;
+using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.ModAPI;
@@ -15,7 +16,6 @@ using IMyBlockGroup = Sandbox.ModAPI.Ingame.IMyBlockGroup;
 using InputOutputLcdSurfaceScript = LcdMod.Client.SurfaceScripts.InputOutputLcdSurfaceScript;
 using InventoryLcdSurfaceScript = LcdMod.Client.SurfaceScripts.InventoryLcdSurfaceScript;
 using ProjectorLcdSurfaceScript = LcdMod.Client.SurfaceScripts.ProjectorLcdSurfaceScript;
-using ScreenConfigWithBlocks = LcdMod.Common.Config.Models.Apps.ScreenConfigWithBlocks;
 
 namespace LcdMod.Client.Terminal.Controls.Filter.Listbox
 {
@@ -33,7 +33,9 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Listbox
         protected override void Getter(IMyTerminalBlock b, List<MyTerminalControlListBoxItem> blockList,
             List<MyTerminalControlListBoxItem> selected)
         {
-            var screenSettings = ConfigManager.GetConfigForCurrentScreen(b) as ScreenConfigWithBlocks;
+            var settings = ConfigManager.GetConfigForBlock(b);
+            var surface = settings == null ? null : settings.GetSurfaceConfig(GetThisSurfaceIndex(b));
+            var screenSettings = surface == null ? null : surface.TryGet<BlockSelectionConfigComponent>(Constants.BLOCKS);
 
             if (screenSettings == null)
                 return;
@@ -47,8 +49,9 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Listbox
             
             if (script != AntennaSurfaceScript.ID) // antenna does not support groups
             {
+                var selectedGroups = screenSettings.SelectedGroups ?? new string[0];
                 MyAPIGateway.TerminalActionsHelper.GetTerminalSystemForGrid(b.CubeGrid).GetBlockGroups(_groups,
-                    g => !screenSettings.SelectedGroups.Contains(g.Name));
+                    g => !selectedGroups.Contains(g.Name));
                 blockList.AddRange(_groups.Select(a => ListBoxItemHelper.GetOrComputeListBoxItem(
                     $"*{a.Name}*",
                     $"{MyStringId.GetOrCompute("Terminal_GroupTitle")} {a.Name}",
@@ -85,12 +88,13 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Listbox
             base.Getter(b, blockList, selected);
         }
 
-        bool IsValidBlock(IMySlimBlock block, IMyTerminalBlock referenceBlock, ScreenConfigWithBlocks config, string script)
+        bool IsValidBlock(IMySlimBlock block, IMyTerminalBlock referenceBlock, BlockSelectionConfigComponent config, string script)
         {
             var fat = block?.FatBlock;
+            var selectedBlocks = config.SelectedBlocks ?? new long[0];
 
             if (fat == null ||  
-                config.SelectedBlocks.Contains(fat.EntityId) || 
+                selectedBlocks.Contains(fat.EntityId) ||
                 fat.GetUserRelationToOwner(referenceBlock.OwnerId) > MyRelationsBetweenPlayerAndBlock.FactionShare)  
                 return false;
 

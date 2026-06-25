@@ -1,3 +1,4 @@
+using LcdMod.Common.Config.Components;
 #if DEBUG
 using System;
 using System.Collections.Generic;
@@ -8,14 +9,18 @@ using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.SurfaceScripts;
 using LcdMod.Client.SurfaceScripts.Abstract;
-using LcdMod.Common.Config.Models.Apps;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
+using VRage.ModAPI;
 using VRageMath;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.Apps
 {
-    internal sealed class VisibleTreeDebugApp : App
+    [LcdApp(24, Name = "VisibleTreeDebug")]
+    [ConfigComponent(Constants.APP, typeof(VisibleTreeDebugConfigComponent), PropertyName = "VisibleTreeDebugComponent")]
+    [ConfigComponent(Constants.VisibleTreeReference, typeof(BlockReferenceConfigComponent), PropertyName = "VisibleTreeReferenceComponent")]
+    internal sealed partial class VisibleTreeDebugApp : App
     {
         const string DEBUG_FONT = "Monospace";
         const float LINE_SCALE = 0.52f;
@@ -32,8 +37,8 @@ namespace LcdMod.Client.Apps
 
         public override IReadOnlyList<Control> Children { get; } = new Control[] {};
 
-        public VisibleTreeDebugApp(ScreenConfigVisibleTreeDebug config, VisibleTreeDebugSurfaceScript host)
-            : base(config, host)
+        public VisibleTreeDebugApp(VisibleTreeDebugSurfaceScript host)
+            : base(host)
         {
         }
 
@@ -49,8 +54,50 @@ namespace LcdMod.Client.Apps
 
             SurfaceScriptBase target;
             string status;
-            owner.TryGetDebugTarget(out target, out status);
+            TryGetDebugTarget(out target, out status);
             return GetSprites(owner, target, status);
+        }
+
+        public bool TryGetDebugTarget(out SurfaceScriptBase target, out string status)
+        {
+            target = null;
+            status = null;
+
+            if (VisibleTreeReferenceComponent.EntityId == 0L)
+            {
+                status = "Screen Not Linked";
+                return false;
+            }
+
+            IMyEntity entity;
+            if (!MyAPIGateway.Entities.TryGetEntityById(VisibleTreeReferenceComponent.EntityId, out entity))
+            {
+                status = "Reference block not found";
+                return false;
+            }
+
+            var targetBlock = entity as IMyTerminalBlock;
+            if (targetBlock == null || targetBlock.MarkedForClose)
+            {
+                status = "Invalid reference block";
+                return false;
+            }
+
+            var instances = SurfaceScriptBase.Instances.GetInstances(targetBlock);
+            if (instances == null)
+            {
+                status = "No LcdMod script instance";
+                return false;
+            }
+
+            target = instances.GetInstance(VisibleTreeDebugComponent.ReferenceScreenIndex);
+            if (target == null)
+            {
+                status = "No active script for screen " + VisibleTreeDebugComponent.ReferenceScreenIndex;
+                return false;
+            }
+
+            return true;
         }
 
         public List<MySprite> GetSprites(
@@ -87,7 +134,7 @@ namespace LcdMod.Client.Apps
             float fontScale = owner.Surface != null && owner.Surface.FontSize > 0f
                 ? owner.Surface.FontSize
                 : 1f;
-            return Math.Max(0.05f, LINE_SCALE * owner.Config.Scale * fontScale);
+            return Math.Max(0.05f, LINE_SCALE * owner.ConfiguredScale * fontScale);
         }
 
         static RectangleF GetViewBox(VisibleTreeDebugSurfaceScript owner)

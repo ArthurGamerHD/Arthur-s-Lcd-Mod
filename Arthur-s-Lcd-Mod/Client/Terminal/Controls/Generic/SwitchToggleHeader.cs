@@ -1,4 +1,6 @@
 using LcdMod.Client.Config;
+using LcdMod.Common.Config.Components;
+using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage;
@@ -28,17 +30,17 @@ namespace LcdMod.Client.Terminal.Controls.Generic
 
         void Setter(IMyTerminalBlock block, bool value)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block);
-            if (config == null)
-                return;
-
-            config.TitleVisible = value;
-            ConfigManager.Sync(block);
+            ConfigManager.ModifyComponentForCurrentSurface<GeneralConfigComponent>(
+                block,
+                Constants.GENERAL,
+                config => config.TitleVisible = value);
         }
 
         bool Getter(IMyTerminalBlock myTerminalBlock)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(myTerminalBlock);
+            var config = ConfigManager.GetComponentForCurrentSurface<GeneralConfigComponent>(
+                myTerminalBlock,
+                Constants.GENERAL);
             return config != null && config.TitleVisible;
         }
     }

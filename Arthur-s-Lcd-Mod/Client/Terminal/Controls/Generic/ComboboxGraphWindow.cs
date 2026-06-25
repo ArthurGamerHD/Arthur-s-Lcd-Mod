@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Config;
+using LcdMod.Common.Config.Components;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.ModAPI;
 using VRage.Utils;
 using static LcdMod.Common.Helpers.Constants;
-using ScreenConfigPower = LcdMod.Common.Config.Models.Apps.ScreenConfigPower;
 
 namespace LcdMod.Client.Terminal.Controls.Generic
 {
@@ -37,20 +37,22 @@ namespace LcdMod.Client.Terminal.Controls.Generic
 
         long Getter(IMyTerminalBlock block)
         {
-            var cfg = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigPower;
+            var cfg = ConfigManager.GetComponentForTerminalApp<PowerConfigComponent>(block);
             return GetConfiguredTier(cfg);
         }
 
         void Setter(IMyTerminalBlock block, long value)
         {
-            var cfg = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigPower;
-            if (cfg == null) return;
-            cfg.PowerHistoryTier = (int)value;
-            cfg.GraphWindowIndex = (int)value;
-            ConfigManager.Sync(block);
+            ConfigManager.ModifyComponentForTerminalApp<PowerConfigComponent>(
+                block,
+                cfg =>
+                {
+                    cfg.PowerHistoryTier = (int)value;
+                    cfg.GraphWindowIndex = (int)value;
+                });
         }
 
-        static int GetConfiguredTier(ScreenConfigPower cfg)
+        static int GetConfiguredTier(PowerConfigComponent cfg)
         {
             if (cfg == null)
                 return 2;

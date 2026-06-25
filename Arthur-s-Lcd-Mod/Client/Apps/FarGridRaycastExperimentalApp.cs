@@ -1,3 +1,4 @@
+using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -8,7 +9,6 @@ using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
-using LcdMod.Common.Config.Models.Apps;
 using LcdMod.Common.Helpers;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
@@ -21,9 +21,12 @@ using VRageMath;
 using SliderFov = LcdMod.Client.Terminal.Controls.Generic.SliderFov;
 using static LcdMod.Common.Helpers.Constants;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.Apps
 {
-    public class FarGridRaycastExperimentalApp : App, IApp
+    [LcdApp(15, Name = "Raycast")]
+    [ConfigComponent(APP, typeof(RaycastConfigComponent), PropertyName = "RaycastComponent")]
+    public partial class FarGridRaycastExperimentalApp : App, IApp
     {
         public const string ID = MOD_PREFIX + "FarGridRaycastExperimental";
         public const string TITLE = "Far Grid Raycast Experimental";
@@ -46,9 +49,8 @@ namespace LcdMod.Client.Apps
         const string MISS_GLYPH = "";
         const int COLOR_GLYPH_BASE = 0xE100;
 
-        new ScreenConfigRaycast AppConfig => (ScreenConfigRaycast)base.AppConfig;
-        float RayDensityMultiplier => AppConfig.RenderScale;
-        int RaysPerTick => Math.Max(1, AppConfig.RaysPerTick);
+        float RayDensityMultiplier => RaycastComponent.RenderScale;
+        int RaysPerTick => Math.Max(1, RaycastComponent.RaysPerTick);
 
         readonly IAppHost _host;
         readonly List<MySprite> _sprites = new List<MySprite>();
@@ -103,9 +105,9 @@ namespace LcdMod.Client.Apps
         bool _frameBuildWorkerRunning;
         bool _frameBuildQueued;
 
-        IMyCubeBlock Block => _host?.Block;
-        Sandbox.ModAPI.Ingame.IMyTextSurface Surface => _host?.Surface;
-        RectangleF ViewBox => _host?.ViewBox ?? default(RectangleF);
+        IMyCubeBlock Block => _host.Block;
+        Sandbox.ModAPI.Ingame.IMyTextSurface Surface => _host.Surface;
+        RectangleF ViewBox => _host.ViewBox;
         float FontScale
         {
             get
@@ -115,11 +117,11 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        Color ForegroundColor => _host?.ForegroundColor ?? Color.White;
+        Color ForegroundColor => _host.ForegroundColor;
         public override IReadOnlyList<Control> Children => _children;
 
-        public FarGridRaycastExperimentalApp(ScreenConfigRaycast config, IAppHost host)
-            : base(config, host)
+        public FarGridRaycastExperimentalApp(IAppHost host)
+            : base(host)
         {
             _host = host;
         }
@@ -202,7 +204,7 @@ namespace LcdMod.Client.Apps
 
         bool TryGetReferenceWorldMatrix(out MatrixD world)
         {
-            return _host.TryGetReferenceWorldMatrix(AppConfig?.ReferenceMode ?? (int)ReferenceMode.Auto, out world);
+            return _host.TryGetReferenceWorldMatrix(InteractionComponent.ReferenceMode, out world);
         }
 
         public override void OnMouseScroll(int delta, ref bool handled)
@@ -873,12 +875,12 @@ namespace LcdMod.Client.Apps
             switch (relationship)
             {
                 case MyRelationsBetweenPlayerAndBlock.Enemies:
-                    return AppConfig?.ErrorColor ?? Color.Red;
+                    return ColorComponent.ResolveErrorColor();
                 case MyRelationsBetweenPlayerAndBlock.Owner:
                 case MyRelationsBetweenPlayerAndBlock.FactionShare:
-                    return AppConfig?.HeaderColor ?? Color.Blue;
+                    return GetHeaderColor();
                 default:
-                    return AppConfig?.WarningColor ?? Color.Yellow;
+                    return ColorComponent.ResolveWarningColor();
             }
         }
 
@@ -957,7 +959,7 @@ namespace LcdMod.Client.Apps
             if (columns <= 0 || rows <= 0)
                 GetRayCanvasSize(displayColumns, displayRows, out columns, out rows);
 
-            int relationOverlay = AppConfig.RelationOverlay;
+            int relationOverlay = RaycastComponent.RelationOverlay;
             if (IsFrameCacheValid(columns, rows, generation, writeVersion, sampleLength, relationOverlay))
             {
                 AddCachedFrameSprites(sprites);
@@ -989,7 +991,7 @@ namespace LcdMod.Client.Apps
         {
             _frameBuildPending = false;
 
-            if (AppConfig == null || ViewBox.Width <= 0f || ViewBox.Height <= 0f)
+            if (ViewBox.Width <= 0f || ViewBox.Height <= 0f)
                 return;
 
             int displayColumns;
@@ -1006,7 +1008,7 @@ namespace LcdMod.Client.Apps
             if (columns <= 0 || rows <= 0)
                 GetRayCanvasSize(displayColumns, displayRows, out columns, out rows);
 
-            int relationOverlay = AppConfig.RelationOverlay;
+            int relationOverlay = RaycastComponent.RelationOverlay;
             if (IsFrameCacheValid(columns, rows, generation, writeVersion, sampleLength, relationOverlay))
                 return;
 

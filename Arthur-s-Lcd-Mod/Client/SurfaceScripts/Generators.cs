@@ -15,13 +15,14 @@ using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRageMath;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
+    [LcdSurface(typeof(LcdMod.Client.Apps.GeneratorsApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class GeneratorsSurfaceScript : InteractiveSurfaceScript, IAutoScroll, IMultiDisplayMode,
         IUsesTerminalControl<ComboboxLinkType>
     {
-        protected override ConfigKind ConfigKind => ConfigKind.Power;
         public const string ID = "GeneratorsGraph";
         public const string TITLE = "RadialMenuGroupTitle_Power";
         GeneratorsApp _app;
@@ -44,13 +45,10 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override void SafeRun()
         {
-            if (AppConfig == null)
-                return;
-
             base.SafeRun();
 
             if (_app == null)
-                _app = new GeneratorsApp(AppConfig, this);
+                _app = new GeneratorsApp(this);
 
             _app.Update();
             RenderSprites();

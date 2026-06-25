@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using LcdMod.Client.Config;
 using LcdMod.Client.Helpers;
-using LcdMod.Common.Config.Interfaces;
+using LcdMod.Common.Config.Components;
 using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
@@ -35,20 +35,23 @@ namespace LcdMod.Client.Terminal.Controls.Generic
 
         void Setter(IMyTerminalBlock block, List<MyTerminalControlListBoxItem> selection)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as IConfigWithReferenceBlock;
-            if(config == null)
+            var selectedBlockId = ListBoxItemHelper.GetLongUserData(selection.FirstOrDefault());
+            if (!ConfigManager.ModifyComponentForCurrentSurface<BlockReferenceConfigComponent>(
+                    block,
+                    Constants.PROJECTOR_REFERENCE,
+                    config => config.EntityId = selectedBlockId))
                 return;
 
-            config.ReferenceBlock = ListBoxItemHelper.GetLongUserData(selection.FirstOrDefault());
-            RemapHelper.PinBlock(config.ReferenceBlock);
-            ConfigManager.Sync(block);
+            RemapHelper.PinBlock(selectedBlockId);
         }
 
         void Getter(IMyTerminalBlock block, List<MyTerminalControlListBoxItem> blockList,
             List<MyTerminalControlListBoxItem> selected)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as IConfigWithReferenceBlock;
-            if(config == null)
+            var reference = ConfigManager.GetComponentForCurrentSurface<BlockReferenceConfigComponent>(
+                block,
+                Constants.PROJECTOR_REFERENCE);
+            if (reference == null)
                 return;
             
             GetReferenceBlocks(block.CubeGrid);
@@ -63,9 +66,9 @@ namespace LcdMod.Client.Terminal.Controls.Generic
                 a.CubeGrid.DisplayName,
                 a.EntityId)));
 
-            AddConfiguredReferenceIfMissing(blockList, config.ReferenceBlock);
+            AddConfiguredReferenceIfMissing(blockList, reference.EntityId);
             
-            var selection = blockList.FirstOrDefault(a => ListBoxItemHelper.GetLongUserData(a) == config.ReferenceBlock);
+            var selection = blockList.FirstOrDefault(a => ListBoxItemHelper.GetLongUserData(a) == reference.EntityId);
             
             if(selection != null)
                 selected.Add(selection);

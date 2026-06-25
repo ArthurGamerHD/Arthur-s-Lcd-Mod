@@ -1,3 +1,4 @@
+using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -8,7 +9,6 @@ using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Common.Helpers;
-using LcdMod.Common.Config.Models.Apps;
 using Sandbox.ModAPI;
 using VRage;
 using VRage.Game;
@@ -21,6 +21,7 @@ using IMyCubeGrid = VRage.Game.ModAPI.IMyCubeGrid;
 using SliderRadarRange = LcdMod.Client.Terminal.Controls.Generic.SliderRadarRange;
 using static LcdMod.Common.Helpers.Constants;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.Apps
 {
     internal class ContactRecord
@@ -35,7 +36,11 @@ namespace LcdMod.Client.Apps
         public int MissedFrames;
     }
 
-    public class RadarApp : App, IApp
+    [LcdApp(12)]
+
+    [ConfigComponent(APP, typeof(RadarConfigComponent), PropertyName = "RadarComponent")]
+
+    public partial class RadarApp : App, IApp
     {
         public const string ID = MOD_PREFIX + "Radar";
         public const string TITLE = MOD_PREFIX + "Radar";
@@ -107,11 +112,10 @@ namespace LcdMod.Client.Apps
         float _footerHeight;
 
         readonly IAppHost _host;
-        new ScreenConfigRadar AppConfig => (ScreenConfigRadar)base.AppConfig;
         IMyCubeBlock Block => _host.Block;
         Sandbox.ModAPI.Ingame.IMyTextSurface Surface => _host.Surface;
         RectangleF ViewBox => _host.ViewBox;
-        float Scale => _host.Config.Scale;
+        float Scale => _host.ConfiguredScale;
         float FontScale => _host.Surface.FontSize;
         float LayoutScale => Scale * FontScale;
         Color ForegroundColor => _host.ForegroundColor;
@@ -131,17 +135,14 @@ namespace LcdMod.Client.Apps
         }
 
 
-        public RadarApp(ScreenConfigRadar config, IAppHost host)
-            : base(config, host)
+        public RadarApp(IAppHost host)
+            : base(host)
         {
             _host = host;
         }
 
         public override void Update()
         {
-            if (AppConfig == null)
-                return;
-
             SyncConfigIfNeeded();
             CollectContacts();
             PurgeStaleContacts();
@@ -421,7 +422,7 @@ namespace LcdMod.Client.Apps
 
         float GetConfiguredRange()
         {
-            return SliderRadarRange.GetRangeMeters(AppConfig?.RangeScale ?? SliderRadarRange.DEFAULT_SCALE);
+            return SliderRadarRange.GetRangeMeters(RadarComponent.RangeScale);
         }
 
         bool GridGroupHasLongRangeSignal(List<IMyCubeGrid> grids, Vector3D receiverPosition, IMyCubeGrid receiverGrid)
@@ -755,9 +756,9 @@ namespace LcdMod.Client.Apps
         {
             var lineColor = ForegroundColor;
             var backColor = BackgroundColor;
-            var warnColor = AppConfig.WarningColor;
-            var errColor = AppConfig.ErrorColor;
-            var allyColor = AppConfig.HeaderColor;
+            var warnColor = ColorComponent.ResolveWarningColor();
+            var errColor = ColorComponent.ResolveErrorColor();
+            var allyColor = GetHeaderColor();
             var planeColor = new Color(ForegroundColor, 0.12f);
 
             UpdateProjectionAngle();
@@ -788,7 +789,7 @@ namespace LcdMod.Client.Apps
                 sideLength = viewportCropped.Y / _radarProjectionCos;
 
             Vector2 radarCenterPos = new Vector2(ViewBox.Center.X, areaTop + viewportCropped.Y * 0.5f);
-            var radarPlaneSize = new Vector2(sideLength, sideLength * _radarProjectionCos) * AppConfig.Scale;
+            var radarPlaneSize = new Vector2(sideLength, sideLength * _radarProjectionCos) * GeneralComponent.GetScale();
 
             DrawLongRangeWarning(sprites, areaBottom, cappedScale);
             DrawRadarPlaneBackground(sprites, radarCenterPos, radarPlaneSize, radarScale, lineColor, backColor,
@@ -811,7 +812,7 @@ namespace LcdMod.Client.Apps
                 float debugScale = 0.5f * radarScale * FontScale;
                 float debugOffsetY =
                     Surface.MeasureStringInPixels(new StringBuilder(debugText), TextFont, debugScale).Y * 0.5f;
-                var debugColor = _debugLockedTargetPercent >= 0.99f ? AppConfig.ErrorColor : AppConfig.WarningColor;
+                var debugColor = _debugLockedTargetPercent >= 0.99f ? ColorComponent.ResolveErrorColor() : ColorComponent.ResolveWarningColor();
                 sprites.Add(new MySprite(
                     SpriteType.TEXT,
                     debugText,
@@ -840,7 +841,7 @@ namespace LcdMod.Client.Apps
                 LocHelper.GetLoc(LONG_RANGE_WARNING_KEY),
                 new Vector2(ViewBox.Center.X, y),
                 null,
-                new Color(AppConfig.WarningColor, 0.9f),
+                new Color(ColorComponent.ResolveWarningColor(), 0.9f),
                 TextFont,
                 TextAlignment.CENTER,
                 textScale));
@@ -848,16 +849,15 @@ namespace LcdMod.Client.Apps
 
         public override void OnMouseScroll(int delta, ref bool handled)
         {
-            var config = base.AppConfig as ScreenConfigRadar;
-            if (config == null || delta == 0 || handled)
+            if (delta == 0 || handled)
                 return;
 
-            float currentScale = SliderRadarRange.ClampRangeScale(config.RangeScale);
+            float currentScale = SliderRadarRange.ClampRangeScale(RadarComponent.RangeScale);
             float nextScale = SliderRadarRange.ApplyScrollStep(currentScale, delta);
             if (Math.Abs(currentScale - nextScale) <= 0.001f)
                 return;
 
-            config.RangeScale = nextScale;
+            RadarComponent.RangeScale = nextScale;
             _maxRange = SliderRadarRange.GetRangeMeters(nextScale);
             _syncConfigNextRun = true;
             handled = true;
@@ -927,7 +927,7 @@ namespace LcdMod.Client.Apps
 
         bool TryGetReferenceWorldMatrix(out MatrixD world)
         {
-            return _host.TryGetReferenceWorldMatrix(AppConfig?.ReferenceMode ?? (int)ReferenceMode.Auto, out world, true);
+            return _host.TryGetReferenceWorldMatrix(InteractionComponent.ReferenceMode, out world, true);
         }
 
         bool TryBuildTargetInfo(ContactRecord contact, MatrixD gridMatrix, Color errColor, Color warnColor,
@@ -1369,9 +1369,9 @@ namespace LcdMod.Client.Apps
             });
 
             var shipPos = Block.WorldMatrix.Translation;
-            var errColor = AppConfig.ErrorColor;
-            var warnColor = AppConfig.WarningColor;
-            var allyColor = AppConfig.HeaderColor;
+            var errColor = ColorComponent.ResolveErrorColor();
+            var warnColor = ColorComponent.ResolveWarningColor();
+            var allyColor = GetHeaderColor();
             float contentTop = top + headerHeight + pad;
             float contentBottom = top + _footerHeight - pad;
             float rowHeight = Math.Max(1f, (contentBottom - contentTop) / Math.Max(1, rowsPerCol));
@@ -1464,7 +1464,7 @@ namespace LcdMod.Client.Apps
 
         void GetRadarCappedScales(out float cappedScale, out float cappedLayoutScale)
         {
-            float configScale = Math.Max(AppConfig.Scale, 0.0001f);
+            float configScale = Math.Max(GeneralComponent.GetScale(), 0.0001f);
             float autoScale = Scale / configScale;
             float cappedUserScale = Math.Min(configScale, 1f);
             cappedScale = autoScale * cappedUserScale;

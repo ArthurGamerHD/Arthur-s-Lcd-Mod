@@ -1,3 +1,4 @@
+using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,9 +15,11 @@ using LcdMod.Common.Config.Models;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.Apps
 {
-    internal sealed class SessionDebugApp : App
+    [LcdApp(21)]
+    internal sealed partial class SessionDebugApp : App
     {
         const string DEBUG_FONT = "Monospace";
         const float LINE_SCALE = 0.62f;
@@ -34,7 +37,7 @@ namespace LcdMod.Client.Apps
 
         SessionDebugSurfaceScript _host;
         
-        public SessionDebugApp(ScreenConfigInteractive appConfig, SessionDebugSurfaceScript sessionDebugSurfaceScript) : base(appConfig, sessionDebugSurfaceScript)
+        public SessionDebugApp(SessionDebugSurfaceScript sessionDebugSurfaceScript) : base(sessionDebugSurfaceScript)
         {
             _scrollPanel = AddChild(new ScrollPanel());
             _scrollPanel.ManualScrollInertiaEnabled = false;
@@ -46,7 +49,7 @@ namespace LcdMod.Client.Apps
 
         public List<Control> InteractiveEntries => _interactiveEntries;
 
-        float Scale => Host != null ? AppConfig.Scale : 1f;
+        float Scale => GeneralComponent.GetScale();
 
         float FontScale => _host != null && _host.Surface != null ? Math.Max(0.1f, _host.Surface.FontSize) : 1f;
 

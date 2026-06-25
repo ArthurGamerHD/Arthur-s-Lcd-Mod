@@ -1,0 +1,138 @@
+<Project>
+  <PropertyGroup>
+    <IsIDEBuild Condition="'$(BuildingInsideVisualStudio)' == 'true' Or '$(BuildingByReSharper)' == 'true'">True</IsIDEBuild>
+    <IsIDEBuild Condition="'$(IsIDEBuild)' == ''">False</IsIDEBuild>
+    <SpaceEngineersBinCopyLocal Condition="'$(SpaceEngineersBinCopyLocal)' == ''">false</SpaceEngineersBinCopyLocal>
+
+    <MdkRuntimeIdentifier Condition="'$(OS)' == 'Windows_NT'">win-x64</MdkRuntimeIdentifier>
+    <MdkRuntimeIdentifier Condition="'$(OS)' != 'Windows_NT'">linux-x64</MdkRuntimeIdentifier>
+    <MdkCliExecutable Condition="'$(OS)' == 'Windows_NT'">mdk.exe</MdkCliExecutable>
+    <MdkCliExecutable Condition="'$(OS)' != 'Windows_NT'">mdk</MdkCliExecutable>
+
+    <MdkReferencesTaskDirectory>$(MdkSourceRoot)Mdk.References/bin/$(MdkLocalPlatform)/$(MdkLocalConfiguration)/netstandard2.0/</MdkReferencesTaskDirectory>
+    <MdkReferencesTaskAssembly>$(MdkReferencesTaskDirectory)Mal.Mdk2.References.dll</MdkReferencesTaskAssembly>
+    <MdkAnalyzerDirectory>$(MdkSourceRoot)Mdk.ModAnalyzers/bin/$(MdkLocalPlatform)/$(MdkLocalConfiguration)/netstandard2.0/</MdkAnalyzerDirectory>
+    <MdkCliPath>$(MdkSourceRoot)Mdk.CommandLine/bin/$(MdkLocalPlatform)/$(MdkLocalConfiguration)/net9.0/$(MdkRuntimeIdentifier)/$(MdkCliExecutable)</MdkCliPath>
+
+    <MdkBuildConfiguration>all</MdkBuildConfiguration>
+    <MdkArguments/>
+    <MdkInteractive>auto</MdkInteractive>
+    <MdkInteractiveFlag Condition="'$(MdkInteractive)' == '' Or '$(MdkInteractive)' == 'no'">-interactive DoNothing</MdkInteractiveFlag>
+    <MdkInteractiveFlag Condition="'$(MdkInteractive)' != '' And '$(MdkInteractive)' != 'no' And '$(MdkInteractive)' != 'auto'">-interactive $(MdkInteractive)</MdkInteractiveFlag>
+  </PropertyGroup>
+
+  <UsingTask TaskName="SpaceEngineersFinder" AssemblyFile="$(MdkReferencesTaskAssembly)"/>
+
+  <ItemGroup>
+    <AdditionalFiles Include="**\*.ini"/>
+    <Analyzer Include="$(PkgMicrosoft_Extensions_FileSystemGlobbing)/lib/netstandard2.0/Microsoft.Extensions.FileSystemGlobbing.dll"
+              Condition="Exists('$(PkgMicrosoft_Extensions_FileSystemGlobbing)/lib/netstandard2.0/Microsoft.Extensions.FileSystemGlobbing.dll')"/>
+  </ItemGroup>
+
+  <Target Name="BuildLocalMdkAnalyzers" BeforeTargets="CoreCompile">
+    <Exec Command="dotnet build &quot;$(MdkSourceRoot)Mdk.ModAnalyzers/Mdk.ModAnalyzers.csproj&quot; -c &quot;$(MdkLocalConfiguration)&quot; -p:Platform=$(MdkLocalPlatform)"/>
+    <Copy SourceFiles="$(PkgMicrosoft_Extensions_FileSystemGlobbing)/lib/netstandard2.0/Microsoft.Extensions.FileSystemGlobbing.dll"
+          DestinationFolder="$(MdkAnalyzerDirectory)"
+          SkipUnchangedFiles="true"
+          Condition="Exists('$(PkgMicrosoft_Extensions_FileSystemGlobbing)/lib/netstandard2.0/Microsoft.Extensions.FileSystemGlobbing.dll')"/>
+  </Target>
+
+  <Target Name="BuildLocalMdkReferences" BeforeTargets="SpaceEngineers">
+    <Exec Command="dotnet build &quot;$(MdkSourceRoot)Mdk.References/Mdk.References.csproj&quot; -c &quot;$(MdkLocalConfiguration)&quot; -p:Platform=$(MdkLocalPlatform)"/>
+    <Copy SourceFiles="$(PkgSystem_Collections_Immutable)/lib/netstandard2.0/System.Collections.Immutable.dll"
+          DestinationFolder="$(MdkReferencesTaskDirectory)"
+          SkipUnchangedFiles="true"
+          Condition="Exists('$(PkgSystem_Collections_Immutable)/lib/netstandard2.0/System.Collections.Immutable.dll')"/>
+  </Target>
+
+  <Target Name="SpaceEngineers" BeforeTargets="PrepareForBuild" DependsOnTargets="BuildLocalMdkReferences">
+    <SpaceEngineersFinder Interactive="$(IsIDEBuild)" ProjectPath="$(MSBuildProjectFullPath)" Verbose="$(SpaceEngineersFinderVerbose)">
+      <Output PropertyName="SpaceEngineersBinPath" TaskParameter="BinaryPath"/>
+      <Output PropertyName="SpaceEngineersDataPath" TaskParameter="DataPath"/>
+    </SpaceEngineersFinder>
+
+    <Message Importance="high" Text="Loading Space Engineers assemblies from $(SpaceEngineersBinPath)" />
+
+    <ItemGroup>
+      <Reference Include="System.Collections.Immutable">
+        <HintPath>$(SpaceEngineersBinPath)\System.Collections.Immutable.dll</HintPath>
+        <Private>$(SpaceEngineersBinCopyLocal)</Private>
+      </Reference>
+      <Reference Include="Sandbox.Common">
+        <HintPath>$(SpaceEngineersBinPath)\Sandbox.Common.dll</HintPath>
+        <Private>$(SpaceEngineersBinCopyLocal)</Private>
+      </Reference>
+      <Reference Include="Sandbox.Game">
+        <HintPath>$(SpaceEngineersBinPath)\Sandbox.Game.dll</HintPath>
+        <Private>$(SpaceEngineersBinCopyLocal)</Private>
+      </Reference>
+      <Reference Include="Sandbox.Graphics">
+        <HintPath>$(SpaceEngineersBinPath)\Sandbox.Graphics.dll</HintPath>
+        <Private>$(SpaceEngineersBinCopyLocal)</Private>
+      </Reference>
+      <Reference Include="SpaceEngineers.Game">
+        <HintPath>$(SpaceEngineersBinPath)\SpaceEngineers.Game.dll</HintPath>
+        <Private>$(SpaceEngineersBinCopyLocal)</Private>
+      </Reference>
+      <Reference Include="SpaceEngineers.ObjectBuilders">
+        <HintPath>$(SpaceEngineersBinPath)\SpaceEngineers.ObjectBuilders.dll</HintPath>
+        <Private>$(SpaceEngineersBinCopyLocal)</Private>
+      </Reference>
+      <Reference Include="VRage">
+        <HintPath>$(SpaceEngineersBinPath)\VRage.dll</HintPath>
+        <Private>$(SpaceEngineersBinCopyLocal)</Private>
+      </Reference>
+      <Reference Include="VRage.Audio">
+        <HintPath>$(SpaceEngineersBinPath)\VRage.Audio.dll</HintPath>
+        <Private>$(SpaceEngineersBinCopyLocal)</Private>
+      </Reference>
+      <Reference Include="VRage.Game">
+        <HintPath>$(SpaceEngineersBinPath)\VRage.Game.dll</HintPath>
+        <Private>$(SpaceEngineersBinCopyLocal)</Private>
+      </Reference>
+      <Reference Include="VRage.Input">
+        <HintPath>$(SpaceEngineersBinPath)\VRage.Input.dll</HintPath>
+        <Private>$(SpaceEngineersBinCopyLocal)</Private>
+      </Reference>
+      <Reference Include="VRage.Library">
+        <HintPath>$(SpaceEngineersBinPath)\VRage.Library.dll</HintPath>
+        <Private>$(SpaceEngineersBinCopyLocal)</Private>
+      </Reference>
+      <Reference Include="VRage.Math">
+        <HintPath>$(SpaceEngineersBinPath)\VRage.Math.dll</HintPath>
+        <Private>$(SpaceEngineersBinCopyLocal)</Private>
+      </Reference>
+      <Reference Include="VRage.Render">
+        <HintPath>$(SpaceEngineersBinPath)\VRage.Render.dll</HintPath>
+        <Private>$(SpaceEngineersBinCopyLocal)</Private>
+      </Reference>
+      <Reference Include="VRage.Render11">
+        <HintPath>$(SpaceEngineersBinPath)\VRage.Render11.dll</HintPath>
+        <Private>$(SpaceEngineersBinCopyLocal)</Private>
+      </Reference>
+      <Reference Include="VRage.Scripting">
+        <HintPath>$(SpaceEngineersBinPath)\VRage.Scripting.dll</HintPath>
+        <Private>$(SpaceEngineersBinCopyLocal)</Private>
+      </Reference>
+      <Reference Include="ProtoBuf.Net.Core">
+        <HintPath>$(SpaceEngineersBinPath)\ProtoBuf.Net.Core.dll</HintPath>
+        <Private>$(SpaceEngineersBinCopyLocal)</Private>
+      </Reference>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="BuildLocalMdkCommandLine" BeforeTargets="MdkPack">
+    <Exec Command="dotnet build &quot;$(MdkSourceRoot)Mdk.CommandLine/Mdk.CommandLine.csproj&quot; -c &quot;$(MdkLocalConfiguration)&quot; -p:Platform=$(MdkLocalPlatform) -r &quot;$(MdkRuntimeIdentifier)&quot; --self-contained true"/>
+  </Target>
+
+  <Target Name="MdkPack" AfterTargets="PostBuildEvent" Condition="'$(Configuration)' == '$(MdkBuildConfiguration)' Or '$(MdkBuildConfiguration)' == 'all'">
+    <Exec Command="&quot;$(MdkCliPath)&quot; pack &quot;$(MSBuildProjectFullPath)&quot; $(MdkArguments) -configuration $(Configuration) $(MdkInteractiveFlag)" ContinueOnError="true">
+      <Output TaskParameter="ExitCode" PropertyName="MdkExitCode"/>
+    </Exec>
+    <Error Condition="'$(MdkExitCode)' != '0'" Text="MDK could not package the project. Please check the build output."/>
+  </Target>
+
+  <Target Name="MdkDidNotPack" AfterTargets="PostBuildEvent" Condition="'$(Configuration)' != '$(MdkBuildConfiguration)' And '$(MdkBuildConfiguration)' != 'all'">
+    <Exec Command="echo MDK did not pack, because the current configuration is '$(Configuration)', not '$(MdkBuildConfiguration)'."/>
+  </Target>
+</Project>

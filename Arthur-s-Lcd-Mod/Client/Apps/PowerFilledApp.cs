@@ -1,3 +1,4 @@
+using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
@@ -12,12 +13,16 @@ using LcdMod.Client.Gui.UserControls.Power;
 using LcdMod.Client.Helpers;
 using VRage;
 using VRage.Game.GUI.TextPanel;
-using ScreenConfigPower = LcdMod.Common.Config.Models.Apps.ScreenConfigPower;
 using VRageMath;
+
+using LcdMod.Common.Config.Generation;
+using LcdMod.Common.Helpers;
 
 namespace LcdMod.Client.Apps
 {
-    internal sealed class PowerFilledApp : App, IApp
+    [LcdApp(8)]
+    [ConfigComponent(Constants.APP, typeof(PowerConfigComponent), PropertyName = "PowerComponent")]
+    internal sealed partial class PowerFilledApp : App, IApp
     {
         const float BATTERY_SLOT_W = 100f;
         const float BATTERY_SLOT_H = 100f;
@@ -30,17 +35,15 @@ namespace LcdMod.Client.Apps
         readonly Dictionary<long, PowerEntry> _entryById = new Dictionary<long, PowerEntry>();
         readonly ScrollPanel _scrollPanel;
         readonly VirtualizedWrapPanel<PowerEntry> _gridPanel;
-        ScreenConfigPower _config;
         
         public override IReadOnlyList<Control> Children => _children;
 
-        public PowerFilledApp(ScreenConfigPower config, IAppHost surfaceHost) : base(config, surfaceHost)
+        public PowerFilledApp(IAppHost surfaceHost) : base(surfaceHost)
         {
             _surfaceHost = surfaceHost;
             _interactiveHost = surfaceHost as InteractiveSurfaceScript;
             if (_interactiveHost == null)
                 throw new ArgumentException("PowerFilledApp requires an InteractiveSurfaceScript host.", "surfaceHost");
-            _config = config;
 
             _scrollPanel = AddChild(new ScrollPanel(CursorType.Default, this));
             _scrollPanel.ScrollChanged = OnScrollPanelChanged;
@@ -61,9 +64,6 @@ namespace LcdMod.Client.Apps
 
         public override void Update()
         {
-            if (_config == null)
-                return;
-
             if (_collectors.Count == 0)
                 BuildCollectors();
 
@@ -121,14 +121,14 @@ namespace LcdMod.Client.Apps
             var labelJumpReady = MyTexts.GetString("ScreenMedicals_RespawnShipReady");
             var labelFull = MyTexts.GetString("RadialMenuAction_Signal_Full");
 
-            _collectors.Add(new BatteryPowerCollector(_config)
+            _collectors.Add(new BatteryPowerCollector(Host, () => PowerComponent, () => ColorComponent)
             {
                 ChargingLabel = labelCharging,
                 DischargingLabel = labelDischarging,
                 FullLabel = labelFull
             });
 
-            _collectors.Add(new JumpDrivePowerCollector(_config)
+            _collectors.Add(new JumpDrivePowerCollector(Host, () => PowerComponent, () => ColorComponent)
             {
                 ChargingLabel = labelCharging,
                 ReadyLabel = labelJumpReady,
@@ -138,9 +138,9 @@ namespace LcdMod.Client.Apps
 
         void DrawBatteries(IAppHost owner, List<MySprite> sprites)
         {
-            float minW = BATTERY_SLOT_W * owner.Config.Scale;
-            float minH = BATTERY_SLOT_H * owner.Config.Scale;
-            float contentTop = GetContentTop(owner) + 6f * owner.Config.Scale;
+            float minW = BATTERY_SLOT_W * owner.ConfiguredScale;
+            float minH = BATTERY_SLOT_H * owner.ConfiguredScale;
+            float contentTop = GetContentTop(owner) + 6f * owner.ConfiguredScale;
             float footerHeight = GetFooterHeight(owner);
 
             int count = _entries.Count;
@@ -162,7 +162,7 @@ namespace LcdMod.Client.Apps
             var viewportHeight = Math.Max(0f, owner.ViewBox.Bottom - contentTop - Math.Max(0f, footerHeight));
             _scrollPanel.ConfigureAutomatic(
                 new RectangleF(owner.ViewBox.X, contentTop, owner.ViewBox.Width, viewportHeight),
-                ScrollPanel.DefaultScrollerWidthPixels * owner.Config.Scale,
+                ScrollPanel.DefaultScrollerWidthPixels * owner.ConfiguredScale,
                 rowHeight);
             _scrollPanel.SetVisible(true);
             if (!_children.Contains(_scrollPanel))
@@ -260,12 +260,12 @@ namespace LcdMod.Client.Apps
                 return;
             }
 
-            float rowHeight = 40f * owner.Config.Scale * owner.Surface.FontSize;
+            float rowHeight = 40f * owner.ConfiguredScale * owner.Surface.FontSize;
             float footerHeight = rowHeight * rows;
             float footerTop = owner.ViewBox.Bottom - footerHeight;
             float footerLeft = owner.ViewBox.X;
             float footerWidth = Math.Max(1f, owner.ViewBox.Width);
-            float footerPad = 6f * owner.Config.Scale;
+            float footerPad = 6f * owner.ConfiguredScale;
             float contentLeft = footerLeft + footerPad;
             float contentRight = footerLeft + footerWidth - footerPad;
             Color fg = owner.Surface.ScriptForegroundColor;
@@ -281,8 +281,8 @@ namespace LcdMod.Client.Apps
             });
 
             float iconLeft = contentLeft;
-            float textScale = owner.Config.Scale * 0.75f * owner.Surface.FontSize;
-            float textLeftPad = Math.Max(2f, owner.Config.Scale * 2f);
+            float textScale = owner.ConfiguredScale * 0.75f * owner.Surface.FontSize;
+            float textLeftPad = Math.Max(2f, owner.ConfiguredScale * 2f);
             int rowIndex = 0;
 
             for (int i = 0; i < _collectors.Count; i++)
@@ -354,7 +354,7 @@ namespace LcdMod.Client.Apps
         {
             float width = bounds.Width;
             float height = bounds.Height;
-            float labelGap = Math.Max(1f, owner.Config.Scale * 2f);
+            float labelGap = Math.Max(1f, owner.ConfiguredScale * 2f);
             Vector2 pctRef = FormatingHelper.GetSizeInPixel(slot.PercentText, this, 1f, owner.Surface);
             float pctScale = Math.Min((width * 0.6f) / Math.Max(1f, pctRef.X), (height * 0.22f) / Math.Max(1f, pctRef.Y)) * Math.Min(owner.Surface.FontSize, 1f);
             float pctH = pctRef.Y * pctScale;
@@ -425,7 +425,7 @@ namespace LcdMod.Client.Apps
 
         float GetContentTop(IAppHost owner)
         {
-            return owner.TitleVisible ? owner.ViewBox.Y + (40f * owner.Config.Scale * owner.Surface.FontSize) : owner.ViewBox.Y;
+            return owner.TitleVisible ? owner.ViewBox.Y + (40f * owner.ConfiguredScale * owner.Surface.FontSize) : owner.ViewBox.Y;
         }
 
         float GetFooterHeight(IAppHost owner)
@@ -436,7 +436,7 @@ namespace LcdMod.Client.Apps
                     rows++;
             if (rows == 0)
                 return 0f;
-            return (40f * owner.Config.Scale * owner.Surface.FontSize) * rows;
+            return (40f * owner.ConfiguredScale * owner.Surface.FontSize) * rows;
         }
     }
 }

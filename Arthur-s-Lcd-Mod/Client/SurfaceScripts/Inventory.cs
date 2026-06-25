@@ -20,8 +20,10 @@ using LabelSeparator = LcdMod.Client.Terminal.Controls.Filter.LabelSeparator;
 using SeparatorFilter = LcdMod.Client.Terminal.Controls.Filter.SeparatorFilter;
 using SwitchToggleLines = LcdMod.Client.Terminal.Controls.Generic.SwitchToggleLines;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
+    [LcdSurface(typeof(LcdMod.Client.Apps.InventoryApp))]
     [MyTextSurfaceScript(ID, "Inventory")]
     public partial class InventoryLcdSurfaceScript : InteractiveSurfaceScript,
         IUsesTerminalControl<SwitchToggleLines>,
@@ -34,7 +36,6 @@ namespace LcdMod.Client.SurfaceScripts
         IAutoScroll,
         IMultiDisplayMode
     {
-        protected override ConfigKind ConfigKind => ConfigKind.WithItems;
         public const string ID = "InventoryCharts";
         public const string NAME = InventoryApp.NAME;
 
@@ -60,13 +61,10 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override void SafeRun()
         {
-            if (AppConfig == null)
-                return;
-
             base.SafeRun();
 
             if (_app == null)
-                _app = new InventoryApp(AppConfig, this);
+                _app = new InventoryApp(this);
 
             _app.Update();
 

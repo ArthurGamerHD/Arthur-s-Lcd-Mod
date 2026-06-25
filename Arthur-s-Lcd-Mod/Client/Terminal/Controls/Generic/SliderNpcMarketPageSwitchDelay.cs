@@ -2,7 +2,7 @@ using System;
 using System.Text;
 using LcdMod.Client.Config;
 using LcdMod.Client.Helpers;
-using LcdMod.Common.Config.Models.Apps;
+using LcdMod.Common.Config.Components;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
@@ -12,6 +12,7 @@ namespace LcdMod.Client.Terminal.Controls.Generic
     public sealed partial class SliderNpcMarketPageSwitchDelay : TerminalControlsWrapper
     {
         public const float MAX_SECONDS = 30f;
+        public const float DEFAULT_SECONDS = 5f;
 
         public override IMyTerminalControl TerminalControl { get; }
 
@@ -42,26 +43,23 @@ namespace LcdMod.Client.Terminal.Controls.Generic
 
         void Setter(IMyTerminalBlock block, float value)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigNpcMarket;
-            if (config == null)
-                return;
-
-            config.PageSwitchSeconds = ClampSeconds(value);
-            ConfigManager.Sync(block);
+            ConfigManager.ModifyComponentForTerminalApp<NpcMarketConfigComponent>(
+                block,
+                config => config.PageSwitchSeconds = ClampSeconds(value));
         }
 
         float Getter(IMyTerminalBlock block)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigNpcMarket;
+            var config = ConfigManager.GetComponentForTerminalApp<NpcMarketConfigComponent>(block);
             return config != null
                 ? ClampSeconds(config.PageSwitchSeconds)
-                : ScreenConfigNpcMarket.DEFAULT_PAGE_SWITCH_SECONDS;
+                : DEFAULT_SECONDS;
         }
 
         public static float ClampSeconds(float seconds)
         {
             if (float.IsNaN(seconds) || float.IsInfinity(seconds))
-                return ScreenConfigNpcMarket.DEFAULT_PAGE_SWITCH_SECONDS;
+                return DEFAULT_SECONDS;
 
             return Math.Max(0f, Math.Min(MAX_SECONDS, seconds));
         }

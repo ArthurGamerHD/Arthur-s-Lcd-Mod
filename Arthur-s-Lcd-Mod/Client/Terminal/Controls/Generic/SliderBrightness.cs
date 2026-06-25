@@ -2,7 +2,8 @@ using System;
 using System.Text;
 using LcdMod.Client.Config;
 using LcdMod.Client.ScreenAreas;
-using LcdMod.Common.Config.Models.Apps;
+using LcdMod.Common.Config.Components;
+using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
@@ -41,24 +42,26 @@ namespace LcdMod.Client.Terminal.Controls.Generic
             if (!IsBrightnessSupported(block))
                 return;
 
-            var config = ConfigManager.GetConfigForCurrentScreen(block);
-            if (config == null)
-                return;
-
-            value = Mirror((byte)value);
+            var alpha = (byte)Mirror((byte)value);
             var @default = GetThisSurface(block).BackgroundAlpha;
 
-            if (((byte)value).Equals(@default))
-                config.BackgroundAlpha.Clear();
-            else
-                config.BackgroundAlpha.Set((byte)value);
-
-            ConfigManager.Sync(block);
+            ConfigManager.ModifyComponentForCurrentSurface<GeneralConfigComponent>(
+                block,
+                Constants.GENERAL,
+                config =>
+                {
+                    if (alpha.Equals(@default))
+                        config.BackgroundAlpha.Clear();
+                    else
+                        config.BackgroundAlpha.Set(alpha);
+                });
         }
 
         float Getter(IMyTerminalBlock block)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block);
+            var config = ConfigManager.GetComponentForCurrentSurface<GeneralConfigComponent>(
+                block,
+                Constants.GENERAL);
             if (config != null && config.BackgroundAlpha.HasValue)
                 return Mirror(config.BackgroundAlpha.Value);
 

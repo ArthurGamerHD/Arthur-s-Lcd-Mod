@@ -1,3 +1,4 @@
+using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,7 +16,11 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
     {
         long _statusAnimTick;
 
-        public LaserAntennaCollector(IAppHost antennaSurfaceScript) : base(antennaSurfaceScript)
+        public LaserAntennaCollector(
+            IAppHost antennaSurfaceScript,
+            Func<BlockSelectionConfigComponent> getConfig,
+            Func<ColorConfigComponent> getColors)
+            : base(antennaSurfaceScript, getConfig, getColors)
         {
             
         }
@@ -26,7 +31,7 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
             Dictionary<long, AntennaEntry> models,
             HashSet<long> activeEntryIds)
         {
-            var lasers = grid.GetTerminalBlocks<IMyLaserAntenna>(ScreenConfigGeneral.GridLinkType);
+            var lasers = grid.GetTerminalBlocks<IMyLaserAntenna>(GridLinkType);
 
             for (int i = 0; i < lasers.Count; i++)
             {
@@ -59,7 +64,7 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
 
         string GetStatusIcon(IMyLaserAntenna laserAntenna)
         {
-            if (laserAntenna == null || !laserAntenna.Enabled || (ScreenConfigGeneral.SelectedBlocks.Any() && !ScreenConfigGeneral.SelectedBlocks.Contains(laserAntenna.EntityId)))
+            if (laserAntenna == null || !laserAntenna.Enabled || (AntennaConfig.SelectedBlocks.Any() && !AntennaConfig.SelectedBlocks.Contains(laserAntenna.EntityId)))
                 return "GridPower";
 
             if (!laserAntenna.IsFunctional)

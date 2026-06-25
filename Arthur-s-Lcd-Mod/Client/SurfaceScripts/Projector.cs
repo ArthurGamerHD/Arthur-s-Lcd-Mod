@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using LcdMod.Common.Config.Components;
 using Generated;
 using LcdMod.Client.Apps;
 using LcdMod.Client.Apps.Abstract;
@@ -18,8 +19,10 @@ using ListboxProjectorSelection = LcdMod.Client.Terminal.Controls.Blueprint.List
 using SeparatorFilter = LcdMod.Client.Terminal.Controls.Filter.SeparatorFilter;
 using SwitchToggleLines = LcdMod.Client.Terminal.Controls.Generic.SwitchToggleLines;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
+    [LcdSurface(typeof(LcdMod.Client.Apps.ProjectorApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class ProjectorLcdSurfaceScript : InteractiveSurfaceScript,
         IUsesTerminalControl<SwitchToggleLines>,
@@ -29,7 +32,6 @@ namespace LcdMod.Client.SurfaceScripts
         IUsesTerminalControlGroup<BlocksFilterTerminalControlGroup>,
         IMultiDisplayMode
     {
-        protected override ConfigKind ConfigKind => ConfigKind.Projector;
         public const string ID = "ProjectorCharts";
         public const string TITLE = ProjectorApp.TITLE;
 
@@ -62,15 +64,11 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override void SafeRun()
         {
-            var appConfig = AppConfig;
-            if (appConfig == null)
-                return;
-
             base.SafeRun();
 
             if (_app == null)
             {
-                _app = new ProjectorApp(appConfig, this);
+                _app = new ProjectorApp(this);
                 _app.LayoutChanged();
             }
 
@@ -82,13 +80,12 @@ namespace LcdMod.Client.SurfaceScripts
         public override List<MySprite> GetSprites()
         {
             var sprites = new List<MySprite>();
-            var appConfig = AppConfig;
-            if (_app == null || appConfig == null)
+            if (_app == null)
                 return sprites;
 
             if (_app.IsLoading)
             {
-                AddLoadingScreenSprites(sprites, appConfig.Scale);
+                AddLoadingScreenSprites(sprites, GeneralComponent.GetScale());
                 return sprites;
             }
 

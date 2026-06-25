@@ -1,3 +1,4 @@
+using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
@@ -7,7 +8,6 @@ using LcdMod.Client.Gui.ControlsTemplates.Inputs;
 using LcdMod.Client.Gui.ControlsTemplates.Lists;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.Styling;
-using LcdMod.Common.Config.Models.Apps;
 using LcdMod.Common.Helpers;
 using VRage;
 using VRage.Game.GUI.TextPanel;
@@ -155,7 +155,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         const int BUTTON_WEAPONS = 2;
         const int BUTTON_COUNT = 3;
 
-        readonly ScreenConfigCargoActions _config;
+        readonly Func<CargoActionsConfigComponent> _getConfig;
+        CargoActionsConfigComponent Config => _getConfig();
         readonly Action _onSaved;
         readonly Action _requestRedraw;
         readonly Action<Dialog> _showDialog;
@@ -163,11 +164,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
         readonly Button[] _buttons = new Button[BUTTON_COUNT];
 
-        public CargoActionsSettingsDialog(IApp parentApp, ScreenConfigCargoActions config, Action onSaved,
+        public CargoActionsSettingsDialog(IApp parentApp, Func<CargoActionsConfigComponent> getConfig, Action onSaved,
             Action requestRedraw, Action<Dialog> showDialog, List<WeaponOption> weapons)
             : base(parentApp)
         {
-            _config = config;
+            _getConfig = getConfig;
             _onSaved = onSaved;
             _requestRedraw = requestRedraw;
             _showDialog = showDialog;
@@ -189,7 +190,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             var gap = 10f * scale;
             var buttonHeight = Math.Min(110f * scale, (contentRect.Height - 2f * gap) / 3f);
 
-            var sortText = MyTexts.GetString(MOD_PREFIX + "CargoActions_Sort") + ": " + SortModeLabel(_config.SortMode);
+            var sortText = MyTexts.GetString(MOD_PREFIX + "CargoActions_Sort") + ": " + SortModeLabel(Config.SortMode);
             RenderButton(BUTTON_SORT, Rect(contentRect, 0, buttonHeight, gap), sortText, CycleSort);
             RenderButton(BUTTON_URANIUM, Rect(contentRect, 1, buttonHeight, gap), MyTexts.GetString(MOD_PREFIX + "CargoActions_Uranium"), OpenUranium);
             RenderButton(BUTTON_WEAPONS, Rect(contentRect, 2, buttonHeight, gap), MyTexts.GetString(MOD_PREFIX + "CargoActions_Ammo"), OpenWeapons);
@@ -233,7 +234,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
         void CycleSort()
         {
-            _config.SortMode = (_config.SortMode + 1) % 3;
+            Config.SortMode = (Config.SortMode + 1) % 3;
             if (_onSaved != null)
                 _onSaved();
             if (_requestRedraw != null)
@@ -242,12 +243,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
         void OpenUranium()
         {
-            Open(new CargoUraniumDialog(ParentApp, _config, _onSaved, _requestRedraw, BackToMenu));
+            Open(new CargoUraniumDialog(ParentApp, _getConfig, _onSaved, _requestRedraw, BackToMenu));
         }
 
         void OpenWeapons()
         {
-            Open(new CargoWeaponsDialog(ParentApp, _config, _onSaved, _requestRedraw, BackToMenu, _weapons));
+            Open(new CargoWeaponsDialog(ParentApp, _getConfig, _onSaved, _requestRedraw, BackToMenu, _weapons));
         }
 
         void Open(Dialog dialog)
@@ -259,7 +260,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
     internal sealed class CargoUraniumDialog : CargoSettingsDialogBase
     {
-        readonly ScreenConfigCargoActions _config;
+        readonly Func<CargoActionsConfigComponent> _getConfig;
+        CargoActionsConfigComponent Config => _getConfig();
         readonly Action _onSaved;
         readonly Action _requestRedraw;
         readonly Action _backToMenu;
@@ -267,11 +269,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         readonly NumericUpDown[] _inputs = new NumericUpDown[4];
         readonly string[] _labels = new string[4];
 
-        public CargoUraniumDialog(IApp parentApp, ScreenConfigCargoActions config, Action onSaved,
+        public CargoUraniumDialog(IApp parentApp, Func<CargoActionsConfigComponent> getConfig, Action onSaved,
             Action requestRedraw, Action backToMenu)
             : base(parentApp)
         {
-            _config = config;
+            _getConfig = getConfig;
             _onSaved = onSaved;
             _requestRedraw = requestRedraw;
             _backToMenu = backToMenu;
@@ -299,10 +301,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         {
             switch (index)
             {
-                case 0: return _config.UraniumLargeGridSmallReactor;
-                case 1: return _config.UraniumLargeGridLargeReactor;
-                case 2: return _config.UraniumSmallGridSmallReactor;
-                default: return _config.UraniumSmallGridLargeReactor;
+                case 0: return Config.UraniumLargeGridSmallReactor;
+                case 1: return Config.UraniumLargeGridLargeReactor;
+                case 2: return Config.UraniumSmallGridSmallReactor;
+                default: return Config.UraniumSmallGridLargeReactor;
             }
         }
 
@@ -310,10 +312,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         {
             switch (index)
             {
-                case 0: _config.UraniumLargeGridSmallReactor = value; break;
-                case 1: _config.UraniumLargeGridLargeReactor = value; break;
-                case 2: _config.UraniumSmallGridSmallReactor = value; break;
-                default: _config.UraniumSmallGridLargeReactor = value; break;
+                case 0: Config.UraniumLargeGridSmallReactor = value; break;
+                case 1: Config.UraniumLargeGridLargeReactor = value; break;
+                case 2: Config.UraniumSmallGridSmallReactor = value; break;
+                default: Config.UraniumSmallGridLargeReactor = value; break;
             }
         }
 
@@ -375,7 +377,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
     internal sealed class CargoWeaponsDialog : CargoSettingsDialogBase
     {
-        readonly ScreenConfigCargoActions _config;
+        readonly Func<CargoActionsConfigComponent> _getConfig;
+        CargoActionsConfigComponent Config => _getConfig();
         readonly Action _onSaved;
         readonly Action _requestRedraw;
         readonly Action _backToMenu;
@@ -389,17 +392,18 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         ListBoxModel<WeaponOption> _listModel;
         NumericUpDown _selectedInput;
 
-        public CargoWeaponsDialog(IApp parentApp, ScreenConfigCargoActions config, Action onSaved,
+        public CargoWeaponsDialog(IApp parentApp, Func<CargoActionsConfigComponent> getConfig, Action onSaved,
             Action requestRedraw, Action backToMenu, List<WeaponOption> weapons)
             : base(parentApp)
         {
-            _config = config;
+            _getConfig = getConfig;
             _onSaved = onSaved;
             _requestRedraw = requestRedraw;
             _backToMenu = backToMenu;
             OnClose = backToMenu;
             _options = weapons ?? new List<WeaponOption>();
 
+            var config = Config;
             var keys = config.WeaponOverrideKeys;
             var counts = config.WeaponOverrideCounts;
             if (keys != null && counts != null)
@@ -424,7 +428,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             int value;
             if (subtype != null && _overrides.TryGetValue(subtype, out value))
                 return value;
-            return _config.AmmoDefaultPerWeapon;
+            return Config.AmmoDefaultPerWeapon;
         }
 
         void FlushOverridesToConfig()
@@ -439,8 +443,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 i++;
             }
 
-            _config.WeaponOverrideKeys = keys;
-            _config.WeaponOverrideCounts = counts;
+            Config.WeaponOverrideKeys = keys;
+            Config.WeaponOverrideCounts = counts;
         }
 
         protected override void RenderContent(RectangleF contentRect, float scale, float fontScale,
@@ -472,7 +476,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             {
                 var model = new NumericUpDownModel
                 {
-                    Value = _config.AmmoDefaultPerWeapon,
+                    Value = Config.AmmoDefaultPerWeapon,
                     MinValue = 0,
                     MaxValue = 100000,
                     Step = 1,
@@ -486,7 +490,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             {
                 _defaultInput.SetRect(rect);
                 if (_defaultInput.NumericModel != null)
-                    _defaultInput.NumericModel.Value = _config.AmmoDefaultPerWeapon;
+                    _defaultInput.NumericModel.Value = Config.AmmoDefaultPerWeapon;
             }
 
             _defaultInput.SetVisible(true);
@@ -496,7 +500,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
         void OnDefaultChanged(double value)
         {
-            _config.AmmoDefaultPerWeapon = (int)Math.Round(value);
+            Config.AmmoDefaultPerWeapon = (int)Math.Round(value);
             Redraw();
         }
 
@@ -544,7 +548,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
         void RenderSelectedInput(RectangleF rect)
         {
-            double value = _selected != null ? GetCount(_selected.SubtypeId) : _config.AmmoDefaultPerWeapon;
+            double value = _selected != null ? GetCount(_selected.SubtypeId) : Config.AmmoDefaultPerWeapon;
 
             if (_selectedInput == null)
             {
@@ -582,7 +586,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 return;
 
             var rounded = (int)Math.Round(value);
-            if (rounded == _config.AmmoDefaultPerWeapon)
+            if (rounded == Config.AmmoDefaultPerWeapon)
                 _overrides.Remove(_selected.SubtypeId);
             else
                 _overrides[_selected.SubtypeId] = rounded;

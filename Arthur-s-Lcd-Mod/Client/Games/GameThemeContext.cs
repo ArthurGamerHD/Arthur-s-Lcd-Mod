@@ -3,6 +3,8 @@ using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Gui.Styling.Styles;
 using LcdMod.Client.SurfaceScripts.Abstract;
+using LcdMod.Common.Config.Components;
+using Sandbox.ModAPI;
 using VRageMath;
 
 namespace LcdMod.Client.Games
@@ -51,9 +53,9 @@ namespace LcdMod.Client.Games
 
         Color GetHeaderColor()
         {
-            var colorableConfig = _script?.ColorableConfig;
-            if (colorableConfig != null)
-                return colorableConfig.HeaderColor;
+            var colors = _script?.ColorComponent;
+            if (colors != null)
+                return colors.ResolveHeaderColor(_script.Block as IMyTerminalBlock);
 
             return _script?.ForegroundColor ?? Color.White;
         }

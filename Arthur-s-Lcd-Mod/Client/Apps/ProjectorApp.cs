@@ -1,4 +1,5 @@
-﻿using System;
+using LcdMod.Common.Config.Components;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -14,7 +15,6 @@ using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
-using LcdMod.Common.Config.Models.Apps;
 using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
@@ -27,14 +27,16 @@ using VRageMath;
 using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
 using static LcdMod.Common.Helpers.Constants;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.Apps
 {
-    internal sealed class ProjectorApp : ItemsApp
+    [LcdApp(17)]
+    [ConfigComponent(PROJECTOR_REFERENCE, typeof(BlockReferenceConfigComponent), PropertyName = "ProjectorReferenceComponent")]
+    internal sealed partial class ProjectorApp : ItemsApp
     {
         public const string TITLE = "DisplayName_Block_Projector";
 
         public string[] AllowedTypes = { "Component" };
-        new ScreenConfigProjector AppConfig => (ScreenConfigProjector)base.AppConfig;
 
         protected override string DefaultTitle => _customTitle ?? TITLE;
 
@@ -80,7 +82,7 @@ namespace LcdMod.Client.Apps
 
         public bool IsLoading { get; private set; }
 
-        public ProjectorApp(ScreenConfigProjector config, IAppHost host) : base(config, host)
+        public ProjectorApp(IAppHost host) : base(host)
         {
         }
 
@@ -208,7 +210,7 @@ namespace LcdMod.Client.Apps
                 Data = "Circle",
                 Position = pos,
                 Size = legendSize,
-                Color = AppConfig.HeaderColor,
+                Color = GetHeaderColor(),
                 Alignment = TextAlignment.CENTER,
             });
 
@@ -232,7 +234,7 @@ namespace LcdMod.Client.Apps
                 pieSize,
                 componentsPct,
                 blocksPct,
-                AppConfig.HeaderColor,
+                GetHeaderColor(),
                 true,
                 false);
 
@@ -255,7 +257,7 @@ namespace LcdMod.Client.Apps
             IsLoading = false;
             EnsureData();
 
-            if (!_projectorDataInitialized && AppConfig != null && AppConfig.ReferenceBlock != 0 && _projector == null)
+            if (!_projectorDataInitialized && ProjectorReferenceComponent.EntityId != 0 && _projector == null)
             {
                 _projectorDataInitialized = true;
                 IsLoading = true;
@@ -296,8 +298,8 @@ namespace LcdMod.Client.Apps
             var viewModel = base.GetOrCreateItemViewModel(item);
             var shortageColor = GetShortageColor(item.Key, item.Value);
             var rowColor = shortageColor ?? Surface.ScriptForegroundColor;
-            var useAlertText = shortageColor.HasValue && AppConfig.DrawLines;
-            var panelColor = AppConfig.HeaderColor;
+            var useAlertText = shortageColor.HasValue && GeneralComponent.DrawLines;
+            var panelColor = GetHeaderColor();
             var panelTextColor = Surface.ScriptForegroundColor;
             var neededText = FormatingHelper.FormatItemQty(GetNeededQty(item.Key));
             var availableText = FormatingHelper.FormatItemQty(GetAvailableQty(item.Key, item.Value));
@@ -306,8 +308,8 @@ namespace LcdMod.Client.Apps
             viewModel.ListTextColor = rowColor;
             viewModel.ListAmountColor = rowColor;
             viewModel.ListIconColor = Color.White;
-            viewModel.IconBackgroundColor = shortageColor.HasValue && shortageColor.Value.Equals(AppConfig.ErrorColor)
-                ? AppConfig.ErrorColor
+            viewModel.IconBackgroundColor = shortageColor.HasValue && shortageColor.Value.Equals(ColorComponent.ResolveErrorColor())
+                ? ColorComponent.ResolveErrorColor()
                 : Color.White;
             viewModel.GridTextColor = useAlertText ? shortageColor.Value : panelTextColor;
             viewModel.GridAmountColor = viewModel.GridTextColor;
@@ -359,10 +361,10 @@ namespace LcdMod.Client.Apps
 
             var available = GetAvailableQty(itemType, missingQty);
             if (available <= 0)
-                return AppConfig.ErrorColor;
+                return ColorComponent.ResolveErrorColor();
 
             if (available < needed)
-                return AppConfig.WarningColor;
+                return ColorComponent.ResolveWarningColor();
 
             return null;
         }
@@ -820,7 +822,7 @@ namespace LcdMod.Client.Apps
 
             try
             {
-                LcdMod.Client.GridData.GridLogic.EnsureBlueprintResultDatabase();
+                GridData.GridLogic.EnsureBlueprintResultDatabase();
 
                 foreach (var component in componentNeeded)
                 {
@@ -829,7 +831,7 @@ namespace LcdMod.Client.Apps
 
                     MyDefinitionId componentId = component.Key;
                     MyBlueprintDefinitionBase blueprint;
-                    if (!LcdMod.Client.GridData.GridLogic.PrimaryBlueprintByCreatedItem.TryGetValue(componentId, out blueprint) ||
+                    if (!GridData.GridLogic.PrimaryBlueprintByCreatedItem.TryGetValue(componentId, out blueprint) ||
                         blueprint == null)
                         continue;
 
@@ -879,8 +881,8 @@ namespace LcdMod.Client.Apps
         {
             try
             {
-                var hasFilter = AppConfig.SelectedBlocks.Length > 0 || AppConfig.SelectedGroups.Length > 0;
-                return hasFilter ? GridLogic.GetIngots(AppConfig, referenceBlock) : GridLogic.Ingots;
+                var hasFilter = BlockSelectionComponent.SelectedBlocks.Length > 0 || BlockSelectionComponent.SelectedGroups.Length > 0;
+                return hasFilter ? GridLogic.GetIngots(BlockSelectionComponent, ItemSelectionComponent, referenceBlock) : GridLogic.Ingots;
             }
             catch (Exception e)
             {
@@ -894,8 +896,8 @@ namespace LcdMod.Client.Apps
         {
             try
             {
-                var hasFilter = AppConfig.SelectedBlocks.Length > 0 || AppConfig.SelectedGroups.Length > 0;
-                return hasFilter ? GridLogic.GetItems(AppConfig, referenceBlock, AllowedTypes) : GridLogic.Components;
+                var hasFilter = BlockSelectionComponent.SelectedBlocks.Length > 0 || BlockSelectionComponent.SelectedGroups.Length > 0;
+                return hasFilter ? GridLogic.GetItems(BlockSelectionComponent, ItemSelectionComponent, referenceBlock, AllowedTypes) : GridLogic.Components;
             }
             catch (Exception e)
             {
@@ -907,16 +909,16 @@ namespace LcdMod.Client.Apps
 
         void FindProjector(IMyCubeGrid grid, ref IMyProjector projector)
         {
-            if (AppConfig.ReferenceBlock == 0)
+            if (ProjectorReferenceComponent.EntityId == 0)
             {
                 projector = ResolveSingleLoadedProjector(grid);
                 return;
             }
 
-            if (projector != null && projector.EntityId == AppConfig.ReferenceBlock)
+            if (projector != null && projector.EntityId == ProjectorReferenceComponent.EntityId)
                 return;
 
-            var entity = MyAPIGateway.Entities.GetEntityById(AppConfig.ReferenceBlock) as IMyProjector;
+            var entity = MyAPIGateway.Entities.GetEntityById(ProjectorReferenceComponent.EntityId) as IMyProjector;
             projector = entity?.CubeGrid.IsInSameLogicalGroupAs(grid) ?? false ? entity : null;
         }
 

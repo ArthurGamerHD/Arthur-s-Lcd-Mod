@@ -19,9 +19,11 @@ using SeparatorFilter = LcdMod.Client.Terminal.Controls.Filter.SeparatorFilter;
 using CheckboxHideEmpty = LcdMod.Client.Terminal.Controls.Generic.CheckboxHideEmpty;
 using SwitchToggleLines = LcdMod.Client.Terminal.Controls.Generic.SwitchToggleLines;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
 
+    [LcdSurface(typeof(LcdMod.Client.Apps.ButtonPadApp))]
 #if EXPERIMENTAL
     [MyTextSurfaceScript(ID, TITLE)]
 #endif
@@ -33,7 +35,6 @@ namespace LcdMod.Client.SurfaceScripts
         IUsesTerminalControlGroup<BlocksFilterTerminalControlGroup>,
         IMultiDisplayMode
     {
-        protected override ConfigKind ConfigKind => ConfigKind.ButtonPanel;
         public override IApp App => _app;
         ButtonPadApp _app;
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
@@ -67,17 +68,11 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override void SafeRun()
         {
-            if (AppConfig == null)
-                return;
-
-            var buttonPanelConfig = AppConfig;
-            if (buttonPanelConfig == null)
-                return;
 
             base.SafeRun();
 
             if (_app == null)
-                _app = new ButtonPadApp(buttonPanelConfig, this);
+                _app = new ButtonPadApp(this);
 
             _app.Update();
 

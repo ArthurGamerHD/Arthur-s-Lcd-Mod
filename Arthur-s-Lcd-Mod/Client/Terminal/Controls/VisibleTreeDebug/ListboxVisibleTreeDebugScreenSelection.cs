@@ -4,7 +4,7 @@ using System.Linq;
 using LcdMod.Client.Config;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts.Abstract;
-using LcdMod.Common.Config.Models.Apps;
+using LcdMod.Common.Config.Components;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.ModAPI;
@@ -32,22 +32,22 @@ namespace LcdMod.Client.Terminal.Controls.VisibleTreeDebug
 
         void Setter(IMyTerminalBlock block, List<MyTerminalControlListBoxItem> selection)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigVisibleTreeDebug;
-            if (config == null)
-                return;
-
-            config.ReferenceScreenIndex = (int)ListBoxItemHelper.GetLongUserData(selection.FirstOrDefault());
-            ConfigManager.Sync(block);
+            ConfigManager.ModifyComponentForTerminalApp<VisibleTreeDebugConfigComponent>(
+                block,
+                config => config.ReferenceScreenIndex = (int)ListBoxItemHelper.GetLongUserData(selection.FirstOrDefault()));
         }
 
         void Getter(IMyTerminalBlock block, List<MyTerminalControlListBoxItem> itemList,
             List<MyTerminalControlListBoxItem> selected)
         {
-            var config = ConfigManager.GetConfigForCurrentScreen(block) as ScreenConfigVisibleTreeDebug;
-            if (config == null || config.ReferenceBlock == 0L)
+            var app = ConfigManager.GetComponentForTerminalApp<VisibleTreeDebugConfigComponent>(block);
+            var reference = ConfigManager.GetComponentForCurrentSurface<BlockReferenceConfigComponent>(
+                block,
+                Constants.VisibleTreeReference);
+            if (app == null || reference == null || reference.EntityId == 0L)
                 return;
 
-            GetInstances(config.ReferenceBlock);
+            GetInstances(reference.EntityId);
             for (int i = 0; i < _instances.Count; i++)
             {
                 var instance = _instances[i];
@@ -58,7 +58,7 @@ namespace LcdMod.Client.Terminal.Controls.VisibleTreeDebug
                     index));
             }
 
-            var selection = itemList.FirstOrDefault(a => ListBoxItemHelper.GetLongUserData(a) == config.ReferenceScreenIndex);
+            var selection = itemList.FirstOrDefault(a => ListBoxItemHelper.GetLongUserData(a) == app.ReferenceScreenIndex);
             if (selection != null)
                 selected.Add(selection);
         }

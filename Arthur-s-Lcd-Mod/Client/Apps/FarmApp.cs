@@ -1,3 +1,4 @@
+using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -17,12 +18,13 @@ using VRage.Game;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 using static LcdMod.Common.Helpers.Constants;
-using ScreenConfigPower = LcdMod.Common.Config.Models.Apps.ScreenConfigPower;
 using VisualWrapPanel = LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel.WrapPanel;
 
+using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.Apps
 {
-    internal sealed class FarmApp : App, IApp
+    [LcdApp(9)]
+    internal sealed partial class FarmApp : App, IApp
     {
         const float SLOT_W = 100f;
         const float SLOT_H = 100f;
@@ -137,17 +139,15 @@ namespace LcdMod.Client.Apps
         readonly FarmGrowthHelper _growthDefinitions = new FarmGrowthHelper();
         readonly ScrollPanel _scrollPanel;
         readonly VisualWrapPanel _gridPanel;
-        readonly ScreenConfigPower _config;
-        internal ScreenConfigPower Config => _config;
+        internal ColorConfigComponent FarmColors => ColorComponent;
 
-        public FarmApp(ScreenConfigPower config, IAppHost surfaceHost) : base(config, surfaceHost)
+        public FarmApp(IAppHost surfaceHost) : base(surfaceHost)
         {
             _surfaceHost = surfaceHost;
             _interactiveHost = surfaceHost as InteractiveSurfaceScript;
             if (_interactiveHost == null)
                 throw new ArgumentException("FarmApp requires an InteractiveSurfaceScript host.", "surfaceHost");
 
-            _config = config;
             _scrollPanel = AddChild(new ScrollPanel(CursorType.Default, this));
             _scrollPanel.ScrollChanged = OnScrollPanelChanged;
             _scrollPanel.SetVisible(false);
@@ -285,17 +285,14 @@ namespace LcdMod.Client.Apps
 
         Color GetStatusColor(FarmPlotEntry plot, float ratio)
         {
-            if (_config == null)
-                return _surfaceHost.ForegroundColor;
-
             if (plot?.Logic == null || !plot.Logic.IsPlantPlanted)
                 return _surfaceHost.ForegroundColor;
 
             if (!plot.Logic.IsAlive)
-                return _config.ErrorColor;
+                return ColorComponent.ResolveErrorColor();
 
             if (ratio >= 1f || plot.Logic.IsHarvestable)
-                return _config.HeaderColor;
+                return GetHeaderColor();
 
             return _surfaceHost.ForegroundColor;
         }
@@ -315,9 +312,9 @@ namespace LcdMod.Client.Apps
 
         void DrawFarmPlots(IAppHost owner, List<MySprite> sprites)
         {
-            float minW = SLOT_W * owner.Config.Scale;
-            float minH = SLOT_H * owner.Config.Scale;
-            float contentTop = GetContentTop(owner) + 6f * owner.Config.Scale;
+            float minW = SLOT_W * owner.ConfiguredScale;
+            float minH = SLOT_H * owner.ConfiguredScale;
+            float contentTop = GetContentTop(owner) + 6f * owner.ConfiguredScale;
 
             int count = _entries.Count;
             if (count <= 0)
@@ -338,7 +335,7 @@ namespace LcdMod.Client.Apps
             var viewportHeight = Math.Max(0f, owner.ViewBox.Bottom - contentTop);
             _scrollPanel.ConfigureAutomatic(
                 new RectangleF(owner.ViewBox.X, contentTop, owner.ViewBox.Width, viewportHeight),
-                SCROLLER_W * owner.Config.Scale,
+                SCROLLER_W * owner.ConfiguredScale,
                 rowHeight);
             _scrollPanel.SetVisible(true);
             if (!_children.Contains(_scrollPanel))
@@ -506,7 +503,7 @@ namespace LcdMod.Client.Apps
 
         float GetContentTop(IAppHost owner)
         {
-            return owner.TitleVisible ? owner.ViewBox.Y + (40f * owner.Config.Scale * owner.Surface.FontSize) : owner.ViewBox.Y;
+            return owner.TitleVisible ? owner.ViewBox.Y + (40f * owner.ConfiguredScale * owner.Surface.FontSize) : owner.ViewBox.Y;
         }
 
         string GetRemainingText(FarmPlotEntry plot, float growthPercent, float ratio, string percentText)

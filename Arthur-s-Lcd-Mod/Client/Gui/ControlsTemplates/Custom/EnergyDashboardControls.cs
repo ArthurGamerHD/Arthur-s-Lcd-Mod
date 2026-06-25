@@ -208,7 +208,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
             Color fg = _host.Surface.ScriptForegroundColor;
             Color bg = new Color(fg.R, fg.G, fg.B, 24);
             float ratio = EnergyDashboardPowerMetrics.Ratio(Current, Max);
-            float scale = _host.Config.Scale;
+            float scale = _host.ConfiguredScale;
             float titleTs = scale * 0.52f * _host.Surface.FontSize;
             float valueTs = scale * 0.56f * _host.Surface.FontSize;
             string title = string.IsNullOrEmpty(Label) ? string.Empty : Label + ":";
@@ -317,7 +317,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
         {
             var rect = Bounds;
             Color fg = _host.Surface.ScriptForegroundColor;
-            float scale = _host.Config.Scale;
+            float scale = _host.ConfiguredScale;
             float ts = scale * 0.56f * _host.Surface.FontSize;
             float titleTs = ts * 1.08f;
             float labelH = FormatingHelper.GetSizeInPixel("0", this, ts, _host.Surface).Y;
@@ -424,7 +424,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
             if (snapshots == null || snapshots.Count == 0 || row.Entry == null)
                 return;
 
-            float thickness = Math.Max(1f, _host.Config.Scale * 1.25f);
+            float thickness = Math.Max(1f, _host.ConfiguredScale * 1.25f);
             bool hasPrev = false;
             Vector2 prev = Vector2.Zero;
             for (int i = 0; i < snapshots.Count; i++)
@@ -465,7 +465,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
 
         void RenderEmptyLabel(List<MySprite> sprites, RectangleF plot, string text)
         {
-            float ts = _host.Config.Scale * 0.56f * _host.Surface.FontSize;
+            float ts = _host.ConfiguredScale * 0.56f * _host.Surface.FontSize;
             Color fg = new Color(_host.Surface.ScriptForegroundColor.R, _host.Surface.ScriptForegroundColor.G,
                 _host.Surface.ScriptForegroundColor.B, 140);
             Vector2 sz = FormatingHelper.GetSizeInPixel(text, this, ts, _host.Surface);
@@ -481,7 +481,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
             if (_snapshots == null || _snapshots.Count == 0)
                 return;
 
-            float scale = _host.Config.Scale;
+            float scale = _host.ConfiguredScale;
             float tickH = Math.Max(2f, 3f * scale);
             float y = plot.Bottom + 2f * scale;
             float labelY = y + tickH + scale;
@@ -774,7 +774,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
         {
             var rect = GetViewBox();
             Color fg = _host.Surface.ScriptForegroundColor;
-            float scale = _host.Config.Scale;
+            float scale = _host.ConfiguredScale;
             float icon = Math.Min(rect.Height * 0.78f, Math.Max(1f, rect.Width - 2f * scale));
             var iconRect = new RectangleF(rect.Center.X - icon * 0.5f, rect.Center.Y - icon * 0.5f, icon, icon);
 

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Text;
 using LcdMod.Client.GridData;
+using LcdMod.Common.Config.Components;
 using LcdMod.Common.Config.Models;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
@@ -19,7 +20,9 @@ namespace LcdMod.Client.Apps.Abstract
         Color BackgroundColor { get; }
         bool TitleVisible { get; }
         string Title { get; }
-        ScreenConfigGeneral Config { get; }
+        IComponentContainer Config { get; }
+        int SurfaceIndex { get; }
+        float ConfiguredScale { get; }
         GridLogic GridLogic { get; }
         ScreenProviderConfig ProviderConfig { get; }
         void AddBackground(List<MySprite> frame, Color? color = null);
