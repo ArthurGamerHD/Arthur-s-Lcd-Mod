@@ -4,7 +4,7 @@ using System.ComponentModel;
 using ProtoBuf;
 using VRageMath;
 
-namespace LcdMod.Migration.Legacy.V0
+namespace LcdMod.Common.Migration.Legacy.V0
 {
     // Frozen data-only snapshot of the config schema stored under Constants.V0StorageGuid.
     // Do not add runtime methods, generator interfaces, XML projections, or conversions here.

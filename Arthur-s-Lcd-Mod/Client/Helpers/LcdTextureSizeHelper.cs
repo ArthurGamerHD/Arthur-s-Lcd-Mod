@@ -15,6 +15,10 @@ namespace LcdMod.Client.Helpers
         static readonly Dictionary<string, CachedTextureSize> Cache =
             new Dictionary<string, CachedTextureSize>(StringComparer.OrdinalIgnoreCase);
 
+        static readonly object PendingMeasurementsLock = new object();
+        static readonly HashSet<string> PendingMeasurements =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         public static bool TryGetTextureSize(string textureId, out Vector2I size)
         {
             size = Vector2I.Zero;
@@ -48,6 +52,9 @@ namespace LcdMod.Client.Helpers
             if (!TextureHelper.CanRenderTexture(definition.Id.SubtypeName))
                 return false;
 
+            if (TryReadMetadataTextureSize(definition, out size))
+                return true;
+
             var paths = GetSourceCandidates(definition);
             for (int i = 0; i < paths.Count; i++)
             {
@@ -56,6 +63,235 @@ namespace LcdMod.Client.Helpers
             }
 
             return false;
+        }
+
+        static bool TryReadMetadataTextureSize(MyLCDTextureDefinition definition, out Vector2I size)
+        {
+            size = Vector2I.Zero;
+            if (definition == null)
+                return false;
+
+            TextureTransferHelper.TextureMetadata invalidMetadata;
+            if (TryReadMetadataTextureSize(definition.Id.SubtypeName, out size, out invalidMetadata))
+                return true;
+            if (invalidMetadata != null)
+                QueueAsyncTextureSizeMeasurement(definition.Id.SubtypeName, invalidMetadata, GetSourceCandidates(definition));
+
+            var paths = GetSourceCandidates(definition);
+            for (int i = 0; i < paths.Count; i++)
+            {
+                var baseName = TextureTransferHelper.NormalizeTextureName(Path.GetFileNameWithoutExtension(paths[i]));
+                if (TryReadMetadataTextureSize(baseName, out size, out invalidMetadata))
+                    return true;
+                if (invalidMetadata != null)
+                    QueueAsyncTextureSizeMeasurement(baseName, invalidMetadata, paths);
+            }
+
+            return false;
+        }
+
+        static bool TryReadMetadataTextureSize(string metadataKey, out Vector2I size,
+            out TextureTransferHelper.TextureMetadata invalidMetadata)
+        {
+            size = Vector2I.Zero;
+            invalidMetadata = null;
+            if (string.IsNullOrWhiteSpace(metadataKey))
+                return false;
+
+            TextureTransferHelper.TextureMetadata metadata;
+            if (!TextureTransferHelper.TryReadTextureMetadata(metadataKey, out metadata) || metadata == null)
+                return false;
+
+            if (metadata.Width <= 0 || metadata.Height <= 0)
+            {
+                invalidMetadata = metadata;
+                return false;
+            }
+
+            size = new Vector2I(metadata.Width, metadata.Height);
+            return true;
+        }
+
+        static void QueueAsyncTextureSizeMeasurement(string metadataKey,
+            TextureTransferHelper.TextureMetadata metadata,
+            IEnumerable<string> sourcePaths)
+        {
+            if (string.IsNullOrWhiteSpace(metadataKey) || metadata == null)
+                return;
+
+            var sourceFileName = Path.GetFileName(metadata.SourceFileName);
+            if (string.IsNullOrWhiteSpace(sourceFileName))
+                return;
+
+            var pendingKey = metadataKey + "|" + sourceFileName;
+            lock (PendingMeasurementsLock)
+            {
+                if (!PendingMeasurements.Add(pendingKey))
+                    return;
+            }
+
+            byte[] bytes;
+            if (!TextureTransferHelper.TryReadTextureFileBytes(sourceFileName, out bytes))
+            {
+                FinishAsyncTextureSizeMeasurement(pendingKey);
+                return;
+            }
+
+            var work = new TextureSizeMeasurementWork
+            {
+                PendingKey = pendingKey,
+                MetadataKey = metadataKey,
+                SourceFileName = sourceFileName,
+                SourcePaths = CopySourcePaths(sourcePaths),
+                TextureBytes = bytes,
+                TempFileName = BuildTempTextureFileName(metadataKey, sourceFileName)
+            };
+            work.TempPath = BuildLocalStoragePath(work.TempFileName);
+
+            MyAPIGateway.Parallel.Start(
+                delegate { MeasureTextureSizeFromTempFile(work); },
+                delegate { CompleteTextureSizeMeasurement(work); });
+        }
+
+        static List<string> CopySourcePaths(IEnumerable<string> sourcePaths)
+        {
+            var result = new List<string>();
+            if (sourcePaths == null)
+                return result;
+
+            foreach (var sourcePath in sourcePaths)
+                AddSourceCandidate(result, sourcePath);
+
+            return result;
+        }
+
+        static string BuildTempTextureFileName(string metadataKey, string sourceFileName)
+        {
+            var baseName = TextureTransferHelper.NormalizeTextureName(metadataKey);
+            if (string.IsNullOrWhiteSpace(baseName))
+                baseName = TextureTransferHelper.NormalizeTextureName(sourceFileName);
+            if (string.IsNullOrWhiteSpace(baseName))
+                baseName = "texture";
+
+            return baseName + "_tmp.dds";
+        }
+
+        static string BuildLocalStoragePath(string fileName)
+        {
+            return Path.Combine(
+                MyAPIGateway.Utilities.GamePaths.UserDataPath,
+                "Storage",
+                MyAPIGateway.Utilities.GamePaths.ModScopeName,
+                fileName);
+        }
+
+        static void MeasureTextureSizeFromTempFile(TextureSizeMeasurementWork work)
+        {
+            if (work == null)
+                return;
+
+            try
+            {
+                using (var writer = MyAPIGateway.Utilities.WriteBinaryFileInLocalStorage(
+                           work.TempFileName,
+                           typeof(LcdModSessionComponent)))
+                {
+                    writer.Write(work.TextureBytes);
+                }
+
+                Vector2I size;
+                if (TryReadImageSizeFromPath(work.TempPath, out size) && size.X > 0 && size.Y > 0)
+                {
+                    work.Size = size;
+                    work.Found = true;
+                }
+            }
+            catch (Exception e)
+            {
+                work.Exception = e;
+            }
+            finally
+            {
+                TryDeleteTempTexture(work.TempFileName);
+            }
+        }
+
+        static void CompleteTextureSizeMeasurement(TextureSizeMeasurementWork work)
+        {
+            if (work == null)
+                return;
+
+            FinishAsyncTextureSizeMeasurement(work.PendingKey);
+
+            if (work.Exception != null)
+            {
+                ErrorHandlerHelper.LogError(work.Exception, typeof(LcdTextureSizeHelper));
+                return;
+            }
+
+            if (!work.Found || work.Size.X <= 0 || work.Size.Y <= 0)
+                return;
+
+            TextureTransferHelper.TextureMetadata metadata;
+            if (!TextureTransferHelper.TryReadTextureMetadata(work.MetadataKey, out metadata) || metadata == null)
+                metadata = new TextureTransferHelper.TextureMetadata();
+
+            metadata.RegistrationName = string.IsNullOrWhiteSpace(metadata.RegistrationName)
+                ? work.MetadataKey
+                : metadata.RegistrationName;
+            metadata.SourceFileName = string.IsNullOrWhiteSpace(metadata.SourceFileName)
+                ? work.SourceFileName
+                : metadata.SourceFileName;
+            metadata.Width = work.Size.X;
+            metadata.Height = work.Size.Y;
+            metadata.LastUpdatedUtcTicks = DateTime.UtcNow.Ticks;
+            TextureTransferHelper.TryWriteTextureMetadata(work.MetadataKey, metadata);
+
+            SetCachedTextureSize(work.MetadataKey, work.Size);
+            SetCachedTextureSize(work.SourceFileName, work.Size);
+            for (int i = 0; i < work.SourcePaths.Count; i++)
+                SetCachedTextureSize(work.SourcePaths[i], work.Size);
+        }
+
+        static void FinishAsyncTextureSizeMeasurement(string pendingKey)
+        {
+            if (string.IsNullOrWhiteSpace(pendingKey))
+                return;
+
+            lock (PendingMeasurementsLock)
+                PendingMeasurements.Remove(pendingKey);
+        }
+
+        static void SetCachedTextureSize(string cacheKey, Vector2I size)
+        {
+            if (string.IsNullOrWhiteSpace(cacheKey) || size.X <= 0 || size.Y <= 0)
+                return;
+
+            Cache[NormalizeCacheKey(cacheKey)] = new CachedTextureSize
+            {
+                Found = true,
+                Size = size
+            };
+        }
+
+        static void TryDeleteTempTexture(string tempFileName)
+        {
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(tempFileName) &&
+                    MyAPIGateway.Utilities.FileExistsInLocalStorage(
+                        tempFileName,
+                        typeof(LcdModSessionComponent)))
+                {
+                    MyAPIGateway.Utilities.DeleteFileInLocalStorage(
+                        tempFileName,
+                        typeof(LcdModSessionComponent));
+                }
+            }
+            catch (Exception e)
+            {
+                LogHelper.Log(MyLogSeverity.Warning, e.ToString());
+            }
         }
 
         public static bool TryGetTextureAspectRatio(string textureId, out float aspectRatio)
@@ -272,6 +508,20 @@ namespace LcdMod.Client.Helpers
         {
             public bool Found;
             public Vector2I Size;
+        }
+
+        sealed class TextureSizeMeasurementWork
+        {
+            public string PendingKey;
+            public string MetadataKey;
+            public string SourceFileName;
+            public List<string> SourcePaths = new List<string>();
+            public byte[] TextureBytes;
+            public string TempFileName;
+            public string TempPath;
+            public Vector2I Size;
+            public bool Found;
+            public Exception Exception;
         }
     }
 }

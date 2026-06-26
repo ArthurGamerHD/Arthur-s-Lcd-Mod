@@ -4,10 +4,10 @@ using LcdMod.Common.Config;
 using LcdMod.Common.Config.Components;
 using LcdMod.Common.Config.Models;
 using LcdMod.Common.Helpers;
-using LcdMod.Migration.Legacy.V0;
+using LcdMod.Common.Migration.Legacy.V0;
 using VRage.Game.ModAPI;
 
-namespace LcdMod.Migration
+namespace LcdMod.Common.Migration
 {
     public static class LegacyV0Migrator
     {

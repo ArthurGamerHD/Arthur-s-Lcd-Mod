@@ -15,11 +15,13 @@ using VRage.ModAPI;
 using VRageMath;
 
 using LcdMod.Common.Config.Generation;
+using LcdMod.Common.Helpers;
+
 namespace LcdMod.Client.Apps
 {
     [LcdApp(24, Name = "VisibleTreeDebug")]
     [ConfigComponent(Constants.APP, typeof(VisibleTreeDebugConfigComponent), PropertyName = "VisibleTreeDebugComponent")]
-    [ConfigComponent(Constants.VisibleTreeReference, typeof(BlockReferenceConfigComponent), PropertyName = "VisibleTreeReferenceComponent")]
+    [ConfigComponent(Constants.VISIBLE_TREE_REFERENCE, typeof(BlockReferenceConfigComponent), PropertyName = "VisibleTreeReferenceComponent")]
     internal sealed partial class VisibleTreeDebugApp : App
     {
         const string DEBUG_FONT = "Monospace";

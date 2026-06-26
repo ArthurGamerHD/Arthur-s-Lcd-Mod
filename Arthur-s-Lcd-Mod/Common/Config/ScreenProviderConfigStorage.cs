@@ -1,8 +1,8 @@
 using System;
 using LcdMod.Common.Config.Models;
 using LcdMod.Common.Helpers;
-using LcdMod.Migration;
-using LcdMod.Migration.Legacy.V0;
+using LcdMod.Common.Migration;
+using LcdMod.Common.Migration.Legacy.V0;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 using VRage.ModAPI;

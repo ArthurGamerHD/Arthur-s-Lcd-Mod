@@ -5,6 +5,7 @@ using System.Text;
 using LcdMod.Client.Config;
 using LcdMod.Common.Helpers;
 using LcdMod.Common.Networking;
+using LcdMod.Common.Zip;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
 using VRage.Game;
@@ -31,6 +32,15 @@ namespace LcdMod.Client.Helpers
 
         static readonly HashSet<string> DeferredLocalTextureRegistrations =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        sealed class TextureImportCandidate
+        {
+            public string SourceFile;
+            public string ArchiveFile;
+            public string RegistrationName;
+            public byte[] TextureBytes;
+            public TextureTransferHelper.TextureMetadata Metadata;
+        }
 
         public static void PreloadAllTextures()
         {
@@ -440,6 +450,15 @@ namespace LcdMod.Client.Helpers
             {
                 var file = obj[0];
                 var baseName = Path.GetFileNameWithoutExtension(file);
+                var sourceFileName = file;
+                TextureTransferHelper.TextureMetadata metadata;
+                if (TextureTransferHelper.TryReadTextureMetadata(baseName, out metadata) &&
+                    metadata != null &&
+                    !string.IsNullOrWhiteSpace(metadata.SourceFileName))
+                {
+                    sourceFileName = metadata.SourceFileName;
+                }
+
                 if (LocalConfigManager.Config.LocalTextures.Remove(file))
                     MyAPIGateway.Utilities.ShowNotification(
                         $"Texture {file} will not be loaded next time the game is restarted");
@@ -450,10 +469,12 @@ namespace LcdMod.Client.Helpers
                     return;
                 }
 
-                MyAPIGateway.Utilities.DeleteFileInLocalStorage(file, typeof(LcdModSessionComponent));
+                if (MyAPIGateway.Utilities.FileExistsInLocalStorage(sourceFileName, typeof(LcdModSessionComponent)))
+                    MyAPIGateway.Utilities.DeleteFileInLocalStorage(sourceFileName, typeof(LcdModSessionComponent));
+                TextureTransferHelper.TryRemoveLocalTextureFile(sourceFileName);
+
                 if (!string.IsNullOrEmpty(baseName))
-                    MyAPIGateway.Utilities.DeleteFileInLocalStorage(baseName + "_meta.xml",
-                        typeof(LcdModSessionComponent));
+                    TextureTransferHelper.TryRemoveTextureMetadata(baseName);
             }
             else
             {
@@ -472,25 +493,30 @@ namespace LcdMod.Client.Helpers
                     return;
                 }
 
-                var reader = MyAPIGateway.Utilities.ReadFileInLocalStorage("import.txt", typeof(LcdModClientComponent));
+                var imports = new List<TextureImportCandidate>();
 
-                string file;
-                while ((file = reader.ReadLine()) != null)
+                using (var reader = MyAPIGateway.Utilities.ReadFileInLocalStorage("import.txt", typeof(LcdModClientComponent)))
                 {
-                    if (string.IsNullOrWhiteSpace(file))
-                        continue;
+                    string file;
+                    while ((file = reader.ReadLine()) != null)
+                    {
+                        if (string.IsNullOrWhiteSpace(file))
+                            continue;
 
-                    try
-                    {
-                        ImportTexture(file, verbose: true);
-                    }
-                    catch (Exception e)
-                    {
-                        ErrorHandlerHelper.LogError(e, typeof(TextureHelper));
+                        try
+                        {
+                            TextureImportCandidate import;
+                            if (TryPrepareTextureImport(file, true, null, out import))
+                                imports.Add(import);
+                        }
+                        catch (Exception e)
+                        {
+                            ErrorHandlerHelper.LogError(e, typeof(TextureHelper));
+                        }
                     }
                 }
 
-                reader.Close();
+                ImportTextures(imports, true);
 
                 MyAPIGateway.Utilities.DeleteFileInLocalStorage("import.txt", typeof(LcdModClientComponent));
             }
@@ -500,7 +526,21 @@ namespace LcdMod.Client.Helpers
             }
         }
 
-        public static void LocalTexture(string id, bool verbose = false, bool persistAsLocal = true)
+        static string GetLocalStoragePath()
+        {
+            var userDataPath = MyAPIGateway.Utilities.GamePaths.UserDataPath;
+            return Path.Combine(
+                    userDataPath,
+                    "Storage",
+                    MyAPIGateway.Utilities.GamePaths.ModScopeName)
+                .Replace('\\', '/');
+        }
+
+        public static void LocalTexture(
+            string id,
+            bool verbose = false,
+            bool persistAsLocal = true,
+            bool writeMetadata = true)
         {
             id = TextureTransferHelper.NormalizeTextureName(id);
             if (string.IsNullOrWhiteSpace(id))
@@ -590,6 +630,9 @@ namespace LcdMod.Client.Helpers
             if (string.IsNullOrWhiteSpace(sourceFileName))
                 sourceFileName = TextureTransferHelper.BuildPlainTextureFileName(textureName);
 
+            if (persistAsLocal && localUserId != 0 && ownerId == localUserId)
+                TextureTransferHelper.TryMigrateLocalTextureFileToArchive(sourceFileName);
+
             if (!MyAPIGateway.Utilities.FileExistsInLocalStorage(sourceFileName, typeof(LcdModClientComponent)))
             {
                 var localSourceFileName = id + ".dds";
@@ -597,66 +640,84 @@ namespace LcdMod.Client.Helpers
                     MyAPIGateway.Utilities.FileExistsInLocalStorage(localSourceFileName, typeof(LcdModClientComponent)))
                 {
                     sourceFileName = localSourceFileName;
+                    if (persistAsLocal && localUserId != 0 && ownerId == localUserId)
+                        TextureTransferHelper.TryMigrateLocalTextureFileToArchive(sourceFileName);
                 }
             }
 
+            string path;
             if (MyAPIGateway.Utilities.FileExistsInLocalStorage(sourceFileName, typeof(LcdModClientComponent)))
             {
-                var path = Path.Combine(MyAPIGateway.Utilities.GamePaths.UserDataPath, "Storage",
+                path = Path.Combine(MyAPIGateway.Utilities.GamePaths.UserDataPath, "Storage",
                     MyAPIGateway.Utilities.GamePaths.ModScopeName,
                     sourceFileName);
                 path = path.Replace("/", "\\");
-
-                MyLCDTextureDefinition textureDefinition = new MyLCDTextureDefinition
-                {
-                    Id = new MyDefinitionId((MyObjectBuilderType)typeof(MyObjectBuilder_LCDTextureDefinition),
-                        registrationName),
-                    Public = true,
-                    LocalizationId = ownerName + "_" + textureName,
-                    SpritePath = path,
-                    TexturePath = path,
-                    Selectable = true,
-                    AvailableInSurvival = true
-                };
-
-
-                LogHelper.Log(MyLogSeverity.Info, $"Registered texture {registrationName} at path {path}");
-
-                MyDefinitionManager.Static.Definitions.AddOrReplaceDefinition(textureDefinition);
-
-                var addedCustomTexture = CustomTextures.Add(registrationName);
-                if (persistAsLocal)
-                    LocalCustomTextures.Add(registrationName);
-
+            }
+            else if (!TextureTransferHelper.TryGetLocalTexturePath(sourceFileName, out path) &&
+                     !TextureTransferHelper.TryGetCachedTexturePath(sourceFileName, out path))
+            {
                 if (verbose)
-                    MyAPIGateway.Utilities.ShowNotification(addedCustomTexture
-                        ? $"Definition created for texture {registrationName}"
-                        : $"Existing texture found for id {registrationName}, you may need to restart your game to see the effects");
+                    MyAPIGateway.Utilities.ShowNotification($"File {sourceFileName} does not exists in mod storage");
+                return;
+            }
 
-                metadata.OwnerSteamId = ownerId;
-                metadata.RegistrationName = registrationName;
-                metadata.TextureName = textureName;
-                metadata.SourceFileName = sourceFileName;
-                TextureTransferHelper.TryWriteTextureMetadata(registrationName, metadata);
+            MyLCDTextureDefinition textureDefinition = new MyLCDTextureDefinition
+            {
+                Id = new MyDefinitionId((MyObjectBuilderType)typeof(MyObjectBuilder_LCDTextureDefinition),
+                    registrationName),
+                Public = true,
+                LocalizationId = ownerName + "_" + textureName,
+                SpritePath = path,
+                TexturePath = path,
+                Selectable = true,
+                AvailableInSurvival = true
+            };
 
-                if (LocalConfigManager.Config != null && LocalConfigManager.Config.LocalTextures == null)
-                    LocalConfigManager.Config.LocalTextures = new HashSet<string>();
 
-                if (persistAsLocal && LocalConfigManager.Config != null)
+            LogHelper.Log(MyLogSeverity.Info, $"Registered texture {registrationName} at path {path}");
+
+            MyDefinitionManager.Static.Definitions.AddOrReplaceDefinition(textureDefinition);
+
+            var addedCustomTexture = CustomTextures.Add(registrationName);
+            if (persistAsLocal)
+                LocalCustomTextures.Add(registrationName);
+
+            if (verbose)
+                MyAPIGateway.Utilities.ShowNotification(addedCustomTexture
+                    ? $"Definition created for texture {registrationName}"
+                    : $"Existing texture found for id {registrationName}, you may need to restart your game to see the effects");
+
+            metadata.OwnerSteamId = ownerId;
+            metadata.RegistrationName = registrationName;
+            metadata.TextureName = textureName;
+            metadata.SourceFileName = sourceFileName;
+            if (metadata.Width <= 0 || metadata.Height <= 0)
+            {
+                int width;
+                int height;
+                if (TextureTransferHelper.TryReadTextureFileDimensions(sourceFileName, out width, out height))
                 {
-                    if (!string.Equals(id, registrationName, StringComparison.OrdinalIgnoreCase))
-                        LocalConfigManager.Config.LocalTextures.Remove(id);
-
-                    if (LocalConfigManager.Config.LocalTextures.Add(registrationName) ||
-                        !string.Equals(id, registrationName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        LocalConfigManager.Save();
-                    }
+                    metadata.Width = width;
+                    metadata.Height = height;
                 }
             }
-            else if (verbose)
+
+            if (writeMetadata)
+                TextureTransferHelper.TryWriteTextureMetadata(registrationName, metadata);
+
+            if (LocalConfigManager.Config != null && LocalConfigManager.Config.LocalTextures == null)
+                LocalConfigManager.Config.LocalTextures = new HashSet<string>();
+
+            if (persistAsLocal && LocalConfigManager.Config != null)
             {
-                MyAPIGateway.Utilities.ShowNotification($"File {sourceFileName} does not exists in mod storage");
+                if (!string.Equals(id, registrationName, StringComparison.OrdinalIgnoreCase))
+                    LocalConfigManager.Config.LocalTextures.Remove(id);
+
+                if (LocalConfigManager.Config.LocalTextures.Add(registrationName) ||
+                    !string.Equals(id, registrationName, StringComparison.OrdinalIgnoreCase))
+                {
+                    LocalConfigManager.Save();
+                }
             }
         }
 
@@ -685,22 +746,87 @@ namespace LcdMod.Client.Helpers
 
         public static void ImportTexture(string file, bool verbose = false, string id = null)
         {
-            var sourceFile = Path.GetFileName(file);
-            if (string.IsNullOrWhiteSpace(sourceFile))
+            TextureImportCandidate import;
+            if (!TryPrepareTextureImport(file, verbose, id, out import))
                 return;
 
-            if (!sourceFile.EndsWith(".dds", StringComparison.OrdinalIgnoreCase))
-                sourceFile = Path.GetFileNameWithoutExtension(sourceFile) + ".dds";
+            if (!TextureTransferHelper.TryWriteLocalTextureFilesWithMetadata(
+                    new[] { new MinimalZip.Entry(import.ArchiveFile, import.TextureBytes) },
+                    new[] { import.Metadata }))
+            {
+                if (verbose)
+                    MyAPIGateway.Utilities.ShowNotification($"Failed to save texture {import.ArchiveFile} to {Constants.LOCAL_TEXTURES}");
+                return;
+            }
+
+            CompleteTextureImport(import, verbose);
+        }
+
+        static void ImportTextures(List<TextureImportCandidate> imports, bool verbose)
+        {
+            if (imports == null || imports.Count == 0)
+                return;
+
+            var archiveEntries = new List<MinimalZip.Entry>(imports.Count);
+            var metadataEntries = new List<TextureTransferHelper.TextureMetadata>(imports.Count);
+            for (var i = 0; i < imports.Count; i++)
+            {
+                var import = imports[i];
+                if (import == null)
+                    continue;
+
+                archiveEntries.Add(new MinimalZip.Entry(import.ArchiveFile, import.TextureBytes));
+                metadataEntries.Add(import.Metadata);
+            }
+
+            if (archiveEntries.Count == 0)
+                return;
+
+            if (!TextureTransferHelper.TryWriteLocalTextureFilesWithMetadata(
+                    archiveEntries,
+                    metadataEntries))
+            {
+                if (verbose)
+                    MyAPIGateway.Utilities.ShowNotification($"Failed to save imported textures to {Constants.LOCAL_TEXTURES}");
+                return;
+            }
+
+            for (var i = 0; i < imports.Count; i++)
+            {
+                var import = imports[i];
+                if (import == null)
+                    continue;
+
+                CompleteTextureImport(import, verbose);
+            }
+        }
+
+        static bool TryPrepareTextureImport(
+            string file,
+            bool verbose,
+            string id,
+            out TextureImportCandidate import)
+        {
+            import = null;
+
+            var sourceFile = NormalizeDdsImportFileName(file);
+            if (string.IsNullOrWhiteSpace(sourceFile))
+                return false;
+
+            var archiveFile = Path.GetFileName(sourceFile);
+            if (string.IsNullOrWhiteSpace(archiveFile))
+                return false;
 
             var localUserId = MyAPIGateway.Session?.Player?.SteamUserId ?? 0;
+            byte[] textureBytes;
             int width;
             int height;
-            if (!TextureTransferHelper.TryReadDdsDimensions(sourceFile, out width,
-                    out height))
+            if (!TryReadDdsImportFile(sourceFile, out textureBytes) ||
+                !TextureTransferHelper.TryGetDdsDimensions(textureBytes, out width, out height))
             {
                 if (verbose)
                     MyAPIGateway.Utilities.ShowNotification($"Invalid DDS header in {sourceFile}");
-                return;
+                return false;
             }
 
             if (!AreDdsDimensionsBlockAligned(width, height))
@@ -708,21 +834,20 @@ namespace LcdMod.Client.Helpers
                 if (verbose)
                     MyAPIGateway.Utilities.ShowNotification(
                         $"Refusing {sourceFile}: DDS width and height must be divisible by 4");
-                return;
+                return false;
             }
 
-            long byteCount;
-            if (verbose &&
-                TextureTransferHelper.TryGetBinaryFileSize(sourceFile, out byteCount))
+            if (verbose)
             {
-                var syncWarning = TextureTransferHelper.GetMultiplayerSyncWarning(sourceFile, byteCount, width, height);
+                var syncWarning =
+                    TextureTransferHelper.GetMultiplayerSyncWarning(sourceFile, textureBytes.Length, width, height);
                 if (!string.IsNullOrWhiteSpace(syncWarning))
                     MyAPIGateway.Utilities.ShowNotification(syncWarning, 8000);
             }
 
-            var baseName = TextureTransferHelper.NormalizeTextureName(sourceFile);
+            var baseName = TextureTransferHelper.NormalizeTextureName(archiveFile);
             if (string.IsNullOrWhiteSpace(baseName))
-                return;
+                return false;
 
             var registrationName = localUserId != 0
                 ? TextureTransferHelper.BuildTextureKey(localUserId, baseName)
@@ -732,20 +857,130 @@ namespace LcdMod.Client.Helpers
                 OwnerSteamId = localUserId,
                 RegistrationName = registrationName,
                 TextureName = baseName,
-                SourceFileName = sourceFile,
+                SourceFileName = archiveFile,
                 Width = width,
                 Height = height,
                 LastUpdatedUtcTicks = DateTime.UtcNow.Ticks
             };
 
-            if (!TextureTransferHelper.TryWriteTextureMetadata(registrationName, metadata))
+            import = new TextureImportCandidate
             {
-                if (verbose)
-                    MyAPIGateway.Utilities.ShowNotification($"Failed to write metadata for {sourceFile}");
-                return;
-            }
+                SourceFile = sourceFile,
+                ArchiveFile = archiveFile,
+                RegistrationName = registrationName,
+                TextureBytes = textureBytes,
+                Metadata = metadata
+            };
 
-            LocalTexture(registrationName, verbose);
+            return true;
+        }
+
+        static void CompleteTextureImport(TextureImportCandidate import, bool verbose)
+        {
+            if (import == null)
+                return;
+
+            if (MyAPIGateway.Utilities.FileExistsInLocalStorage(import.SourceFile, typeof(LcdModClientComponent)))
+                MyAPIGateway.Utilities.DeleteFileInLocalStorage(import.SourceFile, typeof(LcdModClientComponent));
+
+            LocalTexture(import.RegistrationName, verbose, true, false);
+        }
+
+        static bool TryReadDdsImportFile(string sourceFile, out byte[] textureBytes)
+        {
+            textureBytes = null;
+
+            if (TextureTransferHelper.TryReadDdsFile(sourceFile, out textureBytes))
+                return true;
+
+            if (!TryReadLocalStorageSubfolderFile(sourceFile, out textureBytes))
+                return false;
+
+            return TextureTransferHelper.IsReadableDdsTexturePayload(textureBytes);
+        }
+
+        
+        /// <summary>
+        /// Hack: this should NOT be possible under the real mod api...
+        /// but it is, until keen fixes it (or add a proper way to do),
+        /// this method is the only way to read sub-folders
+        /// </summary>
+        /// <param name="sourceFile"></param>
+        /// <param name="bytes"></param>
+        /// <returns></returns>
+        static bool TryReadLocalStorageSubfolderFile(string sourceFile, out byte[] bytes)
+        {
+            bytes = null;
+
+            try
+            {
+                if (string.IsNullOrWhiteSpace(sourceFile))
+                    return false;
+
+                var storagePath = GetLocalStoragePath();
+                if (string.IsNullOrWhiteSpace(storagePath))
+                    return false;
+
+                var relativePath = sourceFile.Trim().Replace('\\', '/');
+                if (string.IsNullOrWhiteSpace(relativePath) ||
+                    Path.IsPathRooted(relativePath) ||
+                    HasParentDirectorySegment(relativePath))
+                {
+                    return false;
+                }
+
+                var storageMod = new MyObjectBuilder_Checkpoint.ModItem(storagePath, 0, null);
+                using (var reader = MyAPIGateway.Utilities.ReadBinaryFileInModLocation(relativePath, storageMod))
+                {
+                    if (reader == null)
+                        return false;
+
+                    var length = reader.BaseStream.Length - reader.BaseStream.Position;
+                    if (length <= 0 || length > int.MaxValue)
+                        return false;
+
+                    bytes = reader.ReadBytes((int)length);
+                    return bytes != null && bytes.Length > 0;
+                }
+            }
+            catch (Exception e)
+            {
+                LogHelper.Log(MyLogSeverity.Warning,
+                    $"Failed to read texture import file {sourceFile} through mod-location storage fallback: {e.Message}");
+                bytes = null;
+                return false;
+            }
+        }
+
+        static bool HasParentDirectorySegment(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                return false;
+
+            return string.Equals(path, "..", StringComparison.Ordinal) ||
+                   path.StartsWith("../", StringComparison.Ordinal) ||
+                   path.EndsWith("/..", StringComparison.Ordinal) ||
+                   path.IndexOf("/../", StringComparison.Ordinal) >= 0;
+        }
+
+        static string NormalizeDdsImportFileName(string file)
+        {
+            if (string.IsNullOrWhiteSpace(file))
+                return string.Empty;
+
+            var normalized = file.Trim().Replace('\\', '/');
+            var fileName = Path.GetFileName(normalized);
+            if (string.IsNullOrWhiteSpace(fileName))
+                return string.Empty;
+
+            if (fileName.EndsWith(".dds", StringComparison.OrdinalIgnoreCase))
+                return normalized;
+
+            var directory = Path.GetDirectoryName(normalized);
+            var ddsFileName = Path.GetFileNameWithoutExtension(fileName) + ".dds";
+            return string.IsNullOrWhiteSpace(directory)
+                ? ddsFileName
+                : Path.Combine(directory, ddsFileName).Replace('\\', '/');
         }
 
         static bool AreDdsDimensionsBlockAligned(int width, int height)
@@ -817,7 +1052,7 @@ namespace LcdMod.Client.Helpers
                 return;
             }
 
-            if (!TextureTransferHelper.TryWriteBinaryFile(fileName, data))
+            if (!TextureTransferHelper.TryWriteCachedTextureFile(fileName, data))
             {
                 if (verbose)
                     MyAPIGateway.Utilities.ShowNotification($"Failed to save texture {fileName}");
@@ -857,6 +1092,8 @@ namespace LcdMod.Client.Helpers
 
         public static void LoadCachedTextures()
         {
+            TextureTransferHelper.MigrateCachedTextureStorageToZip();
+
             var localUserId = MyAPIGateway.Session?.Player?.SteamUserId ?? 0;
             var entries = TextureTransferHelper.GetCachedTextureEntries();
             for (var i = 0; i < entries.Count; i++)
@@ -1108,6 +1345,7 @@ Before starting, a few notes:
 - Tested conversion parameters are '-nologo -y -f BC7_UNORM -pmalpha', but you can try other parameters if you want, as long as it is a valid .dds image
 - The mod will refuse to import texture filenames not ending with .dds or not having a valid dds header
 - Use simple texture filenames without special characters when possible to avoid issues
+- Imported local DDS files are moved into {Constants.LOCAL_TEXTURES}; the loose DDS file is no longer needed after import
 - When replacing an existing texture, you need to restart the game
 - Images with dimension greater than {Constants.MAX_SYNC_TEXTURE_DIMENSION}x{Constants.MAX_SYNC_TEXTURE_DIMENSION} or size greater than {Constants.MAX_TEXTURE_BYTES/1000}kb
 will NOT be synced in multiplayer
@@ -1128,7 +1366,7 @@ How to import custom textures:
    /lcdmod importlocaltexture image.dds
 
 
-- Manual import of multiples textures:
+- Manual import of multiple textures:
 
 1. Copy your .dds textures into Storage folder as you would for manual import:
    {configFolderPath}
@@ -1148,8 +1386,7 @@ How to import custom textures:
 5. In game, either restart the current session (exit to menu, then load) or run:
    /lcdmod importtextures
 
-
-- Automatically import multiples texture:
+- Automatically import multiple textures:
 
 1. Copy all png images into this config folder:
    {configFolderPath}

@@ -37,7 +37,7 @@ namespace LcdMod.Client.Terminal.Controls.VisibleTreeDebug
             var surface = settings == null ? null : settings.GetSurfaceConfig(GetThisSurfaceIndex(block));
             if (settings == null || !settings.CanWriteConfig(surface))
                 return;
-            var reference = surface?.TryGet<BlockReferenceConfigComponent>(Constants.VisibleTreeReference);
+            var reference = surface?.TryGet<BlockReferenceConfigComponent>(Constants.VISIBLE_TREE_REFERENCE);
             var app = surface?.TryGet<VisibleTreeDebugConfigComponent>(Constants.APP);
             if (settings == null || reference == null || app == null)
                 return;
@@ -58,7 +58,7 @@ namespace LcdMod.Client.Terminal.Controls.VisibleTreeDebug
         {
             var reference = ConfigManager.GetComponentForCurrentSurface<BlockReferenceConfigComponent>(
                 block,
-                Constants.VisibleTreeReference);
+                Constants.VISIBLE_TREE_REFERENCE);
             if (reference == null)
                 return;
 

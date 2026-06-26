@@ -19,6 +19,9 @@ namespace LcdMod.Common.Helpers
 
         public const string CONFIG_FILE = "LcdMod.local.xml";
         public const string CACHED_TEXTURES_FILE = "cached_textures.xml";
+        public const string CACHED_TEXTURES = "cached_textures.zip";
+        public const string LOCAL_TEXTURES_FILE = "local_textures.xml";
+        public const string LOCAL_TEXTURES = "local_textures.zip";
         // Read-only storage used by the inherited V0 config schema.
         public static Guid V0StorageGuid = new Guid("9a502d67-7a3c-4502-b3e5-a44e76c0acfa");
 

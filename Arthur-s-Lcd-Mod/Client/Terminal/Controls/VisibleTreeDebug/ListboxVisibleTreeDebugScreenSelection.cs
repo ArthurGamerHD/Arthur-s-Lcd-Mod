@@ -5,6 +5,7 @@ using LcdMod.Client.Config;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Common.Config.Components;
+using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.ModAPI;
@@ -43,7 +44,7 @@ namespace LcdMod.Client.Terminal.Controls.VisibleTreeDebug
             var app = ConfigManager.GetComponentForTerminalApp<VisibleTreeDebugConfigComponent>(block);
             var reference = ConfigManager.GetComponentForCurrentSurface<BlockReferenceConfigComponent>(
                 block,
-                Constants.VisibleTreeReference);
+                Constants.VISIBLE_TREE_REFERENCE);
             if (app == null || reference == null || reference.EntityId == 0L)
                 return;
 
