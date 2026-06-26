@@ -24,8 +24,25 @@ namespace LcdMod.Common.Zip
         {
             public string Name { get; }
             public byte[] Data { get; }
+            public DateTime CreationTime
+            {
+                get { return DecodeDosDateTime(DosDate, DosTime); }
+            }
+
+            internal ushort DosTime { get; }
+            internal ushort DosDate { get; }
 
             public Entry(string name, byte[] data)
+                : this(name, data, DateTime.UtcNow)
+            {
+            }
+
+            public Entry(string name, byte[] data, DateTime creationTime)
+                : this(name, data, EncodeDosTime(creationTime), EncodeDosDate(creationTime))
+            {
+            }
+
+            internal Entry(string name, byte[] data, ushort dosTime, ushort dosDate)
             {
                 Name = name;
 
@@ -36,6 +53,9 @@ namespace LcdMod.Common.Zip
 
                 if (Data == null)
                     throw new ArgumentNullException(nameof(data));
+
+                DosTime = dosTime;
+                DosDate = dosDate;
             }
         }
 
@@ -47,16 +67,18 @@ namespace LcdMod.Common.Zip
             public uint Size;
             public uint LocalOffset;
             public ushort Flags;
+            public ushort DosTime;
+            public ushort DosDate;
         }
 
         public static ushort GetTime()
         {
-            var utc = DateTime.UtcNow;
-            if (utc.Kind == DateTimeKind.Unspecified)
-                utc = DateTime.SpecifyKind(utc, DateTimeKind.Utc);
+            return EncodeDosTime(DateTime.UtcNow);
+        }
 
-            // FAT stores local time. Convert UTC -> local first.
-            DateTime local = utc.ToLocalTime();
+        private static ushort EncodeDosTime(DateTime dateTime)
+        {
+            DateTime local = ToLocalDateTime(dateTime);
 
             int hour = local.Hour;                 // 0-23
             int minute = local.Minute;           // 0-59
@@ -77,11 +99,12 @@ namespace LcdMod.Common.Zip
 
         public static ushort GetDate()
         {
-            var utc = DateTime.UtcNow;
-            if (utc.Kind == DateTimeKind.Unspecified)
-                utc = DateTime.SpecifyKind(utc, DateTimeKind.Utc);
+            return EncodeDosDate(DateTime.UtcNow);
+        }
 
-            DateTime local = utc.ToLocalTime();
+        private static ushort EncodeDosDate(DateTime dateTime)
+        {
+            DateTime local = ToLocalDateTime(dateTime);
 
             int year = local.Year;              // valid range typically 1980-2107 for DOS
             int month = local.Month;           // 1-12
@@ -98,6 +121,41 @@ namespace LcdMod.Common.Zip
                          (day & 0x1F));
 
             return dosDate;
+        }
+
+        private static DateTime ToLocalDateTime(DateTime dateTime)
+        {
+            if (dateTime.Kind == DateTimeKind.Unspecified)
+                dateTime = DateTime.SpecifyKind(dateTime, DateTimeKind.Local);
+
+            return dateTime.Kind == DateTimeKind.Utc
+                ? dateTime.ToLocalTime()
+                : dateTime;
+        }
+
+        private static DateTime DecodeDosDateTime(ushort dosDate, ushort dosTime)
+        {
+            int year = MathHelper.Clamp(
+                1980 + ((dosDate >> 9) & 0x7F),
+                1980,
+                2107);
+            int month = MathHelper.Clamp((dosDate >> 5) & 0x0F, 1, 12);
+            int day = MathHelper.Clamp(
+                dosDate & 0x1F,
+                1,
+                DateTime.DaysInMonth(year, month));
+            int hour = MathHelper.Clamp((dosTime >> 11) & 0x1F, 0, 23);
+            int minute = MathHelper.Clamp((dosTime >> 5) & 0x3F, 0, 59);
+            int second = MathHelper.Clamp((dosTime & 0x1F) * 2, 0, 59);
+
+            return new DateTime(
+                year,
+                month,
+                day,
+                hour,
+                minute,
+                second,
+                DateTimeKind.Local);
         }
     
         public static void Write(Stream output, IEnumerable<Entry> entries)
@@ -142,14 +200,16 @@ namespace LcdMod.Common.Zip
 
                     uint size = checked((uint)sourceEntry.Data.Length);
                     uint crc = CalculateCrc32(sourceEntry.Data);
+                    ushort dosTime = sourceEntry.DosTime;
+                    ushort dosDate = sourceEntry.DosDate;
 
                     // Local file header.
                     writer.Write(LOCAL_SIGNATURE);
                     writer.Write((ushort)20); // Version needed: 2.0
                     writer.Write(UTF8_FLAG);
                     writer.Write(STORED_METHOD);
-                    writer.Write(GetTime());
-                    writer.Write(GetDate());
+                    writer.Write(dosTime);
+                    writer.Write(dosDate);
                     writer.Write(crc);
                     writer.Write(size); // Compressed size
                     writer.Write(size); // Uncompressed size
@@ -166,7 +226,9 @@ namespace LcdMod.Common.Zip
                         Crc = crc,
                         Size = size,
                         LocalOffset = localOffset,
-                        Flags = UTF8_FLAG
+                        Flags = UTF8_FLAG,
+                        DosTime = dosTime,
+                        DosDate = dosDate
                     });
                 }
 
@@ -184,8 +246,8 @@ namespace LcdMod.Common.Zip
                     writer.Write((ushort)20); // Version needed: 2.0
                     writer.Write(entry.Flags);
                     writer.Write(STORED_METHOD);
-                    writer.Write(GetTime());
-                    writer.Write(GetDate());
+                    writer.Write(entry.DosTime);
+                    writer.Write(entry.DosDate);
                     writer.Write(entry.Crc);
                     writer.Write(entry.Size);
                     writer.Write(entry.Size);
@@ -277,8 +339,8 @@ namespace LcdMod.Common.Zip
                     ushort flags = reader.ReadUInt16();
                     ushort method = reader.ReadUInt16();
 
-                    reader.ReadUInt16(); // Time
-                    reader.ReadUInt16(); // Date
+                    ushort dosTime = reader.ReadUInt16();
+                    ushort dosDate = reader.ReadUInt16();
 
                     uint crc = reader.ReadUInt32();
                     uint compressedSize = reader.ReadUInt32();
@@ -335,7 +397,9 @@ namespace LcdMod.Common.Zip
                         Crc = crc,
                         Size = compressedSize,
                         LocalOffset = localOffset,
-                        Flags = flags
+                        Flags = flags,
+                        DosTime = dosTime,
+                        DosDate = dosDate
                     });
                 }
 
@@ -412,7 +476,11 @@ namespace LcdMod.Common.Zip
                         CalculateCrc32(data) == entry.Crc,
                         "CRC-32 validation failed for " + entry.Name);
 
-                    result.Add(new Entry(entry.Name, data));
+                    result.Add(new Entry(
+                        entry.Name,
+                        data,
+                        entry.DosTime,
+                        entry.DosDate));
                 }
 
                 return result;
@@ -828,7 +896,9 @@ namespace LcdMod.Common.Zip
 
                 result.Add(new Entry(
                     NormalizeName(entry.Name),
-                    entry.Data));
+                    entry.Data,
+                    entry.DosTime,
+                    entry.DosDate));
             }
 
             return result;

@@ -405,6 +405,15 @@ namespace LcdMod.Common.Helpers
                     return true;
                 }
 
+                if (ShouldStoreMetadataInCachedArchive(textureBaseName, metadata))
+                {
+                    if (!TryWriteCachedTextureMetadata(textureBaseName, metadata))
+                        return false;
+
+                    TryDeleteLocalStorageFile(GetTextureMetaFileName(textureBaseName));
+                    return true;
+                }
+
                 return TryWriteLegacyTextureMetadata(textureBaseName, metadata);
             }
             catch (Exception e)
@@ -443,11 +452,24 @@ namespace LcdMod.Common.Helpers
                 if (TryReadLocalTextureMetadata(textureBaseName, out metadata))
                     return true;
 
+                ulong cachedOwnerId;
+                string cachedTextureName;
+                if (TryParseTextureKey(textureBaseName, out cachedOwnerId, out cachedTextureName) &&
+                    TryGetCachedTextureMetadata(cachedOwnerId, cachedTextureName, out metadata))
+                {
+                    return true;
+                }
+
                 if (!TryReadLegacyTextureMetadata(textureBaseName, out metadata))
                     return false;
 
                 if (ShouldStoreMetadataInLocalArchive(textureBaseName, metadata) &&
                     TryWriteLocalTextureMetadata(textureBaseName, metadata))
+                {
+                    TryDeleteLocalStorageFile(GetTextureMetaFileName(textureBaseName));
+                }
+                else if (ShouldStoreMetadataInCachedArchive(textureBaseName, metadata) &&
+                         TryWriteCachedTextureMetadata(textureBaseName, metadata))
                 {
                     TryDeleteLocalStorageFile(GetTextureMetaFileName(textureBaseName));
                 }
@@ -500,6 +522,7 @@ namespace LcdMod.Common.Helpers
             try
             {
                 removed = TryRemoveLocalTextureMetadata(textureBaseName);
+                removed = TryRemoveCachedTextureMetadata(textureBaseName) || removed;
                 removed = TryDeleteLocalStorageFile(GetTextureMetaFileName(textureBaseName)) || removed;
             }
             catch (Exception e)
@@ -526,6 +549,118 @@ namespace LcdMod.Common.Helpers
 
             var plainFileName = BuildPlainTextureFileName(textureBaseName);
             return !string.IsNullOrWhiteSpace(plainFileName) && LocalTextureFileExists(plainFileName);
+        }
+
+        static bool ShouldStoreMetadataInCachedArchive(string textureBaseName, TextureMetadata metadata)
+        {
+            ulong ownerId;
+            string textureName;
+            string fileName;
+            if (!TryResolveCachedTextureMetadata(textureBaseName, metadata, out ownerId, out textureName, out fileName))
+                return false;
+
+            return CachedTextureFileExists(fileName);
+        }
+
+        static bool TryWriteCachedTextureMetadata(string textureBaseName, TextureMetadata metadata)
+        {
+            try
+            {
+                ulong ownerId;
+                string textureName;
+                string fileName;
+                if (!TryResolveCachedTextureMetadata(textureBaseName, metadata, out ownerId, out textureName, out fileName))
+                    return false;
+
+                RegisterCachedTexture(ownerId, textureName, 0, fileName, metadata);
+                return true;
+            }
+            catch (Exception e)
+            {
+                ErrorHandlerHelper.LogError(e, typeof(TextureTransferHelper));
+                return false;
+            }
+        }
+
+        static bool TryResolveCachedTextureMetadata(
+            string textureBaseName,
+            TextureMetadata metadata,
+            out ulong ownerId,
+            out string textureName,
+            out string fileName)
+        {
+            ownerId = metadata?.OwnerSteamId ?? 0;
+            textureName = NormalizeTextureName(metadata?.TextureName);
+            fileName = metadata == null ? string.Empty : NormalizeCachedImageEntryName(metadata.SourceFileName);
+
+            ulong parsedOwnerId;
+            string parsedTextureName;
+            var registrationName = metadata == null || string.IsNullOrWhiteSpace(metadata.RegistrationName)
+                ? textureBaseName
+                : metadata.RegistrationName;
+
+            if (TryParseTextureKey(registrationName, out parsedOwnerId, out parsedTextureName))
+            {
+                if (ownerId == 0)
+                    ownerId = parsedOwnerId;
+                if (string.IsNullOrEmpty(textureName))
+                    textureName = parsedTextureName;
+            }
+
+            if (ownerId == 0 || string.IsNullOrEmpty(textureName))
+                return false;
+
+            var canonicalFileName = BuildTextureFileName(ownerId, textureName);
+            if (string.IsNullOrEmpty(fileName) ||
+                (!CachedTextureFileExists(fileName) && CachedTextureFileExists(canonicalFileName)))
+            {
+                fileName = canonicalFileName;
+            }
+
+            return !string.IsNullOrEmpty(fileName);
+        }
+
+        static bool TryRemoveCachedTextureMetadata(string textureBaseName)
+        {
+            ulong ownerId;
+            string textureName;
+            if (!TryParseTextureKey(textureBaseName, out ownerId, out textureName))
+                return false;
+
+            try
+            {
+                lock (CacheLock)
+                {
+                    var index = LoadCacheIndex();
+                    if (index == null || index.Entries == null)
+                        return false;
+
+                    var removed = false;
+                    for (var i = index.Entries.Count - 1; i >= 0; i--)
+                    {
+                        var entry = index.Entries[i];
+                        if (entry == null ||
+                            entry.OwnerId != ownerId ||
+                            !string.Equals(entry.TextureName, textureName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            continue;
+                        }
+
+                        index.Entries.RemoveAt(i);
+                        removed = true;
+                    }
+
+                    if (removed)
+                        SaveCacheIndex(index);
+
+                    return removed;
+                }
+            }
+            catch (Exception e)
+            {
+                ErrorHandlerHelper.LogError(e, typeof(TextureTransferHelper));
+                return false;
+            }
         }
 
         static bool TryWriteLocalTextureMetadata(string textureBaseName, TextureMetadata metadata)
@@ -1001,6 +1136,25 @@ namespace LcdMod.Common.Helpers
 
                     if (changed)
                         SaveCacheIndex(mergedIndex);
+
+                    byte[] zippedIndexBytes;
+                    if (TryReadCachedArchiveEntry(CACHED_TEXTURES_FILE, out zippedIndexBytes) &&
+                        zippedIndexBytes != null &&
+                        zippedIndexBytes.Length > 0)
+                    {
+                        TryDeleteLocalStorageFile(CACHED_TEXTURES_FILE);
+
+                        for (var i = 0; i < mergedIndex.Entries.Count; i++)
+                        {
+                            var entry = mergedIndex.Entries[i];
+                            if (entry == null)
+                                continue;
+
+                            TryDeleteLocalStorageFile(GetTextureMetaFileName(entry.RegistrationName));
+                            TryDeleteLocalStorageFile(
+                                GetTextureMetaFileName(Path.GetFileNameWithoutExtension(entry.FileName)));
+                        }
+                    }
                 }
                 catch (Exception e)
                 {
@@ -1098,8 +1252,9 @@ namespace LcdMod.Common.Helpers
                     cachedMetadata.Height = height;
                 cachedMetadata.LastUpdatedUtcTicks = DateTime.UtcNow.Ticks;
 
-                TryWriteTextureMetadata(registrationName, cachedMetadata);
                 RegisterCachedTexture(ownerId, normalizedTextureName, bytes.Length, fileName, cachedMetadata);
+                TryDeleteLocalStorageFile(GetTextureMetaFileName(registrationName));
+                TryDeleteLocalStorageFile(GetTextureMetaFileName(Path.GetFileNameWithoutExtension(fileName)));
             }
             else
             {
@@ -1126,12 +1281,13 @@ namespace LcdMod.Common.Helpers
             if (!TryReadTextureBytes(ownerId, normalizedTextureName, out bytes, out fileName))
                 return false;
 
+            TextureMetadata metadata = null;
             int width;
             int height;
             if (TryGetDdsDimensions(bytes, out width, out height))
             {
                 var registrationName = BuildTextureKey(ownerId, normalizedTextureName);
-                TryWriteTextureMetadata(registrationName, new TextureMetadata
+                metadata = new TextureMetadata
                 {
                     OwnerSteamId = ownerId,
                     OwnerName = string.Empty,
@@ -1141,10 +1297,12 @@ namespace LcdMod.Common.Helpers
                     Width = width,
                     Height = height,
                     LastUpdatedUtcTicks = DateTime.UtcNow.Ticks
-                });
+                };
             }
 
-            RegisterCachedTexture(ownerId, normalizedTextureName, bytes.Length, fileName);
+            RegisterCachedTexture(ownerId, normalizedTextureName, bytes.Length, fileName, metadata);
+            TryDeleteLocalStorageFile(GetTextureMetaFileName(BuildTextureKey(ownerId, normalizedTextureName)));
+            TryDeleteLocalStorageFile(GetTextureMetaFileName(Path.GetFileNameWithoutExtension(fileName)));
             return true;
         }
 
@@ -1319,14 +1477,28 @@ namespace LcdMod.Common.Helpers
                 }
 
                 existing.OwnerId = ownerId;
-                existing.OwnerName = metadata != null ? NormalizeOwnerName(metadata.OwnerName) : string.Empty;
-                existing.RegistrationName = BuildTextureKey(ownerId, normalizedTextureName);
+                if (metadata != null)
+                    existing.OwnerName = NormalizeOwnerName(metadata.OwnerName);
+                else if (existing.OwnerName == null)
+                    existing.OwnerName = string.Empty;
+
+                existing.RegistrationName = metadata != null &&
+                                            !string.IsNullOrWhiteSpace(metadata.RegistrationName)
+                    ? NormalizeTextureName(metadata.RegistrationName)
+                    : BuildTextureKey(ownerId, normalizedTextureName);
                 existing.TextureName = normalizedTextureName;
                 existing.FileName = fileName;
-                existing.SizeBytes = byteCount;
-                existing.Width = metadata?.Width ?? 0;
-                existing.Height = metadata?.Height ?? 0;
-                existing.LastUpdatedUtcTicks = DateTime.UtcNow.Ticks;
+
+                if (byteCount > 0 || existing.SizeBytes <= 0)
+                    existing.SizeBytes = byteCount;
+                if (metadata != null && metadata.Width > 0)
+                    existing.Width = metadata.Width;
+                if (metadata != null && metadata.Height > 0)
+                    existing.Height = metadata.Height;
+
+                existing.LastUpdatedUtcTicks = metadata != null && metadata.LastUpdatedUtcTicks > 0
+                    ? metadata.LastUpdatedUtcTicks
+                    : DateTime.UtcNow.Ticks;
 
                 SaveCacheIndex(index);
             }
@@ -1351,6 +1523,98 @@ namespace LcdMod.Common.Helpers
             var entryName = NormalizeTextureArchiveEntryName(fileName);
             return !string.IsNullOrEmpty(entryName) &&
                    TextureArchiveEntryExists(LOCAL_TEXTURES, entryName);
+        }
+
+        public static List<string> GetLocalTextureRegistrationNames()
+        {
+            try
+            {
+                lock (CacheLock)
+                {
+                    var archiveEntries = ReadTextureArchiveEntries(LOCAL_TEXTURES);
+                    if (archiveEntries == null || archiveEntries.Count == 0)
+                        return new List<string>();
+
+                    var metadataIndex = ReadLocalTextureMetadataIndex(archiveEntries);
+                    var registrationNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                    for (var i = 0; i < archiveEntries.Count; i++)
+                    {
+                        var entry = archiveEntries[i];
+                        if (entry == null || !IsReadableDdsTexturePayload(entry.Data))
+                            continue;
+
+                        var entryName = NormalizeTextureArchiveEntryName(entry.Name);
+                        if (string.IsNullOrEmpty(entryName))
+                            continue;
+
+                        var metadata = FindLocalTextureMetadataForEntry(metadataIndex, entryName);
+                        var registrationName = GetLocalTextureRegistrationName(metadata, entryName);
+                        if (!string.IsNullOrEmpty(registrationName))
+                            registrationNames.Add(registrationName);
+                    }
+
+                    return registrationNames.ToList();
+                }
+            }
+            catch (Exception e)
+            {
+                ErrorHandlerHelper.LogError(e, typeof(TextureTransferHelper));
+                return new List<string>();
+            }
+        }
+
+        static TextureMetadata FindLocalTextureMetadataForEntry(
+            LocalTextureMetadataIndex metadataIndex,
+            string entryName)
+        {
+            if (metadataIndex == null || metadataIndex.Entries == null || string.IsNullOrEmpty(entryName))
+                return null;
+
+            for (var i = 0; i < metadataIndex.Entries.Count; i++)
+            {
+                var metadata = metadataIndex.Entries[i];
+                if (metadata == null)
+                    continue;
+
+                if (string.Equals(
+                        NormalizeTextureArchiveEntryName(metadata.SourceFileName),
+                        entryName,
+                        StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(
+                        NormalizeTextureArchiveEntryName(metadata.TextureName),
+                        entryName,
+                        StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(
+                        NormalizeTextureArchiveEntryName(metadata.RegistrationName),
+                        entryName,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    return metadata;
+                }
+            }
+
+            return null;
+        }
+
+        static string GetLocalTextureRegistrationName(TextureMetadata metadata, string entryName)
+        {
+            if (metadata != null)
+            {
+                var registrationName = NormalizeTextureName(metadata.RegistrationName);
+                if (!string.IsNullOrEmpty(registrationName))
+                    return registrationName;
+
+                var textureName = NormalizeTextureName(metadata.TextureName);
+                if (!string.IsNullOrEmpty(textureName))
+                {
+                    return metadata.OwnerSteamId == 0
+                        ? textureName
+                        : BuildTextureKey(metadata.OwnerSteamId, textureName);
+                }
+            }
+
+            return NormalizeTextureName(entryName);
         }
 
         public static bool TryGetCachedTexturePath(string fileName, out string path)

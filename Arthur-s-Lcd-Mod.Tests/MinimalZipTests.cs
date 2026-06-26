@@ -97,6 +97,31 @@ public sealed class MinimalZipTests
     }
 
     [Fact]
+    public void AddEntry_PreservesExistingEntryCreationTimeWhenRewritingArchive()
+    {
+        var creationTime = new DateTime(2021, 4, 5, 6, 7, 8, DateTimeKind.Local);
+        using var archive = new MemoryStream();
+
+        MinimalZip.Write(archive, new[]
+        {
+            new MinimalZip.Entry(
+                "existing.txt",
+                Encoding.UTF8.GetBytes("keep me"),
+                creationTime)
+        });
+
+        using (var writer = new BinaryWriter(archive, Encoding.UTF8, leaveOpen: true))
+        {
+            MinimalZip.AddEntry(
+                writer,
+                "hello.txt",
+                Encoding.UTF8.GetBytes(HelloWorld));
+        }
+
+        Assert.Equal(creationTime, ReadCreationTimeWithSharpZipLib(archive, "existing.txt"));
+    }
+
+    [Fact]
     public void RemoveEntry_RemovesTextFileFromExistingArchive()
     {
         using var archive = CreateArchive(
@@ -182,5 +207,15 @@ public sealed class MinimalZipTests
         }
 
         return entries;
+    }
+
+    static DateTime ReadCreationTimeWithSharpZipLib(MemoryStream archive, string name)
+    {
+        using var zip = new ZipFile(new MemoryStream(archive.ToArray()));
+        var entry = zip.GetEntry(name);
+
+        Assert.NotNull(entry);
+
+        return entry.DateTime;
     }
 }

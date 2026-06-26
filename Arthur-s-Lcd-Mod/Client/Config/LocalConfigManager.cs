@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Helpers;
 using LcdMod.Common.Helpers;
@@ -21,35 +23,48 @@ namespace LcdMod.Client.Config
 
         public static void Load()
         {
+            var hadLegacyLocalTextures = false;
+
             try
             {
                 if (!MyAPIGateway.Utilities.FileExistsInLocalStorage(Constants.CONFIG_FILE, typeof(LocalConfigManager)))
                 {
                     Config = new LcdModLocalConfig();
-                    return;
                 }
-
-                using (var reader = MyAPIGateway.Utilities.ReadFileInLocalStorage(Constants.CONFIG_FILE, typeof(LocalConfigManager)))
-                    Config = DeserializeConfig(reader.ReadToEnd());
+                else
+                {
+                    using (var reader = MyAPIGateway.Utilities.ReadFileInLocalStorage(Constants.CONFIG_FILE, typeof(LocalConfigManager)))
+                    {
+                        var xml = reader.ReadToEnd();
+                        hadLegacyLocalTextures = ContainsLegacyLocalTextures(xml);
+                        Config = DeserializeConfig(xml);
+                    }
+                }
             }
             catch
             {
                 Config = new LcdModLocalConfig();
             }
 
-            if (Config.LocalTextures == null)
-                Config.LocalTextures = new System.Collections.Generic.HashSet<string>();
+            var legacyLocalTextures = Config.LocalTextures == null
+                ? new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                : new HashSet<string>(Config.LocalTextures, StringComparer.OrdinalIgnoreCase);
 
-            foreach (var localTexture in Config.LocalTextures)
-            {
-                TextureHelper.LocalTexture(localTexture);
-            }
+            // LocalTextures is retained only as a one-time migration input. Runtime state is
+            // rebuilt from local_textures.zip and the property is never serialized again.
+            Config.LocalTextures = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
+            foreach (var localTexture in legacyLocalTextures)
+                TextureHelper.MigrateLegacyLocalTexture(localTexture);
+
+            TextureHelper.LoadLocalTextures();
             TextureHelper.LoadCachedTextures();
 
             TextureHelper.Import();
-            
             TextureHelper.ExportConverter();
+
+            if (hadLegacyLocalTextures)
+                Save();
         }
 
         public static void Save()
@@ -180,6 +195,12 @@ namespace LcdMod.Client.Config
                 "VisibleClip mode " + (VisibleClip ? "enabled." : "disabled."));
         }
 #endif
+        static bool ContainsLegacyLocalTextures(string xml)
+        {
+            return !string.IsNullOrWhiteSpace(xml) &&
+                   xml.IndexOf("<LocalTextures", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
         static LcdModLocalConfig DeserializeConfig(string xml)
         {
             if (string.IsNullOrWhiteSpace(xml))
