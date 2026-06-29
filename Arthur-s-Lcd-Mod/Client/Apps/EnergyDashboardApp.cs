@@ -2,6 +2,7 @@ using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.Config;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
@@ -648,8 +649,14 @@ namespace LcdMod.Client.Apps
         void SetScaleTierIndex(int tier)
         {
             tier = Math.Max(0, Math.Min(tier, SCALE_TIER_COUNT - 1));
+            if (PowerComponent.PowerHistoryTier == tier && PowerComponent.GraphWindowIndex == tier)
+                return;
+
             PowerComponent.PowerHistoryTier = tier;
             PowerComponent.GraphWindowIndex = tier;
+            if (Host.Block != null && Host.ProviderConfig != null)
+                ConfigManager.Sync(Host.Block, Host.ProviderConfig);
+
             Host.RenderSprites();
         }
 
