@@ -31,6 +31,11 @@ namespace LcdMod.Common.Helpers
         public static Guid StorageRemapGuid = new Guid("C08C59FB-B74E-46F6-A477-26909D107E86");
 
         public const ushort PORT = 46541;
+#if EXPERIMENTAL
+        public const long WORKSHOP_ID = 3719322719L;
+#else
+        public const long WORKSHOP_ID = 3730092649L;
+#endif
         public const string GITHUB = "https://github.com/ArthurGamerHD/Arthur-s-Lcd-Mod";
 
         public const string BSOD_TITLE_FALLBACK =

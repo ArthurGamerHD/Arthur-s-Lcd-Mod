@@ -20,6 +20,7 @@ using VRage;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.Utils;
+using ItemsAppBase = LcdMod.Client.Apps.Abstract.ItemsApp;
 using ItemsSurfaceScriptBase = LcdMod.Client.SurfaceScripts.Abstract.ItemsSurfaceScriptBase;
 
 namespace LcdMod.Client
@@ -60,6 +61,7 @@ namespace LcdMod.Client
             LocalConfigManager.Load();
             _session.RegisterModules();
             PowerData = new PowerDataModule();
+            RunNextFrame.Add(TextureHelper.InitializeColorfulIconsApi);
 
             var group = CommandManager.GetOrCreateGroup("/lcdMod", new CmdGroupInitializer(7));
             group.TryAdd("FactionColor", FactionHelper.SetColor);
@@ -111,6 +113,7 @@ namespace LcdMod.Client
             _audioBroadcast.Unload();
 #endif
             LocalConfigManager.Save();
+            TextureHelper.UnloadColorfulIconsApi();
             if (PowerData != null)
                 PowerData.Clear();
             PowerData = null;
@@ -130,6 +133,7 @@ namespace LcdMod.Client
 
             ItemsSurfaceScriptBase.SpriteCache?.Clear();
             ItemsSurfaceScriptBase.SpriteCache = null;
+            ItemsAppBase.SpriteCache?.Clear();
             LcdModSessionComponent.ClearClientEvents();
 
             ListBoxItemHelper.PerTypeCache.Clear();

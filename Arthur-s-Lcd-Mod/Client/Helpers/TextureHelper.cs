@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using LcdMod.Client.Config;
+using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Common.Helpers;
 using LcdMod.Common.Networking;
 using LcdMod.Common.Zip;
@@ -12,6 +14,8 @@ using VRage.Game;
 using VRage.ObjectBuilders;
 using VRage.Utils;
 using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
+using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
+using ItemsAppBase = LcdMod.Client.Apps.Abstract.ItemsApp;
 
 namespace LcdMod.Client.Helpers
 {
@@ -32,6 +36,8 @@ namespace LcdMod.Client.Helpers
 
         static readonly HashSet<string> DeferredLocalTextureRegistrations =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        const long COLORFUL_ICONS_REPLY_CHANNEL = (Constants.WORKSHOP_ID << 8) | 1L;
+        static ColorfulIconsApiClient _colorfulIcons;
 
         sealed class TextureImportCandidate
         {
@@ -40,6 +46,88 @@ namespace LcdMod.Client.Helpers
             public string RegistrationName;
             public byte[] TextureBytes;
             public TextureTransferHelper.TextureMetadata Metadata;
+        }
+
+        public static event Action ColorfulIconsConfigChanged;
+        public static event Action TextureIconCacheChanged;
+
+        public static void InitializeColorfulIconsApi()
+        {
+            if (_colorfulIcons != null)
+                return;
+
+            LogHelper.Log(MyLogSeverity.Info,"initializing Colorful Icons Api");
+            _colorfulIcons = new ColorfulIconsApiClient(COLORFUL_ICONS_REPLY_CHANNEL);
+            _colorfulIcons.Initialized += OnColorfulIconsInitialized;
+            _colorfulIcons.ConfigChanged += OnColorfulIconsConfigChanged;
+            _colorfulIcons.Init();
+            if (!_colorfulIcons.IsReady)
+                LogHelper.Log(MyLogSeverity.Warning, "Colorful Icons API is not ready");
+        }
+
+        public static void UnloadColorfulIconsApi()
+        {
+            if (_colorfulIcons == null)
+                return;
+
+            _colorfulIcons.Initialized -= OnColorfulIconsInitialized;
+            _colorfulIcons.ConfigChanged -= OnColorfulIconsConfigChanged;
+            _colorfulIcons.Close();
+            _colorfulIcons = null;
+        }
+
+        static void OnColorfulIconsInitialized(ColorfulIconsApiClient client)
+        {
+            LogHelper.Log(MyLogSeverity.Info,"Colorful Icons Api initialized");
+            ClearBlockIconCache();
+            RaiseColorfulIconsConfigChanged();
+        }
+
+        static void OnColorfulIconsConfigChanged(ColorfulIconsConfig config)
+        {
+            
+            {
+                if (ItemsSurfaceScriptBase.SpriteCache != null)
+                    ItemsSurfaceScriptBase.SpriteCache.Clear();
+                if (ItemsAppBase.SpriteCache != null)
+                    ItemsAppBase.SpriteCache.Clear();
+
+                foreach (var surface in SurfaceScriptBase.Instances.ToList())
+                {
+                    if (surface != null)
+                        surface.RequestRedraw();
+                }
+            }
+            
+            LogHelper.Log(MyLogSeverity.Info,"Colorful Icons request texture redraw");
+            ClearBlockIconCache();
+            RaiseColorfulIconsConfigChanged();
+        }
+
+        static void RaiseColorfulIconsConfigChanged()
+        {
+            var cacheHandler = TextureIconCacheChanged;
+            if (cacheHandler != null)
+                cacheHandler();
+
+            var handler = ColorfulIconsConfigChanged;
+            if (handler != null)
+                handler();
+        }
+
+        public static void ClearBlockIconCache()
+        {
+            if (HashSet.Count == 0)
+                return;
+
+            var registeredDefinitions = new List<MyCubeBlockDefinition>(HashSet);
+            HashSet.Clear();
+            for (var i = 0; i < registeredDefinitions.Count; i++)
+            {
+                var definition = registeredDefinitions[i];
+                if (definition != null)
+                    GetOrAddTextureForBlock(definition);
+            }
         }
 
         public static void PreloadAllTextures()
@@ -274,6 +362,17 @@ namespace LcdMod.Client.Helpers
             return false;
         }
 
+        public static string ResolveItemSprite(MyItemType itemType, IMyTextSurface surface)
+        {
+            var definition = MyDefinitionManager.Static != null
+                ? MyDefinitionManager.Static.TryGetPhysicalItemDefinition(itemType)
+                : null;
+            if (definition != null)
+                return ResolveItemSprite(definition, surface);
+
+            return ResolveItemSprite(itemType.ToString(), surface, null);
+        }
+
         static void SplitDefinitionName(string definitionName, out string typeId, out string subtypeId)
         {
             typeId = definitionName ?? string.Empty;
@@ -306,34 +405,95 @@ namespace LcdMod.Client.Helpers
             if (definition == null)
                 return string.Empty;
 
+            return ResolveItemSprite(definition.Id.ToString(), surface, definition);
+        }
+
+        static string ResolveItemSprite(string itemId, IMyTextSurface surface, MyPhysicalItemDefinition definition)
+        {
             var spriteNames = new List<string>();
             if (surface != null)
                 surface.GetSprites(spriteNames);
 
-            var itemId = definition.Id.ToString();
-            var colorfulIcon = GetColorfulItemIconName(itemId);
-            if (!string.IsNullOrEmpty(colorfulIcon) && spriteNames.Contains(colorfulIcon))
+            string colorfulIcon;
+            if (TryGetColorfulItemIconName(itemId, definition, out colorfulIcon) &&
+                spriteNames.Contains(colorfulIcon))
+            {
                 return colorfulIcon;
+            }
 
             if (spriteNames.Contains(itemId))
                 return itemId;
 
-            if (definition.Icons != null && definition.Icons.Length > 0 && !string.IsNullOrEmpty(definition.Icons[0]))
+            if (definition != null && definition.Icons != null && definition.Icons.Length > 0 &&
+                !string.IsNullOrEmpty(definition.Icons[0]))
+            {
                 return definition.Icons[0];
+            }
 
             return itemId;
         }
 
-        static string GetColorfulItemIconName(string itemId)
+        static bool TryGetColorfulItemIconName(
+            string itemId,
+            MyPhysicalItemDefinition definition,
+            out string iconName)
         {
+            iconName = string.Empty;
             if (string.IsNullOrEmpty(itemId))
-                return string.Empty;
+                return false;
+
+            if (!IsColorfulItemCategoryEnabled(itemId, definition))
+                return false;
 
             const string prefix = "MyObjectBuilder_";
             if (!itemId.StartsWith(prefix, StringComparison.Ordinal))
+                return false;
+
+            iconName = "ColorfulIcons_" + itemId.Substring(prefix.Length);
+            return true;
+        }
+
+        static bool IsColorfulItemCategoryEnabled(string itemId, MyPhysicalItemDefinition definition)
+        {
+            var client = _colorfulIcons;
+            if (client == null || !client.IsReady)
+                return false;
+
+            var config = client.Config ?? client.GetConfig();
+            if (config == null)
+                return false;
+
+            var typeName = GetDefinitionTypeName(itemId);
+            if (string.Equals(typeName, "Ore", StringComparison.Ordinal))
+                return config.Ores;
+            if (string.Equals(typeName, "Ingot", StringComparison.Ordinal))
+                return config.Ingots;
+            if (string.Equals(typeName, "Component", StringComparison.Ordinal))
+                return config.Components || config.OldComponents;
+            if (string.Equals(typeName, "PhysicalGunObject", StringComparison.Ordinal) ||
+                definition is MyToolItemDefinition ||
+                definition is MyWeaponItemDefinition)
+            {
+                return config.Tools;
+            }
+
+            return config.ForceOverride;
+        }
+
+        static string GetDefinitionTypeName(string definitionId)
+        {
+            if (string.IsNullOrEmpty(definitionId))
                 return string.Empty;
 
-            return "ColorfulIcons_" + itemId.Substring(prefix.Length);
+            var typeName = definitionId;
+            var slash = typeName.IndexOf('/');
+            if (slash >= 0)
+                typeName = typeName.Substring(0, slash);
+
+            const string prefix = "MyObjectBuilder_";
+            return typeName.StartsWith(prefix, StringComparison.Ordinal)
+                ? typeName.Substring(prefix.Length)
+                : typeName;
         }
 
         static string MakeSafeTextureSubtype(string value)

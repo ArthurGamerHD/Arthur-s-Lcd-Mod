@@ -361,17 +361,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
             if (!SpriteCache.TryGetValue(item.Key, out sprite))
             {
-                var reference = new List<string>();
-                var color = "ColorfulIcons_" + item.Key.ToString().Substring(16);
-                const string notFound = "Textures\\FactionLogo\\Unknown.dds";
-
-                Surface.GetSprites(reference);
-                if (reference.Contains(color))
-                    sprite = color;
-                else if (reference.Contains(item.Key.ToString()))
-                    sprite = item.Key.ToString();
-                else sprite = notFound;
-
+                sprite = TextureHelper.ResolveItemSprite(item.Key, Surface);
                 AddToSpriteCache(item.Key, sprite);
             }
 
@@ -460,17 +450,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
             if (!SpriteCache.TryGetValue(item.Key, out sprite))
             {
-                var reference = new List<string>();
-                var color = "ColorfulIcons_" + item.Key.ToString().Substring(16);
-                const string notFound = "Textures\\FactionLogo\\Unknown.dds";
-
-                Surface.GetSprites(reference);
-                if (reference.Contains(color))
-                    sprite = color;
-                else if (reference.Contains(item.Key.ToString()))
-                    sprite = item.Key.ToString();
-                else sprite = notFound;
-
+                sprite = TextureHelper.ResolveItemSprite(item.Key, Surface);
                 AddToSpriteCache(item.Key, sprite);
             }
 

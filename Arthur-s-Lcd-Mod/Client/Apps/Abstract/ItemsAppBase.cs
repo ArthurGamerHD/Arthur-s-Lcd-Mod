@@ -144,12 +144,37 @@ namespace LcdMod.Client.Apps.Abstract
 
         protected ItemsApp(IAppHost host) : base(host)
         {
+            TextureHelper.TextureIconCacheChanged += OnTextureIconCacheChanged;
             _scrollPanel = AddChild(new ScrollPanel(CursorType.Default, this));
             _scrollPanel.ScrollChanged = OnScrollPanelChanged;
             _scrollPanel.SetVisible(false);
             _listPanel = new VisualStackPanel();
             _gridPanel = new VisualWrapPanel();
             _gridPanel.CustomRender = RenderGridPanelContent;
+        }
+
+        public override void Close()
+        {
+            TextureHelper.TextureIconCacheChanged -= OnTextureIconCacheChanged;
+            base.Close();
+        }
+
+        void OnTextureIconCacheChanged()
+        {
+            if (SpriteCache != null)
+                SpriteCache.Clear();
+
+            _viewModelLayoutVersion++;
+            foreach (var model in _models.Values)
+            {
+                if (model == null)
+                    continue;
+
+                model.Icon = ResolveSprite(model.ItemType);
+                model.LayoutVersion = _viewModelLayoutVersion;
+            }
+
+            Host.RenderSprites();
         }
 
 
