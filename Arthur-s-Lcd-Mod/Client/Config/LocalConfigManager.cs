@@ -13,6 +13,7 @@ namespace LcdMod.Client.Config
 
         public static bool AdvancedTweakables => Config != null && Config.AdvancedTweekables;
         public static bool RenderOtherUserTextures => Config == null || Config.RenderOtherUserTextures;
+        public static bool UseLegacyLocalTextureStorage => Config != null && Config.UseLegacyLocalTextureStorage;
         
 #if DEBUG
         public static bool DebugInteractive => Config != null && Config.DebugInteractive;
@@ -50,20 +51,31 @@ namespace LcdMod.Client.Config
                 ? new HashSet<string>(StringComparer.OrdinalIgnoreCase)
                 : new HashSet<string>(Config.LocalTextures, StringComparer.OrdinalIgnoreCase);
 
-            // LocalTextures is retained only as a one-time migration input. Runtime state is
-            // rebuilt from local_textures.zip and the property is never serialized again.
-            Config.LocalTextures = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            TextureTransferHelper.UseLegacyLocalTextureStorage = UseLegacyLocalTextureStorage;
 
-            foreach (var localTexture in legacyLocalTextures)
-                TextureHelper.MigrateLegacyLocalTexture(localTexture);
+            if (UseLegacyLocalTextureStorage)
+            {
+                Config.LocalTextures = legacyLocalTextures;
+                TextureHelper.LoadLegacyLocalTextures();
+            }
+            else
+            {
+                // LocalTextures is retained only as a one-time migration input in ZIP mode.
+                // Runtime state is rebuilt from local_textures.zip and the property is not serialized.
+                Config.LocalTextures = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            TextureHelper.LoadLocalTextures();
+                foreach (var localTexture in legacyLocalTextures)
+                    TextureHelper.MigrateLegacyLocalTexture(localTexture);
+
+                TextureHelper.LoadLocalTextures();
+            }
+
             TextureHelper.LoadCachedTextures();
 
             TextureHelper.Import();
             TextureHelper.ExportConverter();
 
-            if (hadLegacyLocalTextures)
+            if (hadLegacyLocalTextures && !UseLegacyLocalTextureStorage)
                 Save();
         }
 
@@ -112,6 +124,45 @@ namespace LcdMod.Client.Config
             MyAPIGateway.Utilities.ShowMessage(
                 "lcdMod",
                 "Rendering textures owned by other users " + (RenderOtherUserTextures ? "enabled." : "disabled."));
+        }
+
+        public static void SetLegacyLocalTextureStorageCommand(string[] args)
+        {
+            bool enabled;
+            if (!TryParseOptionalBoolean(args, UseLegacyLocalTextureStorage, out enabled))
+            {
+                MyAPIGateway.Utilities.ShowMessage("lcdMod", "Usage: /lcdmod legacylocaltexturestorage [true|false]");
+                return;
+            }
+
+            if (Config == null)
+                Config = new LcdModLocalConfig();
+
+            if (Config.LocalTextures == null)
+                Config.LocalTextures = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            Config.UseLegacyLocalTextureStorage = enabled;
+            TextureTransferHelper.UseLegacyLocalTextureStorage = enabled;
+
+            if (enabled)
+            {
+                TextureHelper.EnableLegacyLocalTextureStorage();
+            }
+            else
+            {
+                var legacyLocalTextures = new HashSet<string>(Config.LocalTextures, StringComparer.OrdinalIgnoreCase);
+                Config.LocalTextures = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                foreach (var localTexture in legacyLocalTextures)
+                    TextureHelper.MigrateLegacyLocalTexture(localTexture);
+            }
+
+            Save();
+
+            MyAPIGateway.Utilities.ShowMessage(
+                "lcdMod",
+                "Legacy local texture storage " + (UseLegacyLocalTextureStorage ? "enabled." : "disabled.") +
+                ". Restart the game if already loaded local textures do not refresh.");
         }
 
 #if DEBUG

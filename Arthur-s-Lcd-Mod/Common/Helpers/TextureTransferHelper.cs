@@ -15,6 +15,8 @@ namespace LcdMod.Common.Helpers
         static readonly Dictionary<string, List<MinimalZip.Entry>> TextureArchiveEntryCache =
             new Dictionary<string, List<MinimalZip.Entry>>(StringComparer.OrdinalIgnoreCase);
 
+        public static bool UseLegacyLocalTextureStorage { get; set; }
+
         public static string NormalizeTextureName(string textureName)
         {
             if (string.IsNullOrWhiteSpace(textureName))
@@ -535,6 +537,9 @@ namespace LcdMod.Common.Helpers
 
         static bool ShouldStoreMetadataInLocalArchive(string textureBaseName, TextureMetadata metadata)
         {
+            if (UseLegacyLocalTextureStorage)
+                return false;
+
             if (metadata == null)
                 return false;
 
@@ -692,6 +697,9 @@ namespace LcdMod.Common.Helpers
 
             try
             {
+                if (UseLegacyLocalTextureStorage)
+                    return false;
+
                 var key = NormalizeTextureName(textureBaseName);
                 if (string.IsNullOrEmpty(key))
                     return false;
@@ -981,6 +989,9 @@ namespace LcdMod.Common.Helpers
                 if (string.IsNullOrWhiteSpace(fileName) || !IsReadableDdsTexturePayload(bytes))
                     return false;
 
+                if (UseLegacyLocalTextureStorage)
+                    return TryWriteLooseLocalTextureFile(fileName, bytes);
+
                 var entryName = NormalizeTextureArchiveEntryName(fileName);
                 if (string.IsNullOrEmpty(entryName))
                     return false;
@@ -1043,6 +1054,9 @@ namespace LcdMod.Common.Helpers
                 if (pendingEntries.Count == 0 && pendingMetadata.Count == 0)
                     return true;
 
+                if (UseLegacyLocalTextureStorage)
+                    return TryWriteLooseLocalTextureFilesWithMetadata(pendingEntries, pendingMetadata);
+
                 lock (CacheLock)
                 {
                     var entries = ReadTextureArchiveEntries(LOCAL_TEXTURES);
@@ -1085,6 +1099,31 @@ namespace LcdMod.Common.Helpers
                 ErrorHandlerHelper.LogError(e, typeof(TextureTransferHelper));
                 return false;
             }
+        }
+
+        static bool TryWriteLooseLocalTextureFilesWithMetadata(
+            List<MinimalZip.Entry> textureEntries,
+            List<TextureMetadata> metadataEntries)
+        {
+            lock (CacheLock)
+            {
+                for (var i = 0; i < textureEntries.Count; i++)
+                {
+                    var entry = textureEntries[i];
+                    if (entry == null || !TryWriteLooseLocalTextureFile(entry.Name, entry.Data))
+                        return false;
+                }
+
+                for (var i = 0; i < metadataEntries.Count; i++)
+                {
+                    var metadata = metadataEntries[i];
+                    var key = GetTextureMetadataKey(metadata);
+                    if (string.IsNullOrEmpty(key) || !TryWriteLegacyTextureMetadata(key, metadata))
+                        return false;
+                }
+            }
+
+            return true;
         }
 
         public static void MigrateCachedTextureStorageToZip()
@@ -1169,6 +1208,9 @@ namespace LcdMod.Common.Helpers
             {
                 if (string.IsNullOrWhiteSpace(fileName))
                     return false;
+
+                if (UseLegacyLocalTextureStorage)
+                    return LooseLocalTextureFileExists(fileName);
 
                 if (LocalTextureFileExists(fileName))
                     return true;
@@ -1525,6 +1567,13 @@ namespace LcdMod.Common.Helpers
                    TextureArchiveEntryExists(LOCAL_TEXTURES, entryName);
         }
 
+        static bool LooseLocalTextureFileExists(string fileName)
+        {
+            var entryName = NormalizeTextureArchiveEntryName(fileName);
+            return !string.IsNullOrEmpty(entryName) &&
+                   MyAPIGateway.Utilities.FileExistsInLocalStorage(entryName, typeof(LcdModSessionComponent));
+        }
+
         public static List<string> GetLocalTextureRegistrationNames()
         {
             try
@@ -1561,6 +1610,74 @@ namespace LcdMod.Common.Helpers
             {
                 ErrorHandlerHelper.LogError(e, typeof(TextureTransferHelper));
                 return new List<string>();
+            }
+        }
+
+        public static bool TryExtractLocalTextureArchiveToLooseFiles(out List<string> registrationNames)
+        {
+            registrationNames = new List<string>();
+
+            try
+            {
+                lock (CacheLock)
+                {
+                    var archiveEntries = ReadTextureArchiveEntries(LOCAL_TEXTURES);
+                    if (archiveEntries == null || archiveEntries.Count == 0)
+                        return false;
+
+                    var metadataIndex = ReadLocalTextureMetadataIndex(archiveEntries);
+                    for (var i = 0; i < archiveEntries.Count; i++)
+                    {
+                        var entry = archiveEntries[i];
+                        if (entry == null || !IsReadableDdsTexturePayload(entry.Data))
+                            continue;
+
+                        var entryName = NormalizeTextureArchiveEntryName(entry.Name);
+                        if (string.IsNullOrEmpty(entryName))
+                            continue;
+
+                        if (!TryWriteLooseLocalTextureFile(entryName, entry.Data))
+                            continue;
+
+                        var metadata = FindLocalTextureMetadataForEntry(metadataIndex, entryName);
+                        if (metadata != null)
+                            TryWriteLegacyTextureMetadata(GetTextureMetadataKey(metadata), metadata);
+
+                        var registrationName = GetLocalTextureRegistrationName(metadata, entryName);
+                        if (!string.IsNullOrEmpty(registrationName))
+                            registrationNames.Add(registrationName);
+                    }
+                }
+
+                return registrationNames.Count > 0;
+            }
+            catch (Exception e)
+            {
+                ErrorHandlerHelper.LogError(e, typeof(TextureTransferHelper));
+                registrationNames = new List<string>();
+                return false;
+            }
+        }
+
+        public static bool TryExtractLocalTextureFileToLooseStorage(string fileName)
+        {
+            try
+            {
+                var entryName = NormalizeTextureArchiveEntryName(fileName);
+                if (string.IsNullOrEmpty(entryName))
+                    return false;
+
+                if (LooseLocalTextureFileExists(entryName))
+                    return true;
+
+                byte[] bytes;
+                return TryReadLocalTextureFile(entryName, out bytes) &&
+                       TryWriteLooseLocalTextureFile(entryName, bytes);
+            }
+            catch (Exception e)
+            {
+                ErrorHandlerHelper.LogError(e, typeof(TextureTransferHelper));
+                return false;
             }
         }
 
@@ -1642,6 +1759,9 @@ namespace LcdMod.Common.Helpers
         {
             path = string.Empty;
 
+            if (UseLegacyLocalTextureStorage)
+                return false;
+
             if (!LocalTextureFileExists(fileName))
                 return false;
 
@@ -1669,6 +1789,9 @@ namespace LcdMod.Common.Helpers
 
         static bool TryReadCachedOrLocalTextureFileRaw(string fileName, out byte[] bytes)
         {
+            if (UseLegacyLocalTextureStorage && TryReadBinaryFileRaw(fileName, out bytes))
+                return true;
+
             if (TryReadLocalTextureFile(fileName, out bytes))
                 return true;
 
@@ -1676,6 +1799,29 @@ namespace LcdMod.Common.Helpers
                 return true;
 
             return TryReadBinaryFileRaw(fileName, out bytes);
+        }
+
+        static bool TryWriteLooseLocalTextureFile(string fileName, byte[] bytes)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(fileName) || !IsReadableDdsTexturePayload(bytes))
+                    return false;
+
+                var entryName = NormalizeTextureArchiveEntryName(fileName);
+                if (string.IsNullOrEmpty(entryName))
+                    return false;
+
+                using (var writer = MyAPIGateway.Utilities.WriteBinaryFileInLocalStorage(entryName, typeof(LcdModSessionComponent)))
+                    writer.Write(bytes);
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                ErrorHandlerHelper.LogError(e, typeof(TextureTransferHelper));
+                return false;
+            }
         }
 
         static bool TryReadCachedTextureFile(string fileName, out byte[] bytes)

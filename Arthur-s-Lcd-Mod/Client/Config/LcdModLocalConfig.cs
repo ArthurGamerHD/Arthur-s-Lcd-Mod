@@ -6,7 +6,7 @@ namespace LcdMod.Client.Config
     {
         public LcdModLocalConfig()
         {
-            LocalTextures = new HashSet<string>();
+            LocalTextures = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
             RenderOtherUserTextures = true;
         }
 
@@ -16,14 +16,14 @@ namespace LcdMod.Client.Config
         public bool DebugSurface { get; set; }
         public bool SpriteCountDebug { get; set; }
         public bool VisibleClip { get; set; }
+        public bool UseLegacyLocalTextureStorage { get; set; }
 
-        // Legacy migration input only. Local textures are now discovered from local_textures.zip.
-        // Keep this property deserializable so existing configs can be migrated, but never write it again.
+        // Legacy migration input for ZIP mode, and active runtime state when legacy storage is enabled.
         public HashSet<string> LocalTextures { get; set; }
 
         public bool ShouldSerializeLocalTextures()
         {
-            return false;
+            return UseLegacyLocalTextureStorage && LocalTextures != null && LocalTextures.Count > 0;
         }
     }
 }

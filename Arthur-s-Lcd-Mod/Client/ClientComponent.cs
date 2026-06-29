@@ -65,6 +65,7 @@ namespace LcdMod.Client
             group.TryAdd("FactionColor", FactionHelper.SetColor);
             group.TryAdd("Advanced", LocalConfigManager.SetAdvancedTweakablesCommand, 1);
             group.TryAdd("RenderUserGeneratedTextures", LocalConfigManager.RenderUserGeneratedTextures);
+            group.TryAdd("LegacyLocalTextureStorage", LocalConfigManager.SetLegacyLocalTextureStorageCommand);
             group.TryAdd("PreloadTextures", _ => TextureHelper.PreloadAllTextures());
             group.TryAdd("ClearCache", TextureHelper.ClearCacheCommand);
             group.TryAdd("ImportTextures", _ => TextureHelper.Import(true));
