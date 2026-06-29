@@ -67,6 +67,12 @@ namespace LcdMod.Client.Apps
         bool _sortDescending;
         string _searchQuery = string.Empty;
         NpcMarketAggregationResult _aggregation = new NpcMarketAggregationResult();
+        bool _aggregationDirty = true;
+        bool _rowsDirty = true;
+        bool _hasMaxDistance;
+        double _lastMaxDistanceMeters;
+        int _rowsRevision;
+        Guid _lastTextureIconCacheRevision;
 
         NpcMarketClientCacheKey CacheKey =>
             new NpcMarketClientCacheKey(
@@ -150,11 +156,13 @@ namespace LcdMod.Client.Apps
             _footerGrid.Set(_refreshButton, 3, 1);
             EnsureSortHeaderButtons();
             NpcMarketClientCache.Updated += HandleUpdated;
+            TextureHelper.TextureIconCacheChanged += HandleTextureIconCacheChanged;
         }
 
         public override void Close()
         {
             NpcMarketClientCache.Updated -= HandleUpdated;
+            TextureHelper.TextureIconCacheChanged -= HandleTextureIconCacheChanged;
         }
 
         public override void Update()
@@ -163,18 +171,26 @@ namespace LcdMod.Client.Apps
             if (IsLocallyAccessDenied())
             {
                 NpcMarketClientCache.MarkAccessDenied(key);
-                RefreshRows();
+                ApplyPendingRowChanges();
                 return;
+            }
+
+            var maxDistanceMeters = GetMaxDistanceMeters();
+            if (!_hasMaxDistance || !AreEqualDistance(_lastMaxDistanceMeters, maxDistanceMeters))
+            {
+                _hasMaxDistance = true;
+                _lastMaxDistanceMeters = maxDistanceMeters;
+                MarkAggregationDirty();
             }
 
             NpcMarketClientCache.EnsureRequested(key);
             NpcMarketClientCache.Update(key);
-            RefreshRows();
+            ApplyPendingRowChanges();
         }
 
         public override void LayoutChanged()
         {
-            RefreshRows();
+            // Layout changes do not change market data or row membership.
         }
 
         public override List<MySprite> GetSprites()
@@ -281,20 +297,62 @@ namespace LcdMod.Client.Apps
                    !terminalBlock.HasPlayerAccess(localPlayer.IdentityId);
         }
 
-        void RefreshRows()
+        void MarkAggregationDirty()
         {
-            _rows.Clear();
-            var snapshot = NpcMarketClientCache.GetSnapshot(CacheKey);
-            if (snapshot == null)
-                return;
+            _aggregationDirty = true;
+            _rowsDirty = true;
+        }
 
-            _aggregation = _aggregator.Build(snapshot, Host.Surface, _mode, _sortColumn, _sortDescending,
-                GetMaxDistanceMeters());
-            foreach (var t in _aggregation.Rows)
+        void MarkRowsDirty()
+        {
+            _rowsDirty = true;
+        }
+
+        void ApplyPendingRowChanges()
+        {
+            if (_aggregationDirty)
+                RebuildAggregation();
+
+            if (_rowsDirty)
+                RefreshVisibleRows();
+        }
+
+        void RebuildAggregation()
+        {
+            _aggregationDirty = false;
+            var snapshot = NpcMarketClientCache.GetSnapshot(CacheKey);
+            _aggregation = snapshot == null
+                ? new NpcMarketAggregationResult()
+                : _aggregator.Build(snapshot, Host.Surface, _mode, _sortColumn, _sortDescending,
+                    GetMaxDistanceMeters());
+            _rowsDirty = true;
+        }
+
+        void RefreshVisibleRows()
+        {
+            _rowsDirty = false;
+            _rows.Clear();
+            if (_aggregation == null)
+                _aggregation = new NpcMarketAggregationResult();
+
+            foreach (var row in _aggregation.Rows)
             {
-                if (MatchesSearch(t))
-                    _rows.Add(t);
+                if (MatchesSearch(row))
+                    _rows.Add(row);
             }
+
+            unchecked
+            {
+                _rowsRevision++;
+            }
+        }
+
+        static bool AreEqualDistance(double left, double right)
+        {
+            if (double.IsPositiveInfinity(left) && double.IsPositiveInfinity(right))
+                return true;
+
+            return Math.Abs(left - right) < 0.001d;
         }
 
         internal NpcMarketItemGroup GetItemGroup(string itemKey)
@@ -559,7 +617,7 @@ namespace LcdMod.Client.Apps
                 Host.ViewBox.Width,
                 Math.Max(0f, Host.ViewBox.Bottom - contentTop - Math.Max(0f, footerHeight)));
 
-            _listStripPanel.Rows = _rows;
+            _listStripPanel.SetRows(_rows, _rowsRevision);
             _listStripPanel.Mode = _mode;
             _listStripPanel.SortColumn = _sortColumn;
             _listStripPanel.SortDescending = _sortDescending;
@@ -934,7 +992,8 @@ namespace LcdMod.Client.Apps
             _searchQuery = value ?? string.Empty;
             NpcMarketComponent.SearchQuery = _searchQuery;
             ResetSavedPageIndex();
-            RefreshRows();
+            MarkRowsDirty();
+            ApplyPendingRowChanges();
             Host.RenderSprites();
         }
 
@@ -954,7 +1013,8 @@ namespace LcdMod.Client.Apps
             NpcMarketComponent.SelectedMode = (int)_mode;
             LoadSortStateForMode(_mode);
             ResetSavedPageIndex();
-            RefreshRows();
+            MarkAggregationDirty();
+            ApplyPendingRowChanges();
             Host.RenderSprites();
         }
 
@@ -979,13 +1039,28 @@ namespace LcdMod.Client.Apps
 
             SaveSortStateForMode(_mode);
             ResetSavedPageIndex();
-            RefreshRows();
+            _aggregator.SortRows(_aggregation.Rows, _sortColumn, _sortDescending);
+            MarkRowsDirty();
+            ApplyPendingRowChanges();
             Host.RenderSprites();
         }
 
-        void HandleUpdated()
+        void HandleUpdated(NpcMarketClientCacheKey key, bool rowDataChanged)
         {
-            RefreshRows();
+            if (!key.Equals(CacheKey))
+                return;
+
+            if (rowDataChanged)
+                MarkAggregationDirty();
+
+            ApplyPendingRowChanges();
+            Host.RenderSprites();
+        }
+
+        void HandleTextureIconCacheChanged()
+        {
+            MarkAggregationDirty();
+            ApplyPendingRowChanges();
             Host.RenderSprites();
         }
 

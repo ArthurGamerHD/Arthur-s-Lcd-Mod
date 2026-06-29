@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using LcdMod.Client.Helpers;
 using LcdMod.Common.Market;
@@ -28,6 +29,7 @@ namespace LcdMod.Client.Market
 
             var viewerPosition = GetViewerPosition();
             var includeBoth = mode == NpcMarketMode.Both;
+            var spriteCatalog = TextureHelper.BuildSpriteCatalog(surface);
 
             for (var sellerIndex = 0; sellerIndex < packet.Sellers.Count; sellerIndex++)
             {
@@ -42,8 +44,8 @@ namespace LcdMod.Client.Market
                         continue;
 
                     for (var offerIndex = 0; offerIndex < station.Offers.Count; offerIndex++)
-                        AddOffer(result, seller, station, station.Offers[offerIndex], surface, mode, viewerPosition,
-                            maxDistanceMeters);
+                        AddOffer(result, seller, station, station.Offers[offerIndex], spriteCatalog, mode,
+                            viewerPosition, maxDistanceMeters);
                 }
             }
 
@@ -73,12 +75,20 @@ namespace LcdMod.Client.Market
                 result.Rows.Add(group.Summary);
             }
 
-            result.Rows.Sort(delegate(NpcMarketRow a, NpcMarketRow b)
+            SortRows(result.Rows, sortColumn, sortDescending);
+
+            return result;
+        }
+
+        public void SortRows(List<NpcMarketRow> rows, NpcMarketSortColumn sortColumn, bool sortDescending)
+        {
+            if (rows == null || rows.Count <= 1)
+                return;
+
+            rows.Sort(delegate(NpcMarketRow a, NpcMarketRow b)
             {
                 return CompareRows(a, b, sortColumn, sortDescending);
             });
-
-            return result;
         }
 
         static int CompareRows(NpcMarketRow a, NpcMarketRow b, NpcMarketSortColumn sortColumn, bool descending)
@@ -149,7 +159,7 @@ namespace LcdMod.Client.Market
         }
 
         void AddOffer(NpcMarketAggregationResult result, NpcMarketSellerFactionDto seller, NpcMarketStationDto station,
-            NpcMarketOfferDto offer, IMyTextSurface surface, NpcMarketMode mode, Vector3D viewerPosition,
+            NpcMarketOfferDto offer, ISet<string> spriteCatalog, NpcMarketMode mode, Vector3D viewerPosition,
             double maxDistanceMeters)
         {
             if (offer == null)
@@ -171,7 +181,7 @@ namespace LcdMod.Client.Market
             NpcMarketItemGroup group;
             if (!result.GroupsByItemKey.TryGetValue(key, out group))
             {
-                var presentation = ResolvePresentation(offer, surface);
+                var presentation = ResolvePresentation(offer, spriteCatalog);
                 group = new NpcMarketItemGroup
                 {
                     ItemKey = key,
@@ -387,7 +397,7 @@ namespace LcdMod.Client.Market
             return offer != null && !string.IsNullOrEmpty(offer.TypeId) && !string.IsNullOrEmpty(offer.SubtypeId);
         }
 
-        static NpcMarketPresentation ResolvePresentation(NpcMarketOfferDto offer, IMyTextSurface surface)
+        static NpcMarketPresentation ResolvePresentation(NpcMarketOfferDto offer, ISet<string> spriteCatalog)
         {
             if (offer == null)
                 return new NpcMarketPresentation("Unknown listing", "MissingIcon");
@@ -395,7 +405,7 @@ namespace LcdMod.Client.Market
             switch (offer.ItemType)
             {
                 case ItemTypes.PhysicalItem:
-                    return ResolvePhysicalItem(offer, surface);
+                    return ResolvePhysicalItem(offer, spriteCatalog);
                 case ItemTypes.Grid:
                     return ResolvePrefab(offer);
                 case ItemTypes.Oxygen:
@@ -409,7 +419,7 @@ namespace LcdMod.Client.Market
             }
         }
 
-        static NpcMarketPresentation ResolvePhysicalItem(NpcMarketOfferDto offer, IMyTextSurface surface)
+        static NpcMarketPresentation ResolvePhysicalItem(NpcMarketOfferDto offer, ISet<string> spriteCatalog)
         {
             MyDefinitionId id;
             if (TryGetDefinitionId(offer, out id) && MyDefinitionManager.Static != null)
@@ -418,7 +428,8 @@ namespace LcdMod.Client.Market
                 if (MyDefinitionManager.Static.TryGetPhysicalItemDefinition(id, out def) && def != null)
                 {
                     var display = !string.IsNullOrEmpty(def.DisplayNameText) ? def.DisplayNameText : offer.SubtypeId;
-                    return new NpcMarketPresentation(display, TextureHelper.ResolveItemSprite(def, surface));
+                    return new NpcMarketPresentation(display,
+                        TextureHelper.ResolveItemSpriteFromCatalog(def, spriteCatalog));
                 }
             }
 

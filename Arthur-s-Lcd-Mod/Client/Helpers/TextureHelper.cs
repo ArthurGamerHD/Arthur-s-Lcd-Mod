@@ -362,6 +362,24 @@ namespace LcdMod.Client.Helpers
             return false;
         }
 
+        public static HashSet<string> BuildSpriteCatalog(IMyTextSurface surface)
+        {
+            var catalog = new HashSet<string>(StringComparer.Ordinal);
+            if (surface == null)
+                return catalog;
+
+            var spriteNames = new List<string>();
+            surface.GetSprites(spriteNames);
+            for (var i = 0; i < spriteNames.Count; i++)
+            {
+                var spriteName = spriteNames[i];
+                if (!string.IsNullOrEmpty(spriteName))
+                    catalog.Add(spriteName);
+            }
+
+            return catalog;
+        }
+
         public static string ResolveItemSprite(MyItemType itemType, IMyTextSurface surface)
         {
             var definition = MyDefinitionManager.Static != null
@@ -405,23 +423,34 @@ namespace LcdMod.Client.Helpers
             if (definition == null)
                 return string.Empty;
 
-            return ResolveItemSprite(definition.Id.ToString(), surface, definition);
+            return ResolveItemSprite(definition.Id.ToString(), BuildSpriteCatalog(surface), definition);
+        }
+
+        public static string ResolveItemSpriteFromCatalog(MyPhysicalItemDefinition definition,
+            ISet<string> spriteCatalog)
+        {
+            if (definition == null)
+                return string.Empty;
+
+            return ResolveItemSprite(definition.Id.ToString(), spriteCatalog, definition);
         }
 
         static string ResolveItemSprite(string itemId, IMyTextSurface surface, MyPhysicalItemDefinition definition)
         {
-            var spriteNames = new List<string>();
-            if (surface != null)
-                surface.GetSprites(spriteNames);
+            return ResolveItemSprite(itemId, BuildSpriteCatalog(surface), definition);
+        }
 
+        static string ResolveItemSprite(string itemId, ISet<string> spriteCatalog,
+            MyPhysicalItemDefinition definition)
+        {
             string colorfulIcon;
             if (TryGetColorfulItemIconName(itemId, definition, out colorfulIcon) &&
-                spriteNames.Contains(colorfulIcon))
+                spriteCatalog != null && spriteCatalog.Contains(colorfulIcon))
             {
                 return colorfulIcon;
             }
 
-            if (spriteNames.Contains(itemId))
+            if (spriteCatalog != null && spriteCatalog.Contains(itemId))
                 return itemId;
 
             if (definition != null && definition.Icons != null && definition.Icons.Length > 0 &&

@@ -14,7 +14,7 @@ namespace LcdMod.Client.Market
         static readonly Dictionary<NpcMarketClientCacheKey, NpcMarketClientEntry> Entries =
             new Dictionary<NpcMarketClientCacheKey, NpcMarketClientEntry>();
 
-        public static event Action Updated;
+        public static event Action<NpcMarketClientCacheKey, bool> Updated;
 
         public static void Reset()
         {
@@ -91,7 +91,7 @@ namespace LcdMod.Client.Market
 #endif
             var updated = Updated;
             if (updated != null)
-                updated();
+                updated(key, true);
         }
 
         public static void HandleSync(PacketSyncNpcMarket packet)
@@ -125,6 +125,9 @@ namespace LcdMod.Client.Market
                 return;
             }
 
+            var previousSnapshot = entry.Snapshot;
+            var rowDataChanged = RequiresRowRebuild(previousSnapshot, packet);
+
             entry.Snapshot = packet;
             entry.Waiting = false;
             entry.ActiveRequestId = packet.RequestId;
@@ -138,7 +141,27 @@ namespace LcdMod.Client.Market
 #endif
             var updated = Updated;
             if (updated != null)
-                updated();
+                updated(key, rowDataChanged);
+        }
+
+        static bool RequiresRowRebuild(PacketSyncNpcMarket previous, PacketSyncNpcMarket current)
+        {
+            if (previous == null || current == null)
+                return true;
+
+            if (previous.Version != current.Version)
+                return true;
+
+            var previousScope = previous.Scope;
+            var currentScope = current.Scope;
+            if (previousScope == null || currentScope == null)
+                return previousScope != currentScope;
+
+            return previousScope.Mode != currentScope.Mode ||
+                   previousScope.HostOwnerIdentityId != currentScope.HostOwnerIdentityId ||
+                   previousScope.HostFactionId != currentScope.HostFactionId ||
+                   previousScope.ContributingMemberCount != currentScope.ContributingMemberCount ||
+                   previousScope.KnownStationCount != currentScope.KnownStationCount;
         }
 
         static void SendRequest(NpcMarketClientCacheKey key, bool noCache, uint requestId)

@@ -16,6 +16,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
         readonly PageRepeater<NpcMarketListPageContext, NpcMarketListPanel> _pageRepeater;
         readonly IAppHost _host;
         IList<NpcMarketRow> _rows = new List<NpcMarketRow>();
+        int _rowsRevision = -1;
         float _listWidth;
         int _rowsPerPage = 1;
         Vector2 _lastAvailableSize;
@@ -32,11 +33,18 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
         public IList<NpcMarketRow> Rows
         {
             get { return _rows; }
-            set
-            {
-                _rows = value ?? new List<NpcMarketRow>();
-                InvalidateLayout();
-            }
+            set { SetRows(value, _rowsRevision + 1); }
+        }
+
+        public void SetRows(IList<NpcMarketRow> rows, int revision)
+        {
+            var normalizedRows = rows ?? new List<NpcMarketRow>();
+            if (ReferenceEquals(_rows, normalizedRows) && _rowsRevision == revision)
+                return;
+
+            _rows = normalizedRows;
+            _rowsRevision = revision;
+            InvalidateLayout();
         }
 
         public NpcMarketMode Mode { get; set; }
