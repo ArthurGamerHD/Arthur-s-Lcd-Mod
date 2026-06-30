@@ -73,7 +73,7 @@ namespace LcdMod.Client.Apps
 
         public ButtonPadApp(IAppHost host) : base(host)
         {
-            _scrollPanel = AddChild(new ScrollPanel());
+            _scrollPanel = AddLogicalChild(new ScrollPanel());
             _scrollPanel.ManualScrollInertiaEnabled = false;
             _scrollPanel.ScrollChanged = OnScrollPanelChanged;
             _entryPanel.CreateControl = CreateEntryButton;
@@ -81,7 +81,7 @@ namespace LcdMod.Client.Apps
             LoadButtonPanelSettings();
         }
 
-        public override IReadOnlyList<Control> Children => _children;
+        public override IReadOnlyList<Control> VisualChildren => _children;
 
         float Scale => GeneralComponent.GetScale();
 

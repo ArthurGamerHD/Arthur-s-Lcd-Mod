@@ -103,7 +103,7 @@ namespace LcdMod.Client.SurfaceScripts
 
                 var appInteractive = AppInteractive;
                 if (appInteractive != null)
-                    return appInteractive.Children as List<Control>;
+                    return appInteractive.VisualChildren as List<Control>;
 
                 var game = App as IGame;
                 return game?.Interactive;

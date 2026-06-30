@@ -2,6 +2,7 @@ using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Text;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Farm;
 using LcdMod.Client.GridData;
@@ -43,6 +44,7 @@ namespace LcdMod.Client.Apps
             public string OutputSprite { get; private set; }
             public string OutputName { get; private set; }
             public Color StatusColor { get; private set; }
+            public string DetailsMarkdown { get; private set; } = string.Empty;
 
             public void Update(
                 FarmPlotEntry plot,
@@ -100,6 +102,8 @@ namespace LcdMod.Client.Apps
 
                 if (_details.Count == 0)
                     _details.Add(new StaticTooltipLine(PercentText));
+
+                DetailsMarkdown = BuildDetailsMarkdown();
             }
 
             void AppendDetailedInfoLines(Sandbox.ModAPI.IMyFarmPlotLogic logic)
@@ -125,6 +129,28 @@ namespace LcdMod.Client.Apps
                     ErrorHandlerHelper.LogError(e, typeof(FarmApp));
                 }
             }
+
+            string BuildDetailsMarkdown()
+            {
+                if (_details.Count == 0)
+                    return string.Empty;
+
+                var sb = new StringBuilder();
+                for (int i = 0; i < _details.Count; i++)
+                {
+                    var line = _details[i];
+                    var text = line != null ? line.GetText() : string.Empty;
+                    if (string.IsNullOrEmpty(text))
+                        continue;
+
+                    if (sb.Length > 0)
+                        sb.AppendLine().AppendLine();
+
+                    sb.Append(text);
+                }
+
+                return sb.ToString();
+            }
         }
 
         readonly IAppHost _surfaceHost;
@@ -148,13 +174,13 @@ namespace LcdMod.Client.Apps
             if (_interactiveHost == null)
                 throw new ArgumentException("FarmApp requires an InteractiveSurfaceScript host.", "surfaceHost");
 
-            _scrollPanel = AddChild(new ScrollPanel(CursorType.Default, this));
+            _scrollPanel = AddLogicalChild(new ScrollPanel(CursorType.Default, this));
             _scrollPanel.ScrollChanged = OnScrollPanelChanged;
             _scrollPanel.SetVisible(false);
             _gridPanel = new VisualWrapPanel();
         }
 
-        public override IReadOnlyList<Control> Children => _children;
+        public override IReadOnlyList<Control> VisualChildren => _children;
 
         public override void LayoutChanged()
         {
@@ -405,7 +431,7 @@ namespace LcdMod.Client.Apps
 
         static void RemoveStalePanelChildren(Panel panel, Dictionary<long, bool> desiredIds)
         {
-            var children = panel.Children;
+            var children = panel.VisualChildren;
             if (children == null)
                 return;
 
@@ -425,7 +451,7 @@ namespace LcdMod.Client.Apps
             if (panel == null || desired == null)
                 return;
 
-            var children = panel.Children;
+            var children = panel.VisualChildren;
             bool changed = false;
             for (int i = 0; i < desired.Count; i++)
             {
@@ -436,7 +462,7 @@ namespace LcdMod.Client.Apps
                 if (!ReferenceEquals(child.Parent, panel))
                 {
                     panel.AddChild(child);
-                    children = panel.Children;
+                    children = panel.VisualChildren;
                     changed = true;
                 }
 
@@ -476,6 +502,14 @@ namespace LcdMod.Client.Apps
 
         InteractiveTooltip BuildFarmEntryTooltip(long entryId)
         {
+            var markdownPanel = new MarkdownTooltipPanel(
+                _surfaceHost,
+                delegate
+                {
+                    var entry = GetFarmEntry(entryId);
+                    return entry != null ? entry.DetailsMarkdown : string.Empty;
+                });
+
             return new InteractiveTooltip(
                 delegate
                 {
@@ -487,8 +521,7 @@ namespace LcdMod.Client.Apps
                 },
                 delegate
                 {
-                    var entry = GetFarmEntry(entryId);
-                    return entry != null ? entry.GetDetails() : new List<ITooltipLine>();
+                    return new List<ITooltipLine>();
                 },
                 null,
                 null,
@@ -498,6 +531,10 @@ namespace LcdMod.Client.Apps
                 {
                     var entry = GetFarmEntry(entryId);
                     return entry != null ? entry.OutputSprite : string.Empty;
+                },
+                delegate
+                {
+                    return markdownPanel;
                 });
         }
 

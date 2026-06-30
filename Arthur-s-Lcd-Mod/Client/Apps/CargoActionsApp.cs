@@ -87,7 +87,7 @@ namespace LcdMod.Client.Apps
             _interactiveHost = host as InteractiveSurfaceScript;
         }
 
-        public override IReadOnlyList<Control> Children => _children;
+        public override IReadOnlyList<Control> VisualChildren => _children;
 
 
         public override void Update()
@@ -168,7 +168,7 @@ namespace LcdMod.Client.Apps
             var button = _buttons[index];
             if (button == null)
             {
-                button = AddChild(new Button(rect, new PadTileModel
+                button = AddLogicalChild(new Button(rect, new PadTileModel
                 {
                     Text = GetButtonText(index),
                     SpriteName = GetButtonSprite(index),

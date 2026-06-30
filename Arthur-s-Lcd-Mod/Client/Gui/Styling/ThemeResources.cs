@@ -104,6 +104,12 @@ namespace LcdMod.Client.Gui.Styling
 
         public static readonly ResourceKey<float> AutoScrollSecondsPerStep =
             ResourceKey.Register<float>("autoScrollSecondsPerStep");
+
+        public static readonly ResourceKey<int> PageTransitionFrames =
+            ResourceKey.Register<int>("pageTransitionFrames");
+
+        public static readonly ResourceKey<int> PictureTransitionFrames =
+            ResourceKey.Register<int>("pictureTransitionFrames");
         
         public static readonly ResourceKey<string> TextFont =
             ResourceKey.Register<string>("textFont");

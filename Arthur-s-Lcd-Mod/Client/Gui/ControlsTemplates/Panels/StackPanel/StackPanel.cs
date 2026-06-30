@@ -55,12 +55,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels.StackPanel
         {
             return new Vector2(
                 Math.Max(0f, availableSize.X),
-                StackPanelLayout.CalculateTotalHeight(RowHeight, Gap, Children.Count));
+                StackPanelLayout.CalculateTotalHeight(RowHeight, Gap, VisualChildren.Count));
         }
 
         protected override void ArrangeChildren()
         {
-            var children = Children;
+            var children = VisualChildren;
             if (children == null || children.Count == 0)
                 return;
 

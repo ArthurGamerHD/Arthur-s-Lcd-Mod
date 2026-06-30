@@ -30,7 +30,7 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override IApp App => _app;
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
-        public override List<Control> InteractiveList => _app?.Children as List<Control>;
+        public override List<Control> InteractiveList => _app?.VisualChildren as List<Control>;
         protected override string DefaultTitle => TITLE;
         protected override bool RendersInteractiveEntriesInGetSprites => true;
 

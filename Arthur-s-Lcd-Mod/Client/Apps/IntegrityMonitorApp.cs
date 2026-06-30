@@ -63,7 +63,7 @@ namespace LcdMod.Client.Apps
         };
         
         // todo: convert to interactive app
-        public override IReadOnlyList<Control> Children { get; } = new Control[]{};
+        public override IReadOnlyList<Control> VisualChildren { get; } = new Control[]{};
         
         const int MAP_BUILD_BATCH_SIZE = 256;
 

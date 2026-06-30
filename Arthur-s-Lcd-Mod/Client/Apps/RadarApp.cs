@@ -120,7 +120,7 @@ namespace LcdMod.Client.Apps
         float LayoutScale => Scale * FontScale;
         Color ForegroundColor => _host.ForegroundColor;
         Color BackgroundColor => _host.BackgroundColor;
-        public override IReadOnlyList<Control> Children => _children;
+        public override IReadOnlyList<Control> VisualChildren => _children;
 
         struct TargetInfo
         {

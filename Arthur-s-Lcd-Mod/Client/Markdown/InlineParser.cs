@@ -136,6 +136,17 @@ namespace LcdMod.Client.Markdown
             return true;
         }
 
+        bool StartsWithIgnoreCase(string value)
+        {
+            if (value == null)
+                return false;
+
+            if (_position + value.Length > _text.Length)
+                return false;
+
+            return string.Compare(_text, _position, value, 0, value.Length, StringComparison.OrdinalIgnoreCase) == 0;
+        }
+
         private static void AddNode(List<InlineNode> nodes, InlineNode node)
         {
             if (node == null)
@@ -384,6 +395,9 @@ namespace LcdMod.Client.Markdown
         {
             node = null;
 
+            if (TryParseEqualsColor(out node))
+                return true;
+
             const string prefix = "[color:";
             const string close = "[/color]";
 
@@ -428,12 +442,69 @@ namespace LcdMod.Client.Markdown
             return true;
         }
 
+        bool TryParseEqualsColor(out InlineNode node)
+        {
+            node = null;
+
+            const string prefix = "[color=";
+            const string close = "[/color]";
+
+            if (!StartsWithIgnoreCase(prefix))
+                return false;
+
+            int originalPosition = _position;
+
+            int colorStart = _position + prefix.Length;
+            int colorEnd = _text.IndexOf(']', colorStart);
+
+            if (colorEnd < 0)
+            {
+                _position = originalPosition;
+                return false;
+            }
+
+            string color = _text.Substring(colorStart, colorEnd - colorStart).Trim();
+
+            if (!IsValidColorValue(color))
+            {
+                _position = originalPosition;
+                return false;
+            }
+
+            int contentStart = colorEnd + 1;
+            int closeStart = IndexOfIgnoreCase(close, contentStart);
+
+            if (closeStart < 0)
+            {
+                _position = originalPosition;
+                return false;
+            }
+
+            string content = _text.Substring(contentStart, closeStart - contentStart);
+            _position = closeStart + close.Length;
+
+            ColorInline colorInline = new ColorInline();
+            colorInline.Color = color;
+            colorInline.Children.AddRange(new InlineParser().Parse(content));
+
+            node = colorInline;
+            return true;
+        }
+
+        int IndexOfIgnoreCase(string value, int startIndex)
+        {
+            if (string.IsNullOrEmpty(value) || startIndex < 0 || startIndex >= _text.Length)
+                return -1;
+
+            return _text.IndexOf(value, startIndex, StringComparison.OrdinalIgnoreCase);
+        }
+
         static bool IsValidColorValue(string value)
         {
             if (string.IsNullOrEmpty(value))
                 return false;
 
-            if (value.Length != 7)
+            if (value.Length != 7 && value.Length != 9)
                 return false;
 
             if (value[0] != '#')

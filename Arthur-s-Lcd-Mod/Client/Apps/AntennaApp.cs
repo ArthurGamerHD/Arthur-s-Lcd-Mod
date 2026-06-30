@@ -45,7 +45,7 @@ namespace LcdMod.Client.Apps
         bool _drawGridLineSprites;
         bool _drawGridVerticalLines;
         public bool HasEntries => _entries.Count > 0;
-        public override IReadOnlyList<Control> Children => _children;
+        public override IReadOnlyList<Control> VisualChildren => _children;
 
         public AntennaApp(IAppHost script) : base(script)
         {
@@ -53,7 +53,7 @@ namespace LcdMod.Client.Apps
             if (_interactiveHost == null)
                 throw new ArgumentException("AntennaApp requires an InteractiveSurfaceScript host.", "script");
 
-            _scrollPanel = AddChild(new ScrollPanel(CursorType.Default, this));
+            _scrollPanel = AddLogicalChild(new ScrollPanel(CursorType.Default, this));
             _scrollPanel.ScrollChanged = OnScrollPanelChanged;
             _scrollPanel.SetVisible(false);
             _listPanel = new VisualStackPanel();
@@ -214,7 +214,7 @@ namespace LcdMod.Client.Apps
 
         void RenderListPanelContent(ControlTemplate control, List<MySprite> sprites)
         {
-            var children = control?.Children;
+            var children = control?.VisualChildren;
             if (children == null)
                 return;
 
@@ -226,7 +226,7 @@ namespace LcdMod.Client.Apps
 
         void RenderGridPanelContent(ControlTemplate control, List<MySprite> sprites)
         {
-            var children = control?.Children;
+            var children = control?.VisualChildren;
             if (children == null)
                 return;
 
@@ -301,7 +301,7 @@ namespace LcdMod.Client.Apps
 
         void RemoveStalePanelChildren(Panel panel, HashSet<long> desiredIds)
         {
-            var children = panel.Children;
+            var children = panel.VisualChildren;
             if (children == null)
                 return;
 
@@ -321,7 +321,7 @@ namespace LcdMod.Client.Apps
             if (panel == null || desired == null)
                 return;
 
-            var children = panel.Children;
+            var children = panel.VisualChildren;
             bool changed = false;
             for (int i = 0; i < desired.Count; i++)
             {
@@ -332,7 +332,7 @@ namespace LcdMod.Client.Apps
                 if (!ReferenceEquals(child.Parent, panel))
                 {
                     panel.AddChild(child);
-                    children = panel.Children;
+                    children = panel.VisualChildren;
                     changed = true;
                 }
 

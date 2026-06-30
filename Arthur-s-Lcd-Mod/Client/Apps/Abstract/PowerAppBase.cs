@@ -120,7 +120,7 @@ namespace LcdMod.Client.Apps.Abstract
         float FontScale => Host.Surface.FontSize;
         float LayoutScale => Scale * FontScale;
         Color ForegroundColor => Host.ForegroundColor;
-        public override IReadOnlyList<Control> Children => _children;
+        public override IReadOnlyList<Control> VisualChildren => _children;
 
         protected abstract PowerEntryDefinition[] EntryDefinitions { get; }
 
@@ -130,7 +130,7 @@ namespace LcdMod.Client.Apps.Abstract
             if (_interactiveHost == null)
                 throw new ArgumentException("PowerAppBase requires an InteractiveSurfaceScript host.", "host");
 
-            _scrollPanel = AddChild(new ScrollPanel(CursorType.Default, this));
+            _scrollPanel = AddLogicalChild(new ScrollPanel(CursorType.Default, this));
             _scrollPanel.ScrollChanged = OnScrollPanelChanged;
             _scrollPanel.SetVisible(false);
             _listPanel = new VisualStackPanel();
@@ -441,7 +441,7 @@ namespace LcdMod.Client.Apps.Abstract
 
         void RenderListPanelContent(ControlTemplate control, List<MySprite> sprites)
         {
-            var children = control?.Children;
+            var children = control?.VisualChildren;
             if (children == null)
                 return;
 
@@ -453,7 +453,7 @@ namespace LcdMod.Client.Apps.Abstract
 
         void RenderGridPanelContent(ControlTemplate control, List<MySprite> sprites)
         {
-            var children = control?.Children;
+            var children = control?.VisualChildren;
             if (children == null)
                 return;
 
@@ -528,7 +528,7 @@ namespace LcdMod.Client.Apps.Abstract
 
         void RemoveStalePanelChildren(Panel panel, HashSet<string> desiredKeys)
         {
-            var children = panel.Children;
+            var children = panel.VisualChildren;
             if (children == null)
                 return;
 
@@ -548,7 +548,7 @@ namespace LcdMod.Client.Apps.Abstract
             if (panel == null || desired == null)
                 return;
 
-            var children = panel.Children;
+            var children = panel.VisualChildren;
             bool changed = false;
             for (int i = 0; i < desired.Count; i++)
             {
@@ -559,7 +559,7 @@ namespace LcdMod.Client.Apps.Abstract
                 if (!ReferenceEquals(child.Parent, panel))
                 {
                     panel.AddChild(child);
-                    children = panel.Children;
+                    children = panel.VisualChildren;
                     changed = true;
                 }
 

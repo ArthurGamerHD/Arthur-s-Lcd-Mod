@@ -118,7 +118,7 @@ namespace LcdMod.Client.Apps
         }
 
         Color ForegroundColor => _host.ForegroundColor;
-        public override IReadOnlyList<Control> Children => _children;
+        public override IReadOnlyList<Control> VisualChildren => _children;
 
         public FarGridRaycastExperimentalApp(IAppHost host)
             : base(host)
@@ -1604,6 +1604,7 @@ namespace LcdMod.Client.Apps
                     continue;
 
                 _detectedGridHitboxByEntityId.Remove(hitbox.EntityId);
+                RemoveLogicalChild(hitbox.Entry);
                 _detectedGridHitboxes.RemoveAt(i);
             }
         }
@@ -1621,7 +1622,7 @@ namespace LcdMod.Client.Apps
                 if (hitbox == null || !hitbox.Active || hitbox.Entry == null)
                     continue;
 
-                AddChild(hitbox.Entry);
+                AddLogicalChild(hitbox.Entry);
                 hitbox.Entry.SetVisible(true);
                 _children.Add(hitbox.Entry);
             }

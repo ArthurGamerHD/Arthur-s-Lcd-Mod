@@ -516,7 +516,7 @@ namespace LcdMod.Client.Apps
             EnsureCraftAllButton(layout.ButtonRect);
             ConfigureCraftAllButton(enabled);
 
-            if (!Children.Contains(_craftAllButton))
+            if (!VisualChildren.Contains(_craftAllButton))
                 _children.Add(_craftAllButton);
 
             _craftAllButton.Render(frame);
@@ -529,7 +529,7 @@ namespace LcdMod.Client.Apps
 
             if (_toggleViewButton == null)
             {
-                _toggleViewButton = AddChild(new Button(layout.ToggleRect, new ButtonModel
+                _toggleViewButton = AddLogicalChild(new Button(layout.ToggleRect, new ButtonModel
                 {
                     Text = GetToggleViewButtonText(),
                     Clicked = OnToggleViewClicked
@@ -552,7 +552,7 @@ namespace LcdMod.Client.Apps
             _toggleViewButton.SetStyleId("Primary");
             _toggleViewButton.CustomRender = RenderCraftAllButton;
 
-            if (!Children.Contains(_toggleViewButton))
+            if (!VisualChildren.Contains(_toggleViewButton))
                 _children.Add(_toggleViewButton);
 
             _toggleViewButton.Render(frame);
@@ -576,7 +576,7 @@ namespace LcdMod.Client.Apps
         {
             if (_craftAllButton == null)
             {
-                _craftAllButton = AddChild(new Button(rect, new ButtonModel
+                _craftAllButton = AddLogicalChild(new Button(rect, new ButtonModel
                 {
                     Text = CRAFT_ALL_TEXT,
                     Clicked = OnCraftAllClicked
@@ -608,14 +608,9 @@ namespace LcdMod.Client.Apps
         void RenderCraftAllButton(ControlTemplate control, List<MySprite> sprites)
         {
             var model = control.DataContext as ButtonModel;
-            var enabled = model == null || model.Enabled;
             var rect = control.Bounds;
-            var hover = enabled && rect.Contains(new Vector2(float.NaN, float.NaN));
             var button = control as Button;
-            var defaultButtonColor = button?.BackgroundColor ?? control.BackgroundColor;
-            var buttonColor = hover
-                ? control.GetResourceColor(ThemeResources.AccentColor, defaultButtonColor)
-                : defaultButtonColor;
+            var buttonColor = button?.BackgroundColor ?? control.BackgroundColor;
             var textColor = control.TextColor;
             var text = model == null || string.IsNullOrEmpty(model.Text) ? CRAFT_ALL_TEXT : model.Text;
             var textScale = GetCraftAllButtonTextScale(control.LayoutScale, control.FontScale);

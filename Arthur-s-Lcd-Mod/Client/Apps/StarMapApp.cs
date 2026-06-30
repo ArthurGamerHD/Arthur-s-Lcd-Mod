@@ -39,7 +39,7 @@ namespace LcdMod.Client.Apps
         float FontScale => _host.Surface.FontSize;
         Color ForegroundColor => _host.ForegroundColor;
         Color BackgroundColor => _host.BackgroundColor;
-        public override IReadOnlyList<Control> Children => _children;
+        public override IReadOnlyList<Control> VisualChildren => _children;
         public CursorType RequestedCursorType { get; private set; } = CursorType.Default;
 
         float _fov;
@@ -260,13 +260,21 @@ namespace LcdMod.Client.Apps
         }
 
 
+        void ClearCachedInteractiveEntries()
+        {
+            for (int i = _cachedInteractiveEntries.Count - 1; i >= 0; i--)
+                RemoveLogicalChild(_cachedInteractiveEntries[i]);
+
+            _cachedInteractiveEntries.Clear();
+        }
+
         void InvalidateStaticOrbitCache()
         {
             _staticOrbitCacheValid = false;
             _cachedStaticBaseSprites.Clear();
             _cachedStaticTitleSprites.Clear();
             _cachedStaticRingSprites.Clear();
-            _cachedInteractiveEntries.Clear();
+            ClearCachedInteractiveEntries();
         }
 
         void InvalidateDynamicMapCache()
@@ -276,7 +284,7 @@ namespace LcdMod.Client.Apps
             _cachedDynamicGroundOcclusionSprites.Clear();
             _cachedDynamicRingSprites.Clear();
             _cachedOverlaySprites.Clear();
-            _cachedInteractiveEntries.Clear();
+            ClearCachedInteractiveEntries();
         }
         
         public override void Update()
@@ -695,8 +703,8 @@ namespace LcdMod.Client.Apps
             _cachedOverlaySprites.Clear();
             for (int i = overlayStartIndex; i < overlaySprites.Count; i++)
                 _cachedOverlaySprites.Add(overlaySprites[i]);
-            _cachedInteractiveEntries.Clear();
-            _cachedInteractiveEntries.AddRange(Children);
+            ClearCachedInteractiveEntries();
+            _cachedInteractiveEntries.AddRange(VisualChildren);
             _dynamicMapCacheValid = true;
         }
 
@@ -2314,8 +2322,8 @@ namespace LcdMod.Client.Apps
             _cachedOverlaySprites.Clear();
             _cachedStaticRingSprites.Clear();
             _cachedStaticRingSprites.AddRange(ringSprites);
-            _cachedInteractiveEntries.Clear();
-            _cachedInteractiveEntries.AddRange(Children);
+            ClearCachedInteractiveEntries();
+            _cachedInteractiveEntries.AddRange(VisualChildren);
             _staticOrbitCacheValid = true;
             return true;
         }
@@ -2698,7 +2706,7 @@ namespace LcdMod.Client.Apps
                 cursor ?? (line.IsClickable ? CursorType.Hand : CursorType.Default),
                 line.GetDataContext(),
                 line.GetOnClick());
-            AddChild(entry);
+            AddLogicalChild(entry);
             entry.ClickSound = line.GetClickSound();
             entry.CustomRender = delegate(ControlTemplate renderEntry, List<MySprite> targetSprites)
             {
@@ -3050,7 +3058,7 @@ namespace LcdMod.Client.Apps
         {
             var center = planet.ScreenPos;
             var radius = planet.MarkerRadius;
-            var entry = AddChild(new InteractiveCircleEntry(center, radius, CursorType.Hand, planet.PlanetId));
+            var entry = AddLogicalChild(new InteractiveCircleEntry(center, radius, CursorType.Hand, planet.PlanetId));
             if (GeneralComponent.DisplayMode == (int)DisplayMode.Legacy)
             {
                 entry.SetTooltip(new InteractiveTooltip(

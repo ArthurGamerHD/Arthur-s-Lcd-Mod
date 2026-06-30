@@ -73,6 +73,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Inputs
                     continue;
 
                 buttonModel.Enabled = model.Enabled;
+                _buttons[i].SetEnabled(model.Enabled);
                 buttonModel.Text = FormatStep(i == 0 ? -step : step);
             }
 

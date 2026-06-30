@@ -27,5 +27,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
             return base.BackgroundColor;
         }
 
+        protected override bool ShouldRenderStyleBorder()
+        {
+            return true;
+        }
+
     }
 }

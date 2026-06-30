@@ -81,7 +81,7 @@ namespace LcdMod.Client.Apps
         public InGameClockDashboardApp(IAppHost host)
             : base(host)
         {
-            _rootGrid = AddChild(new Grid());
+            _rootGrid = AddLogicalChild(new Grid());
             _clockProgressBarStyles = BuildClockProgressBarStyles();
 
             _wideRightGrid = new Grid();
@@ -170,7 +170,7 @@ namespace LcdMod.Client.Apps
             BuildSquareLayoutTree();
         }
 
-        public override IReadOnlyList<Control> Children => _interactiveChildren;
+        public override IReadOnlyList<Control> VisualChildren => _interactiveChildren;
 
         public override void Update()
         {

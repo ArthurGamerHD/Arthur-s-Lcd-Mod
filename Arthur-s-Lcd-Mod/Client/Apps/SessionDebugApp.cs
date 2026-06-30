@@ -39,7 +39,7 @@ namespace LcdMod.Client.Apps
         
         public SessionDebugApp(SessionDebugSurfaceScript sessionDebugSurfaceScript) : base(sessionDebugSurfaceScript)
         {
-            _scrollPanel = AddChild(new ScrollPanel());
+            _scrollPanel = AddLogicalChild(new ScrollPanel());
             _scrollPanel.ManualScrollInertiaEnabled = false;
             _interactiveEntries.Add(_scrollPanel);
             _linePanel.CreateControl = CreateLineControl;
@@ -284,6 +284,6 @@ namespace LcdMod.Client.Apps
         }
 
         // hack: not needed on this app
-        public override IReadOnlyList<Control> Children { get; } = new Control[]{};
+        public override IReadOnlyList<Control> VisualChildren { get; } = new Control[]{};
     }
 }

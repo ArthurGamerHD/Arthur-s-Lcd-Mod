@@ -229,29 +229,23 @@ namespace LcdMod.Client.Modules.EyeTracking
                     {
                         HandleClickOnPress(hoveredClickable, eyeTrackingEntity);
                         _suppressPrimaryReleaseClick = true;
-                        _pressedClickable = null;
-                        _pressedClickableDataContext = null;
+                        SetPressedClickable(hoveredClickable);
                     }
                     else
                     {
-                        _pressedClickable = hoveredClickable;
-                        _pressedClickableDataContext = hoveredClickable != null
-                            ? hoveredClickable.DataContext ?? hoveredClickable
-                            : null;
+                        SetPressedClickable(hoveredClickable);
                     }
                 }
                 else
                 {
                     _suppressPrimaryReleaseClick = true;
-                    _pressedClickable = null;
-                    _pressedClickableDataContext = null;
+                    SetPressedClickable(null);
                 }
             }
 
             if (secondaryStarted)
             {
-                _pressedClickable = hoveredClickable;
-                _pressedClickableDataContext = hoveredClickable != null ? hoveredClickable.DataContext ?? hoveredClickable : null;
+                SetPressedClickable(hoveredClickable);
             }
 
             if (primaryPressed && _draggingControl != null)
@@ -345,8 +339,7 @@ namespace LcdMod.Client.Modules.EyeTracking
                     ErrorHandlerHelper.LogError(error: e, source: this);
                 }
 
-                _pressedClickable = null;
-                _pressedClickableDataContext = null;
+                SetPressedClickable(null);
 
                 if (primaryReleased)
                     _suppressPrimaryReleaseClick = false;
@@ -354,8 +347,7 @@ namespace LcdMod.Client.Modules.EyeTracking
 
             if (!hasInputTarget)
             {
-                _pressedClickable = null;
-                _pressedClickableDataContext = null;
+                SetPressedClickable(null);
 
                 if (_draggingControl != null)
                     EndActiveDrag();
@@ -366,6 +358,23 @@ namespace LcdMod.Client.Modules.EyeTracking
 
             _primaryWasPressed = primaryPressed;
             _secondaryWasPressed = secondaryPressed;
+        }
+
+        void SetPressedClickable(ControlTemplate control)
+        {
+            if (ReferenceEquals(_pressedClickable, control))
+                return;
+
+            if (_pressedClickable != null)
+                _pressedClickable.SetPressed(false);
+
+            _pressedClickable = control;
+            _pressedClickableDataContext = control != null
+                ? control.DataContext ?? control
+                : null;
+
+            if (_pressedClickable != null)
+                _pressedClickable.SetPressed(true);
         }
 
         static void UpdateScrollState(IEyeTracking lookingScreen)

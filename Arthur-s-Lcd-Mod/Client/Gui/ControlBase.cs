@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using LcdMod.Client.Animation;
 using LcdMod.Client.Gui.Styling;
 
 namespace LcdMod.Client.Gui
@@ -12,6 +14,15 @@ namespace LcdMod.Client.Gui
 
         public virtual IVisualStyleScope StyleParent => _styleParent;
 
+        internal virtual AnimationController AnimationController
+        {
+            get
+            {
+                var parent = StyleParent as Control;
+                return parent != null ? parent.AnimationController : null;
+            }
+        }
+
         public virtual StyleTree Styles { get; protected set; }
 
         public virtual ResourceTree Resources { get; protected set; }
@@ -21,7 +32,17 @@ namespace LcdMod.Client.Gui
         internal bool _isDirty;
         public virtual bool IsDirty => _isDirty;
         
-        public abstract IReadOnlyList<Control> Children { get; }
+        /// <summary>
+        /// Controls owned by this control for lifetime, invalidation, and cleanup.
+        /// Logical children do not need to be currently rendered or interactive.
+        /// </summary>
+        public abstract IReadOnlyList<Control> LogicalChildren { get; }
+
+        /// <summary>
+        /// Controls currently participating in the visible/input tree.
+        /// </summary>
+        public virtual IReadOnlyList<Control> VisualChildren => LogicalChildren;
+
         public object DataContext { get; set; }
 
         public Control SetClass(string @class)
@@ -80,7 +101,7 @@ namespace LcdMod.Client.Gui
         {
             MarkDirty();
 
-            var children = Children;
+            var children = LogicalChildren;
             if (children == null)
                 return;
 

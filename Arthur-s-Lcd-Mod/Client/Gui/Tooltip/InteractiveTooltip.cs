@@ -26,6 +26,7 @@ namespace LcdMod.Client.Gui.Tooltip
         readonly Func<string> _footerGetter;
         readonly Func<CursorType?> _getCursor;
         readonly Func<string> _iconTextureGetter;
+        readonly Func<ControlTemplate> _bodyGetter;
         readonly List<Control> _interactiveEntries = new List<Control>();
         readonly Dictionary<ITooltipLine, TooltipLineControl> _lineEntryByLine =
             new Dictionary<ITooltipLine, TooltipLineControl>();
@@ -33,6 +34,7 @@ namespace LcdMod.Client.Gui.Tooltip
 
         TooltipContainerControl _containerControl;
         RectangleControl _cardControl;
+        ControlTemplate _bodyControl;
 
         public InteractiveTooltip(
             Func<string> titleGetter,
@@ -41,7 +43,8 @@ namespace LcdMod.Client.Gui.Tooltip
             Func<CursorType?> getCursor = null,
             TooltipActivationMode openMode = TooltipActivationMode.Auto,
             TooltipActivationMode closeMode = TooltipActivationMode.Auto,
-            Func<string> iconGetter = null)
+            Func<string> iconGetter = null,
+            Func<ControlTemplate> bodyGetter = null)
             : this(
                 titleGetter,
                 lines != null ? (Func<IList<ITooltipLine>>)(() => lines) : null,
@@ -49,7 +52,8 @@ namespace LcdMod.Client.Gui.Tooltip
                 getCursor,
                 openMode,
                 closeMode,
-                iconGetter)
+                iconGetter,
+                bodyGetter)
         {
         }
 
@@ -60,7 +64,8 @@ namespace LcdMod.Client.Gui.Tooltip
             Func<CursorType?> getCursor = null,
             TooltipActivationMode openMode = TooltipActivationMode.Auto,
             TooltipActivationMode closeMode = TooltipActivationMode.Auto,
-            Func<string> iconGetter = null)
+            Func<string> iconGetter = null,
+            Func<ControlTemplate> bodyGetter = null)
         {
             _titleGetter = titleGetter;
             _linesGetter = linesGetter;
@@ -68,6 +73,7 @@ namespace LcdMod.Client.Gui.Tooltip
             _footerGetter = footerGetter;
             _getCursor = getCursor;
             _iconTextureGetter = iconGetter;
+            _bodyGetter = bodyGetter;
             OpenMode = openMode;
             CloseMode = closeMode;
         }
@@ -78,7 +84,8 @@ namespace LcdMod.Client.Gui.Tooltip
             string footer = null,
             TooltipActivationMode openMode = TooltipActivationMode.Auto,
             TooltipActivationMode closeMode = TooltipActivationMode.Auto,
-            string iconTexture = null)
+            string iconTexture = null,
+            Func<ControlTemplate> bodyGetter = null)
         {
             _titleGetter = () => title ?? string.Empty;
             _staticLines = lines != null ? new List<ITooltipLine>(lines) : new List<ITooltipLine>();
@@ -86,6 +93,7 @@ namespace LcdMod.Client.Gui.Tooltip
             _footerGetter = footer != null ? (Func<string>)(() => footer) : null;
             _getCursor = null;
             _iconTextureGetter = iconTexture != null ? (Func<string>)(() => iconTexture) : null;
+            _bodyGetter = bodyGetter;
             OpenMode = openMode;
             CloseMode = closeMode;
         }
@@ -136,6 +144,11 @@ namespace LcdMod.Client.Gui.Tooltip
             return _iconTextureGetter != null ? (_iconTextureGetter() ?? string.Empty) : string.Empty;
         }
 
+        public ControlTemplate GetBodyControl()
+        {
+            return _bodyGetter != null ? _bodyGetter() : null;
+        }
+
         public void Hide()
         {
             if (_containerControl != null)
@@ -146,6 +159,9 @@ namespace LcdMod.Client.Gui.Tooltip
 
             if (_cardControl != null)
                 _cardControl.SetVisible(false);
+
+            if (_bodyControl != null)
+                _bodyControl.SetVisible(false);
 
             foreach (var kv in _lineEntryByLine)
             {
@@ -189,6 +205,7 @@ namespace LcdMod.Client.Gui.Tooltip
             var footer = GetFooter();
             var iconTexture = GetIconTexture();
             var cursor = GetCursor();
+            var bodyControl = GetBodyControl();
 
             int lineCount = tooltipLines.Count;
             float lineScale = 0.52f * scale * fontScale;
@@ -231,18 +248,29 @@ namespace LcdMod.Client.Gui.Tooltip
 
             float linesHeight = tooltipLines.Count * lineStep;
             float titleFooterWidth = Math.Max(titleSize.X, footerSize.X);
+            Vector2 bodySize = Vector2.Zero;
+            if (bodyControl != null)
+            {
+                float maxBodyWidth = Math.Max(80f * scale, Math.Min(420f * scale, viewBox.Width - 4f * padding.X));
+                float maxBodyHeight = Math.Max(40f * scale, viewBox.Height - titleSize.Y - footerSize.Y - 4f * spacing - 2f * padding.Y);
+                bodySize = bodyControl.Measure(new Vector2(maxBodyWidth, maxBodyHeight));
+                if (bodySize.X <= 0f || bodySize.Y <= 0f)
+                    bodyControl = null;
+            }
 
             float iconSize = hasIcon
-                ? Math.Max(24f * scale, Math.Min(52f * scale, Math.Max(linesHeight, 24f * scale)))
+                ? Math.Max(24f * scale, Math.Min(52f * scale, Math.Max(bodyControl != null ? bodySize.Y : linesHeight, 24f * scale)))
                 : 0f;
 
             float iconGap = hasIcon ? 8f * scale : 0f;
 
             // Body is only icon + lines. Title/footer are centered over the whole card.
-            float bodyWidth = maxLineWidth + iconSize + iconGap;
+            float textBodyWidth = bodyControl != null ? bodySize.X : maxLineWidth;
+            float bodyWidth = textBodyWidth + iconSize + iconGap;
             float contentWidth = Math.Max(titleFooterWidth, bodyWidth);
 
-            float contentHeight = titleSize.Y + spacing + Math.Max(linesHeight, iconSize);
+            float textBodyHeight = bodyControl != null ? bodySize.Y : linesHeight;
+            float contentHeight = titleSize.Y + spacing + Math.Max(textBodyHeight, iconSize);
             if (!string.IsNullOrEmpty(footer))
                 contentHeight += spacing + footerSize.Y;
 
@@ -340,7 +368,7 @@ namespace LcdMod.Client.Gui.Tooltip
             currentY += titleSize.Y + spacing;
 
             float bodyTopY = currentY;
-            float bodyHeight = Math.Max(linesHeight, iconSize);
+            float bodyHeight = Math.Max(textBodyHeight, iconSize);
 
             if (hasIcon)
             {
@@ -360,81 +388,100 @@ namespace LcdMod.Client.Gui.Tooltip
             // Vertically center the lines against the icon/body area.
             currentY = bodyTopY + Math.Max(0f, (bodyHeight - linesHeight) * 0.5f);
 
-            for (int i = 0; i < tooltipLines.Count; i++)
+            if (bodyControl != null)
             {
-                var line = tooltipLines[i];
+                if (_bodyControl != null && !ReferenceEquals(_bodyControl, bodyControl))
+                    _bodyControl.SetVisible(false);
 
-                var textPosition = new Vector2(
+                _bodyControl = bodyControl;
+                var bodyRect = new RectangleF(
                     leftX,
-                    currentY - lineSizes[i].Y * 0.25f * lineScale);
-
-                var lineBounds = new RectangleF(
-                    leftX,
-                    textPosition.Y,
-                    Math.Max(lineSizes[i].X, 1f),
-                    Math.Max(lineSizes[i].Y, lineStep));
-
-                bool hasLineCursor = lineCursors[i].HasValue;
-                bool hasLineEntry = line != null && (clickables[i] || hasLineCursor);
-
-                bool lineHovered = hasLineEntry && lineBounds.Contains(cursorPosition);
-                var lineColor = textColor;
-                if (lineHovered)
+                    bodyTopY + Math.Max(0f, (bodyHeight - bodySize.Y) * 0.5f),
+                    bodySize.X,
+                    bodySize.Y);
+                bodyControl.Arrange(bodyRect);
+                bodyControl.SetVisible(true);
+                _containerControl.AddChild(bodyControl);
+                bodyControl.Render(sprites);
+            }
+            else
+            {
+                for (int i = 0; i < tooltipLines.Count; i++)
                 {
-                    if (!ScopedResourceResolver.TryResolve(styleScope, ThemeResources.AccentColor, out lineColor))
-                        throw new ResourceKeyNotFoundException(ThemeResources.AccentColor.Name, "ResourceTree");
-                }
+                    var line = tooltipLines[i];
 
-                if (hasLineEntry)
-                {
-                    TooltipLineControl lineEntry;
-                    var resolvedCursor = lineCursors[i] ?? (clickables[i] ? CursorType.Hand : CursorType.Default);
+                    var textPosition = new Vector2(
+                        leftX,
+                        currentY - lineSizes[i].Y * 0.25f * lineScale);
 
-                    if (!_lineEntryByLine.TryGetValue(line, out lineEntry) || lineEntry == null)
+                    var lineBounds = new RectangleF(
+                        leftX,
+                        textPosition.Y,
+                        Math.Max(lineSizes[i].X, 1f),
+                        Math.Max(lineSizes[i].Y, lineStep));
+
+                    bool hasLineCursor = lineCursors[i].HasValue;
+                    bool hasLineEntry = line != null && (clickables[i] || hasLineCursor);
+
+                    bool lineHovered = hasLineEntry && lineBounds.Contains(cursorPosition);
+                    var lineColor = textColor;
+                    if (lineHovered)
                     {
-                        lineEntry = new TooltipLineControl(lineBounds, line, resolvedCursor);
-                        _lineEntryByLine[line] = lineEntry;
+                        if (!ScopedResourceResolver.TryResolve(styleScope, ThemeResources.AccentColor, out lineColor))
+                            throw new ResourceKeyNotFoundException(ThemeResources.AccentColor.Name, "ResourceTree");
                     }
-                    else
+
+                    if (hasLineEntry)
                     {
-                        lineEntry.SetRect(lineBounds);
-                        lineEntry.SetCursor(resolvedCursor);
+                        TooltipLineControl lineEntry;
+                        var resolvedCursor = lineCursors[i] ?? (clickables[i] ? CursorType.Hand : CursorType.Default);
+
+                        if (!_lineEntryByLine.TryGetValue(line, out lineEntry) || lineEntry == null)
+                        {
+                            lineEntry = new TooltipLineControl(lineBounds, line, resolvedCursor);
+                            _lineEntryByLine[line] = lineEntry;
+                        }
+                        else
+                        {
+                            lineEntry.SetRect(lineBounds);
+                            lineEntry.SetCursor(resolvedCursor);
+                        }
+
+                        lineEntry.SetVisible(true);
+                        lineEntry.ClickSound = line.GetClickSound();
+
+                        _linesUsedThisFrame.Add(line);
+                        _containerControl.AddChild(lineEntry);
                     }
 
-                    lineEntry.SetVisible(true);
-                    lineEntry.ClickSound = line.GetClickSound();
+                    var position = new Vector2(leftX, currentY - lineSizes[i].Y * 0.25f * lineScale);
 
-                    _linesUsedThisFrame.Add(line);
-                    _containerControl.AddChild(lineEntry);
-                }
-
-                var position = new Vector2(leftX, currentY - lineSizes[i].Y * 0.25f * lineScale);
-
-                sprites.Add(new MySprite
-                {
-                    Type = SpriteType.TEXT,
-                    Data = lineTexts[i],
-                    Position = position,
-                    Color = lineColor,
-                    FontId = parentEntry.TextFont,
-                    Alignment = TextAlignment.LEFT,
-                    RotationOrScale = lineScale
-                });
-
-                if (clickables[i])
-                {
                     sprites.Add(new MySprite
                     {
-                        Type = SpriteType.TEXTURE,
-                        Data = "SquareSimple",
-                        Position = new Vector2(position.X, position.Y + lineSizes[i].Y),
-                        Size = new Vector2(Math.Max(1f, lineSizes[i].X), Math.Max(1f, scale)),
-                        Color = new Color(lineColor, .3f),
-                        Alignment = TextAlignment.LEFT
+                        Type = SpriteType.TEXT,
+                        Data = lineTexts[i],
+                        Position = position,
+                        Color = lineColor,
+                        FontId = parentEntry.TextFont,
+                        Alignment = TextAlignment.LEFT,
+                        RotationOrScale = lineScale
                     });
-                }
 
-                currentY += lineStep;
+                    if (clickables[i])
+                    {
+                        sprites.Add(new MySprite
+                        {
+                            Type = SpriteType.TEXTURE,
+                            Data = "SquareSimple",
+                            Position = new Vector2(position.X, position.Y + lineSizes[i].Y),
+                            Size = new Vector2(Math.Max(1f, lineSizes[i].X), Math.Max(1f, scale)),
+                            Color = new Color(lineColor, .3f),
+                            Alignment = TextAlignment.LEFT
+                        });
+                    }
+
+                    currentY += lineStep;
+                }
             }
 
             currentY = bodyTopY + bodyHeight;

@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using LcdMod.Client.Animation;
+using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.Styling;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
@@ -19,6 +21,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         const float INDICATOR_DOT_PIXELS = 8f;
         const float INDICATOR_DOT_GAP_PIXELS = 8f;
         const float ARROW_ICON_PIXELS = 18f;
+        const string PAGE_TRANSITION_FRAMES_RESOURCE = "pageTransitionFrames";
+        const string PAGE_TRANSITION_CHANNEL = "PageSwitch";
 
         RectangleF _leftButtonBounds;
         RectangleF _rightButtonBounds;
@@ -28,6 +32,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         bool _showControls;
         int _firstVisiblePage;
         int _visiblePageCount = 1;
+        int _layoutPageCount;
+        float _layoutPageWidth;
+        float _layoutStartX;
+        float _pagePosition;
+        float _transitionStartPosition;
+        float _transitionTargetPosition;
+        AnimationHandle _pageTransitionAnimation;
         readonly ArrowControl _leftButton;
         readonly ArrowControl _rightButton;
         readonly IndicatorControl _indicatorControl;
@@ -44,6 +55,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         }
 
         public float PageWidthPixels { get; set; } = DEFAULT_PAGE_WIDTH_PIXELS;
+        public string PageTransitionFramesResource { get; set; } = PAGE_TRANSITION_FRAMES_RESOURCE;
         public Action<int> PageChanged { get; set; }
         public Func<RectangleF, int> PageProvider { get; set; }
         public RectangleF ViewBox { get; private set; }
@@ -75,18 +87,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         public int FirstVisiblePage
         {
             get { return _firstVisiblePage; }
-            set
-            {
-                int pageCount = GetPageCount();
-                int next = pageCount > 0 ? NormalizePageIndex(value, pageCount) : Math.Max(0, value);
-                if (_firstVisiblePage == next)
-                    return;
-
-                _firstVisiblePage = next;
-                InvalidateLayout();
-                if (PageChanged != null)
-                    PageChanged(_firstVisiblePage);
-            }
+            set { SetFirstVisiblePage(value, GetPreferredDirection(value)); }
         }
 
         bool MovePage(int direction)
@@ -94,7 +95,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             if (!_showControls || GetPageCount() <= 1)
                 return false;
 
-            FirstVisiblePage = _firstVisiblePage + (direction < 0 ? -1 : 1);
+            int step = direction < 0 ? -1 : 1;
+            SetFirstVisiblePage(_firstVisiblePage + step, step);
             return true;
         }
 
@@ -107,17 +109,117 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             if (pageIndex < 0 || pageIndex >= pageCount)
                 return false;
 
-            FirstVisiblePage = pageIndex;
+            SetFirstVisiblePage(pageIndex, 0);
             return true;
+        }
+
+        int GetPreferredDirection(int requestedPage)
+        {
+            if (requestedPage == _firstVisiblePage)
+                return 0;
+
+            return requestedPage < _firstVisiblePage ? -1 : 1;
+        }
+
+        void SetFirstVisiblePage(int value, int preferredDirection)
+        {
+            int pageCount = GetPageCount();
+            int next = pageCount > 0 ? NormalizePageIndex(value, pageCount) : Math.Max(0, value);
+            if (_firstVisiblePage == next)
+                return;
+
+            _firstVisiblePage = next;
+
+            if (CanAnimatePageChange(pageCount))
+                StartPageTransition(next, pageCount, preferredDirection);
+            else
+                SnapToSelectedPage(next);
+
+            if (PageChanged != null)
+                PageChanged(_firstVisiblePage);
+        }
+
+        bool CanAnimatePageChange(int pageCount)
+        {
+            return AnimationController != null &&
+                   pageCount > 1 &&
+                   GetPageTransitionFrames() > 0 &&
+                   _layoutPageCount == pageCount &&
+                   _visiblePageCount < pageCount &&
+                   _layoutPageWidth > 0f &&
+                   ContentViewportBounds.Width > 0f;
+        }
+
+        void StartPageTransition(int targetPage, int pageCount, int preferredDirection)
+        {
+            float targetPosition = GetNearestPagePosition(
+                _pagePosition,
+                targetPage,
+                pageCount,
+                preferredDirection);
+
+            _transitionStartPosition = _pagePosition;
+            _transitionTargetPosition = targetPosition;
+
+            _pageTransitionAnimation = this.RunAnimation(
+                PAGE_TRANSITION_CHANNEL,
+                AnimationConflict.Replace,
+                new Keyframe(
+                    () => _pagePosition,
+                    SetAnimatedPagePosition,
+                    targetPosition,
+                    GetPageTransitionFrames(),
+                    EasingMode.EaseInOutCubic),
+                new ActionKeyframe(CompletePageTransition, false));
+
+            ArrangePageChildren();
+            MarkDirty();
+        }
+
+        void SetAnimatedPagePosition(float position)
+        {
+            _pagePosition = position;
+            ArrangePageChildren();
+        }
+
+        int GetPageTransitionFrames()
+        {
+            return this.ResolveAnimationFrames(PageTransitionFramesResource, 0);
+        }
+
+        void CompletePageTransition()
+        {
+            _pagePosition = _firstVisiblePage;
+            _transitionStartPosition = _pagePosition;
+            _transitionTargetPosition = _pagePosition;
+            _pageTransitionAnimation = null;
+            ArrangePageChildren();
+        }
+
+        void SnapToSelectedPage(int pageIndex)
+        {
+            this.CancelAnimation(PAGE_TRANSITION_CHANNEL, false);
+            _pageTransitionAnimation = null;
+            _pagePosition = pageIndex;
+            _transitionStartPosition = pageIndex;
+            _transitionTargetPosition = pageIndex;
+            InvalidateLayout();
         }
 
         protected override void ArrangeChildren()
         {
-            var children = Children;
             float scale = Math.Max(0.01f, LayoutScale);
             int pageCount = ConfigureProvidedPages(scale);
             if (pageCount <= 0)
             {
+                this.CancelAnimation(PAGE_TRANSITION_CHANNEL, false);
+                _pageTransitionAnimation = null;
+                _layoutPageCount = 0;
+                _layoutPageWidth = 0f;
+                _layoutStartX = 0f;
+                _pagePosition = 0f;
+                _transitionStartPosition = 0f;
+                _transitionTargetPosition = 0f;
                 _showControls = false;
                 _visiblePageCount = 1;
                 ContentViewportBounds = ViewBox;
@@ -145,30 +247,95 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             float startX = ContentViewportBounds.X + Math.Max(0f, (ContentViewportBounds.Width - totalWidth) * 0.5f);
             _firstVisiblePage = NormalizePageIndex(_firstVisiblePage, pageCount);
 
-            for (int i = 0; i < children.Count; i++)
-            {
-                var child = children[i];
-                if (child == null || IsNavigationControl(child))
-                    continue;
+            bool pageCountChanged = _layoutPageCount != pageCount;
+            _layoutPageCount = pageCount;
+            _layoutPageWidth = pageWidth;
+            _layoutStartX = startX;
 
-                child.SetVisible(false);
+            if (pageCountChanged || allPagesFit)
+            {
+                this.CancelAnimation(PAGE_TRANSITION_CHANNEL, false);
+                _pageTransitionAnimation = null;
+                _pagePosition = _firstVisiblePage;
+                _transitionStartPosition = _pagePosition;
+                _transitionTargetPosition = _pagePosition;
             }
 
-            for (int visibleIndex = 0; visibleIndex < _visiblePageCount; visibleIndex++)
-            {
-                int pageIndex = NormalizePageIndex(_firstVisiblePage + visibleIndex, pageCount);
-                var child = GetPageAtIndex(pageIndex) as ControlTemplate;
-                if (child == null)
-                    continue;
-
-                child.SetVisible(true);
-                child.Arrange(new RectangleF(startX + visibleIndex * pageWidth, ContentViewportBounds.Y, pageWidth, ContentViewportBounds.Height));
-            }
+            ArrangePageChildren();
 
             ArrangeControls(scale);
             _leftButton.SetVisible(_showControls);
             _indicatorControl.SetVisible(_showControls);
             _rightButton.SetVisible(_showControls);
+        }
+
+        void ArrangePageChildren()
+        {
+            if (_layoutPageCount <= 0 || _layoutPageWidth <= 0f)
+                return;
+
+            var children = VisualChildren;
+            if (children == null)
+                return;
+
+            bool animating = _pageTransitionAnimation != null && _pageTransitionAnimation.IsRunning;
+            if (!animating)
+            {
+                _pageTransitionAnimation = null;
+                _pagePosition = _firstVisiblePage;
+                _transitionStartPosition = _pagePosition;
+                _transitionTargetPosition = _pagePosition;
+            }
+
+            float routeStart = animating
+                ? Math.Min(_transitionStartPosition, _transitionTargetPosition)
+                : _pagePosition;
+            float routeEnd = animating
+                ? Math.Max(_transitionStartPosition, _transitionTargetPosition) + _visiblePageCount - 1f
+                : _pagePosition + _visiblePageCount - 1f;
+            float viewportCenter = _pagePosition + (_visiblePageCount - 1f) * 0.5f;
+
+            int pageIndex = 0;
+            for (int i = 0; i < children.Count; i++)
+            {
+                var current = children[i];
+                if (IsNavigationControl(current))
+                    continue;
+
+                var child = current as ControlTemplate;
+                if (child == null)
+                {
+                    pageIndex++;
+                    continue;
+                }
+
+                if (pageIndex >= _layoutPageCount)
+                {
+                    child.SetVisible(false);
+                    pageIndex++;
+                    continue;
+                }
+
+                float slotPosition;
+                bool visible = TryGetNearestEquivalentInRange(
+                    pageIndex,
+                    viewportCenter,
+                    routeStart,
+                    routeEnd,
+                    _layoutPageCount,
+                    out slotPosition);
+                child.SetVisible(visible);
+                if (visible)
+                {
+                    child.Arrange(new RectangleF(
+                        _layoutStartX + (slotPosition - _pagePosition) * _layoutPageWidth,
+                        ContentViewportBounds.Y,
+                        _layoutPageWidth,
+                        ContentViewportBounds.Height));
+                }
+
+                pageIndex++;
+            }
         }
 
         int ConfigureProvidedPages(float scale)
@@ -295,7 +462,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
         void RenderPageChildren(List<MySprite> sprites)
         {
-            var children = Children;
+            var children = VisualChildren;
             if (children == null)
                 return;
 
@@ -325,17 +492,26 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             if (!_showControls || sprites == null)
                 return;
 
-            RenderArrow(sprites, _leftButtonBounds, "LeftArrow", CanMove(-1));
+            _leftButton.Render(sprites);
             RenderIndicators(sprites);
-            RenderArrow(sprites, _rightButtonBounds, "RightArrow", CanMove(1));
+            _rightButton.Render(sprites);
         }
 
-        void RenderArrow(List<MySprite> sprites, RectangleF rect, string texture, bool enabled)
+        void RenderArrow(
+            ArrowControl control,
+            List<MySprite> sprites,
+            RectangleF rect,
+            string texture,
+            bool enabled)
         {
-            var fg = ResolveColor(ThemeResources.OnSurfaceColor);
-            var color = enabled
-                ? new Color(fg.R, fg.G, fg.B, 180)
-                : new Color(fg.R, fg.G, fg.B, 45);
+            Color foreground = control != null
+                ? control.TextColor
+                : ResolveColor(ThemeResources.OnSurfaceColor);
+            float opacity = enabled ? 180f / 255f : 45f / 255f;
+            byte alpha = (byte)Math.Max(
+                0f,
+                Math.Min(255f, foreground.A * opacity));
+            var color = new Color(foreground.R, foreground.G, foreground.B, alpha);
             float iconSize = Math.Min(Math.Min(rect.Width, rect.Height) * 0.72f, ARROW_ICON_PIXELS * LayoutScale);
 
             sprites.Add(new MySprite
@@ -419,9 +595,64 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             return result < 0 ? result + pageCount : result;
         }
 
+        static float GetNearestPagePosition(
+            float currentPosition,
+            int targetPage,
+            int pageCount,
+            int preferredDirection)
+        {
+            if (pageCount <= 0)
+                return targetPage;
+
+            float lower = targetPage +
+                          (float)Math.Floor((currentPosition - targetPage) / pageCount) * pageCount;
+            float upper = lower + pageCount;
+            float lowerDistance = Math.Abs(currentPosition - lower);
+            float upperDistance = Math.Abs(upper - currentPosition);
+
+            if (Math.Abs(lowerDistance - upperDistance) <= 0.001f)
+                return preferredDirection < 0 ? lower : upper;
+
+            return lowerDistance < upperDistance ? lower : upper;
+        }
+
+        static bool TryGetNearestEquivalentInRange(
+            int pageIndex,
+            float referencePosition,
+            float rangeStart,
+            float rangeEnd,
+            int pageCount,
+            out float position)
+        {
+            if (pageCount <= 0)
+            {
+                position = pageIndex;
+                return false;
+            }
+
+            int minimumCycle = (int)Math.Ceiling((rangeStart - pageIndex - 0.001f) / pageCount);
+            int maximumCycle = (int)Math.Floor((rangeEnd - pageIndex + 0.001f) / pageCount);
+            if (minimumCycle > maximumCycle)
+            {
+                position = pageIndex;
+                return false;
+            }
+
+            float cyclePosition = (referencePosition - pageIndex) / pageCount;
+            int lowerCycle = (int)Math.Floor(cyclePosition);
+            int upperCycle = lowerCycle + 1;
+            int nearestCycle = Math.Abs(cyclePosition - lowerCycle) < Math.Abs(upperCycle - cyclePosition)
+                ? lowerCycle
+                : upperCycle;
+
+            nearestCycle = Math.Max(minimumCycle, Math.Min(maximumCycle, nearestCycle));
+            position = pageIndex + nearestCycle * pageCount;
+            return true;
+        }
+
         int GetPageCount()
         {
-            var children = Children;
+            var children = VisualChildren;
             if (children == null)
                 return 0;
 
@@ -449,26 +680,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             return false;
         }
 
-        Control GetPageAtIndex(int pageIndex)
-        {
-            var children = Children;
-            if (children == null || pageIndex < 0)
-                return null;
-
-            int currentPageIndex = 0;
-            for (int i = 0; i < children.Count; i++)
-            {
-                var current = children[i];
-                if (IsNavigationControl(current))
-                    continue;
-                if (currentPageIndex == pageIndex)
-                    return current;
-                currentPageIndex++;
-            }
-
-            return null;
-        }
-
         static bool IsNavigationControl(Control control)
         {
             return control is ArrowControl || control is IndicatorControl;
@@ -494,7 +705,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
         void EnsureControlsZOrder()
         {
-            var children = Children;
+            var children = VisualChildren;
             if (children == null || _leftButton == null || _rightButton == null)
                 return;
 
@@ -519,16 +730,17 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             return _showControls && GetPageCount() > 1;
         }
 
-        sealed class ArrowControl : ControlTemplate
+        sealed class ArrowControl : Button
         {
             readonly PagesPanel _owner;
             readonly int _direction;
 
             public ArrowControl(PagesPanel owner, int direction)
-                : base(CursorType.Hand, owner)
+                : base(default(RectangleF), CursorType.Hand, owner)
             {
                 _owner = owner;
                 _direction = direction;
+                SetStyleId("PageArrow");
                 SetClickOnPress();
                 SetOnClick((dataContext, sender) => { });
             }
@@ -556,6 +768,19 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
             protected override void RenderDefault(List<MySprite> sprites)
             {
+                RectangleF bounds;
+                if (_owner == null ||
+                    !_owner.TryGetButtonBounds(_direction, out bounds))
+                {
+                    return;
+                }
+
+                _owner.RenderArrow(
+                    this,
+                    sprites,
+                    bounds,
+                    _direction < 0 ? "LeftArrow" : "RightArrow",
+                    _owner.CanMove(_direction));
             }
 
             protected override bool HitCore(Vector2 point)

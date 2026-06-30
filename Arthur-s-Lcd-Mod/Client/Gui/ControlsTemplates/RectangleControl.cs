@@ -22,7 +22,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             MarkDirty();
         }
 
-        public override RectangleF Bounds => Rect;
+        public override RectangleF Bounds => GetRenderBounds(Rect);
 
         public override void Arrange(RectangleF bounds)
         {

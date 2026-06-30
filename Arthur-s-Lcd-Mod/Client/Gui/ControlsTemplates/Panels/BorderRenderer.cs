@@ -76,6 +76,38 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
                 Math.Max(0f, rect.Height - inset * 2f));
         }
 
+        public static void CreateBorderSpritesFromRect(
+            RectangleF rect,
+            List<MySprite> sprites,
+            Color backgroundColor,
+            Color borderColor,
+            float radiusPixels = DEFAULT_RADIUS_PIXELS,
+            float radiusScale = 1f,
+            float thicknessPixels = 1f)
+        {
+            if (sprites == null || rect.Width <= 0f || rect.Height <= 0f)
+                return;
+
+            float scale = Math.Max(0f, radiusScale);
+            float thickness = Math.Max(0f, thicknessPixels * scale);
+            if (thickness <= 0f || borderColor.A == 0)
+                return;
+
+            if (backgroundColor.A != byte.MaxValue)
+            {
+                throw new NotSupportedException(
+                    "Inner rounded borders require a fully opaque background. " +
+                    "Any background alpha would let the border layer show through the inset background.");
+            }
+
+            CreateSpritesFromRect(
+                rect,
+                sprites,
+                borderColor,
+                radiusPixels: radiusPixels,
+                radiusScale: scale);
+        }
+
         public static MySprite[] DrawRectangle(RectangleF rectangle, Color color, float finalScale = 1f,
             float radiusPixels = DEFAULT_RADIUS_PIXELS)
         {
@@ -219,6 +251,25 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             // Restore the owning element's rectangular clip. Parent controls can
             // further intersect this through their existing clipping behavior.
             sprites.Add(MySprite.CreateClipRect(new Rectangle(left, top, width, height)));
+        }
+
+        static void AddRectangleSprite(
+            List<MySprite> sprites,
+            float x,
+            float y,
+            float width,
+            float height,
+            Color color)
+        {
+            if (width <= 0f || height <= 0f)
+                return;
+
+            sprites.Add(new MySprite(
+                SpriteType.TEXTURE,
+                "SquareSimple",
+                new Vector2(x + width * 0.5f, y + height * 0.5f),
+                new Vector2(width, height),
+                color));
         }
 
         static void AddRectangleSprite(

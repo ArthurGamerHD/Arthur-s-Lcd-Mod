@@ -18,7 +18,7 @@ namespace LcdMod.Client.Apps
     internal sealed partial class RenderProxyApp : App
     {
         public RenderProxyApp(IAppHost host) : base(host) { }
-        public override IReadOnlyList<Control> Children { get; } = new Control[] { };
+        public override IReadOnlyList<Control> VisualChildren { get; } = new Control[] { };
         public override void Update() { }
         public override List<MySprite> GetSprites() { return new List<MySprite>(); }
     }
@@ -31,7 +31,7 @@ namespace LcdMod.Client.Apps
     internal sealed partial class GamesConfigApp : App
     {
         public GamesConfigApp(IAppHost host) : base(host) { }
-        public override IReadOnlyList<Control> Children { get; } = new Control[] { };
+        public override IReadOnlyList<Control> VisualChildren { get; } = new Control[] { };
         public override void Update() { }
         public override List<MySprite> GetSprites() { return new List<MySprite>(); }
     }
@@ -41,7 +41,7 @@ namespace LcdMod.Client.Apps
     internal sealed partial class BSoDTestApp : App
     {
         public BSoDTestApp(IAppHost host) : base(host) { }
-        public override IReadOnlyList<Control> Children { get; } = new Control[] { };
+        public override IReadOnlyList<Control> VisualChildren { get; } = new Control[] { };
         public override void Update() { }
         public override List<MySprite> GetSprites() { return new List<MySprite>(); }
     }

@@ -4,10 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using Generated;
+using LcdMod.Client.Animation;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Config;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.GridData;
+using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Gui.UserControls;
@@ -122,6 +124,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         bool _dirty;
         bool _disposed;
 
+        public AnimationController Animations { get; private set; }
         public ScreenProviderConfig ProviderConfig { get; private set; }
         protected bool IsScreenReadyToRender { get; private set; }
         public event Action<SurfaceScriptBase> OnRender;
@@ -129,6 +132,11 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         protected SurfaceScriptBase(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block,
             size)
         {
+            Animations = new AnimationController(
+                GetAnimationFrame,
+                ScheduleAnimationFrame,
+                RenderSprites);
+
             WaitForFrame = MyAPIGateway.Session.GameplayFrameCounter + 6 * 5; // minimum of 5 frames splash screen 
             Block = (IMyCubeBlock)base.Block;
             var terminalBlock = (IMyTerminalBlock)Block;
@@ -203,6 +211,19 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
             LogHelper.Log(MyLogSeverity.Warning, "Failed to find surface {0} for {1}", Surface.Name, Block);
             return -1;
+        }
+
+        static long GetAnimationFrame()
+        {
+            return MyAPIGateway.Session != null
+                ? MyAPIGateway.Session.GameplayFrameCounter
+                : 0L;
+        }
+
+        static void ScheduleAnimationFrame(Action action)
+        {
+            if (action != null)
+                LcdModClientComponent.RunNextFrame.Add(action);
         }
 
         void DrawSplash()
@@ -286,6 +307,16 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
             try
             {
+                if (Animations != null)
+                    Animations.Dispose();
+            }
+            catch (Exception e)
+            {
+                ErrorHandlerHelper.LogError(e, this);
+            }
+
+            try
+            {
                 if (Block != null)
                 {
                     Block.OnMarkForClose -= HandleBlockMarkedForClose;
@@ -327,7 +358,14 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             if (appBase == null)
                 return;
 
-            appBase.Close();
+            try
+            {
+                appBase.Close();
+            }
+            finally
+            {
+                appBase.CancelAnimationTree();
+            }
         }
 
         protected virtual void UpdateViewBox()

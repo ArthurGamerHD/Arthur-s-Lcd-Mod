@@ -1437,7 +1437,8 @@ namespace LcdMod.Client.Games.Minesweeper
             }
         }
         
-        public IReadOnlyList<Control> Children { get; set; }
+        public IReadOnlyList<Control> LogicalChildren => Interactive;
+        public IReadOnlyList<Control> VisualChildren => Interactive;
 
         public bool HasVisibleItems()
         {

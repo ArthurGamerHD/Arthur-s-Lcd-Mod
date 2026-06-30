@@ -44,7 +44,7 @@ namespace LcdMod.Client.Apps
         const float MAX_VELOCITY_VECTOR_METERS_PER_SECOND = 10f;
 
         // todo: convert to interactive app
-        public override IReadOnlyList<Control> Children { get; } = new Control[]{};
+        public override IReadOnlyList<Control> VisualChildren { get; } = new Control[]{};
         
         static readonly List<MyTerminalControlComboBoxItem> DockingDisplayModes =
             new List<MyTerminalControlComboBoxItem>

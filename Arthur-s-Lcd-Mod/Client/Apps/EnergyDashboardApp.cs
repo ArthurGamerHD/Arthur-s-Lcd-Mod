@@ -86,7 +86,7 @@ namespace LcdMod.Client.Apps
 
         public EnergyDashboardApp(IAppHost host) : base(host)
         {
-            _rootGrid = AddChild(new ControlGrid(default(RectangleF), new[] { 1f },
+            _rootGrid = AddLogicalChild(new ControlGrid(default(RectangleF), new[] { 1f },
                 new[] { PROGRESS_ROW_WEIGHT, BUTTON_ROW_WEIGHT, 90f, 140f }));
             _progressGrid = new ControlGrid(default(RectangleF), new[] { 1f, 1f, 1f }, new[] { 1f });
             var columns = new float[SCALE_TIER_COUNT];
@@ -153,7 +153,7 @@ namespace LcdMod.Client.Apps
             return page;
         }
 
-        public override IReadOnlyList<Control> Children => _children;
+        public override IReadOnlyList<Control> VisualChildren => _children;
 
         public override void Update()
         {

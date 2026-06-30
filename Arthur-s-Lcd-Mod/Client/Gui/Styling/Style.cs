@@ -1,4 +1,5 @@
 using System;
+using LcdMod.Client.Animation;
 using LcdMod.Client.Gui.ControlsTemplates;
 
 namespace LcdMod.Client.Gui.Styling
@@ -28,6 +29,16 @@ namespace LcdMod.Client.Gui.Styling
             ResourceKey<TValue> key)
         {
             Resources.Set(property, key);
+            return this;
+        }
+
+        public Style Animate<TValue>(
+            StyleProperty<TValue> property,
+            int durationFrames,
+            EasingMode easingMode,
+            AnimationInterpolator<TValue> interpolator)
+        {
+            Animations.Set(property, durationFrames, easingMode, interpolator);
             return this;
         }
 
@@ -83,6 +94,16 @@ namespace LcdMod.Client.Gui.Styling
             ResourceKey<TValue> key)
         {
             Resources.Set(property, key);
+            return this;
+        }
+
+        public new Style<TControl> Animate<TValue>(
+            StyleProperty<TValue> property,
+            int durationFrames,
+            EasingMode easingMode,
+            AnimationInterpolator<TValue> interpolator)
+        {
+            Animations.Set(property, durationFrames, easingMode, interpolator);
             return this;
         }
 

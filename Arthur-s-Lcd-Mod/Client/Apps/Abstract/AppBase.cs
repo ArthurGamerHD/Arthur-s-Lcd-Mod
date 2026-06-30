@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using LcdMod.Client.Animation;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
@@ -20,7 +21,8 @@ namespace LcdMod.Client.Apps.Abstract
     [ConfigComponent(Constants.INTERACTION, typeof(InteractiveConfigComponent), PropertyName = "InteractionComponent")]
     public abstract partial class App : Control, IApp, ITextSurfaceProvider, ITextStyleProvider
     {
-        readonly List<Control> _rootControls = new List<Control>();
+        readonly List<Control> _logicalChildren = new List<Control>();
+        readonly AnimationController _animationController;
         StyleTree _styles;
         ResourceTree _resources;
         Dictionary<string, Color> _theme;
@@ -39,11 +41,14 @@ namespace LcdMod.Client.Apps.Abstract
             if (Host == null)
                 throw new ArgumentNullException(nameof(host));
 
+            _animationController = Host.Animations;
             _styles = DefaultStyleBuilder.Build();
         }
 
         protected IAppHost Host { get; private set; }
         protected IComponentContainer Config => Host.Config;
+        internal override AnimationController AnimationController => _animationController;
+        public override IReadOnlyList<Control> LogicalChildren => _logicalChildren;
 
         public override StyleTree Styles => _styles;
 
@@ -61,18 +66,49 @@ namespace LcdMod.Client.Apps.Abstract
             _isDirty = false;
         }
 
-        protected T AddChild<T>(T control)
+        protected T AddLogicalChild<T>(T control)
             where T : ControlTemplate
         {
             if (control == null)
                 return null;
 
-            if (!_rootControls.Contains(control))
-                _rootControls.Add(control);
+            var previousOwner = control.StyleParent as App;
+            if (previousOwner != null && !ReferenceEquals(previousOwner, this))
+                previousOwner.RemoveLogicalChild(control);
+
+            if (!_logicalChildren.Contains(control))
+                _logicalChildren.Add(control);
 
             control.SetStyleParent(this);
             MarkDirty();
             return control;
+        }
+
+        protected bool RemoveLogicalChild(Control control)
+        {
+            if (control == null || !_logicalChildren.Remove(control))
+                return false;
+
+            var visualChildren = VisualChildren as IList<Control>;
+            if (visualChildren != null &&
+                !ReferenceEquals(visualChildren, _logicalChildren) &&
+                !visualChildren.IsReadOnly)
+            {
+                visualChildren.Remove(control);
+            }
+
+            control.CancelAnimationTree(_animationController);
+            if (ReferenceEquals(control.StyleParent, this))
+                control.SetStyleParent(null);
+
+            MarkDirty();
+            return true;
+        }
+
+        protected void ClearLogicalChildren()
+        {
+            for (int i = _logicalChildren.Count - 1; i >= 0; i--)
+                RemoveLogicalChild(_logicalChildren[i]);
         }
 
         public Sandbox.ModAPI.Ingame.IMyTextSurface TextSurface => Host.Surface;
@@ -206,5 +242,6 @@ namespace LcdMod.Client.Apps.Abstract
             return backgroundColor.ContrastRatio(Color.Black) >=
                    backgroundColor.ContrastRatio(Color.White);
         }
+
     }
 }

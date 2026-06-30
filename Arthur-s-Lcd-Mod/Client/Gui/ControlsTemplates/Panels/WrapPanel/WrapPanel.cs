@@ -100,7 +100,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel
             int rows = WrapPanelLayout.CalculateTotalRows(
                 availableSize.X,
                 MinimumColumnWidth,
-                Children.Count,
+                VisualChildren.Count,
                 ForceSingleColumn);
 
             float height = rows * RowHeight + Math.Max(0, rows - 1) * VerticalGap;
@@ -109,7 +109,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel
 
         protected override void ArrangeChildren()
         {
-            var children = Children;
+            var children = VisualChildren;
             if (children == null || children.Count == 0)
                 return;
 

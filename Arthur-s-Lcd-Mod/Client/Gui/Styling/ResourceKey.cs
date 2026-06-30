@@ -48,5 +48,18 @@ namespace LcdMod.Client.Gui.Styling
             
             return resourceKey;
         }
+
+        public static bool TryGet<TValue>(string name, out ResourceKey<TValue> resourceKey)
+        {
+            ResourceKeyBase key;
+            if (Resources.TryGetValue(name, out key))
+            {
+                resourceKey = key as ResourceKey<TValue>;
+                return resourceKey != null;
+            }
+
+            resourceKey = null;
+            return false;
+        }
     }
 }

@@ -25,6 +25,15 @@ namespace LcdMod.Client.Gui.Styling
             return StyleTreeWalker.TryResolve(this, target, id, state, property, out value);
         }
 
+        internal void ResolveAnimations(
+            ControlTemplate target,
+            string id,
+            StyleState state,
+            Dictionary<int, StyleAnimationBase> animations)
+        {
+            StyleTreeWalker.ResolveAnimations(this, target, id, state, animations);
+        }
+
         internal IList<StyleNode> Roots => _roots;
     }
 }

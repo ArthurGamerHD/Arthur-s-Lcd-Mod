@@ -13,7 +13,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
         Up
     }
 
-    public sealed class ComboBox<T> : RectangleControl
+    public sealed class ComboBox<T> : Button
     {
         readonly List<T> _options = new List<T>();
         readonly List<Button> _optionButtons = new List<Button>();
@@ -97,7 +97,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
         protected override void RenderDefault(List<MySprite> sprites)
         {
             UpdateLayoutScale(LayoutScale);
-            RenderButton(this, Bounds, GetLabel(_selectedValue), true, false, Enabled && IsMouseOver, sprites);
+            RenderButton(this, Bounds, GetLabel(_selectedValue), true, false, sprites);
         }
 
         protected override StyleState GetStyleState()
@@ -213,26 +213,28 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
 
             var model = control.DataContext as ComboBoxOptionModel<T>;
             var selected = model != null && EqualityComparer<T>.Default.Equals(_selectedValue, model.Value);
-            RenderButton(control, control.Bounds, model != null ? model.Text : string.Empty, false, selected,
-                control.IsMouseOver, sprites);
+            RenderButton(control, control.Bounds, model != null ? model.Text : string.Empty, false, selected, sprites);
         }
 
-        void RenderButton(ControlTemplate control, RectangleF rect, string text, bool drawArrow, bool selected, bool hovered,
+        void RenderButton(ControlTemplate control, RectangleF rect, string text, bool drawArrow, bool selected,
             List<MySprite> sprites)
         {
             var scale = Math.Max(0.01f, _layoutScale);
-            var active = hovered || selected;
-            var panelColor = active
-                ? GetResourceColor(ThemeResources.AccentColor, BackgroundColor)
-                : BackgroundColor;
-            var textColor = active
-                ? GetResourceColor(ThemeResources.OnAccentColor, TextColor)
-                : TextColor;
-            var textScale = 0.58f * scale * ResolveStyleValue(ControlTemplate.FontScaleProperty);
+            var panelColor = control != null ? control.BackgroundColor : BackgroundColor;
+            var textColor = control != null ? control.TextColor : TextColor;
+
+            if (selected)
+            {
+                panelColor = GetResourceColor(ThemeResources.AccentColor, panelColor);
+                textColor = GetResourceColor(ThemeResources.OnAccentColor, textColor);
+            }
+
+            var textScale = 0.58f * scale * (control != null ? control.FontScale : FontScale);
             var fontId = control != null ? control.TextFont : TextFont;
+            var borderRadius = control != null ? control.GetEffectiveRenderBorderRadiusPixels() : GetEffectiveRenderBorderRadiusPixels();
 
             BorderRenderer.CreateSpritesFromRect(rect, sprites, panelColor,
-                radiusPixels: BorderRadiusPixels,
+                radiusPixels: borderRadius,
                 radiusScale: scale);
             sprites.Add(new MySprite
             {

@@ -37,7 +37,7 @@ namespace LcdMod.Client.Apps
 
         readonly List<MySprite> _sprites = new List<MySprite>();
 
-        public override IReadOnlyList<Control> Children { get; } = new Control[] {};
+        public override IReadOnlyList<Control> VisualChildren { get; } = new Control[] {};
 
         public VisibleTreeDebugApp(VisibleTreeDebugSurfaceScript host)
             : base(host)
@@ -245,7 +245,7 @@ namespace LcdMod.Client.Apps
                 return;
             }
 
-            var children = control.Children;
+            var children = control.VisualChildren;
             if (children == null || children.Count == 0)
                 return;
 
@@ -294,7 +294,8 @@ namespace LcdMod.Client.Apps
                     sb.Append(" auto=").Append(scrollPanel.AutoScrollSecondsPerStep.ToString("0.##"));
             }
 
-            sb.Append(" children=").Append(control.Children?.Count ?? 0);
+            sb.Append(" visual=").Append(control.VisualChildren?.Count ?? 0)
+                .Append(" logical=").Append(control.LogicalChildren?.Count ?? 0);
             sb.Append(" bounds=").Append(FormatRect(control.Bounds));
 
             return sb.ToString();

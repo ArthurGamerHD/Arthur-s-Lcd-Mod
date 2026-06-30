@@ -65,6 +65,18 @@ public sealed class MarkdownParserSnapshotTests
         Assert.Equal("Arrow", image.Source);
     }
 
+    [Fact]
+    public void ParseCustomInfoArgbColorTag()
+    {
+        MarkdownDocument document = new MarkdownParser().Parse("[Color=#8012ABEF]Tinted[/Color]");
+        ParagraphBlock paragraph = Assert.IsType<ParagraphBlock>(Assert.Single(document.Blocks));
+        ColorInline color = Assert.IsType<ColorInline>(Assert.Single(paragraph.Inlines));
+        TextInline text = Assert.IsType<TextInline>(Assert.Single(color.Children));
+
+        Assert.Equal("#8012ABEF", color.Color);
+        Assert.Equal("Tinted", text.Text);
+    }
+
     [Theory]
     [MemberData(nameof(MarkdownCases))]
     public void ParseMarkdown(string name, string markdown)

@@ -36,7 +36,7 @@ namespace LcdMod.Client.Apps
         readonly ScrollPanel _scrollPanel;
         readonly VirtualizedWrapPanel<PowerEntry> _gridPanel;
         
-        public override IReadOnlyList<Control> Children => _children;
+        public override IReadOnlyList<Control> VisualChildren => _children;
 
         public PowerFilledApp(IAppHost surfaceHost) : base(surfaceHost)
         {
@@ -45,7 +45,7 @@ namespace LcdMod.Client.Apps
             if (_interactiveHost == null)
                 throw new ArgumentException("PowerFilledApp requires an InteractiveSurfaceScript host.", "surfaceHost");
 
-            _scrollPanel = AddChild(new ScrollPanel(CursorType.Default, this));
+            _scrollPanel = AddLogicalChild(new ScrollPanel(CursorType.Default, this));
             _scrollPanel.ScrollChanged = OnScrollPanelChanged;
             _scrollPanel.SetVisible(false);
             _gridPanel = new VirtualizedWrapPanel<PowerEntry>

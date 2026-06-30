@@ -238,6 +238,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
         {
             var button = new Button(default(RectangleF), new RowHitButtonModel { Clicked = OnMarketRowClicked });
             button.SetClass("ControlBase Button NpcMarketRowHit");
+            button.BorderThicknessPixels = 0f;
             button.CustomRender = RenderRowHitButton;
             return button;
         }

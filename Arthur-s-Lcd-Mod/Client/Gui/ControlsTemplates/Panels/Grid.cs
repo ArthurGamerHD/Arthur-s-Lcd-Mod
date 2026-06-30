@@ -149,7 +149,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
         protected override void ArrangeChildren()
         {
-            var children = Children;
+            var children = VisualChildren;
             if (children == null)
                 return;
 

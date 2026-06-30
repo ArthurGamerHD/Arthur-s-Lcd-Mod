@@ -61,9 +61,12 @@ namespace LcdMod.Common.Config
                         return null;
 
                     var supported = current.NormalizeComponentSchema();
-                    MyLog.Default.WriteLine(supported
-                        ? $"[LcdMod] Loaded component config schema {current.SchemaVersion}."
-                        : $"[LcdMod] Loaded newer component config schema {current.SchemaVersion} read-only; current schema is {ScreenProviderConfig.COMPONENT_SCHEMA_VERSION}.");
+#if DEBUG
+                    MyLog.Default.WriteLine(supported ? $"[LcdMod] Loaded component config schema {current.SchemaVersion}." : 
+#else
+                    if(!supported) MyLog.Default.WriteLine(
+#endif
+                    $"[LcdMod] Loaded newer component config schema {current.SchemaVersion} read-only; current schema is {ScreenProviderConfig.COMPONENT_SCHEMA_VERSION}.");
                     return current;
                 }
                 catch (Exception exception)

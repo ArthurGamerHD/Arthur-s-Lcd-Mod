@@ -53,7 +53,7 @@ namespace LcdMod.Client.Apps
             if (_interactiveHost == null)
                 throw new ArgumentException("CargoFilledApp requires an InteractiveSurfaceScript host.", "host");
 
-            _scrollPanel = AddChild(new ScrollPanel(CursorType.Default, this));
+            _scrollPanel = AddLogicalChild(new ScrollPanel(CursorType.Default, this));
             _scrollPanel.ScrollChanged = OnScrollPanelChanged;
             _scrollPanel.SetVisible(false);
             _listPanel = new VisualStackPanel();
@@ -62,7 +62,7 @@ namespace LcdMod.Client.Apps
         }
         public bool HasEntries => _entries.Count > 0;
 
-        public override IReadOnlyList<Control> Children => _children;
+        public override IReadOnlyList<Control> VisualChildren => _children;
 
         public override void Update()
         {
@@ -384,7 +384,7 @@ namespace LcdMod.Client.Apps
 
         private void RenderGridPanelContent(ControlTemplate control, List<MySprite> sprites)
         {
-            var children = control?.Children;
+            var children = control?.VisualChildren;
             if (children == null)
                 return;
 
@@ -439,7 +439,7 @@ namespace LcdMod.Client.Apps
 
         private static void RemoveStalePanelChildren(Panel panel, HashSet<long> desiredIds)
         {
-            var children = panel.Children;
+            var children = panel.VisualChildren;
             if (children == null)
                 return;
 
@@ -459,7 +459,7 @@ namespace LcdMod.Client.Apps
             if (panel == null || desired == null)
                 return;
 
-            var children = panel.Children;
+            var children = panel.VisualChildren;
             var changed = false;
             for (var i = 0; i < desired.Count; i++)
             {
@@ -470,7 +470,7 @@ namespace LcdMod.Client.Apps
                 if (!ReferenceEquals(child.Parent, panel))
                 {
                     panel.AddChild(child);
-                    children = panel.Children;
+                    children = panel.VisualChildren;
                     changed = true;
                 }
 

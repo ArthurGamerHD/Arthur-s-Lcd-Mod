@@ -22,7 +22,7 @@ namespace LcdMod.Client.Apps
         string _loadedText;
 
         // todo: convert to interactive app
-        public override IReadOnlyList<Control> Children { get; } = new Control[]{};
+        public override IReadOnlyList<Control> VisualChildren { get; } = new Control[]{};
         
         public MarkdownApp(IAppHost host) : base(host)
         {

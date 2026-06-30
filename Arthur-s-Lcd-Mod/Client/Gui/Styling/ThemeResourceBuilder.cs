@@ -45,6 +45,8 @@ namespace LcdMod.Client.Gui.Styling
             resources.Set(ThemeResources.ScrollBarThumbPressedColor, scrollBarThumbColor.DeriveAccentColor().DeriveAccentColor());
 
             resources.Set(ThemeResources.TextFont, "White");
+            resources.Set(ThemeResources.PageTransitionFrames, 24);
+            resources.Set(ThemeResources.PictureTransitionFrames, 24);
             
             resources.Set(MarketThemeResources.PriceTrendUpColor, theme[Constants.SUCCESS]);
             resources.Set(MarketThemeResources.PriceTrendDownColor, theme[Constants.ERROR]);

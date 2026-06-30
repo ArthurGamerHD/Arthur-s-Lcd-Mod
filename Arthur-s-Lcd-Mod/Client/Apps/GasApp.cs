@@ -43,12 +43,12 @@ namespace LcdMod.Client.Apps
         readonly VisualWrapPanel _gridPanel;
 
         // todo: convert to interactive app
-        public override IReadOnlyList<Control> Children { get; } = new Control[]{};
+        public override IReadOnlyList<Control> VisualChildren { get; } = new Control[]{};
         public bool HasEntries => _entries.Count > 0;
 
         public GasApp(IAppHost host) : base(host)
         {
-            _scrollPanel = AddChild(new ScrollPanel(CursorType.Default, this));
+            _scrollPanel = AddLogicalChild(new ScrollPanel(CursorType.Default, this));
             _scrollPanel.SetVisible(false);
             _listPanel = new VisualStackPanel();
             _gridPanel = new VisualWrapPanel();
@@ -145,7 +145,7 @@ namespace LcdMod.Client.Apps
             EnsureEntryControlCount(_entries.Count);
             RemoveExtraPanelChildren(panel, _entries.Count);
 
-            var children = panel.Children;
+            var children = panel.VisualChildren;
             bool changed = false;
             for (int i = 0; i < _entries.Count; i++)
             {
@@ -157,7 +157,7 @@ namespace LcdMod.Client.Apps
                 if (!ReferenceEquals(control.Parent, panel))
                 {
                     panel.AddChild(control);
-                    children = panel.Children;
+                    children = panel.VisualChildren;
                     changed = true;
                 }
 
@@ -189,7 +189,7 @@ namespace LcdMod.Client.Apps
 
         void RemoveExtraPanelChildren(Panel panel, int desiredCount)
         {
-            var children = panel.Children;
+            var children = panel.VisualChildren;
             if (children == null)
                 return;
 
@@ -231,7 +231,7 @@ namespace LcdMod.Client.Apps
 
         void RenderGridPanelContent(ControlTemplate control, List<MySprite> sprites)
         {
-            var children = control?.Children;
+            var children = control?.VisualChildren;
             if (children == null)
                 return;
 

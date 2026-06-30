@@ -71,7 +71,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
         protected override void ArrangeChildren()
         {
-            var children = Children;
+            var children = VisualChildren;
             int pageCount = GetPageCount();
             if (pageCount <= 0)
             {
@@ -207,7 +207,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
         int GetPageCount()
         {
-            var children = Children;
+            var children = VisualChildren;
             if (children == null)
                 return 0;
 
@@ -223,7 +223,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
         int GetPageIndex(ControlTemplate child)
         {
-            var children = Children;
+            var children = VisualChildren;
             if (children == null)
                 return -1;
 
@@ -243,7 +243,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
         ControlTemplate GetPageAtIndex(int pageIndex)
         {
-            var children = Children;
+            var children = VisualChildren;
             if (children == null || pageIndex < 0)
                 return null;
 
@@ -268,7 +268,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
         void EnsureArrowZOrder()
         {
-            var children = Children;
+            var children = VisualChildren;
             if (children == null || _leftArrow == null || _rightArrow == null)
                 return;
 

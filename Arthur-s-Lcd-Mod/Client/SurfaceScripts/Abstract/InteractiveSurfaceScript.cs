@@ -299,7 +299,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             if (entry.Tooltip != null && Equals(entry.DataContext, dataContext))
                 return entry;
 
-            var children = entry.Children;
+            var children = entry.VisualChildren;
             if (children == null || children.Count == 0)
                 return null;
 
@@ -713,7 +713,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         public virtual bool IsInsideContainer(ControlTemplate entry, Vector2 position)
         {
-            if (entry == null || !entry.Visible || entry.Children == null || entry.Children.Count == 0)
+            if (entry == null || !entry.Visible || entry.VisualChildren == null || entry.VisualChildren.Count == 0)
                 return false;
 
             return entry.Hit(position) || _hasTooltipBounds && ReferenceEquals(entry, _activeTooltipParentEntry);

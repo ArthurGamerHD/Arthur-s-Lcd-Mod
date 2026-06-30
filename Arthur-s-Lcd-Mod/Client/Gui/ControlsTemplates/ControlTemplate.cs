@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using LcdMod.Client.Animation;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Gui.Tooltip;
@@ -40,6 +41,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         public static readonly StyleProperty<float> OpacityProperty =
             StyleProperty.Register<ControlTemplate, float>("Opacity", 1f);
 
+        public static readonly StyleProperty<RenderTransform> RenderTransformProperty =
+            StyleProperty.Register<ControlTemplate, RenderTransform>(
+                "RenderTransform",
+                LcdMod.Client.Animation.RenderTransform.Identity,
+                false);
+
         public static readonly StyleProperty<Color> BackgroundColorProperty =
             StyleProperty.Register<ControlTemplate, Color>("BackgroundColor", (Color?)Color.Gray);
 
@@ -55,10 +62,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         public static readonly StyleProperty<Vector4> PaddingProperty =
             StyleProperty.Register<ControlTemplate, Vector4>("Padding", (Vector4?)Vector4.Zero);
         
+        internal ControlAnimationState AnimationState;
+
+        RectangleF? _renderBoundsOverride;
+        float _renderBorderRadiusInsetPixels;
         bool _isLayoutDirty = true;
 
         public bool WasMouseOver { get; private set; }
         public bool IsMouseOver { get; private set; }
+        public bool IsPressed { get; private set; }
 
         public bool IsPointerOver => IsMouseOver;
 
@@ -75,6 +87,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         {
             SetMouseOver(value);
         }
+
+        internal void SetPressed(bool value)
+        {
+            if (IsPressed == value)
+                return;
+
+            IsPressed = value;
+            MarkDirty();
+        }
         
         public override Control SetEnabled(bool enabled)
         {
@@ -88,7 +109,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         }
 
         readonly List<Control> _children = new List<Control>();
-        public override IReadOnlyList<Control> Children => _children;
+        public override IReadOnlyList<Control> LogicalChildren => _children;
+        public override IReadOnlyList<Control> VisualChildren => _children;
 
         public bool HasChildren => _children.Count > 0;
         public ControlTemplate Parent { get; private set; }
@@ -171,6 +193,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
                 var child = _children[i] as ControlTemplate;
                 if (child != null && ReferenceEquals(child.Parent, this))
                 {
+                    child.CancelAnimationTree(AnimationController);
                     child.Parent = null;
                     child.SetStyleParent(null);
                 }
@@ -245,6 +268,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             if (ReferenceEquals(childControl.Parent, this))
                 childControl.Parent = null;
 
+            childControl.CancelAnimationTree(AnimationController);
             childControl.SetStyleParent(null);
 
             OnChildrenChanged();
@@ -452,22 +476,60 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             if (!Visible || sprites == null)
                 return;
 
+            this.UpdateStyleStateAnimations();
+
+            int spriteStart = sprites.Count;
+            RectangleF renderBounds = Bounds;
+            RenderTransform renderTransform = RenderTransform ?? LcdMod.Client.Animation.RenderTransform.Identity;
+            RectangleF? inheritedClip = GetInheritedClipBounds();
+            bool rendered = false;
+
             try
             {
                 var customRender = CustomRender ?? Model?.CustomRender;
 
-                if (customRender != null)
-                {
-                    customRender(this, sprites);
-                    return;
-                }
+                // Draw the interaction border at the control's normal bounds,
+                // then render the button itself against an inset bounds. This
+                // preserves the existing two-layer rounded rendering while
+                // keeping the border inside the layout/hit-test rectangle.
+                float borderInsetPixels = ShouldRenderStyleBorder()
+                    ? RenderStyleBorder(sprites)
+                    : 0f;
 
-                RenderDefault(sprites);
+                if (borderInsetPixels > 0f)
+                    BeginStyleBorderBackgroundInset(renderBounds, borderInsetPixels);
+
+                if (customRender != null)
+                    customRender(this, sprites);
+                else
+                    RenderDefault(sprites);
+
+                rendered = true;
             }
             finally
             {
+                EndStyleBorderBackgroundInset();
+
+                if (rendered)
+                {
+                    this.ApplyRenderTransform(
+                        sprites,
+                        spriteStart,
+                        renderBounds,
+                        inheritedClip,
+                        renderTransform);
+                }
+
                 CompleteRenderState();
             }
+        }
+
+        RectangleF? GetInheritedClipBounds()
+        {
+            ControlTemplate clipParent = FindClipContentParent();
+            return clipParent != null
+                ? (RectangleF?)clipParent.ClipContentBounds
+                : null;
         }
 
         void CompleteRenderState()
@@ -492,6 +554,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             if (IsMouseOver)
                 state |= StyleState.Hover;
 
+            if (IsPressed)
+                state |= StyleState.Pressed;
+
             if (!Enabled)
                 state |= StyleState.Disabled;
 
@@ -509,6 +574,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         {
             if (value.LocalOverride)
                 return value.Local;
+
+            TValue animatedValue;
+            if (this.TryGetAnimatedStyleValue(property, out animatedValue))
+                return animatedValue;
 
             if (IsDirty || HasDirtyStyleAncestor() || !value.HasCache)
             {
@@ -542,11 +611,22 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             StyleProperty<TValue> property,
             out TValue value)
         {
+            return TryResolveStyleValueForState(
+                property,
+                GetStyleStateForResolver(),
+                out value);
+        }
+
+        internal bool TryResolveStyleValueForState<TValue>(
+            StyleProperty<TValue> property,
+            StyleState state,
+            out TValue value)
+        {
             int guard = 0;
             for (IVisualStyleScope scope = this; scope != null && guard++ < 128;)
             {
                 StyleTree styles = scope.Styles;
-                if (styles != null && styles.TryResolve(this, StyleId, GetStyleStateForResolver(), property, out value))
+                if (styles != null && styles.TryResolve(this, StyleId, state, property, out value))
                     return true;
 
                 IVisualStyleScope next = scope.StyleParent;
@@ -562,12 +642,19 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 
         protected TValue ResolveStyleValue<TValue>(StyleProperty<TValue> property)
         {
+            return ResolveStyleValueForState(property, GetStyleStateForResolver());
+        }
+
+        internal TValue ResolveStyleValueForState<TValue>(
+            StyleProperty<TValue> property,
+            StyleState state)
+        {
             TValue value;
 
-            if (TryResolveStyleValue(property, out value))
+            if (TryResolveStyleValueForState(property, state, out value))
                 return value;
 
-            if (Parent != null)
+            if (property.Inherits && Parent != null)
                 return Parent.ResolveStyleValue(property);
 
             if (property.HasDefaultValue)
@@ -609,6 +696,64 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             return BackgroundColor;
         }
 
+        protected virtual bool ShouldRenderStyleBorder()
+        {
+            return false;
+        }
+
+        float RenderStyleBorder(List<MySprite> sprites)
+        {
+            RectangleF rect = GetViewBox();
+            if (rect.Width <= 0f || rect.Height <= 0f)
+                return 0f;
+
+            float thicknessPixels = Math.Max(0f, BorderThicknessPixels);
+            Color borderColor = ApplyOpacity(BorderColor);
+            if (thicknessPixels <= 0f || borderColor.A == 0)
+                return 0f;
+
+            BorderRenderer.CreateBorderSpritesFromRect(
+                rect,
+                sprites,
+                GetRenderBackgroundColor(),
+                borderColor,
+                GetRenderBorderRadiusPixels(),
+                LayoutScale,
+                thicknessPixels);
+
+            return thicknessPixels;
+        }
+
+        void BeginStyleBorderBackgroundInset(RectangleF bounds, float thicknessPixels)
+        {
+            float scaledThickness = Math.Max(0f, thicknessPixels * Math.Max(0f, LayoutScale));
+            if (scaledThickness <= 0f)
+                return;
+
+            _renderBoundsOverride = new RectangleF(
+                bounds.X + scaledThickness,
+                bounds.Y + scaledThickness,
+                Math.Max(0f, bounds.Width - scaledThickness * 2f),
+                Math.Max(0f, bounds.Height - scaledThickness * 2f));
+            _renderBorderRadiusInsetPixels = thicknessPixels;
+        }
+
+        void EndStyleBorderBackgroundInset()
+        {
+            _renderBoundsOverride = null;
+            _renderBorderRadiusInsetPixels = 0f;
+        }
+
+        internal RectangleF GetRenderBounds(RectangleF bounds)
+        {
+            return _renderBoundsOverride ?? bounds;
+        }
+
+        internal float GetEffectiveRenderBorderRadiusPixels()
+        {
+            return Math.Max(0f, BorderRadiusPixels - _renderBorderRadiusInsetPixels);
+        }
+
         protected Color ApplyOpacity(Color color)
         {
             float opacity = MathHelper.Clamp(Opacity, 0f, 1f);
@@ -630,7 +775,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 
         protected virtual float GetRenderBorderRadiusPixels()
         {
-            return BorderRadiusPixels;
+            return GetEffectiveRenderBorderRadiusPixels();
         }
 
         public RectangleF GetViewBox()

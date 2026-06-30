@@ -41,6 +41,21 @@ namespace LcdMod.Client.Gui.UserControls
             renderer.Render(document);
         }
 
+        public static Vector2 MeasureContent(
+            MarkdownDocument document,
+            float maxWidth,
+            IAppHost context)
+        {
+            if (document == null || context == null || maxWidth <= 1f)
+                return Vector2.Zero;
+
+            var sprites = new List<MySprite>();
+            var viewBox = new RectangleF(0f, 0f, maxWidth, 100000f);
+            var renderer = new Renderer(viewBox, Color.White, Color.White, sprites, context);
+            renderer.Render(document);
+            return new Vector2(maxWidth, renderer.RenderedHeight);
+        }
+
         public static RectangleF GetContentViewBox(IAppHost context)
         {
             if (context == null)
@@ -76,6 +91,7 @@ namespace LcdMod.Client.Gui.UserControls
             float _contentRight;
             float _contentBottom;
             float _layoutScale;
+            float _padding;
 
             public Renderer(
                 RectangleF viewBox,
@@ -92,13 +108,15 @@ namespace LcdMod.Client.Gui.UserControls
                 _layoutScale = Math.Max(0.1f, _context.ConfiguredScale * _context.Surface.FontSize);
             }
 
+            public float RenderedHeight { get; private set; }
+
             public void Render(MarkdownDocument document)
             {
-                float padding = Math.Max(2f, 5f * _layoutScale);
-                _contentLeft = _viewBox.X + padding;
-                _contentRight = _viewBox.Right - padding;
-                _contentBottom = _viewBox.Bottom - padding;
-                _cursorY = _viewBox.Y + padding;
+                _padding = Math.Max(2f, 5f * _layoutScale);
+                _contentLeft = _viewBox.X + _padding;
+                _contentRight = _viewBox.Right - _padding;
+                _contentBottom = _viewBox.Bottom - _padding;
+                _cursorY = _viewBox.Y + _padding;
 
                 if (_contentRight <= _contentLeft || _contentBottom <= _cursorY)
                     return;
@@ -118,6 +136,7 @@ namespace LcdMod.Client.Gui.UserControls
                 }
 
                 _sprites.Add(MySprite.CreateClearClipRect());
+                RenderedHeight = Math.Max(0f, _cursorY - _viewBox.Y + _padding);
             }
 
             void RenderBlock(BlockNode block, float indent)
@@ -751,18 +770,31 @@ namespace LcdMod.Client.Gui.UserControls
             static bool TryParseColor(string value, out Color color)
             {
                 color = Color.White;
-                if (string.IsNullOrEmpty(value) || value.Length != 7 || value[0] != '#')
+                if (string.IsNullOrEmpty(value) ||
+                    (value.Length != 7 && value.Length != 9) ||
+                    value[0] != '#')
                     return false;
 
+                int a = 255;
                 int r;
                 int g;
                 int b;
-                if (!int.TryParse(value.Substring(1, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out r) ||
-                    !int.TryParse(value.Substring(3, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out g) ||
-                    !int.TryParse(value.Substring(5, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out b))
+
+                int offset = 1;
+                if (value.Length == 9)
+                {
+                    if (!int.TryParse(value.Substring(offset, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out a))
+                        return false;
+
+                    offset += 2;
+                }
+
+                if (!int.TryParse(value.Substring(offset, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out r) ||
+                    !int.TryParse(value.Substring(offset + 2, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out g) ||
+                    !int.TryParse(value.Substring(offset + 4, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out b))
                     return false;
 
-                color = new Color(r, g, b);
+                color = new Color(r, g, b, a);
                 return true;
             }
         }

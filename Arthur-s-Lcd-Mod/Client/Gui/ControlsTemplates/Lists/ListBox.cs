@@ -40,7 +40,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
         {
             ConfigureScrollPanel();
 
-            ApplyListStyleScope();
             var viewBox = GetViewBox();
             var backgroundColor = GetRenderBackgroundColor();
             BorderRenderer.CreateSpritesFromRect(viewBox, sprites, backgroundColor,
@@ -51,28 +50,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
             EndContentClip(sprites);
 
             _scrollPanel.Render(sprites);
-        }
-
-        void ApplyListStyleScope()
-        {
-            var containerColor = ResolveColor(ThemeResources.SecondaryContainerColor);
-            var textColor = ResolveColor(ThemeResources.OnSecondaryContainerColor);
-
-            var children = _scrollPanel.Children;
-            if (children != null)
-            {
-                for (int i = 0; i < children.Count; i++)
-                {
-                    var item = children[i] as ControlTemplate;
-                    if (item == null)
-                        continue;
-
-                    item.BackgroundColor = containerColor;
-                    item.TextColor = textColor;
-                    item.BorderRadiusPixels = BorderRadiusPixels;
-                    item.Padding = Padding;
-                }
-            }
         }
 
         void ConfigureScrollPanel()
@@ -89,13 +66,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
 
         void RebuildVisibleRows()
         {
-            _scrollPanel.ClearChildren();
-
             var model = ListModel;
             if (!ReferenceEquals(_cachedListModel, model))
             {
-                _rowModelsByIndex.Clear();
-                _rowControlsByIndex.Clear();
+                ClearRowCache();
                 _cachedListModel = model;
             }
 
@@ -142,7 +116,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
                     item.SetDataContext(itemModel);
                 }
 
-                _scrollPanel.AddChild(item);
+                item.BorderRadiusPixels = BorderRadiusPixels;
+                item.Padding = Padding;
+
+                if (!ReferenceEquals(item.Parent, _scrollPanel))
+                    _scrollPanel.AddChild(item);
             }
         }
 
@@ -158,6 +136,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
             for (int i = 0; i < _rowIndexesToRemove.Count; i++)
             {
                 int key = _rowIndexesToRemove[i];
+                ListBoxItem<T> item;
+                if (_rowControlsByIndex.TryGetValue(key, out item) && item != null)
+                    _scrollPanel.RemoveChild(item);
+
                 _rowModelsByIndex.Remove(key);
                 _rowControlsByIndex.Remove(key);
             }
@@ -167,6 +149,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
 
         void ClearRowCache()
         {
+            foreach (var item in _rowControlsByIndex.Values)
+            {
+                if (item != null)
+                    _scrollPanel.RemoveChild(item);
+            }
+
             _rowModelsByIndex.Clear();
             _rowControlsByIndex.Clear();
             _rowIndexesToRemove.Clear();
@@ -174,14 +162,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
 
         void RenderRows(List<MySprite> sprites)
         {
-            var children = _scrollPanel.Children;
+            var children = _scrollPanel.VisualChildren;
             if (children == null)
                 return;
 
             for (int i = 0; i < children.Count; i++)
             {
-                var child = children[i] as ControlTemplate;
-                child?.Render(sprites);
+                var item = children[i] as ListBoxItem<T>;
+                item?.Render(sprites);
             }
         }
 

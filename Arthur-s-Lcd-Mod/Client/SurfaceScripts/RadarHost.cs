@@ -31,7 +31,7 @@ namespace LcdMod.Client.SurfaceScripts
         public override IApp App => _app;       
         RadarApp _app;
 
-        public override List<Control> InteractiveList => _app.Children as List<Control>;
+        public override List<Control> InteractiveList => _app.VisualChildren as List<Control>;
 
         public RadarSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)
         {

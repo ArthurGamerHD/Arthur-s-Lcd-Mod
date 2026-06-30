@@ -1036,7 +1036,8 @@ namespace LcdMod.Client.Games.Chess
             _script.ShowMessageBox("Game Over!", "Play again?", "New Game", "Dismiss", (o, o1) => NewGame());
         }
         
-        public IReadOnlyList<Control> Children { get; set; }
+        public IReadOnlyList<Control> LogicalChildren => Interactive;
+        public IReadOnlyList<Control> VisualChildren => Interactive;
 
         public bool HasVisibleItems()
         {

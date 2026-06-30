@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Text;
+using LcdMod.Client.Animation;
 using LcdMod.Client.GridData;
 using LcdMod.Common.Config.Components;
 using LcdMod.Common.Config.Models;
@@ -13,6 +14,7 @@ namespace LcdMod.Client.Apps.Abstract
 {
     public interface IAppHost
     {
+        AnimationController Animations { get; }
         IMyCubeBlock Block { get; }
         IMyTextSurface Surface { get; }
         RectangleF ViewBox { get; }

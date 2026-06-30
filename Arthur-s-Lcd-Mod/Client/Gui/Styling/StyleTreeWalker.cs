@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using LcdMod.Client.Gui.ControlsTemplates;
 
 namespace LcdMod.Client.Gui.Styling
@@ -51,5 +52,41 @@ namespace LcdMod.Client.Gui.Styling
 
             return found;
         }
+        public static void ResolveAnimations(
+            StyleTree tree,
+            ControlTemplate target,
+            string id,
+            StyleState state,
+            Dictionary<int, StyleAnimationBase> animations)
+        {
+            if (tree == null || animations == null)
+                return;
+
+            var roots = tree.Roots;
+            for (int i = 0; i < roots.Count; i++)
+                ResolveAnimations(roots[i], target, id, state, animations);
+        }
+
+        static void ResolveAnimations(
+            StyleNode node,
+            ControlTemplate target,
+            string id,
+            StyleState state,
+            Dictionary<int, StyleAnimationBase> animations)
+        {
+            if (node == null ||
+                !node.MatchesControl(target) ||
+                !node.MatchesSelector(id, state))
+            {
+                return;
+            }
+
+            node.Animations.CopyTo(animations);
+
+            var children = node.Children;
+            for (int i = 0; i < children.Count; i++)
+                ResolveAnimations(children[i], target, id, state, animations);
+        }
+
     }
 }

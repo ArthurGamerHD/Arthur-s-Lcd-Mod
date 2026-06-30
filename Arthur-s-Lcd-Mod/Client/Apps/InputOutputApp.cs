@@ -80,7 +80,7 @@ namespace LcdMod.Client.Apps
 
         public InputOutputApp(IAppHost host) : base(host)
         {
-            _scroll = AddChild(new ScrollPanel(CursorType.Default, this));
+            _scroll = AddLogicalChild(new ScrollPanel(CursorType.Default, this));
             _scroll.ManualScrollInertiaEnabled = false;
             _scroll.ScrollChanged = OnScrollChanged;
             _listPanel = new VisualStackPanel();
@@ -233,7 +233,7 @@ namespace LcdMod.Client.Apps
         {
             DrawBlockCards(sprites, _currentRowHeight);
 
-            var children = control?.Children;
+            var children = control?.VisualChildren;
             if (children == null)
                 return;
 
@@ -282,7 +282,7 @@ namespace LcdMod.Client.Apps
             EnsureRowControlCount(_rows.Count);
             RemoveExtraPanelChildren(panel, _rows.Count);
 
-            var children = panel.Children;
+            var children = panel.VisualChildren;
             bool changed = false;
             for (int i = 0; i < _rows.Count; i++)
             {
@@ -312,7 +312,7 @@ namespace LcdMod.Client.Apps
                 if (!ReferenceEquals(control.Parent, panel))
                 {
                     panel.AddChild(control);
-                    children = panel.Children;
+                    children = panel.VisualChildren;
                     changed = true;
                 }
 
@@ -357,7 +357,7 @@ namespace LcdMod.Client.Apps
 
         void RemoveExtraPanelChildren(Panel panel, int desiredCount)
         {
-            var children = panel.Children;
+            var children = panel.VisualChildren;
             if (children == null)
                 return;
 

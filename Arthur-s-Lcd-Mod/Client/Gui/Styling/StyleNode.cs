@@ -22,6 +22,7 @@ namespace LcdMod.Client.Gui.Styling
             Id = id;
             RequiredState = requiredState;
             Resources = new ResourceSet();
+            Animations = new StyleAnimationSet();
         }
 
         public StyleNode Parent { get; private set; }
@@ -30,6 +31,7 @@ namespace LcdMod.Client.Gui.Styling
         public string Id { get; private set; }
         public StyleState RequiredState { get; private set; }
         public ResourceSet Resources { get; private set; }
+        internal StyleAnimationSet Animations { get; private set; }
 
         internal IList<StyleNode> Children => _children;
 

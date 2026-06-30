@@ -2,6 +2,7 @@ using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using LcdMod.Client.Animation;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Config;
 using LcdMod.Client.Gui;
@@ -27,7 +28,7 @@ namespace LcdMod.Client.Apps
         const float BUTTON_WIDTH_PIXELS = 220f;
         const float BUTTON_HEIGHT_PIXELS = 42f;
         const int MAX_TILE_SPRITES = 2048;
-        const long TRANSITION_FRAMES = 24L;
+        const string TRANSITION_FRAMES_RESOURCE = "pictureTransitionFrames";
 
         readonly List<MySprite> _sprites = new List<MySprite>();
         readonly List<Control> _children = new List<Control>();
@@ -36,20 +37,20 @@ namespace LcdMod.Client.Apps
         readonly InteractiveSurfaceScript _interactiveHost;
         string _currentSprite = string.Empty;
         string _previousSprite = string.Empty;
-        long _transitionStartFrame = long.MinValue;
-        bool _redrawQueued;
+        float _transitionProgress = 1f;
+        AnimationHandle _transitionAnimation;
 
         public DigitalPictureFramesApp(InteractiveSurfaceScript host)
             : base(host)
         {
             _interactiveHost = host;
 
-            _pickBackgroundButton = AddChild(new Button(default(RectangleF), new ButtonModel
+            _pickBackgroundButton = AddLogicalChild(new Button(default(RectangleF), new ButtonModel
             {
                 Text = LocHelper.GetLoc(MOD_PREFIX + "PickTexture"),
                 Clicked = OnPickBackgroundClicked
             }));
-            _imagePickerHitbox = AddChild(new RectangleControl(default(RectangleF), CursorType.Hand, null, OnImageClicked)
+            _imagePickerHitbox = AddLogicalChild(new RectangleControl(default(RectangleF), CursorType.Hand, null, OnImageClicked)
             {
                 CustomRender = RenderImagePickerHitbox
             });
@@ -58,7 +59,7 @@ namespace LcdMod.Client.Apps
             _children.Add(_imagePickerHitbox);
         }
 
-        public override IReadOnlyList<Control> Children => _children;
+        public override IReadOnlyList<Control> VisualChildren => _children;
 
         public override void Update()
         {
@@ -95,15 +96,25 @@ namespace LcdMod.Client.Apps
 
             _sprites.Add(MySprite.CreateClipRect(ToRectangle(viewBox)));
 
-            float progress;
-            if (TryGetTransitionProgress(out progress) && !string.IsNullOrWhiteSpace(_previousSprite))
+            if (_transitionAnimation != null &&
+                _transitionAnimation.IsRunning &&
+                !string.IsNullOrWhiteSpace(_previousSprite))
             {
-                var eased = EaseInOutCubic(progress);
                 var previousTravel = GetTransitionTravel(_previousSprite, displayMode, viewBox);
                 var currentTravel = GetTransitionTravel(spriteName, displayMode, viewBox);
-                DrawImage(_previousSprite, displayMode, viewBox, new Vector2(-previousTravel * eased, 0f));
-                DrawImage(spriteName, displayMode, viewBox, new Vector2(currentTravel * (1f - eased), 0f));
-                QueueTransitionRedraw();
+                var previousOffset = new Vector2(-previousTravel * _transitionProgress, 0f);
+                var currentOffset = new Vector2(currentTravel * (1f - _transitionProgress), 0f);
+
+                if (displayMode == PictureFrameDisplayMode.Tile)
+                {
+                    DrawTransitionTile(_previousSprite, viewBox, previousOffset);
+                    DrawTransitionTile(spriteName, viewBox, currentOffset);
+                }
+                else
+                {
+                    DrawImage(_previousSprite, displayMode, viewBox, previousOffset);
+                    DrawImage(spriteName, displayMode, viewBox, currentOffset);
+                }
             }
             else
             {
@@ -151,27 +162,71 @@ namespace LcdMod.Client.Apps
 
             _previousSprite = _currentSprite;
             _currentSprite = spriteName;
-            _transitionStartFrame = !string.IsNullOrWhiteSpace(_previousSprite) &&
-                                    !string.IsNullOrWhiteSpace(_currentSprite)
-                ? GetFrameCounter()
-                : long.MinValue;
+
+            if (string.IsNullOrWhiteSpace(_previousSprite) ||
+                string.IsNullOrWhiteSpace(_currentSprite))
+            {
+                this.CancelAnimation("PictureTransition", false);
+                _transitionAnimation = null;
+                _previousSprite = string.Empty;
+                _transitionProgress = 1f;
+                MarkDirty();
+                return;
+            }
+
+            _transitionProgress = 0f;
+            _transitionAnimation = this.RunAnimation(
+                "PictureTransition",
+                AnimationConflict.Replace,
+                new Keyframe(
+                    value => _transitionProgress = value,
+                    0f,
+                    1f,
+                    GetPictureTransitionFrames(),
+                    EasingMode.EaseInOutCubic),
+                new ActionKeyframe(CompletePictureTransition, false));
         }
 
-        bool TryGetTransitionProgress(out float progress)
+        int GetPictureTransitionFrames()
         {
-            progress = 1f;
-            if (_transitionStartFrame == long.MinValue)
-                return false;
+            return this.ResolveAnimationFrames(TRANSITION_FRAMES_RESOURCE, 0);
+        }
 
-            var elapsed = GetFrameCounter() - _transitionStartFrame;
-            if (elapsed < 0L || elapsed >= TRANSITION_FRAMES)
+        void CompletePictureTransition()
+        {
+            _transitionProgress = 1f;
+            _previousSprite = string.Empty;
+            _transitionAnimation = null;
+        }
+
+        void DrawTransitionTile(string spriteName, RectangleF viewBox, Vector2 offset)
+        {
+            RectangleF visibleBounds;
+            if (!TryGetTranslatedViewClip(viewBox, offset, out visibleBounds))
+                return;
+
+            _sprites.Add(MySprite.CreateClipRect(ToRectangle(visibleBounds)));
+            DrawTiledImage(spriteName, viewBox, GetImageScale(), offset);
+        }
+
+        static bool TryGetTranslatedViewClip(RectangleF viewBox, Vector2 offset, out RectangleF clip)
+        {
+            var translatedLeft = viewBox.X + offset.X;
+            var translatedTop = viewBox.Y + offset.Y;
+            var left = Math.Max(viewBox.X, translatedLeft);
+            var top = Math.Max(viewBox.Y, translatedTop);
+            var right = Math.Min(viewBox.X + viewBox.Width, translatedLeft + viewBox.Width);
+            var bottom = Math.Min(viewBox.Y + viewBox.Height, translatedTop + viewBox.Height);
+
+            var width = right - left;
+            var height = bottom - top;
+            if (width <= 0f || height <= 0f)
             {
-                _transitionStartFrame = long.MinValue;
-                _previousSprite = string.Empty;
+                clip = default(RectangleF);
                 return false;
             }
 
-            progress = MathHelper.Clamp((float)elapsed / TRANSITION_FRAMES, 0f, 1f);
+            clip = new RectangleF(left, top, width, height);
             return true;
         }
 
@@ -244,33 +299,6 @@ namespace LcdMod.Client.Apps
                     spriteCount++;
                 }
             }
-        }
-
-        void QueueTransitionRedraw()
-        {
-            if (_redrawQueued || _interactiveHost == null)
-                return;
-
-            _redrawQueued = true;
-            LcdModClientComponent.RunNextFrame.Add(delegate
-            {
-                _redrawQueued = false;
-                if (_interactiveHost != null)
-                    _interactiveHost.RequestRedraw();
-            });
-        }
-
-        static long GetFrameCounter()
-        {
-            return MyAPIGateway.Session != null ? MyAPIGateway.Session.GameplayFrameCounter : 0L;
-        }
-
-        static float EaseInOutCubic(float value)
-        {
-            value = MathHelper.Clamp(value, 0f, 1f);
-            return value < 0.5f
-                ? 4f * value * value * value
-                : 1f - (float)Math.Pow(-2f * value + 2f, 3d) * 0.5f;
         }
 
         Vector2 GetImageDrawSize(Vector2 viewSize, Vector2 sourceSize, bool hasSourceSize,

@@ -28,7 +28,7 @@ namespace LcdMod.Client.SurfaceScripts
         public override IApp App => _app;
         IApp _app;
 
-        public override List<Control> InteractiveList => _app.Children as List<Control>;
+        public override List<Control> InteractiveList => _app.VisualChildren as List<Control>;
         protected override bool RendersInteractiveEntriesInGetSprites => true;
 
         public EnergyDashboardSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)

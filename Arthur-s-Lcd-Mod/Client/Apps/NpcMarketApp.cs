@@ -79,7 +79,7 @@ namespace LcdMod.Client.Apps
                 Host.Block?.EntityId ?? 0L,
                 Host.SurfaceIndex);
 
-        public override IReadOnlyList<Control> Children => _children;
+        public override IReadOnlyList<Control> VisualChildren => _children;
         internal NpcMarketMode Mode => _mode;
         internal IAppHost AppHost => Host;
         bool _restoredPageIndex;
@@ -92,7 +92,7 @@ namespace LcdMod.Client.Apps
             _searchQuery = NpcMarketComponent.SearchQuery ?? string.Empty;
             NpcMarketComponent.SearchQuery = _searchQuery;
             LoadSortStateForMode(_mode);
-            _pagesPanel = AddChild(new PagesPanel());
+            _pagesPanel = AddLogicalChild(new PagesPanel());
             _pagesPanel.SetVisible(false);
             _pagesPanel.PageChanged = OnPageChanged;
             _listStripPanel = new NpcMarketListStripPanel(Host)
@@ -114,19 +114,19 @@ namespace LcdMod.Client.Apps
                 Placeholder = MyTexts.GetString(LOC_SEARCH),
                 ValueChanged = OnSearchChanged
             };
-            _searchInput = AddChild(new TextInput(default(RectangleF), _searchInputModel));
+            _searchInput = AddLogicalChild(new TextInput(default(RectangleF), _searchInputModel));
             _searchInput.CustomRender = RenderSearchInput;
             _searchInput.SetVisible(false);
-            _searchButton = AddChild(new Button(default(RectangleF), new ButtonModel { Clicked = OnSearchClicked }));
+            _searchButton = AddLogicalChild(new Button(default(RectangleF), new ButtonModel { Clicked = OnSearchClicked }));
             _searchButton.CustomRender = RenderSearchButton;
             _searchButton.SetVisible(false);
-            _clearSearchButton = AddChild(new Button(default(RectangleF), new ButtonModel { Clicked = OnClearSearchClicked }));
+            _clearSearchButton = AddLogicalChild(new Button(default(RectangleF), new ButtonModel { Clicked = OnClearSearchClicked }));
             _clearSearchButton.CustomRender = RenderClearSearchButton;
             _clearSearchButton.SetVisible(false);
             _refreshButton = new Button(default(RectangleF), new ButtonModel { Clicked = OnRefreshClicked });
             _refreshButton.CustomRender = RenderRefreshButton;
             _refreshButton.SetVisible(false);
-            _footerGrid = AddChild(new Grid());
+            _footerGrid = AddLogicalChild(new Grid());
             _footerGrid.SetClass("ControlBase NpcMarketFooter");
             _footerGrid.BackgroundTexture = null;
             _footerGrid.SetVisible(false);
@@ -565,7 +565,7 @@ namespace LcdMod.Client.Apps
 
         void AddSortHeaderButton(NpcMarketSortColumn column, string localizationKey)
         {
-            var button = AddChild(new Button(default(RectangleF), new SortHeaderButtonModel
+            var button = AddLogicalChild(new Button(default(RectangleF), new SortHeaderButtonModel
             {
                 Column = column,
                 LocalizationKey = localizationKey,
@@ -933,14 +933,9 @@ namespace LcdMod.Client.Apps
         void RenderRefreshButton(ControlTemplate control, List<MySprite> sprites)
         {
             var model = control.DataContext as ButtonModel;
-            var enabled = model == null || model.Enabled;
             var rect = control.Bounds;
-            var hover = enabled && control.IsPointerOver;
             var button = control as Button;
-            var defaultColor = button?.BackgroundColor ?? control.BackgroundColor;
-            var color = hover
-                ? control.GetResourceColor(ThemeResources.AccentColor, defaultColor)
-                : defaultColor;
+            var color = button?.BackgroundColor ?? control.BackgroundColor;
             var textColor = control.TextColor;
             var text = model == null || string.IsNullOrEmpty(model.Text) ? MyTexts.GetString(LOC_REFRESH) : model.Text;
             var textScale = 0.58f * control.LayoutScale * control.FontScale;
@@ -1038,7 +1033,6 @@ namespace LcdMod.Client.Apps
             }
 
             SaveSortStateForMode(_mode);
-            ResetSavedPageIndex();
             _aggregator.SortRows(_aggregation.Rows, _sortColumn, _sortDescending);
             MarkRowsDirty();
             ApplyPendingRowChanges();

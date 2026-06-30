@@ -1,10 +1,16 @@
 using System;
 using System.Collections.Generic;
 using Sandbox.ModAPI;
+using VRage.Game.GUI.TextPanel;
 using VRageMath;
 
 namespace LcdMod.Client.Gui.ControlsTemplates.Lists
 {
+    public delegate void ListBoxItemRenderHandler<T>(
+        ListBoxItem<T> control,
+        T item,
+        List<MySprite> sprites);
+
     public sealed class ListBoxModel<T> : ControlModelBase
     {
         public ListBoxModel()
@@ -14,15 +20,18 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
             RowHeight = 32f;
             ScrollerWidthPixels = 6f;
             MultiSelect = true;
+            SelectionEnabled = true;
         }
 
         public IList<T> Items { get; set; }
         public IList<T> SelectedEntries { get; set; }
         public bool MultiSelect { get; set; }
+        public bool SelectionEnabled { get; set; }
         public float RowHeight { get; set; }
         public float ScrollerWidthPixels { get; set; }
         public Func<T, string> TextSelector { get; set; }
         public Action<T> EntryClicked { get; set; }
+        public ListBoxItemRenderHandler<T> ItemRenderer { get; set; }
         public Color? SelectedPanelColor { get; set; }
         public Color? SelectedTextColor { get; set; }
 
@@ -51,27 +60,30 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
 
         public void SelectClicked(T item, int index)
         {
-            EnsureSelectedEntries();
+            if (SelectionEnabled)
+            {
+                EnsureSelectedEntries();
 
-            var input = MyAPIGateway.Input;
-            bool ctrl = input != null && input.IsAnyCtrlKeyPressed();
-            bool shift = input != null && input.IsAnyShiftKeyPressed();
+                var input = MyAPIGateway.Input;
+                bool ctrl = input != null && input.IsAnyCtrlKeyPressed();
+                bool shift = input != null && input.IsAnyShiftKeyPressed();
 
-            if (!MultiSelect)
-            {
-                ReplaceSelection(item);
-            }
-            else if (ctrl)
-            {
-                ToggleSelection(item);
-            }
-            else if (shift)
-            {
-                AddRangeFromFirstSelected(index);
-            }
-            else
-            {
-                ReplaceSelection(item);
+                if (!MultiSelect)
+                {
+                    ReplaceSelection(item);
+                }
+                else if (ctrl)
+                {
+                    ToggleSelection(item);
+                }
+                else if (shift)
+                {
+                    AddRangeFromFirstSelected(index);
+                }
+                else
+                {
+                    ReplaceSelection(item);
+                }
             }
 
             if (EntryClicked != null)

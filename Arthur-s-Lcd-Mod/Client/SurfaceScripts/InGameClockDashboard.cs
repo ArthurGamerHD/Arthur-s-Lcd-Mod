@@ -30,7 +30,7 @@ namespace LcdMod.Client.SurfaceScripts
         protected override bool RendersInteractiveEntriesInGetSprites => true;
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
         public override IApp App => _app;
-        public override List<Control> InteractiveList => _app?.Children as List<Control>;
+        public override List<Control> InteractiveList => _app?.VisualChildren as List<Control>;
 
         public InGameClockDashboardSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
             : base(surface, block, size)
