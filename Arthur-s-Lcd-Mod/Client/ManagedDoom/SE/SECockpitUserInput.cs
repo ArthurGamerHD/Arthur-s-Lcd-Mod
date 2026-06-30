@@ -1,3 +1,4 @@
+using System.Threading;
 using LcdMod.Client.Apps.Abstract;
 using ManagedDoom.UserInput;
 using Sandbox.ModAPI;
@@ -7,9 +8,8 @@ using VRage.ModAPI;
 namespace ManagedDoom.SE
 {
     /// <summary>
-    /// Converts classic keyboard controls, optionally augmented by mouse yaw,
-    /// into Doom tic commands while the local player controls the cockpit
-    /// selected for this LCD surface.
+    /// Captures Space Engineers input on the main thread and exposes only
+    /// atomically published primitive state to the Doom parallel worker.
     /// </summary>
     public sealed class SECockpitUserInput : IUserInput
     {
@@ -23,30 +23,41 @@ namespace ManagedDoom.SE
         const int SlowTurnTics = 6;
         const int MouseTurnPerPixel = 40;
 
+        const int ForwardMask = 1 << 0;
+        const int BackMask = 1 << 1;
+        const int LeftMask = 1 << 2;
+        const int RightMask = 1 << 3;
+        const int FireMask = 1 << 4;
+        const int UseMask = 1 << 5;
+        const int StrafeMask = 1 << 6;
+        const int RunMask = 1 << 7;
+        const int EscapeMask = 1 << 8;
+
         // Doom's command stores only a three-bit weapon number. Doom 1's
         // selectable weapons occupy indices 0 through 7.
         const int EncodableWeaponCount = 8;
 
         readonly IAppHost _host;
 
+        // Main-thread-only engine/capture state.
         long _resolvedEntityId;
         IMyCockpit _cockpit;
-        int _mouseSensitivity = 3;
-        int _accumulatedMouseX;
-        int _queuedWeaponStep;
-        int _pendingWeaponNumber = -1;
-        int _turnHeldTics;
-        bool _forwardDown;
-        bool _backDown;
-        bool _leftDown;
-        bool _rightDown;
-        bool _fireDown;
-        bool _useDown;
-        bool _strafeDown;
-        bool _runDown;
-        bool _escapeDown;
         bool _weaponPreviousDown;
         bool _weaponNextDown;
+
+        // Atomically published main-to-worker state.
+        int _controlled;
+        int _heldKeys;
+        int _accumulatedMouseX;
+        int _queuedWeaponStep;
+        int _keyboardTurnSensitivity = 100;
+        int _mouseTurningEnabled;
+        int _mouseSensitivity = 3;
+        int _disposed;
+
+        // Parallel-worker-only Doom state.
+        int _pendingWeaponNumber = -1;
+        int _turnHeldTics;
         bool _menuUp;
         bool _menuDown;
         bool _menuLeft;
@@ -61,43 +72,46 @@ namespace ManagedDoom.SE
         }
 
         /// <summary>
-        /// Posts edge-triggered keyboard events for Doom's opening sequence and
-        /// menu system. BuildTicCmd is only called after gameplay has started.
+        /// Posts edge-triggered menu events from the latest atomically
+        /// published input snapshot. This method is parallel-worker-only and
+        /// never touches Space Engineers APIs.
         /// </summary>
         public void UpdateEvents(Doom doom)
         {
-            if (doom == null)
+            if (doom == null || AtomicRead(ref _disposed) != 0)
                 return;
 
-            var cockpit = ResolveCockpit();
-            bool controlled = IsLocallyControlled(cockpit);
-            bool menuInput = controlled &&
+            var heldKeys = AtomicRead(ref _heldKeys);
+            var controlled = AtomicRead(ref _controlled) != 0;
+            var menuInput = controlled &&
                 (doom.State == DoomState.Opening || doom.Menu.Active);
 
-            UpdateKey(doom, DoomKey.Up, menuInput && _forwardDown, ref _menuUp);
-            UpdateKey(doom, DoomKey.Down, menuInput && _backDown, ref _menuDown);
-            UpdateKey(doom, DoomKey.Left, menuInput && _leftDown, ref _menuLeft);
-            UpdateKey(doom, DoomKey.Right, menuInput && _rightDown, ref _menuRight);
+            UpdateKey(doom, DoomKey.Up, menuInput && IsDown(heldKeys, ForwardMask), ref _menuUp);
+            UpdateKey(doom, DoomKey.Down, menuInput && IsDown(heldKeys, BackMask), ref _menuDown);
+            UpdateKey(doom, DoomKey.Left, menuInput && IsDown(heldKeys, LeftMask), ref _menuLeft);
+            UpdateKey(doom, DoomKey.Right, menuInput && IsDown(heldKeys, RightMask), ref _menuRight);
 
             // Ctrl is the classic fire key, but acts as Enter in menus. Space
             // also confirms because it is the classic Use/Open key.
             UpdateKey(
                 doom,
                 DoomKey.Enter,
-                menuInput && (_fireDown || _useDown),
+                menuInput &&
+                    (IsDown(heldKeys, FireMask) || IsDown(heldKeys, UseMask)),
                 ref _menuAccept);
-            UpdateKey(doom, DoomKey.Escape, menuInput && _escapeDown, ref _menuBack);
+            UpdateKey(
+                doom,
+                DoomKey.Escape,
+                menuInput && IsDown(heldKeys, EscapeMask),
+                ref _menuBack);
 
             if (menuInput)
             {
-                // Do not carry mouse motion or keyboard-turn acceleration from
-                // the title/menu into the first gameplay tic.
-                _accumulatedMouseX = 0;
+                Interlocked.Exchange(ref _accumulatedMouseX, 0);
                 _turnHeldTics = 0;
             }
 
-            int weaponStep = _queuedWeaponStep;
-            _queuedWeaponStep = 0;
+            var weaponStep = Interlocked.Exchange(ref _queuedWeaponStep, 0);
             if (controlled &&
                 weaponStep != 0 &&
                 doom.State == DoomState.Game &&
@@ -113,32 +127,40 @@ namespace ManagedDoom.SE
         {
             cmd.Clear();
 
-            var cockpit = ResolveCockpit();
-            if (!IsLocallyControlled(cockpit))
+            if (AtomicRead(ref _disposed) != 0 ||
+                AtomicRead(ref _controlled) == 0)
             {
-                ClearCapturedInput();
+                Interlocked.Exchange(ref _accumulatedMouseX, 0);
                 _pendingWeaponNumber = -1;
+                _turnHeldTics = 0;
                 return;
             }
 
-            int forwardDirection = (_forwardDown ? 1 : 0) - (_backDown ? 1 : 0);
-            int horizontalDirection = (_rightDown ? 1 : 0) - (_leftDown ? 1 : 0);
-            bool turning = horizontalDirection != 0 && !_strafeDown;
+            var heldKeys = AtomicRead(ref _heldKeys);
+            var forwardDirection =
+                (IsDown(heldKeys, ForwardMask) ? 1 : 0) -
+                (IsDown(heldKeys, BackMask) ? 1 : 0);
+            var horizontalDirection =
+                (IsDown(heldKeys, RightMask) ? 1 : 0) -
+                (IsDown(heldKeys, LeftMask) ? 1 : 0);
+            var strafing = IsDown(heldKeys, StrafeMask);
+            var running = IsDown(heldKeys, RunMask);
+            var turning = horizontalDirection != 0 && !strafing;
 
-            int forwardSpeed = _runDown ? RunForwardMove : WalkForwardMove;
-            int sideSpeed = _runDown ? RunSideMove : WalkSideMove;
+            var forwardSpeed = running ? RunForwardMove : WalkForwardMove;
+            var sideSpeed = running ? RunSideMove : WalkSideMove;
 
             cmd.ForwardMove = (sbyte)(forwardDirection * forwardSpeed);
-            if (_strafeDown)
+            if (strafing)
                 cmd.SideMove = (sbyte)(horizontalDirection * sideSpeed);
 
-            int angleTurn = 0;
+            var angleTurn = 0;
             if (turning)
             {
                 _turnHeldTics++;
-                int baseTurn = _turnHeldTics < SlowTurnTics
+                var baseTurn = _turnHeldTics < SlowTurnTics
                     ? SlowAngleTurn
-                    : (_runDown ? RunAngleTurn : WalkAngleTurn);
+                    : (running ? RunAngleTurn : WalkAngleTurn);
 
                 angleTurn = -horizontalDirection * ScaleKeyboardTurn(baseTurn);
             }
@@ -147,21 +169,23 @@ namespace ManagedDoom.SE
                 _turnHeldTics = 0;
             }
 
-            if (DoomInputSettings.GetMouseTurningEnabled(
-                _host == null ? null : _host.Config))
+            if (AtomicRead(ref _mouseTurningEnabled) != 0)
             {
-                int mouseX = _accumulatedMouseX;
-                int mouseScale = MouseTurnPerPixel * (_mouseSensitivity + 1);
+                var mouseX = Interlocked.Exchange(ref _accumulatedMouseX, 0);
+                var mouseScale = MouseTurnPerPixel * (MouseSensitivity + 1);
                 angleTurn -= mouseX * mouseScale / 4;
             }
+            else
+            {
+                Interlocked.Exchange(ref _accumulatedMouseX, 0);
+            }
 
-            _accumulatedMouseX = 0;
             cmd.AngleTurn = ClampShort(angleTurn);
 
             byte buttons = 0;
-            if (_fireDown)
+            if (IsDown(heldKeys, FireMask))
                 buttons |= TicCmdButtons.Attack;
-            if (_useDown)
+            if (IsDown(heldKeys, UseMask))
                 buttons |= TicCmdButtons.Use;
 
             if (_pendingWeaponNumber >= 0)
@@ -175,34 +199,39 @@ namespace ManagedDoom.SE
         }
 
         /// <summary>
-        /// Managed Doom calls Reset when a level starts. It clears transient
-        /// state without unregistering the still-active LCD app.
+        /// Managed Doom calls Reset from the worker when a level starts. Only
+        /// worker state and atomic handoff values are reset here.
         /// </summary>
         public void Reset()
         {
-            _resolvedEntityId = 0L;
-            _cockpit = null;
             _pendingWeaponNumber = -1;
-            _queuedWeaponStep = 0;
             _turnHeldTics = 0;
-            _weaponPreviousDown = false;
-            _weaponNextDown = false;
             _menuUp = false;
             _menuDown = false;
             _menuLeft = false;
             _menuRight = false;
             _menuAccept = false;
             _menuBack = false;
-            ClearCapturedInput();
+            AtomicWrite(ref _heldKeys, 0);
+            AtomicWrite(ref _controlled, 0);
+            Interlocked.Exchange(ref _queuedWeaponStep, 0);
+            Interlocked.Exchange(ref _accumulatedMouseX, 0);
         }
 
         /// <summary>
-        /// Called only when the LCD app itself is destroyed or replaced.
+        /// Called only when the LCD app itself is destroyed or replaced. This
+        /// method is main-thread-only because it unregisters from the session
+        /// input dispatcher.
         /// </summary>
         public void Dispose()
         {
+            if (Interlocked.Exchange(ref _disposed, 1) != 0)
+                return;
+
             DoomInputDispatcher.Unregister(this);
-            Reset();
+            ClearCapturedInput();
+            _resolvedEntityId = 0L;
+            _cockpit = null;
         }
 
         public void GrabMouse()
@@ -220,20 +249,34 @@ namespace ManagedDoom.SE
 
         public int MouseSensitivity
         {
-            get { return _mouseSensitivity; }
+            get { return AtomicRead(ref _mouseSensitivity); }
             set
             {
                 if (value < 0)
-                    _mouseSensitivity = 0;
+                    value = 0;
                 else if (value > MaxMouseSensitivity)
-                    _mouseSensitivity = MaxMouseSensitivity;
-                else
-                    _mouseSensitivity = value;
+                    value = MaxMouseSensitivity;
+
+                AtomicWrite(ref _mouseSensitivity, value);
             }
         }
 
+        /// <summary>
+        /// Samples all Space Engineers state on the main thread and publishes
+        /// only primitive values for the worker.
+        /// </summary>
         internal bool TryCaptureFrameInput()
         {
+            if (AtomicRead(ref _disposed) != 0)
+                return false;
+
+            var config = _host == null ? null : _host.Config;
+            var mouseTurningEnabled = DoomInputSettings.GetMouseTurningEnabled(config);
+            AtomicWrite(ref _mouseTurningEnabled, mouseTurningEnabled ? 1 : 0);
+            AtomicWrite(
+                ref _keyboardTurnSensitivity,
+                DoomInputSettings.GetKeyboardTurnSensitivity(config));
+
             var cockpit = ResolveCockpit();
             if (!IsLocallyControlled(cockpit))
                 return false;
@@ -242,61 +285,60 @@ namespace ManagedDoom.SE
             if (input == null)
                 return false;
 
-            _forwardDown = input.IsKeyPress(MyKeys.W);
-            _backDown = input.IsKeyPress(MyKeys.S);
-            _leftDown = input.IsKeyPress(MyKeys.A);
-            _rightDown = input.IsKeyPress(MyKeys.D);
-            _fireDown = input.IsAnyCtrlKeyPressed();
-            _useDown = input.IsKeyPress(MyKeys.Space);
-            _strafeDown = input.IsAnyAltKeyPressed();
-            _runDown = input.IsAnyShiftKeyPressed();
-            _escapeDown = input.IsKeyPress(MyKeys.Escape);
+            var heldKeys = 0;
+            if (input.IsKeyPress(MyKeys.W))
+                heldKeys |= ForwardMask;
+            if (input.IsKeyPress(MyKeys.S))
+                heldKeys |= BackMask;
+            if (input.IsKeyPress(MyKeys.A))
+                heldKeys |= LeftMask;
+            if (input.IsKeyPress(MyKeys.D))
+                heldKeys |= RightMask;
+            if (input.IsAnyCtrlKeyPressed())
+                heldKeys |= FireMask;
+            if (input.IsKeyPress(MyKeys.Space))
+                heldKeys |= UseMask;
+            if (input.IsAnyAltKeyPressed())
+                heldKeys |= StrafeMask;
+            if (input.IsAnyShiftKeyPressed())
+                heldKeys |= RunMask;
+            if (input.IsKeyPress(MyKeys.Escape))
+                heldKeys |= EscapeMask;
 
-            if (DoomInputSettings.GetMouseTurningEnabled(
-                _host == null ? null : _host.Config))
-            {
-                _accumulatedMouseX += input.GetMouseXForGamePlay();
-            }
+            if (mouseTurningEnabled)
+                Interlocked.Add(ref _accumulatedMouseX, input.GetMouseXForGamePlay());
             else
-            {
-                _accumulatedMouseX = 0;
-            }
+                Interlocked.Exchange(ref _accumulatedMouseX, 0);
 
-            bool weaponPrevious = input.IsKeyPress(MyKeys.Q);
-            bool weaponNext = input.IsKeyPress(MyKeys.E);
+            var weaponPrevious = input.IsKeyPress(MyKeys.Q);
+            var weaponNext = input.IsKeyPress(MyKeys.E);
 
             if (weaponPrevious && !_weaponPreviousDown)
-                _queuedWeaponStep--;
+                Interlocked.Decrement(ref _queuedWeaponStep);
             if (weaponNext && !_weaponNextDown)
-                _queuedWeaponStep++;
+                Interlocked.Increment(ref _queuedWeaponStep);
 
             _weaponPreviousDown = weaponPrevious;
             _weaponNextDown = weaponNext;
+
+            AtomicWrite(ref _heldKeys, heldKeys);
+            AtomicWrite(ref _controlled, 1);
             return true;
         }
 
         internal void ClearCapturedInput()
         {
-            _forwardDown = false;
-            _backDown = false;
-            _leftDown = false;
-            _rightDown = false;
-            _fireDown = false;
-            _useDown = false;
-            _strafeDown = false;
-            _runDown = false;
-            _escapeDown = false;
+            AtomicWrite(ref _controlled, 0);
+            AtomicWrite(ref _heldKeys, 0);
+            Interlocked.Exchange(ref _accumulatedMouseX, 0);
+            Interlocked.Exchange(ref _queuedWeaponStep, 0);
             _weaponPreviousDown = false;
             _weaponNextDown = false;
-            _accumulatedMouseX = 0;
-            _turnHeldTics = 0;
         }
 
         int ScaleKeyboardTurn(int value)
         {
-            int sensitivity = DoomInputSettings.GetKeyboardTurnSensitivity(
-                _host == null ? null : _host.Config);
-            return value * sensitivity / 100;
+            return value * AtomicRead(ref _keyboardTurnSensitivity) / 100;
         }
 
         void QueueWeaponChange(Doom doom, int direction)
@@ -307,19 +349,19 @@ namespace ManagedDoom.SE
             if (player == null || player.WeaponOwned == null)
                 return;
 
-            WeaponType current = player.PendingWeapon != WeaponType.NoChange
+            var current = player.PendingWeapon != WeaponType.NoChange
                 ? player.PendingWeapon
                 : player.ReadyWeapon;
 
-            int start = (int)current;
+            var start = (int)current;
             if (start < 0 || start >= EncodableWeaponCount)
                 start = (int)player.ReadyWeapon;
             if (start < 0 || start >= EncodableWeaponCount)
                 start = 0;
 
-            for (int offset = 1; offset <= EncodableWeaponCount; offset++)
+            for (var offset = 1; offset <= EncodableWeaponCount; offset++)
             {
-                int weapon = start + direction * offset;
+                var weapon = start + direction * offset;
                 while (weapon < 0)
                     weapon += EncodableWeaponCount;
                 weapon %= EncodableWeaponCount;
@@ -334,7 +376,7 @@ namespace ManagedDoom.SE
 
         IMyCockpit ResolveCockpit()
         {
-            long entityId = DoomInputSettings.GetCockpitEntityId(
+            var entityId = DoomInputSettings.GetCockpitEntityId(
                 _host == null ? null : _host.Config);
             if (entityId == 0L)
             {
@@ -374,6 +416,21 @@ namespace ManagedDoom.SE
             return controlled != null &&
                 controlled.Entity != null &&
                 controlled.Entity.EntityId == cockpit.EntityId;
+        }
+
+        static int AtomicRead(ref int value)
+        {
+            return Interlocked.CompareExchange(ref value, 0, 0);
+        }
+
+        static void AtomicWrite(ref int location, int value)
+        {
+            Interlocked.Exchange(ref location, value);
+        }
+
+        static bool IsDown(int heldKeys, int mask)
+        {
+            return (heldKeys & mask) != 0;
         }
 
         static void UpdateKey(Doom doom, DoomKey key, bool pressed, ref bool previous)

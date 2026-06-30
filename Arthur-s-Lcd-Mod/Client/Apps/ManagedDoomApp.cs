@@ -1,14 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
-using System.Text;
+using System.Threading;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Audio;
 using LcdMod.Client.Gui;
 using LcdMod.Common.Config.Models;
-using LcdMod.Common.Helpers;
 using ManagedDoom;
-using ManagedDoom.Audio;
 using ManagedDoom.SE;
 using Sandbox.ModAPI;
 using VRage.Game;
@@ -22,56 +21,49 @@ namespace LcdMod.Client.Apps
     {
         const string DoomWadDisplayPath = "Data/DOOM1.WAD";
         const string DoomWadRootPath = "DOOM1.WAD";
-        const string DoomFont = Constants.MOD_PREFIX + "DoomChannel";
-        const int SpaceEngineersSimulationRate = 60;
+        const string PixelSprite = "SquareSimple";
+        const int WorkerFrameRate = 60;
 
-        // The RGB components intentionally remain non-zero while alpha is zero.
-        // With Space Engineers' premultiplied source-over LCD blend state this
-        // makes each channel pass additive instead of attenuating prior passes.
-
-        static readonly Color RedChannelTint =
-            new Color(255, 0, 0, 254);
-
-        static readonly Color GreenChannelTint =
-            new Color(0, 255, 0, 128);
-
-        static readonly Color BlueChannelTint =
-            new Color(0, 0, 255, 85);
+        const int FrameFree = 0;
+        const int FrameWriting = 1;
+        const int FrameReady = 2;
+        const int FrameReading = 3;
+        const int FrameSlotCount = 2;
 
         static byte[] _cachedWadBytes;
 
         readonly List<MySprite> _sprites = new List<MySprite>();
         readonly List<Control> _children = new List<Control>();
-        readonly StringBuilder _frameBuilder = new StringBuilder(320 * 201);
-        readonly StringBuilder _middleFrameBuilder = new StringBuilder(320 * 201);
-        readonly StringBuilder _highFrameBuilder = new StringBuilder(320 * 201);
-        readonly StringBuilder _measureBuilder = new StringBuilder(320);
-        char[] _frameRow;
-        char[] _middleFrameRow;
-        char[] _highFrameRow;
 
-        CommandLineArgs _doomArgs;
-        DoomConfig _doomConfig;
+        MySprite[] _pixelSprites;
         GameContent _content;
+        GameContent _audioContent;
         SEVideoToTextSprite _video;
-        SESurfaceSound _sound;
-        SESurfaceMusic _music;
+        SEMainThreadAudioQueue _audio;
         SECockpitUserInput _input;
         Doom _doom;
-        string _frameText;
-        string _middleFrameText;
-        string _highFrameText;
+        bool _parallelWorkerStarted;
+
+        byte[][] _frameBuffers;
+        int[] _frameStates;
+        int[] _frameSequences;
+        int _producedFrameSequence;
+        int _stopWorker;
+        string _workerStatusMessage;
+
         string _statusMessage;
         bool _initFailed;
-        bool _completed;
-        float _textScale = 1f;
-        Vector2 _textPosition;
-        Vector2 _measuredSurfaceSize;
-        int _measuredWidth;
-        int _measuredHeight;
-        int _frameTextWidth;
-        int _frameTextHeight;
-        int _ticAccumulator;
+        bool _closed;
+        bool _parallelWorkerOwnsContent;
+        bool _pixelLayoutValid;
+        float _pixelViewX;
+        float _pixelViewY;
+        float _pixelViewWidth;
+        float _pixelViewHeight;
+        int _pixelWidth;
+        int _pixelHeight;
+        int _pixelColumns;
+        int _pixelRows;
         int _appliedSfxVolume = -1;
         int _appliedMusicVolume = -1;
 
@@ -81,12 +73,18 @@ namespace LcdMod.Client.Apps
 
         public override IReadOnlyList<Control> Children => _children;
 
+        /// <summary>
+        /// Main-thread dispatch only. Space Engineers input is captured by
+        /// the session HandleInput hook, audio emitters are serviced here,
+        /// and the latest completed worker framebuffer is copied into sprites.
+        /// This method never waits for the Doom worker.
+        /// </summary>
         public override void Update()
         {
-            if (_completed)
+            if (_closed)
                 return;
 
-            if (_doom == null)
+            if (!_parallelWorkerStarted)
             {
                 if (_initFailed)
                     return;
@@ -100,40 +98,23 @@ namespace LcdMod.Client.Apps
 
             ApplyAudioVolumes();
 
-            // Space Engineers calls this once per 60 Hz simulation frame, but
-            // Doom's game logic runs at 35 tics per second. Accumulating 35
-            // against 60 spreads the updates evenly instead of running Doom at
-            // 60 Hz or skipping a large block of consecutive frames. The
-            // resulting 12-frame pattern contains seven game tics.
-            _ticAccumulator += GameConst.TicRate;
-
-            if (_ticAccumulator >= SpaceEngineersSimulationRate)
+            var audio = _audio;
+            if (audio != null)
             {
-                _ticAccumulator -= SpaceEngineersSimulationRate;
-
-                _input.UpdateEvents(_doom);
-
-                if (_doom.Update() == UpdateResult.Completed)
-                {
-                    _completed = true;
-                    _statusMessage = "Doom completed.";
-                }
+                audio.DispatchPending();
+                audio.UpdateMainThread();
             }
 
-            if (_music != null)
-                _music.Update();
+            ConsumeLatestFrame();
 
-            // Render on every Space Engineers frame. ManagedDoom uses this
-            // fraction to interpolate between the previous and next 35 Hz tic.
-            var frameFrac = Fixed.FromFloat((float)_ticAccumulator / SpaceEngineersSimulationRate);
-            _video.Render(_doom, frameFrac);
-            BuildFrameText();
-            EnsureLayout();
+            var workerStatus = AtomicRead(ref _workerStatusMessage);
+            if (!string.IsNullOrEmpty(workerStatus))
+                _statusMessage = workerStatus;
         }
 
         public override void LayoutChanged()
         {
-            _measuredSurfaceSize = Vector2.Zero;
+            _pixelLayoutValid = false;
         }
 
         public override List<MySprite> GetSprites()
@@ -150,8 +131,16 @@ namespace LcdMod.Client.Apps
                 return _sprites;
             }
 
-            if (string.IsNullOrEmpty(_frameText))
+            if (_pixelWidth <= 0 || _pixelHeight <= 0)
                 return _sprites;
+
+            EnsurePixelSprites();
+            if (_pixelSprites == null || _pixelSprites.Length == 0)
+                return _sprites;
+
+            var requiredCapacity = _pixelSprites.Length + 2;
+            if (_sprites.Capacity < requiredCapacity)
+                _sprites.Capacity = requiredCapacity;
 
             _sprites.Add(MySprite.CreateClipRect(new Rectangle(
                 (int)viewBox.X,
@@ -159,76 +148,71 @@ namespace LcdMod.Client.Apps
                 (int)viewBox.Width,
                 (int)viewBox.Height)));
 
-            // Each glyph contains one 8-bit grayscale channel value. The
-            // three zero-alpha tints route those values to R, G and B while
-            // leaving the destination multiplier at one for additive assembly.
-            AddFrameSprite(_frameText, RedChannelTint);
-            AddFrameSprite(_middleFrameText, GreenChannelTint);
-            AddFrameSprite(_highFrameText, BlueChannelTint);
-
+            _sprites.AddRange(_pixelSprites);
             _sprites.Add(MySprite.CreateClearClipRect());
             return _sprites;
         }
 
-        void AddFrameSprite(string text, Color channelTint)
-        {
-            _sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXT,
-                Data = text,
-                Position = _textPosition,
-                RotationOrScale = _textScale,
-                Color = channelTint,
-                Alignment = TextAlignment.LEFT,
-                FontId = DoomFont
-            });
-        }
-
         public override void Close()
         {
-            if (_music != null)
+            if (_closed)
+                return;
+
+            _closed = true;
+            Interlocked.Exchange(ref _stopWorker, 1);
+
+            // All engine-facing resources are disposed on the main thread.
+            // The worker is not joined: it observes the stop flag and releases
+            // its read-only GameContent in its own finally block.
+            var audio = _audio;
+            _audio = null;
+            if (audio != null)
+                audio.Dispose();
+
+            var input = _input;
+            _input = null;
+            if (input != null)
+                input.Dispose();
+
+            if (_audioContent != null)
             {
-                _music.Dispose();
-                _music = null;
+                _audioContent.Dispose();
+                _audioContent = null;
             }
 
-            if (_sound != null)
-            {
-                _sound.Dispose();
-                _sound = null;
-            }
-
-            if (_content != null)
-            {
+            if (!_parallelWorkerOwnsContent && _content != null)
                 _content.Dispose();
-                _content = null;
-            }
 
-            if (_input != null)
-            {
-                _input.Dispose();
-                _input = null;
-            }
-
+            _content = null;
             _doom = null;
             _video = null;
+            _parallelWorkerStarted = false;
+            _pixelSprites = null;
+            // The worker may still be finishing its current software render.
+            // Keep the two handoff slots alive until that parallel worker
+            // observes _stopWorker and exits; Close must not wait for it.
+            _pixelLayoutValid = false;
             _appliedSfxVolume = -1;
             _appliedMusicVolume = -1;
         }
 
         void ApplyAudioVolumes()
         {
+            var audio = _audio;
+            if (audio == null)
+                return;
+
             var sfxVolume = DoomAudioSettings.GetSfxVolume(AppConfig);
-            if (_sound != null && sfxVolume != _appliedSfxVolume)
+            if (sfxVolume != _appliedSfxVolume)
             {
-                _sound.Volume = sfxVolume;
+                audio.SetSoundVolumeFromMainThread(sfxVolume);
                 _appliedSfxVolume = sfxVolume;
             }
 
             var musicVolume = DoomAudioSettings.GetMusicVolume(AppConfig);
-            if (_music != null && musicVolume != _appliedMusicVolume)
+            if (musicVolume != _appliedMusicVolume)
             {
-                _music.Volume = musicVolume;
+                audio.SetMusicVolumeFromMainThread(musicVolume);
                 _appliedMusicVolume = musicVolume;
             }
         }
@@ -237,7 +221,7 @@ namespace LcdMod.Client.Apps
         {
             try
             {
-                _doomArgs = new CommandLineArgs(new string[]
+                var doomArgs = new CommandLineArgs(new string[]
                 {
                     "-skill",
                     "3",
@@ -245,45 +229,369 @@ namespace LcdMod.Client.Apps
                     "-nodeh"
                 });
 
-                _doomConfig = new DoomConfig();
-                _doomConfig.video_highresolution = false;
+                var doomConfig = new DoomConfig();
+                doomConfig.video_highresolution = false;
                 // 7 keeps the status bar visible. 8 for borderless with no HUD/status bar.
-                _doomConfig.video_gamescreensize = 7;
-                _doomConfig.video_fpsscale = 1;
-                _doomConfig.video_displaymessage = true;
+                doomConfig.video_gamescreensize = 7;
+                doomConfig.video_fpsscale = 1;
+                doomConfig.video_displaymessage = true;
 
-                _content = GameContent.FromWadBytes("doom1", LoadWad(), _doomArgs);
-                _video = new SEVideoToTextSprite(_doomConfig, _content);
-                _sound = new SESurfaceSound(_content, Host.Block);
-                _music = new SESurfaceMusic(_content, Host.Block);
+                var wadBytes = LoadWad();
+                _content = GameContent.FromWadBytes("doom1", wadBytes, doomArgs);
+                _audioContent = GameContent.FromWadBytes("doom1-audio", wadBytes, doomArgs);
+                _video = new SEVideoToTextSprite(doomConfig, _content);
+
+                // Audio has its own WAD streams. Wad.ReadLump uses a mutable
+                // stream position, so sharing GameContent between the worker
+                // renderer and main-thread audio would create a data race.
+                var surfaceSound = new SESurfaceSound(_audioContent, Host.Block);
+                var surfaceMusic = new SESurfaceMusic(_audioContent, Host.Block);
+                _audio = new SEMainThreadAudioQueue(surfaceSound, surfaceMusic);
                 _input = new SECockpitUserInput(Host);
 
-                // Apply the persisted surface settings before Doom's
-                // constructor starts the title music or any startup SFX.
+                // Apply persisted settings before Doom queues title music or
+                // startup effects. Actual emitters remain main-thread-only.
                 _appliedSfxVolume = DoomAudioSettings.GetSfxVolume(AppConfig);
                 _appliedMusicVolume = DoomAudioSettings.GetMusicVolume(AppConfig);
-                _sound.Volume = _appliedSfxVolume;
-                _music.Volume = _appliedMusicVolume;
+                _audio.SetSoundVolumeFromMainThread(_appliedSfxVolume);
+                _audio.SetMusicVolumeFromMainThread(_appliedMusicVolume);
 
                 _doom = new Doom(
-                    _doomArgs,
-                    _doomConfig,
+                    doomArgs,
+                    doomConfig,
                     _content,
                     _video,
-                    _sound,
-                    _music,
+                    _audio.Sound,
+                    _audio.Music,
                     _input);
 
-                _ticAccumulator = 0;
+                _pixelWidth = _video.Width;
+                _pixelHeight = _video.Height;
+                var byteCount = _pixelWidth * _pixelHeight * 4;
+                _frameBuffers = new byte[FrameSlotCount][];
+                _frameStates = new int[FrameSlotCount];
+                _frameSequences = new int[FrameSlotCount];
+                for (var i = 0; i < FrameSlotCount; i++)
+                    _frameBuffers[i] = new byte[byteCount];
+
                 _statusMessage = null;
+                _workerStatusMessage = null;
+                _producedFrameSequence = 0;
+                _stopWorker = 0;
+                _pixelLayoutValid = false;
+
+                // Constructor-time music requests were queued on the main
+                // thread, so dispatch them before the producer changes to the
+                // parallel worker.
+                _audio.DispatchPending();
+
+                var parallel = MyAPIGateway.Parallel;
+                if (parallel == null)
+                    throw new InvalidOperationException("Space Engineers parallel API is unavailable.");
+
+                var workerDoom = _doom;
+                var workerVideo = _video;
+                var workerInput = _input;
+                var workerContent = _content;
+
+                // StartBackground is the whitelisted ModAPI entry point for a
+                // long-lived producer. The mod does not construct its own
+                // execution primitive.
+                _parallelWorkerOwnsContent = false;
+                try
+                {
+                    parallel.StartBackground(
+                        () => WorkerLoop(
+                            workerDoom,
+                            workerVideo,
+                            workerInput,
+                            workerContent,
+                            parallel));
+                    _parallelWorkerOwnsContent = true;
+                    _parallelWorkerStarted = true;
+                }
+                catch
+                {
+                    _parallelWorkerOwnsContent = false;
+                    throw;
+                }
+
                 return true;
             }
             catch (Exception e)
             {
-                Close();
+                CloseAfterInitializationFailure();
                 _statusMessage = "Failed to start Doom: " + e.Message;
                 return false;
             }
+        }
+
+        void CloseAfterInitializationFailure()
+        {
+            Interlocked.Exchange(ref _stopWorker, 1);
+
+            if (_audio != null)
+            {
+                _audio.Dispose();
+                _audio = null;
+            }
+
+            if (_input != null)
+            {
+                _input.Dispose();
+                _input = null;
+            }
+
+            if (_audioContent != null)
+            {
+                _audioContent.Dispose();
+                _audioContent = null;
+            }
+
+            if (!_parallelWorkerOwnsContent && _content != null)
+                _content.Dispose();
+
+            _content = null;
+            _doom = null;
+            _video = null;
+            _parallelWorkerStarted = false;
+            _frameBuffers = null;
+            _frameStates = null;
+            _frameSequences = null;
+        }
+
+        void WorkerLoop(
+            Doom doom,
+            SEVideoToTextSprite video,
+            SECockpitUserInput input,
+            GameContent content,
+            VRage.Game.ModAPI.IMyParallelTask parallel)
+        {
+            try
+            {
+                var stopwatch = Stopwatch.StartNew();
+                var frameInterval = 1.0 / WorkerFrameRate;
+                var nextFrameTime = stopwatch.Elapsed.TotalSeconds;
+                var ticAccumulator = 0;
+
+                while (AtomicRead(ref _stopWorker) == 0)
+                {
+                    var now = stopwatch.Elapsed.TotalSeconds;
+                    if (now < nextFrameTime)
+                    {
+                        parallel.Sleep(nextFrameTime - now > 0.002 ? 1 : 0);
+                        continue;
+                    }
+
+                    // Do not spend seconds replaying stale frames after the
+                    // process or game was suspended.
+                    if (now - nextFrameTime > 0.25)
+                        nextFrameTime = now;
+
+                    var completed = false;
+                    ticAccumulator += GameConst.TicRate;
+                    if (ticAccumulator >= WorkerFrameRate)
+                    {
+                        ticAccumulator -= WorkerFrameRate;
+                        input.UpdateEvents(doom);
+                        completed = doom.Update() == UpdateResult.Completed;
+                    }
+
+                    var slot = AcquireWritableFrameSlot();
+                    if (slot >= 0)
+                    {
+                        var published = false;
+                        try
+                        {
+                            var frameFrac = Fixed.FromFloat(
+                                (float)ticAccumulator / WorkerFrameRate);
+                            video.RenderTo(doom, _frameBuffers[slot], frameFrac);
+                            PublishFrame(slot);
+                            published = true;
+                        }
+                        finally
+                        {
+                            if (!published)
+                                AtomicWrite(ref _frameStates[slot], FrameFree);
+                        }
+                    }
+
+                    if (completed)
+                    {
+                        AtomicWrite(ref _workerStatusMessage, "Doom completed.");
+                        break;
+                    }
+
+                    nextFrameTime += frameInterval;
+                }
+            }
+            catch (Exception e)
+            {
+                AtomicWrite(ref _workerStatusMessage, "Doom worker failed: " + e.Message);
+            }
+            finally
+            {
+                // GameContent belongs exclusively to this parallel worker.
+                // Audio uses a separate WAD-backed GameContent instance on the
+                // main thread, so no shutdown wait or cross-context disposal is
+                // required here.
+                try
+                {
+                    if (content != null)
+                        content.Dispose();
+                }
+                catch
+                {
+                    // Shutdown should still complete if WAD disposal fails.
+                }
+            }
+        }
+
+        int AcquireWritableFrameSlot()
+        {
+            var states = _frameStates;
+            if (states == null)
+                return -1;
+
+            for (var i = 0; i < FrameSlotCount; i++)
+            {
+                if (Interlocked.CompareExchange(
+                    ref states[i],
+                    FrameWriting,
+                    FrameFree) == FrameFree)
+                    return i;
+            }
+
+            // Both slots are occupied. Reclaim an unconsumed ready frame, but
+            // never the slot currently being copied by the main thread.
+            var first = 0;
+            var second = 1;
+            if (AtomicRead(ref _frameSequences[first]) >
+                AtomicRead(ref _frameSequences[second]))
+            {
+                first = 1;
+                second = 0;
+            }
+
+            if (Interlocked.CompareExchange(
+                ref states[first],
+                FrameWriting,
+                FrameReady) == FrameReady)
+                return first;
+
+            if (Interlocked.CompareExchange(
+                ref states[second],
+                FrameWriting,
+                FrameReady) == FrameReady)
+                return second;
+
+            // The main thread may be reading one slot while the other changes
+            // ownership. Dropping this worker frame is always preferable to
+            // waiting or touching a frame being consumed.
+            return -1;
+        }
+
+        void PublishFrame(int slot)
+        {
+            var sequence = Interlocked.Increment(ref _producedFrameSequence);
+            AtomicWrite(ref _frameSequences[slot], sequence);
+            AtomicWrite(ref _frameStates[slot], FrameReady);
+        }
+
+        void ConsumeLatestFrame()
+        {
+            var slot = AcquireLatestReadyFrame();
+            if (slot < 0)
+                return;
+
+            var consumedSequence = AtomicRead(ref _frameSequences[slot]);
+            try
+            {
+                EnsurePixelSprites();
+                UpdatePixelColors(_frameBuffers[slot]);
+            }
+            finally
+            {
+                AtomicWrite(ref _frameStates[slot], FrameFree);
+            }
+
+            // Free an older frame that was superseded while this frame was
+            // acquired. Claim the second ready slot before checking its
+            // sequence so the worker cannot publish a newer frame between the
+            // sequence read and the release.
+            for (var i = 0; i < FrameSlotCount; i++)
+            {
+                if (i == slot)
+                    continue;
+
+                if (Interlocked.CompareExchange(
+                    ref _frameStates[i],
+                    FrameReading,
+                    FrameReady) != FrameReady)
+                    continue;
+
+                if (AtomicRead(ref _frameSequences[i]) <= consumedSequence)
+                    AtomicWrite(ref _frameStates[i], FrameFree);
+                else
+                    AtomicWrite(ref _frameStates[i], FrameReady);
+            }
+        }
+
+        int AcquireLatestReadyFrame()
+        {
+            var states = _frameStates;
+            if (states == null)
+                return -1;
+
+            for (var attempt = 0; attempt < FrameSlotCount; attempt++)
+            {
+                var selected = -1;
+                var selectedSequence = int.MinValue;
+
+                for (var i = 0; i < FrameSlotCount; i++)
+                {
+                    if (AtomicRead(ref states[i]) != FrameReady)
+                        continue;
+
+                    var sequence = AtomicRead(ref _frameSequences[i]);
+                    if (sequence > selectedSequence)
+                    {
+                        selected = i;
+                        selectedSequence = sequence;
+                    }
+                }
+
+                if (selected < 0)
+                    return -1;
+
+                if (Interlocked.CompareExchange(
+                    ref states[selected],
+                    FrameReading,
+                    FrameReady) == FrameReady)
+                    return selected;
+            }
+
+            return -1;
+        }
+
+        static int AtomicRead(ref int value)
+        {
+            return Interlocked.CompareExchange(ref value, 0, 0);
+        }
+
+        static void AtomicWrite(ref int location, int value)
+        {
+            Interlocked.Exchange(ref location, value);
+        }
+
+        static string AtomicRead(ref string value)
+        {
+            return Interlocked.CompareExchange(ref value, null, null);
+        }
+
+        static void AtomicWrite(ref string location, string value)
+        {
+            Interlocked.Exchange(ref location, value);
         }
 
         static byte[] LoadWad()
@@ -310,7 +618,7 @@ namespace LcdMod.Client.Apps
 
             if (LcdModSessionComponent.ModItem != null)
             {
-                MyObjectBuilder_Checkpoint.ModItem modItem = (MyObjectBuilder_Checkpoint.ModItem)LcdModSessionComponent.ModItem;
+                var modItem = (MyObjectBuilder_Checkpoint.ModItem)LcdModSessionComponent.ModItem;
                 if (!utilities.FileExistsInModLocation(relativePath, modItem))
                     return false;
 
@@ -324,145 +632,102 @@ namespace LcdMod.Client.Apps
                 }
             }
 
-            if (bytes == null || bytes.Length == 0)
-                return false;
-
-            return true;
+            return bytes != null && bytes.Length != 0;
         }
 
-        void BuildFrameText()
+        void EnsurePixelSprites()
         {
-            var width = _video.Width;
-            var height = _video.Height;
-
-            _frameText = BuildLayerText(
-                _video.RedFrameBuffer,
-                _frameBuilder,
-                ref _frameRow,
-                width,
-                height);
-
-            _middleFrameText = BuildLayerText(
-                _video.GreenFrameBuffer,
-                _middleFrameBuilder,
-                ref _middleFrameRow,
-                width,
-                height);
-
-            _highFrameText = BuildLayerText(
-                _video.BlueFrameBuffer,
-                _highFrameBuilder,
-                ref _highFrameRow,
-                width,
-                height);
-
-            _frameTextWidth = width;
-            _frameTextHeight = height;
-        }
-
-        static string BuildLayerText(
-            char[] buffer,
-            StringBuilder builder,
-            ref char[] row,
-            int width,
-            int height)
-        {
-            builder.Clear();
-            builder.EnsureCapacity(buffer.Length + height);
-
-            if (row == null || row.Length != width)
-                row = new char[width];
-
-            // DrawScreen stores pixels by column: index = height * x + y.
-            // MySprite multiline text expects each row to be contiguous, so
-            // transpose each color plane into row-major order.
-            for (int y = 0; y < height; y++)
-            {
-                for (int x = 0; x < width; x++)
-                    row[x] = buffer[x * height + y];
-
-                builder.Append(row, 0, width);
-                if (y + 1 < height)
-                    builder.Append('\n');
-            }
-
-            return builder.ToString();
-        }
-
-        void EnsureLayout()
-        {
-            if (_video == null || Host.Surface == null)
-                return;
-
-            var surfaceSize = Host.Surface.SurfaceSize;
-            if (_measuredSurfaceSize == surfaceSize &&
-                _measuredWidth == _frameTextWidth &&
-                _measuredHeight == _frameTextHeight)
-                return;
-
             var viewBox = Host.ViewBox;
-            
-            var frameSize = MeasureFrameSize();
-            float frameWidth = Math.Max(1f, frameSize.X);
-            float frameHeight = Math.Max(1f, frameSize.Y);
-            
-            float availableWidth = Math.Max(1f, viewBox.Width);
-            float availableHeight = Math.Max(1f, viewBox.Height);
-            _textScale = Math.Min(availableWidth / frameWidth, availableHeight / frameHeight);
-            _textScale = Math.Max(0.01f, _textScale);
+            var width = _pixelWidth;
+            var height = _pixelHeight;
 
-            var scaledSize = new Vector2(frameWidth, frameHeight) * _textScale;
-            _textPosition = new Vector2(
-                viewBox.X + Math.Max(1f, (viewBox.Width - scaledSize.X) * 0.5f),
-                viewBox.Y + Math.Max(1f, (viewBox.Height - scaledSize.Y) * 0.5f));
+            if (width <= 0 || height <= 0 || viewBox.Width <= 0f || viewBox.Height <= 0f)
+                return;
 
-            _measuredSurfaceSize = surfaceSize;
-            _measuredWidth = _frameTextWidth;
-            _measuredHeight = _frameTextHeight;
-        }
+            if (_pixelLayoutValid &&
+                _pixelViewX == viewBox.X &&
+                _pixelViewY == viewBox.Y &&
+                _pixelViewWidth == viewBox.Width &&
+                _pixelViewHeight == viewBox.Height)
+                return;
 
-        Vector2 MeasureFrameSize()
-        {
-            var surface = Host.Surface;
-            if (surface != null && _frameBuilder.Length > 0)
+            // One rectangle per native Doom framebuffer pixel. At 320 x 200
+            // this intentionally creates 64,000 independently colored sprites.
+            var columns = width;
+            var rows = height;
+            var pixelCount = columns * rows;
+            var previousSprites = _pixelSprites;
+            if (_pixelSprites == null || _pixelSprites.Length != pixelCount)
+                _pixelSprites = new MySprite[pixelCount];
+
+            // Preserve Doom's native 320:200 aspect ratio and center the grid.
+            // Texture sprite positions are center anchors.
+            var scale = Math.Min(viewBox.Width / width, viewBox.Height / height);
+            var frameWidth = width * scale;
+            var frameHeight = height * scale;
+            var frameLeft = viewBox.X + (viewBox.Width - frameWidth) * 0.5f;
+            var frameTop = viewBox.Y + (viewBox.Height - frameHeight) * 0.5f;
+            var pixelSize = new Vector2(frameWidth / columns, frameHeight / rows);
+
+            for (var x = 0; x < columns; x++)
             {
-                var measured = surface.MeasureStringInPixels(_frameBuilder, DoomFont, 1f);
-                if (measured.X > 0f && measured.Y > 0f)
-                    return measured;
+                var centerX = frameLeft + (x + 0.5f) * pixelSize.X;
+                for (var y = 0; y < rows; y++)
+                {
+                    var index = x * rows + y;
+                    var color = previousSprites != null && previousSprites.Length == pixelCount
+                        ? previousSprites[index].Color
+                        : Color.Black;
+
+                    _pixelSprites[index] = new MySprite
+                    {
+                        Type = SpriteType.TEXTURE,
+                        Data = PixelSprite,
+                        Position = new Vector2(
+                            centerX,
+                            frameTop + (y + 0.5f) * pixelSize.Y),
+                        Size = pixelSize,
+                        Color = color,
+                        Alignment = TextAlignment.CENTER
+                    };
+                }
             }
 
-            // Conservative fallback for surfaces that cannot measure the full
-            // multiline private-use glyph string.
-            var charSize = MeasureCharSize();
-            return new Vector2(
-                Math.Max(1f, charSize.X * Math.Max(1, _frameTextWidth)),
-                Math.Max(1f, charSize.Y * Math.Max(1, _frameTextHeight)));
+            _pixelColumns = columns;
+            _pixelRows = rows;
+            _pixelViewX = viewBox.X;
+            _pixelViewY = viewBox.Y;
+            _pixelViewWidth = viewBox.Width;
+            _pixelViewHeight = viewBox.Height;
+            _pixelLayoutValid = true;
         }
 
-        Vector2 MeasureCharSize()
+        void UpdatePixelColors(byte[] frameBuffer)
         {
-            var surface = Host.Surface;
-            if (surface == null)
-                return new Vector2(1f, 1f);
+            if (frameBuffer == null || _pixelSprites == null)
+                return;
 
-            _measureBuilder.Clear();
-            _measureBuilder.Append('M');
-            var single = surface.MeasureStringInPixels(_measureBuilder, DoomFont, 1f);
+            if (frameBuffer.Length < _pixelWidth * _pixelHeight * 4)
+                return;
 
-            _measureBuilder.Clear();
-            for (int i = 0; i < 80; i++)
-                _measureBuilder.Append('M');
-            var row = surface.MeasureStringInPixels(_measureBuilder, DoomFont, 1f);
-
-            float width = row.X > 0f ? row.X / 80f : single.X;
-            float height = single.Y;
-
-            if (width <= 0f)
-                width = 1f;
-            if (height <= 0f)
-                height = 1f;
-
-            return new Vector2(width, height);
+            for (var x = 0; x < _pixelColumns; x++)
+            {
+                for (var y = 0; y < _pixelRows; y++)
+                {
+                    // ManagedDoom stores pixels by column:
+                    // index = height * x + y. Each source pixel maps directly
+                    // to one rectangle; there is no averaging.
+                    var pixelIndex = x * _pixelHeight + y;
+                    var offset = pixelIndex * 4;
+                    var sprite = _pixelSprites[pixelIndex];
+                    sprite.Color = new Color(
+                        frameBuffer[offset],
+                        frameBuffer[offset + 1],
+                        frameBuffer[offset + 2],
+                        frameBuffer[offset + 3]);
+                    _pixelSprites[pixelIndex] = sprite;
+                }
+            }
         }
     }
 }

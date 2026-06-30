@@ -1,0 +1,84 @@
+--- /mnt/data/rect_prev/Arthur-s-LCD-Mod/Arthur-s-Lcd-Mod/Client/Apps/ManagedDoomApp.cs	2026-06-30 15:19:39.000000000 +0000
++++ /mnt/data/rect_full/Arthur-s-LCD-Mod/Arthur-s-Lcd-Mod/Client/Apps/ManagedDoomApp.cs	2026-06-30 15:47:35.570117627 +0000
+@@ -21,9 +21,6 @@
+         const string DoomWadDisplayPath = "Data/DOOM1.WAD";
+         const string DoomWadRootPath = "DOOM1.WAD";
+         const string PixelSprite = "SquareSimple";
+-        // Each rectangle represents this many Doom pixels on each axis.
+-        // Set to 1 for the native 320 x 200 grid (64,000 sprites).
+-        const int PixelBlockSize = 4;
+         const int SpaceEngineersSimulationRate = 60;
+ 
+         static byte[] _cachedWadBytes;
+@@ -328,8 +325,10 @@
+                 _pixelViewHeight == viewBox.Height)
+                 return;
+ 
+-            var columns = (width + PixelBlockSize - 1) / PixelBlockSize;
+-            var rows = (height + PixelBlockSize - 1) / PixelBlockSize;
++            // One rectangle per native Doom framebuffer pixel. At 320 x 200
++            // this intentionally creates 64,000 independently colored sprites.
++            var columns = width;
++            var rows = height;
+             var pixelCount = columns * rows;
+             if (_pixelSprites == null || _pixelSprites.Length != pixelCount)
+                 _pixelSprites = new MySprite[pixelCount];
+@@ -385,45 +384,22 @@
+             if (frameBuffer == null || frameBuffer.Length < _pixelWidth * _pixelHeight * 4)
+                 return;
+ 
+-            for (var gridX = 0; gridX < _pixelColumns; gridX++)
++            for (var x = 0; x < _pixelColumns; x++)
+             {
+-                var sourceXStart = gridX * PixelBlockSize;
+-                var sourceXEnd = Math.Min(sourceXStart + PixelBlockSize, _pixelWidth);
+-
+-                for (var gridY = 0; gridY < _pixelRows; gridY++)
++                for (var y = 0; y < _pixelRows; y++)
+                 {
+-                    var sourceYStart = gridY * PixelBlockSize;
+-                    var sourceYEnd = Math.Min(sourceYStart + PixelBlockSize, _pixelHeight);
+-                    var red = 0;
+-                    var green = 0;
+-                    var blue = 0;
+-                    var alpha = 0;
+-                    var sampleCount = 0;
+-
+-                    for (var sourceX = sourceXStart; sourceX < sourceXEnd; sourceX++)
+-                    {
+-                        for (var sourceY = sourceYStart; sourceY < sourceYEnd; sourceY++)
+-                        {
+-                            // ManagedDoom stores pixels by column:
+-                            // index = height * x + y.
+-                            var sourceIndex = sourceX * _pixelHeight + sourceY;
+-                            var offset = sourceIndex * 4;
+-                            red += frameBuffer[offset];
+-                            green += frameBuffer[offset + 1];
+-                            blue += frameBuffer[offset + 2];
+-                            alpha += frameBuffer[offset + 3];
+-                            sampleCount++;
+-                        }
+-                    }
+-
+-                    var spriteIndex = gridX * _pixelRows + gridY;
+-                    var sprite = _pixelSprites[spriteIndex];
++                    // ManagedDoom stores pixels by column:
++                    // index = height * x + y. Each source pixel maps directly
++                    // to one rectangle; there is no block averaging.
++                    var pixelIndex = x * _pixelHeight + y;
++                    var offset = pixelIndex * 4;
++                    var sprite = _pixelSprites[pixelIndex];
+                     sprite.Color = new Color(
+-                        (byte)(red / sampleCount),
+-                        (byte)(green / sampleCount),
+-                        (byte)(blue / sampleCount),
+-                        (byte)(alpha / sampleCount));
+-                    _pixelSprites[spriteIndex] = sprite;
++                        frameBuffer[offset],
++                        frameBuffer[offset + 1],
++                        frameBuffer[offset + 2],
++                        frameBuffer[offset + 3]);
++                    _pixelSprites[pixelIndex] = sprite;
+                 }
+             }
+ 

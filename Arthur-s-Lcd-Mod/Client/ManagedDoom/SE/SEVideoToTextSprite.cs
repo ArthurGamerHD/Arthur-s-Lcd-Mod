@@ -7,9 +7,8 @@ namespace ManagedDoom.SE
     {
         private readonly Renderer renderer;
         private readonly TextWriter output;
-        private readonly char[] lowFrameBuffer;
-        private readonly char[] middleFrameBuffer;
-        private readonly char[] highFrameBuffer;
+        private readonly byte[] frameBuffer;
+        private readonly char[] diagnosticFrameBuffer;
 
         public SEVideoToTextSprite(Config config, GameContent content)
             : this(config, content, null)
@@ -20,25 +19,43 @@ namespace ManagedDoom.SE
         {
             renderer = new Renderer(config, content);
             this.output = output;
-            var frameBufferLength = renderer.Width * renderer.Height;
-            lowFrameBuffer = new char[frameBufferLength];
-            middleFrameBuffer = new char[frameBufferLength];
-            highFrameBuffer = new char[frameBufferLength];
+            frameBuffer = new byte[renderer.Width * renderer.Height * 4];
+
+            if (output != null)
+                diagnosticFrameBuffer = new char[renderer.Width * renderer.Height];
         }
 
         public void Render(Doom doom, Fixed frameFrac)
         {
-            renderer.Render(
-                doom,
-                lowFrameBuffer,
-                middleFrameBuffer,
-                highFrameBuffer,
-                frameFrac);
+            RenderTo(doom, frameBuffer, frameFrac);
+        }
+
+        /// <summary>
+        /// Renders directly into a caller-owned RGBA target. This lets the Doom
+        /// worker render into an acquired frame slot without first writing an
+        /// intermediate framebuffer and copying it.
+        /// </summary>
+        public void RenderTo(Doom doom, byte[] target, Fixed frameFrac)
+        {
+            if (target == null)
+                throw new System.ArgumentNullException("target");
+            if (target.Length < renderer.Width * renderer.Height * 4)
+                throw new System.ArgumentException("The target framebuffer is too small.", "target");
+
+            renderer.Render(doom, target, frameFrac);
 
             if (output != null)
             {
-                // Preserve diagnostic output by writing the blue-channel layer.
-                output.Write(highFrameBuffer, 0, highFrameBuffer.Length);
+                for (var i = 0; i < diagnosticFrameBuffer.Length; i++)
+                {
+                    var offset = i * 4;
+                    diagnosticFrameBuffer[i] = Renderer.ColorToChar(
+                        target[offset],
+                        target[offset + 1],
+                        target[offset + 2]);
+                }
+
+                output.Write(diagnosticFrameBuffer, 0, diagnosticFrameBuffer.Length);
                 output.Flush();
             }
         }
@@ -53,59 +70,11 @@ namespace ManagedDoom.SE
             return true;
         }
 
-        public char[] FrameBuffer
+        public byte[] FrameBuffer
         {
             get
             {
-                return highFrameBuffer;
-            }
-        }
-
-        public char[] LowFrameBuffer
-        {
-            get
-            {
-                return lowFrameBuffer;
-            }
-        }
-
-        public char[] MiddleFrameBuffer
-        {
-            get
-            {
-                return middleFrameBuffer;
-            }
-        }
-
-        public char[] HighFrameBuffer
-        {
-            get
-            {
-                return highFrameBuffer;
-            }
-        }
-
-        public char[] RedFrameBuffer
-        {
-            get
-            {
-                return lowFrameBuffer;
-            }
-        }
-
-        public char[] GreenFrameBuffer
-        {
-            get
-            {
-                return middleFrameBuffer;
-            }
-        }
-
-        public char[] BlueFrameBuffer
-        {
-            get
-            {
-                return highFrameBuffer;
+                return frameBuffer;
             }
         }
 
