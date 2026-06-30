@@ -12,10 +12,9 @@ using VRageMath;
 using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
-    [LcdSurface(typeof(LcdMod.Client.Apps.BSoDTestApp))]
 #if DEBUG
+    [LcdSurface(typeof(LcdMod.Client.Apps.BSoDTestApp))]
     [MyTextSurfaceScript(ID, TITLE)]
-#endif
     public partial class BSoDTestSurfaceScript : SurfaceScriptBase
     {
         public const string ID = "BSoDTest";
@@ -41,4 +40,5 @@ namespace LcdMod.Client.SurfaceScripts
             return _sprites;
         }
     }
+#endif
 }
