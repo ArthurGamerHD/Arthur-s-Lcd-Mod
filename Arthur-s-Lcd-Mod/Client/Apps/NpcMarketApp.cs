@@ -84,6 +84,8 @@ namespace LcdMod.Client.Apps
         internal IAppHost AppHost => Host;
         bool _restoredPageIndex;
         int _lastAutoPageStep = -1;
+        long _autoPagePauseStartedFrame = long.MinValue;
+        long _autoPagePausedFrames;
 
         public NpcMarketApp(IAppHost host) : base(host)
         {
@@ -1080,7 +1082,7 @@ namespace LcdMod.Client.Apps
             NpcMarketComponent.HorizontalScrollOffsetPixels = 0f;
             NpcMarketComponent.VerticalScrollOffsetPixels = 0f;
             _restoredPageIndex = true;
-            _lastAutoPageStep = -1;
+            ResetAutoPageTimer();
             _pagesPanel.FirstVisiblePage = 0;
         }
 
@@ -1100,14 +1102,14 @@ namespace LcdMod.Client.Apps
         {
             if (!_pagesPanel.CanNavigate)
             {
-                _lastAutoPageStep = -1;
+                ResetAutoPageTimer();
                 return;
             }
 
             var seconds = SliderNpcMarketPageSwitchDelay.ClampSeconds(NpcMarketComponent.PageSwitchSeconds);
             if (seconds <= 0f)
             {
-                _lastAutoPageStep = -1;
+                ResetAutoPageTimer();
                 return;
             }
 
@@ -1116,18 +1118,40 @@ namespace LcdMod.Client.Apps
                 return;
 
             var framesPerStep = Math.Max(1, (int)Math.Round(seconds * 60f));
-            var step = session.GameplayFrameCounter / framesPerStep;
+            var frame = session.GameplayFrameCounter;
+            if (_pagesPanel.IsPanelPinned)
+            {
+                if (_autoPagePauseStartedFrame == long.MinValue)
+                    _autoPagePauseStartedFrame = frame;
+
+                return;
+            }
+
+            if (_autoPagePauseStartedFrame != long.MinValue)
+            {
+                _autoPagePausedFrames += Math.Max(0L, frame - _autoPagePauseStartedFrame);
+                _autoPagePauseStartedFrame = long.MinValue;
+            }
+
+            var step = Math.Max(0L, frame - _autoPagePausedFrames) / framesPerStep;
             if (_lastAutoPageStep < 0)
             {
-                _lastAutoPageStep = step;
+                _lastAutoPageStep = (int)step;
                 return;
             }
 
             if (step == _lastAutoPageStep)
                 return;
 
-            _lastAutoPageStep = step;
+            _lastAutoPageStep = (int)step;
             _pagesPanel.FirstVisiblePage += 1;
+        }
+
+        void ResetAutoPageTimer()
+        {
+            _lastAutoPageStep = -1;
+            _autoPagePauseStartedFrame = long.MinValue;
+            _autoPagePausedFrames = 0L;
         }
 
         NpcMarketMode NormalizeConfiguredMode(int value)

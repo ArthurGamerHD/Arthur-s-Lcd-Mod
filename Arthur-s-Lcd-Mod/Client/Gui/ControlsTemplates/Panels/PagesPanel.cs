@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using LcdMod.Client.Animation;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.Styling;
+using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 
@@ -21,6 +22,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         const float INDICATOR_DOT_PIXELS = 8f;
         const float INDICATOR_DOT_GAP_PIXELS = 8f;
         const float ARROW_ICON_PIXELS = 18f;
+        const long HOVER_LIFETIME_FRAMES = 2L;
         const string PAGE_TRANSITION_FRAMES_RESOURCE = "pageTransitionFrames";
         const string PAGE_TRANSITION_CHANNEL = "PageSwitch";
 
@@ -39,6 +41,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         float _transitionStartPosition;
         float _transitionTargetPosition;
         AnimationHandle _pageTransitionAnimation;
+        long _panelHitFrame = long.MinValue;
         readonly ArrowControl _leftButton;
         readonly ArrowControl _rightButton;
         readonly IndicatorControl _indicatorControl;
@@ -62,6 +65,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         public RectangleF ContentViewportBounds { get; private set; }
         public int PageCount => GetPageCount();
         public bool CanNavigate => _showControls && GetPageCount() > 1;
+        public bool IsPanelPinned => _showControls && IsPanelHitRecent();
 
         protected override bool ClipContent => true;
 
@@ -479,7 +483,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
         protected override bool HitCore(Vector2 point)
         {
-            return ViewBox.Contains(point);
+            if (!ViewBox.Contains(point))
+                return false;
+
+            _panelHitFrame = GetFrameCounter();
+            return true;
         }
 
         protected override bool CanResolveChildren(Vector2 point, bool selfHit)
@@ -709,9 +717,27 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             if (children == null || _leftButton == null || _rightButton == null)
                 return;
 
-            MoveChild(_leftButton, Math.Max(0, children.Count - 3));
-            MoveChild(_indicatorControl, Math.Max(0, children.Count - 2));
-            MoveChild(_rightButton, Math.Max(0, children.Count - 1));
+            MoveChild(_leftButton, children.Count - 1);
+            MoveChild(_indicatorControl, children.Count - 1);
+            MoveChild(_rightButton, children.Count - 1);
+        }
+
+        bool IsPanelHitRecent()
+        {
+            return _panelHitFrame != long.MinValue &&
+                   GetFrameCounter() - _panelHitFrame <= HOVER_LIFETIME_FRAMES;
+        }
+
+        static long GetFrameCounter()
+        {
+            try
+            {
+                return MyAPIGateway.Session?.GameplayFrameCounter ?? 0L;
+            }
+            catch
+            {
+                return 0L;
+            }
         }
 
         bool TryGetButtonBounds(int direction, out RectangleF bounds)
