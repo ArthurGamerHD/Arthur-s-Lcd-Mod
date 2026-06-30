@@ -83,9 +83,14 @@ namespace ManagedDoom.SE
 
             for (var i = _active.Count - 1; i >= 0; i--)
             {
-                if (!_active[i].Emitter.IsPlaying)
+                var emitter = _active[i].Emitter;
+
+                if (_entity == null && _block != null && !_block.MarkedForClose && !_block.Closed)
+                    emitter.SetPosition(_block.GetPosition());
+
+                if (!emitter.IsPlaying)
                 {
-                    ReleaseEmitter(_active[i].Emitter);
+                    ReleaseEmitter(emitter);
                     _active.RemoveAt(i);
                 }
             }
@@ -118,7 +123,12 @@ namespace ManagedDoom.SE
                 _active.RemoveAt(0);
             }
 
-            var emitter = new MyEntity3DSoundEmitter(_entity);
+            var emitter = new MyEntity3DSoundEmitter(_entity, dopplerScaler: 0.0f)
+            {
+                Force3D = true,
+                CustomMaxDistance = 25f
+            };
+
             if (_entity == null && _block != null)
                 emitter.SetPosition(_block.GetPosition());
 

@@ -2,8 +2,10 @@ using System;
 using LcdMod.Client.Audio;
 using ManagedDoom.Audio;
 using Sandbox.Game.Entities;
+using Sandbox.ModAPI;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
+using VRageMath;
 
 namespace ManagedDoom.SE
 {
@@ -14,6 +16,9 @@ namespace ManagedDoom.SE
     public sealed class SESurfaceMusic : IMusic, IDisposable
     {
         const int OutputSampleRate = 24000;
+        const float AudibleMaxDistance = 25f;
+        const float SpatializationMaxDistance = 100000f;
+        const float VolumeUpdateEpsilon = 0.0025f;
 
         readonly GameContent _content;
         readonly IMyCubeBlock _block;
@@ -26,6 +31,7 @@ namespace ManagedDoom.SE
         bool _loop;
         bool _disposed;
         int _volume = 8;
+        float _lastAppliedVolume = -1f;
 
         public SESurfaceMusic(GameContent content, IMyCubeBlock block)
         {
@@ -55,7 +61,7 @@ namespace ManagedDoom.SE
                 if (_volume == 0)
                     StopEmitter();
                 else if (_emitter != null)
-                    _emitter.CustomVolume = GetEmitterVolume();
+                    ApplyEmitterVolume(force: true);
                 else if (_currentPcm != null)
                     PlayCurrent();
             }
@@ -111,7 +117,17 @@ namespace ManagedDoom.SE
 
         public void Update()
         {
-            if (_disposed || !_loop || _currentPcm == null || _volume == 0)
+            if (_disposed)
+                return;
+
+            if (_entity == null && _emitter != null && _block != null &&
+                !_block.MarkedForClose && !_block.Closed)
+                _emitter.SetPosition(_block.GetPosition());
+
+            if (_emitter != null)
+                ApplyEmitterVolume(force: false);
+
+            if (!_loop || _currentPcm == null || _volume == 0)
                 return;
 
             if (_emitter == null || !_emitter.IsPlaying)
@@ -134,18 +150,70 @@ namespace ManagedDoom.SE
                 return;
 
             StopEmitter();
-            _emitter = new MyEntity3DSoundEmitter(_entity);
+            _emitter = new MyEntity3DSoundEmitter(_entity, dopplerScaler: 0.0f)
+            {
+                Force3D = true,
+
+                // Raw PCM receives only its initial distance calculation. Give
+                // the engine a practically flat range so direction remains 3D,
+                // then apply the intended 25 m falloff through VolumeMultiplier.
+                CustomMaxDistance = SpatializationMaxDistance
+            };
+
             if (_entity == null && _block != null)
                 _emitter.SetPosition(_block.GetPosition());
 
-            _emitter.PlaySound(_currentPcm, volume: GetEmitterVolume(), maxDistance: 25f);
+            _emitter.PlaySound(
+                _currentPcm,
+                volume: 1f,
+                maxDistance: SpatializationMaxDistance);
+
             if (!_emitter.IsPlaying)
+            {
                 StopEmitter();
+                return;
+            }
+
+            ApplyEmitterVolume(force: true);
         }
 
-        float GetEmitterVolume()
+        void ApplyEmitterVolume(bool force)
+        {
+            if (_emitter == null)
+                return;
+
+            float appliedVolume = GetBaseVolume() * GetDistanceGain();
+            if (!force && Math.Abs(appliedVolume - _lastAppliedVolume) < VolumeUpdateEpsilon)
+                return;
+
+            _emitter.VolumeMultiplier = appliedVolume;
+            _lastAppliedVolume = appliedVolume;
+        }
+
+        float GetBaseVolume()
         {
             return _volume / (float)MaxVolume;
+        }
+
+        float GetDistanceGain()
+        {
+            if (_block == null || _block.MarkedForClose || _block.Closed)
+                return 0f;
+
+            var session = MyAPIGateway.Session;
+            var camera = session != null ? session.Camera : null;
+            if (camera == null)
+                return 1f;
+
+            double distanceSquared = Vector3D.DistanceSquared(
+                camera.Position,
+                _block.GetPosition());
+            double maxDistanceSquared = AudibleMaxDistance * AudibleMaxDistance;
+            if (distanceSquared >= maxDistanceSquared)
+                return 0f;
+
+            double distance = Math.Sqrt(distanceSquared);
+            return (float)(1d - distance / AudibleMaxDistance);
         }
 
         void StopEmitter()
@@ -157,6 +225,7 @@ namespace ManagedDoom.SE
                 // destroy that voice, so app recreation eventually loses audio.
                 _emitter.StopSound(true, cleanUp: true, cleanupSound: true);
                 _emitter = null;
+                _lastAppliedVolume = -1f;
             }
         }
     }
