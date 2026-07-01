@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Extensions;
+using LcdMod.Client.GridData;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
@@ -39,6 +40,7 @@ namespace LcdMod.Client.Apps
         public string[] AllowedTypes = { "Component" };
 
         protected override string DefaultTitle => _customTitle ?? TITLE;
+        protected override bool AlwaysRefreshItems => true;
 
         string _customTitle;
 
@@ -268,12 +270,14 @@ namespace LcdMod.Client.Apps
             base.Update();
         }
 
-        protected override List<KeyValuePair<MyItemType, double>> ReadItems(IMyTerminalBlock lcd)
+        protected override List<KeyValuePair<MyItemType, double>> ReadItems(
+            IMyTerminalBlock lcd,
+            ItemSnapshot snapshot)
         {
-            if (lcd == null || ItemSource == null)
+            if (lcd == null || snapshot == null)
                 return new List<KeyValuePair<MyItemType, double>>();
 
-            var list = ItemSource.ToList();
+            var list = snapshot.Items.ToList();
             switch (SortMethod)
             {
                 case SortMethod.Type:

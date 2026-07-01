@@ -17,6 +17,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 
         public virtual void SetRect(RectangleF bounds)
         {
+            if (Rect.Equals(bounds) && !IsLayoutDirty)
+                return;
+
             Rect = bounds;
             ValidateLayout();
             MarkDirty();

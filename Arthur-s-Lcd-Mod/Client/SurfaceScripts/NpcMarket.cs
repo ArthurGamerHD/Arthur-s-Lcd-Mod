@@ -33,6 +33,7 @@ namespace LcdMod.Client.SurfaceScripts
         public override List<Control> InteractiveList => _app?.VisualChildren as List<Control>;
         protected override string DefaultTitle => TITLE;
         protected override bool RendersInteractiveEntriesInGetSprites => true;
+        protected override bool RenderContinuouslyWhileLookedAt => false;
 
         public NpcMarketSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
             : base(surface, block, size)
@@ -62,7 +63,8 @@ namespace LcdMod.Client.SurfaceScripts
                 _app = new NpcMarketApp(this);
 
             _app.Update();
-            RenderSprites();
+            if (_app.IsDirty || InteractiveVisualsDirty)
+                RenderSprites();
         }
 
         public override List<MySprite> GetSprites()

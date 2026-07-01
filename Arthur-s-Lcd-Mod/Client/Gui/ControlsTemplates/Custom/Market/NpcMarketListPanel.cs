@@ -26,6 +26,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
         readonly Repeater<NpcMarketRowHitSlot> _rowHitRepeater;
         readonly Button _searchButton;
         IList<NpcMarketRow> _rows = new List<NpcMarketRow>();
+        int _rowsRevision = -1;
         NpcMarketListPage _page;
         NpcMarketMode _mode;
         NpcMarketSortColumn _sortColumn;
@@ -73,7 +74,28 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
             if (context == null)
                 return;
 
-            _rows = context.Rows ?? new List<NpcMarketRow>();
+            var rows = context.Rows ?? new List<NpcMarketRow>();
+            var layoutScale = Math.Max(0.01f, context.LayoutScale);
+            if (ReferenceEquals(_rows, rows) &&
+                _rowsRevision == context.RowsRevision &&
+                ReferenceEquals(_page, context.Page) &&
+                _mode == context.Mode &&
+                _sortColumn == context.SortColumn &&
+                _sortDescending == context.SortDescending &&
+                _headerHeight.Equals(context.HeaderHeight) &&
+                _rowHeight.Equals(context.RowHeight) &&
+                _textScale.Equals(context.TextScale) &&
+                _layoutScale.Equals(layoutScale) &&
+                _muted.Equals(context.MutedColor) &&
+                SortClicked == context.SortClicked &&
+                SearchClicked == context.SearchClicked &&
+                RowClicked == context.RowClicked)
+            {
+                return;
+            }
+
+            _rows = rows;
+            _rowsRevision = context.RowsRevision;
             _page = context.Page;
             _mode = context.Mode;
             _sortColumn = context.SortColumn;
@@ -81,7 +103,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
             _headerHeight = context.HeaderHeight;
             _rowHeight = context.RowHeight;
             _textScale = context.TextScale;
-            _layoutScale = Math.Max(0.01f, context.LayoutScale);
+            _layoutScale = layoutScale;
             _muted = context.MutedColor;
             SortClicked = context.SortClicked;
             SearchClicked = context.SearchClicked;

@@ -38,6 +38,7 @@ namespace LcdMod.Client.Apps.Abstract
     public abstract partial class ItemsApp : App, IApp
     {
         protected virtual SortMethod SortMethod => (SortMethod)FilterComponent.SortMethod;
+        protected virtual bool AlwaysRefreshItems => false;
 
         public static Dictionary<MyItemType, string> SpriteCache =
             new Dictionary<MyItemType, string>();
@@ -47,6 +48,8 @@ namespace LcdMod.Client.Apps.Abstract
 
         readonly Dictionary<MyItemType, double> _itemsCache = new Dictionary<MyItemType, double>();
         readonly List<ItemViewModel> _items = new List<ItemViewModel>();
+        readonly List<MySprite> _contentSpriteCache = new List<MySprite>();
+        readonly List<MySprite> _footerSpriteCache = new List<MySprite>();
         readonly Dictionary<MyItemType, ItemViewModel> _models = new Dictionary<MyItemType, ItemViewModel>();
         readonly Dictionary<MyItemType, ItemControl> _gridItemControls =
             new Dictionary<MyItemType, ItemControl>();
@@ -58,6 +61,16 @@ namespace LcdMod.Client.Apps.Abstract
         ScrollPanel _activeScrollPanel;
         int _viewModelLayoutVersion = 1;
         bool _scrollRenderQueued;
+        bool _contentSpritesDirty = true;
+        bool _footerSpritesDirty = true;
+        bool _hasRenderConfigSnapshot;
+        bool _lastHideEmpty;
+        bool _lastDrawLines;
+        int _lastDisplayMode;
+        SortMethod _lastSortMethod;
+        ItemSnapshot _lastItemSnapshot;
+        ItemSnapshot _fallbackItemSnapshot;
+        float _cachedFooterHeight;
         float _caretY;
         float _footerHeight;
         protected string LocalizedTitleCache = string.Empty;
@@ -219,16 +232,40 @@ namespace LcdMod.Client.Apps.Abstract
                 model.LayoutVersion = _viewModelLayoutVersion;
             }
 
+            InvalidateContentSprites();
             Host.RenderSprites();
         }
 
 
-        protected virtual List<KeyValuePair<MyItemType, double>> ReadItems(IMyTerminalBlock lcd)
+        protected virtual ItemSnapshot ReadItemSnapshot(IMyTerminalBlock lcd)
+        {
+            var searchToken = SearchQueryToken.GetToken(BlockSelectionComponent, ItemSelectionComponent);
+            var source = ItemSource ?? new Dictionary<MyItemType, double>();
+            if (_fallbackItemSnapshot != null &&
+                _fallbackItemSnapshot.SearchToken.Equals(searchToken) &&
+                ItemSnapshot.ContentEquals(_fallbackItemSnapshot.Items, source))
+                return _fallbackItemSnapshot;
+
+            var revision = DateTime.UtcNow;
+            if (_fallbackItemSnapshot != null && revision <= _fallbackItemSnapshot.Revision)
+                revision = _fallbackItemSnapshot.Revision.AddTicks(1);
+
+            _fallbackItemSnapshot = new ItemSnapshot(
+                searchToken,
+                revision,
+                new Dictionary<MyItemType, double>(source));
+            return _fallbackItemSnapshot;
+        }
+
+
+        protected virtual List<KeyValuePair<MyItemType, double>> ReadItems(
+            IMyTerminalBlock lcd,
+            ItemSnapshot snapshot)
         {
             if (FilterComponent.HideEmpty || ItemSelectionComponent.GetSelectedItems().Any())
                 _itemsCache.Clear();
 
-            if (lcd == null || ItemSource == null)
+            if (lcd == null || snapshot == null)
                 return new List<KeyValuePair<MyItemType, double>>();
 
             if (_itemsCache.Any())
@@ -254,7 +291,7 @@ namespace LcdMod.Client.Apps.Abstract
                 }
             }
 
-            foreach (var keyValuePair in ItemSource)
+            foreach (var keyValuePair in snapshot.Items)
                 _itemsCache[keyValuePair.Key] = (keyValuePair.Value);
 
 
@@ -289,18 +326,36 @@ namespace LcdMod.Client.Apps.Abstract
 
         public override void Update()
         {
-            _items.Clear();
-            ClearInteractiveTree();
-            
             try
             {
-                var items = ReadItems(Block as IMyTerminalBlock);
+                if (_activeScrollPanel != null && _activeScrollPanel.UpdateAutoScroll())
+                    InvalidateContentSprites();
+
+                var snapshot = ReadItemSnapshot(Block as IMyTerminalBlock);
+                bool hasFilters = ItemSelectionComponent.SelectedCategories.Any() || BlockSelectionComponent.SelectedBlocks.Any() ||
+                                  ItemSelectionComponent.GetSelectedItems().Any() || BlockSelectionComponent.SelectedGroups.Any() ||
+                                  ItemSelectionComponent.SelectedDefinition.Any();
+                bool renderConfigChanged = HasRenderConfigChanged();
+                bool snapshotChanged = AlwaysRefreshItems ||
+                                       _lastItemSnapshot == null ||
+                                       !_lastItemSnapshot.Matches(snapshot);
+                bool filterStateChanged = HasFilters != hasFilters;
+
+                if (!snapshotChanged && !renderConfigChanged && !filterStateChanged)
+                    return;
+
+                _items.Clear();
+                var items = ReadItems(Block as IMyTerminalBlock, snapshot);
                 for (int i = 0; i < items.Count; i++)
                     _items.Add(GetOrCreateItemViewModel(items[i]));
 
-                HasFilters = ItemSelectionComponent.SelectedCategories.Any() || BlockSelectionComponent.SelectedBlocks.Any() ||
-                             ItemSelectionComponent.GetSelectedItems().Any() || BlockSelectionComponent.SelectedGroups.Any() ||
-                             ItemSelectionComponent.SelectedDefinition.Any();
+                if (_items.Count == 0)
+                    ClearInteractiveTree();
+
+                HasFilters = hasFilters;
+                _lastItemSnapshot = snapshot;
+                CaptureRenderConfig();
+                InvalidateContentAndFooterSprites();
             }
             catch (Exception e)
             {
@@ -314,29 +369,124 @@ namespace LcdMod.Client.Apps.Abstract
             LocKeysCache.Clear();
             LocalizedTitleCache = string.Empty;
             _viewModelLayoutVersion++;
+            _hasRenderConfigSnapshot = false;
+            InvalidateContentAndFooterSprites();
         }
 
         public override List<MySprite> GetSprites()
         {
             var sprites = new List<MySprite>();
-            ClearInteractiveTree();
-            _caretY = ContentTop();
-            _footerHeight = 0f;
-            DrawFooter(sprites);
+            CaptureDirtyControlSections();
 
-            switch (GeneralComponent.DisplayMode)
+            if (_contentSpritesDirty)
             {
-                case (int)DisplayMode.Legacy:
-                    DrawList(sprites, _items);
-                    break;
-                case (int)DisplayMode.Grid:
-                    DrawGrid(sprites, _items);
-                    break;
+                ClearInteractiveTree();
+                _footerSpritesDirty = true;
             }
+
+            if (_footerSpritesDirty)
+                RebuildFooterSpriteCache();
+
+            if (_contentSpritesDirty)
+                RebuildContentSpriteCache();
+
+            sprites.AddRange(_footerSpriteCache);
+            sprites.AddRange(_contentSpriteCache);
 
             QueueControlRenderIfNeeded();
             ClearDirtyAfterRender();
             return sprites;
+        }
+
+        public void CompleteHostRender()
+        {
+            ClearDirtyAfterRender();
+        }
+
+        protected void InvalidateContentSprites()
+        {
+            _contentSpritesDirty = true;
+            MarkDirty();
+        }
+
+        protected void InvalidateFooterSprites()
+        {
+            _footerSpritesDirty = true;
+            MarkDirty();
+        }
+
+        protected void InvalidateContentAndFooterSprites()
+        {
+            _contentSpritesDirty = true;
+            _footerSpritesDirty = true;
+            MarkDirty();
+        }
+
+        bool HasRenderConfigChanged()
+        {
+            if (!_hasRenderConfigSnapshot)
+                return true;
+
+            return _lastHideEmpty != FilterComponent.HideEmpty ||
+                   _lastDrawLines != GeneralComponent.DrawLines ||
+                   _lastDisplayMode != GeneralComponent.DisplayMode ||
+                   _lastSortMethod != SortMethod;
+        }
+
+        void CaptureRenderConfig()
+        {
+            _lastHideEmpty = FilterComponent.HideEmpty;
+            _lastDrawLines = GeneralComponent.DrawLines;
+            _lastDisplayMode = GeneralComponent.DisplayMode;
+            _lastSortMethod = SortMethod;
+            _hasRenderConfigSnapshot = true;
+        }
+
+        void CaptureDirtyControlSections()
+        {
+            for (int i = 0; i < _children.Count; i++)
+            {
+                var child = _children[i];
+                if (!IsVisibleTreeDirty(child))
+                    continue;
+
+                if (ReferenceEquals(child, _scrollPanel) || ReferenceEquals(child, _listBox))
+                    _contentSpritesDirty = true;
+                else
+                    _footerSpritesDirty = true;
+            }
+        }
+
+        void RebuildFooterSpriteCache()
+        {
+            _footerSpriteCache.Clear();
+            _caretY = ContentTop();
+            _footerHeight = 0f;
+            DrawFooter(_footerSpriteCache);
+            if (Math.Abs(_cachedFooterHeight - _footerHeight) > 0.001f)
+                _contentSpritesDirty = true;
+
+            _cachedFooterHeight = _footerHeight;
+            _footerSpritesDirty = false;
+        }
+
+        void RebuildContentSpriteCache()
+        {
+            _contentSpriteCache.Clear();
+            _caretY = ContentTop();
+            _footerHeight = _cachedFooterHeight;
+
+            switch (GeneralComponent.DisplayMode)
+            {
+                case (int)DisplayMode.Legacy:
+                    DrawList(_contentSpriteCache, _items);
+                    break;
+                case (int)DisplayMode.Grid:
+                    DrawGrid(_contentSpriteCache, _items);
+                    break;
+            }
+
+            _contentSpritesDirty = false;
         }
 
         protected virtual ItemViewModel GetOrCreateItemViewModel(KeyValuePair<MyItemType, double> item)

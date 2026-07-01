@@ -37,14 +37,24 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override CursorType CursorType { get; protected set; }
 
+        protected override void LayoutChanged()
+        {
+            base.LayoutChanged();
+            if (_app != null)
+                _app.LayoutChanged();
+        }
+
         public override void SafeRun()
         {
+            base.SafeRun();
+
             if (_app == null)
                 _app = new EnergyDashboardApp(this);
 
             UpdateViewBox();
             _app.Update();
-            RenderSprites();
+            if (_app.IsDirty || InteractiveVisualsDirty)
+                RenderSprites();
         }
 
         public override List<MySprite> GetSprites()

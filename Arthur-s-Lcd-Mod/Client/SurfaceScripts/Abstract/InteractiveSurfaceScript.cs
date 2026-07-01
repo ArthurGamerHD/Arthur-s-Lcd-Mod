@@ -57,6 +57,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         int _externalOverlayCount;
 
         public ICollection<Control> InteractiveEntries => GetInteractiveEntries();
+        protected bool InteractiveVisualsDirty { get; private set; }
 
         public ICollection<Control> GetInteractiveEntries(bool includeDisabled = false)
         {
@@ -183,16 +184,28 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         public abstract CursorType CursorType { get; protected set; }
 
-        public void LookAt(Vector2 onScreenCoordinates)
+        protected virtual bool RenderContinuouslyWhileLookedAt => true;
+
+        public virtual void LookAt(Vector2 onScreenCoordinates)
         {
+            bool hadRecentVisualContact = HasRecentVisualContact;
             _lastVisualContactFrame = MyAPIGateway.Session.GameplayFrameCounter;
             CursorPosition = onScreenCoordinates;
             OnLookAt(onScreenCoordinates);
             RaiseVisualContact(onScreenCoordinates);
-            RenderSprites();
+
             try
             {
-                TryHoverAtCursor(this);
+                bool pointerChanged = UpdateCursorFromTopHit();
+                bool hoverHandled = TryHoverAtCursor(this);
+                if (RenderContinuouslyWhileLookedAt ||
+                    !hadRecentVisualContact ||
+                    pointerChanged ||
+                    hoverHandled ||
+                    App != null && App.IsDirty)
+                {
+                    RenderSprites();
+                }
             }
             catch (Exception e)
             {
@@ -255,13 +268,24 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         public override void SafeRun()
         {
+            InteractiveVisualsDirty = false;
             if (!HasRecentVisualContact)
             {
                 CursorPosition = new Vector2(float.NaN, float.NaN);
+                if (UpdateCursorFromTopHit())
+                    InteractiveVisualsDirty = true;
+
+                var tooltip = _activeTooltipParentEntry != null
+                    ? _activeTooltipParentEntry.Tooltip
+                    : null;
+                if (tooltip != null && tooltip.HasBounds)
+                    InteractiveVisualsDirty = true;
+
                 ClearTooltip();
             }
 
-            UpdateHiddenGlobalMenuLifetime();
+            if (UpdateHiddenGlobalMenuLifetime())
+                InteractiveVisualsDirty = true;
         }
 
         void HideAttachedTooltip()
@@ -633,16 +657,16 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             _hiddenGlobalMenuVisibleUntilFrame = session.GameplayFrameCounter + HIDDEN_GLOBAL_MENU_TIMEOUT_FRAMES;
         }
 
-        void UpdateHiddenGlobalMenuLifetime()
+        bool UpdateHiddenGlobalMenuLifetime()
         {
             if (!_showHiddenGlobalMenu)
-                return;
+                return false;
 
             if (!CanOpenHiddenGlobalMenu())
             {
                 CloseHiddenGlobalMenu();
                 UpdateViewBox();
-                return;
+                return true;
             }
 
             var session = MyAPIGateway.Session;
@@ -650,20 +674,21 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             {
                 CloseHiddenGlobalMenu();
                 UpdateViewBox();
-                return;
+                return true;
             }
 
             if (_globalMenu != null && _globalMenu.Hit(CursorPosition))
             {
                 RefreshHiddenGlobalMenuLifetime();
-                return;
+                return false;
             }
 
             if (session.GameplayFrameCounter <= _hiddenGlobalMenuVisibleUntilFrame)
-                return;
+                return false;
 
             CloseHiddenGlobalMenu();
             UpdateViewBox();
+            return true;
         }
 
         void CloseHiddenGlobalMenu()
@@ -736,28 +761,39 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             return entry.Hit(position) || _hasTooltipBounds && ReferenceEquals(entry, _activeTooltipParentEntry);
         }
 
-        void UpdateCursorFromTopHit()
+        bool UpdateCursorFromTopHit()
         {
-            if (_pointerOverControl != null)
-            {
-                _pointerOverControl.SetPointerOver(false);
-                _pointerOverControl = null;
-            }
-
+            ControlTemplate nextPointerOverControl = null;
+            CursorType nextCursorType = CursorType.Default;
             var position = HitTestCursorPosition;
-            if (float.IsNaN(position.X) || float.IsNaN(position.Y) || !HasRecentVisualContact)
-                return;
-
-            ControlTemplate entry;
-            if (TryResolveHit(position, out entry))
+            if (!float.IsNaN(position.X) && !float.IsNaN(position.Y) && HasRecentVisualContact)
             {
-                CursorType = entry.Cursor;
-                entry.SetPointerOver(true);
-                _pointerOverControl = entry;
-                return;
+                ControlTemplate entry;
+                if (TryResolveHit(position, out entry))
+                {
+                    nextPointerOverControl = entry;
+                    nextCursorType = entry.Cursor;
+                }
             }
 
-            CursorType = CursorType.Default;
+            bool pointerChanged = !ReferenceEquals(_pointerOverControl, nextPointerOverControl);
+            bool cursorChanged = CursorType != nextCursorType;
+            if (pointerChanged)
+            {
+                if (_pointerOverControl != null)
+                    _pointerOverControl.SetPointerOver(false);
+
+                _pointerOverControl = nextPointerOverControl;
+                if (_pointerOverControl != null)
+                    _pointerOverControl.SetPointerOver(true);
+            }
+            else if (_pointerOverControl != null)
+            {
+                _pointerOverControl.RestorePointerOverForRender();
+            }
+
+            CursorType = nextCursorType;
+            return pointerChanged || cursorChanged;
         }
 
         public virtual bool TryResolveHitAtCursor(out ControlTemplate entry)

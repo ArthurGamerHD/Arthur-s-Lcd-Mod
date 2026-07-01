@@ -28,6 +28,10 @@ namespace LcdMod.Client.Apps
     {
         const int SCALE_TIER_COUNT = 6;
         const int GRAPH_BUCKET_COUNT = 10;
+        const int ROW_REFRESH_RUN_INTERVAL = 6;
+        const int GRAPH_1_SECOND_REFRESH_RUN_INTERVAL = 1;
+        const int GRAPH_5_SECOND_REFRESH_RUN_INTERVAL = 3;
+        const int GRAPH_LONG_REFRESH_RUN_INTERVAL = 6;
         const float LIST_COLUMN_WRAP_WIDTH_PIXELS = 220f;
         const float PROGRESS_CELL_MARGIN_X_PIXELS = 3f;
         const float PROGRESS_CELL_MARGIN_Y_PIXELS = 2f;
@@ -62,6 +66,7 @@ namespace LcdMod.Client.Apps
         readonly Dictionary<EnergyDashboardPowerCategory, EnergyDashboardPowerRow> _hoverRows =
             new Dictionary<EnergyDashboardPowerCategory, EnergyDashboardPowerRow>();
         readonly Dictionary<string, string> _spriteCache = new Dictionary<string, string>(StringComparer.Ordinal);
+        readonly List<string> _rowKeysToRemove = new List<string>();
         readonly ToggleButton[] _scaleButtons = new ToggleButton[SCALE_TIER_COUNT];
         readonly ControlGrid _rootGrid;
         readonly ControlGrid _progressGrid;
@@ -81,8 +86,15 @@ namespace LcdMod.Client.Apps
         readonly VirtualizedWrapPanel<EnergyDashboardPowerRow> _chargeWrapPanel;
         long _powerRowUpdateToken;
         long _hoverFrame = -1L;
+        long _lastGraphPresentedFrame = long.MinValue;
+        int _runsUntilRowRefresh;
+        int _runsUntilGraphRefresh;
+        int _presentationTier = -1;
+        bool _rowRefreshPending = true;
         PowerDataLease _lease;
+        PowerDataService _presentedService;
         PowerSnapshot _latest;
+        List<PowerSnapshot> _presentationSnapshots = new List<PowerSnapshot>();
 
         public EnergyDashboardApp(IAppHost host) : base(host)
         {
@@ -127,6 +139,11 @@ namespace LcdMod.Client.Apps
             _producerScrollPanel.SetContent(_producerWrapPanel);
             _consumerScrollPanel.SetContent(_consumerWrapPanel);
             _chargeScrollPanel.SetContent(_chargeWrapPanel);
+            // Energy Dashboard lists are manually scrollable only. Override the app/theme
+            // auto-scroll resource so their position never advances without user input.
+            _producerScrollPanel.SetAutoScrollSecondsPerStep(0f);
+            _consumerScrollPanel.SetAutoScrollSecondsPerStep(0f);
+            _chargeScrollPanel.SetAutoScrollSecondsPerStep(0f);
             _contentPages = new PagesPanel();
             _contentPages.AddChild(CreatePage(_consumerGraph, _consumerScrollPanel));
             _contentPages.AddChild(CreatePage(_producerGraph, _producerScrollPanel));
@@ -155,22 +172,95 @@ namespace LcdMod.Client.Apps
 
         public override IReadOnlyList<Control> VisualChildren => _children;
 
+        public override void LayoutChanged()
+        {
+            _runsUntilRowRefresh = 0;
+            _runsUntilGraphRefresh = 0;
+            _rowRefreshPending = true;
+            MarkDirty();
+        }
+
         public override void Update()
         {
             CaptureLease();
-            _latest = _lease?.Latest ?? new PowerSnapshot();
-            BuildRows(_latest.ProducerSubtypes, _producerRows,
-                EnergyDashboardPowerMetrics.GetCurrentProducerTotal(_latest),
-                EnergyDashboardPowerCategory.Producer, false);
-            BuildRows(_latest.ConsumerSubtypes, _consumerRows,
-                EnergyDashboardPowerMetrics.GetCurrentConsumerTotal(_latest),
-                EnergyDashboardPowerCategory.Consumer, false);
-            BuildRows(_latest.ChargeSubtypes, _chargeRows, _latest.MaxStoredEnergyWh,
-                EnergyDashboardPowerCategory.Charge, true);
-            SetChargeControlsVisible(HasChargeableDevices(_latest));
-            _producerWrapPanel.InvalidateLayout();
-            _consumerWrapPanel.InvalidateLayout();
-            _chargeWrapPanel.InvalidateLayout();
+            bool listPinned = IsCursorOverPowerList();
+            bool dynamicChanged = !listPinned && ClearExpiredHover();
+
+            var currentService = _lease?.Service;
+            int currentTier = GetScaleTierIndex();
+            bool serviceChanged = !ReferenceEquals(_presentedService, currentService);
+            bool tierChanged = _presentationTier != currentTier;
+            if (serviceChanged)
+            {
+                _runsUntilRowRefresh = 0;
+                _runsUntilGraphRefresh = 0;
+                _rowRefreshPending = true;
+            }
+            else if (tierChanged)
+            {
+                _runsUntilGraphRefresh = 0;
+                _rowRefreshPending = true;
+            }
+
+            if (TakeRefreshTurn(ref _runsUntilRowRefresh, ROW_REFRESH_RUN_INTERVAL))
+                _rowRefreshPending = true;
+
+            bool refreshGraph = TakeRefreshTurn(
+                ref _runsUntilGraphRefresh,
+                GetGraphRefreshRunInterval(currentTier));
+            var latest = _lease?.Latest ?? new PowerSnapshot();
+            bool presentationChanged = false;
+            bool graphPresentationChanged = false;
+
+            if (refreshGraph)
+            {
+                long graphRevision;
+                var graphSnapshots = GetSnapshots(_lease?.History, out graphRevision);
+                if (serviceChanged || tierChanged || _lastGraphPresentedFrame != graphRevision)
+                {
+                    _lastGraphPresentedFrame = graphRevision;
+                    _presentationTier = currentTier;
+                    _latest = latest;
+                    _presentationSnapshots = graphSnapshots;
+                    graphPresentationChanged = true;
+                    presentationChanged = true;
+                }
+            }
+            
+            if (graphPresentationChanged && _rowRefreshPending && !listPinned)
+            {
+                RefreshRowsFromGraphPresentation();
+                _rowRefreshPending = false;
+            }
+
+            _presentedService = currentService;
+            if (presentationChanged || dynamicChanged)
+                MarkDirty();
+        }
+
+        static bool TakeRefreshTurn(ref int runsUntilRefresh, int interval)
+        {
+            if (runsUntilRefresh > 0)
+            {
+                runsUntilRefresh--;
+                return false;
+            }
+
+            runsUntilRefresh = Math.Max(1, interval) - 1;
+            return true;
+        }
+
+        static int GetGraphRefreshRunInterval(int tier)
+        {
+            switch ((PowerHistoryTier)tier)
+            {
+                case PowerHistoryTier.Average1Second:
+                    return GRAPH_1_SECOND_REFRESH_RUN_INTERVAL;
+                case PowerHistoryTier.Average5Seconds:
+                    return GRAPH_5_SECOND_REFRESH_RUN_INTERVAL;
+                default:
+                    return GRAPH_LONG_REFRESH_RUN_INTERVAL;
+            }
         }
 
         public override List<MySprite> GetSprites()
@@ -179,7 +269,7 @@ namespace LcdMod.Client.Apps
             float top = GetContentTop();
             var bounds = new RectangleF(Host.ViewBox.X, top, Host.ViewBox.Width,
                 Math.Max(0f, Host.ViewBox.Bottom - top));
-            BindControls(GetSnapshots(_lease?.History));
+            BindControls(_presentationSnapshots);
             _rootGrid.SetRows(CreateRootRows(bounds.Height, GeneralComponent.GetScale()));
             _rootGrid.Arrange(bounds);
             _rootGrid.Render(sprites);
@@ -215,7 +305,6 @@ namespace LcdMod.Client.Apps
             _consumerGraph.UseTimeSpacing = showAll;
             _producerGraph.UseTimeSpacing = showAll;
             _chargeGraph.UseTimeSpacing = showAll;
-            ClearExpiredHover();
             ApplyRowColors(_consumerRows, EnergyDashboardPowerCategory.Consumer);
             ApplyRowColors(_producerRows, EnergyDashboardPowerCategory.Producer);
             ApplyRowColors(_chargeRows, EnergyDashboardPowerCategory.Charge);
@@ -230,6 +319,37 @@ namespace LcdMod.Client.Apps
             BindList(_producerScrollPanel, _producerWrapPanel);
             if (_chargePage.Parent != null)
                 BindList(_chargeScrollPanel, _chargeWrapPanel);
+        }
+
+        void RefreshRowsFromGraphPresentation()
+        {
+            var rowSnapshot = GetNewestDisplayedSnapshot();
+            BuildRows(rowSnapshot.ProducerSubtypes, _producerRows,
+                EnergyDashboardPowerMetrics.GetCurrentProducerTotal(rowSnapshot),
+                EnergyDashboardPowerCategory.Producer, false);
+            BuildRows(rowSnapshot.ConsumerSubtypes, _consumerRows,
+                EnergyDashboardPowerMetrics.GetCurrentConsumerTotal(rowSnapshot),
+                EnergyDashboardPowerCategory.Consumer, false);
+            BuildRows(rowSnapshot.ChargeSubtypes, _chargeRows, rowSnapshot.MaxStoredEnergyWh,
+                EnergyDashboardPowerCategory.Charge, true);
+            SetChargeControlsVisible(HasChargeableDevices(_latest));
+            _producerWrapPanel.InvalidateLayout();
+            _consumerWrapPanel.InvalidateLayout();
+            _chargeWrapPanel.InvalidateLayout();
+        }
+
+        PowerSnapshot GetNewestDisplayedSnapshot()
+        {
+            if (_presentationSnapshots != null)
+            {
+                for (int i = _presentationSnapshots.Count - 1; i >= 0; i--)
+                {
+                    if (HasPowerData(_presentationSnapshots[i]))
+                        return _presentationSnapshots[i];
+                }
+            }
+
+            return _latest;
         }
 
         void SetChargeControlsVisible(bool visible)
@@ -335,6 +455,16 @@ namespace LcdMod.Client.Apps
             rows.Sort(ComparePowerRowsDescending);
             for (int i = 0; i < rows.Count; i++)
                 rows[i].Color = ColorForSubtypeIndex(i);
+
+            _rowKeysToRemove.Clear();
+            foreach (var kv in rowsByKey)
+            {
+                if (kv.Value == null || kv.Value.UpdateToken != updateToken)
+                    _rowKeysToRemove.Add(kv.Key);
+            }
+
+            for (int i = 0; i < _rowKeysToRemove.Count; i++)
+                rowsByKey.Remove(_rowKeysToRemove[i]);
         }
 
         void ApplyRowColors(List<EnergyDashboardPowerRow> rows, EnergyDashboardPowerCategory category)
@@ -404,10 +534,12 @@ namespace LcdMod.Client.Apps
             if (row == null || row.Entry == null || string.IsNullOrEmpty(row.Entry.Key))
                 return;
 
+            var previous = GetTrackedRow(_hoverRows, row.Category);
             _hoverRows.Clear();
             _hoverRows[row.Category] = row;
             _hoverFrame = GetFrameCounter();
-            Host.RenderSprites();
+            if (!ReferenceEquals(previous, row))
+                Host.RenderSprites();
         }
 
         static int ComparePowerRowsDescending(EnergyDashboardPowerRow a, EnergyDashboardPowerRow b)
@@ -448,12 +580,13 @@ namespace LcdMod.Client.Apps
             trackedRows.Remove(category);
         }
 
-        void ClearExpiredHover()
+        bool ClearExpiredHover()
         {
-            if (IsHoverFresh())
-                return;
+            if (_hoverRows.Count == 0 || IsHoverFresh())
+                return false;
 
             _hoverRows.Clear();
+            return true;
         }
 
         bool IsHoverFresh()
@@ -488,8 +621,9 @@ namespace LcdMod.Client.Apps
             return spriteName;
         }
 
-        List<PowerSnapshot> GetSnapshots(PowerHistory history)
+        List<PowerSnapshot> GetSnapshots(PowerHistory history, out long revision)
         {
+            revision = long.MinValue;
             if (history == null)
                 return new List<PowerSnapshot>();
 
@@ -513,10 +647,23 @@ namespace LcdMod.Client.Apps
                     snapshots = history.Average5Minutes.ToListOldestFirst();
                     break;
                 default:
-                    return GetAllNonZeroSnapshots(history, _latest);
+                    snapshots = GetAllNonZeroSnapshots(history, _latest);
+                    revision = GetNewestSnapshotFrame(snapshots);
+                    return snapshots;
             }
 
-            return PadSnapshots(snapshots, GetScaleWindowSeconds(tier), _latest);
+            // RawSamples already contains the current complete 1-second-tier point. Averaged histories
+            // contain only drained, complete buckets; do not append _latest as a partial right-edge bucket.
+            revision = GetNewestSnapshotFrame(snapshots);
+            return PadSnapshots(snapshots, GetScaleWindowSeconds(tier), _latest.GameplayFrame);
+        }
+
+        static long GetNewestSnapshotFrame(List<PowerSnapshot> snapshots)
+        {
+            if (snapshots == null || snapshots.Count == 0)
+                return long.MinValue;
+
+            return snapshots[snapshots.Count - 1].GameplayFrame;
         }
 
         static List<PowerSnapshot> GetAllNonZeroSnapshots(PowerHistory history, PowerSnapshot latest)
@@ -606,16 +753,10 @@ namespace LcdMod.Client.Apps
         }
 
         static List<PowerSnapshot> PadSnapshots(List<PowerSnapshot> snapshots, float windowSeconds,
-            PowerSnapshot latest)
+            long fallbackEndFrame)
         {
             if (snapshots == null)
                 snapshots = new List<PowerSnapshot>();
-
-            if (snapshots.Count == 0 || latest.GameplayFrame > snapshots[snapshots.Count - 1].GameplayFrame)
-            {
-                snapshots = new List<PowerSnapshot>(snapshots);
-                snapshots.Add(latest);
-            }
 
             if (snapshots.Count > GRAPH_BUCKET_COUNT)
                 snapshots = snapshots.GetRange(snapshots.Count - GRAPH_BUCKET_COUNT, GRAPH_BUCKET_COUNT);
@@ -623,7 +764,9 @@ namespace LcdMod.Client.Apps
             if (snapshots.Count >= GRAPH_BUCKET_COUNT)
                 return snapshots;
 
-            long endFrame = snapshots.Count > 0 ? snapshots[snapshots.Count - 1].GameplayFrame : latest.GameplayFrame;
+            long endFrame = snapshots.Count > 0
+                ? snapshots[snapshots.Count - 1].GameplayFrame
+                : fallbackEndFrame;
             long stepFrames = Math.Max(1L, (long)Math.Round(Math.Max(0.1f, windowSeconds) * 60f / GRAPH_BUCKET_COUNT));
             var padded = new List<PowerSnapshot>(GRAPH_BUCKET_COUNT);
             int missing = GRAPH_BUCKET_COUNT - snapshots.Count;
@@ -633,11 +776,6 @@ namespace LcdMod.Client.Apps
 
             padded.AddRange(snapshots);
             return padded;
-        }
-
-        PowerHistoryTier GetHistoryTier()
-        {
-            return (PowerHistoryTier)GetScaleTierIndex();
         }
 
         int GetScaleTierIndex()
@@ -656,7 +794,18 @@ namespace LcdMod.Client.Apps
             PowerComponent.GraphWindowIndex = tier;
             if (Host.Block != null && Host.ProviderConfig != null)
                 ConfigManager.Sync(Host.Block, Host.ProviderConfig);
-
+            
+            _latest = _lease?.Latest ?? _latest;
+            _presentationTier = tier;
+            _runsUntilGraphRefresh = GetGraphRefreshRunInterval(tier) - 1;
+            _presentationSnapshots = GetSnapshots(_lease?.History, out _lastGraphPresentedFrame);
+            _rowRefreshPending = true;
+            if (!IsCursorOverPowerList())
+            {
+                RefreshRowsFromGraphPresentation();
+                _rowRefreshPending = false;
+            }
+            MarkDirty();
             Host.RenderSprites();
         }
 
@@ -736,10 +885,33 @@ namespace LcdMod.Client.Apps
             return "Unknown";
         }
 
+        bool IsCursorOverPowerList()
+        {
+            var cursor = GetCursorPosition();
+            if (float.IsNaN(cursor.X) || float.IsNaN(cursor.Y) ||
+                float.IsInfinity(cursor.X) || float.IsInfinity(cursor.Y))
+                return false;
+
+            return IsCursorOverList(_producerScrollPanel, cursor) ||
+                   IsCursorOverList(_consumerScrollPanel, cursor) ||
+                   IsCursorOverList(_chargeScrollPanel, cursor);
+        }
+
+        static bool IsCursorOverList(ScrollPanel panel, Vector2 cursor)
+        {
+            if (panel == null || !panel.Visible)
+                return false;
+
+            var bounds = panel.ContentViewportBounds;
+            return bounds.Width > 0f && bounds.Height > 0f && bounds.Contains(cursor);
+        }
+
         Vector2 GetCursorPosition()
         {
             var interactive = Host as IEyeTracking;
-            return interactive?.CursorPosition ?? new Vector2(float.NaN, float.NaN);
+            return interactive != null
+                ? interactive.CursorPosition + interactive.HitTestOffset
+                : new Vector2(float.NaN, float.NaN);
         }
 
         float GetContentTop()

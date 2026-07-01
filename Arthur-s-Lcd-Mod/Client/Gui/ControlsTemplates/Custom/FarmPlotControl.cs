@@ -28,11 +28,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
                 ClickSound = AudioHelper.HudClick;
             }
 
-            public void Bind(FarmApp.FarmEntry entry, InteractiveTooltip tooltip)
+            public void Bind(FarmApp.FarmEntry entry)
             {
-                SetDataContext(entry);
+                if (!ReferenceEquals(DataContext, entry))
+                    SetDataContext(entry);
                 SetCursor(CursorType.Hand);
-                SetTooltip(tooltip);
                 SetVisible(entry != null);
             }
 

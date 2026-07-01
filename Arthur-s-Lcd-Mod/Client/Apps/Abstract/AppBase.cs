@@ -51,6 +51,44 @@ namespace LcdMod.Client.Apps.Abstract
         public override IReadOnlyList<Control> LogicalChildren => _logicalChildren;
         public override StyleTree Styles => _styles;
 
+        public override bool IsDirty
+        {
+            get
+            {
+                if (_isDirty)
+                    return true;
+
+                for (int i = 0; i < _logicalChildren.Count; i++)
+                {
+                    if (IsVisibleTreeDirty(_logicalChildren[i]))
+                        return true;
+                }
+
+                return false;
+            }
+        }
+
+        protected static bool IsVisibleTreeDirty(Control control)
+        {
+            if (control == null || !control.Visible)
+                return false;
+
+            if (control._isDirty)
+                return true;
+
+            var children = control.LogicalChildren;
+            if (children == null)
+                return false;
+
+            for (int i = 0; i < children.Count; i++)
+            {
+                if (IsVisibleTreeDirty(children[i]))
+                    return true;
+            }
+
+            return false;
+        }
+
         public override ResourceTree Resources
         {
             get

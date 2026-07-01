@@ -32,6 +32,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Templates
 
         public int BindTo(PagesPanel host, IList<TItem> items)
         {
+            return BindTo(host, items, null);
+        }
+
+        public int BindTo(PagesPanel host, IList<TItem> items, Func<int, bool> shouldBind)
+        {
             if (host == null)
                 return 0;
 
@@ -55,10 +60,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Templates
                 if (!ReferenceEquals(control.Parent, host))
                     host.AddChild(control);
 
-                if (_bindControl != null)
+                bool bind = shouldBind == null || shouldBind(i);
+                if (bind && _bindControl != null)
                     _bindControl(control, items[i], i);
 
-                control.SetVisible(true);
+                if (bind)
+                    control.SetVisible(true);
             }
 
             return count;

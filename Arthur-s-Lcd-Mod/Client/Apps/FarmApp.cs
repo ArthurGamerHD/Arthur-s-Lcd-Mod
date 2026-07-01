@@ -30,6 +30,7 @@ namespace LcdMod.Client.Apps
         const float SLOT_W = 100f;
         const float SLOT_H = 100f;
         const float SCROLLER_W = 8f;
+        const int DATA_REFRESH_RUN_INTERVAL = 6;
         internal sealed class FarmEntry
         {
             readonly List<ITooltipLine> _details = new List<ITooltipLine>();
@@ -46,7 +47,7 @@ namespace LcdMod.Client.Apps
             public Color StatusColor { get; private set; }
             public string DetailsMarkdown { get; private set; } = string.Empty;
 
-            public void Update(
+            public bool Update(
                 FarmPlotEntry plot,
                 float ratio,
                 string percentText,
@@ -55,19 +56,45 @@ namespace LcdMod.Client.Apps
                 float waterRatio,
                 string outputSprite,
                 string outputName,
-                Color statusColor)
+                Color statusColor,
+                string detailedInfo)
             {
+                ratio = MathHelper.Clamp(ratio, 0f, 1f);
+                waterRatio = MathHelper.Clamp(waterRatio, 0f, 1f);
+                percentText = percentText ?? string.Empty;
+                remainingText = remainingText ?? string.Empty;
+                waterText = waterText ?? string.Empty;
+                outputSprite = outputSprite ?? string.Empty;
+                outputName = outputName ?? string.Empty;
+
+                long entryId = plot != null && plot.Block != null ? plot.Block.EntityId : 0L;
+                bool presentationChanged =
+                    EntryId != entryId ||
+                    !Ratio.Equals(ratio) ||
+                    !string.Equals(PercentText, percentText, StringComparison.Ordinal) ||
+                    !string.Equals(RemainingText, remainingText, StringComparison.Ordinal) ||
+                    !string.Equals(WaterText, waterText, StringComparison.Ordinal) ||
+                    !WaterRatio.Equals(waterRatio) ||
+                    !string.Equals(OutputSprite, outputSprite, StringComparison.Ordinal) ||
+                    !string.Equals(OutputName, outputName, StringComparison.Ordinal) ||
+                    !StatusColor.Equals(statusColor);
+                string previousDetails = DetailsMarkdown;
+
                 Plot = plot;
-                EntryId = plot != null && plot.Block != null ? plot.Block.EntityId : 0L;
-                Ratio = MathHelper.Clamp(ratio, 0f, 1f);
-                PercentText = percentText ?? string.Empty;
-                RemainingText = remainingText ?? string.Empty;
-                WaterText = waterText ?? string.Empty;
-                WaterRatio = MathHelper.Clamp(waterRatio, 0f, 1f);
-                OutputSprite = outputSprite ?? string.Empty;
-                OutputName = outputName ?? string.Empty;
+                EntryId = entryId;
+                Ratio = ratio;
+                PercentText = percentText;
+                RemainingText = remainingText;
+                WaterText = waterText;
+                WaterRatio = waterRatio;
+                OutputSprite = outputSprite;
+                OutputName = outputName;
                 StatusColor = statusColor;
-                RefreshDetails();
+
+                RefreshDetails(detailedInfo);
+
+                return presentationChanged ||
+                       !string.Equals(previousDetails, DetailsMarkdown, StringComparison.Ordinal);
             }
 
             public IList<ITooltipLine> GetDetails()
@@ -75,7 +102,7 @@ namespace LcdMod.Client.Apps
                 return _details;
             }
 
-            void RefreshDetails()
+            void RefreshDetails(string detailedInfo)
             {
                 _details.Clear();
 
@@ -83,6 +110,7 @@ namespace LcdMod.Client.Apps
                 if (logic == null)
                 {
                     _details.Add(new StaticTooltipLine(PercentText));
+                    DetailsMarkdown = BuildDetailsMarkdown();
                     return;
                 }
 
@@ -98,7 +126,7 @@ namespace LcdMod.Client.Apps
                 if (!string.IsNullOrEmpty(WaterText))
                     _details.Add(new StaticTooltipLine(WaterText));
 
-                AppendDetailedInfoLines(logic);
+                AppendDetailedInfoLines(detailedInfo);
 
                 if (_details.Count == 0)
                     _details.Add(new StaticTooltipLine(PercentText));
@@ -106,27 +134,19 @@ namespace LcdMod.Client.Apps
                 DetailsMarkdown = BuildDetailsMarkdown();
             }
 
-            void AppendDetailedInfoLines(Sandbox.ModAPI.IMyFarmPlotLogic logic)
+            void AppendDetailedInfoLines(string detailInfo)
             {
-                try
-                {
-                    var detailInfo = logic.GetDetailedInfoWithoutRequiredInput();
-                    if (string.IsNullOrEmpty(detailInfo))
-                        return;
+                if (string.IsNullOrEmpty(detailInfo))
+                    return;
 
-                    detailInfo = detailInfo.Replace("\r\n", "\n").Replace('\r', '\n');
-                    var lines = detailInfo.Split('\n');
-                    for (int i = 0; i < lines.Length; i++)
-                    {
-                        if (i == lines.Length - 1 && string.IsNullOrEmpty(lines[i]))
-                            continue;
-
-                        _details.Add(new StaticTooltipLine(lines[i]));
-                    }
-                }
-                catch (Exception e)
+                detailInfo = detailInfo.Replace("\r\n", "\n").Replace('\r', '\n');
+                var lines = detailInfo.Split('\n');
+                for (int i = 0; i < lines.Length; i++)
                 {
-                    ErrorHandlerHelper.LogError(e, typeof(FarmApp));
+                    if (i == lines.Length - 1 && string.IsNullOrEmpty(lines[i]))
+                        continue;
+
+                    _details.Add(new StaticTooltipLine(lines[i]));
                 }
             }
 
@@ -156,6 +176,7 @@ namespace LcdMod.Client.Apps
         readonly IAppHost _surfaceHost;
         readonly InteractiveSurfaceScript _interactiveHost;
         readonly List<FarmEntry> _entries = new List<FarmEntry>();
+        readonly List<FarmEntry> _nextEntries = new List<FarmEntry>();
         readonly List<Control> _children = new List<Control>();
         readonly Dictionary<long, FarmEntry> _entryById = new Dictionary<long, FarmEntry>();
         readonly Dictionary<long, FarmEntry> _entryModelsById = new Dictionary<long, FarmEntry>();
@@ -165,6 +186,7 @@ namespace LcdMod.Client.Apps
         readonly FarmGrowthHelper _growthDefinitions = new FarmGrowthHelper();
         readonly ScrollPanel _scrollPanel;
         readonly VisualWrapPanel _gridPanel;
+        int _runsUntilDataRefresh;
         internal ColorConfigComponent FarmColors => ColorComponent;
 
         public FarmApp(IAppHost surfaceHost) : base(surfaceHost)
@@ -178,27 +200,55 @@ namespace LcdMod.Client.Apps
             _scrollPanel.ScrollChanged = OnScrollPanelChanged;
             _scrollPanel.SetVisible(false);
             _gridPanel = new VisualWrapPanel();
+            _children.Add(_scrollPanel);
         }
 
         public override IReadOnlyList<Control> VisualChildren => _children;
 
         public override void LayoutChanged()
         {
+            _runsUntilDataRefresh = 0;
             _entries.Clear();
+            _nextEntries.Clear();
             _entryById.Clear();
             _entryModelsById.Clear();
             ClearFarmEntryControls();
+            MarkDirty();
         }
 
         public override void Update()
         {
-            _entries.Clear();
+            if (_scrollPanel.UpdateAutoScroll())
+                MarkDirty();
+
+            if (_runsUntilDataRefresh > 0)
+            {
+                _runsUntilDataRefresh--;
+                return;
+            }
+
+            _runsUntilDataRefresh = DATA_REFRESH_RUN_INTERVAL - 1;
+            RefreshEntries();
+        }
+
+        void RefreshEntries()
+        {
+            _nextEntries.Clear();
             _entryById.Clear();
             _activeEntryIds.Clear();
+            bool changed = false;
 
             var gridLogic = _surfaceHost.GridLogic;
             if (gridLogic == null)
+            {
+                changed = _entries.Count > 0 || _entryModelsById.Count > 0;
+                _entries.Clear();
+                _entryModelsById.Clear();
+                ClearFarmEntryControls();
+                if (changed)
+                    MarkDirty();
                 return;
+            }
 
             var farmPlots = gridLogic.GetFarmPlots();
             for (int i = 0; i < farmPlots.Count; i++)
@@ -207,13 +257,24 @@ namespace LcdMod.Client.Apps
                 if (plot == null || plot.Block == null || plot.Logic == null)
                     continue;
 
-                var entry = GetOrUpdateEntry(plot);
-                _entries.Add(entry);
+                bool entryChanged;
+                var entry = GetOrUpdateEntry(plot, out entryChanged);
+                changed |= entryChanged;
+                _nextEntries.Add(entry);
                 _entryById[entry.EntryId] = entry;
                 _activeEntryIds.Add(entry.EntryId);
             }
 
-            RemoveStaleEntryModels();
+            changed |= !EntryOrderEquals(_entries, _nextEntries);
+            _entries.Clear();
+            _entries.AddRange(_nextEntries);
+            changed |= RemoveStaleEntryModels();
+
+            if (_entries.Count == 0)
+                _scrollPanel.SetVisible(false);
+
+            if (changed)
+                MarkDirty();
         }
 
         public override bool HasVisibleItems()
@@ -232,10 +293,16 @@ namespace LcdMod.Client.Apps
             BeginFarmEntryControlFrame();
             var sprites = new List<MySprite>();
             DrawFarmPlots(_surfaceHost, sprites);
+            ClearDirtyAfterRender();
             return sprites;
         }
 
-        FarmEntry GetOrUpdateEntry(FarmPlotEntry plot)
+        public void CompleteHostRender()
+        {
+            ClearDirtyAfterRender();
+        }
+
+        FarmEntry GetOrUpdateEntry(FarmPlotEntry plot, out bool changed)
         {
             var entryId = plot.Block.EntityId;
             FarmEntry entry;
@@ -245,8 +312,9 @@ namespace LcdMod.Client.Apps
                 _entryModelsById[entryId] = entry;
             }
 
+            var detailedInfo = GetDetailedInfo(plot);
             float growthPercent;
-            var ratio = GetGrowthRatio(plot, out growthPercent);
+            var ratio = GetGrowthRatio(plot, detailedInfo, out growthPercent);
             var outputItem = plot.Logic.OutputItem;
             var outputSprite = ResolveOutputSprite(outputItem);
             var outputName = ResolveOutputName(outputItem);
@@ -254,7 +322,7 @@ namespace LcdMod.Client.Apps
             var remainingText = GetRemainingText(plot, growthPercent, ratio, percentText);
             var waterRatio = GetWaterRatio(plot);
 
-            entry.Update(
+            changed = entry.Update(
                 plot,
                 ratio,
                 percentText,
@@ -263,8 +331,38 @@ namespace LcdMod.Client.Apps
                 waterRatio,
                 outputSprite,
                 outputName,
-                GetStatusColor(plot, ratio));
+                GetStatusColor(plot, ratio),
+                detailedInfo);
             return entry;
+        }
+
+        static string GetDetailedInfo(FarmPlotEntry plot)
+        {
+            try
+            {
+                return plot?.Logic?.GetDetailedInfoWithoutRequiredInput() ?? string.Empty;
+            }
+            catch (Exception e)
+            {
+                ErrorHandlerHelper.LogError(e, typeof(FarmApp));
+                return string.Empty;
+            }
+        }
+
+        static bool EntryOrderEquals(List<FarmEntry> current, List<FarmEntry> next)
+        {
+            if (ReferenceEquals(current, next))
+                return true;
+            if (current == null || next == null || current.Count != next.Count)
+                return false;
+
+            for (int i = 0; i < current.Count; i++)
+            {
+                if (!ReferenceEquals(current[i], next[i]))
+                    return false;
+            }
+
+            return true;
         }
 
         static float GetWaterRatio(FarmPlotEntry plot)
@@ -323,7 +421,7 @@ namespace LcdMod.Client.Apps
             return _surfaceHost.ForegroundColor;
         }
 
-        void RemoveStaleEntryModels()
+        bool RemoveStaleEntryModels()
         {
             _entryIdsToRemove.Clear();
             foreach (var kv in _entryModelsById)
@@ -333,7 +431,22 @@ namespace LcdMod.Client.Apps
             }
 
             for (int i = 0; i < _entryIdsToRemove.Count; i++)
-                _entryModelsById.Remove(_entryIdsToRemove[i]);
+            {
+                long entryId = _entryIdsToRemove[i];
+                _entryModelsById.Remove(entryId);
+
+                FarmPlotControl control;
+                if (_entryControlById.TryGetValue(entryId, out control))
+                {
+                    if (control != null && ReferenceEquals(control.Parent, _gridPanel))
+                        _gridPanel.RemoveChild(control);
+                    if (control != null)
+                        control.SetVisible(false);
+                    _entryControlById.Remove(entryId);
+                }
+            }
+
+            return _entryIdsToRemove.Count > 0;
         }
 
         void DrawFarmPlots(IAppHost owner, List<MySprite> sprites)
@@ -422,7 +535,7 @@ namespace LcdMod.Client.Apps
             }
             else
             {
-                control.Bind(entry, BuildFarmEntryTooltip(entry.EntryId));
+                control.Bind(entry);
             }
 
             control.SetVisible(true);
@@ -583,7 +696,7 @@ namespace LcdMod.Client.Apps
             return FormatingHelper.FormatTimeHours((float)Math.Max(0d, remainingSeconds / 3600d));
         }
 
-        static float GetGrowthRatio(FarmPlotEntry plot, out float growthPercent)
+        static float GetGrowthRatio(FarmPlotEntry plot, string detailedInfo, out float growthPercent)
         {
             growthPercent = 0f;
             var logic = plot?.Logic;
@@ -597,21 +710,16 @@ namespace LcdMod.Client.Apps
             if (!logic.IsAlive)
                 return 0f;
 
-            try
+            if (!string.IsNullOrEmpty(detailedInfo))
             {
                 float percent;
                 int percentIndex;
                 // Growth progress is not exposed as a typed IMyFarmPlotLogic property.
-                var detailInfo = logic.GetDetailedInfoWithoutRequiredInput();
-                if (TryParseFirstPercent(detailInfo, out percent, out percentIndex))
+                if (TryParseFirstPercent(detailedInfo, out percent, out percentIndex))
                 {
                     growthPercent = MathHelper.Clamp(percent, 0f, 100f);
                     return growthPercent / 100f;
                 }
-            }
-            catch (Exception e)
-            {
-                ErrorHandlerHelper.LogError(e, typeof(FarmApp));
             }
 
             return 0f;

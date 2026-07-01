@@ -71,6 +71,9 @@ namespace LcdMod.Client.GridData
         private readonly Dictionary<SearchQueryToken, Dictionary<MyItemType, double>> _queryCache =
             new Dictionary<SearchQueryToken, Dictionary<MyItemType, double>>();
 
+        private readonly Dictionary<SearchQueryToken, ItemSnapshot> _itemSnapshots =
+            new Dictionary<SearchQueryToken, ItemSnapshot>();
+
 
         public readonly IMyCubeGrid Grid;
         private List<IMyAssembler> _assemblers = new List<IMyAssembler>();
@@ -354,6 +357,34 @@ namespace LcdMod.Client.GridData
             string[] types = null)
         {
             return GetItemsCore(blocksConfig, itemsConfig, referenceBlock, types, _queryCache, false);
+        }
+
+        public ItemSnapshot GetItemsSnapshot(
+            BlockSelectionConfigComponent blocksConfig,
+            ItemSelectionConfigComponent itemsConfig,
+            IMyTerminalBlock referenceBlock,
+            string[] types = null)
+        {
+            var searchToken = SearchQueryToken.GetToken(blocksConfig, itemsConfig);
+            var items = GetItemsCore(blocksConfig, itemsConfig, referenceBlock, types, _queryCache, false);
+
+            ItemSnapshot previous;
+            if (_itemSnapshots.TryGetValue(searchToken, out previous) &&
+                ItemSnapshot.ContentEquals(previous.Items, items))
+            {
+                if (!ReferenceEquals(previous.Items, items))
+                    _queryCache[searchToken] = previous.Items;
+
+                return previous;
+            }
+
+            var revision = DateTime.UtcNow;
+            if (previous != null && revision <= previous.Revision)
+                revision = previous.Revision.AddTicks(1);
+
+            var snapshot = new ItemSnapshot(searchToken, revision, items);
+            _itemSnapshots[searchToken] = snapshot;
+            return snapshot;
         }
 
         public Dictionary<MyItemType, double> GetIngots(BlockSelectionConfigComponent blocksConfig, ItemSelectionConfigComponent itemsConfig, IMyTerminalBlock referenceBlock)

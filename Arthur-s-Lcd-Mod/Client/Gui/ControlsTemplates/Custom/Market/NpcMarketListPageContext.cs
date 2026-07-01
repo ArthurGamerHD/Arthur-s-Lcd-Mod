@@ -10,6 +10,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
     {
         public IAppHost Host;
         public IList<NpcMarketRow> Rows;
+        public int RowsRevision;
         public NpcMarketListPage Page;
         public NpcMarketMode Mode;
         public NpcMarketSortColumn SortColumn;

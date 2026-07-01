@@ -1,6 +1,7 @@
 using LcdMod.Common.Config.Components;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.GridData;
 using Sandbox.ModAPI;
 using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
 
@@ -14,6 +15,12 @@ namespace LcdMod.Client.Apps
 
         public override Dictionary<MyItemType, double> ItemSource =>
             Host.GridLogic?.GetItems(BlockSelectionComponent, ItemSelectionComponent, Host.Block as IMyTerminalBlock);
+
+        protected override ItemSnapshot ReadItemSnapshot(IMyTerminalBlock lcd)
+        {
+            return Host.GridLogic?.GetItemsSnapshot(BlockSelectionComponent, ItemSelectionComponent, lcd)
+                   ?? base.ReadItemSnapshot(lcd);
+        }
 
         protected override string DefaultTitle => NAME;
 

@@ -44,9 +44,12 @@ namespace LcdMod.Client.Apps
         const string LOC_SEARCH = "MarketWatchTab_Button_Search";
         const float SINGLE_SIDE_LIST_MIN_WIDTH = 480f;
         const float BOTH_LIST_MIN_WIDTH = 720f;
+        const int FOOTER_CLOCK_UPDATE_INTERVAL_RUNS = 6;
         static readonly NpcMarketMode[] MarketModes = { NpcMarketMode.Buy, NpcMarketMode.Sell, NpcMarketMode.Both };
 
         readonly List<Control> _children = new List<Control>();
+        readonly List<MySprite> _contentSpriteCache = new List<MySprite>();
+        readonly List<MySprite> _footerSpriteCache = new List<MySprite>();
         readonly NpcMarketAggregator _aggregator = new NpcMarketAggregator();
         readonly List<NpcMarketRow> _rows = new List<NpcMarketRow>();
         readonly StringBuilder _text = new StringBuilder();
@@ -62,6 +65,7 @@ namespace LcdMod.Client.Apps
         readonly TextBlock _footerUpdatedText;
         readonly TextBlock _footerNextTickText;
         readonly Button _refreshButton;
+        readonly Func<RectangleF, int> _pageProvider;
         NpcMarketMode _mode;
         NpcMarketSortColumn _sortColumn = NpcMarketSortColumn.Price;
         bool _sortDescending;
@@ -73,6 +77,16 @@ namespace LcdMod.Client.Apps
         double _lastMaxDistanceMeters;
         int _rowsRevision;
         Guid _lastTextureIconCacheRevision;
+        bool _contentSpritesDirty = true;
+        bool _footerSpritesDirty = true;
+        bool _pagesConfigurationDirty = true;
+        bool _hasContentState;
+        MarketContentState _contentState;
+        string _footerUpdatedValue = string.Empty;
+        string _footerNextTickValue = string.Empty;
+        bool _footerRefreshEnabled;
+        bool _footerModeEnabled;
+        int _footerClockUpdateRunCount = FOOTER_CLOCK_UPDATE_INTERVAL_RUNS - 1;
 
         NpcMarketClientCacheKey CacheKey =>
             new NpcMarketClientCacheKey(
@@ -104,6 +118,8 @@ namespace LcdMod.Client.Apps
                 SearchClicked = OpenSearch,
                 RowClicked = OnMarketRowClicked
             };
+            _pageProvider = viewport => _listStripPanel.ConfigurePages(_pagesPanel, viewport);
+            _pagesPanel.PageProvider = _pageProvider;
             _modeComboBox = new ComboBox<NpcMarketMode>(MarketModes, GetModeLabel, OnModeChanged, Host.RenderSprites)
             {
                 OpenDirection = ComboBoxOpenDirection.Up
@@ -174,6 +190,8 @@ namespace LcdMod.Client.Apps
             {
                 NpcMarketClientCache.MarkAccessDenied(key);
                 ApplyPendingRowChanges();
+                UpdateContentState();
+                UpdateFooterPresentation();
                 return;
             }
 
@@ -188,17 +206,41 @@ namespace LcdMod.Client.Apps
             NpcMarketClientCache.EnsureRequested(key);
             NpcMarketClientCache.Update(key);
             ApplyPendingRowChanges();
+            UpdateContentState();
+            UpdateFooterPresentation();
+            AdvancePageFromTimer();
         }
 
         public override void LayoutChanged()
         {
-            // Layout changes do not change market data or row membership.
+            _pagesConfigurationDirty = true;
+            InvalidateContentAndFooterSprites();
         }
 
         public override List<MySprite> GetSprites()
         {
-            ClearInteractiveTree();
             var sprites = new List<MySprite>();
+            CaptureDirtyControlSections();
+
+            if (_contentSpritesDirty)
+            {
+                ClearInteractiveTree();
+                _footerSpritesDirty = true;
+                RebuildContentSpriteCache();
+            }
+
+            if (_footerSpritesDirty)
+                RebuildFooterSpriteCache();
+
+            sprites.AddRange(_contentSpriteCache);
+            sprites.AddRange(_footerSpriteCache);
+            ClearDirtyAfterRender();
+            return sprites;
+        }
+
+        void RebuildContentSpriteCache()
+        {
+            _contentSpriteCache.Clear();
             var view = Host.ViewBox;
             var scale = GetLayoutScale();
             var fontScale = Host.Surface.FontSize;
@@ -212,20 +254,20 @@ namespace LcdMod.Client.Apps
             
             if (IsLocallyAccessDenied() || (snapshot != null && IsAccessDenied(snapshot)))
             {
-                DrawNativeMessage(sprites, MyTexts.GetString("AccessDenied"), "Lock",
+                DrawNativeMessage(_contentSpriteCache, MyTexts.GetString("AccessDenied"), "Lock",
                     ResolveResource(ThemeResources.ErrorColor, ColorComponent.ResolveErrorColor()));
             }
             else if (snapshot == null)
             {
-                Host.DrawLoading(sprites, GeneralComponent.GetScale());
+                Host.DrawLoading(_contentSpriteCache, GeneralComponent.GetScale());
             }
             else if (ShouldShowNoTraderWarning(snapshot))
             {
-                DrawNativeMessage(sprites, MyTexts.GetString(LOC_NO_TRADER));
+                DrawNativeMessage(_contentSpriteCache, MyTexts.GetString(LOC_NO_TRADER));
             }
             else if (_rows.Count == 0 && string.IsNullOrWhiteSpace(_searchQuery))
             {
-                DrawNativeMessage(sprites, MyTexts.GetString(LOC_EMPTY));
+                DrawNativeMessage(_contentSpriteCache, MyTexts.GetString(LOC_EMPTY));
             }
             else
             {
@@ -235,19 +277,29 @@ namespace LcdMod.Client.Apps
                 var rowHeight = 34f * scale;
                 var contentRight = view.Right;
                 if (searchHeight > 0f)
-                    DrawSearchInput(sprites, headerTop + 2f * scale, searchHeight - 4f * scale,
+                    DrawSearchInput(_contentSpriteCache, headerTop + 2f * scale, searchHeight - 4f * scale,
                         contentRight);
 
                 if (_rows.Count > 0)
                 {
                     ConfigurePagesPanel(rowTop, footerHeight, headerHeight, rowHeight, textScale, muted);
-                    _pagesPanel.Render(sprites);
+                    _pagesPanel.Render(_contentSpriteCache);
+                    _pagesConfigurationDirty = false;
                 }
             }
 
-            DrawFooter(sprites, textScale, muted);
-            ClearDirtyAfterRender();
-            return sprites;
+            _contentSpritesDirty = false;
+        }
+
+        void RebuildFooterSpriteCache()
+        {
+            _footerSpriteCache.Clear();
+            var scale = GetLayoutScale();
+            var fontScale = Host.Surface.FontSize;
+            var textScale = 0.72f * scale * fontScale;
+            var muted = ResolveResource(ThemeResources.MutedTextColor, new Color(Host.ForegroundColor, 0.68f));
+            DrawFooter(_footerSpriteCache, textScale, muted);
+            _footerSpritesDirty = false;
         }
 
         public override bool HasVisibleItems()
@@ -303,11 +355,119 @@ namespace LcdMod.Client.Apps
         {
             _aggregationDirty = true;
             _rowsDirty = true;
+            _pagesConfigurationDirty = true;
+            InvalidateContentSprites();
         }
 
         void MarkRowsDirty()
         {
             _rowsDirty = true;
+            _pagesConfigurationDirty = true;
+            InvalidateContentSprites();
+        }
+
+        void InvalidateContentSprites()
+        {
+            _contentSpritesDirty = true;
+            MarkDirty();
+        }
+
+        void InvalidateFooterSprites()
+        {
+            _footerSpritesDirty = true;
+            MarkDirty();
+        }
+
+        void InvalidateContentAndFooterSprites()
+        {
+            _contentSpritesDirty = true;
+            _footerSpritesDirty = true;
+            MarkDirty();
+        }
+
+        void CaptureDirtyControlSections()
+        {
+            if (IsVisibleTreeDirty(_pagesPanel) ||
+                IsVisibleTreeDirty(_searchInput) ||
+                IsVisibleTreeDirty(_searchButton) ||
+                IsVisibleTreeDirty(_clearSearchButton))
+                _contentSpritesDirty = true;
+
+            for (int i = 0; i < _sortHeaderButtons.Count; i++)
+            {
+                var button = _sortHeaderButtons[i];
+                if (IsVisibleTreeDirty(button))
+                {
+                    _contentSpritesDirty = true;
+                    break;
+                }
+            }
+
+            if (IsVisibleTreeDirty(_footerGrid) ||
+                IsVisibleTreeDirty(_refreshButton) ||
+                IsVisibleTreeDirty(_modeComboBox))
+                _footerSpritesDirty = true;
+        }
+
+        void UpdateContentState()
+        {
+            var snapshot = NpcMarketClientCache.GetSnapshot(CacheKey);
+            MarketContentState state;
+            if (IsLocallyAccessDenied() || IsAccessDenied(snapshot))
+                state = MarketContentState.AccessDenied;
+            else if (snapshot == null)
+                state = MarketContentState.Loading;
+            else if (ShouldShowNoTraderWarning(snapshot))
+                state = MarketContentState.NoTrader;
+            else if (_rows.Count == 0 && string.IsNullOrWhiteSpace(_searchQuery))
+                state = MarketContentState.Empty;
+            else
+                state = MarketContentState.Rows;
+
+            if (_hasContentState && _contentState == state)
+                return;
+
+            _hasContentState = true;
+            _contentState = state;
+            InvalidateContentSprites();
+        }
+
+        void UpdateFooterPresentation(bool forceClockRefresh = false)
+        {
+            var key = CacheKey;
+            var snapshot = NpcMarketClientCache.GetSnapshot(key);
+            var refreshEnabled = NpcMarketClientCache.CanForceRefresh(key);
+            var modeEnabled = !IsLocallyAccessDenied() && !IsAccessDenied(snapshot);
+
+            var updateClock = forceClockRefresh ||
+                              ++_footerClockUpdateRunCount >= FOOTER_CLOCK_UPDATE_INTERVAL_RUNS;
+            var updated = _footerUpdatedValue;
+            var nextTick = _footerNextTickValue;
+            if (updateClock)
+            {
+                _footerClockUpdateRunCount = 0;
+                var now = WorldTime.NowElapsedTicks();
+                updated = snapshot == null
+                    ? string.Empty
+                    : string.Format(MyTexts.GetString(LOC_UPDATED),
+                        FormatDuration(now - snapshot.CacheBuiltAtWorldElapsedTicks));
+                nextTick = snapshot == null
+                    ? string.Empty
+                    : MyTexts.GetString(LOC_NEXT_RESTOCK) + " " +
+                      FormatDuration(snapshot.NextEconomyTickWorldElapsedTicks - now);
+            }
+
+            if (string.Equals(_footerUpdatedValue, updated, StringComparison.Ordinal) &&
+                string.Equals(_footerNextTickValue, nextTick, StringComparison.Ordinal) &&
+                _footerRefreshEnabled == refreshEnabled &&
+                _footerModeEnabled == modeEnabled)
+                return;
+
+            _footerUpdatedValue = updated;
+            _footerNextTickValue = nextTick;
+            _footerRefreshEnabled = refreshEnabled;
+            _footerModeEnabled = modeEnabled;
+            InvalidateFooterSprites();
         }
 
         void ApplyPendingRowChanges()
@@ -632,10 +792,10 @@ namespace LcdMod.Client.Apps
             _listStripPanel.LayoutScale = scale;
             _listStripPanel.MutedColor = muted;
             _pagesPanel.LayoutScale = scale;
-            _pagesPanel.PageProvider = viewport => _listStripPanel.ConfigurePages(_pagesPanel, viewport);
             RestorePageIndex();
+            if (_pagesConfigurationDirty)
+                _pagesPanel.InvalidateLayout();
             _pagesPanel.SetRect(bounds);
-            AdvancePageFromTimer();
             SavePageIndex();
             _pagesPanel.SetVisible(_rows.Count > 0);
             if (_rows.Count > 0 && !_children.Contains(_pagesPanel))
@@ -648,25 +808,18 @@ namespace LcdMod.Client.Apps
             var buttonText = MyTexts.GetString(LOC_REFRESH);
             var buttonSize = GetRefreshButtonSize(buttonText, textScale);
             var modeSize = GetModeButtonSize(textScale);
-            var key = CacheKey;
-            var enabled = NpcMarketClientCache.CanForceRefresh(key);
-            var snapshot = NpcMarketClientCache.GetSnapshot(key);
-            var modeEnabled = !IsLocallyAccessDenied() && !IsAccessDenied(snapshot);
 
             ConfigureFooterGrid(buttonSize, modeSize);
 
-            ConfigureRefreshButton(enabled, buttonText);
+            ConfigureRefreshButton(_footerRefreshEnabled, buttonText);
             _modeComboBox.SetOptions(GetAvailableMarketModes());
             _modeComboBox.SetSelectedValue(_mode);
-            _modeComboBox.SetEnabled(modeEnabled);
-            _modeComboBox.SetStyleId(modeEnabled ? "Primary" : "Disabled");
+            _modeComboBox.SetEnabled(_footerModeEnabled);
+            _modeComboBox.SetStyleId(_footerModeEnabled ? "Primary" : "Disabled");
             _modeComboBox.SetVisible(true);
 
-            var now = WorldTime.NowElapsedTicks();
-            _footerUpdatedText.Text = snapshot == null ? string.Empty : string.Format(MyTexts.GetString(LOC_UPDATED),
-                FormatDuration(now - snapshot.CacheBuiltAtWorldElapsedTicks));
-            _footerNextTickText.Text = snapshot == null ? string.Empty : MyTexts.GetString(LOC_NEXT_RESTOCK) + " " +
-                FormatDuration(snapshot.NextEconomyTickWorldElapsedTicks - now);
+            _footerUpdatedText.Text = _footerUpdatedValue;
+            _footerNextTickText.Text = _footerNextTickValue;
             _footerUpdatedText.TextColor = muted;
             _footerNextTickText.TextColor = muted;
 
@@ -962,6 +1115,7 @@ namespace LcdMod.Client.Apps
                 return;
 
             NpcMarketClientCache.RequestRefresh(CacheKey, true);
+            UpdateFooterPresentation(forceClockRefresh: true);
             Host.RenderSprites();
         }
 
@@ -1012,6 +1166,7 @@ namespace LcdMod.Client.Apps
             LoadSortStateForMode(_mode);
             ResetSavedPageIndex();
             MarkAggregationDirty();
+            InvalidateFooterSprites();
             ApplyPendingRowChanges();
             Host.RenderSprites();
         }
@@ -1051,7 +1206,10 @@ namespace LcdMod.Client.Apps
                 MarkAggregationDirty();
 
             ApplyPendingRowChanges();
-            Host.RenderSprites();
+            UpdateContentState();
+            UpdateFooterPresentation(forceClockRefresh: true);
+            if (IsDirty)
+                Host.RenderSprites();
         }
 
         void HandleTextureIconCacheChanged()
@@ -1064,6 +1222,8 @@ namespace LcdMod.Client.Apps
         void OnPageChanged(int pageIndex)
         {
             SavePageIndex(pageIndex);
+            _pagesConfigurationDirty = true;
+            InvalidateContentSprites();
             Host.RenderSprites();
         }
 
@@ -1334,6 +1494,15 @@ namespace LcdMod.Client.Apps
                 return seconds + "s";
 
             return (seconds / 60) + ":" + (seconds % 60).ToString("00");
+        }
+
+        enum MarketContentState
+        {
+            Loading,
+            AccessDenied,
+            NoTrader,
+            Empty,
+            Rows
         }
 
         sealed class SortHeaderButtonModel : ButtonModel

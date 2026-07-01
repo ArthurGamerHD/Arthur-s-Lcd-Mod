@@ -369,6 +369,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
         public void SetRect(RectangleF bounds)
         {
+            if (ViewBox.Equals(bounds) && PanelBounds.Equals(bounds) && !IsLayoutDirty)
+                return;
+
             ViewBox = bounds;
             PanelBounds = bounds;
             InvalidateLayout();
@@ -387,10 +390,26 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
         public void ConfigureAutomatic(RectangleF bounds, float scrollerWidthPixels, float scrollStepPixels, ScrollAxis enabledAxis)
         {
+            var normalizedScrollerWidth = Math.Max(0f, scrollerWidthPixels);
+            var normalizedScrollStep = Math.Max(1f, scrollStepPixels);
+            bool unchanged =
+                ViewBox.Equals(bounds) &&
+                PanelBounds.Equals(bounds) &&
+                Math.Abs(_configuredAutomaticScrollerWidthPixels - normalizedScrollerWidth) <= 0.0001f &&
+                Math.Abs(ScrollStepPixels - normalizedScrollStep) <= 0.0001f &&
+                Math.Abs(RowHeight - normalizedScrollStep) <= 0.0001f &&
+                EnabledScrollAxes == (IsSingleScrollAxis(enabledAxis) ? enabledAxis : ScrollAxis.Vertical) &&
+                _automaticContentMode == (_content != null) &&
+                !_manualConfigured &&
+                !IsLayoutDirty;
+
+            if (unchanged)
+                return;
+
             ViewBox = bounds;
             PanelBounds = bounds;
-            _configuredAutomaticScrollerWidthPixels = Math.Max(0f, scrollerWidthPixels);
-            ScrollStepPixels = Math.Max(1f, scrollStepPixels);
+            _configuredAutomaticScrollerWidthPixels = normalizedScrollerWidth;
+            ScrollStepPixels = normalizedScrollStep;
             RowHeight = ScrollStepPixels;
             UpdateResolvedAutoScrollSecondsPerStep();
             SetEnabledScrollAxes(enabledAxis);
@@ -421,8 +440,35 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
         public void SetAutoScrollSecondsPerStep(float secondsPerStep)
         {
-            _localAutoScrollSecondsPerStep = NormalizeAutoScrollSecondsPerStep(secondsPerStep);
+            var normalized = NormalizeAutoScrollSecondsPerStep(secondsPerStep);
+            if (_localAutoScrollSecondsPerStep.HasValue &&
+                Math.Abs(_localAutoScrollSecondsPerStep.Value - normalized) <= 0.0001f)
+                return;
+
+            _localAutoScrollSecondsPerStep = normalized;
             UpdateResolvedAutoScrollSecondsPerStep();
+        }
+
+        public bool UpdateAutoScroll()
+        {
+            UpdateResolvedAutoScrollSecondsPerStep();
+            if (!IsAutoScrolling())
+                return false;
+
+            float maxScrollOffset = GetMaxScrollOffsetPixels(EnabledScrollAxes);
+            float nextOffset = GetAutoScrollOffset(AutoScrollSecondsPerStep, maxScrollOffset);
+            float currentOffset = EnabledScrollAxes == ScrollAxis.Horizontal
+                ? ScrollOffsetPixels2D.X
+                : ScrollOffsetPixels2D.Y;
+            if (Math.Abs(currentOffset - nextOffset) <= 0.001f)
+                return false;
+
+            if (_automaticContentMode)
+                InvalidateLayout();
+            else
+                MarkDirty();
+
+            return true;
         }
 
         void UpdateResolvedAutoScrollSecondsPerStep()

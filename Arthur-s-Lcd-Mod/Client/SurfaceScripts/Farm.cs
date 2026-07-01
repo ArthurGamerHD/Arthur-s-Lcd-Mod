@@ -53,7 +53,8 @@ namespace LcdMod.Client.SurfaceScripts
                 _app = new FarmApp(this);
 
             _app.Update();
-            RenderSprites();
+            if (_app.IsDirty || InteractiveVisualsDirty)
+                RenderSprites();
         }
 
         public override List<MySprite> GetSprites()
@@ -62,7 +63,10 @@ namespace LcdMod.Client.SurfaceScripts
             AddBackground(sprites);
             DrawTitle(sprites);
             if (!_app.HasVisibleItems())
+            {
                 DrawMessage(sprites, LocHelper.Empty, "Warning", ColorComponent.ResolveWarningColor(), GeneralComponent.GetScale());
+                (_app as FarmApp)?.CompleteHostRender();
+            }
             else
                 sprites.AddRange(_app.GetSprites());
             return sprites;

@@ -59,6 +59,13 @@ namespace LcdMod.Client.SurfaceScripts
             return DisplayModes.GridAndLegacy;
         }
 
+        protected override void LayoutChanged()
+        {
+            base.LayoutChanged();
+            if (_app != null)
+                _app.LayoutChanged();
+        }
+
         public override void SafeRun()
         {
             base.SafeRun();
@@ -68,7 +75,8 @@ namespace LcdMod.Client.SurfaceScripts
 
             _app.Update();
 
-            RenderSprites();
+            if (_app.IsDirty || InteractiveVisualsDirty)
+                RenderSprites();
         }
 
         public override List<MySprite> GetSprites()
@@ -80,6 +88,8 @@ namespace LcdMod.Client.SurfaceScripts
                     AddEmptyWithFiltersSprites(sprites);
                 else
                     AddEmptySprites(sprites);
+
+                _app?.CompleteHostRender();
                 return sprites;
             }
 

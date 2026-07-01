@@ -21,6 +21,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
         int _rowsPerPage = 1;
         Vector2 _lastAvailableSize;
         RectangleF _viewportBounds;
+        PageLayoutKey _pageLayoutKey;
+        bool _hasPageLayoutKey;
 
         public NpcMarketListStripPanel(IAppHost host)
         {
@@ -87,8 +89,17 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
             RebuildPages(viewport.Size);
             pagesPanel.PageWidthPixels = _listWidth / Math.Max(0.01f, pagesPanel.LayoutScale);
 
-            BuildPageContexts(viewport, 0, _pages.Count);
-            int pageCount = _pageRepeater.BindTo(pagesPanel, _pageContexts);
+            EnsurePageContexts();
+            for (var i = 0; i < _pages.Count; i++)
+            {
+                if (pagesPanel.ShouldUpdatePage(i, _pages.Count, viewport))
+                    UpdatePageContext(i);
+            }
+
+            int pageCount = _pageRepeater.BindTo(
+                pagesPanel,
+                _pageContexts,
+                i => pagesPanel.ShouldUpdatePage(i, _pages.Count, viewport));
 
             FirstVisiblePageIndex = _pages.Count > 0 ? 0 : -1;
             LastVisiblePageIndex = _pages.Count - 1;
@@ -139,43 +150,62 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
             panel.Configure(context);
         }
 
-        void BuildPageContexts(RectangleF viewport, int startPage, int pageCount)
+        void EnsurePageContexts()
         {
-            _pageContexts.Clear();
+            while (_pageContexts.Count < _pages.Count)
+                _pageContexts.Add(new NpcMarketListPageContext());
 
-            for (var i = 0; i < pageCount; i++)
-            {
-                var pageIndex = startPage + i;
-                if (pageIndex < 0 || pageIndex >= _pages.Count)
-                    continue;
+            while (_pageContexts.Count > _pages.Count)
+                _pageContexts.RemoveAt(_pageContexts.Count - 1);
+        }
 
-                var page = _pages[pageIndex];
-                _pageContexts.Add(new NpcMarketListPageContext
-                {
-                    Host = _host,
-                    Rows = _rows,
-                    Page = page,
-                    Mode = Mode,
-                    SortColumn = SortColumn,
-                    SortDescending = SortDescending,
-                    HeaderHeight = RepeatedHeaderHeight,
-                    RowHeight = RowHeight,
-                    TextScale = TextScale,
-                    LayoutScale = LayoutScale,
-                    MutedColor = MutedColor,
-                    SortClicked = SortClicked,
-                    SearchClicked = SearchClicked,
-                    RowClicked = RowClicked
-                });
-            }
+        void UpdatePageContext(int pageIndex)
+        {
+            if (pageIndex < 0 || pageIndex >= _pages.Count || pageIndex >= _pageContexts.Count)
+                return;
+
+            var context = _pageContexts[pageIndex];
+            context.Host = _host;
+            context.Rows = _rows;
+            context.RowsRevision = _rowsRevision;
+            context.Page = _pages[pageIndex];
+            context.Mode = Mode;
+            context.SortColumn = SortColumn;
+            context.SortDescending = SortDescending;
+            context.HeaderHeight = RepeatedHeaderHeight;
+            context.RowHeight = RowHeight;
+            context.TextScale = TextScale;
+            context.LayoutScale = LayoutScale;
+            context.MutedColor = MutedColor;
+            context.SortClicked = SortClicked;
+            context.SearchClicked = SearchClicked;
+            context.RowClicked = RowClicked;
         }
 
         void RebuildPages(Vector2 availableSize)
         {
             var minimum = Math.Max(1f, LogicalMinimumListWidth);
             var gap = Math.Max(0f, HorizontalGap);
-            _listWidth = ResolveDistributedListWidth(availableSize.X, minimum, gap);
-            _rowsPerPage = ResolveRowsPerPage(availableSize.Y, RepeatedHeaderHeight, RowHeight);
+            var listWidth = ResolveDistributedListWidth(availableSize.X, minimum, gap);
+            var rowsPerPage = ResolveRowsPerPage(availableSize.Y, RepeatedHeaderHeight, RowHeight);
+            var key = new PageLayoutKey(
+                _rowsRevision,
+                _rows != null ? _rows.Count : 0,
+                availableSize,
+                minimum,
+                gap,
+                RepeatedHeaderHeight,
+                RowHeight,
+                listWidth,
+                rowsPerPage);
+
+            if (_hasPageLayoutKey && _pageLayoutKey.Equals(key))
+                return;
+
+            _pageLayoutKey = key;
+            _hasPageLayoutKey = true;
+            _listWidth = listWidth;
+            _rowsPerPage = rowsPerPage;
             _pages.Clear();
 
             var rowCount = _rows?.Count ?? 0;
@@ -194,6 +224,78 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
                     Width = _listWidth,
                     Height = availableSize.Y
                 });
+            }
+
+            EnsurePageContexts();
+        }
+
+        struct PageLayoutKey : IEquatable<PageLayoutKey>
+        {
+            readonly int _rowsRevision;
+            readonly int _rowCount;
+            readonly Vector2 _availableSize;
+            readonly float _minimumWidth;
+            readonly float _gap;
+            readonly float _headerHeight;
+            readonly float _rowHeight;
+            readonly float _listWidth;
+            readonly int _rowsPerPage;
+
+            public PageLayoutKey(
+                int rowsRevision,
+                int rowCount,
+                Vector2 availableSize,
+                float minimumWidth,
+                float gap,
+                float headerHeight,
+                float rowHeight,
+                float listWidth,
+                int rowsPerPage)
+            {
+                _rowsRevision = rowsRevision;
+                _rowCount = rowCount;
+                _availableSize = availableSize;
+                _minimumWidth = minimumWidth;
+                _gap = gap;
+                _headerHeight = headerHeight;
+                _rowHeight = rowHeight;
+                _listWidth = listWidth;
+                _rowsPerPage = rowsPerPage;
+            }
+
+            public bool Equals(PageLayoutKey other)
+            {
+                return _rowsRevision == other._rowsRevision &&
+                       _rowCount == other._rowCount &&
+                       _availableSize.Equals(other._availableSize) &&
+                       _minimumWidth.Equals(other._minimumWidth) &&
+                       _gap.Equals(other._gap) &&
+                       _headerHeight.Equals(other._headerHeight) &&
+                       _rowHeight.Equals(other._rowHeight) &&
+                       _listWidth.Equals(other._listWidth) &&
+                       _rowsPerPage == other._rowsPerPage;
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is PageLayoutKey && Equals((PageLayoutKey)obj);
+            }
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    int hash = _rowsRevision;
+                    hash = (hash * 397) ^ _rowCount;
+                    hash = (hash * 397) ^ _availableSize.GetHashCode();
+                    hash = (hash * 397) ^ _minimumWidth.GetHashCode();
+                    hash = (hash * 397) ^ _gap.GetHashCode();
+                    hash = (hash * 397) ^ _headerHeight.GetHashCode();
+                    hash = (hash * 397) ^ _rowHeight.GetHashCode();
+                    hash = (hash * 397) ^ _listWidth.GetHashCode();
+                    hash = (hash * 397) ^ _rowsPerPage;
+                    return hash;
+                }
             }
         }
 

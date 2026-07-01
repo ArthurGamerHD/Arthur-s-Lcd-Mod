@@ -1276,6 +1276,8 @@ namespace LcdMod.Client.SurfaceScripts
             base.RequestRedraw();
         }
 
+        protected override bool RenderContinuouslyWhileLookedAt => false;
+
         protected override void OnLookAt(Vector2 onScreenCoordinates)
         {
             InteractiveSurfaceScript parentInteractive;
@@ -1284,7 +1286,6 @@ namespace LcdMod.Client.SurfaceScripts
                 try
                 {
                     parentInteractive.LookAt(onScreenCoordinates + HitTestOffset);
-                    parentInteractive.RenderSprites(force: true);
                     return;
                 }
                 catch

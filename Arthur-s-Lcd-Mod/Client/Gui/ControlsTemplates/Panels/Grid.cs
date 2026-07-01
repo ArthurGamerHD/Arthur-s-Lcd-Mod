@@ -63,12 +63,18 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
         public void SetColumns(params float[] columns)
         {
+            if (SegmentsEqual(Columns, columns))
+                return;
+
             Columns = columns;
             InvalidateLayout();
         }
 
         public void SetRows(params float[] rows)
         {
+            if (SegmentsEqual(Rows, rows))
+                return;
+
             Rows = rows;
             InvalidateLayout();
         }
@@ -114,6 +120,16 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
                 return null;
 
             ValidatePlacement(col, row, colSpan, rowSpan);
+
+            GridPlacement existing;
+            if (ReferenceEquals(child.Parent, this) &&
+                _placements.TryGetValue(child, out existing) &&
+                existing.Column == col &&
+                existing.Row == row &&
+                existing.ColumnSpan == colSpan &&
+                existing.RowSpan == rowSpan)
+                return child;
+
             AddChild(child);
 
             _placements[child] = new GridPlacement
@@ -126,6 +142,23 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
             InvalidateLayout();
             return child;
+        }
+
+        static bool SegmentsEqual(float[] left, float[] right)
+        {
+            if (ReferenceEquals(left, right))
+                return true;
+
+            if (left == null || right == null || left.Length != right.Length)
+                return false;
+
+            for (int i = 0; i < left.Length; i++)
+            {
+                if (!left[i].Equals(right[i]))
+                    return false;
+            }
+
+            return true;
         }
 
         public bool RemoveChild(ControlTemplate child)

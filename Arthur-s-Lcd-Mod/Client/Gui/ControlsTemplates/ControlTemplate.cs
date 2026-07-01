@@ -88,6 +88,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             SetMouseOver(value);
         }
 
+        internal void RestorePointerOverForRender()
+        {
+            IsMouseOver = true;
+        }
+
         internal void SetPressed(bool value)
         {
             if (IsPressed == value)
@@ -535,7 +540,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         void CompleteRenderState()
         {
             bool wasMouseOver = IsMouseOver;
-            bool changed = WasMouseOver != wasMouseOver || IsMouseOver;
+            bool changed = WasMouseOver != wasMouseOver;
 
             WasMouseOver = wasMouseOver;
             IsMouseOver = false;

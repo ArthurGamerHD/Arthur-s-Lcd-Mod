@@ -84,8 +84,38 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
         public override void SetRect(RectangleF bounds)
         {
+            if (ViewBox.Equals(bounds) && Bounds.Equals(bounds) && !IsLayoutDirty)
+                return;
+
             ViewBox = bounds;
             base.SetRect(bounds);
+        }
+
+        public bool ShouldUpdatePage(int pageIndex, int pageCount, RectangleF viewport)
+        {
+            if (pageCount <= 0 || pageIndex < 0 || pageIndex >= pageCount)
+                return false;
+
+            float scale = Math.Max(0.01f, LayoutScale);
+            float targetPageWidth = Math.Max(1f, PageWidthPixels * scale);
+            int visiblePageCount = Math.Max(1, Math.Min(pageCount,
+                (int)Math.Floor(Math.Max(1f, viewport.Width) / targetPageWidth)));
+            bool animating = _pageTransitionAnimation != null && _pageTransitionAnimation.IsRunning;
+            float routeStart = animating
+                ? Math.Min(_transitionStartPosition, _transitionTargetPosition)
+                : _pagePosition;
+            float routeEnd = animating
+                ? Math.Max(_transitionStartPosition, _transitionTargetPosition) + visiblePageCount - 1f
+                : _pagePosition + visiblePageCount - 1f;
+            float viewportCenter = _pagePosition + (visiblePageCount - 1f) * 0.5f;
+            float ignored;
+            return TryGetNearestEquivalentInRange(
+                pageIndex,
+                viewportCenter,
+                routeStart,
+                routeEnd,
+                pageCount,
+                out ignored);
         }
 
         public int FirstVisiblePage
@@ -501,7 +531,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
                 return;
 
             _leftButton.Render(sprites);
-            RenderIndicators(sprites);
+            _indicatorControl.Render(sprites);
             _rightButton.Render(sprites);
         }
 
@@ -847,6 +877,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
             protected override void RenderDefault(List<MySprite> sprites)
             {
+                if (_owner != null)
+                    _owner.RenderIndicators(sprites);
             }
 
             protected override bool HitCore(Vector2 point)
