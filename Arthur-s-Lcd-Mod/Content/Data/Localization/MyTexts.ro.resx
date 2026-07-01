@@ -788,4 +788,52 @@ Vom aștepta puțin, apoi o vom reporni pentru tine.</value>
   <data name="LcdMod_ClockDashboard_Temperature_Fahrenheit" xml:space="preserve">
     <value>Fahrenheit (°F)</value>
   </data>
+  <data name="LcdMod_Ftue_LookAround_Line1" xml:space="preserve">
+    <value>Ține apăsat **{0}** pentru a folosi urmărirea privirii</value>
+  </data>
+  <data name="LcdMod_Ftue_LookAround_Line2" xml:space="preserve">
+    <value>Poți dezactiva această cerință activând **{0}** în terminal.</value>
+  </data>
+  <data name="LcdMod_Ftue_MarketSearch_Line1" xml:space="preserve">
+    <value>Caută mai multe obiecte cu virgule, *#type* pentru tipuri specifice de obiecte</value>
+  </data>
+  <data name="LcdMod_Ftue_MarketSearch_Line2" xml:space="preserve">
+    <value>cum ar fi *"{0}, #ship, #ore, #gas"*</value>
+  </data>
+  <data name="LcdMod_Ftue_ItemsCraft_Line1" xml:space="preserve">
+    <value>Faceți clic pe un obiect pentru a deschide opțiunile de producție.</value>
+  </data>
+  <data name="LcdMod_Ftue_ItemsCraft_Line2" xml:space="preserve">
+    <value>Alegeți o cantitate și un asamblor disponibil în dialogul de producție.</value>
+  </data>
+  <data name="LcdMod_Ftue_FarmPlotDetails_Line1" xml:space="preserve">
+    <value>Faceți clic pe o parcelă de cultură pentru informații detaliate.</value>
+  </data>
+  <data name="LcdMod_Ftue_FarmPlotDetails_Line2" xml:space="preserve">
+    <value>Verificați creșterea, inventarul, apa și mediul.</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapPlanetDetails_Line1" xml:space="preserve">
+    <value>Faceți clic pe o planetă pentru informații detaliate.</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapPlanetDetails_Line2" xml:space="preserve">
+    <value>Verificați gravitația, atmosfera, temperatura, vântul și poziția.</value>
+  </data>
+  <data name="LcdMod_Ftue_PictureFrameCustomTextures_Line1" xml:space="preserve">
+    <value>Adăugați texturi `.dds` personalizate în {0}.</value>
+  </data>
+  <data name="LcdMod_Ftue_PictureFrameCustomTextures_Line2" xml:space="preserve">
+    <value>Copiați-le acolo, apoi rulați `/lcdmod importtextures`.</value>
+  </data>
+  <data name="LcdMod_Ftue_PowerFilledDetails_Line1" xml:space="preserve">
+    <value>Apasă pe o baterie sau pe un motor de salt pentru a vedea informații detaliate.</value>
+  </data>
+  <data name="LcdMod_Ftue_PowerFilledDetails_Line2" xml:space="preserve">
+    <value>Verifică încărcarea, intrarea, ieșirea și timpul rămas.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarRange_Line1" xml:space="preserve">
+    <value>Derulează pentru a schimba raza radarului.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarRange_Line2" xml:space="preserve">
+    <value>Dincolo de {0} pot fi detectate doar semnale radio.</value>
+  </data>
 </root>

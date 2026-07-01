@@ -789,4 +789,52 @@ Wir warten einen Moment und starten sie dann für dich neu.</value>
   <data name="LcdMod_ClockDashboard_Temperature_Fahrenheit" xml:space="preserve">
     <value>Fahrenheit (°F)</value>
   </data>
+  <data name="LcdMod_Ftue_LookAround_Line1" xml:space="preserve">
+    <value>Halte **{0}** gedrückt, um die Blicksteuerung zu verwenden</value>
+  </data>
+  <data name="LcdMod_Ftue_LookAround_Line2" xml:space="preserve">
+    <value>Du kannst diese Voraussetzung deaktivieren, indem du **{0}** im Terminal einschaltest.</value>
+  </data>
+  <data name="LcdMod_Ftue_MarketSearch_Line1" xml:space="preserve">
+    <value>Mehrere Gegenstände mit Kommas) suchen, *#type* für bestimmte Gegenstandstypen</value>
+  </data>
+  <data name="LcdMod_Ftue_MarketSearch_Line2" xml:space="preserve">
+    <value>zum Beispiel *"{0}, #ship, #ore, #gas"*</value>
+  </data>
+  <data name="LcdMod_Ftue_ItemsCraft_Line1" xml:space="preserve">
+    <value>Klicke auf einen Gegenstand, um seine Fertigungsoptionen zu öffnen.</value>
+  </data>
+  <data name="LcdMod_Ftue_ItemsCraft_Line2" xml:space="preserve">
+    <value>Wähle im Fertigungsdialog eine Menge und einen verfügbaren Assembler.</value>
+  </data>
+  <data name="LcdMod_Ftue_FarmPlotDetails_Line1" xml:space="preserve">
+    <value>Klicke auf ein Anbaufeld, um Details anzuzeigen.</value>
+  </data>
+  <data name="LcdMod_Ftue_FarmPlotDetails_Line2" xml:space="preserve">
+    <value>Prüfe Wachstum, Inventar, Wasser und Umgebung.</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapPlanetDetails_Line1" xml:space="preserve">
+    <value>Klicke auf einen Planeten, um Details anzuzeigen.</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapPlanetDetails_Line2" xml:space="preserve">
+    <value>Prüfe Gravitation, Atmosphäre, Temperatur, Wind und Position.</value>
+  </data>
+  <data name="LcdMod_Ftue_PictureFrameCustomTextures_Line1" xml:space="preserve">
+    <value>Füge eigene `.dds`-Texturen unter {0} hinzu.</value>
+  </data>
+  <data name="LcdMod_Ftue_PictureFrameCustomTextures_Line2" xml:space="preserve">
+    <value>Kopiere sie dorthin und führe anschließend `/lcdmod importtextures` aus.</value>
+  </data>
+  <data name="LcdMod_Ftue_PowerFilledDetails_Line1" xml:space="preserve">
+    <value>Klicke auf eine Batterie oder einen Sprungantrieb, um detaillierte Informationen anzuzeigen.</value>
+  </data>
+  <data name="LcdMod_Ftue_PowerFilledDetails_Line2" xml:space="preserve">
+    <value>Prüfe Ladung, Eingang, Ausgang und verbleibende Zeit.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarRange_Line1" xml:space="preserve">
+    <value>Scrolle, um die Radarreichweite zu ändern.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarRange_Line2" xml:space="preserve">
+    <value>Jenseits von {0} können nur Funksignale erkannt werden.</value>
+  </data>
 </root>

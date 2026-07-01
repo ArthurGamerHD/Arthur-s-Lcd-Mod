@@ -54,6 +54,8 @@ namespace LcdMod.Client.Apps
             {
                 CustomRender = RenderImagePickerHitbox
             });
+            _pickBackgroundButton.SetClass("ControlBase Button PictureFramePickTexture");
+            _imagePickerHitbox.SetClass("ControlBase PictureFramePickTexture");
 
             _children.Add(_pickBackgroundButton);
             _children.Add(_imagePickerHitbox);

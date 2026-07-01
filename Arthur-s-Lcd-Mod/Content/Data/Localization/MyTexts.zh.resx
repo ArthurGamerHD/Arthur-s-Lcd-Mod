@@ -788,4 +788,52 @@
   <data name="LcdMod_ClockDashboard_Temperature_Fahrenheit" xml:space="preserve">
     <value>华氏度 (°F)</value>
   </data>
+  <data name="LcdMod_Ftue_LookAround_Line1" xml:space="preserve">
+    <value>按住 **{0}** 以使用视线追踪</value>
+  </data>
+  <data name="LcdMod_Ftue_LookAround_Line2" xml:space="preserve">
+    <value>在终端中启用 **{0}** 开关即可取消此要求。</value>
+  </data>
+  <data name="LcdMod_Ftue_MarketSearch_Line1" xml:space="preserve">
+    <value>使用 ,（逗号）搜索多个物品，使用 *#type* 搜索特定物品类型</value>
+  </data>
+  <data name="LcdMod_Ftue_MarketSearch_Line2" xml:space="preserve">
+    <value>例如 *"{0}, #ship, #ore, #gas"*</value>
+  </data>
+  <data name="LcdMod_Ftue_ItemsCraft_Line1" xml:space="preserve">
+    <value>点击物品以打开其制造选项。</value>
+  </data>
+  <data name="LcdMod_Ftue_ItemsCraft_Line2" xml:space="preserve">
+    <value>在制造对话框中选择数量和可用的装配机。</value>
+  </data>
+  <data name="LcdMod_Ftue_FarmPlotDetails_Line1" xml:space="preserve">
+    <value>点击种植区以查看详细信息。</value>
+  </data>
+  <data name="LcdMod_Ftue_FarmPlotDetails_Line2" xml:space="preserve">
+    <value>查看其生长、库存、水量和环境。</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapPlanetDetails_Line1" xml:space="preserve">
+    <value>点击行星以查看详细信息。</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapPlanetDetails_Line2" xml:space="preserve">
+    <value>查看其重力、大气、温度、风力和位置。</value>
+  </data>
+  <data name="LcdMod_Ftue_PictureFrameCustomTextures_Line1" xml:space="preserve">
+    <value>将自定义 `.dds` 纹理添加到 {0}。</value>
+  </data>
+  <data name="LcdMod_Ftue_PictureFrameCustomTextures_Line2" xml:space="preserve">
+    <value>复制到该位置后，运行 `/lcdmod importtextures`。</value>
+  </data>
+  <data name="LcdMod_Ftue_PowerFilledDetails_Line1" xml:space="preserve">
+    <value>点击电池或跳跃引擎以查看详细信息。</value>
+  </data>
+  <data name="LcdMod_Ftue_PowerFilledDetails_Line2" xml:space="preserve">
+    <value>检查其电量、输入、输出和剩余时间。</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarRange_Line1" xml:space="preserve">
+    <value>滚动以更改雷达范围。</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarRange_Line2" xml:space="preserve">
+    <value>超过 {0} 范围时只能检测到无线电信号。</value>
+  </data>
 </root>

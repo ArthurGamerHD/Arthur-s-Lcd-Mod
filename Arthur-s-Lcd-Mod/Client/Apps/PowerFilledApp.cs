@@ -177,7 +177,7 @@ namespace LcdMod.Client.Apps
 
         RectangleControl CreatePowerEntryHitbox(PowerEntry entry)
         {
-            return new RectangleControl(
+            var control = new RectangleControl(
                 default(RectangleF),
                 CursorType.Hand,
                 entry,
@@ -187,6 +187,8 @@ namespace LcdMod.Client.Apps
                 ClickSound = AudioHelper.HudClick,
                 CustomRender = RenderPowerEntryHitbox
             };
+            control.SetClass("ControlBase PowerFilledDetails");
+            return control;
         }
 
         void BindPowerEntryHitbox(ControlTemplate control, PowerEntry entry, int index)
@@ -196,6 +198,7 @@ namespace LcdMod.Client.Apps
 
             control.SetDataContext(entry);
             control.SetCursor(CursorType.Hand);
+            control.SetClass("ControlBase PowerFilledDetails");
             control.SetTooltip(entry != null ? BuildPowerEntryTooltip(entry.EntryId) : null);
             control.CustomRender = RenderPowerEntryHitbox;
             control.SetVisible(entry != null);

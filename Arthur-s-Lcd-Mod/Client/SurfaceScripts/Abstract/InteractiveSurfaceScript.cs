@@ -9,6 +9,7 @@ using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Utility;
 using LcdMod.Common.Config.Components;
+using LcdMod.Common.Helpers;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game.Entity;
@@ -20,6 +21,10 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 {
     public abstract partial class InteractiveSurfaceScript : SurfaceScriptBase, IEyeTracking
     {
+        public event Action<InteractiveSurfaceScript, List<Control>> OnCollectOverlayEntries;
+        public event Action<InteractiveSurfaceScript, List<MySprite>> OnRenderOverlay;
+        public event Action<InteractiveSurfaceScript, Vector2> OnVisualContact;
+
         const long CURSOR_VISUAL_CONTACT_TIMEOUT_FRAMES = 6;
         const long HIDDEN_GLOBAL_MENU_TIMEOUT_FRAMES = 180;
         object _activeTooltipParentObject;
@@ -48,6 +53,8 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         readonly List<Control> _interactiveEntriesWithOverlay = new List<Control>();
         int _controlOverlayStartIndex = -1;
         int _controlOverlayCount;
+        int _externalOverlayStartIndex = -1;
+        int _externalOverlayCount;
 
         public ICollection<Control> InteractiveEntries => GetInteractiveEntries();
 
@@ -55,6 +62,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         {
             _interactiveEntriesWithOverlay.Clear();
             ResetControlOverlayRange();
+            ResetExternalOverlayRange();
 
             if (_dialog != null)
             {
@@ -69,12 +77,14 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
                     _dialog.AddInteractiveEntries(_interactiveEntriesWithOverlay);
                     AddControlOverlayEntries(_interactiveEntriesWithOverlay);
+                    RaiseCollectOverlayEntries(_interactiveEntriesWithOverlay);
                     return _interactiveEntriesWithOverlay;
                 }
             }
 
             AddBaseInteractiveEntries(_interactiveEntriesWithOverlay);
             AddControlOverlayEntries(_interactiveEntriesWithOverlay);
+            RaiseCollectOverlayEntries(_interactiveEntriesWithOverlay);
             return _interactiveEntriesWithOverlay;
         }
 
@@ -82,6 +92,12 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         {
             _controlOverlayStartIndex = -1;
             _controlOverlayCount = 0;
+        }
+
+        void ResetExternalOverlayRange()
+        {
+            _externalOverlayStartIndex = -1;
+            _externalOverlayCount = 0;
         }
 
         void AddControlOverlayEntries(List<Control> entries)
@@ -172,6 +188,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             _lastVisualContactFrame = MyAPIGateway.Session.GameplayFrameCounter;
             CursorPosition = onScreenCoordinates;
             OnLookAt(onScreenCoordinates);
+            RaiseVisualContact(onScreenCoordinates);
             RenderSprites();
             try
             {
@@ -903,6 +920,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             if (RendersInteractiveEntriesInGetSprites)
                 RenderControlOverlayVisuals(spriteList);
 
+            RaiseRenderOverlay(spriteList);
             RenderAttachedTooltip(spriteList);
 
             if (InteractionComponent.CursorScale == 0 || CursorType == CursorType.None)
@@ -930,7 +948,11 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             if (sprites == null || entries == null || entries.Count == 0)
                 return;
 
-            for (int i = 0; i < entries.Count; i++)
+            int end = _externalOverlayStartIndex >= 0
+                ? Math.Min(entries.Count, _externalOverlayStartIndex)
+                : entries.Count;
+
+            for (int i = 0; i < end; i++)
             {
                 var entry = entries[i] as ControlTemplate;
                 if (entry != null)
@@ -955,6 +977,68 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             {
                 var entry = entries[i] as ControlTemplate;
                 entry?.Render(sprites);
+            }
+        }
+
+        void RaiseCollectOverlayEntries(List<Control> entries)
+        {
+            var handlers = OnCollectOverlayEntries;
+            if (handlers == null || entries == null)
+                return;
+
+            _externalOverlayStartIndex = entries.Count;
+            foreach (var @delegate in handlers.GetInvocationList())
+            {
+                try
+                {
+                    ((Action<InteractiveSurfaceScript, List<Control>>)@delegate)(this, entries);
+                }
+                catch (Exception e)
+                {
+                    ErrorHandlerHelper.LogError(e, this);
+                }
+            }
+
+            _externalOverlayCount = entries.Count - _externalOverlayStartIndex;
+            if (_externalOverlayCount <= 0)
+                ResetExternalOverlayRange();
+        }
+
+        void RaiseVisualContact(Vector2 onScreenCoordinates)
+        {
+            var handlers = OnVisualContact;
+            if (handlers == null)
+                return;
+
+            foreach (var @delegate in handlers.GetInvocationList())
+            {
+                try
+                {
+                    ((Action<InteractiveSurfaceScript, Vector2>)@delegate)(this, onScreenCoordinates);
+                }
+                catch (Exception e)
+                {
+                    ErrorHandlerHelper.LogError(e, this);
+                }
+            }
+        }
+
+        void RaiseRenderOverlay(List<MySprite> sprites)
+        {
+            var handlers = OnRenderOverlay;
+            if (handlers == null || sprites == null)
+                return;
+
+            foreach (var @delegate in handlers.GetInvocationList())
+            {
+                try
+                {
+                    ((Action<InteractiveSurfaceScript, List<MySprite>>)@delegate)(this, sprites);
+                }
+                catch (Exception e)
+                {
+                    ErrorHandlerHelper.LogError(e, this);
+                }
             }
         }
 
@@ -1004,6 +1088,9 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         public override void Dispose()
         {
+            OnCollectOverlayEntries = null;
+            OnRenderOverlay = null;
+            OnVisualContact = null;
             SoundEmitter?.Cleanup();
             SoundEmitter = null;
             base.Dispose();

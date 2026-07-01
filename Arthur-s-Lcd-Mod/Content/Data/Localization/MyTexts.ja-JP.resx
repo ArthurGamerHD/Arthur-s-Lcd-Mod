@@ -789,4 +789,52 @@
   <data name="LcdMod_ClockDashboard_Temperature_Fahrenheit" xml:space="preserve">
     <value>華氏 (°F)</value>
   </data>
+  <data name="LcdMod_Ftue_LookAround_Line1" xml:space="preserve">
+    <value>**{0}** を長押しすると視線追跡を使用できます</value>
+  </data>
+  <data name="LcdMod_Ftue_LookAround_Line2" xml:space="preserve">
+    <value>ターミナルで **{0}** を有効にすると、この操作を不要にできます。</value>
+  </data>
+  <data name="LcdMod_Ftue_MarketSearch_Line1" xml:space="preserve">
+    <value>複数アイテムの検索には カンマ)、特定のアイテム種別には *#type* を使います</value>
+  </data>
+  <data name="LcdMod_Ftue_MarketSearch_Line2" xml:space="preserve">
+    <value>例: *"{0}, #ship, #ore, #gas"*</value>
+  </data>
+  <data name="LcdMod_Ftue_ItemsCraft_Line1" xml:space="preserve">
+    <value>アイテムをクリックすると、製作オプションが開きます。</value>
+  </data>
+  <data name="LcdMod_Ftue_ItemsCraft_Line2" xml:space="preserve">
+    <value>製作ダイアログで数量と使用可能なアセンブラーを選択します。</value>
+  </data>
+  <data name="LcdMod_Ftue_FarmPlotDetails_Line1" xml:space="preserve">
+    <value>栽培区画をクリックすると、詳細情報を表示できます。</value>
+  </data>
+  <data name="LcdMod_Ftue_FarmPlotDetails_Line2" xml:space="preserve">
+    <value>成長度、インベントリ、水、環境を確認できます。</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapPlanetDetails_Line1" xml:space="preserve">
+    <value>惑星をクリックすると、詳細情報を表示できます。</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapPlanetDetails_Line2" xml:space="preserve">
+    <value>重力、大気、温度、風、位置を確認できます。</value>
+  </data>
+  <data name="LcdMod_Ftue_PictureFrameCustomTextures_Line1" xml:space="preserve">
+    <value>カスタム `.dds` テクスチャを {0} に追加できます。</value>
+  </data>
+  <data name="LcdMod_Ftue_PictureFrameCustomTextures_Line2" xml:space="preserve">
+    <value>そこへコピーしてから `/lcdmod importtextures` を実行してください。</value>
+  </data>
+  <data name="LcdMod_Ftue_PowerFilledDetails_Line1" xml:space="preserve">
+    <value>バッテリーまたはジャンプドライブをクリックして詳細情報を表示します。</value>
+  </data>
+  <data name="LcdMod_Ftue_PowerFilledDetails_Line2" xml:space="preserve">
+    <value>充電量、入力、出力、残り時間を確認できます。</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarRange_Line1" xml:space="preserve">
+    <value>スクロールしてレーダーの範囲を変更します。</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarRange_Line2" xml:space="preserve">
+    <value>{0} を超える範囲では無線信号のみを検出できます。</value>
+  </data>
 </root>

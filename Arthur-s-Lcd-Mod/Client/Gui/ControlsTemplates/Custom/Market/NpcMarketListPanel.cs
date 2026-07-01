@@ -53,7 +53,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
 
             _searchButton = new Button(default(RectangleF), new ButtonModel { Clicked = OnSearchClicked });
             _searchButton.CustomRender = RenderSearchButton;
-            _searchButton.SetClass("ControlBase Button Sort");
+            _searchButton.SetClass("ControlBase Button Sort Search");
             _searchButton.SetVisible(false);
             _headerPanel.AddChild(_searchButton);
             EnsureSortHeaderButtons();
@@ -170,7 +170,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
         void ConfigureSearchButton(RectangleF rect)
         {
             _searchButton.SetRect(rect);
-            _searchButton.SetClass("ControlBase Button Sort");
+            _searchButton.SetClass("ControlBase Button Sort Search");
             _searchButton.SetVisible(rect.Width > 0f && rect.Height > 0f);
         }
 

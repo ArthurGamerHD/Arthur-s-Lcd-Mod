@@ -123,11 +123,14 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         public bool Dirty => _dirty;
         bool _dirty;
         bool _disposed;
+        IApp _publishedApp;
 
         public AnimationController Animations { get; private set; }
         public ScreenProviderConfig ProviderConfig { get; private set; }
         protected bool IsScreenReadyToRender { get; private set; }
         public event Action<SurfaceScriptBase> OnRender;
+        public event Action<SurfaceScriptBase> OnUpdateStart;
+        public event Action<SurfaceScriptBase> OnUpdateEnd;
 
         protected SurfaceScriptBase(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block,
             size)
@@ -295,6 +298,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             if (_disposed)
                 return;
             _disposed = true;
+            UnpublishApp();
 
             try
             {
@@ -344,6 +348,8 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             Instances.Remove(this);
             LcdModSessionComponent.OnLanguageChanged -= LayoutChanged;
             OnRender = null;
+            OnUpdateStart = null;
+            OnUpdateEnd = null;
             base.Dispose();
         }
 
@@ -470,6 +476,8 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
             IsScreenReadyToRender = true;
 
+            PublishAppChange();
+            RaiseUpdateStart();
             try
             {
                 SafeRun();
@@ -478,6 +486,42 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             {
                 OnException(e);
             }
+            finally
+            {
+                RaiseUpdateEnd();
+                PublishAppChange();
+            }
+        }
+
+        void PublishAppChange()
+        {
+            IApp currentApp;
+            try
+            {
+                currentApp = App;
+            }
+            catch (Exception e)
+            {
+                ErrorHandlerHelper.LogError(e, this);
+                return;
+            }
+
+            if (ReferenceEquals(_publishedApp, currentApp))
+                return;
+
+            var previousApp = _publishedApp;
+            _publishedApp = currentApp;
+            Instances.NotifyAppChanged(this, previousApp, currentApp);
+        }
+
+        void UnpublishApp()
+        {
+            if (_publishedApp == null)
+                return;
+
+            var previousApp = _publishedApp;
+            _publishedApp = null;
+            Instances.NotifyAppChanged(this, previousApp, null);
         }
 
         void Init()
@@ -1195,7 +1239,21 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         void NotifyRendered()
         {
-            var handlers = OnRender;
+            RaiseSurfaceEvent(OnRender);
+        }
+
+        void RaiseUpdateStart()
+        {
+            RaiseSurfaceEvent(OnUpdateStart);
+        }
+
+        void RaiseUpdateEnd()
+        {
+            RaiseSurfaceEvent(OnUpdateEnd);
+        }
+
+        void RaiseSurfaceEvent(Action<SurfaceScriptBase> handlers)
+        {
             if (handlers == null)
                 return;
 

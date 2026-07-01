@@ -33,6 +33,15 @@ namespace LcdMod.Client.Markdown
                     continue;
                 }
 
+                SubtextBlock subtext;
+                if (TryParseSubtext(line, out subtext))
+                {
+                    subtext.Inlines.AddRange(_inlineParser.Parse(subtext.RawText));
+                    document.Blocks.Add(subtext);
+                    index++;
+                    continue;
+                }
+
                 HeadingBlock heading;
                 if (TryParseHeading(line, out heading))
                 {
@@ -74,6 +83,28 @@ namespace LcdMod.Client.Markdown
         static bool IsBlank(string line)
         {
             return line == null || line.Trim().Length == 0;
+        }
+
+
+        static bool TryParseSubtext(string line, out SubtextBlock subtext)
+        {
+            subtext = null;
+
+            if (line == null)
+                return false;
+
+            string trimmed = line.TrimStart();
+            const string marker = "-# ";
+            if (!trimmed.StartsWith(marker))
+                return false;
+
+            string rawText = trimmed.Substring(marker.Length).Trim();
+            if (rawText.Length == 0)
+                return false;
+
+            subtext = new SubtextBlock();
+            subtext.RawText = rawText;
+            return true;
         }
 
         static bool TryParseHeading(string line, out HeadingBlock heading)
@@ -271,6 +302,10 @@ namespace LcdMod.Client.Markdown
                 string line = lines[index];
 
                 if (IsBlank(line))
+                    break;
+
+                SubtextBlock ignoredSubtext;
+                if (TryParseSubtext(line, out ignoredSubtext))
                     break;
 
                 HeadingBlock ignoredHeading;

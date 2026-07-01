@@ -788,4 +788,52 @@ Bir süre bekleyeceğiz ve ardından sizin için yeniden başlatacağız.</value
   <data name="LcdMod_ClockDashboard_Temperature_Fahrenheit" xml:space="preserve">
     <value>Fahrenhayt (°F)</value>
   </data>
+  <data name="LcdMod_Ftue_LookAround_Line1" xml:space="preserve">
+    <value>Göz takibini kullanmak için **{0}** tuşunu basılı tutun</value>
+  </data>
+  <data name="LcdMod_Ftue_LookAround_Line2" xml:space="preserve">
+    <value>Terminalde **{0}** seçeneğini etkinleştirerek bu gereksinimi kapatabilirsiniz.</value>
+  </data>
+  <data name="LcdMod_Ftue_MarketSearch_Line1" xml:space="preserve">
+    <value>Birden fazla öğeyi virgül) ile ara, belirli öğe türleri için *#type* kullan</value>
+  </data>
+  <data name="LcdMod_Ftue_MarketSearch_Line2" xml:space="preserve">
+    <value>örneğin *"{0}, #ship, #ore, #gas"*</value>
+  </data>
+  <data name="LcdMod_Ftue_ItemsCraft_Line1" xml:space="preserve">
+    <value>Üretim seçeneklerini açmak için bir öğeye tıklayın.</value>
+  </data>
+  <data name="LcdMod_Ftue_ItemsCraft_Line2" xml:space="preserve">
+    <value>Üretim penceresinde miktarı ve kullanılabilir bir montajcıyı seçin.</value>
+  </data>
+  <data name="LcdMod_Ftue_FarmPlotDetails_Line1" xml:space="preserve">
+    <value>Ayrıntılı bilgileri görmek için bir tarım alanına tıklayın.</value>
+  </data>
+  <data name="LcdMod_Ftue_FarmPlotDetails_Line2" xml:space="preserve">
+    <value>Büyüme, envanter, su ve çevre durumunu inceleyin.</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapPlanetDetails_Line1" xml:space="preserve">
+    <value>Ayrıntılı bilgileri görmek için bir gezegene tıklayın.</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapPlanetDetails_Line2" xml:space="preserve">
+    <value>Yerçekimi, atmosfer, sıcaklık, rüzgâr ve konumu inceleyin.</value>
+  </data>
+  <data name="LcdMod_Ftue_PictureFrameCustomTextures_Line1" xml:space="preserve">
+    <value>Özel `.dds` dokularını {0} konumuna ekleyin.</value>
+  </data>
+  <data name="LcdMod_Ftue_PictureFrameCustomTextures_Line2" xml:space="preserve">
+    <value>Dosyaları oraya kopyalayıp `/lcdmod importtextures` komutunu çalıştırın.</value>
+  </data>
+  <data name="LcdMod_Ftue_PowerFilledDetails_Line1" xml:space="preserve">
+    <value>Ayrıntılı bilgileri görmek için bir bataryaya veya sıçrama motoruna tıklayın.</value>
+  </data>
+  <data name="LcdMod_Ftue_PowerFilledDetails_Line2" xml:space="preserve">
+    <value>Şarjını, girişini, çıkışını ve kalan süreyi kontrol edin.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarRange_Line1" xml:space="preserve">
+    <value>Radar menzilini değiştirmek için kaydırın.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarRange_Line2" xml:space="preserve">
+    <value>{0}'nin ötesinde yalnızca radyo sinyalleri algılanabilir.</value>
+  </data>
 </root>

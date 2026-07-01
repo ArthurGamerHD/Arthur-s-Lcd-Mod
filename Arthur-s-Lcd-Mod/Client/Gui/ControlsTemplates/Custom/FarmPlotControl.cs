@@ -24,6 +24,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
             public FarmPlotControl(RectangleF bounds, FarmApp.FarmEntry entry, InteractiveTooltip tooltip)
                 : base(bounds, CursorType.Hand, entry, null, tooltip)
             {
+                SetClass("ControlBase FarmPlotDetails");
                 ClickSound = AudioHelper.HudClick;
             }
 

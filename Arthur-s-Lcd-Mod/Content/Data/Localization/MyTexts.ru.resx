@@ -788,4 +788,52 @@
   <data name="LcdMod_ClockDashboard_Temperature_Fahrenheit" xml:space="preserve">
     <value>Фаренгейт (°F)</value>
   </data>
+  <data name="LcdMod_Ftue_LookAround_Line1" xml:space="preserve">
+    <value>Удерживайте **{0}**, чтобы использовать отслеживание взгляда</value>
+  </data>
+  <data name="LcdMod_Ftue_LookAround_Line2" xml:space="preserve">
+    <value>Это требование можно отключить, включив **{0}** в терминале.</value>
+  </data>
+  <data name="LcdMod_Ftue_MarketSearch_Line1" xml:space="preserve">
+    <value>Ищи несколько предметов через запятые, *#type* для конкретных типов предметов</value>
+  </data>
+  <data name="LcdMod_Ftue_MarketSearch_Line2" xml:space="preserve">
+    <value>например *"{0}, #ship, #ore, #gas"*</value>
+  </data>
+  <data name="LcdMod_Ftue_ItemsCraft_Line1" xml:space="preserve">
+    <value>Щёлкните по предмету, чтобы открыть параметры производства.</value>
+  </data>
+  <data name="LcdMod_Ftue_ItemsCraft_Line2" xml:space="preserve">
+    <value>В окне производства выберите количество и доступный сборщик.</value>
+  </data>
+  <data name="LcdMod_Ftue_FarmPlotDetails_Line1" xml:space="preserve">
+    <value>Щёлкните по грядке, чтобы посмотреть подробную информацию.</value>
+  </data>
+  <data name="LcdMod_Ftue_FarmPlotDetails_Line2" xml:space="preserve">
+    <value>Проверьте рост, инвентарь, запас воды и условия среды.</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapPlanetDetails_Line1" xml:space="preserve">
+    <value>Щёлкните по планете, чтобы посмотреть подробную информацию.</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapPlanetDetails_Line2" xml:space="preserve">
+    <value>Проверьте гравитацию, атмосферу, температуру, ветер и координаты.</value>
+  </data>
+  <data name="LcdMod_Ftue_PictureFrameCustomTextures_Line1" xml:space="preserve">
+    <value>Добавьте пользовательские текстуры `.dds` в {0}.</value>
+  </data>
+  <data name="LcdMod_Ftue_PictureFrameCustomTextures_Line2" xml:space="preserve">
+    <value>Скопируйте их туда, затем выполните `/lcdmod importtextures`.</value>
+  </data>
+  <data name="LcdMod_Ftue_PowerFilledDetails_Line1" xml:space="preserve">
+    <value>Щёлкните по батарее или прыжковому двигателю, чтобы посмотреть подробную информацию.</value>
+  </data>
+  <data name="LcdMod_Ftue_PowerFilledDetails_Line2" xml:space="preserve">
+    <value>Проверьте заряд, вход, выход и оставшееся время.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarRange_Line1" xml:space="preserve">
+    <value>Прокрутите, чтобы изменить дальность радара.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarRange_Line2" xml:space="preserve">
+    <value>За пределами {0} могут обнаруживаться только радиосигналы.</value>
+  </data>
 </root>

@@ -991,6 +991,7 @@ namespace LcdMod.Client.Apps
             ResetSavedPageIndex();
             MarkRowsDirty();
             ApplyPendingRowChanges();
+            NotifySearchChanged();
             Host.RenderSprites();
         }
 

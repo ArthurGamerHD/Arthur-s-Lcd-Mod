@@ -788,4 +788,52 @@ Ootame veidi ja seejärel taaskäivitame selle teie eest.</value>
   <data name="LcdMod_ClockDashboard_Temperature_Fahrenheit" xml:space="preserve">
     <value>Fahrenheit (°F)</value>
   </data>
+  <data name="LcdMod_Ftue_LookAround_Line1" xml:space="preserve">
+    <value>Pilgujälgimise kasutamiseks hoia all klahvi **{0}**</value>
+  </data>
+  <data name="LcdMod_Ftue_LookAround_Line2" xml:space="preserve">
+    <value>Selle nõude saad välja lülitada, lubades terminalis valiku **{0}**.</value>
+  </data>
+  <data name="LcdMod_Ftue_MarketSearch_Line1" xml:space="preserve">
+    <value>Mitme eseme otsimiseks kasuta komasid, *#type* kindlate esemetüüpide jaoks</value>
+  </data>
+  <data name="LcdMod_Ftue_MarketSearch_Line2" xml:space="preserve">
+    <value>näiteks *"{0}, #ship, #ore, #gas"*</value>
+  </data>
+  <data name="LcdMod_Ftue_ItemsCraft_Line1" xml:space="preserve">
+    <value>Klõpsa esemel, et avada selle tootmisvalikud.</value>
+  </data>
+  <data name="LcdMod_Ftue_ItemsCraft_Line2" xml:space="preserve">
+    <value>Vali tootmisaknas kogus ja saadaolev koostur.</value>
+  </data>
+  <data name="LcdMod_Ftue_FarmPlotDetails_Line1" xml:space="preserve">
+    <value>Klõpsa kasvulapil, et näha üksikasjalikku teavet.</value>
+  </data>
+  <data name="LcdMod_Ftue_FarmPlotDetails_Line2" xml:space="preserve">
+    <value>Vaata kasvu, inventari, veetaset ja keskkonda.</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapPlanetDetails_Line1" xml:space="preserve">
+    <value>Klõpsa planeedil, et näha üksikasjalikku teavet.</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapPlanetDetails_Line2" xml:space="preserve">
+    <value>Vaata gravitatsiooni, atmosfääri, temperatuuri, tuult ja asukohta.</value>
+  </data>
+  <data name="LcdMod_Ftue_PictureFrameCustomTextures_Line1" xml:space="preserve">
+    <value>Lisa kohandatud `.dds`-tekstuurid kausta {0}.</value>
+  </data>
+  <data name="LcdMod_Ftue_PictureFrameCustomTextures_Line2" xml:space="preserve">
+    <value>Kopeeri need sinna ja käivita `/lcdmod importtextures`.</value>
+  </data>
+  <data name="LcdMod_Ftue_PowerFilledDetails_Line1" xml:space="preserve">
+    <value>Klõpsa akul või hüppemootoril, et näha üksikasjalikku teavet.</value>
+  </data>
+  <data name="LcdMod_Ftue_PowerFilledDetails_Line2" xml:space="preserve">
+    <value>Vaata laetust, sisendit, väljundit ja järelejäänud aega.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarRange_Line1" xml:space="preserve">
+    <value>Keri, et muuta radari ulatust.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarRange_Line2" xml:space="preserve">
+    <value>Üle {0} tuvastatakse ainult raadiosignaale.</value>
+  </data>
 </root>

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Text;
 using LcdMod.Client.Markdown;
 using LcdMod.Client.Markdown.Inline;
 using LcdMod.Client.Markdown.Inline.NonStandard;
@@ -22,6 +21,7 @@ namespace LcdMod.Client.Gui.UserControls
         const string CODE_FONT = "DEBUG";
         const string MONOSPACE_FONT = MOD_PREFIX + "Monospace";
         const float TITLE_BAR_HEIGHT_BASE = 40f;
+        const float STYLED_FONT_RIGHT_GAP_BASE = 2f;
 
         public static void CreateSprites(
             MarkdownDocument document,
@@ -81,7 +81,6 @@ namespace LcdMod.Client.Gui.UserControls
             readonly Color _headerColor;
             readonly Color _textColor;
             readonly List<MySprite> _sprites;
-            readonly StringBuilder _measureBuffer = new StringBuilder();
             readonly List<string> _spriteLibrary = new List<string>();
             readonly List<TextRun> _runs = new List<TextRun>();
             readonly LineState _line = new LineState();
@@ -154,6 +153,14 @@ namespace LcdMod.Client.Gui.UserControls
                 {
                     RenderInlineBlock(paragraph.Inlines, indent, 1f, _textColor);
                     AddBlockGap(7f);
+                    return;
+                }
+
+                var subtext = block as SubtextBlock;
+                if (subtext != null)
+                {
+                    RenderInlineBlock(subtext.Inlines, indent, 0.78f, WithOpacity(_textColor, 0.72f));
+                    AddBlockGap(5f);
                     return;
                 }
 
@@ -370,10 +377,16 @@ namespace LcdMod.Client.Gui.UserControls
             void AppendImageRun(TextRun run)
             {
                 Vector2 size = GetImageBoxSize(run, _line.AvailableWidth);
+                float transitionSpacing = GetStyleTransitionSpacing(run);
 
-                if (_line.HasText && _line.Width + size.X > _line.AvailableWidth)
+                if (_line.HasText &&
+                    _line.Width + transitionSpacing + size.X > _line.AvailableWidth)
+                {
                     FlushLine();
+                    transitionSpacing = 0f;
+                }
 
+                _line.AddSpacing(transitionSpacing);
                 _line.Add(run, size.X, size.Y);
             }
 
@@ -400,10 +413,13 @@ namespace LcdMod.Client.Gui.UserControls
                     return;
 
                 float tokenWidth = Measure(token.Text, token.FontId, token.Scale).X;
+                float transitionSpacing = GetStyleTransitionSpacing(token);
 
-                if (_line.HasText && _line.Width + tokenWidth > _line.AvailableWidth)
+                if (_line.HasText &&
+                    _line.Width + transitionSpacing + tokenWidth > _line.AvailableWidth)
                 {
                     FlushLine();
+                    transitionSpacing = 0f;
                     if (trimOnWrap)
                     {
                         token = new TextRun(token.Text.TrimStart(), token.Style);
@@ -417,7 +433,28 @@ namespace LcdMod.Client.Gui.UserControls
                     return;
                 }
 
+                _line.AddSpacing(transitionSpacing);
                 _line.Add(token, tokenWidth, GetLineHeight(token.FontId, token.Scale));
+            }
+
+            float GetStyleTransitionSpacing(TextRun next)
+            {
+                if (!_line.HasText)
+                    return 0f;
+
+                TextRun previous = _line.LastRun;
+                if (previous.Style.Equals(next.Style))
+                    return 0f;
+
+                // Wrapped Markdown tokens already include the normal inter-word space.
+                // Add only a small correction after a custom styled bitmap font so its
+                // right-side bearing cannot touch the following run. Do not compensate
+                // on the left: that previously doubled the visible spacing around bold
+                // text such as the LOOKAROUND key name.
+                if (!previous.IsImage && IsStyledFont(previous.FontId))
+                    return STYLED_FONT_RIGHT_GAP_BASE * Math.Max(0.01f, previous.Scale);
+
+                return 0f;
             }
 
             void AppendOversizedToken(TextRun token)
@@ -700,9 +737,18 @@ namespace LcdMod.Client.Gui.UserControls
 
             Vector2 Measure(string text, string fontId, float scale)
             {
-                _measureBuffer.Clear();
-                _measureBuffer.Append(text);
-                return _context.Surface.MeasureStringInPixels(_measureBuffer, fontId, scale);
+                return TextWrappingHelper.MeasureText(
+                    _context.Surface,
+                    text,
+                    fontId,
+                    scale);
+            }
+
+            static bool IsStyledFont(string fontId)
+            {
+                return string.Equals(fontId, DEFAULT_BOLD_FONT, StringComparison.Ordinal) ||
+                       string.Equals(fontId, DEFAULT_ITALIC_FONT, StringComparison.Ordinal) ||
+                       string.Equals(fontId, DEFAULT_BOLD_ITALIC_FONT, StringComparison.Ordinal);
             }
 
             Vector2 GetImageBoxSize(TextRun run, float availableWidth)
@@ -765,6 +811,16 @@ namespace LcdMod.Client.Gui.UserControls
                     default:
                         return 0.9f;
                 }
+            }
+
+            static Color WithOpacity(Color color, float opacity)
+            {
+                opacity = MathHelper.Clamp(opacity, 0f, 1f);
+                return new Color(
+                    color.R,
+                    color.G,
+                    color.B,
+                    (byte)Math.Round(color.A * opacity));
             }
 
             static bool TryParseColor(string value, out Color color)
@@ -994,6 +1050,9 @@ namespace LcdMod.Client.Gui.UserControls
             public float Width;
             public float Height;
             public bool HasText => Runs.Count > 0;
+            public TextRun LastRun => Runs.Count == 0
+                ? default(TextRun)
+                : Runs[Runs.Count - 1].Run;
 
             public void Reset(float x, float availableWidth)
             {
@@ -1007,6 +1066,17 @@ namespace LcdMod.Client.Gui.UserControls
                 Runs.Clear();
                 Width = 0f;
                 Height = 0f;
+            }
+
+            public void AddSpacing(float spacing)
+            {
+                if (spacing <= 0f || Runs.Count == 0)
+                    return;
+
+                int index = Runs.Count - 1;
+                var previous = Runs[index];
+                Runs[index] = new LineSegment(previous.Run, previous.Width + spacing);
+                Width += spacing;
             }
 
             public void Add(TextRun run, float width, float height)

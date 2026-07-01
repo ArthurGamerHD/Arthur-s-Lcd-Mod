@@ -788,4 +788,52 @@ Chvíľu počkáme a potom ju za vás reštartujeme.</value>
   <data name="LcdMod_ClockDashboard_Temperature_Fahrenheit" xml:space="preserve">
     <value>Fahrenheit (°F)</value>
   </data>
+  <data name="LcdMod_Ftue_LookAround_Line1" xml:space="preserve">
+    <value>Podrž **{0}** na použitie sledovania pohľadu</value>
+  </data>
+  <data name="LcdMod_Ftue_LookAround_Line2" xml:space="preserve">
+    <value>Túto požiadavku môžeš vypnúť zapnutím prepínača **{0}** v termináli.</value>
+  </data>
+  <data name="LcdMod_Ftue_MarketSearch_Line1" xml:space="preserve">
+    <value>Vyhľadávaj viac predmetov pomocou čiarok, *#type* pre konkrétne typy predmetov</value>
+  </data>
+  <data name="LcdMod_Ftue_MarketSearch_Line2" xml:space="preserve">
+    <value>napríklad *"{0}, #ship, #ore, #gas"*</value>
+  </data>
+  <data name="LcdMod_Ftue_ItemsCraft_Line1" xml:space="preserve">
+    <value>Kliknutím na položku otvoríte možnosti výroby.</value>
+  </data>
+  <data name="LcdMod_Ftue_ItemsCraft_Line2" xml:space="preserve">
+    <value>V dialógu výroby vyberte množstvo a dostupný zostavovač.</value>
+  </data>
+  <data name="LcdMod_Ftue_FarmPlotDetails_Line1" xml:space="preserve">
+    <value>Kliknutím na pestovateľské pole zobrazíte podrobné informácie.</value>
+  </data>
+  <data name="LcdMod_Ftue_FarmPlotDetails_Line2" xml:space="preserve">
+    <value>Skontrolujte rast, inventár, vodu a prostredie.</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapPlanetDetails_Line1" xml:space="preserve">
+    <value>Kliknutím na planétu zobrazíte podrobné informácie.</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapPlanetDetails_Line2" xml:space="preserve">
+    <value>Skontrolujte gravitáciu, atmosféru, teplotu, vietor a polohu.</value>
+  </data>
+  <data name="LcdMod_Ftue_PictureFrameCustomTextures_Line1" xml:space="preserve">
+    <value>Pridajte vlastné textúry `.dds` do {0}.</value>
+  </data>
+  <data name="LcdMod_Ftue_PictureFrameCustomTextures_Line2" xml:space="preserve">
+    <value>Skopírujte ich tam a potom spustite `/lcdmod importtextures`.</value>
+  </data>
+  <data name="LcdMod_Ftue_PowerFilledDetails_Line1" xml:space="preserve">
+    <value>Kliknutím na batériu alebo skokový pohon zobrazíte podrobné informácie.</value>
+  </data>
+  <data name="LcdMod_Ftue_PowerFilledDetails_Line2" xml:space="preserve">
+    <value>Skontrolujte nabitie, vstup, výstup a zostávajúci čas.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarRange_Line1" xml:space="preserve">
+    <value>Posúvaním zmeňte dosah radaru.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarRange_Line2" xml:space="preserve">
+    <value>Za hranicou {0} možno detegovať iba rádiové signály.</value>
+  </data>
 </root>

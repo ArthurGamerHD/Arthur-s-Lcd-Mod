@@ -788,4 +788,52 @@ Várunk egy kicsit, majd újraindítjuk helyetted.</value>
   <data name="LcdMod_ClockDashboard_Temperature_Fahrenheit" xml:space="preserve">
     <value>Fahrenheit (°F)</value>
   </data>
+  <data name="LcdMod_Ftue_LookAround_Line1" xml:space="preserve">
+    <value>A szemkövetés használatához tartsd lenyomva a(z) **{0}** gombot</value>
+  </data>
+  <data name="LcdMod_Ftue_LookAround_Line2" xml:space="preserve">
+    <value>Ezt a követelményt kikapcsolhatod a terminál **{0}** kapcsolójának engedélyezésével.</value>
+  </data>
+  <data name="LcdMod_Ftue_MarketSearch_Line1" xml:space="preserve">
+    <value>Több tárgy keresése vesszők) használatával, *#type* adott tárgytípusokhoz</value>
+  </data>
+  <data name="LcdMod_Ftue_MarketSearch_Line2" xml:space="preserve">
+    <value>például *"{0}, #ship, #ore, #gas"*</value>
+  </data>
+  <data name="LcdMod_Ftue_ItemsCraft_Line1" xml:space="preserve">
+    <value>Kattints egy tárgyra a gyártási lehetőségeinek megnyitásához.</value>
+  </data>
+  <data name="LcdMod_Ftue_ItemsCraft_Line2" xml:space="preserve">
+    <value>A gyártási ablakban válassz mennyiséget és egy elérhető összeszerelőt.</value>
+  </data>
+  <data name="LcdMod_Ftue_FarmPlotDetails_Line1" xml:space="preserve">
+    <value>Kattints egy termesztőhelyre a részletes adatok megtekintéséhez.</value>
+  </data>
+  <data name="LcdMod_Ftue_FarmPlotDetails_Line2" xml:space="preserve">
+    <value>Ellenőrizd a növekedést, a készletet, a vizet és a környezetet.</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapPlanetDetails_Line1" xml:space="preserve">
+    <value>Kattints egy bolygóra a részletes adatok megtekintéséhez.</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapPlanetDetails_Line2" xml:space="preserve">
+    <value>Ellenőrizd a gravitációt, a légkört, a hőmérsékletet, a szelet és a pozíciót.</value>
+  </data>
+  <data name="LcdMod_Ftue_PictureFrameCustomTextures_Line1" xml:space="preserve">
+    <value>Adj egyéni `.dds` textúrákat ehhez: {0}.</value>
+  </data>
+  <data name="LcdMod_Ftue_PictureFrameCustomTextures_Line2" xml:space="preserve">
+    <value>Másold őket oda, majd futtasd a `/lcdmod importtextures` parancsot.</value>
+  </data>
+  <data name="LcdMod_Ftue_PowerFilledDetails_Line1" xml:space="preserve">
+    <value>Kattints egy akkumulátorra vagy ugróhajtóműre a részletes információk megtekintéséhez.</value>
+  </data>
+  <data name="LcdMod_Ftue_PowerFilledDetails_Line2" xml:space="preserve">
+    <value>Ellenőrizd a töltöttséget, a bemenetet, a kimenetet és a hátralévő időt.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarRange_Line1" xml:space="preserve">
+    <value>Görgess a radar hatótávolságának módosításához.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarRange_Line2" xml:space="preserve">
+    <value>{0}-en túl csak rádiójelek érzékelhetők.</value>
+  </data>
 </root>

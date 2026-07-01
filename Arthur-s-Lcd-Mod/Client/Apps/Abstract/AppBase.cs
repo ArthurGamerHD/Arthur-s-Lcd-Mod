@@ -49,7 +49,6 @@ namespace LcdMod.Client.Apps.Abstract
         protected IComponentContainer Config => Host.Config;
         internal override AnimationController AnimationController => _animationController;
         public override IReadOnlyList<Control> LogicalChildren => _logicalChildren;
-
         public override StyleTree Styles => _styles;
 
         public override ResourceTree Resources

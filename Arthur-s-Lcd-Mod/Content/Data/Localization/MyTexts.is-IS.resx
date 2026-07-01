@@ -792,4 +792,52 @@ Við bíðum í smá stund og endurræsum hana síðan fyrir þig.</value>
   <data name="LcdMod_ClockDashboard_Temperature_Fahrenheit" xml:space="preserve">
     <value>Fahrenheit (°F)</value>
   </data>
+  <data name="LcdMod_Ftue_LookAround_Line1" xml:space="preserve">
+    <value>Haltu **{0}** inni til að nota augnmiðun</value>
+  </data>
+  <data name="LcdMod_Ftue_LookAround_Line2" xml:space="preserve">
+    <value>Þú getur slökkt á þessari kröfu með því að virkja **{0}** í stjórnstöðinni.</value>
+  </data>
+  <data name="LcdMod_Ftue_MarketSearch_Line1" xml:space="preserve">
+    <value>Leitaðu að mörgum hlutum með kommum, *#type* fyrir tilteknar hlutategundir</value>
+  </data>
+  <data name="LcdMod_Ftue_MarketSearch_Line2" xml:space="preserve">
+    <value>til dæmis *"{0}, #ship, #ore, #gas"*</value>
+  </data>
+  <data name="LcdMod_Ftue_ItemsCraft_Line1" xml:space="preserve">
+    <value>Smelltu á hlut til að opna smíðavalkosti hans.</value>
+  </data>
+  <data name="LcdMod_Ftue_ItemsCraft_Line2" xml:space="preserve">
+    <value>Veldu magn og tiltækan samsetjara í smíðaglugganum.</value>
+  </data>
+  <data name="LcdMod_Ftue_FarmPlotDetails_Line1" xml:space="preserve">
+    <value>Smelltu á ræktunarreit til að sjá ítarlegar upplýsingar.</value>
+  </data>
+  <data name="LcdMod_Ftue_FarmPlotDetails_Line2" xml:space="preserve">
+    <value>Skoðaðu vöxt, birgðir, vatn og umhverfi.</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapPlanetDetails_Line1" xml:space="preserve">
+    <value>Smelltu á plánetu til að sjá ítarlegar upplýsingar.</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapPlanetDetails_Line2" xml:space="preserve">
+    <value>Skoðaðu þyngdarafl, lofthjúp, hitastig, vind og staðsetningu.</value>
+  </data>
+  <data name="LcdMod_Ftue_PictureFrameCustomTextures_Line1" xml:space="preserve">
+    <value>Bættu sérsniðnum `.dds` áferðum við {0}.</value>
+  </data>
+  <data name="LcdMod_Ftue_PictureFrameCustomTextures_Line2" xml:space="preserve">
+    <value>Afritaðu þær þangað og keyrðu síðan `/lcdmod importtextures`.</value>
+  </data>
+  <data name="LcdMod_Ftue_PowerFilledDetails_Line1" xml:space="preserve">
+    <value>Smelltu á rafhlöðu eða stökkdrif til að sjá ítarlegar upplýsingar.</value>
+  </data>
+  <data name="LcdMod_Ftue_PowerFilledDetails_Line2" xml:space="preserve">
+    <value>Skoðaðu hleðslu, inntak, úttak og tíma sem eftir er.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarRange_Line1" xml:space="preserve">
+    <value>Skrunaðu til að breyta drægni ratsjárinnar.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarRange_Line2" xml:space="preserve">
+    <value>Aðeins útvarpsmerki greinast handan {0}.</value>
+  </data>
 </root>

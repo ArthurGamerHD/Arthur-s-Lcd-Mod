@@ -788,4 +788,52 @@ Mēs brīdi pagaidīsim un pēc tam to restartēsim jūsu vietā.</value>
   <data name="LcdMod_ClockDashboard_Temperature_Fahrenheit" xml:space="preserve">
     <value>Fārenheits (°F)</value>
   </data>
+  <data name="LcdMod_Ftue_LookAround_Line1" xml:space="preserve">
+    <value>Turi nospiestu **{0}**, lai izmantotu skatiena izsekošanu</value>
+  </data>
+  <data name="LcdMod_Ftue_LookAround_Line2" xml:space="preserve">
+    <value>Šo prasību vari atspējot, terminālī ieslēdzot **{0}**.</value>
+  </data>
+  <data name="LcdMod_Ftue_MarketSearch_Line1" xml:space="preserve">
+    <value>Meklē vairākus priekšmetus ar komatiem, *#type* konkrētiem priekšmetu tipiem</value>
+  </data>
+  <data name="LcdMod_Ftue_MarketSearch_Line2" xml:space="preserve">
+    <value>piemēram, *"{0}, #ship, #ore, #gas"*</value>
+  </data>
+  <data name="LcdMod_Ftue_ItemsCraft_Line1" xml:space="preserve">
+    <value>Noklikšķiniet uz priekšmeta, lai atvērtu tā izgatavošanas opcijas.</value>
+  </data>
+  <data name="LcdMod_Ftue_ItemsCraft_Line2" xml:space="preserve">
+    <value>Izgatavošanas dialogā izvēlieties daudzumu un pieejamu montētāju.</value>
+  </data>
+  <data name="LcdMod_Ftue_FarmPlotDetails_Line1" xml:space="preserve">
+    <value>Noklikšķiniet uz audzēšanas lauciņa, lai skatītu detalizētu informāciju.</value>
+  </data>
+  <data name="LcdMod_Ftue_FarmPlotDetails_Line2" xml:space="preserve">
+    <value>Pārbaudiet augšanu, inventāru, ūdeni un vidi.</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapPlanetDetails_Line1" xml:space="preserve">
+    <value>Noklikšķiniet uz planētas, lai skatītu detalizētu informāciju.</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapPlanetDetails_Line2" xml:space="preserve">
+    <value>Pārbaudiet gravitāciju, atmosfēru, temperatūru, vēju un pozīciju.</value>
+  </data>
+  <data name="LcdMod_Ftue_PictureFrameCustomTextures_Line1" xml:space="preserve">
+    <value>Pievienojiet pielāgotas `.dds` tekstūras mapē {0}.</value>
+  </data>
+  <data name="LcdMod_Ftue_PictureFrameCustomTextures_Line2" xml:space="preserve">
+    <value>Iekopējiet tās tur un palaidiet `/lcdmod importtextures`.</value>
+  </data>
+  <data name="LcdMod_Ftue_PowerFilledDetails_Line1" xml:space="preserve">
+    <value>Noklikšķiniet uz akumulatora vai lēciena dzinēja, lai skatītu detalizētu informāciju.</value>
+  </data>
+  <data name="LcdMod_Ftue_PowerFilledDetails_Line2" xml:space="preserve">
+    <value>Pārbaudiet uzlādi, ievadi, izvadi un atlikušo laiku.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarRange_Line1" xml:space="preserve">
+    <value>Ritiniet, lai mainītu radara darbības rādiusu.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarRange_Line2" xml:space="preserve">
+    <value>Ārpus {0} var uztvert tikai radio signālus.</value>
+  </data>
 </root>

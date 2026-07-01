@@ -2691,18 +2691,18 @@ namespace LcdMod.Client.Apps
             });
 
             var textRect = GetTextBounds(textPosition, size, alignment);
-            var rect = ExtendTextBoundsToPlanetCenter(textRect, planetCenterX);
+            var panelRect = ExtendTextBoundsToPlanetCenter(textRect, planetCenterX);
 
             if (line == null)
-                return rect;
+                return panelRect;
             
             var cursor = line.GetCursor();
             bool hasEntry = line.IsClickable || cursor.HasValue;
             if (!hasEntry)
-                return rect;
+                return panelRect;
 
             var entry = new RectangleControl(
-                rect,
+                textRect,
                 cursor ?? (line.IsClickable ? CursorType.Hand : CursorType.Default),
                 line.GetDataContext(),
                 line.GetOnClick());
@@ -2714,7 +2714,7 @@ namespace LcdMod.Client.Apps
                     DrawTextHitboxUnderline(textRect, labelColor, targetSprites, textScale);
             };
             _children.Add(entry);
-            return rect;
+            return panelRect;
         }
 
         static RectangleF ExtendTextBoundsToPlanetCenter(RectangleF rect, float planetCenterX)

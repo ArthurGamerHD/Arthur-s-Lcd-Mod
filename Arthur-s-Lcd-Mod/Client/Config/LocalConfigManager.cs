@@ -85,6 +85,73 @@ namespace LcdMod.Client.Config
                 writer.Write(MyAPIGateway.Utilities.SerializeToXML(Config ?? new LcdModLocalConfig()));
         }
 
+
+        public static bool IsFtueTipCompleted(string tipId)
+        {
+            return !string.IsNullOrWhiteSpace(tipId) &&
+                   Config != null &&
+                   Config.CompletedFtueTips != null &&
+                   Config.CompletedFtueTips.Contains(tipId);
+        }
+
+        public static void SetFtueTipCompleted(string tipId, bool completed)
+        {
+            if (string.IsNullOrWhiteSpace(tipId))
+                return;
+
+            if (Config == null)
+                Config = new LcdModLocalConfig();
+
+            if (Config.CompletedFtueTips == null)
+                Config.CompletedFtueTips = new HashSet<string>(StringComparer.Ordinal);
+
+            bool changed = completed
+                ? Config.CompletedFtueTips.Add(tipId)
+                : Config.CompletedFtueTips.Remove(tipId);
+
+            if (!changed)
+                return;
+
+            try
+            {
+                Save();
+            }
+            catch
+            {
+                if (completed)
+                    Config.CompletedFtueTips.Remove(tipId);
+                else
+                    Config.CompletedFtueTips.Add(tipId);
+
+                throw;
+            }
+        }
+
+        public static int ClearCompletedFtueTips()
+        {
+            if (Config == null)
+                Config = new LcdModLocalConfig();
+
+            if (Config.CompletedFtueTips == null || Config.CompletedFtueTips.Count == 0)
+            {
+                Config.CompletedFtueTips = new HashSet<string>(StringComparer.Ordinal);
+                return 0;
+            }
+
+            var completedTips = new HashSet<string>(Config.CompletedFtueTips, StringComparer.Ordinal);
+            Config.CompletedFtueTips.Clear();
+            try
+            {
+                Save();
+                return completedTips.Count;
+            }
+            catch
+            {
+                Config.CompletedFtueTips = completedTips;
+                throw;
+            }
+        }
+
         public static void SetAdvancedTweakablesCommand(string[] args)
         {
             bool enabled;

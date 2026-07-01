@@ -20,6 +20,10 @@ namespace LcdMod.Client.Modules.EyeTracking
 {
     public class EyeTrackingModule : IModule<IEyeTracking>
     {
+        public static event Action<InteractiveSurfaceScript, ControlTemplate> OnControlPointerEnter;
+        public static event Action<InteractiveSurfaceScript, ControlTemplate> OnControlPointerLeave;
+        public static event Action<InteractiveSurfaceScript, ControlTemplate, bool> OnControlClick;
+
         const double MAX_TRACKING_DISTANCE_METERS = 20d;
         const double MAX_TRACKING_DISTANCE_SQ = MAX_TRACKING_DISTANCE_METERS * MAX_TRACKING_DISTANCE_METERS;
         const long ACTIVE_SURFACE_TIMEOUT_FRAMES = 30;
@@ -31,6 +35,8 @@ namespace LcdMod.Client.Modules.EyeTracking
         int _lastActiveNearbyCount;
         ControlTemplate _pressedClickable;
         object _pressedClickableDataContext;
+        InteractiveSurfaceScript _pointerSurface;
+        ControlTemplate _pointerControl;
         ControlTemplate _draggingControl;
         IEyeTracking _draggingEntity;
         Vector2 _lastDragPosition;
@@ -54,6 +60,9 @@ namespace LcdMod.Client.Modules.EyeTracking
             if (instance == null)
                 return;
 
+            if (ReferenceEquals(_pointerSurface, instance))
+                UpdatePointerTarget(null, null);
+
             _modules.Remove(instance);
         }
 
@@ -73,6 +82,7 @@ namespace LcdMod.Client.Modules.EyeTracking
             if (MyAPIGateway.Gui.IsCursorVisible || (!_moveCameraControl.IsPressed() &&
                 ((entity?.BlockDefinition as MyCockpitDefinition)?.EnableShipControl ?? false)))
             {
+                UpdatePointerTarget(null, null);
                 UpdateClickState(null, null, null);
                 _lastActiveNearbyCount = 0;
                 return;
@@ -80,6 +90,7 @@ namespace LcdMod.Client.Modules.EyeTracking
 
             if (LocalPlayerBlockStateHelper.IsBlockPlacerActive())
             {
+                UpdatePointerTarget(null, null);
                 UpdateClickState(null, null, null);
                 _lastActiveNearbyCount = 0;
                 return;
@@ -90,6 +101,7 @@ namespace LcdMod.Client.Modules.EyeTracking
 
             if (!TryGetCameraRay(out cameraPos, out cameraForward))
             {
+                UpdatePointerTarget(null, null);
                 UpdateClickState(null, null, null);
                 _lastActiveNearbyCount = 0;
                 return;
@@ -179,6 +191,22 @@ namespace LcdMod.Client.Modules.EyeTracking
 
             if (tooltipInputEntity != null && tooltipDistanceSq < hoveredDistanceSq)
                 eyeTrackingEntity = tooltipInputEntity;
+
+            var pointerSurface = lookingScreen as InteractiveSurfaceScript;
+            ControlTemplate pointerControl = null;
+            if (pointerSurface != null)
+            {
+                try
+                {
+                    pointerSurface.TryResolveHitAtCursor(out pointerControl);
+                }
+                catch (Exception e)
+                {
+                    pointerSurface.OnException(e);
+                }
+            }
+
+            UpdatePointerTarget(pointerSurface, pointerControl);
 
             try
             {
@@ -298,23 +326,41 @@ namespace LcdMod.Client.Modules.EyeTracking
                     var interactiveSurface = eyeTrackingEntity as InteractiveSurfaceScript;
                     var rightClick = !_primaryWasPressed && _secondaryWasPressed;
 
-                    ControlTemplate clickedControl;
-                    var click = !suppressReleaseClick &&
-                                _pressedClickable != null &&
-                                hoveredClickable != null &&
-                                Equals(objA: _pressedClickableDataContext, objB: hoveredDataContext) &&
-                                (interactiveSurface != null
-                                    ? interactiveSurface.TryClickAtCursor(rightClick, eyeTrackingEntity, out clickedControl)
-                                    : rightClick
-                                        ? hoveredClickable.SecondaryClick(eyeTrackingEntity)
-                                        : hoveredClickable.Click(eyeTrackingEntity));
+                    ControlTemplate clickedControl = null;
+                    var click = false;
+                    if (!suppressReleaseClick &&
+                        _pressedClickable != null &&
+                        hoveredClickable != null &&
+                        Equals(objA: _pressedClickableDataContext, objB: hoveredDataContext))
+                    {
+                        if (interactiveSurface != null)
+                        {
+                            click = interactiveSurface.TryClickAtCursor(
+                                rightClick,
+                                eyeTrackingEntity,
+                                out clickedControl);
+                        }
+                        else
+                        {
+                            clickedControl = hoveredClickable;
+                            click = rightClick
+                                ? hoveredClickable.SecondaryClick(eyeTrackingEntity)
+                                : hoveredClickable.Click(eyeTrackingEntity);
+                        }
+                    }
 
                     ControlTemplate tooltipParent;
-                    click = !suppressReleaseClick &&
-                            (click || TryHandleTooltipActivation(
-                                eyeTrackingEntity,
-                                rightClick: rightClick,
-                                tooltipParent: out tooltipParent));
+                    if (!suppressReleaseClick && !click && TryHandleTooltipActivation(
+                            eyeTrackingEntity,
+                            rightClick: rightClick,
+                            tooltipParent: out tooltipParent))
+                    {
+                        click = true;
+                        clickedControl = tooltipParent;
+                    }
+
+                    if (click && interactiveSurface != null && clickedControl != null)
+                        RaiseControlClick(interactiveSurface, clickedControl, rightClick);
 
                     if (eyeTrackingEntity != null && !suppressReleaseClick)
                     {
@@ -358,6 +404,70 @@ namespace LcdMod.Client.Modules.EyeTracking
 
             _primaryWasPressed = primaryPressed;
             _secondaryWasPressed = secondaryPressed;
+        }
+
+        void UpdatePointerTarget(InteractiveSurfaceScript surface, ControlTemplate control)
+        {
+            if (ReferenceEquals(_pointerSurface, surface) && ReferenceEquals(_pointerControl, control))
+                return;
+
+            if (_pointerSurface != null && _pointerControl != null)
+                RaiseControlPointerEvent(OnControlPointerLeave, _pointerSurface, _pointerControl);
+
+            _pointerSurface = surface;
+            _pointerControl = control;
+
+            if (_pointerSurface != null && _pointerControl != null)
+                RaiseControlPointerEvent(OnControlPointerEnter, _pointerSurface, _pointerControl);
+        }
+
+        static void RaiseControlPointerEvent(
+            Action<InteractiveSurfaceScript, ControlTemplate> handlers,
+            InteractiveSurfaceScript surface,
+            ControlTemplate control)
+        {
+            if (handlers == null || surface == null || control == null)
+                return;
+
+            foreach (var @delegate in handlers.GetInvocationList())
+            {
+                try
+                {
+                    ((Action<InteractiveSurfaceScript, ControlTemplate>)@delegate)(surface, control);
+                }
+                catch (Exception e)
+                {
+                    ErrorHandlerHelper.LogError(e, surface);
+                }
+            }
+        }
+
+        static void RaiseControlClick(
+            InteractiveSurfaceScript surface,
+            ControlTemplate control,
+            bool secondary)
+        {
+            if (surface == null || control == null)
+                return;
+
+            var handlers = OnControlClick;
+            if (handlers == null)
+                return;
+
+            foreach (var @delegate in handlers.GetInvocationList())
+            {
+                try
+                {
+                    ((Action<InteractiveSurfaceScript, ControlTemplate, bool>)@delegate)(
+                        surface,
+                        control,
+                        secondary);
+                }
+                catch (Exception e)
+                {
+                    ErrorHandlerHelper.LogError(e, surface);
+                }
+            }
         }
 
         void SetPressedClickable(ControlTemplate control)
@@ -427,6 +537,10 @@ namespace LcdMod.Client.Modules.EyeTracking
                 Vector2 position;
                 click = TryGetHitTestCursorPosition(eyeTrackingEntity, out position) &&
                         clickedControl.ClickAt(position, eyeTrackingEntity);
+
+                var interactiveSurface = eyeTrackingEntity as InteractiveSurfaceScript;
+                if (click && interactiveSurface != null)
+                    RaiseControlClick(interactiveSurface, clickedControl, false);
 
                 if (eyeTrackingEntity != null)
                 {

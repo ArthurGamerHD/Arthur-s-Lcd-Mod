@@ -77,6 +77,17 @@ public sealed class MarkdownParserSnapshotTests
         Assert.Equal("Tinted", text.Text);
     }
 
+    [Fact]
+    public void ParseSubtextBlock()
+    {
+        MarkdownDocument document = new MarkdownParser().Parse("Primary line\n-# Secondary **line**");
+
+        Assert.IsType<ParagraphBlock>(document.Blocks[0]);
+        SubtextBlock subtext = Assert.IsType<SubtextBlock>(document.Blocks[1]);
+        Assert.Equal("Secondary **line**", subtext.RawText);
+        Assert.Equal(2, subtext.Inlines.Count);
+    }
+
     [Theory]
     [MemberData(nameof(MarkdownCases))]
     public void ParseMarkdown(string name, string markdown)

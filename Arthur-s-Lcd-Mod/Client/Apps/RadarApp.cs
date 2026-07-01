@@ -45,6 +45,8 @@ namespace LcdMod.Client.Apps
         public const string ID = MOD_PREFIX + "Radar";
         public const string TITLE = MOD_PREFIX + "Radar";
 
+        public event Action<int> RangeScrolled;
+
         // Fixed ring distances (meters) drawn regardless of dynamic range
         const float RING_1_M = 800f;
         const float RING_2_M = 1400f;
@@ -861,6 +863,7 @@ namespace LcdMod.Client.Apps
             _maxRange = SliderRadarRange.GetRangeMeters(nextScale);
             _syncConfigNextRun = true;
             handled = true;
+            RangeScrolled?.Invoke(delta);
         }
 
         void UpdateProjectionAngle()

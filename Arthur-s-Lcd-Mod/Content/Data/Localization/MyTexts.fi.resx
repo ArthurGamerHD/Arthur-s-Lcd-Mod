@@ -788,4 +788,52 @@ Odotamme hetken ja käynnistämme sen sitten uudelleen puolestasi.</value>
   <data name="LcdMod_ClockDashboard_Temperature_Fahrenheit" xml:space="preserve">
     <value>Fahrenheit (°F)</value>
   </data>
+  <data name="LcdMod_Ftue_LookAround_Line1" xml:space="preserve">
+    <value>Käytä katseenseurantaa pitämällä **{0}** painettuna</value>
+  </data>
+  <data name="LcdMod_Ftue_LookAround_Line2" xml:space="preserve">
+    <value>Voit poistaa tämän vaatimuksen ottamalla terminaalissa käyttöön asetuksen **{0}**.</value>
+  </data>
+  <data name="LcdMod_Ftue_MarketSearch_Line1" xml:space="preserve">
+    <value>Etsi useita esineitä merkillä pilkut, *#type* tietyille esinetyypeille</value>
+  </data>
+  <data name="LcdMod_Ftue_MarketSearch_Line2" xml:space="preserve">
+    <value>esimerkiksi *"{0}, #ship, #ore, #gas"*</value>
+  </data>
+  <data name="LcdMod_Ftue_ItemsCraft_Line1" xml:space="preserve">
+    <value>Avaa esineen valmistusvaihtoehdot napsauttamalla sitä.</value>
+  </data>
+  <data name="LcdMod_Ftue_ItemsCraft_Line2" xml:space="preserve">
+    <value>Valitse valmistusikkunassa määrä ja käytettävissä oleva kokoonpanija.</value>
+  </data>
+  <data name="LcdMod_Ftue_FarmPlotDetails_Line1" xml:space="preserve">
+    <value>Näytä viljelyruudun tarkat tiedot napsauttamalla sitä.</value>
+  </data>
+  <data name="LcdMod_Ftue_FarmPlotDetails_Line2" xml:space="preserve">
+    <value>Tarkista kasvu, varasto, vesi ja ympäristö.</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapPlanetDetails_Line1" xml:space="preserve">
+    <value>Näytä planeetan tarkat tiedot napsauttamalla sitä.</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapPlanetDetails_Line2" xml:space="preserve">
+    <value>Tarkista painovoima, ilmakehä, lämpötila, tuuli ja sijainti.</value>
+  </data>
+  <data name="LcdMod_Ftue_PictureFrameCustomTextures_Line1" xml:space="preserve">
+    <value>Lisää omat `.dds`-tekstuurit kansioon {0}.</value>
+  </data>
+  <data name="LcdMod_Ftue_PictureFrameCustomTextures_Line2" xml:space="preserve">
+    <value>Kopioi ne sinne ja suorita `/lcdmod importtextures`.</value>
+  </data>
+  <data name="LcdMod_Ftue_PowerFilledDetails_Line1" xml:space="preserve">
+    <value>Napsauta akkua tai hyppymoottoria nähdäksesi tarkat tiedot.</value>
+  </data>
+  <data name="LcdMod_Ftue_PowerFilledDetails_Line2" xml:space="preserve">
+    <value>Tarkista varaus, syöttö, tuotto ja jäljellä oleva aika.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarRange_Line1" xml:space="preserve">
+    <value>Vieritä muuttaaksesi tutkan kantamaa.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarRange_Line2" xml:space="preserve">
+    <value>Yli {0}:n etäisyydeltä voidaan havaita vain radiosignaaleja.</value>
+  </data>
 </root>

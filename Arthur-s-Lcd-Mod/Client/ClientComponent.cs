@@ -6,6 +6,7 @@ using System.Linq;
 using LcdMod.Client.Audio;
 #endif
 using LcdMod.Client.Market;
+using LcdMod.Client.Ftue;
 using LcdMod.Client.Modules.Power;
 using LcdMod.Client.Modules.RoomEnvironment;
 using LcdMod.Client.SurfaceScripts.Abstract;
@@ -51,10 +52,12 @@ namespace LcdMod.Client
             _session = session;
             _terminalManager = new TerminalManager(session);
             RoomEnvironment = new GridRoomEnvironmentClientModule();
+            Ftue = new FtueService();
         }
 
         public PowerDataModule PowerData { get; private set; }
         public GridRoomEnvironmentClientModule RoomEnvironment { get; }
+        internal FtueService Ftue { get; }
 
         public void LoadData()
         {
@@ -70,6 +73,7 @@ namespace LcdMod.Client
             group.TryAdd("LegacyLocalTextureStorage", LocalConfigManager.SetLegacyLocalTextureStorageCommand);
             group.TryAdd("PreloadTextures", _ => TextureHelper.PreloadAllTextures());
             group.TryAdd("ClearCache", TextureHelper.ClearCacheCommand);
+            group.TryAdd("ResetFtue", Ftue.ResetCommand);
             group.TryAdd("ImportTextures", _ => TextureHelper.Import(true));
             group.TryAdd("RemoveLocalTexture", TextureHelper.RemoveLocalTexture);
             group.TryAdd("ImportLocalTexture", TextureHelper.ImportLocalTexture);
@@ -102,12 +106,14 @@ namespace LcdMod.Client
         {
             PlanetHelper.RefreshPlanets();
             LoadLocalization();
+            Ftue.Load();
             MyAPIGateway.Gui.GuiControlRemoved += OnGuiControlRemoved;
             _terminalManager.Initialize();
         }
 
         public void UnloadData()
         {
+            Ftue.Unload();
 #if EXPERIMENTAL
             _audioPoc.Unload();
             _audioBroadcast.Unload();

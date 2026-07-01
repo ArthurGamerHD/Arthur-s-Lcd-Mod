@@ -173,6 +173,8 @@ namespace LcdMod.Client.Utility
         public event Action<SurfaceScriptBase> Added;
         public event Action<SurfaceScriptBase> Removed;
         public event Action<SurfaceScriptBase> ActiveInstanceChanged;
+        public event Action<SurfaceScriptBase, IApp> AppRegistered;
+        public event Action<SurfaceScriptBase, IApp> AppUnregistered;
         public int Count => _items.Count;
         public bool IsReadOnly => false;
         
@@ -219,6 +221,18 @@ namespace LcdMod.Client.Utility
         {
             var instances = GetInstances(block);
             return instances?.GetInstance(index);
+        }
+
+        internal void NotifyAppChanged(SurfaceScriptBase surface, IApp previousApp, IApp currentApp)
+        {
+            if (surface == null || ReferenceEquals(previousApp, currentApp))
+                return;
+
+            if (previousApp != null)
+                AppUnregistered?.Invoke(surface, previousApp);
+
+            if (currentApp != null)
+                AppRegistered?.Invoke(surface, currentApp);
         }
 
         public void RefreshActiveInstance(SurfaceScriptBase item)

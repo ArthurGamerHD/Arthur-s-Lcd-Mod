@@ -788,4 +788,52 @@ Pričekat ćemo neko vrijeme, a zatim je ponovno pokrenuti za vas.</value>
   <data name="LcdMod_ClockDashboard_Temperature_Fahrenheit" xml:space="preserve">
     <value>Fahrenheit (°F)</value>
   </data>
+  <data name="LcdMod_Ftue_LookAround_Line1" xml:space="preserve">
+    <value>Drži **{0}** za korištenje praćenja pogleda</value>
+  </data>
+  <data name="LcdMod_Ftue_LookAround_Line2" xml:space="preserve">
+    <value>Ovaj zahtjev možeš isključiti uključivanjem opcije **{0}** u terminalu.</value>
+  </data>
+  <data name="LcdMod_Ftue_MarketSearch_Line1" xml:space="preserve">
+    <value>Pretražuj više predmeta pomoću zareza, *#type* za određene vrste predmeta</value>
+  </data>
+  <data name="LcdMod_Ftue_MarketSearch_Line2" xml:space="preserve">
+    <value>kao što su *"{0}, #ship, #ore, #gas"*</value>
+  </data>
+  <data name="LcdMod_Ftue_ItemsCraft_Line1" xml:space="preserve">
+    <value>Kliknite predmet kako biste otvorili mogućnosti izrade.</value>
+  </data>
+  <data name="LcdMod_Ftue_ItemsCraft_Line2" xml:space="preserve">
+    <value>U dijalogu izrade odaberite količinu i dostupan sastavljač.</value>
+  </data>
+  <data name="LcdMod_Ftue_FarmPlotDetails_Line1" xml:space="preserve">
+    <value>Kliknite polje za uzgoj kako biste vidjeli detaljne podatke.</value>
+  </data>
+  <data name="LcdMod_Ftue_FarmPlotDetails_Line2" xml:space="preserve">
+    <value>Provjerite rast, inventar, vodu i okoliš.</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapPlanetDetails_Line1" xml:space="preserve">
+    <value>Kliknite planet kako biste vidjeli detaljne podatke.</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapPlanetDetails_Line2" xml:space="preserve">
+    <value>Provjerite gravitaciju, atmosferu, temperaturu, vjetar i položaj.</value>
+  </data>
+  <data name="LcdMod_Ftue_PictureFrameCustomTextures_Line1" xml:space="preserve">
+    <value>Dodajte prilagođene `.dds` teksture u {0}.</value>
+  </data>
+  <data name="LcdMod_Ftue_PictureFrameCustomTextures_Line2" xml:space="preserve">
+    <value>Kopirajte ih tamo, a zatim pokrenite `/lcdmod importtextures`.</value>
+  </data>
+  <data name="LcdMod_Ftue_PowerFilledDetails_Line1" xml:space="preserve">
+    <value>Kliknite bateriju ili skokovni pogon za prikaz detaljnih informacija.</value>
+  </data>
+  <data name="LcdMod_Ftue_PowerFilledDetails_Line2" xml:space="preserve">
+    <value>Provjerite napunjenost, ulaz, izlaz i preostalo vrijeme.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarRange_Line1" xml:space="preserve">
+    <value>Pomaknite kotačić za promjenu dometa radara.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarRange_Line2" xml:space="preserve">
+    <value>Izvan {0} mogu se otkriti samo radijski signali.</value>
+  </data>
 </root>

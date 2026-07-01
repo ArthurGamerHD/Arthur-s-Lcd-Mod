@@ -788,4 +788,52 @@ We wachten even en starten het daarna voor je opnieuw op.</value>
   <data name="LcdMod_ClockDashboard_Temperature_Fahrenheit" xml:space="preserve">
     <value>Fahrenheit (°F)</value>
   </data>
+  <data name="LcdMod_Ftue_LookAround_Line1" xml:space="preserve">
+    <value>Houd **{0}** ingedrukt om oogtracking te gebruiken</value>
+  </data>
+  <data name="LcdMod_Ftue_LookAround_Line2" xml:space="preserve">
+    <value>Je kunt deze vereiste uitschakelen door **{0}** in de terminal in te schakelen.</value>
+  </data>
+  <data name="LcdMod_Ftue_MarketSearch_Line1" xml:space="preserve">
+    <value>Zoek meerdere items met komma’s, *#type* voor specifieke itemtypen</value>
+  </data>
+  <data name="LcdMod_Ftue_MarketSearch_Line2" xml:space="preserve">
+    <value>zoals *"{0}, #ship, #ore, #gas"*</value>
+  </data>
+  <data name="LcdMod_Ftue_ItemsCraft_Line1" xml:space="preserve">
+    <value>Klik op een voorwerp om de productieopties te openen.</value>
+  </data>
+  <data name="LcdMod_Ftue_ItemsCraft_Line2" xml:space="preserve">
+    <value>Kies in het productievenster een aantal en een beschikbare assembler.</value>
+  </data>
+  <data name="LcdMod_Ftue_FarmPlotDetails_Line1" xml:space="preserve">
+    <value>Klik op een kweekvak om gedetailleerde informatie te bekijken.</value>
+  </data>
+  <data name="LcdMod_Ftue_FarmPlotDetails_Line2" xml:space="preserve">
+    <value>Bekijk groei, inventaris, water en omgeving.</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapPlanetDetails_Line1" xml:space="preserve">
+    <value>Klik op een planeet om gedetailleerde informatie te bekijken.</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapPlanetDetails_Line2" xml:space="preserve">
+    <value>Bekijk zwaartekracht, atmosfeer, temperatuur, wind en positie.</value>
+  </data>
+  <data name="LcdMod_Ftue_PictureFrameCustomTextures_Line1" xml:space="preserve">
+    <value>Voeg aangepaste `.dds`-texturen toe aan {0}.</value>
+  </data>
+  <data name="LcdMod_Ftue_PictureFrameCustomTextures_Line2" xml:space="preserve">
+    <value>Kopieer ze daarheen en voer daarna `/lcdmod importtextures` uit.</value>
+  </data>
+  <data name="LcdMod_Ftue_PowerFilledDetails_Line1" xml:space="preserve">
+    <value>Klik op een batterij of jumpdrive om gedetailleerde informatie te bekijken.</value>
+  </data>
+  <data name="LcdMod_Ftue_PowerFilledDetails_Line2" xml:space="preserve">
+    <value>Controleer lading, invoer, uitvoer en resterende tijd.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarRange_Line1" xml:space="preserve">
+    <value>Scroll om het radarbereik te wijzigen.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarRange_Line2" xml:space="preserve">
+    <value>Buiten {0} kunnen alleen radiosignalen worden gedetecteerd.</value>
+  </data>
 </root>
