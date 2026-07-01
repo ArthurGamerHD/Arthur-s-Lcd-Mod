@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+#if EXPERIMENTAL
+using System.Diagnostics;
+#endif
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -131,6 +134,10 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         public event Action<SurfaceScriptBase> OnRender;
         public event Action<SurfaceScriptBase> OnUpdateStart;
         public event Action<SurfaceScriptBase> OnUpdateEnd;
+#if EXPERIMENTAL
+        static readonly double StopwatchMillisecondsPerTick = 1000d / Stopwatch.Frequency;
+        public event Action<SurfaceScriptBase, IApp, double> OnRunProfiled;
+#endif
 
         protected SurfaceScriptBase(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block,
             size)
@@ -350,6 +357,9 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             OnRender = null;
             OnUpdateStart = null;
             OnUpdateEnd = null;
+#if EXPERIMENTAL
+            OnRunProfiled = null;
+#endif
             base.Dispose();
         }
 
@@ -478,9 +488,32 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
             PublishAppChange();
             RaiseUpdateStart();
+#if EXPERIMENTAL
+            var runProfiledHandlers = OnRunProfiled;
+            var profiledApp = _publishedApp;
+            long runStartedAt = runProfiledHandlers != null && profiledApp != null
+                ? Stopwatch.GetTimestamp()
+                : 0L;
+#endif
             try
             {
+#if EXPERIMENTAL
+                try
+                {
+                    SafeRun();
+                }
+                finally
+                {
+                    if (runStartedAt != 0L)
+                    {
+                        double elapsedMilliseconds =
+                            (Stopwatch.GetTimestamp() - runStartedAt) * StopwatchMillisecondsPerTick;
+                        RaiseRunProfiled(runProfiledHandlers, profiledApp, elapsedMilliseconds);
+                    }
+                }
+#else
                 SafeRun();
+#endif
             }
             catch (Exception e)
             {
@@ -1251,6 +1284,30 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         {
             RaiseSurfaceEvent(OnUpdateEnd);
         }
+
+#if EXPERIMENTAL
+        void RaiseRunProfiled(
+            Action<SurfaceScriptBase, IApp, double> handlers,
+            IApp app,
+            double elapsedMilliseconds)
+        {
+            if (handlers == null || app == null)
+                return;
+
+            foreach (var @delegate in handlers.GetInvocationList())
+            {
+                var handler = (Action<SurfaceScriptBase, IApp, double>)@delegate;
+                try
+                {
+                    handler(this, app, elapsedMilliseconds);
+                }
+                catch (Exception e)
+                {
+                    ErrorHandlerHelper.LogError(e, this);
+                }
+            }
+        }
+#endif
 
         void RaiseSurfaceEvent(Action<SurfaceScriptBase> handlers)
         {

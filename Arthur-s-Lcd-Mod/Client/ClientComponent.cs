@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 #if EXPERIMENTAL
 using LcdMod.Client.Audio;
+using LcdMod.Client.Diagnostics;
 #endif
 using LcdMod.Client.Market;
 using LcdMod.Client.Ftue;
@@ -45,6 +46,7 @@ namespace LcdMod.Client
         readonly AudioPocService _audioPoc = new AudioPocService();
         readonly AudioImportService _audioImport = new AudioImportService();
         readonly AudioBroadcastClientService _audioBroadcast = new AudioBroadcastClientService();
+        readonly AppRunProfilerService _appRunProfiler = new AppRunProfilerService();
 #endif
 
         public LcdModClientComponent(LcdModSessionComponent session)
@@ -82,6 +84,7 @@ namespace LcdMod.Client
             group.TryAdd("ImportLocalAudio", _audioImport.ImportLocalAudioCommand, 1);
             group.TryAdd("ImportAudios", _audioImport.ImportAudiosCommand);
             group.TryAdd("StreamAudio", _audioBroadcast.StreamAudioCommand, 1);
+            group.TryAdd("Profile", _appRunProfiler.Command);
 #endif
 #if DEBUG
             group.TryAdd("DebugInteractive", LocalConfigManager.SetDebugInteractiveCommand);
@@ -115,6 +118,7 @@ namespace LcdMod.Client
         {
             Ftue.Unload();
 #if EXPERIMENTAL
+            _appRunProfiler.Unload();
             _audioPoc.Unload();
             _audioBroadcast.Unload();
 #endif
@@ -266,6 +270,7 @@ namespace LcdMod.Client
             RunNextFrameActions();
             RunOnePerFrameAction();
 #if EXPERIMENTAL
+            _appRunProfiler.Update();
             _audioPoc.Update();
             _audioBroadcast.Update();
 #endif
