@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Extensions;
 using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
+using VRage.Game;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRageMath;
@@ -968,29 +968,127 @@ namespace LcdMod.Client.ScreenAreas
             if (string.IsNullOrWhiteSpace(content))
                 return null;
 
-            foreach (var mod in MyAPIGateway.Session.Mods.Where(mod => utilities.FileExistsInModLocation(content, mod)))
+            var candidates = BuildContentPathCandidates(content);
+            if (MyAPIGateway.Session != null && MyAPIGateway.Session.Mods != null)
             {
-                try
+                for (int i = 0; i < candidates.Count; i++)
                 {
-                    LogHelper.LogOnce("file:mod:" + content,
-                        $"opening MWM from mod ({mod.Name} {mod.PublishedServiceName}) location: " + content);
-                    return utilities.ReadBinaryFileInModLocation(content, mod);
-                }
-                catch (Exception e)
-                {   // mods can be unpredictable... had a guy uploading his entire bin64 folder to workshop and crashing this method
-                    LogHelper.LogOnce("fail:file:mod:" + content,
-                        $"Fail to load MWM from mod ({mod.Name} {mod.PublishedServiceName}) location: " + content + $"\n{e}");
+                    foreach (var mod in MyAPIGateway.Session.Mods)
+                    {
+                        var reader = TryOpenModMwm(candidates[i], mod);
+                        if (reader != null)
+                            return reader;
+                    }
                 }
             }
 
-            if (utilities.FileExistsInGameContent(content))
+            for (int i = 0; i < candidates.Count; i++)
             {
-                LogHelper.LogOnce("file:game:" + content, "opening MWM from game content: " + content);
-                return utilities.ReadBinaryFileInGameContent(content);
+                var candidate = candidates[i];
+                try
+                {
+                    var reader = utilities.ReadBinaryFileInGameContent(candidate);
+                    if (reader != null)
+                    {
+                        LogHelper.LogOnce("file:game:" + candidate, "opening MWM from game content: " + candidate);
+                        return reader;
+                    }
+                }
+                catch
+                {
+                }
+
+                try
+                {
+                    if (utilities.FileExistsInGameContent(candidate))
+                    {
+                        LogHelper.LogOnce("file:game:exists:" + candidate, "opening MWM from game content after exists check: " + candidate);
+                        return utilities.ReadBinaryFileInGameContent(candidate);
+                    }
+                }
+                catch (Exception e)
+                {
+                    LogHelper.LogOnce("fail:file:game:exists:" + candidate,
+                        "exists-gated game-content MWM read failed: " + candidate + "\n" + e);
+                }
             }
 
             LogHelper.LogOnce("fail:file:" + content, "Unable to locate MWM: " + content);
             return null;
+        }
+
+        static BinaryReader TryOpenModMwm(string content, MyObjectBuilder_Checkpoint.ModItem mod)
+        {
+            var utilities = MyAPIGateway.Utilities;
+            try
+            {
+                var reader = utilities.ReadBinaryFileInModLocation(content, mod);
+                if (reader != null)
+                {
+                    LogHelper.LogOnce("file:mod:" + content,
+                        $"opening MWM from mod ({mod.Name} {mod.PublishedServiceName}) location: " + content);
+                    return reader;
+                }
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                if (!utilities.FileExistsInModLocation(content, mod))
+                    return null;
+
+                LogHelper.LogOnce("file:mod:exists:" + content,
+                    $"opening MWM from mod ({mod.Name} {mod.PublishedServiceName}) location after exists check: " +
+                    content);
+                return utilities.ReadBinaryFileInModLocation(content, mod);
+            }
+            catch (Exception e)
+            {   // mods can be unpredictable... had a guy uploading his entire bin64 folder to workshop and crashing this method
+                LogHelper.LogOnce("fail:file:mod:exists:" + content + ":" + mod.PublishedFileId,
+                    $"exists-gated MWM read failed for mod ({mod.Name} {mod.PublishedServiceName}) location: " +
+                    content + $"\n{e}");
+            }
+
+            return null;
+        }
+
+        static List<string> BuildContentPathCandidates(string content)
+        {
+            var candidates = new List<string>();
+            var forward = content.Replace('\\', '/');
+            AddContentPathCandidate(candidates, content);
+            AddContentPathCandidate(candidates, forward);
+            AddContentPathCandidate(candidates, content.Replace('/', '\\'));
+
+            while (forward.StartsWith("/", StringComparison.Ordinal))
+                forward = forward.Substring(1);
+
+            if (forward.StartsWith("data/", StringComparison.OrdinalIgnoreCase) && forward.Length > 5)
+            {
+                AddContentPathCandidate(candidates, "Data/" + forward.Substring(5));
+                AddContentPathCandidate(candidates, "data/" + forward.Substring(5));
+            }
+
+            return candidates;
+        }
+
+        static void AddContentPathCandidate(List<string> candidates, string content)
+        {
+            if (candidates == null || string.IsNullOrWhiteSpace(content))
+                return;
+
+            var normalized = content.Trim();
+            while (normalized.StartsWith("/", StringComparison.Ordinal) ||
+                   normalized.StartsWith("\\", StringComparison.Ordinal))
+                normalized = normalized.Substring(1);
+
+            for (int i = 0; i < candidates.Count; i++)
+                if (string.Equals(candidates[i], normalized, StringComparison.Ordinal))
+                    return;
+
+            candidates.Add(normalized);
         }
 
         static string ToModelPath(string assetName)
