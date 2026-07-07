@@ -10,9 +10,9 @@ namespace LcdMod.Client.Audio
 {
     internal sealed class AudioImportService
     {
-        const string AudioImportListFile = "audio_import.txt";
-        const string AudioMetadataFile = "audio.xml";
-        const int MaxSourceWaveBytes = 64 * 1024 * 1024;
+        const string AUDIO_IMPORT_LIST_FILE = "audio_import.txt";
+        const string AUDIO_METADATA_FILE = "audio.xml";
+        const int MAX_SOURCE_WAVE_BYTES = 64 * 1024 * 1024;
 
         public void ImportLocalAudioCommand(string[] args)
         {
@@ -31,7 +31,7 @@ namespace LcdMod.Client.Audio
             if (utilities == null)
                 return;
 
-            if (!utilities.FileExistsInLocalStorage(AudioImportListFile, typeof(LcdModClientComponent)))
+            if (!utilities.FileExistsInLocalStorage(AUDIO_IMPORT_LIST_FILE, typeof(LcdModClientComponent)))
             {
                 Show("audio_import.txt does not exist in mod storage.", "Red");
                 return;
@@ -41,7 +41,7 @@ namespace LcdMod.Client.Audio
 
             try
             {
-                using (var reader = utilities.ReadFileInLocalStorage(AudioImportListFile, typeof(LcdModClientComponent)))
+                using (var reader = utilities.ReadFileInLocalStorage(AUDIO_IMPORT_LIST_FILE, typeof(LcdModClientComponent)))
                 {
                     string line;
                     while ((line = reader.ReadLine()) != null)
@@ -57,7 +57,7 @@ namespace LcdMod.Client.Audio
             }
             catch (Exception error)
             {
-                NotifyFailure(AudioImportListFile, "Could not read audio_import.txt: " + error.Message);
+                NotifyFailure(AUDIO_IMPORT_LIST_FILE, "Could not read audio_import.txt: " + error.Message);
                 return;
             }
 
@@ -193,7 +193,7 @@ namespace LcdMod.Client.Audio
                 using (var reader = utilities.ReadBinaryFileInLocalStorage(sourcePath, typeof(LcdModClientComponent)))
                 {
                     var stream = reader.BaseStream;
-                    if (stream.Length > MaxSourceWaveBytes)
+                    if (stream.Length > MAX_SOURCE_WAVE_BYTES)
                     {
                         failureReason = "Source WAV exceeds size limit.";
                         return false;
@@ -252,10 +252,10 @@ namespace LcdMod.Client.Audio
         {
             try
             {
-                if (!MyAPIGateway.Utilities.FileExistsInLocalStorage(AudioMetadataFile, typeof(LcdModClientComponent)))
+                if (!MyAPIGateway.Utilities.FileExistsInLocalStorage(AUDIO_METADATA_FILE, typeof(LcdModClientComponent)))
                     return new AudioLibraryMetadata();
 
-                using (var reader = MyAPIGateway.Utilities.ReadFileInLocalStorage(AudioMetadataFile, typeof(LcdModClientComponent)))
+                using (var reader = MyAPIGateway.Utilities.ReadFileInLocalStorage(AUDIO_METADATA_FILE, typeof(LcdModClientComponent)))
                 {
                     var xml = reader.ReadToEnd();
                     return MyAPIGateway.Utilities.SerializeFromXML<AudioLibraryMetadata>(xml) ?? new AudioLibraryMetadata();
@@ -273,7 +273,7 @@ namespace LcdMod.Client.Audio
             if (metadata == null)
                 metadata = new AudioLibraryMetadata();
 
-            using (var writer = MyAPIGateway.Utilities.WriteFileInLocalStorage(AudioMetadataFile, typeof(LcdModClientComponent)))
+            using (var writer = MyAPIGateway.Utilities.WriteFileInLocalStorage(AUDIO_METADATA_FILE, typeof(LcdModClientComponent)))
                 writer.Write(MyAPIGateway.Utilities.SerializeToXML(metadata));
         }
 

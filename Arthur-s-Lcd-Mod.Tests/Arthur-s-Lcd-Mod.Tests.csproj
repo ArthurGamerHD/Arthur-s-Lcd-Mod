@@ -9,6 +9,10 @@
     <Configurations>Release;Debug;Experimental</Configurations>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug' Or '$(Configuration)' == 'Experimental'">
+    <DefineConstants>$(DefineConstants);EXPERIMENTAL</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.2" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
@@ -33,6 +37,20 @@
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Config\Models\ScreenProviderConfig.cs" LinkBase="ConfigSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Helpers\Constants.cs" LinkBase="ConfigSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Zip\MinimalZip.cs" LinkBase="ZipSource" />
+    <Compile Include="..\Arthur-s-Lcd-Mod\Common\Compression\HuffmanTree.cs" LinkBase="CompressionSource" />
+    <Compile Include="..\Arthur-s-Lcd-Mod\Client\Audio\Xwma\**\*.cs" LinkBase="AudioSource\Xwma" />
+    <Compile Include="..\Arthur-s-Lcd-Mod\Client\Audio\PcmWaveData.cs" LinkBase="AudioSource" />
+    <Compile Include="..\Arthur-s-Lcd-Mod\Common\Exception\EndOfStreamException.cs" LinkBase="ExceptionSource" />
+    <Compile Include="..\Arthur-s-Lcd-Mod\Common\Exception\InvalidDataException.cs" LinkBase="ExceptionSource" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Data\Mus_victory_KA_1.xwm">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Data\Spazzmatica_Polka.xwm">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>

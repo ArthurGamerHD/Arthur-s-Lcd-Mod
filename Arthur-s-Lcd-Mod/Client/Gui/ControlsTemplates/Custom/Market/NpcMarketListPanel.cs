@@ -41,6 +41,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
         {
             _host = host;
             _templateGrid = new Grid(default(RectangleF), new[] { 1f }, new[] { 1f, 1f });
+            _templateGrid.CustomRender = RenderTemplateGrid;
             _headerPanel = new Panel();
             _rowHitRepeater = new Repeater<NpcMarketRowHitSlot>()
                 .ItemTemplate(Template.For<NpcMarketRowHitSlot>(CreateRowHitControl))
@@ -291,6 +292,18 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
         }
 
         protected override void RenderDefault(List<MySprite> sprites)
+        {
+            // The grid is part of the logical control tree and owns the header/body layout.
+            // Render it as the frame root so its dirty state is completed together with the
+            // manually ordered market content below. Leaving the grid unrendered keeps the
+            // page permanently dirty even when its rows and layout have not changed.
+            if (_templateGrid.IsLayoutDirty)
+                _templateGrid.SetRect(_templateGrid.Bounds);
+
+            _templateGrid.Render(sprites);
+        }
+
+        void RenderTemplateGrid(ControlTemplate control, List<MySprite> sprites)
         {
             var muted = GetResourceColor(ThemeResources.MutedTextColor, _muted);
             var textColor = GetResourceColor(ThemeResources.OnSurfaceColor, _host.ForegroundColor);

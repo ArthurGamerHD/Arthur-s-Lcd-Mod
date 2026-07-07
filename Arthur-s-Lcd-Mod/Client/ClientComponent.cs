@@ -81,6 +81,7 @@ namespace LcdMod.Client
             group.TryAdd("ImportLocalTexture", TextureHelper.ImportLocalTexture);
 #if EXPERIMENTAL
             group.TryAdd("PlayAudio", _audioPoc.PlayAudioCommand, 1);
+            group.TryAdd("PlayGameAudio", _audioPoc.PlayGameAudioCommand, 1);
             group.TryAdd("ImportLocalAudio", _audioImport.ImportLocalAudioCommand, 1);
             group.TryAdd("ImportAudios", _audioImport.ImportAudiosCommand);
             group.TryAdd("StreamAudio", _audioBroadcast.StreamAudioCommand, 1);
