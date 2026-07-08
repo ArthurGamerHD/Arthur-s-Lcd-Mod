@@ -7,10 +7,10 @@ namespace LcdMod.Client.ClockDashboard
 {
     internal static class ClockDashboardFormatter
     {
-        const float TemperatureMinKelvin = 270f;
-        const float TemperatureMaxKelvin = 320f;
-        const float KelvinToCelsiusOffset = 273.15f;
-        const double SecondsPerDisplayedDay = 86400d;
+        const float TEMPERATURE_MIN_KELVIN = 270f;
+        const float TEMPERATURE_MAX_KELVIN = 320f;
+        const float KELVIN_TO_CELSIUS_OFFSET = 273.15f;
+        const double SECONDS_PER_DISPLAYED_DAY = 86400d;
 
         static readonly DateTime SpaceEngineersGameDateEpoch =
             new DateTime(2081, 1, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -105,7 +105,7 @@ namespace LcdMod.Client.ClockDashboard
             double displaySeconds = snapshot.IncomingWeatherEtaSeconds;
             if (snapshot.SolarDayLengthSeconds > 0d)
             {
-                displaySeconds *= SecondsPerDisplayedDay /
+                displaySeconds *= SECONDS_PER_DISPLAYED_DAY /
                                   snapshot.SolarDayLengthSeconds;
             }
 
@@ -130,8 +130,8 @@ namespace LcdMod.Client.ClockDashboard
         public static string FormatTemperature(float value)
         {
             float normalized = MathHelperClamp01(value);
-            float kelvin = TemperatureMinKelvin + normalized * (TemperatureMaxKelvin - TemperatureMinKelvin);
-            float celsius = kelvin - KelvinToCelsiusOffset;
+            float kelvin = TEMPERATURE_MIN_KELVIN + normalized * (TEMPERATURE_MAX_KELVIN - TEMPERATURE_MIN_KELVIN);
+            float celsius = kelvin - KELVIN_TO_CELSIUS_OFFSET;
             string prefix = value <= 0f ? "<" : value >= 1f ? ">" : "";
             return prefix + celsius.ToString("0.#", CultureInfo.CurrentCulture) + " C";
         }

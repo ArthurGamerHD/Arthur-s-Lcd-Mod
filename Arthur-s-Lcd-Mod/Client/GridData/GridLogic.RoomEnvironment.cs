@@ -18,7 +18,7 @@ namespace LcdMod.Client.GridData
         {
             public bool HasSample;
             public GridRoomEnvironmentSample Sample;
-            public long LastRequestTick = -PacketRequestGridRoomEnvironment.RequestIntervalTicks;
+            public long LastRequestTick = -PacketRequestGridRoomEnvironment.REQUEST_INTERVAL_TICKS;
             public uint PendingRequestId;
         }
 
@@ -46,7 +46,7 @@ namespace LcdMod.Client.GridData
             }
 
             long currentTick = MyAPIGateway.Session.GameplayFrameCounter;
-            if (currentTick - entry.LastRequestTick >= PacketRequestGridRoomEnvironment.RequestIntervalTicks)
+            if (currentTick - entry.LastRequestTick >= PacketRequestGridRoomEnvironment.REQUEST_INTERVAL_TICKS)
                 RequestGridRoomEnvironment(block, entry, currentTick);
 
             if (!entry.HasSample)

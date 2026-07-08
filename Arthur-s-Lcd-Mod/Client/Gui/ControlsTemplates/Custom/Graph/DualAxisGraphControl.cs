@@ -21,7 +21,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Graph
         {
             _bounds = bounds;
             LeftValueFormatter = FormatMWh;
-            RightValueFormatter = FormatMW;
+            RightValueFormatter = FormatMw;
             Title = "Power history";
             PointHoverThreshold = 12f;
             SetTooltip(new InteractiveTooltip(GetTooltipTitle, GetTooltipLines));
@@ -322,7 +322,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Graph
             return (wattHours / 1000000.0).ToString("0.##") + " MWh";
         }
 
-        static string FormatMW(double watts)
+        static string FormatMw(double watts)
         {
             return (watts / 1000000.0).ToString("0.##") + " MW";
         }

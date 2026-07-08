@@ -8,12 +8,12 @@ namespace LcdMod.Client.Modules.Power
 {
     public sealed class PowerDataService
     {
-        const int OneSecondWeight = 10;
-        const int FiveSecondWeight = 5;
-        const int ThirtySecondWeight = 30;
-        const int OneMinuteWeight = 60;
-        const int FiveMinuteWeight = 300;
-        const int ThirtyMinuteWeight = 1800;
+        const int ONE_SECOND_WEIGHT = 10;
+        const int FIVE_SECOND_WEIGHT = 5;
+        const int THIRTY_SECOND_WEIGHT = 30;
+        const int ONE_MINUTE_WEIGHT = 60;
+        const int FIVE_MINUTE_WEIGHT = 300;
+        const int THIRTY_MINUTE_WEIGHT = 1800;
 
         readonly PowerScopeResolver _resolver;
         readonly SePowerCollector _collector = new SePowerCollector();
@@ -88,12 +88,12 @@ namespace LcdMod.Client.Modules.Power
         {
             Latest = snapshot;
             History.RawSamples.Add(snapshot);
-            AddAveragedSnapshot(_oneSecondAccumulator, OneSecondWeight, History.Average1Second, snapshot);
-            AddAveragedSnapshot(_fiveSecondAccumulator, FiveSecondWeight, History.Average5Seconds, snapshot);
-            AddAveragedSnapshot(_thirtySecondAccumulator, ThirtySecondWeight, History.Average30Seconds, snapshot);
-            AddAveragedSnapshot(_oneMinuteAccumulator, OneMinuteWeight, History.Average1Minute, snapshot);
-            AddAveragedSnapshot(_fiveMinuteAccumulator, FiveMinuteWeight, History.Average5Minutes, snapshot);
-            AddAveragedSnapshot(_thirtyMinuteAccumulator, ThirtyMinuteWeight, History.Average30Minutes, snapshot);
+            AddAveragedSnapshot(_oneSecondAccumulator, ONE_SECOND_WEIGHT, History.Average1Second, snapshot);
+            AddAveragedSnapshot(_fiveSecondAccumulator, FIVE_SECOND_WEIGHT, History.Average5Seconds, snapshot);
+            AddAveragedSnapshot(_thirtySecondAccumulator, THIRTY_SECOND_WEIGHT, History.Average30Seconds, snapshot);
+            AddAveragedSnapshot(_oneMinuteAccumulator, ONE_MINUTE_WEIGHT, History.Average1Minute, snapshot);
+            AddAveragedSnapshot(_fiveMinuteAccumulator, FIVE_MINUTE_WEIGHT, History.Average5Minutes, snapshot);
+            AddAveragedSnapshot(_thirtyMinuteAccumulator, THIRTY_MINUTE_WEIGHT, History.Average30Minutes, snapshot);
         }
 
         static void AddAveragedSnapshot(

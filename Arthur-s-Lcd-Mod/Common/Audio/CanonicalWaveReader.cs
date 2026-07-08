@@ -14,12 +14,12 @@ namespace LcdMod.Common.Audio
 
     internal static class CanonicalWaveReader
     {
-        public const int MaxBroadcastWaveBytes = 32 * 1024 * 1024;
-        const ushort WaveFormatPcm = 1;
-        const ushort RequiredChannels = 1;
-        const uint RequiredSampleRate = 24000;
-        const ushort RequiredBitsPerSample = 16;
-        const ushort RequiredBlockAlign = 2;
+        public const int MAX_BROADCAST_WAVE_BYTES = 32 * 1024 * 1024;
+        const ushort WAVE_FORMAT_PCM = 1;
+        const ushort REQUIRED_CHANNELS = 1;
+        const uint REQUIRED_SAMPLE_RATE = 24000;
+        const ushort REQUIRED_BITS_PER_SAMPLE = 16;
+        const ushort REQUIRED_BLOCK_ALIGN = 2;
 
         public static bool TryRead(byte[] runtimeWaveBytes, out CanonicalWavePayload result, out string failureReason)
         {
@@ -32,7 +32,7 @@ namespace LcdMod.Common.Audio
                 return false;
             }
 
-            if (runtimeWaveBytes.Length > MaxBroadcastWaveBytes)
+            if (runtimeWaveBytes.Length > MAX_BROADCAST_WAVE_BYTES)
             {
                 failureReason = "Runtime WAV exceeds broadcast size limit.";
                 return false;
@@ -116,37 +116,37 @@ namespace LcdMod.Common.Audio
                     return false;
                 }
 
-                if (formatTag != WaveFormatPcm)
+                if (formatTag != WAVE_FORMAT_PCM)
                 {
                     failureReason = "Expected PCM WAV.";
                     return false;
                 }
 
-                if (channels != RequiredChannels)
+                if (channels != REQUIRED_CHANNELS)
                 {
                     failureReason = "Expected mono WAV.";
                     return false;
                 }
 
-                if (sampleRate != RequiredSampleRate)
+                if (sampleRate != REQUIRED_SAMPLE_RATE)
                 {
                     failureReason = "Expected 24000 Hz WAV.";
                     return false;
                 }
 
-                if (bitsPerSample != RequiredBitsPerSample)
+                if (bitsPerSample != REQUIRED_BITS_PER_SAMPLE)
                 {
                     failureReason = "Expected 16-bit WAV.";
                     return false;
                 }
 
-                if (blockAlign != RequiredBlockAlign)
+                if (blockAlign != REQUIRED_BLOCK_ALIGN)
                 {
                     failureReason = "Expected 2-byte PCM block alignment.";
                     return false;
                 }
 
-                if (pcmBytes.Length % RequiredBlockAlign != 0)
+                if (pcmBytes.Length % REQUIRED_BLOCK_ALIGN != 0)
                 {
                     failureReason = "PCM payload is not sample-aligned.";
                     return false;

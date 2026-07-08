@@ -3,7 +3,7 @@ using InvalidDataException = LcdMod.Common.InvalidDataException;
 namespace LcdMod.Client.Audio.Xwma
 {
     /// <summary>
-    /// Fixed WMAv2 settings derived from the SE xWMA profiles.
+    /// WMAv2 settings derived from the SE xWMA profile and stream rate.
     /// This is codec configuration, not output PCM configuration.
     /// </summary>
     public sealed class Wma2DecoderProfile
@@ -12,7 +12,8 @@ namespace LcdMod.Client.Audio.Xwma
         private const int FIXED_FRAME_LENGTH_BITS = 11;
         private const int FIXED_FRAME_LENGTH = 1 << FIXED_FRAME_LENGTH_BITS;
         private const int FIXED_MINIMUM_BLOCK_LENGTH_BITS = 7;
-        private const int FIXED_BYTE_OFFSET_BITS = 9;
+
+        readonly int _byteOffsetBits;
 
         private Wma2DecoderProfile(XwmaFileInfo file)
         {
@@ -21,6 +22,10 @@ namespace LcdMod.Client.Audio.Xwma
             Channels = file.Format.Channels;
             BitRate = file.Format.AverageBytesPerSecond * 8u;
             PacketSize = file.Format.BlockAlign;
+            _byteOffsetBits = CalculateByteOffsetBits(
+                file.Format.AverageBytesPerSecond,
+                file.Format.Channels,
+                file.Format.SampleRate);
         }
 
         public XwmaProfileKind SourceProfile { get; private set; }
@@ -47,9 +52,9 @@ namespace LcdMod.Client.Audio.Xwma
 
         public int BlockSizeCount => 5;
 
-        public int ByteOffsetBits => FIXED_BYTE_OFFSET_BITS;
+        public int ByteOffsetBits => _byteOffsetBits;
 
-        public int ReservoirBitOffsetFieldBits => FIXED_BYTE_OFFSET_BITS + 3;
+        public int ReservoirBitOffsetFieldBits => _byteOffsetBits + 3;
 
         public int SuperframeHeaderBits => 4 + 4 + ReservoirBitOffsetFieldBits;
 
@@ -67,13 +72,47 @@ namespace LcdMod.Client.Audio.Xwma
 
             switch (file.Profile)
             {
-                case XwmaProfileKind.Wma2Stereo44100Hz48Kbps:
-                case XwmaProfileKind.Wma2Stereo48000Hz48Kbps:
+                case XwmaProfileKind.Wma2Mono44100Hz:
+                case XwmaProfileKind.Wma2Mono48000Hz:
+                case XwmaProfileKind.Wma2Stereo44100Hz:
+                case XwmaProfileKind.Wma2Stereo48000Hz:
                     return new Wma2DecoderProfile(file);
 
                 default:
                     throw new InvalidDataException("Unsupported restricted WMAv2 profile.");
             }
+        }
+
+        static int CalculateByteOffsetBits(
+            uint averageBytesPerSecond,
+            ushort channels,
+            uint sampleRate)
+        {
+            if (averageBytesPerSecond == 0 || channels == 0 || sampleRate == 0)
+                throw new InvalidDataException("Invalid WMAv2 byte-offset profile input.");
+
+            long denominator = (long)channels * sampleRate;
+            long roundedBytesPerFrame =
+                ((long)averageBytesPerSecond * FIXED_FRAME_LENGTH + denominator / 2L) /
+                denominator;
+
+            if (roundedBytesPerFrame <= 0L)
+                throw new InvalidDataException("Invalid WMAv2 byte-offset bit width.");
+
+            return FloorLog2(roundedBytesPerFrame) + 2;
+        }
+
+        static int FloorLog2(long value)
+        {
+            int result = 0;
+
+            while (value > 1L)
+            {
+                value >>= 1;
+                result++;
+            }
+
+            return result;
         }
     }
 }

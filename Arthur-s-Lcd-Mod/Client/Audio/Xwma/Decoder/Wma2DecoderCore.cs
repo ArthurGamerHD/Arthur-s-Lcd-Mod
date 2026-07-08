@@ -10,7 +10,7 @@ namespace LcdMod.Client.Audio.Xwma.Decoder
     /// </summary>
     internal sealed class Wma2DecoderCore
     {
-        const int CHANNEL_COUNT = 2;
+        const int MAX_CHANNEL_COUNT = 2;
         const int FRAME_LENGTH = 2048;
         const int FRAME_LENGTH_BITS = 11;
         const int BLOCK_SIZE_COUNT = 5;
@@ -57,7 +57,7 @@ namespace LcdMod.Client.Audio.Xwma.Decoder
             if (profile == null)
                 throw new InvalidDataException("Missing WMAv2 decoder profile.");
 
-            if (profile.Channels != CHANNEL_COUNT ||
+            if ((profile.Channels < 1 || profile.Channels > MAX_CHANNEL_COUNT) ||
                 profile.FrameLength != FRAME_LENGTH ||
                 profile.FrameLengthBits != FRAME_LENGTH_BITS ||
                 profile.BlockSizeCount != BLOCK_SIZE_COUNT ||
@@ -89,18 +89,19 @@ namespace LcdMod.Client.Audio.Xwma.Decoder
                     new Wma2FastImdct(blockLength);
             }
 
-            _exponents = CreateFloatChannels(FRAME_LENGTH);
-            _exponentsInitialized = new bool[CHANNEL_COUNT];
-            _exponentBlockSizeIndexes = new int[CHANNEL_COUNT];
-            _maximumExponents = new float[CHANNEL_COUNT];
-            _quantizedCoefficients = CreateIntChannels(FRAME_LENGTH);
-            _spectralCoefficients = CreateFloatChannels(FRAME_LENGTH);
-            _transformOutput = CreateFloatChannels(FRAME_LENGTH * 2);
-            _frameOutput = CreateFloatChannels(FRAME_LENGTH * 2);
-            _channelCoded = new bool[CHANNEL_COUNT];
+            _exponents = CreateFloatChannels(profile.Channels, FRAME_LENGTH);
+            _exponentsInitialized = new bool[profile.Channels];
+            _exponentBlockSizeIndexes = new int[profile.Channels];
+            _maximumExponents = new float[profile.Channels];
+            _quantizedCoefficients = CreateIntChannels(profile.Channels, FRAME_LENGTH);
+            _spectralCoefficients = CreateFloatChannels(profile.Channels, FRAME_LENGTH);
+            _transformOutput = CreateFloatChannels(profile.Channels, FRAME_LENGTH * 2);
+            _frameOutput = CreateFloatChannels(profile.Channels, FRAME_LENGTH * 2);
+            _channelCoded = new bool[profile.Channels];
             _bits = new MsbBitReader();
             _pcmSink = new Wma2Pcm24KMonoSink(
                 profile.SampleRate,
+                profile.Channels,
                 file.DeclaredSourceSampleFrames);
             _reservoir = new byte[0];
 
@@ -126,10 +127,7 @@ namespace LcdMod.Client.Audio.Xwma.Decoder
             // buffers were intentionally suppressed while decoding.
             if (_decodedFrameCount >= CODEC_DELAY_FRAMES)
             {
-                _pcmSink.AppendStereoFrame(
-                    _frameOutput[0],
-                    _frameOutput[1],
-                    FRAME_LENGTH);
+                AppendCurrentFrame();
             }
 
             PcmWaveData result = _pcmSink.Complete();
@@ -224,13 +222,10 @@ namespace LcdMod.Client.Audio.Xwma.Decoder
 
             if (_decodedFrameCount >= CODEC_DELAY_FRAMES)
             {
-                _pcmSink.AppendStereoFrame(
-                    _frameOutput[0],
-                    _frameOutput[1],
-                    FRAME_LENGTH);
+                AppendCurrentFrame();
             }
 
-            for (int channel = 0; channel < CHANNEL_COUNT; channel++)
+            for (int channel = 0; channel < _profile.Channels; channel++)
             {
                 Array.Copy(
                     _frameOutput[channel],
@@ -256,10 +251,10 @@ namespace LcdMod.Client.Audio.Xwma.Decoder
             if (_blockPosition > FRAME_LENGTH - blockLength)
                 throw new InvalidDataException("A WMAv2 block exceeds its frame.");
 
-            _midSideStereo = _bits.ReadBit();
+            _midSideStereo = _profile.Channels == 2 && _bits.ReadBit();
             bool anyChannelCoded = false;
 
-            for (int channel = 0; channel < CHANNEL_COUNT; channel++)
+            for (int channel = 0; channel < _profile.Channels; channel++)
             {
                 _channelCoded[channel] = _bits.ReadBit();
                 anyChannelCoded |= _channelCoded[channel];
@@ -323,7 +318,7 @@ namespace LcdMod.Client.Audio.Xwma.Decoder
 
             if (refreshExponents)
             {
-                for (int channel = 0; channel < CHANNEL_COUNT; channel++)
+                for (int channel = 0; channel < _profile.Channels; channel++)
                 {
                     if (_channelCoded[channel])
                     {
@@ -334,7 +329,7 @@ namespace LcdMod.Client.Audio.Xwma.Decoder
                 }
             }
 
-            for (int channel = 0; channel < CHANNEL_COUNT; channel++)
+            for (int channel = 0; channel < _profile.Channels; channel++)
             {
                 if (_channelCoded[channel] &&
                     !_exponentsInitialized[channel])
@@ -346,7 +341,7 @@ namespace LcdMod.Client.Audio.Xwma.Decoder
 
             int coefficientCount = _coefficientEnds[blockSizeIndex];
 
-            for (int channel = 0; channel < CHANNEL_COUNT; channel++)
+            for (int channel = 0; channel < _profile.Channels; channel++)
             {
                 if (!_channelCoded[channel])
                     continue;
@@ -371,7 +366,7 @@ namespace LcdMod.Client.Audio.Xwma.Decoder
 
             Dequantize(blockSizeIndex, blockLength, totalGain);
 
-            if (_midSideStereo && _channelCoded[1])
+            if (_profile.Channels == 2 && _midSideStereo && _channelCoded[1])
             {
                 if (!_channelCoded[0])
                 {
@@ -502,7 +497,7 @@ namespace LcdMod.Client.Audio.Xwma.Decoder
             float normalization = 2.0f / blockLength;
             int coefficientCount = _coefficientEnds[blockSizeIndex];
 
-            for (int channel = 0; channel < CHANNEL_COUNT; channel++)
+            for (int channel = 0; channel < _profile.Channels; channel++)
             {
                 if (!_channelCoded[channel])
                     continue;
@@ -547,7 +542,7 @@ namespace LcdMod.Client.Audio.Xwma.Decoder
             int blockSizeIndex,
             int blockLength)
         {
-            for (int channel = 0; channel < CHANNEL_COUNT; channel++)
+            for (int channel = 0; channel < _profile.Channels; channel++)
             {
                 if (_channelCoded[channel])
                 {
@@ -566,7 +561,7 @@ namespace LcdMod.Client.Audio.Xwma.Decoder
 
             // When only the middle channel was transmitted, WMAv2 uses the
             // same transform output for both reconstructed channels.
-            if (_midSideStereo && !_channelCoded[1])
+            if (_profile.Channels == 2 && _midSideStereo && !_channelCoded[1])
             {
                 Array.Copy(
                     _transformOutput[0],
@@ -586,7 +581,7 @@ namespace LcdMod.Client.Audio.Xwma.Decoder
                     "WMAv2 overlap-add position is outside the frame buffer.");
             }
 
-            for (int channel = 0; channel < CHANNEL_COUNT; channel++)
+            for (int channel = 0; channel < _profile.Channels; channel++)
             {
                 ApplyWindow(
                     _transformOutput[channel],
@@ -784,22 +779,40 @@ namespace LcdMod.Client.Audio.Xwma.Decoder
             return window;
         }
 
-        static float[][] CreateFloatChannels(int length)
+        void AppendCurrentFrame()
         {
-            return new float[][]
+            if (_profile.Channels == 1)
             {
-                new float[length],
-                new float[length]
-            };
+                _pcmSink.AppendMonoFrame(
+                    _frameOutput[0],
+                    FRAME_LENGTH);
+                return;
+            }
+
+            _pcmSink.AppendStereoFrame(
+                _frameOutput[0],
+                _frameOutput[1],
+                FRAME_LENGTH);
         }
 
-        static int[][] CreateIntChannels(int length)
+        static float[][] CreateFloatChannels(
+            int channelCount,
+            int length)
         {
-            return new int[][]
-            {
-                new int[length],
-                new int[length]
-            };
+            float[][] channels = new float[channelCount][];
+            for (int channel = 0; channel < channelCount; channel++)
+                channels[channel] = new float[length];
+            return channels;
+        }
+
+        static int[][] CreateIntChannels(
+            int channelCount,
+            int length)
+        {
+            int[][] channels = new int[channelCount][];
+            for (int channel = 0; channel < channelCount; channel++)
+                channels[channel] = new int[length];
+            return channels;
         }
     }
 }

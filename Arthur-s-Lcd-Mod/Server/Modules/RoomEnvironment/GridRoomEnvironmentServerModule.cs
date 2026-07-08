@@ -98,7 +98,7 @@ namespace LcdMod.Server.Modules.RoomEnvironment
 
             long lastTick;
             if (byBlock.TryGetValue(blockEntityId, out lastTick) &&
-                currentTick - lastTick < PacketRequestGridRoomEnvironment.RequestIntervalTicks)
+                currentTick - lastTick < PacketRequestGridRoomEnvironment.REQUEST_INTERVAL_TICKS)
             {
                 return false;
             }

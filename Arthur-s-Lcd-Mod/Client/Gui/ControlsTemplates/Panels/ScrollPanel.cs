@@ -29,7 +29,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
     public sealed partial class ScrollPanel : ControlTemplate
     {
-        public const float DefaultScrollerWidthPixels = 5f;
+        public const float DEFAULT_SCROLLER_WIDTH_PIXELS = 5f;
         const long MANUAL_SCROLL_OVERRIDE_FRAMES = 300L;
         const float DEFAULT_MANUAL_SCROLL_PIXEL_MULTIPLIER = 0.08f;
         const float MANUAL_SCROLL_VELOCITY_IMPULSE = 0.12f;
@@ -60,7 +60,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         Vector2 _contentExtentPixels;
         Vector2 _manualScrollOffsetPixels;
         Vector2 _scrollVelocityPixelsPerFrame;
-        float _configuredAutomaticScrollerWidthPixels = DefaultScrollerWidthPixels;
+        float _configuredAutomaticScrollerWidthPixels = DEFAULT_SCROLLER_WIDTH_PIXELS;
         float? _localAutoScrollSecondsPerStep;
         float _resolvedAutoScrollSecondsPerStep;
 
@@ -105,7 +105,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         public RectangleF ContentBounds { get; private set; }
         public float RowHeight { get; private set; }
         public float ScrollerWidthPixels { get; private set; }
-        public float AutomaticScrollerWidthPixels { get; set; } = DefaultScrollerWidthPixels;
+        public float AutomaticScrollerWidthPixels { get; set; } = DEFAULT_SCROLLER_WIDTH_PIXELS;
         public float ScrollStepPixels { get; set; } = 32f;
         public float AutoScrollSecondsPerStep
         {

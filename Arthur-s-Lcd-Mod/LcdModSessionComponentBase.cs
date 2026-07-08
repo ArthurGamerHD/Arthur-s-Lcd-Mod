@@ -120,6 +120,15 @@ namespace LcdMod
 
         protected override void UnloadData()
         {
+            if (Components != null)
+            {
+                foreach (var logic in Components.Values)
+                {
+                    if (logic != null)
+                        logic.Unload();
+                }
+            }
+
             Client?.UnloadData();
             Server?.UnloadData();
             Client = null;
@@ -131,8 +140,13 @@ namespace LcdMod
         {
             try
             {
+                GridLogic logic;
+                if (Components != null && Components.TryGetValue(ent.EntityId, out logic) && logic != null)
+                    logic.Unload();
+
                 _grids.Remove(ent.EntityId);
-                Components.Remove(ent.EntityId);
+                if (Components != null)
+                    Components.Remove(ent.EntityId);
             }
             catch (Exception e)
             {

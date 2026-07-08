@@ -10,7 +10,7 @@ namespace LcdMod.Common.Audio
     public sealed class AudioLibraryMetadata
     {
         [XmlAttribute("version")]
-        public int Version = 1;
+        public int Version = 2;
 
         [XmlArray("Assets")]
         [XmlArrayItem("Asset")]
@@ -31,6 +31,12 @@ namespace LcdMod.Common.Audio
 
         [XmlAttribute("sourceSha256")]
         public string SourceSha256;
+
+        [XmlAttribute("sourceArchivePath")]
+        public string SourceArchivePath;
+
+        [XmlAttribute("sourceByteLength")]
+        public long SourceByteLength;
 
         [XmlAttribute("runtimePath")]
         public string RuntimePath;
@@ -55,6 +61,24 @@ namespace LcdMod.Common.Audio
 
         [XmlAttribute("bitsPerSample")]
         public int BitsPerSample;
+
+        [XmlAttribute("sourceSampleRate")]
+        public int SourceSampleRate;
+
+        [XmlAttribute("sourceChannels")]
+        public int SourceChannels;
+
+        [XmlAttribute("sourceBitsPerSample")]
+        public int SourceBitsPerSample;
+
+        [XmlAttribute("sourceEncoding")]
+        public string SourceEncodingName;
+
+        [XmlAttribute("wasNormalized")]
+        public bool WasNormalized;
+
+        [XmlAttribute("importedUtcTicks")]
+        public long ImportedUtcTicks;
     }
 }
 #endif

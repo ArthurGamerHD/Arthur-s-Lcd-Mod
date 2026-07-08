@@ -12,9 +12,9 @@ namespace LcdModCodeGenerator;
 [Generator]
 public sealed class TerminalSettingControlsGenerator : IIncrementalGenerator
 {
-    const string SliderAttributeName = "LcdMod.Common.Config.Generation.TerminalControl_SliderAttribute";
-    const string SwitchAttributeName = "LcdMod.Common.Config.Generation.TerminalControl_SwitchAttribute";
-    const string ColorAttributeName = "LcdMod.Common.Config.Generation.TerminalControl_ColorAttribute";
+    const string TerminalSliderTypeName = "Generated.TerminalSlider";
+    const string TerminalSwitchTypeName = "Generated.TerminalSwitch";
+    const string TerminalColorTypeName = "Generated.TerminalColor";
     const string ConfigComponentAttributeName = "LcdMod.Common.Config.Generation.ConfigComponentAttribute";
     const string ConfigComponentBaseName = "LcdMod.Common.Config.Components.ConfigComponent";
     const string OptionalValueTypeName = "LcdMod.Common.Config.OptionalValue`1";
@@ -65,24 +65,12 @@ public sealed class TerminalSettingControlsGenerator : IIncrementalGenerator
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        var sliders = context.SyntaxProvider.ForAttributeWithMetadataName(
-                SliderAttributeName,
-                static (node, _) => node is PropertyDeclarationSyntax,
-                static (ctx, _) => ReadSlider(ctx))
-            .Where(static value => value != null)
-            .Collect();
+        context.RegisterPostInitializationOutput(postInitializationContext =>
+            postInitializationContext.AddSource("TerminalControlAttributeConfigTypes.g.cs", ATTRIBUTE_CONFIG_TYPE_SOURCE));
 
-        var switches = context.SyntaxProvider.ForAttributeWithMetadataName(
-                SwitchAttributeName,
-                static (node, _) => node is PropertyDeclarationSyntax,
-                static (ctx, _) => ReadSwitch(ctx))
-            .Where(static value => value != null)
-            .Collect();
-
-        var colors = context.SyntaxProvider.ForAttributeWithMetadataName(
-                ColorAttributeName,
-                static (node, _) => node is PropertyDeclarationSyntax,
-                static (ctx, _) => ReadColor(ctx))
+        var settings = context.SyntaxProvider.CreateSyntaxProvider(
+                static (node, _) => node is PropertyDeclarationSyntax property && property.AttributeLists.Count > 0,
+                static (ctx, _) => ReadSetting(ctx))
             .Where(static value => value != null)
             .Collect();
 
@@ -93,106 +81,101 @@ public sealed class TerminalSettingControlsGenerator : IIncrementalGenerator
             .Where(static value => value != null)
             .Collect();
 
-        var input = sliders.Combine(switches).Combine(colors).Combine(componentSlots).Combine(context.CompilationProvider);
+        var input = settings.Combine(componentSlots).Combine(context.CompilationProvider);
         context.RegisterSourceOutput(input, static (spc, value) =>
         {
             var compilation = value.Right;
             var slots = value.Left.Right;
-            var colorsInput = value.Left.Left.Right;
-            var switchesInput = value.Left.Left.Left.Right;
-            var slidersInput = value.Left.Left.Left.Left;
-            Generate(spc, compilation, slidersInput, switchesInput, colorsInput, slots);
+            var settingsInput = value.Left.Left;
+            Generate(spc, compilation, settingsInput, slots);
         });
     }
 
     static DiagnosticDescriptor Error(string id, string title, string message) =>
         new(id, title, message, "LcdModCodeGenerator", DiagnosticSeverity.Error, true);
 
-    static SettingInput ReadSlider(GeneratorAttributeSyntaxContext context)
+    static SettingInput ReadSetting(GeneratorSyntaxContext context)
     {
-        var property = context.TargetSymbol as IPropertySymbol;
-        var attribute = context.Attributes.FirstOrDefault();
-        if (property == null || attribute == null)
+        var declaration = context.Node as PropertyDeclarationSyntax;
+        var property = declaration == null ? null : context.SemanticModel.GetDeclaredSymbol(declaration) as IPropertySymbol;
+        if (property == null)
             return null;
 
-        return new SettingInput(
-            SettingKind.Slider,
-            property,
-            GetInt(attribute, 0),
-            GetString(attribute, 1),
-            GetString(attribute, 2),
-            GetFloat(attribute, 3),
-            GetFloat(attribute, 4),
-            GetString(attribute, 5),
-            GetNamedString(attribute, "Tooltip"),
-            GetNamedString(attribute, "Slot"),
-            GetNamedString(attribute, "WriterSuffix"),
-            GetNamedBool(attribute, "RequiresAdvancedTweakables"),
-            GetNamedFloat(attribute, "Quantum"),
-            null,
-            null,
-            null,
-            false,
-            false,
-            AttributeLocation(attribute, property));
-    }
+        foreach (var attribute in property.GetAttributes())
+        {
+            SettingKind kind;
+            if (!TryGetSettingKind(attribute.AttributeClass, out kind))
+                continue;
 
-    static SettingInput ReadSwitch(GeneratorAttributeSyntaxContext context)
-    {
-        var property = context.TargetSymbol as IPropertySymbol;
-        var attribute = context.Attributes.FirstOrDefault();
-        if (property == null || attribute == null)
-            return null;
+            switch (kind)
+            {
+                case SettingKind.Slider:
+                    return new SettingInput(
+                        kind,
+                        property,
+                        GetInt(attribute, 0),
+                        GetString(attribute, 1),
+                        GetString(attribute, 2),
+                        GetFloat(attribute, 3),
+                        GetFloat(attribute, 4),
+                        GetString(attribute, 5),
+                        GetNamedString(attribute, "Tooltip"),
+                        GetNamedString(attribute, "Slot"),
+                        GetNamedString(attribute, "WriterSuffix"),
+                        GetNamedBool(attribute, "RequiresAdvancedTweakables"),
+                        GetNamedFloat(attribute, "Quantum"),
+                        null,
+                        null,
+                        null,
+                        false,
+                        false,
+                        AttributeLocation(attribute, property));
+                case SettingKind.Switch:
+                    return new SettingInput(
+                        kind,
+                        property,
+                        GetInt(attribute, 0),
+                        GetString(attribute, 1),
+                        GetString(attribute, 2),
+                        0f,
+                        0f,
+                        null,
+                        GetNamedString(attribute, "Tooltip"),
+                        GetNamedString(attribute, "Slot"),
+                        null,
+                        GetNamedBool(attribute, "RequiresAdvancedTweakables"),
+                        0f,
+                        GetNamedString(attribute, "OnText"),
+                        GetNamedString(attribute, "OffText"),
+                        GetNamedString(attribute, "TitleSuffix"),
+                        GetNamedBool(attribute, "RefreshTerminalOnSet"),
+                        false,
+                        AttributeLocation(attribute, property));
+                default:
+                    return new SettingInput(
+                        kind,
+                        property,
+                        GetInt(attribute, 0),
+                        GetString(attribute, 1),
+                        GetString(attribute, 2),
+                        0f,
+                        0f,
+                        null,
+                        GetNamedString(attribute, "Tooltip"),
+                        GetNamedString(attribute, "Slot"),
+                        null,
+                        GetNamedBool(attribute, "RequiresAdvancedTweakables"),
+                        0f,
+                        null,
+                        null,
+                        null,
+                        false,
+                        GetNamedBool(attribute, "RequiresCustomColor"),
+                        AttributeLocation(attribute, property));
+            }
+        }
 
-        return new SettingInput(
-            SettingKind.Switch,
-            property,
-            GetInt(attribute, 0),
-            GetString(attribute, 1),
-            GetString(attribute, 2),
-            0f,
-            0f,
-            null,
-            GetNamedString(attribute, "Tooltip"),
-            GetNamedString(attribute, "Slot"),
-            null,
-            GetNamedBool(attribute, "RequiresAdvancedTweakables"),
-            0f,
-            GetNamedString(attribute, "OnText"),
-            GetNamedString(attribute, "OffText"),
-            GetNamedString(attribute, "TitleSuffix"),
-            GetNamedBool(attribute, "RefreshTerminalOnSet"),
-            false,
-            AttributeLocation(attribute, property));
-    }
-
-    static SettingInput ReadColor(GeneratorAttributeSyntaxContext context)
-    {
-        var property = context.TargetSymbol as IPropertySymbol;
-        var attribute = context.Attributes.FirstOrDefault();
-        if (property == null || attribute == null)
-            return null;
-
-        return new SettingInput(
-            SettingKind.Color,
-            property,
-            GetInt(attribute, 0),
-            GetString(attribute, 1),
-            GetString(attribute, 2),
-            0f,
-            0f,
-            null,
-            GetNamedString(attribute, "Tooltip"),
-            GetNamedString(attribute, "Slot"),
-            null,
-            GetNamedBool(attribute, "RequiresAdvancedTweakables"),
-            0f,
-            null,
-            null,
-            null,
-            false,
-            GetNamedBool(attribute, "RequiresCustomColor"),
-            AttributeLocation(attribute, property));
+        return null;
     }
 
     static ComponentSlotTarget ReadComponentSlots(GeneratorAttributeSyntaxContext context)
@@ -216,9 +199,7 @@ public sealed class TerminalSettingControlsGenerator : IIncrementalGenerator
     static void Generate(
         SourceProductionContext spc,
         Compilation compilation,
-        ImmutableArray<SettingInput> sliders,
-        ImmutableArray<SettingInput> switches,
-        ImmutableArray<SettingInput> colors,
+        ImmutableArray<SettingInput> settings,
         ImmutableArray<ComponentSlotTarget> rawSlots)
     {
         // Config-only test projects deliberately do not reference the client terminal runtime.
@@ -234,7 +215,7 @@ public sealed class TerminalSettingControlsGenerator : IIncrementalGenerator
             return;
 
         var slotsByComponent = BuildSlotMap(rawSlots);
-        var rawSettings = sliders.Concat(switches).Concat(colors).Where(item => item != null).ToArray();
+        var rawSettings = settings.Where(item => item != null).ToArray();
         var valid = new List<SettingModel>();
 
         foreach (var input in rawSettings)
@@ -429,6 +410,52 @@ public sealed class TerminalSettingControlsGenerator : IIncrementalGenerator
             }
         }
         return result;
+    }
+
+    static bool TryGetSettingKind(INamedTypeSymbol attributeType, out SettingKind kind)
+    {
+        kind = default;
+        if (attributeType == null)
+            return false;
+
+        foreach (var implementedInterface in attributeType.AllInterfaces)
+        {
+            if (!IsAttributeConfigTypeInterface(implementedInterface))
+                continue;
+
+            var configType = implementedInterface.TypeArguments.Length == 1
+                ? implementedInterface.TypeArguments[0]
+                : null;
+            var configTypeName = configType == null
+                ? null
+                : configType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+
+            switch (configTypeName)
+            {
+                case "global::" + TerminalSliderTypeName:
+                    kind = SettingKind.Slider;
+                    return true;
+                case "global::" + TerminalSwitchTypeName:
+                    kind = SettingKind.Switch;
+                    return true;
+                case "global::" + TerminalColorTypeName:
+                    kind = SettingKind.Color;
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    static bool IsAttributeConfigTypeInterface(INamedTypeSymbol type)
+    {
+        if (type == null)
+            return false;
+
+        var definition = type.OriginalDefinition;
+        return definition.MetadataName == "IAttributeConfigType`1"
+               && definition.ContainingNamespace != null
+               && definition.ContainingNamespace.ToDisplayString() == "Generated";
     }
 
     static bool TryResolveSlot(
@@ -910,6 +937,110 @@ public sealed class TerminalSettingControlsGenerator : IIncrementalGenerator
                ?? fallback.Locations.FirstOrDefault()
                ?? Location.None;
     }
+
+    const string ATTRIBUTE_CONFIG_TYPE_SOURCE = """
+// <auto-generated/>
+namespace Generated
+{
+    internal interface IAttributeConfigType<TConfig>
+    {
+    }
+
+    internal sealed class TerminalSlider
+    {
+    }
+
+    internal sealed class TerminalSwitch
+    {
+    }
+
+    internal sealed class TerminalColor
+    {
+    }
+
+    [global::System.AttributeUsage(global::System.AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
+    internal sealed class TerminalControlSliderAttribute : global::System.Attribute, IAttributeConfigType<TerminalSlider>
+    {
+        public TerminalControlSliderAttribute(
+            int registrationId,
+            string controlId,
+            string title,
+            float minimum,
+            float maximum,
+            string writerFormat)
+        {
+            RegistrationId = registrationId;
+            ControlId = controlId;
+            Title = title;
+            Minimum = minimum;
+            Maximum = maximum;
+            WriterFormat = writerFormat;
+        }
+
+        public int RegistrationId { get; private set; }
+        public string ControlId { get; private set; }
+        public string Title { get; private set; }
+        public float Minimum { get; private set; }
+        public float Maximum { get; private set; }
+        public string WriterFormat { get; private set; }
+
+        public string Tooltip { get; set; }
+        public string Slot { get; set; }
+        public string WriterSuffix { get; set; }
+        public bool RequiresAdvancedTweakables { get; set; }
+        public float Quantum { get; set; }
+    }
+
+    [global::System.AttributeUsage(global::System.AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
+    internal sealed class TerminalControlSwitchAttribute : global::System.Attribute, IAttributeConfigType<TerminalSwitch>
+    {
+        public TerminalControlSwitchAttribute(
+            int registrationId,
+            string controlId,
+            string title)
+        {
+            RegistrationId = registrationId;
+            ControlId = controlId;
+            Title = title;
+        }
+
+        public int RegistrationId { get; private set; }
+        public string ControlId { get; private set; }
+        public string Title { get; private set; }
+
+        public string TitleSuffix { get; set; }
+        public string Tooltip { get; set; }
+        public string Slot { get; set; }
+        public string OnText { get; set; }
+        public string OffText { get; set; }
+        public bool RequiresAdvancedTweakables { get; set; }
+        public bool RefreshTerminalOnSet { get; set; }
+    }
+
+    [global::System.AttributeUsage(global::System.AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
+    internal sealed class TerminalControlColorAttribute : global::System.Attribute, IAttributeConfigType<TerminalColor>
+    {
+        public TerminalControlColorAttribute(
+            int registrationId,
+            string controlId,
+            string title)
+        {
+            RegistrationId = registrationId;
+            ControlId = controlId;
+            Title = title;
+        }
+
+        public int RegistrationId { get; private set; }
+        public string ControlId { get; private set; }
+        public string Title { get; private set; }
+
+        public string Tooltip { get; set; }
+        public string Slot { get; set; }
+        public bool RequiresCustomColor { get; set; }
+        public bool RequiresAdvancedTweakables { get; set; }
+    }
+}
+""";
 
     static int GetInt(AttributeData attribute, int index)
     {

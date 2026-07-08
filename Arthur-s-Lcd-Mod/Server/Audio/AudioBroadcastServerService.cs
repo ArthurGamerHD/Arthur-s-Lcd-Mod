@@ -12,7 +12,7 @@ namespace LcdMod.Server.Audio
 {
     internal sealed class AudioBroadcastServerService
     {
-        const long CooldownTicks = TimeSpan.TicksPerSecond * 10;
+        const long COOLDOWN_TICKS = TimeSpan.TicksPerSecond * 10;
 
         readonly Dictionary<ulong, long> _lastBroadcastTicksBySteamId = new Dictionary<ulong, long>();
         long _nextPlaybackId;
@@ -39,7 +39,7 @@ namespace LcdMod.Server.Audio
                 return;
             }
 
-            if (packet.RuntimeWaveBytes.Length <= 0 || packet.RuntimeWaveBytes.Length > CanonicalWaveReader.MaxBroadcastWaveBytes)
+            if (packet.RuntimeWaveBytes.Length <= 0 || packet.RuntimeWaveBytes.Length > CanonicalWaveReader.MAX_BROADCAST_WAVE_BYTES)
             {
                 Reject(senderSteamId, "Audio payload size rejected.");
                 return;
@@ -87,7 +87,7 @@ namespace LcdMod.Server.Audio
         {
             var now = DateTime.UtcNow.Ticks;
             long last;
-            if (_lastBroadcastTicksBySteamId.TryGetValue(senderSteamId, out last) && now - last < CooldownTicks)
+            if (_lastBroadcastTicksBySteamId.TryGetValue(senderSteamId, out last) && now - last < COOLDOWN_TICKS)
                 return false;
 
             _lastBroadcastTicksBySteamId[senderSteamId] = now;

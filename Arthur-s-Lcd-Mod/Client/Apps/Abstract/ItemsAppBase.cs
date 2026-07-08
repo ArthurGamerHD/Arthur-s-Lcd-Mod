@@ -548,7 +548,7 @@ namespace LcdMod.Client.Apps.Abstract
 
             var contentBounds = GetScrollPanelBounds(CaretY, FooterHeight);
             _listModel.RowHeight = rowHeight;
-            _listModel.ScrollerWidthPixels = ScrollPanel.DefaultScrollerWidthPixels * Scale;
+            _listModel.ScrollerWidthPixels = ScrollPanel.DEFAULT_SCROLLER_WIDTH_PIXELS * Scale;
             _listBox.SetRect(contentBounds);
             _listBox.BackgroundColor = Color.Transparent;
 
@@ -576,7 +576,7 @@ namespace LcdMod.Client.Apps.Abstract
 
             _scrollPanel.ConfigureAutomatic(
                 contentBounds,
-                ScrollPanel.DefaultScrollerWidthPixels * Scale,
+                ScrollPanel.DEFAULT_SCROLLER_WIDTH_PIXELS * Scale,
                 rowHeight);
 
             BeginInteractiveTree(_scrollPanel);

@@ -7,10 +7,10 @@ namespace LcdMod.Client.Gui
 {
     public abstract class Control : IVisualStyleScope
     {
-        public const string DefaultStyleClass = "ControlBase";
+        public const string DEFAULT_STYLE_CLASS = "ControlBase";
 
         IVisualStyleScope _styleParent;
-        string _class = DefaultStyleClass;
+        string _class = DEFAULT_STYLE_CLASS;
 
         public virtual IVisualStyleScope StyleParent => _styleParent;
 
@@ -48,7 +48,7 @@ namespace LcdMod.Client.Gui
         public Control SetClass(string @class)
         {
             if (string.IsNullOrEmpty(@class))
-                @class = DefaultStyleClass;
+                @class = DEFAULT_STYLE_CLASS;
 
             if (_class == @class)
                 return this;

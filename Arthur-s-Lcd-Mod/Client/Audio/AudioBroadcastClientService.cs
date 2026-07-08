@@ -1,7 +1,6 @@
 #if EXPERIMENTAL
 using System;
 using System.Collections.Generic;
-using System.IO;
 using LcdMod.Common.Audio;
 using LcdMod.Common.Helpers;
 using LcdMod.Common.Networking;
@@ -14,8 +13,7 @@ namespace LcdMod.Client.Audio
 {
     internal sealed class AudioBroadcastClientService
     {
-        const string AudioMetadataFile = "audio.xml";
-        const int MaxRecentPlaybackIds = 64;
+        const int MAX_RECENT_PLAYBACK_IDS = 64;
 
         readonly List<MyEntity3DSoundEmitter> _activeEmitters = new List<MyEntity3DSoundEmitter>();
         readonly HashSet<long> _recentPlaybackIds = new HashSet<long>();
@@ -41,7 +39,7 @@ namespace LcdMod.Client.Audio
 
             byte[] runtimeWaveBytes;
             string failureReason;
-            if (!TryReadRuntimeWave(asset.RuntimePath, out runtimeWaveBytes, out failureReason))
+            if (!TryReadRuntimeWave(asset, out runtimeWaveBytes, out failureReason))
             {
                 Show(failureReason, "Red");
                 return;
@@ -143,6 +141,7 @@ namespace LcdMod.Client.Audio
 
                 if (string.Equals(asset.Id, query, StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(asset.SourcePath, query, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(asset.SourceArchivePath, query, StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(asset.RuntimePath, query, StringComparison.OrdinalIgnoreCase))
                     return asset;
             }
@@ -152,67 +151,23 @@ namespace LcdMod.Client.Audio
 
         AudioLibraryMetadata LoadLibrary()
         {
-            try
-            {
-                if (!MyAPIGateway.Utilities.FileExistsInLocalStorage(AudioMetadataFile, typeof(LcdModClientComponent)))
-                {
-                    _library = new AudioLibraryMetadata();
-                    return _library;
-                }
-
-                using (var reader = MyAPIGateway.Utilities.ReadFileInLocalStorage(AudioMetadataFile, typeof(LcdModClientComponent)))
-                {
-                    var xml = reader.ReadToEnd();
-                    _library = MyAPIGateway.Utilities.SerializeFromXML<AudioLibraryMetadata>(xml) ?? new AudioLibraryMetadata();
-                    return _library;
-                }
-            }
-            catch (Exception error)
-            {
-                LogHelper.Log(MyLogSeverity.Warning, "Could not read audio.xml: " + error.Message);
-                _library = new AudioLibraryMetadata();
-                return _library;
-            }
+            _library = AudioLibraryStorage.LoadMetadata();
+            return _library;
         }
 
-        static bool TryReadRuntimeWave(string runtimePath, out byte[] runtimeWaveBytes, out string failureReason)
+        static bool TryReadRuntimeWave(AudioAssetMetadata asset, out byte[] runtimeWaveBytes, out string failureReason)
         {
-            runtimeWaveBytes = null;
-            failureReason = string.Empty;
+            if (!AudioLibraryStorage.TryReadRuntimeWave(asset, out runtimeWaveBytes, out failureReason))
+                return false;
 
-            if (string.IsNullOrWhiteSpace(runtimePath) || !IsSafeFlatWaveFileName(runtimePath))
+            if (runtimeWaveBytes.Length > CanonicalWaveReader.MAX_BROADCAST_WAVE_BYTES)
             {
-                failureReason = "Invalid runtime WAV path.";
+                failureReason = "Runtime WAV exceeds broadcast size limit.";
+                runtimeWaveBytes = null;
                 return false;
             }
 
-            if (!MyAPIGateway.Utilities.FileExistsInLocalStorage(runtimePath, typeof(LcdModClientComponent)))
-            {
-                failureReason = "Runtime WAV not found: " + runtimePath;
-                return false;
-            }
-
-            try
-            {
-                using (var reader = MyAPIGateway.Utilities.ReadBinaryFileInLocalStorage(runtimePath, typeof(LcdModClientComponent)))
-                {
-                    var stream = reader.BaseStream;
-                    if (stream.Length > CanonicalWaveReader.MaxBroadcastWaveBytes)
-                    {
-                        failureReason = "Runtime WAV exceeds broadcast size limit.";
-                        return false;
-                    }
-
-                    runtimeWaveBytes = reader.ReadBytes((int)stream.Length);
-                }
-            }
-            catch (Exception error)
-            {
-                failureReason = "Could not read runtime WAV: " + error.Message;
-                return false;
-            }
-
-            return runtimeWaveBytes != null && runtimeWaveBytes.Length > 0;
+            return true;
         }
 
         static AudioBroadcastMetadata BuildBroadcastMetadata(AudioAssetMetadata asset, byte[] runtimeWaveBytes, CanonicalWavePayload wave)
@@ -276,23 +231,12 @@ namespace LcdMod.Client.Audio
 
         void TrimRecentPlaybackIds()
         {
-            while (_recentPlaybackIdOrder.Count > MaxRecentPlaybackIds)
+            while (_recentPlaybackIdOrder.Count > MAX_RECENT_PLAYBACK_IDS)
             {
                 var id = _recentPlaybackIdOrder[0];
                 _recentPlaybackIdOrder.RemoveAt(0);
                 _recentPlaybackIds.Remove(id);
             }
-        }
-
-        static bool IsSafeFlatWaveFileName(string fileName)
-        {
-            if (string.IsNullOrWhiteSpace(fileName))
-                return false;
-
-            if (!string.Equals(Path.GetFileName(fileName), fileName, StringComparison.Ordinal))
-                return false;
-
-            return string.Equals(Path.GetExtension(fileName), ".wav", StringComparison.OrdinalIgnoreCase);
         }
 
         static void Show(string text, string font = "White")

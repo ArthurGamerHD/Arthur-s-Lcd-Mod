@@ -46,6 +46,7 @@ namespace LcdMod.Client
         readonly AudioPocService _audioPoc = new AudioPocService();
         readonly AudioImportService _audioImport = new AudioImportService();
         readonly AudioBroadcastClientService _audioBroadcast = new AudioBroadcastClientService();
+        readonly GameAudioTestReportService _audioTestReport = new GameAudioTestReportService();
         readonly AppRunProfilerService _appRunProfiler = new AppRunProfilerService();
 #endif
 
@@ -85,6 +86,8 @@ namespace LcdMod.Client
             group.TryAdd("ImportLocalAudio", _audioImport.ImportLocalAudioCommand, 1);
             group.TryAdd("ImportAudios", _audioImport.ImportAudiosCommand);
             group.TryAdd("StreamAudio", _audioBroadcast.StreamAudioCommand, 1);
+            group.TryAdd("TestAudio", _audioTestReport.TestAllGameAudioCommand);
+            group.TryAdd("TestGameAudio", _audioTestReport.TestAllGameAudioCommand);
             group.TryAdd("Profile", _appRunProfiler.Command);
 #endif
 #if DEBUG

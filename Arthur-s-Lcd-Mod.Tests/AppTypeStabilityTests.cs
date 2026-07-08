@@ -32,7 +32,8 @@ public sealed class AppTypeStabilityTests
         ["VisibleTreeDebug"] = 24,
         ["RenderProxy"] = 25,
         ["Games"] = 26,
-        ["BSoDTest"] = 27
+        ["BSoDTest"] = 27,
+        ["MediaPlayer"] = 28
     };
 
     [Fact]

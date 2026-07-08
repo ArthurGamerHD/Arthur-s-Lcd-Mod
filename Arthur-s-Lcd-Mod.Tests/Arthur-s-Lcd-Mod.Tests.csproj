@@ -30,7 +30,6 @@
     <Compile Include="..\Arthur-s-Lcd-Mod\Client\Markdown\**\*.cs" LinkBase="MarkdownSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Config\OptionalValue.cs" LinkBase="ConfigSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Config\Generation\ConfigMetadataAttributes.cs" LinkBase="ConfigSource" />
-    <Compile Include="..\Arthur-s-Lcd-Mod\Common\Config\Generation\TerminalControlMetadataAttributes.cs" LinkBase="ConfigSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Config\Components\ConfigComponentModels.cs" LinkBase="ConfigSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Config\Components\GeneralConfigComponentExtensions.cs" LinkBase="ConfigSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Config\Components\ComponentConfigEntityReferences.cs" LinkBase="ConfigSource" />
@@ -39,7 +38,10 @@
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Zip\MinimalZip.cs" LinkBase="ZipSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Compression\HuffmanTree.cs" LinkBase="CompressionSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Client\Audio\Xwma\**\*.cs" LinkBase="AudioSource\Xwma" />
+    <Compile Include="..\Arthur-s-Lcd-Mod\Client\Audio\Adpcm\**\*.cs" LinkBase="AudioSource\Adpcm" />
+    <Compile Include="..\Arthur-s-Lcd-Mod\Client\Audio\GameAudioPcmLoader.cs" LinkBase="AudioSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Client\Audio\PcmWaveData.cs" LinkBase="AudioSource" />
+    <Compile Include="..\Arthur-s-Lcd-Mod\Client\Audio\PcmWaveReader.cs" LinkBase="AudioSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Exception\EndOfStreamException.cs" LinkBase="ExceptionSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Exception\InvalidDataException.cs" LinkBase="ExceptionSource" />
   </ItemGroup>

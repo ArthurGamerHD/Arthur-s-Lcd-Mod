@@ -61,7 +61,7 @@ namespace LcdMod.Client.Gui.Styling
             Style child = new Style(
                 this,
                 TargetType,
-                string.IsNullOrEmpty(@class) ? Control.DefaultStyleClass : @class,
+                string.IsNullOrEmpty(@class) ? Control.DEFAULT_STYLE_CLASS : @class,
                 null,
                 StyleState.None);
 

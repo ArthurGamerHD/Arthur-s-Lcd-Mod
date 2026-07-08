@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Serialization;
 using ProtoBuf;
+using Generated;
 using LcdMod.Common.Config;
 using LcdMod.Common.Config.Generation;
 using LcdMod.Common.Helpers;
@@ -35,6 +36,7 @@ namespace LcdMod.Common.Config.Components
     [ProtoInclude(119, typeof(ClockDashboardConfigComponent))]
     [ProtoInclude(120, typeof(VisibleTreeDebugConfigComponent))]
     [ProtoInclude(121, typeof(TabContainerConfigComponent))]
+    [ProtoInclude(122, typeof(MediaPlayerConfigComponent))]
     [XmlInclude(typeof(GeneralConfigComponent))]
     [XmlInclude(typeof(ColorConfigComponent))]
     [XmlInclude(typeof(InteractiveConfigComponent))]
@@ -56,6 +58,7 @@ namespace LcdMod.Common.Config.Components
     [XmlInclude(typeof(ClockDashboardConfigComponent))]
     [XmlInclude(typeof(VisibleTreeDebugConfigComponent))]
     [XmlInclude(typeof(TabContainerConfigComponent))]
+    [XmlInclude(typeof(MediaPlayerConfigComponent))]
     public abstract class ConfigComponent
     {
         public abstract ConfigComponent Clone();
@@ -363,7 +366,7 @@ namespace LcdMod.Common.Config.Components
     public sealed class GeneralConfigComponent : ConfigComponent
     {
         [ProtoMember(1)]
-        [TerminalControl_Switch(
+        [TerminalControlSwitch(
             2600,
             "TitleSwitch",
             "BlockPropertyTitle_TextPanelPublicTitle",
@@ -448,7 +451,7 @@ namespace LcdMod.Common.Config.Components
     public sealed class ColorConfigComponent : ConfigComponent
     {
         [ProtoMember(1)]
-        [TerminalControl_Color(
+        [TerminalControlColor(
             2300,
             "HeaderColor",
             "BlockPropertyTitle_TextPanelPublicTitle",
@@ -456,7 +459,7 @@ namespace LcdMod.Common.Config.Components
             RequiresCustomColor = true)]
         public OptionalValue<Color> HeaderColor { get; set; } = new OptionalValue<Color>();
         [ProtoMember(2)]
-        [TerminalControl_Color(
+        [TerminalControlColor(
             2500,
             "ErrorColor",
             "ContractScreen_Aministration_CreatinResultCaption_Error",
@@ -464,7 +467,7 @@ namespace LcdMod.Common.Config.Components
             RequiresCustomColor = true)]
         public OptionalValue<Color> ErrorColor { get; set; } = new OptionalValue<Color>();
         [ProtoMember(3)]
-        [TerminalControl_Color(
+        [TerminalControlColor(
             2400,
             "WarningColor",
             "SalvageService_InventoryWarning_Title",
@@ -472,7 +475,7 @@ namespace LcdMod.Common.Config.Components
             RequiresCustomColor = true)]
         public OptionalValue<Color> WarningColor { get; set; } = new OptionalValue<Color>();
         [ProtoMember(4)]
-        [TerminalControl_Switch(
+        [TerminalControlSwitch(
             2200,
             "SwitchToggleCustomColors",
             "WorldSettings_ViewDistance_Custom",
@@ -497,7 +500,7 @@ namespace LcdMod.Common.Config.Components
     public sealed class InteractiveConfigComponent : ConfigComponent
     {
         [ProtoMember(1)]
-        [TerminalControl_Slider(
+        [TerminalControlSlider(
             2800,
             "CursorScaleSlider",
             MOD_PREFIX + "CursorScale",
@@ -630,7 +633,7 @@ namespace LcdMod.Common.Config.Components
         [ProtoMember(1)] public int RelationOverlay { get; set; } = 1;
         [ProtoMember(2)] public float RenderScale { get; set; } = .2f;
         [ProtoMember(3)]
-        [TerminalControl_Slider(
+        [TerminalControlSlider(
             3100,
             "RaysPerTickSlider",
             MOD_PREFIX + "RaysPerTick",
@@ -656,7 +659,7 @@ namespace LcdMod.Common.Config.Components
     public sealed class RenderProxyConfigComponent : ConfigComponent
     {
         [ProtoMember(1)]
-        [TerminalControl_Slider(
+        [TerminalControlSlider(
             5700,
             "SliderProxyX",
             MOD_PREFIX + "ProxyOffsetX",
@@ -666,7 +669,7 @@ namespace LcdMod.Common.Config.Components
             Slot = APP)]
         public sbyte XAxisOffset { get; set; }
         [ProtoMember(2)]
-        [TerminalControl_Slider(
+        [TerminalControlSlider(
             5800,
             "SliderProxyY",
             MOD_PREFIX + "ProxyOffsetY",
@@ -676,7 +679,7 @@ namespace LcdMod.Common.Config.Components
             Slot = APP)]
         public sbyte YAxisOffset { get; set; }
         [ProtoMember(3)]
-        [TerminalControl_Switch(
+        [TerminalControlSwitch(
             5900,
             "ProxyAutoAdjustSwitch",
             MOD_PREFIX + "EnableAutoAdjust",
@@ -737,7 +740,7 @@ Click [color:#0000FF]""[loc]BlockPropertyTitle_TextPanelShowTextPanel[/loc]""[/c
         [ProtoMember(1)] public string BackgroundSprite { get; set; } = string.Empty;
         [ProtoMember(2)] public string[] SelectedSprites { get; set; } = Array.Empty<string>();
         [ProtoMember(3)]
-        [TerminalControl_Slider(
+        [TerminalControlSlider(
             5500,
             "ImageChangeIntervalSlider",
             "BlockPropertyTitle_LCDScreenRefreshInterval",
@@ -772,7 +775,7 @@ Click [color:#0000FF]""[loc]BlockPropertyTitle_TextPanelShowTextPanel[/loc]""[/c
         [ProtoMember(8)] public int[] WeaponOverrideCounts { get; set; } = Array.Empty<int>();
         [ProtoMember(9)] public int SettingsRevision { get; set; }
         [ProtoMember(10)]
-        [TerminalControl_Switch(
+        [TerminalControlSwitch(
             6100,
             "CargoActionsShowConfigButton",
             MOD_PREFIX + "CargoActions_ShowConfigButton",
@@ -842,7 +845,7 @@ Click [color:#0000FF]""[loc]BlockPropertyTitle_TextPanelShowTextPanel[/loc]""[/c
     public sealed class ClockDashboardConfigComponent : ConfigComponent
     {
         [ProtoMember(1)]
-        [TerminalControl_Switch(
+        [TerminalControlSwitch(
             1900,
             "ClockDashboard24Hour",
             MOD_PREFIX + "ClockDashboard_Control_24Hour",
@@ -865,6 +868,33 @@ Click [color:#0000FF]""[loc]BlockPropertyTitle_TextPanelShowTextPanel[/loc]""[/c
     {
         [ProtoMember(1)] public int ReferenceScreenIndex { get; set; }
         public override ConfigComponent Clone() => new VisibleTreeDebugConfigComponent { ReferenceScreenIndex = ReferenceScreenIndex };
+    }
+
+
+    [ProtoContract]
+    public sealed class MediaPlayerConfigComponent : ConfigComponent
+    {
+        [ProtoMember(1)] public string SelectedSoundSubtype { get; set; } = string.Empty;
+        [ProtoMember(2)] public int SelectedIndex { get; set; }
+        [ProtoMember(3)] public bool AutoPlay { get; set; }
+        [ProtoMember(4)]
+        [TerminalControlSwitch(
+            8700,
+            "MediaPlayerVisualizer",
+            "Media Player Visualizer",
+            Slot = APP)]
+        public bool VisualizerEnabled { get; set; } = true;
+
+        public override ConfigComponent Clone()
+        {
+            return new MediaPlayerConfigComponent
+            {
+                SelectedSoundSubtype = SelectedSoundSubtype,
+                SelectedIndex = SelectedIndex,
+                AutoPlay = AutoPlay,
+                VisualizerEnabled = VisualizerEnabled
+            };
+        }
     }
 
     public sealed class ConfigCustomDataXmlEntry

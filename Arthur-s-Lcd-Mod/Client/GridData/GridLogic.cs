@@ -53,6 +53,13 @@ namespace LcdMod.Client.GridData
         private static readonly string[] IngotTypeFilter = { "Ingot" };
         private static readonly TimeSpan JumpPointGpsTtl = TimeSpan.FromSeconds(60);
 
+        private ItemsComponent _itemsComponent;
+        private BlocksComponent _blocksComponent;
+        private PowerComponent _powerComponent;
+#if EXPERIMENTAL
+        private GridMediaPlayer _mediaPlayer;
+#endif
+
         private readonly Dictionary<MyItemType, double> _compCache = new Dictionary<MyItemType, double>();
 
         private readonly Dictionary<MyItemType, double> _ingotCache = new Dictionary<MyItemType, double>();
@@ -135,31 +142,27 @@ namespace LcdMod.Client.GridData
         public bool IsRefreshRunning => _refreshUpdater != null;
         public bool IsSleeping => _ticksSinceRequested > REQUEST_TTL_TICKS;
 
+        public ItemsComponent Items => _itemsComponent ?? (_itemsComponent = new ItemsComponent(this));
+
+        public BlocksComponent Blocks => _blocksComponent ?? (_blocksComponent = new BlocksComponent(this));
+
+        public PowerComponent Power => _powerComponent ?? (_powerComponent = new PowerComponent(this));
+
+#if EXPERIMENTAL
+        public GridMediaPlayer MediaPlayer => _mediaPlayer ?? (_mediaPlayer = new GridMediaPlayer());
+#endif
+
         private IMyGridTerminalSystem GridTerminalSystem =>
             MyAPIGateway.TerminalActionsHelper.GetTerminalSystemForGrid(Grid);
 
         public Dictionary<MyItemType, double> Components
         {
-            get
-            {
-                if (!_compCache.Any())
-                    AggregateItems(GetInventories(), _compCache, new[] { "Component" },
-                        Array.Empty<MyDefinitionId>());
-
-                return _compCache;
-            }
+            get { return Items.Components; }
         }
 
         public Dictionary<MyItemType, double> Ingots
         {
-            get
-            {
-                if (!_ingotCache.Any())
-                    AggregateItems(GetInventories(), _ingotCache, IngotTypeFilter,
-                        Array.Empty<MyDefinitionId>());
-
-                return _ingotCache;
-            }
+            get { return Items.Ingots; }
         }
 
         internal GridGroupLogic GetLocalGridGroupResolver()
@@ -180,6 +183,14 @@ namespace LcdMod.Client.GridData
             _ticksSinceRequested = 0;
         }
 
+        public void Unload()
+        {
+#if EXPERIMENTAL
+            if (_mediaPlayer != null)
+                _mediaPlayer.Unload();
+#endif
+        }
+
         /// <summary>
         ///     Update Grid component after specific <see cref="DELAY" />, Called every tick
         /// </summary>
@@ -187,6 +198,11 @@ namespace LcdMod.Client.GridData
         {
             if (_ticksSinceRequested < int.MaxValue)
                 _ticksSinceRequested++;
+
+#if EXPERIMENTAL
+            if (_mediaPlayer != null)
+                _mediaPlayer.Update();
+#endif
 
             if (_ticksSinceRequested > REQUEST_TTL_TICKS)
             {
@@ -356,7 +372,7 @@ namespace LcdMod.Client.GridData
         public Dictionary<MyItemType, double> GetItems(BlockSelectionConfigComponent blocksConfig, ItemSelectionConfigComponent itemsConfig, IMyTerminalBlock referenceBlock,
             string[] types = null)
         {
-            return GetItemsCore(blocksConfig, itemsConfig, referenceBlock, types, _queryCache, false);
+            return Items.GetItems(blocksConfig, itemsConfig, referenceBlock, types);
         }
 
         public ItemSnapshot GetItemsSnapshot(
@@ -365,31 +381,12 @@ namespace LcdMod.Client.GridData
             IMyTerminalBlock referenceBlock,
             string[] types = null)
         {
-            var searchToken = SearchQueryToken.GetToken(blocksConfig, itemsConfig);
-            var items = GetItemsCore(blocksConfig, itemsConfig, referenceBlock, types, _queryCache, false);
-
-            ItemSnapshot previous;
-            if (_itemSnapshots.TryGetValue(searchToken, out previous) &&
-                ItemSnapshot.ContentEquals(previous.Items, items))
-            {
-                if (!ReferenceEquals(previous.Items, items))
-                    _queryCache[searchToken] = previous.Items;
-
-                return previous;
-            }
-
-            var revision = DateTime.UtcNow;
-            if (previous != null && revision <= previous.Revision)
-                revision = previous.Revision.AddTicks(1);
-
-            var snapshot = new ItemSnapshot(searchToken, revision, items);
-            _itemSnapshots[searchToken] = snapshot;
-            return snapshot;
+            return Items.GetItemsSnapshot(blocksConfig, itemsConfig, referenceBlock, types);
         }
 
         public Dictionary<MyItemType, double> GetIngots(BlockSelectionConfigComponent blocksConfig, ItemSelectionConfigComponent itemsConfig, IMyTerminalBlock referenceBlock)
         {
-            return GetItemsCore(blocksConfig, itemsConfig, referenceBlock, IngotTypeFilter, _ingotQueryCache, true);
+            return Items.GetIngots(blocksConfig, itemsConfig, referenceBlock);
         }
 
         private Dictionary<MyItemType, double> GetItemsCore(BlockSelectionConfigComponent blocksConfig, ItemSelectionConfigComponent itemsConfig,
@@ -449,25 +446,12 @@ namespace LcdMod.Client.GridData
 
         public List<IMyTerminalBlock> GetInventories()
         {
-            RefreshIfNeeded();
-            return _invBlocks;
+            return Blocks.GetInventories();
         }
 
         public List<IMyTerminalBlock> GetInventories(GridLinkTypeEnum linkType)
         {
-            var terminals = GetTerminalBlocks<IMyTerminalBlock>(linkType);
-            var inventories = new List<IMyTerminalBlock>();
-            if (terminals == null)
-                return inventories;
-
-            for (var i = 0; i < terminals.Count; i++)
-            {
-                var block = terminals[i];
-                if (block != null && block.HasInventory)
-                    inventories.Add(block);
-            }
-
-            return inventories;
+            return Blocks.GetInventories(linkType);
         }
 
         private bool IsBlockInGridLinkScope(IMyTerminalBlock block, IMyTerminalBlock referenceBlock,
@@ -495,7 +479,7 @@ namespace LcdMod.Client.GridData
 
         public void RefreshIfNeeded()
         {
-            StartRefresh();
+            Blocks.RefreshIfNeeded();
         }
 
         public static bool EnsureAssemblerBlueprintDatabase(IMyAssembler assembler)
@@ -739,54 +723,18 @@ namespace LcdMod.Client.GridData
 
         internal List<T> GetTerminalBlocksInternal<T>() where T : IMyTerminalBlock
         {
-            RefreshIfNeeded();
-            switch (typeof(T).Name)
-            {
-                case nameof(IMyTerminalBlock):
-                    return _terminalBlocks as List<T>;
-                case nameof(IMyCargoContainer):
-                    return _cargoContainers as List<T>;
-                case nameof(IMyGasTank):
-                    return _gasTanks as List<T>;
-                case nameof(IMyPowerProducer):
-                    return _powerProducers as List<T>;
-                case nameof(IMyLaserAntenna):
-                    return _lasers as List<T>;
-                case nameof(IMyRadioAntenna):
-                    return _radio as List<T>;
-                case nameof(IMyBeacon):
-                    return _beacons as List<T>;
-                case nameof(IMyBatteryBlock):
-                    return _batteries as List<T>;
-                case nameof(IMyJumpDrive):
-                    return _jumpDrives as List<T>;
-                case nameof(IMyAssembler):
-                    return _assemblers as List<T>;
-            }
-
-            throw new NotImplementedException(typeof(T).Name);
+            return Blocks.GetTerminalBlocksInternal<T>();
         }
 
         public List<T> GetTerminalBlocks<T>(GridLinkTypeEnum linkType = (GridLinkTypeEnum)(-1))
             where T : IMyTerminalBlock
         {
-            if (linkType == (GridLinkTypeEnum)(-1))
-                return GetTerminalBlocksInternal<T>();
-
-            if (linkType != GridLinkTypeEnum.Physical && linkType != GridLinkTypeEnum.Mechanical)
-                throw new NotImplementedException(typeof(T).Name);
-
-            var resolver = GridGroupLogic.ResolveFor(this);
-            if (resolver == null)
-                return GetTerminalBlocksInternal<T>();
-
-            return resolver.GetTerminalBlocks<T>(this, linkType);
+            return Blocks.GetTerminalBlocks<T>(linkType);
         }
 
         public List<FarmPlotEntry> GetFarmPlots()
         {
-            RefreshIfNeeded();
-            return _farmPlots;
+            return Blocks.GetFarmPlots();
         }
 
         public bool TryGetPlanetJumpPoint(
@@ -917,44 +865,7 @@ namespace LcdMod.Client.GridData
         public List<ProductionBlockItems> GetProductionBlockItems(BlockSelectionConfigComponent blocksConfig, ItemSelectionConfigComponent itemsConfig,
             IMyTerminalBlock referenceBlock)
         {
-            try
-            {
-                var token = SearchQueryToken.GetToken(blocksConfig, itemsConfig);
-
-                List<ProductionBlockItems> cached;
-                if (_productionByBlockCache.TryGetValue(token, out cached))
-                    return cached;
-
-                var blocks = new List<IMyTerminalBlock>();
-                BuildProductionBlockList(blocksConfig, referenceBlock, blocks);
-
-                var result = new List<ProductionBlockItems>(blocks.Count);
-                var scratchItems = new List<IngameItem>();
-                var scratchInput = new Dictionary<MyItemType, double>();
-                var scratchOutput = new Dictionary<MyItemType, double>();
-
-                for (var b = 0; b < blocks.Count; b++)
-                {
-                    var tb = blocks[b];
-                    scratchInput.Clear();
-                    scratchOutput.Clear();
-                    ReadInventoryAmounts(tb, 0, scratchItems, scratchInput);
-                    ReadInventoryAmounts(tb, 1, scratchItems, scratchOutput);
-
-                    var entry = new ProductionBlockItems(tb.EntityId, GetBlockDisplayName(tb));
-                    FillSortedByAmount(scratchInput, entry.Input);
-                    FillSortedByAmount(scratchOutput, entry.Output);
-                    result.Add(entry);
-                }
-
-                _productionByBlockCache[token] = result;
-                return result;
-            }
-            catch (Exception e)
-            {
-                ErrorHandlerHelper.LogError(e, this);
-                return new List<ProductionBlockItems>();
-            }
+            return Items.GetProductionBlockItems(blocksConfig, itemsConfig, referenceBlock);
         }
 
         /// <summary>
@@ -1049,6 +960,252 @@ namespace LcdMod.Client.GridData
             active = next;
             next = old;
             next?.Clear();
+        }
+
+        public sealed class ItemsComponent
+        {
+            readonly GridLogic _owner;
+
+            internal ItemsComponent(GridLogic owner)
+            {
+                _owner = owner;
+            }
+
+            public Dictionary<MyItemType, double> Components
+            {
+                get
+                {
+                    if (!_owner._compCache.Any())
+                        _owner.AggregateItems(_owner.GetInventories(), _owner._compCache, new[] { "Component" },
+                            Array.Empty<MyDefinitionId>());
+
+                    return _owner._compCache;
+                }
+            }
+
+            public Dictionary<MyItemType, double> Ingots
+            {
+                get
+                {
+                    if (!_owner._ingotCache.Any())
+                        _owner.AggregateItems(_owner.GetInventories(), _owner._ingotCache, IngotTypeFilter,
+                            Array.Empty<MyDefinitionId>());
+
+                    return _owner._ingotCache;
+                }
+            }
+
+            public Dictionary<MyItemType, double> GetItems(
+                BlockSelectionConfigComponent blocksConfig,
+                ItemSelectionConfigComponent itemsConfig,
+                IMyTerminalBlock referenceBlock,
+                string[] types = null)
+            {
+                return _owner.GetItemsCore(blocksConfig, itemsConfig, referenceBlock, types, _owner._queryCache, false);
+            }
+
+            public ItemSnapshot GetItemsSnapshot(
+                BlockSelectionConfigComponent blocksConfig,
+                ItemSelectionConfigComponent itemsConfig,
+                IMyTerminalBlock referenceBlock,
+                string[] types = null)
+            {
+                var searchToken = SearchQueryToken.GetToken(blocksConfig, itemsConfig);
+                var items = _owner.GetItemsCore(blocksConfig, itemsConfig, referenceBlock, types, _owner._queryCache, false);
+
+                ItemSnapshot previous;
+                if (_owner._itemSnapshots.TryGetValue(searchToken, out previous) &&
+                    ItemSnapshot.ContentEquals(previous.Items, items))
+                {
+                    if (!ReferenceEquals(previous.Items, items))
+                        _owner._queryCache[searchToken] = previous.Items;
+
+                    return previous;
+                }
+
+                var revision = DateTime.UtcNow;
+                if (previous != null && revision <= previous.Revision)
+                    revision = previous.Revision.AddTicks(1);
+
+                var snapshot = new ItemSnapshot(searchToken, revision, items);
+                _owner._itemSnapshots[searchToken] = snapshot;
+                return snapshot;
+            }
+
+            public Dictionary<MyItemType, double> GetIngots(
+                BlockSelectionConfigComponent blocksConfig,
+                ItemSelectionConfigComponent itemsConfig,
+                IMyTerminalBlock referenceBlock)
+            {
+                return _owner.GetItemsCore(blocksConfig, itemsConfig, referenceBlock, IngotTypeFilter,
+                    _owner._ingotQueryCache, true);
+            }
+
+            public List<ProductionBlockItems> GetProductionBlockItems(
+                BlockSelectionConfigComponent blocksConfig,
+                ItemSelectionConfigComponent itemsConfig,
+                IMyTerminalBlock referenceBlock)
+            {
+                try
+                {
+                    var token = SearchQueryToken.GetToken(blocksConfig, itemsConfig);
+
+                    List<ProductionBlockItems> cached;
+                    if (_owner._productionByBlockCache.TryGetValue(token, out cached))
+                        return cached;
+
+                    var blocks = new List<IMyTerminalBlock>();
+                    _owner.BuildProductionBlockList(blocksConfig, referenceBlock, blocks);
+
+                    var result = new List<ProductionBlockItems>(blocks.Count);
+                    var scratchItems = new List<IngameItem>();
+                    var scratchInput = new Dictionary<MyItemType, double>();
+                    var scratchOutput = new Dictionary<MyItemType, double>();
+
+                    for (var b = 0; b < blocks.Count; b++)
+                    {
+                        var tb = blocks[b];
+                        scratchInput.Clear();
+                        scratchOutput.Clear();
+                        ReadInventoryAmounts(tb, 0, scratchItems, scratchInput);
+                        ReadInventoryAmounts(tb, 1, scratchItems, scratchOutput);
+
+                        var entry = new ProductionBlockItems(tb.EntityId, GetBlockDisplayName(tb));
+                        FillSortedByAmount(scratchInput, entry.Input);
+                        FillSortedByAmount(scratchOutput, entry.Output);
+                        result.Add(entry);
+                    }
+
+                    _owner._productionByBlockCache[token] = result;
+                    return result;
+                }
+                catch (Exception e)
+                {
+                    ErrorHandlerHelper.LogError(e, _owner);
+                    return new List<ProductionBlockItems>();
+                }
+            }
+        }
+
+        public sealed class BlocksComponent
+        {
+            readonly GridLogic _owner;
+
+            internal BlocksComponent(GridLogic owner)
+            {
+                _owner = owner;
+            }
+
+            public int LastRefreshIterations => _owner.LastRefreshIterations;
+            public int LastRefreshProcessed => _owner.LastRefreshProcessed;
+            public int EstimatedNextRefreshBatchSize => _owner.EstimatedNextRefreshBatchSize;
+            public int CurrentRefreshBatchSize => _owner.CurrentRefreshBatchSize;
+            public bool IsRefreshRunning => _owner.IsRefreshRunning;
+
+            public void RefreshIfNeeded()
+            {
+                _owner.StartRefresh();
+            }
+
+            public List<IMyTerminalBlock> GetInventories()
+            {
+                RefreshIfNeeded();
+                return _owner._invBlocks;
+            }
+
+            public List<IMyTerminalBlock> GetInventories(GridLinkTypeEnum linkType)
+            {
+                var terminals = GetTerminalBlocks<IMyTerminalBlock>(linkType);
+                var inventories = new List<IMyTerminalBlock>();
+                if (terminals == null)
+                    return inventories;
+
+                for (var i = 0; i < terminals.Count; i++)
+                {
+                    var block = terminals[i];
+                    if (block != null && block.HasInventory)
+                        inventories.Add(block);
+                }
+
+                return inventories;
+            }
+
+            internal List<T> GetTerminalBlocksInternal<T>() where T : IMyTerminalBlock
+            {
+                RefreshIfNeeded();
+                switch (typeof(T).Name)
+                {
+                    case nameof(IMyTerminalBlock):
+                        return _owner._terminalBlocks as List<T>;
+                    case nameof(IMyCargoContainer):
+                        return _owner._cargoContainers as List<T>;
+                    case nameof(IMyGasTank):
+                        return _owner._gasTanks as List<T>;
+                    case nameof(IMyPowerProducer):
+                        return _owner._powerProducers as List<T>;
+                    case nameof(IMyLaserAntenna):
+                        return _owner._lasers as List<T>;
+                    case nameof(IMyRadioAntenna):
+                        return _owner._radio as List<T>;
+                    case nameof(IMyBeacon):
+                        return _owner._beacons as List<T>;
+                    case nameof(IMyBatteryBlock):
+                        return _owner._batteries as List<T>;
+                    case nameof(IMyJumpDrive):
+                        return _owner._jumpDrives as List<T>;
+                    case nameof(IMyAssembler):
+                        return _owner._assemblers as List<T>;
+                }
+
+                throw new NotImplementedException(typeof(T).Name);
+            }
+
+            public List<T> GetTerminalBlocks<T>(GridLinkTypeEnum linkType = (GridLinkTypeEnum)(-1))
+                where T : IMyTerminalBlock
+            {
+                if (linkType == (GridLinkTypeEnum)(-1))
+                    return GetTerminalBlocksInternal<T>();
+
+                if (linkType != GridLinkTypeEnum.Physical && linkType != GridLinkTypeEnum.Mechanical)
+                    throw new NotImplementedException(typeof(T).Name);
+
+                var resolver = GridGroupLogic.ResolveFor(_owner);
+                if (resolver == null)
+                    return GetTerminalBlocksInternal<T>();
+
+                return resolver.GetTerminalBlocks<T>(_owner, linkType);
+            }
+
+            public List<FarmPlotEntry> GetFarmPlots()
+            {
+                RefreshIfNeeded();
+                return _owner._farmPlots;
+            }
+        }
+
+        public sealed class PowerComponent
+        {
+            readonly GridLogic _owner;
+
+            internal PowerComponent(GridLogic owner)
+            {
+                _owner = owner;
+            }
+
+            public List<IMyPowerProducer> GetProducers(GridLinkTypeEnum linkType = (GridLinkTypeEnum)(-1))
+            {
+                return _owner.GetTerminalBlocks<IMyPowerProducer>(linkType);
+            }
+
+            public List<IMyBatteryBlock> GetBatteries(GridLinkTypeEnum linkType = (GridLinkTypeEnum)(-1))
+            {
+                return _owner.GetTerminalBlocks<IMyBatteryBlock>(linkType);
+            }
+
+            public List<IMyJumpDrive> GetJumpDrives(GridLinkTypeEnum linkType = (GridLinkTypeEnum)(-1))
+            {
+                return _owner.GetTerminalBlocks<IMyJumpDrive>(linkType);
+            }
         }
 
         private struct JumpPointGpsEntry

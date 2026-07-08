@@ -11,7 +11,6 @@ namespace LcdMod.Client.Audio
     internal sealed class AudioImportService
     {
         const string AUDIO_IMPORT_LIST_FILE = "audio_import.txt";
-        const string AUDIO_METADATA_FILE = "audio.xml";
         const int MAX_SOURCE_WAVE_BYTES = 64 * 1024 * 1024;
 
         public void ImportLocalAudioCommand(string[] args)
@@ -135,34 +134,41 @@ namespace LcdMod.Client.Audio
                 return;
             }
 
-            if (work.RuntimeWaveBytes.Length > AudioImportProcessor.MaxRuntimeWaveBytes)
+            if (work.RuntimeWaveBytes.Length > AudioImportProcessor.MAX_RUNTIME_WAVE_BYTES)
             {
                 NotifyFailure(work.SourcePath, "Runtime WAV exceeds size limit.");
                 return;
             }
 
-            try
+            var sourceArchivePath = AudioLibraryStorage.BuildSourceEntryPath(work.AssetId, work.SourcePath, work.SourceSha256);
+            work.RuntimePath = AudioLibraryStorage.BuildRuntimeEntryPath(work.AssetId, work.RuntimeSha256);
+
+            string saveFailure;
+            if (!AudioLibraryStorage.TrySaveImportedAsset(new AudioAssetMetadata
             {
-                WriteCanonicalRuntimeFile(work.RuntimePath, work.RuntimeWaveBytes);
-                UpsertAudioMetadata(new AudioAssetMetadata
-                {
-                    Id = work.AssetId,
-                    OwnerSteamId = work.OwnerSteamId,
-                    SourcePath = work.SourcePath,
-                    SourceSha256 = work.SourceSha256,
-                    RuntimePath = work.RuntimePath,
-                    RuntimeSha256 = work.RuntimeSha256,
-                    RuntimeByteLength = work.RuntimeWaveBytes.LongLength,
-                    PcmByteLength = work.PcmByteLength,
-                    DurationTicks = work.DurationTicks,
-                    SampleRate = AudioImportProcessor.TargetSampleRate,
-                    Channels = AudioImportProcessor.TargetChannels,
-                    BitsPerSample = AudioImportProcessor.TargetBitsPerSample
-                });
-            }
-            catch (Exception error)
+                Id = work.AssetId,
+                OwnerSteamId = work.OwnerSteamId,
+                SourcePath = work.SourcePath,
+                SourceSha256 = work.SourceSha256,
+                SourceArchivePath = sourceArchivePath,
+                SourceByteLength = work.SourceBytes == null ? 0 : work.SourceBytes.LongLength,
+                RuntimePath = work.RuntimePath,
+                RuntimeSha256 = work.RuntimeSha256,
+                RuntimeByteLength = work.RuntimeWaveBytes.LongLength,
+                PcmByteLength = work.PcmByteLength,
+                DurationTicks = work.DurationTicks,
+                SampleRate = AudioImportProcessor.TARGET_SAMPLE_RATE,
+                Channels = AudioImportProcessor.TARGET_CHANNELS,
+                BitsPerSample = AudioImportProcessor.TARGET_BITS_PER_SAMPLE,
+                SourceSampleRate = work.SourceSampleRate,
+                SourceChannels = work.SourceChannels,
+                SourceBitsPerSample = work.SourceBitsPerSample,
+                SourceEncodingName = work.SourceEncodingName,
+                WasNormalized = work.WasNormalized,
+                ImportedUtcTicks = DateTime.UtcNow.Ticks
+            }, work.SourceBytes, work.RuntimeWaveBytes, out saveFailure))
             {
-                NotifyFailure(work.SourcePath, "Could not save imported audio: " + error.Message);
+                NotifyFailure(work.SourcePath, saveFailure);
                 return;
             }
 
@@ -219,62 +225,11 @@ namespace LcdMod.Client.Audio
 
         static bool IsAlreadyImported(string assetId, string sourceSha256)
         {
-            var metadata = LoadAudioMetadata();
+            var metadata = AudioLibraryStorage.LoadMetadata();
             var existing = FindAsset(metadata, assetId);
             return existing != null &&
                    string.Equals(existing.SourceSha256, sourceSha256, StringComparison.OrdinalIgnoreCase) &&
-                   !string.IsNullOrWhiteSpace(existing.RuntimePath) &&
-                   MyAPIGateway.Utilities.FileExistsInLocalStorage(existing.RuntimePath, typeof(LcdModClientComponent));
-        }
-
-        static void WriteCanonicalRuntimeFile(string runtimePath, byte[] runtimeWaveBytes)
-        {
-            if (MyAPIGateway.Utilities.FileExistsInLocalStorage(runtimePath, typeof(LcdModClientComponent)))
-                return;
-
-            using (var writer = MyAPIGateway.Utilities.WriteBinaryFileInLocalStorage(runtimePath, typeof(LcdModClientComponent)))
-                writer.Write(runtimeWaveBytes);
-        }
-
-        static void UpsertAudioMetadata(AudioAssetMetadata asset)
-        {
-            var metadata = LoadAudioMetadata();
-            var existing = FindAsset(metadata, asset.Id);
-
-            if (existing != null)
-                metadata.Assets.Remove(existing);
-
-            metadata.Assets.Add(asset);
-            SaveAudioMetadata(metadata);
-        }
-
-        static AudioLibraryMetadata LoadAudioMetadata()
-        {
-            try
-            {
-                if (!MyAPIGateway.Utilities.FileExistsInLocalStorage(AUDIO_METADATA_FILE, typeof(LcdModClientComponent)))
-                    return new AudioLibraryMetadata();
-
-                using (var reader = MyAPIGateway.Utilities.ReadFileInLocalStorage(AUDIO_METADATA_FILE, typeof(LcdModClientComponent)))
-                {
-                    var xml = reader.ReadToEnd();
-                    return MyAPIGateway.Utilities.SerializeFromXML<AudioLibraryMetadata>(xml) ?? new AudioLibraryMetadata();
-                }
-            }
-            catch (Exception error)
-            {
-                LogHelper.Log(MyLogSeverity.Warning, "Could not read audio.xml; starting with empty audio metadata: " + error.Message);
-                return new AudioLibraryMetadata();
-            }
-        }
-
-        static void SaveAudioMetadata(AudioLibraryMetadata metadata)
-        {
-            if (metadata == null)
-                metadata = new AudioLibraryMetadata();
-
-            using (var writer = MyAPIGateway.Utilities.WriteFileInLocalStorage(AUDIO_METADATA_FILE, typeof(LcdModClientComponent)))
-                writer.Write(MyAPIGateway.Utilities.SerializeToXML(metadata));
+                   AudioLibraryStorage.RuntimeWaveExists(existing);
         }
 
         static AudioAssetMetadata FindAsset(AudioLibraryMetadata metadata, string assetId)

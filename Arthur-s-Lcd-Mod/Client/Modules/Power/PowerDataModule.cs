@@ -6,7 +6,7 @@ namespace LcdMod.Client.Modules.Power
 {
     public sealed class PowerDataModule
     {
-        const long ReleaseGraceFrames = 600;
+        const long RELEASE_GRACE_FRAMES = 600;
         readonly Dictionary<PowerScopeKey, PowerDataService> _services = new Dictionary<PowerScopeKey, PowerDataService>();
         readonly List<PowerScopeKey> _removeKeys = new List<PowerScopeKey>();
         readonly List<PowerDataService> _serviceSnapshot = new List<PowerDataService>();
@@ -85,7 +85,7 @@ namespace LcdMod.Client.Modules.Power
             foreach (var kv in _services)
             {
                 var service = kv.Value;
-                if (service != null && !service.HasCaptures && gameplayFrame - service.ReleasedFrame > ReleaseGraceFrames)
+                if (service != null && !service.HasCaptures && gameplayFrame - service.ReleasedFrame > RELEASE_GRACE_FRAMES)
                     _removeKeys.Add(kv.Key);
             }
 

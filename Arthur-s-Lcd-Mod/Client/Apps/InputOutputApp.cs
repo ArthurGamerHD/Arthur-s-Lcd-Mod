@@ -225,7 +225,7 @@ namespace LcdMod.Client.Apps
             _scroll.AutoScrollSecondsPerStep = 0f;
             _scroll.ConfigureAutomatic(
                 new RectangleF(ViewBox.X, contentTop, ViewBox.Width, viewportHeight),
-                ScrollPanel.DefaultScrollerWidthPixels * Scale,
+                ScrollPanel.DEFAULT_SCROLLER_WIDTH_PIXELS * Scale,
                 rowHeight);
         }
 

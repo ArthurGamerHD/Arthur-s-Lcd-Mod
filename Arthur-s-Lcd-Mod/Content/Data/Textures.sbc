@@ -86,6 +86,24 @@
             <Selectable>false</Selectable>
         </LCDTextureDefinition>
 
+        <LCDTextureDefinition> <!-- Custom Folder Icon Sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="Folder"/>
+            <SpritePath>Textures/Sprites/Folder.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Custom XWM File Icon Sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="FileXwm"/>
+            <SpritePath>Textures/Sprites/FileXwm.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Custom WAV File Icon Sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="FileWav"/>
+            <SpritePath>Textures/Sprites/FileWav.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
         <LCDTextureDefinition> <!-- Custom Boolean Input Icon Sprite -->
             <Id Type="LCDTextureDefinition" Subtype="BooleanInput"/>
             <SpritePath>Textures/Sprites/BooleanInput.dds</SpritePath>

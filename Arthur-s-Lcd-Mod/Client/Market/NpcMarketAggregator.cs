@@ -16,8 +16,8 @@ namespace LcdMod.Client.Market
 {
     internal sealed class NpcMarketAggregator
     {
-        const string OxygenIconPath = "Textures\\GUI\\Icons\\OxygenIcon.dds";
-        const string HydrogenIconPath = "Textures\\GUI\\Icons\\HydrogenIcon.dds";
+        const string OXYGEN_ICON_PATH = "Textures\\GUI\\Icons\\OxygenIcon.dds";
+        const string HYDROGEN_ICON_PATH = "Textures\\GUI\\Icons\\HydrogenIcon.dds";
 
         public NpcMarketAggregationResult Build(PacketSyncNpcMarket packet, IMyTextSurface surface, NpcMarketMode mode,
             NpcMarketSortColumn sortColumn, bool sortDescending, double maxDistanceMeters)
@@ -409,9 +409,9 @@ namespace LcdMod.Client.Market
                 case ItemTypes.Grid:
                     return ResolvePrefab(offer);
                 case ItemTypes.Oxygen:
-                    return ResolveFixedGas("Oxygen", OxygenIconPath, offer);
+                    return ResolveFixedGas("Oxygen", OXYGEN_ICON_PATH, offer);
                 case ItemTypes.Hydrogen:
-                    return ResolveFixedGas("Hydrogen", HydrogenIconPath, offer);
+                    return ResolveFixedGas("Hydrogen", HYDROGEN_ICON_PATH, offer);
                 case ItemTypes.Gas:
                     return ResolveGenericGas(offer);
                 default:

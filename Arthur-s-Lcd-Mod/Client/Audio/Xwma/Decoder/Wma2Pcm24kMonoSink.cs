@@ -22,6 +22,7 @@ namespace LcdMod.Client.Audio.Xwma.Decoder
         const double CUTOFF_SAFETY = 0.94;
 
         readonly uint _sourceSampleRate;
+        readonly ushort _sourceChannels;
         readonly int _phaseDivisor;
         readonly double[][] _phaseCoefficients;
         readonly float[] _sourceRing;
@@ -33,12 +34,19 @@ namespace LcdMod.Client.Audio.Xwma.Decoder
 
         public Wma2Pcm24KMonoSink(
             uint sourceSampleRate,
+            ushort sourceChannels,
             long estimatedSourceFrames)
         {
             if (sourceSampleRate != 44100u && sourceSampleRate != 48000u)
             {
                 throw new InvalidDataException(
                     "Only 44100 Hz and 48000 Hz WMAv2 are supported.");
+            }
+
+            if (sourceChannels != 1 && sourceChannels != 2)
+            {
+                throw new InvalidDataException(
+                    "Only mono and stereo WMAv2 are supported.");
             }
 
             if (estimatedSourceFrames < 0)
@@ -48,6 +56,7 @@ namespace LcdMod.Client.Audio.Xwma.Decoder
             }
 
             _sourceSampleRate = sourceSampleRate;
+            _sourceChannels = sourceChannels;
             _phaseDivisor = GreatestCommonDivisor(
                 (int)sourceSampleRate,
                 (int)PcmAudioFormat.REQUIRED_SAMPLE_RATE);
@@ -75,6 +84,28 @@ namespace LcdMod.Client.Audio.Xwma.Decoder
 
         public int OutputFrameCount => _outputFrameCount;
 
+        public void AppendMonoFrame(
+            float[] mono,
+            int frameLength)
+        {
+            if (_completed)
+            {
+                throw new InvalidDataException(
+                    "PCM was appended after the WMAv2 output was completed.");
+            }
+
+            if (mono == null ||
+                frameLength < 0 ||
+                mono.Length < frameLength)
+            {
+                throw new InvalidDataException(
+                    "Invalid mono WMAv2 output frame.");
+            }
+
+            for (int i = 0; i < frameLength; i++)
+                AppendMonoSample(mono[i]);
+        }
+
         public void AppendStereoFrame(
             float[] left,
             float[] right,
@@ -92,16 +123,18 @@ namespace LcdMod.Client.Audio.Xwma.Decoder
                 right.Length < frameLength)
             {
                 throw new InvalidDataException(
-                    "Invalid WMAv2 output frame.");
+                    "Invalid stereo WMAv2 output frame.");
             }
 
             for (int i = 0; i < frameLength; i++)
-            {
-                float mono = 0.5f * (left[i] + right[i]);
-                _sourceRing[_sourceFrameCount % SOURCE_RING_LENGTH] = mono;
-                _sourceFrameCount++;
-                EmitReadyOutput(false);
-            }
+                AppendMonoSample(0.5f * (left[i] + right[i]));
+        }
+
+        void AppendMonoSample(float sample)
+        {
+            _sourceRing[_sourceFrameCount % SOURCE_RING_LENGTH] = sample;
+            _sourceFrameCount++;
+            EmitReadyOutput(false);
         }
 
         public PcmWaveData Complete()
@@ -133,11 +166,15 @@ namespace LcdMod.Client.Audio.Xwma.Decoder
             {
                 Samples = samples,
                 Channels = PcmAudioFormat.REQUIRED_MONO_CHANNELS,
-                SourceChannels = PcmAudioFormat.SUPPORTED_STEREO_CHANNELS,
+                SourceChannels = _sourceChannels,
                 SampleRate = PcmAudioFormat.REQUIRED_SAMPLE_RATE,
+                SourceSampleRate = _sourceSampleRate,
                 BitsPerSample = PcmAudioFormat.REQUIRED_BITS_PER_SAMPLE,
+                SourceBitsPerSample = PcmAudioFormat.REQUIRED_BITS_PER_SAMPLE,
                 BlockAlign = PcmAudioFormat.REQUIRED_MONO_BLOCK_ALIGN,
-                WasDownmixedToMono = true
+                WasDownmixedToMono = _sourceChannels != PcmAudioFormat.REQUIRED_MONO_CHANNELS,
+                WasResampled = _sourceSampleRate != PcmAudioFormat.REQUIRED_SAMPLE_RATE,
+                SourceFormatDisplayName = "xwma"
             };
         }
 

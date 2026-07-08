@@ -5,10 +5,10 @@ namespace LcdMod.Client.ClockDashboard
 {
     internal static class ClockDashboardSolarTime
     {
-        public const double PolarUtcEnterLatitudeDegrees = 70d;
-        public const double PolarUtcExitLatitudeDegrees = 65d;
+        public const double POLAR_UTC_ENTER_LATITUDE_DEGREES = 70d;
+        public const double POLAR_UTC_EXIT_LATITUDE_DEGREES = 65d;
         
-        const double PolarEpsilonSquared = 1e-8;
+        const double POLAR_EPSILON_SQUARED = 1e-8;
 
         public static bool TryCalculateLocalSolarHour(
             Vector3D position,
@@ -22,11 +22,11 @@ namespace LcdMod.Client.ClockDashboard
             elevation = 0d;
 
             Vector3D surfaceNormal = position - planetCenter;
-            if (surfaceNormal.LengthSquared() <= PolarEpsilonSquared)
+            if (surfaceNormal.LengthSquared() <= POLAR_EPSILON_SQUARED)
                 return false;
 
-            if (sunDirection.LengthSquared() <= PolarEpsilonSquared ||
-                rotationAxis.LengthSquared() <= PolarEpsilonSquared)
+            if (sunDirection.LengthSquared() <= POLAR_EPSILON_SQUARED ||
+                rotationAxis.LengthSquared() <= POLAR_EPSILON_SQUARED)
                 return false;
 
             surfaceNormal.Normalize();
@@ -36,8 +36,8 @@ namespace LcdMod.Client.ClockDashboard
 
             Vector3D localMeridian = Reject(surfaceNormal, rotationAxis);
             Vector3D projectedSun = Reject(sunDirection, rotationAxis);
-            if (localMeridian.LengthSquared() <= PolarEpsilonSquared ||
-                projectedSun.LengthSquared() <= PolarEpsilonSquared)
+            if (localMeridian.LengthSquared() <= POLAR_EPSILON_SQUARED ||
+                projectedSun.LengthSquared() <= POLAR_EPSILON_SQUARED)
                 return false;
 
             localMeridian.Normalize();
@@ -60,20 +60,20 @@ namespace LcdMod.Client.ClockDashboard
             sunDirection = Vector3D.Zero;
 
             Vector3D surfaceNormal = position - planetCenter;
-            if (surfaceNormal.LengthSquared() <= PolarEpsilonSquared ||
-                rotationAxis.LengthSquared() <= PolarEpsilonSquared)
+            if (surfaceNormal.LengthSquared() <= POLAR_EPSILON_SQUARED ||
+                rotationAxis.LengthSquared() <= POLAR_EPSILON_SQUARED)
                 return false;
 
             surfaceNormal.Normalize();
             rotationAxis.Normalize();
 
             Vector3D localMeridian = Reject(surfaceNormal, rotationAxis);
-            if (localMeridian.LengthSquared() <= PolarEpsilonSquared)
+            if (localMeridian.LengthSquared() <= POLAR_EPSILON_SQUARED)
                 return false;
 
             localMeridian.Normalize();
             Vector3D positiveHourTangent = Vector3D.Cross(rotationAxis, localMeridian);
-            if (positiveHourTangent.LengthSquared() <= PolarEpsilonSquared)
+            if (positiveHourTangent.LengthSquared() <= POLAR_EPSILON_SQUARED)
                 return false;
 
             positiveHourTangent.Normalize();
@@ -86,7 +86,7 @@ namespace LcdMod.Client.ClockDashboard
                 localMeridian * Math.Cos(hourAngle) +
                 positiveHourTangent * Math.Sin(hourAngle);
 
-            if (sunDirection.LengthSquared() <= PolarEpsilonSquared)
+            if (sunDirection.LengthSquared() <= POLAR_EPSILON_SQUARED)
                 return false;
 
             sunDirection.Normalize();
@@ -100,8 +100,8 @@ namespace LcdMod.Client.ClockDashboard
             DashboardClockMode previousMode)
         {
             Vector3D surfaceNormal = position - planetCenter;
-            if (surfaceNormal.LengthSquared() <= PolarEpsilonSquared ||
-                rotationAxis.LengthSquared() <= PolarEpsilonSquared)
+            if (surfaceNormal.LengthSquared() <= POLAR_EPSILON_SQUARED ||
+                rotationAxis.LengthSquared() <= POLAR_EPSILON_SQUARED)
                 return false;
 
             surfaceNormal.Normalize();
@@ -110,8 +110,8 @@ namespace LcdMod.Client.ClockDashboard
             double axisAlignment = Math.Abs(Vector3D.Dot(surfaceNormal, rotationAxis));
             axisAlignment = MathHelper.Clamp(axisAlignment, 0d, 1d);
             double latitudeDegrees = MathHelper.ToDegrees(Math.Asin(axisAlignment));
-            double enter = PolarUtcEnterLatitudeDegrees;
-            double exit = PolarUtcExitLatitudeDegrees;
+            double enter = POLAR_UTC_ENTER_LATITUDE_DEGREES;
+            double exit = POLAR_UTC_EXIT_LATITUDE_DEGREES;
 
             enter = MathHelper.Clamp(enter, 0d, 90d);
             exit = MathHelper.Clamp(exit, 0d, enter);

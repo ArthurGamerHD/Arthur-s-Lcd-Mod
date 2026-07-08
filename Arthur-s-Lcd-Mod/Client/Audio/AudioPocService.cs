@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using LcdMod.Client.Audio.Xwma.Decoder;
 using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
 using Sandbox.Game.Entities;
@@ -16,7 +15,7 @@ namespace LcdMod.Client.Audio
 {
     internal sealed class AudioPocService
     {
-        const double TargetSubmittedSeconds = 3.0;
+        const double TargetSubmittedSeconds = 0.5;
 
         readonly Queue<PlaybackBuffer> _pendingBuffers =
             new Queue<PlaybackBuffer>();
@@ -36,6 +35,7 @@ namespace LcdMod.Client.Audio
             public string WavePath;
             public PcmWaveData Pcm;
             public string FailureReason;
+            public GameAudioContainerKind ContainerKind;
         }
 
         public void PlayAudioCommand(string[] args)
@@ -118,14 +118,15 @@ namespace LcdMod.Client.Audio
             var work = new GameAudioDecodeWork
             {
                 SoundSubtype = definition.Id.SubtypeName,
-                WavePath = Path.Combine("Audio", relativeWavePath)
+                WavePath = Path.Combine("Audio", relativeWavePath),
+                ContainerKind = GameAudioPcmLoader.GetContainerKind(relativeWavePath)
             };
 
             MyAPIGateway.Parallel.Start(
                 delegate { DecodeGameAudio(work); },
                 delegate { CompleteGameAudioPlayback(work); });
 
-            Show("Decoding game sound: " + work.SoundSubtype);
+            Show("Loading game sound: " + work.SoundSubtype);
         }
 
         static MyAudioDefinition FindSoundDefinition(string subtype)
@@ -157,10 +158,8 @@ namespace LcdMod.Client.Audio
             for (int i = 0; i < data.Waves.Count; i++)
             {
                 string path = data.Waves[i].Start;
-                string extension = Path.GetExtension(path);
                 if (!string.IsNullOrWhiteSpace(path) &&
-                    (string.Equals(extension, ".xwm", StringComparison.OrdinalIgnoreCase) ||
-                     string.Equals(extension, ".wav", StringComparison.OrdinalIgnoreCase)))
+                    GameAudioPcmLoader.IsSupportedAudioPath(path))
                 {
                     return path;
                 }
@@ -171,46 +170,16 @@ namespace LcdMod.Client.Audio
 
         static void DecodeGameAudio(GameAudioDecodeWork work)
         {
-            try
-            {
-                using (BinaryReader reader =
-                    MyAPIGateway.Utilities.ReadBinaryFileInGameContent(work.WavePath))
-                {
-                    string extension = Path.GetExtension(work.WavePath);
-                    bool decoded;
+            GameAudioContainerKind containerKind;
+            bool decoded = GameAudioPcmLoader.TryReadInGameContent(
+                work.WavePath,
+                out work.Pcm,
+                out work.FailureReason,
+                out containerKind);
+            work.ContainerKind = containerKind;
 
-                    if (string.Equals(extension, ".xwm", StringComparison.OrdinalIgnoreCase))
-                    {
-                        decoded = XwmaPcmDecoder.TryDecode(
-                            reader.BaseStream,
-                            out work.Pcm,
-                            out work.FailureReason);
-                    }
-                    else if (string.Equals(extension, ".wav", StringComparison.OrdinalIgnoreCase))
-                    {
-                        decoded = PcmWaveReader.TryRead(
-                            reader,
-                            out work.Pcm,
-                            out work.FailureReason);
-                    }
-                    else
-                    {
-                        decoded = false;
-                        work.FailureReason = "Unsupported game audio extension: " + extension;
-                    }
-
-                    if (!decoded)
-                    {
-                        LogHelper.Log(MyLogSeverity.Warning, "Failed to decode " + work.FailureReason);
-                        return;
-                    }
-                }
-            }
-            catch (Exception error)
-            {
-                work.FailureReason = error.Message;
-                work.Pcm = null;
-            }
+            if (!decoded)
+                LogHelper.Log(MyLogSeverity.Warning, "Failed to read game audio PCM: " + work.FailureReason);
         }
 
         void CompleteGameAudioPlayback(GameAudioDecodeWork work)
@@ -229,6 +198,7 @@ namespace LcdMod.Client.Audio
             Play(work.Pcm);
             Show(
                 "Playing " + work.SoundSubtype +
+                " [" + GameAudioPcmLoader.GetContainerDisplayName(work.ContainerKind) + "]" +
                 " (" + work.Pcm.DurationSeconds.ToString("0.00") + "s)");
         }
 

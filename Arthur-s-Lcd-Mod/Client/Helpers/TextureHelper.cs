@@ -528,7 +528,7 @@ namespace LcdMod.Client.Helpers
         static string MakeSafeTextureSubtype(string value)
         {
             if (string.IsNullOrEmpty(value))
-                return StableFnv1a32(string.Empty).ToString("X8");
+                return StableFnv1A32(string.Empty).ToString("X8");
 
             var sb = new StringBuilder(value.Length);
             for (var i = 0; i < value.Length; i++)
@@ -541,10 +541,10 @@ namespace LcdMod.Client.Helpers
             if (sanitized.Length > 72)
                 sanitized = sanitized.Substring(0, 72);
 
-            return sanitized + "_" + StableFnv1a32(value).ToString("X8");
+            return sanitized + "_" + StableFnv1A32(value).ToString("X8");
         }
 
-        static uint StableFnv1a32(string value)
+        static uint StableFnv1A32(string value)
         {
             unchecked
             {

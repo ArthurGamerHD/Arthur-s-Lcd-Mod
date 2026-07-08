@@ -5,10 +5,12 @@ using InvalidDataException = LcdMod.Common.InvalidDataException;
 
 namespace LcdMod.Client.Audio.Xwma
 {
-public enum XwmaProfileKind
+    public enum XwmaProfileKind
     {
-        Wma2Stereo44100Hz48Kbps,
-        Wma2Stereo48000Hz48Kbps
+        Wma2Mono44100Hz,
+        Wma2Mono48000Hz,
+        Wma2Stereo44100Hz,
+        Wma2Stereo48000Hz
     }
 
     public sealed class XwmaWaveFormat
@@ -82,9 +84,18 @@ public enum XwmaProfileKind
             }
         }
 
-        // The restricted input profile is stereo, 16-bit PCM after decode:
-        // two channels * two bytes = four bytes per sample frame.
-        public long DeclaredSourceSampleFrames => DeclaredDecodedPcmBytes / 4L;
+        public long DeclaredSourceSampleFrames
+        {
+            get
+            {
+                long bytesPerFrame = Format == null
+                    ? 0L
+                    : Format.Channels * 2L;
+                return bytesPerFrame <= 0L
+                    ? 0L
+                    : DeclaredDecodedPcmBytes / bytesPerFrame;
+            }
+        }
 
         public long Estimate24000HzStereoPcmBytes()
         {
@@ -93,15 +104,15 @@ public enum XwmaProfileKind
                 (sourceFrames * 24000L + Format.SampleRate - 1L) /
                 Format.SampleRate);
 
-            return checked(outputFrames * 4L);
+            return checked(outputFrames * Format.Channels * 2L);
         }
     }
 
     public static class XwmaParser
     {
         private const ushort WMA_AUDIO2_FORMAT_TAG = 0x0161;
-        private const ushort REQUIRED_INPUT_CHANNELS = 2;
-        private const uint REQUIRED_AVERAGE_BYTES_PER_SECOND = 6000;
+        private const ushort MINIMUM_INPUT_CHANNELS = 1;
+        private const ushort MAXIMUM_INPUT_CHANNELS = 2;
         private const ushort REQUIRED_INPUT_BITS_PER_SAMPLE = 16;
         private const uint REQUIRED_FORMAT_CHUNK_SIZE = 18;
         private const ushort REQUIRED_EXTRA_SIZE = 0;
@@ -318,14 +329,18 @@ public enum XwmaProfileKind
                     "Only WMAv2 format tag 0x0161 is supported.");
             }
 
-            if (format.Channels != REQUIRED_INPUT_CHANNELS)
-                throw new NotSupportedException("Only stereo WMAv2 input is supported.");
-
-            if (format.AverageBytesPerSecond != REQUIRED_AVERAGE_BYTES_PER_SECOND)
+            if (format.Channels < MINIMUM_INPUT_CHANNELS ||
+                format.Channels > MAXIMUM_INPUT_CHANNELS)
             {
                 throw new NotSupportedException(
-                    "Only the 48 kb/s WMAv2 profile is supported.");
+                    "Only mono or stereo WMAv2 input is supported.");
             }
+
+            if (format.AverageBytesPerSecond == 0)
+                throw new NotSupportedException("Invalid WMAv2 average byte rate.");
+
+            if (format.BlockAlign == 0)
+                throw new NotSupportedException("Invalid WMAv2 packet size.");
 
             if (format.BitsPerSample != REQUIRED_INPUT_BITS_PER_SAMPLE)
             {
@@ -342,18 +357,31 @@ public enum XwmaProfileKind
             if (format.SampleRate == SAMPLE_RATE44100 &&
                 format.BlockAlign == PACKET_SIZE44100)
             {
-                return XwmaProfileKind.Wma2Stereo44100Hz48Kbps;
+                return format.Channels == 1
+                    ? XwmaProfileKind.Wma2Mono44100Hz
+                    : XwmaProfileKind.Wma2Stereo44100Hz;
             }
 
             if (format.SampleRate == SAMPLE_RATE48000 &&
                 format.BlockAlign == PACKET_SIZE48000)
             {
-                return XwmaProfileKind.Wma2Stereo48000Hz48Kbps;
+                return format.Channels == 1
+                    ? XwmaProfileKind.Wma2Mono48000Hz
+                    : XwmaProfileKind.Wma2Stereo48000Hz;
             }
 
+            if (format.SampleRate == SAMPLE_RATE44100)
+                return format.Channels == 1
+                    ? XwmaProfileKind.Wma2Mono44100Hz
+                    : XwmaProfileKind.Wma2Stereo44100Hz;
+
+            if (format.SampleRate == SAMPLE_RATE48000)
+                return format.Channels == 1
+                    ? XwmaProfileKind.Wma2Mono48000Hz
+                    : XwmaProfileKind.Wma2Stereo48000Hz;
+
             throw new NotSupportedException(
-                "Unsupported sample-rate and packet-size combination: " +
-                format.SampleRate + " Hz, " + format.BlockAlign + " bytes.");
+                "Unsupported WMAv2 sample rate: " + format.SampleRate + " Hz.");
         }
 
         private static void ValidatePacketTable(
@@ -394,12 +422,12 @@ public enum XwmaProfileKind
                         "The dpds table decreases at entry " + i + ".");
                 }
 
-                // Decoded output for this restricted source profile is stereo PCM16,
-                // so cumulative byte positions must be aligned to four bytes.
-                if ((current & 3u) != 0)
+                uint decodedBlockAlign = (uint)(format.Channels * 2u);
+                if ((current % decodedBlockAlign) != 0)
                 {
                     throw new InvalidDataException(
-                        "The dpds entry at index " + i + " is not stereo-PCM16 aligned.");
+                        "The dpds entry at index " + i +
+                        " is not source-PCM16 aligned.");
                 }
 
                 previous = current;

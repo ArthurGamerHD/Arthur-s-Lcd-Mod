@@ -381,7 +381,7 @@ namespace LcdMod.Client.Apps
             wrapPanel.MinimumColumnWidth = LIST_COLUMN_WRAP_WIDTH_PIXELS * scale;
             wrapPanel.HorizontalGap = 6f * scale;
             wrapPanel.VerticalGap = 0f;
-            scrollPanel.AutomaticScrollerWidthPixels = ScrollPanel.DefaultScrollerWidthPixels * scale;
+            scrollPanel.AutomaticScrollerWidthPixels = ScrollPanel.DEFAULT_SCROLLER_WIDTH_PIXELS * scale;
             scrollPanel.ScrollStepPixels = rowH;
             scrollPanel.SetVisible(true);
         }

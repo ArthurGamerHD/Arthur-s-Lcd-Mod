@@ -6,15 +6,15 @@ namespace LcdMod.Common.Audio
 {
     internal static class AudioImportProcessor
     {
-        public const int TargetSampleRate = 24000;
-        public const int TargetChannels = 1;
-        public const int TargetBitsPerSample = 16;
-        public const int MaxRuntimeWaveBytes = 64 * 1024 * 1024;
+        public const int TARGET_SAMPLE_RATE = 24000;
+        public const int TARGET_CHANNELS = 1;
+        public const int TARGET_BITS_PER_SAMPLE = 16;
+        public const int MAX_RUNTIME_WAVE_BYTES = 64 * 1024 * 1024;
 
-        const ushort WaveFormatPcm = 1;
-        const ushort WaveFormatIeeeFloat = 3;
-        const int MinimumSampleRate = 8000;
-        const int MaximumSampleRate = 192000;
+        const ushort WAVE_FORMAT_PCM = 1;
+        const ushort WAVE_FORMAT_IEEE_FLOAT = 3;
+        const int MINIMUM_SAMPLE_RATE = 8000;
+        const int MAXIMUM_SAMPLE_RATE = 192000;
 
         public static void ProcessImport(AudioImportWork work)
         {
@@ -24,7 +24,6 @@ namespace LcdMod.Common.Audio
                     throw new InvalidOperationException("Missing import work.");
 
                 work.SourceSha256 = Sha256Hex(work.SourceBytes);
-                work.RuntimePath = "audio_" + work.SourceSha256.Substring(0, 8) + "_runtime.wav";
 
                 var source = WaveReader.Parse(work.SourceBytes);
                 work.SourceSampleRate = source.SampleRate;
@@ -40,16 +39,16 @@ namespace LcdMod.Common.Audio
                 else
                 {
                     var monoSamples = source.DecodeToMonoFloat();
-                    var resampled = AudioResampler.ResampleLinear(monoSamples, source.SampleRate, TargetSampleRate);
+                    var resampled = AudioResampler.ResampleLinear(monoSamples, source.SampleRate, TARGET_SAMPLE_RATE);
                     var pcm = AudioQuantizer.ToPcm16LittleEndian(resampled);
-                    work.RuntimeWaveBytes = WaveWriter.WritePcm16Mono(pcm, TargetSampleRate);
+                    work.RuntimeWaveBytes = WaveWriter.WritePcm16Mono(pcm, TARGET_SAMPLE_RATE);
                     work.WasNormalized = true;
                 }
 
                 if (work.RuntimeWaveBytes == null || work.RuntimeWaveBytes.Length == 0)
                     throw new InvalidOperationException("Audio import produced no runtime WAV bytes.");
 
-                if (work.RuntimeWaveBytes.Length > MaxRuntimeWaveBytes)
+                if (work.RuntimeWaveBytes.Length > MAX_RUNTIME_WAVE_BYTES)
                     throw new InvalidOperationException("Runtime WAV exceeds size limit.");
 
                 var runtime = WaveReader.Parse(work.RuntimeWaveBytes);
@@ -91,10 +90,10 @@ namespace LcdMod.Common.Audio
             {
                 get
                 {
-                    if (FormatTag == WaveFormatPcm)
+                    if (FormatTag == WAVE_FORMAT_PCM)
                         return "pcm";
 
-                    if (FormatTag == WaveFormatIeeeFloat)
+                    if (FormatTag == WAVE_FORMAT_IEEE_FLOAT)
                         return "float";
 
                     return "format_" + FormatTag;
@@ -102,10 +101,10 @@ namespace LcdMod.Common.Audio
             }
 
             public bool IsCanonicalRuntimeFormat =>
-                FormatTag == WaveFormatPcm &&
-                SampleRate == TargetSampleRate &&
-                Channels == TargetChannels &&
-                BitsPerSample == TargetBitsPerSample &&
+                FormatTag == WAVE_FORMAT_PCM &&
+                SampleRate == TARGET_SAMPLE_RATE &&
+                Channels == TARGET_CHANNELS &&
+                BitsPerSample == TARGET_BITS_PER_SAMPLE &&
                 BlockAlign == 2 &&
                 PcmBytes != null &&
                 PcmBytes.Length % 2 == 0;
@@ -141,7 +140,7 @@ namespace LcdMod.Common.Audio
 
             float DecodeSample(int offset)
             {
-                if (FormatTag == WaveFormatPcm)
+                if (FormatTag == WAVE_FORMAT_PCM)
                 {
                     if (BitsPerSample == 8)
                         return (PcmBytes[offset] - 128) / 128f;
@@ -171,7 +170,7 @@ namespace LcdMod.Common.Audio
                     }
                 }
 
-                if (FormatTag == WaveFormatIeeeFloat && BitsPerSample == 32)
+                if (FormatTag == WAVE_FORMAT_IEEE_FLOAT && BitsPerSample == 32)
                     return ClampFloat(BitConverter.ToSingle(PcmBytes, offset));
 
                 throw new InvalidOperationException("Unsupported WAV sample format.");
@@ -255,23 +254,23 @@ namespace LcdMod.Common.Audio
                 if (wave.PcmBytes == null)
                     throw new InvalidOperationException("Missing data chunk.");
 
-                if (wave.FormatTag != WaveFormatPcm && wave.FormatTag != WaveFormatIeeeFloat)
+                if (wave.FormatTag != WAVE_FORMAT_PCM && wave.FormatTag != WAVE_FORMAT_IEEE_FLOAT)
                     throw new InvalidOperationException("Only PCM integer and 32-bit IEEE float WAV files are supported.");
 
                 if (wave.Channels != 1 && wave.Channels != 2)
                     throw new InvalidOperationException("Only mono and stereo WAV files are supported.");
 
-                if (wave.SampleRate < MinimumSampleRate || wave.SampleRate > MaximumSampleRate)
+                if (wave.SampleRate < MINIMUM_SAMPLE_RATE || wave.SampleRate > MAXIMUM_SAMPLE_RATE)
                     throw new InvalidOperationException("WAV sample rate is outside the supported range.");
 
-                if (wave.FormatTag == WaveFormatPcm &&
+                if (wave.FormatTag == WAVE_FORMAT_PCM &&
                     wave.BitsPerSample != 8 &&
                     wave.BitsPerSample != 16 &&
                     wave.BitsPerSample != 24 &&
                     wave.BitsPerSample != 32)
                     throw new InvalidOperationException("Unsupported PCM bit depth.");
 
-                if (wave.FormatTag == WaveFormatIeeeFloat && wave.BitsPerSample != 32)
+                if (wave.FormatTag == WAVE_FORMAT_IEEE_FLOAT && wave.BitsPerSample != 32)
                     throw new InvalidOperationException("Only 32-bit IEEE float WAV files are supported.");
 
                 var expectedBlockAlign = wave.Channels * (wave.BitsPerSample / 8);
@@ -411,7 +410,7 @@ namespace LcdMod.Common.Audio
                 WriteFourCc(bytes, 8, "WAVE");
                 WriteFourCc(bytes, 12, "fmt ");
                 WriteUInt32(bytes, 16, 16);
-                WriteUInt16(bytes, 20, WaveFormatPcm);
+                WriteUInt16(bytes, 20, WAVE_FORMAT_PCM);
                 WriteUInt16(bytes, 22, 1);
                 WriteUInt32(bytes, 24, (uint)sampleRate);
                 WriteUInt32(bytes, 28, (uint)(sampleRate * 2));

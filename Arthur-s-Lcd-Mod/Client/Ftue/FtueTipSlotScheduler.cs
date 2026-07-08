@@ -25,7 +25,7 @@ namespace LcdMod.Client.Ftue
             public readonly SlotState Bottom = new SlotState();
         }
 
-        readonly static Dictionary<InteractiveSurfaceScript, SurfaceSlots> _slots =
+        readonly static Dictionary<InteractiveSurfaceScript, SurfaceSlots> Slots =
             new Dictionary<InteractiveSurfaceScript, SurfaceSlots>();
 
         public static bool ShowOrSchedule(
@@ -63,7 +63,7 @@ namespace LcdMod.Client.Ftue
             SurfaceSlots surfaceSlots;
             return surface != null &&
                    tip != null &&
-                   _slots.TryGetValue(surface, out surfaceSlots) &&
+                   Slots.TryGetValue(surface, out surfaceSlots) &&
                    ReferenceEquals(GetSlot(surfaceSlots, placement).ActiveTip, tip);
         }
 
@@ -73,7 +73,7 @@ namespace LcdMod.Client.Ftue
             FtueTip tip)
         {
             SurfaceSlots surfaceSlots;
-            if (surface == null || tip == null || !_slots.TryGetValue(surface, out surfaceSlots))
+            if (surface == null || tip == null || !Slots.TryGetValue(surface, out surfaceSlots))
                 return;
 
             var slot = GetSlot(surfaceSlots, placement);
@@ -93,7 +93,7 @@ namespace LcdMod.Client.Ftue
             FtueTip tip)
         {
             SurfaceSlots surfaceSlots;
-            if (surface == null || tip == null || !_slots.TryGetValue(surface, out surfaceSlots))
+            if (surface == null || tip == null || !Slots.TryGetValue(surface, out surfaceSlots))
                 return;
 
             var slot = GetSlot(surfaceSlots, placement);
@@ -111,7 +111,7 @@ namespace LcdMod.Client.Ftue
 
         public static void Clear()
         {
-            _slots.Clear();
+            Slots.Clear();
         }
 
         static void QueueOrReplace(SlotState slot, FtueTip tip, Func<bool> activate)
@@ -191,11 +191,11 @@ namespace LcdMod.Client.Ftue
         static SurfaceSlots GetOrCreateSurfaceSlots(InteractiveSurfaceScript surface)
         {
             SurfaceSlots slots;
-            if (_slots.TryGetValue(surface, out slots))
+            if (Slots.TryGetValue(surface, out slots))
                 return slots;
 
             slots = new SurfaceSlots();
-            _slots[surface] = slots;
+            Slots[surface] = slots;
             return slots;
         }
 
@@ -212,7 +212,7 @@ namespace LcdMod.Client.Ftue
                 return;
 
             if (IsEmpty(slots.Top) && IsEmpty(slots.Bottom))
-                _slots.Remove(surface);
+                Slots.Remove(surface);
         }
 
         static bool IsEmpty(SlotState slot)

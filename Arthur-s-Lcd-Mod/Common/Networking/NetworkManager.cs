@@ -13,7 +13,7 @@ namespace LcdMod.Common.Networking
         const int MAX_WIRE_PACKET_BYTES = 96 * 1024;
         const int MAX_FRAGMENTED_PACKET_BYTES = 32 * 1024 * 1024;
         const int MAX_FRAGMENT_CHUNKS = 384;
-        static readonly long FRAGMENT_ASSEMBLY_EXPIRY_TICKS = TimeSpan.TicksPerSecond * 15;
+        static readonly long FragmentAssemblyExpiryTicks = TimeSpan.TicksPerSecond * 15;
 
         ushort _channelId;
         int _nextFragmentTransferId;
@@ -227,7 +227,7 @@ namespace LcdMod.Common.Networking
 
             foreach (var pair in _fragmentAssemblies)
             {
-                if (now - pair.Value.CreatedUtcTicks > FRAGMENT_ASSEMBLY_EXPIRY_TICKS)
+                if (now - pair.Value.CreatedUtcTicks > FragmentAssemblyExpiryTicks)
                     expired.Add(pair.Key);
             }
 

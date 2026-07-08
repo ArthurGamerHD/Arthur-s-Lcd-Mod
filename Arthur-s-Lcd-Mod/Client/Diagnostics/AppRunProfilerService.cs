@@ -61,8 +61,8 @@ namespace LcdMod.Client.Diagnostics
             }
         }
 
-        const int DefaultDurationSeconds = 10;
-        const int MaximumDurationSeconds = 600;
+        const int DEFAULT_DURATION_SECONDS = 10;
+        const int MAXIMUM_DURATION_SECONDS = 600;
         static readonly char[] CsvEscapedCharacters = {';', '"', '\r', '\n'};
 
         readonly Dictionary<SurfaceScriptBase, Dictionary<IApp, AppProfile>> _profilesBySurface =
@@ -320,7 +320,7 @@ namespace LcdMod.Client.Diagnostics
 
         static bool TryParseDuration(string[] args, out int durationSeconds)
         {
-            durationSeconds = DefaultDurationSeconds;
+            durationSeconds = DEFAULT_DURATION_SECONDS;
             if (args == null || args.Length == 0)
                 return true;
 
@@ -330,7 +330,7 @@ namespace LcdMod.Client.Diagnostics
                 return false;
             }
 
-            return durationSeconds >= 1 && durationSeconds <= MaximumDurationSeconds;
+            return durationSeconds >= 1 && durationSeconds <= MAXIMUM_DURATION_SECONDS;
         }
 
         static void ShowUsage()

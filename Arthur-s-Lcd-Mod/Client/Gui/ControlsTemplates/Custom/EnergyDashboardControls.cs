@@ -37,7 +37,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
 
     internal static class EnergyDashboardPowerMetrics
     {
-        public const int MaxGraphSeries = 8;
+        public const int MAX_GRAPH_SERIES = 8;
 
         public static double GetCurrentProducerTotal(PowerSnapshot snapshot)
         {
@@ -102,7 +102,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
                 }
             }
 
-            int seriesCount = Math.Min(MaxGraphSeries, rows?.Count ?? 0);
+            int seriesCount = Math.Min(MAX_GRAPH_SERIES, rows?.Count ?? 0);
             for (int r = 0; r < seriesCount; r++)
             {
                 var row = rows[r];
@@ -371,7 +371,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
                 });
             }
 
-            int seriesCount = Math.Min(EnergyDashboardPowerMetrics.MaxGraphSeries, _rows.Count);
+            int seriesCount = Math.Min(EnergyDashboardPowerMetrics.MAX_GRAPH_SERIES, _rows.Count);
             for (int r = 0; r < seriesCount; r++)
             {
                 if (ReferenceEquals(_rows[r], SelectedRow))

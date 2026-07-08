@@ -12,8 +12,8 @@ namespace LcdMod.Client.Modules.Power
     public sealed class SePowerCollector
     {
         static readonly MyDefinitionId ElectricityId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
-        const string ElectricThrusterSubtypeKey = "PowerConsumer/ElectricThruster";
-        const string ElectricThrusterDisplayName = "Thrusters";
+        const string ELECTRIC_THRUSTER_SUBTYPE_KEY = "PowerConsumer/ElectricThruster";
+        const string ELECTRIC_THRUSTER_DISPLAY_NAME = "Thrusters";
         readonly HashSet<MyResourceSinkComponent> _sinks = new HashSet<MyResourceSinkComponent>(ReferenceIdentityComparer<MyResourceSinkComponent>.Instance);
         readonly HashSet<long> _producerIds = new HashSet<long>();
         readonly HashSet<long> _batteryIds = new HashSet<long>();
@@ -216,8 +216,8 @@ namespace LcdMod.Client.Modules.Power
                         snapshot.ElectricThrusterCurrentInputW += current;
                         snapshot.ElectricThrusterRequiredInputW += required;
                         snapshot.ElectricThrusterMaxRequiredInputW += maxRequired;
-                        AddSyntheticSubtypeValue(snapshot.ConsumerSubtypes, terminal, ElectricThrusterSubtypeKey,
-                            "PowerConsumer", "ElectricThruster", ElectricThrusterDisplayName, current, required, maxRequired);
+                        AddSyntheticSubtypeValue(snapshot.ConsumerSubtypes, terminal, ELECTRIC_THRUSTER_SUBTYPE_KEY,
+                            "PowerConsumer", "ElectricThruster", ELECTRIC_THRUSTER_DISPLAY_NAME, current, required, maxRequired);
                     }
                     else
                     {
