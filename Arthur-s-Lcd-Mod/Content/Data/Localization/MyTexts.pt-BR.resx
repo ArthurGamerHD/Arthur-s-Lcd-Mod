@@ -837,4 +837,12 @@ Vamos aguardar um pouco e então reiniciá-la para você.</value>
   <data name="LcdMod_Ftue_RadarRange_Line2" xml:space="preserve">
     <value>Apenas sinais de rádio podem ser detectados além de {0}. </value>
   </data>
+  <data name="LcdMod_MediaPlayer_Title" xml:space="preserve">
+    <value>Media player</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_PausedTitleFormat" xml:space="preserve">
+    <value>(Paused) - {0}</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
 </root>

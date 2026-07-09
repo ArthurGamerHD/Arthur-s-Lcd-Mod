@@ -875,7 +875,7 @@ Click [color:#0000FF]""[loc]BlockPropertyTitle_TextPanelShowTextPanel[/loc]""[/c
     public sealed class MediaPlayerConfigComponent : ConfigComponent
     {
         [ProtoMember(1)] public string SelectedSoundSubtype { get; set; } = string.Empty;
-        [ProtoMember(2)] public int SelectedIndex { get; set; }
+        [ProtoMember(2)] public int SelectedIndex { get; set; } = -1;
         [ProtoMember(3)] public bool AutoPlay { get; set; }
         [ProtoMember(4)]
         [TerminalControlSwitch(
@@ -884,6 +884,10 @@ Click [color:#0000FF]""[loc]BlockPropertyTitle_TextPanelShowTextPanel[/loc]""[/c
             "Media Player Visualizer",
             Slot = APP)]
         public bool VisualizerEnabled { get; set; } = true;
+        [ProtoMember(5)] public bool ShuffleEnabled { get; set; }
+        [ProtoMember(6)] public int RepeatModeInternal { get; set; }
+        [ProtoMember(7)] public string SelectedAudioSource { get; set; } = string.Empty;
+        [ProtoMember(8)] public string SelectedPickerFullPath { get; set; } = string.Empty;
 
         public override ConfigComponent Clone()
         {
@@ -892,7 +896,11 @@ Click [color:#0000FF]""[loc]BlockPropertyTitle_TextPanelShowTextPanel[/loc]""[/c
                 SelectedSoundSubtype = SelectedSoundSubtype,
                 SelectedIndex = SelectedIndex,
                 AutoPlay = AutoPlay,
-                VisualizerEnabled = VisualizerEnabled
+                VisualizerEnabled = VisualizerEnabled,
+                ShuffleEnabled = ShuffleEnabled,
+                RepeatModeInternal = RepeatModeInternal,
+                SelectedAudioSource = SelectedAudioSource,
+                SelectedPickerFullPath = SelectedPickerFullPath
             };
         }
     }

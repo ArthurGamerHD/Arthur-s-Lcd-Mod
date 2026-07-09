@@ -30,8 +30,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         readonly VirtualizedStackPanel<FilePickerEntryModel> _listPanel = new VirtualizedStackPanel<FilePickerEntryModel>();
 
         string _filter = string.Empty;
+        bool _loadingFrameQueued;
 
-        public FilePickerGrid(RectangleF rect, FilePickerMode mode, IEnumerable<FolderModel> roots)
+        public FilePickerGrid(RectangleF rect, FilePickerMode mode, IEnumerable<FolderModel> roots, string initialPath = null)
             : base(rect, CursorType.Default)
         {
             Mode = mode;
@@ -42,6 +43,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _listPanel.BindControl = BindRowControl;
             AddChild(_scrollPanel);
             SetRoots(roots);
+            OpenPath(initialPath);
         }
 
         public FilePickerMode Mode { get; private set; }
@@ -50,6 +52,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         public FileModel SelectedFile { get; private set; }
         public Action<FilePickerResult> Accepted { get; set; }
         public Action Changed { get; set; }
+        public bool IsLoading { get; private set; }
+        public string LoadingMessage { get; private set; }
 
         public string CurrentPath
         {
@@ -83,6 +87,31 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             SelectedFolder = null;
             SelectedFile = null;
             RebuildItems(resetScroll: true);
+        }
+
+        public void SetLoading(bool loading, string message = null)
+        {
+            IsLoading = loading;
+            LoadingMessage = string.IsNullOrWhiteSpace(message) ? "Loading..." : message;
+            MarkDirty();
+            NotifyChanged();
+        }
+
+        public bool OpenPath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                return false;
+
+            var folder = FindFolderByPath(path);
+            if (folder == null)
+                return false;
+
+            CurrentFolder = folder;
+            SelectedFolder = null;
+            SelectedFile = null;
+            RebuildItems(resetScroll: true);
+            NotifyChanged();
+            return true;
         }
 
         public void SetFilter(string filter)
@@ -290,7 +319,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _scrollPanel.SetVisible(true);
             _scrollPanel.Render(sprites);
 
-            if (_items.Count == 0)
+            if (IsLoading)
+                DrawLoadingListMessage(rect, sprites);
+            else if (_items.Count == 0)
                 DrawEmptyListMessage(rect, sprites);
         }
 
@@ -382,15 +413,24 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _items.Clear();
 
             var query = (_filter ?? string.Empty).Trim();
+            var hasQuery = !string.IsNullOrEmpty(query);
             if (CurrentFolder == null)
             {
-                for (int i = 0; i < _roots.Count; i++)
+                if (hasQuery)
                 {
-                    var root = _roots[i];
-                    if (root == null || !MatchesFolder(root, query))
-                        continue;
+                    for (int i = 0; i < _roots.Count; i++)
+                        AddMatchingEntriesRecursive(_roots[i], query, includeFolder: true);
+                }
+                else
+                {
+                    for (int i = 0; i < _roots.Count; i++)
+                    {
+                        var root = _roots[i];
+                        if (root == null)
+                            continue;
 
-                    _items.Add(GetFolderEntryModel(root));
+                        _items.Add(GetFolderEntryModel(root));
+                    }
                 }
 
                 InvalidateItemsLayout(resetScroll);
@@ -403,8 +443,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 _items.Add(GetUpEntryModel(CurrentFolder, parent));
             }
 
-            AddFolders(CurrentFolder, query);
-            AddFiles(CurrentFolder, query);
+            if (hasQuery)
+                AddMatchingEntriesRecursive(CurrentFolder, query, includeFolder: false);
+            else
+            {
+                AddFolders(CurrentFolder, query);
+                AddFiles(CurrentFolder, query);
+            }
+
             InvalidateItemsLayout(resetScroll);
         }
 
@@ -467,6 +513,24 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             }
         }
 
+        void AddMatchingEntriesRecursive(FolderModel folder, string query, bool includeFolder)
+        {
+            if (folder == null)
+                return;
+
+            if (includeFolder && MatchesFolder(folder, query))
+                _items.Add(GetFolderEntryModel(folder));
+
+            AddFiles(folder, query);
+
+            if (folder.Folders == null)
+                return;
+
+            folder.Folders.Sort(CompareFolders);
+            for (int i = 0; i < folder.Folders.Count; i++)
+                AddMatchingEntriesRecursive(folder.Folders[i], query, includeFolder: true);
+        }
+
         FolderControlModel GetFolderEntryModel(FolderModel folder)
         {
             FolderControlModel model;
@@ -522,7 +586,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             model.Name = file == null ? string.Empty : file.Name;
             model.FullPath = file == null ? string.Empty : file.FullPath;
             model.Subtitle = file == null ? string.Empty : file.Subtitle;
-            model.Icon = ResolveFileIcon(file == null ? null : file.Name);
+            model.Icon = ResolveFileIcon(GetFileIconPath(file));
             model.IsUpEntry = false;
             model.IsSelected = ReferenceEquals(SelectedFile, file);
             return model;
@@ -540,6 +604,50 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             }
 
             return false;
+        }
+
+        FolderModel FindFolderByPath(string path)
+        {
+            path = NormalizePath(path);
+            if (string.IsNullOrEmpty(path))
+                return null;
+
+            for (int i = 0; i < _roots.Count; i++)
+            {
+                var found = FindFolderByPath(_roots[i], path);
+                if (found != null)
+                    return found;
+            }
+
+            return null;
+        }
+
+        static FolderModel FindFolderByPath(FolderModel folder, string path)
+        {
+            if (folder == null)
+                return null;
+
+            if (string.Equals(NormalizePath(folder.FullPath), path, StringComparison.OrdinalIgnoreCase))
+                return folder;
+
+            if (folder.Folders == null)
+                return null;
+
+            for (int i = 0; i < folder.Folders.Count; i++)
+            {
+                var found = FindFolderByPath(folder.Folders[i], path);
+                if (found != null)
+                    return found;
+            }
+
+            return null;
+        }
+
+        static string NormalizePath(string path)
+        {
+            return string.IsNullOrWhiteSpace(path)
+                ? string.Empty
+                : path.Trim().Replace('\\', '/').Trim('/');
         }
 
         void DrawEmptyListMessage(RectangleF rect, List<MySprite> sprites)
@@ -560,6 +668,72 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 FontId = TextFont,
                 Alignment = TextAlignment.CENTER,
                 RotationOrScale = textScale
+            });
+        }
+
+        void DrawLoadingListMessage(RectangleF rect, List<MySprite> sprites)
+        {
+            IMyTextSurface surface = TextSurface;
+            var scale = Math.Max(1f, LayoutScale);
+            var center = rect.Center;
+            var outerSize = Math.Max(26f, Math.Min(rect.Width, rect.Height) * 0.18f);
+            var innerSize = outerSize * 0.6f;
+            var color = ResolveColor(ThemeResources.OnSurfaceVariantColor);
+            var session = Sandbox.ModAPI.MyAPIGateway.Session;
+            var seconds = session == null ? 0.0 : session.GameplayFrameCounter / 60.0;
+            var outerRotation = (float)(seconds * 2.4);
+            var innerRotation = -outerRotation;
+
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE,
+                Data = "Screen_LoadingBar",
+                Position = center,
+                Size = new Vector2(outerSize),
+                Color = color,
+                Alignment = TextAlignment.CENTER,
+                RotationOrScale = outerRotation
+            });
+
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE,
+                Data = "Screen_LoadingBar",
+                Position = center,
+                Size = new Vector2(innerSize),
+                Color = color,
+                Alignment = TextAlignment.CENTER,
+                RotationOrScale = innerRotation
+            });
+
+            var text = string.IsNullOrEmpty(LoadingMessage) ? "Loading..." : LoadingMessage;
+            var textScale = 0.52f * LayoutScale * FontScale;
+            var textHeight = surface == null ? 0f : FormatingHelper.LineHeight(textScale, this, surface);
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXT,
+                Data = text,
+                Position = new Vector2(rect.Center.X, center.Y + outerSize * 0.75f + textHeight * .25f),
+                Color = color,
+                FontId = TextFont,
+                Alignment = TextAlignment.CENTER,
+                RotationOrScale = textScale
+            });
+
+            ScheduleLoadingFrame();
+        }
+
+        void ScheduleLoadingFrame()
+        {
+            if (_loadingFrameQueued || !IsLoading)
+                return;
+
+            _loadingFrameQueued = true;
+            LcdModClientComponent.RunNextFrame.Add(delegate
+            {
+                _loadingFrameQueued = false;
+                if (IsLoading)
+                    NotifyChanged();
             });
         }
 
@@ -584,7 +758,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             folder.Parent = parent;
             if (string.IsNullOrEmpty(folder.Name))
                 folder.Name = string.Empty;
-            folder.FullPath = string.IsNullOrEmpty(path) ? folder.Name : path;
+
+            if (string.IsNullOrEmpty(folder.FullPath))
+                folder.FullPath = string.IsNullOrEmpty(path) ? folder.Name : path;
 
             if (folder.Folders != null)
             {
@@ -594,9 +770,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                     if (child == null)
                         continue;
 
-                    var childPath = string.IsNullOrEmpty(folder.FullPath)
-                        ? child.Name
-                        : folder.FullPath + "/" + child.Name;
+                    var childPath = string.IsNullOrEmpty(child.FullPath)
+                        ? (string.IsNullOrEmpty(folder.FullPath) ? child.Name : folder.FullPath + "/" + child.Name)
+                        : child.FullPath;
                     PrepareFolder(child, folder, childPath);
                 }
             }
@@ -661,6 +837,20 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             if (string.Equals(extension, ".wav", StringComparison.OrdinalIgnoreCase))
                 return "FileWav";
             return "MissingIcon";
+        }
+
+        static string GetFileIconPath(FileModel file)
+        {
+            if (file == null)
+                return null;
+
+            if (!string.IsNullOrEmpty(file.IconPath))
+                return file.IconPath;
+
+            if (!string.IsNullOrEmpty(file.FullPath))
+                return file.FullPath;
+
+            return file.Name;
         }
 
         static string GetRootName(string path)

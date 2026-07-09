@@ -74,18 +74,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Progress
             float maxLineHeight = Math.Max(1f, 3f * layoutScale);
             float lineHeight = MathHelper.Clamp(CENTER_LINE_HEIGHT * layoutScale, 1f, maxLineHeight);
             float centerY = rect.Center.Y;
-            var centerLineColor = model == null ? Color.Black : model.CenterLineColor;
-
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = "SquareSimple",
-                Position = new Vector2(rect.X, centerY),
-                Size = new Vector2(rect.Width, lineHeight),
-                Color = centerLineColor,
-                Alignment = TextAlignment.LEFT
-            });
-
             float availableHalfHeight = Math.Max(1f, (rect.Height - lineHeight) * .5f);
             int columnCount = Math.Max(1, (barCount + 1) / 2);
             float step = rect.Width / columnCount;

@@ -36,6 +36,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
     {
         public string Name { get; set; }
         public string FullPath { get; set; }
+        public string IconPath { get; set; }
         public string Subtitle { get; set; }
         public object Tag { get; set; }
 

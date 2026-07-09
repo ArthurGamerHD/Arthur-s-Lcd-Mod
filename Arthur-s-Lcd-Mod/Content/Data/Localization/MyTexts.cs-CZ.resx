@@ -836,4 +836,12 @@ Chvíli počkáme a potom ji za vás restartujeme.</value>
   <data name="LcdMod_Ftue_RadarRange_Line2" xml:space="preserve">
     <value>Za hranicí {0} lze detekovat pouze rádiové signály.</value>
   </data>
+  <data name="LcdMod_MediaPlayer_Title" xml:space="preserve">
+    <value>Media player</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_PausedTitleFormat" xml:space="preserve">
+    <value>(Paused) - {0}</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
 </root>

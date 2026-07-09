@@ -134,6 +134,30 @@
             <Selectable>false</Selectable>
         </LCDTextureDefinition>
 
+        <LCDTextureDefinition> <!-- Media Player: Repeat button icon -->
+            <Id Type="LCDTextureDefinition" Subtype="Repeat"/>
+            <SpritePath>Textures/Sprites/Repeat.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Media Player: Shuffle button icon -->
+            <Id Type="LCDTextureDefinition" Subtype="Shuffle"/>
+            <SpritePath>Textures/Sprites/Shuffle.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Media Player: Low volume icon -->
+            <Id Type="LCDTextureDefinition" Subtype="SoundLow"/>
+            <SpritePath>Textures/Sprites/SoundLow.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Media Player: High volume icon -->
+            <Id Type="LCDTextureDefinition" Subtype="SoundHigh"/>
+            <SpritePath>Textures/Sprites/SoundHigh.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
         <LCDTextureDefinition> <!-- Cargo Actions: Settings button icon -->
             <Id Type="LCDTextureDefinition" Subtype="SettingsIcon"/>
             <SpritePath>Textures/Sprites/Settings.dds</SpritePath>

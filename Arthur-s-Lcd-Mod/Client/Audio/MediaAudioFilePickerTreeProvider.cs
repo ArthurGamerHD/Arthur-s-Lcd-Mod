@@ -8,6 +8,7 @@ using LcdMod.Common.Audio;
 using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
+using VRage;
 using VRage.Game;
 using VRage.Utils;
 
@@ -16,6 +17,7 @@ namespace LcdMod.Client.Audio
     sealed class MediaAudioFileReference
     {
         public const string SOURCE_LOCAL = "Local";
+        public const string SOURCE_SOUND_BLOCK = "SoundBlock";
         public const string SOURCE_CONTENT = "Content";
 
         public string Source { get; set; }
@@ -23,6 +25,8 @@ namespace LcdMod.Client.Audio
         public string GameContentPath { get; set; }
         public string FirstSoundSubtype { get; set; }
         public string FirstWaveSlot { get; set; }
+        public string PickerFullPath { get; set; }
+        public string PickerFolderPath { get; set; }
         public int ReferenceCount { get; set; }
         public AudioAssetMetadata LocalAsset { get; set; }
 
@@ -35,25 +39,82 @@ namespace LcdMod.Client.Audio
         {
             get { return string.Equals(Source, SOURCE_CONTENT, StringComparison.OrdinalIgnoreCase); }
         }
+
+        public bool IsSoundBlock
+        {
+            get { return string.Equals(Source, SOURCE_SOUND_BLOCK, StringComparison.OrdinalIgnoreCase); }
+        }
     }
 
     static class MediaAudioFilePickerTreeProvider
     {
+        static string _currentPath;
+        static List<FolderModel> _cachedRoots;
+
         sealed class ContentAudioReference
         {
             public string Path;
+            public string DisplayName;
             public string FirstSoundSubtype;
             public string FirstWaveSlot;
             public int ReferenceCount;
         }
 
+        sealed class SoundCategoryNameLookup
+        {
+            public readonly Dictionary<string, string> BySoundId = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            public readonly Dictionary<string, string> ByFileName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        }
+
         public static List<FolderModel> BuildRoots()
         {
-            return new List<FolderModel>
+            var roots = new List<FolderModel>
             {
                 BuildLocalRoot(),
+                BuildSoundBlockRoot(),
                 BuildContentRoot()
             };
+            _cachedRoots = roots;
+            return roots;
+        }
+
+        public static void BuildRootsAsync(Action<List<FolderModel>, Exception> completed)
+        {
+            List<FolderModel> roots = null;
+            Exception failure = null;
+
+            MyAPIGateway.Parallel.Start(
+                delegate
+                {
+                    try
+                    {
+                        roots = BuildRoots();
+                    }
+                    catch (Exception error)
+                    {
+                        failure = error;
+                    }
+                },
+                delegate
+                {
+                    if (completed != null)
+                        completed(roots, failure);
+                });
+        }
+
+        public static string CurrentPath
+        {
+            get { return _currentPath ?? string.Empty; }
+        }
+
+        public static void SetCurrentPath(string path)
+        {
+            _currentPath = NormalizePickerPath(path);
+        }
+
+        public static List<FolderModel> GetCachedRootsOrBuild()
+        {
+            return _cachedRoots ?? BuildRoots();
         }
 
         static FolderModel BuildLocalRoot()
@@ -77,22 +138,87 @@ namespace LcdMod.Client.Audio
                     continue;
 
                 var fileName = GetDisplayFileName(asset);
+                var fullPath = MediaAudioFileReference.SOURCE_LOCAL + "/" + fileName;
                 root.Files.Add(new FileModel
                 {
                     Name = fileName,
-                    FullPath = MediaAudioFileReference.SOURCE_LOCAL + "/" + fileName,
+                    FullPath = fullPath,
+                    IconPath = fileName,
                     Subtitle = BuildLocalSubtitle(asset),
                     Tag = new MediaAudioFileReference
                     {
                         Source = MediaAudioFileReference.SOURCE_LOCAL,
                         DefinitionPath = fileName,
                         GameContentPath = asset.RuntimePath,
+                        PickerFullPath = fullPath,
+                        PickerFolderPath = root.FullPath,
                         LocalAsset = asset,
                         ReferenceCount = 1
                     }
                 });
             }
 
+            return root;
+        }
+
+        static FolderModel BuildSoundBlockRoot()
+        {
+            var root = new FolderModel
+            {
+                Name = MyTexts.GetString("DisplayName_Block_SoundBlock"),
+                FullPath = MediaAudioFileReference.SOURCE_SOUND_BLOCK,
+                Subtitle = "Sound block sounds"
+            };
+
+            if (MyDefinitionManager.Static == null)
+                return root;
+
+            var files = new List<FileModel>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (MySoundCategoryDefinition category in MyDefinitionManager.Static.GetSoundCategoryDefinitions())
+            {
+                if (category == null || !category.Public || category.Sounds == null)
+                    continue;
+
+                for (int i = 0; i < category.Sounds.Count; i++)
+                {
+                    var sound = category.Sounds[i];
+                    if (sound == null || string.IsNullOrEmpty(sound.SoundId) || !seen.Add(sound.SoundId))
+                        continue;
+
+                    var definition = FindSoundDefinition(sound.SoundId);
+                    var wavePath = FindStartWave(definition);
+                    if (string.IsNullOrEmpty(wavePath))
+                        continue;
+
+                    var displayName = ResolveSoundBlockDisplayName(sound);
+                    var fullPath = MediaAudioFileReference.SOURCE_SOUND_BLOCK + "/" + sound.SoundId;
+                    files.Add(new FileModel
+                    {
+                        Name = displayName,
+                        FullPath = fullPath,
+                        IconPath = wavePath,
+                        Subtitle = BuildSoundBlockSubtitle(sound, wavePath),
+                        Tag = new MediaAudioFileReference
+                        {
+                            Source = MediaAudioFileReference.SOURCE_SOUND_BLOCK,
+                            DefinitionPath = wavePath,
+                            GameContentPath = GameAudioPcmLoader.ToAudioGameContentPath(wavePath),
+                            FirstSoundSubtype = sound.SoundId,
+                            FirstWaveSlot = "Start",
+                            PickerFullPath = fullPath,
+                            PickerFolderPath = root.FullPath,
+                            ReferenceCount = 1
+                        }
+                    });
+                }
+            }
+
+            files.Sort(delegate(FileModel left, FileModel right)
+            {
+                return string.Compare(left == null ? null : left.Name, right == null ? null : right.Name, StringComparison.OrdinalIgnoreCase);
+            });
+            root.Files.AddRange(files);
             return root;
         }
 
@@ -119,6 +245,7 @@ namespace LcdMod.Client.Audio
             if (MyDefinitionManager.Static == null)
                 return new List<ContentAudioReference>();
 
+            var nameLookup = BuildSoundCategoryNameLookup();
             foreach (MyAudioDefinition definition in MyDefinitionManager.Static.GetSoundDefinitions())
             {
                 if (definition == null)
@@ -146,9 +273,9 @@ namespace LcdMod.Client.Audio
                     if (wave == null)
                         continue;
 
-                    AddContentReference(references, wave.Start, definition.Id.SubtypeName, "Start");
-                    AddContentReference(references, wave.Loop, definition.Id.SubtypeName, "Loop");
-                    AddContentReference(references, wave.End, definition.Id.SubtypeName, "End");
+                    AddContentReference(references, nameLookup, wave.Start, definition.Id.SubtypeName, "Start");
+                    AddContentReference(references, nameLookup, wave.Loop, definition.Id.SubtypeName, "Loop");
+                    AddContentReference(references, nameLookup, wave.End, definition.Id.SubtypeName, "End");
                 }
             }
 
@@ -162,6 +289,7 @@ namespace LcdMod.Client.Audio
 
         static void AddContentReference(
             Dictionary<string, ContentAudioReference> references,
+            SoundCategoryNameLookup nameLookup,
             string path,
             string soundSubtype,
             string waveSlot)
@@ -179,11 +307,16 @@ namespace LcdMod.Client.Audio
                 reference = new ContentAudioReference
                 {
                     Path = path,
+                    DisplayName = ResolveSoundCategoryName(nameLookup, soundSubtype, path),
                     FirstSoundSubtype = soundSubtype,
                     FirstWaveSlot = waveSlot,
                     ReferenceCount = 0
                 };
                 references.Add(path, reference);
+            }
+            else if (string.IsNullOrEmpty(reference.DisplayName))
+            {
+                reference.DisplayName = ResolveSoundCategoryName(nameLookup, soundSubtype, path);
             }
 
             reference.ReferenceCount++;
@@ -203,10 +336,12 @@ namespace LcdMod.Client.Audio
                 folder = GetOrCreateFolder(folder, parts[i]);
 
             var fileName = parts[parts.Length - 1];
+            var fullPath = MediaAudioFileReference.SOURCE_CONTENT + "/" + reference.Path;
             folder.Files.Add(new FileModel
             {
                 Name = fileName,
-                FullPath = MediaAudioFileReference.SOURCE_CONTENT + "/" + reference.Path,
+                FullPath = fullPath,
+                IconPath = reference.Path,
                 Subtitle = BuildContentSubtitle(reference),
                 Tag = new MediaAudioFileReference
                 {
@@ -215,6 +350,8 @@ namespace LcdMod.Client.Audio
                     GameContentPath = GameAudioPcmLoader.ToAudioGameContentPath(reference.Path),
                     FirstSoundSubtype = reference.FirstSoundSubtype,
                     FirstWaveSlot = reference.FirstWaveSlot,
+                    PickerFullPath = fullPath,
+                    PickerFolderPath = folder.FullPath,
                     ReferenceCount = reference.ReferenceCount
                 }
             });
@@ -235,6 +372,7 @@ namespace LcdMod.Client.Audio
             var folder = new FolderModel
             {
                 Name = name,
+                FullPath = string.IsNullOrEmpty(parent.FullPath) ? name : parent.FullPath + "/" + name,
                 Subtitle = parent.FullPath
             };
             parent.Folders.Add(folder);
@@ -263,6 +401,14 @@ namespace LcdMod.Client.Audio
                 path = path.Substring("Audio/".Length);
 
             return path;
+        }
+
+        static string NormalizePickerPath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                return string.Empty;
+
+            return path.Trim().Replace('\\', '/').Trim('/');
         }
 
         static string GetDisplayFileName(AudioAssetMetadata asset)
@@ -300,13 +446,164 @@ namespace LcdMod.Client.Audio
             if (reference == null)
                 return string.Empty;
 
+            var title = reference.DisplayName;
             var format = GameAudioPcmLoader.GetContainerDisplayName(GameAudioPcmLoader.GetContainerKind(reference.Path));
             var owner = string.IsNullOrEmpty(reference.FirstSoundSubtype)
                 ? "definition audio"
                 : reference.FirstSoundSubtype + "." + reference.FirstWaveSlot;
             if (reference.ReferenceCount > 1)
                 owner += " (+" + (reference.ReferenceCount - 1).ToString(CultureInfo.InvariantCulture) + ")";
-            return format + " · " + owner;
+
+            return string.IsNullOrEmpty(title)
+                ? format + " · " + owner
+                : title + " · " + format + " · " + owner;
+        }
+
+        static string BuildSoundBlockSubtitle(MySoundCategoryDefinition.SoundDescription sound, string wavePath)
+        {
+            var format = GameAudioPcmLoader.GetContainerDisplayName(GameAudioPcmLoader.GetContainerKind(wavePath));
+            var soundId = sound == null ? string.Empty : sound.SoundId;
+            return string.IsNullOrEmpty(soundId)
+                ? format
+                : format + " · " + soundId;
+        }
+
+        static string ResolveSoundBlockDisplayName(MySoundCategoryDefinition.SoundDescription sound)
+        {
+            if (sound == null)
+                return string.Empty;
+
+            if (!string.IsNullOrEmpty(sound.SoundText))
+                return sound.SoundText;
+
+            if (!string.IsNullOrEmpty(sound.SoundName))
+                return sound.SoundName;
+
+            return sound.SoundId ?? string.Empty;
+        }
+
+        static MyAudioDefinition FindSoundDefinition(string subtype)
+        {
+            if (MyDefinitionManager.Static == null || string.IsNullOrEmpty(subtype))
+                return null;
+
+            foreach (MyAudioDefinition definition in MyDefinitionManager.Static.GetSoundDefinitions())
+            {
+                if (definition != null && string.Equals(definition.Id.SubtypeName, subtype, StringComparison.OrdinalIgnoreCase))
+                    return definition;
+            }
+
+            return null;
+        }
+
+        static SoundCategoryNameLookup BuildSoundCategoryNameLookup()
+        {
+            var lookup = new SoundCategoryNameLookup();
+            if (MyDefinitionManager.Static == null)
+                return lookup;
+
+            foreach (MySoundCategoryDefinition category in MyDefinitionManager.Static.GetSoundCategoryDefinitions())
+            {
+                if (category == null || category.Sounds == null)
+                    continue;
+
+                for (int i = 0; i < category.Sounds.Count; i++)
+                {
+                    var sound = category.Sounds[i];
+                    if (sound == null || string.IsNullOrEmpty(sound.SoundId))
+                        continue;
+
+                    var text = sound.SoundText;
+                    if (string.IsNullOrEmpty(text))
+                        text = sound.SoundName;
+                    if (!string.IsNullOrEmpty(text) && !lookup.BySoundId.ContainsKey(sound.SoundId))
+                        lookup.BySoundId.Add(sound.SoundId, text);
+                }
+            }
+
+            foreach (MyAudioDefinition definition in MyDefinitionManager.Static.GetSoundDefinitions())
+            {
+                if (definition == null || string.IsNullOrEmpty(definition.Id.SubtypeName))
+                    continue;
+
+                string text;
+                if (!lookup.BySoundId.TryGetValue(definition.Id.SubtypeName, out text) || string.IsNullOrEmpty(text))
+                    continue;
+
+                AddFileNameLookup(lookup, FindStartWave(definition), text);
+            }
+
+            return lookup;
+        }
+
+        static string ResolveSoundCategoryName(SoundCategoryNameLookup lookup, string subtype, string path)
+        {
+            if (lookup == null)
+                return string.Empty;
+
+            string name;
+            if (!string.IsNullOrEmpty(subtype) && lookup.BySoundId.TryGetValue(subtype, out name))
+                return name;
+
+            var fileName = GetFileNameWithoutExtension(path);
+            if (!string.IsNullOrEmpty(fileName) && lookup.ByFileName.TryGetValue(fileName, out name))
+                return name;
+
+            return string.Empty;
+        }
+
+        static void AddFileNameLookup(SoundCategoryNameLookup lookup, string path, string text)
+        {
+            if (lookup == null || string.IsNullOrEmpty(path) || string.IsNullOrEmpty(text))
+                return;
+
+            var fileName = GetFileNameWithoutExtension(path);
+            if (string.IsNullOrEmpty(fileName) || lookup.ByFileName.ContainsKey(fileName))
+                return;
+
+            lookup.ByFileName.Add(fileName, text);
+        }
+
+        static string FindStartWave(MyAudioDefinition definition)
+        {
+            if (definition == null)
+                return null;
+
+            AudioWavesDefinition data = null;
+            try
+            {
+                data = definition;
+            }
+            catch
+            {
+                return null;
+            }
+
+            if (data == null || data.Waves == null)
+                return null;
+
+            for (int i = 0; i < data.Waves.Count; i++)
+            {
+                var wave = data.Waves[i];
+                if (wave != null && !string.IsNullOrEmpty(wave.Start))
+                    return NormalizeDefinitionPath(wave.Start);
+            }
+
+            return null;
+        }
+
+        static string GetFileNameWithoutExtension(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+                return string.Empty;
+
+            var normalized = path.Replace('\\', '/');
+            var slash = normalized.LastIndexOf('/');
+            var name = slash >= 0 && slash + 1 < normalized.Length
+                ? normalized.Substring(slash + 1)
+                : normalized;
+            var dot = name.LastIndexOf('.');
+            return dot > 0 ? name.Substring(0, dot) : name;
         }
     }
 }

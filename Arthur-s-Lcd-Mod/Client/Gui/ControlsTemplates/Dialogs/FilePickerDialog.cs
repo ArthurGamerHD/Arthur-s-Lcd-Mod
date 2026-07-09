@@ -31,6 +31,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         readonly FilePickerMode _mode;
         readonly string _title;
         readonly Action<FilePickerResult> _onSelected;
+        readonly Action<string> _currentPathChanged;
+        readonly string _initialPath;
         readonly bool _acceptSelectionOnClose;
         readonly FilePickerGrid _grid;
         bool _accepted;
@@ -48,12 +50,16 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             Action<FilePickerResult> onSelected,
             Action requestRedraw = null,
             Action onClosed = null,
-            bool acceptSelectionOnClose = false)
+            bool acceptSelectionOnClose = false,
+            string initialPath = null,
+            Action<string> currentPathChanged = null)
             : base(parentApp)
         {
             _title = string.IsNullOrWhiteSpace(title) ? GetDefaultTitle(mode) : title;
             _mode = mode;
             _onSelected = onSelected;
+            _currentPathChanged = currentPathChanged;
+            _initialPath = initialPath;
             _acceptSelectionOnClose = acceptSelectionOnClose;
             RequestRedraw = requestRedraw;
             OnClosed = onClosed;
@@ -67,7 +73,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 }
             }
 
-            _grid = new FilePickerGrid(default(RectangleF), mode, _roots);
+            _grid = new FilePickerGrid(default(RectangleF), mode, _roots, initialPath);
             _grid.Accepted = OnGridAccepted;
             _grid.Changed = OnGridChanged;
 
@@ -84,6 +90,27 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
         public Action RequestRedraw { get; set; }
         public Action OnClosed { get; set; }
+
+        public void SetRoots(IEnumerable<FolderModel> roots)
+        {
+            _roots.Clear();
+            if (roots != null)
+            {
+                foreach (var root in roots)
+                {
+                    if (root != null)
+                        _roots.Add(root);
+                }
+            }
+
+            _grid.SetRoots(_roots);
+            _grid.OpenPath(_initialPath);
+        }
+
+        public void SetLoading(bool loading, string message = null)
+        {
+            _grid.SetLoading(loading, message);
+        }
 
         protected override void BuildDialogControls(
             InteractiveSurfaceScript owner,
@@ -321,6 +348,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
         void OnGridChanged()
         {
+            if (_currentPathChanged != null && (_grid == null || !_grid.IsLoading))
+                _currentPathChanged(_grid == null ? string.Empty : _grid.CurrentPath);
+
             MarkDirty();
             if (RequestRedraw != null)
                 RequestRedraw();
