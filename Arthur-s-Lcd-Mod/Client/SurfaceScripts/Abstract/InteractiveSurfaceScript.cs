@@ -824,7 +824,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             if (!IsValidHitTestPosition(position) || !TryResolveClickable(position, secondary, out entry))
                 return false;
 
-            return secondary ? entry.SecondaryClick(sender) : entry.Click(sender);
+            return secondary ? entry.SecondaryClickAt(position, sender) : entry.ClickAt(position, sender);
         }
 
         public virtual bool TryScrollAtCursor(int delta, object sender)

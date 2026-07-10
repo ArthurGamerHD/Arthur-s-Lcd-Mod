@@ -12,6 +12,7 @@ namespace LcdMod.Client.Gui.Styling
         Opened = 1 << 3,
         Selected = 1 << 4,
         Disabled = 1 << 5,
-        Focused = 1 << 6
+        Focused = 1 << 6,
+        Dragged = 1 << 7
     }
 }

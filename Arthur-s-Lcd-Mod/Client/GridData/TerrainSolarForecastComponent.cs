@@ -7,8 +7,15 @@ using VRageMath;
 
 namespace LcdMod.Client.GridData
 {
-    public partial class GridLogic
+    internal sealed class TerrainSolarForecastComponent
     {
+        readonly GridLogic _owner;
+
+        internal TerrainSolarForecastComponent(GridLogic owner)
+        {
+            _owner = owner;
+        }
+
         private const double SOLAR_FORECAST_MOVE_TOLERANCE_SQUARED = 25d;
         private const double SOLAR_FORECAST_AXIS_DOT_TOLERANCE = 0.9999d;
         private const double SOLAR_FORECAST_SAMPLE_STEP_HOURS = 0.5d;
@@ -144,7 +151,7 @@ namespace LcdMod.Client.GridData
             rayOrigin = Vector3D.Zero;
             gravityRadius = 0d;
 
-            if (Grid == null || Grid.MarkedForClose || planet == null || planet.MarkedForClose)
+            if (_owner.Grid == null || _owner.Grid.MarkedForClose || planet == null || planet.MarkedForClose)
                 return false;
 
             long frame = MyAPIGateway.Session != null
@@ -166,7 +173,7 @@ namespace LcdMod.Client.GridData
             _terrainSolarReferenceRayOrigin = Vector3D.Zero;
             _terrainSolarReferenceGravityRadius = 0d;
 
-            Vector3D gridPosition = Grid.WorldAABB.Center;
+            Vector3D gridPosition = _owner.Grid.WorldAABB.Center;
             Vector3D planetCenter = planet.WorldMatrix.Translation;
             surfacePoint = planet.GetClosestSurfacePointGlobal(gridPosition);
 
@@ -210,13 +217,13 @@ namespace LcdMod.Client.GridData
 
         private bool IsTerrainSolarGridStationary()
         {
-            if (Grid == null || Grid.MarkedForClose)
+            if (_owner.Grid == null || _owner.Grid.MarkedForClose)
                 return false;
 
-            if (Grid.IsStatic)
+            if (_owner.Grid.IsStatic)
                 return true;
 
-            var physics = Grid.Physics;
+            var physics = _owner.Grid.Physics;
             if (physics == null)
                 return false;
 

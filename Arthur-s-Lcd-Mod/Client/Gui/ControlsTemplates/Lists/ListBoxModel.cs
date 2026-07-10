@@ -31,7 +31,18 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
         public float ScrollerWidthPixels { get; set; }
         public Func<T, string> TextSelector { get; set; }
         public Action<T> EntryClicked { get; set; }
+        public Action<T, int, int> EntryMoved { get; set; }
+        public Func<Vector2, int> DragTargetIndexResolver { get; set; }
+        public Func<T, int, int, int> DragTargetIndexFilter { get; set; }
+        public Action<Vector2> DragPointerChanged { get; set; }
         public ListBoxItemRenderHandler<T> ItemRenderer { get; set; }
+        public float DragHandleWidthPixels { get; set; }
+        public bool DraggingItem { get; private set; }
+        public T DraggedItem { get; private set; }
+        public int DraggedItemIndex { get; private set; }
+        public Vector2 DraggedPointerPosition { get; private set; }
+        public Vector2 DraggedPointerOffset { get; private set; }
+        public RectangleF DraggedItemBounds { get; private set; }
         public Color? SelectedPanelColor { get; set; }
         public Color? SelectedTextColor { get; set; }
 
@@ -142,6 +153,113 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
             }
 
             return -1;
+        }
+
+
+        public int IndexOf(T item)
+        {
+            return Items == null ? -1 : Items.IndexOf(item);
+        }
+
+        public void BeginDragItem(T item, int index, RectangleF bounds, Vector2 pointerPosition)
+        {
+            DraggingItem = true;
+            DraggedItem = item;
+            DraggedItemIndex = index;
+            DraggedItemBounds = bounds;
+            DraggedPointerPosition = pointerPosition;
+            DraggedPointerOffset = pointerPosition - bounds.Position;
+        }
+
+        public void UpdateDraggedPointer(Vector2 pointerPosition)
+        {
+            if (!DraggingItem)
+                return;
+
+            DraggedPointerPosition = pointerPosition;
+            if (DragPointerChanged != null)
+                DragPointerChanged(pointerPosition);
+        }
+
+        public void EndDragItem()
+        {
+            DraggingItem = false;
+            DraggedItem = default(T);
+            DraggedItemIndex = -1;
+            DraggedPointerPosition = default(Vector2);
+            DraggedPointerOffset = default(Vector2);
+            DraggedItemBounds = default(RectangleF);
+        }
+
+        public bool IsDraggingItem(T item)
+        {
+            return DraggingItem && object.Equals(DraggedItem, item);
+        }
+
+        public bool TryGetDragGhost(out T item, out int index, out RectangleF bounds)
+        {
+            item = default(T);
+            index = -1;
+            bounds = default(RectangleF);
+
+            if (!DraggingItem || DraggedItemBounds.Width <= 0f || DraggedItemBounds.Height <= 0f)
+                return false;
+
+            item = DraggedItem;
+            index = DraggedItemIndex;
+            bounds = new RectangleF(
+                DraggedPointerPosition.X - DraggedPointerOffset.X,
+                DraggedPointerPosition.Y - DraggedPointerOffset.Y,
+                DraggedItemBounds.Width,
+                DraggedItemBounds.Height);
+            return true;
+        }
+
+        public bool MoveDraggedItemToPointer(T item, Vector2 pointerPosition)
+        {
+            var resolver = DragTargetIndexResolver;
+            if (EntryMoved == null || resolver == null || Items == null || Items.Count <= 1)
+                return false;
+
+            // Drag callbacks are delivered to the handle control that started
+            // the gesture, but list rows are virtualized/rebound by index while
+            // the drag is in progress. Always resolve movement against the
+            // original dragged item so the invisible source row cannot cause
+            // adjacent entries to be moved back and forth.
+            if (DraggingItem)
+                item = DraggedItem;
+
+            int currentIndex = Items.IndexOf(item);
+            if (currentIndex < 0)
+                return false;
+
+            int targetIndex = resolver(pointerPosition);
+            if (targetIndex < 0)
+                targetIndex = 0;
+            if (targetIndex >= Items.Count)
+                targetIndex = Items.Count - 1;
+
+            var targetFilter = DragTargetIndexFilter;
+            if (targetFilter != null)
+            {
+                targetIndex = targetFilter(item, currentIndex, targetIndex);
+                if (targetIndex < 0)
+                    targetIndex = 0;
+                if (targetIndex >= Items.Count)
+                    targetIndex = Items.Count - 1;
+            }
+
+            if (targetIndex == currentIndex)
+            {
+                if (DraggingItem && object.Equals(DraggedItem, item))
+                    DraggedItemIndex = currentIndex;
+                return false;
+            }
+
+            EntryMoved(item, currentIndex, targetIndex);
+            if (DraggingItem && object.Equals(DraggedItem, item))
+                DraggedItemIndex = targetIndex;
+            return true;
         }
 
         void AddSelected(T item)

@@ -854,4 +854,100 @@ We are waiting for a while, and then we will restart it for you.</value>
   <data name="LcdMod_MediaPlayer_PausedTitleFormat" xml:space="preserve">
     <value>(Paused) - {0}</value>
   </data>
+  <data name="LcdMod_MediaPlayer_NoSupportedAudio" xml:space="preserve">
+    <value>No supported Space Engineers WAV/XWM sounds were found.</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_QueueEmpty" xml:space="preserve">
+    <value>Queue is empty</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_ClearQueue" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_SaveQueue" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_QueuePlayedPrefix" xml:space="preserve">
+    <value>played: </value>
+  </data>
+  <data name="LcdMod_MediaPlayer_QueueCurrentPrefix" xml:space="preserve">
+    <value>&gt; </value>
+  </data>
+  <data name="LcdMod_MediaPlayer_QueueNextPrefix" xml:space="preserve">
+    <value>next: </value>
+  </data>
+  <data name="LcdMod_MediaPlayer_UnknownLength" xml:space="preserve">
+    <value>unknown length</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_PickAudio" xml:space="preserve">
+    <value>Pick audio</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_LoadingAudioFiles" xml:space="preserve">
+    <value>Loading audio files...</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_SavePlaylistTitle" xml:space="preserve">
+    <value>Save playlist</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_SavePlaylistPrompt" xml:space="preserve">
+    <value>Enter a playlist name. It will be saved as a local .m3u file.</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_PlaylistNameEmpty" xml:space="preserve">
+    <value>Playlist name is empty.</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_PlaylistSavedFormat" xml:space="preserve">
+    <value>Saved playlist {0}.</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Context_AddToQueue" xml:space="preserve">
+    <value>Add to queue</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Context_AddNext" xml:space="preserve">
+    <value>Add next</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Context_PlayNow" xml:space="preserve">
+    <value>Play now</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Context_Favorite" xml:space="preserve">
+    <value>Favorite</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Context_AddAll" xml:space="preserve">
+    <value>Add all</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Context_PlayAll" xml:space="preserve">
+    <value>Play all</value>
+  </data>
+  <data name="LcdMod_FilePicker_PickFile" xml:space="preserve">
+    <value>Pick file</value>
+  </data>
+  <data name="LcdMod_FilePicker_PickFolder" xml:space="preserve">
+    <value>Pick folder</value>
+  </data>
+  <data name="LcdMod_FilePicker_Root" xml:space="preserve">
+    <value>Root</value>
+  </data>
+  <data name="LcdMod_FilePicker_SearchTitle" xml:space="preserve">
+    <value>Search File</value>
+  </data>
+  <data name="LcdMod_FilePicker_SearchSubtitle" xml:space="preserve">
+    <value>Filter files and folders in the current folder</value>
+  </data>
+  <data name="LcdMod_FilePicker_SearchPlaceholder" xml:space="preserve">
+    <value>Search files</value>
+  </data>
+  <data name="LcdMod_FilePicker_SelectFile" xml:space="preserve">
+    <value>Select File</value>
+  </data>
+  <data name="LcdMod_FilePicker_SelectFolder" xml:space="preserve">
+    <value>Select Folder</value>
+  </data>
+  <data name="LcdMod_FilePicker_Loading" xml:space="preserve">
+    <value>Loading...</value>
+  </data>
+  <data name="LcdMod_FilePicker_NoFilesFound" xml:space="preserve">
+    <value>No files found</value>
+  </data>
+  <data name="LcdMod_FilePicker_NoFilesMatchFormat" xml:space="preserve">
+    <value>No files match "{0}"</value>
+  </data>
+  <data name="LcdMod_FilePicker_BackToRoots" xml:space="preserve">
+    <value>Back to roots</value>
+  </data>
 </root>

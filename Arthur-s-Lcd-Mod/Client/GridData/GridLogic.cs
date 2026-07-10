@@ -6,12 +6,15 @@ using System.Linq;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Terminal.Actions;
 using LcdMod.Common.Helpers;
+using LcdMod.Common.Networking;
 using Sandbox.Definitions;
+using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.ModAPI;
 using VRage.Game.ModAPI.Ingame;
 using VRageMath;
+using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
 using IMyCubeGrid = VRage.Game.ModAPI.IMyCubeGrid;
 using IMyFarmPlotLogic = Sandbox.ModAPI.IMyFarmPlotLogic;
 using IMyFunctionalBlock = Sandbox.ModAPI.IMyFunctionalBlock;
@@ -23,7 +26,7 @@ namespace LcdMod.Client.GridData
     /// <summary>
     ///     Logic attached to <see cref="Grid" />
     /// </summary>
-    public partial class GridLogic
+    public class GridLogic
     {
         private const int DELAY = 120;
         private const int REQUEST_TTL_TICKS = 120;
@@ -56,8 +59,11 @@ namespace LcdMod.Client.GridData
         private ItemsComponent _itemsComponent;
         private BlocksComponent _blocksComponent;
         private PowerComponent _powerComponent;
+        private GridRoomEnvironmentComponent _roomEnvironmentComponent;
+        private TerrainSolarForecastComponent _terrainSolarForecastComponent;
 #if EXPERIMENTAL
-        private GridMediaPlayer _mediaPlayer;
+        private readonly Dictionary<MediaPlayerPartitionKey, GridMediaPlayer> _mediaPlayers =
+            new Dictionary<MediaPlayerPartitionKey, GridMediaPlayer>();
 #endif
 
         private readonly Dictionary<MyItemType, double> _compCache = new Dictionary<MyItemType, double>();
@@ -148,8 +154,30 @@ namespace LcdMod.Client.GridData
 
         public PowerComponent Power => _powerComponent ?? (_powerComponent = new PowerComponent(this));
 
+        internal GridRoomEnvironmentComponent RoomEnvironment =>
+            _roomEnvironmentComponent ?? (_roomEnvironmentComponent = new GridRoomEnvironmentComponent(this));
+
+        internal TerrainSolarForecastComponent TerrainSolarForecast =>
+            _terrainSolarForecastComponent ?? (_terrainSolarForecastComponent = new TerrainSolarForecastComponent(this));
+
 #if EXPERIMENTAL
-        public GridMediaPlayer MediaPlayer => _mediaPlayer ?? (_mediaPlayer = new GridMediaPlayer());
+        public GridMediaPlayer MediaPlayer => GetMediaPlayer(0L, 0);
+
+        public GridMediaPlayer GetMediaPlayer(long blockId, int screenIndex)
+        {
+            if (screenIndex < 0)
+                screenIndex = 0;
+
+            var key = new MediaPlayerPartitionKey(blockId, screenIndex);
+            GridMediaPlayer player;
+            if (!_mediaPlayers.TryGetValue(key, out player))
+            {
+                player = new GridMediaPlayer();
+                _mediaPlayers[key] = player;
+            }
+
+            return player;
+        }
 #endif
 
         private IMyGridTerminalSystem GridTerminalSystem =>
@@ -186,8 +214,9 @@ namespace LcdMod.Client.GridData
         public void Unload()
         {
 #if EXPERIMENTAL
-            if (_mediaPlayer != null)
-                _mediaPlayer.Unload();
+            foreach (var player in _mediaPlayers.Values)
+                player.Unload();
+            _mediaPlayers.Clear();
 #endif
         }
 
@@ -200,8 +229,8 @@ namespace LcdMod.Client.GridData
                 _ticksSinceRequested++;
 
 #if EXPERIMENTAL
-            if (_mediaPlayer != null)
-                _mediaPlayer.Update();
+            foreach (var player in _mediaPlayers.Values)
+                player.Update();
 #endif
 
             if (_ticksSinceRequested > REQUEST_TTL_TICKS)
@@ -243,6 +272,35 @@ namespace LcdMod.Client.GridData
             _ingotQueryCache.Clear();
             _productionByBlockCache.Clear();
         }
+
+#if EXPERIMENTAL
+        private struct MediaPlayerPartitionKey : IEquatable<MediaPlayerPartitionKey>
+        {
+            readonly long _blockId;
+            readonly int _screenIndex;
+
+            public MediaPlayerPartitionKey(long blockId, int screenIndex)
+            {
+                _blockId = blockId;
+                _screenIndex = screenIndex;
+            }
+
+            public bool Equals(MediaPlayerPartitionKey other)
+            {
+                return _blockId == other._blockId && _screenIndex == other._screenIndex;
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is MediaPlayerPartitionKey && Equals((MediaPlayerPartitionKey)obj);
+            }
+
+            public override int GetHashCode()
+            {
+                return (_blockId.GetHashCode() * 397) ^ _screenIndex;
+            }
+        }
+#endif
 
         private void StartRefresh(bool force = false)
         {
@@ -480,6 +538,33 @@ namespace LcdMod.Client.GridData
         public void RefreshIfNeeded()
         {
             Blocks.RefreshIfNeeded();
+        }
+
+        internal bool TryGetGridRoomEnvironment(IMyCubeBlock block, out GridRoomEnvironmentSample sample)
+        {
+            return RoomEnvironment.TryGetGridRoomEnvironment(block, out sample);
+        }
+
+        internal void ApplyGridRoomEnvironment(PacketSyncGridRoomEnvironment packet)
+        {
+            RoomEnvironment.ApplyGridRoomEnvironment(packet);
+        }
+
+        internal bool TryGetTerrainSolarForecast(
+            MyPlanet planet,
+            Vector3D rotationAxis,
+            out bool hasSunrise,
+            out double sunriseHour,
+            out bool hasSunset,
+            out double sunsetHour)
+        {
+            return TerrainSolarForecast.TryGetTerrainSolarForecast(
+                planet,
+                rotationAxis,
+                out hasSunrise,
+                out sunriseHour,
+                out hasSunset,
+                out sunsetHour);
         }
 
         public static bool EnsureAssemblerBlueprintDatabase(IMyAssembler assembler)

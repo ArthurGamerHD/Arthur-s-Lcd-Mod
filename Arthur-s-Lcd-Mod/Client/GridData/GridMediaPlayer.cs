@@ -58,10 +58,6 @@ namespace LcdMod.Client.GridData
             public AudioAssetMetadata LocalAsset;
         }
 
-        public GridMediaPlayer()
-        {
-        }
-
         public string CurrentSoundSubtype { get; private set; }
         public string CurrentWavePath { get; private set; }
         public double CurrentDurationSeconds { get; private set; }
@@ -167,7 +163,7 @@ namespace LcdMod.Client.GridData
         {
             _lastError = null;
 
-            if (sourceBlock == null || sourceBlock.MarkedForClose)
+            if (IsSourceBlockUnavailable(sourceBlock))
             {
                 Fail("Screen block is not available.");
                 return;
@@ -200,7 +196,7 @@ namespace LcdMod.Client.GridData
         {
             _lastError = null;
 
-            if (sourceBlock == null || sourceBlock.MarkedForClose)
+            if (IsSourceBlockUnavailable(sourceBlock))
             {
                 Fail("Screen block is not available.");
                 return;
@@ -230,7 +226,7 @@ namespace LcdMod.Client.GridData
         {
             _lastError = null;
 
-            if (sourceBlock == null || sourceBlock.MarkedForClose)
+            if (IsSourceBlockUnavailable(sourceBlock))
             {
                 Fail("Screen block is not available.");
                 return;
@@ -380,14 +376,14 @@ namespace LcdMod.Client.GridData
 
         public void Update()
         {
-            if (_paused)
-                return;
-
-            if (_sourceBlock != null && _sourceBlock.MarkedForClose)
+            if (_sourceBlock != null && IsSourceBlockUnavailable(_sourceBlock))
             {
                 StopInternal(true);
                 return;
             }
+
+            if (_paused)
+                return;
 
             SubmitPendingBuffers();
         }
@@ -764,6 +760,15 @@ namespace LcdMod.Client.GridData
                 CurrentDurationSeconds = 0.0;
                 _sourceBlock = null;
             }
+        }
+
+        static bool IsSourceBlockUnavailable(IMyTerminalBlock block)
+        {
+            if (block == null || block.MarkedForClose)
+                return true;
+
+            var functional = block as IMyFunctionalBlock;
+            return functional != null && !functional.IsFunctional;
         }
 
 

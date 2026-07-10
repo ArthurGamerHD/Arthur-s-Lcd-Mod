@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using LcdMod.Client.Animation;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.Styling;
 using VRage.Game.GUI.TextPanel;
@@ -15,6 +16,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
         readonly Dictionary<int, ListBoxItem<T>> _rowControlsByIndex =
             new Dictionary<int, ListBoxItem<T>>();
         readonly List<int> _rowIndexesToRemove = new List<int>();
+        readonly ListBoxItemModel<T> _dragGhostModel;
+        readonly ListBoxItem<T> _dragGhostItem;
+        Vector2 _lastDragPointerPosition;
+        bool _dragAutoScrollFrameQueued;
         ListBoxModel<T> _cachedListModel;
 
         public ListBox(RectangleF bounds, ListBoxModel<T> model = null)
@@ -23,6 +28,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
             _scrollPanel = new ScrollPanel();
             _scrollPanel.ManualScrollInertiaEnabled = false;
             AddChild(_scrollPanel);
+            _dragGhostModel = new ListBoxItemModel<T>(ListModel, default(T), -1);
+            _dragGhostItem = new ListBoxItem<T>(default(RectangleF), _dragGhostModel);
+            _dragGhostItem.IsDragGhost = true;
+            _dragGhostItem.IsDraggedVisual = true;
+            _dragGhostItem.SetStyleParent(_scrollPanel);
             ConfigureScrollPanel();
         }
 
@@ -52,6 +62,16 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
             _scrollPanel.Render(sprites);
         }
 
+        public override void AddOverlayEntries(List<Control> entries)
+        {
+            base.AddOverlayEntries(entries);
+
+            if (entries == null || !Visible || !PrepareDragGhostOverlay())
+                return;
+
+            entries.Add(_dragGhostItem);
+        }
+
         void ConfigureScrollPanel()
         {
             var model = ListModel;
@@ -59,9 +79,93 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
             float scrollerWidth = model != null && model.ScrollerWidthPixels > 0f ? model.ScrollerWidthPixels : 6f;
             int count = model?.Count ?? 0;
 
+            if (model != null)
+            {
+                model.DragTargetIndexResolver = ResolveDragTargetIndex;
+                model.DragPointerChanged = OnDragPointerChanged;
+            }
+
             var viewBox = GetViewBox();
             _scrollPanel.Configure(viewBox, viewBox.Y, 0f, rowHeight, count, scrollerWidth, 0f);
             RebuildVisibleRows();
+        }
+
+
+        int ResolveDragTargetIndex(Vector2 pointer)
+        {
+            var model = ListModel;
+            if (model == null || model.Count <= 0)
+                return -1;
+
+            var viewport = _scrollPanel.ContentViewportBounds;
+            var rowHeight = Math.Max(1f, _scrollPanel.RowHeight);
+            var contentY = pointer.Y - viewport.Y + _scrollPanel.ScrollOffsetPixels;
+            if (float.IsNaN(contentY) || float.IsInfinity(contentY))
+                return -1;
+
+            var index = (int)Math.Floor(contentY / rowHeight);
+            if (index < 0)
+                return 0;
+            if (index >= model.Count)
+                return model.Count - 1;
+            return index;
+        }
+
+        void OnDragPointerChanged(Vector2 pointer)
+        {
+            _lastDragPointerPosition = pointer;
+            if (ApplyDragEdgeAutoScroll(pointer))
+                ScheduleDragEdgeAutoScroll();
+        }
+
+        bool ApplyDragEdgeAutoScroll(Vector2 pointer)
+        {
+            var model = ListModel;
+            if (model == null || !model.DraggingItem || !_scrollPanel.IsVerticallyScrollable)
+                return false;
+
+            var viewport = _scrollPanel.ContentViewportBounds;
+            if (viewport.Width <= 0f || viewport.Height <= 0f)
+                return false;
+
+            var rowHeight = Math.Max(1f, _scrollPanel.RowHeight);
+            var edge = Math.Min(viewport.Height * .35f, Math.Max(12f, rowHeight * .7f));
+            var step = Math.Max(1f, rowHeight * .35f);
+            float delta = 0f;
+            if (pointer.Y <= viewport.Y + edge)
+                delta = -step;
+            else if (pointer.Y >= viewport.Bottom - edge)
+                delta = step;
+
+            if (Math.Abs(delta) <= 0.001f)
+                return false;
+
+            var moved = _scrollPanel.SetScrollOffsetPixels(_scrollPanel.ScrollOffsetPixels + delta);
+            if (moved)
+            {
+                model.MoveDraggedItemToPointer(model.DraggedItem, pointer);
+                MarkDirty();
+            }
+
+            return moved;
+        }
+
+        void ScheduleDragEdgeAutoScroll()
+        {
+            if (_dragAutoScrollFrameQueued)
+                return;
+
+            _dragAutoScrollFrameQueued = true;
+            global::LcdMod.Client.LcdModClientComponent.RunNextFrame.Add(delegate
+            {
+                _dragAutoScrollFrameQueued = false;
+                var model = ListModel;
+                if (model == null || !model.DraggingItem)
+                    return;
+
+                if (ApplyDragEdgeAutoScroll(_lastDragPointerPosition))
+                    ScheduleDragEdgeAutoScroll();
+            });
         }
 
         void RebuildVisibleRows()
@@ -108,12 +212,16 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
                 if (!_rowControlsByIndex.TryGetValue(itemIndex, out item))
                 {
                     item = new ListBoxItem<T>(rowBounds, itemModel);
+                    item.IsDragGhost = false;
+                    item.IsDraggedVisual = false;
                     _rowControlsByIndex[itemIndex] = item;
                 }
                 else
                 {
                     item.SetRect(rowBounds);
                     item.SetDataContext(itemModel);
+                    item.IsDragGhost = false;
+                    item.IsDraggedVisual = false;
                 }
 
                 item.BorderRadiusPixels = BorderRadiusPixels;
@@ -171,6 +279,29 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
                 var item = children[i] as ListBoxItem<T>;
                 item?.Render(sprites);
             }
+        }
+
+        bool PrepareDragGhostOverlay()
+        {
+            var model = ListModel;
+            if (model == null || _dragGhostModel == null || _dragGhostItem == null)
+                return false;
+
+            T item;
+            int index;
+            RectangleF bounds;
+            if (!model.TryGetDragGhost(out item, out index, out bounds))
+                return false;
+
+            _dragGhostModel.Update(model, item, index);
+            _dragGhostItem.IsDragGhost = true;
+            _dragGhostItem.IsDraggedVisual = true;
+            _dragGhostItem.SetDataContext(_dragGhostModel);
+            _dragGhostItem.SetRect(bounds);
+            _dragGhostItem.BorderRadiusPixels = BorderRadiusPixels;
+            _dragGhostItem.Padding = Padding;
+            _dragGhostItem.RenderTransform = new ScaleTransform(1.1f);
+            return true;
         }
 
     }

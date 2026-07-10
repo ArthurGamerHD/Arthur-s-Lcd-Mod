@@ -12,8 +12,15 @@ namespace LcdMod.Client.GridData
         public float OxygenRatio;
     }
 
-    public partial class GridLogic
+    internal sealed class GridRoomEnvironmentComponent
     {
+        readonly GridLogic _owner;
+
+        internal GridRoomEnvironmentComponent(GridLogic owner)
+        {
+            _owner = owner;
+        }
+
         sealed class GridRoomEnvironmentCacheEntry
         {
             public bool HasSample;
@@ -33,7 +40,7 @@ namespace LcdMod.Client.GridData
         {
             sample = default(GridRoomEnvironmentSample);
             if (block == null || block.MarkedForClose || block.CubeGrid == null ||
-                block.CubeGrid.EntityId != Grid.EntityId || MyAPIGateway.Session == null)
+                block.CubeGrid.EntityId != _owner.Grid.EntityId || MyAPIGateway.Session == null)
             {
                 return false;
             }

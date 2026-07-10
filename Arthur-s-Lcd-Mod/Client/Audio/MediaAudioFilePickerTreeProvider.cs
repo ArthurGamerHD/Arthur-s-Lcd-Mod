@@ -46,8 +46,22 @@ namespace LcdMod.Client.Audio
         }
     }
 
+    sealed class MediaAudioPlaylistReference
+    {
+        public const string SOURCE_PLAYLISTS = "Playlists";
+
+        public string FileName { get; set; }
+        public string DisplayName { get; set; }
+        public string PickerFullPath { get; set; }
+    }
+
     static class MediaAudioFilePickerTreeProvider
     {
+        const string PLAYLIST_INDEX_FILE = "music_cache_playlists.txt";
+        const string PLAYLIST_SAVE_FILE_PREFIX = "music_cache_playlist_";
+        const string FAVORITES_PLAYLIST_FILE = "music_cache_favorites.m3u";
+        const string PLAYLIST_FILE_EXTENSION = ".m3u";
+
         static string _currentPath;
         static List<FolderModel> _cachedRoots;
 
@@ -71,6 +85,7 @@ namespace LcdMod.Client.Audio
             var roots = new List<FolderModel>
             {
                 BuildLocalRoot(),
+                BuildPlaylistRoot(),
                 BuildSoundBlockRoot(),
                 BuildContentRoot()
             };
@@ -117,6 +132,11 @@ namespace LcdMod.Client.Audio
             return _cachedRoots ?? BuildRoots();
         }
 
+        public static void InvalidateCache()
+        {
+            _cachedRoots = null;
+        }
+
         static FolderModel BuildLocalRoot()
         {
             var root = new FolderModel
@@ -159,6 +179,130 @@ namespace LcdMod.Client.Audio
             }
 
             return root;
+        }
+
+        static FolderModel BuildPlaylistRoot()
+        {
+            var root = new FolderModel
+            {
+                Name = MediaAudioPlaylistReference.SOURCE_PLAYLISTS,
+                FullPath = MediaAudioPlaylistReference.SOURCE_PLAYLISTS,
+                Subtitle = "Saved local music playlists"
+            };
+
+            AddPlaylistFileIfExists(root, FAVORITES_PLAYLIST_FILE, "Favorites");
+
+            var records = LoadPlaylistIndex();
+            for (int i = 0; i < records.Count; i++)
+            {
+                var record = records[i];
+                AddPlaylistFileIfExists(root, record.FileName, record.DisplayName);
+            }
+
+            return root;
+        }
+
+        sealed class PlaylistIndexRecord
+        {
+            public string FileName;
+            public string DisplayName;
+        }
+
+        static List<PlaylistIndexRecord> LoadPlaylistIndex()
+        {
+            var records = new List<PlaylistIndexRecord>();
+            if (MyAPIGateway.Utilities == null ||
+                !MyAPIGateway.Utilities.FileExistsInLocalStorage(PLAYLIST_INDEX_FILE, typeof(LcdModClientComponent)))
+                return records;
+
+            try
+            {
+                using (var reader = MyAPIGateway.Utilities.ReadFileInLocalStorage(PLAYLIST_INDEX_FILE, typeof(LcdModClientComponent)))
+                {
+                    if (reader == null)
+                        return records;
+
+                    string line;
+                    while ((line = reader.ReadLine()) != null)
+                    {
+                        line = line.Trim();
+                        if (line.Length == 0)
+                            continue;
+
+                        var separator = line.IndexOf('|');
+                        var fileName = separator < 0 ? line : line.Substring(0, separator).Trim();
+                        var displayName = separator < 0 ? GetPlaylistDisplayNameFromFileName(fileName) : line.Substring(separator + 1).Trim();
+                        if (IsPlaylistFileName(fileName))
+                        {
+                            records.Add(new PlaylistIndexRecord
+                            {
+                                FileName = fileName,
+                                DisplayName = string.IsNullOrWhiteSpace(displayName) ? GetPlaylistDisplayNameFromFileName(fileName) : displayName
+                            });
+                        }
+                    }
+                }
+            }
+            catch (Exception error)
+            {
+                LogHelper.Log(MyLogSeverity.Warning, "Could not read media playlist index: " + error.Message);
+            }
+
+            return records;
+        }
+
+        static void AddPlaylistFileIfExists(FolderModel root, string fileName, string displayName)
+        {
+            if (root == null || string.IsNullOrWhiteSpace(fileName) || MyAPIGateway.Utilities == null)
+                return;
+
+            try
+            {
+                if (!MyAPIGateway.Utilities.FileExistsInLocalStorage(fileName, typeof(LcdModClientComponent)))
+                    return;
+            }
+            catch
+            {
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(displayName))
+                displayName = GetPlaylistDisplayNameFromFileName(fileName);
+
+            var pickerPath = MediaAudioPlaylistReference.SOURCE_PLAYLISTS + "/" + displayName + PLAYLIST_FILE_EXTENSION;
+            root.Files.Add(new FileModel
+            {
+                Name = displayName + PLAYLIST_FILE_EXTENSION,
+                FullPath = pickerPath,
+                IconPath = "playlist" + PLAYLIST_FILE_EXTENSION,
+                Subtitle = "M3U playlist",
+                Tag = new MediaAudioPlaylistReference
+                {
+                    FileName = fileName,
+                    DisplayName = displayName,
+                    PickerFullPath = pickerPath
+                }
+            });
+        }
+
+        static bool IsPlaylistFileName(string fileName)
+        {
+            return !string.IsNullOrWhiteSpace(fileName) &&
+                   fileName.EndsWith(PLAYLIST_FILE_EXTENSION, StringComparison.OrdinalIgnoreCase);
+        }
+
+        static string GetPlaylistDisplayNameFromFileName(string fileName)
+        {
+            if (string.IsNullOrWhiteSpace(fileName))
+                return "Playlist";
+
+            var name = fileName.Trim();
+            if (name.StartsWith(PLAYLIST_SAVE_FILE_PREFIX, StringComparison.OrdinalIgnoreCase))
+                name = name.Substring(PLAYLIST_SAVE_FILE_PREFIX.Length);
+            if (name.EndsWith(PLAYLIST_FILE_EXTENSION, StringComparison.OrdinalIgnoreCase))
+                name = name.Substring(0, name.Length - PLAYLIST_FILE_EXTENSION.Length);
+
+            return string.IsNullOrWhiteSpace(name) ? "Playlist" : name;
         }
 
         static FolderModel BuildSoundBlockRoot()

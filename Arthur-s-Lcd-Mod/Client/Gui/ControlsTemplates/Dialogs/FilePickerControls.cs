@@ -2,11 +2,14 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.ControlsTemplates.Panels.Virtualized;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
+using LcdMod.Client.Utility;
 using LcdMod.Common.Helpers;
+using static LcdMod.Common.Helpers.Constants;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
@@ -19,6 +22,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         const float ROW_GAP_PIXELS = 3f;
         const float ICON_SIZE_PIXELS = 30f;
         const float SCROLLER_WIDTH_PIXELS = 10f;
+        const string LOC_LOADING = MOD_PREFIX + "FilePicker_Loading";
+        const string LOC_NO_FILES_FOUND = MOD_PREFIX + "FilePicker_NoFilesFound";
+        const string LOC_NO_FILES_MATCH_FORMAT = MOD_PREFIX + "FilePicker_NoFilesMatchFormat";
+        const string LOC_BACK_TO_ROOTS = MOD_PREFIX + "FilePicker_BackToRoots";
 
         readonly List<FolderModel> _roots = new List<FolderModel>();
         readonly List<FilePickerEntryModel> _items = new List<FilePickerEntryModel>();
@@ -28,9 +35,18 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         readonly FolderControlModel _rootsUpEntryModel = new FolderControlModel { IsUpEntry = true };
         readonly ScrollPanel _scrollPanel = new ScrollPanel();
         readonly VirtualizedStackPanel<FilePickerEntryModel> _listPanel = new VirtualizedStackPanel<FilePickerEntryModel>();
+        readonly List<FilePickerContextAction> _contextActions = new List<FilePickerContextAction>();
+        readonly List<Button> _contextButtons = new List<Button>();
+        Vector2 _contextMenuPosition;
+        bool _contextMenuOpen;
 
         string _filter = string.Empty;
         bool _loadingFrameQueued;
+
+        sealed class ContextMenuButtonModel : ButtonModel
+        {
+            public int ActionIndex;
+        }
 
         public FilePickerGrid(RectangleF rect, FilePickerMode mode, IEnumerable<FolderModel> roots, string initialPath = null)
             : base(rect, CursorType.Default)
@@ -52,8 +68,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         public FileModel SelectedFile { get; private set; }
         public Action<FilePickerResult> Accepted { get; set; }
         public Action Changed { get; set; }
+        public Func<FilePickerResult, List<FilePickerContextAction>> ContextActionsProvider { get; set; }
         public bool IsLoading { get; private set; }
         public string LoadingMessage { get; private set; }
+        public bool CompactRows { get; set; }
+        public bool ChromeVisible { get; set; } = true;
 
         public string CurrentPath
         {
@@ -91,8 +110,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
         public void SetLoading(bool loading, string message = null)
         {
+            var nextMessage = string.IsNullOrWhiteSpace(message) ? LocHelper.GetLoc(LOC_LOADING) : message;
+            if (IsLoading == loading && string.Equals(LoadingMessage, nextMessage, StringComparison.Ordinal))
+                return;
+
             IsLoading = loading;
-            LoadingMessage = string.IsNullOrWhiteSpace(message) ? "Loading..." : message;
+            LoadingMessage = nextMessage;
             MarkDirty();
             NotifyChanged();
         }
@@ -105,6 +128,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var folder = FindFolderByPath(path);
             if (folder == null)
                 return false;
+
+            if (ReferenceEquals(CurrentFolder, folder) && SelectedFolder == null && SelectedFile == null)
+                return true;
 
             CurrentFolder = folder;
             SelectedFolder = null;
@@ -160,6 +186,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
         internal void OnFolderControlClicked(FolderControlModel model, object sender)
         {
+            CloseContextMenu();
             if (model == null)
                 return;
 
@@ -186,6 +213,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
         internal void OnFileControlClicked(FileControlModel model, object sender)
         {
+            CloseContextMenu();
             if (model == null || model.File == null)
                 return;
 
@@ -199,6 +227,28 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             SelectedFolder = null;
             RefreshSelectionFlags();
             NotifyChanged();
+        }
+
+        internal bool OnFolderControlSecondaryClicked(FolderControlModel model, RectangleF bounds, Vector2 clickPosition, object sender)
+        {
+            if (model == null || model.IsUpEntry || model.Folder == null)
+                return false;
+
+            SelectedFolder = model.Folder;
+            SelectedFile = null;
+            RefreshSelectionFlags();
+            return OpenContextMenu(CreateFolderResult(model.Folder), bounds, clickPosition);
+        }
+
+        internal bool OnFileControlSecondaryClicked(FileControlModel model, RectangleF bounds, Vector2 clickPosition, object sender)
+        {
+            if (model == null || model.File == null)
+                return false;
+
+            SelectedFile = model.File;
+            SelectedFolder = null;
+            RefreshSelectionFlags();
+            return OpenContextMenu(CreateFileResult(model.File), bounds, clickPosition);
         }
 
         internal void RenderEntry(ControlTemplate control, FilePickerEntryModel model, List<MySprite> sprites)
@@ -232,6 +282,58 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 sprites,
                 backgroundColor,
                 radiusScale: control.LayoutScale);
+
+            if (CompactRows)
+            {
+                var compactIconSize = Math.Min(
+                    Math.Max(10f * control.LayoutScale, 14f * control.LayoutScale * control.FontScale),
+                    Math.Max(1f, Math.Min(rect.Height, rect.Width) - 6f * Math.Max(1f, control.LayoutScale)));
+                var compactIconRect = new RectangleF(
+                    rect.X + 5f * control.LayoutScale,
+                    rect.Center.Y - compactIconSize * 0.5f,
+                    compactIconSize,
+                    compactIconSize);
+                var compactTextX = compactIconRect.Right + 6f * control.LayoutScale;
+                var compactTextWidth = Math.Max(1f, rect.Right - compactTextX - 8f * control.LayoutScale);
+                var compactScale = 0.42f * control.LayoutScale * control.FontScale;
+                var compactHeight = FormatingHelper.LineHeight(compactScale, control, control.TextSurface);
+                var compactText = string.IsNullOrEmpty(model.Subtitle)
+                    ? model.Name
+                    : model.Name + "  " + model.Subtitle;
+                var compactIcon = string.IsNullOrEmpty(model.Icon) ? "MissingIcon" : model.Icon;
+                var compactBackground = selected
+                    ? backgroundColor
+                    : ResolveColor(ThemeResources.SurfaceContainerHighColor);
+                compactBackground.A = byte.MaxValue;
+
+                BorderRenderer.CreateSpritesFromRect(
+                    rect,
+                    sprites,
+                    compactBackground,
+                    radiusScale: control.LayoutScale);
+
+                sprites.Add(new MySprite
+                {
+                    Type = SpriteType.TEXTURE,
+                    Data = compactIcon,
+                    Position = compactIconRect.Center,
+                    Size = new Vector2(compactIconSize, compactIconSize),
+                    Color = Constants.ColorCorrection,
+                    Alignment = TextAlignment.CENTER
+                });
+
+                sprites.Add(new MySprite
+                {
+                    Type = SpriteType.TEXT,
+                    Data = TrimToWidth(compactText, compactTextWidth, compactScale, control),
+                    Position = new Vector2(compactTextX, rect.Center.Y - compactHeight * 0.5f),
+                    Color = foregroundColor,
+                    FontId = control.TextFont,
+                    Alignment = TextAlignment.LEFT,
+                    RotationOrScale = compactScale
+                });
+                return;
+            }
 
             var iconSize = Math.Min(
                 Math.Max(1f, ICON_SIZE_PIXELS * control.LayoutScale),
@@ -279,7 +381,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             if (!hasSubtitle)
                 return;
 
-            var subtitleHeight = FormatingHelper.LineHeight(subtitleScale, control, control.TextSurface);
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
@@ -298,13 +399,16 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             if (rect.Width <= 0f || rect.Height <= 0f)
                 return;
 
-            BorderRenderer.CreateSpritesFromRect(
-                rect,
-                sprites,
-                ResolveColor(ThemeResources.SurfaceContainerColor),
-                radiusScale: LayoutScale);
+            if (ChromeVisible)
+            {
+                BorderRenderer.CreateSpritesFromRect(
+                    rect,
+                    sprites,
+                    ResolveColor(ThemeResources.SurfaceContainerColor),
+                    radiusScale: LayoutScale);
+            }
 
-            var rowHeight = GetRowHeight(LayoutScale);
+            var rowHeight = GetRowHeight(LayoutScale, CompactRows);
             _listPanel.ItemsSource = _items;
             _listPanel.RowHeight = rowHeight;
             _listPanel.Gap = ROW_GAP_PIXELS * LayoutScale;
@@ -323,6 +427,168 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 DrawLoadingListMessage(rect, sprites);
             else if (_items.Count == 0)
                 DrawEmptyListMessage(rect, sprites);
+
+            RenderContextMenu(sprites);
+        }
+
+        void RenderContextMenu(List<MySprite> sprites)
+        {
+            if (!_contextMenuOpen || _contextActions.Count == 0 || sprites == null)
+            {
+                HideContextButtonsFrom(0);
+                return;
+            }
+
+            var scale = Math.Max(1f, LayoutScale);
+            var itemHeight = Math.Max(22f * scale, 26f * scale * FontScale);
+            var width = Math.Max(118f * scale, Bounds.Width * .32f);
+            var height = itemHeight * _contextActions.Count;
+            var x = MathHelper.Clamp(_contextMenuPosition.X, Bounds.X, Math.Max(Bounds.X, Bounds.Right - width));
+            var spaceBelow = Bounds.Bottom - _contextMenuPosition.Y;
+            var spaceAbove = _contextMenuPosition.Y - Bounds.Y;
+            var preferredY = spaceBelow >= height || spaceBelow >= spaceAbove
+                ? _contextMenuPosition.Y
+                : _contextMenuPosition.Y - height;
+            var y = MathHelper.Clamp(preferredY, Bounds.Y, Math.Max(Bounds.Y, Bounds.Bottom - height));
+            var menuRect = new RectangleF(x, y, width, height);
+
+            BorderRenderer.CreateSpritesFromRect(
+                menuRect,
+                sprites,
+                ResolveColor(ThemeResources.SurfaceContainerHighestColor),
+                radiusScale: scale);
+
+            for (int i = 0; i < _contextActions.Count; i++)
+            {
+                var action = _contextActions[i];
+                var button = EnsureContextButton(i);
+                var model = button.DataContext as ContextMenuButtonModel;
+                model.ActionIndex = i;
+                model.Text = action == null ? string.Empty : action.Text;
+                model.Enabled = action != null && action.Enabled && action.Clicked != null;
+                model.Clicked = OnContextActionClicked;
+
+                button.BackgroundColor = Color.Transparent;
+                button.TextColor = ResolveColor(ThemeResources.OnSurfaceColor);
+                button.BorderColor = Color.Transparent;
+                button.BorderThicknessPixels = 0f;
+                button.BorderRadiusPixels = 0f;
+                button.SetRect(new RectangleF(menuRect.X, menuRect.Y + itemHeight * i, menuRect.Width, itemHeight));
+                button.SetVisible(true);
+                button.SetEnabled(model.Enabled);
+                button.SetCursor(model.Enabled ? CursorType.Hand : CursorType.Default);
+                button.SetClass("ControlBase Button ContextMenuItem");
+                button.CustomRender = RenderContextActionButton;
+                button.Render(sprites);
+            }
+
+            HideContextButtonsFrom(_contextActions.Count);
+        }
+
+        void HideContextButtonsFrom(int startIndex)
+        {
+            if (startIndex < 0)
+                startIndex = 0;
+
+            for (int i = startIndex; i < _contextButtons.Count; i++)
+            {
+                if (_contextButtons[i] != null)
+                    _contextButtons[i].SetVisible(false);
+            }
+        }
+
+        Button EnsureContextButton(int index)
+        {
+            while (_contextButtons.Count <= index)
+            {
+                var button = new Button(default(RectangleF), new ContextMenuButtonModel());
+                _contextButtons.Add(button);
+                AddChild(button);
+            }
+
+            return _contextButtons[index];
+        }
+
+        void RenderContextActionButton(ControlTemplate control, List<MySprite> sprites)
+        {
+            if (control == null || sprites == null)
+                return;
+
+            var rect = control.Bounds;
+            var fill = control.IsMouseOver
+                ? ResolveColor(ThemeResources.AccentContainerColor)
+                : Color.Transparent;
+            if (fill.A > 0)
+                BorderRenderer.CreateSpritesFromRect(rect, sprites, fill, radiusScale: LayoutScale);
+
+            var model = control.DataContext as ButtonModel;
+            var text = model == null ? string.Empty : model.Text;
+            var textScale = 0.46f * LayoutScale * FontScale;
+            var y = rect.Center.Y - FormatingHelper.LineHeight(textScale, control, TextSurface) * .5f;
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXT,
+                Data = TrimToWidth(text, Math.Max(1f, rect.Width - 14f * LayoutScale), textScale, control),
+                Position = new Vector2(rect.X + 7f * LayoutScale, y),
+                Color = control.TextColor,
+                FontId = TextFont,
+                Alignment = TextAlignment.LEFT,
+                RotationOrScale = textScale
+            });
+        }
+
+        void OnContextActionClicked(ButtonModel model, object sender)
+        {
+            var contextModel = model as ContextMenuButtonModel;
+            if (contextModel == null || contextModel.ActionIndex < 0 || contextModel.ActionIndex >= _contextActions.Count)
+                return;
+
+            var action = _contextActions[contextModel.ActionIndex];
+            CloseContextMenu();
+            if (action != null && action.Enabled && action.Clicked != null)
+                action.Clicked();
+
+            NotifyChanged();
+        }
+
+        bool OpenContextMenu(FilePickerResult result, RectangleF sourceBounds, Vector2 clickPosition)
+        {
+            var provider = ContextActionsProvider;
+            var actions = provider == null ? null : provider(result);
+            _contextActions.Clear();
+            if (actions != null)
+            {
+                for (int i = 0; i < actions.Count; i++)
+                {
+                    if (actions[i] != null)
+                        _contextActions.Add(actions[i]);
+                }
+            }
+
+            if (_contextActions.Count == 0)
+            {
+                CloseContextMenu();
+                NotifyChanged();
+                return false;
+            }
+
+            if (float.IsNaN(clickPosition.X) || float.IsNaN(clickPosition.Y))
+                _contextMenuPosition = new Vector2(sourceBounds.Right - Math.Max(1f, 8f * LayoutScale), sourceBounds.Y);
+            else
+                _contextMenuPosition = clickPosition;
+            _contextMenuOpen = true;
+            NotifyChanged();
+            return true;
+        }
+
+        void CloseContextMenu()
+        {
+            if (!_contextMenuOpen && _contextActions.Count == 0)
+                return;
+
+            _contextMenuOpen = false;
+            _contextActions.Clear();
+            HideContextButtonsFrom(0);
         }
 
         protected override bool CanResolveChildren(Vector2 point, bool selfHit)
@@ -353,6 +619,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
         void OpenFolder(FolderModel folder)
         {
+            if (ReferenceEquals(CurrentFolder, folder) && SelectedFolder == null && SelectedFile == null)
+                return;
+
             CurrentFolder = folder;
             SelectedFolder = null;
             SelectedFile = null;
@@ -566,7 +835,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             model.Folder = parent;
             model.Name = "..";
             model.FullPath = parent == null ? string.Empty : parent.FullPath;
-            model.Subtitle = parent == null ? "Back to roots" : parent.FullPath;
+            model.Subtitle = parent == null ? LocHelper.GetLoc(LOC_BACK_TO_ROOTS) : parent.FullPath;
             model.Icon = "Folder";
             model.IsUpEntry = true;
             model.IsSelected = ReferenceEquals(SelectedFolder, parent);
@@ -654,8 +923,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         {
             IMyTextSurface surface = TextSurface;
             var text = string.IsNullOrWhiteSpace(_filter)
-                ? "No files found"
-                : "No files match \"" + _filter + "\"";
+                ? LocHelper.GetLoc(LOC_NO_FILES_FOUND)
+                : string.Format(FormatingHelper.Culture, LocHelper.GetLoc(LOC_NO_FILES_MATCH_FORMAT), _filter);
             var textScale = 0.52f * LayoutScale * FontScale;
             var textHeight = surface == null ? 0f : FormatingHelper.LineHeight(textScale, this, surface);
 
@@ -706,7 +975,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 RotationOrScale = innerRotation
             });
 
-            var text = string.IsNullOrEmpty(LoadingMessage) ? "Loading..." : LoadingMessage;
+            var text = string.IsNullOrEmpty(LoadingMessage) ? LocHelper.GetLoc(LOC_LOADING) : LoadingMessage;
             var textScale = 0.52f * LayoutScale * FontScale;
             var textHeight = surface == null ? 0f : FormatingHelper.LineHeight(textScale, this, surface);
             sprites.Add(new MySprite
@@ -836,6 +1105,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 return "FileXwm";
             if (string.Equals(extension, ".wav", StringComparison.OrdinalIgnoreCase))
                 return "FileWav";
+            if (string.Equals(extension, ".m3u", StringComparison.OrdinalIgnoreCase))
+                return "FileWav";
             return "MissingIcon";
         }
 
@@ -863,8 +1134,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             return slash < 0 ? normalized : normalized.Substring(0, slash);
         }
 
-        static float GetRowHeight(float scale)
+        static float GetRowHeight(float scale, bool compact)
         {
+            if (compact)
+                return Math.Max(24f * scale, 28f * Math.Max(1f, scale));
+
             return Math.Max(ROW_HEIGHT_PIXELS * scale, ICON_SIZE_PIXELS * scale + 8f * Math.Max(1f, scale));
         }
 
@@ -974,6 +1248,22 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         }
     }
 
+    static class FilePickerClickPosition
+    {
+        public static Vector2 FromSenderOrBounds(object sender, RectangleF bounds)
+        {
+            var eyeTracking = sender as IEyeTracking;
+            if (eyeTracking != null)
+            {
+                var position = eyeTracking.CursorPosition + eyeTracking.HitTestOffset;
+                if (!float.IsNaN(position.X) && !float.IsNaN(position.Y))
+                    return position;
+            }
+
+            return bounds.Position;
+        }
+    }
+
     sealed class FolderControl : RectangleControl
     {
         FilePickerGrid _owner;
@@ -983,6 +1273,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         {
             _owner = owner;
             SetOnClick(OnClicked);
+            OnSecondaryClick = OnSecondaryClicked;
         }
 
         public void SetOwner(FilePickerGrid owner)
@@ -1001,6 +1292,17 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             if (_owner != null)
                 _owner.OnFolderControlClicked(dataContext as FolderControlModel, sender);
         }
+
+        public override bool SecondaryClickAt(Vector2 point, object sender)
+        {
+            return _owner != null && _owner.OnFolderControlSecondaryClicked(DataContext as FolderControlModel, Bounds, point, sender);
+        }
+
+        void OnSecondaryClicked(object dataContext, object sender)
+        {
+            if (_owner != null)
+                _owner.OnFolderControlSecondaryClicked(dataContext as FolderControlModel, Bounds, FilePickerClickPosition.FromSenderOrBounds(sender, Bounds), sender);
+        }
     }
 
     sealed class FileControl : RectangleControl
@@ -1012,6 +1314,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         {
             _owner = owner;
             SetOnClick(OnClicked);
+            OnSecondaryClick = OnSecondaryClicked;
         }
 
         public void SetOwner(FilePickerGrid owner)
@@ -1029,6 +1332,17 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         {
             if (_owner != null)
                 _owner.OnFileControlClicked(dataContext as FileControlModel, sender);
+        }
+
+        public override bool SecondaryClickAt(Vector2 point, object sender)
+        {
+            return _owner != null && _owner.OnFileControlSecondaryClicked(DataContext as FileControlModel, Bounds, point, sender);
+        }
+
+        void OnSecondaryClicked(object dataContext, object sender)
+        {
+            if (_owner != null)
+                _owner.OnFileControlSecondaryClicked(dataContext as FileControlModel, Bounds, FilePickerClickPosition.FromSenderOrBounds(sender, Bounds), sender);
         }
     }
 }

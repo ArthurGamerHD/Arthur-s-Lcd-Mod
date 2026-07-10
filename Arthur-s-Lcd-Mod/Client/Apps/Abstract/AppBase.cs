@@ -22,7 +22,7 @@ namespace LcdMod.Client.Apps.Abstract
     public abstract partial class App : Control, IApp, ITextSurfaceProvider, ITextStyleProvider
     {
         readonly List<Control> _logicalChildren = new List<Control>();
-        readonly AnimationController _animationController;
+        AnimationController _animationController;
         StyleTree _styles;
         ResourceTree _resources;
         Dictionary<string, Color> _theme;
@@ -50,6 +50,15 @@ namespace LcdMod.Client.Apps.Abstract
         internal override AnimationController AnimationController => _animationController;
         public override IReadOnlyList<Control> LogicalChildren => _logicalChildren;
         public override StyleTree Styles => _styles;
+
+        protected void RebindAppHost(IAppHost host)
+        {
+            if (host == null)
+                throw new ArgumentNullException(nameof(host));
+
+            Host = host;
+            _animationController = Host.Animations;
+        }
 
         public override bool IsDirty
         {

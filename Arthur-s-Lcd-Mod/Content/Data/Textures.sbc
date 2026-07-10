@@ -158,6 +158,12 @@
             <Selectable>false</Selectable>
         </LCDTextureDefinition>
 
+        <LCDTextureDefinition> <!-- Media Player: Save button icon -->
+            <Id Type="LCDTextureDefinition" Subtype="Diskette"/>
+            <SpritePath>Textures/Sprites/Diskette.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
         <LCDTextureDefinition> <!-- Cargo Actions: Settings button icon -->
             <Id Type="LCDTextureDefinition" Subtype="SettingsIcon"/>
             <SpritePath>Textures/Sprites/Settings.dds</SpritePath>

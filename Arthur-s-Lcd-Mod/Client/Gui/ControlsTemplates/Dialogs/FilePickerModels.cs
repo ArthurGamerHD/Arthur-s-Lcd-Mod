@@ -56,6 +56,23 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         public object Tag { get; set; }
     }
 
+    sealed class FilePickerContextAction
+    {
+        public FilePickerContextAction()
+        {
+        }
+
+        public FilePickerContextAction(string text, Action clicked)
+        {
+            Text = text;
+            Clicked = clicked;
+        }
+
+        public string Text { get; set; }
+        public Action Clicked { get; set; }
+        public bool Enabled { get; set; } = true;
+    }
+
     abstract class FilePickerEntryModel
     {
         public bool IsSelected;

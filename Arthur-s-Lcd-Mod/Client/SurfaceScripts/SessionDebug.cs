@@ -24,14 +24,13 @@ namespace LcdMod.Client.SurfaceScripts
 
         SessionDebugApp _app;
 
-        public override CursorType CursorType { get; protected set; }
+        public override CursorType CursorType { get; protected set; } = CursorType.Default;
 
         public override List<Control> InteractiveList => _app?.InteractiveEntries ?? new List<Control>();
 
         public SessionDebugSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
             : base(surface, block, size)
         {
-            CursorType = CursorType.Default;
             LcdModSessionComponent.OnAfterSimulationUpdate += HandleAfterSimulationUpdate;
         }
 

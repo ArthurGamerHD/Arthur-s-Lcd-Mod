@@ -132,6 +132,26 @@ namespace LcdMod.Client.Gui.Styling.Styles
                     2,
                     EasingMode.EaseOutCubic,
                     AnimationInterpolators.Color);
+
+            style.State(StyleState.Dragged)
+                .Set(ControlTemplate.BackgroundColorProperty, ThemeResources.SurfaceContainerHighestColor)
+                .Set(ControlTemplate.TextColorProperty, ThemeResources.OnSurfaceColor)
+                .Set(ControlTemplate.RenderTransformProperty, new ScaleTransform(1.05f))
+                .Animate(
+                    ControlTemplate.RenderTransformProperty,
+                    2,
+                    EasingMode.EaseOutCubic,
+                    AnimationInterpolators.RenderTransform)
+                .Animate(
+                    ControlTemplate.BackgroundColorProperty,
+                    2,
+                    EasingMode.EaseOutCubic,
+                    AnimationInterpolators.Color)
+                .Animate(
+                    ControlTemplate.TextColorProperty,
+                    2,
+                    EasingMode.EaseOutCubic,
+                    AnimationInterpolators.Color);
         }
 
         static void ConfigureStandardButton(Style style)

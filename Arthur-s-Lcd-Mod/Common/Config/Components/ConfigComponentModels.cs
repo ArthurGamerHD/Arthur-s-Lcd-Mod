@@ -888,6 +888,10 @@ Click [color:#0000FF]""[loc]BlockPropertyTitle_TextPanelShowTextPanel[/loc]""[/c
         [ProtoMember(6)] public int RepeatModeInternal { get; set; }
         [ProtoMember(7)] public string SelectedAudioSource { get; set; } = string.Empty;
         [ProtoMember(8)] public string SelectedPickerFullPath { get; set; } = string.Empty;
+        [ProtoMember(9)] public string[] PlaylistPaths { get; set; } = new string[0];
+        [ProtoMember(10)] public string[] PlaylistTitles { get; set; } = new string[0];
+        [ProtoMember(11)] public int PlaylistIndex { get; set; } = -1;
+        [ProtoMember(12)] public int ShuffleSeed { get; set; }
 
         public override ConfigComponent Clone()
         {
@@ -900,7 +904,11 @@ Click [color:#0000FF]""[loc]BlockPropertyTitle_TextPanelShowTextPanel[/loc]""[/c
                 ShuffleEnabled = ShuffleEnabled,
                 RepeatModeInternal = RepeatModeInternal,
                 SelectedAudioSource = SelectedAudioSource,
-                SelectedPickerFullPath = SelectedPickerFullPath
+                SelectedPickerFullPath = SelectedPickerFullPath,
+                PlaylistPaths = ConfigComponentClone.Copy(PlaylistPaths),
+                PlaylistTitles = ConfigComponentClone.Copy(PlaylistTitles),
+                PlaylistIndex = PlaylistIndex,
+                ShuffleSeed = ShuffleSeed
             };
         }
     }

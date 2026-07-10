@@ -5,6 +5,7 @@ using System.Linq;
 #if EXPERIMENTAL
 using LcdMod.Client.Audio;
 using LcdMod.Client.Diagnostics;
+using LcdMod.Client.SurfaceScripts;
 #endif
 using LcdMod.Client.Market;
 using LcdMod.Client.Ftue;
@@ -61,6 +62,7 @@ namespace LcdMod.Client
         public PowerDataModule PowerData { get; private set; }
         public GridRoomEnvironmentClientModule RoomEnvironment { get; }
         internal FtueService Ftue { get; }
+        public static event Action OnUpdateBeforeSimulation;
 
         public void LoadData()
         {
@@ -156,6 +158,7 @@ namespace LcdMod.Client
             RunNextFrame.Clear();
             RunThisFrame.Clear();
             RunOnePerFrame.Clear();
+            OnUpdateBeforeSimulation = null;
         }
 
         public void UpdateBeforeSimulation()
@@ -176,6 +179,7 @@ namespace LcdMod.Client
 
                 _session.UpdateModules();
                 UpdateDebugSnapshot();
+                OnUpdateBeforeSimulation?.Invoke();
             }
             catch (Exception e)
             {
