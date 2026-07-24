@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using LcdMod.Client.Config;
 using LcdMod.Client.Terminal.Controls.Filter.Listbox;
@@ -56,7 +57,7 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Buttons
                 return config.SelectedSprites.Where(s => !string.IsNullOrWhiteSpace(s)).ToArray();
 
             return string.IsNullOrWhiteSpace(config.BackgroundSprite)
-                ? new string[0]
+                ? Array.Empty<string>()
                 : new[] { config.BackgroundSprite };
         }
     }

@@ -1,4 +1,3 @@
-#if EXPERIMENTAL
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,6 +11,8 @@ using VRage.Game;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRage.Utils;
+using VRageMath;
+using IMySoundBlock = SpaceEngineers.Game.ModAPI.IMySoundBlock;
 
 namespace LcdMod.Client.GridData
 {
@@ -19,8 +20,14 @@ namespace LcdMod.Client.GridData
     {
         const double TARGET_SUBMITTED_SECONDS = 0.5;
         const double BUFFER_CHUNK_SECONDS = 0.5;
-        const float DEFAULT_MAX_DISTANCE = 25f;
+        // Raw PCM voices do not get normal cue-based distance refreshes, so
+        // keep the voice spatialized and apply the audible falloff manually.
+        const float DEFAULT_AUDIBLE_MAX_DISTANCE = 50f;
+        const float SPATIALIZATION_MAX_DISTANCE = 100000f;
+        const float VOLUME_UPDATE_EPSILON = 0.0025f;
         const int SPECTRUM_WINDOW_SAMPLES = 1024;
+        const int STREAM_SAMPLE_RATE = 24000;
+        const int STREAM_BLOCK_ALIGN = 2;
 
         readonly Queue<PlaybackBuffer> _pendingBuffers = new Queue<PlaybackBuffer>();
         readonly Stopwatch _playbackClock = new Stopwatch();
@@ -33,7 +40,9 @@ namespace LcdMod.Client.GridData
         double _pausedPositionSeconds;
         int _currentBytesPerSecond;
         PcmWaveData _currentPcm;
+        float _lastAppliedEmitterVolume = -1f;
         bool _decodePending;
+        bool _streaming;
         bool _paused;
         float _volume = 1f;
         string _lastError;
@@ -56,6 +65,7 @@ namespace LcdMod.Client.GridData
             public string SourceFormatDisplayName;
             public bool IsLocal;
             public AudioAssetMetadata LocalAsset;
+            public double StartPositionSeconds;
         }
 
         public string CurrentSoundSubtype { get; private set; }
@@ -70,12 +80,20 @@ namespace LcdMod.Client.GridData
         public float Volume
         {
             get { return _volume; }
-            set { _volume = Clamp01(value); }
+            set
+            {
+                var volume = Clamp01(value);
+                if (Math.Abs(_volume - volume) <= float.Epsilon)
+                    return;
+
+                _volume = volume;
+                ApplyEmitterVolume(force: true);
+            }
         }
 
         public bool IsPlaying
         {
-            get { return !_paused && (_decodePending || _pendingBuffers.Count > 0 || IsEmitterPlaying); }
+            get { return !_paused && (_streaming || _decodePending || _pendingBuffers.Count > 0 || IsEmitterPlaying); }
         }
 
         public bool CanSeek
@@ -95,7 +113,7 @@ namespace LcdMod.Client.GridData
 
         public bool IsActive
         {
-            get { return _decodePending || _paused || _pendingBuffers.Count > 0 || IsEmitterPlaying; }
+            get { return _streaming || _decodePending || _paused || _pendingBuffers.Count > 0 || IsEmitterPlaying; }
         }
 
         public bool HasLoadedAudio
@@ -159,7 +177,7 @@ namespace LcdMod.Client.GridData
             return true;
         }
 
-        public void PlayGameSound(IMyTerminalBlock sourceBlock, string soundSubtype, bool startPaused = false)
+        public void PlayGameSound(IMyTerminalBlock sourceBlock, string soundSubtype, bool startPaused = false, double startPositionSeconds = 0.0)
         {
             _lastError = null;
 
@@ -189,10 +207,10 @@ namespace LcdMod.Client.GridData
                 return;
             }
 
-            StartGameAudioDecode(sourceBlock, definition.Id.SubtypeName, relativeWavePath, startPaused);
+            StartGameAudioDecode(sourceBlock, definition.Id.SubtypeName, relativeWavePath, startPaused, startPositionSeconds);
         }
 
-        public void PlayGameAudioFile(IMyTerminalBlock sourceBlock, string displayName, string definitionPath, bool startPaused = false)
+        public void PlayGameAudioFile(IMyTerminalBlock sourceBlock, string displayName, string definitionPath, bool startPaused = false, double startPositionSeconds = 0.0)
         {
             _lastError = null;
 
@@ -219,10 +237,11 @@ namespace LcdMod.Client.GridData
                 sourceBlock,
                 string.IsNullOrEmpty(displayName) ? definitionPath : displayName,
                 definitionPath,
-                startPaused);
+                startPaused,
+                startPositionSeconds);
         }
 
-        public void PlayLocalAudio(IMyTerminalBlock sourceBlock, AudioAssetMetadata asset, bool startPaused = false)
+        public void PlayLocalAudio(IMyTerminalBlock sourceBlock, AudioAssetMetadata asset, bool startPaused = false, double startPositionSeconds = 0.0)
         {
             _lastError = null;
 
@@ -252,7 +271,7 @@ namespace LcdMod.Client.GridData
             CurrentDurationSeconds = 0.0;
             _decodePending = true;
             _paused = startPaused;
-            _pausedPositionSeconds = 0.0;
+            _pausedPositionSeconds = SanitizeStartPosition(startPositionSeconds);
             var containerKind = GameAudioPcmLoader.GetContainerKind(CurrentWavePath);
             _status = "Loading local audio";
             long token = ++_decodeToken;
@@ -264,7 +283,8 @@ namespace LcdMod.Client.GridData
                 WavePath = CurrentWavePath,
                 ContainerKind = containerKind,
                 IsLocal = true,
-                LocalAsset = asset
+                LocalAsset = asset,
+                StartPositionSeconds = _pausedPositionSeconds
             };
 
             MyAPIGateway.Parallel.Start(
@@ -272,7 +292,7 @@ namespace LcdMod.Client.GridData
                 delegate { CompleteGameAudioPlayback(work); });
         }
 
-        void StartGameAudioDecode(IMyTerminalBlock sourceBlock, string displayName, string relativeWavePath, bool startPaused)
+        void StartGameAudioDecode(IMyTerminalBlock sourceBlock, string displayName, string relativeWavePath, bool startPaused, double startPositionSeconds)
         {
             StopInternal(false);
 
@@ -282,7 +302,7 @@ namespace LcdMod.Client.GridData
             CurrentDurationSeconds = 0.0;
             _decodePending = true;
             _paused = startPaused;
-            _pausedPositionSeconds = 0.0;
+            _pausedPositionSeconds = SanitizeStartPosition(startPositionSeconds);
             var containerKind = GameAudioPcmLoader.GetContainerKind(CurrentWavePath);
             _status = "Loading audio";
             long token = ++_decodeToken;
@@ -292,7 +312,8 @@ namespace LcdMod.Client.GridData
                 Token = token,
                 SoundSubtype = CurrentSoundSubtype,
                 WavePath = CurrentWavePath,
-                ContainerKind = containerKind
+                ContainerKind = containerKind,
+                StartPositionSeconds = _pausedPositionSeconds
             };
 
             MyAPIGateway.Parallel.Start(
@@ -303,6 +324,48 @@ namespace LcdMod.Client.GridData
         public void Stop()
         {
             ResetPlaybackEngine();
+        }
+
+        public void StartStream(IMyTerminalBlock sourceBlock, string title)
+        {
+            _lastError = null;
+
+            if (IsSourceBlockUnavailable(sourceBlock))
+            {
+                Fail("Screen block is not available.");
+                return;
+            }
+
+            StopInternal(false);
+
+            _sourceBlock = sourceBlock;
+            CurrentSoundSubtype = string.IsNullOrWhiteSpace(title) ? "Audio stream" : title;
+            CurrentWavePath = "stream";
+            CurrentDurationSeconds = 0.0;
+            _currentBytesPerSecond = STREAM_SAMPLE_RATE * STREAM_BLOCK_ALIGN;
+            _streaming = true;
+            _paused = false;
+            _status = "Streaming";
+        }
+
+        public void AppendStreamChunk(byte[] pcmBytes, double durationSeconds)
+        {
+            if (!_streaming || pcmBytes == null || pcmBytes.Length == 0)
+                return;
+
+            _pendingBuffers.Enqueue(new PlaybackBuffer
+            {
+                Samples = pcmBytes,
+                DurationSeconds = durationSeconds > 0.0 ? durationSeconds : pcmBytes.Length / (double)(STREAM_SAMPLE_RATE * STREAM_BLOCK_ALIGN)
+            });
+
+            if (!_paused)
+                SubmitPendingBuffers();
+        }
+
+        public void EndStream()
+        {
+            _streaming = false;
         }
 
         public void ResetPlaybackEngine()
@@ -321,7 +384,7 @@ namespace LcdMod.Client.GridData
             _paused = true;
 
             if (_emitter != null)
-                _emitter.StopSound(forced: false);
+                StopEmitterSound(forced: false);
 
             RebuildPendingBuffersFromPosition(_pausedPositionSeconds);
             _playbackClock.Reset();
@@ -385,6 +448,8 @@ namespace LcdMod.Client.GridData
             if (_paused)
                 return;
 
+            UpdateEmitterPosition();
+            ApplyEmitterVolume(force: false);
             SubmitPendingBuffers();
         }
 
@@ -519,7 +584,8 @@ namespace LcdMod.Client.GridData
             CurrentDurationSeconds = work.Pcm.DurationSeconds;
             _currentPcm = work.Pcm;
             _currentBytesPerSecond = checked((int)(work.Pcm.SampleRate * work.Pcm.BlockAlign));
-            RebuildPendingBuffersFromPosition(_paused ? _pausedPositionSeconds : 0.0);
+            var startPosition = ClampToDuration(work.StartPositionSeconds);
+            RebuildPendingBuffersFromPosition(startPosition);
 
             if (_paused)
             {
@@ -531,6 +597,23 @@ namespace LcdMod.Client.GridData
             if (work.Pcm.WasResampled || work.Pcm.WasDownmixedToMono)
                 _status += " (normalized to 24 kHz mono)";
             SubmitPendingBuffers();
+        }
+
+        double ClampToDuration(double seconds)
+        {
+            seconds = SanitizeStartPosition(seconds);
+            if (CurrentDurationSeconds > 0.0 && seconds > CurrentDurationSeconds)
+                return CurrentDurationSeconds;
+
+            return seconds;
+        }
+
+        static double SanitizeStartPosition(double seconds)
+        {
+            if (double.IsNaN(seconds) || double.IsInfinity(seconds) || seconds < 0.0)
+                return 0.0;
+
+            return seconds;
         }
 
 
@@ -652,13 +735,16 @@ namespace LcdMod.Client.GridData
                     _playbackClock.Reset();
                     _submittedSeconds = 0.0;
                     if (!_decodePending && !_paused)
-                        _status = string.IsNullOrEmpty(CurrentSoundSubtype) ? "Idle" : "Finished";
+                        _status = _streaming ? "Buffering stream" : string.IsNullOrEmpty(CurrentSoundSubtype) ? "Idle" : "Finished";
                 }
                 return;
             }
 
             if (!EnsureEmitter())
                 return;
+
+            UpdateEmitterPosition();
+            ApplyEmitterVolume(force: false);
 
             if (!_emitter.IsPlaying)
             {
@@ -675,8 +761,11 @@ namespace LcdMod.Client.GridData
 
                 _emitter.PlaySound(
                     buffer.Samples,
-                    volume: _volume,
-                    maxDistance: DEFAULT_MAX_DISTANCE);
+                    volume: 1f,
+                    maxDistance: GetSpatializationMaxDistance());
+                if (starting)
+                    ApplyEmitterVolume(force: true);
+
                 _submittedSeconds += buffer.DurationSeconds;
 
                 if (starting)
@@ -711,13 +800,86 @@ namespace LcdMod.Client.GridData
 
             CloseEmitter();
 
-            _emitter = new MyEntity3DSoundEmitter(entity);
+            _emitter = new MyEntity3DSoundEmitter(entity, dopplerScaler: 0.0f)
+            {
+                Force3D = true,
+                CustomMaxDistance = GetSpatializationMaxDistance()
+            };
             if (entity == null)
                 _emitter.SetPosition(_sourceBlock.GetPosition());
 
+            _lastAppliedEmitterVolume = -1f;
             _playbackClock.Reset();
             _submittedSeconds = 0.0;
             return true;
+        }
+
+        void UpdateEmitterPosition()
+        {
+            if (_emitter == null || _sourceBlock == null || _emitter.Entity != null)
+                return;
+
+            _emitter.SetPosition(_sourceBlock.GetPosition());
+        }
+
+        void UpdateEmitterDistanceLimit()
+        {
+            if (_emitter == null)
+                return;
+
+            _emitter.CustomMaxDistance = GetSpatializationMaxDistance();
+        }
+
+        void ApplyEmitterVolume(bool force)
+        {
+            if (_emitter == null)
+                return;
+
+            UpdateEmitterDistanceLimit();
+            var appliedVolume = _volume * GetDistanceGain();
+            if (!force && Math.Abs(appliedVolume - _lastAppliedEmitterVolume) < VOLUME_UPDATE_EPSILON)
+                return;
+
+            _emitter.VolumeMultiplier = appliedVolume;
+            _lastAppliedEmitterVolume = appliedVolume;
+        }
+
+        float GetDistanceGain()
+        {
+            if (_sourceBlock == null || _sourceBlock.MarkedForClose || _sourceBlock.Closed)
+                return 0f;
+
+            var session = MyAPIGateway.Session;
+            var camera = session == null ? null : session.Camera;
+            if (camera == null)
+                return 1f;
+
+            var audibleMaxDistance = GetAudibleMaxDistance();
+            double distanceSquared = Vector3D.DistanceSquared(camera.Position, _sourceBlock.GetPosition());
+            double maxDistanceSquared = audibleMaxDistance * audibleMaxDistance;
+            if (distanceSquared >= maxDistanceSquared)
+                return 0f;
+
+            double distance = Math.Sqrt(distanceSquared);
+            return (float)(1d - distance / audibleMaxDistance);
+        }
+
+        float GetSpatializationMaxDistance()
+        {
+            return Math.Max(SPATIALIZATION_MAX_DISTANCE, GetAudibleMaxDistance());
+        }
+
+        float GetAudibleMaxDistance()
+        {
+            var soundBlock = _sourceBlock as IMySoundBlock;
+            if (soundBlock == null)
+                return DEFAULT_AUDIBLE_MAX_DISTANCE;
+
+            var range = soundBlock.Range;
+            if (float.IsNaN(range) || float.IsInfinity(range) || range <= 0f)
+                return DEFAULT_AUDIBLE_MAX_DISTANCE;
+
+            return range;
         }
 
         void CloseEmitter()
@@ -725,16 +887,25 @@ namespace LcdMod.Client.GridData
             if (_emitter == null)
                 return;
 
+            StopEmitterSound(forced: true);
+            _emitter = null;
+        }
+
+        void StopEmitterSound(bool forced)
+        {
+            if (_emitter == null)
+                return;
+
             try
             {
-                _emitter.StopSound(forced: true);
+                _emitter.StopSound(forced, cleanUp: true, cleanupSound: true);
             }
             catch (Exception error)
             {
                 LogHelper.Log(MyLogSeverity.Warning, "Media player emitter reset failed: " + error.Message);
             }
 
-            _emitter = null;
+            _lastAppliedEmitterVolume = -1f;
         }
 
         void StopInternal(bool clearIdentity)
@@ -750,6 +921,7 @@ namespace LcdMod.Client.GridData
             _pausedPositionSeconds = 0.0;
             _currentBytesPerSecond = 0;
             _currentPcm = null;
+            _streaming = false;
             _paused = false;
             _status = "Stopped";
 
@@ -836,4 +1008,3 @@ namespace LcdMod.Client.GridData
         }
     }
 }
-#endif

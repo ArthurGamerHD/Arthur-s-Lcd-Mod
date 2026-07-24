@@ -1,4 +1,3 @@
-#if EXPERIMENTAL
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
@@ -118,6 +117,17 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
         public void SetRoots(IEnumerable<FolderModel> roots)
         {
+            ApplyRoots(roots, _initialPath, false);
+        }
+
+        public void RefreshRoots(IEnumerable<FolderModel> roots)
+        {
+            var currentPath = _grid == null ? _initialPath : _grid.CurrentPath;
+            ApplyRoots(roots, currentPath, true);
+        }
+
+        void ApplyRoots(IEnumerable<FolderModel> roots, string preferredPath, bool fallbackToInitialPath)
+        {
             _roots.Clear();
             if (roots != null)
             {
@@ -129,7 +139,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             }
 
             _grid.SetRoots(_roots);
-            _grid.OpenPath(_initialPath);
+            if (!_grid.OpenPath(preferredPath) &&
+                fallbackToInitialPath &&
+                !string.Equals(preferredPath, _initialPath, StringComparison.OrdinalIgnoreCase))
+            {
+                _grid.OpenPath(_initialPath);
+            }
+
+            MarkDirty();
         }
 
         public void SetLoading(bool loading, string message = null)
@@ -546,4 +563,3 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         }
     }
 }
-#endif

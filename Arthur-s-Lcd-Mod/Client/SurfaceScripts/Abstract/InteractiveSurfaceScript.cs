@@ -739,9 +739,39 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             Action<object, object> button2Callback = null,
             string icon = null)
         {
+            var previousDialog = _dialog;
             var messageBox = new MessageBox(App);
-            messageBox.Show(title, content, button1, button2, button1Callback, button2Callback, icon);
+            var wrappedButton2Callback = button2Callback != null || !string.IsNullOrWhiteSpace(button2)
+                ? WrapMessageBoxCallback(messageBox, previousDialog, button2Callback)
+                : null;
+            messageBox.Show(
+                title,
+                content,
+                button1,
+                button2,
+                WrapMessageBoxCallback(messageBox, previousDialog, button1Callback),
+                wrappedButton2Callback,
+                icon);
             ShowDialog(messageBox);
+        }
+
+        Action<object, object> WrapMessageBoxCallback(Dialog messageBox, Dialog previousDialog, Action<object, object> callback)
+        {
+            return delegate(object dataContext, object sender)
+            {
+                if (callback != null)
+                    callback(dataContext, sender);
+
+                if (previousDialog != null &&
+                    !previousDialog.Dismissed &&
+                    (_dialog == null || ReferenceEquals(_dialog, messageBox)))
+                {
+                    ShowDialog(previousDialog);
+                    return;
+                }
+
+                RenderSprites();
+            };
         }
 
         internal void ShowDialog(Dialog dialog)

@@ -1,8 +1,8 @@
-#if EXPERIMENTAL
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Text;
 using LcdMod.Client.Gui.ControlsTemplates.Dialogs;
 using LcdMod.Common.Audio;
 using LcdMod.Common.Helpers;
@@ -137,6 +137,66 @@ namespace LcdMod.Client.Audio
             _cachedRoots = null;
         }
 
+        public static bool TryDeleteLocalAudio(MediaAudioFileReference reference, out string failureReason)
+        {
+            failureReason = string.Empty;
+
+            if (reference == null || !reference.IsLocal)
+            {
+                failureReason = "Only imported local audio can be deleted.";
+                return false;
+            }
+
+            if (reference.LocalAsset == null)
+            {
+                failureReason = "Missing local audio metadata.";
+                return false;
+            }
+
+            var deleted = AudioLibraryStorage.TryDeleteAsset(reference.LocalAsset, out failureReason);
+            if (deleted)
+                InvalidateCache();
+            return deleted;
+        }
+
+        public static bool TryDeletePlaylist(MediaAudioPlaylistReference playlist, out string failureReason)
+        {
+            failureReason = string.Empty;
+
+            if (playlist == null || !IsPlaylistFileName(playlist.FileName))
+            {
+                failureReason = "Invalid playlist file.";
+                return false;
+            }
+
+            if (MyAPIGateway.Utilities == null)
+            {
+                failureReason = "Local storage is not available.";
+                return false;
+            }
+
+            try
+            {
+                if (!MyAPIGateway.Utilities.FileExistsInLocalStorage(playlist.FileName, typeof(LcdModClientComponent)))
+                {
+                    RemovePlaylistIndexRecord(playlist.FileName);
+                    InvalidateCache();
+                    return true;
+                }
+
+                MyAPIGateway.Utilities.DeleteFileInLocalStorage(playlist.FileName, typeof(LcdModClientComponent));
+                RemovePlaylistIndexRecord(playlist.FileName);
+                InvalidateCache();
+                return true;
+            }
+            catch (Exception error)
+            {
+                failureReason = "Could not delete playlist: " + error.Message;
+                LogHelper.Log(MyLogSeverity.Warning, failureReason);
+                return false;
+            }
+        }
+
         static FolderModel BuildLocalRoot()
         {
             var root = new FolderModel
@@ -249,6 +309,65 @@ namespace LcdMod.Client.Audio
             }
 
             return records;
+        }
+
+        static bool RemovePlaylistIndexRecord(string fileName)
+        {
+            if (string.IsNullOrWhiteSpace(fileName))
+                return false;
+
+            var records = LoadPlaylistIndex();
+            var removed = false;
+            for (int i = records.Count - 1; i >= 0; i--)
+            {
+                var record = records[i];
+                if (record == null || !string.Equals(record.FileName, fileName, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                records.RemoveAt(i);
+                removed = true;
+            }
+
+            if (removed)
+                SavePlaylistIndex(records);
+            return removed;
+        }
+
+        static void SavePlaylistIndex(List<PlaylistIndexRecord> records)
+        {
+            if (MyAPIGateway.Utilities == null)
+                return;
+
+            try
+            {
+                if (records == null || records.Count == 0)
+                {
+                    if (MyAPIGateway.Utilities.FileExistsInLocalStorage(PLAYLIST_INDEX_FILE, typeof(LcdModClientComponent)))
+                        MyAPIGateway.Utilities.DeleteFileInLocalStorage(PLAYLIST_INDEX_FILE, typeof(LcdModClientComponent));
+                    return;
+                }
+
+                var builder = new StringBuilder();
+                for (int i = 0; i < records.Count; i++)
+                {
+                    var record = records[i];
+                    if (record == null || !IsPlaylistFileName(record.FileName))
+                        continue;
+
+                    builder.Append(record.FileName)
+                        .Append('|')
+                        .AppendLine((record.DisplayName ?? string.Empty).Replace('|', ' '));
+                }
+
+                using (var writer = MyAPIGateway.Utilities.WriteFileInLocalStorage(PLAYLIST_INDEX_FILE, typeof(LcdModClientComponent)))
+                {
+                    writer.Write(builder.ToString());
+                }
+            }
+            catch (Exception error)
+            {
+                LogHelper.Log(MyLogSeverity.Warning, "Could not update media playlist index: " + error.Message);
+            }
         }
 
         static void AddPlaylistFileIfExists(FolderModel root, string fileName, string displayName)
@@ -751,4 +870,3 @@ namespace LcdMod.Client.Audio
         }
     }
 }
-#endif

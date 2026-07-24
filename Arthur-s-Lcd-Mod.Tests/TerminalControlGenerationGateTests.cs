@@ -23,7 +23,7 @@ public sealed class TerminalControlGenerationGateTests
             "TerminalManager.cs"));
 
         Assert.Equal(5, Regex.Matches(models, @"\[TerminalControlSlider\(").Count);
-        Assert.Equal(5, Regex.Matches(models, @"\[TerminalControlSwitch\(").Count);
+        Assert.Equal(6, Regex.Matches(models, @"\[TerminalControlSwitch\(").Count);
         Assert.Equal(3, Regex.Matches(models, @"\[TerminalControlColor\(").Count);
         Assert.Equal(3, Regex.Matches(models, @"RequiresCustomColor = true").Count);
         Assert.Contains("RefreshTerminalOnSet = true", models);

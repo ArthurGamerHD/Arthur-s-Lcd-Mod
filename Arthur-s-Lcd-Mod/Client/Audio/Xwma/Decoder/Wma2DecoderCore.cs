@@ -1,4 +1,3 @@
-#if EXPERIMENTAL
 using System;
 using InvalidDataException = LcdMod.Common.InvalidDataException;
 
@@ -103,7 +102,7 @@ namespace LcdMod.Client.Audio.Xwma.Decoder
                 profile.SampleRate,
                 profile.Channels,
                 file.DeclaredSourceSampleFrames);
-            _reservoir = new byte[0];
+            _reservoir = Array.Empty<byte>();
 
             _resetBlockLengths = true;
             _previousBlockLengthBits = FRAME_LENGTH_BITS;
@@ -816,4 +815,3 @@ namespace LcdMod.Client.Audio.Xwma.Decoder
         }
     }
 }
-#endif

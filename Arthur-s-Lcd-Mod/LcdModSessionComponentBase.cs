@@ -244,7 +244,6 @@ namespace LcdMod
                         if (args.IsFromServer && !MyAPIGateway.Utilities.IsDedicated)
                             Client?.RoomEnvironment.HandleSyncGridRoomEnvironment(args);
                         break;
-#if EXPERIMENTAL
                     case PackageCode.RequestBroadcastAudio:
                         if (!args.IsFromServer)
                             Server?.HandleRequestBroadcastAudio(args);
@@ -253,7 +252,33 @@ namespace LcdMod
                         if (args.IsFromServer && !MyAPIGateway.Utilities.IsDedicated)
                             Client?.HandleSyncBroadcastAudio(args);
                         break;
-#endif
+                    case PackageCode.RequestMediaPlayerCommand:
+                        if (!args.IsFromServer)
+                            Server?.HandleRequestMediaPlayerCommand(args);
+                        break;
+                    case PackageCode.SyncMediaPlayerCommand:
+                        if (args.IsFromServer && !MyAPIGateway.Utilities.IsDedicated)
+                            Client?.HandleSyncMediaPlayerCommand(args);
+                        break;
+                    case PackageCode.MediaStreamControl:
+                        if (args.IsFromServer)
+                        {
+                            if (!MyAPIGateway.Utilities.IsDedicated)
+                                Client?.HandleMediaStreamControl(args);
+                        }
+                        else
+                        {
+                            Server?.HandleMediaStreamControl(args);
+                        }
+                        break;
+                    case PackageCode.RequestMediaStreamChunk:
+                        if (!args.IsFromServer)
+                            Server?.HandleRequestMediaStreamChunk(args);
+                        break;
+                    case PackageCode.SyncMediaStreamChunk:
+                        if (args.IsFromServer && !MyAPIGateway.Utilities.IsDedicated)
+                            Client?.HandleSyncMediaStreamChunk(args);
+                        break;
                     default:
                         {
                             LogHelper.Log(MyLogSeverity.Error, $"Unexpected Packet Code Received");
@@ -308,7 +333,7 @@ namespace LcdMod
 
     public struct SessionDebugSnapshot
     {
-        public static readonly SessionDebugSnapshot Empty = new SessionDebugSnapshot(0, 0, 0, 0, 0, 0, 0, new string[0]);
+        public static readonly SessionDebugSnapshot Empty = new SessionDebugSnapshot(0, 0, 0, 0, 0, 0, 0, Array.Empty<string>());
 
         public readonly int UpdateTick;
         public readonly int TrackedGrids;
@@ -336,7 +361,7 @@ namespace LcdMod
             TotalLastRefreshIterations = totalLastRefreshIterations;
             TotalLastRefreshProcessed = totalLastRefreshProcessed;
             AverageNextBatchSize = averageNextBatchSize;
-            ModuleLines = moduleLines ?? new string[0];
+            ModuleLines = moduleLines ?? Array.Empty<string>();
         }
     }
 }

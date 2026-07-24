@@ -1,4 +1,3 @@
-#if EXPERIMENTAL
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -116,6 +115,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
             IsLoading = loading;
             LoadingMessage = nextMessage;
+            _scrollPanel.SetEnabled(!loading);
+            _scrollPanel.SetCursor(CursorType.Default);
+            if (loading)
+                CloseContextMenu();
             MarkDirty();
             NotifyChanged();
         }
@@ -157,6 +160,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         {
             get
             {
+                if (IsLoading)
+                    return false;
+
                 if (Mode == FilePickerMode.PickFile)
                     return SelectedFile != null;
 
@@ -166,6 +172,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
         public void AcceptSelection()
         {
+            if (IsLoading)
+                return;
+
             var callback = Accepted;
             if (callback == null)
                 return;
@@ -187,6 +196,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         internal void OnFolderControlClicked(FolderControlModel model, object sender)
         {
             CloseContextMenu();
+            if (IsLoading)
+                return;
+
             if (model == null)
                 return;
 
@@ -214,6 +226,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         internal void OnFileControlClicked(FileControlModel model, object sender)
         {
             CloseContextMenu();
+            if (IsLoading)
+                return;
+
             if (model == null || model.File == null)
                 return;
 
@@ -231,6 +246,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
         internal bool OnFolderControlSecondaryClicked(FolderControlModel model, RectangleF bounds, Vector2 clickPosition, object sender)
         {
+            if (IsLoading)
+                return false;
+
             if (model == null || model.IsUpEntry || model.Folder == null)
                 return false;
 
@@ -242,6 +260,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
         internal bool OnFileControlSecondaryClicked(FileControlModel model, RectangleF bounds, Vector2 clickPosition, object sender)
         {
+            if (IsLoading)
+                return false;
+
             if (model == null || model.File == null)
                 return false;
 
@@ -421,14 +442,24 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 ResolveColor(ThemeResources.SurfaceContainerHighestColor),
                 ResolveColor(ThemeResources.OnSurfaceColor));
             _scrollPanel.SetVisible(true);
+            _scrollPanel.SetEnabled(!IsLoading);
+            _scrollPanel.SetCursor(CursorType.Default);
             _scrollPanel.Render(sprites);
 
             if (IsLoading)
+            {
                 DrawLoadingListMessage(rect, sprites);
+                HideContextButtonsFrom(0);
+            }
             else if (_items.Count == 0)
+            {
                 DrawEmptyListMessage(rect, sprites);
-
-            RenderContextMenu(sprites);
+                RenderContextMenu(sprites);
+            }
+            else
+            {
+                RenderContextMenu(sprites);
+            }
         }
 
         void RenderContextMenu(List<MySprite> sprites)
@@ -469,7 +500,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 model.Clicked = OnContextActionClicked;
 
                 button.BackgroundColor = Color.Transparent;
-                button.TextColor = ResolveColor(ThemeResources.OnSurfaceColor);
+                button.TextColor = model.Enabled
+                    ? ResolveContextActionTextColor(action)
+                    : ResolveColor(ThemeResources.DisabledColor);
                 button.BorderColor = Color.Transparent;
                 button.BorderThicknessPixels = 0f;
                 button.BorderRadiusPixels = 0f;
@@ -483,6 +516,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             }
 
             HideContextButtonsFrom(_contextActions.Count);
+        }
+
+        Color ResolveContextActionTextColor(FilePickerContextAction action)
+        {
+            return action != null && action.UseErrorTextStyle
+                ? ResolveColor(ThemeResources.ErrorColor)
+                : ResolveColor(ThemeResources.OnSurfaceColor);
         }
 
         void HideContextButtonsFrom(int startIndex)
@@ -539,6 +579,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
         void OnContextActionClicked(ButtonModel model, object sender)
         {
+            if (IsLoading)
+                return;
+
             var contextModel = model as ContextMenuButtonModel;
             if (contextModel == null || contextModel.ActionIndex < 0 || contextModel.ActionIndex >= _contextActions.Count)
                 return;
@@ -1346,4 +1389,3 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         }
     }
 }
-#endif

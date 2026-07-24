@@ -356,6 +356,11 @@ namespace LcdMod.Common.Networking
         SyncBroadcastAudio = 12,
         RequestGridRoomEnvironment = 13,
         SyncGridRoomEnvironment = 14,
+        RequestMediaPlayerCommand = 15,
+        SyncMediaPlayerCommand = 16,
+        MediaStreamControl = 17,
+        RequestMediaStreamChunk = 18,
+        SyncMediaStreamChunk = 19,
         NetworkFragment = 100
     }
 

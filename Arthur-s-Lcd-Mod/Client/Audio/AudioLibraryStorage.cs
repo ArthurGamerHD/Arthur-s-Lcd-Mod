@@ -1,4 +1,3 @@
-#if EXPERIMENTAL
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -190,6 +189,72 @@ namespace LcdMod.Client.Audio
                    bytes.Length > 0;
         }
 
+        public static bool TryDeleteAsset(AudioAssetMetadata asset, out string failureReason)
+        {
+            failureReason = string.Empty;
+
+            if (asset == null)
+            {
+                failureReason = "Missing audio metadata.";
+                return false;
+            }
+
+            if (MyAPIGateway.Utilities == null)
+            {
+                failureReason = "Local storage is not available.";
+                return false;
+            }
+
+            try
+            {
+                lock (ArchiveLock)
+                {
+                    var entries = ReadArchiveEntries();
+                    var metadata = ReadMetadataFromEntries(entries);
+                    if (metadata.Assets == null)
+                        metadata.Assets = new List<AudioAssetMetadata>();
+
+                    var removedAssets = new List<AudioAssetMetadata>();
+                    for (var i = metadata.Assets.Count - 1; i >= 0; i--)
+                    {
+                        var existing = metadata.Assets[i];
+                        if (!AudioAssetMatches(existing, asset))
+                            continue;
+
+                        removedAssets.Add(existing);
+                        metadata.Assets.RemoveAt(i);
+                    }
+
+                    var removedArchiveEntries = RemoveAssetArchiveEntries(entries, asset);
+                    for (var i = 0; i < removedAssets.Count; i++)
+                    {
+                        removedArchiveEntries = RemoveAssetArchiveEntries(entries, removedAssets[i]) || removedArchiveEntries;
+                        RemoveRuntimeCacheLocked(removedAssets[i]);
+                    }
+
+                    RemoveRuntimeCacheLocked(asset);
+
+                    if (removedAssets.Count == 0 && !removedArchiveEntries)
+                    {
+                        failureReason = "Local audio asset was not found.";
+                        return false;
+                    }
+
+                    metadata.Version = Math.Max(metadata.Version, 2);
+                    UpsertArchiveEntry(entries, MetadataEntryName, Encoding.UTF8.GetBytes(MyAPIGateway.Utilities.SerializeToXML(metadata)));
+                    WriteArchiveEntries(entries);
+                }
+
+                return true;
+            }
+            catch (Exception error)
+            {
+                failureReason = "Could not delete local audio: " + error.Message;
+                LogHelper.Log(MyLogSeverity.Warning, failureReason);
+                return false;
+            }
+        }
+
         public static string BuildSourceEntryPath(string assetId, string sourcePath, string sourceSha256)
         {
             var baseName = NormalizeAssetId(assetId);
@@ -247,6 +312,44 @@ namespace LcdMod.Client.Audio
                 if (asset != null && string.Equals(asset.Id, assetId, StringComparison.OrdinalIgnoreCase))
                     metadata.Assets.RemoveAt(i);
             }
+        }
+
+        static bool AudioAssetMatches(AudioAssetMetadata left, AudioAssetMetadata right)
+        {
+            if (left == null || right == null)
+                return false;
+
+            if (!string.IsNullOrWhiteSpace(left.Id) &&
+                !string.IsNullOrWhiteSpace(right.Id) &&
+                string.Equals(left.Id, right.Id, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            if (SameArchivePath(left.SourceArchivePath, right.SourceArchivePath))
+                return true;
+
+            if (SameArchivePath(left.RuntimePath, right.RuntimePath))
+                return true;
+
+            return false;
+        }
+
+        static bool SameArchivePath(string left, string right)
+        {
+            left = NormalizeArchiveEntryName(left);
+            right = NormalizeArchiveEntryName(right);
+            return !string.IsNullOrEmpty(left) &&
+                   !string.IsNullOrEmpty(right) &&
+                   string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
+        }
+
+        static bool RemoveAssetArchiveEntries(List<MinimalZip.Entry> entries, AudioAssetMetadata asset)
+        {
+            if (asset == null)
+                return false;
+
+            var removed = RemoveArchiveEntry(entries, asset.SourceArchivePath);
+            removed = RemoveArchiveEntry(entries, asset.RuntimePath) || removed;
+            return removed;
         }
 
         static bool TryReadArchiveEntry(string entryName, out byte[] bytes)
@@ -346,18 +449,24 @@ namespace LcdMod.Client.Audio
             entries.Add(new MinimalZip.Entry(entryName, bytes));
         }
 
-        static void RemoveArchiveEntry(List<MinimalZip.Entry> entries, string entryName)
+        static bool RemoveArchiveEntry(List<MinimalZip.Entry> entries, string entryName)
         {
             entryName = NormalizeArchiveEntryName(entryName);
             if (entries == null || string.IsNullOrEmpty(entryName))
-                return;
+                return false;
 
+            var removed = false;
             for (var i = entries.Count - 1; i >= 0; i--)
             {
                 var entry = entries[i];
                 if (entry != null && string.Equals(entry.Name, entryName, StringComparison.OrdinalIgnoreCase))
+                {
                     entries.RemoveAt(i);
+                    removed = true;
+                }
             }
+
+            return removed;
         }
 
         static void CacheRuntimeWave(AudioAssetMetadata asset, byte[] runtimeWaveBytes)
@@ -390,6 +499,13 @@ namespace LcdMod.Client.Audio
             return true;
         }
 
+        static void RemoveRuntimeCacheLocked(AudioAssetMetadata asset)
+        {
+            var key = NormalizeArchiveEntryName(asset == null ? null : asset.RuntimePath);
+            if (!string.IsNullOrEmpty(key))
+                RuntimeCache.Remove(key);
+        }
+
         static List<MinimalZip.Entry> CloneEntries(List<MinimalZip.Entry> entries)
         {
             var clone = new List<MinimalZip.Entry>();
@@ -402,7 +518,7 @@ namespace LcdMod.Client.Audio
                 if (entry == null)
                     continue;
 
-                var data = entry.Data == null ? new byte[0] : (byte[])entry.Data.Clone();
+                var data = entry.Data == null ? Array.Empty<byte>() : (byte[])entry.Data.Clone();
                 clone.Add(new MinimalZip.Entry(entry.Name, data, entry.CreationTime));
             }
 
@@ -484,4 +600,3 @@ namespace LcdMod.Client.Audio
         }
     }
 }
-#endif

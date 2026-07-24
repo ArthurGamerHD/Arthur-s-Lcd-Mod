@@ -1,4 +1,3 @@
-#if EXPERIMENTAL
 using System;
 using System.IO;
 using LcdMod.Client.Audio.Xwma.Decoder;
@@ -485,4 +484,3 @@ namespace LcdMod.Client.Audio
         }
     }
 }
-#endif

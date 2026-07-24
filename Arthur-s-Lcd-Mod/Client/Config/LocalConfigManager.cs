@@ -14,6 +14,7 @@ namespace LcdMod.Client.Config
         public static bool AdvancedTweakables => Config != null && Config.AdvancedTweekables;
         public static bool RenderOtherUserTextures => Config == null || Config.RenderOtherUserTextures;
         public static bool UseLegacyLocalTextureStorage => Config != null && Config.UseLegacyLocalTextureStorage;
+        public static bool AcceptMediaStreams => Config == null || Config.AcceptMediaStreams;
         
 #if DEBUG
         public static bool DebugInteractive => Config != null && Config.DebugInteractive;

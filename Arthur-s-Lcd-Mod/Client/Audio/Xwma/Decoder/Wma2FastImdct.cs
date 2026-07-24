@@ -1,4 +1,3 @@
-#if EXPERIMENTAL
 using System;
 using InvalidDataException = LcdMod.Common.InvalidDataException;
 
@@ -177,4 +176,3 @@ namespace LcdMod.Client.Audio.Xwma.Decoder
         }
     }
 }
-#endif

@@ -49,7 +49,7 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Listbox
             
             if (script != AntennaSurfaceScript.ID) // antenna does not support groups
             {
-                var selectedGroups = screenSettings.SelectedGroups ?? new string[0];
+                var selectedGroups = screenSettings.SelectedGroups ?? Array.Empty<string>();
                 MyAPIGateway.TerminalActionsHelper.GetTerminalSystemForGrid(b.CubeGrid).GetBlockGroups(_groups,
                     g => !selectedGroups.Contains(g.Name));
                 blockList.AddRange(_groups.Select(a => ListBoxItemHelper.GetOrComputeListBoxItem(
@@ -91,7 +91,7 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Listbox
         bool IsValidBlock(IMySlimBlock block, IMyTerminalBlock referenceBlock, BlockSelectionConfigComponent config, string script)
         {
             var fat = block?.FatBlock;
-            var selectedBlocks = config.SelectedBlocks ?? new long[0];
+            var selectedBlocks = config.SelectedBlocks ?? Array.Empty<long>();
 
             if (fat == null ||  
                 selectedBlocks.Contains(fat.EntityId) ||

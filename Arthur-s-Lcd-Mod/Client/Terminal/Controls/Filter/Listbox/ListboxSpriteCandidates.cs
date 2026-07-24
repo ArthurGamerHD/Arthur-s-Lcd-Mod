@@ -82,7 +82,7 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Listbox
                 return config.SelectedSprites.Where(s => !string.IsNullOrWhiteSpace(s)).ToArray();
 
             return string.IsNullOrWhiteSpace(config.BackgroundSprite)
-                ? new string[0]
+                ? Array.Empty<string>()
                 : new[] { config.BackgroundSprite };
         }
     }

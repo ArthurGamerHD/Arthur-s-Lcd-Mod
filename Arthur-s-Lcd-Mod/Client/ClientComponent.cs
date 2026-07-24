@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-#if EXPERIMENTAL
+using Generated;
 using LcdMod.Client.Audio;
+using LcdMod.Common.Audio;
+#if EXPERIMENTAL
 using LcdMod.Client.Diagnostics;
 using LcdMod.Client.SurfaceScripts;
 #endif
@@ -13,6 +15,7 @@ using LcdMod.Client.Modules.Power;
 using LcdMod.Client.Modules.RoomEnvironment;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Config;
+using LcdMod.Client.GridData;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Terminal;
 using LcdMod.Common.Helpers;
@@ -43,11 +46,11 @@ namespace LcdMod.Client
 
         readonly LcdModSessionComponent _session;
         readonly TerminalManager _terminalManager;
-#if EXPERIMENTAL
         readonly AudioPocService _audioPoc = new AudioPocService();
         readonly AudioImportService _audioImport = new AudioImportService();
         readonly AudioBroadcastClientService _audioBroadcast = new AudioBroadcastClientService();
         readonly GameAudioTestReportService _audioTestReport = new GameAudioTestReportService();
+#if EXPERIMENTAL
         readonly AppRunProfilerService _appRunProfiler = new AppRunProfilerService();
 #endif
 
@@ -82,7 +85,6 @@ namespace LcdMod.Client
             group.TryAdd("ImportTextures", _ => TextureHelper.Import(true));
             group.TryAdd("RemoveLocalTexture", TextureHelper.RemoveLocalTexture);
             group.TryAdd("ImportLocalTexture", TextureHelper.ImportLocalTexture);
-#if EXPERIMENTAL
             group.TryAdd("PlayAudio", _audioPoc.PlayAudioCommand, 1);
             group.TryAdd("PlayGameAudio", _audioPoc.PlayGameAudioCommand, 1);
             group.TryAdd("ImportLocalAudio", _audioImport.ImportLocalAudioCommand, 1);
@@ -90,6 +92,7 @@ namespace LcdMod.Client
             group.TryAdd("StreamAudio", _audioBroadcast.StreamAudioCommand, 1);
             group.TryAdd("TestAudio", _audioTestReport.TestAllGameAudioCommand);
             group.TryAdd("TestGameAudio", _audioTestReport.TestAllGameAudioCommand);
+#if EXPERIMENTAL
             group.TryAdd("Profile", _appRunProfiler.Command);
 #endif
 #if DEBUG
@@ -125,9 +128,9 @@ namespace LcdMod.Client
             Ftue.Unload();
 #if EXPERIMENTAL
             _appRunProfiler.Unload();
+#endif
             _audioPoc.Unload();
             _audioBroadcast.Unload();
-#endif
             LocalConfigManager.Save();
             TextureHelper.UnloadColorfulIconsApi();
             if (PowerData != null)
@@ -279,9 +282,9 @@ namespace LcdMod.Client
             RunOnePerFrameAction();
 #if EXPERIMENTAL
             _appRunProfiler.Update();
+#endif
             _audioPoc.Update();
             _audioBroadcast.Update();
-#endif
         }
 
         public void UpdateAfterSimulation()
@@ -414,7 +417,6 @@ namespace LcdMod.Client
             NpcMarketClientCache.HandleSync(packet);
         }
 
-#if EXPERIMENTAL
         public void HandleSyncBroadcastAudio(ReceivedPacketEventArgs args)
         {
             if (!args.IsFromServer)
@@ -427,7 +429,127 @@ namespace LcdMod.Client
         {
             _audioBroadcast.HandleSync(packet);
         }
-#endif
+
+        public bool StartMediaPlayerLocalAudioStream(IMyTerminalBlock block, int surfaceIndex, AudioAssetMetadata asset, string title)
+        {
+            return _audioBroadcast.StartMediaPlayerLocalAudioStream(block, surfaceIndex, asset, title);
+        }
+
+        public void HandleSyncMediaStreamChunk(ReceivedPacketEventArgs args)
+        {
+            if (!args.IsFromServer)
+                return;
+
+            HandleLocalSyncMediaStreamChunk(args.UnWrap<PacketSyncMediaStreamChunk>());
+        }
+
+        public void HandleLocalSyncMediaStreamChunk(PacketSyncMediaStreamChunk packet)
+        {
+            _audioBroadcast.HandleStreamChunk(packet);
+        }
+
+        public void HandleMediaStreamControl(ReceivedPacketEventArgs args)
+        {
+            if (!args.IsFromServer)
+                return;
+
+            HandleLocalMediaStreamControl(args.UnWrap<PacketMediaStreamControl>());
+        }
+
+        public void HandleLocalMediaStreamControl(PacketMediaStreamControl packet)
+        {
+            _audioBroadcast.HandleStreamControl(packet);
+        }
+
+        public void HandleSyncMediaPlayerCommand(ReceivedPacketEventArgs args)
+        {
+            if (!args.IsFromServer)
+                return;
+
+            HandleLocalSyncMediaPlayerCommand(args.UnWrap<PacketSyncMediaPlayerCommand>());
+        }
+
+        public void HandleLocalSyncMediaPlayerCommand(PacketSyncMediaPlayerCommand packet)
+        {
+            if (packet == null ||
+                packet.BlockEntityId == 0 ||
+                packet.SurfaceIndex < 0 ||
+                packet.AppTypeId != (int)AppType.MediaPlayer)
+            {
+                return;
+            }
+
+            var block = MyEntities.GetEntityById(packet.BlockEntityId) as IMyTerminalBlock;
+            if (block == null || block.Closed || block.MarkedForClose || block.CubeGrid == null)
+                return;
+
+            var gridLogic = LcdModSessionComponent.GetOrCreateGridLogic(block.CubeGrid);
+            if (gridLogic == null)
+                return;
+
+            var player = gridLogic.GetMediaPlayer(packet.BlockEntityId, packet.SurfaceIndex);
+            if (player == null)
+                return;
+
+            ApplyMediaPlayerCommand(block, player, packet);
+            gridLogic.MarkRequested();
+        }
+
+        static void ApplyMediaPlayerCommand(IMyTerminalBlock block, GridMediaPlayer player, PacketSyncMediaPlayerCommand packet)
+        {
+            switch (packet.Command)
+            {
+                case MediaPlayerCommandKind.Play:
+                    ApplyMediaPlayerPlayCommand(block, player, packet);
+                    break;
+                case MediaPlayerCommandKind.Pause:
+                    if (player.CanSeek)
+                        player.SeekTo(GetSyncedPosition(packet));
+                    player.Pause();
+                    break;
+                case MediaPlayerCommandKind.Resume:
+                    if (player.CanSeek)
+                        player.SeekTo(GetSyncedPosition(packet));
+                    player.Resume();
+                    break;
+                case MediaPlayerCommandKind.Stop:
+                    player.ResetPlaybackEngine();
+                    break;
+                case MediaPlayerCommandKind.Seek:
+                    player.SeekTo(GetSyncedPosition(packet));
+                    break;
+            }
+        }
+
+        static void ApplyMediaPlayerPlayCommand(IMyTerminalBlock block, GridMediaPlayer player, PacketSyncMediaPlayerCommand packet)
+        {
+            var startPosition = GetSyncedPosition(packet);
+            switch (packet.SourceKind)
+            {
+                case MediaPlayerSourceKind.SoundSubtype:
+                    player.PlayGameSound(block, packet.SourceId, false, startPosition);
+                    break;
+                case MediaPlayerSourceKind.ContentPath:
+                    player.PlayGameAudioFile(block, packet.DisplayName, packet.SourceId, false, startPosition);
+                    break;
+            }
+        }
+
+        static double GetSyncedPosition(PacketSyncMediaPlayerCommand packet)
+        {
+            if (packet == null || double.IsNaN(packet.PositionSeconds) || double.IsInfinity(packet.PositionSeconds))
+                return 0.0;
+
+            var position = packet.PositionSeconds;
+            if (packet.ServerFrame > 0 && MyAPIGateway.Session != null)
+            {
+                var frameDelta = MyAPIGateway.Session.GameplayFrameCounter - packet.ServerFrame;
+                if (frameDelta > 0)
+                    position += frameDelta / 60.0;
+            }
+
+            return position < 0.0 ? 0.0 : position;
+        }
 
         void FactionStateChanged(MyFactionStateChange change, long faction1, long faction2, long player, long client)
         {

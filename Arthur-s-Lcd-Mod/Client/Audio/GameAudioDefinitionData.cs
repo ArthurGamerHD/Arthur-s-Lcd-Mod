@@ -1,4 +1,3 @@
-#if EXPERIMENTAL
 using System.Collections.Generic;
 using System.Xml.Serialization;
 using Sandbox.ModAPI;
@@ -36,4 +35,3 @@ namespace LcdMod.Client.Audio
         public string End { get; set; }
     }
 }
-#endif

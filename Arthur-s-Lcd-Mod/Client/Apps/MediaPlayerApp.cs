@@ -1,4 +1,3 @@
-#if EXPERIMENTAL
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -20,6 +19,7 @@ using LcdMod.Client.Extensions;
 using LcdMod.Common.Config.Components;
 using LcdMod.Common.Config.Generation;
 using LcdMod.Common.Helpers;
+using LcdMod.Common.Networking;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
 using VRage.Game;
@@ -116,7 +116,7 @@ namespace LcdMod.Client.Apps
         MediaAudioFileReference _pickedAudio;
         InteractiveSurfaceScript _interactiveHost;
 
-        static readonly MediaItem[] EmptyLibrary = new MediaItem[0];
+        static readonly MediaItem[] EmptyLibrary = Array.Empty<MediaItem>();
 
         public string Title
         {
@@ -142,6 +142,15 @@ namespace LcdMod.Client.Apps
         const string LOC_QUEUE_EMPTY = MOD_PREFIX + "MediaPlayer_QueueEmpty";
         const string LOC_CLEAR_QUEUE = MOD_PREFIX + "MediaPlayer_ClearQueue";
         const string LOC_SAVE_QUEUE = MOD_PREFIX + "MediaPlayer_SaveQueue";
+        const string LOC_PICK = MOD_PREFIX + "MediaPlayer_Pick";
+        const string LOC_SHUFFLE = MOD_PREFIX + "MediaPlayer_Shuffle";
+        const string LOC_PREVIOUS = MOD_PREFIX + "MediaPlayer_Previous";
+        const string LOC_PLAY = MOD_PREFIX + "MediaPlayer_Play";
+        const string LOC_PAUSE = MOD_PREFIX + "MediaPlayer_Pause";
+        const string LOC_NEXT = MOD_PREFIX + "MediaPlayer_Next";
+        const string LOC_PLAYLIST = MOD_PREFIX + "MediaPlayer_Playlist";
+        const string LOC_STOP = MOD_PREFIX + "MediaPlayer_Stop";
+        const string LOC_REPEAT = MOD_PREFIX + "MediaPlayer_Repeat";
         const string LOC_UNKNOWN_LENGTH = MOD_PREFIX + "MediaPlayer_UnknownLength";
         const string LOC_PICK_AUDIO = MOD_PREFIX + "MediaPlayer_PickAudio";
         const string LOC_LOADING_AUDIO_FILES = MOD_PREFIX + "MediaPlayer_LoadingAudioFiles";
@@ -155,8 +164,26 @@ namespace LcdMod.Client.Apps
         const string LOC_CONTEXT_FAVORITE = MOD_PREFIX + "MediaPlayer_Context_Favorite";
         const string LOC_CONTEXT_ADD_ALL = MOD_PREFIX + "MediaPlayer_Context_AddAll";
         const string LOC_CONTEXT_PLAY_ALL = MOD_PREFIX + "MediaPlayer_Context_PlayAll";
+        const string LOC_CONTEXT_DELETE = MOD_PREFIX + "MediaPlayer_Context_Delete";
+        const string LOC_DELETE_LOCAL_AUDIO_TITLE = MOD_PREFIX + "MediaPlayer_DeleteLocalAudioTitle";
+        const string LOC_DELETE_LOCAL_AUDIO_PROMPT_FORMAT = MOD_PREFIX + "MediaPlayer_DeleteLocalAudioPromptFormat";
+        const string LOC_DELETE_PLAYLIST_TITLE = MOD_PREFIX + "MediaPlayer_DeletePlaylistTitle";
+        const string LOC_DELETE_PLAYLIST_PROMPT_FORMAT = MOD_PREFIX + "MediaPlayer_DeletePlaylistPromptFormat";
+        const string LOC_DELETE_FAILED_FORMAT = MOD_PREFIX + "MediaPlayer_DeleteFailedFormat";
+        const string LOC_LOCAL_AUDIO_DELETED_FORMAT = MOD_PREFIX + "MediaPlayer_LocalAudioDeletedFormat";
+        const string LOC_PLAYLIST_DELETED_FORMAT = MOD_PREFIX + "MediaPlayer_PlaylistDeletedFormat";
+        const string LOC_COMMON_CANCEL = MOD_PREFIX + "Common_Button_Cancel";
 
         readonly Dictionary<string, string> _locKeysCache = new Dictionary<string, string>();
+
+        delegate bool AudioDeleteOperation(out string failureReason);
+
+        sealed class AudioDeleteWork
+        {
+            public bool Deleted;
+            public string FailureReason;
+            public Exception Error;
+        }
 
         sealed class MediaItem
         {
@@ -247,12 +274,12 @@ namespace LcdMod.Client.Apps
                 _owner = owner;
             }
 
-            protected override void RenderDefault(List<MySprite> sprites)
+            protected override void ArrangeChildren()
             {
                 if (_owner != null)
                     _owner.UpdateMediaVisualTree(Bounds);
 
-                base.RenderDefault(sprites);
+                base.ArrangeChildren();
             }
         }
 
@@ -355,10 +382,10 @@ namespace LcdMod.Client.Apps
             _audioIcon = new MediaIconControl(default(RectangleF)) { SizeRatio = .72f };
             _volumeLowIcon = new MediaIconControl(default(RectangleF)) { Icon = SOUND_LOW_ICON, SizeRatio = 1f };
             _volumeHighIcon = new MediaIconControl(default(RectangleF)) { Icon = SOUND_HIGH_ICON, SizeRatio = 1f };
-            _pickButton = CreateButton("Pick", PickAudio);
+            _pickButton = CreateButton(LOC_PICK, PickAudio);
             _shuffleButton = new MediaToggleButtonControl(this, default(RectangleF), new MediaButtonModel
             {
-                Text = "Shuffle",
+                Text = ResolveLoc(LOC_SHUFFLE),
                 DisplayText = string.Empty,
                 Content = MediaButtonContent.Shuffle,
                 Clicked = ToggleShuffle,
@@ -367,11 +394,11 @@ namespace LcdMod.Client.Apps
             {
                 GetState = IsShuffleEnabled
             };
-            _previousButton = CreateButton("Prev", Previous);
+            _previousButton = CreateButton(LOC_PREVIOUS, Previous);
             _playButton = new MediaToggleButtonControl(this, default(RectangleF), new MediaButtonModel
             {
-                Text = "Play",
-                DisplayText = "Play",
+                Text = ResolveLoc(LOC_PLAY),
+                DisplayText = ResolveLoc(LOC_PLAY),
                 Content = MediaButtonContent.Text,
                 Clicked = TogglePlay,
                 Enabled = true
@@ -379,10 +406,10 @@ namespace LcdMod.Client.Apps
             {
                 GetState = IsPlayToggleActive
             };
-            _nextButton = CreateButton("Next", Next);
+            _nextButton = CreateButton(LOC_NEXT, Next);
             _playlistButton = new MediaToggleButtonControl(this, default(RectangleF), new MediaButtonModel
             {
-                Text = "Playlist",
+                Text = ResolveLoc(LOC_PLAYLIST),
                 DisplayText = string.Empty,
                 Content = MediaButtonContent.Playlist,
                 Clicked = TogglePlaylist,
@@ -391,10 +418,10 @@ namespace LcdMod.Client.Apps
             {
                 GetState = IsPlaylistVisible
             };
-            _stopButton = CreateButton("Stop", StopClicked);
+            _stopButton = CreateButton(LOC_STOP, StopClicked);
             _repeatButton = new MediaToggleButtonControl(this, default(RectangleF), new MediaButtonModel
             {
-                Text = "Repeat",
+                Text = ResolveLoc(LOC_REPEAT),
                 DisplayText = string.Empty,
                 Content = MediaButtonContent.Repeat,
                 Clicked = CycleRepeatMode,
@@ -403,8 +430,8 @@ namespace LcdMod.Client.Apps
             {
                 GetState = IsRepeatActive
             };
-            _clearQueueButton = CreateButton("Clear", ClearQueue);
-            _saveQueueButton = CreateButton("Save", SaveQueue);
+            _clearQueueButton = CreateButton(LOC_CLEAR_QUEUE, ClearQueue);
+            _saveQueueButton = CreateButton(LOC_SAVE_QUEUE, SaveQueue);
             _playlistListModel = new ListBoxModel<PlaylistEntry>
             {
                 Items = _queue,
@@ -441,6 +468,13 @@ namespace LcdMod.Client.Apps
         }
 
         public override IReadOnlyList<Control> VisualChildren => _children;
+
+        public override void MarkDirty()
+        {
+            base.MarkDirty();
+            if (_rootPanel != null)
+                _rootPanel.InvalidateLayout();
+        }
 
         internal void RebindHost(IAppHost host)
         {
@@ -526,6 +560,7 @@ namespace LcdMod.Client.Apps
             if (_rootPanel != null)
             {
                 _rootPanel.SetRect(GetContentArea());
+                UpdateFrameBoundControls();
                 _rootPanel.Render(_sprites);
             }
 
@@ -533,8 +568,9 @@ namespace LcdMod.Client.Apps
             return _sprites;
         }
 
-        Button CreateButton(string text, Action<ButtonModel, object> clicked)
+        Button CreateButton(string locKey, Action<ButtonModel, object> clicked)
         {
+            var text = ResolveLoc(locKey);
             return new MediaButtonControl(this, default(RectangleF), new MediaButtonModel
             {
                 Text = text,
@@ -760,19 +796,32 @@ namespace LcdMod.Client.Apps
             var gap = Math.Max(3f, 5f * scale);
             var buttonHeight = MathHelper.Clamp(area.Height * .55f, MIN_BUTTON_HEIGHT * scale, MAX_BUTTON_HEIGHT * scale);
             buttonHeight = Math.Min(buttonHeight, Math.Max(1f, area.Height));
-            var buttonY = area.Bottom - buttonHeight;
+            var volumeHeight = Math.Max(10f, 14f * scale);
+            var volumeY = area.Bottom - volumeHeight;
+            var volumeFits = volumeY - gap - buttonHeight >= area.Y;
+            var buttonY = volumeFits
+                ? volumeY - gap - buttonHeight
+                : area.Bottom - buttonHeight;
             var progressHeight = Math.Max(10f, 14f * scale);
             var progressY = buttonY - gap - progressHeight;
             var canSeek = _player != null && _player.CanSeek;
 
-            HideVolumeControls();
             HideVisualizerControls();
 
             if (_playlistVisible)
             {
                 HideControl(_audioProgress);
                 HideTransportControls();
-                ArrangeTinyPlaylistOverlay(area);
+                if (volumeFits)
+                {
+                    ArrangeVolumeSlider(new RectangleF(area.X, volumeY, area.Width, volumeHeight));
+                    ArrangeTinyPlaylistOverlay(new RectangleF(area.X, area.Y, area.Width, Math.Max(1f, volumeY - gap - area.Y)));
+                }
+                else
+                {
+                    HideVolumeControls();
+                    ArrangeTinyPlaylistOverlay(area);
+                }
                 return;
             }
 
@@ -785,6 +834,10 @@ namespace LcdMod.Client.Apps
             var showCompactPlaylist = _playlistVisible && bodyBottom > area.Y + Math.Max(20f, 28f * scale);
 
             ArrangeTransportButtons(area, buttonY, buttonHeight, gap, hidePlaylistButton: showCompactPlaylist);
+            if (volumeFits)
+                ArrangeVolumeSlider(new RectangleF(area.X, volumeY, area.Width, volumeHeight));
+            else
+                HideVolumeControls();
 
             if (showCompactPlaylist)
                 ArrangePlaylistArea(new RectangleF(area.X, area.Y, area.Width, bodyBottom - area.Y), true);
@@ -911,8 +964,8 @@ namespace LcdMod.Client.Apps
                 .Set(ControlTemplate.TextColorProperty, ThemeResources.OnSurfaceColor);
 
             item.State(StyleState.Selected)
-                .Set(ControlTemplate.BackgroundColorProperty, ThemeResources.AccentContainerColor)
-                .Set(ControlTemplate.TextColorProperty, ThemeResources.OnAccentContainerColor);
+                .Set(ControlTemplate.BackgroundColorProperty, ThemeResources.SurfaceContainerHighestColor)
+                .Set(ControlTemplate.TextColorProperty, ThemeResources.OnSurfaceColor);
 
             item.State(StyleState.Hover | StyleState.Selected)
                 .Set(ControlTemplate.BackgroundColorProperty, ThemeResources.AccentColor)
@@ -1037,8 +1090,8 @@ namespace LcdMod.Client.Apps
                 : Math.Max(40f * scale, 48f * scale * Host.Surface.FontSize);
             _playlistListModel.DragHandleWidthPixels = compact ? Math.Max(18f * scale, 22f * scale) : Math.Max(24f * scale, 30f * scale);
             _playlistListModel.ScrollerWidthPixels = Math.Max(6f, 7f * scale);
-            _playlistListModel.SelectedPanelColor = GetMediaActiveColor();
-            _playlistListModel.SelectedTextColor = Host.ForegroundColor;
+            _playlistListModel.SelectedPanelColor = ResolveResource(ThemeResources.SurfaceContainerHighestColor, GetMediaActiveColor());
+            _playlistListModel.SelectedTextColor = ResolveResource(ThemeResources.OnSurfaceColor, Host.ForegroundColor);
 
             _playlistListBox.BackgroundColor = GetMediaInactiveSurfaceColor();
             _playlistListBox.TextColor = Host.ForegroundColor;
@@ -1209,6 +1262,33 @@ namespace LcdMod.Client.Apps
             if (_audioProgress == null || _audioProgressModel == null)
                 return;
 
+            UpdateAudioProgressModel(canSeek);
+
+            _audioProgress.SetRect(rect);
+            _audioProgress.SetVisible(true);
+            _audioProgress.SetEnabled(true);
+            _audioProgress.SetCursor(canSeek ? CursorType.Hand : CursorType.Default);
+        }
+
+        void UpdateFrameBoundControls()
+        {
+            if (_audioProgress != null && _audioProgress.Visible)
+                UpdateAudioProgressModel(_player != null && _player.CanSeek);
+
+            if (_audioVisualizer != null && _audioVisualizer.Visible)
+            {
+                RefreshVisualizerLevels();
+                _audioVisualizer.MarkDirty();
+            }
+
+            ScheduleVisualizerFrameIfNeeded();
+        }
+
+        void UpdateAudioProgressModel(bool canSeek)
+        {
+            if (_audioProgressModel == null)
+                return;
+
             double duration = _player == null ? 0.0 : _player.CurrentDurationSeconds;
             double position = _player == null ? 0.0 : _player.CurrentPositionSeconds;
 
@@ -1219,11 +1299,6 @@ namespace LcdMod.Client.Apps
             _audioProgressModel.BackgroundColor = GetMediaInactiveSurfaceColor();
             _audioProgressModel.FillColor = GetMediaActiveColor();
             _audioProgressModel.ThumbColor = GetMediaActiveColor();
-
-            _audioProgress.SetRect(rect);
-            _audioProgress.SetVisible(true);
-            _audioProgress.SetEnabled(true);
-            _audioProgress.SetCursor(canSeek ? CursorType.Hand : CursorType.Default);
         }
 
         void ArrangeIcon(MediaIconControl control, string icon, RectangleF rect, Color color, float sizeRatio)
@@ -1300,9 +1375,13 @@ namespace LcdMod.Client.Apps
 
         bool ShouldScheduleVisualizerFrames()
         {
-            return MediaPlayerComponent.VisualizerEnabled &&
-                   _player != null &&
-                   (_player.IsPlaying || HasVisibleVisualizerLevels());
+            if (_player == null || _audioProgress == null || _audioVisualizer == null)
+                return false;
+
+            bool hasFrameBoundControl = _audioProgress.Visible || _audioVisualizer.Visible;
+            return hasFrameBoundControl &&
+                   (_player.IsPlaying ||
+                    MediaPlayerComponent.VisualizerEnabled && HasVisibleVisualizerLevels());
         }
 
         bool HasVisibleVisualizerLevels()
@@ -1770,7 +1849,8 @@ namespace LcdMod.Client.Apps
             if (_interactiveHost == null)
                 return;
 
-            var dialog = new FilePickerDialog(
+            FilePickerDialog dialog = null;
+            dialog = new FilePickerDialog(
                 this,
                 ResolveLoc(LOC_PICK_AUDIO),
                 FilePickerMode.PickFile,
@@ -1781,7 +1861,7 @@ namespace LcdMod.Client.Apps
                 false,
                 MediaAudioFilePickerTreeProvider.CurrentPath,
                 MediaAudioFilePickerTreeProvider.SetCurrentPath,
-                BuildAudioPickerContextActions);
+                delegate(FilePickerResult result) { return BuildAudioPickerContextActions(result, dialog); });
             dialog.FullscreenOnCompactSurfaces = true;
             dialog.SetLoading(true, ResolveLoc(LOC_LOADING_AUDIO_FILES));
             _interactiveHost.ShowDialog(dialog);
@@ -1977,21 +2057,28 @@ namespace LcdMod.Client.Apps
             MarkLocalMediaInteraction();
             if (IsShiftPressed())
             {
-                Stop();
+                if (!TrySendMediaPlayerCommand(MediaPlayerCommandKind.Stop, GetPlayerPositionSeconds(), false))
+                    Stop();
                 return;
             }
 
             if (_player != null && _player.IsPlaying)
             {
-                _player.Pause();
-                MarkDirty();
+                if (!TrySendMediaPlayerCommand(MediaPlayerCommandKind.Pause, _player.CurrentPositionSeconds, false))
+                {
+                    _player.Pause();
+                    MarkDirty();
+                }
                 return;
             }
 
             if (_player != null && _player.IsPaused)
             {
-                _player.Resume();
-                MarkDirty();
+                if (!TrySendMediaPlayerCommand(MediaPlayerCommandKind.Resume, _player.CurrentPositionSeconds, false))
+                {
+                    _player.Resume();
+                    MarkDirty();
+                }
                 return;
             }
 
@@ -2034,6 +2121,12 @@ namespace LcdMod.Client.Apps
             if (_volumeSliderModel != null)
                 _player.Volume = _volumeSliderModel.Value;
 
+            if (_pickedAudio != null && _pickedAudio.IsLocal && TryStartLocalAudioStream(block))
+                return;
+
+            if (TrySendMediaPlayerCommand(MediaPlayerCommandKind.Play, 0.0, true))
+                return;
+
             if (_pickedAudio != null)
             {
                 if (_pickedAudio.IsLocal)
@@ -2070,7 +2163,7 @@ namespace LcdMod.Client.Apps
 
         string GetPlayButtonText()
         {
-            return IsPlayToggleActive() ? "Pause" : "Play";
+            return IsPlayToggleActive() ? ResolveLoc(LOC_PAUSE) : ResolveLoc(LOC_PLAY);
         }
 
 
@@ -2728,7 +2821,7 @@ namespace LcdMod.Client.Apps
             return -1;
         }
 
-        List<FilePickerContextAction> BuildAudioPickerContextActions(FilePickerResult result)
+        List<FilePickerContextAction> BuildAudioPickerContextActions(FilePickerResult result, FilePickerDialog dialog)
         {
             if (result == null)
                 return null;
@@ -2743,6 +2836,7 @@ namespace LcdMod.Client.Apps
                     actions.Add(new FilePickerContextAction(ResolveLoc(LOC_CONTEXT_ADD_TO_QUEUE), delegate { AddPlaylistReferenceToQueue(playlistReference, false); }));
                     actions.Add(new FilePickerContextAction(ResolveLoc(LOC_CONTEXT_ADD_NEXT), delegate { AddPlaylistReferenceToQueue(playlistReference, true); }));
                     actions.Add(new FilePickerContextAction(ResolveLoc(LOC_CONTEXT_PLAY_NOW), delegate { PlayPlaylistReferenceNow(playlistReference); }));
+                    actions.Add(CreateDeleteContextAction(delegate { DeletePlaylistFromPicker(playlistReference, dialog); }));
                 }
                 else
                 {
@@ -2754,6 +2848,8 @@ namespace LcdMod.Client.Apps
                         actions.Add(new FilePickerContextAction(ResolveLoc(LOC_CONTEXT_ADD_NEXT), delegate { AddPickedReferenceNext(fileReference); }));
                         actions.Add(new FilePickerContextAction(ResolveLoc(LOC_CONTEXT_PLAY_NOW), delegate { PlayPickedReferenceNow(fileReference); }));
                         actions.Add(new FilePickerContextAction(ResolveLoc(LOC_CONTEXT_FAVORITE), delegate { FavoritePickedReference(fileReference); }));
+                        if (fileReference.IsLocal)
+                            actions.Add(CreateDeleteContextAction(delegate { DeleteLocalAudioFromPicker(fileReference, dialog); }));
                     }
                 }
             }
@@ -2765,6 +2861,290 @@ namespace LcdMod.Client.Apps
             }
 
             return actions.Count == 0 ? null : actions;
+        }
+
+        FilePickerContextAction CreateDeleteContextAction(Action clicked)
+        {
+            return new FilePickerContextAction(ResolveLoc(LOC_CONTEXT_DELETE), clicked)
+            {
+                UseErrorTextStyle = true
+            };
+        }
+
+        void DeleteLocalAudioFromPicker(MediaAudioFileReference reference, FilePickerDialog dialog)
+        {
+            if (reference == null || !reference.IsLocal)
+                return;
+
+            var displayName = GetLocalAudioDeleteDisplayName(reference);
+            if (IsShiftPressed())
+            {
+                DeleteLocalAudio(reference, dialog, displayName);
+                return;
+            }
+
+            ShowAudioDeleteConfirmation(
+                ResolveLoc(LOC_DELETE_LOCAL_AUDIO_TITLE),
+                string.Format(FormatingHelper.Culture, ResolveLoc(LOC_DELETE_LOCAL_AUDIO_PROMPT_FORMAT), displayName),
+                delegate { DeleteLocalAudio(reference, dialog, displayName); });
+        }
+
+        void DeletePlaylistFromPicker(MediaAudioPlaylistReference playlist, FilePickerDialog dialog)
+        {
+            if (playlist == null)
+                return;
+
+            var displayName = GetPlaylistDeleteDisplayName(playlist);
+            if (IsShiftPressed())
+            {
+                DeletePlaylist(playlist, dialog, displayName);
+                return;
+            }
+
+            ShowAudioDeleteConfirmation(
+                ResolveLoc(LOC_DELETE_PLAYLIST_TITLE),
+                string.Format(FormatingHelper.Culture, ResolveLoc(LOC_DELETE_PLAYLIST_PROMPT_FORMAT), displayName),
+                delegate { DeletePlaylist(playlist, dialog, displayName); });
+        }
+
+        void ShowAudioDeleteConfirmation(string title, string content, Action confirmed)
+        {
+            if (_interactiveHost == null)
+                return;
+
+            _interactiveHost.ShowMessageBox(
+                title,
+                content,
+                ResolveLoc(LOC_CONTEXT_DELETE),
+                ResolveLoc(LOC_COMMON_CANCEL),
+                delegate
+                {
+                    if (confirmed != null)
+                        confirmed();
+                },
+                null,
+                "Danger");
+        }
+
+        void DeleteLocalAudio(MediaAudioFileReference reference, FilePickerDialog dialog, string displayName)
+        {
+            MarkLocalMediaInteraction();
+
+            QueueAudioDelete(
+                dialog,
+                delegate(out string failureReason)
+                {
+                    return MediaAudioFilePickerTreeProvider.TryDeleteLocalAudio(reference, out failureReason);
+                },
+                delegate
+                {
+                    RemoveDeletedLocalAudioReferences(reference);
+                    ShowAudioDeleteNotification(string.Format(FormatingHelper.Culture, ResolveLoc(LOC_LOCAL_AUDIO_DELETED_FORMAT), displayName));
+                    SyncConfig();
+                    MarkDirty();
+                });
+        }
+
+        void DeletePlaylist(MediaAudioPlaylistReference playlist, FilePickerDialog dialog, string displayName)
+        {
+            MarkLocalMediaInteraction();
+
+            QueueAudioDelete(
+                dialog,
+                delegate(out string failureReason)
+                {
+                    return MediaAudioFilePickerTreeProvider.TryDeletePlaylist(playlist, out failureReason);
+                },
+                delegate
+                {
+                    ShowAudioDeleteNotification(string.Format(FormatingHelper.Culture, ResolveLoc(LOC_PLAYLIST_DELETED_FORMAT), displayName));
+                    MarkDirty();
+                });
+        }
+
+        void QueueAudioDelete(FilePickerDialog dialog, AudioDeleteOperation deleteOperation, Action completed)
+        {
+            if (deleteOperation == null)
+                return;
+
+            SetAudioPickerBusy(dialog, true);
+
+            var work = new AudioDeleteWork();
+            MyAPIGateway.Parallel.Start(
+                delegate
+                {
+                    try
+                    {
+                        string failureReason;
+                        work.Deleted = deleteOperation(out failureReason);
+                        work.FailureReason = failureReason;
+                    }
+                    catch (Exception error)
+                    {
+                        work.Error = error;
+                        work.FailureReason = error.Message;
+                    }
+                },
+                delegate { CompleteQueuedAudioDelete(dialog, work, completed); });
+        }
+
+        void CompleteQueuedAudioDelete(FilePickerDialog dialog, AudioDeleteWork work, Action completed)
+        {
+            if (work == null)
+            {
+                SetAudioPickerBusy(dialog, false);
+                ShowAudioDeleteFailure("unknown error");
+                return;
+            }
+
+            if (work.Error != null)
+            {
+                SetAudioPickerBusy(dialog, false);
+                ShowAudioDeleteFailure("Could not delete audio: " + work.Error.Message);
+                return;
+            }
+
+            if (!work.Deleted)
+            {
+                SetAudioPickerBusy(dialog, false);
+                ShowAudioDeleteFailure(work.FailureReason);
+                return;
+            }
+
+            if (completed != null)
+                completed();
+
+            RefreshAudioPickerDialog(dialog);
+        }
+
+        void SetAudioPickerBusy(FilePickerDialog dialog, bool busy)
+        {
+            if (dialog != null && !dialog.Dismissed)
+                dialog.SetLoading(busy, ResolveLoc(LOC_LOADING_AUDIO_FILES));
+
+            if (_interactiveHost != null)
+                _interactiveHost.RequestRedraw();
+        }
+
+        void RemoveDeletedLocalAudioReferences(MediaAudioFileReference reference)
+        {
+            var target = CreatePlaylistEntry(reference);
+            var removedCurrentQueueEntry = false;
+            for (int i = _queue.Count - 1; i >= 0; i--)
+            {
+                if (!PlaylistEntriesMatch(_queue[i], target))
+                    continue;
+
+                if (i == _queueIndex)
+                    removedCurrentQueueEntry = true;
+
+                _queue.RemoveAt(i);
+                if (i < _queueIndex)
+                    _queueIndex--;
+            }
+
+            if (removedCurrentQueueEntry)
+            {
+                _queueIndex = -1;
+                Stop();
+            }
+            else if (_queueIndex >= _queue.Count)
+            {
+                _queueIndex = _queue.Count - 1;
+            }
+
+            if (_queue.Count == 0)
+                _queueIndex = -1;
+
+            _selectedQueueEntries.Clear();
+            ClearPreShuffleQueue();
+
+            if (_pickedAudio != null && AudioReferencesMatch(_pickedAudio, reference))
+            {
+                _pickedAudio = null;
+                _restorePickedAudioAttempted = true;
+                MediaPlayerComponent.SelectedAudioSource = string.Empty;
+                MediaPlayerComponent.SelectedPickerFullPath = string.Empty;
+                Stop();
+            }
+
+            UpdatePlaylistListModel();
+        }
+
+        bool AudioReferencesMatch(MediaAudioFileReference left, MediaAudioFileReference right)
+        {
+            if (ReferenceEquals(left, right))
+                return true;
+
+            return PlaylistEntriesMatch(CreatePlaylistEntry(left), CreatePlaylistEntry(right));
+        }
+
+        void RefreshAudioPickerDialog(FilePickerDialog dialog)
+        {
+            MediaAudioFilePickerTreeProvider.InvalidateCache();
+            if (dialog == null || dialog.Dismissed)
+            {
+                if (_interactiveHost != null)
+                    _interactiveHost.RequestRedraw();
+                return;
+            }
+
+            dialog.SetLoading(true, ResolveLoc(LOC_LOADING_AUDIO_FILES));
+            MediaAudioFilePickerTreeProvider.BuildRootsAsync(delegate(List<FolderModel> roots, Exception error)
+            {
+                if (!dialog.Dismissed)
+                {
+                    dialog.RefreshRoots(roots ?? EmptyFolderRoots);
+                    dialog.SetLoading(false);
+                }
+
+                if (error != null)
+                    LogHelper.Log(MyLogSeverity.Warning, "Could not refresh media audio picker tree: " + error.Message);
+
+                if (_interactiveHost != null)
+                    _interactiveHost.RequestRedraw();
+            });
+        }
+
+        void ShowAudioDeleteFailure(string failureReason)
+        {
+            if (string.IsNullOrWhiteSpace(failureReason))
+                failureReason = "unknown error";
+
+            if (MyAPIGateway.Utilities != null)
+            {
+                MyAPIGateway.Utilities.ShowNotification(
+                    string.Format(FormatingHelper.Culture, ResolveLoc(LOC_DELETE_FAILED_FORMAT), failureReason),
+                    4000,
+                    "Red");
+            }
+        }
+
+        static void ShowAudioDeleteNotification(string message)
+        {
+            if (MyAPIGateway.Utilities != null)
+                MyAPIGateway.Utilities.ShowNotification(message, 2000);
+        }
+
+        string GetLocalAudioDeleteDisplayName(MediaAudioFileReference reference)
+        {
+            var displayName = GetPickedAudioSongName(reference);
+            if (!string.IsNullOrWhiteSpace(displayName))
+                return displayName;
+
+            displayName = GetPickedAudioTitle(reference);
+            return string.IsNullOrWhiteSpace(displayName) ? "local audio" : displayName;
+        }
+
+        static string GetPlaylistDeleteDisplayName(MediaAudioPlaylistReference playlist)
+        {
+            if (playlist == null)
+                return "playlist";
+
+            if (!string.IsNullOrWhiteSpace(playlist.DisplayName))
+                return playlist.DisplayName;
+
+            return string.IsNullOrWhiteSpace(playlist.FileName) ? "playlist" : playlist.FileName;
         }
 
         void AddPlaylistReferenceToQueue(MediaAudioPlaylistReference playlist, bool next)
@@ -3296,11 +3676,117 @@ namespace LcdMod.Client.Apps
             return Host.GridLogic.GetMediaPlayer(Host.Block == null ? 0L : Host.Block.EntityId, Host.SurfaceIndex);
         }
 
+        bool TrySendMediaPlayerCommand(MediaPlayerCommandKind command, double positionSeconds, bool includeSource)
+        {
+            if (!IsMultiplayerMediaCommandRequired())
+                return false;
+
+            var block = Host.Block as IMyTerminalBlock;
+            if (block == null)
+                return false;
+
+            var packet = new PacketRequestMediaPlayerCommand
+            {
+                BlockEntityId = block.EntityId,
+                SurfaceIndex = Host.SurfaceIndex,
+                AppTypeId = (int)AppType.MediaPlayer,
+                Command = command,
+                SourceKind = MediaPlayerSourceKind.None,
+                SourceId = string.Empty,
+                DisplayName = string.Empty,
+                PositionSeconds = SanitizeCommandPosition(positionSeconds),
+                ClientFrame = MyAPIGateway.Session == null ? 0L : MyAPIGateway.Session.GameplayFrameCounter
+            };
+
+            if (includeSource && !TryFillMediaPlayerCommandSource(packet))
+                return false;
+
+            if (MyAPIGateway.Session != null && MyAPIGateway.Session.IsServer && LcdModSessionComponent.Server != null)
+                LcdModSessionComponent.Server.HandleLocalRequestMediaPlayerCommand(packet);
+            else
+                LcdModSessionComponent.NetworkManager.TransmitToServer(packet, false);
+
+            return true;
+        }
+
+        bool TryFillMediaPlayerCommandSource(PacketRequestMediaPlayerCommand packet)
+        {
+            if (packet == null)
+                return false;
+
+            if (_pickedAudio != null)
+            {
+                if (_pickedAudio.IsLocal && _pickedAudio.LocalAsset != null)
+                    return false;
+
+                if (_pickedAudio.IsSoundBlock)
+                {
+                    packet.SourceKind = MediaPlayerSourceKind.SoundSubtype;
+                    packet.SourceId = _pickedAudio.FirstSoundSubtype;
+                    packet.DisplayName = GetPickedAudioTitle(_pickedAudio);
+                    return !string.IsNullOrWhiteSpace(packet.SourceId);
+                }
+
+                packet.SourceKind = MediaPlayerSourceKind.ContentPath;
+                packet.SourceId = _pickedAudio.DefinitionPath;
+                packet.DisplayName = GetPickedAudioTitle(_pickedAudio);
+                return !string.IsNullOrWhiteSpace(packet.SourceId);
+            }
+
+            if (HasLibrarySelection())
+            {
+                packet.SourceKind = MediaPlayerSourceKind.SoundSubtype;
+                packet.SourceId = _library[_selectedIndex].Subtype;
+                packet.DisplayName = _library[_selectedIndex].DisplayName;
+                return !string.IsNullOrWhiteSpace(packet.SourceId);
+            }
+
+            return false;
+        }
+
+        bool TryStartLocalAudioStream(IMyTerminalBlock block)
+        {
+            if (!IsMultiplayerMediaCommandRequired() ||
+                block == null ||
+                _pickedAudio == null ||
+                !_pickedAudio.IsLocal ||
+                _pickedAudio.LocalAsset == null ||
+                LcdModSessionComponent.Client == null)
+            {
+                return false;
+            }
+
+            return LcdModSessionComponent.Client.StartMediaPlayerLocalAudioStream(
+                block,
+                Host.SurfaceIndex,
+                _pickedAudio.LocalAsset,
+                GetPickedAudioTitle(_pickedAudio));
+        }
+
+        static bool IsMultiplayerMediaCommandRequired()
+        {
+            return MyAPIGateway.Multiplayer != null && MyAPIGateway.Multiplayer.MultiplayerActive;
+        }
+
+        double GetPlayerPositionSeconds()
+        {
+            return _player == null ? 0.0 : _player.CurrentPositionSeconds;
+        }
+
+        static double SanitizeCommandPosition(double seconds)
+        {
+            if (double.IsNaN(seconds) || double.IsInfinity(seconds) || seconds < 0.0)
+                return 0.0;
+
+            return seconds;
+        }
+
         void SeekToPosition(double seconds)
         {
             if (_player != null)
             {
-                _player.SeekTo(seconds);
+                if (!TrySendMediaPlayerCommand(MediaPlayerCommandKind.Seek, seconds, false))
+                    _player.SeekTo(seconds);
                 MarkDirty();
             }
         }
@@ -3317,7 +3803,8 @@ namespace LcdMod.Client.Apps
         void StopClicked(ButtonModel model, object sender)
         {
             MarkLocalMediaInteraction();
-            Stop();
+            if (!TrySendMediaPlayerCommand(MediaPlayerCommandKind.Stop, GetPlayerPositionSeconds(), false))
+                Stop();
         }
 
         void OnAudioPicked(FilePickerResult result)
@@ -4151,4 +4638,3 @@ namespace LcdMod.Client.Apps
         }
     }
 }
-#endif

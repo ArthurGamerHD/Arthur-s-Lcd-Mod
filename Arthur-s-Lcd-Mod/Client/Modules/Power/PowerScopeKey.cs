@@ -11,7 +11,7 @@ namespace LcdMod.Client.Modules.Power
         public PowerScopeKey(GridLinkTypeEnum linkType, long[] gridEntityIds)
         {
             LinkType = linkType;
-            GridEntityIds = gridEntityIds ?? new long[0];
+            GridEntityIds = gridEntityIds ?? Array.Empty<long>();
         }
 
         public bool Equals(PowerScopeKey other)
@@ -19,8 +19,8 @@ namespace LcdMod.Client.Modules.Power
             if (LinkType != other.LinkType)
                 return false;
 
-            var a = GridEntityIds ?? new long[0];
-            var b = other.GridEntityIds ?? new long[0];
+            var a = GridEntityIds ?? Array.Empty<long>();
+            var b = other.GridEntityIds ?? Array.Empty<long>();
             if (a.Length != b.Length)
                 return false;
 

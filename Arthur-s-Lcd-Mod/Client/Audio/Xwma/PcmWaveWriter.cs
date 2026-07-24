@@ -1,4 +1,3 @@
-#if EXPERIMENTAL
 using System;
 using System.IO;
 
@@ -191,4 +190,3 @@ namespace LcdMod.Client.Audio.Xwma
         }
     }
 }
-#endif

@@ -169,7 +169,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         }
 
         public int RotationOrSurfaceIndex => _rotationOrSurfaceIndex;
-        public int SurfaceIndex => Config.SurfaceIndex;
+        public int SurfaceIndex => Config == null ? RotationOrSurfaceIndex : Config.SurfaceIndex;
 
         public abstract IApp App { get; }
 

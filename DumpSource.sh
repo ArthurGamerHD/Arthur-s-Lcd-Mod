@@ -2,14 +2,14 @@
 set -euo pipefail
 
 INI_FILE="./Arthur-s-Lcd-Mod/mdk.local.ini"
-OUT="./SE.Source/"
+LOCAL_SOURCE_LINK="./SE.Source"
 
 # read binarypath from [mdk] section
 MANAGED="$(awk -F= '
   /^\[mdk\]/ { in_mdk=1; next }
   /^\[/ && in_mdk { in_mdk=0 }
   in_mdk && $1 ~ /binarypath[ \t]*/ {
-    gsub(/^[ \t]+|[ \t]+$/,"",$2); print $2; exit
+    gsub(/^[ \t]+|[ \t\r]+$/,"",$2); print $2; exit
   }
 ' "$INI_FILE")"
 
@@ -18,7 +18,17 @@ if [ -z "$MANAGED" ]; then
   exit 1
 fi
 
+OUT="${MANAGED%/}/../SE.Source"
+
 mkdir -p "$OUT"
+
+if [ -L "$LOCAL_SOURCE_LINK" ]; then
+  ln -sfn "$OUT" "$LOCAL_SOURCE_LINK"
+elif [ ! -e "$LOCAL_SOURCE_LINK" ]; then
+  ln -s "$OUT" "$LOCAL_SOURCE_LINK"
+else
+  echo "Warning: $LOCAL_SOURCE_LINK already exists and is not a symlink; leaving it unchanged" >&2
+fi
 
 for f in "$MANAGED"/*.dll; do
   [ -e "$f" ] || continue

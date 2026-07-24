@@ -1,4 +1,3 @@
-#if EXPERIMENTAL
 using LcdMod.Common.Compression;
 
 namespace LcdMod.Client.Audio.Xwma.Decoder
@@ -629,4 +628,3 @@ namespace LcdMod.Client.Audio.Xwma.Decoder
         };
     }
 }
-#endif

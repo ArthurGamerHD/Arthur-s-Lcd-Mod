@@ -837,108 +837,167 @@ Poczekamy chwilę, a następnie uruchomimy ją ponownie za ciebie.</value>
     <value>Poza zasięgiem {0} można wykrywać tylko sygnały radiowe.</value>
   </data>
   <data name="LcdMod_MediaPlayer_Title" xml:space="preserve">
-    <value>Media player</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Odtwarzacz multimedialny - (eksperymentalny)</value>
   </data>
   <data name="LcdMod_MediaPlayer_PausedTitleFormat" xml:space="preserve">
-    <value>(Paused) - {0}</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>(Wstrzymano) - {0}</value>
   </data>
-  <!-- TODO_TRANSLATION: English fallback values for new media player and file picker strings. -->
   <data name="LcdMod_MediaPlayer_NoSupportedAudio" xml:space="preserve">
-    <value>No supported Space Engineers WAV/XWM sounds were found.</value>
+    <value>Nie znaleziono obsługiwanych dźwięków Space Engineers w formacie WAV/XWM.</value>
   </data>
   <data name="LcdMod_MediaPlayer_QueueEmpty" xml:space="preserve">
-    <value>Queue is empty</value>
+    <value>Kolejka jest pusta</value>
   </data>
   <data name="LcdMod_MediaPlayer_ClearQueue" xml:space="preserve">
-    <value>Clear</value>
+    <value>Wyczyść</value>
   </data>
   <data name="LcdMod_MediaPlayer_SaveQueue" xml:space="preserve">
-    <value>Save</value>
+    <value>Zapisz</value>
   </data>
   <data name="LcdMod_MediaPlayer_QueuePlayedPrefix" xml:space="preserve">
-    <value>played: </value>
+    <value>odtworzono: </value>
   </data>
   <data name="LcdMod_MediaPlayer_QueueCurrentPrefix" xml:space="preserve">
     <value>&gt; </value>
   </data>
   <data name="LcdMod_MediaPlayer_QueueNextPrefix" xml:space="preserve">
-    <value>next: </value>
+    <value>następny: </value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Pick" xml:space="preserve">
+    <value>Wybierz</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Shuffle" xml:space="preserve">
+    <value>Losowo</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Previous" xml:space="preserve">
+    <value>Poprzedni</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Play" xml:space="preserve">
+    <value>Odtwórz</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Pause" xml:space="preserve">
+    <value>Pauza</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Next" xml:space="preserve">
+    <value>Następny</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Playlist" xml:space="preserve">
+    <value>Lista odtwarzania</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Stop" xml:space="preserve">
+    <value>Stop</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Repeat" xml:space="preserve">
+    <value>Powtórz</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Visualizer" xml:space="preserve">
+    <value>Wizualizacja odtwarzacza multimedialnego</value>
   </data>
   <data name="LcdMod_MediaPlayer_UnknownLength" xml:space="preserve">
-    <value>unknown length</value>
+    <value>nieznana długość</value>
   </data>
   <data name="LcdMod_MediaPlayer_PickAudio" xml:space="preserve">
-    <value>Pick audio</value>
+    <value>Wybierz dźwięk</value>
   </data>
   <data name="LcdMod_MediaPlayer_LoadingAudioFiles" xml:space="preserve">
-    <value>Loading audio files...</value>
+    <value>Ładowanie plików audio...</value>
   </data>
   <data name="LcdMod_MediaPlayer_SavePlaylistTitle" xml:space="preserve">
-    <value>Save playlist</value>
+    <value>Zapisz listę odtwarzania</value>
   </data>
   <data name="LcdMod_MediaPlayer_SavePlaylistPrompt" xml:space="preserve">
-    <value>Enter a playlist name. It will be saved as a local .m3u file.</value>
+    <value>Podaj nazwę listy odtwarzania. Zostanie zapisana jako lokalny plik .m3u.</value>
   </data>
   <data name="LcdMod_MediaPlayer_PlaylistNameEmpty" xml:space="preserve">
-    <value>Playlist name is empty.</value>
+    <value>Nazwa listy odtwarzania jest pusta.</value>
   </data>
   <data name="LcdMod_MediaPlayer_PlaylistSavedFormat" xml:space="preserve">
-    <value>Saved playlist {0}.</value>
+    <value>Zapisano listę odtwarzania {0}.</value>
   </data>
   <data name="LcdMod_MediaPlayer_Context_AddToQueue" xml:space="preserve">
-    <value>Add to queue</value>
+    <value>Dodaj do kolejki</value>
   </data>
   <data name="LcdMod_MediaPlayer_Context_AddNext" xml:space="preserve">
-    <value>Add next</value>
+    <value>Dodaj jako następny</value>
   </data>
   <data name="LcdMod_MediaPlayer_Context_PlayNow" xml:space="preserve">
-    <value>Play now</value>
+    <value>Odtwórz teraz</value>
   </data>
   <data name="LcdMod_MediaPlayer_Context_Favorite" xml:space="preserve">
-    <value>Favorite</value>
+    <value>Ulubione</value>
   </data>
   <data name="LcdMod_MediaPlayer_Context_AddAll" xml:space="preserve">
-    <value>Add all</value>
+    <value>Dodaj wszystkie</value>
   </data>
   <data name="LcdMod_MediaPlayer_Context_PlayAll" xml:space="preserve">
-    <value>Play all</value>
+    <value>Odtwórz wszystkie</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Context_Delete" xml:space="preserve">
+    <value>Delete</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_DeleteLocalAudioTitle" xml:space="preserve">
+    <value>Delete local audio</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_DeleteLocalAudioPromptFormat" xml:space="preserve">
+    <value>Delete &quot;{0}&quot; from local audio? This cannot be undone.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_DeletePlaylistTitle" xml:space="preserve">
+    <value>Delete playlist</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_DeletePlaylistPromptFormat" xml:space="preserve">
+    <value>Delete playlist &quot;{0}&quot;? This cannot be undone.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_DeleteFailedFormat" xml:space="preserve">
+    <value>Delete failed: {0}</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_LocalAudioDeletedFormat" xml:space="preserve">
+    <value>Deleted local audio {0}.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_PlaylistDeletedFormat" xml:space="preserve">
+    <value>Deleted playlist {0}.</value>
+    <comment>TODO_TRANSLATION</comment>
   </data>
   <data name="LcdMod_FilePicker_PickFile" xml:space="preserve">
-    <value>Pick file</value>
+    <value>Wybierz plik</value>
   </data>
   <data name="LcdMod_FilePicker_PickFolder" xml:space="preserve">
-    <value>Pick folder</value>
+    <value>Wybierz folder</value>
   </data>
   <data name="LcdMod_FilePicker_Root" xml:space="preserve">
-    <value>Root</value>
+    <value>Katalog główny</value>
   </data>
   <data name="LcdMod_FilePicker_SearchTitle" xml:space="preserve">
-    <value>Search File</value>
+    <value>Wyszukaj plik</value>
   </data>
   <data name="LcdMod_FilePicker_SearchSubtitle" xml:space="preserve">
-    <value>Filter files and folders in the current folder</value>
+    <value>Filtruj pliki i foldery w bieżącym folderze</value>
   </data>
   <data name="LcdMod_FilePicker_SearchPlaceholder" xml:space="preserve">
-    <value>Search files</value>
+    <value>Szukaj plików</value>
   </data>
   <data name="LcdMod_FilePicker_SelectFile" xml:space="preserve">
-    <value>Select File</value>
+    <value>Wybierz plik</value>
   </data>
   <data name="LcdMod_FilePicker_SelectFolder" xml:space="preserve">
-    <value>Select Folder</value>
+    <value>Wybierz folder</value>
   </data>
   <data name="LcdMod_FilePicker_Loading" xml:space="preserve">
-    <value>Loading...</value>
+    <value>Ładowanie...</value>
   </data>
   <data name="LcdMod_FilePicker_NoFilesFound" xml:space="preserve">
-    <value>No files found</value>
+    <value>Nie znaleziono plików</value>
   </data>
   <data name="LcdMod_FilePicker_NoFilesMatchFormat" xml:space="preserve">
-    <value>No files match "{0}"</value>
+    <value>Żadne pliki nie pasują do "{0}"</value>
   </data>
   <data name="LcdMod_FilePicker_BackToRoots" xml:space="preserve">
-    <value>Back to roots</value>
+    <value>Wróć do katalogów głównych</value>
   </data>
 </root>

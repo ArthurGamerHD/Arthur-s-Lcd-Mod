@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using LcdMod.Client.Config;
@@ -31,8 +32,8 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Listbox
                 return;
             
             var script = ((IMyTextSurfaceProvider)b).GetSurface(GetThisSurfaceIndex(b)).Script;
-            var selectedGroups = screenSettings.SelectedGroups ?? new string[0];
-            var selectedBlocks = screenSettings.SelectedBlocks ?? new long[0];
+            var selectedGroups = screenSettings.SelectedGroups ?? Array.Empty<string>();
+            var selectedBlocks = screenSettings.SelectedBlocks ?? Array.Empty<long>();
 
             if (script != AntennaSurfaceScript.ID) // antenna does not support groups
                 blockList.AddRange(selectedGroups.Select(a => ListBoxItemHelper.GetOrComputeListBoxItem(

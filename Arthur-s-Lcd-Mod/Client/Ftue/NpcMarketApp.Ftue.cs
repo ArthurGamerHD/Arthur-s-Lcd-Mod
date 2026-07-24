@@ -1,5 +1,6 @@
 using System;
 
+// ReSharper disable once CheckNamespace
 namespace LcdMod.Client.Apps
 {
     internal sealed partial class NpcMarketApp

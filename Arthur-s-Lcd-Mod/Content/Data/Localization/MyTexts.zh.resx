@@ -837,108 +837,167 @@
     <value>超过 {0} 范围时只能检测到无线电信号。</value>
   </data>
   <data name="LcdMod_MediaPlayer_Title" xml:space="preserve">
-    <value>Media player</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>媒体播放器 - (实验性)</value>
   </data>
   <data name="LcdMod_MediaPlayer_PausedTitleFormat" xml:space="preserve">
-    <value>(Paused) - {0}</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>(已暂停) - {0}</value>
   </data>
-  <!-- TODO_TRANSLATION: English fallback values for new media player and file picker strings. -->
   <data name="LcdMod_MediaPlayer_NoSupportedAudio" xml:space="preserve">
-    <value>No supported Space Engineers WAV/XWM sounds were found.</value>
+    <value>未找到受支持的 Space Engineers WAV/XWM 声音。</value>
   </data>
   <data name="LcdMod_MediaPlayer_QueueEmpty" xml:space="preserve">
-    <value>Queue is empty</value>
+    <value>队列为空</value>
   </data>
   <data name="LcdMod_MediaPlayer_ClearQueue" xml:space="preserve">
-    <value>Clear</value>
+    <value>清空</value>
   </data>
   <data name="LcdMod_MediaPlayer_SaveQueue" xml:space="preserve">
-    <value>Save</value>
+    <value>保存</value>
   </data>
   <data name="LcdMod_MediaPlayer_QueuePlayedPrefix" xml:space="preserve">
-    <value>played: </value>
+    <value>已播放：</value>
   </data>
   <data name="LcdMod_MediaPlayer_QueueCurrentPrefix" xml:space="preserve">
     <value>&gt; </value>
   </data>
   <data name="LcdMod_MediaPlayer_QueueNextPrefix" xml:space="preserve">
-    <value>next: </value>
+    <value>下一个：</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Pick" xml:space="preserve">
+    <value>选择</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Shuffle" xml:space="preserve">
+    <value>随机播放</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Previous" xml:space="preserve">
+    <value>上一个</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Play" xml:space="preserve">
+    <value>播放</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Pause" xml:space="preserve">
+    <value>暂停</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Next" xml:space="preserve">
+    <value>下一个</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Playlist" xml:space="preserve">
+    <value>播放列表</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Stop" xml:space="preserve">
+    <value>停止</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Repeat" xml:space="preserve">
+    <value>重复</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Visualizer" xml:space="preserve">
+    <value>媒体播放器可视化</value>
   </data>
   <data name="LcdMod_MediaPlayer_UnknownLength" xml:space="preserve">
-    <value>unknown length</value>
+    <value>时长未知</value>
   </data>
   <data name="LcdMod_MediaPlayer_PickAudio" xml:space="preserve">
-    <value>Pick audio</value>
+    <value>选择音频</value>
   </data>
   <data name="LcdMod_MediaPlayer_LoadingAudioFiles" xml:space="preserve">
-    <value>Loading audio files...</value>
+    <value>正在加载音频文件...</value>
   </data>
   <data name="LcdMod_MediaPlayer_SavePlaylistTitle" xml:space="preserve">
-    <value>Save playlist</value>
+    <value>保存播放列表</value>
   </data>
   <data name="LcdMod_MediaPlayer_SavePlaylistPrompt" xml:space="preserve">
-    <value>Enter a playlist name. It will be saved as a local .m3u file.</value>
+    <value>输入播放列表名称。它将保存为本地 .m3u 文件。</value>
   </data>
   <data name="LcdMod_MediaPlayer_PlaylistNameEmpty" xml:space="preserve">
-    <value>Playlist name is empty.</value>
+    <value>播放列表名称为空。</value>
   </data>
   <data name="LcdMod_MediaPlayer_PlaylistSavedFormat" xml:space="preserve">
-    <value>Saved playlist {0}.</value>
+    <value>已保存播放列表 {0}。</value>
   </data>
   <data name="LcdMod_MediaPlayer_Context_AddToQueue" xml:space="preserve">
-    <value>Add to queue</value>
+    <value>添加到队列</value>
   </data>
   <data name="LcdMod_MediaPlayer_Context_AddNext" xml:space="preserve">
-    <value>Add next</value>
+    <value>添加为下一个</value>
   </data>
   <data name="LcdMod_MediaPlayer_Context_PlayNow" xml:space="preserve">
-    <value>Play now</value>
+    <value>立即播放</value>
   </data>
   <data name="LcdMod_MediaPlayer_Context_Favorite" xml:space="preserve">
-    <value>Favorite</value>
+    <value>收藏</value>
   </data>
   <data name="LcdMod_MediaPlayer_Context_AddAll" xml:space="preserve">
-    <value>Add all</value>
+    <value>全部添加</value>
   </data>
   <data name="LcdMod_MediaPlayer_Context_PlayAll" xml:space="preserve">
-    <value>Play all</value>
+    <value>全部播放</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Context_Delete" xml:space="preserve">
+    <value>Delete</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_DeleteLocalAudioTitle" xml:space="preserve">
+    <value>Delete local audio</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_DeleteLocalAudioPromptFormat" xml:space="preserve">
+    <value>Delete &quot;{0}&quot; from local audio? This cannot be undone.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_DeletePlaylistTitle" xml:space="preserve">
+    <value>Delete playlist</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_DeletePlaylistPromptFormat" xml:space="preserve">
+    <value>Delete playlist &quot;{0}&quot;? This cannot be undone.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_DeleteFailedFormat" xml:space="preserve">
+    <value>Delete failed: {0}</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_LocalAudioDeletedFormat" xml:space="preserve">
+    <value>Deleted local audio {0}.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_PlaylistDeletedFormat" xml:space="preserve">
+    <value>Deleted playlist {0}.</value>
+    <comment>TODO_TRANSLATION</comment>
   </data>
   <data name="LcdMod_FilePicker_PickFile" xml:space="preserve">
-    <value>Pick file</value>
+    <value>选择文件</value>
   </data>
   <data name="LcdMod_FilePicker_PickFolder" xml:space="preserve">
-    <value>Pick folder</value>
+    <value>选择文件夹</value>
   </data>
   <data name="LcdMod_FilePicker_Root" xml:space="preserve">
-    <value>Root</value>
+    <value>根目录</value>
   </data>
   <data name="LcdMod_FilePicker_SearchTitle" xml:space="preserve">
-    <value>Search File</value>
+    <value>搜索文件</value>
   </data>
   <data name="LcdMod_FilePicker_SearchSubtitle" xml:space="preserve">
-    <value>Filter files and folders in the current folder</value>
+    <value>筛选当前文件夹中的文件和文件夹</value>
   </data>
   <data name="LcdMod_FilePicker_SearchPlaceholder" xml:space="preserve">
-    <value>Search files</value>
+    <value>搜索文件</value>
   </data>
   <data name="LcdMod_FilePicker_SelectFile" xml:space="preserve">
-    <value>Select File</value>
+    <value>选择文件</value>
   </data>
   <data name="LcdMod_FilePicker_SelectFolder" xml:space="preserve">
-    <value>Select Folder</value>
+    <value>选择文件夹</value>
   </data>
   <data name="LcdMod_FilePicker_Loading" xml:space="preserve">
-    <value>Loading...</value>
+    <value>正在加载...</value>
   </data>
   <data name="LcdMod_FilePicker_NoFilesFound" xml:space="preserve">
-    <value>No files found</value>
+    <value>未找到文件</value>
   </data>
   <data name="LcdMod_FilePicker_NoFilesMatchFormat" xml:space="preserve">
-    <value>No files match "{0}"</value>
+    <value>没有文件匹配“{0}”</value>
   </data>
   <data name="LcdMod_FilePicker_BackToRoots" xml:space="preserve">
-    <value>Back to roots</value>
+    <value>返回根目录</value>
   </data>
 </root>

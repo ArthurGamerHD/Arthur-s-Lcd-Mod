@@ -30,7 +30,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         RectangleF _rightButtonBounds;
         RectangleF _indicatorBounds;
         RectangleF _navigationViewportBounds;
-        RectangleF[] _indicatorButtonBounds = new RectangleF[0];
+        RectangleF[] _indicatorButtonBounds = Array.Empty<RectangleF>();
         bool _showControls;
         int _firstVisiblePage;
         int _visiblePageCount = 1;
@@ -261,7 +261,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
                 _leftButtonBounds = default(RectangleF);
                 _rightButtonBounds = default(RectangleF);
                 _indicatorBounds = default(RectangleF);
-                _indicatorButtonBounds = new RectangleF[0];
+                _indicatorButtonBounds = Array.Empty<RectangleF>();
                 _leftButton.SetVisible(false);
                 _indicatorControl.SetVisible(false);
                 _rightButton.SetVisible(false);
@@ -438,7 +438,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
                 _leftButtonBounds = default(RectangleF);
                 _rightButtonBounds = default(RectangleF);
                 _indicatorBounds = default(RectangleF);
-                _indicatorButtonBounds = new RectangleF[0];
+                _indicatorButtonBounds = Array.Empty<RectangleF>();
                 return;
             }
 
@@ -466,7 +466,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             int pageCount = GetPageCount();
             if (pageCount <= 0 || _indicatorBounds.Width <= 0f || _indicatorBounds.Height <= 0f)
             {
-                _indicatorButtonBounds = new RectangleF[0];
+                _indicatorButtonBounds = Array.Empty<RectangleF>();
                 return;
             }
 

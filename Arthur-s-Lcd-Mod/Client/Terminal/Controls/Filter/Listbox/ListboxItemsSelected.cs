@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using LcdMod.Client.Config;
@@ -29,8 +30,8 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Listbox
             if (screenSettings == null)
                 return;
 
-            var selectedCategories = screenSettings.SelectedCategories ?? new string[0];
-            var selectedDefinitions = screenSettings.SelectedDefinition ?? new string[0];
+            var selectedCategories = screenSettings.SelectedCategories ?? Array.Empty<string>();
+            var selectedDefinitions = screenSettings.SelectedDefinition ?? Array.Empty<string>();
 
             itemList.AddRange(selectedCategories
                 .Select(g => ListBoxItemHelper.GetOrComputeListBoxItem(ItemCategoryHelper.GetGroupName(g), string.Empty, g)));

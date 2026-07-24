@@ -9,6 +9,7 @@ namespace LcdMod.Client.Config
             LocalTextures = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
             CompletedFtueTips = new HashSet<string>(System.StringComparer.Ordinal);
             RenderOtherUserTextures = true;
+            AcceptMediaStreams = true;
         }
 
         public bool AdvancedTweekables { get; set; }
@@ -18,6 +19,7 @@ namespace LcdMod.Client.Config
         public bool SpriteCountDebug { get; set; }
         public bool VisibleClip { get; set; }
         public bool UseLegacyLocalTextureStorage { get; set; }
+        public bool AcceptMediaStreams { get; set; }
 
         public HashSet<string> CompletedFtueTips { get; set; }
 

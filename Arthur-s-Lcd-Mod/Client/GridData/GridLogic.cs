@@ -61,10 +61,8 @@ namespace LcdMod.Client.GridData
         private PowerComponent _powerComponent;
         private GridRoomEnvironmentComponent _roomEnvironmentComponent;
         private TerrainSolarForecastComponent _terrainSolarForecastComponent;
-#if EXPERIMENTAL
         private readonly Dictionary<MediaPlayerPartitionKey, GridMediaPlayer> _mediaPlayers =
             new Dictionary<MediaPlayerPartitionKey, GridMediaPlayer>();
-#endif
 
         private readonly Dictionary<MyItemType, double> _compCache = new Dictionary<MyItemType, double>();
 
@@ -160,7 +158,6 @@ namespace LcdMod.Client.GridData
         internal TerrainSolarForecastComponent TerrainSolarForecast =>
             _terrainSolarForecastComponent ?? (_terrainSolarForecastComponent = new TerrainSolarForecastComponent(this));
 
-#if EXPERIMENTAL
         public GridMediaPlayer MediaPlayer => GetMediaPlayer(0L, 0);
 
         public GridMediaPlayer GetMediaPlayer(long blockId, int screenIndex)
@@ -178,7 +175,6 @@ namespace LcdMod.Client.GridData
 
             return player;
         }
-#endif
 
         private IMyGridTerminalSystem GridTerminalSystem =>
             MyAPIGateway.TerminalActionsHelper.GetTerminalSystemForGrid(Grid);
@@ -213,11 +209,9 @@ namespace LcdMod.Client.GridData
 
         public void Unload()
         {
-#if EXPERIMENTAL
             foreach (var player in _mediaPlayers.Values)
                 player.Unload();
             _mediaPlayers.Clear();
-#endif
         }
 
         /// <summary>
@@ -228,10 +222,8 @@ namespace LcdMod.Client.GridData
             if (_ticksSinceRequested < int.MaxValue)
                 _ticksSinceRequested++;
 
-#if EXPERIMENTAL
             foreach (var player in _mediaPlayers.Values)
                 player.Update();
-#endif
 
             if (_ticksSinceRequested > REQUEST_TTL_TICKS)
             {
@@ -273,7 +265,6 @@ namespace LcdMod.Client.GridData
             _productionByBlockCache.Clear();
         }
 
-#if EXPERIMENTAL
         private struct MediaPlayerPartitionKey : IEquatable<MediaPlayerPartitionKey>
         {
             readonly long _blockId;
@@ -300,7 +291,6 @@ namespace LcdMod.Client.GridData
                 return (_blockId.GetHashCode() * 397) ^ _screenIndex;
             }
         }
-#endif
 
         private void StartRefresh(bool force = false)
         {

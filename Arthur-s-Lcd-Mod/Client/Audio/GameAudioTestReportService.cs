@@ -1,4 +1,3 @@
-#if EXPERIMENTAL
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -518,4 +517,3 @@ namespace LcdMod.Client.Audio
         }
     }
 }
-#endif

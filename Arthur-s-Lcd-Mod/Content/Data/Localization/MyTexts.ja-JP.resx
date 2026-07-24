@@ -838,108 +838,167 @@
     <value>{0} を超える範囲では無線信号のみを検出できます。</value>
   </data>
   <data name="LcdMod_MediaPlayer_Title" xml:space="preserve">
-    <value>Media player</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>メディアプレーヤー - (試験的)</value>
   </data>
   <data name="LcdMod_MediaPlayer_PausedTitleFormat" xml:space="preserve">
-    <value>(Paused) - {0}</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>(一時停止中) - {0}</value>
   </data>
-  <!-- TODO_TRANSLATION: English fallback values for new media player and file picker strings. -->
   <data name="LcdMod_MediaPlayer_NoSupportedAudio" xml:space="preserve">
-    <value>No supported Space Engineers WAV/XWM sounds were found.</value>
+    <value>対応している Space Engineers の WAV/XWM サウンドが見つかりませんでした。</value>
   </data>
   <data name="LcdMod_MediaPlayer_QueueEmpty" xml:space="preserve">
-    <value>Queue is empty</value>
+    <value>キューは空です</value>
   </data>
   <data name="LcdMod_MediaPlayer_ClearQueue" xml:space="preserve">
-    <value>Clear</value>
+    <value>クリア</value>
   </data>
   <data name="LcdMod_MediaPlayer_SaveQueue" xml:space="preserve">
-    <value>Save</value>
+    <value>保存</value>
   </data>
   <data name="LcdMod_MediaPlayer_QueuePlayedPrefix" xml:space="preserve">
-    <value>played: </value>
+    <value>再生済み: </value>
   </data>
   <data name="LcdMod_MediaPlayer_QueueCurrentPrefix" xml:space="preserve">
     <value>&gt; </value>
   </data>
   <data name="LcdMod_MediaPlayer_QueueNextPrefix" xml:space="preserve">
-    <value>next: </value>
+    <value>次: </value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Pick" xml:space="preserve">
+    <value>選択</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Shuffle" xml:space="preserve">
+    <value>シャッフル</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Previous" xml:space="preserve">
+    <value>前へ</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Play" xml:space="preserve">
+    <value>再生</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Pause" xml:space="preserve">
+    <value>一時停止</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Next" xml:space="preserve">
+    <value>次へ</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Playlist" xml:space="preserve">
+    <value>プレイリスト</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Stop" xml:space="preserve">
+    <value>停止</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Repeat" xml:space="preserve">
+    <value>リピート</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Visualizer" xml:space="preserve">
+    <value>メディアプレーヤー ビジュアライザー</value>
   </data>
   <data name="LcdMod_MediaPlayer_UnknownLength" xml:space="preserve">
-    <value>unknown length</value>
+    <value>長さ不明</value>
   </data>
   <data name="LcdMod_MediaPlayer_PickAudio" xml:space="preserve">
-    <value>Pick audio</value>
+    <value>音声を選択</value>
   </data>
   <data name="LcdMod_MediaPlayer_LoadingAudioFiles" xml:space="preserve">
-    <value>Loading audio files...</value>
+    <value>音声ファイルを読み込み中...</value>
   </data>
   <data name="LcdMod_MediaPlayer_SavePlaylistTitle" xml:space="preserve">
-    <value>Save playlist</value>
+    <value>プレイリストを保存</value>
   </data>
   <data name="LcdMod_MediaPlayer_SavePlaylistPrompt" xml:space="preserve">
-    <value>Enter a playlist name. It will be saved as a local .m3u file.</value>
+    <value>プレイリスト名を入力してください。ローカルの .m3u ファイルとして保存されます。</value>
   </data>
   <data name="LcdMod_MediaPlayer_PlaylistNameEmpty" xml:space="preserve">
-    <value>Playlist name is empty.</value>
+    <value>プレイリスト名が空です。</value>
   </data>
   <data name="LcdMod_MediaPlayer_PlaylistSavedFormat" xml:space="preserve">
-    <value>Saved playlist {0}.</value>
+    <value>プレイリスト {0} を保存しました。</value>
   </data>
   <data name="LcdMod_MediaPlayer_Context_AddToQueue" xml:space="preserve">
-    <value>Add to queue</value>
+    <value>キューに追加</value>
   </data>
   <data name="LcdMod_MediaPlayer_Context_AddNext" xml:space="preserve">
-    <value>Add next</value>
+    <value>次に追加</value>
   </data>
   <data name="LcdMod_MediaPlayer_Context_PlayNow" xml:space="preserve">
-    <value>Play now</value>
+    <value>今すぐ再生</value>
   </data>
   <data name="LcdMod_MediaPlayer_Context_Favorite" xml:space="preserve">
-    <value>Favorite</value>
+    <value>お気に入り</value>
   </data>
   <data name="LcdMod_MediaPlayer_Context_AddAll" xml:space="preserve">
-    <value>Add all</value>
+    <value>すべて追加</value>
   </data>
   <data name="LcdMod_MediaPlayer_Context_PlayAll" xml:space="preserve">
-    <value>Play all</value>
+    <value>すべて再生</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_Context_Delete" xml:space="preserve">
+    <value>Delete</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_DeleteLocalAudioTitle" xml:space="preserve">
+    <value>Delete local audio</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_DeleteLocalAudioPromptFormat" xml:space="preserve">
+    <value>Delete &quot;{0}&quot; from local audio? This cannot be undone.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_DeletePlaylistTitle" xml:space="preserve">
+    <value>Delete playlist</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_DeletePlaylistPromptFormat" xml:space="preserve">
+    <value>Delete playlist &quot;{0}&quot;? This cannot be undone.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_DeleteFailedFormat" xml:space="preserve">
+    <value>Delete failed: {0}</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_LocalAudioDeletedFormat" xml:space="preserve">
+    <value>Deleted local audio {0}.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_PlaylistDeletedFormat" xml:space="preserve">
+    <value>Deleted playlist {0}.</value>
+    <comment>TODO_TRANSLATION</comment>
   </data>
   <data name="LcdMod_FilePicker_PickFile" xml:space="preserve">
-    <value>Pick file</value>
+    <value>ファイルを選択</value>
   </data>
   <data name="LcdMod_FilePicker_PickFolder" xml:space="preserve">
-    <value>Pick folder</value>
+    <value>フォルダーを選択</value>
   </data>
   <data name="LcdMod_FilePicker_Root" xml:space="preserve">
-    <value>Root</value>
+    <value>ルート</value>
   </data>
   <data name="LcdMod_FilePicker_SearchTitle" xml:space="preserve">
-    <value>Search File</value>
+    <value>ファイルを検索</value>
   </data>
   <data name="LcdMod_FilePicker_SearchSubtitle" xml:space="preserve">
-    <value>Filter files and folders in the current folder</value>
+    <value>現在のフォルダー内のファイルとフォルダーを絞り込みます</value>
   </data>
   <data name="LcdMod_FilePicker_SearchPlaceholder" xml:space="preserve">
-    <value>Search files</value>
+    <value>ファイルを検索</value>
   </data>
   <data name="LcdMod_FilePicker_SelectFile" xml:space="preserve">
-    <value>Select File</value>
+    <value>ファイルを選択</value>
   </data>
   <data name="LcdMod_FilePicker_SelectFolder" xml:space="preserve">
-    <value>Select Folder</value>
+    <value>フォルダーを選択</value>
   </data>
   <data name="LcdMod_FilePicker_Loading" xml:space="preserve">
-    <value>Loading...</value>
+    <value>読み込み中...</value>
   </data>
   <data name="LcdMod_FilePicker_NoFilesFound" xml:space="preserve">
-    <value>No files found</value>
+    <value>ファイルが見つかりません</value>
   </data>
   <data name="LcdMod_FilePicker_NoFilesMatchFormat" xml:space="preserve">
-    <value>No files match "{0}"</value>
+    <value>"{0}" に一致するファイルはありません</value>
   </data>
   <data name="LcdMod_FilePicker_BackToRoots" xml:space="preserve">
-    <value>Back to roots</value>
+    <value>ルートに戻る</value>
   </data>
 </root>

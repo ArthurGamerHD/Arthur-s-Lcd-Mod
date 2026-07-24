@@ -36,9 +36,9 @@ Rules:
 
 # Space Engineers Source Instruction
 
-Decompiled Space Engineers sources are available in `./SE.Source/`.
+Decompiled Space Engineers sources are available in `{binarypath}/../SE.Source`, where `{binarypath}` is read from the `[mdk]` `binarypath=` entry in `./Arthur-s-Lcd-Mod/mdk.local.ini`. For easy repo-local access, `./DumpSource.sh` creates or updates `./SE.Source` as a symlink to that folder when `./SE.Source` is absent or already a symlink.
 
-If `./SE.Source/` is missing or does not contain the needed source, run `./DumpSource.sh` only after ensuring `./Arthur-s-Lcd-Mod/mdk.local.ini` exists and has a valid `[mdk]` `binarypath=` pointing to the Space Engineers `Bin64` directory.
+If that `SE.Source` folder is missing or does not contain the needed source, run `./DumpSource.sh` only after ensuring `./Arthur-s-Lcd-Mod/mdk.local.ini` exists and has a valid `[mdk]` `binarypath=` pointing to the Space Engineers `Bin64` directory.
 
 
 # MVVM / Control Rendering Instruction
@@ -60,4 +60,3 @@ Space engineers uses Sandbox.ModAPI.Ingame.IMyTextSurface for TextSurfaceScript:
 2. Do not let the default resolver find a match for `IMyTextSurface`
 3. Do NOT import `Sandbox.ModAPI.Ingame` unless explicit necessary
 4. Always prefer the `Sandbox.ModAPI` over `Sandbox.ModAPI.Ingame` when possible
-

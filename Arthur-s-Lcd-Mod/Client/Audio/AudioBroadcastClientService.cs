@@ -1,25 +1,59 @@
-#if EXPERIMENTAL
 using System;
 using System.Collections.Generic;
 using LcdMod.Common.Audio;
+using LcdMod.Client.Config;
+using LcdMod.Client.GridData;
 using LcdMod.Common.Helpers;
 using LcdMod.Common.Networking;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game.Entity;
+using VRage.Game.ModAPI;
 using VRage.Utils;
+using IMyTerminalBlock = Sandbox.ModAPI.IMyTerminalBlock;
 
 namespace LcdMod.Client.Audio
 {
     internal sealed class AudioBroadcastClientService
     {
         const int MAX_RECENT_PLAYBACK_IDS = 64;
+        const int STREAM_SAMPLE_RATE = 24000;
+        const int STREAM_BLOCK_ALIGN = 2;
+        const int STREAM_CHUNK_PCM_BYTES = STREAM_SAMPLE_RATE * STREAM_BLOCK_ALIGN;
+        const int STREAM_INITIAL_CHUNKS = 3;
+        const long STREAM_LISTENER_REFRESH_FRAMES = 300L;
 
         readonly List<MyEntity3DSoundEmitter> _activeEmitters = new List<MyEntity3DSoundEmitter>();
         readonly HashSet<long> _recentPlaybackIds = new HashSet<long>();
         readonly List<long> _recentPlaybackIdOrder = new List<long>();
+        readonly Dictionary<long, IncomingMediaStream> _incomingMediaStreams =
+            new Dictionary<long, IncomingMediaStream>();
+        readonly List<OutgoingMediaStream> _outgoingMediaStreams = new List<OutgoingMediaStream>();
 
         AudioLibraryMetadata _library;
+        long _nextClientStreamId;
+
+        sealed class IncomingMediaStream
+        {
+            public long ServerStreamId;
+            public long BlockEntityId;
+            public int SurfaceIndex;
+            public GridMediaPlayer Player;
+        }
+
+        sealed class OutgoingMediaStream
+        {
+            public long ClientStreamId;
+            public long ServerStreamId;
+            public byte[] PcmBytes;
+            public int Offset;
+            public int ChunkIndex;
+            public int InitialChunksSent;
+            public long NextSendFrame;
+            public long NextListenerRefreshFrame;
+            public bool CloseSent;
+            public ulong[] ListenerSteamIds;
+        }
 
         public void StreamAudioCommand(string[] args)
         {
@@ -99,8 +133,181 @@ namespace LcdMod.Client.Audio
                               ", duration=" + TimeSpan.FromTicks(wave.DurationTicks).TotalSeconds.ToString("0.00") + "s");
         }
 
+        public bool StartMediaPlayerLocalAudioStream(IMyTerminalBlock block, int surfaceIndex, AudioAssetMetadata asset, string title)
+        {
+            if (block == null || asset == null)
+                return false;
+
+            byte[] runtimeWaveBytes;
+            string failureReason;
+            if (!TryReadRuntimeWave(asset, out runtimeWaveBytes, out failureReason))
+            {
+                Show(failureReason, "Red");
+                return false;
+            }
+
+            CanonicalWavePayload wave;
+            if (!CanonicalWaveReader.TryRead(runtimeWaveBytes, out wave, out failureReason))
+            {
+                Show("Runtime WAV rejected: " + failureReason, "Red");
+                return false;
+            }
+
+            var clientStreamId = ++_nextClientStreamId;
+            if (clientStreamId == 0)
+                clientStreamId = ++_nextClientStreamId;
+
+            var open = new PacketMediaStreamControl
+            {
+                Intent = MediaStreamControlIntent.Request,
+                ClientStreamId = clientStreamId,
+                BlockEntityId = block.EntityId,
+                SurfaceIndex = surfaceIndex,
+                AppTypeId = (int)Generated.AppType.MediaPlayer,
+                Title = string.IsNullOrWhiteSpace(title) ? asset.Id : title,
+                TotalDurationTicks = wave.DurationTicks
+            };
+
+            _outgoingMediaStreams.Add(new OutgoingMediaStream
+            {
+                ClientStreamId = clientStreamId,
+                PcmBytes = wave.PcmBytes,
+                Offset = 0,
+                ChunkIndex = 0,
+                InitialChunksSent = 0,
+                NextSendFrame = MyAPIGateway.Session == null ? 0L : MyAPIGateway.Session.GameplayFrameCounter + 1L,
+                NextListenerRefreshFrame = MyAPIGateway.Session == null
+                    ? STREAM_LISTENER_REFRESH_FRAMES
+                    : MyAPIGateway.Session.GameplayFrameCounter + STREAM_LISTENER_REFRESH_FRAMES
+            });
+
+            SendOpenStream(open);
+
+            return true;
+        }
+
+        public void HandleStreamControl(PacketMediaStreamControl packet)
+        {
+            if (packet == null)
+                return;
+
+            switch (packet.Intent)
+            {
+                case MediaStreamControlIntent.Invite:
+                    HandleStreamOpen(packet);
+                    break;
+                case MediaStreamControlIntent.Clients:
+                    HandleStreamListeners(packet);
+                    break;
+                case MediaStreamControlIntent.Close:
+                    HandleStreamClose(packet);
+                    break;
+            }
+        }
+
+        void HandleStreamOpen(PacketMediaStreamControl packet)
+        {
+            if (packet == null || packet.ServerStreamId == 0 || packet.BlockEntityId == 0 || packet.SurfaceIndex < 0)
+                return;
+
+            if (!LocalConfigManager.AcceptMediaStreams)
+            {
+                SendStreamControl(new PacketMediaStreamControl { Intent = MediaStreamControlIntent.Refused, ServerStreamId = packet.ServerStreamId });
+                return;
+            }
+
+            var block = MyEntities.GetEntityById(packet.BlockEntityId) as IMyTerminalBlock;
+            if (block == null || block.Closed || block.MarkedForClose || block.CubeGrid == null)
+            {
+                SendStreamControl(new PacketMediaStreamControl { Intent = MediaStreamControlIntent.Refused, ServerStreamId = packet.ServerStreamId });
+                return;
+            }
+
+            var gridLogic = LcdModSessionComponent.GetOrCreateGridLogic(block.CubeGrid);
+            if (gridLogic == null)
+            {
+                SendStreamControl(new PacketMediaStreamControl { Intent = MediaStreamControlIntent.Refused, ServerStreamId = packet.ServerStreamId });
+                return;
+            }
+
+            var player = gridLogic.GetMediaPlayer(packet.BlockEntityId, packet.SurfaceIndex);
+            if (player == null)
+            {
+                SendStreamControl(new PacketMediaStreamControl { Intent = MediaStreamControlIntent.Refused, ServerStreamId = packet.ServerStreamId });
+                return;
+            }
+
+            player.StartStream(block, packet.Title);
+            gridLogic.MarkRequested();
+            _incomingMediaStreams[packet.ServerStreamId] = new IncomingMediaStream
+            {
+                ServerStreamId = packet.ServerStreamId,
+                BlockEntityId = packet.BlockEntityId,
+                SurfaceIndex = packet.SurfaceIndex,
+                Player = player
+            };
+            SendStreamControl(new PacketMediaStreamControl { Intent = MediaStreamControlIntent.Accepted, ServerStreamId = packet.ServerStreamId });
+        }
+
+        public void HandleStreamChunk(PacketSyncMediaStreamChunk packet)
+        {
+            if (packet == null || packet.ServerStreamId == 0 || packet.PcmBytes == null || packet.PcmBytes.Length == 0)
+                return;
+
+            IncomingMediaStream stream;
+            if (!_incomingMediaStreams.TryGetValue(packet.ServerStreamId, out stream))
+                return;
+
+            var player = stream.Player ?? ResolveStreamPlayer(stream);
+            if (player == null)
+                return;
+
+            player.AppendStreamChunk(packet.PcmBytes, packet.DurationTicks / (double)TimeSpan.TicksPerSecond);
+            if (packet.IsFinal)
+            {
+                player.EndStream();
+                _incomingMediaStreams.Remove(packet.ServerStreamId);
+            }
+        }
+
+        void HandleStreamClose(PacketMediaStreamControl packet)
+        {
+            if (packet == null || packet.ServerStreamId == 0)
+                return;
+
+            IncomingMediaStream stream;
+            if (!_incomingMediaStreams.TryGetValue(packet.ServerStreamId, out stream))
+                return;
+
+            if (packet.StopPlayback && stream.Player != null)
+                stream.Player.ResetPlaybackEngine();
+            else if (stream.Player != null)
+                stream.Player.EndStream();
+
+            _incomingMediaStreams.Remove(packet.ServerStreamId);
+        }
+
+        void HandleStreamListeners(PacketMediaStreamControl packet)
+        {
+            if (packet == null || packet.ClientStreamId == 0)
+                return;
+
+            for (var i = 0; i < _outgoingMediaStreams.Count; i++)
+            {
+                var stream = _outgoingMediaStreams[i];
+                if (stream == null || stream.ClientStreamId != packet.ClientStreamId)
+                    continue;
+
+                stream.ServerStreamId = packet.ServerStreamId;
+                stream.ListenerSteamIds = packet.ListenerSteamIds ?? new ulong[0];
+                return;
+            }
+        }
+
         public void Update()
         {
+            UpdateOutgoingMediaStreams();
+
             for (var i = _activeEmitters.Count - 1; i >= 0; i--)
             {
                 var emitter = _activeEmitters[i];
@@ -121,7 +328,119 @@ namespace LcdMod.Client.Audio
             _activeEmitters.Clear();
             _recentPlaybackIds.Clear();
             _recentPlaybackIdOrder.Clear();
+            _incomingMediaStreams.Clear();
+            _outgoingMediaStreams.Clear();
             _library = null;
+        }
+
+        void UpdateOutgoingMediaStreams()
+        {
+            if (_outgoingMediaStreams.Count == 0)
+                return;
+
+            var frame = MyAPIGateway.Session == null ? 0L : MyAPIGateway.Session.GameplayFrameCounter;
+            for (var i = _outgoingMediaStreams.Count - 1; i >= 0; i--)
+            {
+                var stream = _outgoingMediaStreams[i];
+                if (stream == null || stream.PcmBytes == null || stream.Offset >= stream.PcmBytes.Length)
+                {
+                    if (stream != null && !stream.CloseSent)
+                        SendStreamControl(new PacketMediaStreamControl { Intent = MediaStreamControlIntent.Close, ClientStreamId = stream.ClientStreamId, StopPlayback = false });
+                    _outgoingMediaStreams.RemoveAt(i);
+                    continue;
+                }
+
+                if (frame >= stream.NextListenerRefreshFrame)
+                {
+                    SendStreamControl(new PacketMediaStreamControl { Intent = MediaStreamControlIntent.Refresh, ClientStreamId = stream.ClientStreamId });
+                    stream.NextListenerRefreshFrame = frame + STREAM_LISTENER_REFRESH_FRAMES;
+                }
+
+                if (stream.ListenerSteamIds == null || stream.ListenerSteamIds.Length == 0)
+                    continue;
+
+                if (stream.InitialChunksSent >= STREAM_INITIAL_CHUNKS && frame < stream.NextSendFrame)
+                    continue;
+
+                SendNextStreamChunk(stream, frame);
+            }
+        }
+
+        void SendNextStreamChunk(OutgoingMediaStream stream, long frame)
+        {
+            var remaining = stream.PcmBytes.Length - stream.Offset;
+            var size = Math.Min(STREAM_CHUNK_PCM_BYTES, remaining);
+            size -= size % STREAM_BLOCK_ALIGN;
+            if (size <= 0)
+            {
+                stream.Offset = stream.PcmBytes.Length;
+                return;
+            }
+
+            var chunk = new byte[size];
+            Buffer.BlockCopy(stream.PcmBytes, stream.Offset, chunk, 0, size);
+            stream.Offset += size;
+
+            var isFinal = stream.Offset >= stream.PcmBytes.Length;
+            SendStreamChunk(new PacketRequestMediaStreamChunk
+            {
+                ClientStreamId = stream.ClientStreamId,
+                ChunkIndex = stream.ChunkIndex++,
+                PcmBytes = chunk,
+                DurationTicks = TimeSpan.FromSeconds(size / (double)(STREAM_SAMPLE_RATE * STREAM_BLOCK_ALIGN)).Ticks,
+                IsFinal = isFinal
+            });
+
+            if (stream.InitialChunksSent < STREAM_INITIAL_CHUNKS)
+                stream.InitialChunksSent++;
+
+            stream.NextSendFrame = frame + 60L;
+            if (isFinal)
+            {
+                stream.CloseSent = true;
+                SendStreamControl(new PacketMediaStreamControl { Intent = MediaStreamControlIntent.Close, ClientStreamId = stream.ClientStreamId, StopPlayback = false });
+            }
+        }
+
+        GridMediaPlayer ResolveStreamPlayer(IncomingMediaStream stream)
+        {
+            if (stream == null)
+                return null;
+
+            var block = MyEntities.GetEntityById(stream.BlockEntityId) as IMyTerminalBlock;
+            if (block == null || block.CubeGrid == null)
+                return null;
+
+            var gridLogic = LcdModSessionComponent.GetOrCreateGridLogic(block.CubeGrid);
+            if (gridLogic == null)
+                return null;
+
+            stream.Player = gridLogic.GetMediaPlayer(stream.BlockEntityId, stream.SurfaceIndex);
+            return stream.Player;
+        }
+
+        static void SendOpenStream(PacketMediaStreamControl packet)
+        {
+            if (MyAPIGateway.Session != null && MyAPIGateway.Session.IsServer && LcdModSessionComponent.Server != null)
+                LcdModSessionComponent.Server.HandleLocalMediaStreamControl(packet);
+            else
+                LcdModSessionComponent.NetworkManager.TransmitToServer(packet, sendToAllPlayers: false, sendToSender: false);
+        }
+
+        static void SendStreamChunk(PacketRequestMediaStreamChunk packet)
+        {
+            if (MyAPIGateway.Session != null && MyAPIGateway.Session.IsServer && LcdModSessionComponent.Server != null)
+                LcdModSessionComponent.Server.HandleLocalRequestMediaStreamChunk(packet);
+            else
+                LcdModSessionComponent.NetworkManager.TransmitToServer(packet, sendToAllPlayers: false, sendToSender: false);
+        }
+
+        static void SendStreamControl(PacketMediaStreamControl packet)
+        {
+            if (MyAPIGateway.Session != null && MyAPIGateway.Session.IsServer && LcdModSessionComponent.Server != null)
+                LcdModSessionComponent.Server.HandleLocalMediaStreamControl(packet);
+            else
+                LcdModSessionComponent.NetworkManager.TransmitToServer(packet, sendToAllPlayers: false, sendToSender: false);
         }
 
         AudioAssetMetadata ResolveAsset(string query)
@@ -245,4 +564,3 @@ namespace LcdMod.Client.Audio
         }
     }
 }
-#endif

@@ -1,4 +1,3 @@
-#if EXPERIMENTAL
 namespace LcdMod.Client.Audio
 {
     internal sealed class PcmWaveData
@@ -28,4 +27,3 @@ namespace LcdMod.Client.Audio
         }
     }
 }
-#endif

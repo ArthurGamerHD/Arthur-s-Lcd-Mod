@@ -1,4 +1,3 @@
-#if EXPERIMENTAL
 using System;
 using System.Text;
 
@@ -342,7 +341,7 @@ namespace LcdMod.Common.Audio
             public static float[] ResampleLinear(float[] source, int sourceSampleRate, int targetSampleRate)
             {
                 if (source == null || source.Length == 0)
-                    return new float[0];
+                    return Array.Empty<float>();
 
                 if (sourceSampleRate == targetSampleRate)
                     return source;
@@ -375,7 +374,7 @@ namespace LcdMod.Common.Audio
             public static byte[] ToPcm16LittleEndian(float[] samples)
             {
                 if (samples == null)
-                    return new byte[0];
+                    return Array.Empty<byte>();
 
                 var bytes = new byte[samples.Length * 2];
 
@@ -575,4 +574,3 @@ namespace LcdMod.Common.Audio
         }
     }
 }
-#endif

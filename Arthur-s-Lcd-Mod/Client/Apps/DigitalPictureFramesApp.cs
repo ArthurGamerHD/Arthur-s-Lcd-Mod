@@ -145,13 +145,13 @@ namespace LcdMod.Client.Apps
         static string[] GetConfiguredSprites(DigitalPictureFramesConfigComponent config)
         {
             if (config == null)
-                return new string[0];
+                return Array.Empty<string>();
 
             if (config.SelectedSprites != null && config.SelectedSprites.Length > 0)
                 return config.SelectedSprites.Where(s => !string.IsNullOrWhiteSpace(s)).ToArray();
 
             return string.IsNullOrWhiteSpace(config.BackgroundSprite)
-                ? new string[0]
+                ? Array.Empty<string>()
                 : new[] { config.BackgroundSprite };
         }
 
@@ -441,7 +441,7 @@ namespace LcdMod.Client.Apps
         void OnSpriteSelected(string spriteName)
         {
             OnSpritesSelected(string.IsNullOrWhiteSpace(spriteName)
-                ? new string[0]
+                ? Array.Empty<string>()
                 : new[] { spriteName });
         }
 
@@ -468,7 +468,7 @@ namespace LcdMod.Client.Apps
         static string[] NormalizeSpriteSelection(IEnumerable<string> spriteNames)
         {
             if (spriteNames == null)
-                return new string[0];
+                return Array.Empty<string>();
 
             var selectedSprites = new List<string>();
             var seenSprites = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

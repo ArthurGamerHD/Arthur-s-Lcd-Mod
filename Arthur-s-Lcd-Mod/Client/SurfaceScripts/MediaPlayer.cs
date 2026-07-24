@@ -1,4 +1,3 @@
-#if EXPERIMENTAL
 using System.Collections.Generic;
 using LcdMod.Client.Apps;
 using LcdMod.Client.Apps.Abstract;
@@ -12,7 +11,7 @@ using VRage.Game.GUI.TextPanel;
 using VRageMath;
 using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
 using IMyFunctionalBlock = Sandbox.ModAPI.IMyFunctionalBlock;
-using IMyTextSurface = Sandbox.ModAPI.IMyTextSurface;
+using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 
 namespace LcdMod.Client.SurfaceScripts
 {
@@ -22,8 +21,9 @@ namespace LcdMod.Client.SurfaceScripts
     {
         static bool lazyInitialized;
         public const string ID = "MediaPlayer";
-        public const string TITLE = "Media Player";
+        public const string TITLE = Constants.MOD_PREFIX + "MediaPlayer_Title";
 
+        static readonly object AppCacheLock = new object();
         static readonly Dictionary<MediaPlayerAppKey, CachedMediaPlayerApp> AppCache =
             new Dictionary<MediaPlayerAppKey, CachedMediaPlayerApp>();
 
@@ -37,13 +37,16 @@ namespace LcdMod.Client.SurfaceScripts
         protected override bool RendersInteractiveEntriesInGetSprites => true;
 
         public MediaPlayerSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
-            : base(surface, block, size)
+            : base((Sandbox.ModAPI.IMyTextSurface)(object)surface, block, size)
         {
-            if (lazyInitialized) 
-                return;
+            lock (AppCacheLock)
+            {
+                if (lazyInitialized)
+                    return;
 
-            LcdModClientComponent.OnUpdateBeforeSimulation += UpdateDetachedApps;
-            lazyInitialized = true;
+                LcdModClientComponent.OnUpdateBeforeSimulation += UpdateDetachedApps;
+                lazyInitialized = true;
+            }
         }
 
         protected override void LayoutChanged()
@@ -65,7 +68,6 @@ namespace LcdMod.Client.SurfaceScripts
             base.SafeRun();
 
             var cached = GetOrCreateCachedApp();
-            cached.Attach(this);
             _app = cached.App;
 
             UpdateViewBox();
@@ -75,21 +77,49 @@ namespace LcdMod.Client.SurfaceScripts
 
         public static void UpdateDetachedApps()
         {
-            if (AppCache.Count == 0)
-                return;
+            var detached = new List<CachedMediaPlayerApp>();
+            var stale = new List<CachedMediaPlayerApp>();
 
-            var stale = new List<MediaPlayerAppKey>();
-            foreach (var pair in AppCache)
+            lock (AppCacheLock)
             {
-                var cached = pair.Value;
-                if (cached == null || cached.Attached)
+                if (AppCache.Count == 0)
+                    return;
+
+                var staleKeys = new List<MediaPlayerAppKey>();
+                foreach (var pair in AppCache)
+                {
+                    var cached = pair.Value;
+                    if (cached == null || cached.Attached)
+                        continue;
+
+                    if (cached.IsParentBlockUnavailable())
+                    {
+                        staleKeys.Add(pair.Key);
+                        stale.Add(cached);
+                    }
+                    else
+                    {
+                        detached.Add(cached);
+                    }
+                }
+
+                for (int i = 0; i < staleKeys.Count; i++)
+                    AppCache.Remove(staleKeys[i]);
+            }
+
+            for (int i = 0; i < stale.Count; i++)
+                stale[i].Close();
+
+            for (int i = 0; i < detached.Count; i++)
+            {
+                var cached = detached[i];
+                if (cached == null)
                     continue;
 
-                if (cached.IsParentBlockUnavailable())
+                lock (AppCacheLock)
                 {
-                    cached.Close();
-                    stale.Add(pair.Key);
-                    continue;
+                    if (cached.Attached)
+                        continue;
                 }
 
                 try
@@ -101,9 +131,6 @@ namespace LcdMod.Client.SurfaceScripts
                     ErrorHandlerHelper.LogError(error, cached.Host);
                 }
             }
-
-            for (int i = 0; i < stale.Count; i++)
-                AppCache.Remove(stale[i]);
         }
 
         public override List<MySprite> GetSprites()
@@ -121,31 +148,42 @@ namespace LcdMod.Client.SurfaceScripts
         CachedMediaPlayerApp GetOrCreateCachedApp()
         {
             var key = GetCacheKey();
-            CachedMediaPlayerApp cached;
-            if (!AppCache.TryGetValue(key, out cached) || cached == null)
+            lock (AppCacheLock)
             {
-                cached = new CachedMediaPlayerApp(this, new MediaPlayerApp(this));
-                AppCache[key] = cached;
-            }
+                CachedMediaPlayerApp cached;
+                if (!AppCache.TryGetValue(key, out cached) || cached == null)
+                {
+                    cached = new CachedMediaPlayerApp(this, new MediaPlayerApp(this));
+                    AppCache[key] = cached;
+                }
+                else
+                {
+                    cached.Attach(this);
+                }
 
-            return cached;
+                return cached;
+            }
         }
 
         void ReleaseCachedApp(bool close)
         {
-            CachedMediaPlayerApp cached;
             var key = GetCacheKey();
-            if (!AppCache.TryGetValue(key, out cached) || cached == null || !ReferenceEquals(cached.App, _app))
-                return;
+            CachedMediaPlayerApp cached = null;
+
+            lock (AppCacheLock)
+            {
+                if (!AppCache.TryGetValue(key, out cached) || cached == null || !ReferenceEquals(cached.App, _app))
+                    return;
+
+                if (close)
+                    AppCache.Remove(key);
+                else
+                    cached.Detach(this);
+            }
 
             if (close)
             {
                 cached.Close();
-                AppCache.Remove(key);
-            }
-            else
-            {
-                cached.Detach(this);
             }
         }
 
@@ -156,7 +194,7 @@ namespace LcdMod.Client.SurfaceScripts
 
         int ResolveCacheSurfaceIndex()
         {
-            return Config == null ? RotationOrSurfaceIndex : Config.SurfaceIndex;
+            return SurfaceIndex;
         }
 
         bool IsParentBlockUnavailable()
@@ -240,4 +278,3 @@ namespace LcdMod.Client.SurfaceScripts
         }
     }
 }
-#endif

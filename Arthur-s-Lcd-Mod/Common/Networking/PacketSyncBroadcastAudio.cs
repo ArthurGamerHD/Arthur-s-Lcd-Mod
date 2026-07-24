@@ -1,4 +1,4 @@
-#if EXPERIMENTAL
+using System;
 using LcdMod.Common.Audio;
 using ProtoBuf;
 
@@ -17,8 +17,7 @@ namespace LcdMod.Common.Networking
         public PacketSyncBroadcastAudio()
         {
             Metadata = new AudioBroadcastMetadata();
-            RuntimeWaveBytes = new byte[0];
+            RuntimeWaveBytes = Array.Empty<byte>();
         }
     }
 }
-#endif

@@ -881,15 +881,15 @@ Click [color:#0000FF]""[loc]BlockPropertyTitle_TextPanelShowTextPanel[/loc]""[/c
         [TerminalControlSwitch(
             8700,
             "MediaPlayerVisualizer",
-            "Media Player Visualizer",
+            MOD_PREFIX + "MediaPlayer_Visualizer",
             Slot = APP)]
         public bool VisualizerEnabled { get; set; } = true;
         [ProtoMember(5)] public bool ShuffleEnabled { get; set; }
         [ProtoMember(6)] public int RepeatModeInternal { get; set; }
         [ProtoMember(7)] public string SelectedAudioSource { get; set; } = string.Empty;
         [ProtoMember(8)] public string SelectedPickerFullPath { get; set; } = string.Empty;
-        [ProtoMember(9)] public string[] PlaylistPaths { get; set; } = new string[0];
-        [ProtoMember(10)] public string[] PlaylistTitles { get; set; } = new string[0];
+        [ProtoMember(9)] public string[] PlaylistPaths { get; set; } = Array.Empty<string>();
+        [ProtoMember(10)] public string[] PlaylistTitles { get; set; } = Array.Empty<string>();
         [ProtoMember(11)] public int PlaylistIndex { get; set; } = -1;
         [ProtoMember(12)] public int ShuffleSeed { get; set; }
 

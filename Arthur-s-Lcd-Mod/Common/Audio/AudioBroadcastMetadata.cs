@@ -1,4 +1,3 @@
-#if EXPERIMENTAL
 using ProtoBuf;
 
 namespace LcdMod.Common.Audio
@@ -15,4 +14,3 @@ namespace LcdMod.Common.Audio
         [ProtoMember(7)] public string RuntimeSha256;
     }
 }
-#endif

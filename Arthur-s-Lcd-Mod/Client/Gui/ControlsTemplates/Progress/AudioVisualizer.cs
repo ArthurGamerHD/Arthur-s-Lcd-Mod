@@ -1,4 +1,3 @@
-#if EXPERIMENTAL
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Extensions;
@@ -120,4 +119,3 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Progress
         }
     }
 }
-#endif

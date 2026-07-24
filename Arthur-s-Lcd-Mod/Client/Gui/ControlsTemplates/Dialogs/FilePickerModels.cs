@@ -1,4 +1,3 @@
-#if EXPERIMENTAL
 using System;
 using System.Collections.Generic;
 
@@ -71,6 +70,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         public string Text { get; set; }
         public Action Clicked { get; set; }
         public bool Enabled { get; set; } = true;
+        public bool UseErrorTextStyle { get; set; }
     }
 
     abstract class FilePickerEntryModel
@@ -93,4 +93,3 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         public FileModel File;
     }
 }
-#endif

@@ -1,4 +1,3 @@
-#if EXPERIMENTAL
 using System;
 
 namespace LcdMod.Client.Audio.Adpcm
@@ -361,4 +360,3 @@ namespace LcdMod.Client.Audio.Adpcm
         }
     }
 }
-#endif

@@ -1,4 +1,3 @@
-#if EXPERIMENTAL
 using System;
 
 namespace LcdMod.Common.Audio
@@ -31,4 +30,3 @@ namespace LcdMod.Common.Audio
         public Exception Error;
     }
 }
-#endif

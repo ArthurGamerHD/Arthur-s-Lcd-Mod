@@ -1,3 +1,4 @@
+using System;
 using ProtoBuf;
 using LcdMod.Common.Helpers;
 
@@ -17,7 +18,7 @@ namespace LcdMod.Common.Networking
         // ReSharper disable once UnusedMember.Global
         public PacketSyncTexture()
         {
-            Data = new byte[0];
+            Data = Array.Empty<byte>();
             Metadata = new TextureTransferHelper.TextureMetadata();
         }
 
@@ -26,7 +27,7 @@ namespace LcdMod.Common.Networking
             OwnerSteamId = ownerSteamId;
             TextureName = textureName;
             RequesterSteamId = requesterSteamId;
-            Data = data ?? new byte[0];
+            Data = data ?? Array.Empty<byte>();
             Metadata = metadata ?? new TextureTransferHelper.TextureMetadata
             {
                 OwnerSteamId = ownerSteamId,

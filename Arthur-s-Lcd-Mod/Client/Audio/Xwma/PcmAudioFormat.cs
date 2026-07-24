@@ -1,4 +1,3 @@
-#if EXPERIMENTAL
 namespace LcdMod.Client.Audio.Xwma
 {
     internal static class PcmAudioFormat
@@ -13,4 +12,3 @@ namespace LcdMod.Client.Audio.Xwma
         public const int MAXIMUM_PCM_BYTES = 32 * 1024 * 1024;
     }
 }
-#endif

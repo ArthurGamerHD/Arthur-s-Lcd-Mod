@@ -149,7 +149,7 @@ namespace LcdMod.Client.Helpers
         static string[] NormalizeArgs(string[] args)
         {
             if (args == null || args.Length == 0)
-                return new string[0];
+                return Array.Empty<string>();
 
             var tokens = new List<string>();
             for (int i = 0; i < args.Length; i++)
