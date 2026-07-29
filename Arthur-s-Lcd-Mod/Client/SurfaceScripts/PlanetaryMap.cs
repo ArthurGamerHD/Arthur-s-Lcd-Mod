@@ -20,6 +20,8 @@ namespace LcdMod.Client.SurfaceScripts
         public const string ID = "LcdMod_PlanetaryMap";
         public const string TITLE = "Planetary Map";
 
+        public override bool AsyncRender => true;
+        
         readonly List<Control> _emptyInteractive = new List<Control>();
         PlanetaryMapApp _app;
         Matrix _rotationTransform = Matrix.Identity;

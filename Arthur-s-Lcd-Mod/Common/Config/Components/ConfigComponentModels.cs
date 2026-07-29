@@ -37,6 +37,7 @@ namespace LcdMod.Common.Config.Components
     [ProtoInclude(120, typeof(VisibleTreeDebugConfigComponent))]
     [ProtoInclude(121, typeof(TabContainerConfigComponent))]
     [ProtoInclude(122, typeof(MediaPlayerConfigComponent))]
+    [ProtoInclude(123, typeof(PlanetaryMapConfigComponent))]
     [XmlInclude(typeof(GeneralConfigComponent))]
     [XmlInclude(typeof(ColorConfigComponent))]
     [XmlInclude(typeof(InteractiveConfigComponent))]
@@ -59,6 +60,7 @@ namespace LcdMod.Common.Config.Components
     [XmlInclude(typeof(VisibleTreeDebugConfigComponent))]
     [XmlInclude(typeof(TabContainerConfigComponent))]
     [XmlInclude(typeof(MediaPlayerConfigComponent))]
+    [XmlInclude(typeof(PlanetaryMapConfigComponent))]
     public abstract class ConfigComponent
     {
         public abstract ConfigComponent Clone();
@@ -618,6 +620,36 @@ namespace LcdMod.Common.Config.Components
     {
         [ProtoMember(1)] public float FoV { get; set; } = 70f;
         public override ConfigComponent Clone() => new StarMapConfigComponent { FoV = FoV };
+    }
+
+    [ProtoContract]
+    public sealed class PlanetaryMapConfigComponent : ConfigComponent
+    {
+        [ProtoMember(1), DefaultValue(true)] public bool NorthUp { get; set; } = true;
+        [ProtoMember(2), DefaultValue(true)] public bool FollowCamera { get; set; } = true;
+        [ProtoMember(3)] public float OrbitYawRadians { get; set; }
+        [ProtoMember(4)] public float OrbitPitchRadians { get; set; }
+        [ProtoMember(5)] public bool HasStaticCameraPosition { get; set; }
+        [ProtoMember(6)] public double StaticCameraPositionX { get; set; }
+        [ProtoMember(7)] public double StaticCameraPositionY { get; set; }
+        [ProtoMember(8)] public double StaticCameraPositionZ { get; set; }
+        [ProtoMember(9), DefaultValue(16f)] public float Zoom { get; set; } = 16f;
+
+        public override ConfigComponent Clone()
+        {
+            return new PlanetaryMapConfigComponent
+            {
+                NorthUp = NorthUp,
+                FollowCamera = FollowCamera,
+                OrbitYawRadians = OrbitYawRadians,
+                OrbitPitchRadians = OrbitPitchRadians,
+                HasStaticCameraPosition = HasStaticCameraPosition,
+                StaticCameraPositionX = StaticCameraPositionX,
+                StaticCameraPositionY = StaticCameraPositionY,
+                StaticCameraPositionZ = StaticCameraPositionZ,
+                Zoom = Zoom
+            };
+        }
     }
 
     [ProtoContract]

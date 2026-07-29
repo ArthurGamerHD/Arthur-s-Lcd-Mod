@@ -60,6 +60,7 @@ namespace LcdMod.Client.Apps
         readonly List<MySprite> _groundSprites = new List<MySprite>();
         readonly List<MySprite> _groundOcclusionSprites = new List<MySprite>();
         readonly List<MySprite> _ringSprites = new List<MySprite>();
+        readonly List<MySprite> _frontRingSprites = new List<MySprite>();
         readonly List<MySprite> _overlaySprites = new List<MySprite>();
         readonly List<MySprite> _sprites = new List<MySprite>();
         readonly List<Control> _children = new List<Control>();
@@ -74,22 +75,31 @@ namespace LcdMod.Client.Apps
             public long RetryFrame;
         }
 
+        sealed class PlanetInteractiveState
+        {
+            public PlanetProjection Projection;
+            public PlanetGlobeControl Entry;
+            public InteractiveTooltip StaticTooltip;
+            public bool UsedThisFrame;
+        }
+
         readonly Dictionary<long, PlanetCubemapState> _planetCubemapStates =
             new Dictionary<long, PlanetCubemapState>();
         readonly Dictionary<long, PlanetGlobeControl> _planetGlobeControls =
             new Dictionary<long, PlanetGlobeControl>();
         bool _closed;
 
-        // Static orbit rings are intentionally refreshed only by the periodic
-        // Update/Run path. Mouse-triggered camera renders keep the last completed
-        // ring sprites while planet controls continue to reproject immediately.
+        // Static orbit rings are cached between renders and rebuilt whenever the
+        // static camera, layout, or map data invalidates them.
         bool _staticOrbitCacheValid;
-        bool _allowStaticOrbitRingCacheRebuild;
         readonly List<MySprite> _cachedStaticBaseSprites = new List<MySprite>();
         readonly List<MySprite> _cachedStaticTitleSprites = new List<MySprite>();
         readonly List<MySprite> _cachedStaticRingSprites = new List<MySprite>();
-        readonly List<Control> _cachedStaticInteractiveEntries = new List<Control>();
+        readonly List<MySprite> _cachedStaticFrontRingSprites = new List<MySprite>();
         readonly List<Control> _cachedInteractiveEntries = new List<Control>();
+        readonly Dictionary<long, PlanetInteractiveState> _planetInteractiveStates =
+            new Dictionary<long, PlanetInteractiveState>();
+        readonly List<long> _removedPlanetInteractiveIds = new List<long>();
 
         bool _dynamicMapCacheValid;
         MatrixD _cachedDynamicWorldMatrix;
@@ -168,6 +178,7 @@ namespace LcdMod.Client.Apps
 
         struct StaticRingProjection
         {
+            public long OwnerPlanetId;
             public Vector3D CenterWorld;
             public Vector3D AxisXWorld;
             public Vector3D AxisYWorld;
@@ -303,9 +314,6 @@ namespace LcdMod.Client.Apps
 
         void ClearCachedInteractiveEntries()
         {
-            for (int i = _cachedInteractiveEntries.Count - 1; i >= 0; i--)
-                RemoveLogicalChild(_cachedInteractiveEntries[i]);
-
             _cachedInteractiveEntries.Clear();
         }
 
@@ -314,14 +322,57 @@ namespace LcdMod.Client.Apps
             _staticOrbitCacheValid = false;
             _cachedStaticBaseSprites.Clear();
             _cachedStaticTitleSprites.Clear();
+            _cachedStaticFrontRingSprites.Clear();
         }
 
-        void ClearCachedStaticInteractiveEntries()
+        void BeginPlanetInteractiveFrame()
         {
-            for (int i = _cachedStaticInteractiveEntries.Count - 1; i >= 0; i--)
-                RemoveLogicalChild(_cachedStaticInteractiveEntries[i]);
+            foreach (PlanetInteractiveState state in _planetInteractiveStates.Values)
+                state.UsedThisFrame = false;
+        }
 
-            _cachedStaticInteractiveEntries.Clear();
+        void FinalizePlanetInteractiveFrame()
+        {
+            Dictionary<long, MyPlanet> planets = PlanetHelper.PlanetsById;
+            _removedPlanetInteractiveIds.Clear();
+            foreach (KeyValuePair<long, PlanetInteractiveState> pair in _planetInteractiveStates)
+            {
+                PlanetInteractiveState state = pair.Value;
+                if (!state.UsedThisFrame)
+                    state.Entry.SetVisible(false);
+
+                if (planets == null)
+                    continue;
+
+                MyPlanet planet;
+                if (!planets.TryGetValue(pair.Key, out planet) ||
+                    planet == null ||
+                    planet.MarkedForClose)
+                {
+                    _removedPlanetInteractiveIds.Add(pair.Key);
+                }
+            }
+
+            bool invalidatedDynamicCache = false;
+            for (int i = 0; i < _removedPlanetInteractiveIds.Count; i++)
+            {
+                long planetId = _removedPlanetInteractiveIds[i];
+                PlanetInteractiveState state;
+                if (!_planetInteractiveStates.TryGetValue(planetId, out state))
+                    continue;
+
+                if (_cachedInteractiveEntries.Remove(state.Entry))
+                    invalidatedDynamicCache = true;
+
+                RemoveLogicalChild(state.Entry);
+                _planetGlobeControls.Remove(planetId);
+                _planetInteractiveStates.Remove(planetId);
+            }
+
+            if (invalidatedDynamicCache)
+                InvalidateDynamicMapCache();
+
+            _removedPlanetInteractiveIds.Clear();
         }
 
         void InvalidateDynamicMapCache()
@@ -353,11 +404,6 @@ namespace LcdMod.Client.Apps
 
                 LayoutChanged();
             }
-
-            UpdatePlanetTextures();
-            _allowStaticOrbitRingCacheRebuild =
-                GeneralComponent.DisplayMode == (int)DisplayMode.Legacy &&
-                !_staticOrbitCacheValid;
         }
 
         public override void Close()
@@ -373,6 +419,8 @@ namespace LcdMod.Client.Apps
 
             _planetCubemapStates.Clear();
             _planetGlobeControls.Clear();
+            _planetInteractiveStates.Clear();
+            _removedPlanetInteractiveIds.Clear();
             ClearLogicalChildren();
             base.Close();
         }
@@ -388,18 +436,14 @@ namespace LcdMod.Client.Apps
             _groundSprites.Clear();
             _groundOcclusionSprites.Clear();
             _ringSprites.Clear();
+            _frontRingSprites.Clear();
             _overlaySprites.Clear();
             _children.Clear();
+            BeginPlanetInteractiveFrame();
             RequestedCursorType = GetDefaultCursorType();
             _suppressDynamicOverlays = false;
 
             bool staticMode = GeneralComponent.DisplayMode == (int)DisplayMode.Legacy;
-            if (!staticMode)
-            {
-                _allowStaticOrbitRingCacheRebuild = false;
-                ClearCachedStaticInteractiveEntries();
-            }
-
             bool hasPlanets;
 
             if (staticMode && _staticOrbitCacheValid)
@@ -407,7 +451,7 @@ namespace LcdMod.Client.Apps
                 _baseSprites.AddRange(_cachedStaticBaseSprites);
                 _overlaySprites.AddRange(_cachedStaticTitleSprites);
 
-                hasPlanets = DrawPlanetMap(_groundSprites, _groundOcclusionSprites, _ringSprites, _overlaySprites);
+                hasPlanets = DrawPlanetMap(_groundSprites, _groundOcclusionSprites, _ringSprites, _frontRingSprites, _overlaySprites);
             }
             else if (staticMode)
             {
@@ -416,11 +460,11 @@ namespace LcdMod.Client.Apps
                 _cachedStaticTitleSprites.Clear();
                 _cachedStaticTitleSprites.AddRange(_overlaySprites);
 
-                hasPlanets = DrawPlanetMap(_groundSprites, _groundOcclusionSprites, _ringSprites, _overlaySprites);
+                hasPlanets = DrawPlanetMap(_groundSprites, _groundOcclusionSprites, _ringSprites, _frontRingSprites, _overlaySprites);
             }
             else
             {
-                hasPlanets = DrawPlanetMap(_groundSprites, _groundOcclusionSprites, _ringSprites, _overlaySprites);
+                hasPlanets = DrawPlanetMap(_groundSprites, _groundOcclusionSprites, _ringSprites, _frontRingSprites, _overlaySprites);
                 
                 _baseSprites.AddRange(_groundSprites);
             }
@@ -441,12 +485,22 @@ namespace LcdMod.Client.Apps
                 _children.Insert(0, _staticOrbitControl);
             }
 
+            FinalizePlanetInteractiveFrame();
+
             _sprites.Clear();
             _sprites.AddRange(_baseSprites);
             _sprites.AddRange(_ringSprites);
-            _sprites.AddRange(_groundOcclusionSprites);
-            _sprites.AddRange(_overlaySprites);
             return _sprites;
+        }
+
+        public void RenderPostInteractiveSprites(List<MySprite> sprites)
+        {
+            if (sprites == null)
+                return;
+
+            sprites.AddRange(_groundOcclusionSprites);
+            sprites.AddRange(_frontRingSprites);
+            sprites.AddRange(_overlaySprites);
         }
 
         void OnTextureQualityChanged(PlanetTextureQuality quality)
@@ -479,27 +533,6 @@ namespace LcdMod.Client.Apps
             InvalidateDynamicMapCache();
             if (redraw)
                 Host.RenderSprites();
-        }
-
-        /// <summary>
-        /// Resolves cubemap detail and rebuilds the expensive rectangle texture
-        /// cache only from the periodic app Update/Run path. Mouse-triggered
-        /// renders keep using the last completed cache.
-        /// </summary>
-        void UpdatePlanetTextures()
-        {
-            foreach (KeyValuePair<long, PlanetGlobeControl> pair in _planetGlobeControls)
-            {
-                PlanetGlobeControl globe = pair.Value;
-                if (globe == null)
-                    continue;
-
-                int preferredFaceSide = globe.GetPreferredFaceSide();
-                globe.SetCubemap(ResolvePlanetCubemap(
-                    pair.Key,
-                    preferredFaceSide));
-                globe.UpdateRenderCache();
-            }
         }
 
         IMyGravityProviderSystem GetGravityProvider()
@@ -556,6 +589,7 @@ namespace LcdMod.Client.Apps
             List<MySprite> groundSprites,
             List<MySprite> groundOcclusionSprites,
             List<MySprite> ringSprites,
+            List<MySprite> frontRingSprites,
             List<MySprite> overlaySprites)
         {
             var planets = PlanetHelper.PlanetsById;
@@ -565,7 +599,7 @@ namespace LcdMod.Client.Apps
 
             bool staticMode = GeneralComponent.DisplayMode == (int)DisplayMode.Legacy;
             if (staticMode)
-                return DrawStaticOrbitMap(ringSprites, planets);
+                return DrawStaticOrbitMap(ringSprites, frontRingSprites, planets);
 
             if (Block == null)
                 return false;
@@ -807,7 +841,26 @@ namespace LcdMod.Client.Apps
             groundOcclusionSprites.AddRange(_cachedDynamicGroundOcclusionSprites);
             ringSprites.AddRange(_cachedDynamicRingSprites);
             overlaySprites.AddRange(_cachedOverlaySprites);
-            _children.AddRange(_cachedInteractiveEntries);
+            for (int i = 0; i < _cachedInteractiveEntries.Count; i++)
+            {
+                PlanetGlobeControl entry = _cachedInteractiveEntries[i] as PlanetGlobeControl;
+                if (entry == null)
+                    continue;
+
+                long planetId = entry.DataContext is long ? (long)entry.DataContext : 0L;
+                PlanetInteractiveState state;
+                if (planetId == 0L ||
+                    !_planetInteractiveStates.TryGetValue(planetId, out state) ||
+                    !ReferenceEquals(state.Entry, entry))
+                {
+                    continue;
+                }
+
+                UpdatePlanetGlobe(entry, state.Projection);
+                state.UsedThisFrame = true;
+                entry.SetVisible(true);
+                _children.Add(entry);
+            }
             return true;
         }
 
@@ -2258,10 +2311,10 @@ namespace LcdMod.Client.Apps
 
         bool DrawStaticOrbitMap(
             List<MySprite> ringSprites,
+            List<MySprite> frontRingSprites,
             Dictionary<long, MyPlanet> planets)
         {
             ClearCachedInteractiveEntries();
-            ClearCachedStaticInteractiveEntries();
 
             if (planets == null || planets.Count == 0)
                 return false;
@@ -2506,6 +2559,7 @@ namespace LcdMod.Client.Apps
                     axisY = Vector3D.Normalize(axisY);
                     ringProjections.Add(new StaticRingProjection
                     {
+                        OwnerPlanetId = projection.PlanetId,
                         CenterWorld = ringCenter,
                         AxisXWorld = axisX,
                         AxisYWorld = axisY,
@@ -2529,9 +2583,10 @@ namespace LcdMod.Client.Apps
                 return b.RadiusWorld.CompareTo(a.RadiusWorld);
             });
 
-            if (_allowStaticOrbitRingCacheRebuild)
+            if (!_staticOrbitCacheValid)
             {
                 int ringStartIndex = ringSprites.Count;
+                int frontRingStartIndex = frontRingSprites.Count;
                 var ringColor = new Color(
                     ForegroundColor.R,
                     ForegroundColor.G,
@@ -2542,6 +2597,9 @@ namespace LcdMod.Client.Apps
                 {
                     DrawProjectedOrbitRing(
                         ringSprites,
+                        frontRingSprites,
+                        projectedPlanets,
+                        ringProjections[i].OwnerPlanetId,
                         ringProjections[i].CenterWorld,
                         ringProjections[i].AxisXWorld,
                         ringProjections[i].AxisYWorld,
@@ -2561,12 +2619,16 @@ namespace LcdMod.Client.Apps
                 for (int i = ringStartIndex; i < ringSprites.Count; i++)
                     _cachedStaticRingSprites.Add(ringSprites[i]);
 
+                _cachedStaticFrontRingSprites.Clear();
+                for (int i = frontRingStartIndex; i < frontRingSprites.Count; i++)
+                    _cachedStaticFrontRingSprites.Add(frontRingSprites[i]);
+
                 _staticOrbitCacheValid = true;
-                _allowStaticOrbitRingCacheRebuild = false;
             }
             else
             {
                 ringSprites.AddRange(_cachedStaticRingSprites);
+                frontRingSprites.AddRange(_cachedStaticFrontRingSprites);
             }
 
             projectedPlanets.Sort(delegate(PlanetProjection a, PlanetProjection b)
@@ -2587,7 +2649,6 @@ namespace LcdMod.Client.Apps
             _dynamicMapCacheValid = false;
             _cachedDynamicRingSprites.Clear();
             _cachedOverlaySprites.Clear();
-            _cachedStaticInteractiveEntries.AddRange(_children);
             return true;
         }
 
@@ -2691,6 +2752,9 @@ namespace LcdMod.Client.Apps
 
         static void DrawProjectedOrbitRing(
             List<MySprite> sprites,
+            List<MySprite> frontSprites,
+            List<PlanetProjection> planets,
+            long ownerPlanetId,
             Vector3D centerWorld,
             Vector3D axisXWorld,
             Vector3D axisYWorld,
@@ -2729,6 +2793,9 @@ namespace LcdMod.Client.Apps
                 {
                     DrawCameraClippedStaticLine(
                         sprites,
+                        frontSprites,
+                        planets,
+                        ownerPlanetId,
                         previousWorld,
                         previousDepth,
                         pointWorld,
@@ -2750,6 +2817,9 @@ namespace LcdMod.Client.Apps
 
         static void DrawCameraClippedStaticLine(
             List<MySprite> sprites,
+            List<MySprite> frontSprites,
+            List<PlanetProjection> planets,
+            long ownerPlanetId,
             Vector3D startWorld,
             double startDepth,
             Vector3D endWorld,
@@ -2782,9 +2852,15 @@ namespace LcdMod.Client.Apps
                                         (endWorld - startWorld) * intersectionAmount;
 
                 if (startVisible)
+                {
                     endWorld = intersection;
+                    endDepth = STATIC_CAMERA_NEAR_CLIP_DEPTH;
+                }
                 else
+                {
                     startWorld = intersection;
+                    startDepth = STATIC_CAMERA_NEAR_CLIP_DEPTH;
+                }
             }
 
             Vector2 start = ProjectStaticPoint(
@@ -2801,7 +2877,91 @@ namespace LcdMod.Client.Apps
                 worldToPx,
                 screenRight,
                 screenUp);
-            AddLineSprite(sprites, start, end, lineWidth, color);
+            AddDepthSplitStaticLineSprites(
+                sprites,
+                frontSprites,
+                planets,
+                ownerPlanetId,
+                start,
+                startDepth,
+                end,
+                endDepth,
+                lineWidth,
+                color);
+        }
+
+        static void AddDepthSplitStaticLineSprites(
+            List<MySprite> backSprites,
+            List<MySprite> frontSprites,
+            List<PlanetProjection> planets,
+            long ownerPlanetId,
+            Vector2 start,
+            double startDepth,
+            Vector2 end,
+            double endDepth,
+            float lineWidth,
+            Color color)
+        {
+            Vector2 delta = end - start;
+            float length = delta.Length();
+            if (length <= 0.001f)
+                return;
+
+            float maxPartLength = Math.Max(4f, lineWidth * 4f);
+            int parts = Math.Max(1, (int)Math.Ceiling(length / maxPartLength));
+            for (int i = 0; i < parts; i++)
+            {
+                float amount0 = (float)i / parts;
+                float amount1 = (float)(i + 1) / parts;
+                Vector2 partStart = Vector2.Lerp(start, end, amount0);
+                Vector2 partEnd = Vector2.Lerp(start, end, amount1);
+                Vector2 midpoint = Vector2.Lerp(partStart, partEnd, 0.5f);
+                double midpointDepth = startDepth + (endDepth - startDepth) * ((amount0 + amount1) * 0.5d);
+                List<MySprite> target = ShouldDrawStaticRingSegmentInFront(
+                    planets,
+                    ownerPlanetId,
+                    midpoint,
+                    midpointDepth,
+                    lineWidth)
+                    ? frontSprites
+                    : backSprites;
+                AddLineSprite(target, partStart, partEnd, lineWidth, color);
+            }
+        }
+
+        static bool ShouldDrawStaticRingSegmentInFront(
+            List<PlanetProjection> planets,
+            long ownerPlanetId,
+            Vector2 screenPosition,
+            double depth,
+            float lineWidth)
+        {
+            if (planets == null || planets.Count == 0)
+                return false;
+
+            bool overlapsPlanet = false;
+            for (int i = 0; i < planets.Count; i++)
+            {
+                PlanetProjection planet = planets[i];
+                if (ownerPlanetId != 0L && planet.PlanetId == ownerPlanetId)
+                    continue;
+
+                if (planet.CameraDepth <= STATIC_CAMERA_NEAR_CLIP_DEPTH ||
+                    planet.MarkerRadius <= 0f)
+                {
+                    continue;
+                }
+
+                float radius = planet.MarkerRadius + lineWidth * 0.5f;
+                if (Vector2.DistanceSquared(screenPosition, planet.ScreenPos) > radius * radius)
+                    continue;
+
+                overlapsPlanet = true;
+                if (depth >= planet.CameraDepth)
+                    return false;
+            }
+
+            return overlapsPlanet;
         }
 
         static void AddLineSprite(
@@ -3525,53 +3685,41 @@ namespace LcdMod.Client.Apps
 
         void DrawPlanet(PlanetProjection planet)
         {
-            var center = planet.ScreenPos;
-            var radius = planet.MarkerRadius;
-            var entry = AddLogicalChild(new InteractiveCircleEntry(center, radius, CursorType.Hand, planet.PlanetId));
-            if (GeneralComponent.DisplayMode == (int)DisplayMode.Legacy)
+            PlanetInteractiveState state;
+            if (!_planetInteractiveStates.TryGetValue(planet.PlanetId, out state))
             {
-                entry.SetOnClick(OnStaticPlanetClicked);
-                entry.SetTooltip(new InteractiveTooltip(
-                    () => planet.Name,
-                    BuildPlanetInfoLines(planet, false),
-                    () => FormatingHelper.DistanceToString((float)planet.Distance),
-                    GetCursor, TooltipActivationMode.Click, TooltipActivationMode.Click));
+                state = new PlanetInteractiveState();
+                state.Entry = GetPlanetGlobeControl(planet.PlanetId);
+                state.Entry.SetDataContext(planet.PlanetId);
+                state.Entry.SetCursor(CursorType.Hand);
+                state.StaticTooltip = new InteractiveTooltip(
+                    () => state.Projection.Name,
+                    () => BuildPlanetInfoLines(state.Projection, false),
+                    () => FormatingHelper.DistanceToString((float)state.Projection.Distance),
+                    GetCursor,
+                    TooltipActivationMode.Click,
+                    TooltipActivationMode.Click);
+                _planetInteractiveStates[planet.PlanetId] = state;
             }
-            entry.CustomRender = delegate(ControlTemplate renderEntry, List<MySprite> targetSprites)
-            {
-                DrawPlanetVisual(targetSprites, planet, renderEntry);
-                RestoreTextureClip(targetSprites);
-            };
-            _children.Add(entry);
+
+            state.Projection = planet;
+            float diameter = planet.MarkerRadius * 2f;
+            state.Entry.SetRect(new RectangleF(
+                planet.ScreenPos - new Vector2(planet.MarkerRadius),
+                new Vector2(diameter)));
+            UpdatePlanetGlobe(state.Entry, planet);
+
+            bool staticMode = GeneralComponent.DisplayMode == (int)DisplayMode.Legacy;
+            state.Entry.SetOnClick(staticMode ? OnStaticPlanetClicked : (Action<object, object>)null);
+            state.Entry.SetTooltip(staticMode ? state.StaticTooltip : null);
+            state.UsedThisFrame = true;
+            state.Entry.SetVisible(true);
+
+            _children.Add(state.Entry);
         }
 
-        void DrawPlanetVisual(
-            List<MySprite> sprites,
-            PlanetProjection planet,
-            ControlTemplate entry)
+        void UpdatePlanetGlobe(PlanetGlobeControl globe, PlanetProjection planet)
         {
-            var circle = entry as InteractiveCircleEntry;
-            var center = circle != null ? circle.Center : planet.ScreenPos;
-            var radius = circle != null ? circle.Radius : planet.MarkerRadius;
-            float diameter = radius * 2f;
-
-            if (planet.ShouldDisplayInfo)
-            {
-                sprites.Add(new MySprite
-                {
-                    Type = SpriteType.TEXTURE,
-                    Data = "Circle",
-                    Position = center,
-                    Size = new Vector2(diameter + 10 * entry.LayoutScale),
-                    Color = ApplyAlpha(entry.ResolveColor(ThemeResources.SurfaceColor), planet.Visibility),
-                    Alignment = TextAlignment.CENTER
-                });
-            }
-
-            PlanetGlobeControl globe = GetPlanetGlobeControl(planet.PlanetId);
-            globe.SetRect(new RectangleF(
-                center - new Vector2(radius),
-                new Vector2(diameter)));
             globe.SetClipBounds(GetTextureBounds());
             globe.SetProjection(
                 planet.ViewDirectionLocal,
@@ -3580,7 +3728,15 @@ namespace LcdMod.Client.Apps
             globe.SetRotationTransform(Matrix.Identity);
             globe.SetZoom(1f);
             globe.SetColorAlpha(planet.Visibility);
-            globe.Render(sprites);
+            globe.SetCubemap(ResolvePlanetCubemap(
+                planet.PlanetId,
+                globe.GetPreferredFaceSide()));
+            globe.SetSelectionBackdrop(
+                planet.ShouldDisplayInfo,
+                planet.ShouldDisplayInfo
+                    ? ApplyAlpha(globe.ResolveColor(ThemeResources.SurfaceColor), planet.Visibility)
+                    : Color.Transparent,
+                10f);
         }
 
         PlanetGlobeControl GetPlanetGlobeControl(long planetId)
@@ -3852,6 +4008,8 @@ namespace LcdMod.Client.Apps
             _lastFovChangedFrame = GetCurrentGameFrame();
             _lastKnownConfigFov = float.NaN;
             _syncConfigNextRun = true;
+            handled = true;
+            Host.RenderSprites();
         }
 
         void DrawMessage(List<MySprite> sprites, string message, string icon, Color color, float scale = 1f)

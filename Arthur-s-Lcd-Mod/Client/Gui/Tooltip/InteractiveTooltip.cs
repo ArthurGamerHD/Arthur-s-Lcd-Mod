@@ -630,6 +630,16 @@ namespace LcdMod.Client.Gui.Tooltip
         public Vector2 Center { get; private set; }
         public float Radius { get; private set; }
 
+        public void SetCircle(Vector2 center, float radius)
+        {
+            if (Center == center && Math.Abs(Radius - radius) < 0.01)
+                return;
+
+            Center = center;
+            Radius = radius;
+            MarkDirty();
+        }
+
         public override RectangleF Bounds
         {
             get

@@ -1,6 +1,7 @@
 using LcdMod.Common.Config.Components;
 using ProtoBuf;
 using VRage.Game.ModAPI;
+using Generated;
 
 namespace Arthur_s_Lcd_Mod.Tests;
 
@@ -55,5 +56,45 @@ public sealed class ConfigComponentSerializationTests
         Assert.Equal(4, power.GraphWindowIndex);
         Assert.Equal(7, power.PowerHistoryTier);
         Assert.Equal((int)GridLinkTypeEnum.Electrical, power.GridLinkTypeInternal);
+    }
+
+    [Fact]
+    public void PlanetaryMapConfigComponent_RoundTrips_OrientationAndCameraLock()
+    {
+        var surface = new SurfaceConfig
+        {
+            SurfaceIndex = 1,
+            AppTypeId = (int)AppType.PlanetaryMap
+        };
+
+        surface.Set(LcdMod.Common.Helpers.Constants.APP, new PlanetaryMapConfigComponent
+        {
+            NorthUp = false,
+            FollowCamera = false,
+            OrbitYawRadians = 0.75f,
+            OrbitPitchRadians = -0.25f,
+            HasStaticCameraPosition = true,
+            StaticCameraPositionX = 123.5d,
+            StaticCameraPositionY = -456.25d,
+            StaticCameraPositionZ = 789.125d,
+            Zoom = 2.5f
+        });
+
+        using var stream = new MemoryStream();
+        Serializer.Serialize(stream, surface);
+        stream.Position = 0;
+
+        var result = Serializer.Deserialize<SurfaceConfig>(stream);
+        var planetaryMap = result.Get<PlanetaryMapConfigComponent>(LcdMod.Common.Helpers.Constants.APP);
+
+        Assert.False(planetaryMap.NorthUp);
+        Assert.False(planetaryMap.FollowCamera);
+        Assert.Equal(0.75f, planetaryMap.OrbitYawRadians);
+        Assert.Equal(-0.25f, planetaryMap.OrbitPitchRadians);
+        Assert.True(planetaryMap.HasStaticCameraPosition);
+        Assert.Equal(123.5d, planetaryMap.StaticCameraPositionX);
+        Assert.Equal(-456.25d, planetaryMap.StaticCameraPositionY);
+        Assert.Equal(789.125d, planetaryMap.StaticCameraPositionZ);
+        Assert.Equal(2.5f, planetaryMap.Zoom);
     }
 }

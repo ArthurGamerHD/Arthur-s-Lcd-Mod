@@ -74,6 +74,14 @@ namespace LcdMod.Client.Apps
         public BlockSelectionConfigComponent ReadReferenceBlocks() => ReferenceBlocksComponent;
         public BlockSelectionConfigComponent ReadOtherBlocks() => OtherBlocksComponent;
     }
+
+    [LcdApp(7, Name = "PlanetaryMap")]
+    [ConfigComponent(LcdMod.Common.Helpers.Constants.APP, typeof(PlanetaryMapConfigComponent), PropertyName = "PlanetaryMapComponent")]
+    public sealed partial class GeneratedPlanetaryMapApp : App
+    {
+        public GeneratedPlanetaryMapApp(IComponentContainer config) : base(config) { }
+        public PlanetaryMapConfigComponent ReadPlanetaryMap() => PlanetaryMapComponent;
+    }
 }
 
 namespace LcdMod.Client.SurfaceScripts.Abstract

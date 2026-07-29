@@ -33,6 +33,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
         float _colorAlpha = 1f;
         int _maximumRenderResolution;
         Color _loadingColor = new Color(128, 128, 128, 255);
+        Color _selectionBackdropColor = Color.Transparent;
+        bool _selectionBackdropVisible;
+        float _selectionBackdropExtraDiameterPixels;
         bool _renderCacheDirty = true;
         bool _hasRenderCache;
 
@@ -41,59 +44,35 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
         {
         }
 
-        public PlanetColorCubemap Cubemap
-        {
-            get { return _cubemap; }
-        }
+        public PlanetColorCubemap Cubemap => _cubemap;
 
-        public Vector3 ViewDirection
-        {
-            get { return _viewDirection; }
-        }
+        public Vector3 ViewDirection => _viewDirection;
 
-        public Vector3 ScreenRightDirection
-        {
-            get { return _screenRight; }
-        }
+        public Vector3 ScreenRightDirection => _screenRight;
 
-        public Vector3 ScreenUpDirection
-        {
-            get { return _screenUp; }
-        }
+        public Vector3 ScreenUpDirection => _screenUp;
 
-        public Matrix RotationTransform
-        {
-            get { return _rotationTransform; }
-        }
+        public Matrix RotationTransform => _rotationTransform;
 
-        public float Zoom
-        {
-            get { return _zoom; }
-        }
+        public float Zoom => _zoom;
 
-        public float ColorAlpha
-        {
-            get { return _colorAlpha; }
-        }
+        public float ColorAlpha => _colorAlpha;
 
         /// <summary>
         /// Maximum square sampling-grid side used to render the globe. Zero keeps
         /// the previous unrestricted behavior.
         /// </summary>
-        public int MaximumRenderResolution
-        {
-            get { return _maximumRenderResolution; }
-        }
+        public int MaximumRenderResolution => _maximumRenderResolution;
 
-        public RectangleF? ClipBounds
-        {
-            get { return _clipBounds; }
-        }
+        public RectangleF? ClipBounds => _clipBounds;
 
-        public Color LoadingColor
-        {
-            get { return _loadingColor; }
-        }
+        public Color LoadingColor => _loadingColor;
+
+        public bool SelectionBackdropVisible => _selectionBackdropVisible;
+
+        public Color SelectionBackdropColor => _selectionBackdropColor;
+
+        public float SelectionBackdropExtraDiameterPixels => _selectionBackdropExtraDiameterPixels;
 
         public void SetCubemap(PlanetColorCubemap cubemap)
         {
@@ -208,6 +187,22 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
             InvalidateRenderCache();
         }
 
+        public void SetSelectionBackdrop(bool visible, Color color, float extraDiameterPixels)
+        {
+            float nextExtraDiameter = Math.Max(0f, extraDiameterPixels);
+            if (_selectionBackdropVisible == visible &&
+                _selectionBackdropColor.Equals(color) &&
+                Math.Abs(_selectionBackdropExtraDiameterPixels - nextExtraDiameter) <= VALUE_EPSILON)
+            {
+                return;
+            }
+
+            _selectionBackdropVisible = visible;
+            _selectionBackdropColor = color;
+            _selectionBackdropExtraDiameterPixels = nextExtraDiameter;
+            MarkDirty();
+        }
+
         /// <summary>
         /// Returns the lazily requested cubemap face side for the current control
         /// bounds and zoom. SquareSimple can represent one independent native Color
@@ -258,8 +253,30 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
             base.SetRect(bounds);
         }
 
+        protected override bool HitCore(Vector2 point)
+        {
+            if (_colorAlpha <= 0f)
+                return false;
+
+            RectangleF content = GetViewBox();
+            float diameter = Math.Min(content.Width, content.Height) * _zoom;
+            if (diameter <= 0f)
+                return false;
+
+            if (_clipBounds.HasValue && !_clipBounds.Value.Contains(point))
+                return false;
+
+            float radius = diameter * 0.5f;
+            return Vector2.DistanceSquared(point, content.Center) <= radius * radius;
+        }
+
         protected override void RenderDefault(List<MySprite> sprites)
         {
+            AddSelectionBackdrop(sprites);
+
+            if (_renderCacheDirty || !_hasRenderCache)
+                RebuildRenderCache();
+
             if (_hasRenderCache)
             {
                 sprites.AddRange(_cachedSprites);
@@ -269,10 +286,34 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
             AddLoadingSphere(sprites);
         }
 
+        void AddSelectionBackdrop(List<MySprite> sprites)
+        {
+            if (!_selectionBackdropVisible || _selectionBackdropColor.A == 0)
+                return;
+
+            RectangleF content = GetViewBox();
+            if (content.Width <= 0f || content.Height <= 0f)
+                return;
+
+            float displaySide = Math.Min(content.Width, content.Height);
+            float sphereDiameter = displaySide * _zoom;
+            if (sphereDiameter <= 0f)
+                return;
+
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE,
+                Data = CIRCLE_SPRITE,
+                Position = content.Center,
+                Size = new Vector2(sphereDiameter + _selectionBackdropExtraDiameterPixels * LayoutScale),
+                Color = _selectionBackdropColor,
+                Alignment = TextAlignment.CENTER
+            });
+        }
+
         /// <summary>
-        /// Rebuilds the sampled planet texture only from the app's periodic
-        /// Update/Run path. Render calls intentionally reuse the last completed
-        /// sprite cache so high-frequency mouse renders do not resample the globe.
+        /// Prewarms the sampled planet texture cache. Render calls also rebuild
+        /// the cache on demand when projection, bounds, cubemap, or quality changed.
         /// </summary>
         public void UpdateRenderCache()
         {

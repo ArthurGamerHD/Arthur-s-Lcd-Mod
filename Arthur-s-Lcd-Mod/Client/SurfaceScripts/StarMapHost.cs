@@ -32,6 +32,7 @@ namespace LcdMod.Client.SurfaceScripts
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
         protected override bool RendersInteractiveEntriesInGetSprites => true;
         public override IApp App => _app;
+        public override bool AsyncRender => true;
         StarMapApp _app;
 
         public override List<Control> InteractiveList => _app.VisualChildren as List<Control>;
@@ -72,12 +73,13 @@ namespace LcdMod.Client.SurfaceScripts
         {
             var sprites = new List<MySprite>();
             AddBackground(sprites);
-            DrawTitle(sprites);
             if (_app != null)
             {
                 sprites.AddRange(_app.GetSprites());
                 RenderInteractiveEntryVisuals(sprites);
+                _app.RenderPostInteractiveSprites(sprites);
             }
+            DrawTitle(sprites);
             CursorType = _app?.RequestedCursorType ?? CursorType.Default;
             return sprites;
         }

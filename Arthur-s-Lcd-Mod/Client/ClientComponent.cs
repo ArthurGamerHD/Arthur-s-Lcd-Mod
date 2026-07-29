@@ -21,6 +21,7 @@ using LcdMod.Client.Helpers;
 using LcdMod.Client.Terminal;
 using LcdMod.Common.Helpers;
 using LcdMod.Common.Networking;
+using ParallelTasks;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage;
@@ -36,6 +37,9 @@ namespace LcdMod.Client
     {
         public static readonly List<Action> RunNextFrame = new List<Action>();
         static readonly List<Action> RunThisFrame = new List<Action>();
+        
+        public static readonly List<Task> Blocker = new List<Task>();
+        
         sealed class ScheduledOnePerFrameAction
         {
             public Action Action;
@@ -166,6 +170,7 @@ namespace LcdMod.Client
             //TextureHelper.UnloadTextureCache();
             RunNextFrame.Clear();
             RunThisFrame.Clear();
+            Blocker.Clear();
             RunOnePerFrame.Clear();
             OnUpdateBeforeSimulation = null;
         }
@@ -195,6 +200,7 @@ namespace LcdMod.Client
                 ErrorHandlerHelper.LogError(e, _session);
             }
         }
+
 
         static void RunNextFrameActions()
         {
@@ -304,6 +310,19 @@ namespace LcdMod.Client
             {
                 ErrorHandlerHelper.LogError(e, _session);
             }
+            
+            WaitForBlockers();
+        }
+
+        void WaitForBlockers()
+        {
+            foreach (var task in Blocker)
+            {
+                if (task.valid && !task.IsComplete)
+                    task.Wait();
+            }
+            
+            Blocker.Clear();
         }
 
         public void HandleSyncConfig(ReceivedPacketEventArgs args)

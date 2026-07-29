@@ -26,7 +26,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         protected FilterConfigComponent FilterComponent => Config.GetComponent<FilterConfigComponent>();
         protected BlockSelectionConfigComponent BlockSelectionComponent => Config.GetComponent<BlockSelectionConfigComponent>();
         protected ItemSelectionConfigComponent ItemSelectionComponent => Config.GetComponent<ItemSelectionConfigComponent>();
-        protected override SortMethod SortMethod => (SortMethod)FilterComponent.SortMethod;
+        protected virtual SortMethod SortMethod => (SortMethod)FilterComponent.SortMethod;
 
         public static Dictionary<MyItemType, string> SpriteCache =
             new Dictionary<MyItemType, string>();

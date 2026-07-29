@@ -50,15 +50,29 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Camera
 
         public void ResetOrbit()
         {
-            if (Math.Abs(_yawRadians) <= VECTOR_EPSILON &&
-                Math.Abs(_pitchRadians) <= VECTOR_EPSILON)
+            SetOrbit(0f, 0f, true);
+        }
+
+        public bool SetOrbit(float yawRadians, float pitchRadians, bool raiseCameraChanged)
+        {
+            float nextYaw = IsFinite(yawRadians) ? WrapRadians(yawRadians) : 0f;
+            float nextPitch = IsFinite(pitchRadians)
+                ? MathHelper.Clamp(pitchRadians, -MAXIMUM_PITCH_RADIANS, MAXIMUM_PITCH_RADIANS)
+                : 0f;
+
+            if (Math.Abs(nextYaw - _yawRadians) <= VECTOR_EPSILON &&
+                Math.Abs(nextPitch - _pitchRadians) <= VECTOR_EPSILON)
             {
-                return;
+                return false;
             }
 
-            _yawRadians = 0f;
-            _pitchRadians = 0f;
-            RaiseCameraChanged();
+            _yawRadians = nextYaw;
+            _pitchRadians = nextPitch;
+            if (raiseCameraChanged)
+                RaiseCameraChanged();
+            else
+                MarkDirty();
+            return true;
         }
 
         public void BuildProjection(
@@ -179,6 +193,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Camera
                    !float.IsInfinity(value.X) &&
                    !float.IsNaN(value.Y) &&
                    !float.IsInfinity(value.Y);
+        }
+
+        static bool IsFinite(float value)
+        {
+            return !float.IsNaN(value) &&
+                   !float.IsInfinity(value);
         }
     }
 }

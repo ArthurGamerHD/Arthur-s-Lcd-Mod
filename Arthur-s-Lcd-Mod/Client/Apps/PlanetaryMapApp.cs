@@ -11,11 +11,13 @@ using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Modules.Cartography;
 using LcdMod.Client.Terminal.Controls;
+using LcdMod.Common.Config.Components;
 using LcdMod.Common.Config.Generation;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
+using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.Apps
 {
@@ -26,6 +28,7 @@ namespace LcdMod.Client.Apps
     /// visible until its replacement is ready. Only the initial load uses gray.
     /// </summary>
     [LcdApp(29, Name = "PlanetaryMap")]
+    [ConfigComponent(APP, typeof(PlanetaryMapConfigComponent), PropertyName = "PlanetaryMapComponent")]
     public sealed partial class PlanetaryMapApp : App, IApp
     {
         const float MINIMUM_ZOOM = 0.25f;
@@ -44,6 +47,9 @@ namespace LcdMod.Client.Apps
         const float CAMERA_BUTTON_SIZE_PIXELS = 42f;
         const float CAMERA_BUTTON_ICON_RATIO = 0.56f;
         const float CAMERA_BUTTON_SHADOW_RATIO = 0.055f;
+        const float ORBIT_CONFIG_EPSILON = 0.000001f;
+        const float ZOOM_CONFIG_EPSILON = 0.0001f;
+        const double STATIC_CAMERA_CONFIG_EPSILON_METERS = 0.001d;
 
         readonly List<MySprite> _sprites = new List<MySprite>();
         readonly List<MySprite> _cachedShipMarkerSprites = new List<MySprite>();
@@ -71,6 +77,14 @@ namespace LcdMod.Client.Apps
         bool _hasStaticCameraPosition;
         Vector3D _staticCameraPosition;
         bool _suppressOrbitModeChange;
+        bool _syncConfigNextRun;
+        bool _lastKnownConfigNorthUp = true;
+        bool _lastKnownConfigFollowCamera = true;
+        float _lastKnownConfigOrbitYawRadians;
+        float _lastKnownConfigOrbitPitchRadians;
+        float _lastKnownConfigZoom = MAXIMUM_ZOOM;
+        bool _lastKnownConfigHasStaticCameraPosition;
+        Vector3D _lastKnownConfigStaticCameraPosition;
         bool _closed;
 
         public PlanetaryMapApp(IAppHost host)
@@ -117,6 +131,8 @@ namespace LcdMod.Client.Apps
             _children.Add(_orientationButton);
             _children.Add(_followButton);
 
+            ApplyPlanetaryMapConfig(true);
+
             LocalConfigManager.TextureQualityChanged += OnTextureQualityChanged;
             ApplyTextureQuality(LocalConfigManager.TextureQuality, false);
         }
@@ -145,6 +161,9 @@ namespace LcdMod.Client.Apps
 
         public override void Update()
         {
+            ApplyPlanetaryMapConfig(false);
+            SyncConfigIfNeeded();
+
             long frame = GetCurrentFrame();
 
             if (_planet == null ||
@@ -158,12 +177,18 @@ namespace LcdMod.Client.Apps
             UpdatePlanetControl();
             UpdateShipMarkerCache();
             UpdateCubemapDetail(frame);
-            _planetControl.UpdateRenderCache();
         }
 
         public override List<MySprite> GetSprites()
         {
             _sprites.Clear();
+
+            if (_planet != null && !_planet.MarkedForClose)
+            {
+                UpdatePlanetControl();
+                UpdateShipMarkerCache();
+                UpdateCubemapDetail(GetCurrentFrame());
+            }
 
             if (_planet == null)
             {
@@ -203,8 +228,8 @@ namespace LcdMod.Client.Apps
             if (Math.Abs(next - _zoom) <= 0.0001f)
                 return;
 
-            _zoom = next;
-            _planetControl.SetZoom(_zoom);
+            SetZoom(next);
+            PersistPlanetaryMapConfig();
             handled = true;
             Host.RenderSprites();
         }
@@ -335,8 +360,20 @@ namespace LcdMod.Client.Apps
                 };
 
                 PlanetColorCubemap cachedCubemap;
-                if (module.TryGetCachedColorCubemap(request, out cachedCubemap))
+                string cachedFailure;
+                if (module.TryGetCachedColorCubemap(
+                        request,
+                        out cachedCubemap,
+                        out cachedFailure))
                 {
+                    if (cachedFailure != null)
+                    {
+                        _requestedFaceSide = -1;
+                        _retryFaceSide = int.MinValue;
+                        _error = cachedFailure;
+                        return;
+                    }
+
                     _loadedCubemap = cachedCubemap;
                     _planetControl.SetCubemap(cachedCubemap);
                     _requestedFaceSide = -1;
@@ -505,7 +542,11 @@ namespace LcdMod.Client.Apps
                 return;
 
             if (!_suppressOrbitModeChange && _followCamera)
+            {
                 SetFollowCamera(false, false);
+            }
+
+            PersistPlanetaryMapConfig();
 
             UpdatePlanetControl();
             Host.RenderSprites();
@@ -513,9 +554,8 @@ namespace LcdMod.Client.Apps
 
         void OnOrientationButtonClicked(ButtonModel model, object sender)
         {
-            _northUp = !_northUp;
-            _orientationButtonModel.Text = _northUp ? "N" : "Current";
-            _orientationButton.MarkDirty();
+            SetNorthUp(!_northUp);
+            PersistPlanetaryMapConfig();
             UpdatePlanetControl();
             Host.RenderSprites();
         }
@@ -523,8 +563,159 @@ namespace LcdMod.Client.Apps
         void OnFollowButtonClicked(ButtonModel model, object sender)
         {
             SetFollowCamera(!_followCamera, true);
+            PersistPlanetaryMapConfig();
             UpdatePlanetControl();
             Host.RenderSprites();
+        }
+
+        void ApplyPlanetaryMapConfig(bool force)
+        {
+            PlanetaryMapConfigComponent config = PlanetaryMapComponent;
+            Vector3D staticCameraPosition = GetConfigStaticCameraPosition(config);
+            float zoom = ClampZoom(config.Zoom);
+            bool staticCameraChanged =
+                config.HasStaticCameraPosition != _lastKnownConfigHasStaticCameraPosition ||
+                (config.HasStaticCameraPosition &&
+                 !NearlyEqual(staticCameraPosition, _lastKnownConfigStaticCameraPosition));
+
+            if (force || config.NorthUp != _lastKnownConfigNorthUp)
+            {
+                SetNorthUp(config.NorthUp);
+                _lastKnownConfigNorthUp = config.NorthUp;
+            }
+
+            if (force ||
+                !NearlyEqual(config.OrbitYawRadians, _lastKnownConfigOrbitYawRadians) ||
+                !NearlyEqual(config.OrbitPitchRadians, _lastKnownConfigOrbitPitchRadians))
+            {
+                _orbitControl.SetOrbit(
+                    config.OrbitYawRadians,
+                    config.OrbitPitchRadians,
+                    false);
+                _lastKnownConfigOrbitYawRadians = config.OrbitYawRadians;
+                _lastKnownConfigOrbitPitchRadians = config.OrbitPitchRadians;
+            }
+
+            if (force || !NearlyEqualZoom(zoom, _lastKnownConfigZoom))
+            {
+                SetZoom(zoom);
+                _lastKnownConfigZoom = zoom;
+            }
+
+            if (force ||
+                config.FollowCamera != _lastKnownConfigFollowCamera ||
+                staticCameraChanged)
+            {
+                ApplyFollowCameraConfig(config, staticCameraPosition, force);
+                CaptureConfigSnapshot(config);
+            }
+        }
+
+        void PersistPlanetaryMapConfig()
+        {
+            PlanetaryMapConfigComponent config = PlanetaryMapComponent;
+            bool changed = false;
+            float orbitYawRadians = _orbitControl.YawRadians;
+            float orbitPitchRadians = _orbitControl.PitchRadians;
+
+            if (config.NorthUp != _northUp)
+            {
+                config.NorthUp = _northUp;
+                changed = true;
+            }
+
+            if (config.FollowCamera != _followCamera)
+            {
+                config.FollowCamera = _followCamera;
+                changed = true;
+            }
+
+            if (!NearlyEqual(config.OrbitYawRadians, orbitYawRadians))
+            {
+                config.OrbitYawRadians = orbitYawRadians;
+                changed = true;
+            }
+
+            if (!NearlyEqual(config.OrbitPitchRadians, orbitPitchRadians))
+            {
+                config.OrbitPitchRadians = orbitPitchRadians;
+                changed = true;
+            }
+
+            if (!NearlyEqualZoom(config.Zoom, _zoom))
+            {
+                config.Zoom = _zoom;
+                changed = true;
+            }
+
+            if (config.HasStaticCameraPosition != _hasStaticCameraPosition)
+            {
+                config.HasStaticCameraPosition = _hasStaticCameraPosition;
+                changed = true;
+            }
+
+            if (_hasStaticCameraPosition &&
+                !NearlyEqual(GetConfigStaticCameraPosition(config), _staticCameraPosition))
+            {
+                config.StaticCameraPositionX = _staticCameraPosition.X;
+                config.StaticCameraPositionY = _staticCameraPosition.Y;
+                config.StaticCameraPositionZ = _staticCameraPosition.Z;
+                changed = true;
+            }
+
+            CaptureConfigSnapshot(config);
+
+            if (changed)
+                _syncConfigNextRun = true;
+        }
+
+        void SyncConfigIfNeeded()
+        {
+            if (!_syncConfigNextRun)
+                return;
+
+            _syncConfigNextRun = false;
+            if (Host.Block != null && Host.ProviderConfig != null)
+                ConfigManager.Sync(Host.Block, Host.ProviderConfig);
+        }
+
+        void SetNorthUp(bool northUp)
+        {
+            _northUp = northUp;
+            _orientationButtonModel.Text = _northUp ? "N" : "Current";
+            _orientationButton.MarkDirty();
+        }
+
+        void SetZoom(float zoom)
+        {
+            _zoom = ClampZoom(zoom);
+            _planetControl.SetZoom(_zoom);
+        }
+
+        void ApplyFollowCameraConfig(
+            PlanetaryMapConfigComponent config,
+            Vector3D staticCameraPosition,
+            bool force)
+        {
+            if (config.FollowCamera)
+            {
+                SetFollowCamera(true, !force);
+                return;
+            }
+
+            if (config.HasStaticCameraPosition)
+            {
+                _staticCameraPosition = staticCameraPosition;
+                _hasStaticCameraPosition = true;
+            }
+            else
+            {
+                _staticCameraPosition = GetCameraWorldPosition();
+                _hasStaticCameraPosition = true;
+            }
+
+            _followCamera = false;
+            UpdateFollowButtonState();
         }
 
         void SetFollowCamera(bool follow, bool resetOrbitWhenFollowing)
@@ -558,8 +749,56 @@ namespace LcdMod.Client.Apps
                 _followCamera = false;
             }
 
+            UpdateFollowButtonState();
+        }
+
+        void UpdateFollowButtonState()
+        {
             _followButtonModel.Text = _followCamera ? "Lock" : "RotationPlane";
             _followButton.MarkDirty();
+        }
+
+        void CaptureConfigSnapshot(PlanetaryMapConfigComponent config)
+        {
+            _lastKnownConfigNorthUp = config.NorthUp;
+            _lastKnownConfigFollowCamera = config.FollowCamera;
+            _lastKnownConfigOrbitYawRadians = config.OrbitYawRadians;
+            _lastKnownConfigOrbitPitchRadians = config.OrbitPitchRadians;
+            _lastKnownConfigZoom = ClampZoom(config.Zoom);
+            _lastKnownConfigHasStaticCameraPosition = config.HasStaticCameraPosition;
+            _lastKnownConfigStaticCameraPosition = GetConfigStaticCameraPosition(config);
+        }
+
+        static Vector3D GetConfigStaticCameraPosition(PlanetaryMapConfigComponent config)
+        {
+            return new Vector3D(
+                config.StaticCameraPositionX,
+                config.StaticCameraPositionY,
+                config.StaticCameraPositionZ);
+        }
+
+        static bool NearlyEqual(float left, float right)
+        {
+            return Math.Abs(left - right) <= ORBIT_CONFIG_EPSILON;
+        }
+
+        static bool NearlyEqualZoom(float left, float right)
+        {
+            return Math.Abs(left - right) <= ZOOM_CONFIG_EPSILON;
+        }
+
+        static float ClampZoom(float zoom)
+        {
+            if (float.IsNaN(zoom) || float.IsInfinity(zoom))
+                return MAXIMUM_ZOOM;
+
+            return MathHelper.Clamp(zoom, MINIMUM_ZOOM, MAXIMUM_ZOOM);
+        }
+
+        static bool NearlyEqual(Vector3D left, Vector3D right)
+        {
+            return Vector3D.DistanceSquared(left, right) <=
+                   STATIC_CAMERA_CONFIG_EPSILON_METERS * STATIC_CAMERA_CONFIG_EPSILON_METERS;
         }
 
         void RenderCameraControls()

@@ -58,6 +58,8 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         protected string Icon { get; set; }
         public new IMyCubeBlock Block { get; }
 
+        public virtual bool AsyncRender => false;
+
         protected virtual bool ClipToBounds => _registeredProxyOffsets.Count > 0;
 
         protected long WaitForFrame;
@@ -65,8 +67,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         public long LastRunTick { get; private set; } = long.MinValue;
 
         public Vector2 TextureSize => Surface.TextureSize;
-
-        protected virtual SortMethod SortMethod => SortMethod.Amount;
 
         /// <summary>
         /// Relative area of the <see cref="Sandbox.ModAPI.IMyTextSurface.TextureSize"/> That is Visible
@@ -126,6 +126,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         public bool Dirty => _dirty;
         bool _dirty;
         bool _disposed;
+        volatile bool _asyncRenderPending;
         IApp _publishedApp;
 
         public AnimationController Animations { get; private set; }
@@ -1237,7 +1238,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         {
             var currentFrame = MyAPIGateway.Session.GameplayFrameCounter;
 
-            if ((!force && LastRenderFrame == currentFrame) || WaitForFrame > currentFrame || _disposed)
+            if ((!force && LastRenderFrame == currentFrame) || WaitForFrame > currentFrame || _disposed || _asyncRenderPending)
                 return;
             try
             {
@@ -1251,14 +1252,49 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 AddSpriteCountDebug(renderList);
 #endif
 
-                _renderComp.RenderSpritesToTexture(RotationOrSurfaceIndex, renderList, _textureSize, _aspectRatio,
-                    Surface.ScriptBackgroundColor, GetRenderOpacity());
+                if (AsyncRender)
+                {
+                    _asyncBuffer.Clear();
+                    _asyncBuffer.AddRange(renderList);
+                    _asyncRenderPending = true;
+
+                    var surfaceIndex = RotationOrSurfaceIndex;
+                    var backgroundColor = Surface.ScriptBackgroundColor;
+                    var renderOpacity = GetRenderOpacity();
+                    LcdModClientComponent.Blocker.Add(MyAPIGateway.Parallel.Start(() =>
+                    {
+                        try
+                        {
+                            _renderComp.RenderSpritesToTexture(
+                                surfaceIndex, _asyncBuffer, _textureSize, _aspectRatio,
+                                backgroundColor, renderOpacity);
+                        }
+                        finally
+                        {
+                            OnAsyncRendered();
+                        }
+                    }));
+                }
+                else
+                {
+                    _renderComp.RenderSpritesToTexture(RotationOrSurfaceIndex, renderList, _textureSize, _aspectRatio,
+                        Surface.ScriptBackgroundColor, GetRenderOpacity());
+                }
+
             }
             catch (Exception e)
             {
                 OnException(e);
             }
         }
+
+        void OnAsyncRendered()
+        {
+            _asyncBuffer?.Clear();
+            _asyncRenderPending = false;
+        }
+
+        readonly List<MySprite> _asyncBuffer = new List<MySprite>();
 
         byte GetRenderOpacity()
         {

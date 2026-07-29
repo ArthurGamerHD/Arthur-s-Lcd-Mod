@@ -69,6 +69,8 @@ namespace LcdMod.Client.Modules.Cartography
         readonly Queue<PendingJob> _queue = new Queue<PendingJob>();
         readonly Dictionary<ColorCubemapCacheKey, PlanetColorCubemap> _colorCubemapCache =
             new Dictionary<ColorCubemapCacheKey, PlanetColorCubemap>();
+        readonly Dictionary<string, string> _failedPlanetTypeCache =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         PendingJob _running;
         long _nextId;
         bool _unloaded;
@@ -77,10 +79,25 @@ namespace LcdMod.Client.Modules.Cartography
             CartographyRequest request,
             out PlanetColorCubemap cubemap)
         {
+            string failureReason;
+            return TryGetCachedColorCubemap(
+                       request,
+                       out cubemap,
+                       out failureReason) &&
+                   failureReason == null;
+        }
+
+        public bool TryGetCachedColorCubemap(
+            CartographyRequest request,
+            out PlanetColorCubemap cubemap,
+            out string failureReason)
+        {
             cubemap = null;
+            failureReason = null;
             if (request == null || !request.ReturnColorCubemap)
                 return false;
 
+            string planetType = ResolvePlanetType(request);
             ColorCubemapCacheKey key = CreateColorCubemapCacheKey(request);
             lock (_sync)
             {
@@ -108,7 +125,12 @@ namespace LcdMod.Client.Modules.Cartography
                     found = true;
                 }
 
-                return found;
+                if (found)
+                    return true;
+
+                return TryGetFailedPlanetTypeNoLock(
+                    planetType,
+                    out failureReason);
             }
         }
 
@@ -122,8 +144,40 @@ namespace LcdMod.Client.Modules.Cartography
             // Copy caller-owned options and resolve engine-owned entities/definitions
             // on the game thread. The worker receives only module-owned data.
             CartographyRequest workRequest = CopyRequest(request);
-            PlanetDefinitionSnapshot planet = CartographySnapshotBuilder.BuildPlanet(workRequest);
-            FarColorCatalogSnapshot farColors = CartographySnapshotBuilder.BuildFarColors(planet);
+            string requestedPlanetType = ResolvePlanetType(workRequest);
+            string cachedFailure;
+            lock (_sync)
+            {
+                if (_unloaded)
+                    throw new InvalidOperationException("Cartography module is unloaded.");
+
+                TryGetFailedPlanetTypeNoLock(requestedPlanetType, out cachedFailure);
+            }
+
+            PlanetDefinitionSnapshot planet = null;
+            FarColorCatalogSnapshot farColors = null;
+            if (cachedFailure == null)
+            {
+                try
+                {
+                    planet = CartographySnapshotBuilder.BuildPlanet(workRequest);
+                    farColors = CartographySnapshotBuilder.BuildFarColors(planet);
+                }
+                catch (Exception error)
+                {
+                    lock (_sync)
+                    {
+                        if (!_unloaded)
+                        {
+                            StoreFailedPlanetTypeNoLock(
+                                planet != null ? planet.GeneratorSubtype : requestedPlanetType,
+                                error.Message);
+                        }
+                    }
+
+                    throw;
+                }
+            }
 
             PendingJob job;
             lock (_sync)
@@ -140,6 +194,27 @@ namespace LcdMod.Client.Modules.Cartography
                     Cancellation = new CartographyCancellation(),
                     Completed = completed
                 };
+
+                string latestFailure;
+                string resolvedPlanetType = planet != null
+                    ? planet.GeneratorSubtype
+                    : requestedPlanetType;
+                if (cachedFailure != null)
+                {
+                    job.Result = CreateFailedResult(
+                        workRequest,
+                        resolvedPlanetType,
+                        cachedFailure);
+                }
+                else if (TryGetFailedPlanetTypeNoLock(
+                             resolvedPlanetType,
+                             out latestFailure))
+                {
+                    job.Result = CreateFailedResult(
+                        workRequest,
+                        resolvedPlanetType,
+                        latestFailure);
+                }
 
                 _queue.Enqueue(job);
             }
@@ -161,6 +236,70 @@ namespace LcdMod.Client.Modules.Cartography
                 Projection = request.Projection,
                 Layer = request.Layer,
                 MaximumFaceSide = request.MaximumFaceSide
+            };
+        }
+
+        static string ResolvePlanetType(CartographyRequest request)
+        {
+            if (request == null)
+                return null;
+
+            if (!string.IsNullOrWhiteSpace(request.PlanetGeneratorSubtype))
+                return request.PlanetGeneratorSubtype.Trim();
+
+            if (request.PlanetEntityId == 0L)
+                return null;
+
+            Sandbox.Game.Entities.MyPlanet planet;
+            if (!LcdMod.Client.Helpers.PlanetHelper.PlanetsById.TryGetValue(
+                    request.PlanetEntityId,
+                    out planet) ||
+                planet == null ||
+                planet.Generator == null)
+            {
+                return null;
+            }
+
+            return planet.Generator.Id.SubtypeName;
+        }
+
+        bool TryGetFailedPlanetTypeNoLock(
+            string planetType,
+            out string failureReason)
+        {
+            failureReason = null;
+            return !string.IsNullOrWhiteSpace(planetType) &&
+                   _failedPlanetTypeCache.TryGetValue(planetType, out failureReason);
+        }
+
+        void StoreFailedPlanetTypeNoLock(
+            string planetType,
+            string failureReason)
+        {
+            if (string.IsNullOrWhiteSpace(planetType))
+                return;
+
+            _failedPlanetTypeCache[planetType] = string.IsNullOrWhiteSpace(failureReason)
+                ? "Cartography failed for this planet type."
+                : failureReason;
+        }
+
+        static CartographyResult CreateFailedResult(
+            CartographyRequest request,
+            string planetType,
+            string failureReason)
+        {
+            return new CartographyResult
+            {
+                Success = false,
+                Error = string.IsNullOrWhiteSpace(failureReason)
+                    ? "Cartography failed for this planet type."
+                    : failureReason,
+                PlanetEntityId = request == null ? 0L : request.PlanetEntityId,
+                PlanetGeneratorSubtype = planetType ??
+                                         (request == null
+                                             ? null
+                                             : request.PlanetGeneratorSubtype)
             };
         }
 
@@ -254,12 +393,14 @@ namespace LcdMod.Client.Modules.Cartography
                     _queue.Dequeue().Cancellation.Cancel();
 
                 _colorCubemapCache.Clear();
+                _failedPlanetTypeCache.Clear();
             }
         }
 
         void TryStartNext()
         {
             PendingJob job = null;
+            bool alreadyCompleted = false;
             lock (_sync)
             {
                 if (_unloaded || _running != null)
@@ -273,12 +414,36 @@ namespace LcdMod.Client.Modules.Cartography
 
                     job = candidate;
                     _running = candidate;
+                    if (candidate.Result == null)
+                    {
+                        string failureReason;
+                        string planetType = candidate.Planet != null
+                            ? candidate.Planet.GeneratorSubtype
+                            : ResolvePlanetType(candidate.Request);
+                        if (TryGetFailedPlanetTypeNoLock(
+                                planetType,
+                                out failureReason))
+                        {
+                            candidate.Result = CreateFailedResult(
+                                candidate.Request,
+                                planetType,
+                                failureReason);
+                        }
+                    }
+
+                    alreadyCompleted = candidate.Result != null;
                     break;
                 }
             }
 
             if (job == null)
                 return;
+
+            if (alreadyCompleted)
+            {
+                Complete(job);
+                return;
+            }
 
             MyAPIGateway.Parallel.Start(
                 delegate { Execute(job); },
@@ -355,6 +520,17 @@ namespace LcdMod.Client.Modules.Cartography
                     StoreColorCubemap(
                         CreateColorCubemapCacheKey(job.Request),
                         job.Result.ColorCubemap);
+                }
+                else if (!_unloaded &&
+                         job.Result != null &&
+                         !job.Result.Success &&
+                         !job.Result.Cancelled)
+                {
+                    StoreFailedPlanetTypeNoLock(
+                        job.Planet != null
+                            ? job.Planet.GeneratorSubtype
+                            : ResolvePlanetType(job.Request),
+                        job.Result.Error);
                 }
 
                 allowCallback = !_unloaded;

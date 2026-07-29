@@ -34,6 +34,21 @@ public sealed class AppSchemaRegistryTests
     }
 
     [Fact]
+    public void PlanetaryMapSchema_AddsMapStateComponent()
+    {
+        var surface = AppSchemaRegistry.CreateSurface(AppType.PlanetaryMap, 0);
+
+        var config = surface.Get<PlanetaryMapConfigComponent>(LcdMod.Common.Helpers.Constants.APP);
+
+        Assert.True(config.NorthUp);
+        Assert.True(config.FollowCamera);
+        Assert.Equal(0f, config.OrbitYawRadians);
+        Assert.Equal(0f, config.OrbitPitchRadians);
+        Assert.Equal(16f, config.Zoom);
+        Assert.False(config.HasStaticCameraPosition);
+    }
+
+    [Fact]
     public void ChangeApp_CopiesOnlyExactSlotAndTypeMatches()
     {
         var surface = AppSchemaRegistry.CreateSurface(AppType.Projector, 0);
