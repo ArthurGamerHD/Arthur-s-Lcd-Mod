@@ -25,6 +25,20 @@ public sealed class MinimalZipTests
     }
 
     [Fact]
+    public void WriteBytes_CreatesTextFileReadableByZipDependency()
+    {
+        byte[] archive = MinimalZip.WriteBytes(new[]
+        {
+            new MinimalZip.Entry("hello.txt", Encoding.UTF8.GetBytes(HelloWorld))
+        });
+
+        var entries = ReadWithSharpZipLib(archive);
+
+        Assert.Single(entries);
+        Assert.Equal(HelloWorld, Encoding.UTF8.GetString(entries["hello.txt"]));
+    }
+
+    [Fact]
     public void AddEntry_AddsTextFileToExistingArchive()
     {
         using var archive = CreateArchive(
@@ -192,7 +206,12 @@ public sealed class MinimalZipTests
 
     static Dictionary<string, byte[]> ReadWithSharpZipLib(MemoryStream archive)
     {
-        using var zip = new ZipFile(new MemoryStream(archive.ToArray()));
+        return ReadWithSharpZipLib(archive.ToArray());
+    }
+
+    static Dictionary<string, byte[]> ReadWithSharpZipLib(byte[] archiveBytes)
+    {
+        using var zip = new ZipFile(new MemoryStream(archiveBytes));
         var entries = new Dictionary<string, byte[]>(StringComparer.Ordinal);
 
         foreach (ZipEntry entry in zip)

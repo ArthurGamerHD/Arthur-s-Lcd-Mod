@@ -10,6 +10,7 @@ namespace LcdMod.Client.Config
             CompletedFtueTips = new HashSet<string>(System.StringComparer.Ordinal);
             RenderOtherUserTextures = true;
             AcceptMediaStreams = true;
+            TextureQuality = PlanetTextureQuality.Ultra;
         }
 
         public bool AdvancedTweekables { get; set; }
@@ -20,6 +21,7 @@ namespace LcdMod.Client.Config
         public bool VisibleClip { get; set; }
         public bool UseLegacyLocalTextureStorage { get; set; }
         public bool AcceptMediaStreams { get; set; }
+        public PlanetTextureQuality TextureQuality { get; set; }
 
         public HashSet<string> CompletedFtueTips { get; set; }
 

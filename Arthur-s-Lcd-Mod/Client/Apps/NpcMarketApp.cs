@@ -76,7 +76,6 @@ namespace LcdMod.Client.Apps
         bool _hasMaxDistance;
         double _lastMaxDistanceMeters;
         int _rowsRevision;
-        Guid _lastTextureIconCacheRevision;
         bool _contentSpritesDirty = true;
         bool _footerSpritesDirty = true;
         bool _pagesConfigurationDirty = true;

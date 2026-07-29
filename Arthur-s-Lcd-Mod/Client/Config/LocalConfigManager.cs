@@ -15,6 +15,10 @@ namespace LcdMod.Client.Config
         public static bool RenderOtherUserTextures => Config == null || Config.RenderOtherUserTextures;
         public static bool UseLegacyLocalTextureStorage => Config != null && Config.UseLegacyLocalTextureStorage;
         public static bool AcceptMediaStreams => Config == null || Config.AcceptMediaStreams;
+        public static PlanetTextureQuality TextureQuality => PlanetTextureQualitySettings.Normalize(
+            Config?.TextureQuality ?? PlanetTextureQuality.High);
+
+        public static event Action<PlanetTextureQuality> TextureQualityChanged;
         
 #if DEBUG
         public static bool DebugInteractive => Config != null && Config.DebugInteractive;
@@ -52,6 +56,8 @@ namespace LcdMod.Client.Config
                 ? new HashSet<string>(StringComparer.OrdinalIgnoreCase)
                 : new HashSet<string>(Config.LocalTextures, StringComparer.OrdinalIgnoreCase);
 
+            Config.TextureQuality = PlanetTextureQualitySettings.Normalize(Config.TextureQuality);
+
             TextureTransferHelper.UseLegacyLocalTextureStorage = UseLegacyLocalTextureStorage;
 
             if (UseLegacyLocalTextureStorage)
@@ -84,6 +90,32 @@ namespace LcdMod.Client.Config
         {
             using (var writer = MyAPIGateway.Utilities.WriteFileInLocalStorage(Constants.CONFIG_FILE, typeof(LocalConfigManager)))
                 writer.Write(MyAPIGateway.Utilities.SerializeToXML(Config ?? new LcdModLocalConfig()));
+        }
+
+        public static void SetTextureQuality(PlanetTextureQuality quality)
+        {
+            quality = PlanetTextureQualitySettings.Normalize(quality);
+            if (Config == null)
+                Config = new LcdModLocalConfig();
+
+            PlanetTextureQuality previous = TextureQuality;
+            if (previous == quality)
+                return;
+
+            Config.TextureQuality = quality;
+            try
+            {
+                Save();
+            }
+            catch
+            {
+                Config.TextureQuality = previous;
+                throw;
+            }
+
+            Action<PlanetTextureQuality> changed = TextureQualityChanged;
+            if (changed != null)
+                changed(quality);
         }
 
 

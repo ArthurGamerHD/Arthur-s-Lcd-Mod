@@ -28,6 +28,7 @@ namespace LcdMod.Client.Modules.EyeTracking
         const double MAX_TRACKING_DISTANCE_SQ = MAX_TRACKING_DISTANCE_METERS * MAX_TRACKING_DISTANCE_METERS;
         const long ACTIVE_SURFACE_TIMEOUT_FRAMES = 30;
         const float MIN_DRAG_DELTA_PIXELS = 0.001f;
+        const float PRESERVED_CLICK_DRAG_THRESHOLD_PIXELS = 3f;
 
         readonly HashSet<IEyeTracking> _modules = new HashSet<IEyeTracking>();
         readonly List<IEyeTracking> _pendingModules = new List<IEyeTracking>();
@@ -40,7 +41,12 @@ namespace LcdMod.Client.Modules.EyeTracking
         ControlTemplate _draggingControl;
         IEyeTracking _draggingEntity;
         Vector2 _lastDragPosition;
+        Vector2 _pendingDragDelta;
+        bool _draggingSecondary;
+        bool _draggingMoved;
+        bool _draggingPreservesPrimaryClick;
         bool _suppressPrimaryReleaseClick;
+        bool _suppressSecondaryReleaseClick;
         bool _primaryWasPressed;
         bool _secondaryWasPressed;
 
@@ -251,7 +257,7 @@ namespace LcdMod.Client.Modules.EyeTracking
 
             if (primaryStarted)
             {
-                if (!TryBeginDrag(lookingScreen ?? eyeTrackingEntity))
+                if (!TryBeginDrag(lookingScreen ?? eyeTrackingEntity, false))
                 {
                     if (hoveredClickable != null && hoveredClickable.ClickOnPress)
                     {
@@ -266,22 +272,39 @@ namespace LcdMod.Client.Modules.EyeTracking
                 }
                 else
                 {
-                    _suppressPrimaryReleaseClick = true;
-                    SetPressedClickable(null);
+                    if (_draggingPreservesPrimaryClick)
+                    {
+                        SetPressedClickable(hoveredClickable);
+                    }
+                    else
+                    {
+                        _suppressPrimaryReleaseClick = true;
+                        SetPressedClickable(null);
+                    }
                 }
             }
 
             if (secondaryStarted)
             {
-                SetPressedClickable(hoveredClickable);
+                if (!TryBeginDrag(lookingScreen ?? eyeTrackingEntity, true))
+                {
+                    SetPressedClickable(hoveredClickable);
+                }
+                else
+                {
+                    _suppressSecondaryReleaseClick = true;
+                    SetPressedClickable(null);
+                }
             }
 
-            if (primaryPressed && _draggingControl != null)
+            bool activeDragPressed = _draggingSecondary ? secondaryPressed : primaryPressed;
+            if (activeDragPressed && _draggingControl != null)
             {
                 if (!ReferenceEquals(lookingScreen, _draggingEntity))
                 {
+                    bool suppressClick = !_draggingPreservesPrimaryClick || _draggingMoved;
                     EndActiveDrag();
-                    finishedDrag = true;
+                    finishedDrag = suppressClick;
                 }
                 else
                 {
@@ -289,8 +312,9 @@ namespace LcdMod.Client.Modules.EyeTracking
 
                     if (!TryGetHitTestCursorPosition(_draggingEntity, out currentPosition))
                     {
+                        bool suppressClick = !_draggingPreservesPrimaryClick || _draggingMoved;
                         EndActiveDrag();
-                        finishedDrag = true;
+                        finishedDrag = suppressClick;
                     }
                     else
                     {
@@ -299,26 +323,55 @@ namespace LcdMod.Client.Modules.EyeTracking
 
                         if (!IsValidVector(delta))
                         {
+                            bool suppressClick = !_draggingPreservesPrimaryClick || _draggingMoved;
                             EndActiveDrag();
-                            finishedDrag = true;
+                            finishedDrag = suppressClick;
                         }
-                        else if (Math.Abs(delta.X) > MIN_DRAG_DELTA_PIXELS || Math.Abs(delta.Y) > MIN_DRAG_DELTA_PIXELS)
+                        else
                         {
-                            _draggingControl.Drag(_draggingEntity, delta);
+                            _pendingDragDelta += delta;
+                            float dragThreshold = _draggingPreservesPrimaryClick && !_draggingMoved
+                                ? PRESERVED_CLICK_DRAG_THRESHOLD_PIXELS
+                                : MIN_DRAG_DELTA_PIXELS;
+                            bool exceededThreshold =
+                                Math.Abs(_pendingDragDelta.X) > dragThreshold ||
+                                Math.Abs(_pendingDragDelta.Y) > dragThreshold;
+
+                            if (exceededThreshold)
+                            {
+                                Vector2 dragDelta = _pendingDragDelta;
+                                _pendingDragDelta = Vector2.Zero;
+
+                                if (_draggingControl.Drag(_draggingEntity, dragDelta, _draggingSecondary))
+                                {
+                                    _draggingMoved = true;
+
+                                    if (_draggingPreservesPrimaryClick)
+                                    {
+                                        _suppressPrimaryReleaseClick = true;
+                                        SetPressedClickable(null);
+                                    }
+                                }
+                            }
                         }
                     }
                 }
             }
 
-            if (primaryReleased && _draggingControl != null)
+            bool activeDragReleased = _draggingControl != null &&
+                                      (_draggingSecondary ? secondaryReleased : primaryReleased);
+            if (activeDragReleased)
             {
+                bool suppressClick = !_draggingPreservesPrimaryClick || _draggingMoved;
                 EndActiveDrag();
-                finishedDrag = true;
+                finishedDrag = suppressClick;
             }
 
             if (primaryReleased || secondaryReleased)
             {
-                bool suppressReleaseClick = finishedDrag || primaryReleased && _suppressPrimaryReleaseClick;
+                bool suppressReleaseClick = finishedDrag ||
+                                            primaryReleased && _suppressPrimaryReleaseClick ||
+                                            secondaryReleased && _suppressSecondaryReleaseClick;
                 var hoveredDataContext = hoveredClickable != null ? hoveredClickable.DataContext ?? hoveredClickable : null;
 
                 try
@@ -389,6 +442,9 @@ namespace LcdMod.Client.Modules.EyeTracking
 
                 if (primaryReleased)
                     _suppressPrimaryReleaseClick = false;
+
+                if (secondaryReleased)
+                    _suppressSecondaryReleaseClick = false;
             }
 
             if (!hasInputTarget)
@@ -400,6 +456,9 @@ namespace LcdMod.Client.Modules.EyeTracking
 
                 if (!primaryPressed)
                     _suppressPrimaryReleaseClick = false;
+
+                if (!secondaryPressed)
+                    _suppressSecondaryReleaseClick = false;
             }
 
             _primaryWasPressed = primaryPressed;
@@ -498,20 +557,28 @@ namespace LcdMod.Client.Modules.EyeTracking
                 lookingScreen.MouseScroll(delta);
         }
 
-        bool TryBeginDrag(IEyeTracking screen)
+        bool TryBeginDrag(IEyeTracking screen, bool secondary)
         {
+            if (_draggingControl != null)
+                return false;
+
             ControlTemplate draggable;
             Vector2 position;
 
-            if (!TryGetHoveredDraggable(screen, out draggable) || !TryGetHitTestCursorPosition(screen, out position))
+            if (!TryGetHoveredDraggable(screen, secondary, out draggable) ||
+                !TryGetHitTestCursorPosition(screen, out position))
                 return false;
 
-            if (!draggable.BeginDrag(screen))
+            if (!draggable.BeginDrag(screen, secondary))
                 return false;
 
             _draggingControl = draggable;
             _draggingEntity = screen;
             _lastDragPosition = position;
+            _pendingDragDelta = Vector2.Zero;
+            _draggingSecondary = secondary;
+            _draggingMoved = false;
+            _draggingPreservesPrimaryClick = !secondary && draggable.PreservePrimaryClickUntilDragged;
             return true;
         }
 
@@ -523,6 +590,10 @@ namespace LcdMod.Client.Modules.EyeTracking
             _draggingControl = null;
             _draggingEntity = null;
             _lastDragPosition = default(Vector2);
+            _pendingDragDelta = Vector2.Zero;
+            _draggingSecondary = false;
+            _draggingMoved = false;
+            _draggingPreservesPrimaryClick = false;
         }
 
         void HandleClickOnPress(ControlTemplate clickedControl, IEyeTracking eyeTrackingEntity)
@@ -637,7 +708,10 @@ namespace LcdMod.Client.Modules.EyeTracking
             return false;
         }
 
-        static bool TryGetHoveredDraggable(IEyeTracking screen, out ControlTemplate draggable)
+        static bool TryGetHoveredDraggable(
+            IEyeTracking screen,
+            bool secondary,
+            out ControlTemplate draggable)
         {
             draggable = null;
 
@@ -662,7 +736,7 @@ namespace LcdMod.Client.Modules.EyeTracking
             {
                 var entry = list[i] as ControlTemplate;
 
-                if (entry != null && entry.TryResolveDraggable(position, out draggable))
+                if (entry != null && entry.TryResolveDraggable(position, secondary, out draggable))
                     return true;
             }
 

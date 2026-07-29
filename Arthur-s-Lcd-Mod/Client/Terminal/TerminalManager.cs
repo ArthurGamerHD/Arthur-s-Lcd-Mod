@@ -110,6 +110,7 @@ namespace LcdMod.Client.Terminal
             AddRegistration(registrations, 3200, new SliderRenderScale());
 
             AddRegistration(registrations, 3300, new ComboboxDisplayMode());
+            AddRegistration(registrations, 3350, new ComboboxPlanetTextureQuality());
             AddRegistration(registrations, 3400, new ComboboxReferenceMode());
             AddRegistration(registrations, 3500, new ComboboxGraphWindow());
             AddRegistration(registrations, 3600, new ListboxReferenceBlockSelection());

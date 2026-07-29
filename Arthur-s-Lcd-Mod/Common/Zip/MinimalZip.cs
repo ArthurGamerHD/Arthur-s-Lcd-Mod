@@ -102,6 +102,129 @@ namespace LcdMod.Common.Zip
             return EncodeDosDate(DateTime.UtcNow);
         }
 
+        public static byte[] WriteBytes(IEnumerable<Entry> entries)
+        {
+            if (entries == null)
+                throw new ArgumentNullException(nameof(entries));
+
+            var source = NormalizeEntries(entries);
+
+            if (source.Count > ushort.MaxValue)
+                throw new NotSupportedException("ZIP64 is required.");
+
+            var directory = new List<DirectoryEntry>(source.Count);
+            long archiveSize = 0;
+
+            for (int i = 0; i < source.Count; i++)
+            {
+                Entry sourceEntry = source[i];
+                byte[] nameBytes = Utf8.GetBytes(sourceEntry.Name);
+
+                if (nameBytes.Length > ushort.MaxValue)
+                    throw new NotSupportedException("Entry name is too long.");
+
+                uint localOffset = ToUInt32(
+                    archiveSize,
+                    "Archive exceeds the non-ZIP64 size limit.");
+
+                uint size = (uint)sourceEntry.Data.Length;
+                uint crc = CalculateCrc32(sourceEntry.Data);
+
+                directory.Add(new DirectoryEntry
+                {
+                    Name = sourceEntry.Name,
+                    NameBytes = nameBytes,
+                    Crc = crc,
+                    Size = size,
+                    LocalOffset = localOffset,
+                    Flags = UTF8_FLAG,
+                    DosTime = sourceEntry.DosTime,
+                    DosDate = sourceEntry.DosDate
+                });
+
+                archiveSize = checked(archiveSize + 30L + nameBytes.Length + sourceEntry.Data.Length);
+            }
+
+            long centralStart = archiveSize;
+            uint centralOffset = ToUInt32(
+                centralStart,
+                "Archive exceeds the non-ZIP64 size limit.");
+
+            for (int i = 0; i < directory.Count; i++)
+                archiveSize = checked(archiveSize + 46L + directory[i].NameBytes.Length);
+
+            uint centralSize = ToUInt32(
+                archiveSize - centralStart,
+                "Central directory exceeds the non-ZIP64 size limit.");
+
+            archiveSize = checked(archiveSize + 22L);
+
+            if (archiveSize > int.MaxValue)
+            {
+                throw new NotSupportedException(
+                    "This byte[] API does not support archives over 2 GiB.");
+            }
+
+            byte[] output = new byte[(int)archiveSize];
+            int offset = 0;
+
+            for (int i = 0; i < source.Count; i++)
+            {
+                Entry sourceEntry = source[i];
+                DirectoryEntry entry = directory[i];
+
+                WriteUInt32LittleEndian(output, ref offset, LOCAL_SIGNATURE);
+                WriteUInt16LittleEndian(output, ref offset, 20); // Version needed: 2.0
+                WriteUInt16LittleEndian(output, ref offset, UTF8_FLAG);
+                WriteUInt16LittleEndian(output, ref offset, STORED_METHOD);
+                WriteUInt16LittleEndian(output, ref offset, entry.DosTime);
+                WriteUInt16LittleEndian(output, ref offset, entry.DosDate);
+                WriteUInt32LittleEndian(output, ref offset, entry.Crc);
+                WriteUInt32LittleEndian(output, ref offset, entry.Size);
+                WriteUInt32LittleEndian(output, ref offset, entry.Size);
+                WriteUInt16LittleEndian(output, ref offset, entry.NameBytes.Length);
+                WriteUInt16LittleEndian(output, ref offset, 0); // Extra-field length
+
+                CopyBytes(entry.NameBytes, output, ref offset);
+                CopyBytes(sourceEntry.Data, output, ref offset);
+            }
+
+            for (int i = 0; i < directory.Count; i++)
+            {
+                DirectoryEntry entry = directory[i];
+
+                WriteUInt32LittleEndian(output, ref offset, CENTRAL_SIGNATURE);
+                WriteUInt16LittleEndian(output, ref offset, 20); // Made by: MS-DOS, 2.0
+                WriteUInt16LittleEndian(output, ref offset, 20); // Version needed: 2.0
+                WriteUInt16LittleEndian(output, ref offset, entry.Flags);
+                WriteUInt16LittleEndian(output, ref offset, STORED_METHOD);
+                WriteUInt16LittleEndian(output, ref offset, entry.DosTime);
+                WriteUInt16LittleEndian(output, ref offset, entry.DosDate);
+                WriteUInt32LittleEndian(output, ref offset, entry.Crc);
+                WriteUInt32LittleEndian(output, ref offset, entry.Size);
+                WriteUInt32LittleEndian(output, ref offset, entry.Size);
+                WriteUInt16LittleEndian(output, ref offset, entry.NameBytes.Length);
+                WriteUInt16LittleEndian(output, ref offset, 0); // Extra-field length
+                WriteUInt16LittleEndian(output, ref offset, 0); // File-comment length
+                WriteUInt16LittleEndian(output, ref offset, 0); // Starting disk
+                WriteUInt16LittleEndian(output, ref offset, 0); // Internal attributes
+                WriteUInt32LittleEndian(output, ref offset, 0); // External attributes
+                WriteUInt32LittleEndian(output, ref offset, entry.LocalOffset);
+                CopyBytes(entry.NameBytes, output, ref offset);
+            }
+
+            WriteUInt32LittleEndian(output, ref offset, END_SIGNATURE);
+            WriteUInt16LittleEndian(output, ref offset, 0); // This disk
+            WriteUInt16LittleEndian(output, ref offset, 0); // Central-directory disk
+            WriteUInt16LittleEndian(output, ref offset, directory.Count);
+            WriteUInt16LittleEndian(output, ref offset, directory.Count);
+            WriteUInt32LittleEndian(output, ref offset, centralSize);
+            WriteUInt32LittleEndian(output, ref offset, centralOffset);
+            WriteUInt16LittleEndian(output, ref offset, 0); // ZIP-comment length
+
+            return output;
+        }
+
         private static ushort EncodeDosDate(DateTime dateTime)
         {
             DateTime local = ToLocalDateTime(dateTime);
@@ -722,20 +845,27 @@ namespace LcdMod.Common.Zip
 
         private static uint CalculateCrc32(byte[] data)
         {
-            uint crc = 0xFFFFFFFFu;
+            return LcdMod.Common.Zip.Crc32.Compute(data);
+        }
 
-            foreach (byte value in data)
-            {
-                crc ^= value;
+        static void WriteUInt16LittleEndian(byte[] output, ref int offset, int value)
+        {
+            output[offset++] = (byte)value;
+            output[offset++] = (byte)(value >> 8);
+        }
 
-                for (int bit = 0; bit < 8; bit++)
-                {
-                    crc = (crc >> 1) ^
-                          ((crc & 1) != 0 ? 0xEDB88320u : 0u);
-                }
-            }
+        static void WriteUInt32LittleEndian(byte[] output, ref int offset, uint value)
+        {
+            output[offset++] = (byte)value;
+            output[offset++] = (byte)(value >> 8);
+            output[offset++] = (byte)(value >> 16);
+            output[offset++] = (byte)(value >> 24);
+        }
 
-            return ~crc;
+        static void CopyBytes(byte[] source, byte[] output, ref int offset)
+        {
+            Buffer.BlockCopy(source, 0, output, offset, source.Length);
+            offset += source.Length;
         }
 
         private static bool BytesEqual(byte[] left, byte[] right)

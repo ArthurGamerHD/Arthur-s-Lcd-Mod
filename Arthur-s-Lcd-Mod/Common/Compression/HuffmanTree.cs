@@ -20,6 +20,11 @@ namespace LcdMod.Common.Compression
 
         readonly Node[] _nodes;
 
+        HuffmanTree()
+        {
+            _nodes = new Node[0];
+        }
+
         public HuffmanTree(
             uint[] codes,
             byte[] bitCounts,
@@ -88,8 +93,21 @@ namespace LcdMod.Common.Compression
             _nodes = nodes.ToArray();
         }
 
+        public bool IsEmpty
+        {
+            get { return _nodes.Length == 0; }
+        }
+
+        internal static HuffmanTree<TSymbol> CreateEmpty()
+        {
+            return new HuffmanTree<TSymbol>();
+        }
+
         public TSymbol Decode(IHuffmanBitReader bits)
         {
+            if (IsEmpty)
+                throw new InvalidDataException("Attempted to decode an empty Huffman tree.");
+
             if (bits == null)
                 throw new InvalidDataException("Missing Huffman bit reader.");
 
@@ -121,6 +139,85 @@ namespace LcdMod.Common.Compression
                 symbols[i] = i;
 
             return new HuffmanTree<int>(codes, bitCounts, symbols);
+        }
+
+        public static HuffmanTree<int> CreateCanonicalIndexed(
+            int[] bitCounts,
+            int maxBitCount = 32,
+            bool allowEmpty = false)
+        {
+            if (bitCounts == null)
+                throw new InvalidDataException("Missing Huffman code lengths.");
+
+            if (maxBitCount <= 0 || maxBitCount > 32)
+                throw new InvalidDataException("Invalid Huffman maximum code length.");
+
+            int[] counts = new int[maxBitCount + 1];
+            int symbolCount = 0;
+            int maxObservedBits = 0;
+
+            for (int i = 0; i < bitCounts.Length; i++)
+            {
+                int bitCount = bitCounts[i];
+                if (bitCount < 0 || bitCount > maxBitCount)
+                    throw new InvalidDataException("Invalid Huffman code length.");
+
+                if (bitCount == 0)
+                    continue;
+
+                counts[bitCount]++;
+                symbolCount++;
+                if (bitCount > maxObservedBits)
+                    maxObservedBits = bitCount;
+            }
+
+            if (symbolCount == 0)
+            {
+                if (!allowEmpty)
+                    throw new InvalidDataException("Empty Huffman tree.");
+
+                return HuffmanTree<int>.CreateEmpty();
+            }
+
+            long codesRemaining = 1;
+            for (int bits = 1; bits <= maxObservedBits; bits++)
+            {
+                codesRemaining = (codesRemaining << 1) - counts[bits];
+                if (codesRemaining < 0)
+                    throw new InvalidDataException("Oversubscribed Huffman tree.");
+            }
+
+            ulong[] nextCodes = new ulong[maxBitCount + 1];
+            ulong code = 0;
+
+            for (int bits = 1; bits <= maxObservedBits; bits++)
+            {
+                code = (code + (ulong)counts[bits - 1]) << 1;
+                nextCodes[bits] = code;
+            }
+
+            uint[] codes = new uint[symbolCount];
+            byte[] canonicalBitCounts = new byte[symbolCount];
+            int[] symbols = new int[symbolCount];
+            int entry = 0;
+
+            for (int symbol = 0; symbol < bitCounts.Length; symbol++)
+            {
+                int bitCount = bitCounts[symbol];
+                if (bitCount == 0)
+                    continue;
+
+                ulong nextCode = nextCodes[bitCount]++;
+                if (nextCode > uint.MaxValue)
+                    throw new InvalidDataException("A Huffman code is too large.");
+
+                codes[entry] = (uint)nextCode;
+                canonicalBitCounts[entry] = (byte)bitCount;
+                symbols[entry] = symbol;
+                entry++;
+            }
+
+            return new HuffmanTree<int>(codes, canonicalBitCounts, symbols);
         }
     }
 }

@@ -16,6 +16,26 @@ public sealed class HuffmanTreeTests
         Assert.Equal("eleven", tree.Decode(bits));
     }
 
+    [Fact]
+    public void CreateCanonicalIndexed_DecodesCanonicalSymbol()
+    {
+        var tree = HuffmanTree.CreateCanonicalIndexed(
+            new[] { 1, 2, 2 });
+        var bits = new TestBitReader(true, false);
+
+        Assert.Equal(1, tree.Decode(bits));
+    }
+
+    [Fact]
+    public void CreateCanonicalIndexed_AllowsEmptyTreeWhenRequested()
+    {
+        var tree = HuffmanTree.CreateCanonicalIndexed(
+            new[] { 0, 0 },
+            allowEmpty: true);
+
+        Assert.True(tree.IsEmpty);
+    }
+
     sealed class TestBitReader : IHuffmanBitReader
     {
         readonly bool[] _bits;

@@ -12,6 +12,7 @@ using LcdMod.Client.SurfaceScripts;
 using LcdMod.Client.Market;
 using LcdMod.Client.Ftue;
 using LcdMod.Client.Modules.Power;
+using LcdMod.Client.Modules.Cartography;
 using LcdMod.Client.Modules.RoomEnvironment;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Config;
@@ -60,9 +61,11 @@ namespace LcdMod.Client
             _terminalManager = new TerminalManager(session);
             RoomEnvironment = new GridRoomEnvironmentClientModule();
             Ftue = new FtueService();
+            Cartography = new CartographyModule();
         }
 
         public PowerDataModule PowerData { get; private set; }
+        public CartographyModule Cartography { get; private set; }
         public GridRoomEnvironmentClientModule RoomEnvironment { get; }
         internal FtueService Ftue { get; }
         public static event Action OnUpdateBeforeSimulation;
@@ -136,6 +139,9 @@ namespace LcdMod.Client
             if (PowerData != null)
                 PowerData.Clear();
             PowerData = null;
+            if (Cartography != null)
+                Cartography.Clear();
+            Cartography = null;
             _terminalManager.Unload();
             MyAPIGateway.Gui.GuiControlRemoved -= OnGuiControlRemoved;
             MyAPIGateway.Entities.OnEntityAdd -= EntityAdded;

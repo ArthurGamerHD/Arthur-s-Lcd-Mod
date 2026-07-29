@@ -266,6 +266,15 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             HideAttachedTooltip();
         }
 
+        public void ShowTooltipFor(object dataContext)
+        {
+            if (dataContext == null)
+                return;
+
+            _manualTooltipParentEntry = null;
+            _manualTooltipParentObject = dataContext;
+        }
+
         public override void SafeRun()
         {
             InteractiveVisualsDirty = false;

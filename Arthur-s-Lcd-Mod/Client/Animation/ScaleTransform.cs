@@ -96,7 +96,7 @@ namespace LcdMod.Client.Animation
         /// Interpolates between two scale transforms.
         /// Null values are treated as <see cref="Identity"/>.
         /// </summary>
-        public new static ScaleTransform Interpolate(ScaleTransform from, ScaleTransform to, float progress)
+        public static ScaleTransform Interpolate(ScaleTransform from, ScaleTransform to, float progress)
         {
             from = from ?? Identity;
             to = to ?? Identity;

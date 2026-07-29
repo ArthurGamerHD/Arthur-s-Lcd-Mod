@@ -33,7 +33,8 @@ public sealed class AppTypeStabilityTests
         ["RenderProxy"] = 25,
         ["Games"] = 26,
         ["BSoDTest"] = 27,
-        ["MediaPlayer"] = 28
+        ["MediaPlayer"] = 28,
+        ["PlanetaryMap"] = 29
     };
 
     [Fact]

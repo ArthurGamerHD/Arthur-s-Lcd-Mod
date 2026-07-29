@@ -362,6 +362,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 
         public virtual bool CanDrag => Visible && Enabled && Draggable && OnDrag != null;
 
+        public virtual bool CanSecondaryDrag => Visible && Enabled && SecondaryDraggable && OnDrag != null;
+
         protected ControlTemplate(CursorType? cursor = null, object dataContext = null, Action<object, object> onClick = null,
             InteractiveTooltip tooltip = null)
         {
@@ -389,6 +391,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         }
 
         public Action<object, object> OnClick { get; private set; }
+        public Action<object, object> OnDoubleClick { get; private set; }
         public Action<object, object> OnSecondaryClick { get; set; }
         public ControlScrollHandler OnScroll { get; set; }
         public ControlHoverHandler OnHover { get; set; }
@@ -396,8 +399,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         public Action<object, object> OnBeginDrag { get; set; }
         public Action<object, object> OnEndDrag { get; set; }
         public bool Draggable { get; set; }
+        public bool SecondaryDraggable { get; set; }
+        public bool PreservePrimaryClickUntilDragged { get; set; }
 
         public bool ClickOnPress { get; set; }
+
+        const long DOUBLE_CLICK_MAX_TICKS = TimeSpan.TicksPerMillisecond * 500L;
+        long _lastPrimaryClickTicks = long.MinValue;
 
         protected virtual bool ClipContent => false;
 
@@ -406,6 +414,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         public ControlTemplate SetOnClick(Action<object, object> onClick)
         {
             OnClick = onClick;
+            return this;
+        }
+
+        public ControlTemplate SetOnDoubleClick(Action<object, object> onDoubleClick)
+        {
+            OnDoubleClick = onDoubleClick;
+            _lastPrimaryClickTicks = long.MinValue;
             return this;
         }
 
@@ -442,6 +457,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         public ControlTemplate SetDraggable(bool draggable = true)
         {
             Draggable = draggable;
+            return this;
+        }
+
+        public ControlTemplate SetSecondaryDraggable(bool draggable = true)
+        {
+            SecondaryDraggable = draggable;
             return this;
         }
 
@@ -948,6 +969,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             return draggable != null;
         }
 
+        public bool TryResolveDraggable(Vector2 point, bool secondary, out ControlTemplate draggable)
+        {
+            ControlHitFilter accept = secondary
+                ? (ControlHitFilter)AcceptSecondaryDraggableHit
+                : AcceptDraggableHit;
+            draggable = ResolveHit(point, accept);
+            return draggable != null;
+        }
+
         public bool TryResolveTooltipTarget(Vector2 point, out ControlTemplate tooltipTarget)
         {
             tooltipTarget = ResolveHit(point, AcceptTooltipHit);
@@ -994,7 +1024,23 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             return SecondaryClick(sender);
         }
 
-        public virtual bool Click(object sender) => HandleClick(sender, OnClick, false);
+        public virtual bool Click(object sender)
+        {
+            if (OnDoubleClick != null)
+            {
+                long now = DateTime.UtcNow.Ticks;
+                long elapsed = now - _lastPrimaryClickTicks;
+                _lastPrimaryClickTicks = now;
+                if (elapsed >= 0L && elapsed <= DOUBLE_CLICK_MAX_TICKS)
+                {
+                    _lastPrimaryClickTicks = long.MinValue;
+                    OnDoubleClick(DataContext ?? this, sender);
+                    return true;
+                }
+            }
+
+            return HandleClick(sender, OnClick, false);
+        }
 
         public virtual bool SecondaryClick(object sender) => HandleClick(sender, OnSecondaryClick, true);
 
@@ -1052,12 +1098,41 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             return true;
         }
 
+        public virtual bool BeginDrag(object sender, bool secondary)
+        {
+            if (secondary)
+            {
+                if (!CanSecondaryDrag)
+                    return false;
+
+                if (OnBeginDrag != null)
+                    OnBeginDrag(DataContext ?? this, sender);
+
+                return true;
+            }
+
+            return BeginDrag(sender);
+        }
+
         public virtual bool Drag(object sender, Vector2 delta)
         {
             if (!CanDrag || !IsValidDelta(delta))
                 return false;
 
             return OnDrag != null && OnDrag(DataContext ?? this, sender, delta);
+        }
+
+        public virtual bool Drag(object sender, Vector2 delta, bool secondary)
+        {
+            if (secondary)
+            {
+                if (!CanSecondaryDrag || !IsValidDelta(delta))
+                    return false;
+
+                return OnDrag != null && OnDrag(DataContext ?? this, sender, delta);
+            }
+
+            return Drag(sender, delta);
         }
 
         public virtual void EndDrag(object sender)
@@ -1186,6 +1261,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         static bool AcceptDraggableHit(ControlTemplate control)
         {
             return control.CanDrag;
+        }
+
+        static bool AcceptSecondaryDraggableHit(ControlTemplate control)
+        {
+            return control.CanSecondaryDrag;
         }
 
         static bool AcceptTooltipHit(ControlTemplate control)
