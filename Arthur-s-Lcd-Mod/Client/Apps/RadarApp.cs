@@ -1,13 +1,13 @@
 using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Config;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
-using LcdMod.Client.Terminal.Controls;
 using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using VRage;
@@ -105,7 +105,6 @@ namespace LcdMod.Client.Apps
         readonly StringBuilder _footerTextBuilder = new StringBuilder();
         readonly List<MySprite> _backgroundSprites = new List<MySprite>();
         readonly List<MySprite> _foregroundSprites = new List<MySprite>();
-        readonly List<Control> _children = new List<Control>();
         long _cachedCharacterId;
         Sandbox.Game.EntityComponents.MyTargetLockingComponent _cachedCharacterTargetLocking;
         float _radarProjectionCos;
@@ -122,7 +121,7 @@ namespace LcdMod.Client.Apps
         float LayoutScale => Scale * FontScale;
         Color ForegroundColor => _host.ForegroundColor;
         Color BackgroundColor => _host.BackgroundColor;
-        public override IReadOnlyList<Control> VisualChildren => _children;
+        public override IReadOnlyList<Control> VisualChildren { get; } = new List<Control>();
 
         struct TargetInfo
         {
@@ -209,8 +208,7 @@ namespace LcdMod.Client.Apps
                 var entitiesInSphere = MyAPIGateway.Entities.GetEntitiesInSphere(ref sphere);
                 if (entitiesInSphere != null)
                 {
-                    for (int i = 0; i < entitiesInSphere.Count; i++)
-                        _tempEntities.Add(entitiesInSphere[i]);
+                    _tempEntities.AddRange(entitiesInSphere);
                     entitiesInSphere.Clear();
                 }
 
@@ -248,9 +246,8 @@ namespace LcdMod.Client.Apps
                     bool ownGroup = false;
                     bool groupHasLockedTarget = false;
 
-                    for (int i = 0; i < _tempGroupGrids.Count; i++)
+                    foreach (var groupGrid in _tempGroupGrids)
                     {
-                        var groupGrid = _tempGroupGrids[i];
                         _processedGroupGridIds.Add(groupGrid.EntityId);
                         if (lockedTargetGridId != 0 && groupGrid.EntityId == lockedTargetGridId)
                             groupHasLockedTarget = true;
@@ -283,8 +280,7 @@ namespace LcdMod.Client.Apps
                         continue;
 
                     long entityId = selectedGrid.EntityId;
-                    if (_seenThisFrame.Contains(entityId)) continue;
-                    _seenThisFrame.Add(entityId);
+                    if (!_seenThisFrame.Add(entityId)) continue;
 
                     ContactRecord rec;
                     if (!_contacts.TryGetValue(entityId, out rec))
@@ -427,14 +423,8 @@ namespace LcdMod.Client.Apps
             return SliderRadarRange.GetRangeMeters(RadarComponent.RangeScale);
         }
 
-        bool GridGroupHasLongRangeSignal(List<IMyCubeGrid> grids, Vector3D receiverPosition, IMyCubeGrid receiverGrid)
-        {
-            for (int i = 0; i < grids.Count; i++)
-                if (GridHasLongRangeSignal(grids[i], receiverPosition, receiverGrid))
-                    return true;
-
-            return false;
-        }
+        bool GridGroupHasLongRangeSignal(List<IMyCubeGrid> grids, Vector3D receiverPosition, IMyCubeGrid receiverGrid) => 
+            grids.Any(t => GridHasLongRangeSignal(t, receiverPosition, receiverGrid));
 
         bool GridHasLongRangeSignal(IMyCubeGrid grid, Vector3D receiverPosition, IMyCubeGrid receiverGrid)
         {
@@ -517,12 +507,11 @@ namespace LcdMod.Client.Apps
 
             long lockedEntityId;
             float lockedPercent;
-            long lockedGridId;
 
             var player = MyAPIGateway.Session?.LocalHumanPlayer;
             RefreshCachedCharacterTargetLocking(player);
 
-            lockedGridId = GetLockedTargetGridIdFromTargetLockingComponent(_cachedCharacterTargetLocking,
+            var lockedGridId = GetLockedTargetGridIdFromTargetLockingComponent(_cachedCharacterTargetLocking,
                 out lockedEntityId,
                 out lockedPercent);
             if (lockedEntityId != 0)
@@ -749,8 +738,8 @@ namespace LcdMod.Client.Apps
                 if (kv.Value.MissedFrames > CONTACT_TIMEOUT)
                     _toRemove.Add(kv.Key);
 
-            for (int i = 0; i < _toRemove.Count; i++)
-                _contacts.Remove(_toRemove[i]);
+            foreach (var t in _toRemove)
+                _contacts.Remove(t);
         }
 
 
@@ -799,11 +788,11 @@ namespace LcdMod.Client.Apps
             DrawRadarPlane(sprites, radarCenterPos, radarPlaneSize, radarScale, lineColor);
 
             BuildTargetLayers(errColor, warnColor, allyColor);
-            for (int i = 0; i < _targetsBelowPlane.Count; i++)
-                DrawTargetIcon(sprites, radarCenterPos, radarPlaneSize, _targetsBelowPlane[i], radarScale);
+            foreach (var t in _targetsBelowPlane)
+                DrawTargetIcon(sprites, radarCenterPos, radarPlaneSize, t, radarScale);
 
-            for (int i = 0; i < _targetsAbovePlane.Count; i++)
-                DrawTargetIcon(sprites, radarCenterPos, radarPlaneSize, _targetsAbovePlane[i], radarScale);
+            foreach (var t in _targetsAbovePlane)
+                DrawTargetIcon(sprites, radarCenterPos, radarPlaneSize, t, radarScale);
 
             if (_debugLockedTargetEntityId != 0)
             {

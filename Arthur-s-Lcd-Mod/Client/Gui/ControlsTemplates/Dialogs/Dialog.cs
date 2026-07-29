@@ -31,7 +31,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 throw new ArgumentNullException("parentApp");
 
             _parentApp = parentApp;
-            _styleParent = parentApp as IVisualStyleScope;
+            _styleParent = parentApp;
         }
 
         public bool Dismissed { get; private set; }
@@ -158,7 +158,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 return;
 
             BuildDialogControls(owner, viewBox, scale, fontScale, surface, textColor, backgroundColor, panelColor, cursorPosition);
-            RenderCloseButton(surface, scale, fontScale, textColor, panelColor, cursorPosition);
+            RenderCloseButton(scale);
 
             if (targetSprites != null)
                 targetSprites.AddRange(_sprites);
@@ -223,13 +223,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 size.Y);
         }
 
-        void RenderCloseButton(
-            Sandbox.ModAPI.Ingame.IMyTextSurface surface,
-            float scale,
-            float fontScale,
-            Color textColor,
-            Color panelColor,
-            Vector2 cursorPosition)
+        void RenderCloseButton(float scale)
         {
             if (!ShowCloseButton || !_dialogCardRegistered || Dismissed || _containerControl == null)
                 return;

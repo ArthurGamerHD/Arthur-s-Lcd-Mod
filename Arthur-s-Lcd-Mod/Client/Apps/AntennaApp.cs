@@ -393,13 +393,6 @@ namespace LcdMod.Client.Apps
             _interactiveHost.RenderSprites();
         }
 
-        int GetMaxColsFromSurface()
-        {
-            var max = Host.ViewBox.Width - Host.ViewBox.X;
-            var perCol = MINIMUM_COL_WIDTH * GeneralComponent.GetScale();
-            return (int)Math.Max(1, Math.Round(max / perCol - .5, MidpointRounding.AwayFromZero));
-        }
-
         float GetContentTop()
         {
             if (!Host.TitleVisible)

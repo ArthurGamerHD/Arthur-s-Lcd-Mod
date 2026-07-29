@@ -248,7 +248,7 @@ namespace LcdMod.Client.Helpers
 
             try
             {
-                var container = block.Components?.Serialize(false);
+                var container = block.Components?.Serialize();
                 var components = container?.Components;
                 if (components == null)
                     return false;

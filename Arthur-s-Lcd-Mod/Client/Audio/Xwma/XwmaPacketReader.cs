@@ -1,7 +1,8 @@
+// ReSharper disable RedundantUsingDirective
 using System.IO;
 using LcdMod.Client.Audio.Xwma.Decoder;
-using EndOfStreamException = LcdMod.Common.EndOfStreamException;
-using InvalidDataException = LcdMod.Common.InvalidDataException;
+using EndOfStreamException = LcdMod.Common.Exceptions.EndOfStreamException;
+using InvalidDataException = LcdMod.Common.Exceptions.InvalidDataException;
 
 namespace LcdMod.Client.Audio.Xwma
 {

@@ -255,25 +255,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 
         static void AddRectangleSprite(
             List<MySprite> sprites,
-            float x,
-            float y,
-            float width,
-            float height,
-            Color color)
-        {
-            if (width <= 0f || height <= 0f)
-                return;
-
-            sprites.Add(new MySprite(
-                SpriteType.TEXTURE,
-                "SquareSimple",
-                new Vector2(x + width * 0.5f, y + height * 0.5f),
-                new Vector2(width, height),
-                color));
-        }
-
-        static void AddRectangleSprite(
-            List<MySprite> sprites,
             int x,
             int y,
             int width,

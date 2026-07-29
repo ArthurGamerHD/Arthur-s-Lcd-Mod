@@ -1,4 +1,4 @@
-using InvalidDataException = LcdMod.Common.InvalidDataException;
+using InvalidDataException = LcdMod.Common.Exceptions.InvalidDataException;
 
 namespace LcdMod.Client.Audio.Xwma.Decoder
 {
@@ -14,7 +14,7 @@ namespace LcdMod.Client.Audio.Xwma.Decoder
 
             if (sourceStartBit < 0 || bitCount < 0 ||
                 (long)sourceStartBit + bitCount >
-                (long)source.Length * 8L)
+                source.Length * 8L)
             {
                 throw new InvalidDataException(
                     "Invalid WMAv2 bit-copy range.");
@@ -50,7 +50,7 @@ namespace LcdMod.Client.Audio.Xwma.Decoder
 
             if (secondStartBit < 0 || secondBitCount < 0 ||
                 (long)secondStartBit + secondBitCount >
-                (long)second.Length * 8L)
+                second.Length * 8L)
             {
                 throw new InvalidDataException(
                     "Invalid WMAv2 packet reservoir range.");

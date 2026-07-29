@@ -1,7 +1,8 @@
+// ReSharper disable RedundantUsingDirective
 using System;
 using LcdMod.Common.Compression;
-using ArgumentOutOfRangeException = LcdMod.Common.ArgumentOutOfRangeException;
-using InvalidDataException = LcdMod.Common.InvalidDataException;
+using ArgumentOutOfRangeException = LcdMod.Common.Exceptions.ArgumentOutOfRangeException;
+using InvalidDataException = LcdMod.Common.Exceptions.InvalidDataException;
 
 namespace LcdMod.Common.Zip
 {
@@ -214,7 +215,7 @@ namespace LcdMod.Common.Zip
                 if (symbol == 256)
                     return;
 
-                if (symbol < 257 || symbol > 285)
+                if (symbol > 285)
                     throw new InvalidDataException("Invalid DEFLATE length symbol: " + symbol);
 
                 int lengthIndex = symbol - 257;
@@ -336,17 +337,17 @@ namespace LcdMod.Common.Zip
 
         static uint ComputeAdler32(byte[] data, int count)
         {
-            const uint Modulus = 65521;
+            const uint modulus = 65521;
             uint a = 1;
             uint b = 0;
 
             for (int i = 0; i < count; i++)
             {
                 a += data[i];
-                if (a >= Modulus) a -= Modulus;
+                if (a >= modulus) a -= modulus;
 
                 b += a;
-                if (b >= Modulus) b %= Modulus;
+                if (b >= modulus) b %= modulus;
             }
 
             return (b << 16) | a;

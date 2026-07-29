@@ -667,7 +667,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         {
             var rect = control.Bounds;
             var buttonModel = control.DataContext as ButtonModel;
-            var enabled = buttonModel == null || buttonModel.Enabled;
             BorderRenderer.CreateSpritesFromRect(rect, sprites, control.BackgroundColor, radiusScale: control.LayoutScale);
 
             var text = buttonModel == null ? string.Empty : buttonModel.Text;

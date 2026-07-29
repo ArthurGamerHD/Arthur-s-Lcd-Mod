@@ -20,7 +20,7 @@ using static LcdMod.Common.Helpers.Constants;
 using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
-    [LcdSurface(typeof(LcdMod.Client.Apps.GamesConfigApp))]
+    [LcdSurface(typeof(Apps.GamesConfigApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class GameSurfaceScript : InteractiveSurfaceScript, IMultiDisplayMode
     {

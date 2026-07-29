@@ -69,10 +69,8 @@ public sealed class TerminalControlGenerationGateTests
             "ConfigComponentModels.cs"));
 
         var ids = Regex.Matches(manager, @"AddRegistration\(registrations,\s*(\d+)")
-            .Cast<Match>()
             .Select(match => int.Parse(match.Groups[1].Value))
             .Concat(Regex.Matches(models, @"\[TerminalControl_(?:Slider|Switch|Color)\(\s*(\d+)")
-                .Cast<Match>()
                 .Select(match => int.Parse(match.Groups[1].Value)))
             .ToArray();
 

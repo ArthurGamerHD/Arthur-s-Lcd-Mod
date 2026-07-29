@@ -16,7 +16,7 @@ using static LcdMod.Common.Helpers.Constants;
 using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
-    [LcdSurface(typeof(LcdMod.Client.Apps.EnergyDashboardApp))]
+    [LcdSurface(typeof(EnergyDashboardApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class EnergyDashboardSurfaceScript : InteractiveSurfaceScript,
         IUsesTerminalControl<ComboboxGraphWindow>,

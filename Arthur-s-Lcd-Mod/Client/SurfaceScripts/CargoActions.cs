@@ -15,7 +15,7 @@ using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
 using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
-    [LcdSurface(typeof(LcdMod.Client.Apps.CargoActionsApp))]
+    [LcdSurface(typeof(CargoActionsApp))]
 #if EXPERIMENTAL
     [MyTextSurfaceScript(ID, TITLE)]
 #endif

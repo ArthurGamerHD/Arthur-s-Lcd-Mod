@@ -17,7 +17,6 @@ using static LcdMod.Common.Helpers.Constants;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
 
 using LcdMod.Common.Config.Generation;
-using LcdMod.Common.Helpers;
 
 namespace LcdMod.Client.Apps
 {
@@ -436,13 +435,6 @@ namespace LcdMod.Client.Apps
         {
             var block = _interactiveHost?.Block as IMyTerminalBlock;
             return block != null && block.HasLocalPlayerAccess();
-        }
-
-        void OnSpriteSelected(string spriteName)
-        {
-            OnSpritesSelected(string.IsNullOrWhiteSpace(spriteName)
-                ? Array.Empty<string>()
-                : new[] { spriteName });
         }
 
         void OnSpritesSelected(string[] spriteNames)

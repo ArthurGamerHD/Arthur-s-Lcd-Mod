@@ -44,7 +44,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         public static readonly StyleProperty<RenderTransform> RenderTransformProperty =
             StyleProperty.Register<ControlTemplate, RenderTransform>(
                 "RenderTransform",
-                LcdMod.Client.Animation.RenderTransform.Identity,
+                RenderTransform.Identity,
                 false);
 
         public static readonly StyleProperty<Color> BackgroundColorProperty =
@@ -506,7 +506,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 
             int spriteStart = sprites.Count;
             RectangleF renderBounds = Bounds;
-            RenderTransform renderTransform = RenderTransform ?? LcdMod.Client.Animation.RenderTransform.Identity;
+            RenderTransform renderTransform = RenderTransform ?? RenderTransform.Identity;
             RectangleF? inheritedClip = GetInheritedClipBounds();
             bool rendered = false;
 

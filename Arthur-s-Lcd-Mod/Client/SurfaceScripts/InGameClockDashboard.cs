@@ -1,4 +1,3 @@
-using LcdMod.Common.Config.Components;
 using System.Collections.Generic;
 using Generated;
 using LcdMod.Client.Apps;
@@ -17,7 +16,7 @@ using static LcdMod.Common.Helpers.Constants;
 using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
-    [LcdSurface(typeof(LcdMod.Client.Apps.InGameClockDashboardApp))]
+    [LcdSurface(typeof(InGameClockDashboardApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public sealed partial class InGameClockDashboardSurfaceScript : InteractiveSurfaceScript,
         IUsesTerminalControl<ComboboxClockDashboardTemperatureMode>

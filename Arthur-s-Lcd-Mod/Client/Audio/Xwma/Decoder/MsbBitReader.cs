@@ -1,5 +1,5 @@
 using LcdMod.Common.Compression;
-using InvalidDataException = LcdMod.Common.InvalidDataException;
+using InvalidDataException = LcdMod.Common.Exceptions.InvalidDataException;
 
 namespace LcdMod.Client.Audio.Xwma.Decoder
 {
@@ -37,7 +37,7 @@ namespace LcdMod.Client.Audio.Xwma.Decoder
                 throw new InvalidDataException("The WMAv2 bit range is invalid.");
 
             long endBit = (long)startBit + bitLength;
-            long bufferBits = (long)buffer.Length * 8L;
+            long bufferBits = buffer.Length * 8L;
 
             if (endBit > bufferBits)
                 throw new InvalidDataException("The WMAv2 bit range exceeds its buffer.");

@@ -1,12 +1,10 @@
 using System.Collections.Generic;
 using LcdMod.Common.Config.Components;
-using Generated;
 using IAutoScroll = LcdMod.Client.Terminal.Controls.Generic.IAutoScroll;
 using LcdMod.Client.Apps;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
-using LcdMod.Client.Terminal.Controls.Generic;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
@@ -18,7 +16,7 @@ using IMyTextSurface = Sandbox.ModAPI.IMyTextSurface;
 using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
-    [LcdSurface(typeof(LcdMod.Client.Apps.FarmApp))]
+    [LcdSurface(typeof(FarmApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class FarmSurfaceScript : InteractiveSurfaceScript,
         IAutoScroll

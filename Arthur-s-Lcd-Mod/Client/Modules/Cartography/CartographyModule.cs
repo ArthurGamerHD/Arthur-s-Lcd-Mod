@@ -4,7 +4,6 @@ using System.Linq;
 using LcdMod.Common.Helpers;
 using LcdMod.Common.Imaging;
 using Sandbox.ModAPI;
-using VRageMath;
 
 namespace LcdMod.Client.Modules.Cartography
 {
@@ -251,7 +250,7 @@ namespace LcdMod.Client.Modules.Cartography
                 return null;
 
             Sandbox.Game.Entities.MyPlanet planet;
-            if (!LcdMod.Client.Helpers.PlanetHelper.PlanetsById.TryGetValue(
+            if (!Helpers.PlanetHelper.PlanetsById.TryGetValue(
                     request.PlanetEntityId,
                     out planet) ||
                 planet == null ||

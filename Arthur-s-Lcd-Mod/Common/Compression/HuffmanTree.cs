@@ -1,5 +1,6 @@
+// ReSharper disable RedundantUsingDirective
 using System.Collections.Generic;
-using InvalidDataException = LcdMod.Common.InvalidDataException;
+using InvalidDataException = LcdMod.Common.Exceptions.InvalidDataException;
 
 namespace LcdMod.Common.Compression
 {

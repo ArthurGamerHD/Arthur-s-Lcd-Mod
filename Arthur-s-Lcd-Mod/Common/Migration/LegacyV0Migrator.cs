@@ -175,11 +175,8 @@ namespace LcdMod.Common.Migration
             }
 
             var visibleTree = source as LegacyScreenConfigVisibleTreeDebug;
-            if (visibleTree != null)
-            {
+            if (visibleTree != null) 
                 app.Set(Constants.VISIBLE_TREE_REFERENCE, new BlockReferenceConfigComponent { EntityId = visibleTree.ReferenceBlock });
-                return;
-            }
         }
 
         static void AddAppSettings(IComponentContainer app, LegacyScreenConfigGeneral source)

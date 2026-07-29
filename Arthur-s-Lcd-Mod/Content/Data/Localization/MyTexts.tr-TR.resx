@@ -541,6 +541,15 @@
     <data name="LcdMod_Common_Time_LessThanOneSecond" xml:space="preserve">
     <value>&lt; 1 sn</value>
   </data>
+    <data name="LcdMod_Common_Time_Now" xml:space="preserve">
+    <value>şimdi</value>
+  </data>
+    <data name="LcdMod_Common_Time_RelativeSecondsAgoFormat" xml:space="preserve">
+    <value>-{0} sn</value>
+  </data>
+    <data name="LcdMod_Common_Time_RelativeMinutesAgoFormat" xml:space="preserve">
+    <value>-{0} dk</value>
+  </data>
     <data name="LcdMod_Common_Label_WithColon" xml:space="preserve">
     <value>{0}:</value>
   </data>
@@ -999,5 +1008,74 @@ Bir süre bekleyeceğiz ve ardından sizin için yeniden başlatacağız.</value
   </data>
   <data name="LcdMod_FilePicker_BackToRoots" xml:space="preserve">
     <value>Kök konumlara dön</value>
+  </data>
+  <data name="LcdMod_AutoScroll" xml:space="preserve">
+    <value>Otomatik kaydırma</value>
+  </data>
+  <data name="LcdMod_AutoScroll_Tooltip" xml:space="preserve">
+    <value>Kaydırma adımları arasındaki gecikmeyi ayarlar (0 otomatik kaydırmayı kapatır).</value>
+  </data>
+  <data name="LcdMod_Search_Script" xml:space="preserve">
+    <value>Uygulama ara</value>
+  </data>
+  <data name="LcdMod_Search_Script_Tooltip" xml:space="preserve">
+    <value>Uygulama listesini filtreler.</value>
+  </data>
+  <data name="LcdMod_GW_30m" xml:space="preserve">
+    <value>30 dakika</value>
+  </data>
+  <data name="LcdMod_RenderScale" xml:space="preserve">
+    <value>İşleme ölçeği</value>
+  </data>
+  <data name="LcdMod_RaysPerTick" xml:space="preserve">
+    <value>Tik başına ışın</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality" xml:space="preserve">
+    <value>Gezegen doku kalitesi</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality_Tooltip" xml:space="preserve">
+    <value>Bu istemcide gezegen haritası dokularının ayrıntı düzeyini sınırlar. Ultra, kullanılabilir en yüksek ayrıntıyı kullanır.</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality_VeryLow" xml:space="preserve">
+    <value>Çok düşük</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality_Low" xml:space="preserve">
+    <value>Düşük</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality_Medium" xml:space="preserve">
+    <value>Orta</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality_High" xml:space="preserve">
+    <value>Yüksek</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality_Ultra" xml:space="preserve">
+    <value>Ultra</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_NoPlanet" xml:space="preserve">
+    <value>Gezegen bulunamadı.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CartographyNotReady" xml:space="preserve">
+    <value>Gezegen haritası verileri henüz hazır değil.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_NoColorCubemap" xml:space="preserve">
+    <value>Gezegen haritası dokuları kullanılamıyor.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_NoResult" xml:space="preserve">
+    <value>Gezegen haritası verisi döndürülmedi.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CartographyFailed" xml:space="preserve">
+    <value>Bu gezegen türü için haritalama başarısız oldu.</value>
+  </data>
+  <data name="LcdMod_AudioBroadcast_Usage" xml:space="preserve">
+    <value>Kullanım: /lcdmod streamaudio &lt;audio-id&gt;</value>
+  </data>
+  <data name="LcdMod_AudioBroadcast_AssetNotFoundFormat" xml:space="preserve">
+    <value>Ses varlığı bulunamadı: {0}</value>
+  </data>
+  <data name="LcdMod_AudioBroadcast_WaveRejectedFormat" xml:space="preserve">
+    <value>Ses dosyası reddedildi: {0}</value>
+  </data>
+  <data name="LcdMod_AudioBroadcast_RequestedFormat" xml:space="preserve">
+    <value>Ses yayını istendi: {0}</value>
   </data>
 </root>

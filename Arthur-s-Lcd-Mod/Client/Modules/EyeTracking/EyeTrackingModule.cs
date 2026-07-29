@@ -601,7 +601,7 @@ namespace LcdMod.Client.Modules.EyeTracking
             if (clickedControl == null)
                 return;
 
-            bool click = false;
+            bool click;
 
             try
             {

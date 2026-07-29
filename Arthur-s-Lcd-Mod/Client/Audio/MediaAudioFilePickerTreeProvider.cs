@@ -4,7 +4,6 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using LcdMod.Client.Gui.ControlsTemplates.Dialogs;
-using LcdMod.Common.Audio;
 using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
@@ -311,10 +310,9 @@ namespace LcdMod.Client.Audio
             return records;
         }
 
-        static bool RemovePlaylistIndexRecord(string fileName)
+        static void RemovePlaylistIndexRecord(string fileName)
         {
-            if (string.IsNullOrWhiteSpace(fileName))
-                return false;
+            if (string.IsNullOrWhiteSpace(fileName)) return;
 
             var records = LoadPlaylistIndex();
             var removed = false;
@@ -330,7 +328,6 @@ namespace LcdMod.Client.Audio
 
             if (removed)
                 SavePlaylistIndex(records);
-            return removed;
         }
 
         static void SavePlaylistIndex(List<PlaylistIndexRecord> records)
@@ -514,7 +511,7 @@ namespace LcdMod.Client.Audio
                 if (definition == null)
                     continue;
 
-                AudioWavesDefinition data = null;
+                AudioWavesDefinition data;
                 try
                 {
                     data = definition;
@@ -832,7 +829,7 @@ namespace LcdMod.Client.Audio
             if (definition == null)
                 return null;
 
-            AudioWavesDefinition data = null;
+            AudioWavesDefinition data;
             try
             {
                 data = definition;

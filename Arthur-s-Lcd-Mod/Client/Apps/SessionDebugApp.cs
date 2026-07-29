@@ -10,8 +10,7 @@ using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.ControlsTemplates.Panels.Virtualized;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts;
-using LcdMod.Client.Terminal.Actions;
-using LcdMod.Common.Config.Models;
+using LcdMod.Client.Terminal;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 
@@ -19,6 +18,7 @@ using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.Apps
 {
     [LcdApp(21)]
+    // ReSharper disable once PartialTypeWithSinglePart
     internal sealed partial class SessionDebugApp : App
     {
         const string DEBUG_FONT = "Monospace";
@@ -35,7 +35,7 @@ namespace LcdMod.Client.Apps
         readonly VirtualizedStackPanel<DebugLine> _linePanel = new VirtualizedStackPanel<DebugLine>();
         readonly List<Control> _interactiveEntries = new List<Control>();
 
-        SessionDebugSurfaceScript _host;
+        readonly SessionDebugSurfaceScript _host;
         
         public SessionDebugApp(SessionDebugSurfaceScript sessionDebugSurfaceScript) : base(sessionDebugSurfaceScript)
         {
@@ -123,20 +123,22 @@ namespace LcdMod.Client.Apps
 
         static List<DebugLine> BuildDebugLines(SessionDebugSnapshot snapshot, SessionDebugSurfaceScript owner)
         {
-            var lines = new List<DebugLine>(64);
-
-            lines.Add(new DebugLine("LcdMod Session Debug - " + owner.GetHashCode(), Color.White));
-            lines.Add(new DebugLine($"Screen Info: {owner.Surface.Name} - {owner.Surface.TextureSize} - {owner.ViewBox}", Color.White));
-            lines.Add(new DebugLine("Tick: " + Fixed4(snapshot.UpdateTick), Color.White));
-            lines.Add(new DebugLine("Tracked Grids: " + Fixed4(snapshot.TrackedGrids), Color.White));
-            lines.Add(new DebugLine("GridLogic Entries: " + Fixed4(snapshot.TrackedGridLogic), Color.White));
-            lines.Add(new DebugLine("Refresh In Progress: " + Fixed4(snapshot.RefreshInProgress), Color.White));
-            lines.Add(new DebugLine("Last Iterations Sum: " + Fixed4(snapshot.TotalLastRefreshIterations), Color.White));
-            lines.Add(new DebugLine("Last Processed Sum: " + Fixed4(snapshot.TotalLastRefreshProcessed), Color.White));
-            lines.Add(new DebugLine("Avg Next Batch: " + Fixed4(snapshot.AverageNextBatchSize), Color.White));
-            lines.Add(new DebugLine(string.Empty, Color.White));
-            lines.Add(new DebugLine("Per Grid:", Color.White));
-            lines.Add(new DebugLine("Name ite prc bat nxt", Color.White));
+            var lines = new List<DebugLine>(64)
+            {
+                new DebugLine("LcdMod Session Debug - " + owner.GetHashCode(), Color.White),
+                new DebugLine($"Screen Info: {owner.Surface.Name} - {owner.Surface.TextureSize} - {owner.ViewBox}",
+                    Color.White),
+                new DebugLine("Tick: " + Fixed4(snapshot.UpdateTick), Color.White),
+                new DebugLine("Tracked Grids: " + Fixed4(snapshot.TrackedGrids), Color.White),
+                new DebugLine("GridLogic Entries: " + Fixed4(snapshot.TrackedGridLogic), Color.White),
+                new DebugLine("Refresh In Progress: " + Fixed4(snapshot.RefreshInProgress), Color.White),
+                new DebugLine("Last Iterations Sum: " + Fixed4(snapshot.TotalLastRefreshIterations), Color.White),
+                new DebugLine("Last Processed Sum: " + Fixed4(snapshot.TotalLastRefreshProcessed), Color.White),
+                new DebugLine("Avg Next Batch: " + Fixed4(snapshot.AverageNextBatchSize), Color.White),
+                new DebugLine(string.Empty, Color.White),
+                new DebugLine("Per Grid:", Color.White),
+                new DebugLine("Name ite prc bat nxt", Color.White)
+            };
 
             var components = LcdModSessionComponent.Components;
             if (components == null || components.Count == 0)
@@ -175,12 +177,12 @@ namespace LcdMod.Client.Apps
                 return lines;
             }
 
-            for (int i = 0; i < moduleLines.Length; i++)
+            foreach (var line in moduleLines)
             {
                 string moduleName;
                 int count;
                 int active;
-                ParseModuleLine(moduleLines[i], out moduleName, out count, out active);
+                ParseModuleLine(line, out moduleName, out count, out active);
                 moduleName = ClampToWidth(moduleName, 22);
                 lines.Add(new DebugLine(moduleName + " " + Fixed4(count) + " " + Fixed4(active), Color.White));
             }

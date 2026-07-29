@@ -773,7 +773,7 @@ namespace LcdMod.Client.Helpers
                         try
                         {
                             TextureImportCandidate import;
-                            if (TryPrepareTextureImport(file, true, null, out import))
+                            if (TryPrepareTextureImport(file, true, out import))
                                 imports.Add(import);
                         }
                         catch (Exception e)
@@ -1049,7 +1049,7 @@ namespace LcdMod.Client.Helpers
         public static void ImportTexture(string file, bool verbose = false, string id = null)
         {
             TextureImportCandidate import;
-            if (!TryPrepareTextureImport(file, verbose, id, out import))
+            if (!TryPrepareTextureImport(file, verbose, out import))
                 return;
 
             if (!TextureTransferHelper.TryWriteLocalTextureFilesWithMetadata(
@@ -1106,7 +1106,6 @@ namespace LcdMod.Client.Helpers
         static bool TryPrepareTextureImport(
             string file,
             bool verbose,
-            string id,
             out TextureImportCandidate import)
         {
             import = null;

@@ -542,6 +542,15 @@
     <data name="LcdMod_Common_Time_LessThanOneSecond" xml:space="preserve">
     <value>&lt; 1 s</value>
   </data>
+    <data name="LcdMod_Common_Time_Now" xml:space="preserve">
+    <value>agora</value>
+  </data>
+    <data name="LcdMod_Common_Time_RelativeSecondsAgoFormat" xml:space="preserve">
+    <value>-{0} s</value>
+  </data>
+    <data name="LcdMod_Common_Time_RelativeMinutesAgoFormat" xml:space="preserve">
+    <value>-{0} min</value>
+  </data>
     <data name="LcdMod_Common_Label_WithColon" xml:space="preserve">
     <value>{0}:</value>
   </data>
@@ -1000,5 +1009,74 @@ Vamos aguardar um pouco e então reiniciá-la para você.</value>
   </data>
   <data name="LcdMod_FilePicker_BackToRoots" xml:space="preserve">
     <value>Voltar às raízes</value>
+  </data>
+  <data name="LcdMod_AutoScroll" xml:space="preserve">
+    <value>Rolagem automática</value>
+  </data>
+  <data name="LcdMod_AutoScroll_Tooltip" xml:space="preserve">
+    <value>Define o atraso entre as etapas de rolagem (0 desativa a rolagem automática).</value>
+  </data>
+  <data name="LcdMod_Search_Script" xml:space="preserve">
+    <value>Buscar aplicativos</value>
+  </data>
+  <data name="LcdMod_Search_Script_Tooltip" xml:space="preserve">
+    <value>Filtra a lista de aplicativos.</value>
+  </data>
+  <data name="LcdMod_GW_30m" xml:space="preserve">
+    <value>30 minutos</value>
+  </data>
+  <data name="LcdMod_RenderScale" xml:space="preserve">
+    <value>Escala de renderização</value>
+  </data>
+  <data name="LcdMod_RaysPerTick" xml:space="preserve">
+    <value>Raios por tick</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality" xml:space="preserve">
+    <value>Qualidade da textura do planeta</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality_Tooltip" xml:space="preserve">
+    <value>Limita o nível de detalhe das texturas do mapa planetário neste cliente. Ultra usa o nível máximo disponível.</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality_VeryLow" xml:space="preserve">
+    <value>Muito baixa</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality_Low" xml:space="preserve">
+    <value>Baixa</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality_Medium" xml:space="preserve">
+    <value>Média</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality_High" xml:space="preserve">
+    <value>Alta</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality_Ultra" xml:space="preserve">
+    <value>Ultra</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_NoPlanet" xml:space="preserve">
+    <value>Nenhum planeta encontrado.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CartographyNotReady" xml:space="preserve">
+    <value>Os dados do mapa planetário ainda não estão prontos.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_NoColorCubemap" xml:space="preserve">
+    <value>As texturas do mapa planetário não estão disponíveis.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_NoResult" xml:space="preserve">
+    <value>Nenhum dado do mapa planetário foi retornado.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CartographyFailed" xml:space="preserve">
+    <value>O mapeamento falhou para este tipo de planeta.</value>
+  </data>
+  <data name="LcdMod_AudioBroadcast_Usage" xml:space="preserve">
+    <value>Uso: /lcdmod streamaudio &lt;audio-id&gt;</value>
+  </data>
+  <data name="LcdMod_AudioBroadcast_AssetNotFoundFormat" xml:space="preserve">
+    <value>Recurso de áudio não encontrado: {0}</value>
+  </data>
+  <data name="LcdMod_AudioBroadcast_WaveRejectedFormat" xml:space="preserve">
+    <value>Arquivo de áudio rejeitado: {0}</value>
+  </data>
+  <data name="LcdMod_AudioBroadcast_RequestedFormat" xml:space="preserve">
+    <value>Transmissão de áudio solicitada: {0}</value>
   </data>
 </root>

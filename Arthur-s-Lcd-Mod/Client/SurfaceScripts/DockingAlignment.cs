@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Generated;
 using LcdMod.Client.Apps;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.SurfaceScripts.Abstract;
@@ -17,7 +16,7 @@ using static LcdMod.Common.Helpers.Constants;
 using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
-    [LcdSurface(typeof(LcdMod.Client.Apps.DockingAlignmentApp))]
+    [LcdSurface(typeof(DockingAlignmentApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class DockingAlignment : SurfaceScriptBase,
         IReferenceBlockSelection,

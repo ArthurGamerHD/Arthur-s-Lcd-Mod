@@ -39,7 +39,7 @@ namespace LcdMod.Client.Terminal.Controls.VisibleTreeDebug
                 return;
             var reference = surface?.TryGet<BlockReferenceConfigComponent>(Constants.VISIBLE_TREE_REFERENCE);
             var app = surface?.TryGet<VisibleTreeDebugConfigComponent>(Constants.APP);
-            if (settings == null || reference == null || app == null)
+            if (reference == null || app == null)
                 return;
 
             long selectedBlockId = ListBoxItemHelper.GetLongUserData(selection.FirstOrDefault());
@@ -115,7 +115,7 @@ namespace LcdMod.Client.Terminal.Controls.VisibleTreeDebug
             if (referenceBlockId == 0L || blockList.Any(a => ListBoxItemHelper.GetLongUserData(a) == referenceBlockId))
                 return;
 
-            VRage.ModAPI.IMyEntity entity;
+            IMyEntity entity;
             if (!MyAPIGateway.Entities.TryGetEntityById(referenceBlockId, out entity))
                 return;
 

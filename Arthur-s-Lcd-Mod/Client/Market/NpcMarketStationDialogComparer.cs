@@ -8,7 +8,7 @@ namespace LcdMod.Client.Market
         readonly NpcMarketStationSortColumn _column;
         readonly bool _descending;
 
-        public NpcMarketStationDialogComparer(NpcMarketMode mode, NpcMarketStationSortColumn column, bool descending)
+        public NpcMarketStationDialogComparer(NpcMarketStationSortColumn column, bool descending)
         {
             _column = column;
             _descending = descending;

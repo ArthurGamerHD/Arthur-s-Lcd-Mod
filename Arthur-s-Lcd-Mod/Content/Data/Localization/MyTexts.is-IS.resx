@@ -545,6 +545,15 @@
     <data name="LcdMod_Common_Time_LessThanOneSecond" xml:space="preserve">
     <value>&lt; 1 s</value>
   </data>
+    <data name="LcdMod_Common_Time_Now" xml:space="preserve">
+    <value>núna</value>
+  </data>
+    <data name="LcdMod_Common_Time_RelativeSecondsAgoFormat" xml:space="preserve">
+    <value>-{0} sek.</value>
+  </data>
+    <data name="LcdMod_Common_Time_RelativeMinutesAgoFormat" xml:space="preserve">
+    <value>-{0} mín.</value>
+  </data>
     <data name="LcdMod_Common_Label_WithColon" xml:space="preserve">
     <value>{0}:</value>
   </data>
@@ -1003,5 +1012,74 @@ Við bíðum í smá stund og endurræsum hana síðan fyrir þig.</value>
   </data>
   <data name="LcdMod_FilePicker_BackToRoots" xml:space="preserve">
     <value>Til baka í rótarstaði</value>
+  </data>
+  <data name="LcdMod_AutoScroll" xml:space="preserve">
+    <value>Sjálfvirkt skrun</value>
+  </data>
+  <data name="LcdMod_AutoScroll_Tooltip" xml:space="preserve">
+    <value>Stillir töf milli skrunskrefa (0 slekkur á sjálfvirku skruni).</value>
+  </data>
+  <data name="LcdMod_Search_Script" xml:space="preserve">
+    <value>Leita að forritum</value>
+  </data>
+  <data name="LcdMod_Search_Script_Tooltip" xml:space="preserve">
+    <value>Síar forritalistann.</value>
+  </data>
+  <data name="LcdMod_GW_30m" xml:space="preserve">
+    <value>30 mínútur</value>
+  </data>
+  <data name="LcdMod_RenderScale" xml:space="preserve">
+    <value>Myndgerðarhlutfall</value>
+  </data>
+  <data name="LcdMod_RaysPerTick" xml:space="preserve">
+    <value>Geislar á hverju tikk</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality" xml:space="preserve">
+    <value>Áferðargæði reikistjörnu</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality_Tooltip" xml:space="preserve">
+    <value>Takmarkar smáatriði í áferð reikistjörnukorts á þessum biðlara. Ultra notar mestu tiltæku smáatriðin.</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality_VeryLow" xml:space="preserve">
+    <value>Mjög lág</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality_Low" xml:space="preserve">
+    <value>Lág</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality_Medium" xml:space="preserve">
+    <value>Miðlungs</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality_High" xml:space="preserve">
+    <value>Há</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality_Ultra" xml:space="preserve">
+    <value>Ultra</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_NoPlanet" xml:space="preserve">
+    <value>Engin reikistjarna fannst.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CartographyNotReady" xml:space="preserve">
+    <value>Gögn reikistjörnukortsins eru ekki tilbúin.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_NoColorCubemap" xml:space="preserve">
+    <value>Áferð reikistjörnukortsins er ekki tiltæk.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_NoResult" xml:space="preserve">
+    <value>Engum gögnum reikistjörnukorts var skilað.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CartographyFailed" xml:space="preserve">
+    <value>Kortlagning mistókst fyrir þessa gerð reikistjörnu.</value>
+  </data>
+  <data name="LcdMod_AudioBroadcast_Usage" xml:space="preserve">
+    <value>Notkun: /lcdmod streamaudio &lt;audio-id&gt;</value>
+  </data>
+  <data name="LcdMod_AudioBroadcast_AssetNotFoundFormat" xml:space="preserve">
+    <value>Hljóðtilfang fannst ekki: {0}</value>
+  </data>
+  <data name="LcdMod_AudioBroadcast_WaveRejectedFormat" xml:space="preserve">
+    <value>Hljóðskrá var hafnað: {0}</value>
+  </data>
+  <data name="LcdMod_AudioBroadcast_RequestedFormat" xml:space="preserve">
+    <value>Beiðni um hljóðútsendingu send: {0}</value>
   </data>
 </root>

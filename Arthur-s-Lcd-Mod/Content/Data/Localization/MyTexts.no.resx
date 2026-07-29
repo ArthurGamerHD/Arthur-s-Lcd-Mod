@@ -541,6 +541,15 @@
     <data name="LcdMod_Common_Time_LessThanOneSecond" xml:space="preserve">
     <value>&lt; 1 s</value>
   </data>
+    <data name="LcdMod_Common_Time_Now" xml:space="preserve">
+    <value>nå</value>
+  </data>
+    <data name="LcdMod_Common_Time_RelativeSecondsAgoFormat" xml:space="preserve">
+    <value>-{0} s</value>
+  </data>
+    <data name="LcdMod_Common_Time_RelativeMinutesAgoFormat" xml:space="preserve">
+    <value>-{0} min</value>
+  </data>
     <data name="LcdMod_Common_Label_WithColon" xml:space="preserve">
     <value>{0}:</value>
   </data>
@@ -999,5 +1008,74 @@ Vi venter en stund og starter den deretter på nytt for deg.</value>
   </data>
   <data name="LcdMod_FilePicker_BackToRoots" xml:space="preserve">
     <value>Tilbake til rotplasseringer</value>
+  </data>
+  <data name="LcdMod_AutoScroll" xml:space="preserve">
+    <value>Automatisk rulling</value>
+  </data>
+  <data name="LcdMod_AutoScroll_Tooltip" xml:space="preserve">
+    <value>Angi forsinkelsen mellom rulletrinn (0 deaktiverer automatisk rulling).</value>
+  </data>
+  <data name="LcdMod_Search_Script" xml:space="preserve">
+    <value>Søk etter apper</value>
+  </data>
+  <data name="LcdMod_Search_Script_Tooltip" xml:space="preserve">
+    <value>Filtrerer applisten.</value>
+  </data>
+  <data name="LcdMod_GW_30m" xml:space="preserve">
+    <value>30 minutter</value>
+  </data>
+  <data name="LcdMod_RenderScale" xml:space="preserve">
+    <value>Renderingsskala</value>
+  </data>
+  <data name="LcdMod_RaysPerTick" xml:space="preserve">
+    <value>Stråler per tick</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality" xml:space="preserve">
+    <value>Kvalitet på planetteksturer</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality_Tooltip" xml:space="preserve">
+    <value>Begrenser detaljnivået for planetkartets teksturer på denne klienten. Ultra bruker høyeste tilgjengelige detaljnivå.</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality_VeryLow" xml:space="preserve">
+    <value>Svært lav</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality_Low" xml:space="preserve">
+    <value>Lav</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality_Medium" xml:space="preserve">
+    <value>Middels</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality_High" xml:space="preserve">
+    <value>Høy</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality_Ultra" xml:space="preserve">
+    <value>Ultra</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_NoPlanet" xml:space="preserve">
+    <value>Ingen planet funnet.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CartographyNotReady" xml:space="preserve">
+    <value>Planetkartdataene er ikke klare ennå.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_NoColorCubemap" xml:space="preserve">
+    <value>Planetkartteksturene er ikke tilgjengelige.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_NoResult" xml:space="preserve">
+    <value>Ingen planetkartdata ble returnert.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CartographyFailed" xml:space="preserve">
+    <value>Kartleggingen mislyktes for denne planettypen.</value>
+  </data>
+  <data name="LcdMod_AudioBroadcast_Usage" xml:space="preserve">
+    <value>Bruk: /lcdmod streamaudio &lt;audio-id&gt;</value>
+  </data>
+  <data name="LcdMod_AudioBroadcast_AssetNotFoundFormat" xml:space="preserve">
+    <value>Lydressursen ble ikke funnet: {0}</value>
+  </data>
+  <data name="LcdMod_AudioBroadcast_WaveRejectedFormat" xml:space="preserve">
+    <value>Lydfilen ble avvist: {0}</value>
+  </data>
+  <data name="LcdMod_AudioBroadcast_RequestedFormat" xml:space="preserve">
+    <value>Lydkringkasting forespurt: {0}</value>
   </data>
 </root>

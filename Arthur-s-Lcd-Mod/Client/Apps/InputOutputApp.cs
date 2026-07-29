@@ -1,4 +1,3 @@
-using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
@@ -26,6 +25,7 @@ namespace LcdMod.Client.Apps
     /// in "All", its items are shown in two columns (input | output). Collapsed by default.
     /// </summary>
     [LcdApp(5)]
+    // ReSharper disable once PartialTypeWithSinglePart
     internal sealed partial class InputOutputApp : ItemsApp
     {
         public const string NAME = MOD_PREFIX + "InputOutput";
@@ -289,7 +289,6 @@ namespace LcdMod.Client.Apps
                 var control = _rowControls[i];
                 var row = _rows[i];
                 control.Row = row;
-                control.RowIndex = i;
                 control.CustomRender = RenderRowControl;
                 control.SetVisible(true);
 
@@ -629,7 +628,7 @@ namespace LcdMod.Client.Apps
             BlockUiState state;
             if (!_state.TryGetValue(entityId, out state))
             {
-                state = new BlockUiState { EntityId = entityId, Expanded = false, Mode = MODE_INPUT };
+                state = new BlockUiState { Expanded = false, Mode = MODE_INPUT };
                 _state[entityId] = state;
             }
 
@@ -705,7 +704,6 @@ namespace LcdMod.Client.Apps
 
         sealed class BlockUiState
         {
-            public long EntityId;
             public bool Expanded;
             public int Mode;
         }
@@ -717,7 +715,6 @@ namespace LcdMod.Client.Apps
             {
             }
 
-            public int RowIndex;
             public Row Row;
         }
 

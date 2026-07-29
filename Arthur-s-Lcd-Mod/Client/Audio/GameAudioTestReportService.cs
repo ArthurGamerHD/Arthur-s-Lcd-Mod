@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
-using LcdMod.Client;
 using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
@@ -41,8 +41,6 @@ namespace LcdMod.Client.Audio
             public ushort SourceChannels;
             public uint SourceSampleRate;
             public ushort SourceBitsPerSample;
-            public ushort Channels;
-            public uint SampleRate;
             public ushort BitsPerSample;
             public bool WasDownmixedToMono;
             public bool WasResampled;
@@ -100,7 +98,7 @@ namespace LcdMod.Client.Audio
                 if (definition == null)
                     continue;
 
-                AudioWavesDefinition data = null;
+                AudioWavesDefinition data;
 
                 try
                 {
@@ -117,12 +115,8 @@ namespace LcdMod.Client.Audio
                 if (data == null || data.Waves == null)
                     continue;
 
-                for (int i = 0; i < data.Waves.Count; i++)
+                foreach (var wave in data.Waves.Where(wave => wave != null))
                 {
-                    WaveData wave = data.Waves[i];
-                    if (wave == null)
-                        continue;
-
                     AddWaveReference(
                         references,
                         wave.Start,
@@ -142,10 +136,7 @@ namespace LcdMod.Client.Audio
             }
 
             var list = new List<AudioReference>(references.Values);
-            list.Sort(delegate(AudioReference left, AudioReference right)
-            {
-                return string.Compare(left.Path, right.Path, StringComparison.OrdinalIgnoreCase);
-            });
+            list.Sort((left, right) => string.Compare(left.Path, right.Path, StringComparison.OrdinalIgnoreCase));
 
             return list;
         }
@@ -244,8 +235,6 @@ namespace LcdMod.Client.Audio
                         result.SourceChannels = pcm.SourceChannels;
                         result.SourceSampleRate = pcm.SourceSampleRate;
                         result.SourceBitsPerSample = pcm.SourceBitsPerSample;
-                        result.Channels = pcm.Channels;
-                        result.SampleRate = pcm.SampleRate;
                         result.BitsPerSample = pcm.BitsPerSample;
                         result.WasDownmixedToMono = pcm.WasDownmixedToMono;
                         result.WasResampled = pcm.WasResampled;
@@ -326,8 +315,7 @@ namespace LcdMod.Client.Audio
 
             _progressNotification = MyAPIGateway.Utilities.CreateNotification(
                 BuildProgressText(tested, total),
-                int.MaxValue,
-                "White");
+                int.MaxValue);
             _progressNotification.Show();
         }
 
@@ -395,8 +383,6 @@ namespace LcdMod.Client.Audio
                 SourceChannels = pcm == null ? (ushort)0 : pcm.SourceChannels,
                 SourceSampleRate = pcm == null ? 0u : pcm.SourceSampleRate,
                 SourceBitsPerSample = pcm == null ? (ushort)0 : pcm.SourceBitsPerSample,
-                Channels = pcm == null ? (ushort)0 : pcm.Channels,
-                SampleRate = pcm == null ? 0u : pcm.SampleRate,
                 BitsPerSample = pcm == null ? (ushort)0 : pcm.BitsPerSample,
                 WasDownmixedToMono = pcm != null && pcm.WasDownmixedToMono,
                 WasResampled = pcm != null && pcm.WasResampled,

@@ -1,10 +1,9 @@
 using System;
 using System.Collections.Generic;
-using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 
-namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Clock
+namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 {
     internal sealed class Border : RectangleControl
     {

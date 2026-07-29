@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using Generated;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.ControlsTemplates.Progress;
 using LcdMod.Client.Helpers;
@@ -21,6 +20,7 @@ using IMyCubeGrid = VRage.Game.ModAPI.IMyCubeGrid;
 
 namespace LcdMod.Client.SurfaceScripts.Abstract
 {
+    // ReSharper disable once PartialTypeWithSinglePart
     public abstract partial class PowerSurfaceScriptBase : SurfaceScriptBase, IMultiDisplayMode
     {
         protected PowerConfigComponent PowerComponent => Config.GetComponent<PowerConfigComponent>();

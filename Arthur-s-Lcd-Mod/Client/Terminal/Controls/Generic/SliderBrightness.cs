@@ -1,4 +1,3 @@
-using System;
 using System.Text;
 using LcdMod.Client.Config;
 using LcdMod.Client.ScreenAreas;

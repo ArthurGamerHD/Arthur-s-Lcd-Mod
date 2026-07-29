@@ -10,13 +10,12 @@ using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
-using VRage.ModAPI;
 using VRageMath;
 
 using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
-    [LcdSurface(typeof(LcdMod.Client.Apps.VisibleTreeDebugApp))]
+    [LcdSurface(typeof(VisibleTreeDebugApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class VisibleTreeDebugSurfaceScript : InteractiveSurfaceScript,
         IUsesTerminalControl<ListboxVisibleTreeDebugBlockSelection>,

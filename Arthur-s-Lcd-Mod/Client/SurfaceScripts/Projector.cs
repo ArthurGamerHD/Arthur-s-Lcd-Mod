@@ -22,7 +22,7 @@ using SwitchToggleLines = LcdMod.Client.Terminal.Controls.Generic.SwitchToggleLi
 using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
-    [LcdSurface(typeof(LcdMod.Client.Apps.ProjectorApp))]
+    [LcdSurface(typeof(ProjectorApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class ProjectorLcdSurfaceScript : InteractiveSurfaceScript,
         IUsesTerminalControl<SwitchToggleLines>,

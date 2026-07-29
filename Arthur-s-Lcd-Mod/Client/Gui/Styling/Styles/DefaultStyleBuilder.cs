@@ -1,6 +1,4 @@
-using LcdMod.Client.ClockDashboard;
 using LcdMod.Client.Gui.ControlsTemplates;
-using LcdMod.Client.Gui.ControlsTemplates.Custom.Clock;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using VRageMath;
 

@@ -525,14 +525,14 @@ namespace LcdMod.Client.Modules.Cartography
             if (request.PlanetEntityId != 0)
             {
                 MyPlanet direct;
-                if (LcdMod.Client.Helpers.PlanetHelper.PlanetsById.TryGetValue(request.PlanetEntityId, out direct))
+                if (Helpers.PlanetHelper.PlanetsById.TryGetValue(request.PlanetEntityId, out direct))
                     return direct;
             }
 
             if (string.IsNullOrWhiteSpace(request.PlanetGeneratorSubtype))
                 return null;
 
-            foreach (var pair in LcdMod.Client.Helpers.PlanetHelper.PlanetsById)
+            foreach (var pair in Helpers.PlanetHelper.PlanetsById)
             {
                 var candidate = pair.Value;
                 if (candidate == null || candidate.MarkedForClose || candidate.Generator == null)

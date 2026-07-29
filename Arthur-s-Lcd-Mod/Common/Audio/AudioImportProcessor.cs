@@ -70,8 +70,8 @@ namespace LcdMod.Common.Audio
             var hash = ManagedSha256.ComputeHash(bytes);
             var builder = new StringBuilder(hash.Length * 2);
 
-            for (var i = 0; i < hash.Length; i++)
-                builder.Append(hash[i].ToString("X2"));
+            foreach (var hex in hash)
+                builder.Append(hex.ToString("X2"));
 
             return builder.ToString();
         }
@@ -203,14 +203,13 @@ namespace LcdMod.Common.Audio
                     throw new InvalidOperationException("Expected RIFF/WAVE container.");
 
                 var result = new SourceWave();
-                var hasFormat = false;
 
                 while (reader.Position + 8 <= reader.Length)
                 {
                     var chunkId = reader.ReadFourCc();
                     var chunkSize = reader.ReadUInt32();
                     var chunkStart = reader.Position;
-                    var chunkEnd = chunkStart + (long)chunkSize;
+                    var chunkEnd = chunkStart + chunkSize;
 
                     if (chunkEnd > reader.Length)
                         throw new InvalidOperationException("WAV chunk exceeds file length.");
@@ -226,7 +225,6 @@ namespace LcdMod.Common.Audio
                         reader.ReadUInt32();
                         result.BlockAlign = reader.ReadUInt16();
                         result.BitsPerSample = reader.ReadUInt16();
-                        hasFormat = true;
                     }
                     else if (chunkId == "data")
                     {
@@ -241,15 +239,12 @@ namespace LcdMod.Common.Audio
                         reader.Position++;
                 }
 
-                Validate(result, hasFormat);
+                Validate(result);
                 return result;
             }
 
-            static void Validate(SourceWave wave, bool hasFormat)
+            static void Validate(SourceWave wave)
             {
-                if (!hasFormat)
-                    throw new InvalidOperationException("Missing fmt chunk.");
-
                 if (wave.PcmBytes == null)
                     throw new InvalidOperationException("Missing data chunk.");
 

@@ -1,3 +1,4 @@
+// ReSharper disable RedundantUsingDirective
 using System.IO;
 using LcdMod.Client.Audio.Xwma;
 using Xunit;
@@ -10,7 +11,7 @@ namespace Arthur_s_Lcd_Mod.Tests
         public void ReadsFirst48000HzPacketHeader()
         {
             string path = Path.Combine(
-                System.AppContext.BaseDirectory,
+                AppContext.BaseDirectory,
                 "Data",
                 "Spazzmatica_Polka.xwm");
 
@@ -36,7 +37,7 @@ namespace Arthur_s_Lcd_Mod.Tests
         public void ReadsFirst44100HzPacketHeader()
         {
             string path = Path.Combine(
-                System.AppContext.BaseDirectory,
+                AppContext.BaseDirectory,
                 "Data",
                 "Mus_victory_KA_1.xwm");
 
@@ -60,7 +61,7 @@ namespace Arthur_s_Lcd_Mod.Tests
         public void AllowsFinalPacketWithNoDpdsGrowth()
         {
             string path = Path.Combine(
-                System.AppContext.BaseDirectory,
+                AppContext.BaseDirectory,
                 "Data",
                 "Mus_victory_KA_1.xwm");
 

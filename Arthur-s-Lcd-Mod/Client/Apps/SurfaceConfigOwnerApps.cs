@@ -5,7 +5,7 @@ using LcdMod.Common.Config.Components;
 using LcdMod.Common.Config.Generation;
 using LcdMod.Common.Helpers;
 using VRage.Game.GUI.TextPanel;
-
+// ReSharper disable PartialTypeWithSinglePart
 namespace LcdMod.Client.Apps
 {
     /// <summary>
@@ -28,6 +28,7 @@ namespace LcdMod.Client.Apps
     /// normal app factory/lifecycle until the nested-app work is designed.
     /// </summary>
     [LcdApp(26, Name = "Games")]
+
     internal sealed partial class GamesConfigApp : App
     {
         public GamesConfigApp(IAppHost host) : base(host) { }

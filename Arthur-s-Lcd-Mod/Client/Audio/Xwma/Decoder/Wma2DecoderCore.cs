@@ -1,5 +1,6 @@
+// ReSharper disable RedundantUsingDirective
 using System;
-using InvalidDataException = LcdMod.Common.InvalidDataException;
+using InvalidDataException = LcdMod.Common.Exceptions.InvalidDataException;
 
 namespace LcdMod.Client.Audio.Xwma.Decoder
 {
@@ -736,7 +737,7 @@ namespace LcdMod.Client.Audio.Xwma.Decoder
                 {
                     long frequency = Wma2Codebooks.CriticalFrequencies[i];
                     long numerator =
-                        (long)blockLength * 2L * frequency +
+                        blockLength * 2L * frequency +
                         ((long)sampleRate << 1);
                     int position = (int)(numerator /
                         (4L * sampleRate));

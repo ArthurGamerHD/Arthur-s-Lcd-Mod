@@ -4,10 +4,8 @@ using System.IO;
 using System.Linq;
 using Generated;
 using LcdMod.Client.Audio;
-using LcdMod.Common.Audio;
 #if EXPERIMENTAL
 using LcdMod.Client.Diagnostics;
-using LcdMod.Client.SurfaceScripts;
 #endif
 using LcdMod.Client.Market;
 using LcdMod.Client.Ftue;
@@ -393,7 +391,7 @@ namespace LcdMod.Client
                 textureBytes, metadata);
             LogHelper.LogInfo(
                 $"Client sending requested texture {TextureTransferHelper.BuildTextureKey(packet.OwnerSteamId, packet.TextureName)} to server ({textureBytes.Length} bytes)");
-            if (MyAPIGateway.Session.IsServer && LcdModSessionComponent.Server != null)
+            if (_session.Session.IsServer && LcdModSessionComponent.Server != null)
             {
                 LcdModSessionComponent.Server.HandleLocalSyncTexture(syncPacket);
                 return;
@@ -422,7 +420,7 @@ namespace LcdMod.Client
 
             LogHelper.LogInfo(
                 $"Client received requested texture {TextureTransferHelper.BuildTextureKey(packet.OwnerSteamId, packet.TextureName)} from server ({packet.Data.Length} bytes)");
-            TextureHelper.SaveRemoteTexture(packet, false);
+            TextureHelper.SaveRemoteTexture(packet);
         }
 
         public void HandleSyncNpcMarket(ReceivedPacketEventArgs args)
@@ -458,6 +456,14 @@ namespace LcdMod.Client
         public bool StartMediaPlayerLocalAudioStream(IMyTerminalBlock block, int surfaceIndex, AudioAssetMetadata asset, string title)
         {
             return _audioBroadcast.StartMediaPlayerLocalAudioStream(block, surfaceIndex, asset, title);
+        }
+
+        public bool CancelMediaPlayerLocalAudioStream(long blockEntityId, int surfaceIndex, bool stopPlayback)
+        {
+            return _audioBroadcast.CancelMediaPlayerLocalAudioStream(
+                blockEntityId,
+                surfaceIndex,
+                stopPlayback);
         }
 
         public void HandleSyncMediaStreamChunk(ReceivedPacketEventArgs args)
@@ -515,6 +521,15 @@ namespace LcdMod.Client
             var player = gridLogic.GetMediaPlayer(packet.BlockEntityId, packet.SurfaceIndex);
             if (player == null)
                 return;
+
+            if (packet.Command == MediaPlayerCommandKind.Play ||
+                packet.Command == MediaPlayerCommandKind.Stop)
+            {
+                _audioBroadcast.CancelMediaPlayerLocalAudioStream(
+                    packet.BlockEntityId,
+                    packet.SurfaceIndex,
+                    stopPlayback: true);
+            }
 
             ApplyMediaPlayerCommand(block, player, packet);
             gridLogic.MarkRequested();

@@ -1,5 +1,4 @@
 #if EXPERIMENTAL
-using LcdMod.Client.Terminal.Actions;
 using LcdMod.Client.Terminal.Models.Actions;
 using LcdMod.Client.Terminal.Models.Property;
 #endif
@@ -14,6 +13,7 @@ using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
+using LcdMod.Client.Terminal;
 using LcdMod.Client.Terminal.Models;
 using LcdMod.Common.Helpers;
 using Sandbox.Game.Entities;
@@ -51,7 +51,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         readonly ButtonPanelTargetSettings _target;
         readonly ButtonPanelActionSettings _initialSelection;
         readonly Action<ButtonPanelActionSettings> _selectedCallback;
-        readonly Action _cancelCallback;
         readonly Action _requestRedraw;
         readonly List<ButtonPanelActionSettings> _allItems = new List<ButtonPanelActionSettings>();
         readonly List<ButtonPanelActionSettings> _filteredItems = new List<ButtonPanelActionSettings>();
@@ -80,12 +79,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _target = target?.Clone();
             _initialSelection = initialSelection?.Clone();
             _selectedCallback = selectedCallback;
-            _cancelCallback = cancelCallback;
+            var cancelCallback1 = cancelCallback;
             _requestRedraw = requestRedraw;
             OnClose = delegate
             {
-                if (_cancelCallback != null)
-                    _cancelCallback();
+                if (cancelCallback1 != null)
+                    cancelCallback1();
             };
 
             _scrollPanel.ManualScrollInertiaEnabled = false;

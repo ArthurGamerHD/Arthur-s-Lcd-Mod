@@ -6,7 +6,7 @@ namespace Arthur_s_Lcd_Mod.Tests;
 
 public sealed class MinimalZipTests
 {
-    const string HelloWorld = "hello world";
+    const string HELLO_WORLD = "hello world";
 
     [Fact]
     public void Write_CreatesTextFileReadableByZipDependency()
@@ -15,13 +15,13 @@ public sealed class MinimalZipTests
 
         MinimalZip.Write(archive, new[]
         {
-            new MinimalZip.Entry("hello.txt", Encoding.UTF8.GetBytes(HelloWorld))
+            new MinimalZip.Entry("hello.txt", Encoding.UTF8.GetBytes(HELLO_WORLD))
         });
 
         var entries = ReadWithSharpZipLib(archive);
 
         Assert.Single(entries);
-        Assert.Equal(HelloWorld, Encoding.UTF8.GetString(entries["hello.txt"]));
+        Assert.Equal(HELLO_WORLD, Encoding.UTF8.GetString(entries["hello.txt"]));
     }
 
     [Fact]
@@ -29,13 +29,13 @@ public sealed class MinimalZipTests
     {
         byte[] archive = MinimalZip.WriteBytes(new[]
         {
-            new MinimalZip.Entry("hello.txt", Encoding.UTF8.GetBytes(HelloWorld))
+            new MinimalZip.Entry("hello.txt", Encoding.UTF8.GetBytes(HELLO_WORLD))
         });
 
         var entries = ReadWithSharpZipLib(archive);
 
         Assert.Single(entries);
-        Assert.Equal(HelloWorld, Encoding.UTF8.GetString(entries["hello.txt"]));
+        Assert.Equal(HELLO_WORLD, Encoding.UTF8.GetString(entries["hello.txt"]));
     }
 
     [Fact]
@@ -49,14 +49,14 @@ public sealed class MinimalZipTests
             MinimalZip.AddEntry(
                 writer,
                 "hello.txt",
-                Encoding.UTF8.GetBytes(HelloWorld));
+                Encoding.UTF8.GetBytes(HELLO_WORLD));
         }
 
         var entries = ReadWithSharpZipLib(archive);
 
         Assert.Equal(2, entries.Count);
         Assert.Equal("keep me", Encoding.UTF8.GetString(entries["existing.txt"]));
-        Assert.Equal(HelloWorld, Encoding.UTF8.GetString(entries["hello.txt"]));
+        Assert.Equal(HELLO_WORLD, Encoding.UTF8.GetString(entries["hello.txt"]));
     }
 
     [Fact]
@@ -71,7 +71,7 @@ public sealed class MinimalZipTests
                 writer,
                 new[]
                 {
-                    new MinimalZip.Entry("hello.txt", Encoding.UTF8.GetBytes(HelloWorld)),
+                    new MinimalZip.Entry("hello.txt", Encoding.UTF8.GetBytes(HELLO_WORLD)),
                     new MinimalZip.Entry("folder/goodbye.txt", Encoding.UTF8.GetBytes("goodbye"))
                 });
         }
@@ -80,7 +80,7 @@ public sealed class MinimalZipTests
 
         Assert.Equal(3, entries.Count);
         Assert.Equal("keep me", Encoding.UTF8.GetString(entries["existing.txt"]));
-        Assert.Equal(HelloWorld, Encoding.UTF8.GetString(entries["hello.txt"]));
+        Assert.Equal(HELLO_WORLD, Encoding.UTF8.GetString(entries["hello.txt"]));
         Assert.Equal("goodbye", Encoding.UTF8.GetString(entries["folder/goodbye.txt"]));
     }
 
@@ -129,7 +129,7 @@ public sealed class MinimalZipTests
             MinimalZip.AddEntry(
                 writer,
                 "hello.txt",
-                Encoding.UTF8.GetBytes(HelloWorld));
+                Encoding.UTF8.GetBytes(HELLO_WORLD));
         }
 
         Assert.Equal(creationTime, ReadCreationTimeWithSharpZipLib(archive, "existing.txt"));
@@ -139,7 +139,7 @@ public sealed class MinimalZipTests
     public void RemoveEntry_RemovesTextFileFromExistingArchive()
     {
         using var archive = CreateArchive(
-            ("hello.txt", HelloWorld),
+            ("hello.txt", HELLO_WORLD),
             ("existing.txt", "keep me"));
 
         bool removed;
@@ -160,7 +160,7 @@ public sealed class MinimalZipTests
     public void RemoveEntries_RemovesTextFilesFromExistingArchive()
     {
         using var archive = CreateArchive(
-            ("hello.txt", HelloWorld),
+            ("hello.txt", HELLO_WORLD),
             ("goodbye.txt", "goodbye"),
             ("existing.txt", "keep me"));
 
@@ -185,7 +185,7 @@ public sealed class MinimalZipTests
     public void ContainsEntry_FindsEntryFromCentralDirectory()
     {
         using var archive = CreateArchive(
-            ("hello.txt", HelloWorld),
+            ("hello.txt", HELLO_WORLD),
             ("folder/goodbye.txt", "goodbye"));
 
         Assert.True(MinimalZip.ContainsEntry(archive, "hello.txt"));

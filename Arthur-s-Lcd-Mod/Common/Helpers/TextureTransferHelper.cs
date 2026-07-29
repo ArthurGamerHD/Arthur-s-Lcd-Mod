@@ -206,12 +206,6 @@ namespace LcdMod.Common.Helpers
             fileName = string.Empty;
             failureReason = string.Empty;
 
-            if (typeof(LcdModSessionComponent) == null)
-            {
-                failureReason = "storage owner is null";
-                return false;
-            }
-
             var candidates = new List<string>();
             var cacheFile = BuildTextureFileName(ownerId, textureName);
             if (!string.IsNullOrEmpty(cacheFile))
@@ -363,7 +357,7 @@ namespace LcdMod.Common.Helpers
 
             try
             {
-                if (typeof(LcdModSessionComponent) == null || string.IsNullOrWhiteSpace(fileName))
+                if (string.IsNullOrWhiteSpace(fileName))
                     return false;
 
                 if (!MyAPIGateway.Utilities.FileExistsInLocalStorage(fileName, typeof(LcdModSessionComponent)))
@@ -1236,7 +1230,7 @@ namespace LcdMod.Common.Helpers
         {
             try
             {
-                if (typeof(LcdModSessionComponent) == null || string.IsNullOrWhiteSpace(sourceFileName) || string.IsNullOrWhiteSpace(destinationFileName))
+                if (string.IsNullOrWhiteSpace(sourceFileName) || string.IsNullOrWhiteSpace(destinationFileName))
                     return false;
 
                 if (string.Equals(sourceFileName, destinationFileName, StringComparison.OrdinalIgnoreCase))
@@ -1995,11 +1989,6 @@ namespace LcdMod.Common.Helpers
             }
         }
 
-        static bool TryReadCachedImagesArchive(out List<MinimalZip.Entry> entries)
-        {
-            return TryReadTextureArchive(CACHED_TEXTURES, out entries);
-        }
-
         static bool TryReadTextureArchive(string archiveFileName, out List<MinimalZip.Entry> entries)
         {
             entries = null;
@@ -2103,22 +2092,21 @@ namespace LcdMod.Common.Helpers
             return false;
         }
 
-        static bool TryWriteCachedArchiveEntry(string entryName, byte[] bytes)
+        static void TryWriteCachedArchiveEntry(string entryName, byte[] bytes)
         {
-            return TryWriteArchiveEntry(CACHED_TEXTURES, entryName, bytes);
+            TryWriteArchiveEntry(CACHED_TEXTURES, entryName, bytes);
         }
 
-        static bool TryWriteLocalArchiveEntry(string entryName, byte[] bytes)
+        static void TryWriteLocalArchiveEntry(string entryName, byte[] bytes)
         {
-            return TryWriteArchiveEntry(LOCAL_TEXTURES, entryName, bytes);
+            TryWriteArchiveEntry(LOCAL_TEXTURES, entryName, bytes);
         }
 
-        static bool TryWriteArchiveEntry(string archiveFileName, string entryName, byte[] bytes)
+        static void TryWriteArchiveEntry(string archiveFileName, string entryName, byte[] bytes)
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(entryName) || bytes == null)
-                    return false;
+                if (string.IsNullOrWhiteSpace(entryName) || bytes == null) return;
 
                 lock (CacheLock)
                 {
@@ -2126,13 +2114,10 @@ namespace LcdMod.Common.Helpers
                     UpsertArchiveEntry(entries, entryName, bytes);
                     WriteTextureArchiveEntries(archiveFileName, entries);
                 }
-
-                return true;
             }
             catch (Exception e)
             {
                 ErrorHandlerHelper.LogError(e, typeof(TextureTransferHelper));
-                return false;
             }
         }
 

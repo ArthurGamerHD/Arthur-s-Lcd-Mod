@@ -541,6 +541,15 @@
     <data name="LcdMod_Common_Time_LessThanOneSecond" xml:space="preserve">
     <value>&lt;1s</value>
   </data>
+    <data name="LcdMod_Common_Time_Now" xml:space="preserve">
+    <value>now</value>
+  </data>
+    <data name="LcdMod_Common_Time_RelativeSecondsAgoFormat" xml:space="preserve">
+    <value>-{0}s</value>
+  </data>
+    <data name="LcdMod_Common_Time_RelativeMinutesAgoFormat" xml:space="preserve">
+    <value>-{0}m</value>
+  </data>
     <data name="LcdMod_Common_Label_WithColon" xml:space="preserve">
     <value>{0}:</value>
   </data>
@@ -725,16 +734,16 @@ We are waiting for a while, and then we will restart it for you.</value>
     <value>Updated {0} ago</value>
   </data>
   <data name="LcdMod_Search_Script" xml:space="preserve">
-    <value>Search App</value>
+    <value>Search apps</value>
   </data>
   <data name="LcdMod_Search_Script_Tooltip" xml:space="preserve">
-    <value>Search for specific app</value>
+    <value>Filter the app list.</value>
   </data>
   <data name="LcdMod_AutoScroll" xml:space="preserve">
-    <value>Auto Scroll</value>
+    <value>Auto-scroll</value>
   </data>
   <data name="LcdMod_AutoScroll_Tooltip" xml:space="preserve">
-    <value>Set a delay for the scroll step (Set to 0 to disable)</value>
+    <value>Set the delay between scroll steps (0 disables auto-scroll).</value>
   </data>
 
   <data name="LcdMod_InGameClockDashboard" xml:space="preserve">
@@ -1003,5 +1012,62 @@ We are waiting for a while, and then we will restart it for you.</value>
   </data>
   <data name="LcdMod_FilePicker_BackToRoots" xml:space="preserve">
     <value>Back to roots</value>
+  </data>
+  <data name="LcdMod_GW_30m" xml:space="preserve">
+    <value>30 minutes</value>
+  </data>
+  <data name="LcdMod_RenderScale" xml:space="preserve">
+    <value>Render Scale</value>
+  </data>
+  <data name="LcdMod_RaysPerTick" xml:space="preserve">
+    <value>Rays per Tick</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality" xml:space="preserve">
+    <value>Planet Texture Quality</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality_Tooltip" xml:space="preserve">
+    <value>Limits planet map texture detail on this client. Ultra uses the maximum available detail.</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality_VeryLow" xml:space="preserve">
+    <value>Very Low</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality_Low" xml:space="preserve">
+    <value>Low</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality_Medium" xml:space="preserve">
+    <value>Medium</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality_High" xml:space="preserve">
+    <value>High</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality_Ultra" xml:space="preserve">
+    <value>Ultra</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_NoPlanet" xml:space="preserve">
+    <value>No planet found.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CartographyNotReady" xml:space="preserve">
+    <value>Planet map data is not ready.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_NoColorCubemap" xml:space="preserve">
+    <value>Planet map textures are unavailable.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_NoResult" xml:space="preserve">
+    <value>No planet map data was returned.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CartographyFailed" xml:space="preserve">
+    <value>Planet mapping failed for this planet type.</value>
+  </data>
+  <data name="LcdMod_AudioBroadcast_Usage" xml:space="preserve">
+    <value>Usage: /lcdmod streamaudio &lt;audio-id&gt;</value>
+  </data>
+  <data name="LcdMod_AudioBroadcast_AssetNotFoundFormat" xml:space="preserve">
+    <value>Audio asset not found: {0}</value>
+  </data>
+  <data name="LcdMod_AudioBroadcast_WaveRejectedFormat" xml:space="preserve">
+    <value>Audio file rejected: {0}</value>
+  </data>
+  <data name="LcdMod_AudioBroadcast_RequestedFormat" xml:space="preserve">
+    <value>Audio broadcast requested: {0}</value>
   </data>
 </root>

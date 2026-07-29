@@ -123,7 +123,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
         public float HorizontalScrollOffsetPixels => ScrollOffsetPixels2D.X;
         public float VerticalScrollOffsetPixels => ScrollOffsetPixels2D.Y;
         public float RowOffsetPixels { get; private set; }
-        public float ScrollVelocityPixelsPerFrame { get { return _scrollVelocityPixelsPerFrame.Y; } private set { _scrollVelocityPixelsPerFrame.Y = value; } }
+        public float ScrollVelocityPixelsPerFrame => _scrollVelocityPixelsPerFrame.Y;
         public bool IsAnimating { get; private set; }
         public Action<ScrollPanel> ScrollChanged { get; set; }
         public int TotalRows { get; private set; }
@@ -1109,11 +1109,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             return axis == ScrollAxis.Vertical
                 ? Math.Max(0f, GetTotalContentHeightPixels() - ContentViewportBounds.Height)
                 : Math.Max(0f, GetTotalContentWidthPixels() - ContentViewportBounds.Width);
-        }
-
-        float GetMaxScrollOffsetPixels()
-        {
-            return GetMaxScrollOffsetPixels(ScrollAxis.Vertical);
         }
 
         float GetTotalContentHeightPixels()

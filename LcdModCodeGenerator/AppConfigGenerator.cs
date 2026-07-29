@@ -13,13 +13,13 @@ namespace LcdModCodeGenerator;
 [Generator]
 public sealed class AppConfigGenerator : IIncrementalGenerator
 {
-    const string AppAttributeName = "LcdMod.Common.Config.Generation.LcdAppAttribute";
-    const string ComponentAttributeName = "LcdMod.Common.Config.Generation.ConfigComponentAttribute";
-    const string SurfaceAttributeName = "LcdMod.Common.Config.Generation.LcdSurfaceAttribute";
-    const string AppBaseName = "LcdMod.Client.Apps.Abstract.App";
-    const string SurfaceBaseName = "LcdMod.Client.SurfaceScripts.Abstract.SurfaceScriptBase";
-    const string ConfigComponentBaseName = "LcdMod.Common.Config.Components.ConfigComponent";
-    const string BlockReferenceComponentName = "LcdMod.Common.Config.Components.BlockReferenceConfigComponent";
+    const string APP_ATTRIBUTE_NAME = "LcdMod.Common.Config.Generation.LcdAppAttribute";
+    const string COMPONENT_ATTRIBUTE_NAME = "LcdMod.Common.Config.Generation.ConfigComponentAttribute";
+    const string SURFACE_ATTRIBUTE_NAME = "LcdMod.Common.Config.Generation.LcdSurfaceAttribute";
+    const string APP_BASE_NAME = "LcdMod.Client.Apps.Abstract.App";
+    const string SURFACE_BASE_NAME = "LcdMod.Client.SurfaceScripts.Abstract.SurfaceScriptBase";
+    const string CONFIG_COMPONENT_BASE_NAME = "LcdMod.Common.Config.Components.ConfigComponent";
+    const string BLOCK_REFERENCE_COMPONENT_NAME = "LcdMod.Common.Config.Components.BlockReferenceConfigComponent";
 
     static readonly DiagnosticDescriptor InvalidAppId = Error("LCDCFG001", "Invalid app ID", "App '{0}' must use a stable ID greater than zero");
     static readonly DiagnosticDescriptor DuplicateAppId = Error("LCDCFG002", "Duplicate app ID", "Apps '{0}' and '{1}' both use stable ID {2}");
@@ -41,21 +41,21 @@ public sealed class AppConfigGenerator : IIncrementalGenerator
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var apps = context.SyntaxProvider.ForAttributeWithMetadataName(
-                AppAttributeName,
+                APP_ATTRIBUTE_NAME,
                 static (node, _) => node is ClassDeclarationSyntax,
                 static (ctx, _) => ReadApp(ctx))
             .Where(static value => value != null)
             .Collect();
 
         var componentTargets = context.SyntaxProvider.ForAttributeWithMetadataName(
-                ComponentAttributeName,
+                COMPONENT_ATTRIBUTE_NAME,
                 static (node, _) => node is ClassDeclarationSyntax,
                 static (ctx, _) => ReadComponents(ctx))
             .Where(static value => value != null)
             .Collect();
 
         var surfaces = context.SyntaxProvider.ForAttributeWithMetadataName(
-                SurfaceAttributeName,
+                SURFACE_ATTRIBUTE_NAME,
                 static (node, _) => node is ClassDeclarationSyntax,
                 static (ctx, _) => ReadSurface(ctx))
             .Where(static value => value != null)
@@ -123,7 +123,7 @@ public sealed class AppConfigGenerator : IIncrementalGenerator
                 if (pair.Key == "PropertyName")
                     propertyName = pair.Value.Value as string;
 
-            declarations.Add(new ComponentInput(type, slot, componentType, propertyName, AttributeLocation(attribute, type)));
+            declarations.Add(new ComponentInput(slot, componentType, propertyName, AttributeLocation(attribute, type)));
         }
         return new ComponentTargetInput(type, declarations.ToImmutable());
     }
@@ -154,10 +154,10 @@ public sealed class AppConfigGenerator : IIncrementalGenerator
         ImmutableArray<ComponentTargetInput> rawComponentTargets,
         ImmutableArray<SurfaceInput> rawSurfaces)
     {
-        var appBase = compilation.GetTypeByMetadataName(AppBaseName);
-        var surfaceBase = compilation.GetTypeByMetadataName(SurfaceBaseName);
-        var componentBase = compilation.GetTypeByMetadataName(ConfigComponentBaseName);
-        var blockReferenceComponent = compilation.GetTypeByMetadataName(BlockReferenceComponentName);
+        var appBase = compilation.GetTypeByMetadataName(APP_BASE_NAME);
+        var surfaceBase = compilation.GetTypeByMetadataName(SURFACE_BASE_NAME);
+        var componentBase = compilation.GetTypeByMetadataName(CONFIG_COMPONENT_BASE_NAME);
+        var blockReferenceComponent = compilation.GetTypeByMetadataName(BLOCK_REFERENCE_COMPONENT_NAME);
 
         var componentByType = new Dictionary<INamedTypeSymbol, List<ComponentInput>>(SymbolEqualityComparer.Default);
         foreach (var target in rawComponentTargets)
@@ -332,8 +332,7 @@ public sealed class AppConfigGenerator : IIncrementalGenerator
                 continue;
             foreach (var declaration in declarations)
             {
-                ComponentInput previous;
-                if (bySlot.TryGetValue(declaration.Slot, out previous))
+                if (bySlot.TryGetValue(declaration.Slot, out _))
                 {
                     spc.ReportDiagnostic(Diagnostic.Create(DuplicateSlot, declaration.Location, appType.ToDisplayString(), declaration.Slot));
                     continue;
@@ -707,7 +706,7 @@ public sealed class AppConfigGenerator : IIncrementalGenerator
 
     static string TypeName(INamedTypeSymbol type) => type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
     static string Identifier(string value) => SyntaxFacts.GetKeywordKind(value) == SyntaxKind.None ? value : "@" + value;
-    static string Literal(string value) => Microsoft.CodeAnalysis.CSharp.SymbolDisplay.FormatLiteral(value ?? string.Empty, true);
+    static string Literal(string value) => SymbolDisplay.FormatLiteral(value ?? string.Empty, true);
     static string Escape(string value) => value.Replace("\\", "\\\\").Replace("\"", "\\\"");
     static string SafeHint(INamedTypeSymbol type) => type.ToDisplayString().Replace('<', '_').Replace('>', '_').Replace('.', '_').Replace('+', '_');
 
@@ -741,18 +740,13 @@ public sealed class AppConfigGenerator : IIncrementalGenerator
         public ImmutableArray<ComponentInput> Components { get; }
     }
 
-    sealed class ComponentInput
+    sealed class ComponentInput(string slot, INamedTypeSymbol componentType, string propertyName, Location location)
     {
-        public ComponentInput(INamedTypeSymbol declaringType, string slot, INamedTypeSymbol componentType, string propertyName, Location location)
-        {
-            DeclaringType = declaringType; Slot = slot; ComponentType = componentType; ExplicitPropertyName = propertyName; PropertyName = propertyName; Location = location;
-        }
-        public INamedTypeSymbol DeclaringType { get; }
-        public string Slot { get; }
-        public INamedTypeSymbol ComponentType { get; }
-        public string ExplicitPropertyName { get; }
-        public string PropertyName { get; set; }
-        public Location Location { get; }
+        public string Slot { get; } = slot;
+        public INamedTypeSymbol ComponentType { get; } = componentType;
+        public string ExplicitPropertyName { get; } = propertyName;
+        public string PropertyName { get; set; } = propertyName;
+        public Location Location { get; } = location;
     }
 
     sealed class SurfaceInput

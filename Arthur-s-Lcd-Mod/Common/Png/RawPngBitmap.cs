@@ -1,10 +1,11 @@
+// ReSharper disable RedundantUsingDirective
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using ArgumentOutOfRangeException = LcdMod.Common.ArgumentOutOfRangeException;
-using EndOfStreamException = LcdMod.Common.EndOfStreamException;
-using InvalidDataException = LcdMod.Common.InvalidDataException;
+using ArgumentOutOfRangeException = LcdMod.Common.Exceptions.ArgumentOutOfRangeException;
+using EndOfStreamException = LcdMod.Common.Exceptions.EndOfStreamException;
+using InvalidDataException = LcdMod.Common.Exceptions.InvalidDataException;
 using ZipCrc32 = LcdMod.Common.Zip.Crc32;
 using ZipZlib = LcdMod.Common.Zip.Zlib;
 
@@ -490,7 +491,7 @@ namespace LcdMod.Common.Png
                     byte g;
                     byte b;
                     byte a;
-                    ushort exactRed = 0;
+                    ushort exactRed;
 
                     if (colorType == 0)
                     {

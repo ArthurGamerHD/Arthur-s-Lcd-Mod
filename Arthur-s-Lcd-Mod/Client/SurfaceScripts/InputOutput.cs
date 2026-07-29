@@ -14,7 +14,7 @@ using VRageMath;
 using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
-    [LcdSurface(typeof(LcdMod.Client.Apps.InputOutputApp))]
+    [LcdSurface(typeof(InputOutputApp))]
 #if EXPERIMENTAL
     [MyTextSurfaceScript(ID, "Input / Output")]
 #endif

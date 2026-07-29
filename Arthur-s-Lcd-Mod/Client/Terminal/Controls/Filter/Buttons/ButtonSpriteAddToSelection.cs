@@ -39,7 +39,7 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Buttons
             var selected = GetSelectedSprites(config).ToList();
             for (int i = 0; i < sprites.Length; i++)
             {
-                if (!selected.Contains(sprites[i], System.StringComparer.OrdinalIgnoreCase))
+                if (!selected.Contains(sprites[i], StringComparer.OrdinalIgnoreCase))
                     selected.Add(sprites[i]);
             }
 

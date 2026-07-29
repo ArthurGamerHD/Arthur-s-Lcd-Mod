@@ -1,4 +1,3 @@
-using LcdMod.Common.Config.Components;
 using System;
 using LcdMod.Client.Apps.Abstract;
 using Sandbox.ModAPI;
@@ -7,6 +6,7 @@ using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.Apps
 {
     [LcdApp(6)]
+    // ReSharper disable once PartialTypeWithSinglePart
     internal sealed partial class GeneratorsApp : PowerApp
     {
         static readonly PowerEntryDefinition[] Definitions =

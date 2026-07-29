@@ -18,7 +18,7 @@ using VRageMath;
 using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
-    [LcdSurface(typeof(LcdMod.Client.Apps.GeneratorsApp))]
+    [LcdSurface(typeof(GeneratorsApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class GeneratorsSurfaceScript : InteractiveSurfaceScript, IAutoScroll, IMultiDisplayMode,
         IUsesTerminalControl<ComboboxLinkType>

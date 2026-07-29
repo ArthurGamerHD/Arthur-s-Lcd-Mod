@@ -1,6 +1,6 @@
 using System;
 
-namespace LcdMod.Common
+namespace LcdMod.Common.Exceptions
 {
     public class NotImplementedException : Exception
     {

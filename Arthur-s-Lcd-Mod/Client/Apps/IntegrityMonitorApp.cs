@@ -19,7 +19,6 @@ using ColorExtensions = LcdMod.Client.Extensions.ColorExtensions;
 using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
 
 using LcdMod.Common.Config.Generation;
-using LcdMod.Common.Helpers;
 
 namespace LcdMod.Client.Apps
 {

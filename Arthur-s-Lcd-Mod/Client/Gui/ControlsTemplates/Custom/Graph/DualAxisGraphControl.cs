@@ -17,7 +17,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Graph
         RectangleF _plotBounds;
 
         public DualAxisGraphControl(RectangleF bounds)
-            : base()
         {
             _bounds = bounds;
             LeftValueFormatter = FormatMWh;

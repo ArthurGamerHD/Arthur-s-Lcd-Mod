@@ -1,4 +1,4 @@
-// ReSharper disable EmptyNamespace
+// ReSharper disable All
 namespace LcdMod.Common
 {
 }
@@ -9,6 +9,7 @@ namespace Sandbox.ModAPI
     {
     }
 
+    // ReSharper disable once InconsistentNaming
     public static class MyAPIGateway
     {
         public static MyUtilities Utilities { get; set; } = new MyUtilities();
@@ -17,22 +18,22 @@ namespace Sandbox.ModAPI
 
     public sealed class MySession
     {
-        public System.Collections.Generic.List<VRage.Game.MyObjectBuilder_Checkpoint.ModItem> Mods { get; set; } =
-            new System.Collections.Generic.List<VRage.Game.MyObjectBuilder_Checkpoint.ModItem>();
+        public List<VRage.Game.MyObjectBuilder_Checkpoint.ModItem> Mods { get; set; } =
+            new List<VRage.Game.MyObjectBuilder_Checkpoint.ModItem>();
     }
 
     public sealed class MyUtilities
     {
         public string GameContentRoot { get; set; } = string.Empty;
 
-        public System.IO.BinaryWriter WriteBinaryFileInGlobalStorage(string name)
+        public BinaryWriter WriteBinaryFileInGlobalStorage(string name)
         {
-            return new System.IO.BinaryWriter(new System.IO.MemoryStream(), System.Text.Encoding.UTF8, leaveOpen: false);
+            return new BinaryWriter(new MemoryStream(), System.Text.Encoding.UTF8, leaveOpen: false);
         }
 
         public bool FileExistsInGameContent(string name)
         {
-            return System.IO.File.Exists(ResolveGameContentPath(name));
+            return File.Exists(ResolveGameContentPath(name));
         }
 
         public bool FileExistsInModLocation(
@@ -42,26 +43,26 @@ namespace Sandbox.ModAPI
             return false;
         }
 
-        public System.IO.BinaryReader ReadBinaryFileInGameContent(string name)
+        public BinaryReader ReadBinaryFileInGameContent(string name)
         {
-            return new System.IO.BinaryReader(System.IO.File.OpenRead(ResolveGameContentPath(name)));
+            return new BinaryReader(File.OpenRead(ResolveGameContentPath(name)));
         }
 
-        public System.IO.BinaryReader ReadBinaryFileInModLocation(
+        public BinaryReader ReadBinaryFileInModLocation(
             string name,
             VRage.Game.MyObjectBuilder_Checkpoint.ModItem mod)
         {
-            throw new System.IO.FileNotFoundException(name);
+            throw new FileNotFoundException(name);
         }
 
         string ResolveGameContentPath(string name)
         {
-            if (System.IO.Path.IsPathRooted(name))
+            if (Path.IsPathRooted(name))
                 return name;
 
             return string.IsNullOrEmpty(GameContentRoot)
                 ? name
-                : System.IO.Path.Combine(GameContentRoot, name);
+                : Path.Combine(GameContentRoot, name);
         }
     }
 }
@@ -153,7 +154,7 @@ namespace LcdMod.Common.Helpers
 {
     public static class ErrorHandlerHelper
     {
-        public static void LogError(System.Exception exception, object source)
+        public static void LogError(Exception exception, object source)
         {
         }
     }

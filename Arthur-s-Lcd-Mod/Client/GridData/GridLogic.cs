@@ -4,7 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using LcdMod.Client.Helpers;
-using LcdMod.Client.Terminal.Actions;
+using LcdMod.Client.Terminal;
 using LcdMod.Common.Helpers;
 using LcdMod.Common.Networking;
 using Sandbox.Definitions;
@@ -20,7 +20,7 @@ using IMyFarmPlotLogic = Sandbox.ModAPI.IMyFarmPlotLogic;
 using IMyFunctionalBlock = Sandbox.ModAPI.IMyFunctionalBlock;
 using IMySlimBlock = VRage.Game.ModAPI.IMySlimBlock;
 using IngameItem = VRage.Game.ModAPI.Ingame.MyInventoryItem;
-using NotImplementedException = LcdMod.Common.NotImplementedException;
+using NotImplementedException = LcdMod.Common.Exceptions.NotImplementedException;
 namespace LcdMod.Client.GridData
 {
     /// <summary>

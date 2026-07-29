@@ -1,5 +1,4 @@
 using Generated;
-using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;

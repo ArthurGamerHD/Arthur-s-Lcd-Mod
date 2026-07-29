@@ -1,4 +1,3 @@
-using LcdMod.Common.Config.Components;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.GridData;
@@ -9,6 +8,7 @@ using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.Apps
 {
     [LcdApp(4)]
+    // ReSharper disable once PartialTypeWithSinglePart
     internal sealed partial class InventoryApp : ItemsApp
     {
         public const string NAME = "Inventory";

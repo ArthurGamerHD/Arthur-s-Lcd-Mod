@@ -51,7 +51,7 @@ namespace LcdMod.Client.Gui.Styling
 
         public Style SetId(string id)
         {
-            Style child = new Style(this, TargetType, Class, id, StyleState.None);
+            Style child = new Style(this, TargetType, Class, id);
             Children.Add(child);
             return child;
         }
@@ -61,9 +61,7 @@ namespace LcdMod.Client.Gui.Styling
             Style child = new Style(
                 this,
                 TargetType,
-                string.IsNullOrEmpty(@class) ? Control.DEFAULT_STYLE_CLASS : @class,
-                null,
-                StyleState.None);
+                string.IsNullOrEmpty(@class) ? Control.DEFAULT_STYLE_CLASS : @class);
 
             Children.Add(child);
             return child;
@@ -116,7 +114,7 @@ namespace LcdMod.Client.Gui.Styling
 
         public new Style<TControl> Id(string id)
         {
-            Style<TControl> child = new Style<TControl>(this, id, StyleState.None);
+            Style<TControl> child = new Style<TControl>(this, id);
             Children.Add(child);
             return child;
         }

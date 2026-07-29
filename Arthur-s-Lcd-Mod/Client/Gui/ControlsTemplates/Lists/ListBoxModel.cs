@@ -193,7 +193,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
 
         public bool IsDraggingItem(T item)
         {
-            return DraggingItem && object.Equals(DraggedItem, item);
+            return DraggingItem && Equals(DraggedItem, item);
         }
 
         public bool TryGetDragGhost(out T item, out int index, out RectangleF bounds)
@@ -251,13 +251,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
 
             if (targetIndex == currentIndex)
             {
-                if (DraggingItem && object.Equals(DraggedItem, item))
+                if (DraggingItem && Equals(DraggedItem, item))
                     DraggedItemIndex = currentIndex;
                 return false;
             }
 
             EntryMoved(item, currentIndex, targetIndex);
-            if (DraggingItem && object.Equals(DraggedItem, item))
+            if (DraggingItem && Equals(DraggedItem, item))
                 DraggedItemIndex = targetIndex;
             return true;
         }

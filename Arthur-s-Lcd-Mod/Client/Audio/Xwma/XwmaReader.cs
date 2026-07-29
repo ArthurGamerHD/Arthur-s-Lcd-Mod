@@ -1,7 +1,8 @@
+// ReSharper disable RedundantUsingDirective
 using System;
 using System.IO;
-using EndOfStreamException = LcdMod.Common.EndOfStreamException;
-using InvalidDataException = LcdMod.Common.InvalidDataException;
+using EndOfStreamException = LcdMod.Common.Exceptions.EndOfStreamException;
+using InvalidDataException = LcdMod.Common.Exceptions.InvalidDataException;
 
 namespace LcdMod.Client.Audio.Xwma
 {
@@ -422,7 +423,7 @@ namespace LcdMod.Client.Audio.Xwma
                         "The dpds table decreases at entry " + i + ".");
                 }
 
-                uint decodedBlockAlign = (uint)(format.Channels * 2u);
+                uint decodedBlockAlign = format.Channels * 2u;
                 if ((current % decodedBlockAlign) != 0)
                 {
                     throw new InvalidDataException(

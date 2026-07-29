@@ -10,14 +10,12 @@ using LcdMod.Common.Helpers;
 using LcdMod.Common.Networking;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
-using VRage.Game;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 using static LcdMod.Common.Helpers.Constants;
 using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
 using MyInventoryItem = VRage.Game.ModAPI.Ingame.MyInventoryItem;
-using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
 
 namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 {
@@ -27,30 +25,30 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
     /// </summary>
     internal sealed class ContainerActionDialog : Dialog
     {
-        private const int MAX_VISIBLE_ROWS = 20;
-        private readonly List<IMyTerminalBlock> _candidates = new List<IMyTerminalBlock>();
-        private readonly List<DisplayRow> _displayRows = new List<DisplayRow>();
-        private readonly Action<List<string>, List<string>> _onSaveFilter;
-        private readonly Action<string> _onStatusMessage;
+        const int MAX_VISIBLE_ROWS = 20;
+        readonly List<IMyTerminalBlock> _candidates = new List<IMyTerminalBlock>();
+        readonly List<DisplayRow> _displayRows = new List<DisplayRow>();
+        readonly Action<List<string>, List<string>> _onSaveFilter;
+        readonly Action<string> _onStatusMessage;
 
-        private readonly List<RectangleControl> _pool = new List<RectangleControl>();
-        private readonly HashSet<string> _selectedCategories = new HashSet<string>();
+        readonly List<RectangleControl> _pool = new List<RectangleControl>();
+        readonly HashSet<string> _selectedCategories = new HashSet<string>();
 
-        private readonly HashSet<long> _selectedTargets = new HashSet<long>();
-        private readonly HashSet<string> _selectedTypeKeys = new HashSet<string>();
-        private readonly Action<Dialog> _showDialog;
+        readonly HashSet<long> _selectedTargets = new HashSet<long>();
+        readonly HashSet<string> _selectedTypeKeys = new HashSet<string>();
+        readonly Action<Dialog> _showDialog;
 
-        private readonly IMyTerminalBlock _source;
-        private readonly List<TypeRow> _types = new List<TypeRow>();
-        private int _maxScroll;
-        private TransferMode _mode;
-        private int _poolIndex;
-        private int _scroll;
-        private RectangleControl _scrollCatcher;
-        private bool _scrollRenderQueued;
+        readonly IMyTerminalBlock _source;
+        readonly List<TypeRow> _types = new List<TypeRow>();
+        int _maxScroll;
+        TransferMode _mode;
+        int _poolIndex;
+        int _scroll;
+        RectangleControl _scrollCatcher;
+        bool _scrollRenderQueued;
 
-        private int _step;
-        private bool _typesBuilt;
+        int _step;
+        bool _typesBuilt;
 
         public ContainerActionDialog(IApp parentApp, IMyTerminalBlock source,
             List<IMyTerminalBlock> candidates, Action<Dialog> showDialog,
@@ -148,14 +146,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 footerTop - bodyTop - 8f * scale);
 
             if (_step == 0)
-                RenderActionStep(bodyRect, scale, buttonScale, cardTextColor);
+                RenderActionStep(bodyRect, scale, buttonScale);
             else
-                RenderListStep(bodyRect, scale, bodyScale, cardTextColor, surface);
+                RenderListStep(bodyRect, scale, bodyScale, surface);
 
-            RenderFooter(cardRect, footerTop, footerHeight, pad, scale, buttonScale, surface);
+            RenderFooter(cardRect, footerTop, footerHeight, pad, scale, buttonScale);
         }
 
-        private string GetTitle()
+        string GetTitle()
         {
             var name = SafeName(_source);
             switch (_step)
@@ -169,7 +167,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             }
         }
 
-        private void RenderActionStep(RectangleF body, float scale, float buttonScale, Color textColor)
+        void RenderActionStep(RectangleF body, float scale, float buttonScale)
         {
             var gap = 10f * scale;
             var h = Math.Min(46f * scale, (body.Height - 2f * gap) / 3f);
@@ -199,7 +197,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 });
         }
 
-        private void RenderListStep(RectangleF body, float scale, float rowScale, Color textColor,
+        void RenderListStep(RectangleF body, float scale, float rowScale,
             IMyTextSurface surface)
         {
             var rowHeight = MeasureLineHeight(rowScale, surface) + 6f * scale;
@@ -279,8 +277,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             }
         }
 
-        private void RenderFooter(RectangleF cardRect, float footerTop, float footerHeight, float pad, float scale,
-            float buttonScale, IMyTextSurface surface)
+        void RenderFooter(RectangleF cardRect, float footerTop, float footerHeight, float pad, float scale,
+            float buttonScale)
         {
             if (_step == 0)
                 return;
@@ -319,7 +317,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             }
         }
 
-        private bool OnListScroll(object dataContext, object sender, int delta)
+        bool OnListScroll(object dataContext, object sender, int delta)
         {
             if (_step == 0)
                 return false;
@@ -345,7 +343,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             return true;
         }
 
-        private void GoToStep(int step)
+        void GoToStep(int step)
         {
             if (step < 0)
             {
@@ -358,7 +356,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             _showDialog?.Invoke(this);
         }
 
-        private void GoToItems()
+        void GoToItems()
         {
             GatherGameTypes();
             _step = 2;
@@ -366,7 +364,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             _showDialog?.Invoke(this);
         }
 
-        private void ToggleAll()
+        void ToggleAll()
         {
             if (_step == 1)
             {
@@ -388,21 +386,21 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             _showDialog?.Invoke(this);
         }
 
-        private void Toggle(HashSet<long> set, long value)
+        void Toggle(HashSet<long> set, long value)
         {
             if (!set.Remove(value))
                 set.Add(value);
             _showDialog?.Invoke(this);
         }
 
-        private void Toggle(HashSet<string> set, string value)
+        void Toggle(HashSet<string> set, string value)
         {
             if (!set.Remove(value))
                 set.Add(value);
             _showDialog?.Invoke(this);
         }
 
-        private void GatherGameTypes()
+        void GatherGameTypes()
         {
             if (_typesBuilt)
                 return;
@@ -458,7 +456,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             _typesBuilt = true;
         }
 
-        private static bool PassesWhiteList(MyPhysicalItemDefinition def)
+        static bool PassesWhiteList(MyPhysicalItemDefinition def)
         {
             var id = def.Id.ToString();
             return !id.Contains("_TreeObject/")
@@ -466,7 +464,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                    && !id.Contains("GunObject/CubePlacerItem");
         }
 
-        private static string CategoryFor(string typeId, out int order)
+        static string CategoryFor(string typeId, out int order)
         {
             var t = typeId ?? string.Empty;
             const string prefix = "MyObjectBuilder_";
@@ -485,14 +483,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             return string.IsNullOrEmpty(t) ? "Other" : t;
         }
 
-        private void ExpandCategoriesToKeys(List<IMyTerminalBlock> targets, HashSet<string> keys)
+        void ExpandCategoriesToKeys(List<IMyTerminalBlock> targets, HashSet<string> keys)
         {
             AddCategoryItemKeys(_source, keys);
             for (var i = 0; i < targets.Count; i++)
                 AddCategoryItemKeys(targets[i], keys);
         }
 
-        private void AddCategoryItemKeys(IMyTerminalBlock block, HashSet<string> keys)
+        void AddCategoryItemKeys(IMyTerminalBlock block, HashSet<string> keys)
         {
             if (block == null || !block.HasInventory)
                 return;
@@ -515,7 +513,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             }
         }
 
-        private void Apply()
+        void Apply()
         {
             string status = null;
             try
@@ -566,13 +564,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             NotifyStatus(status);
         }
 
-        private void NotifyStatus(string message)
+        void NotifyStatus(string message)
         {
             if (_onStatusMessage != null && !string.IsNullOrEmpty(message))
                 _onStatusMessage(message);
         }
 
-        private string GetModeLabel()
+        string GetModeLabel()
         {
             switch (_mode)
             {
@@ -585,7 +583,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             }
         }
 
-        private void DrawButton(RectangleF rect, string text, float textScale, bool primary, bool enabled,
+        void DrawButton(RectangleF rect, string text, float textScale, bool primary, bool enabled,
             Action onClick)
         {
             var control = Rent(rect, enabled ? OnClickAction(onClick) : null);
@@ -625,7 +623,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             control.Render(Sprites);
         }
 
-        private void DrawRow(RectangleF rect, string text, float textScale, bool selected, Action onClick)
+        void DrawRow(RectangleF rect, string text, float textScale, bool selected, Action onClick)
         {
             var control = Rent(rect, OnClickAction(onClick));
             control.SetCursor(CursorType.Hand);
@@ -677,7 +675,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             control.Render(Sprites);
         }
 
-        private RectangleControl Rent(RectangleF rect, Action<object, object> onClick)
+        RectangleControl Rent(RectangleF rect, Action<object, object> onClick)
         {
             RectangleControl control;
             if (_poolIndex < _pool.Count)
@@ -697,14 +695,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             return control;
         }
 
-        private static Action<object, object> OnClickAction(Action onClick)
+        static Action<object, object> OnClickAction(Action onClick)
         {
             if (onClick == null)
                 return null;
             return delegate { onClick(); };
         }
 
-        private static string SafeName(IMyTerminalBlock block)
+        static string SafeName(IMyTerminalBlock block)
         {
             if (block == null)
                 return "?";
@@ -721,26 +719,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             }
         }
 
-        private static string GetItemName(MyItemType type)
-        {
-            try
-            {
-                MyDefinitionId id;
-                if (MyDefinitionId.TryParse(type.TypeId + "/" + type.SubtypeId, out id))
-                {
-                    var def = MyDefinitionManager.Static.GetPhysicalItemDefinition(id);
-                    if (def != null && !string.IsNullOrEmpty(def.DisplayNameText))
-                        return def.DisplayNameText;
-                }
-            }
-            catch (Exception)
-            {
-            }
-
-            return type.SubtypeId ?? string.Empty;
-        }
-
-        private struct TypeRow
+        struct TypeRow
         {
             public string Key;
             public string Name;
@@ -748,7 +727,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             public int Order;
         }
 
-        private struct DisplayRow
+        struct DisplayRow
         {
             public bool IsGroup;
             public string Label;

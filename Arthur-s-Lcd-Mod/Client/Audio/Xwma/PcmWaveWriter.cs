@@ -1,3 +1,4 @@
+// ReSharper disable RedundantUsingDirective
 using System;
 using System.IO;
 
@@ -11,8 +12,9 @@ namespace LcdMod.Client.Audio.Xwma
     /// </summary>
     internal static class PcmWaveWriter
     {
-        private const uint FORMAT_CHUNK_SIZE = 16;
-        private const uint WAVE_HEADER_SIZE = 44;
+        const uint FORMAT_CHUNK_SIZE = 16;
+        // ReSharper disable once UnusedMember.Local
+        const uint WAVE_HEADER_SIZE = 44;
 
         public static bool TryWriteFile(
             Stream stream,
@@ -80,7 +82,7 @@ namespace LcdMod.Client.Audio.Xwma
             }
         }
 
-        private static bool Validate(
+        static bool Validate(
             PcmWaveData data,
             out string failureReason)
         {
@@ -124,18 +126,17 @@ namespace LcdMod.Client.Audio.Xwma
 
             ushort requiredBlockAlign;
 
-            if (data.Channels == PcmAudioFormat.REQUIRED_MONO_CHANNELS)
+            switch (data.Channels)
             {
-                requiredBlockAlign = PcmAudioFormat.REQUIRED_MONO_BLOCK_ALIGN;
-            }
-            else if (data.Channels == PcmAudioFormat.SUPPORTED_STEREO_CHANNELS)
-            {
-                requiredBlockAlign = PcmAudioFormat.REQUIRED_STEREO_BLOCK_ALIGN;
-            }
-            else
-            {
-                failureReason = "Expected mono or stereo PCM.";
-                return false;
+                case PcmAudioFormat.REQUIRED_MONO_CHANNELS:
+                    requiredBlockAlign = PcmAudioFormat.REQUIRED_MONO_BLOCK_ALIGN;
+                    break;
+                case PcmAudioFormat.SUPPORTED_STEREO_CHANNELS:
+                    requiredBlockAlign = PcmAudioFormat.REQUIRED_STEREO_BLOCK_ALIGN;
+                    break;
+                default:
+                    failureReason = "Expected mono or stereo PCM.";
+                    return false;
             }
 
             if (data.BlockAlign != requiredBlockAlign)
@@ -144,25 +145,13 @@ namespace LcdMod.Client.Audio.Xwma
                 return false;
             }
 
-            if ((data.Samples.Length % data.BlockAlign) != 0)
-            {
-                failureReason = "PCM payload is not sample-frame aligned.";
-                return false;
-            }
+            if ((data.Samples.Length % data.BlockAlign) == 0) return true;
+            failureReason = "PCM payload is not sample-frame aligned.";
+            return false;
 
-            // standard RIFF/WAVE file uses unsigned 32-bit chunk sizes.
-            // Check if MaximumPcmBytes is below that limit, so we don't need to catch
-            // System.OverflowException (is not whitelisted)
-            if ((long)data.Samples.Length + WAVE_HEADER_SIZE > uint.MaxValue)
-            {
-                failureReason = "PCM payload is too large for a RIFF/WAVE file.";
-                return false;
-            }
-
-            return true;
         }
 
-        private static void WriteFourCc(
+        static void WriteFourCc(
             Stream stream,
             char c0,
             char c1,
@@ -175,13 +164,13 @@ namespace LcdMod.Client.Audio.Xwma
             stream.WriteByte((byte)c3);
         }
 
-        private static void WriteUInt16LittleEndian(Stream stream, ushort value)
+        static void WriteUInt16LittleEndian(Stream stream, ushort value)
         {
             stream.WriteByte((byte)value);
             stream.WriteByte((byte)(value >> 8));
         }
 
-        private static void WriteUInt32LittleEndian(Stream stream, uint value)
+        static void WriteUInt32LittleEndian(Stream stream, uint value)
         {
             stream.WriteByte((byte)value);
             stream.WriteByte((byte)(value >> 8));

@@ -24,7 +24,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels.Virtualized
             set
             {
                 float next = Math.Max(1f, value);
-                if (_rowHeight == next)
+                if (Math.Abs(_rowHeight - next) < 0.1)
                     return;
 
                 _rowHeight = next;
@@ -38,7 +38,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels.Virtualized
             set
             {
                 float next = Math.Max(1f, value);
-                if (_minimumColumnWidth == next)
+                if (Math.Abs(_minimumColumnWidth - next) < 0.1)
                     return;
 
                 _minimumColumnWidth = next;
@@ -65,7 +65,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels.Virtualized
             set
             {
                 float next = Math.Max(0f, value);
-                if (_horizontalGap == next)
+                if (Math.Abs(_horizontalGap - next) < 0.1)
                     return;
 
                 _horizontalGap = next;
@@ -79,7 +79,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels.Virtualized
             set
             {
                 float next = Math.Max(0f, value);
-                if (_verticalGap == next)
+                if (Math.Abs(_verticalGap - next) < 0.1)
                     return;
 
                 _verticalGap = next;

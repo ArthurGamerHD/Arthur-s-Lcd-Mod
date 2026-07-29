@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Generated;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Terminal.Controls;
@@ -13,6 +12,7 @@ using VRageMath;
 
 namespace LcdMod.Client.SurfaceScripts.Abstract
 {
+    // ReSharper disable once PartialTypeWithSinglePart
     public abstract partial class PercentageSurfaceScript<TEntry> : SurfaceScriptBase, IMultiDisplayMode
     {
         protected const int LINE_HEIGHT = 40;

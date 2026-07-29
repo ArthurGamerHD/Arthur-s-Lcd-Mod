@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using LcdMod.Client.Apps;
 using LcdMod.Client.Apps.Abstract;
@@ -6,7 +7,6 @@ using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Common.Config.Generation;
 using LcdMod.Common.Helpers;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
-using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
@@ -15,11 +15,11 @@ using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 
 namespace LcdMod.Client.SurfaceScripts
 {
-    [LcdSurface(typeof(LcdMod.Client.Apps.MediaPlayerApp))]
+    [LcdSurface(typeof(MediaPlayerApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class MediaPlayerSurfaceScript : InteractiveSurfaceScript
     {
-        static bool lazyInitialized;
+        static bool _lazyInitialized;
         public const string ID = "MediaPlayer";
         public const string TITLE = Constants.MOD_PREFIX + "MediaPlayer_Title";
 
@@ -37,15 +37,15 @@ namespace LcdMod.Client.SurfaceScripts
         protected override bool RendersInteractiveEntriesInGetSprites => true;
 
         public MediaPlayerSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
-            : base((Sandbox.ModAPI.IMyTextSurface)(object)surface, block, size)
+            : base((Sandbox.ModAPI.IMyTextSurface)surface, block, size)
         {
             lock (AppCacheLock)
             {
-                if (lazyInitialized)
+                if (_lazyInitialized)
                     return;
 
                 LcdModClientComponent.OnUpdateBeforeSimulation += UpdateDetachedApps;
-                lazyInitialized = true;
+                _lazyInitialized = true;
             }
         }
 
@@ -126,7 +126,7 @@ namespace LcdMod.Client.SurfaceScripts
                 {
                     cached.App.Update();
                 }
-                catch (System.Exception error)
+                catch (Exception error)
                 {
                     ErrorHandlerHelper.LogError(error, cached.Host);
                 }
@@ -168,7 +168,7 @@ namespace LcdMod.Client.SurfaceScripts
         void ReleaseCachedApp(bool close)
         {
             var key = GetCacheKey();
-            CachedMediaPlayerApp cached = null;
+            CachedMediaPlayerApp cached;
 
             lock (AppCacheLock)
             {
@@ -211,7 +211,7 @@ namespace LcdMod.Client.SurfaceScripts
             return functional != null && !functional.IsFunctional;
         }
 
-        struct MediaPlayerAppKey
+        struct MediaPlayerAppKey : IEquatable<MediaPlayerAppKey>
         {
             readonly long _blockId;
             readonly int _surfaceIndex;
@@ -234,6 +234,11 @@ namespace LcdMod.Client.SurfaceScripts
             public override int GetHashCode()
             {
                 return (_blockId.GetHashCode() * 397) ^ _surfaceIndex;
+            }
+
+            public bool Equals(MediaPlayerAppKey other)
+            {
+                return _blockId == other._blockId && _surfaceIndex == other._surfaceIndex;
             }
         }
 

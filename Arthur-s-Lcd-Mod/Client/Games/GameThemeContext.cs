@@ -12,7 +12,6 @@ namespace LcdMod.Client.Games
     internal sealed class GameThemeContext : IVisualStyleScope
     {
         readonly InteractiveSurfaceScript _script;
-        readonly StyleTree _styles;
         Dictionary<string, Color> _theme;
         ResourceTree _resources;
         bool _isDirty = true;
@@ -25,18 +24,18 @@ namespace LcdMod.Client.Games
         public GameThemeContext(InteractiveSurfaceScript script)
         {
             _script = script;
-            _styles = DefaultStyleBuilder.Build();
+            Styles = DefaultStyleBuilder.Build();
         }
 
         public IVisualStyleScope StyleParent => null;
 
-        public StyleTree Styles => _styles;
+        public StyleTree Styles { get; }
 
         public ResourceTree Resources
         {
             get
             {
-                GetTheme();
+                LoadTheme();
                 return _resources;
             }
         }
@@ -65,7 +64,7 @@ namespace LcdMod.Client.Games
             return _script?.ForegroundColor ?? Color.White;
         }
 
-        Dictionary<string, Color> GetTheme()
+        void LoadTheme()
         {
             var headerColor = GetHeaderColor();
             var foregroundColor = GetForegroundColor();
@@ -89,8 +88,6 @@ namespace LcdMod.Client.Games
                 _hasTheme = true;
                 MarkDirty();
             }
-
-            return _theme;
         }
 
         string GetTextFontResourceValue()

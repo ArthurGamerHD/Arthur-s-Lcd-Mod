@@ -8,7 +8,6 @@ using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts.Abstract;
-using LcdMod.Client.Terminal.Controls;
 using LcdMod.Common.Helpers;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;

@@ -22,7 +22,7 @@ using SwitchSubGrid = LcdMod.Client.Terminal.Controls.Generic.SwitchSubGrid;
 using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
-    [LcdSurface(typeof(LcdMod.Client.Apps.CargoFilledApp))]
+    [LcdSurface(typeof(CargoFilledApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class CargoFilledSurfaceScript : InteractiveSurfaceScript,
         IUsesTerminalControl<SwitchToggleLines>,

@@ -14,7 +14,7 @@ using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
 using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
-    [LcdSurface(typeof(LcdMod.Client.Apps.MarkdownApp))]
+    [LcdSurface(typeof(MarkdownApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class MarkdownSurfaceScript : SurfaceScriptBase,
         IUsesTerminalControl<ButtonEditMarkdown>, IInputBlock

@@ -1,3 +1,5 @@
+// ReSharper disable RedundantUsingDirective
+// ReSharper disable NotAccessedOutParameterVariable
 using System;
 using System.IO;
 using LcdMod.Client.Audio.Xwma.Decoder;
@@ -33,12 +35,12 @@ namespace LcdMod.Client.Audio
 
             try
             {
-                ResolvedAudioFile resolved;
-                string failureReason;
+                string b;
+                ResolvedAudioFile a;
                 return TryResolveTrustedAudioPath(
                     fallbackPath,
-                    out resolved,
-                    out failureReason);
+                    out a,
+                    out b);
             }
             catch
             {
@@ -75,15 +77,15 @@ namespace LcdMod.Client.Audio
             out string failureReason,
             out GameAudioContainerKind containerKind)
         {
-            string resolvedWavePath;
-            bool usedWavFallback;
+            string a;
+            bool b;
             return TryReadInGameContent(
                 wavePath,
                 out pcm,
                 out failureReason,
                 out containerKind,
-                out resolvedWavePath,
-                out usedWavFallback);
+                out a,
+                out b);
         }
 
         public static bool TryReadInGameContent(
@@ -228,7 +230,7 @@ namespace LcdMod.Client.Audio
             failureReason = string.Empty;
             containerKind = GameAudioContainerKind.Unknown;
 
-            if (reader == null || reader.BaseStream == null)
+            if (reader == null)
             {
                 failureReason = "Missing input stream.";
                 return false;
@@ -371,6 +373,7 @@ namespace LcdMod.Client.Audio
             }
             catch
             {
+                // file not found, ignoring
             }
 
             return false;

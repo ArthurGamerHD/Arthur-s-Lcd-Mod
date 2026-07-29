@@ -1,5 +1,7 @@
+// ReSharper disable RedundantUsingDirective
 using System;
 using System.IO;
+// ReSharper disable NotAccessedOutParameterVariable
 
 namespace LcdMod.Common.Imaging
 {
@@ -27,6 +29,8 @@ namespace LcdMod.Common.Imaging
 
         enum DdsPixelEncoding
         {
+            // ReSharper disable once UnusedMember.Local
+            // well, is unknown, so its usage is unknown ;P
             Unknown,
             Dxt1,
             Bc7,
@@ -636,6 +640,8 @@ namespace LcdMod.Common.Imaging
                 return (byte)(raw >> (bitCount - 8));
 
             uint maximum = (1u << bitCount) - 1u;
+            if (maximum == 0)
+                throw new DivideByZeroException();
             return (byte)((raw * 255u + maximum / 2u) / maximum);
         }
 

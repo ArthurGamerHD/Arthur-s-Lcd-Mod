@@ -16,8 +16,8 @@ using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.ControlsTemplates.Panels.Virtualized;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
+using LcdMod.Client.Terminal;
 #if EXPERIMENTAL
-using LcdMod.Client.Terminal.Actions;
 using LcdMod.Client.Terminal.Models;
 using LcdMod.Client.Terminal.Models.Actions;
 using LcdMod.Client.Terminal.Models.Property;
@@ -36,6 +36,8 @@ using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 using IMyTerminalBlock = Sandbox.ModAPI.IMyTerminalBlock;
 
 using LcdMod.Common.Config.Generation;
+// ReSharper disable All
+// todo: fix-me
 namespace LcdMod.Client.Apps
 {
     [LcdApp(23, Name = "ButtonPanel")]
@@ -90,8 +92,6 @@ namespace LcdMod.Client.Apps
         float LayoutScale => Scale * FontScale;
 
         RectangleF ViewBox => Host.ViewBox;
-
-        IMyTextSurface Surface => Host.Surface;
 
         public override void Update()
         {

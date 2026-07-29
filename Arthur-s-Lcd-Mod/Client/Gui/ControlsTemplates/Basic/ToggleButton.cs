@@ -1,7 +1,5 @@
 using System;
-using System.Collections.Generic;
 using LcdMod.Client.Gui.Styling;
-using VRage.Game.GUI.TextPanel;
 using VRageMath;
 
 namespace LcdMod.Client.Gui.ControlsTemplates.Basic
@@ -11,6 +9,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
     /// The state is queried while rendering so the button always reflects the
     /// current application mode without maintaining a second local copy.
     /// </summary>
+    // ReSharper disable once PartialTypeWithSinglePart
     public partial class ToggleButton : Button
     {
         public ToggleButton(RectangleF bounds, ButtonModel model = null)
@@ -40,11 +39,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
                 state |= StyleState.Active | StyleState.Selected;
 
             return state;
-        }
-
-        protected override void RenderDefault(List<MySprite> sprites)
-        {
-            base.RenderDefault(sprites);
         }
     }
 }

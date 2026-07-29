@@ -1,5 +1,5 @@
 using LcdMod.Common.Compression;
-using InvalidDataException = LcdMod.Common.InvalidDataException;
+using InvalidDataException = LcdMod.Common.Exceptions.InvalidDataException;
 
 namespace LcdMod.Client.Audio.Xwma.Decoder
 {

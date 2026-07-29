@@ -6,7 +6,6 @@ using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
-using LcdMod.Common.Config.Models;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
@@ -20,6 +19,7 @@ using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.Apps
 {
     [LcdApp(22)]
+    // ReSharper disable once PartialTypeWithSinglePart
     internal sealed partial class ThrustApp : App
     {
         const float AXIS_THICKNESS = 6f;

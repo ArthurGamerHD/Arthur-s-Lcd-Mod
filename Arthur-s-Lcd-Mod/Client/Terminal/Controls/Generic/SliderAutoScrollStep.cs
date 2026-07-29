@@ -3,7 +3,6 @@ using System.Text;
 using LcdMod.Client.Config;
 using LcdMod.Client.Helpers;
 using LcdMod.Common.Config.Components;
-using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
@@ -50,7 +49,7 @@ namespace LcdMod.Client.Terminal.Controls.Generic
         {
             ConfigManager.ModifyComponentForCurrentSurface<InteractiveConfigComponent>(
                 block,
-                Constants.INTERACTION,
+                INTERACTION,
                 config => config.AutoScrollStep = Normalize(value));
         }
 
@@ -58,7 +57,7 @@ namespace LcdMod.Client.Terminal.Controls.Generic
         {
             var config = ConfigManager.GetComponentForCurrentSurface<InteractiveConfigComponent>(
                 block,
-                Constants.INTERACTION);
+                INTERACTION);
             if (config == null)
                 return 0f;
 

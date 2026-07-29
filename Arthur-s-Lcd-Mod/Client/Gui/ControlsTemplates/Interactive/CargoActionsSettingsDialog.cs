@@ -264,7 +264,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         CargoActionsConfigComponent Config => _getConfig();
         readonly Action _onSaved;
         readonly Action _requestRedraw;
-        readonly Action _backToMenu;
 
         readonly NumericUpDown[] _inputs = new NumericUpDown[4];
         readonly string[] _labels = new string[4];
@@ -276,7 +275,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             _getConfig = getConfig;
             _onSaved = onSaved;
             _requestRedraw = requestRedraw;
-            _backToMenu = backToMenu;
             OnClose = backToMenu;
 
             var gridLarge = MyTexts.GetString(MOD_PREFIX + "CargoActions_GridLarge");
@@ -381,7 +379,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         CargoActionsConfigComponent Config => _getConfig();
         readonly Action _onSaved;
         readonly Action _requestRedraw;
-        readonly Action _backToMenu;
 
         readonly Dictionary<string, int> _overrides = new Dictionary<string, int>();
         readonly List<WeaponOption> _options;
@@ -399,7 +396,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             _getConfig = getConfig;
             _onSaved = onSaved;
             _requestRedraw = requestRedraw;
-            _backToMenu = backToMenu;
             OnClose = backToMenu;
             _options = weapons ?? new List<WeaponOption>();
 

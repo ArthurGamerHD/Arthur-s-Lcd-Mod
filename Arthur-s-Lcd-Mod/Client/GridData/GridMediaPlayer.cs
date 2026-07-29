@@ -9,7 +9,6 @@ using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.Entity;
-using VRage.Game.ModAPI;
 using VRage.Utils;
 using VRageMath;
 using IMySoundBlock = SpaceEngineers.Game.ModAPI.IMySoundBlock;
@@ -955,9 +954,7 @@ namespace LcdMod.Client.GridData
 
             double omega = 2.0 * Math.PI * k / window;
             double coeff = 2.0 * Math.Cos(omega);
-            double s0 = 0.0;
-            double s1 = 0.0;
-            double s2 = 0.0;
+            double s1 = 0.0, s2 = 0.0;
             int blockAlign = pcm.BlockAlign;
             byte[] samples = pcm.Samples;
             double windowDenominator = Math.Max(1, window - 1);
@@ -972,7 +969,7 @@ namespace LcdMod.Client.GridData
                 double value = sample / 32768.0;
                 double envelope = 0.5 - 0.5 * Math.Cos(2.0 * Math.PI * i / windowDenominator);
 
-                s0 = value * envelope + coeff * s1 - s2;
+                var s0 = value * envelope + coeff * s1 - s2;
                 s2 = s1;
                 s1 = s0;
             }

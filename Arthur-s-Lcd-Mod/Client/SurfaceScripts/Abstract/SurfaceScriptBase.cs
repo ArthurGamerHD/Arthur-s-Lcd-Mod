@@ -39,7 +39,7 @@ using IMyCockpit = Sandbox.ModAPI.IMyCockpit;
 using IMyShipController = Sandbox.ModAPI.IMyShipController;
 using IMyTextSurfaceProvider = Sandbox.ModAPI.Ingame.IMyTextSurfaceProvider;
 using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
-using NotImplementedException = LcdMod.Common.NotImplementedException;
+using NotImplementedException = LcdMod.Common.Exceptions.NotImplementedException;
 
 namespace LcdMod.Client.SurfaceScripts.Abstract
 {

@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using LcdMod.Client.Animation;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
-using LcdMod.Client.Gui.Styling;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 
@@ -156,7 +155,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
                 return;
 
             _dragAutoScrollFrameQueued = true;
-            global::LcdMod.Client.LcdModClientComponent.RunNextFrame.Add(delegate
+            LcdModClientComponent.RunNextFrame.Add(delegate
             {
                 _dragAutoScrollFrameQueued = false;
                 var model = ListModel;

@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Generated;
 using LcdMod.Client.Apps;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Gui;
@@ -13,7 +12,7 @@ using VRageMath;
 using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
-    [LcdSurface(typeof(LcdMod.Client.Apps.SessionDebugApp))]
+    [LcdSurface(typeof(SessionDebugApp))]
 #if DEBUG
     [MyTextSurfaceScript(ID, TITLE)]
 #endif

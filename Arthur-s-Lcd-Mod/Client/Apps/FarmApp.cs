@@ -25,6 +25,7 @@ using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.Apps
 {
     [LcdApp(9)]
+    // ReSharper disable once PartialTypeWithSinglePart
     internal sealed partial class FarmApp : App, IApp
     {
         const float SLOT_W = 100f;

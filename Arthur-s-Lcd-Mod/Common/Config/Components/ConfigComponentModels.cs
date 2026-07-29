@@ -1,3 +1,4 @@
+// ReSharper disable RedundantUsingDirective
 using System;
 using System.ComponentModel;
 using System.Collections.Generic;
@@ -5,9 +6,6 @@ using System.Linq;
 using System.Xml.Serialization;
 using ProtoBuf;
 using Generated;
-using LcdMod.Common.Config;
-using LcdMod.Common.Config.Generation;
-using LcdMod.Common.Helpers;
 using VRage.Game.ModAPI;
 using VRageMath;
 using static LcdMod.Common.Helpers.Constants;

@@ -22,7 +22,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Progress
         public static readonly StyleProperty<float> MaxHorizontalInsetPixelsProperty =
             StyleProperty.Register<ProgressBar, float>("MaxHorizontalInsetPixels", 0f);
 
-        public ProgressBar(RectangleF bounds) : base(bounds, null, null)
+        public ProgressBar(RectangleF bounds) : base(bounds)
         {
             Fraction = 0f;
             CornerRadius = -1f;

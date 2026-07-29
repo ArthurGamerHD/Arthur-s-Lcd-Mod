@@ -105,6 +105,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
             int seriesCount = Math.Min(MAX_GRAPH_SERIES, rows?.Count ?? 0);
             for (int r = 0; r < seriesCount; r++)
             {
+                if (rows == null) continue;
+
                 var row = rows[r];
                 if (row.CurrentW > max)
                     max = row.CurrentW;
@@ -454,6 +456,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
             if (count <= 1)
                 return plot.X;
 
+            if (snapshots == null) return 0;
+
             long first = snapshots[0].GameplayFrame;
             long last = snapshots[count - 1].GameplayFrame;
             if (last <= first)
@@ -461,6 +465,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
 
             double ratio = (snapshots[index].GameplayFrame - first) / (double)(last - first);
             return plot.X + (float)Math.Max(0.0, Math.Min(1.0, ratio)) * plot.Width;
+
         }
 
         void RenderEmptyLabel(List<MySprite> sprites, RectangleF plot, string text)
@@ -485,13 +490,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
             float tickH = Math.Max(2f, 3f * scale);
             float y = plot.Bottom + 2f * scale;
             float labelY = y + tickH + scale;
+            long latestFrame = _snapshots[_snapshots.Count - 1].GameplayFrame;
             string left = WindowSeconds > 0f
-                ? FormatRelativeSeconds(WindowSeconds)
-                : FormatRelativeTime(GetInterpolatedFrame(0f));
+                ? FormatingHelper.FormatRelativeTime(WindowSeconds)
+                : FormatingHelper.FormatRelativeTime(latestFrame, GetInterpolatedFrame(0f));
             string middle = WindowSeconds > 0f
-                ? FormatRelativeSeconds(WindowSeconds * 0.5f)
-                : FormatRelativeTime(GetInterpolatedFrame(0.5f));
-            const string right = "now";
+                ? FormatingHelper.FormatRelativeTime(WindowSeconds * 0.5f)
+                : FormatingHelper.FormatRelativeTime(latestFrame, GetInterpolatedFrame(0.5f));
+            string right = FormatingHelper.FormatRelativeTime(0f);
             float textScale = GetTimeLabelScale(baseScale, Math.Max(1f, plot.Width * 0.32f), left, middle, right);
 
             DrawTimeTick(sprites, plot.X, y, tickH, color);
@@ -520,40 +526,19 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
             int count = _snapshots?.Count ?? 0;
             if (count <= 0)
                 return 0L;
-            if (count == 1)
-                return _snapshots[0].GameplayFrame;
 
-            long first = _snapshots[0].GameplayFrame;
-            long last = _snapshots[count - 1].GameplayFrame;
-            return first + (long)Math.Round((last - first) * Math.Max(0f, Math.Min(1f, ratio)));
-        }
+            if (_snapshots != null)
+            {
+                long first = _snapshots[0].GameplayFrame;
+                if (count == 1)
+                    return first;
 
-        string FormatRelativeTime(long frame)
-        {
-            int count = _snapshots?.Count ?? 0;
-            if (count <= 1)
-                return "now";
 
-            long latest = _snapshots[count - 1].GameplayFrame;
-            double secondsAgo = Math.Max(0.0, (latest - frame) / 60.0);
-            if (secondsAgo < 0.5)
-                return "now";
-            if (secondsAgo < 60.0)
-                return "-" + Math.Max(1, (int)Math.Round(secondsAgo)).ToString(FormatingHelper.Culture) + "s";
+                long last = _snapshots[count - 1].GameplayFrame;
+                return first + (long)Math.Round((last - first) * Math.Max(0f, Math.Min(1f, ratio)));
+            }
 
-            int minutes = Math.Max(1, (int)Math.Round(secondsAgo / 60.0));
-            return "-" + minutes.ToString(FormatingHelper.Culture) + "m";
-        }
-
-        static string FormatRelativeSeconds(float secondsAgo)
-        {
-            if (secondsAgo <= 0.05f)
-                return "now";
-            if (secondsAgo < 60f)
-                return "-" + secondsAgo.ToString(secondsAgo < 10f ? "0.#" : "0", FormatingHelper.Culture) + "s";
-
-            float minutes = secondsAgo / 60f;
-            return "-" + minutes.ToString(minutes < 10f ? "0.#" : "0", FormatingHelper.Culture) + "m";
+            return 0;
         }
 
         float GetTimeLabelScale(float baseScale, float availableWidth, string left, string middle, string right)
@@ -622,7 +607,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
     internal sealed class EnergyPowerRowControl : Panel
     {
         readonly GridControl _layout;
-        readonly GridControl _barCell;
         readonly EnergyPowerIconControl _icon;
         readonly TextBlock _name;
         readonly ProgressBar _bar;
@@ -635,7 +619,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
             {
                 BackgroundTexture = null
             };
-            _barCell = new GridControl(default(RectangleF), new[] { 1f, 24f, 1f }, new[] { 31f, 38f, 31f })
+            var barCell = new GridControl(default(RectangleF), new[] { 1f, 24f, 1f }, new[] { 31f, 38f, 31f })
             {
                 BackgroundTexture = null
             };
@@ -659,9 +643,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
             };
 
             _layout.Set(_icon, 0, 0, 1, 2);
-            _layout.Set(_name, 1, 0, 2, 1);
-            _layout.Set(_barCell, 1, 1);
-            _barCell.Set(_bar, 1, 1);
+            _layout.Set(_name, 1, 0, 2);
+            _layout.Set(barCell, 1, 1);
+            barCell.Set(_bar, 1, 1);
             _layout.Set(_value, 2, 1);
             AddChild(_layout);
         }

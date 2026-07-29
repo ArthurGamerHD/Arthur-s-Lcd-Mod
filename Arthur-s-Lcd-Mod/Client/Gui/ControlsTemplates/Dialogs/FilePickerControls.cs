@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
@@ -7,7 +8,6 @@ using LcdMod.Client.Gui.ControlsTemplates.Panels.Virtualized;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Utility;
-using LcdMod.Common.Helpers;
 using static LcdMod.Common.Helpers.Constants;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
@@ -73,15 +73,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         public bool CompactRows { get; set; }
         public bool ChromeVisible { get; set; } = true;
 
-        public string CurrentPath
-        {
-            get
-            {
-                return CurrentFolder == null || string.IsNullOrEmpty(CurrentFolder.FullPath)
-                    ? string.Empty
-                    : CurrentFolder.FullPath;
-            }
-        }
+        public string CurrentPath =>
+            CurrentFolder == null || string.IsNullOrEmpty(CurrentFolder.FullPath)
+                ? string.Empty
+                : CurrentFolder.FullPath;
 
         public void SetRoots(IEnumerable<FolderModel> roots)
         {
@@ -339,7 +334,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                     Data = compactIcon,
                     Position = compactIconRect.Center,
                     Size = new Vector2(compactIconSize, compactIconSize),
-                    Color = Constants.ColorCorrection,
+                    Color = ColorCorrection,
                     Alignment = TextAlignment.CENTER
                 });
 
@@ -373,7 +368,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Data = icon,
                 Position = iconRect.Center,
                 Size = new Vector2(iconSize, iconSize),
-                Color = Constants.ColorCorrection,
+                Color = ColorCorrection,
                 Alignment = TextAlignment.CENTER
             });
 
@@ -494,22 +489,26 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 var action = _contextActions[i];
                 var button = EnsureContextButton(i);
                 var model = button.DataContext as ContextMenuButtonModel;
-                model.ActionIndex = i;
-                model.Text = action == null ? string.Empty : action.Text;
-                model.Enabled = action != null && action.Enabled && action.Clicked != null;
-                model.Clicked = OnContextActionClicked;
+                if (model != null)
+                {
+                    model.ActionIndex = i;
+                    model.Text = action == null ? string.Empty : action.Text;
+                    model.Enabled = action != null && action.Enabled && action.Clicked != null;
+                    model.Clicked = OnContextActionClicked;
 
-                button.BackgroundColor = Color.Transparent;
-                button.TextColor = model.Enabled
-                    ? ResolveContextActionTextColor(action)
-                    : ResolveColor(ThemeResources.DisabledColor);
-                button.BorderColor = Color.Transparent;
-                button.BorderThicknessPixels = 0f;
-                button.BorderRadiusPixels = 0f;
-                button.SetRect(new RectangleF(menuRect.X, menuRect.Y + itemHeight * i, menuRect.Width, itemHeight));
-                button.SetVisible(true);
-                button.SetEnabled(model.Enabled);
-                button.SetCursor(model.Enabled ? CursorType.Hand : CursorType.Default);
+                    button.BackgroundColor = Color.Transparent;
+                    button.TextColor = model.Enabled
+                        ? ResolveContextActionTextColor(action)
+                        : ResolveColor(ThemeResources.DisabledColor);
+                    button.BorderColor = Color.Transparent;
+                    button.BorderThicknessPixels = 0f;
+                    button.BorderRadiusPixels = 0f;
+                    button.SetRect(new RectangleF(menuRect.X, menuRect.Y + itemHeight * i, menuRect.Width, itemHeight));
+                    button.SetVisible(true);
+                    button.SetEnabled(model.Enabled);
+                    button.SetCursor(model.Enabled ? CursorType.Hand : CursorType.Default);
+                }
+
                 button.SetClass("ControlBase Button ContextMenuItem");
                 button.CustomRender = RenderContextActionButton;
                 button.Render(sprites);
@@ -597,15 +596,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         bool OpenContextMenu(FilePickerResult result, RectangleF sourceBounds, Vector2 clickPosition)
         {
             var provider = ContextActionsProvider;
-            var actions = provider == null ? null : provider(result);
+            var actions = provider?.Invoke(result);
             _contextActions.Clear();
             if (actions != null)
             {
-                for (int i = 0; i < actions.Count; i++)
-                {
-                    if (actions[i] != null)
-                        _contextActions.Add(actions[i]);
-                }
+                foreach (var t in actions.Where(t => t != null)) _contextActions.Add(t);
             }
 
             if (_contextActions.Count == 0)
@@ -681,15 +676,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             callback(CreateFileResult(file));
         }
 
-        void AcceptFolder(FolderModel folder)
-        {
-            var callback = Accepted;
-            if (callback == null || folder == null)
-                return;
-
-            callback(CreateFolderResult(folder));
-        }
-
         FilePickerResult CreateFileResult(FileModel file)
         {
             if (file == null)
@@ -730,17 +716,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             {
                 if (hasQuery)
                 {
-                    for (int i = 0; i < _roots.Count; i++)
-                        AddMatchingEntriesRecursive(_roots[i], query, includeFolder: true);
+                    foreach (var t in _roots)
+                        AddMatchingEntriesRecursive(t, query, includeFolder: true);
                 }
                 else
                 {
-                    for (int i = 0; i < _roots.Count; i++)
+                    foreach (var root in _roots.Where(root => root != null))
                     {
-                        var root = _roots[i];
-                        if (root == null)
-                            continue;
-
                         _items.Add(GetFolderEntryModel(root));
                     }
                 }
@@ -778,16 +760,16 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
         void RefreshSelectionFlags()
         {
-            for (int i = 0; i < _items.Count; i++)
+            foreach (var item in _items)
             {
-                var folder = _items[i] as FolderControlModel;
+                var folder = item as FolderControlModel;
                 if (folder != null)
                 {
                     folder.IsSelected = ReferenceEquals(SelectedFolder, folder.Folder);
                     continue;
                 }
 
-                var file = _items[i] as FileControlModel;
+                var file = item as FileControlModel;
                 if (file != null)
                     file.IsSelected = ReferenceEquals(SelectedFile, file.File);
             }
@@ -799,14 +781,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 return;
 
             folder.Folders.Sort(CompareFolders);
-            for (int i = 0; i < folder.Folders.Count; i++)
-            {
-                var child = folder.Folders[i];
-                if (child == null || !MatchesFolder(child, query))
-                    continue;
-
+            foreach (var child in folder.Folders.Where(child => child != null && MatchesFolder(child, query))) 
                 _items.Add(GetFolderEntryModel(child));
-            }
         }
 
         void AddFiles(FolderModel folder, string query)
@@ -853,9 +829,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             }
 
             model.Folder = folder;
-            model.Name = folder == null ? string.Empty : folder.Name;
-            model.FullPath = folder == null ? string.Empty : folder.FullPath;
-            model.Subtitle = folder == null ? string.Empty : folder.Subtitle;
+            model.Name = folder.Name;
+            model.FullPath = folder.FullPath;
+            model.Subtitle = folder.Subtitle;
             model.Icon = "Folder";
             model.IsUpEntry = false;
             model.IsSelected = ReferenceEquals(SelectedFolder, folder);
@@ -895,9 +871,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             }
 
             model.File = file;
-            model.Name = file == null ? string.Empty : file.Name;
-            model.FullPath = file == null ? string.Empty : file.FullPath;
-            model.Subtitle = file == null ? string.Empty : file.Subtitle;
+            model.Name = file.Name;
+            model.FullPath = file.FullPath;
+            model.Subtitle = file.Subtitle;
             model.Icon = ResolveFileIcon(GetFileIconPath(file));
             model.IsUpEntry = false;
             model.IsSelected = ReferenceEquals(SelectedFile, file);
@@ -986,7 +962,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         void DrawLoadingListMessage(RectangleF rect, List<MySprite> sprites)
         {
             IMyTextSurface surface = TextSurface;
-            var scale = Math.Max(1f, LayoutScale);
             var center = rect.Center;
             var outerSize = Math.Max(26f, Math.Min(rect.Width, rect.Height) * 0.18f);
             var innerSize = outerSize * 0.6f;
@@ -1225,7 +1200,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
         public int GetHashCode(T obj)
         {
-            return obj == null ? 0 : RuntimeHelpers.GetHashCode(obj);
+            return RuntimeHelpers.GetHashCode(obj);
         }
     }
 
@@ -1233,12 +1208,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
     {
         readonly FolderControl _folderControl;
         readonly FileControl _fileControl;
-        FilePickerGrid _owner;
 
         public FilePickerRowControl(RectangleF rect, FilePickerGrid owner)
             : base(rect, CursorType.Hand)
         {
-            _owner = owner;
             _folderControl = new FolderControl(rect, owner);
             _fileControl = new FileControl(rect, owner);
             AddChild(_folderControl);
@@ -1247,7 +1220,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
         public void SetOwner(FilePickerGrid owner)
         {
-            _owner = owner;
             _folderControl.SetOwner(owner);
             _fileControl.SetOwner(owner);
         }

@@ -1,11 +1,11 @@
 #if EXPERIMENTAL
-using LcdMod.Client.Terminal.Actions;
 using LcdMod.Client.Terminal.Models;
 using LcdMod.Client.Terminal.Models.Actions;
 using LcdMod.Client.Terminal.Models.Property;
 #endif
 using System;
 using System.Globalization;
+using System.Linq;
 using System.Text;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Extensions;
@@ -16,6 +16,7 @@ using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
+using LcdMod.Client.Terminal;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
@@ -53,7 +54,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         readonly ButtonPanelTargetSettings _target;
         readonly ButtonPanelActionSettings _action;
         readonly Action<ButtonPanelActionSettings> _selectedCallback;
-        readonly Action _cancelCallback;
         readonly Action _requestRedraw;
         readonly System.Collections.Generic.List<IMyBlockGroup> _groups = new System.Collections.Generic.List<IMyBlockGroup>();
         readonly System.Collections.Generic.List<IMyIngameTerminalBlock> _groupBlocks = new System.Collections.Generic.List<IMyIngameTerminalBlock>();
@@ -101,12 +101,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _target = target?.Clone();
             _action = action?.Clone();
             _selectedCallback = selectedCallback;
-            _cancelCallback = cancelCallback;
+            var cancelCallback1 = cancelCallback;
             _requestRedraw = requestRedraw;
             OnClose = delegate
             {
-                if (_cancelCallback != null)
-                    _cancelCallback();
+                if (cancelCallback1 != null)
+                    cancelCallback1();
             };
         }
 
@@ -185,9 +185,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             DrawInfoText(GetActionTitle(), cardRect.X + padding.X, y, contentWidth, labelScale, surface);
             y += labelHeight + smallSpacing;
 
-            var fieldRect = new RectangleF(cardRect.X + padding.X, y, contentWidth, fieldHeight);
             DrawInfoText(GetParameterCaption(), cardRect.X + padding.X, y, contentWidth, labelScale * 0.88f, surface);
-            fieldRect = new RectangleF(cardRect.X + padding.X, y + labelHeight, contentWidth, fieldHeight);
+            var fieldRect = new RectangleF(cardRect.X + padding.X, y + labelHeight, contentWidth, fieldHeight);
             RenderParameterControl(fieldRect, scale, surface);
 
             y = fieldRect.Bottom;
@@ -196,7 +195,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 y += smallSpacing;
                 DrawInfoText("Scroll", cardRect.X + padding.X, y, contentWidth, labelScale * 0.88f, surface);
                 var scrollRect = new RectangleF(cardRect.X + padding.X, y + labelHeight, contentWidth, fieldHeight);
-                RenderScrollCombo(scrollRect, scale);
+                RenderScrollCombo(scrollRect);
                 y = scrollRect.Bottom;
             }
 
@@ -255,7 +254,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var boolAction = customAction as PropertyCustomAction<bool>;
             if (boolAction != null)
             {
-                InitializeBoolean(boolAction, block);
+                InitializeBoolean();
                 return;
             }
 
@@ -294,13 +293,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             }
         }
 
-        void InitializeBoolean(PropertyCustomAction<bool> action, IMyIngameTerminalBlock block)
+        void InitializeBoolean()
         {
             _parameterTypeName = TYPE_BOOLEAN;
-            if (HasExistingParameter(TYPE_BOOLEAN))
-                _booleanMode = NormalizeBooleanMode(_action.ParameterValue, BOOLEAN_TOGGLE);
-            else
-                _booleanMode = BOOLEAN_TOGGLE;
+            _booleanMode = HasExistingParameter(TYPE_BOOLEAN) ? NormalizeBooleanMode(_action.ParameterValue, BOOLEAN_TOGGLE) : BOOLEAN_TOGGLE;
         }
 
         void InitializeOnOffAction()
@@ -323,7 +319,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _parameterTypeName = TYPE_STRING;
             _textValue = HasExistingParameter(TYPE_STRING)
                 ? _action.ParameterValue ?? string.Empty
-                : GetStringValue(action, block, GetStringDefault(action, block, string.Empty));
+                : GetValue(action, block, GetDefault(action, block, string.Empty));
         }
 
         void InitializeStringBuilder(PropertyCustomAction<StringBuilder> action, IMyIngameTerminalBlock block)
@@ -331,7 +327,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _parameterTypeName = TYPE_STRING_BUILDER;
             _textValue = HasExistingParameter(TYPE_STRING_BUILDER)
                 ? _action.ParameterValue ?? string.Empty
-                : GetStringBuilderValue(action, block, GetStringBuilderDefault(action, block, string.Empty));
+                : GetValue(action, block, GetDefault(action, block, new StringBuilder())).ToString();
         }
 
         void InitializeInt64(PropertyCustomAction<long> action, IMyIngameTerminalBlock block)
@@ -341,12 +337,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _numberFormat = "0";
             _numberStep = 1d;
 
-            var min = GetInt64Minimum(action, block, long.MinValue);
-            var max = GetInt64Maximum(action, block, long.MaxValue);
+            var min = GetMinimum(action, block, long.MinValue);
+            var max = GetMaximum(action, block, long.MaxValue);
             SetNumberRange(min, max);
 
             long parsed;
-            if (HasExistingParameter(TYPE_INT64) &&
+            if (HasExistingParameter(TYPE_INT64) && _action != null &&
                 long.TryParse(_action.ParameterValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out parsed))
             {
                 _numberValue = Clamp(parsed, _numberMin, _numberMax);
@@ -354,7 +350,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             }
 
             var fallback = ToInt64(Clamp(0d, _numberMin, _numberMax));
-            _numberValue = Clamp(GetInt64Value(action, block, GetInt64Default(action, block, fallback)), _numberMin, _numberMax);
+            _numberValue = Clamp(GetValue(action, block, GetDefault(action, block, fallback)), _numberMin, _numberMax);
         }
 
         void InitializeSingle(PropertyCustomAction<float> action, IMyIngameTerminalBlock block)
@@ -363,13 +359,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _scrollMode = NormalizeScrollMode(_action?.ScrollMode, SCROLL_NONE);
             _numberFormat = "0.###";
 
-            var min = GetSingleMinimum(action, block, float.MinValue);
-            var max = GetSingleMaximum(action, block, float.MaxValue);
+            var min = GetMinimum(action, block, float.MinValue);
+            var max = GetMaximum(action, block, float.MaxValue);
             SetNumberRange(min, max);
             _numberStep = GetSingleStep(_numberMin, _numberMax);
 
             double parsed;
             if (HasExistingParameter(TYPE_SINGLE) &&
+                _action != null &&
                 double.TryParse(_action.ParameterValue, NumberStyles.Float, CultureInfo.InvariantCulture, out parsed))
             {
                 _numberValue = Clamp(parsed, _numberMin, _numberMax);
@@ -377,7 +374,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             }
 
             var fallback = (float)Clamp(0d, _numberMin, _numberMax);
-            _numberValue = Clamp(GetSingleValue(action, block, GetSingleDefault(action, block, fallback)), _numberMin, _numberMax);
+            _numberValue = Clamp(GetValue(action, block, GetDefault(action, block, fallback)), _numberMin, _numberMax);
         }
 
         void InitializeColor(PropertyCustomAction<Color> action, IMyIngameTerminalBlock block)
@@ -385,13 +382,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _parameterTypeName = TYPE_COLOR;
 
             Color parsed;
-            if (HasExistingParameter(TYPE_COLOR) && LcdMod.Client.Extensions.ColorExtensions.TryParseHexColor(_action.ParameterValue, out parsed))
+            if (HasExistingParameter(TYPE_COLOR) && Extensions.ColorExtensions.TryParseHexColor(_action.ParameterValue, out parsed))
             {
                 _colorValue = parsed;
                 return;
             }
 
-            _colorValue = GetColorValue(action, block, GetColorDefault(action, block, Color.White));
+            _colorValue = GetValue(action, block, GetDefault(action, block, Color.White));
         }
 #endif
 
@@ -403,43 +400,35 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 return;
             }
 
-            if (_parameterTypeName == TYPE_INT64 || _parameterTypeName == TYPE_SINGLE)
+            switch (_parameterTypeName)
             {
-                EnsureNumericInput(fieldRect);
-                ContainerControl.AddChild(_numericInput);
-                _numericInput.Render(Sprites);
-                return;
+                case TYPE_INT64:
+                case TYPE_SINGLE:
+                    EnsureNumericInput(fieldRect);
+                    ContainerControl.AddChild(_numericInput);
+                    _numericInput.Render(Sprites);
+                    return;
+                case TYPE_STRING:
+                case TYPE_STRING_BUILDER:
+                    EnsureTextInput(fieldRect);
+                    ContainerControl.AddChild(_textInput);
+                    _textInput.Render(Sprites);
+                    return;
+                case TYPE_COLOR:
+                    EnsureColorButton(fieldRect);
+                    ContainerControl.AddChild(_colorButton);
+                    _colorButton.Render(Sprites);
+                    return;
+                case TYPE_BOOLEAN:
+                    RenderBooleanModeButtons(fieldRect, scale);
+                    return;
+                case TYPE_INCREASE_DECREASE:
+                    RenderClickActionButtons(fieldRect, scale);
+                    return;
+                default:
+                    DrawMessage(fieldRect, scale, surface);
+                    break;
             }
-
-            if (_parameterTypeName == TYPE_STRING || _parameterTypeName == TYPE_STRING_BUILDER)
-            {
-                EnsureTextInput(fieldRect);
-                ContainerControl.AddChild(_textInput);
-                _textInput.Render(Sprites);
-                return;
-            }
-
-            if (_parameterTypeName == TYPE_COLOR)
-            {
-                EnsureColorButton(fieldRect);
-                ContainerControl.AddChild(_colorButton);
-                _colorButton.Render(Sprites);
-                return;
-            }
-
-            if (_parameterTypeName == TYPE_BOOLEAN)
-            {
-                RenderBooleanModeButtons(fieldRect, scale);
-                return;
-            }
-
-            if (_parameterTypeName == TYPE_INCREASE_DECREASE)
-            {
-                RenderClickActionButtons(fieldRect, scale);
-                return;
-            }
-
-            DrawMessage(fieldRect, scale, surface);
         }
 
         void EnsureNumericInput(RectangleF rect)
@@ -707,7 +696,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             RenderChoiceButton(control, rect, GetClickActionLabel(clickAction), selected, sprites);
         }
 
-        void RenderScrollCombo(RectangleF rect, float scale)
+        void RenderScrollCombo(RectangleF rect)
         {
             _scrollComboRect = rect;
             EnsureScrollComboButton(rect);
@@ -799,8 +788,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         {
             while (_scrollOptionButtons.Count <= index)
             {
-                var button = new Button(default(RectangleF), new ScrollModeButtonModel { Clicked = OnScrollOptionClicked });
-                button.CustomRender = RenderScrollOptionButton;
+                var button = new Button(default(RectangleF), new ScrollModeButtonModel { Clicked = OnScrollOptionClicked })
+                    {
+                        CustomRender = RenderScrollOptionButton
+                    };
                 _scrollOptionButtons.Add(button);
             }
 
@@ -869,7 +860,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         {
             var rect = control.Bounds;
             var buttonModel = control.DataContext as ButtonModel;
-            var enabled = buttonModel == null || buttonModel.Enabled;
             BorderRenderer.CreateSpritesFromRect(rect, sprites, control.BackgroundColor, radiusScale: control.LayoutScale);
 
             var text = buttonModel == null ? string.Empty : buttonModel.Text;
@@ -916,7 +906,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         void OnColorTextChanged(string value)
         {
             Color parsed;
-            if (LcdMod.Client.Extensions.ColorExtensions.TryParseHexColor(value, out parsed))
+            if (Extensions.ColorExtensions.TryParseHexColor(value, out parsed))
             {
                 _colorValue = parsed;
                 if (_requestRedraw != null)
@@ -1363,17 +1353,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 return null;
 
             var blocks = _gridLogic.GetTerminalBlocks<IMyTerminalBlock>();
-            if (blocks == null)
-                return null;
-
-            for (var i = 0; i < blocks.Count; i++)
-            {
-                var block = blocks[i];
-                if (block != null && block.EntityId == entityId)
-                    return block;
-            }
-
-            return null;
+            return blocks?.FirstOrDefault(block => block != null && block.EntityId == entityId);
         }
 
         IMyIngameTerminalBlock FindGroupBlock(ICustomAction action, string groupName)
@@ -1387,20 +1367,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
             _groups.Clear();
             terminalSystem.GetBlockGroups(_groups);
-            for (var i = 0; i < _groups.Count; i++)
+            foreach (var group in _groups.Where(group => group != null && string.Equals(group.Name, groupName, StringComparison.OrdinalIgnoreCase)))
             {
-                var group = _groups[i];
-                if (group == null || !string.Equals(group.Name, groupName, StringComparison.OrdinalIgnoreCase))
-                    continue;
-
                 _groupBlocks.Clear();
                 group.GetBlocks(_groupBlocks);
-                for (var blockIndex = 0; blockIndex < _groupBlocks.Count; blockIndex++)
-                {
-                    var block = _groupBlocks[blockIndex];
-                    if (IsActionCompatibleWithBlock(action, block))
-                        return block;
-                }
+                foreach (var block in _groupBlocks.Where(block => IsActionCompatibleWithBlock(action, block)))
+                    return block;
             }
 
             return null;
@@ -1412,20 +1384,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 return null;
 
             var blocks = _gridLogic.GetTerminalBlocks<IMyTerminalBlock>();
-            if (blocks == null)
-                return null;
-
-            for (var i = 0; i < blocks.Count; i++)
-            {
-                var block = blocks[i];
-                if (block == null || !IsTypeMatch(targetType, block.GetType()))
-                    continue;
-
-                if (IsActionCompatibleWithBlock(action, block))
-                    return block;
-            }
-
-            return null;
+            return blocks?.Where(block => block != null && IsTypeMatch(targetType, block.GetType())).FirstOrDefault(block => IsActionCompatibleWithBlock(action, block));
         }
 
         IMyIngameTerminalBlock FindSubtypeBlock(ICustomAction action, string subtype)
@@ -1437,24 +1396,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             if (blocks == null)
                 return null;
 
-            for (var i = 0; i < blocks.Count; i++)
-            {
-                var block = blocks[i];
-                if (block == null)
-                    continue;
-
-                var cubeBlock = block as MyCubeBlock;
-                if (cubeBlock == null || cubeBlock.BlockDefinition == null)
-                    continue;
-
-                if (!string.Equals(cubeBlock.BlockDefinition.Id.SubtypeName, subtype, StringComparison.OrdinalIgnoreCase))
-                    continue;
-
-                if (IsActionCompatibleWithBlock(action, block))
-                    return block;
-            }
-
-            return null;
+            return (from block in blocks where block != null let cubeBlock = block as MyCubeBlock where cubeBlock?.BlockDefinition != null where string.Equals(cubeBlock.BlockDefinition.Id.SubtypeName, subtype, StringComparison.OrdinalIgnoreCase) select block).FirstOrDefault(block => IsActionCompatibleWithBlock(action, block));
         }
 
         bool IsActionCompatibleWithBlock(ICustomAction action, IMyIngameTerminalBlock block)
@@ -1515,232 +1457,62 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
             return null;
         }
-
-        static long GetInt64Minimum(PropertyCustomAction<long> action, IMyIngameTerminalBlock block, long fallback)
+        
+        static T GetMinimum<T>(PropertyCustomAction<T> action, IMyIngameTerminalBlock block, T fallback)
         {
             try
             {
-                if (action != null && action.Property != null && block != null)
+                if (action?.Property != null && block != null)
                     return action.Property.GetMinimum(block);
             }
             catch
             {
+                // fallback
             }
 
             return fallback;
         }
-
-        static long GetInt64Maximum(PropertyCustomAction<long> action, IMyIngameTerminalBlock block, long fallback)
+        
+        static T GetMaximum<T>(PropertyCustomAction<T> action, IMyIngameTerminalBlock block, T fallback)
         {
             try
             {
-                if (action != null && action.Property != null && block != null)
+                if (action?.Property != null && block != null)
                     return action.Property.GetMaximum(block);
             }
             catch
             {
+                // fallback
             }
 
             return fallback;
         }
-
-        static long GetInt64Value(PropertyCustomAction<long> action, IMyIngameTerminalBlock block, long fallback)
+        
+        static T GetValue<T>(PropertyCustomAction<T> action, IMyIngameTerminalBlock block, T fallback)
         {
             try
             {
-                if (action != null && action.Property != null && block != null)
+                if (action?.Property != null && block != null)
                     return action.Property.GetValue(block);
             }
             catch
             {
+                // fallback
             }
 
             return fallback;
         }
 
-        static long GetInt64Default(PropertyCustomAction<long> action, IMyIngameTerminalBlock block, long fallback)
+        static T GetDefault<T>(PropertyCustomAction<T> action, IMyIngameTerminalBlock block, T fallback)
         {
             try
             {
-                if (action != null && action.Property != null && block != null)
+                if (action?.Property != null && block != null)
                     return action.Property.GetDefaultValue(block);
             }
             catch
             {
-            }
-
-            return fallback;
-        }
-
-        static float GetSingleMinimum(PropertyCustomAction<float> action, IMyIngameTerminalBlock block, float fallback)
-        {
-            try
-            {
-                if (action != null && action.Property != null && block != null)
-                    return action.Property.GetMinimum(block);
-            }
-            catch
-            {
-            }
-
-            return fallback;
-        }
-
-        static float GetSingleMaximum(PropertyCustomAction<float> action, IMyIngameTerminalBlock block, float fallback)
-        {
-            try
-            {
-                if (action != null && action.Property != null && block != null)
-                    return action.Property.GetMaximum(block);
-            }
-            catch
-            {
-            }
-
-            return fallback;
-        }
-
-        static float GetSingleValue(PropertyCustomAction<float> action, IMyIngameTerminalBlock block, float fallback)
-        {
-            try
-            {
-                if (action != null && action.Property != null && block != null)
-                    return action.Property.GetValue(block);
-            }
-            catch
-            {
-            }
-
-            return fallback;
-        }
-
-        static float GetSingleDefault(PropertyCustomAction<float> action, IMyIngameTerminalBlock block, float fallback)
-        {
-            try
-            {
-                if (action != null && action.Property != null && block != null)
-                    return action.Property.GetDefaultValue(block);
-            }
-            catch
-            {
-            }
-
-            return fallback;
-        }
-
-        static bool GetBooleanValue(PropertyCustomAction<bool> action, IMyIngameTerminalBlock block, bool fallback)
-        {
-            try
-            {
-                if (action != null && action.Property != null && block != null)
-                    return action.Property.GetValue(block);
-            }
-            catch
-            {
-            }
-
-            return fallback;
-        }
-
-        static bool GetBooleanDefault(PropertyCustomAction<bool> action, IMyIngameTerminalBlock block, bool fallback)
-        {
-            try
-            {
-                if (action != null && action.Property != null && block != null)
-                    return action.Property.GetDefaultValue(block);
-            }
-            catch
-            {
-            }
-
-            return fallback;
-        }
-
-        static string GetStringValue(PropertyCustomAction<string> action, IMyIngameTerminalBlock block, string fallback)
-        {
-            try
-            {
-                if (action != null && action.Property != null && block != null)
-                    return action.Property.GetValue(block) ?? string.Empty;
-            }
-            catch
-            {
-            }
-
-            return fallback;
-        }
-
-        static string GetStringDefault(PropertyCustomAction<string> action, IMyIngameTerminalBlock block, string fallback)
-        {
-            try
-            {
-                if (action != null && action.Property != null && block != null)
-                    return action.Property.GetDefaultValue(block) ?? string.Empty;
-            }
-            catch
-            {
-            }
-
-            return fallback;
-        }
-
-        static string GetStringBuilderValue(PropertyCustomAction<StringBuilder> action, IMyIngameTerminalBlock block, string fallback)
-        {
-            try
-            {
-                if (action != null && action.Property != null && block != null)
-                {
-                    var value = action.Property.GetValue(block);
-                    return value == null ? string.Empty : value.ToString();
-                }
-            }
-            catch
-            {
-            }
-
-            return fallback;
-        }
-
-        static string GetStringBuilderDefault(PropertyCustomAction<StringBuilder> action, IMyIngameTerminalBlock block, string fallback)
-        {
-            try
-            {
-                if (action != null && action.Property != null && block != null)
-                {
-                    var value = action.Property.GetDefaultValue(block);
-                    return value == null ? string.Empty : value.ToString();
-                }
-            }
-            catch
-            {
-            }
-
-            return fallback;
-        }
-
-        static Color GetColorValue(PropertyCustomAction<Color> action, IMyIngameTerminalBlock block, Color fallback)
-        {
-            try
-            {
-                if (action != null && action.Property != null && block != null)
-                    return action.Property.GetValue(block);
-            }
-            catch
-            {
-            }
-
-            return fallback;
-        }
-
-        static Color GetColorDefault(PropertyCustomAction<Color> action, IMyIngameTerminalBlock block, Color fallback)
-        {
-            try
-            {
-                if (action != null && action.Property != null && block != null)
-                    return action.Property.GetDefaultValue(block);
-            }
-            catch
-            {
+                // fallback
             }
 
             return fallback;

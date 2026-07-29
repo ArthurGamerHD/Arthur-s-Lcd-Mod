@@ -13,6 +13,7 @@ using LcdMod.Client.Modules.Cartography;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Common.Config.Components;
 using LcdMod.Common.Config.Generation;
+using LcdMod.Common.Helpers;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
@@ -192,7 +193,7 @@ namespace LcdMod.Client.Apps
 
             if (_planet == null)
             {
-                AddCenteredStatus("No planet found.", Host.ForegroundColor);
+                AddCenteredStatus(LocHelper.GetLoc(MOD_PREFIX + "PlanetaryMap_NoPlanet"), Host.ForegroundColor);
                 RenderCameraControls();
                 return _sprites;
             }
@@ -338,7 +339,7 @@ namespace LcdMod.Client.Apps
                 : null;
             if (module == null)
             {
-                _error = "Cartography module is not ready.";
+                _error = LocHelper.GetLoc(MOD_PREFIX + "PlanetaryMap_CartographyNotReady");
                 ScheduleRequestRetry(faceSide);
                 return;
             }
@@ -397,9 +398,13 @@ namespace LcdMod.Client.Apps
 
                         if (result == null || !result.Success || result.ColorCubemap == null)
                         {
+                            if (result != null && !string.IsNullOrWhiteSpace(result.Error))
+                                LogHelper.Log(VRage.Utils.MyLogSeverity.Warning,
+                                    "Planetary map cartography failed: " + result.Error);
+
                             _error = result != null
-                                ? result.Error ?? "Cartography did not return a color cubemap."
-                                : "Cartography returned no result.";
+                                ? GetCartographyErrorText(result.Error)
+                                : LocHelper.GetLoc(MOD_PREFIX + "PlanetaryMap_NoResult");
                             ScheduleRequestRetry(faceSide);
                         }
                         else
@@ -417,11 +422,21 @@ namespace LcdMod.Client.Apps
             }
             catch (Exception error)
             {
+                LogHelper.Log(VRage.Utils.MyLogSeverity.Warning,
+                    "Planetary map cartography request failed: " + error.Message);
                 _ticket = null;
                 _requestedFaceSide = -1;
-                _error = error.Message;
+                _error = LocHelper.GetLoc(MOD_PREFIX + "PlanetaryMap_CartographyFailed");
                 ScheduleRequestRetry(faceSide);
             }
+        }
+
+        static string GetCartographyErrorText(string error)
+        {
+            if (string.IsNullOrWhiteSpace(error))
+                return LocHelper.GetLoc(MOD_PREFIX + "PlanetaryMap_NoColorCubemap");
+
+            return LocHelper.GetLoc(MOD_PREFIX + "PlanetaryMap_CartographyFailed");
         }
 
         void CancelPendingRequest()

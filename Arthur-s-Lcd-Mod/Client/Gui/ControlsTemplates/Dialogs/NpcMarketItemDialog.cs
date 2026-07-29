@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using LcdMod.Client.Apps;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
@@ -112,7 +113,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             DrawListPanel(tableRect, scale);
             ConfigureScrollPanel(listContentRect, rowHeight, scale);
             DrawHeaders(tableHeaderTop, tableHeaderHeight, tableContentRect, scale);
-            DrawRows(listContentRect, rowHeight, scale, fontScale, surface, cursorPosition);
+            DrawRows(listContentRect, rowHeight, scale, fontScale, surface);
 
         }
 
@@ -172,7 +173,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             {
                 _quotes.AddRange(group.Quotes);
             }
-            _quotes.Sort(new NpcMarketStationDialogComparer(_mode, _sortColumn, _sortDescending));
+            _quotes.Sort(new NpcMarketStationDialogComparer(_sortColumn, _sortDescending));
         }
 
         void ConfigureScrollPanel(RectangleF rect, float rowHeight, float scale)
@@ -218,7 +219,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         }
 
         void DrawRows(RectangleF listRect, float rowHeight, float scale, float fontScale,
-            IMyTextSurface surface, Vector2 cursorPosition)
+            IMyTextSurface surface)
         {
             var start = _scrollPanel.StartRow;
             var end = Math.Min(_quotes.Count, start + _scrollPanel.RenderRows);
@@ -231,7 +232,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             {
                 var top = _scrollPanel.ContentBounds.Y + (i - start) * rowHeight;
                 DrawQuote(_quotes[i], top, rowHeight, _scrollPanel.ContentViewportBounds.Right, scale, fontScale,
-                    surface, cursorPosition, GetRowButton(_quotes[i]));
+                    surface, GetRowButton(_quotes[i]));
             }
 
             Sprites.Add(MySprite.CreateClearClipRect());
@@ -252,8 +253,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Button button;
                 if (!_rowButtonsByQuoteKey.TryGetValue(quoteKey, out button))
                 {
-                    button = new Button(rect, CursorType.Hand, quoteKey, OnStationClicked);
-                    button.ClickSound = AudioHelper.HudGps3;
+                    button = new Button(rect, CursorType.Hand, quoteKey, OnStationClicked)
+                    {
+                        ClickSound = AudioHelper.HudGps3
+                    };
                     _rowButtonsByQuoteKey[quoteKey] = button;
                     _scrollPanel.AddChild(button);
                 }
@@ -272,7 +275,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         }
 
         void DrawQuote(NpcMarketStationQuote quote, float top, float height, float right, float scale, float fontScale,
-            IMyTextSurface surface, Vector2 cursor, Button button)
+            IMyTextSurface surface, Button button)
         {
             if (button != null && button.IsPointerOver)
             {
@@ -356,14 +359,16 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
         void EnsureSortButtons()
         {
-            for (var i = 0; i < SortColumns.Length; i++)
+            foreach (var t in SortColumns)
             {
                 var button = new Button(default(RectangleF), new StationHeaderModel
                 {
-                    Column = SortColumns[i],
+                    Column = t,
                     Clicked = OnSortClicked
-                });
-                button.CustomRender = RenderHeader;
+                })
+                {
+                    CustomRender = RenderHeader
+                };
                 button.SetClass("ControlBase Button Sort");
                 _sortButtons.Add(button);
             }
@@ -451,15 +456,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         void OnStationClicked(object dataContext, object sender)
         {
             var quoteKey = dataContext as string;
-            NpcMarketStationQuote quote = null;
-            for (var i = 0; i < _quotes.Count; i++)
-            {
-                if (string.Equals(GetQuoteKey(_quotes[i]), quoteKey, StringComparison.Ordinal))
-                {
-                    quote = _quotes[i];
-                    break;
-                }
-            }
+            NpcMarketStationQuote quote = _quotes.FirstOrDefault(t => string.Equals(GetQuoteKey(t), quoteKey, StringComparison.Ordinal));
             if (quote != null)
                 _parent.CreateTemporaryGps(quote, _fallbackDisplayName);
         }

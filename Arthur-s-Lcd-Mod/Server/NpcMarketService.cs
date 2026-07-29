@@ -38,10 +38,6 @@ namespace LcdMod.Server
         int _saveGeneration;
         int _nextVersion;
 
-        public NpcMarketService(LcdModSessionComponent session)
-        {
-        }
-
         public void LoadData()
         {
             if (MyAPIGateway.Session == null || !MyAPIGateway.Session.IsServer)
@@ -258,9 +254,10 @@ namespace LcdMod.Server
                 if (addedForPlayer > 0)
                 {
 #if DEBUG
-                    LogHelper.LogInfo("NPC market knowledge ledger merge: identity=" + player.Key +
-                                      ", checkpointStations=" + player.Value.Count + ", newlyAdded=" +
-                                      addedForPlayer + ", durableStations=" + durable.Count);
+                    if (durable != null)
+                        LogHelper.LogInfo("NPC market knowledge ledger merge: identity=" + player.Key +
+                                          ", checkpointStations=" + player.Value.Count + ", newlyAdded=" +
+                                          addedForPlayer + ", durableStations=" + durable.Count);
 #endif
                 }
             }
@@ -377,8 +374,7 @@ namespace LcdMod.Server
                 NoCache = request.NoCache,
                 HostBlockEntityId = request.HostBlockEntityId,
                 HostSurfaceIndex = request.HostSurfaceIndex,
-                HostOwnerIdentityId = terminalBlock.OwnerId,
-                RequestingIdentityId = requestingIdentityId
+                HostOwnerIdentityId = terminalBlock.OwnerId
             };
             return true;
         }
@@ -580,7 +576,7 @@ namespace LcdMod.Server
             LogHelper.LogInfo("NPC market server transmitting packet to player: steam=" + steamId +
                               ", request=" + packet.RequestId);
 #endif
-            LcdModSessionComponent.NetworkManager.TransmitToPlayer(packet, steamId, false);
+            LcdModSessionComponent.NetworkManager.TransmitToPlayer(packet, steamId);
         }
 
         ScopedNpcMarketReply GetOrBuildScopedReply(ParsedNpcMarketCheckpoint cache, PendingNpcMarketRequest request)
@@ -1067,7 +1063,6 @@ namespace LcdMod.Server
             public long HostBlockEntityId;
             public int HostSurfaceIndex;
             public long HostOwnerIdentityId;
-            public long RequestingIdentityId;
         }
 
         sealed class ParsedNpcMarketCheckpoint
@@ -1091,6 +1086,8 @@ namespace LcdMod.Server
             public long FactionId;
             public string Tag;
             public string Name;
+            // ReSharper disable once CollectionNeverQueried.Local
+            // maybe we use that later, who knows
             public List<long> StationIds;
         }
 

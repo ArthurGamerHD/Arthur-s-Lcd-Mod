@@ -46,9 +46,9 @@
     <Compile Include="..\Arthur-s-Lcd-Mod\Client\Audio\GameAudioPcmLoader.cs" LinkBase="AudioSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Client\Audio\PcmWaveData.cs" LinkBase="AudioSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Client\Audio\PcmWaveReader.cs" LinkBase="AudioSource" />
-    <Compile Include="..\Arthur-s-Lcd-Mod\Common\Exception\ArgumentOutOfRangeException.cs" LinkBase="ExceptionSource" />
-    <Compile Include="..\Arthur-s-Lcd-Mod\Common\Exception\EndOfStreamException.cs" LinkBase="ExceptionSource" />
-    <Compile Include="..\Arthur-s-Lcd-Mod\Common\Exception\InvalidDataException.cs" LinkBase="ExceptionSource" />
+    <Compile Include="..\Arthur-s-Lcd-Mod\Common\Exceptions\ArgumentOutOfRangeException.cs" LinkBase="ExceptionSource" />
+    <Compile Include="..\Arthur-s-Lcd-Mod\Common\Exceptions\EndOfStreamException.cs" LinkBase="ExceptionSource" />
+    <Compile Include="..\Arthur-s-Lcd-Mod\Common\Exceptions\InvalidDataException.cs" LinkBase="ExceptionSource" />
   </ItemGroup>
 
   <ItemGroup>

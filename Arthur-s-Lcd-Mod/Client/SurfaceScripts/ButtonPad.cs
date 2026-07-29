@@ -23,7 +23,7 @@ using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
 
-    [LcdSurface(typeof(LcdMod.Client.Apps.ButtonPadApp))]
+    [LcdSurface(typeof(ButtonPadApp))]
 #if EXPERIMENTAL
     [MyTextSurfaceScript(ID, TITLE)]
 #endif

@@ -275,6 +275,43 @@ namespace LcdMod.Client.Helpers
             return ts.TotalSeconds > 60 ? $"{ts.Minutes:D2}:{ts.Seconds:D2}" : $"{ts.Seconds}s";
         }
 
+        public static string FormatRelativeTime(double secondsAgo)
+        {
+            return FormatRelativeTime(secondsAgo, false);
+        }
+
+        public static string FormatRelativeTime(long latestFrame, long frame, double framesPerSecond = 60.0)
+        {
+            if (double.IsNaN(framesPerSecond) || double.IsInfinity(framesPerSecond) || framesPerSecond <= 0.0)
+                framesPerSecond = 60.0;
+
+            return FormatRelativeTime(Math.Max(0.0, (latestFrame - frame) / framesPerSecond), true);
+        }
+
+        static string FormatRelativeTime(double secondsAgo, bool wholeUnits)
+        {
+            if (double.IsNaN(secondsAgo) || double.IsInfinity(secondsAgo))
+                secondsAgo = 0.0;
+
+            secondsAgo = Math.Max(0.0, secondsAgo);
+            if (wholeUnits ? secondsAgo < 0.5 : secondsAgo <= 0.05)
+                return LocHelper.GetLoc(MOD_PREFIX + "Common_Time_Now");
+
+            if (secondsAgo < 60.0)
+            {
+                string seconds = wholeUnits
+                    ? Math.Max(1, (int)Math.Round(secondsAgo)).ToString(Culture)
+                    : secondsAgo.ToString(secondsAgo < 10.0 ? "0.#" : "0", Culture);
+                return string.Format(Culture, LocHelper.GetLoc(MOD_PREFIX + "Common_Time_RelativeSecondsAgoFormat"), seconds);
+            }
+
+            double minutesAgo = secondsAgo / 60.0;
+            string minutes = wholeUnits
+                ? Math.Max(1, (int)Math.Round(minutesAgo)).ToString(Culture)
+                : minutesAgo.ToString(minutesAgo < 10.0 ? "0.#" : "0", Culture);
+            return string.Format(Culture, LocHelper.GetLoc(MOD_PREFIX + "Common_Time_RelativeMinutesAgoFormat"), minutes);
+        }
+
         public static float LineHeight(float scale, IMyTextSurface surface, string font = "White", string probe = "Ag")
             => GetSizeInPixel(probe, font, scale, surface).Y;
 

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using LcdMod.Client;
 using LcdMod.Client.Animation;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Config;
@@ -58,17 +57,23 @@ namespace LcdMod.Client.Ftue
             public float SuccessProgress;
             public float Opacity = 1f;
 
-            public SurfaceState(InteractiveSurfaceScript surface, IApp app, Action<ButtonModel, object> close)
+            public SurfaceState(InteractiveSurfaceScript surface, IApp app)
             {
                 Surface = surface;
                 App = app;
                 CloseButton = new BorderlessButton(default(RectangleF), new ButtonModel
                 {
-                    Text = string.Empty,
-                    Clicked = close
+                    Text = string.Empty
                 });
-                CloseButton.SetStyleParent(app as IVisualStyleScope);
+                CloseButton.SetStyleParent(app);
                 CloseButton.SetCursor(CursorType.Hand);
+            }
+
+            public void SetCloseClicked(Action<ButtonModel, object> clicked)
+            {
+                var model = CloseButton.DataContext as ButtonModel;
+                if (model != null)
+                    model.Clicked = clicked;
             }
 
             public void Invalidate()
@@ -186,8 +191,8 @@ namespace LcdMod.Client.Ftue
             if (surface == null || app == null || _states.ContainsKey(surface))
                 return;
 
-            SurfaceState state = null;
-            state = new SurfaceState(surface, app, (model, sender) => CompleteFrom(state));
+            var state = new SurfaceState(surface, app);
+            state.SetCloseClicked((model, sender) => CompleteFrom(state));
             state.CloseButton.CustomRender = (control, sprites) => RenderCloseButton(state, control, sprites);
             state.Eligible = !_completionStarted && IsEligible(surface);
             state.CloseButton.SetVisible(false);
@@ -202,7 +207,7 @@ namespace LcdMod.Client.Ftue
                 });
                 state.UnbindCompletion = unbind;
                 if (_completionStarted)
-                    UnbindCompletion(state);
+                    UnbindComplete(state);
             }
             catch
             {
@@ -392,7 +397,7 @@ namespace LcdMod.Client.Ftue
                 for (int i = 0; i < states.Count; i++)
                 {
                     var state = states[i];
-                    UnbindCompletion(state);
+                    UnbindComplete(state);
 
                     if (state.Triggered &&
                         IsEligible(state.Surface) &&
@@ -527,7 +532,7 @@ namespace LcdMod.Client.Ftue
                 return;
 
             FtueTipSlotScheduler.Cancel(state.Surface, Placement, this);
-            UnbindCompletion(state);
+            UnbindComplete(state);
 
             if (state.CompletionAnimationActive)
             {
@@ -621,7 +626,7 @@ namespace LcdMod.Client.Ftue
         static Color ResolveColor(IApp app, ResourceKey<Color> key, Color fallback)
         {
             Color color;
-            return ScopedResourceResolver.TryResolve(app as IVisualStyleScope, key, out color)
+            return ScopedResourceResolver.TryResolve(app, key, out color)
                 ? color
                 : fallback;
         }
@@ -652,9 +657,9 @@ namespace LcdMod.Client.Ftue
                 (byte)Math.Round(color.A * opacity));
         }
 
-        static void UnbindCompletion(SurfaceState state)
+        static void UnbindComplete(SurfaceState state)
         {
-            if (state == null || state.UnbindCompletion == null)
+            if (state?.UnbindCompletion == null)
                 return;
 
             var unbind = state.UnbindCompletion;

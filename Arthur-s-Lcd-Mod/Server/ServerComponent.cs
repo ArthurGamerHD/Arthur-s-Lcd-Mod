@@ -22,7 +22,7 @@ namespace LcdMod.Server
         readonly LcdModSessionComponent _session;
         readonly Dictionary<long, IMyCubeGrid> _trackedGrids = new Dictionary<long, IMyCubeGrid>();
         readonly Dictionary<long, Dictionary<long, long>> _gridRemaps = new Dictionary<long, Dictionary<long, long>>();
-        readonly Dictionary<string, HashSet<ulong>> _pendingTextureRequests = new Dictionary<string, HashSet<ulong>>(System.StringComparer.OrdinalIgnoreCase);
+        readonly Dictionary<string, HashSet<ulong>> _pendingTextureRequests = new Dictionary<string, HashSet<ulong>>(StringComparer.OrdinalIgnoreCase);
         readonly HashSet<IMyEntity> _entities = new HashSet<IMyEntity>();
         readonly NpcMarketService _npcMarket;
         readonly AudioBroadcastServerService _audioBroadcast;
@@ -30,7 +30,7 @@ namespace LcdMod.Server
         public LcdModServerComponent(LcdModSessionComponent session)
         {
             _session = session;
-            _npcMarket = new NpcMarketService(session);
+            _npcMarket = new NpcMarketService();
             RoomEnvironment = new GridRoomEnvironmentServerModule();
             _audioBroadcast = new AudioBroadcastServerService();
         }
@@ -71,7 +71,7 @@ namespace LcdMod.Server
 
                 _entities.Clear();
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 ErrorHandlerHelper.LogError(e, _session);
             }
@@ -158,7 +158,7 @@ namespace LcdMod.Server
 
                 TrackGrid(grid);
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 ErrorHandlerHelper.LogError(e, _session);
             }
@@ -196,7 +196,7 @@ namespace LcdMod.Server
                 _trackedGrids.Remove(entity.EntityId);
                 _gridRemaps.Remove(entity.EntityId);
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 ErrorHandlerHelper.LogError(e, _session);
             }
@@ -212,7 +212,7 @@ namespace LcdMod.Server
 
                 RemapHelper.RemapGrid(terminalBlock.CubeGrid, GetRemap(terminalBlock.CubeGrid));
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 ErrorHandlerHelper.LogError(e, _session);
             }
@@ -473,9 +473,7 @@ namespace LcdMod.Server
             }
 
             HashSet<ulong> pending;
-            if (!_pendingTextureRequests.TryGetValue(cacheKey, out pending))
-                pending = null;
-
+            _pendingTextureRequests.TryGetValue(cacheKey, out pending);
             if (pending == null || pending.Count == 0)
             {
                 if (packet.RequesterSteamId != 0)

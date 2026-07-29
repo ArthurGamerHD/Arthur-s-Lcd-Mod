@@ -1,6 +1,6 @@
 using System;
 using VRageMath;
-using ArgumentOutOfRangeException = LcdMod.Common.ArgumentOutOfRangeException;
+using ArgumentOutOfRangeException = LcdMod.Common.Exceptions.ArgumentOutOfRangeException;
 
 namespace LcdMod.Client.Animation
 {
@@ -48,14 +48,14 @@ namespace LcdMod.Client.Animation
         /// <summary>
         /// Gets the uniform scale multiplier.
         /// </summary>
-        public float Scale { get; private set; }
+        public float Scale { get; }
 
         /// <summary>
         /// Gets the normalized scale origin inside the control bounds.
         /// </summary>
-        public Vector2 Origin { get; private set; }
+        public Vector2 Origin { get; }
 
-        public override bool IsIdentity => Scale == 1f;
+        public override bool IsIdentity => Math.Abs(Scale - 1f) < 0.001;
 
         public override Vector2 TransformPosition(Vector2 position, RectangleF bounds)
         {

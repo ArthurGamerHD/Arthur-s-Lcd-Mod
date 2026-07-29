@@ -24,9 +24,8 @@ namespace LcdMod.Client.Terminal.Controls.Generic
             combo.Setter = Setter;
             combo.ComboBoxContent = Content;
             combo.Visible = Visible;
-            combo.Title = MyStringId.GetOrCompute("Texture Quality");
-            combo.Tooltip = MyStringId.GetOrCompute(
-                "Client-local limit for planet texture rectangles. Ultra uses the current maximum.");
+            combo.Title = MyStringId.GetOrCompute("LcdMod_PlanetTextureQuality");
+            combo.Tooltip = MyStringId.GetOrCompute("LcdMod_PlanetTextureQuality_Tooltip");
             TerminalControl = combo;
         }
 
@@ -38,7 +37,7 @@ namespace LcdMod.Client.Terminal.Controls.Generic
                 items.Add(new MyTerminalControlComboBoxItem
                 {
                     Key = (long)quality,
-                    Value = MyStringId.GetOrCompute(PlanetTextureQualitySettings.GetLabel(quality))
+                    Value = MyStringId.GetOrCompute(PlanetTextureQualitySettings.GetLocalizationKey(quality))
                 });
             }
         }

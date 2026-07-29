@@ -113,7 +113,6 @@ namespace LcdMod.Client.Apps.Abstract
         bool _drawGridLineSprites;
         bool _drawGridVerticalLines;
         const float FOOTER_HEIGHT = 0f;
-        IMyCubeBlock Block => Host.Block;
         Sandbox.ModAPI.Ingame.IMyTextSurface Surface => Host.Surface;
         RectangleF ViewBox => Host.ViewBox;
         float Scale => GeneralComponent.GetScale();
@@ -595,13 +594,6 @@ namespace LcdMod.Client.Apps.Abstract
         public override bool HasVisibleItems() => _visibleEntries.Count > 0;
 
         void OnScrollPanelChanged(ScrollPanel panel) => _interactiveHost.RenderSprites();
-
-        int GetMaxColsFromSurface()
-        {
-            var max = ViewBox.Width - ViewBox.X;
-            var perCol = MINIMUM_COL_WIDTH * Scale;
-            return (int)Math.Max(1, Math.Round(max / perCol - .5, MidpointRounding.AwayFromZero));
-        }
 
         void DrawGridPowerCell(List<MySprite> sprites, PowerEntry entry, float xStart, float xEnd,
             float yStart, float rowHeight, string maxLabel, string currentLabel, bool drawAsLines)

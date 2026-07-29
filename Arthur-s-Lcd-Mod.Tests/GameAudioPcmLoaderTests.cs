@@ -1,5 +1,7 @@
 #if EXPERIMENTAL
 using LcdMod.Client.Audio;
+// ReSharper disable UseCollectionExpression
+// ReSharper disable RedundantExplicitArrayCreation
 
 namespace Arthur_s_Lcd_Mod.Tests;
 
@@ -187,7 +189,7 @@ public sealed class GameAudioPcmLoaderTests
         writer.Write((ushort)1);
         writer.Write(channels);
         writer.Write(sampleRate);
-        writer.Write((uint)(sampleRate * blockAlign));
+        writer.Write(sampleRate * blockAlign);
         writer.Write(blockAlign);
         writer.Write((ushort)16);
 

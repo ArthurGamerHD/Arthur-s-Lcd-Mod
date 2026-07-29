@@ -1,14 +1,15 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using LcdMod.Common.Audio;
 using LcdMod.Client.Config;
 using LcdMod.Client.GridData;
+using LcdMod.Client.Helpers;
 using LcdMod.Common.Helpers;
 using LcdMod.Common.Networking;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game.Entity;
-using VRage.Game.ModAPI;
 using VRage.Utils;
 using IMyTerminalBlock = Sandbox.ModAPI.IMyTerminalBlock;
 
@@ -35,7 +36,6 @@ namespace LcdMod.Client.Audio
 
         sealed class IncomingMediaStream
         {
-            public long ServerStreamId;
             public long BlockEntityId;
             public int SurfaceIndex;
             public GridMediaPlayer Player;
@@ -44,7 +44,8 @@ namespace LcdMod.Client.Audio
         sealed class OutgoingMediaStream
         {
             public long ClientStreamId;
-            public long ServerStreamId;
+            public long BlockEntityId;
+            public int SurfaceIndex;
             public byte[] PcmBytes;
             public int Offset;
             public int ChunkIndex;
@@ -59,7 +60,7 @@ namespace LcdMod.Client.Audio
         {
             if (args == null || args.Length == 0 || string.IsNullOrWhiteSpace(args[0]))
             {
-                Show("Usage: /lcdmod streamaudio <audio-id>", "Red");
+                Show(LocHelper.GetLoc("LcdMod_AudioBroadcast_Usage"), "Red");
                 return;
             }
 
@@ -67,7 +68,7 @@ namespace LcdMod.Client.Audio
             var asset = ResolveAsset(query);
             if (asset == null)
             {
-                Show("Audio asset not found: " + query, "Red");
+                Show(string.Format(LocHelper.GetLoc("LcdMod_AudioBroadcast_AssetNotFoundFormat"), query), "Red");
                 return;
             }
 
@@ -75,14 +76,14 @@ namespace LcdMod.Client.Audio
             string failureReason;
             if (!TryReadRuntimeWave(asset, out runtimeWaveBytes, out failureReason))
             {
-                Show(failureReason, "Red");
+                Show(string.Format(LocHelper.GetLoc("LcdMod_AudioBroadcast_WaveRejectedFormat"), failureReason), "Red");
                 return;
             }
 
             CanonicalWavePayload wave;
             if (!CanonicalWaveReader.TryRead(runtimeWaveBytes, out wave, out failureReason))
             {
-                Show("Runtime WAV rejected: " + failureReason, "Red");
+                Show(string.Format(LocHelper.GetLoc("LcdMod_AudioBroadcast_WaveRejectedFormat"), failureReason), "Red");
                 return;
             }
 
@@ -98,7 +99,7 @@ namespace LcdMod.Client.Audio
                 LcdModSessionComponent.NetworkManager.TransmitToServer(packet, sendToAllPlayers: false, sendToSender: false);
             }
 
-            Show("Audio broadcast requested: " + asset.Id);
+            Show(string.Format(LocHelper.GetLoc("LcdMod_AudioBroadcast_RequestedFormat"), asset.Id));
         }
 
         public void HandleSync(PacketSyncBroadcastAudio packet)
@@ -142,16 +143,21 @@ namespace LcdMod.Client.Audio
             string failureReason;
             if (!TryReadRuntimeWave(asset, out runtimeWaveBytes, out failureReason))
             {
-                Show(failureReason, "Red");
+                Show(string.Format(LocHelper.GetLoc("LcdMod_AudioBroadcast_WaveRejectedFormat"), failureReason), "Red");
                 return false;
             }
 
             CanonicalWavePayload wave;
             if (!CanonicalWaveReader.TryRead(runtimeWaveBytes, out wave, out failureReason))
             {
-                Show("Runtime WAV rejected: " + failureReason, "Red");
+                Show(string.Format(LocHelper.GetLoc("LcdMod_AudioBroadcast_WaveRejectedFormat"), failureReason), "Red");
                 return false;
             }
+
+            CancelMediaPlayerLocalAudioStream(
+                block.EntityId,
+                surfaceIndex,
+                stopPlayback: true);
 
             var clientStreamId = ++_nextClientStreamId;
             if (clientStreamId == 0)
@@ -171,6 +177,8 @@ namespace LcdMod.Client.Audio
             _outgoingMediaStreams.Add(new OutgoingMediaStream
             {
                 ClientStreamId = clientStreamId,
+                BlockEntityId = block.EntityId,
+                SurfaceIndex = surfaceIndex,
                 PcmBytes = wave.PcmBytes,
                 Offset = 0,
                 ChunkIndex = 0,
@@ -184,6 +192,35 @@ namespace LcdMod.Client.Audio
             SendOpenStream(open);
 
             return true;
+        }
+
+        public bool CancelMediaPlayerLocalAudioStream(
+            long blockEntityId,
+            int surfaceIndex,
+            bool stopPlayback)
+        {
+            bool cancelled = false;
+            for (var i = _outgoingMediaStreams.Count - 1; i >= 0; i--)
+            {
+                var stream = _outgoingMediaStreams[i];
+                if (stream == null ||
+                    stream.BlockEntityId != blockEntityId ||
+                    stream.SurfaceIndex != surfaceIndex)
+                {
+                    continue;
+                }
+
+                SendStreamControl(new PacketMediaStreamControl
+                {
+                    Intent = MediaStreamControlIntent.Close,
+                    ClientStreamId = stream.ClientStreamId,
+                    StopPlayback = stopPlayback
+                });
+                _outgoingMediaStreams.RemoveAt(i);
+                cancelled = true;
+            }
+
+            return cancelled;
         }
 
         public void HandleStreamControl(PacketMediaStreamControl packet)
@@ -209,6 +246,16 @@ namespace LcdMod.Client.Audio
         {
             if (packet == null || packet.ServerStreamId == 0 || packet.BlockEntityId == 0 || packet.SurfaceIndex < 0)
                 return;
+
+            if (IsLocallyOriginatedStream(packet))
+            {
+                SendStreamControl(new PacketMediaStreamControl
+                {
+                    Intent = MediaStreamControlIntent.Refused,
+                    ServerStreamId = packet.ServerStreamId
+                });
+                return;
+            }
 
             if (!LocalConfigManager.AcceptMediaStreams)
             {
@@ -237,16 +284,31 @@ namespace LcdMod.Client.Audio
                 return;
             }
 
+            CancelMediaPlayerLocalAudioStream(
+                packet.BlockEntityId,
+                packet.SurfaceIndex,
+                stopPlayback: true);
             player.StartStream(block, packet.Title);
             gridLogic.MarkRequested();
             _incomingMediaStreams[packet.ServerStreamId] = new IncomingMediaStream
             {
-                ServerStreamId = packet.ServerStreamId,
                 BlockEntityId = packet.BlockEntityId,
                 SurfaceIndex = packet.SurfaceIndex,
                 Player = player
             };
             SendStreamControl(new PacketMediaStreamControl { Intent = MediaStreamControlIntent.Accepted, ServerStreamId = packet.ServerStreamId });
+        }
+
+        bool IsLocallyOriginatedStream(PacketMediaStreamControl packet)
+        {
+            if (packet == null)
+                return false;
+
+            ulong localSteamId = MyAPIGateway.Session?.Player?.SteamUserId ??
+                                 (MyAPIGateway.Multiplayer == null
+                                     ? 0UL
+                                     : MyAPIGateway.Multiplayer.MyId);
+            return localSteamId != 0 && packet.RequestedBySteamId == localSteamId;
         }
 
         public void HandleStreamChunk(PacketSyncMediaStreamChunk packet)
@@ -292,14 +354,9 @@ namespace LcdMod.Client.Audio
             if (packet == null || packet.ClientStreamId == 0)
                 return;
 
-            for (var i = 0; i < _outgoingMediaStreams.Count; i++)
+            foreach (var stream in _outgoingMediaStreams.Where(stream => stream != null && stream.ClientStreamId == packet.ClientStreamId))
             {
-                var stream = _outgoingMediaStreams[i];
-                if (stream == null || stream.ClientStreamId != packet.ClientStreamId)
-                    continue;
-
-                stream.ServerStreamId = packet.ServerStreamId;
-                stream.ListenerSteamIds = packet.ListenerSteamIds ?? new ulong[0];
+                stream.ListenerSteamIds = packet.ListenerSteamIds ?? Array.Empty<ulong>();
                 return;
             }
         }
@@ -318,12 +375,8 @@ namespace LcdMod.Client.Audio
 
         public void Unload()
         {
-            for (var i = 0; i < _activeEmitters.Count; i++)
-            {
-                var emitter = _activeEmitters[i];
-                if (emitter != null)
-                    emitter.StopSound(forced: true);
-            }
+            foreach (var emitter in _activeEmitters.Where(emitter => emitter != null)) 
+                emitter.StopSound(forced: true);
 
             _activeEmitters.Clear();
             _recentPlaybackIds.Clear();
@@ -452,20 +505,11 @@ namespace LcdMod.Client.Audio
             if (library == null || library.Assets == null)
                 return null;
 
-            for (var i = 0; i < library.Assets.Count; i++)
-            {
-                var asset = library.Assets[i];
-                if (asset == null)
-                    continue;
-
-                if (string.Equals(asset.Id, query, StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(asset.SourcePath, query, StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(asset.SourceArchivePath, query, StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(asset.RuntimePath, query, StringComparison.OrdinalIgnoreCase))
-                    return asset;
-            }
-
-            return null;
+            return library.Assets.Where(asset => asset != null)
+                .FirstOrDefault(asset => string.Equals(asset.Id, query, StringComparison.OrdinalIgnoreCase) || 
+                                         string.Equals(asset.SourcePath, query, StringComparison.OrdinalIgnoreCase) || 
+                                         string.Equals(asset.SourceArchivePath, query, StringComparison.OrdinalIgnoreCase) || 
+                                         string.Equals(asset.RuntimePath, query, StringComparison.OrdinalIgnoreCase));
         }
 
         AudioLibraryMetadata LoadLibrary()

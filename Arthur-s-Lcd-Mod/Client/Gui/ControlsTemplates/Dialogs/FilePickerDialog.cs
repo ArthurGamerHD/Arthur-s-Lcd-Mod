@@ -39,14 +39,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         const string LOC_SELECT_FOLDER = MOD_PREFIX + "FilePicker_SelectFolder";
 
         readonly List<FolderModel> _roots = new List<FolderModel>();
-        readonly FilePickerMode _mode;
         readonly string _title;
         readonly Action<FilePickerResult> _onSelected;
         readonly Action<string> _currentPathChanged;
         readonly string _initialPath;
         readonly string _selectButtonText;
         readonly bool _acceptSelectionOnClose;
-        readonly Func<FilePickerResult, List<FilePickerContextAction>> _contextActionsProvider;
         readonly FilePickerGrid _grid;
         bool _accepted;
 
@@ -74,13 +72,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             : base(parentApp)
         {
             _title = string.IsNullOrWhiteSpace(title) ? GetDefaultTitle(mode) : title;
-            _mode = mode;
             _onSelected = onSelected;
             _currentPathChanged = currentPathChanged;
             _initialPath = initialPath;
             _selectButtonText = LocHelper.GetLoc(mode == FilePickerMode.PickFolder ? LOC_SELECT_FOLDER : LOC_SELECT_FILE);
             _acceptSelectionOnClose = acceptSelectionOnClose;
-            _contextActionsProvider = contextActionsProvider;
             RequestRedraw = requestRedraw;
             OnClosed = onClosed;
 
@@ -94,7 +90,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             }
 
             _grid = new FilePickerGrid(default(RectangleF), mode, _roots, initialPath);
-            _grid.ContextActionsProvider = _contextActionsProvider;
+            SetContextActionsProvider(contextActionsProvider);
             _grid.Accepted = OnGridAccepted;
             _grid.Changed = OnGridChanged;
 
@@ -112,6 +108,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         public Action RequestRedraw { get; set; }
         public Action OnClosed { get; set; }
         public bool FullscreenOnCompactSurfaces { get; set; }
+
+        public void SetContextActionsProvider(Func<FilePickerResult, List<FilePickerContextAction>> contextActionsProvider)
+        {
+            _grid.ContextActionsProvider = contextActionsProvider;
+        }
 
         protected override bool ShowCloseButton => !_compactFullscreenThisFrame;
 
@@ -209,35 +210,30 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
             var closeSize = GetDialogCloseButtonSize(scale);
             var titleScale = 0.82f * layoutScale;
-            var titleHeight = compactFullscreen ? 0f : MeasureLineHeight(titleScale, surface);
-            var headerHeight = compactFullscreen ? 0f : Math.Max(titleHeight, closeSize.Y);
+            var titleHeight = MeasureLineHeight(titleScale, surface);
+            var headerHeight = Math.Max(titleHeight, closeSize.Y);
 
-            if (!compactFullscreen)
+            Sprites.Add(new MySprite
             {
-                Sprites.Add(new MySprite
-                {
-                    Type = SpriteType.TEXT,
-                    Data = _title,
-                    Position = new Vector2(cardRect.Center.X, cardRect.Y + innerPadding.Y + (headerHeight - titleHeight) * 0.5f),
-                    Color = ResolveColor(ThemeResources.OnSurfaceColor),
-                    FontId = TextFont,
-                    Alignment = TextAlignment.CENTER,
-                    RotationOrScale = titleScale
-                });
-            }
+                Type = SpriteType.TEXT,
+                Data = _title,
+                Position = new Vector2(cardRect.Center.X, cardRect.Y + innerPadding.Y + (headerHeight - titleHeight) * 0.5f),
+                Color = ResolveColor(ThemeResources.OnSurfaceColor),
+                FontId = TextFont,
+                Alignment = TextAlignment.CENTER,
+                RotationOrScale = titleScale
+            });
 
-            var pathScale = (compactFullscreen ? 0.34f : 0.42f) * layoutScale;
-            var pathHeight = Math.Max((compactFullscreen ? 9f : 12f) * scale, MeasureLineHeight(pathScale, surface));
+            var pathScale = (0.42f) * layoutScale;
+            var pathHeight = Math.Max((12f) * scale, MeasureLineHeight(pathScale, surface));
             var pathRect = new RectangleF(
                 cardRect.X + innerPadding.X,
-                cardRect.Y + innerPadding.Y + headerHeight + (compactFullscreen ? 0f : spacing),
+                cardRect.Y + innerPadding.Y + headerHeight + (spacing),
                 Math.Max(1f, cardRect.Width - innerPadding.X * 2f),
                 pathHeight);
             DrawPath(pathRect, pathScale);
 
-            var searchHeight = compactFullscreen
-                ? 0f
-                : Math.Max(SEARCH_HEIGHT_PIXELS * scale, MeasureLineHeight(0.54f * layoutScale, surface) + 16f * scale);
+            var searchHeight = Math.Max(SEARCH_HEIGHT_PIXELS * scale, MeasureLineHeight(0.54f * layoutScale, surface) + 16f * scale);
             var searchRect = new RectangleF(
                 cardRect.X + innerPadding.X,
                 pathRect.Bottom + spacing,
@@ -245,10 +241,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 searchHeight);
 
             var footerButtonHeight = Math.Max(
-                (compactFullscreen ? 24f : SELECT_BUTTON_HEIGHT_PIXELS) * scale,
-                MeasureLineHeight(0.54f * layoutScale, surface) + (compactFullscreen ? 8f : 14f) * scale);
+                (SELECT_BUTTON_HEIGHT_PIXELS) * scale,
+                MeasureLineHeight(0.54f * layoutScale, surface) + (14f) * scale);
             var footerHeight = footerButtonHeight + spacing;
-            var listTop = compactFullscreen ? pathRect.Bottom + spacing : searchRect.Bottom + spacing;
+            var listTop = searchRect.Bottom + spacing;
             var listBottom = cardRect.Bottom - innerPadding.Y - footerHeight;
             var listRect = new RectangleF(
                 cardRect.X + innerPadding.X,
@@ -256,17 +252,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Math.Max(1f, cardRect.Width - innerPadding.X * 2f),
                 Math.Max(0f, listBottom - listTop));
 
-            if (compactFullscreen)
-            {
-                if (_searchInput != null)
-                    _searchInput.SetVisible(false);
-            }
-            else
-            {
-                EnsureSearchInput(searchRect);
-                ContainerControl.AddChild(_searchInput);
-                _searchInput.Render(Sprites);
-            }
+            EnsureSearchInput(searchRect);
+            ContainerControl.AddChild(_searchInput);
+            _searchInput.Render(Sprites);
 
             _grid.CompactRows = false;
             _grid.ChromeVisible = true;
@@ -276,21 +264,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _grid.Render(Sprites);
 
             var footerY = cardRect.Bottom - innerPadding.Y - footerButtonHeight;
-            var footerGap = spacing;
-            var selectButtonWidth = compactFullscreen
-                ? Math.Max(1f, (cardRect.Width - innerPadding.X * 2f - footerGap) * .5f)
-                : Math.Min(Math.Max(SELECT_BUTTON_WIDTH_PIXELS * scale, 96f * scale), Math.Max(1f, cardRect.Width - innerPadding.X * 2f));
-            if (compactFullscreen)
-            {
-                var closeRect = new RectangleF(cardRect.X + innerPadding.X, footerY, selectButtonWidth, footerButtonHeight);
-                EnsureCompactCloseButton(closeRect);
-                ContainerControl.AddChild(_compactCloseButton);
-                _compactCloseButton.Render(Sprites);
-            }
-            else if (_compactCloseButton != null)
-            {
-                _compactCloseButton.SetVisible(false);
-            }
+            var selectButtonWidth = Math.Min(Math.Max(SELECT_BUTTON_WIDTH_PIXELS * scale, 96f * scale), Math.Max(1f, cardRect.Width - innerPadding.X * 2f));
+            _compactCloseButton?.SetVisible(false);
 
             var selectRect = new RectangleF(
                 cardRect.Right - innerPadding.X - selectButtonWidth,

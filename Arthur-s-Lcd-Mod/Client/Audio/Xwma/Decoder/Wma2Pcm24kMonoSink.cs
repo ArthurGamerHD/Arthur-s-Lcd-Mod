@@ -1,5 +1,6 @@
+// ReSharper disable RedundantUsingDirective
 using System;
-using InvalidDataException = LcdMod.Common.InvalidDataException;
+using InvalidDataException = LcdMod.Common.Exceptions.InvalidDataException;
 
 namespace LcdMod.Client.Audio.Xwma.Decoder
 {
@@ -183,10 +184,10 @@ namespace LcdMod.Client.Audio.Xwma.Decoder
                 ? ScaleFrameCount(_sourceFrameCount, _sourceSampleRate)
                 : long.MaxValue;
 
-            while ((long)_outputFrameCount < finalOutputFrameCount)
+            while (_outputFrameCount < finalOutputFrameCount)
             {
                 long sourceNumerator =
-                    (long)_outputFrameCount * _sourceSampleRate;
+                    _outputFrameCount * _sourceSampleRate;
                 int sourceIndex = (int)(sourceNumerator /
                     PcmAudioFormat.REQUIRED_SAMPLE_RATE);
 

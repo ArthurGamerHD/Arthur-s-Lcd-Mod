@@ -996,6 +996,7 @@ namespace LcdMod.Client.ScreenAreas
                 }
                 catch
                 {
+                    // continue until we find a match
                 }
 
                 try
@@ -1030,27 +1031,17 @@ namespace LcdMod.Client.ScreenAreas
                     return reader;
                 }
             }
-            catch
-            {
-            }
-
-            try
-            {
-                if (!utilities.FileExistsInModLocation(content, mod))
-                    return null;
-
-                LogHelper.LogOnce("file:mod:exists:" + content,
-                    $"opening MWM from mod ({mod.Name} {mod.PublishedServiceName}) location after exists check: " +
-                    content);
-                return utilities.ReadBinaryFileInModLocation(content, mod);
-            }
             catch (Exception e)
-            {   // mods can be unpredictable... had a guy uploading his entire bin64 folder to workshop and crashing this method
+            {
                 LogHelper.LogOnce("fail:file:mod:exists:" + content + ":" + mod.PublishedFileId,
-                    $"exists-gated MWM read failed for mod ({mod.Name} {mod.PublishedServiceName}) location: " +
+                    $"MWM read failed for mod ({mod.Name} {mod.PublishedServiceName}) location: " +
                     content + $"\n{e}");
             }
-
+            
+            LogHelper.LogOnce("notfound:file:mod:" + content + ":" + mod.PublishedFileId,
+                $"MWM file not found for mod ({mod.Name} {mod.PublishedServiceName}) location: " +
+                content);
+            
             return null;
         }
 

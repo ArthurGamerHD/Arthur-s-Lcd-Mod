@@ -12,8 +12,8 @@ namespace LcdMod.Client.Audio
 {
     internal static class AudioLibraryStorage
     {
-        public const string ArchiveFileName = "local_audio.zip";
-        public const string MetadataEntryName = "audio.xml";
+        public const string ARCHIVE_FILE_NAME = "local_audio.zip";
+        public const string METADATA_ENTRY_NAME = "audio.xml";
 
         const string SOURCE_FOLDER = "source";
         const string RUNTIME_FOLDER = "runtime";
@@ -28,7 +28,7 @@ namespace LcdMod.Client.Audio
             try
             {
                 byte[] bytes;
-                if (!TryReadArchiveEntry(MetadataEntryName, out bytes) || bytes == null || bytes.Length == 0)
+                if (!TryReadArchiveEntry(METADATA_ENTRY_NAME, out bytes) || bytes == null || bytes.Length == 0)
                     return new AudioLibraryMetadata();
 
                 var xml = Encoding.UTF8.GetString(bytes);
@@ -94,7 +94,7 @@ namespace LcdMod.Client.Audio
                     RemoveAsset(metadata, asset.Id);
                     metadata.Version = Math.Max(metadata.Version, 2);
                     metadata.Assets.Add(asset);
-                    UpsertArchiveEntry(entries, MetadataEntryName, Encoding.UTF8.GetBytes(MyAPIGateway.Utilities.SerializeToXML(metadata)));
+                    UpsertArchiveEntry(entries, METADATA_ENTRY_NAME, Encoding.UTF8.GetBytes(MyAPIGateway.Utilities.SerializeToXML(metadata)));
 
                     WriteArchiveEntries(entries);
                     CacheRuntimeWaveLocked(asset, runtimeWaveBytes);
@@ -241,7 +241,7 @@ namespace LcdMod.Client.Audio
                     }
 
                     metadata.Version = Math.Max(metadata.Version, 2);
-                    UpsertArchiveEntry(entries, MetadataEntryName, Encoding.UTF8.GetBytes(MyAPIGateway.Utilities.SerializeToXML(metadata)));
+                    UpsertArchiveEntry(entries, METADATA_ENTRY_NAME, Encoding.UTF8.GetBytes(MyAPIGateway.Utilities.SerializeToXML(metadata)));
                     WriteArchiveEntries(entries);
                 }
 
@@ -282,7 +282,7 @@ namespace LcdMod.Client.Audio
             try
             {
                 byte[] bytes;
-                if (!TryFindEntryData(entries, MetadataEntryName, out bytes) || bytes == null || bytes.Length == 0)
+                if (!TryFindEntryData(entries, METADATA_ENTRY_NAME, out bytes) || bytes == null || bytes.Length == 0)
                     return new AudioLibraryMetadata();
 
                 var xml = Encoding.UTF8.GetString(bytes);
@@ -394,13 +394,13 @@ namespace LcdMod.Client.Audio
             try
             {
                 if (MyAPIGateway.Utilities == null ||
-                    !MyAPIGateway.Utilities.FileExistsInLocalStorage(ArchiveFileName, typeof(LcdModClientComponent)))
+                    !MyAPIGateway.Utilities.FileExistsInLocalStorage(ARCHIVE_FILE_NAME, typeof(LcdModClientComponent)))
                 {
                     _cachedEntries = new List<MinimalZip.Entry>();
                     return new List<MinimalZip.Entry>();
                 }
 
-                using (var reader = MyAPIGateway.Utilities.ReadBinaryFileInLocalStorage(ArchiveFileName, typeof(LcdModClientComponent)))
+                using (var reader = MyAPIGateway.Utilities.ReadBinaryFileInLocalStorage(ARCHIVE_FILE_NAME, typeof(LcdModClientComponent)))
                 {
                     if (reader == null || reader.BaseStream.Length - reader.BaseStream.Position <= 0)
                     {
@@ -423,7 +423,7 @@ namespace LcdMod.Client.Audio
 
         static void WriteArchiveEntries(List<MinimalZip.Entry> entries)
         {
-            using (var writer = MyAPIGateway.Utilities.WriteBinaryFileInLocalStorage(ArchiveFileName, typeof(LcdModClientComponent)))
+            using (var writer = MyAPIGateway.Utilities.WriteBinaryFileInLocalStorage(ARCHIVE_FILE_NAME, typeof(LcdModClientComponent)))
             {
                 writer.BaseStream.SetLength(0);
                 writer.BaseStream.Position = 0;

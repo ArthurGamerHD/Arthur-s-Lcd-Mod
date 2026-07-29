@@ -4,6 +4,7 @@ using VRageMath;
 
 namespace LcdMod.Client.Gui.ControlsTemplates.Basic
 {
+    // ReSharper disable once PartialTypeWithSinglePart
     public partial class Button : RectangleControl
     {
         public Button(RectangleF bounds, ButtonModel model = null)
@@ -24,7 +25,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
 
         protected override Color GetRenderBackgroundColor()
         {
-            return base.BackgroundColor;
+            return BackgroundColor;
         }
 
         protected override bool ShouldRenderStyleBorder()

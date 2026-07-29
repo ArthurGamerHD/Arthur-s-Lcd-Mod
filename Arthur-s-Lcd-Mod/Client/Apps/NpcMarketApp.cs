@@ -24,7 +24,6 @@ using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.Interacti
 using static LcdMod.Common.Helpers.Constants;
 
 using LcdMod.Common.Config.Generation;
-using LcdMod.Common.Helpers;
 
 namespace LcdMod.Client.Apps
 {
@@ -65,11 +64,10 @@ namespace LcdMod.Client.Apps
         readonly TextBlock _footerUpdatedText;
         readonly TextBlock _footerNextTickText;
         readonly Button _refreshButton;
-        readonly Func<RectangleF, int> _pageProvider;
         NpcMarketMode _mode;
         NpcMarketSortColumn _sortColumn = NpcMarketSortColumn.Price;
         bool _sortDescending;
-        string _searchQuery = string.Empty;
+        string _searchQuery;
         NpcMarketAggregationResult _aggregation = new NpcMarketAggregationResult();
         bool _aggregationDirty = true;
         bool _rowsDirty = true;
@@ -117,8 +115,8 @@ namespace LcdMod.Client.Apps
                 SearchClicked = OpenSearch,
                 RowClicked = OnMarketRowClicked
             };
-            _pageProvider = viewport => _listStripPanel.ConfigurePages(_pagesPanel, viewport);
-            _pagesPanel.PageProvider = _pageProvider;
+            Func<RectangleF, int> pageProvider = viewport => _listStripPanel.ConfigurePages(_pagesPanel, viewport);
+            _pagesPanel.PageProvider = pageProvider;
             _modeComboBox = new ComboBox<NpcMarketMode>(MarketModes, GetModeLabel, OnModeChanged, Host.RenderSprites)
             {
                 OpenDirection = ComboBoxOpenDirection.Up

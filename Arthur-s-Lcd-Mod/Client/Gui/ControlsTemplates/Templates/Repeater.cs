@@ -78,14 +78,17 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Templates
                     continue;
                 }
 
-                TItem item = _items[i];
-                if (_bindItem != null)
-                    _bindItem(control, item, i);
+                if (_items != null)
+                {
+                    TItem item = _items[i];
+                    if (_bindItem != null)
+                        _bindItem(control, item, i);
 
-                if (_arrangeItem != null)
-                    _arrangeItem(control, Bounds, item, i);
-                else
-                    control.Arrange(Bounds);
+                    if (_arrangeItem != null)
+                        _arrangeItem(control, Bounds, item, i);
+                    else
+                        control.Arrange(Bounds);
+                }
 
                 control.SetVisible(true);
             }

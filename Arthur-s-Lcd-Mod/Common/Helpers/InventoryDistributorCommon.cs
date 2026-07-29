@@ -325,7 +325,7 @@ namespace LcdMod.Common.Helpers
                 {
                     if (best < 0
                         || remainders[i] > remainders[best]
-                        || (remainders[i] == remainders[best] && weights[i] > weights[best]))
+                        || (Math.Abs(remainders[i] - remainders[best]) < 0.01 && weights[i] > weights[best]))
                         best = i;
                 }
 

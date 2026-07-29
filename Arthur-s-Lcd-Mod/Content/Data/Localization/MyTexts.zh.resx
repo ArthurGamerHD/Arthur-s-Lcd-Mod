@@ -541,6 +541,15 @@
   <data name="LcdMod_Common_Time_LessThanOneSecond" xml:space="preserve">
     <value>&lt;1秒</value>
   </data>
+    <data name="LcdMod_Common_Time_Now" xml:space="preserve">
+    <value>现在</value>
+  </data>
+    <data name="LcdMod_Common_Time_RelativeSecondsAgoFormat" xml:space="preserve">
+    <value>-{0}秒</value>
+  </data>
+    <data name="LcdMod_Common_Time_RelativeMinutesAgoFormat" xml:space="preserve">
+    <value>-{0}分</value>
+  </data>
   <data name="LcdMod_Common_Label_WithColon" xml:space="preserve">
     <value>{0}：</value>
   </data>
@@ -999,5 +1008,74 @@
   </data>
   <data name="LcdMod_FilePicker_BackToRoots" xml:space="preserve">
     <value>返回根目录</value>
+  </data>
+  <data name="LcdMod_AutoScroll" xml:space="preserve">
+    <value>自动滚动</value>
+  </data>
+  <data name="LcdMod_AutoScroll_Tooltip" xml:space="preserve">
+    <value>设置滚动步进之间的延迟（设为 0 可关闭自动滚动）。</value>
+  </data>
+  <data name="LcdMod_Search_Script" xml:space="preserve">
+    <value>搜索应用</value>
+  </data>
+  <data name="LcdMod_Search_Script_Tooltip" xml:space="preserve">
+    <value>筛选应用列表。</value>
+  </data>
+  <data name="LcdMod_GW_30m" xml:space="preserve">
+    <value>30 分钟</value>
+  </data>
+  <data name="LcdMod_RenderScale" xml:space="preserve">
+    <value>渲染比例</value>
+  </data>
+  <data name="LcdMod_RaysPerTick" xml:space="preserve">
+    <value>每帧射线数</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality" xml:space="preserve">
+    <value>行星纹理质量</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality_Tooltip" xml:space="preserve">
+    <value>限制此客户端上的行星地图纹理细节。“超高”使用可用的最高细节。</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality_VeryLow" xml:space="preserve">
+    <value>极低</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality_Low" xml:space="preserve">
+    <value>低</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality_Medium" xml:space="preserve">
+    <value>中</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality_High" xml:space="preserve">
+    <value>高</value>
+  </data>
+  <data name="LcdMod_PlanetTextureQuality_Ultra" xml:space="preserve">
+    <value>超高</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_NoPlanet" xml:space="preserve">
+    <value>未找到行星。</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CartographyNotReady" xml:space="preserve">
+    <value>行星地图数据尚未准备就绪。</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_NoColorCubemap" xml:space="preserve">
+    <value>行星地图纹理不可用。</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_NoResult" xml:space="preserve">
+    <value>未返回行星地图数据。</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CartographyFailed" xml:space="preserve">
+    <value>无法为此类行星生成地图。</value>
+  </data>
+  <data name="LcdMod_AudioBroadcast_Usage" xml:space="preserve">
+    <value>用法：/lcdmod streamaudio &lt;audio-id&gt;</value>
+  </data>
+  <data name="LcdMod_AudioBroadcast_AssetNotFoundFormat" xml:space="preserve">
+    <value>未找到音频资源：{0}</value>
+  </data>
+  <data name="LcdMod_AudioBroadcast_WaveRejectedFormat" xml:space="preserve">
+    <value>音频文件被拒绝：{0}</value>
+  </data>
+  <data name="LcdMod_AudioBroadcast_RequestedFormat" xml:space="preserve">
+    <value>已请求音频广播：{0}</value>
   </data>
 </root>

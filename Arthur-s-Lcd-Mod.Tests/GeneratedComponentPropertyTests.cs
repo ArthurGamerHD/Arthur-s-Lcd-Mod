@@ -1,21 +1,22 @@
 using Generated;
 using LcdMod.Common.Config.Components;
 using LcdMod.Common.Config.Generation;
+// ReSharper disable PartialTypeWithSinglePart
 
 namespace LcdMod.Client.Apps.Abstract
 {
-    [ConfigComponent(LcdMod.Common.Helpers.Constants.GENERAL, typeof(GeneralConfigComponent), PropertyName = "GeneralComponent")]
-    [ConfigComponent(LcdMod.Common.Helpers.Constants.COLORS, typeof(ColorConfigComponent), PropertyName = "ColorComponent")]
-    [ConfigComponent(LcdMod.Common.Helpers.Constants.INTERACTION, typeof(InteractiveConfigComponent), PropertyName = "InteractionComponent")]
+    [ConfigComponent(Common.Helpers.Constants.GENERAL, typeof(GeneralConfigComponent), PropertyName = "GeneralComponent")]
+    [ConfigComponent(Common.Helpers.Constants.COLORS, typeof(ColorConfigComponent), PropertyName = "ColorComponent")]
+    [ConfigComponent(Common.Helpers.Constants.INTERACTION, typeof(InteractiveConfigComponent), PropertyName = "InteractionComponent")]
     public abstract partial class App
     {
         protected App(IComponentContainer config) { Config = config; }
         protected IComponentContainer Config { get; }
     }
 
-    [ConfigComponent(LcdMod.Common.Helpers.Constants.FILTERS, typeof(FilterConfigComponent), PropertyName = "FilterComponent")]
-    [ConfigComponent(LcdMod.Common.Helpers.Constants.BLOCKS, typeof(BlockSelectionConfigComponent), PropertyName = "BlockSelectionComponent")]
-    [ConfigComponent(LcdMod.Common.Helpers.Constants.ITEMS, typeof(ItemSelectionConfigComponent), PropertyName = "ItemSelectionComponent")]
+    [ConfigComponent(Common.Helpers.Constants.FILTERS, typeof(FilterConfigComponent), PropertyName = "FilterComponent")]
+    [ConfigComponent(Common.Helpers.Constants.BLOCKS, typeof(BlockSelectionConfigComponent), PropertyName = "BlockSelectionComponent")]
+    [ConfigComponent(Common.Helpers.Constants.ITEMS, typeof(ItemSelectionConfigComponent), PropertyName = "ItemSelectionComponent")]
     public abstract partial class ItemsApp : App
     {
         protected ItemsApp(IComponentContainer config) : base(config) { }
@@ -24,10 +25,10 @@ namespace LcdMod.Client.Apps.Abstract
 
 namespace LcdMod.Client.Apps
 {
-    using LcdMod.Client.Apps.Abstract;
+    using Abstract;
 
     [LcdApp(1, Name = "Power")]
-    [ConfigComponent(LcdMod.Common.Helpers.Constants.APP, typeof(PowerConfigComponent), PropertyName = "PowerComponent")]
+    [ConfigComponent(Common.Helpers.Constants.APP, typeof(PowerConfigComponent), PropertyName = "PowerComponent")]
     public sealed partial class GeneratedPowerApp : App
     {
         public GeneratedPowerApp(IComponentContainer config) : base(config) { }
@@ -36,7 +37,7 @@ namespace LcdMod.Client.Apps
     }
 
     [LcdApp(2, Name = "Projector")]
-    [ConfigComponent(LcdMod.Common.Helpers.Constants.PROJECTOR_REFERENCE, typeof(BlockReferenceConfigComponent), PropertyName = "ProjectorReferenceComponent")]
+    [ConfigComponent(Common.Helpers.Constants.PROJECTOR_REFERENCE, typeof(BlockReferenceConfigComponent), PropertyName = "ProjectorReferenceComponent")]
     public sealed partial class GeneratedProjectorApp : ItemsApp
     {
         public GeneratedProjectorApp(IComponentContainer config) : base(config) { }
@@ -51,7 +52,7 @@ namespace LcdMod.Client.Apps
     }
 
     [LcdApp(4, Name = "Radar")]
-    [ConfigComponent(LcdMod.Common.Helpers.Constants.APP, typeof(RadarConfigComponent), PropertyName = "RadarComponent")]
+    [ConfigComponent(Common.Helpers.Constants.APP, typeof(RadarConfigComponent), PropertyName = "RadarComponent")]
     public sealed partial class GeneratedRadarApp : App
     {
         public GeneratedRadarApp(IComponentContainer config) : base(config) { }
@@ -59,7 +60,7 @@ namespace LcdMod.Client.Apps
     }
 
     [LcdApp(5, Name = "Markdown")]
-    [ConfigComponent(LcdMod.Common.Helpers.Constants.APP, typeof(MarkdownConfigComponent), PropertyName = "MarkdownComponent")]
+    [ConfigComponent(Common.Helpers.Constants.APP, typeof(MarkdownConfigComponent), PropertyName = "MarkdownComponent")]
     public sealed partial class GeneratedMarkdownApp : App
     {
         public GeneratedMarkdownApp(IComponentContainer config) : base(config) { }
@@ -76,7 +77,7 @@ namespace LcdMod.Client.Apps
     }
 
     [LcdApp(7, Name = "PlanetaryMap")]
-    [ConfigComponent(LcdMod.Common.Helpers.Constants.APP, typeof(PlanetaryMapConfigComponent), PropertyName = "PlanetaryMapComponent")]
+    [ConfigComponent(Common.Helpers.Constants.APP, typeof(PlanetaryMapConfigComponent), PropertyName = "PlanetaryMapComponent")]
     public sealed partial class GeneratedPlanetaryMapApp : App
     {
         public GeneratedPlanetaryMapApp(IComponentContainer config) : base(config) { }
@@ -94,8 +95,8 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
 namespace LcdMod.Client.SurfaceScripts
 {
-    using LcdMod.Client.Apps;
-    using LcdMod.Client.SurfaceScripts.Abstract;
+    using Apps;
+    using Abstract;
 
     [LcdSurface(typeof(GeneratedPowerApp))]
     public sealed partial class GeneratedPowerSurface : SurfaceScriptBase

@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Generated;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Utility;
@@ -21,6 +20,7 @@ using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
 
 namespace LcdMod.Client.SurfaceScripts.Abstract
 {
+    // ReSharper disable once PartialTypeWithSinglePart
     public abstract partial class ItemsSurfaceScriptBase : SurfaceScriptBase, IMultiDisplayMode
     {
         protected FilterConfigComponent FilterComponent => Config.GetComponent<FilterConfigComponent>();

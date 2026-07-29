@@ -21,7 +21,6 @@ using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
 using MyShipConnectorStatus = Sandbox.ModAPI.Ingame.MyShipConnectorStatus;
 
 using LcdMod.Common.Config.Generation;
-using LcdMod.Common.Helpers;
 
 namespace LcdMod.Client.Apps
 {

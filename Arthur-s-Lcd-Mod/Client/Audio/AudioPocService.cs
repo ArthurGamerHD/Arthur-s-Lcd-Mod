@@ -14,7 +14,7 @@ namespace LcdMod.Client.Audio
 {
     internal sealed class AudioPocService
     {
-        const double TargetSubmittedSeconds = 0.5;
+        const double TARGET_SUBMITTED_SECONDS = 0.5;
 
         readonly Queue<PlaybackBuffer> _pendingBuffers =
             new Queue<PlaybackBuffer>();
@@ -255,7 +255,7 @@ namespace LcdMod.Client.Audio
             while (_pendingBuffers.Count > 0 &&
                    (!_playerEmitter.IsPlaying ||
                     _submittedSeconds - _playbackClock.Elapsed.TotalSeconds <
-                    TargetSubmittedSeconds))
+                    TARGET_SUBMITTED_SECONDS))
             {
                 PlaybackBuffer buffer = _pendingBuffers.Dequeue();
                 bool starting = !_playerEmitter.IsPlaying;

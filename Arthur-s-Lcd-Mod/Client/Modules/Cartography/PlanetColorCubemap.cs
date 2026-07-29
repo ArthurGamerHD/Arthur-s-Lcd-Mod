@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using LcdMod.Common.Imaging;
 using VRageMath;
-using ArgumentOutOfRangeException = LcdMod.Common.ArgumentOutOfRangeException;
+using ArgumentOutOfRangeException = LcdMod.Common.Exceptions.ArgumentOutOfRangeException;
 
 namespace LcdMod.Client.Modules.Cartography
 {

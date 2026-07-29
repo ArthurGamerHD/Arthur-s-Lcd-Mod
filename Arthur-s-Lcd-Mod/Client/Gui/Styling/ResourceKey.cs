@@ -16,6 +16,7 @@ namespace LcdMod.Client.Gui.Styling
         public string Name { get; private set; }
     }
 
+    // ReSharper disable once UnusedTypeParameter
     public sealed class ResourceKey<TValue> : ResourceKeyBase
     {
         internal ResourceKey(int id, string name)

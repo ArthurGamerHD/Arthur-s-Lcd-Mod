@@ -11,7 +11,7 @@ using VRage.Utils;
 using VRageMath;
 using IMyFunctionalBlock = Sandbox.ModAPI.IMyFunctionalBlock;
 
-namespace LcdMod.Client.Terminal.Actions
+namespace LcdMod.Client.Terminal
 {
 
     public static class ActionHelper

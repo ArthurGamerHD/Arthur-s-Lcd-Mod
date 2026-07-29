@@ -1,5 +1,4 @@
 using System;
-using LcdMod.Client.Terminal;
 using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Xml.Serialization;
 
-namespace LcdMod.Common.Audio
+namespace LcdMod.Client.Audio
 {
     [Serializable]
     [XmlRoot("AudioLibrary")]

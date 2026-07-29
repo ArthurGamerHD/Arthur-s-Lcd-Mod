@@ -1,4 +1,3 @@
-using LcdMod.Common.Config.Components;
 using Generated;
 using System.Collections.Generic;
 using LcdMod.Client.Apps;
@@ -19,7 +18,7 @@ using static LcdMod.Common.Helpers.Constants;
 using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
-    [LcdSurface(typeof(LcdMod.Client.Apps.StarMapApp))]
+    [LcdSurface(typeof(StarMapApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public sealed partial class StarMapSurfaceScript : InteractiveSurfaceScript,
         IUsesTerminalControl<SliderFov>,

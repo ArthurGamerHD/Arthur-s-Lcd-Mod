@@ -505,6 +505,7 @@ namespace LcdMod.Client.Market
                 }
                 catch
                 {
+                    // ignored, Using "Missing icon" instead
                 }
             }
 

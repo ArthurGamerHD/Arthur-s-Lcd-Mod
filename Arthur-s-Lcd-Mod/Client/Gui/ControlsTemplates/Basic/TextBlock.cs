@@ -52,7 +52,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
                 return;
 
             string fontId = string.IsNullOrEmpty(FontId) ? TextFont : FontId;
-            float styledFontScale = ResolveStyleValue(ControlTemplate.FontScaleProperty);
+            float styledFontScale = ResolveStyleValue(FontScaleProperty);
             float scale = Math.Max(0.01f, LayoutScale * styledFontScale * FontScale);
             Color color = TextColor ?? base.TextColor;
             if (Wrapping == TextBlockWrapping.Wrap)

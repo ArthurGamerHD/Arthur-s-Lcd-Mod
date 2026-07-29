@@ -3,7 +3,7 @@ using VRageMath;
 
 namespace LcdMod.Client.Gui.ControlsTemplates.Panels.StackPanel
 {
-    public class StackPanel : LcdMod.Client.Gui.ControlsTemplates.Panels.Panel
+    public class StackPanel : Panel
     {
         float _rowHeight = 30f;
         float _gap;
@@ -29,7 +29,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels.StackPanel
             set
             {
                 float next = Math.Max(1f, value);
-                if (_rowHeight == next)
+                if (Math.Abs(_rowHeight - next) < 0.1)
                     return;
 
                 _rowHeight = next;
@@ -43,7 +43,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels.StackPanel
             set
             {
                 float next = Math.Max(0f, value);
-                if (_gap == next)
+                if (Math.Abs(_gap - next) < 0.1)
                     return;
 
                 _gap = next;
@@ -68,7 +68,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels.StackPanel
             float totalHeight = StackPanelLayout.CalculateTotalHeight(RowHeight, Gap, children.Count);
             var layoutBounds = new RectangleF(Rect.X, Rect.Y, Rect.Width, totalHeight);
 
-            var layout = StackPanelLayout.Create(layoutBounds, strideHeight, children.Count, 0);
+            var layout = StackPanelLayout.Create(layoutBounds, strideHeight, children.Count);
 
             for (int i = 0; i < children.Count; i++)
             {

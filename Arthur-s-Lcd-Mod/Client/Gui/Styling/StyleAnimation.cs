@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using LcdMod.Client.Animation;
-using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 
 namespace LcdMod.Client.Gui.Styling

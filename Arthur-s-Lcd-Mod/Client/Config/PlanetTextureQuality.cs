@@ -57,20 +57,20 @@ namespace LcdMod.Client.Config
             }
         }
 
-        public static string GetLabel(PlanetTextureQuality quality)
+        public static string GetLocalizationKey(PlanetTextureQuality quality)
         {
             switch (Normalize(quality))
             {
                 case PlanetTextureQuality.Poop:
-                    return "Poop";
+                    return "LcdMod_PlanetTextureQuality_VeryLow";
                 case PlanetTextureQuality.Low:
-                    return "Low";
+                    return "LcdMod_PlanetTextureQuality_Low";
                 case PlanetTextureQuality.Medium:
-                    return "Medium";
+                    return "LcdMod_PlanetTextureQuality_Medium";
                 case PlanetTextureQuality.High:
-                    return "High";
+                    return "LcdMod_PlanetTextureQuality_High";
                 default:
-                    return "Ultra";
+                    return "LcdMod_PlanetTextureQuality_Ultra";
             }
         }
     }

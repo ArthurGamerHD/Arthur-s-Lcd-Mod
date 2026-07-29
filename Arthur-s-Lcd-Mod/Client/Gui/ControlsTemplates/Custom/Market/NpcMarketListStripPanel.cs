@@ -19,7 +19,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
         int _rowsRevision = -1;
         float _listWidth;
         int _rowsPerPage = 1;
-        Vector2 _lastAvailableSize;
         RectangleF _viewportBounds;
         PageLayoutKey _pageLayoutKey;
         bool _hasPageLayoutKey;
@@ -70,7 +69,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
 
         public Vector2 MeasureContent(Vector2 availableSize)
         {
-            _lastAvailableSize = availableSize;
             RebuildPages(availableSize);
             if (_pages.Count <= 0)
                 return new Vector2(0f, availableSize.Y);
@@ -85,7 +83,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Market
                 return 0;
 
             _viewportBounds = viewport;
-            _lastAvailableSize = viewport.Size;
             RebuildPages(viewport.Size);
             pagesPanel.PageWidthPixels = _listWidth / Math.Max(0.01f, pagesPanel.LayoutScale);
 

@@ -1,4 +1,3 @@
-using LcdMod.Common.Config.Components;
 using Generated;
 using System.Collections.Generic;
 using LcdMod.Client.Apps;
@@ -17,7 +16,7 @@ using static LcdMod.Common.Helpers.Constants;
 using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
-    [LcdSurface(typeof(LcdMod.Client.Apps.FarGridRaycastExperimentalApp))]
+    [LcdSurface(typeof(FarGridRaycastExperimentalApp))]
 #if EXPERIMENTAL
     [MyTextSurfaceScript(ID, TITLE)]
 #endif

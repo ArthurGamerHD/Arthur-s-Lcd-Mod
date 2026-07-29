@@ -124,7 +124,7 @@ namespace LcdMod.Common.Helpers
                                 // amount = null moves the WHOLE stack and merges it with a matching
                                 // stack in the destination. Passing an explicit amount makes SE split
                                 // off a new stack instead (the "needs a 2nd sort to merge" bug).
-                                source.TransferItemTo(dest, k, null, true, null);
+                                source.TransferItemTo(dest, k, null, true);
                             }
                             catch (Exception e)
                             {

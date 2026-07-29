@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using LcdMod.Client.Animation;
 using LcdMod.Client.Gui.Styling;

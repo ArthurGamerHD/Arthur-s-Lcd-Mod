@@ -12,16 +12,16 @@ namespace LcdModCodeGenerator;
 [Generator]
 public sealed class TerminalSettingControlsGenerator : IIncrementalGenerator
 {
-    const string TerminalSliderTypeName = "Generated.TerminalSlider";
-    const string TerminalSwitchTypeName = "Generated.TerminalSwitch";
-    const string TerminalColorTypeName = "Generated.TerminalColor";
-    const string ConfigComponentAttributeName = "LcdMod.Common.Config.Generation.ConfigComponentAttribute";
-    const string ConfigComponentBaseName = "LcdMod.Common.Config.Components.ConfigComponent";
-    const string OptionalValueTypeName = "LcdMod.Common.Config.OptionalValue`1";
-    const string ColorTypeName = "VRageMath.Color";
-    const string ColorResolverTypeName = "LcdMod.Common.Config.Components.ColorConfigComponentExtensions";
-    const string TerminalBlockTypeName = "Sandbox.ModAPI.IMyTerminalBlock";
-    const string RuntimeWrapperName = "LcdMod.Client.Terminal.Controls.TerminalControlsWrapper";
+    const string TERMINAL_SLIDER_TYPE_NAME = "Generated.TerminalSlider";
+    const string TERMINAL_SWITCH_TYPE_NAME = "Generated.TerminalSwitch";
+    const string TERMINAL_COLOR_TYPE_NAME = "Generated.TerminalColor";
+    const string CONFIG_COMPONENT_ATTRIBUTE_NAME = "LcdMod.Common.Config.Generation.ConfigComponentAttribute";
+    const string CONFIG_COMPONENT_BASE_NAME = "LcdMod.Common.Config.Components.ConfigComponent";
+    const string OPTIONAL_VALUE_TYPE_NAME = "LcdMod.Common.Config.OptionalValue`1";
+    const string COLOR_TYPE_NAME = "VRageMath.Color";
+    const string COLOR_RESOLVER_TYPE_NAME = "LcdMod.Common.Config.Components.ColorConfigComponentExtensions";
+    const string TERMINAL_BLOCK_TYPE_NAME = "Sandbox.ModAPI.IMyTerminalBlock";
+    const string RUNTIME_WRAPPER_NAME = "LcdMod.Client.Terminal.Controls.TerminalControlsWrapper";
 
     static readonly DiagnosticDescriptor InvalidTarget = Error(
         "LCDTERM101", "Invalid terminal setting target",
@@ -75,7 +75,7 @@ public sealed class TerminalSettingControlsGenerator : IIncrementalGenerator
             .Collect();
 
         var componentSlots = context.SyntaxProvider.ForAttributeWithMetadataName(
-                ConfigComponentAttributeName,
+                CONFIG_COMPONENT_ATTRIBUTE_NAME,
                 static (node, _) => node is ClassDeclarationSyntax,
                 static (ctx, _) => ReadComponentSlots(ctx))
             .Where(static value => value != null)
@@ -97,14 +97,13 @@ public sealed class TerminalSettingControlsGenerator : IIncrementalGenerator
     static SettingInput ReadSetting(GeneratorSyntaxContext context)
     {
         var declaration = context.Node as PropertyDeclarationSyntax;
-        var property = declaration == null ? null : context.SemanticModel.GetDeclaredSymbol(declaration) as IPropertySymbol;
+        var property = declaration == null ? null : context.SemanticModel.GetDeclaredSymbol(declaration);
         if (property == null)
             return null;
 
         foreach (var attribute in property.GetAttributes())
         {
-            SettingKind kind;
-            if (!TryGetSettingKind(attribute.AttributeClass, out kind))
+            if (!TryGetSettingKind(attribute.AttributeClass, out var kind))
                 continue;
 
             switch (kind)
@@ -203,14 +202,14 @@ public sealed class TerminalSettingControlsGenerator : IIncrementalGenerator
         ImmutableArray<ComponentSlotTarget> rawSlots)
     {
         // Config-only test projects deliberately do not reference the client terminal runtime.
-        if (compilation.GetTypeByMetadataName(RuntimeWrapperName) == null)
+        if (compilation.GetTypeByMetadataName(RUNTIME_WRAPPER_NAME) == null)
             return;
 
-        var componentBase = compilation.GetTypeByMetadataName(ConfigComponentBaseName);
-        var colorType = compilation.GetTypeByMetadataName(ColorTypeName);
-        var optionalValueType = compilation.GetTypeByMetadataName(OptionalValueTypeName);
-        var colorResolverType = compilation.GetTypeByMetadataName(ColorResolverTypeName);
-        var terminalBlockType = compilation.GetTypeByMetadataName(TerminalBlockTypeName);
+        var componentBase = compilation.GetTypeByMetadataName(CONFIG_COMPONENT_BASE_NAME);
+        var colorType = compilation.GetTypeByMetadataName(COLOR_TYPE_NAME);
+        var optionalValueType = compilation.GetTypeByMetadataName(OPTIONAL_VALUE_TYPE_NAME);
+        var colorResolverType = compilation.GetTypeByMetadataName(COLOR_RESOLVER_TYPE_NAME);
+        var terminalBlockType = compilation.GetTypeByMetadataName(TERMINAL_BLOCK_TYPE_NAME);
         if (componentBase == null)
             return;
 
@@ -432,13 +431,13 @@ public sealed class TerminalSettingControlsGenerator : IIncrementalGenerator
 
             switch (configTypeName)
             {
-                case "global::" + TerminalSliderTypeName:
+                case "global::" + TERMINAL_SLIDER_TYPE_NAME:
                     kind = SettingKind.Slider;
                     return true;
-                case "global::" + TerminalSwitchTypeName:
+                case "global::" + TERMINAL_SWITCH_TYPE_NAME:
                     kind = SettingKind.Switch;
                     return true;
-                case "global::" + TerminalColorTypeName:
+                case "global::" + TERMINAL_COLOR_TYPE_NAME:
                     kind = SettingKind.Color;
                     return true;
             }
@@ -545,7 +544,7 @@ public sealed class TerminalSettingControlsGenerator : IIncrementalGenerator
     static string BuildSlider(SettingModel model)
     {
         var input = model.Input;
-        var propertyType = TypeName(input.Property.Type);
+        TypeName(input.Property.Type);
         var componentType = TypeName(model.ComponentType);
         var sb = Header();
         sb.AppendLine("namespace LcdMod.Client.Terminal.Controls.GeneratedSettings");
@@ -928,7 +927,7 @@ public sealed class TerminalSettingControlsGenerator : IIncrementalGenerator
 
     static string TypeName(ITypeSymbol type) => type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
     static string Identifier(string value) => SyntaxFacts.GetKeywordKind(value) == SyntaxKind.None ? value : "@" + value;
-    static string Literal(string value) => Microsoft.CodeAnalysis.CSharp.SymbolDisplay.FormatLiteral(value ?? string.Empty, true);
+    static string Literal(string value) => SymbolDisplay.FormatLiteral(value ?? string.Empty, true);
     static string FloatLiteral(float value) => value.ToString("R", System.Globalization.CultureInfo.InvariantCulture) + "f";
 
     static Location AttributeLocation(AttributeData attribute, ISymbol fallback)

@@ -1,3 +1,4 @@
+// ReSharper disable RedundantUsingDirective
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -845,7 +846,7 @@ namespace LcdMod.Common.Zip
 
         private static uint CalculateCrc32(byte[] data)
         {
-            return LcdMod.Common.Zip.Crc32.Compute(data);
+            return Crc32.Compute(data);
         }
 
         static void WriteUInt16LittleEndian(byte[] output, ref int offset, int value)

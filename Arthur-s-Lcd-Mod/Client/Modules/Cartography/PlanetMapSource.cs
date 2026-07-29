@@ -3,8 +3,8 @@ using System.IO;
 using LcdMod.Common.Png;
 using Sandbox.ModAPI;
 using VRageMath;
-using ArgumentOutOfRangeException = LcdMod.Common.ArgumentOutOfRangeException;
-using InvalidDataException = LcdMod.Common.InvalidDataException;
+using ArgumentOutOfRangeException = LcdMod.Common.Exceptions.ArgumentOutOfRangeException;
+using InvalidDataException = LcdMod.Common.Exceptions.InvalidDataException;
 
 namespace LcdMod.Client.Modules.Cartography
 {

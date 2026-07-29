@@ -1,5 +1,6 @@
+// ReSharper disable RedundantUsingDirective
 using System;
-using ArgumentOutOfRangeException = LcdMod.Common.ArgumentOutOfRangeException;
+using ArgumentOutOfRangeException = LcdMod.Common.Exceptions.ArgumentOutOfRangeException;
 
 namespace LcdMod.Common.Zip
 {

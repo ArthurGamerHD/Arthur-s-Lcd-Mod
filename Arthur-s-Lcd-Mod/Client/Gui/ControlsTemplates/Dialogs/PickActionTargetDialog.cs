@@ -1,5 +1,4 @@
 #if EXPERIMENTAL
-using LcdMod.Client.Terminal.Actions;
 #endif
 using System;
 using System.Collections.Generic;
@@ -10,6 +9,7 @@ using LcdMod.Client.Gui.ControlsTemplates.Inputs;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
+using LcdMod.Client.Terminal;
 using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
 using Sandbox.Game.Entities;
@@ -72,7 +72,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         readonly GridLogic _gridLogic;
         readonly PickActionTargetResult _initialSelection;
         readonly Action<PickActionTargetResult> _selectedCallback;
-        readonly Action _cancelCallback;
         readonly Action _requestRedraw;
         readonly List<PickActionTargetResult> _allItems = new List<PickActionTargetResult>();
         readonly List<PickActionTargetResult> _filteredItems = new List<PickActionTargetResult>();
@@ -103,12 +102,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _gridLogic = gridLogic;
             _initialSelection = initialSelection;
             _selectedCallback = selectedCallback;
-            _cancelCallback = cancelCallback;
+            var cancelCallback1 = cancelCallback;
             _requestRedraw = requestRedraw;
             OnClose = delegate
             {
-                if (_cancelCallback != null)
-                    _cancelCallback();
+                if (cancelCallback1 != null)
+                    cancelCallback1();
             };
 
             if (initialSelection != null)
@@ -751,11 +750,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             try
             {
                 var cubeBlock = block as MyCubeBlock;
-                if (cubeBlock != null && cubeBlock.BlockDefinition != null)
+                if (cubeBlock?.BlockDefinition != null)
                     return TextureHelper.GetOrAddTextureForBlock(cubeBlock.BlockDefinition);
             }
             catch
             {
+                // ignored, using missing icon instead
             }
 
             return MISSING_ICON_PLACEHOLDER;

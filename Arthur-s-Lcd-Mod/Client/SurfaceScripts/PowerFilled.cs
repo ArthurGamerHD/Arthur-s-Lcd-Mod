@@ -18,7 +18,7 @@ using static LcdMod.Common.Helpers.Constants;
 using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
-    [LcdSurface(typeof(LcdMod.Client.Apps.PowerFilledApp))]
+    [LcdSurface(typeof(PowerFilledApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class PowerFilledSurfaceScript : InteractiveSurfaceScript,
         IAutoScroll,

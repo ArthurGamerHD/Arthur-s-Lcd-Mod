@@ -23,7 +23,6 @@ using VRageMath;
 using static LcdMod.Common.Helpers.Constants;
 
 using LcdMod.Common.Config.Generation;
-using Constants = LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.Apps
 {

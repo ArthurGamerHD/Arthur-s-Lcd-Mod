@@ -16,7 +16,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
             : base(bounds, CursorType.Hand, model)
         {
             _dragHandle = new RectangleControl(default(RectangleF), CursorType.Hand);
-            _dragHandle.SetDraggable(true);
+            _dragHandle.SetDraggable();
             _dragHandle.SetOnBeginDrag(OnDragHandleBeginDrag);
             _dragHandle.SetOnDrag(OnDragHandleDragged);
             _dragHandle.SetOnEndDrag(OnDragHandleEndDrag);
@@ -51,10 +51,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
         {
             StyleState state = base.GetStyleState();
             var model = ItemModel;
-            var owner = model != null ? model.Owner : null;
+            var owner = model?.Owner;
             if (model != null && model.Selected)
                 state |= StyleState.Selected;
-            if (IsDraggedVisual || (owner != null && model != null && owner.IsDraggingItem(model.Item)))
+            if (IsDraggedVisual || (owner != null && owner.IsDraggingItem(model.Item)))
                 state |= StyleState.Dragged;
 
             return state;
@@ -81,7 +81,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
 
             ConfigureDragHandle(rect, owner);
 
-            if (!IsDragGhost && owner != null && model != null && owner.IsDraggingItem(model.Item))
+            if (!IsDragGhost && owner != null && owner.IsDraggingItem(model.Item))
                 return;
 
             BorderRenderer.CreateSpritesFromRect(
@@ -123,8 +123,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
         void OnDragHandleBeginDrag(object dataContext, object sender)
         {
             var model = ItemModel;
-            var owner = model == null ? null : model.Owner;
-            if (owner == null || owner.EntryMoved == null)
+            var owner = model?.Owner;
+            if (owner?.EntryMoved == null)
                 return;
 
             Vector2 pointer;

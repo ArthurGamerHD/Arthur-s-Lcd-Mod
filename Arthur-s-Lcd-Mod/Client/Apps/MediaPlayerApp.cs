@@ -15,7 +15,6 @@ using LcdMod.Client.Gui.ControlsTemplates.Progress;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
-using LcdMod.Client.Extensions;
 using LcdMod.Common.Config.Components;
 using LcdMod.Common.Config.Generation;
 using LcdMod.Common.Helpers;
@@ -27,6 +26,7 @@ using VRage.Game.GUI.TextPanel;
 using VRage.Utils;
 using VRageMath;
 using static LcdMod.Common.Helpers.Constants;
+using ArgumentOutOfRangeException = LcdMod.Common.Exceptions.ArgumentOutOfRangeException;
 using IMyTerminalBlock = Sandbox.ModAPI.IMyTerminalBlock;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
 // todo: this app is just an "stub" to test in game, a real UI for it should be created later 
@@ -207,11 +207,6 @@ namespace LcdMod.Client.Apps
             public string Path;
             public string Detail;
             public string Icon;
-
-            public bool IsPickedAudio
-            {
-                get { return Reference != null; }
-            }
 
             public override string ToString()
             {
@@ -1289,8 +1284,8 @@ namespace LcdMod.Client.Apps
             if (_audioProgressModel == null)
                 return;
 
-            double duration = _player == null ? 0.0 : _player.CurrentDurationSeconds;
-            double position = _player == null ? 0.0 : _player.CurrentPositionSeconds;
+            double duration = _player?.CurrentDurationSeconds ?? 0.0;
+            double position = _player?.CurrentPositionSeconds ?? 0.0;
 
             _audioProgressModel.PositionSeconds = position;
             _audioProgressModel.DurationSeconds = duration;
@@ -1362,7 +1357,7 @@ namespace LcdMod.Client.Apps
                 return;
 
             _visualizerFrameScheduled = true;
-            global::LcdMod.Client.LcdModClientComponent.RunNextFrame.Add(delegate
+            LcdModClientComponent.RunNextFrame.Add(delegate
             {
                 _visualizerFrameScheduled = false;
                 if (!ShouldScheduleVisualizerFrames())
@@ -1488,7 +1483,7 @@ namespace LcdMod.Client.Apps
 
             DrawMediaButtonDecorator(
                 sprites,
-                model.DecoratorRect.HasValue ? model.DecoratorRect.Value : control.Bounds,
+                model.DecoratorRect ?? control.Bounds,
                 control.BackgroundColor,
                 model.Shape);
 
@@ -1849,8 +1844,7 @@ namespace LcdMod.Client.Apps
             if (_interactiveHost == null)
                 return;
 
-            FilePickerDialog dialog = null;
-            dialog = new FilePickerDialog(
+            var dialog = new FilePickerDialog(
                 this,
                 ResolveLoc(LOC_PICK_AUDIO),
                 FilePickerMode.PickFile,
@@ -1860,9 +1854,14 @@ namespace LcdMod.Client.Apps
                 null,
                 false,
                 MediaAudioFilePickerTreeProvider.CurrentPath,
-                MediaAudioFilePickerTreeProvider.SetCurrentPath,
-                delegate(FilePickerResult result) { return BuildAudioPickerContextActions(result, dialog); });
-            dialog.FullscreenOnCompactSurfaces = true;
+                MediaAudioFilePickerTreeProvider.SetCurrentPath)
+            {
+                FullscreenOnCompactSurfaces = true
+            };
+            dialog.SetContextActionsProvider(delegate(FilePickerResult result)
+            {
+                return BuildAudioPickerContextActions(result, dialog);
+            });
             dialog.SetLoading(true, ResolveLoc(LOC_LOADING_AUDIO_FILES));
             _interactiveHost.ShowDialog(dialog);
 
@@ -2057,6 +2056,7 @@ namespace LcdMod.Client.Apps
             MarkLocalMediaInteraction();
             if (IsShiftPressed())
             {
+                CancelPendingLocalAudioStream();
                 if (!TrySendMediaPlayerCommand(MediaPlayerCommandKind.Stop, GetPlayerPositionSeconds(), false))
                     Stop();
                 return;
@@ -2121,17 +2121,21 @@ namespace LcdMod.Client.Apps
             if (_volumeSliderModel != null)
                 _player.Volume = _volumeSliderModel.Value;
 
-            if (_pickedAudio != null && _pickedAudio.IsLocal && TryStartLocalAudioStream(block))
+            CancelPendingLocalAudioStream();
+            if (_pickedAudio != null && _pickedAudio.IsLocal)
+            {
+                TryStartLocalAudioStream(block);
+                _player.PlayLocalAudio(block, _pickedAudio.LocalAsset, startPaused);
+                MarkDirty();
                 return;
+            }
 
             if (TrySendMediaPlayerCommand(MediaPlayerCommandKind.Play, 0.0, true))
                 return;
 
             if (_pickedAudio != null)
             {
-                if (_pickedAudio.IsLocal)
-                    _player.PlayLocalAudio(block, _pickedAudio.LocalAsset, startPaused);
-                else if (_pickedAudio.IsSoundBlock)
+                if (_pickedAudio.IsSoundBlock)
                     _player.PlayGameSound(block, _pickedAudio.FirstSoundSubtype, startPaused);
                 else
                     _player.PlayGameAudioFile(block, GetPickedAudioTitle(_pickedAudio), _pickedAudio.DefinitionPath, startPaused);
@@ -2299,7 +2303,7 @@ namespace LcdMod.Client.Apps
 
         int GetPlaylistEntryIndex(ListBoxItem<PlaylistEntry> control, PlaylistEntry entry)
         {
-            var model = control == null ? null : control.ItemModel;
+            var model = control?.ItemModel;
             if (model != null && model.Index >= 0 && model.Index < _queue.Count && ReferenceEquals(_queue[model.Index], entry))
                 return model.Index;
 
@@ -2370,7 +2374,7 @@ namespace LcdMod.Client.Apps
             if (string.IsNullOrEmpty(displayName))
             {
                 if (MyAPIGateway.Utilities != null)
-                    MyAPIGateway.Utilities.ShowNotification(ResolveLoc(LOC_PLAYLIST_NAME_EMPTY), 2000);
+                    MyAPIGateway.Utilities.ShowNotification(ResolveLoc(LOC_PLAYLIST_NAME_EMPTY));
                 return;
             }
 
@@ -2379,11 +2383,11 @@ namespace LcdMod.Client.Apps
                 return;
 
             var fileName = BuildPlaylistFileName(displayName);
-            AppendM3u(fileName, entries, false);
+            AppendM3U(fileName, entries, false);
             RegisterSavedPlaylist(fileName, displayName);
             MediaAudioFilePickerTreeProvider.InvalidateCache();
             if (MyAPIGateway.Utilities != null)
-                MyAPIGateway.Utilities.ShowNotification(string.Format(FormatingHelper.Culture, ResolveLoc(LOC_PLAYLIST_SAVED_FORMAT), displayName), 2000);
+                MyAPIGateway.Utilities.ShowNotification(string.Format(FormatingHelper.Culture, ResolveLoc(LOC_PLAYLIST_SAVED_FORMAT), displayName));
             MarkDirty();
         }
 
@@ -2431,7 +2435,7 @@ namespace LcdMod.Client.Apps
                 Reference = reference,
                 SoundSubtype = reference.FirstSoundSubtype ?? string.Empty,
                 Title = GetPickedAudioSongName(reference),
-                Path = GetPickedAudioM3uPath(reference),
+                Path = GetPickedAudioM3UPath(reference),
                 Detail = GetPickedAudioLengthOrDetail(reference),
                 Icon = GetAudioFileIcon(reference.IsLocal ? reference.GameContentPath : reference.DefinitionPath)
             };
@@ -2625,6 +2629,7 @@ namespace LcdMod.Client.Apps
 
         void MovePlaylistEntry(PlaylistEntry entry, int sourceIndex, int targetIndex)
         {
+            if (sourceIndex < 0) throw new ArgumentOutOfRangeException(nameof(sourceIndex));
             if (entry == null || _queue.Count <= 1)
                 return;
 
@@ -3123,7 +3128,7 @@ namespace LcdMod.Client.Apps
         static void ShowAudioDeleteNotification(string message)
         {
             if (MyAPIGateway.Utilities != null)
-                MyAPIGateway.Utilities.ShowNotification(message, 2000);
+                MyAPIGateway.Utilities.ShowNotification(message);
         }
 
         string GetLocalAudioDeleteDisplayName(MediaAudioFileReference reference)
@@ -3217,7 +3222,7 @@ namespace LcdMod.Client.Apps
                         if (line[0] == '#')
                             continue;
 
-                        var entry = CreatePlaylistEntryFromM3uPath(line, pendingTitle);
+                        var entry = CreatePlaylistEntryFromM3UPath(line, pendingTitle);
                         pendingTitle = null;
                         if (entry != null)
                             entries.Add(entry);
@@ -3232,7 +3237,7 @@ namespace LcdMod.Client.Apps
             return entries;
         }
 
-        PlaylistEntry CreatePlaylistEntryFromM3uPath(string path, string title)
+        PlaylistEntry CreatePlaylistEntryFromM3UPath(string path, string title)
         {
             if (string.IsNullOrWhiteSpace(path))
                 return null;
@@ -3247,17 +3252,17 @@ namespace LcdMod.Client.Apps
                     for (int j = 0; j < files.Count; j++)
                     {
                         var reference = files[j] == null ? null : files[j].Tag as MediaAudioFileReference;
-                        if (reference == null || !ReferenceMatchesM3uPath(reference, path, files[j].FullPath))
+                        if (reference == null || !ReferenceMatchesM3UPath(reference, path, files[j].FullPath))
                             continue;
 
                         var entry = CreatePlaylistEntry(reference);
-                        ApplyM3uTitle(entry, title);
+                        ApplyM3UTitle(entry, title);
                         return entry;
                     }
                 }
             }
 
-            var contentPath = StripM3uPathPrefix(path, "Content/");
+            var contentPath = StripM3UPathPrefix(path, "Content/");
             if (!string.IsNullOrEmpty(contentPath))
             {
                 for (int i = 0; i < _library.Length; i++)
@@ -3266,12 +3271,12 @@ namespace LcdMod.Client.Apps
                     if (item == null)
                         continue;
 
-                    if (M3uPathsEqual(contentPath, item.WavePath) ||
-                        M3uPathsEqual(path, item.WavePath) ||
+                    if (M3UPathsEqual(contentPath, item.WavePath) ||
+                        M3UPathsEqual(path, item.WavePath) ||
                         string.Equals(path, item.Subtype, StringComparison.OrdinalIgnoreCase))
                     {
                         var entry = CreatePlaylistEntry(item);
-                        ApplyM3uTitle(entry, title);
+                        ApplyM3UTitle(entry, title);
                         return entry;
                     }
                 }
@@ -3280,32 +3285,32 @@ namespace LcdMod.Client.Apps
             return null;
         }
 
-        static void ApplyM3uTitle(PlaylistEntry entry, string title)
+        static void ApplyM3UTitle(PlaylistEntry entry, string title)
         {
             if (entry != null && !string.IsNullOrWhiteSpace(title))
                 entry.Title = title.Trim();
         }
 
-        static bool ReferenceMatchesM3uPath(MediaAudioFileReference reference, string path, string pickerFullPath)
+        static bool ReferenceMatchesM3UPath(MediaAudioFileReference reference, string path, string pickerFullPath)
         {
             if (reference == null || string.IsNullOrWhiteSpace(path))
                 return false;
 
-            if (M3uPathsEqual(path, pickerFullPath) ||
-                M3uPathsEqual(path, reference.PickerFullPath) ||
-                M3uPathsEqual(path, GetPickedAudioM3uPath(reference)) ||
-                M3uPathsEqual(path, reference.DefinitionPath) ||
-                M3uPathsEqual(StripM3uPathPrefix(path, "Content/"), reference.DefinitionPath))
+            if (M3UPathsEqual(path, pickerFullPath) ||
+                M3UPathsEqual(path, reference.PickerFullPath) ||
+                M3UPathsEqual(path, GetPickedAudioM3UPath(reference)) ||
+                M3UPathsEqual(path, reference.DefinitionPath) ||
+                M3UPathsEqual(StripM3UPathPrefix(path, "Content/"), reference.DefinitionPath))
                 return true;
 
             if (reference.IsLocal && reference.LocalAsset != null)
             {
-                if (M3uPathsEqual(StripM3uPathPrefix(path, "Local/"), reference.LocalAsset.RuntimePath) ||
-                    M3uPathsEqual(StripM3uPathPrefix(path, "Local/"), reference.LocalAsset.SourceArchivePath) ||
-                    M3uPathsEqual(StripM3uPathPrefix(path, "Local/"), reference.LocalAsset.SourcePath) ||
-                    M3uPathsEqual(path, reference.LocalAsset.RuntimePath) ||
-                    M3uPathsEqual(path, reference.LocalAsset.SourceArchivePath) ||
-                    M3uPathsEqual(path, reference.LocalAsset.SourcePath))
+                if (M3UPathsEqual(StripM3UPathPrefix(path, "Local/"), reference.LocalAsset.RuntimePath) ||
+                    M3UPathsEqual(StripM3UPathPrefix(path, "Local/"), reference.LocalAsset.SourceArchivePath) ||
+                    M3UPathsEqual(StripM3UPathPrefix(path, "Local/"), reference.LocalAsset.SourcePath) ||
+                    M3UPathsEqual(path, reference.LocalAsset.RuntimePath) ||
+                    M3UPathsEqual(path, reference.LocalAsset.SourceArchivePath) ||
+                    M3UPathsEqual(path, reference.LocalAsset.SourcePath))
                     return true;
             }
 
@@ -3313,25 +3318,25 @@ namespace LcdMod.Client.Apps
                    string.Equals(path, reference.FirstSoundSubtype, StringComparison.OrdinalIgnoreCase);
         }
 
-        static string StripM3uPathPrefix(string path, string prefix)
+        static string StripM3UPathPrefix(string path, string prefix)
         {
             if (string.IsNullOrWhiteSpace(path) || string.IsNullOrEmpty(prefix))
                 return string.Empty;
 
-            var normalized = NormalizeM3uPath(path);
+            var normalized = NormalizeM3UPath(path);
             return normalized.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
                 ? normalized.Substring(prefix.Length)
                 : string.Empty;
         }
 
-        static bool M3uPathsEqual(string left, string right)
+        static bool M3UPathsEqual(string left, string right)
         {
-            left = NormalizeM3uPath(left);
-            right = NormalizeM3uPath(right);
+            left = NormalizeM3UPath(left);
+            right = NormalizeM3UPath(right);
             return left.Length > 0 && right.Length > 0 && string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
         }
 
-        static string NormalizeM3uPath(string path)
+        static string NormalizeM3UPath(string path)
         {
             return string.IsNullOrWhiteSpace(path)
                 ? string.Empty
@@ -3345,7 +3350,7 @@ namespace LcdMod.Client.Apps
             if (entry == null)
                 return;
 
-            AppendM3u(FAVORITES_PLAYLIST_FILE, new List<PlaylistEntry> { entry }, true);
+            AppendM3U(FAVORITES_PLAYLIST_FILE, new List<PlaylistEntry> { entry }, true);
             MediaAudioFilePickerTreeProvider.InvalidateCache();
             MarkDirty();
         }
@@ -3465,7 +3470,7 @@ namespace LcdMod.Client.Apps
             return records;
         }
 
-        void AppendM3u(string fileName, IList<PlaylistEntry> entries, bool append)
+        void AppendM3U(string fileName, IList<PlaylistEntry> entries, bool append)
         {
             if (string.IsNullOrEmpty(fileName) || entries == null || entries.Count == 0 || MyAPIGateway.Utilities == null)
                 return;
@@ -3507,7 +3512,7 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        static string GetPickedAudioM3uPath(MediaAudioFileReference reference)
+        static string GetPickedAudioM3UPath(MediaAudioFileReference reference)
         {
             if (reference == null)
                 return string.Empty;
@@ -3673,7 +3678,7 @@ namespace LcdMod.Client.Apps
             if (Host.GridLogic == null)
                 return null;
 
-            return Host.GridLogic.GetMediaPlayer(Host.Block == null ? 0L : Host.Block.EntityId, Host.SurfaceIndex);
+            return Host.GridLogic.GetMediaPlayer(Host.Block?.EntityId ?? 0L, Host.SurfaceIndex);
         }
 
         bool TrySendMediaPlayerCommand(MediaPlayerCommandKind command, double positionSeconds, bool includeSource)
@@ -3744,7 +3749,7 @@ namespace LcdMod.Client.Apps
             return false;
         }
 
-        bool TryStartLocalAudioStream(IMyTerminalBlock block)
+        void TryStartLocalAudioStream(IMyTerminalBlock block)
         {
             if (!IsMultiplayerMediaCommandRequired() ||
                 block == null ||
@@ -3753,14 +3758,25 @@ namespace LcdMod.Client.Apps
                 _pickedAudio.LocalAsset == null ||
                 LcdModSessionComponent.Client == null)
             {
-                return false;
+                return;
             }
 
-            return LcdModSessionComponent.Client.StartMediaPlayerLocalAudioStream(
+            LcdModSessionComponent.Client.StartMediaPlayerLocalAudioStream(
                 block,
                 Host.SurfaceIndex,
                 _pickedAudio.LocalAsset,
                 GetPickedAudioTitle(_pickedAudio));
+        }
+
+        void CancelPendingLocalAudioStream()
+        {
+            var block = Host.Block as IMyTerminalBlock;
+            if (block == null || LcdModSessionComponent.Client == null) return;
+
+            LcdModSessionComponent.Client.CancelMediaPlayerLocalAudioStream(
+                block.EntityId,
+                Host.SurfaceIndex,
+                stopPlayback: true);
         }
 
         static bool IsMultiplayerMediaCommandRequired()
@@ -3770,7 +3786,7 @@ namespace LcdMod.Client.Apps
 
         double GetPlayerPositionSeconds()
         {
-            return _player == null ? 0.0 : _player.CurrentPositionSeconds;
+            return _player?.CurrentPositionSeconds ?? 0.0;
         }
 
         static double SanitizeCommandPosition(double seconds)
@@ -3793,6 +3809,7 @@ namespace LcdMod.Client.Apps
 
         void Stop()
         {
+            CancelPendingLocalAudioStream();
             if (_player == null) 
                 return;
 
@@ -3803,6 +3820,7 @@ namespace LcdMod.Client.Apps
         void StopClicked(ButtonModel model, object sender)
         {
             MarkLocalMediaInteraction();
+            CancelPendingLocalAudioStream();
             if (!TrySendMediaPlayerCommand(MediaPlayerCommandKind.Stop, GetPlayerPositionSeconds(), false))
                 Stop();
         }
@@ -3817,7 +3835,7 @@ namespace LcdMod.Client.Apps
                 return;
             }
 
-            var reference = result == null ? null : result.Tag as MediaAudioFileReference;
+            var reference = result?.Tag as MediaAudioFileReference;
             if (reference == null)
                 return;
 
@@ -3881,81 +3899,7 @@ namespace LcdMod.Client.Apps
 
             return false;
         }
-
-        static FileModel FindAdjacentFileInCurrentFolder(FolderModel root, MediaAudioFileReference current, int direction, bool loop)
-        {
-            if (root == null || current == null)
-                return null;
-
-            FolderModel folder;
-            FileModel file;
-            if (!FindFile(root, current, out folder, out file) || folder == null || folder.Files == null || folder.Files.Count == 0)
-                return null;
-
-            folder.Files.Sort(ComparePickerFiles);
-            var index = IndexOfFile(folder.Files, file);
-            if (index < 0)
-                return null;
-
-            var nextIndex = index + (direction < 0 ? -1 : 1);
-            if (nextIndex < 0 || nextIndex >= folder.Files.Count)
-            {
-                if (!loop)
-                    return null;
-
-                nextIndex = nextIndex < 0 ? folder.Files.Count - 1 : 0;
-            }
-
-            return folder.Files[nextIndex];
-        }
-
-        static FileModel FindAdjacentContentFile(FolderModel root, MediaAudioFileReference current, int direction, bool loop)
-        {
-            if (root == null || current == null)
-                return null;
-
-            var folders = new List<FolderModel>();
-            AddFoldersWithFiles(root, folders);
-            if (folders.Count == 0)
-                return null;
-
-            FolderModel currentFolder;
-            FileModel currentFile;
-            if (!FindFile(root, current, out currentFolder, out currentFile) || currentFolder == null)
-                return null;
-
-            var folderIndex = IndexOfFolder(folders, currentFolder);
-            if (folderIndex < 0)
-                return null;
-
-            currentFolder.Files.Sort(ComparePickerFiles);
-            var fileIndex = IndexOfFile(currentFolder.Files, currentFile);
-            if (fileIndex < 0)
-                return null;
-
-            var step = direction < 0 ? -1 : 1;
-            var nextFileIndex = fileIndex + step;
-            if (nextFileIndex >= 0 && nextFileIndex < currentFolder.Files.Count)
-                return currentFolder.Files[nextFileIndex];
-
-            var nextFolderIndex = folderIndex + step;
-            if (nextFolderIndex < 0 || nextFolderIndex >= folders.Count)
-            {
-                if (!loop)
-                    return null;
-
-                nextFolderIndex = nextFolderIndex < 0 ? folders.Count - 1 : 0;
-            }
-
-            var nextFolder = folders[nextFolderIndex];
-            if (nextFolder == null || nextFolder.Files == null || nextFolder.Files.Count == 0)
-                return null;
-
-            nextFolder.Files.Sort(ComparePickerFiles);
-            return step > 0 ? nextFolder.Files[0] : nextFolder.Files[nextFolder.Files.Count - 1];
-        }
-
-
+        
         static void AddAudioFiles(FolderModel folder, List<FileModel> result)
         {
             if (folder == null || result == null)
@@ -3988,76 +3932,6 @@ namespace LcdMod.Client.Apps
                 for (int i = current.Folders.Count - 1; i >= 0; i--)
                     stack.Push(current.Folders[i]);
             }
-        }
-
-        static void AddFoldersWithFiles(FolderModel folder, List<FolderModel> result)
-        {
-            if (folder == null || result == null)
-                return;
-
-            var stack = new Stack<FolderModel>();
-            var visited = new HashSet<FolderModel>();
-            stack.Push(folder);
-
-            while (stack.Count > 0)
-            {
-                var current = stack.Pop();
-                if (current == null || !visited.Add(current))
-                    continue;
-
-                if (current.Files != null && current.Files.Count > 0)
-                    result.Add(current);
-
-                if (current.Folders == null || current.Folders.Count == 0)
-                    continue;
-
-                current.Folders.Sort(ComparePickerFolders);
-                for (int i = current.Folders.Count - 1; i >= 0; i--)
-                    stack.Push(current.Folders[i]);
-            }
-        }
-
-        static bool FindFile(FolderModel folder, MediaAudioFileReference reference, out FolderModel foundFolder, out FileModel foundFile)
-        {
-            foundFolder = null;
-            foundFile = null;
-            if (folder == null || reference == null)
-                return false;
-
-            var stack = new Stack<FolderModel>();
-            var visited = new HashSet<FolderModel>();
-            stack.Push(folder);
-
-            while (stack.Count > 0)
-            {
-                var current = stack.Pop();
-                if (current == null || !visited.Add(current))
-                    continue;
-
-                if (current.Files != null)
-                {
-                    current.Files.Sort(ComparePickerFiles);
-                    for (int i = 0; i < current.Files.Count; i++)
-                    {
-                        var file = current.Files[i];
-                        if (FileMatchesReference(file, reference))
-                        {
-                            foundFolder = current;
-                            foundFile = file;
-                            return true;
-                        }
-                    }
-                }
-
-                if (current.Folders == null || current.Folders.Count == 0)
-                    continue;
-
-                current.Folders.Sort(ComparePickerFolders);
-                for (int i = current.Folders.Count - 1; i >= 0; i--)
-                    stack.Push(current.Folders[i]);
-            }
-
-            return false;
         }
 
         static FileModel FindFileByPickerFullPath(FolderModel folder, string pickerFullPath)
@@ -4133,42 +4007,14 @@ namespace LcdMod.Client.Apps
                    string.Equals(fileReference.FirstSoundSubtype, reference.FirstSoundSubtype, StringComparison.OrdinalIgnoreCase);
         }
 
-        static int IndexOfFile(List<FileModel> files, FileModel file)
-        {
-            if (files == null || file == null)
-                return -1;
-
-            for (int i = 0; i < files.Count; i++)
-            {
-                if (ReferenceEquals(files[i], file))
-                    return i;
-            }
-
-            return -1;
-        }
-
-        static int IndexOfFolder(List<FolderModel> folders, FolderModel folder)
-        {
-            if (folders == null || folder == null)
-                return -1;
-
-            for (int i = 0; i < folders.Count; i++)
-            {
-                if (ReferenceEquals(folders[i], folder))
-                    return i;
-            }
-
-            return -1;
-        }
-
         static int ComparePickerFolders(FolderModel left, FolderModel right)
         {
-            return string.Compare(left == null ? null : left.Name, right == null ? null : right.Name, StringComparison.OrdinalIgnoreCase);
+            return string.Compare(left?.Name, right?.Name, StringComparison.OrdinalIgnoreCase);
         }
 
         static int ComparePickerFiles(FileModel left, FileModel right)
         {
-            return string.Compare(left == null ? null : left.Name, right == null ? null : right.Name, StringComparison.OrdinalIgnoreCase);
+            return string.Compare(left?.Name, right?.Name, StringComparison.OrdinalIgnoreCase);
         }
 
         void SetSelectedIndex(int index, bool applyToActivePlayer)
@@ -4463,7 +4309,7 @@ namespace LcdMod.Client.Apps
                 return;
 
             var file = FindFileByPickerFullPath(root, MediaPlayerComponent.SelectedPickerFullPath);
-            var reference = file == null ? null : file.Tag as MediaAudioFileReference;
+            var reference = file?.Tag as MediaAudioFileReference;
             if (reference == null)
                 return;
 
@@ -4488,7 +4334,7 @@ namespace LcdMod.Client.Apps
             {
                 var path = paths[i];
                 var title = titles != null && i < titles.Length ? titles[i] : null;
-                var entry = CreatePlaylistEntryFromM3uPath(path, title);
+                var entry = CreatePlaylistEntryFromM3UPath(path, title);
                 if (entry != null)
                     entries.Add(entry);
             }

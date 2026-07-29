@@ -25,7 +25,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
 
         public ComboBox(IEnumerable<T> options, Func<T, string> getLabel, Action<T> selectionChanged,
             Action stateChanged = null)
-            : base(default(RectangleF), CursorType.Hand, null, null)
+            : base(default(RectangleF), CursorType.Hand)
         {
             _getLabel = getLabel ?? (value => value == null ? string.Empty : value.ToString());
             _selectionChanged = selectionChanged;
@@ -186,10 +186,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
                 }
 
                 var model = button.DataContext as ComboBoxOptionModel<T>;
-                model.Value = _options[i];
-                model.Text = GetLabel(_options[i]);
-                model.Enabled = true;
-                model.Clicked = OnOptionClicked;
+                if (model != null)
+                {
+                    model.Value = _options[i];
+                    model.Text = GetLabel(_options[i]);
+                    model.Enabled = true;
+                    model.Clicked = OnOptionClicked;
+                }
 
                 var offset = (i + 1) * Bounds.Height + (i + 1) * gap;
                 var y = OpenDirection == ComboBoxOpenDirection.Up ? Bounds.Y - offset : Bounds.Y + offset;

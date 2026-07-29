@@ -27,7 +27,6 @@ using SliderFov = LcdMod.Client.Terminal.Controls.Generic.SliderFov;
 using static LcdMod.Common.Helpers.Constants;
 
 using LcdMod.Common.Config.Generation;
-using LcdMod.Common.Helpers;
 
 namespace LcdMod.Client.Apps
 {
@@ -728,7 +727,9 @@ namespace LcdMod.Client.Apps
                 var projection = new PlanetProjection
                 {
                     PlanetId = planet.EntityId,
-                    Name = string.IsNullOrWhiteSpace(name) ? "Unknown Planet" : name,
+                    Name = string.IsNullOrWhiteSpace(name)
+                        ? LocHelper.GetLoc(MOD_PREFIX + "ClockDashboard_UnknownPlanet")
+                        : name,
                     GpsColor = ResolvePlanetTexture(planet).BaseColor,
                     WorldPosition = planet.WorldMatrix.Translation,
                     Direction = delta / distance,
@@ -2395,7 +2396,9 @@ namespace LcdMod.Client.Apps
                 var projection = new PlanetProjection
                 {
                     PlanetId = planet.EntityId,
-                    Name = string.IsNullOrWhiteSpace(name) ? "Unknown Planet" : name,
+                    Name = string.IsNullOrWhiteSpace(name)
+                        ? LocHelper.GetLoc(MOD_PREFIX + "ClockDashboard_UnknownPlanet")
+                        : name,
                     GpsColor = ResolvePlanetTexture(planet).BaseColor,
                     WorldPosition = pos,
                     Direction = Vector3D.Zero,

@@ -1,3 +1,4 @@
+// ReSharper disable RedundantUsingDirective
 using System;
 using System.IO;
 using System.Text;
@@ -52,7 +53,7 @@ namespace LcdMod.Client.Audio
             result = null;
             failureReason = string.Empty;
 
-            if (reader == null || reader.BaseStream == null)
+            if (reader == null)
             {
                 failureReason = "Missing input stream.";
                 return false;
@@ -270,6 +271,9 @@ namespace LcdMod.Client.Audio
                     return false;
                 }
 
+                if (blockAlign == 0)
+                    throw new DivideByZeroException();
+                
                 if (samples.Length % blockAlign != 0)
                 {
                     failureReason = "PCM payload is not sample-aligned.";
@@ -540,7 +544,7 @@ namespace LcdMod.Client.Audio
             switch (bitsPerSample)
             {
                 case 8:
-                    return ((int)samples[offset] - 128) / 128.0;
+                    return (samples[offset] - 128) / 128.0;
 
                 case 16:
                     return ReadInt16LittleEndian(samples, offset) / 32768.0;
@@ -621,7 +625,7 @@ namespace LcdMod.Client.Audio
             if (sourceFrames < 0 || sourceSampleRate == 0)
                 throw new InvalidOperationException("The WAV frame count is invalid.");
 
-            long numerator = (long)sourceFrames * REQUIRED_SAMPLE_RATE;
+            long numerator = sourceFrames * REQUIRED_SAMPLE_RATE;
             long frameCount = (numerator + sourceSampleRate - 1L) / sourceSampleRate;
 
             if (frameCount > int.MaxValue)

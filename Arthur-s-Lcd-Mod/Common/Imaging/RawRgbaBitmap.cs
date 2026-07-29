@@ -1,5 +1,4 @@
-using System;
-using ArgumentOutOfRangeException = LcdMod.Common.ArgumentOutOfRangeException;
+using LcdMod.Common.Exceptions;
 
 namespace LcdMod.Common.Imaging
 {

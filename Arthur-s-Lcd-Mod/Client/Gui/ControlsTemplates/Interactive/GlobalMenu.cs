@@ -66,7 +66,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
             _menu.Configure(
                 viewBox,
-                owner != null ? owner.ViewBox.Width * 0.65f : viewBox.Width * 0.65f,
+                owner.ViewBox.Width * 0.65f,
                 surface,
                 cursorPosition);
 

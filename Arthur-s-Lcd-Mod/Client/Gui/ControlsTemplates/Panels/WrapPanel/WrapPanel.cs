@@ -3,7 +3,7 @@ using VRageMath;
 
 namespace LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel
 {
-    public class WrapPanel : LcdMod.Client.Gui.ControlsTemplates.Panels.Panel
+    public class WrapPanel : Panel
     {
         float _rowHeight = 32f;
         float _minimumColumnWidth = 96f;
@@ -32,7 +32,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel
             set
             {
                 float next = Math.Max(1f, value);
-                if (_rowHeight == next)
+                if (Math.Abs(_rowHeight - next) < 0.1)
                     return;
 
                 _rowHeight = next;
@@ -46,7 +46,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel
             set
             {
                 float next = Math.Max(1f, value);
-                if (_minimumColumnWidth == next)
+                if (Math.Abs(_minimumColumnWidth - next) < 0.1)
                     return;
 
                 _minimumColumnWidth = next;
@@ -73,7 +73,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel
             set
             {
                 float next = Math.Max(0f, value);
-                if (_horizontalGap == next)
+                if (Math.Abs(_horizontalGap - next) < 0.1)
                     return;
 
                 _horizontalGap = next;
@@ -87,7 +87,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel
             set
             {
                 float next = Math.Max(0f, value);
-                if (_verticalGap == next)
+                if (Math.Abs(_verticalGap - next) < 0.1)
                     return;
 
                 _verticalGap = next;

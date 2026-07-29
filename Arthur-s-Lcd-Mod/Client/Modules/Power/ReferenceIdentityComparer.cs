@@ -14,7 +14,7 @@ namespace LcdMod.Client.Modules.Power
 
         public int GetHashCode(T obj)
         {
-            return obj == null ? 0 : RuntimeHelpers.GetHashCode(obj);
+            return RuntimeHelpers.GetHashCode(obj);
         }
     }
 }

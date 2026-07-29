@@ -16,7 +16,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Graph
         RectangleF _plotBounds;
 
         public GraphControl(RectangleF bounds)
-            : base()
         {
             _bounds = bounds;
             ValueFormatter = FormatingHelper.WattsToString;

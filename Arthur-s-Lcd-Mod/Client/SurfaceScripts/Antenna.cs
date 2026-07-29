@@ -21,7 +21,7 @@ using SwitchToggleLines = LcdMod.Client.Terminal.Controls.Generic.SwitchToggleLi
 using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
-    [LcdSurface(typeof(LcdMod.Client.Apps.AntennaApp))]
+    [LcdSurface(typeof(AntennaApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class AntennaSurfaceScript : InteractiveSurfaceScript,
         IUsesTerminalControl<SwitchToggleLines>,

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Generated;
 using LcdMod.Client.Config;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
@@ -19,6 +18,7 @@ using VRageMath;
 
 namespace LcdMod.Client.SurfaceScripts.Abstract
 {
+    // ReSharper disable once PartialTypeWithSinglePart
     public abstract partial class InteractiveSurfaceScript : SurfaceScriptBase, IEyeTracking
     {
         public event Action<InteractiveSurfaceScript, List<Control>> OnCollectOverlayEntries;

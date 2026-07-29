@@ -28,11 +28,6 @@ namespace LcdMod.Client.Terminal.Controls.Scale
 
         void Writer(IMyTerminalBlock b, StringBuilder arg2)
         {
-            if (Getter(b) >= .99f)
-            {
-                arg2.Append("I paid 100% of the CPU");
-                return;
-            }
             arg2.Append(Getter(b).ToString("P"));
         }
 

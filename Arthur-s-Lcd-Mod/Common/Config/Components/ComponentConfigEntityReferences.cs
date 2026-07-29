@@ -1,3 +1,4 @@
+// ReSharper disable RedundantUsingDirective
 using System.Collections.Generic;
 
 namespace LcdMod.Common.Config.Components

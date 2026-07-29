@@ -23,7 +23,7 @@ using SwitchToggleLines = LcdMod.Client.Terminal.Controls.Generic.SwitchToggleLi
 using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
-    [LcdSurface(typeof(LcdMod.Client.Apps.InventoryApp))]
+    [LcdSurface(typeof(InventoryApp))]
     [MyTextSurfaceScript(ID, "Inventory")]
     public partial class InventoryLcdSurfaceScript : InteractiveSurfaceScript,
         IUsesTerminalControl<SwitchToggleLines>,

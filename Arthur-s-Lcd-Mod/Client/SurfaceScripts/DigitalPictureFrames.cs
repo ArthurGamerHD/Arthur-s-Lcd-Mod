@@ -1,4 +1,3 @@
-using LcdMod.Common.Config.Components;
 using System.IO;
 using System.Collections.Generic;
 using Generated;
@@ -20,7 +19,7 @@ using static LcdMod.Common.Helpers.Constants;
 using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
-    [LcdSurface(typeof(LcdMod.Client.Apps.DigitalPictureFramesApp))]
+    [LcdSurface(typeof(DigitalPictureFramesApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public sealed partial class DigitalPictureFramesSurfaceScript : InteractiveSurfaceScript,
         IMultiDisplayMode,

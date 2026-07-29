@@ -73,9 +73,10 @@ namespace LcdMod.Server.Modules.RoomEnvironment
                     IMyOxygenRoom room = FindGridRoom(block);
                     response.Status = GridRoomEnvironmentStatus.Available;
                     response.IsSealed = room != null && room.IsAirtight;
-                    response.OxygenRatio = response.IsSealed
-                        ? room.OxygenLevel(grid.GridSize)
-                        : 0f;
+                    if (room != null)
+                        response.OxygenRatio = response.IsSealed
+                            ? room.OxygenLevel(grid.GridSize)
+                            : 0f;
                     response.OxygenRatio = MathHelper.Clamp(response.OxygenRatio, 0f, 1f);
                 }
             }

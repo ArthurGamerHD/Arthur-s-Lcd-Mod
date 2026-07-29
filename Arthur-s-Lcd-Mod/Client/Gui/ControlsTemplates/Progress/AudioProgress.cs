@@ -158,9 +158,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Progress
                 new Vector2(bar.X, bar.Y),
                 bar.Size,
                 background,
-                fraction,
-                -1f,
-                ProgressBarStyle.PillBleed);
+                fraction);
 
             float fillWidth = bar.Width * (fraction > .99f ? 1f : MathHelper.Clamp(fraction, 0f, 1f));
             if (fillWidth > 0.001f)
@@ -172,9 +170,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Progress
                         sprites,
                         new Vector2(bar.X, bar.Y),
                         bar.Size,
-                        fill,
-                        -1f,
-                        ProgressBarStyle.PillBleed);
+                        fill);
                     EndContentClip(sprites);
                 }
             }

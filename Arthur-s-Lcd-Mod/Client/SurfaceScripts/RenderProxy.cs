@@ -25,7 +25,7 @@ using static LcdMod.Common.Helpers.Constants;
 using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
-    [LcdSurface(typeof(LcdMod.Client.Apps.RenderProxyApp))]
+    [LcdSurface(typeof(Apps.RenderProxyApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class RenderProxySurfaceScript : InteractiveSurfaceScript,
         IReferenceBlockSelection,
@@ -194,7 +194,7 @@ namespace LcdMod.Client.SurfaceScripts
 
         static void EnsureActiveInstanceChangeSubscription()
         {
-            var collection = SurfaceScriptBase.Instances;
+            var collection = Instances;
             if (ReferenceEquals(_activeInstanceCollection, collection))
                 return;
 
@@ -736,7 +736,7 @@ namespace LcdMod.Client.SurfaceScripts
 
             hostBlock = targetBlock;
             hostRotationIndex = GetSelectedTextPanelRotationIndex(targetBlock);
-            host = GetActiveParentInstance(SurfaceScriptBase.Instances.GetInstances(targetBlock), hostRotationIndex);
+            host = GetActiveParentInstance(Instances.GetInstances(targetBlock), hostRotationIndex);
             if (host == null)
                 host = null;
 
@@ -1189,7 +1189,7 @@ namespace LcdMod.Client.SurfaceScripts
                 ScheduleLinkedProxyRotationUpdate(targetBlock, hostRotationIndex);
 
             if (_parentInstances == null || _resolvedReferenceBlockId != referenceBlockId)
-                _parentInstances = SurfaceScriptBase.Instances.GetInstances(targetBlock);
+                _parentInstances = Instances.GetInstances(targetBlock);
 
             if (_resolvedReferenceBlockId == referenceBlockId &&
                 _resolvedHostRotationIndex == hostRotationIndex &&
@@ -1211,7 +1211,7 @@ namespace LcdMod.Client.SurfaceScripts
             _parent = null;
             _resolvedReferenceBlockId = referenceBlockId;
             _resolvedHostRotationIndex = hostRotationIndex;
-            _parentInstances = SurfaceScriptBase.Instances.GetInstances(targetBlock);
+            _parentInstances = Instances.GetInstances(targetBlock);
             _hostScriptUnsupported = false;
             _hostResolutionUnsupported = false;
 
@@ -1269,11 +1269,6 @@ namespace LcdMod.Client.SurfaceScripts
                 return;
 
             RenderSprites();
-        }
-
-        public override void RequestRedraw()
-        {
-            base.RequestRedraw();
         }
 
         protected override bool RenderContinuouslyWhileLookedAt => false;

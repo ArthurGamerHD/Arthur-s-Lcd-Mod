@@ -16,7 +16,7 @@ using SliderRotation = LcdMod.Client.Terminal.Controls.Generic.SliderRotation;
 using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
-    [LcdSurface(typeof(LcdMod.Client.Apps.IntegrityMonitorApp))]
+    [LcdSurface(typeof(IntegrityMonitorApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class IntegrityMonitorSurfaceScript : SurfaceScriptBase,
         IUsesTerminalControl<SliderRotation>,

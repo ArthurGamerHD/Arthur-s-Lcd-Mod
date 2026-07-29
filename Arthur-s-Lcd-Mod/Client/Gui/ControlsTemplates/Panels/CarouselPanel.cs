@@ -49,7 +49,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             get { return _firstVisiblePage; }
             set
             {
-                int next = ClampFirstVisiblePage(value, _visiblePageCount);
+                int next = ClampFirstVisiblePage(value);
                 if (_firstVisiblePage == next)
                     return;
 
@@ -168,8 +168,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             if (!_showArrows || sprites == null)
                 return;
 
-            RenderArrow(sprites, _leftArrowBounds, "LeftArrow", CanMove(-1));
-            RenderArrow(sprites, _rightArrowBounds, "RightArrow", CanMove(1));
+            RenderArrow(sprites, _leftArrowBounds, "LeftArrow", CanMove());
+            RenderArrow(sprites, _rightArrowBounds, "RightArrow", CanMove());
         }
 
         void RenderArrow(List<MySprite> sprites, RectangleF rect, string texture, bool enabled)
@@ -191,7 +191,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             });
         }
 
-        int ClampFirstVisiblePage(int value, int visiblePageCount)
+        int ClampFirstVisiblePage(int value)
         {
             return NormalizePageIndex(value, GetPageCount());
         }
@@ -219,26 +219,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             }
 
             return count;
-        }
-
-        int GetPageIndex(ControlTemplate child)
-        {
-            var children = VisualChildren;
-            if (children == null)
-                return -1;
-
-            int pageIndex = 0;
-            for (int i = 0; i < children.Count; i++)
-            {
-                var current = children[i] as ControlTemplate;
-                if (IsArrowControl(current))
-                    continue;
-                if (ReferenceEquals(current, child))
-                    return pageIndex;
-                pageIndex++;
-            }
-
-            return -1;
         }
 
         ControlTemplate GetPageAtIndex(int pageIndex)
@@ -282,10 +262,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             return _showArrows && bounds.Width > 0f && bounds.Height > 0f;
         }
 
-        bool CanMove(int direction)
-        {
-            return _showArrows && GetPageCount() > 1;
-        }
+        bool CanMove() => _showArrows && GetPageCount() > 1;
 
         sealed class ArrowControl : ControlTemplate
         {
@@ -310,7 +287,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
                 }
             }
 
-            public override bool CanPrimaryClick => Visible && _owner != null && _owner.CanMove(_direction);
+            public override bool CanPrimaryClick => Visible && _owner != null && _owner.CanMove();
 
             public override bool ClickAt(Vector2 point, object sender)
             {

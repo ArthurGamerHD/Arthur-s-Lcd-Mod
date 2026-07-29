@@ -1,3 +1,4 @@
+// ReSharper disable once RedundantUsingDirective
 using System;
 
 namespace LcdMod.Client.Audio.Adpcm
@@ -19,8 +20,9 @@ namespace LcdMod.Client.Audio.Adpcm
         const int MINIMUM_DELTA = 16;
         const int MAXIMUM_COEFFICIENT_COUNT = 64;
 
-        static readonly int[] AdaptationTable = new int[]
-        {
+        // ReSharper disable once RedundantArrayCreationExpression
+        static readonly int[] AdaptationTable = new[]{
+        
             230, 230, 230, 230,
             307, 409, 512, 614,
             768, 614, 512, 409,
@@ -155,13 +157,13 @@ namespace LcdMod.Client.Audio.Adpcm
             long outputFrameCount = (long)blockCount * format.SamplesPerBlock;
             long outputByteCount = outputFrameCount * format.Channels * 2L;
 
-            if (outputByteCount > maximumOutputBytes)
+            if (outputByteCount > int.MaxValue)
             {
                 failureReason = "Decoded Microsoft ADPCM exceeds the 32 MiB limit.";
                 return false;
             }
-
-            if (outputByteCount > int.MaxValue)
+            
+            if (outputByteCount > maximumOutputBytes)
             {
                 failureReason = "Decoded Microsoft ADPCM is too large.";
                 return false;
@@ -222,7 +224,7 @@ namespace LcdMod.Client.Audio.Adpcm
             for (int channel = 0; channel < channels; channel++)
             {
                 int predictor = input[predictorOffset + channel];
-                if (predictor < 0 || predictor >= format.CoefficientCount)
+                if (predictor >= format.CoefficientCount)
                 {
                     failureReason = "Microsoft ADPCM predictor index is out of range: " + predictor + ".";
                     return false;

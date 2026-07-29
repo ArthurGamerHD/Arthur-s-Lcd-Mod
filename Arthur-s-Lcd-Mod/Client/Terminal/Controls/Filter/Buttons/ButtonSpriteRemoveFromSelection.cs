@@ -37,7 +37,7 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Buttons
                 return;
 
             config.SelectedSprites = GetSelectedSprites(config)
-                .Where(s => !remove.Contains(s, System.StringComparer.OrdinalIgnoreCase))
+                .Where(s => !remove.Contains(s, StringComparer.OrdinalIgnoreCase))
                 .ToArray();
             config.BackgroundSprite = config.SelectedSprites.Length > 0 ? config.SelectedSprites[0] : string.Empty;
 

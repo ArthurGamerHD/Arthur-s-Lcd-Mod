@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Generated;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
@@ -13,7 +12,7 @@ using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
 #if DEBUG
-    [LcdSurface(typeof(LcdMod.Client.Apps.BSoDTestApp))]
+    [LcdSurface(typeof(Apps.BSoDTestApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class BSoDTestSurfaceScript : SurfaceScriptBase
     {

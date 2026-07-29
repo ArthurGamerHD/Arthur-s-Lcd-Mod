@@ -79,7 +79,7 @@ public sealed class StyleProperties : IIncrementalGenerator
         var list = new List<StylePropertyDefinition>();
         foreach (var field in symbol.GetMembers().OfType<IFieldSymbol>())
         {
-            if (!field.IsStatic || field.Type == null || !field.Name.EndsWith("Property", StringComparison.Ordinal))
+            if (!field.IsStatic || !field.Name.EndsWith("Property", StringComparison.Ordinal))
                 continue;
 
             var namedType = field.Type as INamedTypeSymbol;

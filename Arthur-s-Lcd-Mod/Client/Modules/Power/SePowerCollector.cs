@@ -202,29 +202,33 @@ namespace LcdMod.Client.Modules.Power
                     }
                     catch
                     {
+                        // ignored
                     }
 
                     if (!TryRegisterElectricSink(sink))
                         continue;
 
-                    double current = MegaWattsToWatts(sink.CurrentInputByType(ElectricityId));
-                    double required = MegaWattsToWatts(sink.RequiredInputByType(ElectricityId));
-                    double maxRequired = MegaWattsToWatts(sink.MaxRequiredInputByType(ElectricityId));
+                    if (sink != null)
+                    {
+                        double current = MegaWattsToWatts(sink.CurrentInputByType(ElectricityId));
+                        double required = MegaWattsToWatts(sink.RequiredInputByType(ElectricityId));
+                        double maxRequired = MegaWattsToWatts(sink.MaxRequiredInputByType(ElectricityId));
 
-                    if (terminal is IMyThrust)
-                    {
-                        snapshot.ElectricThrusterCurrentInputW += current;
-                        snapshot.ElectricThrusterRequiredInputW += required;
-                        snapshot.ElectricThrusterMaxRequiredInputW += maxRequired;
-                        AddSyntheticSubtypeValue(snapshot.ConsumerSubtypes, terminal, ELECTRIC_THRUSTER_SUBTYPE_KEY,
-                            "PowerConsumer", "ElectricThruster", ELECTRIC_THRUSTER_DISPLAY_NAME, current, required, maxRequired);
-                    }
-                    else
-                    {
-                        snapshot.Consumers.OtherCurrentInputW += current;
-                        snapshot.Consumers.OtherRequiredInputW += required;
-                        snapshot.Consumers.OtherMaxRequiredInputW += maxRequired;
-                        AddSubtypeValue(snapshot.ConsumerSubtypes, terminal, current, required, maxRequired);
+                        if (terminal is IMyThrust)
+                        {
+                            snapshot.ElectricThrusterCurrentInputW += current;
+                            snapshot.ElectricThrusterRequiredInputW += required;
+                            snapshot.ElectricThrusterMaxRequiredInputW += maxRequired;
+                            AddSyntheticSubtypeValue(snapshot.ConsumerSubtypes, terminal, ELECTRIC_THRUSTER_SUBTYPE_KEY,
+                                "PowerConsumer", "ElectricThruster", ELECTRIC_THRUSTER_DISPLAY_NAME, current, required, maxRequired);
+                        }
+                        else
+                        {
+                            snapshot.Consumers.OtherCurrentInputW += current;
+                            snapshot.Consumers.OtherRequiredInputW += required;
+                            snapshot.Consumers.OtherMaxRequiredInputW += maxRequired;
+                            AddSubtypeValue(snapshot.ConsumerSubtypes, terminal, current, required, maxRequired);
+                        }
                     }
                 }
             }
@@ -237,7 +241,7 @@ namespace LcdMod.Client.Modules.Power
 
             string typeId;
             string subtypeId;
-            GetBlockDefinitionIds(block, out typeId, out subtypeId);
+            TryGetBlockDefinitionIds(block, out typeId, out subtypeId);
             var key = typeId + "/" + subtypeId;
             var displayName = GetSubtypeDisplayName(block, subtypeId);
             AddSyntheticSubtypeValue(entries, block, key, typeId, subtypeId, displayName, currentW, requiredW, maxW);
@@ -284,7 +288,7 @@ namespace LcdMod.Client.Modules.Power
             return null;
         }
 
-        static void GetBlockDefinitionIds(IMyTerminalBlock block, out string typeId, out string subtypeId)
+        static void TryGetBlockDefinitionIds(IMyTerminalBlock block, out string typeId, out string subtypeId)
         {
             typeId = "Unknown";
             subtypeId = string.Empty;
@@ -299,6 +303,8 @@ namespace LcdMod.Client.Modules.Power
             }
             catch
             {
+                typeId = string.Empty;
+                subtypeId = string.Empty;
             }
         }
 
@@ -306,7 +312,7 @@ namespace LcdMod.Client.Modules.Power
         {
             string typeId;
             string subtypeId;
-            GetBlockDefinitionIds(block, out typeId, out subtypeId);
+            TryGetBlockDefinitionIds(block, out typeId, out subtypeId);
             return typeId + "/" + subtypeId;
         }
 
@@ -344,6 +350,7 @@ namespace LcdMod.Client.Modules.Power
             }
             catch
             {
+                return "Error";
             }
 
             return string.IsNullOrEmpty(subtypeId) ? "Unknown" : subtypeId;

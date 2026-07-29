@@ -776,10 +776,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
             return _showControls && bounds.Width > 0f && bounds.Height > 0f;
         }
 
-        bool CanMove(int direction)
-        {
-            return _showControls && GetPageCount() > 1;
-        }
+        bool CanMove() => _showControls && GetPageCount() > 1;
 
         bool CanSelectIndicator()
         {
@@ -810,7 +807,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
                 }
             }
 
-            public override bool CanPrimaryClick => Visible && _owner != null && _owner.CanMove(_direction);
+            public override bool CanPrimaryClick => Visible && _owner != null && _owner.CanMove();
 
             public override bool ClickAt(Vector2 point, object sender)
             {
@@ -836,7 +833,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels
                     sprites,
                     bounds,
                     _direction < 0 ? "LeftArrow" : "RightArrow",
-                    _owner.CanMove(_direction));
+                    _owner.CanMove());
             }
 
             protected override bool HitCore(Vector2 point)

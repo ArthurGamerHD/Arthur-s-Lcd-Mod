@@ -12,7 +12,6 @@ using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Dialogs;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.ControlsTemplates.Progress;
-using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
@@ -821,7 +820,7 @@ namespace LcdMod.Client.Apps
 
             try
             {
-                GridData.GridLogic.EnsureBlueprintResultDatabase();
+                GridLogic.EnsureBlueprintResultDatabase();
 
                 foreach (var component in componentNeeded)
                 {
@@ -830,7 +829,7 @@ namespace LcdMod.Client.Apps
 
                     MyDefinitionId componentId = component.Key;
                     MyBlueprintDefinitionBase blueprint;
-                    if (!GridData.GridLogic.PrimaryBlueprintByCreatedItem.TryGetValue(componentId, out blueprint) ||
+                    if (!GridLogic.PrimaryBlueprintByCreatedItem.TryGetValue(componentId, out blueprint) ||
                         blueprint == null)
                         continue;
 

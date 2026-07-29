@@ -1,4 +1,3 @@
-using LcdMod.Common.Config.Components;
 using System.Collections.Generic;
 using Generated;
 using LcdMod.Client.Apps;
@@ -16,7 +15,7 @@ using static LcdMod.Common.Helpers.Constants;
 using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
-    [LcdSurface(typeof(LcdMod.Client.Apps.NpcMarketApp))]
+    [LcdSurface(typeof(NpcMarketApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public sealed partial class NpcMarketSurfaceScript : InteractiveSurfaceScript,
         IUsesTerminalControl<SliderNpcMarketMaxDistance>,

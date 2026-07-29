@@ -405,12 +405,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         void RenderAssemblerControl(ControlTemplate control, List<MySprite> sprites)
         {
             var rect = control.Bounds;
-            var hovered = _assemblerOptions.Count > 1 && rect.Contains(new Vector2(float.NaN, float.NaN));
             var label = GetAssemblerSelectionLabel();
             var textScale = 0.54f * control.LayoutScale * control.FontScale;
-            var fill = hovered
-                ? control.ResolveColor(ThemeResources.SurfaceContainerColor)
-                : control.ResolveColor(ThemeResources.SurfaceContainerColor);
+            var fill = control.ResolveColor(ThemeResources.SurfaceContainerColor);
             var labelColor = control.ResolveColor(ThemeResources.OnSurfaceColor);
 
             BorderRenderer.CreateSpritesFromRect(rect, sprites, fill,
@@ -762,7 +759,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         readonly List<CraftAssemblerOption> _options;
         readonly List<CraftAssemblerOption> _selected;
         readonly Action<List<CraftAssemblerOption>> _selectedCallback;
-        readonly Action _cancelCallback;
 
         ListBoxModel<CraftAssemblerOption> _listModel;
         ListBox<CraftAssemblerOption> _listBox;
@@ -781,11 +777,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 ? new List<CraftAssemblerOption>()
                 : new List<CraftAssemblerOption>(selected);
             _selectedCallback = selectedCallback;
-            _cancelCallback = cancelCallback;
+            var cancelCallback1 = cancelCallback;
             OnClose = delegate
             {
-                if (_cancelCallback != null)
-                    _cancelCallback();
+                if (cancelCallback1 != null)
+                    cancelCallback1();
             };
         }
 

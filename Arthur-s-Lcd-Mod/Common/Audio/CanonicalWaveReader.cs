@@ -63,7 +63,7 @@ namespace LcdMod.Common.Audio
                     var chunkId = reader.ReadFourCc();
                     var chunkSize = reader.ReadUInt32();
                     var chunkStart = reader.Position;
-                    var chunkEnd = chunkStart + (long)chunkSize;
+                    var chunkEnd = chunkStart + chunkSize;
 
                     if (chunkEnd > reader.Length)
                     {

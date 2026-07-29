@@ -62,7 +62,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Templates
 
                 bool bind = shouldBind == null || shouldBind(i);
                 if (bind && _bindControl != null)
-                    _bindControl(control, items[i], i);
+                    if (items != null)
+                        _bindControl(control, items[i], i);
 
                 if (bind)
                     control.SetVisible(true);
@@ -79,12 +80,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Templates
             while (_realized.Count < count)
             {
                 int index = _realized.Count;
-                ControlTemplate control = _itemTemplate.Build(items[index], index);
-                TControl typed = control as TControl;
-                if (typed == null)
-                    throw new InvalidOperationException("PageRepeater item template returned the wrong control type.");
+                if (_itemTemplate != null)
+                {
+                    ControlTemplate control = _itemTemplate.Build(items[index], index);
+                    TControl typed = control as TControl;
+                    if (typed == null)
+                        throw new InvalidOperationException("PageRepeater item template returned the wrong control type.");
 
-                _realized.Add(typed);
+                    _realized.Add(typed);
+                }
             }
         }
     }

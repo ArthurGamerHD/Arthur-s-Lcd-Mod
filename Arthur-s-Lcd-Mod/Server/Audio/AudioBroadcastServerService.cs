@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Generated;
 using LcdMod.Common.Audio;
 using LcdMod.Common.Config;
@@ -8,7 +9,6 @@ using LcdMod.Common.Networking;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game.ModAPI;
-using VRage.ModAPI;
 using VRage.Utils;
 using VRageMath;
 using IMyTextSurfaceProvider = Sandbox.ModAPI.Ingame.IMyTextSurfaceProvider;
@@ -152,7 +152,7 @@ namespace LcdMod.Server.Audio
             IMyTerminalBlock block;
             if (!TryValidateMediaStreamRequest(senderSteamId, packet, out block))
             {
-                RejectMediaStream(senderSteamId, packet == null ? 0L : packet.ClientStreamId, "open validation failed");
+                RejectMediaStream(senderSteamId, packet?.ClientStreamId ?? 0L, "open validation failed");
                 return;
             }
 
@@ -236,7 +236,7 @@ namespace LcdMod.Server.Audio
                 _mediaStreams.Remove(new MediaStreamKey(senderSteamId, packet.ClientStreamId));
         }
 
-        public void HandleCloseMediaStreamControl(ulong senderSteamId, PacketMediaStreamControl packet)
+        void HandleCloseMediaStreamControl(ulong senderSteamId, PacketMediaStreamControl packet)
         {
             if (senderSteamId == 0 || packet == null || packet.ClientStreamId == 0)
                 return;
@@ -259,7 +259,7 @@ namespace LcdMod.Server.Audio
             }, session, block);
         }
 
-        public void HandleAcceptMediaStreamControl(ulong senderSteamId, PacketMediaStreamControl packet)
+        void HandleAcceptMediaStreamControl(ulong senderSteamId, PacketMediaStreamControl packet)
         {
             if (senderSteamId == 0 || packet == null || packet.ServerStreamId == 0)
                 return;
@@ -280,7 +280,7 @@ namespace LcdMod.Server.Audio
             SendMediaStreamListeners(session);
         }
 
-        public void HandleRefreshMediaStreamListenersControl(ulong senderSteamId, PacketMediaStreamControl packet)
+        void HandleRefreshMediaStreamListenersControl(ulong senderSteamId, PacketMediaStreamControl packet)
         {
             if (senderSteamId == 0 || packet == null || packet.ClientStreamId == 0)
                 return;
@@ -382,7 +382,7 @@ namespace LcdMod.Server.Audio
                 return false;
 
             var providerConfig = ScreenProviderConfigStorage.TryLoad(block);
-            var surfaceConfig = providerConfig == null ? null : providerConfig.GetSurfaceConfig(surfaceIndex);
+            var surfaceConfig = providerConfig?.GetSurfaceConfig(surfaceIndex);
             return surfaceConfig != null && surfaceConfig.AppTypeId == (int)AppType.MediaPlayer;
         }
 
@@ -454,16 +454,7 @@ namespace LcdMod.Server.Audio
             var players = new List<IMyPlayer>();
             MyAPIGateway.Players.GetPlayers(players);
 
-            for (var i = 0; i < players.Count; i++)
-            {
-                var player = players[i];
-                if (player == null || player.IsBot || player.SteamUserId != senderSteamId)
-                    continue;
-
-                return IsPlayerInRange(player, block, MEDIA_COMMAND_RANGE_METERS);
-            }
-
-            return false;
+            return (from player in players where player != null && !player.IsBot && player.SteamUserId == senderSteamId select IsPlayerInRange(player, block, MEDIA_COMMAND_RANGE_METERS)).FirstOrDefault();
         }
 
         bool TryGetMediaStreamByServerId(long serverStreamId, out MediaStreamSession session)
@@ -595,11 +586,9 @@ namespace LcdMod.Server.Audio
                 recipients++;
             }
 
-            if (!deliveredToLocalClient && localSteamId != 0 && LcdModSessionComponent.Client != null)
-            {
-                LcdModSessionComponent.Client.HandleLocalSyncBroadcastAudio(packet);
-                recipients++;
-            }
+            if (deliveredToLocalClient || localSteamId == 0 || LcdModSessionComponent.Client == null) return recipients;
+            LcdModSessionComponent.Client.HandleLocalSyncBroadcastAudio(packet);
+            recipients++;
 
             return recipients;
         }
@@ -710,40 +699,33 @@ namespace LcdMod.Server.Audio
                 session.ListenerSteamIds.Remove(staleListeners[i]);
         }
 
-        static int BroadcastMediaStreamChunkToListeners(PacketSyncMediaStreamChunk packet, MediaStreamSession session, IMyTerminalBlock block)
+        static void BroadcastMediaStreamChunkToListeners(PacketSyncMediaStreamChunk packet, MediaStreamSession session,
+            IMyTerminalBlock block)
         {
-            if (session == null || session.ListenerSteamIds == null || session.ListenerSteamIds.Count == 0)
-                return 0;
+            if (session == null || session.ListenerSteamIds == null || session.ListenerSteamIds.Count == 0) return;
 
-            return BroadcastMediaStreamToListeners(packet, session, block);
+            BroadcastMediaStreamToListeners(packet, session, block);
         }
 
-        static int BroadcastMediaStreamCloseToListeners(PacketMediaStreamControl packet, MediaStreamSession session, IMyTerminalBlock block)
+        static void BroadcastMediaStreamCloseToListeners(PacketMediaStreamControl packet, MediaStreamSession session,
+            IMyTerminalBlock block)
         {
-            if (session == null || session.ListenerSteamIds == null || session.ListenerSteamIds.Count == 0)
-                return 0;
+            if (session == null || session.ListenerSteamIds == null || session.ListenerSteamIds.Count == 0) return;
 
-            return BroadcastMediaStreamToListeners(packet, session, block);
+            BroadcastMediaStreamToListeners(packet, session, block);
         }
 
-        static int BroadcastMediaStreamToListeners(NetworkPackage packet, MediaStreamSession session, IMyTerminalBlock block)
+        static void BroadcastMediaStreamToListeners(NetworkPackage packet, MediaStreamSession session,
+            IMyTerminalBlock block)
         {
             var players = new List<IMyPlayer>();
             MyAPIGateway.Players.GetPlayers(players);
-            var recipients = 0;
             var staleListeners = new List<ulong>();
             var seenListeners = new HashSet<ulong>();
             var localSteamId = MyAPIGateway.Session?.Player?.SteamUserId ?? 0UL;
 
-            for (var i = 0; i < players.Count; i++)
+            foreach (var player in players.Where(player => player != null && !player.IsBot && player.SteamUserId != 0).Where(player => session.ListenerSteamIds.Contains(player.SteamUserId)))
             {
-                var player = players[i];
-                if (player == null || player.IsBot || player.SteamUserId == 0)
-                    continue;
-
-                if (!session.ListenerSteamIds.Contains(player.SteamUserId))
-                    continue;
-
                 seenListeners.Add(player.SteamUserId);
                 if (!IsPlayerInMediaSyncRange(player, block))
                 {
@@ -754,12 +736,10 @@ namespace LcdMod.Server.Audio
                 if (localSteamId != 0 && player.SteamUserId == localSteamId && LcdModSessionComponent.Client != null)
                 {
                     DeliverLocalMediaStreamPacket(packet);
-                    recipients++;
                     continue;
                 }
 
                 LcdModSessionComponent.NetworkManager.TransmitToPlayer(packet, player.SteamUserId);
-                recipients++;
             }
 
             foreach (var listener in session.ListenerSteamIds)
@@ -771,8 +751,6 @@ namespace LcdMod.Server.Audio
 
             if (staleListeners.Count > 0)
                 SendMediaStreamListeners(session);
-
-            return recipients;
         }
 
         static void SendMediaStreamListeners(MediaStreamSession session)
@@ -817,11 +795,8 @@ namespace LcdMod.Server.Audio
             }
 
             var chunk = packet as PacketSyncMediaStreamChunk;
-            if (chunk != null)
-            {
-                LcdModSessionComponent.Client.HandleLocalSyncMediaStreamChunk(chunk);
-                return;
-            }
+            if (chunk == null) return;
+            LcdModSessionComponent.Client.HandleLocalSyncMediaStreamChunk(chunk);
         }
 
         static void Reject(ulong senderSteamId, string reason)

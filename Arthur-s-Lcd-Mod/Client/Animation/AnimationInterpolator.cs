@@ -15,7 +15,7 @@ namespace LcdMod.Client.Animation
             LcdMod.Client.Animation.RenderTransform.Interpolate;
         public static readonly AnimationInterpolator<ScaleTransform> ScaleTransform =
             LcdMod.Client.Animation.ScaleTransform.Interpolate;
-        static double InterpolateDouble(double from, double to, float progress) => MathHelper.Lerp(from, to, (double)progress);
+        static double InterpolateDouble(double from, double to, float progress) => MathHelper.Lerp(from, to, progress);
         static int InterpolateInt(int from, int to, float progress) => (int)Math.Round(MathHelper.Lerp(from, to, progress), MidpointRounding.AwayFromZero);
 
         static Color InterpolateColor(Color from, Color to, float progress)

@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using LcdMod.Client.Config;
 using LcdMod.Client.Helpers;
 using LcdMod.Common.Config.Components;
-using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Game.ModAPI;
@@ -61,7 +60,7 @@ namespace LcdMod.Client.Terminal.Controls.Generic
             var gridLinkType = FromId(value);
             if (ConfigManager.ModifyComponentForCurrentSurface<BlockSelectionConfigComponent>(
                     block,
-                    Constants.BLOCKS,
+                    BLOCKS,
                     config => config.GridLinkTypeInternal = gridLinkType))
                 return;
 
@@ -105,7 +104,7 @@ namespace LcdMod.Client.Terminal.Controls.Generic
         {
             var blocks = ConfigManager.GetComponentForCurrentSurface<BlockSelectionConfigComponent>(
                 block,
-                Constants.BLOCKS);
+                BLOCKS);
             if (blocks != null)
                 return blocks.GridLinkTypeInternal;
 
