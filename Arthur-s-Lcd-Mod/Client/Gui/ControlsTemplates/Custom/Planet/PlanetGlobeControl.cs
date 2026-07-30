@@ -58,6 +58,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
 
         public float ColorAlpha => _colorAlpha;
 
+        public Func<PlanetGlobeControl, Vector2, object, bool> SurfaceClicked { get; set; }
+
+        public override bool CanPrimaryClick
+        {
+            get { return base.CanPrimaryClick || Visible && Enabled && SurfaceClicked != null; }
+        }
+
         /// <summary>
         /// Maximum square sampling-grid side used to render the globe. Zero keeps
         /// the previous unrestricted behavior.
@@ -268,6 +275,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
 
             float radius = diameter * 0.5f;
             return Vector2.DistanceSquared(point, content.Center) <= radius * radius;
+        }
+
+        public override bool ClickAt(Vector2 point, object sender)
+        {
+            var clicked = SurfaceClicked;
+            if (clicked != null && Hit(point))
+                return clicked(this, point, sender);
+
+            return base.ClickAt(point, sender);
         }
 
         protected override void RenderDefault(List<MySprite> sprites)

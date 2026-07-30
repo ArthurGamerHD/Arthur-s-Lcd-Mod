@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Config;
 using LcdMod.Client.Gui;
@@ -16,7 +17,9 @@ using LcdMod.Common.Config.Generation;
 using LcdMod.Common.Helpers;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
+using VRage.Game;
 using VRage.Game.GUI.TextPanel;
+using VRage.Game.ModAPI;
 using VRageMath;
 using static LcdMod.Common.Helpers.Constants;
 
@@ -51,9 +54,36 @@ namespace LcdMod.Client.Apps
         const float ORBIT_CONFIG_EPSILON = 0.000001f;
         const float ZOOM_CONFIG_EPSILON = 0.0001f;
         const double STATIC_CAMERA_CONFIG_EPSILON_METERS = 0.001d;
+        const double GPS_SURFACE_TARGET_TOLERANCE_METERS = 10000d;
+        const double GPS_SURFACE_TERRAIN_MARGIN_METERS = 5000d;
+        const double GPS_SURFACE_MAXIMUM_RADIUS_RATIO = 0.25d;
+        const double GPS_SURFACE_MINIMUM_ALLOWED_TOLERANCE_METERS = 1000d;
+        const float GPS_MARKER_SIZE_PIXELS = 12f;
+        const float GPS_LABEL_SCALE = 0.5f;
+        const float GPS_LABEL_GAP_PIXELS = 5f;
+        const float GPS_CLUSTER_DISTANCE_PIXELS = 30f;
+        const float MARKER_HITBOX_MIN_PIXELS = 18f;
+        const long RADIO_SIGNAL_REFRESH_FRAMES = 60L;
+        const float RADIO_SIGNAL_MARKER_SIZE_PIXELS = 14f;
+        const float RADIO_SIGNAL_LABEL_SCALE = 0.5f;
+        const float RADIO_SIGNAL_LABEL_GAP_PIXELS = 5f;
+        const float RADIO_SIGNAL_CLUSTER_DISTANCE_PIXELS = 30f;
 
         readonly List<MySprite> _sprites = new List<MySprite>();
         readonly List<MySprite> _cachedShipMarkerSprites = new List<MySprite>();
+        readonly List<IMyGps> _gpsEntries = new List<IMyGps>();
+        readonly List<GpsMarkerProjection> _gpsMarkerProjections =
+            new List<GpsMarkerProjection>();
+        readonly List<GpsMarkerCluster> _gpsMarkerClusters =
+            new List<GpsMarkerCluster>();
+        readonly List<byte> _gpsMarkerClusterConsumed = new List<byte>();
+        readonly RadioSignalMarkerCollector _radioSignalCollector = new RadioSignalMarkerCollector();
+        readonly List<RadioSignalMarker> _radioSignals = new List<RadioSignalMarker>();
+        readonly List<RadioSignalMarkerProjection> _radioSignalMarkerProjections =
+            new List<RadioSignalMarkerProjection>();
+        readonly List<RadioSignalMarkerCluster> _radioSignalMarkerClusters =
+            new List<RadioSignalMarkerCluster>();
+        readonly List<byte> _radioSignalMarkerClusterConsumed = new List<byte>();
         readonly List<Control> _children = new List<Control>();
         readonly PlanetGlobeControl _planetControl;
         readonly OrbitCameraControl _orbitControl;
@@ -61,6 +91,17 @@ namespace LcdMod.Client.Apps
         readonly ButtonModel _followButtonModel;
         readonly ToggleButton _orientationButton;
         readonly ToggleButton _followButton;
+        readonly Dictionary<long, StaticMarkerInteractiveState> _radioSignalMarkerInteractiveStates =
+            new Dictionary<long, StaticMarkerInteractiveState>();
+
+        sealed class StaticMarkerInteractiveState
+        {
+            public RectangleControl Entry;
+            public string Name;
+            public Vector3D Position;
+            public Color Color;
+            public bool UsedThisFrame;
+        }
 
         MyPlanet _planet;
         long _planetId;
@@ -86,6 +127,9 @@ namespace LcdMod.Client.Apps
         float _lastKnownConfigZoom = MAXIMUM_ZOOM;
         bool _lastKnownConfigHasStaticCameraPosition;
         Vector3D _lastKnownConfigStaticCameraPosition;
+        long _lastRadioSignalRefreshFrame = long.MinValue;
+        int _lastCreatedSurfaceGpsHash;
+        bool _hasLastCreatedSurfaceGps;
         bool _closed;
 
         public PlanetaryMapApp(IAppHost host)
@@ -100,6 +144,8 @@ namespace LcdMod.Client.Apps
                 new PlanetGlobeControl(default(RectangleF)));
             _planetControl.SetRotationTransform(rotationTransform);
             _planetControl.SetZoom(_zoom);
+            _planetControl.SetCursor(CursorType.Hand);
+            _planetControl.SurfaceClicked = OnPlanetSurfaceClicked;
 
             _orbitControl = AddLogicalChild(
                 new OrbitCameraControl(default(RectangleF)));
@@ -183,6 +229,7 @@ namespace LcdMod.Client.Apps
         public override List<MySprite> GetSprites()
         {
             _sprites.Clear();
+            BeginMarkerInteractiveFrame();
 
             if (_planet != null && !_planet.MarkedForClose)
             {
@@ -195,18 +242,22 @@ namespace LcdMod.Client.Apps
             {
                 AddCenteredStatus(LocHelper.GetLoc(MOD_PREFIX + "PlanetaryMap_NoPlanet"), Host.ForegroundColor);
                 RenderCameraControls();
+                FinalizeMarkerInteractiveFrame();
                 return _sprites;
             }
 
             // PlanetGlobeControl draws one gray Circle only before the first
             // cubemap is available. Detail upgrades keep the previous map visible.
             _planetControl.Render(_sprites);
+            AddGpsMarkers(_sprites);
+            AddRadioSignalMarkers(_sprites);
             _sprites.AddRange(_cachedShipMarkerSprites);
 
             if (!string.IsNullOrWhiteSpace(_error))
                 AddBottomStatus(_error, new Color(255, 80, 80));
 
             RenderCameraControls();
+            FinalizeMarkerInteractiveFrame();
 
             return _sprites;
         }
@@ -245,8 +296,31 @@ namespace LcdMod.Client.Apps
             _loadedCubemap = null;
             _planet = null;
             _cachedShipMarkerSprites.Clear();
+            _gpsEntries.Clear();
+            _radioSignals.Clear();
+            _radioSignalMarkerInteractiveStates.Clear();
             _sprites.Clear();
             base.Close();
+        }
+
+        void BeginMarkerInteractiveFrame()
+        {
+            foreach (StaticMarkerInteractiveState state in _radioSignalMarkerInteractiveStates.Values)
+                state.UsedThisFrame = false;
+        }
+
+        void FinalizeMarkerInteractiveFrame()
+        {
+            HideUnusedMarkerEntries(_radioSignalMarkerInteractiveStates);
+        }
+
+        static void HideUnusedMarkerEntries(Dictionary<long, StaticMarkerInteractiveState> states)
+        {
+            foreach (StaticMarkerInteractiveState state in states.Values)
+            {
+                if (!state.UsedThisFrame && state.Entry != null)
+                    state.Entry.SetVisible(false);
+            }
         }
 
         void ResolveNearestPlanet()
@@ -453,6 +527,7 @@ namespace LcdMod.Client.Apps
         {
             UpdatePlanetControlBounds();
             UpdateCameraControlBounds();
+            _planetControl.SetEnabled(_planet != null && !_planet.MarkedForClose);
             _planetControl.SetZoom(_zoom);
             _planetControl.SetClipBounds(Host.ViewBox);
 
@@ -1023,15 +1098,26 @@ namespace LcdMod.Client.Apps
 
         bool TryGetShipSurfaceScreenPosition(MyPlanet planet, out Vector2 screenPosition)
         {
+            MatrixD shipWorld;
+            if (!TryGetShipWorldMatrix(out shipWorld))
+            {
+                screenPosition = Host.ViewBox.Center;
+                return false;
+            }
+
+            return TryGetSurfaceScreenPosition(planet, shipWorld.Translation, out screenPosition);
+        }
+
+        bool TryGetSurfaceScreenPosition(
+            MyPlanet planet,
+            Vector3D worldPosition,
+            out Vector2 screenPosition)
+        {
             screenPosition = Host.ViewBox.Center;
             if (planet == null)
                 return false;
 
-            MatrixD shipWorld;
-            if (!TryGetShipWorldMatrix(out shipWorld))
-                return false;
-
-            Vector3D radialWorld = shipWorld.Translation - planet.WorldMatrix.Translation;
+            Vector3D radialWorld = worldPosition - planet.WorldMatrix.Translation;
             if (radialWorld.Normalize() <= 1e-9)
                 return false;
 
@@ -1065,6 +1151,607 @@ namespace LcdMod.Client.Apps
                 viewBox.Center.X + x * sphereRadius,
                 viewBox.Center.Y - y * sphereRadius);
             return true;
+        }
+
+        void AddGpsMarkers(List<MySprite> sprites)
+        {
+            if (_planet == null || _planet.MarkedForClose)
+                return;
+
+            PlanetaryMapConfigComponent config = PlanetaryMapComponent;
+            GpsDisplayWaypoint[] alwaysDisplayed = config.AlwaysDisplayedGpsWaypoints ?? Array.Empty<GpsDisplayWaypoint>();
+            int[] legacyAlwaysDisplayed = config.AlwaysDisplayedGpsHashes ?? Array.Empty<int>();
+            bool needsLiveGps = config.DisplayMyGps || legacyAlwaysDisplayed.Length != 0 || _hasLastCreatedSurfaceGps;
+            if (!needsLiveGps && alwaysDisplayed.Length == 0)
+                return;
+
+            float scale = Math.Max(0.5f, Host.ConfiguredScale);
+            float markerSize = GPS_MARKER_SIZE_PIXELS * scale;
+            RectangleF bounds = Host.ViewBox;
+
+            _gpsMarkerProjections.Clear();
+            if (needsLiveGps)
+            {
+                var session = MyAPIGateway.Session;
+                var player = session == null ? null : session.Player;
+                if (session != null && session.GPS != null && player != null)
+                {
+                    _gpsEntries.Clear();
+                    session.GPS.GetGpsList(player.IdentityId, _gpsEntries);
+
+                    for (int i = 0; i < _gpsEntries.Count; i++)
+                    {
+                        IMyGps gps = _gpsEntries[i];
+                        bool forceLastCreated = IsLastCreatedSurfaceGps(gps) &&
+                                                !GpsMarkerLayout.ContainsWaypointSourceHash(alwaysDisplayed, gps.Hash);
+                        if ((!forceLastCreated &&
+                             !GpsMarkerLayout.ShouldRenderLiveGps(
+                                 gps,
+                                 config.DisplayMyGps,
+                                 alwaysDisplayed,
+                                 legacyAlwaysDisplayed)))
+                        {
+                            continue;
+                        }
+
+                        AddGpsMarkerProjection(GpsMarkerLayout.FromGps(gps), bounds, markerSize);
+                    }
+                }
+            }
+
+            for (int i = 0; i < alwaysDisplayed.Length; i++)
+            {
+                GpsMarker marker;
+                if (!GpsMarkerLayout.TryCreateMarker(alwaysDisplayed[i], out marker))
+                    continue;
+
+                AddGpsMarkerProjection(marker, bounds, markerSize);
+            }
+
+            GpsMarkerLayout.Cluster(
+                _gpsMarkerProjections,
+                GPS_CLUSTER_DISTANCE_PIXELS * scale,
+                _gpsMarkerClusters,
+                _gpsMarkerClusterConsumed);
+
+            for (int i = 0; i < _gpsMarkerClusters.Count; i++)
+                DrawGpsMarker(sprites, _gpsMarkerClusters[i], scale, markerSize);
+        }
+
+        void AddGpsMarkerProjection(GpsMarker marker, RectangleF bounds, float markerSize)
+        {
+            if (!IsPositionNearPlanetSurface(_planet, marker.WorldPosition))
+                return;
+
+            Vector2 screenPosition;
+            if (!TryGetSurfaceScreenPosition(_planet, marker.WorldPosition, out screenPosition) ||
+                screenPosition.X < bounds.X - markerSize ||
+                screenPosition.X > bounds.Right + markerSize ||
+                screenPosition.Y < bounds.Y - markerSize ||
+                screenPosition.Y > bounds.Bottom + markerSize)
+            {
+                return;
+            }
+
+            _gpsMarkerProjections.Add(new GpsMarkerProjection
+            {
+                Marker = marker,
+                ScreenPosition = screenPosition
+            });
+        }
+
+        void DrawGpsMarker(
+            List<MySprite> sprites,
+            GpsMarkerCluster cluster,
+            float scale,
+            float baseMarkerSize)
+        {
+            GpsMarker marker = cluster.RepresentativeMarker;
+
+            bool isCluster = cluster.Count > 1;
+            float markerSize = isCluster ? baseMarkerSize * 1.35f : baseMarkerSize;
+            float markerRadius = markerSize * 0.5f;
+            Vector2 screenPosition = cluster.ScreenPosition;
+            Color color = marker.Color;
+            color.A = byte.MaxValue;
+            Color shadow = new Color(0, 0, 0, 210);
+
+            AddMarkerTexture(
+                sprites,
+                "Circle",
+                screenPosition + new Vector2(scale, scale),
+                new Vector2(markerSize * 1.25f),
+                shadow,
+                0f);
+            AddMarkerTexture(
+                sprites,
+                "CircleHollow",
+                screenPosition,
+                new Vector2(markerSize),
+                color,
+                0f);
+
+            float textScale = GPS_LABEL_SCALE * scale;
+            if (isCluster)
+            {
+                string count = cluster.Count.ToString();
+                Vector2 countShadowOffset = new Vector2(scale, scale);
+                sprites.Add(new MySprite
+                {
+                    Type = SpriteType.TEXT,
+                    Data = count,
+                    Position = screenPosition + countShadowOffset,
+                    RotationOrScale = textScale * 0.8f,
+                    Color = shadow,
+                    Alignment = TextAlignment.CENTER,
+                    FontId = TextFont
+                });
+                sprites.Add(new MySprite
+                {
+                    Type = SpriteType.TEXT,
+                    Data = count,
+                    Position = screenPosition,
+                    RotationOrScale = textScale * 0.8f,
+                    Color = color,
+                    Alignment = TextAlignment.CENTER,
+                    FontId = TextFont
+                });
+            }
+
+            string name = isCluster
+                ? cluster.Count + " GPS"
+                : (string.IsNullOrWhiteSpace(marker.Name) ? "GPS" : marker.Name);
+            float lineHeight = MeasureLineHeight(textScale);
+            Vector2 labelPosition = new Vector2(
+                screenPosition.X + markerRadius + GPS_LABEL_GAP_PIXELS * scale,
+                screenPosition.Y - lineHeight * 0.5f);
+            Vector2 shadowOffset = new Vector2(scale, scale);
+
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXT,
+                Data = name,
+                Position = labelPosition + shadowOffset,
+                RotationOrScale = textScale,
+                Color = shadow,
+                Alignment = TextAlignment.LEFT,
+                FontId = TextFont
+            });
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXT,
+                Data = name,
+                Position = labelPosition,
+                RotationOrScale = textScale,
+                Color = color,
+                Alignment = TextAlignment.LEFT,
+                FontId = TextFont
+            });
+        }
+
+        void AddRadioSignalMarkers(List<MySprite> sprites)
+        {
+            if (_planet == null || _planet.MarkedForClose ||
+                !PlanetaryMapComponent.IncludeRadioSignals)
+            {
+                return;
+            }
+
+            RefreshRadioSignals();
+            if (_radioSignals.Count == 0)
+                return;
+
+            float scale = Math.Max(0.5f, Host.ConfiguredScale);
+            float markerSize = RADIO_SIGNAL_MARKER_SIZE_PIXELS * scale;
+            RectangleF bounds = Host.ViewBox;
+
+            _radioSignalMarkerProjections.Clear();
+            for (int i = 0; i < _radioSignals.Count; i++)
+            {
+                RadioSignalMarker marker = _radioSignals[i];
+                Vector2 screenPosition;
+                if (!TryGetSurfaceScreenPosition(_planet, marker.WorldPosition, out screenPosition) ||
+                    screenPosition.X < bounds.X - markerSize ||
+                    screenPosition.X > bounds.Right + markerSize ||
+                    screenPosition.Y < bounds.Y - markerSize ||
+                    screenPosition.Y > bounds.Bottom + markerSize)
+                {
+                    continue;
+                }
+
+                _radioSignalMarkerProjections.Add(new RadioSignalMarkerProjection
+                {
+                    Marker = marker,
+                    ScreenPosition = screenPosition
+                });
+            }
+
+            RadioSignalMarkerLayout.Cluster(
+                _radioSignalMarkerProjections,
+                RADIO_SIGNAL_CLUSTER_DISTANCE_PIXELS * scale,
+                _radioSignalMarkerClusters,
+                _radioSignalMarkerClusterConsumed);
+
+            for (int i = 0; i < _radioSignalMarkerClusters.Count; i++)
+                DrawRadioSignalMarker(sprites, _radioSignalMarkerClusters[i], scale, markerSize);
+        }
+
+        void RefreshRadioSignals()
+        {
+            long frame = GetCurrentFrame();
+            if (_lastRadioSignalRefreshFrame != long.MinValue &&
+                frame >= _lastRadioSignalRefreshFrame &&
+                frame - _lastRadioSignalRefreshFrame < RADIO_SIGNAL_REFRESH_FRAMES)
+            {
+                return;
+            }
+
+            _lastRadioSignalRefreshFrame = frame;
+            _radioSignalCollector.Collect(Host.Block, _radioSignals);
+        }
+
+        void DrawRadioSignalMarker(
+            List<MySprite> sprites,
+            RadioSignalMarkerCluster cluster,
+            float scale,
+            float baseMarkerSize)
+        {
+            bool isCluster = cluster.Count > 1;
+            RadioSignalMarker marker = cluster.RepresentativeMarker;
+            float markerSize = isCluster ? baseMarkerSize * 1.35f : baseMarkerSize;
+            float markerRadius = markerSize * 0.5f;
+            Vector2 screenPosition = cluster.ScreenPosition;
+            Color color = ResolveRadioSignalColor(marker.Relationship);
+            color.A = byte.MaxValue;
+            Color shadow = new Color(0, 0, 0, 210);
+            string texture = isCluster ? "CircleHollow" : ResolveRadioSignalTexture(marker.Relationship);
+
+            AddMarkerTexture(
+                sprites,
+                texture,
+                screenPosition + new Vector2(scale, scale),
+                new Vector2(markerSize * 1.25f),
+                shadow,
+                0f);
+            AddMarkerTexture(
+                sprites,
+                texture,
+                screenPosition,
+                new Vector2(markerSize),
+                color,
+                0f);
+
+            float textScale = RADIO_SIGNAL_LABEL_SCALE * scale;
+            if (isCluster)
+            {
+                string count = cluster.Count.ToString();
+                Vector2 countShadowOffset = new Vector2(scale, scale);
+                sprites.Add(new MySprite
+                {
+                    Type = SpriteType.TEXT,
+                    Data = count,
+                    Position = screenPosition + countShadowOffset,
+                    RotationOrScale = textScale * 0.8f,
+                    Color = shadow,
+                    Alignment = TextAlignment.CENTER,
+                    FontId = TextFont
+                });
+                sprites.Add(new MySprite
+                {
+                    Type = SpriteType.TEXT,
+                    Data = count,
+                    Position = screenPosition,
+                    RotationOrScale = textScale * 0.8f,
+                    Color = color,
+                    Alignment = TextAlignment.CENTER,
+                    FontId = TextFont
+                });
+            }
+
+            string name = isCluster
+                ? cluster.Count + " signals"
+                : (string.IsNullOrWhiteSpace(marker.Name) ? "Radio signal" : marker.Name);
+            string signalName = string.IsNullOrWhiteSpace(marker.Name) ? "Radio signal" : marker.Name;
+            RegisterMarkerHitbox(
+                _radioSignalMarkerInteractiveStates,
+                marker.EntityId,
+                signalName,
+                marker.WorldPosition,
+                color,
+                screenPosition,
+                markerSize);
+            float lineHeight = MeasureLineHeight(textScale);
+            Vector2 labelPosition = new Vector2(
+                screenPosition.X + markerRadius + RADIO_SIGNAL_LABEL_GAP_PIXELS * scale,
+                screenPosition.Y - lineHeight * 0.5f);
+            Vector2 shadowOffset = new Vector2(scale, scale);
+
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXT,
+                Data = name,
+                Position = labelPosition + shadowOffset,
+                RotationOrScale = textScale,
+                Color = shadow,
+                Alignment = TextAlignment.LEFT,
+                FontId = TextFont
+            });
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXT,
+                Data = name,
+                Position = labelPosition,
+                RotationOrScale = textScale,
+                Color = color,
+                Alignment = TextAlignment.LEFT,
+                FontId = TextFont
+            });
+        }
+
+        void RegisterMarkerHitbox(
+            Dictionary<long, StaticMarkerInteractiveState> states,
+            long key,
+            string name,
+            Vector3D position,
+            Color color,
+            Vector2 screenPosition,
+            float markerSize)
+        {
+            StaticMarkerInteractiveState state;
+            if (!states.TryGetValue(key, out state))
+            {
+                state = new StaticMarkerInteractiveState();
+                state.Entry = AddLogicalChild(
+                    new RectangleControl(
+                        default(RectangleF),
+                        CursorType.Hand,
+                        null,
+                        OnMarkerClicked));
+                state.Entry.CustomRender = RenderMarkerHitbox;
+                state.Entry.ClickSound = AudioHelper.HudGps3;
+                state.Entry.SetDataContext(state);
+                InsertMarkerVisualChild(state.Entry);
+                states[key] = state;
+            }
+
+            state.Name = name;
+            state.Position = position;
+            state.Color = color;
+            state.UsedThisFrame = true;
+            state.Entry.SetRect(GetMarkerHitbox(screenPosition, markerSize));
+            state.Entry.SetVisible(true);
+        }
+
+        void InsertMarkerVisualChild(Control entry)
+        {
+            if (entry == null || _children.Contains(entry))
+                return;
+
+            int index = _children.IndexOf(_orientationButton);
+            if (index < 0)
+                index = _children.IndexOf(_followButton);
+            if (index < 0)
+                index = _children.Count;
+
+            _children.Insert(index, entry);
+        }
+
+        static RectangleF GetMarkerHitbox(Vector2 screenPosition, float markerSize)
+        {
+            float size = Math.Max(MARKER_HITBOX_MIN_PIXELS, markerSize * 1.25f);
+            return new RectangleF(
+                screenPosition.X - size * 0.5f,
+                screenPosition.Y - size * 0.5f,
+                size,
+                size);
+        }
+
+        static void RenderMarkerHitbox(ControlTemplate control, List<MySprite> sprites)
+        {
+        }
+
+        bool OnPlanetSurfaceClicked(PlanetGlobeControl control, Vector2 screenPoint, object sender)
+        {
+            if (_planet == null || _planet.MarkedForClose)
+                return false;
+
+            Vector3 localDirection;
+            Vector3D surfacePosition;
+            return TryGetSurfaceClickPosition(
+                       _planet,
+                       screenPoint,
+                       out localDirection,
+                       out surfacePosition) &&
+                   CreateSurfaceGps(localDirection, surfacePosition);
+        }
+
+        bool TryGetSurfaceClickPosition(
+            MyPlanet planet,
+            Vector2 screenPoint,
+            out Vector3 localDirection,
+            out Vector3D surfacePosition)
+        {
+            localDirection = Vector3.Zero;
+            surfacePosition = Vector3D.Zero;
+            if (planet == null)
+                return false;
+
+            RectangleF viewBox = Host.ViewBox;
+            float diameter = Math.Min(viewBox.Width, viewBox.Height) * _zoom;
+            if (diameter <= 0f)
+                return false;
+
+            float radius = diameter * 0.5f;
+            float x = (screenPoint.X - viewBox.Center.X) / radius;
+            float y = (viewBox.Center.Y - screenPoint.Y) / radius;
+            float radiusSquared = x * x + y * y;
+            if (radiusSquared > 1.000001f)
+                return false;
+
+            float z = (float)Math.Sqrt(Math.Max(0f, 1f - radiusSquared));
+            Vector3 displayDirection =
+                _planetControl.ViewDirection * z +
+                _planetControl.ScreenRightDirection * x +
+                _planetControl.ScreenUpDirection * y;
+            if (displayDirection.Normalize() <= 1e-6f)
+                return false;
+
+            localDirection = TransformByInverseRotation(
+                displayDirection,
+                _planetControl.RotationTransform);
+            if (localDirection.Normalize() <= 1e-6f)
+                return false;
+
+            Vector3D worldDirection = PlanetLocalDirectionToWorld(planet, localDirection);
+            if (worldDirection.Normalize() <= 1e-9)
+                return false;
+
+            double radiusMeters = GetPlanetSurfaceClickSampleRadius(planet);
+            if (radiusMeters <= 0d)
+                return false;
+
+            Vector3D samplePosition =
+                planet.WorldMatrix.Translation +
+                worldDirection * radiusMeters;
+            surfacePosition = planet.GetClosestSurfacePointGlobal(samplePosition);
+            return IsFinite(surfacePosition);
+        }
+
+        void OnMarkerClicked(object dataContext, object sender)
+        {
+            var marker = dataContext as StaticMarkerInteractiveState;
+            if (marker == null)
+                return;
+
+            CreateLocalGpsCopy(marker.Name, marker.Position, marker.Color);
+        }
+
+        bool CreateSurfaceGps(Vector3 localDirection, Vector3D position)
+        {
+            var session = MyAPIGateway.Session;
+            var gpsCollection = session == null ? null : session.GPS;
+            if (gpsCollection == null)
+                return false;
+
+            var gps = gpsCollection.Create(
+                FormatSurfaceGpsName(localDirection),
+                string.Empty,
+                position,
+                false,
+                true);
+            if (gps == null)
+                return false;
+
+            gpsCollection.AddLocalGps(gps);
+            _lastCreatedSurfaceGpsHash = gps.Hash;
+            _hasLastCreatedSurfaceGps = true;
+            return true;
+        }
+
+        bool IsLastCreatedSurfaceGps(IMyGps gps)
+        {
+            return _hasLastCreatedSurfaceGps &&
+                   gps != null &&
+                   gps.Hash == _lastCreatedSurfaceGpsHash;
+        }
+
+        void CreateLocalGpsCopy(string name, Vector3D position, Color color)
+        {
+            var session = MyAPIGateway.Session;
+            var gpsCollection = session?.GPS;
+
+            var gps = gpsCollection?.Create(GetLocalGpsName(name), string.Empty, position, false, true);
+            if (gps == null) return;
+
+            gps.GPSColor = color;
+            gpsCollection.AddLocalGps(gps);
+        }
+
+        static string GetLocalGpsName(string name)
+        {
+            return string.IsNullOrWhiteSpace(name) ? "Unknown" : name;
+        }
+
+        static string FormatSurfaceGpsName(Vector3 localDirection)
+        {
+            if (localDirection.Normalize() <= 1e-6f)
+                return "N\u00BA0.0 E\u00BA0.0";
+
+            double latitude = Math.Asin(ClampUnit(localDirection.Y)) * 180d / Math.PI;
+            double longitude = Math.Atan2(localDirection.X, localDirection.Z) * 180d / Math.PI;
+            return string.Format(
+                CultureInfo.InvariantCulture,
+                "{0}\u00BA{1:0.0} {2}\u00BA{3:0.0}",
+                latitude < 0d ? 'S' : 'N',
+                Math.Abs(latitude),
+                longitude < 0d ? 'W' : 'E',
+                Math.Abs(longitude));
+        }
+
+        static double ClampUnit(double value)
+        {
+            if (value < -1d)
+                return -1d;
+            if (value > 1d)
+                return 1d;
+            return value;
+        }
+
+        Color ResolveRadioSignalColor(MyRelationsBetweenPlayerAndBlock relationship)
+        {
+            switch (relationship)
+            {
+                case MyRelationsBetweenPlayerAndBlock.Enemies:
+                    return ColorComponent.ResolveErrorColor();
+                case MyRelationsBetweenPlayerAndBlock.Owner:
+                case MyRelationsBetweenPlayerAndBlock.FactionShare:
+                    return GetHeaderColor();
+                default:
+                    return ColorComponent.ResolveWarningColor();
+            }
+        }
+
+        static string ResolveRadioSignalTexture(MyRelationsBetweenPlayerAndBlock relationship)
+        {
+            switch (relationship)
+            {
+                case MyRelationsBetweenPlayerAndBlock.Enemies:
+                    return "Circle";
+                case MyRelationsBetweenPlayerAndBlock.Owner:
+                case MyRelationsBetweenPlayerAndBlock.FactionShare:
+                    return "SquareSimple";
+                default:
+                    return "Triangle";
+            }
+        }
+
+        static bool IsPositionNearPlanetSurface(MyPlanet planet, Vector3D position)
+        {
+            if (planet == null)
+                return false;
+
+            double averageRadius = planet.AverageRadius > 0d
+                ? planet.AverageRadius
+                : planet.MaximumRadius;
+            if (averageRadius <= 0d)
+                return false;
+
+            double maximumRadius = planet.MaximumRadius > 0d
+                ? planet.MaximumRadius
+                : averageRadius;
+            double terrainVariation = Math.Abs(maximumRadius - averageRadius);
+            double desiredTolerance = Math.Max(
+                GPS_SURFACE_TARGET_TOLERANCE_METERS,
+                terrainVariation + GPS_SURFACE_TERRAIN_MARGIN_METERS);
+            double tolerance = Math.Max(
+                GPS_SURFACE_MINIMUM_ALLOWED_TOLERANCE_METERS,
+                Math.Min(
+                    desiredTolerance,
+                    averageRadius * GPS_SURFACE_MAXIMUM_RADIUS_RATIO));
+            double radialDistance = Vector3D.Distance(
+                position,
+                planet.WorldMatrix.Translation);
+            return Math.Abs(radialDistance - averageRadius) <= tolerance;
         }
 
         Vector2 GetShipFacingScreenDirection(MyPlanet planet)
@@ -1143,6 +1830,15 @@ namespace LcdMod.Client.Apps
                 (float)Vector3D.Dot(worldDirection, planet.WorldMatrix.Backward));
         }
 
+        static Vector3D PlanetLocalDirectionToWorld(
+            MyPlanet planet,
+            Vector3 localDirection)
+        {
+            return planet.WorldMatrix.Right * localDirection.X +
+                   planet.WorldMatrix.Up * localDirection.Y +
+                   planet.WorldMatrix.Backward * localDirection.Z;
+        }
+
         static Vector3 TransformByRotation(Vector3 direction, Matrix rotation)
         {
             return new Vector3(
@@ -1155,6 +1851,39 @@ namespace LcdMod.Client.Apps
                 direction.X * rotation.M13 +
                 direction.Y * rotation.M23 +
                 direction.Z * rotation.M33);
+        }
+
+        static Vector3 TransformByInverseRotation(Vector3 direction, Matrix rotation)
+        {
+            return new Vector3(
+                direction.X * rotation.M11 +
+                direction.Y * rotation.M12 +
+                direction.Z * rotation.M13,
+                direction.X * rotation.M21 +
+                direction.Y * rotation.M22 +
+                direction.Z * rotation.M23,
+                direction.X * rotation.M31 +
+                direction.Y * rotation.M32 +
+                direction.Z * rotation.M33);
+        }
+
+        static double GetPlanetSurfaceClickSampleRadius(MyPlanet planet)
+        {
+            if (planet == null)
+                return 0d;
+
+            double radius = Math.Max(planet.AverageRadius, planet.MaximumRadius);
+            return radius > 0d ? radius : 0d;
+        }
+
+        static bool IsFinite(Vector3D value)
+        {
+            return !double.IsNaN(value.X) &&
+                   !double.IsInfinity(value.X) &&
+                   !double.IsNaN(value.Y) &&
+                   !double.IsInfinity(value.Y) &&
+                   !double.IsNaN(value.Z) &&
+                   !double.IsInfinity(value.Z);
         }
 
         static bool TryNormalize(ref Vector2 direction)

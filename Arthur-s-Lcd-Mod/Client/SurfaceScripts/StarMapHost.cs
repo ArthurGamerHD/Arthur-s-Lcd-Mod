@@ -6,6 +6,8 @@ using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Terminal.Controls.Generic;
+using LcdMod.Client.Terminal.Controls.Gps;
+using LcdMod.Client.Terminal.Controls.Groups;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
@@ -23,7 +25,10 @@ namespace LcdMod.Client.SurfaceScripts
     public sealed partial class StarMapSurfaceScript : InteractiveSurfaceScript,
         IUsesTerminalControl<SliderFov>,
         IMultiDisplayMode,
-        IUsesTerminalControl<ComboboxReferenceMode>
+        IUsesTerminalControl<ComboboxReferenceMode>,
+        IUsesTerminalControl<SwitchDisplayMyGps>,
+        IUsesTerminalControl<SwitchIncludeRadioSignals>,
+        IUsesTerminalControlGroup<GpsAlwaysDisplayTerminalControlGroup>
     {
         public const string ID = MOD_PREFIX + "StarMapSurface";
         public const string TITLE = MOD_PREFIX + "StarMapSurface";

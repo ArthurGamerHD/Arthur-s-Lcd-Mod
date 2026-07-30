@@ -62,6 +62,19 @@ namespace LcdMod.Client.Apps
         readonly List<MySprite> _frontRingSprites = new List<MySprite>();
         readonly List<MySprite> _overlaySprites = new List<MySprite>();
         readonly List<MySprite> _sprites = new List<MySprite>();
+        readonly List<IMyGps> _gpsEntries = new List<IMyGps>();
+        readonly List<GpsMarkerProjection> _gpsMarkerProjections =
+            new List<GpsMarkerProjection>();
+        readonly List<GpsMarkerCluster> _gpsMarkerClusters =
+            new List<GpsMarkerCluster>();
+        readonly List<byte> _gpsMarkerClusterConsumed = new List<byte>();
+        readonly RadioSignalMarkerCollector _radioSignalCollector = new RadioSignalMarkerCollector();
+        readonly List<RadioSignalMarker> _radioSignals = new List<RadioSignalMarker>();
+        readonly List<RadioSignalMarkerProjection> _radioSignalMarkerProjections =
+            new List<RadioSignalMarkerProjection>();
+        readonly List<RadioSignalMarkerCluster> _radioSignalMarkerClusters =
+            new List<RadioSignalMarkerCluster>();
+        readonly List<byte> _radioSignalMarkerClusterConsumed = new List<byte>();
         readonly List<Control> _children = new List<Control>();
         readonly OrbitCameraControl _staticOrbitControl;
         sealed class PlanetCubemapState
@@ -82,6 +95,15 @@ namespace LcdMod.Client.Apps
             public bool UsedThisFrame;
         }
 
+        sealed class StaticMarkerInteractiveState
+        {
+            public RectangleControl Entry;
+            public string Name;
+            public Vector3D Position;
+            public Color Color;
+            public bool UsedThisFrame;
+        }
+
         readonly Dictionary<long, PlanetCubemapState> _planetCubemapStates =
             new Dictionary<long, PlanetCubemapState>();
         readonly Dictionary<long, PlanetGlobeControl> _planetGlobeControls =
@@ -99,6 +121,8 @@ namespace LcdMod.Client.Apps
         readonly Dictionary<long, PlanetInteractiveState> _planetInteractiveStates =
             new Dictionary<long, PlanetInteractiveState>();
         readonly List<long> _removedPlanetInteractiveIds = new List<long>();
+        readonly Dictionary<long, StaticMarkerInteractiveState> _staticRadioMarkerInteractiveStates =
+            new Dictionary<long, StaticMarkerInteractiveState>();
 
         bool _dynamicMapCacheValid;
         MatrixD _cachedDynamicWorldMatrix;
@@ -146,6 +170,7 @@ namespace LcdMod.Client.Apps
         long _artificialHorizonAltWarningShownAt;
         Vector2 _cursorPosition = new Vector2(float.NaN, float.NaN);
         long _lastCursorVisualContactFrame = long.MinValue;
+        long _lastRadioSignalRefreshFrame = long.MinValue;
 
         struct PlanetProjection
         {
@@ -214,12 +239,25 @@ namespace LcdMod.Client.Apps
         const float SIDE_INFO_MARGIN_PX = 14f;
         const float SIDE_INFO_Y_OFFSET_PX = 6f;
         const float STATIC_PLANET_SCALE = 4f;
+        const float STATIC_REAL_SCALE_BLEND_START_MAGNIFICATION = 5f;
+        const float STATIC_MAX_MAGNIFICATION = 240f;
         const float STATIC_PLANET_BODY_RADIUS_PX = 10f;
         const float STATIC_MOON_BODY_RADIUS_PX = 5f;
         public static float StaticOrbitLineThicknessPx = 2f;
         const double STATIC_CAMERA_NEAR_CLIP_DEPTH = 0d;
         const double STATIC_ORBIT_MIN_RING_METERS = 100000d;
         const double STATIC_PARENT_ORBIT_MAX_METERS = 300000d;
+        const double STATIC_GPS_MOON_LOCAL_RANGE_METERS = 100000d;
+        const float STATIC_GPS_MARKER_SIZE_PX = 12f;
+        const float STATIC_GPS_LABEL_SCALE = 0.5f;
+        const float STATIC_GPS_LABEL_GAP_PX = 5f;
+        const float STATIC_GPS_CLUSTER_DISTANCE_PX = 30f;
+        const float STATIC_MARKER_HITBOX_MIN_PX = 18f;
+        const long STATIC_RADIO_SIGNAL_REFRESH_FRAMES = 60L;
+        const float STATIC_RADIO_SIGNAL_MARKER_SIZE_PX = 14f;
+        const float STATIC_RADIO_SIGNAL_LABEL_SCALE = 0.5f;
+        const float STATIC_RADIO_SIGNAL_LABEL_GAP_PX = 5f;
+        const float STATIC_RADIO_SIGNAL_CLUSTER_DISTANCE_PX = 30f;
 
         public static readonly List<MyTerminalControlComboBoxItem> StarMapDisplayModes =
             new List<MyTerminalControlComboBoxItem>
@@ -330,6 +368,12 @@ namespace LcdMod.Client.Apps
                 state.UsedThisFrame = false;
         }
 
+        void BeginStaticMarkerInteractiveFrame()
+        {
+            foreach (StaticMarkerInteractiveState state in _staticRadioMarkerInteractiveStates.Values)
+                state.UsedThisFrame = false;
+        }
+
         void FinalizePlanetInteractiveFrame()
         {
             Dictionary<long, MyPlanet> planets = PlanetHelper.PlanetsById;
@@ -372,6 +416,21 @@ namespace LcdMod.Client.Apps
                 InvalidateDynamicMapCache();
 
             _removedPlanetInteractiveIds.Clear();
+        }
+
+        void FinalizeStaticMarkerInteractiveFrame()
+        {
+            HideUnusedStaticMarkerEntries(_staticRadioMarkerInteractiveStates);
+        }
+
+        static void HideUnusedStaticMarkerEntries(
+            Dictionary<long, StaticMarkerInteractiveState> states)
+        {
+            foreach (StaticMarkerInteractiveState state in states.Values)
+            {
+                if (!state.UsedThisFrame && state.Entry != null)
+                    state.Entry.SetVisible(false);
+            }
         }
 
         void InvalidateDynamicMapCache()
@@ -420,6 +479,9 @@ namespace LcdMod.Client.Apps
             _planetGlobeControls.Clear();
             _planetInteractiveStates.Clear();
             _removedPlanetInteractiveIds.Clear();
+            _staticRadioMarkerInteractiveStates.Clear();
+            _gpsEntries.Clear();
+            _radioSignals.Clear();
             ClearLogicalChildren();
             base.Close();
         }
@@ -439,6 +501,7 @@ namespace LcdMod.Client.Apps
             _overlaySprites.Clear();
             _children.Clear();
             BeginPlanetInteractiveFrame();
+            BeginStaticMarkerInteractiveFrame();
             RequestedCursorType = GetDefaultCursorType();
             _suppressDynamicOverlays = false;
 
@@ -485,6 +548,7 @@ namespace LcdMod.Client.Apps
             }
 
             FinalizePlanetInteractiveFrame();
+            FinalizeStaticMarkerInteractiveFrame();
 
             _sprites.Clear();
             _sprites.AddRange(_baseSprites);
@@ -2460,11 +2524,20 @@ namespace LcdMod.Client.Apps
                 computeOrder.Add(i);
             computeOrder.Sort(delegate(int a, int b) { return radii[b].CompareTo(radii[a]); });
 
+            double baseHalfFov = MathHelper.ToRadians(MAP_VERTICAL_FOV_DEFAULT_DEG) * 0.5;
+            double currentHalfFov = MathHelper.ToRadians(Math.Max(0.1f, _fov)) * 0.5;
+            float magnification = MathHelper.Clamp(
+                (float)(Math.Tan(baseHalfFov) / Math.Tan(currentHalfFov)),
+                0.25f,
+                STATIC_MAX_MAGNIFICATION);
+            float staticPlanetScale = GetStaticPlanetScale(magnification);
+
             double maxDisplayDistance = 1d;
+            double maxRealDisplayDistance = 1d;
             foreach (int i in computeOrder)
             {
                 int parent = parentIndex[i];
-                float radiusScale = parent >= 0 ? STATIC_PLANET_SCALE : 1f;
+                float radiusScale = parent >= 0 ? staticPlanetScale : 1f;
                 Vector3D ringCenter = parent >= 0 ? displayPositions[parent] : Vector3D.Zero;
                 Vector3D sourceCenter = parent >= 0 ? positions[parent] : Vector3D.Zero;
                 Vector3D relative = positions[i] - sourceCenter;
@@ -2484,19 +2557,23 @@ namespace LcdMod.Client.Apps
                                 radii[i] * radiusScale;
                 if (extent > maxDisplayDistance)
                     maxDisplayDistance = extent;
+
+                Vector3D realRingCenter = parent >= 0 ? positions[parent] : Vector3D.Zero;
+                Vector3D realSourceCenter = parent >= 0 ? positions[parent] : Vector3D.Zero;
+                Vector3D realOrbitRadial = positions[i] - realSourceCenter;
+                double realExtent = realRingCenter.Length() +
+                                    realOrbitRadial.Length() +
+                                    radii[i];
+                if (realExtent > maxRealDisplayDistance)
+                    maxRealDisplayDistance = realExtent;
             }
 
             float maxOrbitPx = Math.Min(ViewBox.Width, ViewBox.Height) * 0.45f;
             if (maxOrbitPx <= 1f)
                 return false;
 
-            double baseHalfFov = MathHelper.ToRadians(MAP_VERTICAL_FOV_DEFAULT_DEG) * 0.5;
-            double currentHalfFov = MathHelper.ToRadians(Math.Max(0.1f, _fov)) * 0.5;
-            float magnification = MathHelper.Clamp(
-                (float)(Math.Tan(baseHalfFov) / Math.Tan(currentHalfFov)),
-                0.25f,
-                8f);
             double worldToPx = maxOrbitPx / maxDisplayDistance * magnification;
+            double maxRealWorldToPx = maxOrbitPx / maxRealDisplayDistance * STATIC_MAX_MAGNIFICATION;
             var center = ViewBox.Center;
             Vector3D cameraViewWorld = new Vector3D(
                 cameraViewDirection.X,
@@ -2528,7 +2605,7 @@ namespace LcdMod.Client.Apps
             {
                 int parent = parentIndex[i];
                 bool isMoon = parent >= 0;
-                float radiusScale = isMoon ? STATIC_PLANET_SCALE : 1f;
+                float radiusScale = isMoon ? staticPlanetScale : 1f;
                 Vector3D ringCenter = isMoon
                     ? displayPositions[parent]
                     : Vector3D.Zero;
@@ -2546,9 +2623,12 @@ namespace LcdMod.Client.Apps
                     displayPosition,
                     cameraPositionWorld,
                     cameraViewWorld);
-                projection.MarkerRadius =
-                    (isMoon ? STATIC_MOON_BODY_RADIUS_PX : STATIC_PLANET_BODY_RADIUS_PX) *
-                    Scale * magnification;
+                projection.MarkerRadius = GetStaticMarkerRadius(
+                    radii[i],
+                    isMoon,
+                    magnification,
+                    maxRealWorldToPx,
+                    Scale);
                 projectedPlanets[i] = projection;
 
                 double orbitRadius = orbitDistances[i] * radiusScale;
@@ -2649,10 +2729,666 @@ namespace LcdMod.Client.Apps
                 projectedPlanets[i] = planet;
             }
 
+            DrawStaticGpsMarkers(
+                positions,
+                displayPositions,
+                radii,
+                parentIndex,
+                cameraTargetWorld,
+                center,
+                worldToPx,
+                cameraScreenRight,
+                cameraScreenUp,
+                cameraPositionWorld,
+                cameraViewWorld,
+                staticPlanetScale);
+            DrawStaticRadioSignalMarkers(
+                positions,
+                displayPositions,
+                radii,
+                parentIndex,
+                cameraTargetWorld,
+                center,
+                worldToPx,
+                cameraScreenRight,
+                cameraScreenUp,
+                cameraPositionWorld,
+                cameraViewWorld,
+                staticPlanetScale);
+
             _dynamicMapCacheValid = false;
             _cachedDynamicRingSprites.Clear();
             _cachedOverlaySprites.Clear();
             return true;
+        }
+
+        void DrawStaticGpsMarkers(
+            List<Vector3D> planetPositions,
+            List<Vector3D> displayPositions,
+            List<double> planetRadii,
+            List<int> parentIndices,
+            Vector3D cameraTargetWorld,
+            Vector2 center,
+            double worldToPx,
+            Vector3 cameraScreenRight,
+            Vector3 cameraScreenUp,
+            Vector3D cameraPositionWorld,
+            Vector3D cameraViewWorld,
+            float staticPlanetScale)
+        {
+            StarMapConfigComponent config = StarMapComponent;
+            GpsDisplayWaypoint[] alwaysDisplayed = config.AlwaysDisplayedGpsWaypoints ?? Array.Empty<GpsDisplayWaypoint>();
+            int[] legacyAlwaysDisplayed = config.AlwaysDisplayedGpsHashes ?? Array.Empty<int>();
+            bool needsLiveGps = config.DisplayMyGps || legacyAlwaysDisplayed.Length != 0;
+            if (!needsLiveGps && alwaysDisplayed.Length == 0)
+                return;
+
+            float scale = Math.Max(0.5f, Scale);
+            float markerSize = STATIC_GPS_MARKER_SIZE_PX * scale;
+            RectangleF bounds = ViewBox;
+
+            _gpsMarkerProjections.Clear();
+            if (needsLiveGps)
+            {
+                var session = MyAPIGateway.Session;
+                var player = session == null ? null : session.Player;
+                if (session != null && session.GPS != null && player != null)
+                {
+                    _gpsEntries.Clear();
+                    session.GPS.GetGpsList(player.IdentityId, _gpsEntries);
+
+                    for (int i = 0; i < _gpsEntries.Count; i++)
+                    {
+                        IMyGps gps = _gpsEntries[i];
+                        if (!GpsMarkerLayout.ShouldRenderLiveGps(
+                            gps,
+                            config.DisplayMyGps,
+                            alwaysDisplayed,
+                            legacyAlwaysDisplayed))
+                        {
+                            continue;
+                        }
+
+                        AddStaticGpsMarkerProjection(
+                            GpsMarkerLayout.FromGps(gps),
+                            planetPositions,
+                            displayPositions,
+                            planetRadii,
+                            parentIndices,
+                            cameraTargetWorld,
+                            center,
+                            worldToPx,
+                            cameraScreenRight,
+                            cameraScreenUp,
+                            cameraPositionWorld,
+                            cameraViewWorld,
+                            staticPlanetScale,
+                            bounds,
+                            markerSize);
+                    }
+                }
+            }
+
+            for (int i = 0; i < alwaysDisplayed.Length; i++)
+            {
+                GpsMarker marker;
+                if (!GpsMarkerLayout.TryCreateMarker(alwaysDisplayed[i], out marker))
+                    continue;
+
+                AddStaticGpsMarkerProjection(
+                    marker,
+                    planetPositions,
+                    displayPositions,
+                    planetRadii,
+                    parentIndices,
+                    cameraTargetWorld,
+                    center,
+                    worldToPx,
+                    cameraScreenRight,
+                    cameraScreenUp,
+                    cameraPositionWorld,
+                    cameraViewWorld,
+                    staticPlanetScale,
+                    bounds,
+                    markerSize);
+            }
+
+            GpsMarkerLayout.Cluster(
+                _gpsMarkerProjections,
+                STATIC_GPS_CLUSTER_DISTANCE_PX * scale,
+                _gpsMarkerClusters,
+                _gpsMarkerClusterConsumed);
+
+            for (int i = 0; i < _gpsMarkerClusters.Count; i++)
+                DrawStaticGpsMarker(_gpsMarkerClusters[i], scale, markerSize);
+        }
+
+        void AddStaticGpsMarkerProjection(
+            GpsMarker marker,
+            List<Vector3D> planetPositions,
+            List<Vector3D> displayPositions,
+            List<double> planetRadii,
+            List<int> parentIndices,
+            Vector3D cameraTargetWorld,
+            Vector2 center,
+            double worldToPx,
+            Vector3 cameraScreenRight,
+            Vector3 cameraScreenUp,
+            Vector3D cameraPositionWorld,
+            Vector3D cameraViewWorld,
+            float staticPlanetScale,
+            RectangleF bounds,
+            float markerSize)
+        {
+            Vector3D displayPosition = TransformPointForStaticMap(
+                marker.WorldPosition,
+                planetPositions,
+                displayPositions,
+                planetRadii,
+                parentIndices,
+                staticPlanetScale);
+            double cameraDepth = CalculateStaticCameraDepth(
+                displayPosition,
+                cameraPositionWorld,
+                cameraViewWorld);
+            if (cameraDepth <= STATIC_CAMERA_NEAR_CLIP_DEPTH)
+                return;
+
+            Vector2 screenPosition = ProjectStaticPoint(
+                displayPosition,
+                cameraTargetWorld,
+                center,
+                worldToPx,
+                cameraScreenRight,
+                cameraScreenUp);
+            if (screenPosition.X < bounds.X - markerSize ||
+                screenPosition.X > bounds.Right + markerSize ||
+                screenPosition.Y < bounds.Y - markerSize ||
+                screenPosition.Y > bounds.Bottom + markerSize)
+            {
+                return;
+            }
+
+            _gpsMarkerProjections.Add(new GpsMarkerProjection
+            {
+                Marker = marker,
+                ScreenPosition = screenPosition
+            });
+        }
+
+        void DrawStaticGpsMarker(
+            GpsMarkerCluster cluster,
+            float scale,
+            float baseMarkerSize)
+        {
+            GpsMarker marker = cluster.RepresentativeMarker;
+
+            bool isCluster = cluster.Count > 1;
+            float markerSize = isCluster ? baseMarkerSize * 1.35f : baseMarkerSize;
+            float markerRadius = markerSize * 0.5f;
+            float textScale = STATIC_GPS_LABEL_SCALE * scale;
+            float lineHeight = MeasureLineHeight(textScale);
+            Vector2 screenPosition = cluster.ScreenPosition;
+            Color color = marker.Color;
+            color.A = byte.MaxValue;
+            Color shadow = new Color(0, 0, 0, 210);
+
+            _overlaySprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE,
+                Data = "Circle",
+                Position = screenPosition + new Vector2(scale, scale),
+                Size = new Vector2(markerSize * 1.25f),
+                Color = shadow,
+                Alignment = TextAlignment.CENTER
+            });
+            _overlaySprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE,
+                Data = "CircleHollow",
+                Position = screenPosition,
+                Size = new Vector2(markerSize),
+                Color = color,
+                Alignment = TextAlignment.CENTER
+            });
+
+            if (isCluster)
+            {
+                string count = cluster.Count.ToString();
+                Vector2 countShadowOffset = new Vector2(scale, scale);
+                _overlaySprites.Add(new MySprite
+                {
+                    Type = SpriteType.TEXT,
+                    Data = count,
+                    Position = screenPosition + countShadowOffset,
+                    RotationOrScale = textScale * 0.8f,
+                    Color = shadow,
+                    Alignment = TextAlignment.CENTER,
+                    FontId = TextFont
+                });
+                _overlaySprites.Add(new MySprite
+                {
+                    Type = SpriteType.TEXT,
+                    Data = count,
+                    Position = screenPosition,
+                    RotationOrScale = textScale * 0.8f,
+                    Color = color,
+                    Alignment = TextAlignment.CENTER,
+                    FontId = TextFont
+                });
+            }
+
+            string name = isCluster
+                ? cluster.Count + " GPS"
+                : (string.IsNullOrWhiteSpace(marker.Name) ? "GPS" : marker.Name);
+            Vector2 labelPosition = new Vector2(
+                screenPosition.X + markerRadius + STATIC_GPS_LABEL_GAP_PX * scale,
+                screenPosition.Y - lineHeight * 0.5f);
+            Vector2 shadowOffset = new Vector2(scale, scale);
+            _overlaySprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXT,
+                Data = name,
+                Position = labelPosition + shadowOffset,
+                RotationOrScale = textScale,
+                Color = shadow,
+                Alignment = TextAlignment.LEFT,
+                FontId = TextFont
+            });
+            _overlaySprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXT,
+                Data = name,
+                Position = labelPosition,
+                RotationOrScale = textScale,
+                Color = color,
+                Alignment = TextAlignment.LEFT,
+                FontId = TextFont
+            });
+        }
+
+        void DrawStaticRadioSignalMarkers(
+            List<Vector3D> planetPositions,
+            List<Vector3D> displayPositions,
+            List<double> planetRadii,
+            List<int> parentIndices,
+            Vector3D cameraTargetWorld,
+            Vector2 center,
+            double worldToPx,
+            Vector3 cameraScreenRight,
+            Vector3 cameraScreenUp,
+            Vector3D cameraPositionWorld,
+            Vector3D cameraViewWorld,
+            float staticPlanetScale)
+        {
+            if (!StarMapComponent.IncludeRadioSignals)
+                return;
+
+            RefreshStaticRadioSignals();
+            if (_radioSignals.Count == 0)
+                return;
+
+            float scale = Math.Max(0.5f, Scale);
+            float markerSize = STATIC_RADIO_SIGNAL_MARKER_SIZE_PX * scale;
+            RectangleF bounds = ViewBox;
+
+            _radioSignalMarkerProjections.Clear();
+            for (int i = 0; i < _radioSignals.Count; i++)
+            {
+                RadioSignalMarker marker = _radioSignals[i];
+                Vector3D displayPosition = TransformPointForStaticMap(
+                    marker.WorldPosition,
+                    planetPositions,
+                    displayPositions,
+                    planetRadii,
+                    parentIndices,
+                    staticPlanetScale);
+                double cameraDepth = CalculateStaticCameraDepth(
+                    displayPosition,
+                    cameraPositionWorld,
+                    cameraViewWorld);
+                if (cameraDepth <= STATIC_CAMERA_NEAR_CLIP_DEPTH)
+                    continue;
+
+                Vector2 screenPosition = ProjectStaticPoint(
+                    displayPosition,
+                    cameraTargetWorld,
+                    center,
+                    worldToPx,
+                    cameraScreenRight,
+                    cameraScreenUp);
+                if (screenPosition.X < bounds.X - markerSize ||
+                    screenPosition.X > bounds.Right + markerSize ||
+                    screenPosition.Y < bounds.Y - markerSize ||
+                    screenPosition.Y > bounds.Bottom + markerSize)
+                {
+                    continue;
+                }
+
+                _radioSignalMarkerProjections.Add(new RadioSignalMarkerProjection
+                {
+                    Marker = marker,
+                    ScreenPosition = screenPosition
+                });
+            }
+
+            RadioSignalMarkerLayout.Cluster(
+                _radioSignalMarkerProjections,
+                STATIC_RADIO_SIGNAL_CLUSTER_DISTANCE_PX * scale,
+                _radioSignalMarkerClusters,
+                _radioSignalMarkerClusterConsumed);
+
+            for (int i = 0; i < _radioSignalMarkerClusters.Count; i++)
+                DrawStaticRadioSignalMarker(_radioSignalMarkerClusters[i], scale, markerSize);
+        }
+
+        void RefreshStaticRadioSignals()
+        {
+            long frame = GetCurrentGameFrame();
+            if (_lastRadioSignalRefreshFrame != long.MinValue &&
+                frame >= _lastRadioSignalRefreshFrame &&
+                frame - _lastRadioSignalRefreshFrame < STATIC_RADIO_SIGNAL_REFRESH_FRAMES)
+            {
+                return;
+            }
+
+            _lastRadioSignalRefreshFrame = frame;
+            _radioSignalCollector.Collect(Block, _radioSignals);
+        }
+
+        void DrawStaticRadioSignalMarker(
+            RadioSignalMarkerCluster cluster,
+            float scale,
+            float baseMarkerSize)
+        {
+            bool isCluster = cluster.Count > 1;
+            RadioSignalMarker marker = cluster.RepresentativeMarker;
+            float markerSize = isCluster ? baseMarkerSize * 1.35f : baseMarkerSize;
+            float markerRadius = markerSize * 0.5f;
+            float textScale = STATIC_RADIO_SIGNAL_LABEL_SCALE * scale;
+            float lineHeight = MeasureLineHeight(textScale);
+            Vector2 screenPosition = cluster.ScreenPosition;
+            Color color = ResolveRadioSignalColor(marker.Relationship);
+            color.A = byte.MaxValue;
+            Color shadow = new Color(0, 0, 0, 210);
+            string texture = isCluster ? "CircleHollow" : ResolveRadioSignalTexture(marker.Relationship);
+
+            _overlaySprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE,
+                Data = texture,
+                Position = screenPosition + new Vector2(scale, scale),
+                Size = new Vector2(markerSize * 1.25f),
+                Color = shadow,
+                Alignment = TextAlignment.CENTER
+            });
+            _overlaySprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE,
+                Data = texture,
+                Position = screenPosition,
+                Size = new Vector2(markerSize),
+                Color = color,
+                Alignment = TextAlignment.CENTER
+            });
+
+            if (isCluster)
+            {
+                string count = cluster.Count.ToString();
+                Vector2 countShadowOffset = new Vector2(scale, scale);
+                _overlaySprites.Add(new MySprite
+                {
+                    Type = SpriteType.TEXT,
+                    Data = count,
+                    Position = screenPosition + countShadowOffset,
+                    RotationOrScale = textScale * 0.8f,
+                    Color = shadow,
+                    Alignment = TextAlignment.CENTER,
+                    FontId = TextFont
+                });
+                _overlaySprites.Add(new MySprite
+                {
+                    Type = SpriteType.TEXT,
+                    Data = count,
+                    Position = screenPosition,
+                    RotationOrScale = textScale * 0.8f,
+                    Color = color,
+                    Alignment = TextAlignment.CENTER,
+                    FontId = TextFont
+                });
+            }
+
+            string name = isCluster
+                ? cluster.Count + " signals"
+                : (string.IsNullOrWhiteSpace(marker.Name) ? "Radio signal" : marker.Name);
+            string signalName = string.IsNullOrWhiteSpace(marker.Name) ? "Radio signal" : marker.Name;
+            RegisterStaticMarkerHitbox(
+                _staticRadioMarkerInteractiveStates,
+                marker.EntityId,
+                signalName,
+                marker.WorldPosition,
+                color,
+                screenPosition,
+                markerSize);
+            Vector2 labelPosition = new Vector2(
+                screenPosition.X + markerRadius + STATIC_RADIO_SIGNAL_LABEL_GAP_PX * scale,
+                screenPosition.Y - lineHeight * 0.5f);
+            Vector2 shadowOffset = new Vector2(scale, scale);
+            _overlaySprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXT,
+                Data = name,
+                Position = labelPosition + shadowOffset,
+                RotationOrScale = textScale,
+                Color = shadow,
+                Alignment = TextAlignment.LEFT,
+                FontId = TextFont
+            });
+            _overlaySprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXT,
+                Data = name,
+                Position = labelPosition,
+                RotationOrScale = textScale,
+                Color = color,
+                Alignment = TextAlignment.LEFT,
+                FontId = TextFont
+            });
+        }
+
+        void RegisterStaticMarkerHitbox(
+            Dictionary<long, StaticMarkerInteractiveState> states,
+            long key,
+            string name,
+            Vector3D position,
+            Color color,
+            Vector2 screenPosition,
+            float markerSize)
+        {
+            StaticMarkerInteractiveState state;
+            if (!states.TryGetValue(key, out state))
+            {
+                state = new StaticMarkerInteractiveState();
+                state.Entry = AddLogicalChild(
+                    new RectangleControl(
+                        default(RectangleF),
+                        CursorType.Hand,
+                        null,
+                        OnStaticMarkerClicked));
+                state.Entry.CustomRender = RenderStaticMarkerHitbox;
+                state.Entry.ClickSound = AudioHelper.HudGps3;
+                state.Entry.SetDataContext(state);
+                states[key] = state;
+            }
+
+            state.Name = name;
+            state.Position = position;
+            state.Color = color;
+            state.UsedThisFrame = true;
+            state.Entry.SetRect(GetStaticMarkerHitbox(screenPosition, markerSize));
+            state.Entry.SetVisible(true);
+            _children.Add(state.Entry);
+        }
+
+        static RectangleF GetStaticMarkerHitbox(Vector2 screenPosition, float markerSize)
+        {
+            float size = Math.Max(STATIC_MARKER_HITBOX_MIN_PX, markerSize * 1.25f);
+            return new RectangleF(
+                screenPosition.X - size * 0.5f,
+                screenPosition.Y - size * 0.5f,
+                size,
+                size);
+        }
+
+        static void RenderStaticMarkerHitbox(ControlTemplate control, List<MySprite> sprites)
+        {
+        }
+
+        void OnStaticMarkerClicked(object dataContext, object sender)
+        {
+            var marker = dataContext as StaticMarkerInteractiveState;
+            if (marker == null)
+                return;
+
+            CreateLocalGpsCopy(marker.Name, marker.Position, marker.Color);
+        }
+
+        Color ResolveRadioSignalColor(MyRelationsBetweenPlayerAndBlock relationship)
+        {
+            switch (relationship)
+            {
+                case MyRelationsBetweenPlayerAndBlock.Enemies:
+                    return ColorComponent.ResolveErrorColor();
+                case MyRelationsBetweenPlayerAndBlock.Owner:
+                case MyRelationsBetweenPlayerAndBlock.FactionShare:
+                    return GetHeaderColor();
+                default:
+                    return ColorComponent.ResolveWarningColor();
+            }
+        }
+
+        static string ResolveRadioSignalTexture(MyRelationsBetweenPlayerAndBlock relationship)
+        {
+            switch (relationship)
+            {
+                case MyRelationsBetweenPlayerAndBlock.Enemies:
+                    return "Circle";
+                case MyRelationsBetweenPlayerAndBlock.Owner:
+                case MyRelationsBetweenPlayerAndBlock.FactionShare:
+                    return "SquareSimple";
+                default:
+                    return "Triangle";
+            }
+        }
+
+        static Vector3D TransformPointForStaticMap(
+            Vector3D gpsPosition,
+            List<Vector3D> planetPositions,
+            List<Vector3D> displayPositions,
+            List<double> planetRadii,
+            List<int> parentIndices,
+            float staticPlanetScale)
+        {
+            int nearestPlanet = -1;
+            double nearestSurfaceDistance = double.MaxValue;
+            for (int i = 0; i < planetPositions.Count; i++)
+            {
+                double centerDistance = Vector3D.Distance(gpsPosition, planetPositions[i]);
+                double surfaceDistance = Math.Abs(centerDistance - planetRadii[i]);
+                if (surfaceDistance < nearestSurfaceDistance)
+                {
+                    nearestSurfaceDistance = surfaceDistance;
+                    nearestPlanet = i;
+                }
+            }
+
+            if (nearestPlanet < 0 || parentIndices[nearestPlanet] < 0)
+                return gpsPosition;
+
+            Vector3D localOffset = gpsPosition - planetPositions[nearestPlanet];
+            double localRange = Math.Max(
+                STATIC_GPS_MOON_LOCAL_RANGE_METERS,
+                planetRadii[nearestPlanet] * 5d);
+            if (localOffset.LengthSquared() > localRange * localRange)
+                return gpsPosition;
+
+            return displayPositions[nearestPlanet] + localOffset * staticPlanetScale;
+        }
+
+        static float GetStaticPlanetScale(float magnification)
+        {
+            return MathHelper.Lerp(
+                STATIC_PLANET_SCALE,
+                1f,
+                GetStaticRealScaleBlend(magnification));
+        }
+
+        static float GetStaticRealScaleBlend(float magnification)
+        {
+            float amount = MathHelper.Clamp(
+                (magnification - STATIC_REAL_SCALE_BLEND_START_MAGNIFICATION) /
+                (STATIC_MAX_MAGNIFICATION - STATIC_REAL_SCALE_BLEND_START_MAGNIFICATION),
+                0f,
+                1f);
+            return amount * amount * (3f - 2f * amount);
+        }
+
+        static float GetStaticMarkerRadius(
+            double planetRadiusMeters,
+            bool isMoon,
+            float magnification,
+            double maxRealWorldToPx,
+            float surfaceScale)
+        {
+            float baseReadableRadius =
+                (isMoon ? STATIC_MOON_BODY_RADIUS_PX : STATIC_PLANET_BODY_RADIUS_PX) *
+                surfaceScale;
+            float readableRadius = baseReadableRadius * magnification;
+            float finalRealRadius = (float)(planetRadiusMeters * maxRealWorldToPx);
+
+            if (float.IsNaN(finalRealRadius) ||
+                float.IsInfinity(finalRealRadius) ||
+                finalRealRadius <= 0f)
+            {
+                return readableRadius;
+            }
+
+            if (magnification <= STATIC_REAL_SCALE_BLEND_START_MAGNIFICATION)
+                return Math.Max(surfaceScale, readableRadius);
+
+            float startRadius =
+                baseReadableRadius * STATIC_REAL_SCALE_BLEND_START_MAGNIFICATION;
+            float amount = MathHelper.Clamp(
+                (magnification - STATIC_REAL_SCALE_BLEND_START_MAGNIFICATION) /
+                (STATIC_MAX_MAGNIFICATION - STATIC_REAL_SCALE_BLEND_START_MAGNIFICATION),
+                0f,
+                1f);
+            float slope = Math.Min(
+                baseReadableRadius,
+                Math.Max(0f, 3f * (finalRealRadius - startRadius) /
+                    (STATIC_MAX_MAGNIFICATION - STATIC_REAL_SCALE_BLEND_START_MAGNIFICATION)));
+
+            return Math.Max(
+                surfaceScale,
+                HermiteInterpolate(startRadius, finalRealRadius, slope, 0f, amount));
+        }
+
+        static float HermiteInterpolate(
+            float start,
+            float end,
+            float startSlope,
+            float endSlope,
+            float amount)
+        {
+            float t2 = amount * amount;
+            float t3 = t2 * amount;
+            float range = STATIC_MAX_MAGNIFICATION - STATIC_REAL_SCALE_BLEND_START_MAGNIFICATION;
+
+            return
+                (2f * t3 - 3f * t2 + 1f) * start +
+                (t3 - 2f * t2 + amount) * range * startSlope +
+                (-2f * t3 + 3f * t2) * end +
+                (t3 - t2) * range * endSlope;
         }
 
         static Vector2 ProjectStaticPoint(
@@ -3593,10 +4329,29 @@ namespace LcdMod.Client.Apps
 
         void ClickOnGps(string planetName, Vector3D position, Color color)
         {
-            var gps = MyAPIGateway.Session.GPS.Create(planetName, string.Empty, position, true, true);
+            if (CreateLocalGpsCopy(planetName, position, color))
+                SendGpsToChat(planetName, position, color);
+        }
+
+        bool CreateLocalGpsCopy(string name, Vector3D position, Color color)
+        {
+            var session = MyAPIGateway.Session;
+            var gpsCollection = session == null ? null : session.GPS;
+            if (gpsCollection == null)
+                return false;
+
+            var gps = gpsCollection.Create(GetLocalGpsName(name), string.Empty, position, false, true);
+            if (gps == null)
+                return false;
+
             gps.GPSColor = color;
-            MyAPIGateway.Session.GPS.AddLocalGps(gps);
-            SendGpsToChat(planetName, position, color);
+            gpsCollection.AddLocalGps(gps);
+            return true;
+        }
+
+        static string GetLocalGpsName(string name)
+        {
+            return string.IsNullOrWhiteSpace(name) ? "Unknown" : name;
         }
 
         void SendGpsToChat(string name, Vector3D position, Color color)

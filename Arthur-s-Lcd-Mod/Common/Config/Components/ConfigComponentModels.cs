@@ -613,15 +613,63 @@ namespace LcdMod.Common.Config.Components
         public override ConfigComponent Clone() => new RadarConfigComponent { RangeScale = RangeScale };
     }
 
-    [ProtoContract]
-    public sealed class StarMapConfigComponent : ConfigComponent
+    public interface IGpsDisplayConfig
     {
-        [ProtoMember(1)] public float FoV { get; set; } = 70f;
-        public override ConfigComponent Clone() => new StarMapConfigComponent { FoV = FoV };
+        bool DisplayMyGps { get; set; }
+        bool IncludeRadioSignals { get; set; }
+        GpsDisplayWaypoint[] AlwaysDisplayedGpsWaypoints { get; set; }
+        int[] AlwaysDisplayedGpsHashes { get; set; }
     }
 
     [ProtoContract]
-    public sealed class PlanetaryMapConfigComponent : ConfigComponent
+    public sealed class GpsDisplayWaypoint
+    {
+        [ProtoMember(1)] public int SourceHash { get; set; }
+        [ProtoMember(2)] public string Name { get; set; } = string.Empty;
+        [ProtoMember(3)] public double X { get; set; }
+        [ProtoMember(4)] public double Y { get; set; }
+        [ProtoMember(5)] public double Z { get; set; }
+        [ProtoMember(6)] public Color Color { get; set; } = new Color(117, 201, 241);
+
+        public GpsDisplayWaypoint Clone()
+        {
+            return new GpsDisplayWaypoint
+            {
+                SourceHash = SourceHash,
+                Name = Name,
+                X = X,
+                Y = Y,
+                Z = Z,
+                Color = Color
+            };
+        }
+    }
+
+    [ProtoContract]
+    public sealed class StarMapConfigComponent : ConfigComponent, IGpsDisplayConfig
+    {
+        [ProtoMember(1)] public float FoV { get; set; } = 70f;
+        [ProtoMember(2)] public bool DisplayMyGps { get; set; }
+        [ProtoMember(3)] public int[] AlwaysDisplayedGpsHashes { get; set; } = Array.Empty<int>();
+        [ProtoMember(4)] public bool IncludeRadioSignals { get; set; }
+        [ProtoMember(5)] public GpsDisplayWaypoint[] AlwaysDisplayedGpsWaypoints { get; set; } =
+            Array.Empty<GpsDisplayWaypoint>();
+
+        public override ConfigComponent Clone()
+        {
+            return new StarMapConfigComponent
+            {
+                FoV = FoV,
+                DisplayMyGps = DisplayMyGps,
+                IncludeRadioSignals = IncludeRadioSignals,
+                AlwaysDisplayedGpsHashes = ConfigComponentClone.Copy(AlwaysDisplayedGpsHashes),
+                AlwaysDisplayedGpsWaypoints = ConfigComponentClone.Copy(AlwaysDisplayedGpsWaypoints)
+            };
+        }
+    }
+
+    [ProtoContract]
+    public sealed class PlanetaryMapConfigComponent : ConfigComponent, IGpsDisplayConfig
     {
         [ProtoMember(1), DefaultValue(true)] public bool NorthUp { get; set; } = true;
         [ProtoMember(2), DefaultValue(true)] public bool FollowCamera { get; set; } = true;
@@ -632,6 +680,11 @@ namespace LcdMod.Common.Config.Components
         [ProtoMember(7)] public double StaticCameraPositionY { get; set; }
         [ProtoMember(8)] public double StaticCameraPositionZ { get; set; }
         [ProtoMember(9), DefaultValue(16f)] public float Zoom { get; set; } = 16f;
+        [ProtoMember(10)] public bool DisplayMyGps { get; set; }
+        [ProtoMember(11)] public int[] AlwaysDisplayedGpsHashes { get; set; } = Array.Empty<int>();
+        [ProtoMember(12)] public bool IncludeRadioSignals { get; set; }
+        [ProtoMember(13)] public GpsDisplayWaypoint[] AlwaysDisplayedGpsWaypoints { get; set; } =
+            Array.Empty<GpsDisplayWaypoint>();
 
         public override ConfigComponent Clone()
         {
@@ -645,7 +698,11 @@ namespace LcdMod.Common.Config.Components
                 StaticCameraPositionX = StaticCameraPositionX,
                 StaticCameraPositionY = StaticCameraPositionY,
                 StaticCameraPositionZ = StaticCameraPositionZ,
-                Zoom = Zoom
+                Zoom = Zoom,
+                DisplayMyGps = DisplayMyGps,
+                IncludeRadioSignals = IncludeRadioSignals,
+                AlwaysDisplayedGpsHashes = ConfigComponentClone.Copy(AlwaysDisplayedGpsHashes),
+                AlwaysDisplayedGpsWaypoints = ConfigComponentClone.Copy(AlwaysDisplayedGpsWaypoints)
             };
         }
     }
@@ -966,6 +1023,17 @@ Click [color:#0000FF]""[loc]BlockPropertyTitle_TextPanelShowTextPanel[/loc]""[/c
             if (values == null || values.Length == 0)
                 return Array.Empty<T>();
             return (T[])values.Clone();
+        }
+
+        public static GpsDisplayWaypoint[] Copy(GpsDisplayWaypoint[] values)
+        {
+            if (values == null || values.Length == 0)
+                return Array.Empty<GpsDisplayWaypoint>();
+
+            var copy = new GpsDisplayWaypoint[values.Length];
+            for (var i = 0; i < values.Length; i++)
+                copy[i] = values[i] == null ? null : values[i].Clone();
+            return copy;
         }
     }
 }

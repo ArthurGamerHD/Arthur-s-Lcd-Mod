@@ -10,6 +10,7 @@ using LcdMod.Client.Terminal.Controls.Filter;
 using LcdMod.Client.Terminal.Controls.Filter.Buttons;
 using LcdMod.Client.Terminal.Controls.Filter.Listbox;
 using LcdMod.Client.Terminal.Controls.Generic;
+using LcdMod.Client.Terminal.Controls.Gps;
 using LcdMod.Client.Terminal.Controls.Interactive;
 using LcdMod.Client.Terminal.Controls.Markdown;
 using LcdMod.Client.Terminal.Controls.Proxy;
@@ -144,6 +145,16 @@ namespace LcdMod.Client.Terminal
             AddRegistration(registrations, 5200, new ButtonSpriteAddToSelection(source, target));
             AddRegistration(registrations, 5300, target);
             AddRegistration(registrations, 5400, new ButtonSpriteRemoveFromSelection(source, target));
+
+            source = new ListboxGpsCandidates();
+            target = new ListboxGpsAlwaysDisplayed();
+
+            AddRegistration(registrations, 5450, new SwitchDisplayMyGps());
+            AddRegistration(registrations, 5455, new SwitchIncludeRadioSignals());
+            AddRegistration(registrations, 5460, source);
+            AddRegistration(registrations, 5470, new ButtonGpsAddToAlwaysDisplay(source, target));
+            AddRegistration(registrations, 5480, target);
+            AddRegistration(registrations, 5490, new ButtonGpsRemoveFromAlwaysDisplay(source, target));
 
             AddRegistration(registrations, 5600, new ComboboxSorting());
             AddRegistration(registrations, 6000, new ButtonProxyAuto());

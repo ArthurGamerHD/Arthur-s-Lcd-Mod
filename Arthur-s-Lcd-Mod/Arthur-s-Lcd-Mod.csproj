@@ -77,6 +77,7 @@
       <Compile Remove="Client\Gui\ControlsTemplates\ControlStyleOverride.cs" />
       <Compile Remove="Client\Terminal\Controls\Generic\SliderImageChangeInterval.cs" />
       <Compile Remove="Client\Terminal\Controls\Groups\ColorsTerminalControlGroup.cs" />
+      <Compile Remove="Client\Terminal\Controls\Groups\GpsDisplayTerminalControlGroup.cs" />
     </ItemGroup>
 
     <Target Name="RemoveZhCnResxAlias" AfterTargets="PostBuildEvent">

@@ -91,15 +91,20 @@ namespace VRage.Game.ModAPI
 
 namespace VRageMath
 {
+    [ProtoBuf.ProtoContract]
     public struct Color
     {
+        [ProtoBuf.ProtoMember(1)]
         public uint PackedValue;
         
         public Color(byte r, byte g, byte b, byte a)
         {
+            PackedValue = (uint)(r | g << 8 | b << 16 | a << 24);
         }
+
         public Color(byte r, byte g, byte b)
         {
+            PackedValue = (uint)(r | g << 8 | b << 16 | byte.MaxValue << 24);
         }
     }
 }

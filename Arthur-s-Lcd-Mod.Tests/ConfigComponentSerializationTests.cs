@@ -77,7 +77,22 @@ public sealed class ConfigComponentSerializationTests
             StaticCameraPositionX = 123.5d,
             StaticCameraPositionY = -456.25d,
             StaticCameraPositionZ = 789.125d,
-            Zoom = 2.5f
+            Zoom = 2.5f,
+            DisplayMyGps = true,
+            IncludeRadioSignals = true,
+            AlwaysDisplayedGpsHashes = new[] { 101 },
+            AlwaysDisplayedGpsWaypoints = new[]
+            {
+                new GpsDisplayWaypoint
+                {
+                    SourceHash = 202,
+                    Name = "Ice Hauler",
+                    X = 1234.5d,
+                    Y = -987.25d,
+                    Z = 42.125d,
+                    Color = new VRageMath.Color { PackedValue = 0xFF336699u }
+                }
+            }
         });
 
         using var stream = new MemoryStream();
@@ -96,5 +111,62 @@ public sealed class ConfigComponentSerializationTests
         Assert.Equal(-456.25d, planetaryMap.StaticCameraPositionY);
         Assert.Equal(789.125d, planetaryMap.StaticCameraPositionZ);
         Assert.Equal(2.5f, planetaryMap.Zoom);
+        Assert.True(planetaryMap.DisplayMyGps);
+        Assert.True(planetaryMap.IncludeRadioSignals);
+        Assert.Equal(new[] { 101 }, planetaryMap.AlwaysDisplayedGpsHashes);
+        GpsDisplayWaypoint waypoint = Assert.Single(planetaryMap.AlwaysDisplayedGpsWaypoints);
+        Assert.Equal(202, waypoint.SourceHash);
+        Assert.Equal("Ice Hauler", waypoint.Name);
+        Assert.Equal(1234.5d, waypoint.X);
+        Assert.Equal(-987.25d, waypoint.Y);
+        Assert.Equal(42.125d, waypoint.Z);
+        Assert.Equal(0xFF336699u, waypoint.Color.PackedValue);
+    }
+
+    [Fact]
+    public void StarMapConfigComponent_RoundTrips_GpsWaypoints()
+    {
+        var surface = new SurfaceConfig
+        {
+            SurfaceIndex = 3,
+            AppTypeId = 13
+        };
+
+        surface.Set(LcdMod.Common.Helpers.Constants.APP, new StarMapConfigComponent
+        {
+            FoV = 55f,
+            DisplayMyGps = true,
+            IncludeRadioSignals = true,
+            AlwaysDisplayedGpsWaypoints = new[]
+            {
+                new GpsDisplayWaypoint
+                {
+                    SourceHash = 303,
+                    Name = "Depot",
+                    X = -12d,
+                    Y = 34d,
+                    Z = 56d,
+                    Color = new VRageMath.Color { PackedValue = 0xFFAA5500u }
+                }
+            }
+        });
+
+        using var stream = new MemoryStream();
+        Serializer.Serialize(stream, surface);
+        stream.Position = 0;
+
+        var result = Serializer.Deserialize<SurfaceConfig>(stream);
+        var starMap = result.Get<StarMapConfigComponent>(LcdMod.Common.Helpers.Constants.APP);
+
+        Assert.Equal(55f, starMap.FoV);
+        Assert.True(starMap.DisplayMyGps);
+        Assert.True(starMap.IncludeRadioSignals);
+        GpsDisplayWaypoint waypoint = Assert.Single(starMap.AlwaysDisplayedGpsWaypoints);
+        Assert.Equal(303, waypoint.SourceHash);
+        Assert.Equal("Depot", waypoint.Name);
+        Assert.Equal(-12d, waypoint.X);
+        Assert.Equal(34d, waypoint.Y);
+        Assert.Equal(56d, waypoint.Z);
+        Assert.Equal(0xFFAA5500u, waypoint.Color.PackedValue);
     }
 }

@@ -1,8 +1,11 @@
+using Generated;
 using System.Collections.Generic;
 using LcdMod.Client.Apps;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Gui;
 using LcdMod.Client.SurfaceScripts.Abstract;
+using LcdMod.Client.Terminal.Controls.Gps;
+using LcdMod.Client.Terminal.Controls.Groups;
 using LcdMod.Common.Config.Generation;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using VRage.Game.GUI.TextPanel;
@@ -14,7 +17,10 @@ namespace LcdMod.Client.SurfaceScripts
 {
     [LcdSurface(typeof(PlanetaryMapApp))]
     [MyTextSurfaceScript(ID, TITLE)]
-    public sealed partial class PlanetaryMapSurfaceScript : InteractiveSurfaceScript
+    public sealed partial class PlanetaryMapSurfaceScript : InteractiveSurfaceScript,
+        IUsesTerminalControl<SwitchDisplayMyGps>,
+        IUsesTerminalControl<SwitchIncludeRadioSignals>,
+        IUsesTerminalControlGroup<GpsAlwaysDisplayTerminalControlGroup>
     {
         public const string ID = "LcdMod_PlanetaryMap";
         public const string TITLE = "Planetary Map";

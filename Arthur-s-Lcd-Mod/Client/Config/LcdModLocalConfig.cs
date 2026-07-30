@@ -10,7 +10,7 @@ namespace LcdMod.Client.Config
             CompletedFtueTips = new HashSet<string>(System.StringComparer.Ordinal);
             RenderOtherUserTextures = true;
             AcceptMediaStreams = true;
-            TextureQuality = PlanetTextureQuality.Ultra;
+            TextureQuality = PlanetTextureQuality.Medium;
         }
 
         public bool AdvancedTweekables { get; set; }

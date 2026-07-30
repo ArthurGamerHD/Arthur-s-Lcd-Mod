@@ -15,7 +15,7 @@ namespace LcdMod.Client.Terminal.Controls.Generic
         public override IMyTerminalControl TerminalControl { get; }
         const float BASE_FOV_DEG = 70f;
         const float MIN_MAG = 0.4f;
-        const float MAX_MAG = 80f;
+        const float MAX_MAG = 240f;
         const float MIN_FOV_DEG = 0.1f;
         const float MAX_FOV_DEG = 120f;
 

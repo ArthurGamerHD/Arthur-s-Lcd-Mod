@@ -7,11 +7,11 @@ namespace LcdMod.Client.Config
     /// </summary>
     public enum PlanetTextureQuality
     {
-        Ultra = 0,
-        Poop = 1,
-        Low = 2,
-        Medium = 3,
-        High = 4
+        Poop = -2,
+        Low = -1,
+        Medium = 0,
+        High = 1,
+        Ultra = 2
     }
 
     public static class PlanetTextureQualitySettings
