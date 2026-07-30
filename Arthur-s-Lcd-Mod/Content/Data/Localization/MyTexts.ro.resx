@@ -144,6 +144,12 @@
     <data name="LcdMod_StarMapSurface" xml:space="preserve">
     <value>Hartă stelară</value>
   </data>
+    <data name="LcdMod_Planetarium" xml:space="preserve">
+    <value>Planetariu</value>
+  </data>
+    <data name="LcdMod_Hud" xml:space="preserve">
+    <value>HUD</value>
+  </data>
     <data name="LcdMod_DockingAlignment" xml:space="preserve">
     <value>Aliniere pentru andocare</value>
   </data>
@@ -1077,5 +1083,83 @@ Vom aștepta puțin, apoi o vom reporni pentru tine.</value>
   </data>
   <data name="LcdMod_AudioBroadcast_RequestedFormat" xml:space="preserve">
     <value>Transmisia audio a fost solicitată: {0}</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapStaticCamera_Line1" xml:space="preserve">
+    <value>Ține apăsat **butonul din dreapta** și trage pentru a roti camera.</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapStaticCamera_Line2" xml:space="preserve">
+    <value>Trage cu butonul stâng pentru a deplasa harta și derulează pentru zoom.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMapCreateGps_Line1" xml:space="preserve">
+    <value>Fă clic pe un punct al planetei pentru a crea un marcaj GPS.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMapCreateGps_Line2" xml:space="preserve">
+    <value>Marcajul este adăugat în lista ta GPS locală.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMapCamera_Line1" xml:space="preserve">
+    <value>Ține apăsat **butonul din dreapta** și trage pentru a roti planeta.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMapCamera_Line2" xml:space="preserve">
+    <value>Derulează pentru zoom. Rotirea desprinde camera de nava ta.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_NorthUp_Title" xml:space="preserve">
+    <value>Nordul în sus</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_NorthUp_Tooltip" xml:space="preserve">
+    <value>Păstrează nordul planetei în partea de sus a hărții.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CurrentUp_Title" xml:space="preserve">
+    <value>Nava în sus</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CurrentUp_Tooltip" xml:space="preserve">
+    <value>Folosește direcția actuală a navei ca direcție în sus a hărții.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_FollowCamera_Title" xml:space="preserve">
+    <value>Urmărește nava</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_FollowCamera_Tooltip" xml:space="preserve">
+    <value>Menține camera hărții ancorată de navă.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_FreeCamera_Title" xml:space="preserve">
+    <value>Cameră liberă</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_FreeCamera_Tooltip" xml:space="preserve">
+    <value>Menține camera hărții fixă până când urmărirea este activată din nou.</value>
+  </data>
+  <data name="LcdMod_Gps_DisplayMyGps_Title" xml:space="preserve">
+    <value>Afișează GPS-urile mele</value>
+  </data>
+  <data name="LcdMod_Gps_DisplayMyGps_Tooltip" xml:space="preserve">
+    <value>Afișează pe harta statică marcajele GPS setate să apară pe HUD.</value>
+  </data>
+  <data name="LcdMod_Gps_IncludeRadioSignals_Title" xml:space="preserve">
+    <value>Include semnalele radio</value>
+  </data>
+  <data name="LcdMod_Gps_IncludeRadioSignals_Tooltip" xml:space="preserve">
+    <value>Afișează pe harta statică semnalele active ale antenelor, balizelor și antenelor laser conectate care ajung la această grilă.</value>
+  </data>
+  <data name="LcdMod_Gps_Available_Title" xml:space="preserve">
+    <value>GPS-uri disponibile</value>
+  </data>
+  <data name="LcdMod_Gps_AlwaysDisplayed_Title" xml:space="preserve">
+    <value>Afișează mereu GPS-urile</value>
+  </data>
+  <data name="LcdMod_Gps_Add_Title" xml:space="preserve">
+    <value>Adaugă GPS</value>
+  </data>
+  <data name="LcdMod_Gps_Remove_Title" xml:space="preserve">
+    <value>Elimină GPS</value>
+  </data>
+  <data name="LcdMod_Gps_Unnamed" xml:space="preserve">
+    <value>GPS</value>
+  </data>
+  <data name="LcdMod_Gps_ClusterFormat" xml:space="preserve">
+    <value>{0} GPS</value>
+  </data>
+  <data name="LcdMod_Gps_CreatedFormat" xml:space="preserve">
+    <value>GPS creat: {0}</value>
+  </data>
+  <data name="LcdMod_Gps_Unknown_Name" xml:space="preserve">
+    <value>Necunoscut</value>
   </data>
 </root>

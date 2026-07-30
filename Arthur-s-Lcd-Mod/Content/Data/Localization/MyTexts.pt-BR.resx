@@ -106,6 +106,12 @@
     <data name="LcdMod_StarMapSurface" xml:space="preserve">
     <value>Mapa Estelar</value>
   </data>
+    <data name="LcdMod_Planetarium" xml:space="preserve">
+    <value>Planetário</value>
+  </data>
+    <data name="LcdMod_Hud" xml:space="preserve">
+    <value>HUD</value>
+  </data>
     <data name="LcdMod_OreScannerRadar" xml:space="preserve">
     <value>Radar detector de minério</value>
   </data>
@@ -465,7 +471,7 @@
     <value>Apenas sinais de rádio são detectados além de 3 km.</value>
   </data>
     <data name="LcdMod_Grid" xml:space="preserve">
-    <value>Grade</value>
+    <value>grid</value>
   </data>
     <data name="LcdMod_List" xml:space="preserve">
     <value>Lista</value>
@@ -608,7 +614,7 @@
     <value>Organizar</value>
   </data>
   <data name="LcdMod_SubGrid" xml:space="preserve">
-    <value>Subgrade</value>
+    <value>Subgrid</value>
   </data>
   <data name="LcdMod_Transfer_Send" xml:space="preserve">
     <value>Mandar itens</value>
@@ -1078,5 +1084,83 @@ Vamos aguardar um pouco e então reiniciá-la para você.</value>
   </data>
   <data name="LcdMod_AudioBroadcast_RequestedFormat" xml:space="preserve">
     <value>Transmissão de áudio solicitada: {0}</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapStaticCamera_Line1" xml:space="preserve">
+    <value>Segure o **botão direito** e arraste para orbitar a câmera.</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapStaticCamera_Line2" xml:space="preserve">
+    <value>Arraste com o botão esquerdo para mover o mapa e use o scroll para aplicar zoom.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMapCreateGps_Line1" xml:space="preserve">
+    <value>Clique em um ponto do planeta para criar um marcador GPS.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMapCreateGps_Line2" xml:space="preserve">
+    <value>O marcador é adicionado à sua lista de GPS local.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMapCamera_Line1" xml:space="preserve">
+    <value>Segure o **botão direito** e arraste para girar o planeta.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMapCamera_Line2" xml:space="preserve">
+    <value>Use o scroll para aplicar zoom. Ao girar, a câmera se desvincula da sua nave.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_NorthUp_Title" xml:space="preserve">
+    <value>Norte para cima</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_NorthUp_Tooltip" xml:space="preserve">
+    <value>Mantém o norte planetário na parte superior do mapa.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CurrentUp_Title" xml:space="preserve">
+    <value>Nave para cima</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CurrentUp_Tooltip" xml:space="preserve">
+    <value>Usa o rumo atual da nave como direção superior do mapa.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_FollowCamera_Title" xml:space="preserve">
+    <value>Seguir nave</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_FollowCamera_Tooltip" xml:space="preserve">
+    <value>Mantém a câmera do mapa ancorada à nave.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_FreeCamera_Title" xml:space="preserve">
+    <value>Câmera livre</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_FreeCamera_Tooltip" xml:space="preserve">
+    <value>Mantém a câmera do mapa fixa até o modo de acompanhamento ser ativado novamente.</value>
+  </data>
+  <data name="LcdMod_Gps_DisplayMyGps_Title" xml:space="preserve">
+    <value>Exibir meus GPS</value>
+  </data>
+  <data name="LcdMod_Gps_DisplayMyGps_Tooltip" xml:space="preserve">
+    <value>Exibe no mapa estático seus marcadores GPS configurados para aparecer no HUD.</value>
+  </data>
+  <data name="LcdMod_Gps_IncludeRadioSignals_Title" xml:space="preserve">
+    <value>Incluir sinais de rádio</value>
+  </data>
+  <data name="LcdMod_Gps_IncludeRadioSignals_Tooltip" xml:space="preserve">
+    <value>Exibe no mapa estático os sinais ativos de antenas, sinalizadores e antenas a laser conectadas que alcançam esta grid.</value>
+  </data>
+  <data name="LcdMod_Gps_Available_Title" xml:space="preserve">
+    <value>GPS disponíveis</value>
+  </data>
+  <data name="LcdMod_Gps_AlwaysDisplayed_Title" xml:space="preserve">
+    <value>Sempre exibir GPS</value>
+  </data>
+  <data name="LcdMod_Gps_Add_Title" xml:space="preserve">
+    <value>Adicionar GPS</value>
+  </data>
+  <data name="LcdMod_Gps_Remove_Title" xml:space="preserve">
+    <value>Remover GPS</value>
+  </data>
+  <data name="LcdMod_Gps_Unnamed" xml:space="preserve">
+    <value>GPS</value>
+  </data>
+  <data name="LcdMod_Gps_ClusterFormat" xml:space="preserve">
+    <value>{0} GPS</value>
+  </data>
+  <data name="LcdMod_Gps_CreatedFormat" xml:space="preserve">
+    <value>GPS criado: {0}</value>
+  </data>
+  <data name="LcdMod_Gps_Unknown_Name" xml:space="preserve">
+    <value>Desconhecido</value>
   </data>
 </root>

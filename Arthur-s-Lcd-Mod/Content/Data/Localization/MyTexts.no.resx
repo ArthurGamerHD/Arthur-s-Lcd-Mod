@@ -144,6 +144,12 @@
     <data name="LcdMod_StarMapSurface" xml:space="preserve">
     <value>Stjernekart</value>
   </data>
+    <data name="LcdMod_Planetarium" xml:space="preserve">
+    <value>Planetarium</value>
+  </data>
+    <data name="LcdMod_Hud" xml:space="preserve">
+    <value>HUD</value>
+  </data>
     <data name="LcdMod_DockingAlignment" xml:space="preserve">
     <value>Dokkingjustering</value>
   </data>
@@ -1077,5 +1083,83 @@ Vi venter en stund og starter den deretter på nytt for deg.</value>
   </data>
   <data name="LcdMod_AudioBroadcast_RequestedFormat" xml:space="preserve">
     <value>Lydkringkasting forespurt: {0}</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapStaticCamera_Line1" xml:space="preserve">
+    <value>Hold **høyre museknapp** inne og dra for å rotere kameraet.</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapStaticCamera_Line2" xml:space="preserve">
+    <value>Dra med venstre museknapp for å panorere, og rull for å zoome.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMapCreateGps_Line1" xml:space="preserve">
+    <value>Klikk på et punkt på planeten for å opprette en GPS-markør.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMapCreateGps_Line2" xml:space="preserve">
+    <value>Markøren legges til i den lokale GPS-listen din.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMapCamera_Line1" xml:space="preserve">
+    <value>Hold **høyre museknapp** inne og dra for å rotere planeten.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMapCamera_Line2" xml:space="preserve">
+    <value>Rull for å zoome. Rotering kobler kameraet fra skipet ditt.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_NorthUp_Title" xml:space="preserve">
+    <value>Nord opp</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_NorthUp_Tooltip" xml:space="preserve">
+    <value>Holder planetens nord øverst på kartet.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CurrentUp_Title" xml:space="preserve">
+    <value>Skip opp</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CurrentUp_Tooltip" xml:space="preserve">
+    <value>Bruker skipets gjeldende kurs som kartets oppretning.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_FollowCamera_Title" xml:space="preserve">
+    <value>Følg skip</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_FollowCamera_Tooltip" xml:space="preserve">
+    <value>Holder kartkameraet forankret til skipet.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_FreeCamera_Title" xml:space="preserve">
+    <value>Fritt kamera</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_FreeCamera_Tooltip" xml:space="preserve">
+    <value>Holder kartkameraet fast til følgemodus aktiveres igjen.</value>
+  </data>
+  <data name="LcdMod_Gps_DisplayMyGps_Title" xml:space="preserve">
+    <value>Vis mine GPS-punkter</value>
+  </data>
+  <data name="LcdMod_Gps_DisplayMyGps_Tooltip" xml:space="preserve">
+    <value>Viser GPS-markørene dine som er satt til Vis på HUD, på det statiske kartet.</value>
+  </data>
+  <data name="LcdMod_Gps_IncludeRadioSignals_Title" xml:space="preserve">
+    <value>Ta med radiosignaler</value>
+  </data>
+  <data name="LcdMod_Gps_IncludeRadioSignals_Tooltip" xml:space="preserve">
+    <value>Viser aktive signaler fra antenner, radiofyr og tilkoblede laserantenner som når dette rutenettet, på det statiske kartet.</value>
+  </data>
+  <data name="LcdMod_Gps_Available_Title" xml:space="preserve">
+    <value>Tilgjengelige GPS-punkter</value>
+  </data>
+  <data name="LcdMod_Gps_AlwaysDisplayed_Title" xml:space="preserve">
+    <value>Vis alltid GPS-punkter</value>
+  </data>
+  <data name="LcdMod_Gps_Add_Title" xml:space="preserve">
+    <value>Legg til GPS</value>
+  </data>
+  <data name="LcdMod_Gps_Remove_Title" xml:space="preserve">
+    <value>Fjern GPS</value>
+  </data>
+  <data name="LcdMod_Gps_Unnamed" xml:space="preserve">
+    <value>GPS</value>
+  </data>
+  <data name="LcdMod_Gps_ClusterFormat" xml:space="preserve">
+    <value>{0} GPS</value>
+  </data>
+  <data name="LcdMod_Gps_CreatedFormat" xml:space="preserve">
+    <value>GPS opprettet: {0}</value>
+  </data>
+  <data name="LcdMod_Gps_Unknown_Name" xml:space="preserve">
+    <value>Ukjent</value>
   </data>
 </root>

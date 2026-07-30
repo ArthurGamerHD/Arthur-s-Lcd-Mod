@@ -76,6 +76,12 @@
     <data name="LcdMod_StarMapSurface" xml:space="preserve">
     <value>Sternenkarte</value>
   </data>
+    <data name="LcdMod_Planetarium" xml:space="preserve">
+    <value>Planetarium</value>
+  </data>
+    <data name="LcdMod_Hud" xml:space="preserve">
+    <value>HUD</value>
+  </data>
     <data name="LcdMod_EnergyDashboard" xml:space="preserve">
     <value>Energie-Dashboard</value>
   </data>
@@ -1078,5 +1084,83 @@ Wir warten einen Moment und starten sie dann für dich neu.</value>
   </data>
   <data name="LcdMod_AudioBroadcast_RequestedFormat" xml:space="preserve">
     <value>Audioübertragung angefordert: {0}</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapStaticCamera_Line1" xml:space="preserve">
+    <value>Halte die **rechte Maustaste** gedrückt und ziehe, um die Kamera zu umkreisen.</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapStaticCamera_Line2" xml:space="preserve">
+    <value>Ziehe mit der linken Maustaste zum Verschieben und scrolle zum Zoomen.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMapCreateGps_Line1" xml:space="preserve">
+    <value>Klicke auf einen Punkt des Planeten, um eine GPS-Markierung zu erstellen.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMapCreateGps_Line2" xml:space="preserve">
+    <value>Die Markierung wird deiner lokalen GPS-Liste hinzugefügt.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMapCamera_Line1" xml:space="preserve">
+    <value>Halte die **rechte Maustaste** gedrückt und ziehe, um den Planeten zu drehen.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMapCamera_Line2" xml:space="preserve">
+    <value>Scrolle zum Zoomen. Durch Drehen wird die Kamera vom Schiff gelöst.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_NorthUp_Title" xml:space="preserve">
+    <value>Norden oben</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_NorthUp_Tooltip" xml:space="preserve">
+    <value>Hält den planetaren Norden am oberen Rand der Karte.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CurrentUp_Title" xml:space="preserve">
+    <value>Schiff oben</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CurrentUp_Tooltip" xml:space="preserve">
+    <value>Verwendet den aktuellen Kurs des Schiffs als obere Kartenrichtung.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_FollowCamera_Title" xml:space="preserve">
+    <value>Schiff folgen</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_FollowCamera_Tooltip" xml:space="preserve">
+    <value>Hält die Kartenkamera am Schiff verankert.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_FreeCamera_Title" xml:space="preserve">
+    <value>Freie Kamera</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_FreeCamera_Tooltip" xml:space="preserve">
+    <value>Hält die Kartenkamera fest, bis der Folgemodus wieder aktiviert wird.</value>
+  </data>
+  <data name="LcdMod_Gps_DisplayMyGps_Title" xml:space="preserve">
+    <value>Meine GPS anzeigen</value>
+  </data>
+  <data name="LcdMod_Gps_DisplayMyGps_Tooltip" xml:space="preserve">
+    <value>Zeigt auf der statischen Karte deine GPS-Markierungen an, die auf „Auf HUD anzeigen“ gesetzt sind.</value>
+  </data>
+  <data name="LcdMod_Gps_IncludeRadioSignals_Title" xml:space="preserve">
+    <value>Funksignale einblenden</value>
+  </data>
+  <data name="LcdMod_Gps_IncludeRadioSignals_Tooltip" xml:space="preserve">
+    <value>Zeigt auf der statischen Karte aktive Signale von Antennen, Funkfeuern und verbundenen Laserantennen an, die dieses Grid erreichen.</value>
+  </data>
+  <data name="LcdMod_Gps_Available_Title" xml:space="preserve">
+    <value>Verfügbare GPS</value>
+  </data>
+  <data name="LcdMod_Gps_AlwaysDisplayed_Title" xml:space="preserve">
+    <value>GPS immer anzeigen</value>
+  </data>
+  <data name="LcdMod_Gps_Add_Title" xml:space="preserve">
+    <value>GPS hinzufügen</value>
+  </data>
+  <data name="LcdMod_Gps_Remove_Title" xml:space="preserve">
+    <value>GPS entfernen</value>
+  </data>
+  <data name="LcdMod_Gps_Unnamed" xml:space="preserve">
+    <value>GPS</value>
+  </data>
+  <data name="LcdMod_Gps_ClusterFormat" xml:space="preserve">
+    <value>{0} GPS</value>
+  </data>
+  <data name="LcdMod_Gps_CreatedFormat" xml:space="preserve">
+    <value>GPS erstellt: {0}</value>
+  </data>
+  <data name="LcdMod_Gps_Unknown_Name" xml:space="preserve">
+    <value>Unbekannt</value>
   </data>
 </root>

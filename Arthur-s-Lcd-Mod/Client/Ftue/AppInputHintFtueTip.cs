@@ -26,13 +26,15 @@ namespace LcdMod.Client.Ftue
 
         public Func<InteractiveSurfaceScript, TApp, Action, Action> CompletionBinder { get; set; }
 
+        public Func<InteractiveSurfaceScript, TApp, bool> ActivationCondition { get; set; }
+
         internal override void OnVisualContact(
             InteractiveSurfaceScript surface,
             IApp app,
             Vector2 coordinates)
         {
             var typedApp = app as TApp;
-            if (typedApp != null)
+            if (typedApp != null && IsActiveFor(surface, typedApp))
                 Show(surface, typedApp, null);
         }
 
@@ -46,7 +48,8 @@ namespace LcdMod.Client.Ftue
                 return;
 
             var typedApp = app as TApp;
-            if (_completionCondition != null && typedApp != null && control != null &&
+            if (_completionCondition != null && typedApp != null &&
+                IsActiveFor(surface, typedApp) && control != null &&
                 _completionCondition(surface, typedApp, control))
             {
                 Complete(surface);
@@ -67,6 +70,11 @@ namespace LcdMod.Client.Ftue
                 if (IsTriggered(surface))
                     complete();
             });
+        }
+
+        bool IsActiveFor(InteractiveSurfaceScript surface, TApp app)
+        {
+            return ActivationCondition == null || ActivationCondition(surface, app);
         }
 
         protected override string BuildMarkdown(

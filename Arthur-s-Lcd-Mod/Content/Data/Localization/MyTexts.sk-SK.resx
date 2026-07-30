@@ -144,6 +144,12 @@
     <data name="LcdMod_StarMapSurface" xml:space="preserve">
     <value>Hviezdna mapa</value>
   </data>
+    <data name="LcdMod_Planetarium" xml:space="preserve">
+    <value>Planetárium</value>
+  </data>
+    <data name="LcdMod_Hud" xml:space="preserve">
+    <value>HUD</value>
+  </data>
     <data name="LcdMod_DockingAlignment" xml:space="preserve">
     <value>Zarovnanie dokovania</value>
   </data>
@@ -1077,5 +1083,83 @@ Chvíľu počkáme a potom ju za vás reštartujeme.</value>
   </data>
   <data name="LcdMod_AudioBroadcast_RequestedFormat" xml:space="preserve">
     <value>Bolo vyžiadané vysielanie zvuku: {0}</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapStaticCamera_Line1" xml:space="preserve">
+    <value>Podržte **pravé tlačidlo myši** a ťahaním otáčajte kamerou.</value>
+  </data>
+  <data name="LcdMod_Ftue_StarMapStaticCamera_Line2" xml:space="preserve">
+    <value>Ľavým tlačidlom mapu posúvajte a kolieskom približujte.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMapCreateGps_Line1" xml:space="preserve">
+    <value>Kliknutím na bod na planéte vytvoríte značku GPS.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMapCreateGps_Line2" xml:space="preserve">
+    <value>Značka sa pridá do vášho miestneho zoznamu GPS.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMapCamera_Line1" xml:space="preserve">
+    <value>Podržte **pravé tlačidlo myši** a ťahaním otáčajte planétou.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMapCamera_Line2" xml:space="preserve">
+    <value>Kolieskom približujte. Otočenie odomkne kameru od vašej lode.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_NorthUp_Title" xml:space="preserve">
+    <value>Sever hore</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_NorthUp_Tooltip" xml:space="preserve">
+    <value>Udržiava planetárny sever v hornej časti mapy.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CurrentUp_Title" xml:space="preserve">
+    <value>Loď hore</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CurrentUp_Tooltip" xml:space="preserve">
+    <value>Použije aktuálny smer lode ako horný smer mapy.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_FollowCamera_Title" xml:space="preserve">
+    <value>Sledovať loď</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_FollowCamera_Tooltip" xml:space="preserve">
+    <value>Udržiava kameru mapy ukotvenú k lodi.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_FreeCamera_Title" xml:space="preserve">
+    <value>Voľná kamera</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_FreeCamera_Tooltip" xml:space="preserve">
+    <value>Udržiava kameru mapy pevnú, kým znova nezapnete sledovanie.</value>
+  </data>
+  <data name="LcdMod_Gps_DisplayMyGps_Title" xml:space="preserve">
+    <value>Zobraziť moje GPS</value>
+  </data>
+  <data name="LcdMod_Gps_DisplayMyGps_Tooltip" xml:space="preserve">
+    <value>Na statickej mape zobrazí vaše značky GPS nastavené na zobrazenie na HUD.</value>
+  </data>
+  <data name="LcdMod_Gps_IncludeRadioSignals_Title" xml:space="preserve">
+    <value>Zahrnúť rádiové signály</value>
+  </data>
+  <data name="LcdMod_Gps_IncludeRadioSignals_Tooltip" xml:space="preserve">
+    <value>Na statickej mape zobrazí aktívne signály antén, majákov a pripojených laserových antén, ktoré dosiahnu túto mriežku.</value>
+  </data>
+  <data name="LcdMod_Gps_Available_Title" xml:space="preserve">
+    <value>Dostupné GPS</value>
+  </data>
+  <data name="LcdMod_Gps_AlwaysDisplayed_Title" xml:space="preserve">
+    <value>Vždy zobrazené GPS</value>
+  </data>
+  <data name="LcdMod_Gps_Add_Title" xml:space="preserve">
+    <value>Pridať GPS</value>
+  </data>
+  <data name="LcdMod_Gps_Remove_Title" xml:space="preserve">
+    <value>Odobrať GPS</value>
+  </data>
+  <data name="LcdMod_Gps_Unnamed" xml:space="preserve">
+    <value>GPS</value>
+  </data>
+  <data name="LcdMod_Gps_ClusterFormat" xml:space="preserve">
+    <value>{0} GPS</value>
+  </data>
+  <data name="LcdMod_Gps_CreatedFormat" xml:space="preserve">
+    <value>GPS vytvorené: {0}</value>
+  </data>
+  <data name="LcdMod_Gps_Unknown_Name" xml:space="preserve">
+    <value>Neznáme</value>
   </data>
 </root>

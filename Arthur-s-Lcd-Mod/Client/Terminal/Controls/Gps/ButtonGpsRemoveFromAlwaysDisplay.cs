@@ -3,6 +3,8 @@ using LcdMod.Client.Terminal.Controls.Filter.Buttons;
 using LcdMod.Client.Terminal.Controls.Filter.Listbox;
 using Sandbox.ModAPI;
 
+using static LcdMod.Common.Helpers.Constants;
+
 namespace LcdMod.Client.Terminal.Controls.Gps
 {
     public sealed partial class ButtonGpsRemoveFromAlwaysDisplay : TerminalControlFilterButton
@@ -12,7 +14,7 @@ namespace LcdMod.Client.Terminal.Controls.Gps
             TerminalControlsListbox targetList)
             : base(sourceList, targetList)
         {
-            CreateButton("GpsRemoveFromAlwaysDisplay", "Remove GPS");
+            CreateButton("GpsRemoveFromAlwaysDisplay", MOD_PREFIX + "Gps_Remove_Title");
         }
 
         protected override bool IsAvailableForCurrentConfig(IMyTerminalBlock block)

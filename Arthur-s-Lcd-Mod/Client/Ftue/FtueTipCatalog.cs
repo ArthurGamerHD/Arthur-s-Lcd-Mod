@@ -4,6 +4,7 @@ using System.IO;
 using LcdMod.Client.Apps;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Gui.ControlsTemplates;
+using LcdMod.Client.Gui.ControlsTemplates.Custom.Planet;
 using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts.Abstract;
@@ -29,6 +30,9 @@ namespace LcdMod.Client.Ftue
                 CreateFarmPlotDetailsTip(),
                 CreatePowerFilledDetailsTip(),
                 CreateStarMapPlanetDetailsTip(),
+                CreateStarMapStaticCameraTip(),
+                CreatePlanetaryMapCreateGpsTip(),
+                CreatePlanetaryMapCameraTip(),
                 CreatePictureFrameCustomTexturesTip(),
                 CreateRadarRangeTip()
             };
@@ -108,8 +112,75 @@ namespace LcdMod.Client.Ftue
                 "starmap.planet-details",
                 Loc("StarMapPlanetDetails_Line1"),
                 Loc("StarMapPlanetDetails_Line2"),
-                (surface, app, control) => control is InteractiveCircleEntry);
+                (surface, app, control) =>
+                    control is InteractiveCircleEntry || control is PlanetGlobeControl);
             return tip;
+        }
+
+        static FtueTip CreateStarMapStaticCameraTip()
+        {
+            var tip = CreateAppInputHint<StarMapApp>(
+                "starmap.static-camera",
+                Loc("StarMapStaticCamera_Line1"),
+                Loc("StarMapStaticCamera_Line2"),
+                null);
+            tip.Placement = HintPlacement.Top;
+            tip.ActivationCondition = (surface, app) => app.PlanetariumMode;
+            tip.CompletionBinder = (surface, app, complete) =>
+            {
+                Action handler = () => CompleteSafely(surface, complete);
+                app.StaticCameraOrbitChanged += handler;
+                return () => app.StaticCameraOrbitChanged -= handler;
+            };
+            return tip;
+        }
+
+        static FtueTip CreatePlanetaryMapCreateGpsTip()
+        {
+            var tip = CreateAppInputHint<PlanetaryMapApp>(
+                "planetary-map.create-gps",
+                Loc("PlanetaryMapCreateGps_Line1"),
+                Loc("PlanetaryMapCreateGps_Line2"),
+                null);
+            tip.Placement = HintPlacement.Bottom;
+            tip.ActivationCondition = (surface, app) => app.CanCreateSurfaceGps;
+            tip.CompletionBinder = (surface, app, complete) =>
+            {
+                Action handler = () => CompleteSafely(surface, complete);
+                app.SurfaceGpsCreated += handler;
+                return () => app.SurfaceGpsCreated -= handler;
+            };
+            return tip;
+        }
+
+        static FtueTip CreatePlanetaryMapCameraTip()
+        {
+            var tip = CreateAppInputHint<PlanetaryMapApp>(
+                "planetary-map.camera",
+                Loc("PlanetaryMapCamera_Line1"),
+                Loc("PlanetaryMapCamera_Line2"),
+                null);
+            tip.Placement = HintPlacement.Top;
+            tip.ActivationCondition = (surface, app) => app.CanOrbitCamera;
+            tip.CompletionBinder = (surface, app, complete) =>
+            {
+                Action handler = () => CompleteSafely(surface, complete);
+                app.CameraOrbitChanged += handler;
+                return () => app.CameraOrbitChanged -= handler;
+            };
+            return tip;
+        }
+
+        static void CompleteSafely(InteractiveSurfaceScript surface, Action complete)
+        {
+            try
+            {
+                complete();
+            }
+            catch (Exception e)
+            {
+                ErrorHandlerHelper.LogError(e, surface);
+            }
         }
 
         static FtueTip CreatePictureFrameCustomTexturesTip()

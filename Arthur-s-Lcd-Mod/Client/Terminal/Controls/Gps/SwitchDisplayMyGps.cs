@@ -1,6 +1,7 @@
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
+using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.Terminal.Controls.Gps
 {
@@ -14,9 +15,9 @@ namespace LcdMod.Client.Terminal.Controls.Gps
             toggle.Getter = Getter;
             toggle.Setter = Setter;
             toggle.Visible = Visible;
-            toggle.Title = MyStringId.GetOrCompute("Display My GPS");
+            toggle.Title = MyStringId.GetOrCompute(MOD_PREFIX + "Gps_DisplayMyGps_Title");
             toggle.Tooltip = MyStringId.GetOrCompute(
-                "Display your GPS markers that are set to Show on HUD on the static map.");
+                MOD_PREFIX + "Gps_DisplayMyGps_Tooltip");
             toggle.OnText = MyStringId.GetOrCompute("HudInfoOn");
             toggle.OffText = MyStringId.GetOrCompute("HudInfoOff");
             TerminalControl = toggle;

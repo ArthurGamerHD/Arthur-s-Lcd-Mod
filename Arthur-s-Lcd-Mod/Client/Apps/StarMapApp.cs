@@ -14,7 +14,6 @@ using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Modules.Cartography;
 using LcdMod.Client.SurfaceScripts.Abstract;
-using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Utility;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
@@ -112,7 +111,7 @@ namespace LcdMod.Client.Apps
 
         // Static orbit rings are cached between renders and rebuilt whenever the
         // static camera, layout, or map data invalidates them.
-        bool _staticOrbitCacheValid;
+        bool _planetariumOrbitCacheValid;
         readonly List<MySprite> _cachedStaticBaseSprites = new List<MySprite>();
         readonly List<MySprite> _cachedStaticTitleSprites = new List<MySprite>();
         readonly List<MySprite> _cachedStaticRingSprites = new List<MySprite>();
@@ -171,6 +170,12 @@ namespace LcdMod.Client.Apps
         Vector2 _cursorPosition = new Vector2(float.NaN, float.NaN);
         long _lastCursorVisualContactFrame = long.MinValue;
         long _lastRadioSignalRefreshFrame = long.MinValue;
+        string _gpsCreatedStatus;
+        long _gpsCreatedStatusUntilFrame = long.MinValue;
+
+        public event Action StaticCameraOrbitChanged;
+
+        public bool PlanetariumMode => GeneralComponent.DisplayMode == 0;
 
         struct PlanetProjection
         {
@@ -258,19 +263,20 @@ namespace LcdMod.Client.Apps
         const float STATIC_RADIO_SIGNAL_LABEL_SCALE = 0.5f;
         const float STATIC_RADIO_SIGNAL_LABEL_GAP_PX = 5f;
         const float STATIC_RADIO_SIGNAL_CLUSTER_DISTANCE_PX = 30f;
+        const long GPS_CREATED_STATUS_FRAMES = 180L;
 
         public static readonly List<MyTerminalControlComboBoxItem> StarMapDisplayModes =
             new List<MyTerminalControlComboBoxItem>
             {
                 new MyTerminalControlComboBoxItem
                 {
-                    Key = (long)DisplayMode.Grid,
-                    Value = VRage.Utils.MyStringId.GetOrCompute("Dynamic")
+                    Key = 0,
+                    Value = VRage.Utils.MyStringId.GetOrCompute("LcdMod_Planetarium")
                 },
                 new MyTerminalControlComboBoxItem
                 {
-                    Key = (long)DisplayMode.Legacy,
-                    Value = VRage.Utils.MyStringId.GetOrCompute("Static")
+                    Key = 1,
+                    Value = VRage.Utils.MyStringId.GetOrCompute("LcdMod_Hud")
                 }
             };
 
@@ -289,10 +295,7 @@ namespace LcdMod.Client.Apps
             ApplyTextureQuality(LocalConfigManager.TextureQuality, false);
         }
 
-        public List<MyTerminalControlComboBoxItem> GetDisplayModes()
-        {
-            return StarMapDisplayModes;
-        }
+        public List<MyTerminalControlComboBoxItem> GetDisplayModes() => StarMapDisplayModes;
 
         public override void LayoutChanged()
         {
@@ -327,7 +330,7 @@ namespace LcdMod.Client.Apps
             _propertyLabelCache[name] = LocHelper.GetLoc(BuildPropertyLocKey(name));
         }
 
-        string BuildPropertyLocKey(string name) => MOD_PREFIX + "" + name + (GeneralComponent.DisplayMode == (int)DisplayMode.Grid ? "_Short" : string.Empty);
+        string BuildPropertyLocKey(string name) => MOD_PREFIX + "" + name + (!PlanetariumMode ? "_Short" : string.Empty);
 
         string FormatPropertyLine(string name, object value)
         {
@@ -341,12 +344,7 @@ namespace LcdMod.Client.Apps
             return string.Format(FormatingHelper.Culture, format, value);
         }
 
-        CursorType GetDefaultCursorType()
-        {
-            return GeneralComponent.DisplayMode == (int)DisplayMode.Legacy
-                ? CursorType.Default
-                : CursorType.None;
-        }
+        CursorType GetDefaultCursorType() => PlanetariumMode ? CursorType.Default : CursorType.None;
 
 
         void ClearCachedInteractiveEntries()
@@ -356,7 +354,7 @@ namespace LcdMod.Client.Apps
 
         void InvalidateStaticOrbitCache()
         {
-            _staticOrbitCacheValid = false;
+            _planetariumOrbitCacheValid = false;
             _cachedStaticBaseSprites.Clear();
             _cachedStaticTitleSprites.Clear();
             _cachedStaticFrontRingSprites.Clear();
@@ -505,17 +503,16 @@ namespace LcdMod.Client.Apps
             RequestedCursorType = GetDefaultCursorType();
             _suppressDynamicOverlays = false;
 
-            bool staticMode = GeneralComponent.DisplayMode == (int)DisplayMode.Legacy;
             bool hasPlanets;
 
-            if (staticMode && _staticOrbitCacheValid)
+            if (PlanetariumMode && _planetariumOrbitCacheValid)
             {
                 _baseSprites.AddRange(_cachedStaticBaseSprites);
                 _overlaySprites.AddRange(_cachedStaticTitleSprites);
 
                 hasPlanets = DrawPlanetMap(_groundSprites, _groundOcclusionSprites, _ringSprites, _frontRingSprites, _overlaySprites);
             }
-            else if (staticMode)
+            else if (PlanetariumMode)
             {
                 _cachedStaticBaseSprites.Clear();
                 _cachedStaticBaseSprites.AddRange(_baseSprites);
@@ -533,7 +530,7 @@ namespace LcdMod.Client.Apps
 
             if (hasPlanets)
             {
-                if (!staticMode && ShouldDrawFovHud())
+                if (!PlanetariumMode && ShouldDrawFovHud())
                     DrawFovHud(_overlaySprites, _fov);
             }
             else
@@ -541,7 +538,7 @@ namespace LcdMod.Client.Apps
                 DrawMessage(_overlaySprites, LocHelper.Empty, "Warning", ColorComponent.ResolveWarningColor(), GeneralComponent.GetScale());
             }
 
-            if (staticMode)
+            if (PlanetariumMode)
             {
                 _staticOrbitControl.SetRect(ViewBox);
                 _children.Insert(0, _staticOrbitControl);
@@ -564,6 +561,7 @@ namespace LcdMod.Client.Apps
             sprites.AddRange(_groundOcclusionSprites);
             sprites.AddRange(_frontRingSprites);
             sprites.AddRange(_overlaySprites);
+            AddGpsCreatedStatus(sprites);
         }
 
         void OnTextureQualityChanged(PlanetTextureQuality quality)
@@ -660,9 +658,8 @@ namespace LcdMod.Client.Apps
                 return false;
             bool hasDetectedPlanets = false;
 
-            bool staticMode = GeneralComponent.DisplayMode == (int)DisplayMode.Legacy;
-            if (staticMode)
-                return DrawStaticOrbitMap(ringSprites, frontRingSprites, planets);
+            if (PlanetariumMode)
+                return DrawSolar_SystemOrbitMap(ringSprites, frontRingSprites, planets);
 
             if (Block == null)
                 return false;
@@ -941,7 +938,7 @@ namespace LcdMod.Client.Apps
             int planetCount,
             MatrixD world)
         {
-            _staticOrbitCacheValid = false;
+            _planetariumOrbitCacheValid = false;
             _cachedDynamicWorldMatrix = world;
             _cachedDynamicViewBox = ViewBox;
             _cachedDynamicCursorPosition = CursorPosition;
@@ -2374,7 +2371,7 @@ namespace LcdMod.Client.Apps
             sprites.Add(MySprite.CreateClearClipRect());
         }
 
-        bool DrawStaticOrbitMap(
+        bool DrawSolar_SystemOrbitMap(
             List<MySprite> ringSprites,
             List<MySprite> frontRingSprites,
             Dictionary<long, MyPlanet> planets)
@@ -2666,7 +2663,7 @@ namespace LcdMod.Client.Apps
                 return b.RadiusWorld.CompareTo(a.RadiusWorld);
             });
 
-            if (!_staticOrbitCacheValid)
+            if (!_planetariumOrbitCacheValid)
             {
                 int ringStartIndex = ringSprites.Count;
                 int frontRingStartIndex = frontRingSprites.Count;
@@ -2706,7 +2703,7 @@ namespace LcdMod.Client.Apps
                 for (int i = frontRingStartIndex; i < frontRingSprites.Count; i++)
                     _cachedStaticFrontRingSprites.Add(frontRingSprites[i]);
 
-                _staticOrbitCacheValid = true;
+                _planetariumOrbitCacheValid = true;
             }
             else
             {
@@ -2979,8 +2976,13 @@ namespace LcdMod.Client.Apps
             }
 
             string name = isCluster
-                ? cluster.Count + " GPS"
-                : (string.IsNullOrWhiteSpace(marker.Name) ? "GPS" : marker.Name);
+                ? string.Format(
+                    FormatingHelper.Culture,
+                    LocHelper.GetLoc(MOD_PREFIX + "Gps_ClusterFormat"),
+                    cluster.Count)
+                : (string.IsNullOrWhiteSpace(marker.Name)
+                    ? LocHelper.GetLoc(MOD_PREFIX + "Gps_Unnamed")
+                    : marker.Name);
             Vector2 labelPosition = new Vector2(
                 screenPosition.X + markerRadius + STATIC_GPS_LABEL_GAP_PX * scale,
                 screenPosition.Y - lineHeight * 0.5f);
@@ -4291,7 +4293,7 @@ namespace LcdMod.Client.Apps
                     planet.Radius,
                     planet.GravityRange,
                     out jumpPoint,
-                    GeneralComponent.DisplayMode == 0))
+                    !PlanetariumMode))
             {
                 text = FormatPropertyLine("Jump", FormatingHelper.FormatBearing(GetReferenceMatrix(), jumpPoint));
                 return true;
@@ -4346,12 +4348,48 @@ namespace LcdMod.Client.Apps
 
             gps.GPSColor = color;
             gpsCollection.AddLocalGps(gps);
+            ShowGpsCreatedStatus(gps.Name);
+            Host.RenderSprites();
             return true;
         }
 
         static string GetLocalGpsName(string name)
         {
-            return string.IsNullOrWhiteSpace(name) ? "Unknown" : name;
+            return string.IsNullOrWhiteSpace(name)
+                ? LocHelper.GetLoc(MOD_PREFIX + "Gps_Unknown_Name")
+                : name;
+        }
+
+        void ShowGpsCreatedStatus(string name)
+        {
+            _gpsCreatedStatus = string.Format(
+                FormatingHelper.Culture,
+                LocHelper.GetLoc(MOD_PREFIX + "Gps_CreatedFormat"),
+                GetLocalGpsName(name));
+            _gpsCreatedStatusUntilFrame = GetCurrentGameFrame() + GPS_CREATED_STATUS_FRAMES;
+        }
+
+        void AddGpsCreatedStatus(List<MySprite> sprites)
+        {
+            if (sprites == null ||
+                string.IsNullOrWhiteSpace(_gpsCreatedStatus) ||
+                GetCurrentGameFrame() > _gpsCreatedStatusUntilFrame)
+            {
+                return;
+            }
+
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXT,
+                Data = _gpsCreatedStatus,
+                Position = new Vector2(
+                    ViewBox.Center.X,
+                    ViewBox.Bottom - 24f * Math.Max(0.5f, Scale)),
+                RotationOrScale = 0.45f * Math.Max(0.5f, Scale),
+                Color = ForegroundColor,
+                Alignment = TextAlignment.CENTER,
+                FontId = TextFont
+            });
         }
 
         void SendGpsToChat(string name, Vector3D position, Color color)
@@ -4372,9 +4410,7 @@ namespace LcdMod.Client.Apps
 
         static string SanitizeGpsName(string name)
         {
-            return string.IsNullOrWhiteSpace(name)
-                ? "Unknown"
-                : name.Replace(":", "_");
+            return GetLocalGpsName(name).Replace(":", "_");
         }
 
         bool IsJumpPointUiThrottled(long planetId, double distanceMeters, long currentRun, out int etaSeconds)
@@ -4466,10 +4502,8 @@ namespace LcdMod.Client.Apps
                 planet.ScreenPos - new Vector2(planet.MarkerRadius),
                 new Vector2(diameter)));
             UpdatePlanetGlobe(state.Entry, planet);
-
-            bool staticMode = GeneralComponent.DisplayMode == (int)DisplayMode.Legacy;
-            state.Entry.SetOnClick(staticMode ? OnStaticPlanetClicked : (Action<object, object>)null);
-            state.Entry.SetTooltip(staticMode ? state.StaticTooltip : null);
+            state.Entry.SetOnClick(PlanetariumMode ? OnStaticPlanetClicked : (Action<object, object>)null);
+            state.Entry.SetTooltip(PlanetariumMode ? state.StaticTooltip : null);
             state.UsedThisFrame = true;
             state.Entry.SetVisible(true);
 
@@ -4693,10 +4727,10 @@ namespace LcdMod.Client.Apps
 
         void OnStaticPlanetClicked(object dataContext, object sender)
         {
-            if (_closed || GeneralComponent.DisplayMode != (int)DisplayMode.Legacy)
+            if (_closed || !PlanetariumMode)
                 return;
 
-            long planetId = dataContext is long ? (long)dataContext : 0L;
+            long planetId = dataContext as long? ?? 0L;
             if (planetId == 0L)
                 return;
 
@@ -4713,12 +4747,8 @@ namespace LcdMod.Client.Apps
 
         bool OnStaticCameraMoved(object dataContext, object sender, Vector2 delta)
         {
-            if (_closed ||
-                GeneralComponent.DisplayMode != (int)DisplayMode.Legacy ||
-                !_staticPanProjectionValid)
-            {
+            if (_closed || !PlanetariumMode|| !_staticPanProjectionValid)
                 return false;
-            }
 
             Vector3D movement =
                 _staticPanScreenRightWorld * (-delta.X * _staticPanWorldUnitsPerPixel) +
@@ -4739,6 +4769,13 @@ namespace LcdMod.Client.Apps
 
             InvalidateStaticOrbitCache();
             Host.RenderSprites();
+
+            if (PlanetariumMode)
+            {
+                var staticCameraOrbitChanged = StaticCameraOrbitChanged;
+                if (staticCameraOrbitChanged != null)
+                    staticCameraOrbitChanged();
+            }
         }
 
         public void OnLookAt(Vector2 onScreenCoordinates)

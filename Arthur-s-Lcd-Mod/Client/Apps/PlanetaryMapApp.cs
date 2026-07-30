@@ -9,6 +9,7 @@ using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Custom.Camera;
 using LcdMod.Client.Gui.ControlsTemplates.Custom.Planet;
 using LcdMod.Client.Gui.Styling;
+using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Modules.Cartography;
 using LcdMod.Client.Terminal.Controls;
@@ -68,6 +69,7 @@ namespace LcdMod.Client.Apps
         const float RADIO_SIGNAL_LABEL_SCALE = 0.5f;
         const float RADIO_SIGNAL_LABEL_GAP_PIXELS = 5f;
         const float RADIO_SIGNAL_CLUSTER_DISTANCE_PIXELS = 30f;
+        const long GPS_CREATED_STATUS_FRAMES = 180L;
 
         readonly List<MySprite> _sprites = new List<MySprite>();
         readonly List<MySprite> _cachedShipMarkerSprites = new List<MySprite>();
@@ -130,7 +132,22 @@ namespace LcdMod.Client.Apps
         long _lastRadioSignalRefreshFrame = long.MinValue;
         int _lastCreatedSurfaceGpsHash;
         bool _hasLastCreatedSurfaceGps;
+        string _gpsCreatedStatus;
+        long _gpsCreatedStatusUntilFrame = long.MinValue;
         bool _closed;
+
+        public event Action SurfaceGpsCreated;
+        public event Action CameraOrbitChanged;
+
+        public bool CanCreateSurfaceGps
+        {
+            get { return _planet != null && !_planet.MarkedForClose; }
+        }
+
+        public bool CanOrbitCamera
+        {
+            get { return CanCreateSurfaceGps; }
+        }
 
         public PlanetaryMapApp(IAppHost host)
             : this(host, Matrix.Identity)
@@ -146,6 +163,7 @@ namespace LcdMod.Client.Apps
             _planetControl.SetZoom(_zoom);
             _planetControl.SetCursor(CursorType.Hand);
             _planetControl.SurfaceClicked = OnPlanetSurfaceClicked;
+            _planetControl.ClickSound = AudioHelper.HudGps3;
 
             _orbitControl = AddLogicalChild(
                 new OrbitCameraControl(default(RectangleF)));
@@ -161,6 +179,12 @@ namespace LcdMod.Client.Apps
             _orientationButton.GetState = delegate { return _northUp; };
             _orientationButton.BorderThicknessPixels = 0f;
             _orientationButton.CustomRender = RenderOrientationButton;
+            _orientationButton.SetTooltip(new InteractiveTooltip(
+                GetOrientationTooltipTitle,
+                () => new ITooltipLine[]
+                {
+                    new StaticTooltipLine(GetOrientationTooltipText())
+                }));
 
             _followButtonModel = new ButtonModel
             {
@@ -172,6 +196,12 @@ namespace LcdMod.Client.Apps
             _followButton.GetState = delegate { return _followCamera; };
             _followButton.BorderThicknessPixels = 0f;
             _followButton.CustomRender = RenderFollowButton;
+            _followButton.SetTooltip(new InteractiveTooltip(
+                GetFollowTooltipTitle,
+                () => new ITooltipLine[]
+                {
+                    new StaticTooltipLine(GetFollowTooltipText())
+                }));
 
             _children.Add(_planetControl);
             _children.Add(_orbitControl);
@@ -255,6 +285,8 @@ namespace LcdMod.Client.Apps
 
             if (!string.IsNullOrWhiteSpace(_error))
                 AddBottomStatus(_error, new Color(255, 80, 80));
+            else
+                AddGpsCreatedStatus();
 
             RenderCameraControls();
             FinalizeMarkerInteractiveFrame();
@@ -640,6 +672,9 @@ namespace LcdMod.Client.Apps
 
             UpdatePlanetControl();
             Host.RenderSprites();
+            var cameraOrbitChanged = CameraOrbitChanged;
+            if (cameraOrbitChanged != null)
+                cameraOrbitChanged();
         }
 
         void OnOrientationButtonClicked(ButtonModel model, object sender)
@@ -772,7 +807,7 @@ namespace LcdMod.Client.Apps
         void SetNorthUp(bool northUp)
         {
             _northUp = northUp;
-            _orientationButtonModel.Text = _northUp ? "N" : "Current";
+            _orientationButtonModel.Text = GetOrientationTooltipTitle();
             _orientationButton.MarkDirty();
         }
 
@@ -844,7 +879,7 @@ namespace LcdMod.Client.Apps
 
         void UpdateFollowButtonState()
         {
-            _followButtonModel.Text = _followCamera ? "Lock" : "RotationPlane";
+            _followButtonModel.Text = GetFollowTooltipTitle();
             _followButton.MarkDirty();
         }
 
@@ -889,6 +924,34 @@ namespace LcdMod.Client.Apps
         {
             return Vector3D.DistanceSquared(left, right) <=
                    STATIC_CAMERA_CONFIG_EPSILON_METERS * STATIC_CAMERA_CONFIG_EPSILON_METERS;
+        }
+
+        string GetOrientationTooltipTitle()
+        {
+            return LocHelper.GetLoc(MOD_PREFIX + (_northUp
+                ? "PlanetaryMap_NorthUp_Title"
+                : "PlanetaryMap_CurrentUp_Title"));
+        }
+
+        string GetOrientationTooltipText()
+        {
+            return LocHelper.GetLoc(MOD_PREFIX + (_northUp
+                ? "PlanetaryMap_NorthUp_Tooltip"
+                : "PlanetaryMap_CurrentUp_Tooltip"));
+        }
+
+        string GetFollowTooltipTitle()
+        {
+            return LocHelper.GetLoc(MOD_PREFIX + (_followCamera
+                ? "PlanetaryMap_FollowCamera_Title"
+                : "PlanetaryMap_FreeCamera_Title"));
+        }
+
+        string GetFollowTooltipText()
+        {
+            return LocHelper.GetLoc(MOD_PREFIX + (_followCamera
+                ? "PlanetaryMap_FollowCamera_Tooltip"
+                : "PlanetaryMap_FreeCamera_Tooltip"));
         }
 
         void RenderCameraControls()
@@ -1299,8 +1362,13 @@ namespace LcdMod.Client.Apps
             }
 
             string name = isCluster
-                ? cluster.Count + " GPS"
-                : (string.IsNullOrWhiteSpace(marker.Name) ? "GPS" : marker.Name);
+                ? string.Format(
+                    FormatingHelper.Culture,
+                    LocHelper.GetLoc(MOD_PREFIX + "Gps_ClusterFormat"),
+                    cluster.Count)
+                : (string.IsNullOrWhiteSpace(marker.Name)
+                    ? LocHelper.GetLoc(MOD_PREFIX + "Gps_Unnamed")
+                    : marker.Name);
             float lineHeight = MeasureLineHeight(textScale);
             Vector2 labelPosition = new Vector2(
                 screenPosition.X + markerRadius + GPS_LABEL_GAP_PIXELS * scale,
@@ -1645,6 +1713,12 @@ namespace LcdMod.Client.Apps
             gpsCollection.AddLocalGps(gps);
             _lastCreatedSurfaceGpsHash = gps.Hash;
             _hasLastCreatedSurfaceGps = true;
+            ShowGpsCreatedStatus(gps.Name);
+            Host.RenderSprites();
+
+            var surfaceGpsCreated = SurfaceGpsCreated;
+            if (surfaceGpsCreated != null)
+                surfaceGpsCreated();
             return true;
         }
 
@@ -1658,18 +1732,23 @@ namespace LcdMod.Client.Apps
         void CreateLocalGpsCopy(string name, Vector3D position, Color color)
         {
             var session = MyAPIGateway.Session;
-            var gpsCollection = session?.GPS;
+            var gpsCollection = session == null ? null : session.GPS;
+            if (gpsCollection == null) return;
 
-            var gps = gpsCollection?.Create(GetLocalGpsName(name), string.Empty, position, false, true);
+            var gps = gpsCollection.Create(GetLocalGpsName(name), string.Empty, position, false, true);
             if (gps == null) return;
 
             gps.GPSColor = color;
             gpsCollection.AddLocalGps(gps);
+            ShowGpsCreatedStatus(gps.Name);
+            Host.RenderSprites();
         }
 
         static string GetLocalGpsName(string name)
         {
-            return string.IsNullOrWhiteSpace(name) ? "Unknown" : name;
+            return string.IsNullOrWhiteSpace(name)
+                ? LocHelper.GetLoc(MOD_PREFIX + "Gps_Unknown_Name")
+                : name;
         }
 
         static string FormatSurfaceGpsName(Vector3 localDirection)
@@ -1932,6 +2011,26 @@ namespace LcdMod.Client.Apps
             return MyAPIGateway.Session != null
                 ? MyAPIGateway.Session.GameplayFrameCounter
                 : 0L;
+        }
+
+        void ShowGpsCreatedStatus(string name)
+        {
+            _gpsCreatedStatus = string.Format(
+                FormatingHelper.Culture,
+                LocHelper.GetLoc(MOD_PREFIX + "Gps_CreatedFormat"),
+                GetLocalGpsName(name));
+            _gpsCreatedStatusUntilFrame = GetCurrentFrame() + GPS_CREATED_STATUS_FRAMES;
+        }
+
+        void AddGpsCreatedStatus()
+        {
+            if (string.IsNullOrWhiteSpace(_gpsCreatedStatus) ||
+                GetCurrentFrame() > _gpsCreatedStatusUntilFrame)
+            {
+                return;
+            }
+
+            AddBottomStatus(_gpsCreatedStatus, Host.ForegroundColor);
         }
 
         void AddCenteredStatus(string text, Color color)

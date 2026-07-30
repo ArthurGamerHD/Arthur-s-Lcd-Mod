@@ -7,6 +7,8 @@ using Sandbox.ModAPI;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 
+using static LcdMod.Common.Helpers.Constants;
+
 namespace LcdMod.Client.Terminal.Controls.Gps
 {
     public sealed partial class ListboxGpsAlwaysDisplayed : TerminalControlsListbox
@@ -16,7 +18,7 @@ namespace LcdMod.Client.Terminal.Controls.Gps
 
         public ListboxGpsAlwaysDisplayed()
         {
-            CreateListbox("GpsAlwaysDisplayed", "Always Display GPS");
+            CreateListbox("GpsAlwaysDisplayed", MOD_PREFIX + "Gps_AlwaysDisplayed_Title");
         }
 
         protected override bool IsAvailableForCurrentConfig(IMyTerminalBlock block)
@@ -64,7 +66,9 @@ namespace LcdMod.Client.Terminal.Controls.Gps
                 if (_gpsByHash.TryGetValue(hash, out gps))
                 {
                     itemList.Add(ListBoxItemHelper.GetOrComputeListBoxItem(
-                        string.IsNullOrWhiteSpace(gps.Name) ? "GPS" : gps.Name,
+                        string.IsNullOrWhiteSpace(gps.Name)
+                            ? LocHelper.GetLoc(MOD_PREFIX + "Gps_Unnamed")
+                            : gps.Name,
                         gps.ToString(),
                         hash));
                 }

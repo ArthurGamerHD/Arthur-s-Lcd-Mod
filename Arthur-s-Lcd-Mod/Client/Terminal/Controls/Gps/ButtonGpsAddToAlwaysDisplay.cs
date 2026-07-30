@@ -5,6 +5,8 @@ using LcdMod.Client.Terminal.Controls.Filter.Listbox;
 using Sandbox.ModAPI;
 using VRage.Game.ModAPI;
 
+using static LcdMod.Common.Helpers.Constants;
+
 namespace LcdMod.Client.Terminal.Controls.Gps
 {
     public sealed partial class ButtonGpsAddToAlwaysDisplay : TerminalControlFilterButton
@@ -16,7 +18,7 @@ namespace LcdMod.Client.Terminal.Controls.Gps
             TerminalControlsListbox targetList)
             : base(sourceList, targetList)
         {
-            CreateButton("GpsAddToAlwaysDisplay", "Add GPS");
+            CreateButton("GpsAddToAlwaysDisplay", MOD_PREFIX + "Gps_Add_Title");
         }
 
         protected override bool IsAvailableForCurrentConfig(IMyTerminalBlock block)
