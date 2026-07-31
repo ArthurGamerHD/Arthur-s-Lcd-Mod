@@ -170,6 +170,10 @@ namespace LcdMod.Client.Apps
             _orbitControl = AddLogicalChild(
                 new OrbitCameraControl(default(RectangleF)));
             _orbitControl.CameraChanged = OnOrbitCameraChanged;
+            _orbitControl.ZoomStep = ZOOM_STEP;
+            _orbitControl.ZoomValueProvider = delegate { return _zoom; };
+            _orbitControl.NormalizeZoomValue = ClampZoom;
+            _orbitControl.ZoomChanged = OnOrbitZoomChanged;
 
             _orientationButtonModel = new ButtonModel
             {
@@ -307,17 +311,10 @@ namespace LcdMod.Client.Apps
             if (handled || delta == 0)
                 return;
 
-            float next = delta > 0
-                ? _zoom * ZOOM_STEP
-                : _zoom / ZOOM_STEP;
-            next = MathHelper.Clamp(next, MINIMUM_ZOOM, MAXIMUM_ZOOM);
-            if (Math.Abs(next - _zoom) <= 0.0001f)
+            if (!_orbitControl.ZoomByWheelDelta(delta))
                 return;
 
-            SetZoom(next);
-            PersistPlanetaryMapConfig();
             handled = true;
-            Host.RenderSprites();
         }
 
         public override void Close()
@@ -325,6 +322,7 @@ namespace LcdMod.Client.Apps
             _closed = true;
             LocalConfigManager.TextureQualityChanged -= OnTextureQualityChanged;
             _planetId = 0L;
+            _orbitControl.StopCameraInertia();
             CancelPendingRequest();
             _planetControl.SetCubemap(null);
             _loadedCubemap = null;
@@ -675,6 +673,21 @@ namespace LcdMod.Client.Apps
             UpdatePlanetControl();
             Host.RenderSprites();
             RaiseCameraOrbitChanged();
+        }
+
+        bool OnOrbitZoomChanged(OrbitCameraControl control, float zoom)
+        {
+            if (_closed)
+                return false;
+
+            float next = ClampZoom(zoom);
+            if (Math.Abs(next - _zoom) <= ZOOM_CONFIG_EPSILON)
+                return false;
+
+            SetZoom(next);
+            PersistPlanetaryMapConfig();
+            Host.RenderSprites();
+            return true;
         }
 
         void RaiseCameraOrbitChanged()

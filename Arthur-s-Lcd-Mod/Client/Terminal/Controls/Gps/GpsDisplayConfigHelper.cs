@@ -29,7 +29,7 @@ namespace LcdMod.Client.Terminal.Controls.Gps
             if (starMap != null)
             {
                 var general = surface.TryGet<GeneralConfigComponent>(Constants.GENERAL);
-                return general != null && general.DisplayMode == (int)DisplayMode.Legacy;
+                return general != null && general.DisplayMode == (int)StarMapDisplayMode.Planetarium;
             }
 
             var planetaryMap = surface.TryGet<PlanetaryMapConfigComponent>(Constants.APP);

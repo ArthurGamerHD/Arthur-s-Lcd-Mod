@@ -14,6 +14,7 @@ using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Modules.Cartography;
 using LcdMod.Client.SurfaceScripts.Abstract;
+using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Utility;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
@@ -175,7 +176,7 @@ namespace LcdMod.Client.Apps
 
         public event Action StaticCameraOrbitChanged;
 
-        public bool PlanetariumMode => GeneralComponent.DisplayMode == 0;
+        public bool PlanetariumMode => GeneralComponent.DisplayMode == (int)StarMapDisplayMode.Planetarium;
 
         struct PlanetProjection
         {
@@ -270,12 +271,12 @@ namespace LcdMod.Client.Apps
             {
                 new MyTerminalControlComboBoxItem
                 {
-                    Key = 0,
+                    Key = (long)StarMapDisplayMode.Planetarium,
                     Value = VRage.Utils.MyStringId.GetOrCompute("LcdMod_Planetarium")
                 },
                 new MyTerminalControlComboBoxItem
                 {
-                    Key = 1,
+                    Key = (long)StarMapDisplayMode.Hud,
                     Value = VRage.Utils.MyStringId.GetOrCompute("LcdMod_Hud")
                 }
             };
@@ -288,6 +289,10 @@ namespace LcdMod.Client.Apps
                 new OrbitCameraControl(default(RectangleF)));
             _staticOrbitControl.CameraChanged = OnStaticOrbitCameraChanged;
             _staticOrbitControl.PrimaryDrag = OnStaticCameraMoved;
+            _staticOrbitControl.ZoomStep = 1.1f;
+            _staticOrbitControl.ZoomValueProvider = GetStarMapMagnification;
+            _staticOrbitControl.NormalizeZoomValue = NormalizeStarMapMagnification;
+            _staticOrbitControl.ZoomChanged = OnStaticZoomChanged;
             _staticOrbitControl.SetDraggable();
             _staticOrbitControl.PreservePrimaryClickUntilDragged = true;
 
@@ -466,6 +471,7 @@ namespace LcdMod.Client.Apps
         {
             _closed = true;
             LocalConfigManager.TextureQualityChanged -= OnTextureQualityChanged;
+            _staticOrbitControl.StopCameraInertia();
 
             foreach (PlanetCubemapState state in _planetCubemapStates.Values)
             {
@@ -4861,20 +4867,35 @@ namespace LcdMod.Client.Apps
             if (delta == 0 || handled)
                 return;
 
-            float magnification = SliderFov.FovToMagnification(StarMapComponent.FoV);
-            float step = delta > 0 ? 1.1f : 1f / 1.1f;
-            float nextMagnification = magnification * step;
-            float nextFov = SliderFov.MagnificationToFov(nextMagnification);
+            if (_staticOrbitControl.ZoomByWheelDelta(delta))
+                handled = true;
+        }
 
+        float GetStarMapMagnification()
+        {
+            return SliderFov.FovToMagnification(StarMapComponent.FoV);
+        }
+
+        bool OnStaticZoomChanged(OrbitCameraControl control, float magnification)
+        {
+            if (_closed)
+                return false;
+
+            float nextFov = SliderFov.MagnificationToFov(magnification);
             if (Math.Abs(StarMapComponent.FoV - nextFov) <= 0.001f)
-                return;
+                return false;
 
             StarMapComponent.FoV = nextFov;
             _lastFovChangedFrame = GetCurrentGameFrame();
-            _lastKnownConfigFov = float.NaN;
             _syncConfigNextRun = true;
-            handled = true;
+            LayoutChanged();
             Host.RenderSprites();
+            return true;
+        }
+
+        static float NormalizeStarMapMagnification(float magnification)
+        {
+            return SliderFov.FovToMagnification(SliderFov.MagnificationToFov(magnification));
         }
 
         void DrawMessage(List<MySprite> sprites, string message, string icon, Color color, float scale = 1f)
