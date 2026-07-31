@@ -2,7 +2,9 @@ using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+#if EXPERIMENTAL
 using System.Text;
+#endif
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
@@ -10,7 +12,9 @@ using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.ControlsTemplates.Panels.Virtualized;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts;
+#if EXPERIMENTAL
 using LcdMod.Client.Terminal;
+#endif
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 

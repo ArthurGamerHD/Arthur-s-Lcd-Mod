@@ -138,6 +138,17 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             return true;
         }
 
+        public bool NavigateToPath(string path)
+        {
+            if (IsLoading)
+                return false;
+
+            CloseContextMenu();
+            return string.IsNullOrWhiteSpace(path)
+                ? OpenFolder(null)
+                : OpenPath(path);
+        }
+
         public void SetFilter(string filter)
         {
             var next = filter ?? string.Empty;
@@ -655,16 +666,17 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             row.SetVisible(true);
         }
 
-        void OpenFolder(FolderModel folder)
+        bool OpenFolder(FolderModel folder)
         {
             if (ReferenceEquals(CurrentFolder, folder) && SelectedFolder == null && SelectedFile == null)
-                return;
+                return true;
 
             CurrentFolder = folder;
             SelectedFolder = null;
             SelectedFile = null;
             RebuildItems(resetScroll: true);
             NotifyChanged();
+            return true;
         }
 
         void AcceptFile(FileModel file)

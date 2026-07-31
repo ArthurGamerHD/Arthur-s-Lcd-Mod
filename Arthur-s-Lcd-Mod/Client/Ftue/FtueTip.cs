@@ -84,7 +84,7 @@ namespace LcdMod.Client.Ftue
             InteractiveSurfaceScript surface,
             IApp app,
             ControlTemplate control,
-            bool secondary)
+            ControlClickButton button)
         {
         }
 

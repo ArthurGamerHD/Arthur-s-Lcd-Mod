@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+#if DEBUG
 using LcdMod.Common.Helpers;
+#endif
 using LcdMod.Common.Market;
 using LcdMod.Common.Networking;
 using Sandbox.ModAPI;

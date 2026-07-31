@@ -1,7 +1,7 @@
 namespace LcdMod.Client.Config
 {
     /// <summary>
-    /// Client-local cap for the square sampling grid used to draw a planet.
+    /// Client-local detail controls for the square sampling grid used to draw a planet.
     /// Ultra is zero so older config files that do not contain this setting
     /// preserve the previous unrestricted behavior.
     /// </summary>
@@ -54,6 +54,23 @@ namespace LcdMod.Client.Config
                     return 512;
                 default:
                     return 0;
+            }
+        }
+
+        public static float GetTextCellSizePixels(PlanetTextureQuality quality)
+        {
+            switch (Normalize(quality))
+            {
+                case PlanetTextureQuality.Poop:
+                    return 8f;
+                case PlanetTextureQuality.Low:
+                    return 4f;
+                case PlanetTextureQuality.Medium:
+                    return 2f;
+                case PlanetTextureQuality.High:
+                case PlanetTextureQuality.Ultra:
+                default:
+                    return 1f;
             }
         }
 

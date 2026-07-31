@@ -7,7 +7,9 @@ using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Terminal.Controls.Groups;
 using LcdMod.Client.Utility;
+#if EXPERIMENTAL
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
+#endif
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRage.ModAPI;

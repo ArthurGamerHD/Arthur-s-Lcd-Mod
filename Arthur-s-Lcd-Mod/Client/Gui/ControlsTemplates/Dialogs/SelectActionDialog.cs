@@ -4,7 +4,9 @@ using LcdMod.Client.Terminal.Models.Property;
 #endif
 using System;
 using System.Collections.Generic;
+#if EXPERIMENTAL
 using System.Text;
+#endif
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.GridData;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
@@ -13,11 +15,15 @@ using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
+#if EXPERIMENTAL
 using LcdMod.Client.Terminal;
 using LcdMod.Client.Terminal.Models;
+#endif
 using LcdMod.Common.Helpers;
+#if EXPERIMENTAL
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
+#endif
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;

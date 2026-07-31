@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+#if DEBUG
 using LcdMod.Client.Config;
+#endif
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Dialogs;
@@ -844,9 +846,16 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         public virtual bool TryResolveClickableAtCursor(bool secondary, out ControlTemplate entry)
         {
+            return TryResolveClickableAtCursor(
+                secondary ? ControlClickButton.Secondary : ControlClickButton.Primary,
+                out entry);
+        }
+
+        public virtual bool TryResolveClickableAtCursor(ControlClickButton button, out ControlTemplate entry)
+        {
             entry = null;
             var position = HitTestCursorPosition;
-            return IsValidHitTestPosition(position) && TryResolveClickable(position, secondary, out entry);
+            return IsValidHitTestPosition(position) && TryResolveClickable(position, button, out entry);
         }
 
         public virtual bool TryResolveClickableAtCursor(out ControlTemplate entry)
@@ -858,12 +867,32 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         public virtual bool TryClickAtCursor(bool secondary, object sender, out ControlTemplate entry)
         {
+            return TryClickAtCursor(
+                secondary ? ControlClickButton.Secondary : ControlClickButton.Primary,
+                sender,
+                out entry);
+        }
+
+        public virtual bool TryClickAtCursor(ControlClickButton button, object sender, out ControlTemplate entry)
+        {
             entry = null;
             var position = HitTestCursorPosition;
-            if (!IsValidHitTestPosition(position) || !TryResolveClickable(position, secondary, out entry))
+            if (!IsValidHitTestPosition(position) || !TryResolveClickable(position, button, out entry))
                 return false;
 
-            return secondary ? entry.SecondaryClickAt(position, sender) : entry.ClickAt(position, sender);
+            switch (button)
+            {
+                case ControlClickButton.Secondary:
+                    return entry.SecondaryClickAt(position, sender);
+                case ControlClickButton.Middle:
+                    return entry.MiddleClickAt(position, sender);
+                case ControlClickButton.Back:
+                    return entry.BackClickAt(position, sender);
+                case ControlClickButton.Forward:
+                    return entry.ForwardClickAt(position, sender);
+                default:
+                    return entry.ClickAt(position, sender);
+            }
         }
 
         public virtual bool TryScrollAtCursor(int delta, object sender)
@@ -925,6 +954,14 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         bool TryResolveClickable(Vector2 position, bool secondary, out ControlTemplate entry)
         {
+            return TryResolveClickable(
+                position,
+                secondary ? ControlClickButton.Secondary : ControlClickButton.Primary,
+                out entry);
+        }
+
+        bool TryResolveClickable(Vector2 position, ControlClickButton button, out ControlTemplate entry)
+        {
             entry = null;
             var entries = InteractiveEntries as IList<Control>;
             if (entries == null)
@@ -936,9 +973,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 if (root == null)
                     continue;
 
-                bool resolved = secondary
-                    ? root.TryResolveSecondaryClickable(position, out entry)
-                    : root.TryResolvePrimaryClickable(position, out entry);
+                bool resolved = root.TryResolveClickable(position, button, out entry);
 
                 if (resolved)
                     return true;

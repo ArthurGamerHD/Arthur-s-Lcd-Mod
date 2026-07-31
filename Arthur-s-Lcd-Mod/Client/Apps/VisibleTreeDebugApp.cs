@@ -1,5 +1,5 @@
-using LcdMod.Common.Config.Components;
 #if DEBUG
+using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -332,11 +332,17 @@ namespace LcdMod.Client.Apps
 
         static string GetFlags(ControlTemplate control)
         {
-            var sb = new StringBuilder(6);
+            var sb = new StringBuilder(9);
             if (control.CanPrimaryClick)
                 sb.Append('P');
             if (control.CanSecondaryClick)
                 sb.Append('R');
+            if (control.CanMiddleClick)
+                sb.Append('M');
+            if (control.CanBackClick)
+                sb.Append('B');
+            if (control.CanForwardClick)
+                sb.Append('F');
             if (control.CanScroll)
                 sb.Append('S');
             if (control.CanHover)

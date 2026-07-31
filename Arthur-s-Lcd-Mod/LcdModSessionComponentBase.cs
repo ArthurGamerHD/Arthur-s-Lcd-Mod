@@ -4,7 +4,9 @@ using Generated;
 using LcdMod.Client;
 using LcdMod.Client.Config;
 using LcdMod.Client.GridData;
+#if DEBUG
 using LcdMod.Client.ScreenAreas;
+#endif
 using LcdMod.Common.Config.Models;
 using LcdMod.Common.Helpers;
 using LcdMod.Common.Networking;

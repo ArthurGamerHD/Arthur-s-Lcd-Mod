@@ -1,8 +1,10 @@
 using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
+#if EXPERIMENTAL
 using System.Globalization;
 using System.Text;
+#endif
 using LcdMod.Client.Config;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Gui;
@@ -16,22 +18,28 @@ using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.ControlsTemplates.Panels.Virtualized;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
-using LcdMod.Client.Terminal;
 #if EXPERIMENTAL
+using LcdMod.Client.Terminal;
 using LcdMod.Client.Terminal.Models;
 using LcdMod.Client.Terminal.Models.Actions;
 using LcdMod.Client.Terminal.Models.Property;
 using Sandbox.ModAPI.Interfaces;
 #endif
 using LcdMod.Common.Helpers;
+#if EXPERIMENTAL
 using Sandbox.Game.Entities;
+#endif
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
+#if EXPERIMENTAL
 using VRage.Utils;
+#endif
 using VRageMath;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
+#if EXPERIMENTAL
 using IMyBlockGroup = Sandbox.ModAPI.Ingame.IMyBlockGroup;
 using IMyIngameTerminalBlock = Sandbox.ModAPI.Ingame.IMyTerminalBlock;
+#endif
 using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 using IMyTerminalBlock = Sandbox.ModAPI.IMyTerminalBlock;
 

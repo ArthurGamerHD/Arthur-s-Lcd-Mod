@@ -29,6 +29,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         const float SEARCH_HEIGHT_PIXELS = 36f;
         const float SELECT_BUTTON_WIDTH_PIXELS = 128f;
         const float SELECT_BUTTON_HEIGHT_PIXELS = 36f;
+        const int NAVIGATION_HISTORY_LIMIT = 8;
         const string LOC_PICK_FILE_TITLE = MOD_PREFIX + "FilePicker_PickFile";
         const string LOC_PICK_FOLDER_TITLE = MOD_PREFIX + "FilePicker_PickFolder";
         const string LOC_ROOT = MOD_PREFIX + "FilePicker_Root";
@@ -46,7 +47,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         readonly string _selectButtonText;
         readonly bool _acceptSelectionOnClose;
         readonly FilePickerGrid _grid;
+        readonly List<string> _backHistory = new List<string>(NAVIGATION_HISTORY_LIMIT);
+        readonly List<string> _forwardHistory = new List<string>(NAVIGATION_HISTORY_LIMIT);
         bool _accepted;
+        bool _historyNavigationInProgress;
 
         TextInput _searchInput;
         TextInputModel _searchInputModel;
@@ -54,6 +58,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         Button _compactCloseButton;
         bool _compactFullscreenThisFrame;
         string _searchText = string.Empty;
+        string _lastHistoryPath;
         string _cachedPathSource;
         string _cachedPathText;
 
@@ -93,6 +98,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             SetContextActionsProvider(contextActionsProvider);
             _grid.Accepted = OnGridAccepted;
             _grid.Changed = OnGridChanged;
+            _lastHistoryPath = GetCurrentHistoryPath();
 
             OnClose = delegate
             {
@@ -119,12 +125,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         public void SetRoots(IEnumerable<FolderModel> roots)
         {
             ApplyRoots(roots, _initialPath, false);
+            ResetNavigationHistoryToCurrentPath();
         }
 
         public void RefreshRoots(IEnumerable<FolderModel> roots)
         {
             var currentPath = _grid == null ? _initialPath : _grid.CurrentPath;
             ApplyRoots(roots, currentPath, true);
+            _lastHistoryPath = GetCurrentHistoryPath();
         }
 
         void ApplyRoots(IEnumerable<FolderModel> roots, string preferredPath, bool fallbackToInitialPath)
@@ -166,7 +174,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             Color panelColor,
             Vector2 cursorPosition)
         {
-            EnsureContainer(viewBox);
+            var container = EnsureContainer(viewBox);
+            ConfigureHistoryShortcuts(container);
 
             var layoutScale = scale * fontScale;
             var compactFullscreen = FullscreenOnCompactSurfaces &&
@@ -519,12 +528,151 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
         void OnGridChanged()
         {
+            TrackNavigationHistory();
+
             if (_currentPathChanged != null && (_grid == null || !_grid.IsLoading))
                 _currentPathChanged(_grid == null ? string.Empty : _grid.CurrentPath);
 
             MarkDirty();
             if (RequestRedraw != null)
                 RequestRedraw();
+        }
+
+        void ConfigureHistoryShortcuts(ControlTemplate control)
+        {
+            if (control == null)
+                return;
+
+            var historyEnabled = _grid != null && !_grid.IsLoading;
+            control.OnBackClick = historyEnabled && _backHistory.Count > 0
+                ? (Action<object, object>)OnHistoryBackClicked
+                : null;
+            control.OnForwardClick = historyEnabled && _forwardHistory.Count > 0
+                ? (Action<object, object>)OnHistoryForwardClicked
+                : null;
+        }
+
+        void OnHistoryBackClicked(object dataContext, object sender)
+        {
+            NavigateHistory(_backHistory, _forwardHistory);
+        }
+
+        void OnHistoryForwardClicked(object dataContext, object sender)
+        {
+            NavigateHistory(_forwardHistory, _backHistory);
+        }
+
+        bool NavigateHistory(List<string> source, List<string> destination)
+        {
+            if (_grid == null || _grid.IsLoading || source == null || source.Count == 0)
+                return false;
+
+            var currentPath = GetCurrentHistoryPath();
+
+            while (source.Count > 0)
+            {
+                var targetPath = PopHistory(source);
+                if (SameHistoryPath(targetPath, currentPath))
+                    continue;
+
+                _historyNavigationInProgress = true;
+                try
+                {
+                    if (!_grid.NavigateToPath(targetPath))
+                        continue;
+                }
+                finally
+                {
+                    _historyNavigationInProgress = false;
+                }
+
+                PushHistory(destination, currentPath);
+                _lastHistoryPath = GetCurrentHistoryPath();
+                ConfigureHistoryShortcuts(ContainerControl);
+                MarkDirty();
+                if (RequestRedraw != null)
+                    RequestRedraw();
+                return true;
+            }
+
+            MarkDirty();
+            ConfigureHistoryShortcuts(ContainerControl);
+            if (RequestRedraw != null)
+                RequestRedraw();
+            return false;
+        }
+
+        void TrackNavigationHistory()
+        {
+            var currentPath = GetCurrentHistoryPath();
+            if (_lastHistoryPath == null)
+            {
+                _lastHistoryPath = currentPath;
+                return;
+            }
+
+            if (SameHistoryPath(_lastHistoryPath, currentPath))
+                return;
+
+            if (!_historyNavigationInProgress)
+            {
+                PushHistory(_backHistory, _lastHistoryPath);
+                _forwardHistory.Clear();
+            }
+
+            _lastHistoryPath = currentPath;
+            ConfigureHistoryShortcuts(ContainerControl);
+        }
+
+        void ResetNavigationHistoryToCurrentPath()
+        {
+            _backHistory.Clear();
+            _forwardHistory.Clear();
+            _lastHistoryPath = GetCurrentHistoryPath();
+            ConfigureHistoryShortcuts(ContainerControl);
+            MarkDirty();
+        }
+
+        string GetCurrentHistoryPath()
+        {
+            return NormalizeHistoryPath(_grid == null ? string.Empty : _grid.CurrentPath);
+        }
+
+        static void PushHistory(List<string> history, string path)
+        {
+            if (history == null)
+                return;
+
+            path = NormalizeHistoryPath(path);
+            if (history.Count > 0 && SameHistoryPath(history[history.Count - 1], path))
+                return;
+
+            history.Add(path);
+            while (history.Count > NAVIGATION_HISTORY_LIMIT)
+                history.RemoveAt(0);
+        }
+
+        static string PopHistory(List<string> history)
+        {
+            var index = history.Count - 1;
+            var path = history[index];
+            history.RemoveAt(index);
+            return NormalizeHistoryPath(path);
+        }
+
+        static bool SameHistoryPath(string left, string right)
+        {
+            return string.Equals(
+                NormalizeHistoryPath(left),
+                NormalizeHistoryPath(right),
+                StringComparison.OrdinalIgnoreCase);
+        }
+
+        static string NormalizeHistoryPath(string path)
+        {
+            return string.IsNullOrWhiteSpace(path)
+                ? string.Empty
+                : path.Trim().Replace('\\', '/').Trim('/');
         }
 
         string GetSelectButtonText()

@@ -5,8 +5,10 @@ using LcdMod.Client.Terminal.Models.Property;
 #endif
 using System;
 using System.Globalization;
+#if EXPERIMENTAL
 using System.Linq;
 using System.Text;
+#endif
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.GridData;
@@ -16,8 +18,10 @@ using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
+#if EXPERIMENTAL
 using LcdMod.Client.Terminal;
 using Sandbox.Game.Entities;
+#endif
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;

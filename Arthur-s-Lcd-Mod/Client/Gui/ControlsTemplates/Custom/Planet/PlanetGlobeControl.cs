@@ -22,13 +22,20 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
         const string ALPHA_MASK_FONT = Constants.MOD_PREFIX + "AlphaMask";
         const char TRANSPARENT_CHANNEL_GLYPH = (char)0xe0ff;
         const int CHANNEL_INTENSITY_GLYPH_BASE = 0xe100;
-        const float CHANNEL_GLYPH_PITCH = 4f;
-        const float CHANNEL_GLYPH_LINE_HEIGHT = 4f;
-        const float CHANNEL_FONT_RENDER_SCALE = 144f / 185f;
-        const float CHANNEL_NATIVE_TEXT_SCALE = 185f / 144f;
-        const float CHANNEL_TEXT_SAMPLE_SCALE = 0.25f;
-        // SE multiplies text scale by 144/185; this renders each 4 px glyph cell as 1 LCD pixel.
-        const float CHANNEL_TEXT_SPRITE_SCALE = CHANNEL_NATIVE_TEXT_SCALE * CHANNEL_TEXT_SAMPLE_SCALE;
+        const float CHANNEL_TEXT_CELL_PIXELS_1 = 1f;
+        const float CHANNEL_TEXT_CELL_PIXELS_2 = 2f;
+        const float CHANNEL_TEXT_CELL_PIXELS_4 = 4f;
+        const float CHANNEL_TEXT_CELL_PIXELS_8 = 8f;
+        const float CHANNEL_TEXT_CELL_PIXELS_16 = 16f;
+        const float CHANNEL_TEXT_CELL_PIXELS_32 = 32f;
+        const float CHANNEL_TEXT_CELL_PIXELS_64 = 64f;
+        const float CHANNEL_TEXT_SPRITE_SCALE_1 = 185f / 576f;
+        const float CHANNEL_TEXT_SPRITE_SCALE_2 = 185f / 288f;
+        const float CHANNEL_TEXT_SPRITE_SCALE_4 = 185f / 144f;
+        const float CHANNEL_TEXT_SPRITE_SCALE_8 = 185f / 72f;
+        const float CHANNEL_TEXT_SPRITE_SCALE_16 = 185f / 36f;
+        const float CHANNEL_TEXT_SPRITE_SCALE_32 = 185f / 18f;
+        const float CHANNEL_TEXT_SPRITE_SCALE_64 = 185f / 9f;
         const int CHANNEL_TEXT_VISIBLE_GUARD_CELLS = 2;
         const int CHANNEL_TEXT_FILL_WORKERS = 4;
         const int CHANNEL_TEXT_PARALLEL_MIN_CELLS = 4096;
@@ -53,6 +60,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
         float _zoom = 1f;
         float _colorAlpha = 1f;
         int _maximumRenderResolution;
+        float _channelTextCellPixels = CHANNEL_TEXT_CELL_PIXELS_1;
         Color _loadingColor = new Color(128, 128, 128, 255);
         Color _selectionBackdropColor = Color.Transparent;
         bool _selectionBackdropVisible;
@@ -81,9 +89,16 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
 
         public Func<PlanetGlobeControl, Vector2, object, bool> SurfaceClicked { get; set; }
 
+        public Func<PlanetGlobeControl, Vector2, object, bool> SurfaceMiddleClicked { get; set; }
+
         public override bool CanPrimaryClick
         {
             get { return base.CanPrimaryClick || Visible && Enabled && SurfaceClicked != null; }
+        }
+
+        public override bool CanMiddleClick
+        {
+            get { return base.CanMiddleClick || Visible && Enabled && SurfaceMiddleClicked != null; }
         }
 
         /// <summary>
@@ -91,6 +106,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
         /// the previous unrestricted behavior.
         /// </summary>
         public int MaximumRenderResolution => _maximumRenderResolution;
+
+        public float ChannelTextCellPixels => _channelTextCellPixels;
 
         public RectangleF? ClipBounds => _clipBounds;
 
@@ -198,11 +215,21 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
 
         public void SetMaximumRenderResolution(int maximumResolution)
         {
-            int next = Math.Max(0, maximumResolution);
-            if (_maximumRenderResolution == next)
-                return;
+            SetRenderQuality(maximumResolution, _channelTextCellPixels);
+        }
 
-            _maximumRenderResolution = next;
+        public void SetRenderQuality(int maximumResolution, float channelTextCellPixels)
+        {
+            int nextMaximumResolution = Math.Max(0, maximumResolution);
+            float nextCellPixels = NormalizeChannelTextCellPixels(channelTextCellPixels);
+            if (_maximumRenderResolution == nextMaximumResolution &&
+                Math.Abs(_channelTextCellPixels - nextCellPixels) <= VALUE_EPSILON)
+            {
+                return;
+            }
+
+            _maximumRenderResolution = nextMaximumResolution;
+            _channelTextCellPixels = nextCellPixels;
             InvalidateRenderCache();
         }
 
@@ -246,9 +273,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
             if (sphereDiameter <= 0f)
                 return MINIMUM_REQUEST_FACE_SIDE;
 
-            int desiredSide = Math.Max(MINIMUM_REQUEST_FACE_SIDE, GetChannelTextSide(sphereDiameter));
-            if (_maximumRenderResolution > 0)
-                desiredSide = Math.Min(desiredSide, _maximumRenderResolution);
+            int maximumRows = _maximumRenderResolution > 0 ? _maximumRenderResolution : int.MaxValue;
+            ChannelTextRenderPreset renderPreset = SelectChannelTextRenderPreset(sphereDiameter, maximumRows);
+            int desiredSide = Math.Max(
+                MINIMUM_REQUEST_FACE_SIDE,
+                GetChannelTextSide(sphereDiameter, renderPreset.CellPixels, maximumRows));
 
             int requestSide = MINIMUM_REQUEST_FACE_SIDE;
             while (requestSide < desiredSide &&
@@ -269,6 +298,41 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
 
             _clipBounds = clipBounds;
             InvalidateRenderCache();
+        }
+
+        public bool TryGetSurfaceDirection(Vector2 point, out Vector3 localDirection)
+        {
+            localDirection = Vector3.Zero;
+            if (!Hit(point))
+                return false;
+
+            RectangleF content = GetViewBox();
+            float diameter = Math.Min(content.Width, content.Height) * _zoom;
+            if (diameter <= 0f)
+                return false;
+
+            float radius = diameter * 0.5f;
+            if (radius <= 0f)
+                return false;
+
+            float x = (point.X - content.Center.X) / radius;
+            float y = (content.Center.Y - point.Y) / radius;
+            float radiusSquared = x * x + y * y;
+            if (radiusSquared > 1.000001f)
+                return false;
+
+            float z = (float)Math.Sqrt(Math.Max(0f, 1f - radiusSquared));
+            Vector3 displayDirection =
+                _viewDirection * z +
+                _screenRight * x +
+                _screenUp * y;
+            if (displayDirection.Normalize() <= VECTOR_EPSILON)
+                return false;
+
+            localDirection = TransformByInverseRotation(
+                displayDirection,
+                _rotationTransform);
+            return localDirection.Normalize() > VECTOR_EPSILON;
         }
 
         public override void SetRect(RectangleF bounds)
@@ -303,6 +367,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
                 return clicked(this, point, sender);
 
             return base.ClickAt(point, sender);
+        }
+
+        public override bool MiddleClickAt(Vector2 point, object sender)
+        {
+            var clicked = SurfaceMiddleClicked;
+            if (clicked != null && Hit(point))
+                return clicked(this, point, sender);
+
+            return base.MiddleClickAt(point, sender);
         }
 
         protected override void RenderDefault(List<MySprite> sprites)
@@ -389,17 +462,35 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
                 return;
             }
 
-            // The text sprite scale cancels Space Engineers' internal font
-            // scale, so zoom changes resample the planet into a larger or
-            // smaller 4 px-per-cell channel text image instead.
-            int fullRows = GetChannelTextSide(sphereDiameter);
-            int fullColumns = GetChannelTextColumns(fullRows);
-            if (fullColumns <= 0)
-                return;
-
-            int mipLevel = SelectRenderableMip(fullRows);
+            // Prefer fixed cell-size presets before selecting the mip. If the
+            // 64 px preset still cannot cover the capped render area, calculate
+            // the exact cell size for this frame instead of cropping the globe.
+            int maximumRows = _maximumRenderResolution > 0 ? _maximumRenderResolution : int.MaxValue;
+            ChannelTextRenderPreset renderPreset = SelectChannelTextRenderPreset(sphereDiameter, maximumRows);
+            int desiredRows = GetChannelTextSide(sphereDiameter, renderPreset.CellPixels, maximumRows);
+            int mipLevel = SelectRenderableMip(desiredRows);
             int resolution = _cubemap.GetMipResolution(mipLevel);
             if (resolution <= 0)
+                return;
+
+            if (desiredRows > resolution)
+            {
+                renderPreset = SelectChannelTextRenderPreset(
+                    sphereDiameter,
+                    Math.Min(maximumRows, resolution));
+                desiredRows = GetChannelTextSide(
+                    sphereDiameter,
+                    renderPreset.CellPixels,
+                    Math.Min(maximumRows, resolution));
+                mipLevel = SelectRenderableMip(desiredRows);
+                resolution = _cubemap.GetMipResolution(mipLevel);
+                if (resolution <= 0)
+                    return;
+            }
+
+            int fullRows = desiredRows;
+            int fullColumns = GetChannelTextColumns(fullRows);
+            if (fullColumns <= 0)
                 return;
 
             ChannelTextWindow window;
@@ -415,7 +506,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
 
             EnsureChannelTextSize(window.Columns, window.Rows);
             FillChannelText(window, mipLevel);
-            AddChannelTextSprites(clip, sphereBounds, window);
+            AddChannelTextSprites(clip, sphereBounds, window, renderPreset);
         }
 
         void AddLoadingSphere(List<MySprite> sprites)
@@ -471,14 +562,18 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
             return mipLevel;
         }
 
-        int GetChannelTextSide(float sphereDiameter)
+        int GetChannelTextSide(
+            float sphereDiameter,
+            float cellPixels,
+            int maximumRows)
         {
             if (sphereDiameter <= 0f)
                 return MINIMUM_RENDER_RESOLUTION;
 
-            float cellSide = GetChannelTextCellSide();
-            int side = (int)Math.Ceiling(sphereDiameter / cellSide);
+            int side = (int)Math.Ceiling(sphereDiameter / Math.Max(1f, cellPixels));
             side = Math.Max(MINIMUM_RENDER_RESOLUTION, side);
+            if (maximumRows > 0 && maximumRows != int.MaxValue)
+                side = Math.Min(side, maximumRows);
             return side;
         }
 
@@ -487,27 +582,86 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
             return Math.Max(0, rows);
         }
 
-        static float GetChannelTextCellSide()
+        ChannelTextRenderPreset SelectChannelTextRenderPreset(
+            float sphereDiameter,
+            int maximumRows)
         {
-            return CHANNEL_GLYPH_PITCH * CHANNEL_FONT_RENDER_SCALE * CHANNEL_TEXT_SPRITE_SCALE;
+            float cellPixels = _channelTextCellPixels;
+            while (maximumRows > 0 &&
+                   maximumRows != int.MaxValue &&
+                   cellPixels < CHANNEL_TEXT_CELL_PIXELS_64 &&
+                   (int)Math.Ceiling(sphereDiameter / cellPixels) > maximumRows)
+            {
+                cellPixels = GetNextChannelTextCellPixels(cellPixels);
+            }
+
+            if (maximumRows > 0 &&
+                maximumRows != int.MaxValue &&
+                (int)Math.Ceiling(sphereDiameter / cellPixels) > maximumRows)
+            {
+                return GetRuntimeChannelTextRenderPreset(sphereDiameter, maximumRows);
+            }
+
+            return GetChannelTextRenderPreset(cellPixels);
         }
 
-        static Vector2 EstimateChannelTextSize(int columns, int rows)
+        static float NormalizeChannelTextCellPixels(float cellPixels)
         {
-            return new Vector2(
-                Math.Max(CHANNEL_GLYPH_LINE_HEIGHT, columns * CHANNEL_GLYPH_PITCH) *
-                CHANNEL_FONT_RENDER_SCALE *
-                CHANNEL_TEXT_SPRITE_SCALE,
-                Math.Max(CHANNEL_GLYPH_LINE_HEIGHT, rows * CHANNEL_GLYPH_LINE_HEIGHT) *
-                CHANNEL_FONT_RENDER_SCALE *
-                CHANNEL_TEXT_SPRITE_SCALE);
+            if (cellPixels <= CHANNEL_TEXT_CELL_PIXELS_1 + VALUE_EPSILON)
+                return CHANNEL_TEXT_CELL_PIXELS_1;
+            if (cellPixels <= CHANNEL_TEXT_CELL_PIXELS_2 + VALUE_EPSILON)
+                return CHANNEL_TEXT_CELL_PIXELS_2;
+            if (cellPixels <= CHANNEL_TEXT_CELL_PIXELS_4 + VALUE_EPSILON)
+                return CHANNEL_TEXT_CELL_PIXELS_4;
+            return CHANNEL_TEXT_CELL_PIXELS_8;
         }
 
-        static Vector2 EstimateChannelTextOffset(int columns, int rows)
+        static float GetNextChannelTextCellPixels(float cellPixels)
         {
-            return new Vector2(
-                columns * CHANNEL_GLYPH_PITCH * CHANNEL_FONT_RENDER_SCALE * CHANNEL_TEXT_SPRITE_SCALE,
-                rows * CHANNEL_GLYPH_LINE_HEIGHT * CHANNEL_FONT_RENDER_SCALE * CHANNEL_TEXT_SPRITE_SCALE);
+            if (cellPixels < CHANNEL_TEXT_CELL_PIXELS_2)
+                return CHANNEL_TEXT_CELL_PIXELS_2;
+            if (cellPixels < CHANNEL_TEXT_CELL_PIXELS_4)
+                return CHANNEL_TEXT_CELL_PIXELS_4;
+            if (cellPixels < CHANNEL_TEXT_CELL_PIXELS_8)
+                return CHANNEL_TEXT_CELL_PIXELS_8;
+            if (cellPixels < CHANNEL_TEXT_CELL_PIXELS_16)
+                return CHANNEL_TEXT_CELL_PIXELS_16;
+            if (cellPixels < CHANNEL_TEXT_CELL_PIXELS_32)
+                return CHANNEL_TEXT_CELL_PIXELS_32;
+            if (cellPixels < CHANNEL_TEXT_CELL_PIXELS_64)
+                return CHANNEL_TEXT_CELL_PIXELS_64;
+            return CHANNEL_TEXT_CELL_PIXELS_64;
+        }
+
+        static ChannelTextRenderPreset GetChannelTextRenderPreset(float cellPixels)
+        {
+            if (cellPixels <= CHANNEL_TEXT_CELL_PIXELS_1 + VALUE_EPSILON)
+                return new ChannelTextRenderPreset(CHANNEL_TEXT_CELL_PIXELS_1, CHANNEL_TEXT_SPRITE_SCALE_1);
+            if (cellPixels <= CHANNEL_TEXT_CELL_PIXELS_2 + VALUE_EPSILON)
+                return new ChannelTextRenderPreset(CHANNEL_TEXT_CELL_PIXELS_2, CHANNEL_TEXT_SPRITE_SCALE_2);
+            if (cellPixels <= CHANNEL_TEXT_CELL_PIXELS_4 + VALUE_EPSILON)
+                return new ChannelTextRenderPreset(CHANNEL_TEXT_CELL_PIXELS_4, CHANNEL_TEXT_SPRITE_SCALE_4);
+            if (cellPixels <= CHANNEL_TEXT_CELL_PIXELS_8 + VALUE_EPSILON)
+                return new ChannelTextRenderPreset(CHANNEL_TEXT_CELL_PIXELS_8, CHANNEL_TEXT_SPRITE_SCALE_8);
+            if (cellPixels <= CHANNEL_TEXT_CELL_PIXELS_16 + VALUE_EPSILON)
+                return new ChannelTextRenderPreset(CHANNEL_TEXT_CELL_PIXELS_16, CHANNEL_TEXT_SPRITE_SCALE_16);
+            if (cellPixels <= CHANNEL_TEXT_CELL_PIXELS_32 + VALUE_EPSILON)
+                return new ChannelTextRenderPreset(CHANNEL_TEXT_CELL_PIXELS_32, CHANNEL_TEXT_SPRITE_SCALE_32);
+            return new ChannelTextRenderPreset(CHANNEL_TEXT_CELL_PIXELS_64, CHANNEL_TEXT_SPRITE_SCALE_64);
+        }
+
+        static ChannelTextRenderPreset GetRuntimeChannelTextRenderPreset(
+            float sphereDiameter,
+            int maximumRows)
+        {
+            double cellPixels = Math.Max(
+                CHANNEL_TEXT_CELL_PIXELS_64,
+                (double)sphereDiameter / Math.Max(1, maximumRows));
+
+            cellPixels *= 1.000001d;
+            return new ChannelTextRenderPreset(
+                (float)cellPixels,
+                (float)(cellPixels * 185d / 576d));
         }
 
         static bool TryGetVisibleChannelTextWindow(
@@ -690,29 +844,34 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
         void AddChannelTextSprites(
             RectangleF clip,
             RectangleF sphereBounds,
-            ChannelTextWindow window)
+            ChannelTextWindow window,
+            ChannelTextRenderPreset renderPreset)
         {
-            Vector2 fullTextSize = EstimateChannelTextSize(window.FullColumns, window.FullRows);
-            if (fullTextSize.X <= 0f || fullTextSize.Y <= 0f)
+            double fullTextWidth = Math.Max(1, window.FullColumns) * renderPreset.CellPixels;
+            double fullTextHeight = Math.Max(1, window.FullRows) * renderPreset.CellPixels;
+            if (fullTextWidth <= 0d || fullTextHeight <= 0d)
                 return;
 
-            Vector2 visibleOffset = EstimateChannelTextOffset(
-                window.ColumnStart,
-                window.RowStart);
-            Vector2 position = sphereBounds.Center - fullTextSize * 0.5f + visibleOffset;
+            double visibleOffsetX = window.ColumnStart * renderPreset.CellPixels;
+            double visibleOffsetY = window.RowStart * renderPreset.CellPixels;
+            Vector2 center = sphereBounds.Center;
+            Vector2 position = new Vector2(
+                (float)((double)center.X - fullTextWidth * 0.5d + visibleOffsetX),
+                (float)((double)center.Y - fullTextHeight * 0.5d + visibleOffsetY));
 
             if (!BeginContentClip(_cachedSprites, clip))
                 return;
 
-            AddChannelTextSprite(_redChannelText.Text, position, ApplyChannelAlpha(RedChannelTint));
-            AddChannelTextSprite(_greenChannelText.Text, position, ApplyChannelAlpha(GreenChannelTint));
-            AddChannelTextSprite(_blueChannelText.Text, position, ApplyChannelAlpha(BlueChannelTint));
+            AddChannelTextSprite(_redChannelText.Text, position, renderPreset.SpriteScale, ApplyChannelAlpha(RedChannelTint));
+            AddChannelTextSprite(_greenChannelText.Text, position, renderPreset.SpriteScale, ApplyChannelAlpha(GreenChannelTint));
+            AddChannelTextSprite(_blueChannelText.Text, position, renderPreset.SpriteScale, ApplyChannelAlpha(BlueChannelTint));
             EndContentClip(_cachedSprites);
         }
 
         void AddChannelTextSprite(
             string text,
             Vector2 position,
+            float spriteScale,
             Color channelTint)
         {
             if (channelTint.A == 0 || string.IsNullOrEmpty(text))
@@ -723,7 +882,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
                 Type = SpriteType.TEXT,
                 Data = text,
                 Position = position,
-                RotationOrScale = CHANNEL_TEXT_SPRITE_SCALE,
+                RotationOrScale = spriteScale,
                 Color = channelTint,
                 Alignment = TextAlignment.LEFT,
                 FontId = ALPHA_MASK_FONT
@@ -881,6 +1040,18 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
                    Math.Abs(left.M31 - right.M31) <= VALUE_EPSILON &&
                    Math.Abs(left.M32 - right.M32) <= VALUE_EPSILON &&
                    Math.Abs(left.M33 - right.M33) <= VALUE_EPSILON;
+        }
+
+        struct ChannelTextRenderPreset
+        {
+            public readonly float CellPixels;
+            public readonly float SpriteScale;
+
+            public ChannelTextRenderPreset(float cellPixels, float spriteScale)
+            {
+                CellPixels = cellPixels;
+                SpriteScale = spriteScale;
+            }
         }
 
         struct ChannelTextWindow

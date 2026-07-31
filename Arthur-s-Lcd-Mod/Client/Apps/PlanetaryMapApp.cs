@@ -163,7 +163,9 @@ namespace LcdMod.Client.Apps
             _planetControl.SetZoom(_zoom);
             _planetControl.SetCursor(CursorType.Hand);
             _planetControl.SurfaceClicked = OnPlanetSurfaceClicked;
+            _planetControl.SurfaceMiddleClicked = OnPlanetSurfaceMiddleClicked;
             _planetControl.ClickSound = AudioHelper.HudGps3;
+            _planetControl.ClickSounds[ControlClickButton.Middle] = AudioHelper.HudClick;
 
             _orbitControl = AddLogicalChild(
                 new OrbitCameraControl(default(RectangleF)));
@@ -672,6 +674,11 @@ namespace LcdMod.Client.Apps
 
             UpdatePlanetControl();
             Host.RenderSprites();
+            RaiseCameraOrbitChanged();
+        }
+
+        void RaiseCameraOrbitChanged()
+        {
             var cameraOrbitChanged = CameraOrbitChanged;
             if (cameraOrbitChanged != null)
                 cameraOrbitChanged();
@@ -1083,8 +1090,9 @@ namespace LcdMod.Client.Apps
         void ApplyTextureQuality(PlanetTextureQuality quality, bool redraw)
         {
             quality = PlanetTextureQualitySettings.Normalize(quality);
-            _planetControl.SetMaximumRenderResolution(
-                PlanetTextureQualitySettings.GetMaximumFaceSide(quality));
+            _planetControl.SetRenderQuality(
+                PlanetTextureQualitySettings.GetMaximumFaceSide(quality),
+                PlanetTextureQualitySettings.GetTextCellSizePixels(quality));
 
             CancelPendingRequest();
             _retryFaceSide = int.MinValue;
@@ -1633,6 +1641,56 @@ namespace LcdMod.Client.Apps
                    CreateSurfaceGps(localDirection, surfacePosition);
         }
 
+        bool OnPlanetSurfaceMiddleClicked(PlanetGlobeControl control, Vector2 screenPoint, object sender)
+        {
+            if (_planet == null || _planet.MarkedForClose)
+                return false;
+
+            Vector3 localDirection;
+            return control.TryGetSurfaceDirection(screenPoint, out localDirection) &&
+                   FocusCameraOnSurfaceDirection(localDirection);
+        }
+
+        bool FocusCameraOnSurfaceDirection(Vector3 localDirection)
+        {
+            if (_planet == null || _planet.MarkedForClose)
+                return false;
+
+            if (localDirection.Normalize() <= 1e-6f)
+                return false;
+
+            Vector3D worldDirection = PlanetLocalDirectionToWorld(_planet, localDirection);
+            if (worldDirection.Normalize() <= 1e-9)
+                return false;
+
+            Vector3D center = _planet.WorldMatrix.Translation;
+            double cameraDistance = Vector3D.Distance(GetCameraWorldPosition(), center);
+            if (double.IsNaN(cameraDistance) ||
+                double.IsInfinity(cameraDistance) ||
+                cameraDistance <= 0d)
+            {
+                cameraDistance = GetPlanetSurfaceClickSampleRadius(_planet);
+            }
+
+            double minimumDistance = GetPlanetSurfaceClickSampleRadius(_planet);
+            if (minimumDistance > 0d)
+                cameraDistance = Math.Max(cameraDistance, minimumDistance);
+
+            if (cameraDistance <= 0d)
+                return false;
+
+            _staticCameraPosition = center + worldDirection * cameraDistance;
+            _hasStaticCameraPosition = true;
+            _followCamera = false;
+            UpdateFollowButtonState();
+            _orbitControl.SetOrbit(0f, 0f, false);
+            PersistPlanetaryMapConfig();
+            UpdatePlanetControl();
+            Host.RenderSprites();
+            RaiseCameraOrbitChanged();
+            return true;
+        }
+
         bool TryGetSurfaceClickPosition(
             MyPlanet planet,
             Vector2 screenPoint,
@@ -1644,30 +1702,7 @@ namespace LcdMod.Client.Apps
             if (planet == null)
                 return false;
 
-            RectangleF viewBox = Host.ViewBox;
-            float diameter = Math.Min(viewBox.Width, viewBox.Height) * _zoom;
-            if (diameter <= 0f)
-                return false;
-
-            float radius = diameter * 0.5f;
-            float x = (screenPoint.X - viewBox.Center.X) / radius;
-            float y = (viewBox.Center.Y - screenPoint.Y) / radius;
-            float radiusSquared = x * x + y * y;
-            if (radiusSquared > 1.000001f)
-                return false;
-
-            float z = (float)Math.Sqrt(Math.Max(0f, 1f - radiusSquared));
-            Vector3 displayDirection =
-                _planetControl.ViewDirection * z +
-                _planetControl.ScreenRightDirection * x +
-                _planetControl.ScreenUpDirection * y;
-            if (displayDirection.Normalize() <= 1e-6f)
-                return false;
-
-            localDirection = TransformByInverseRotation(
-                displayDirection,
-                _planetControl.RotationTransform);
-            if (localDirection.Normalize() <= 1e-6f)
+            if (!_planetControl.TryGetSurfaceDirection(screenPoint, out localDirection))
                 return false;
 
             Vector3D worldDirection = PlanetLocalDirectionToWorld(planet, localDirection);
@@ -1929,20 +1964,6 @@ namespace LcdMod.Client.Apps
                 direction.Z * rotation.M32,
                 direction.X * rotation.M13 +
                 direction.Y * rotation.M23 +
-                direction.Z * rotation.M33);
-        }
-
-        static Vector3 TransformByInverseRotation(Vector3 direction, Matrix rotation)
-        {
-            return new Vector3(
-                direction.X * rotation.M11 +
-                direction.Y * rotation.M12 +
-                direction.Z * rotation.M13,
-                direction.X * rotation.M21 +
-                direction.Y * rotation.M22 +
-                direction.Z * rotation.M23,
-                direction.X * rotation.M31 +
-                direction.Y * rotation.M32 +
                 direction.Z * rotation.M33);
         }
 

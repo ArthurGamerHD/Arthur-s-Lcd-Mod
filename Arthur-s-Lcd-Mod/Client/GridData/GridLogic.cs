@@ -4,7 +4,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using LcdMod.Client.Helpers;
+#if EXPERIMENTAL
 using LcdMod.Client.Terminal;
+#endif
 using LcdMod.Common.Helpers;
 using LcdMod.Common.Networking;
 using Sandbox.Definitions;

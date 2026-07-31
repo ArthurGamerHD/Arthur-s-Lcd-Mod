@@ -80,11 +80,11 @@
       <Compile Remove="Client\Terminal\Controls\Groups\GpsDisplayTerminalControlGroup.cs" />
     </ItemGroup>
 
-    <Target Name="RemoveZhCnResxAlias" AfterTargets="PostBuildEvent">
+    <Target Name="RemoveZhCnResxAlias" AfterTargets="MdkPack;MdkDidNotPack">
         <Delete Files="$(MSBuildProjectDirectory)\Content\Data\Localization\MyTexts.zh-CN.resx" />
     </Target>
 
-    <Target Name="RemoveThumbAlias" AfterTargets="PostBuildEvent">
+    <Target Name="RemoveThumbAlias" AfterTargets="MdkPack;MdkDidNotPack">
         <Delete Files="$(MSBuildProjectDirectory)\thumb.png" />
     </Target>
 </Project>

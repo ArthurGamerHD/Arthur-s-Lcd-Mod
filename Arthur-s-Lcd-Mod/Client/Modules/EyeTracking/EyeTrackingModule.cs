@@ -22,7 +22,7 @@ namespace LcdMod.Client.Modules.EyeTracking
     {
         public static event Action<InteractiveSurfaceScript, ControlTemplate> OnControlPointerEnter;
         public static event Action<InteractiveSurfaceScript, ControlTemplate> OnControlPointerLeave;
-        public static event Action<InteractiveSurfaceScript, ControlTemplate, bool> OnControlClick;
+        public static event Action<InteractiveSurfaceScript, ControlTemplate, ControlClickButton> OnControlClick;
 
         const double MAX_TRACKING_DISTANCE_METERS = 20d;
         const double MAX_TRACKING_DISTANCE_SQ = MAX_TRACKING_DISTANCE_METERS * MAX_TRACKING_DISTANCE_METERS;
@@ -47,8 +47,14 @@ namespace LcdMod.Client.Modules.EyeTracking
         bool _draggingPreservesPrimaryClick;
         bool _suppressPrimaryReleaseClick;
         bool _suppressSecondaryReleaseClick;
+        bool _suppressMiddleReleaseClick;
+        bool _suppressBackReleaseClick;
+        bool _suppressForwardReleaseClick;
         bool _primaryWasPressed;
         bool _secondaryWasPressed;
+        bool _middleWasPressed;
+        bool _backWasPressed;
+        bool _forwardWasPressed;
 
         readonly IMyControl _moveCameraControl =
             MyAPIGateway.Input.GetGameControl(MyStringId.GetOrCompute("LOOKAROUND"));
@@ -118,7 +124,7 @@ namespace LcdMod.Client.Modules.EyeTracking
             IEyeTracking eyeTrackingEntity = null;
             IEyeTracking tooltipInputEntity = null;
             IEyeTracking lookingScreen = null;
-            bool? activeClickButton = GetActiveClickButton();
+            ControlClickButton? activeClickButton = GetActiveClickButton();
             double hoveredDistanceSq = double.MaxValue;
             double tooltipDistanceSq = double.MaxValue;
             double lookingDistanceSq = double.MaxValue;
@@ -248,10 +254,19 @@ namespace LcdMod.Client.Modules.EyeTracking
         {
             bool primaryPressed = MyAPIGateway.Input != null && HoldingClick;
             bool secondaryPressed = MyAPIGateway.Input != null && HoldingRightClick;
+            bool middlePressed = MyAPIGateway.Input != null && HoldingMiddleClick;
+            bool backPressed = MyAPIGateway.Input != null && HoldingBackClick;
+            bool forwardPressed = MyAPIGateway.Input != null && HoldingForwardClick;
             bool primaryStarted = primaryPressed && !_primaryWasPressed;
             bool secondaryStarted = secondaryPressed && !_secondaryWasPressed;
+            bool middleStarted = middlePressed && !_middleWasPressed;
+            bool backStarted = backPressed && !_backWasPressed;
+            bool forwardStarted = forwardPressed && !_forwardWasPressed;
             bool primaryReleased = !primaryPressed && _primaryWasPressed;
             bool secondaryReleased = !secondaryPressed && _secondaryWasPressed;
+            bool middleReleased = !middlePressed && _middleWasPressed;
+            bool backReleased = !backPressed && _backWasPressed;
+            bool forwardReleased = !forwardPressed && _forwardWasPressed;
             bool hasInputTarget = hoveredClickable != null || eyeTrackingEntity != null || lookingScreen != null || _draggingControl != null;
             bool finishedDrag = false;
 
@@ -296,6 +311,15 @@ namespace LcdMod.Client.Modules.EyeTracking
                     SetPressedClickable(null);
                 }
             }
+
+            if (middleStarted && _draggingControl == null)
+                SetPressedClickable(hoveredClickable);
+
+            if (backStarted && _draggingControl == null)
+                SetPressedClickable(hoveredClickable);
+
+            if (forwardStarted && _draggingControl == null)
+                SetPressedClickable(hoveredClickable);
 
             bool activeDragPressed = _draggingSecondary ? secondaryPressed : primaryPressed;
             if (activeDragPressed && _draggingControl != null)
@@ -367,17 +391,26 @@ namespace LcdMod.Client.Modules.EyeTracking
                 finishedDrag = suppressClick;
             }
 
-            if (primaryReleased || secondaryReleased)
+            if (primaryReleased || secondaryReleased || middleReleased || backReleased || forwardReleased)
             {
+                ControlClickButton clickButton = GetReleasedClickButton(
+                    primaryReleased,
+                    secondaryReleased,
+                    middleReleased,
+                    backReleased,
+                    forwardReleased);
                 bool suppressReleaseClick = finishedDrag ||
-                                            primaryReleased && _suppressPrimaryReleaseClick ||
-                                            secondaryReleased && _suppressSecondaryReleaseClick;
+                                            clickButton == ControlClickButton.Primary && _suppressPrimaryReleaseClick ||
+                                            clickButton == ControlClickButton.Secondary && _suppressSecondaryReleaseClick ||
+                                            clickButton == ControlClickButton.Middle && _suppressMiddleReleaseClick ||
+                                            clickButton == ControlClickButton.Back && _suppressBackReleaseClick ||
+                                            clickButton == ControlClickButton.Forward && _suppressForwardReleaseClick;
                 var hoveredDataContext = hoveredClickable != null ? hoveredClickable.DataContext ?? hoveredClickable : null;
 
                 try
                 {
                     var interactiveSurface = eyeTrackingEntity as InteractiveSurfaceScript;
-                    var rightClick = !_primaryWasPressed && _secondaryWasPressed;
+                    var rightClick = clickButton == ControlClickButton.Secondary;
 
                     ControlTemplate clickedControl = null;
                     var click = false;
@@ -389,21 +422,39 @@ namespace LcdMod.Client.Modules.EyeTracking
                         if (interactiveSurface != null)
                         {
                             click = interactiveSurface.TryClickAtCursor(
-                                rightClick,
+                                clickButton,
                                 eyeTrackingEntity,
                                 out clickedControl);
                         }
                         else
                         {
                             clickedControl = hoveredClickable;
-                            click = rightClick
-                                ? hoveredClickable.SecondaryClick(eyeTrackingEntity)
-                                : hoveredClickable.Click(eyeTrackingEntity);
+                            switch (clickButton)
+                            {
+                                case ControlClickButton.Secondary:
+                                    click = hoveredClickable.SecondaryClick(eyeTrackingEntity);
+                                    break;
+                                case ControlClickButton.Middle:
+                                    click = hoveredClickable.MiddleClick(eyeTrackingEntity);
+                                    break;
+                                case ControlClickButton.Back:
+                                    click = hoveredClickable.BackClick(eyeTrackingEntity);
+                                    break;
+                                case ControlClickButton.Forward:
+                                    click = hoveredClickable.ForwardClick(eyeTrackingEntity);
+                                    break;
+                                default:
+                                    click = hoveredClickable.Click(eyeTrackingEntity);
+                                    break;
+                            }
                         }
                     }
 
                     ControlTemplate tooltipParent;
-                    if (!suppressReleaseClick && !click && TryHandleTooltipActivation(
+                    if (!suppressReleaseClick &&
+                        IsTooltipActivationButton(clickButton) &&
+                        !click &&
+                        TryHandleTooltipActivation(
                             eyeTrackingEntity,
                             rightClick: rightClick,
                             tooltipParent: out tooltipParent))
@@ -413,7 +464,7 @@ namespace LcdMod.Client.Modules.EyeTracking
                     }
 
                     if (click && interactiveSurface != null && clickedControl != null)
-                        RaiseControlClick(interactiveSurface, clickedControl, rightClick);
+                        RaiseControlClick(interactiveSurface, clickedControl, clickButton);
 
                     if (eyeTrackingEntity != null && !suppressReleaseClick)
                     {
@@ -421,7 +472,7 @@ namespace LcdMod.Client.Modules.EyeTracking
                             hoveredClickable == null
                                 ? AudioHelper.HudClick
                                 : click
-                                    ? hoveredClickable.ClickSound
+                                    ? hoveredClickable.GetClickSound(clickButton)
                                     : hoveredClickable.ClickFailSound);
                     }
                 }
@@ -445,6 +496,15 @@ namespace LcdMod.Client.Modules.EyeTracking
 
                 if (secondaryReleased)
                     _suppressSecondaryReleaseClick = false;
+
+                if (middleReleased)
+                    _suppressMiddleReleaseClick = false;
+
+                if (backReleased)
+                    _suppressBackReleaseClick = false;
+
+                if (forwardReleased)
+                    _suppressForwardReleaseClick = false;
             }
 
             if (!hasInputTarget)
@@ -459,10 +519,22 @@ namespace LcdMod.Client.Modules.EyeTracking
 
                 if (!secondaryPressed)
                     _suppressSecondaryReleaseClick = false;
+
+                if (!middlePressed)
+                    _suppressMiddleReleaseClick = false;
+
+                if (!backPressed)
+                    _suppressBackReleaseClick = false;
+
+                if (!forwardPressed)
+                    _suppressForwardReleaseClick = false;
             }
 
             _primaryWasPressed = primaryPressed;
             _secondaryWasPressed = secondaryPressed;
+            _middleWasPressed = middlePressed;
+            _backWasPressed = backPressed;
+            _forwardWasPressed = forwardPressed;
         }
 
         void UpdatePointerTarget(InteractiveSurfaceScript surface, ControlTemplate control)
@@ -504,7 +576,7 @@ namespace LcdMod.Client.Modules.EyeTracking
         static void RaiseControlClick(
             InteractiveSurfaceScript surface,
             ControlTemplate control,
-            bool secondary)
+            ControlClickButton button)
         {
             if (surface == null || control == null)
                 return;
@@ -517,10 +589,10 @@ namespace LcdMod.Client.Modules.EyeTracking
             {
                 try
                 {
-                    ((Action<InteractiveSurfaceScript, ControlTemplate, bool>)@delegate)(
+                    ((Action<InteractiveSurfaceScript, ControlTemplate, ControlClickButton>)@delegate)(
                         surface,
                         control,
-                        secondary);
+                        button);
                 }
                 catch (Exception e)
                 {
@@ -611,13 +683,13 @@ namespace LcdMod.Client.Modules.EyeTracking
 
                 var interactiveSurface = eyeTrackingEntity as InteractiveSurfaceScript;
                 if (click && interactiveSurface != null)
-                    RaiseControlClick(interactiveSurface, clickedControl, false);
+                    RaiseControlClick(interactiveSurface, clickedControl, ControlClickButton.Primary);
 
                 if (eyeTrackingEntity != null)
                 {
                     eyeTrackingEntity.PlaySounds(
                         click
-                            ? clickedControl.ClickSound
+                            ? clickedControl.GetClickSound(ControlClickButton.Primary)
                             : clickedControl.ClickFailSound);
                 }
             }
@@ -648,29 +720,72 @@ namespace LcdMod.Client.Modules.EyeTracking
 
         public static bool HoldingRightClick => MyAPIGateway.Input.IsRightMousePressed();
 
-        bool? GetActiveClickButton()
+        public static bool HoldingMiddleClick => MyAPIGateway.Input.IsMiddleMousePressed();
+
+        public static bool HoldingBackClick => MyAPIGateway.Input.IsXButton1MousePressed();
+
+        public static bool HoldingForwardClick => MyAPIGateway.Input.IsXButton2MousePressed();
+
+        public static bool HoldingReturnClick => HoldingBackClick;
+
+        ControlClickButton? GetActiveClickButton()
         {
             if (MyAPIGateway.Input == null)
                 return null;
 
             if (HoldingClick || _primaryWasPressed)
-                return false;
+                return ControlClickButton.Primary;
 
             if (HoldingRightClick || _secondaryWasPressed)
-                return true;
+                return ControlClickButton.Secondary;
+
+            if (HoldingMiddleClick || _middleWasPressed)
+                return ControlClickButton.Middle;
+
+            if (HoldingBackClick || _backWasPressed)
+                return ControlClickButton.Back;
+
+            if (HoldingForwardClick || _forwardWasPressed)
+                return ControlClickButton.Forward;
 
             return null;
         }
 
-        static bool TryGetHoveredClickable(IEyeTracking screen, bool? secondary, out ControlTemplate clickable)
+        static ControlClickButton GetReleasedClickButton(
+            bool primaryReleased,
+            bool secondaryReleased,
+            bool middleReleased,
+            bool backReleased,
+            bool forwardReleased)
+        {
+            if (primaryReleased)
+                return ControlClickButton.Primary;
+            if (secondaryReleased)
+                return ControlClickButton.Secondary;
+            if (middleReleased)
+                return ControlClickButton.Middle;
+            if (backReleased)
+                return ControlClickButton.Back;
+            return forwardReleased
+                ? ControlClickButton.Forward
+                : ControlClickButton.Primary;
+        }
+
+        static bool IsTooltipActivationButton(ControlClickButton button)
+        {
+            return button == ControlClickButton.Primary ||
+                   button == ControlClickButton.Secondary;
+        }
+
+        static bool TryGetHoveredClickable(IEyeTracking screen, ControlClickButton? button, out ControlTemplate clickable)
         {
             clickable = null;
             var interactiveSurface = screen as InteractiveSurfaceScript;
 
             if (interactiveSurface != null)
             {
-                return secondary.HasValue
-                    ? interactiveSurface.TryResolveClickableAtCursor(secondary.Value, out clickable)
+                return button.HasValue
+                    ? interactiveSurface.TryResolveClickableAtCursor(button.Value, out clickable)
                     : interactiveSurface.TryResolveClickableAtCursor(out clickable);
             }
 
@@ -695,10 +810,8 @@ namespace LcdMod.Client.Modules.EyeTracking
                 if (entry == null)
                     continue;
 
-                bool resolved = secondary.HasValue
-                    ? secondary.Value
-                        ? entry.TryResolveSecondaryClickable(position, out clickable)
-                        : entry.TryResolvePrimaryClickable(position, out clickable)
+                bool resolved = button.HasValue
+                    ? entry.TryResolveClickable(position, button.Value, out clickable)
                     : entry.TryResolveClickable(position, out clickable);
 
                 if (resolved)

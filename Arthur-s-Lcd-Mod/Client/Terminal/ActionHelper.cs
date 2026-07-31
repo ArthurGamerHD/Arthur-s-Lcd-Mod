@@ -1,3 +1,4 @@
+#if EXPERIMENTAL
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -10,6 +11,7 @@ using Sandbox.ModAPI.Interfaces;
 using VRage.Utils;
 using VRageMath;
 using IMyFunctionalBlock = Sandbox.ModAPI.IMyFunctionalBlock;
+#endif
 
 namespace LcdMod.Client.Terminal
 {

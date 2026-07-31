@@ -1,3 +1,4 @@
+#if DEBUG
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.SurfaceScripts.Abstract;
@@ -13,7 +14,6 @@ namespace LcdMod.Client.ScreenAreas
 {
     public static partial class ScreenAreaGeometry
     {
-#if DEBUG
         const double DEBUG_RAY_MAX_DISTANCE = 20d;
         static List<IMyHudNotification> _debugNotifications = new List<IMyHudNotification>();
         static int _drawTick;
@@ -355,7 +355,6 @@ namespace LcdMod.Client.ScreenAreas
                 return _a == other._a && _b == other._b;
             }
         }
-
-#endif
     }
 }
+#endif

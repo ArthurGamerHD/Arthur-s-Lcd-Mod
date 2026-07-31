@@ -360,7 +360,7 @@ namespace LcdMod.Client.Ftue
         void HandleControlClick(
             InteractiveSurfaceScript surface,
             ControlTemplate control,
-            bool secondary)
+            ControlClickButton button)
         {
             AppBinding binding;
             if (control == null || !TryGetActiveBinding(surface, out binding))
@@ -374,7 +374,7 @@ namespace LcdMod.Client.Ftue
 
                 try
                 {
-                    tip.OnControlClick(surface, binding.App, control, secondary);
+                    tip.OnControlClick(surface, binding.App, control, button);
                 }
                 catch (Exception e)
                 {

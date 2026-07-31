@@ -322,7 +322,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             return false;
         }
 
-        public virtual bool CanClick => CanPrimaryClick || CanSecondaryClick;
+        public virtual bool CanClick =>
+            CanPrimaryClick ||
+            CanSecondaryClick ||
+            CanMiddleClick ||
+            CanBackClick ||
+            CanForwardClick;
 
         public virtual bool CanPrimaryClick
         {
@@ -339,6 +344,33 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             {
                 var model = Model;
                 return Visible && Enabled && (OnSecondaryClick != null || model != null && model.CanSecondaryClick);
+            }
+        }
+
+        public virtual bool CanMiddleClick
+        {
+            get
+            {
+                var model = Model;
+                return Visible && Enabled && (OnMiddleClick != null || model != null && model.CanMiddleClick);
+            }
+        }
+
+        public virtual bool CanBackClick
+        {
+            get
+            {
+                var model = Model;
+                return Visible && Enabled && (OnBackClick != null || model != null && model.CanBackClick);
+            }
+        }
+
+        public virtual bool CanForwardClick
+        {
+            get
+            {
+                var model = Model;
+                return Visible && Enabled && (OnForwardClick != null || model != null && model.CanForwardClick);
             }
         }
 
@@ -393,6 +425,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         public Action<object, object> OnClick { get; private set; }
         public Action<object, object> OnDoubleClick { get; private set; }
         public Action<object, object> OnSecondaryClick { get; set; }
+        public Action<object, object> OnMiddleClick { get; set; }
+        public Action<object, object> OnBackClick { get; set; }
+        public Action<object, object> OnForwardClick { get; set; }
         public ControlScrollHandler OnScroll { get; set; }
         public ControlHoverHandler OnHover { get; set; }
         public ControlDragHandler OnDrag { get; set; }
@@ -494,8 +529,53 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             ValidateLayout();
         }
 
-        public MySoundPair ClickSound { get; set; } = AudioHelper.HudClick;
+        static readonly ControlClickButton[] ClickSoundButtons =
+        {
+            ControlClickButton.Primary,
+            ControlClickButton.Secondary,
+            ControlClickButton.Middle,
+            ControlClickButton.Back,
+            ControlClickButton.Forward
+        };
+
+        public Dictionary<ControlClickButton, MySoundPair> ClickSounds { get; } = CreateDefaultClickSounds();
+
+        public MySoundPair ClickSound
+        {
+            get { return GetClickSound(ControlClickButton.Primary); }
+            set
+            {
+                for (int i = 0; i < ClickSoundButtons.Length; i++)
+                    SetClickSound(ClickSoundButtons[i], value);
+            }
+        }
+
         public MySoundPair ClickFailSound { get; set; } = AudioHelper.HudUnable;
+
+        public MySoundPair GetClickSound(ControlClickButton button)
+        {
+            MySoundPair sound;
+            if (ClickSounds.TryGetValue(button, out sound) && sound != null)
+                return sound;
+
+            return ClickSounds.TryGetValue(ControlClickButton.Primary, out sound) && sound != null
+                ? sound
+                : AudioHelper.HudClick;
+        }
+
+        public ControlTemplate SetClickSound(ControlClickButton button, MySoundPair sound)
+        {
+            ClickSounds[button] = sound;
+            return this;
+        }
+
+        static Dictionary<ControlClickButton, MySoundPair> CreateDefaultClickSounds()
+        {
+            var sounds = new Dictionary<ControlClickButton, MySoundPair>(ClickSoundButtons.Length);
+            for (int i = 0; i < ClickSoundButtons.Length; i++)
+                sounds[ClickSoundButtons[i]] = AudioHelper.HudClick;
+            return sounds;
+        }
 
         public void Render(List<MySprite> sprites)
         {
@@ -951,6 +1031,41 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             return clickable != null;
         }
 
+        public bool TryResolveMiddleClickable(Vector2 point, out ControlTemplate clickable)
+        {
+            clickable = ResolveHit(point, AcceptMiddleClickableHit);
+            return clickable != null;
+        }
+
+        public bool TryResolveBackClickable(Vector2 point, out ControlTemplate clickable)
+        {
+            clickable = ResolveHit(point, AcceptBackClickableHit);
+            return clickable != null;
+        }
+
+        public bool TryResolveForwardClickable(Vector2 point, out ControlTemplate clickable)
+        {
+            clickable = ResolveHit(point, AcceptForwardClickableHit);
+            return clickable != null;
+        }
+
+        public bool TryResolveClickable(Vector2 point, ControlClickButton button, out ControlTemplate clickable)
+        {
+            switch (button)
+            {
+                case ControlClickButton.Secondary:
+                    return TryResolveSecondaryClickable(point, out clickable);
+                case ControlClickButton.Middle:
+                    return TryResolveMiddleClickable(point, out clickable);
+                case ControlClickButton.Back:
+                    return TryResolveBackClickable(point, out clickable);
+                case ControlClickButton.Forward:
+                    return TryResolveForwardClickable(point, out clickable);
+                default:
+                    return TryResolvePrimaryClickable(point, out clickable);
+            }
+        }
+
         public bool TryResolveScrollable(Vector2 point, out ControlTemplate scrollable)
         {
             scrollable = ResolveHit(point, AcceptScrollableHit);
@@ -1002,6 +1117,24 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             return TryResolveSecondaryClickable(point, out clickable) && clickable.SecondaryClickAt(point, sender);
         }
 
+        public bool MiddleClick(Vector2 point, object sender)
+        {
+            ControlTemplate clickable;
+            return TryResolveMiddleClickable(point, out clickable) && clickable.MiddleClickAt(point, sender);
+        }
+
+        public bool BackClick(Vector2 point, object sender)
+        {
+            ControlTemplate clickable;
+            return TryResolveBackClickable(point, out clickable) && clickable.BackClickAt(point, sender);
+        }
+
+        public bool ForwardClick(Vector2 point, object sender)
+        {
+            ControlTemplate clickable;
+            return TryResolveForwardClickable(point, out clickable) && clickable.ForwardClickAt(point, sender);
+        }
+
         public bool Scroll(Vector2 point, object sender, int delta)
         {
             ControlTemplate scrollable;
@@ -1024,6 +1157,21 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             return SecondaryClick(sender);
         }
 
+        public virtual bool MiddleClickAt(Vector2 point, object sender)
+        {
+            return MiddleClick(sender);
+        }
+
+        public virtual bool BackClickAt(Vector2 point, object sender)
+        {
+            return BackClick(sender);
+        }
+
+        public virtual bool ForwardClickAt(Vector2 point, object sender)
+        {
+            return ForwardClick(sender);
+        }
+
         public virtual bool Click(object sender)
         {
             if (OnDoubleClick != null)
@@ -1039,12 +1187,22 @@ namespace LcdMod.Client.Gui.ControlsTemplates
                 }
             }
 
-            return HandleClick(sender, OnClick, false);
+            return HandleClick(sender, OnClick, ControlClickButton.Primary);
         }
 
-        public virtual bool SecondaryClick(object sender) => HandleClick(sender, OnSecondaryClick, true);
+        public virtual bool SecondaryClick(object sender) =>
+            HandleClick(sender, OnSecondaryClick, ControlClickButton.Secondary);
 
-        internal bool HandleClick(object sender, Action<object, object> handler, bool secondary)
+        public virtual bool MiddleClick(object sender) =>
+            HandleClick(sender, OnMiddleClick, ControlClickButton.Middle);
+
+        public virtual bool BackClick(object sender) =>
+            HandleClick(sender, OnBackClick, ControlClickButton.Back);
+
+        public virtual bool ForwardClick(object sender) =>
+            HandleClick(sender, OnForwardClick, ControlClickButton.Forward);
+
+        internal bool HandleClick(object sender, Action<object, object> handler, ControlClickButton button)
         {
             if (!Visible || !Enabled)
                 return false;
@@ -1060,7 +1218,19 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             if (model == null)
                 return false;
 
-            return secondary ? model.SecondaryClick(sender) : model.Click(sender);
+            switch (button)
+            {
+                case ControlClickButton.Secondary:
+                    return model.SecondaryClick(sender);
+                case ControlClickButton.Middle:
+                    return model.MiddleClick(sender);
+                case ControlClickButton.Back:
+                    return model.BackClick(sender);
+                case ControlClickButton.Forward:
+                    return model.ForwardClick(sender);
+                default:
+                    return model.Click(sender);
+            }
         }
 
         public virtual bool Scroll(object sender, int delta)
@@ -1248,6 +1418,21 @@ namespace LcdMod.Client.Gui.ControlsTemplates
             return control.CanSecondaryClick;
         }
 
+        static bool AcceptMiddleClickableHit(ControlTemplate control)
+        {
+            return control.CanMiddleClick;
+        }
+
+        static bool AcceptBackClickableHit(ControlTemplate control)
+        {
+            return control.CanBackClick;
+        }
+
+        static bool AcceptForwardClickableHit(ControlTemplate control)
+        {
+            return control.CanForwardClick;
+        }
+
         static bool AcceptScrollableHit(ControlTemplate control)
         {
             return control.CanScroll;
@@ -1283,7 +1468,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates
                 if (model.Cursor != CursorType.Default)
                     return model.Cursor;
 
-                if (model.CanClick || model.CanSecondaryClick)
+                if (model.CanClick ||
+                    model.CanSecondaryClick ||
+                    model.CanMiddleClick ||
+                    model.CanBackClick ||
+                    model.CanForwardClick)
                     return CursorType.Hand;
             }
 

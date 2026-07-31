@@ -42,9 +42,9 @@ namespace LcdMod.Client.Ftue
             InteractiveSurfaceScript surface,
             IApp app,
             ControlTemplate control,
-            bool secondary)
+            ControlClickButton button)
         {
-            if (secondary || !IsTriggered(surface))
+            if (button != ControlClickButton.Primary || !IsTriggered(surface))
                 return;
 
             var typedApp = app as TApp;

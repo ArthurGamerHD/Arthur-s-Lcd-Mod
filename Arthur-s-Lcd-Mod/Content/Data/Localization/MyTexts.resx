@@ -1035,7 +1035,7 @@ We are waiting for a while, and then we will restart it for you.</value>
     <value>Limits planet map texture detail on this client. Ultra uses the maximum available detail.</value>
   </data>
   <data name="LcdMod_PlanetTextureQuality_VeryLow" xml:space="preserve">
-    <value>Very Low</value>
+    <value>Poop</value>
   </data>
   <data name="LcdMod_PlanetTextureQuality_Low" xml:space="preserve">
     <value>Low</value>

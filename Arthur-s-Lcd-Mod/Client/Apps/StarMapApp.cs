@@ -576,9 +576,10 @@ namespace LcdMod.Client.Apps
         {
             quality = PlanetTextureQualitySettings.Normalize(quality);
             int maximumFaceSide = PlanetTextureQualitySettings.GetMaximumFaceSide(quality);
+            float textCellPixels = PlanetTextureQualitySettings.GetTextCellSizePixels(quality);
 
             foreach (PlanetGlobeControl globe in _planetGlobeControls.Values)
-                globe.SetMaximumRenderResolution(maximumFaceSide);
+                globe.SetRenderQuality(maximumFaceSide, textCellPixels);
 
             foreach (PlanetCubemapState state in _planetCubemapStates.Values)
             {
@@ -4503,6 +4504,9 @@ namespace LcdMod.Client.Apps
                 new Vector2(diameter)));
             UpdatePlanetGlobe(state.Entry, planet);
             state.Entry.SetOnClick(PlanetariumMode ? OnStaticPlanetClicked : (Action<object, object>)null);
+            state.Entry.SurfaceMiddleClicked = PlanetariumMode
+                ? (Func<PlanetGlobeControl, Vector2, object, bool>)OnStaticPlanetSurfaceMiddleClicked
+                : null;
             state.Entry.SetTooltip(PlanetariumMode ? state.StaticTooltip : null);
             state.UsedThisFrame = true;
             state.Entry.SetVisible(true);
@@ -4539,9 +4543,10 @@ namespace LcdMod.Client.Apps
 
             control = AddLogicalChild(
                 new PlanetGlobeControl(default(RectangleF)));
-            control.SetMaximumRenderResolution(
-                PlanetTextureQualitySettings.GetMaximumFaceSide(
-                    LocalConfigManager.TextureQuality));
+            PlanetTextureQuality quality = LocalConfigManager.TextureQuality;
+            control.SetRenderQuality(
+                PlanetTextureQualitySettings.GetMaximumFaceSide(quality),
+                PlanetTextureQualitySettings.GetTextCellSizePixels(quality));
             _planetGlobeControls[planetId] = control;
             return control;
         }
@@ -4723,6 +4728,15 @@ namespace LcdMod.Client.Apps
                 (float)Vector3D.Dot(worldDirection, planet.WorldMatrix.Backward));
         }
 
+        static Vector3D PlanetLocalDirectionToWorld(
+            MyPlanet planet,
+            Vector3 localDirection)
+        {
+            return planet.WorldMatrix.Right * localDirection.X +
+                   planet.WorldMatrix.Up * localDirection.Y +
+                   planet.WorldMatrix.Backward * localDirection.Z;
+        }
+
         CursorType? GetCursor() => _busy ? CursorType.AppStarting : CursorType.Default;
 
         void OnStaticPlanetClicked(object dataContext, object sender)
@@ -4743,6 +4757,62 @@ namespace LcdMod.Client.Apps
 
             InvalidateStaticOrbitCache();
             Host.RenderSprites();
+        }
+
+        bool OnStaticPlanetSurfaceMiddleClicked(PlanetGlobeControl control, Vector2 screenPoint, object sender)
+        {
+            if (_closed || !PlanetariumMode || control == null)
+                return false;
+
+            long planetId = control.DataContext as long? ?? 0L;
+            PlanetInteractiveState state;
+            if (planetId == 0L ||
+                !_planetInteractiveStates.TryGetValue(planetId, out state) ||
+                state.Projection.PlanetId != planetId)
+            {
+                return false;
+            }
+
+            Vector3 localDirection;
+            return control.TryGetSurfaceDirection(screenPoint, out localDirection) &&
+                   FocusStaticCameraOnPlanetSurface(state.Projection, localDirection);
+        }
+
+        bool FocusStaticCameraOnPlanetSurface(PlanetProjection projection, Vector3 localDirection)
+        {
+            MyPlanet planet;
+            if (projection.PlanetId == 0L ||
+                !PlanetHelper.PlanetsById.TryGetValue(projection.PlanetId, out planet) ||
+                planet == null ||
+                planet.MarkedForClose)
+            {
+                return false;
+            }
+
+            if (!_staticPanProjectionValid ||
+                _staticPanWorldUnitsPerPixel <= 0d ||
+                double.IsNaN(_staticPanWorldUnitsPerPixel) ||
+                double.IsInfinity(_staticPanWorldUnitsPerPixel))
+            {
+                return false;
+            }
+
+            if (localDirection.Normalize() <= 1e-6f)
+                return false;
+
+            Vector3D worldDirection = PlanetLocalDirectionToWorld(planet, localDirection);
+            if (worldDirection.Normalize() <= 1e-9)
+                return false;
+
+            double targetRadius = Math.Max(0f, projection.MarkerRadius) * _staticPanWorldUnitsPerPixel;
+            if (targetRadius <= 0d)
+                return false;
+
+            _staticFocusPlanetId = projection.PlanetId;
+            _staticCameraTargetOffsetWorld = worldDirection * targetRadius;
+            InvalidateStaticOrbitCache();
+            Host.RenderSprites();
+            return true;
         }
 
         bool OnStaticCameraMoved(object dataContext, object sender, Vector2 delta)

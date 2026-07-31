@@ -1,3 +1,4 @@
+#if DEBUG
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
@@ -11,7 +12,6 @@ using VRageMath;
 using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
 {
-#if DEBUG
     [LcdSurface(typeof(Apps.BSoDTestApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class BSoDTestSurfaceScript : SurfaceScriptBase
@@ -39,5 +39,5 @@ namespace LcdMod.Client.SurfaceScripts
             return _sprites;
         }
     }
-#endif
 }
+#endif

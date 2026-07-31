@@ -1,5 +1,3 @@
-#if EXPERIMENTAL
-#endif
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
@@ -9,7 +7,9 @@ using LcdMod.Client.Gui.ControlsTemplates.Inputs;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
+#if EXPERIMENTAL
 using LcdMod.Client.Terminal;
+#endif
 using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
 using Sandbox.Game.Entities;
