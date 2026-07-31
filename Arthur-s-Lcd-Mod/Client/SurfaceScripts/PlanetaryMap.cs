@@ -25,7 +25,7 @@ namespace LcdMod.Client.SurfaceScripts
         public const string ID = "LcdMod_PlanetaryMap";
         public const string TITLE = "Planetary Map";
 
-        public override bool AsyncRender => true;
+        public override bool AsyncRender => false;
         
         readonly List<Control> _emptyInteractive = new List<Control>();
         PlanetaryMapApp _app;

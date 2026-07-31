@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Modules.Cartography;
+using LcdMod.Common.Helpers;
+using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 
@@ -8,7 +10,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
 {
     /// <summary>
     /// Renders a mipmapped planet cubemap as an orthographic sphere using native
-    /// SquareSimple sprites. View and screen-axis directions are expressed in the
+    /// per-channel text sprites. View and screen-axis directions are expressed in the
     /// same planet-local coordinate frame used by PlanetColorCubemap.
     /// </summary>
     public sealed class PlanetGlobeControl : RectangleControl
@@ -16,12 +18,31 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
         const int MINIMUM_RENDER_RESOLUTION = 5;
         const int MINIMUM_REQUEST_FACE_SIDE = 8;
         const int MAXIMUM_EXPLICIT_FACE_SIDE = 2048;
-        const string SQUARE_SPRITE = "SquareSimple";
         const string CIRCLE_SPRITE = "Circle";
+        const string ALPHA_MASK_FONT = Constants.MOD_PREFIX + "AlphaMask";
+        const char TRANSPARENT_CHANNEL_GLYPH = (char)0xe0ff;
+        const int CHANNEL_INTENSITY_GLYPH_BASE = 0xe100;
+        const float CHANNEL_GLYPH_PITCH = 4f;
+        const float CHANNEL_GLYPH_LINE_HEIGHT = 4f;
+        const float CHANNEL_FONT_RENDER_SCALE = 144f / 185f;
+        const float CHANNEL_NATIVE_TEXT_SCALE = 185f / 144f;
+        const float CHANNEL_TEXT_SAMPLE_SCALE = 0.25f;
+        // SE multiplies text scale by 144/185; this renders each 4 px glyph cell as 1 LCD pixel.
+        const float CHANNEL_TEXT_SPRITE_SCALE = CHANNEL_NATIVE_TEXT_SCALE * CHANNEL_TEXT_SAMPLE_SCALE;
+        const int CHANNEL_TEXT_VISIBLE_GUARD_CELLS = 2;
+        const int CHANNEL_TEXT_FILL_WORKERS = 4;
+        const int CHANNEL_TEXT_PARALLEL_MIN_CELLS = 4096;
         const float VECTOR_EPSILON = 0.000001f;
         const float VALUE_EPSILON = 0.000001f;
 
+        static readonly Color RedChannelTint = new Color(255, 0, 0, 254);
+        static readonly Color GreenChannelTint = new Color(0, 255, 0, 128);
+        static readonly Color BlueChannelTint = new Color(0, 0, 255, 85);
+
         readonly List<MySprite> _cachedSprites = new List<MySprite>();
+        readonly MutableChannelText _redChannelText = new MutableChannelText();
+        readonly MutableChannelText _greenChannelText = new MutableChannelText();
+        readonly MutableChannelText _blueChannelText = new MutableChannelText();
 
         PlanetColorCubemap _cubemap;
         Vector3 _viewDirection = Vector3.Backward;
@@ -212,10 +233,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
 
         /// <summary>
         /// Returns the lazily requested cubemap face side for the current control
-        /// bounds and zoom. SquareSimple can represent one independent native Color
-        /// per LCD pixel, so the desired face density follows the projected sphere
-        /// diameter until MaximumRenderResolution applies a local cap. Power-of-two request buckets allow one completed
-        /// cubemap and its mip chain to service nearby zoom levels.
+        /// bounds and zoom. The desired face density follows the fixed-scale
+        /// channel text grid until MaximumRenderResolution applies a local cap.
+        /// Power-of-two request buckets allow one completed cubemap and its mip
+        /// chain to service nearby zoom levels.
         /// </summary>
         public int GetPreferredFaceSide()
         {
@@ -225,9 +246,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
             if (sphereDiameter <= 0f)
                 return MINIMUM_REQUEST_FACE_SIDE;
 
-            int desiredSide = Math.Max(
-                MINIMUM_REQUEST_FACE_SIDE,
-                (int)Math.Ceiling(sphereDiameter));
+            int desiredSide = Math.Max(MINIMUM_REQUEST_FACE_SIDE, GetChannelTextSide(sphereDiameter));
             if (_maximumRenderResolution > 0)
                 desiredSide = Math.Min(desiredSide, _maximumRenderResolution);
 
@@ -370,104 +389,33 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
                 return;
             }
 
-            // One cubemap sample per projected LCD pixel. When a sharper
-            // cubemap is still loading, the current lower-resolution map remains
-            // assigned and is intentionally stretched only for that transition.
-            float projectedFaceSamples = Math.Max(1f, sphereDiameter);
-            int mipLevel = SelectRenderableMip(projectedFaceSamples);
+            // The text sprite scale cancels Space Engineers' internal font
+            // scale, so zoom changes resample the planet into a larger or
+            // smaller 4 px-per-cell channel text image instead.
+            int fullRows = GetChannelTextSide(sphereDiameter);
+            int fullColumns = GetChannelTextColumns(fullRows);
+            if (fullColumns <= 0)
+                return;
+
+            int mipLevel = SelectRenderableMip(fullRows);
             int resolution = _cubemap.GetMipResolution(mipLevel);
             if (resolution <= 0)
                 return;
 
-            for (int y = 0; y < resolution; y++)
-            {
-                float cellTop = GetCellEdge(sphereBounds.Y, sphereDiameter, y, resolution);
-                float cellBottom = GetCellEdge(sphereBounds.Y, sphereDiameter, y + 1, resolution);
-                if (cellBottom <= clip.Y || cellTop >= clip.Bottom)
-                    continue;
-
-                float sphereY = 1f - ((y + 0.5f) / resolution) * 2f;
-                bool hasRun = false;
-                int runStart = 0;
-                int runEnd = 0;
-                Color runColor = default(Color);
-
-                for (int x = 0; x < resolution; x++)
-                {
-                    float cellLeft = GetCellEdge(sphereBounds.X, sphereDiameter, x, resolution);
-                    float cellRight = GetCellEdge(sphereBounds.X, sphereDiameter, x + 1, resolution);
-                    float sphereX = ((x + 0.5f) / resolution) * 2f - 1f;
-                    float radiusSquared = sphereX * sphereX + sphereY * sphereY;
-                    bool visible = radiusSquared <= 1f &&
-                                   cellRight > clip.X &&
-                                   cellLeft < clip.Right;
-
-                    if (!visible)
-                    {
-                        FlushRun(
-                            clip,
-                            sphereBounds,
-                            sphereDiameter,
-                            resolution,
-                            y,
-                            ref hasRun,
-                            runStart,
-                            runEnd,
-                            runColor);
-                        continue;
-                    }
-
-                    float sphereZ = (float)Math.Sqrt(Math.Max(0f, 1f - radiusSquared));
-                    Vector3 displayDirection = _viewDirection * sphereZ +
-                                               _screenRight * sphereX +
-                                               _screenUp * sphereY;
-                    if (displayDirection.Normalize() <= VECTOR_EPSILON)
-                        displayDirection = _viewDirection;
-
-                    Vector3 sampleDirection = TransformByInverseRotation(
-                        displayDirection,
-                        _rotationTransform);
-                    if (sampleDirection.Normalize() <= VECTOR_EPSILON)
-                        sampleDirection = displayDirection;
-
-                    Color color = ApplyColorAlpha(
-                        _cubemap.Sample(sampleDirection, mipLevel),
-                        _colorAlpha);
-
-                    if (hasRun && color.Equals(runColor))
-                    {
-                        runEnd = x;
-                        continue;
-                    }
-
-                    FlushRun(
-                        clip,
-                        sphereBounds,
-                        sphereDiameter,
-                        resolution,
-                        y,
-                        ref hasRun,
-                        runStart,
-                        runEnd,
-                        runColor);
-
-                    hasRun = true;
-                    runStart = x;
-                    runEnd = x;
-                    runColor = color;
-                }
-
-                FlushRun(
+            ChannelTextWindow window;
+            if (!TryGetVisibleChannelTextWindow(
                     clip,
                     sphereBounds,
-                    sphereDiameter,
-                    resolution,
-                    y,
-                    ref hasRun,
-                    runStart,
-                    runEnd,
-                    runColor);
+                    fullColumns,
+                    fullRows,
+                    out window))
+            {
+                return;
             }
+
+            EnsureChannelTextSize(window.Columns, window.Rows);
+            FillChannelText(window, mipLevel);
+            AddChannelTextSprites(clip, sphereBounds, window);
         }
 
         void AddLoadingSphere(List<MySprite> sprites)
@@ -523,82 +471,283 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
             return mipLevel;
         }
 
-        void FlushRun(
-            RectangleF clip,
-            RectangleF sphereBounds,
-            float sphereDiameter,
-            int resolution,
-            int row,
-            ref bool hasRun,
-            int firstColumn,
-            int lastColumn,
-            Color color)
+        int GetChannelTextSide(float sphereDiameter)
         {
-            if (!hasRun)
-                return;
+            if (sphereDiameter <= 0f)
+                return MINIMUM_RENDER_RESOLUTION;
 
-            AddSquareRun(
-                clip,
-                sphereBounds,
-                sphereDiameter,
-                resolution,
-                row,
-                firstColumn,
-                lastColumn,
-                color);
-            hasRun = false;
+            float cellSide = GetChannelTextCellSide();
+            int side = (int)Math.Ceiling(sphereDiameter / cellSide);
+            side = Math.Max(MINIMUM_RENDER_RESOLUTION, side);
+            return side;
         }
 
-        void AddSquareRun(
+        static int GetChannelTextColumns(int rows)
+        {
+            return Math.Max(0, rows);
+        }
+
+        static float GetChannelTextCellSide()
+        {
+            return CHANNEL_GLYPH_PITCH * CHANNEL_FONT_RENDER_SCALE * CHANNEL_TEXT_SPRITE_SCALE;
+        }
+
+        static Vector2 EstimateChannelTextSize(int columns, int rows)
+        {
+            return new Vector2(
+                Math.Max(CHANNEL_GLYPH_LINE_HEIGHT, columns * CHANNEL_GLYPH_PITCH) *
+                CHANNEL_FONT_RENDER_SCALE *
+                CHANNEL_TEXT_SPRITE_SCALE,
+                Math.Max(CHANNEL_GLYPH_LINE_HEIGHT, rows * CHANNEL_GLYPH_LINE_HEIGHT) *
+                CHANNEL_FONT_RENDER_SCALE *
+                CHANNEL_TEXT_SPRITE_SCALE);
+        }
+
+        static Vector2 EstimateChannelTextOffset(int columns, int rows)
+        {
+            return new Vector2(
+                columns * CHANNEL_GLYPH_PITCH * CHANNEL_FONT_RENDER_SCALE * CHANNEL_TEXT_SPRITE_SCALE,
+                rows * CHANNEL_GLYPH_LINE_HEIGHT * CHANNEL_FONT_RENDER_SCALE * CHANNEL_TEXT_SPRITE_SCALE);
+        }
+
+        static bool TryGetVisibleChannelTextWindow(
             RectangleF clip,
             RectangleF sphereBounds,
-            float sphereDiameter,
-            int resolution,
-            int row,
-            int firstColumn,
-            int lastColumn,
-            Color color)
+            int fullColumns,
+            int fullRows,
+            out ChannelTextWindow window)
         {
-            float left = GetCellEdge(
-                sphereBounds.X,
-                sphereDiameter,
-                firstColumn,
-                resolution);
-            float right = GetCellEdge(
-                sphereBounds.X,
-                sphereDiameter,
-                lastColumn + 1,
-                resolution);
-            float top = GetCellEdge(
-                sphereBounds.Y,
-                sphereDiameter,
-                row,
-                resolution);
-            float bottom = GetCellEdge(
-                sphereBounds.Y,
-                sphereDiameter,
-                row + 1,
-                resolution);
+            window = default(ChannelTextWindow);
 
-            left = Math.Max(left, clip.X);
-            right = Math.Min(right, clip.Right);
-            top = Math.Max(top, clip.Y);
-            bottom = Math.Min(bottom, clip.Bottom);
-            if (right <= left || bottom <= top)
+            if (fullColumns <= 0 || fullRows <= 0)
+                return false;
+
+            float sphereDiameter = Math.Min(sphereBounds.Width, sphereBounds.Height);
+            if (sphereDiameter <= 0f)
+                return false;
+
+            RectangleF visible = Intersect(clip, sphereBounds);
+            if (visible.Width <= 0f || visible.Height <= 0f)
+                return false;
+
+            int columnStart = ClampInt(
+                (int)Math.Floor((visible.X - sphereBounds.X) * fullColumns / sphereDiameter),
+                0,
+                fullColumns);
+            int columnEnd = ClampInt(
+                (int)Math.Ceiling((visible.Right - sphereBounds.X) * fullColumns / sphereDiameter),
+                0,
+                fullColumns);
+            int rowStart = ClampInt(
+                (int)Math.Floor((visible.Y - sphereBounds.Y) * fullRows / sphereDiameter),
+                0,
+                fullRows);
+            int rowEnd = ClampInt(
+                (int)Math.Ceiling((visible.Bottom - sphereBounds.Y) * fullRows / sphereDiameter),
+                0,
+                fullRows);
+
+            columnStart = Math.Max(0, columnStart - CHANNEL_TEXT_VISIBLE_GUARD_CELLS);
+            columnEnd = Math.Min(fullColumns, columnEnd + CHANNEL_TEXT_VISIBLE_GUARD_CELLS);
+            rowStart = Math.Max(0, rowStart - CHANNEL_TEXT_VISIBLE_GUARD_CELLS);
+            rowEnd = Math.Min(fullRows, rowEnd + CHANNEL_TEXT_VISIBLE_GUARD_CELLS);
+
+            if (columnEnd <= columnStart || rowEnd <= rowStart)
+                return false;
+
+            window = new ChannelTextWindow(
+                fullColumns,
+                fullRows,
+                columnStart,
+                rowStart,
+                columnEnd - columnStart,
+                rowEnd - rowStart);
+            return true;
+        }
+
+        void EnsureChannelTextSize(int columns, int rows)
+        {
+            _redChannelText.EnsureSize(columns, rows);
+            _greenChannelText.EnsureSize(columns, rows);
+            _blueChannelText.EnsureSize(columns, rows);
+        }
+
+        void FillChannelText(ChannelTextWindow window, int mipLevel)
+        {
+            char[] red = _redChannelText.Buffer;
+            char[] green = _greenChannelText.Buffer;
+            char[] blue = _blueChannelText.Buffer;
+            int cellCount = window.Columns * window.Rows;
+            if (red == null || green == null || blue == null || cellCount <= 0)
                 return;
 
-            RectangleF rectangle = new RectangleF(
-                left,
-                top,
-                right - left,
-                bottom - top);
-            MySprite sprite = MySprite.CreateSprite(
-                SQUARE_SPRITE,
-                rectangle.Center,
-                rectangle.Size);
-            sprite.Color = color;
-            sprite.Alignment = TextAlignment.CENTER;
-            _cachedSprites.Add(sprite);
+            var context = new ChannelTextFillContext(
+                window,
+                mipLevel,
+                red,
+                green,
+                blue,
+                _cubemap,
+                _viewDirection,
+                _screenRight,
+                _screenUp,
+                _rotationTransform);
+
+            if (MyAPIGateway.Parallel != null &&
+                cellCount >= CHANNEL_TEXT_PARALLEL_MIN_CELLS)
+            {
+                MyAPIGateway.Parallel.For(
+                    0,
+                    CHANNEL_TEXT_FILL_WORKERS,
+                    workerOffset => FillChannelTextStride(
+                        context,
+                        workerOffset,
+                        CHANNEL_TEXT_FILL_WORKERS));
+            }
+            else
+            {
+                FillChannelTextStride(context, 0, 1);
+            }
+
+            FillChannelTextNewlines(window, red, green, blue);
+
+            _redChannelText.Commit();
+            _greenChannelText.Commit();
+            _blueChannelText.Commit();
+        }
+
+        static void FillChannelTextStride(
+            ChannelTextFillContext context,
+            int offset,
+            int stride)
+        {
+            ChannelTextWindow window = context.Window;
+            int cellCount = window.Columns * window.Rows;
+            int rowStride = window.Columns + 1;
+
+            for (int i = offset; i < cellCount; i += stride)
+            {
+                int y = i / window.Columns;
+                int x = i - y * window.Columns;
+                int rowOffset = y * rowStride;
+                int logicalY = window.RowStart + y;
+                float sphereY = 1f - ((logicalY + 0.5f) / window.FullRows) * 2f;
+
+                int textIndex = rowOffset + x;
+                char redChar = TRANSPARENT_CHANNEL_GLYPH;
+                char greenChar = TRANSPARENT_CHANNEL_GLYPH;
+                char blueChar = TRANSPARENT_CHANNEL_GLYPH;
+
+                int logicalX = window.ColumnStart + x;
+                float sphereX = ((logicalX + 0.5f) / window.FullColumns) * 2f - 1f;
+                float radiusSquared = sphereX * sphereX + sphereY * sphereY;
+                if (radiusSquared <= 1f)
+                {
+                    float sphereZ = (float)Math.Sqrt(Math.Max(0f, 1f - radiusSquared));
+                    Vector3 displayDirection = context.ViewDirection * sphereZ +
+                                               context.ScreenRight * sphereX +
+                                               context.ScreenUp * sphereY;
+                    if (displayDirection.Normalize() <= VECTOR_EPSILON)
+                        displayDirection = context.ViewDirection;
+
+                    Vector3 sampleDirection = TransformByInverseRotation(
+                        displayDirection,
+                        context.RotationTransform);
+                    if (sampleDirection.Normalize() <= VECTOR_EPSILON)
+                        sampleDirection = displayDirection;
+
+                    Color color = context.Cubemap.Sample(sampleDirection, context.MipLevel);
+                    if (color.A != 0)
+                    {
+                        redChar = IntensityToChar(color.R);
+                        greenChar = IntensityToChar(color.G);
+                        blueChar = IntensityToChar(color.B);
+                    }
+                }
+
+                context.Red[textIndex] = redChar;
+                context.Green[textIndex] = greenChar;
+                context.Blue[textIndex] = blueChar;
+            }
+        }
+
+        static void FillChannelTextNewlines(
+            ChannelTextWindow window,
+            char[] red,
+            char[] green,
+            char[] blue)
+        {
+            int rowStride = window.Columns + 1;
+            for (int y = 0; y + 1 < window.Rows; y++)
+            {
+                int newlineIndex = y * rowStride + window.Columns;
+                red[newlineIndex] = '\n';
+                green[newlineIndex] = '\n';
+                blue[newlineIndex] = '\n';
+            }
+        }
+
+        void AddChannelTextSprites(
+            RectangleF clip,
+            RectangleF sphereBounds,
+            ChannelTextWindow window)
+        {
+            Vector2 fullTextSize = EstimateChannelTextSize(window.FullColumns, window.FullRows);
+            if (fullTextSize.X <= 0f || fullTextSize.Y <= 0f)
+                return;
+
+            Vector2 visibleOffset = EstimateChannelTextOffset(
+                window.ColumnStart,
+                window.RowStart);
+            Vector2 position = sphereBounds.Center - fullTextSize * 0.5f + visibleOffset;
+
+            if (!BeginContentClip(_cachedSprites, clip))
+                return;
+
+            AddChannelTextSprite(_redChannelText.Text, position, ApplyChannelAlpha(RedChannelTint));
+            AddChannelTextSprite(_greenChannelText.Text, position, ApplyChannelAlpha(GreenChannelTint));
+            AddChannelTextSprite(_blueChannelText.Text, position, ApplyChannelAlpha(BlueChannelTint));
+            EndContentClip(_cachedSprites);
+        }
+
+        void AddChannelTextSprite(
+            string text,
+            Vector2 position,
+            Color channelTint)
+        {
+            if (channelTint.A == 0 || string.IsNullOrEmpty(text))
+                return;
+
+            _cachedSprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXT,
+                Data = text,
+                Position = position,
+                RotationOrScale = CHANNEL_TEXT_SPRITE_SCALE,
+                Color = channelTint,
+                Alignment = TextAlignment.LEFT,
+                FontId = ALPHA_MASK_FONT
+            });
+        }
+
+        Color ApplyChannelAlpha(Color color)
+        {
+            if (_colorAlpha >= 0.999999f)
+                return color;
+
+            return new Color(
+                color.R,
+                color.G,
+                color.B,
+                (byte)MathHelper.Clamp(
+                    (int)Math.Round(color.A * _colorAlpha),
+                    0,
+                    255));
+        }
+
+        static char IntensityToChar(byte intensity)
+        {
+            return (char)(CHANNEL_INTENSITY_GLYPH_BASE + intensity);
         }
 
         void InvalidateRenderCache()
@@ -679,15 +828,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
                     255));
         }
 
-        static float GetCellEdge(
-            float origin,
-            float span,
-            int edgeIndex,
-            int resolution)
-        {
-            return origin + span * edgeIndex / resolution;
-        }
-
         static RectangleF Intersect(RectangleF left, RectangleF right)
         {
             float x = Math.Max(left.X, right.X);
@@ -697,6 +837,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
             return r > x && b > y
                 ? new RectangleF(x, y, r - x, b - y)
                 : default(RectangleF);
+        }
+
+        static int ClampInt(int value, int min, int max)
+        {
+            if (value < min)
+                return min;
+            return value > max
+                ? max
+                : value;
         }
 
         static bool VectorNearlyEquals(Vector3 left, Vector3 right)
@@ -732,6 +881,126 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
                    Math.Abs(left.M31 - right.M31) <= VALUE_EPSILON &&
                    Math.Abs(left.M32 - right.M32) <= VALUE_EPSILON &&
                    Math.Abs(left.M33 - right.M33) <= VALUE_EPSILON;
+        }
+
+        struct ChannelTextWindow
+        {
+            public readonly int FullColumns;
+            public readonly int FullRows;
+            public readonly int ColumnStart;
+            public readonly int RowStart;
+            public readonly int Columns;
+            public readonly int Rows;
+
+            public ChannelTextWindow(
+                int fullColumns,
+                int fullRows,
+                int columnStart,
+                int rowStart,
+                int columns,
+                int rows)
+            {
+                FullColumns = fullColumns;
+                FullRows = fullRows;
+                ColumnStart = columnStart;
+                RowStart = rowStart;
+                Columns = columns;
+                Rows = rows;
+            }
+        }
+
+        struct ChannelTextFillContext
+        {
+            public readonly ChannelTextWindow Window;
+            public readonly int MipLevel;
+            public readonly char[] Red;
+            public readonly char[] Green;
+            public readonly char[] Blue;
+            public readonly PlanetColorCubemap Cubemap;
+            public readonly Vector3 ViewDirection;
+            public readonly Vector3 ScreenRight;
+            public readonly Vector3 ScreenUp;
+            public readonly Matrix RotationTransform;
+
+            public ChannelTextFillContext(
+                ChannelTextWindow window,
+                int mipLevel,
+                char[] red,
+                char[] green,
+                char[] blue,
+                PlanetColorCubemap cubemap,
+                Vector3 viewDirection,
+                Vector3 screenRight,
+                Vector3 screenUp,
+                Matrix rotationTransform)
+            {
+                Window = window;
+                MipLevel = mipLevel;
+                Red = red;
+                Green = green;
+                Blue = blue;
+                Cubemap = cubemap;
+                ViewDirection = viewDirection;
+                ScreenRight = screenRight;
+                ScreenUp = screenUp;
+                RotationTransform = rotationTransform;
+            }
+        }
+
+        sealed class MutableChannelText
+        {
+            int _columns;
+            int _rows;
+
+            public string Text { get; private set; }
+
+            public char[] Buffer { get; private set; }
+
+            public void EnsureSize(int columns, int rows)
+            {
+                if (columns == _columns && rows == _rows && Text != null && Buffer != null)
+                    return;
+
+                _columns = Math.Max(0, columns);
+                _rows = Math.Max(0, rows);
+
+                if (_columns == 0 || _rows == 0)
+                {
+                    Text = null;
+                    Buffer = null;
+                    return;
+                }
+
+                int length = _columns * _rows + Math.Max(0, _rows - 1);
+                Buffer = new char[length];
+                for (int i = 0; i < Buffer.Length; i++)
+                    Buffer[i] = TRANSPARENT_CHANNEL_GLYPH;
+                Text = null;
+            }
+
+            public void Commit()
+            {
+                if (Buffer == null || Buffer.Length == 0)
+                    return;
+
+                if (Text != null && Text.Length == Buffer.Length)
+                {
+                    bool unchanged = true;
+                    for (int i = 0; i < Buffer.Length; i++)
+                    {
+                        if (Text[i] == Buffer[i])
+                            continue;
+
+                        unchanged = false;
+                        break;
+                    }
+
+                    if (unchanged)
+                        return;
+                }
+
+                Text = new string(Buffer);
+            }
         }
     }
 }

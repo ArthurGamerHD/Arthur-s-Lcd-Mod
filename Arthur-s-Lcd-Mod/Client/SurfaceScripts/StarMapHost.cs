@@ -36,7 +36,7 @@ namespace LcdMod.Client.SurfaceScripts
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
         protected override bool RendersInteractiveEntriesInGetSprites => true;
         public override IApp App => _app;
-        public override bool AsyncRender => true;
+        public override bool AsyncRender => false;
         StarMapApp _app;
 
         public override List<Control> InteractiveList => _app.VisualChildren as List<Control>;
