@@ -53,6 +53,9 @@ namespace LcdMod.Client
         readonly AudioImportService _audioImport = new AudioImportService();
         readonly AudioBroadcastClientService _audioBroadcast = new AudioBroadcastClientService();
         readonly GameAudioTestReportService _audioTestReport = new GameAudioTestReportService();
+#if DEBUG
+        readonly CartographyDebugReportService _cartographyDebugReport;
+#endif
 #if EXPERIMENTAL
         readonly AppRunProfilerService _appRunProfiler = new AppRunProfilerService();
 #endif
@@ -64,6 +67,9 @@ namespace LcdMod.Client
             RoomEnvironment = new GridRoomEnvironmentClientModule();
             Ftue = new FtueService();
             Cartography = new CartographyModule();
+#if DEBUG
+            _cartographyDebugReport = new CartographyDebugReportService(Cartography);
+#endif
         }
 
         public PowerDataModule PowerData { get; private set; }
@@ -99,6 +105,9 @@ namespace LcdMod.Client
             group.TryAdd("TestGameAudio", _audioTestReport.TestAllGameAudioCommand);
 #if EXPERIMENTAL
             group.TryAdd("Profile", _appRunProfiler.Command);
+#endif
+#if DEBUG
+            group.TryAdd("TestCartography", _cartographyDebugReport.Command);
 #endif
 #if DEBUG
             group.TryAdd("DebugInteractive", LocalConfigManager.SetDebugInteractiveCommand);
@@ -141,6 +150,9 @@ namespace LcdMod.Client
             if (PowerData != null)
                 PowerData.Clear();
             PowerData = null;
+#if DEBUG
+            _cartographyDebugReport.Unload();
+#endif
             if (Cartography != null)
                 Cartography.Clear();
             Cartography = null;

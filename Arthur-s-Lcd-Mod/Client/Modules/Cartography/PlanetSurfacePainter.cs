@@ -9,6 +9,7 @@ namespace LcdMod.Client.Modules.Cartography
     {
         public readonly Dictionary<PlanetCubeFace, RawRgbaBitmap> Faces =
             new Dictionary<PlanetCubeFace, RawRgbaBitmap>();
+        public Dictionary<string, long> MissingMaterialUsage;
     }
 
     internal static class PlanetSurfacePainter
@@ -39,6 +40,11 @@ namespace LcdMod.Client.Modules.Cartography
                 : source.Resolution;
 
             var result = new PaintedPlanetFaces();
+            if (request.IncludeDiagnostics && request.Layer == CartographyLayer.Satellite)
+            {
+                result.MissingMaterialUsage =
+                    new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+            }
             for (int faceIndex = 0; faceIndex < PlanetMapSource.ExportOrder.Length; faceIndex++)
             {
                 cancellation.ThrowIfCancelled();
@@ -50,6 +56,7 @@ namespace LcdMod.Client.Modules.Cartography
                     request.Layer,
                     face,
                     outputSide,
+                    result.MissingMaterialUsage,
                     cancellation);
             }
 
@@ -63,6 +70,7 @@ namespace LcdMod.Client.Modules.Cartography
             CartographyLayer layer,
             PlanetCubeFace face,
             int outputSide,
+            Dictionary<string, long> missingMaterialUsage,
             CartographyCancellation cancellation)
         {
             switch (layer)
@@ -74,6 +82,7 @@ namespace LcdMod.Client.Modules.Cartography
                         farColors,
                         face,
                         outputSide,
+                        missingMaterialUsage,
                         cancellation);
                 case CartographyLayer.Terrain:
                     return RenderTerrainFace(source, face, outputSide, cancellation);
@@ -90,10 +99,11 @@ namespace LcdMod.Client.Modules.Cartography
             FarColorCatalogSnapshot farColors,
             PlanetCubeFace face,
             int outputSide,
+            Dictionary<string, long> missingMaterialUsage,
             CartographyCancellation cancellation)
         {
             var bitmap = new RawRgbaBitmap(outputSide, outputSide);
-            float directionStep = 1f / Math.Max(2, source.Resolution - 1);
+            float directionStep = 1f / Math.Max(2, source.HeightResolution - 1);
 
             for (int y = 0; y < outputSide; y++)
             {
@@ -127,8 +137,20 @@ namespace LcdMod.Client.Modules.Cartography
                         slope);
 
                     Color color;
-                    if (!farColors.TryGet(material, out color))
+                    bool resolved = farColors.TryGet(material, out color);
+                    if (!resolved)
                         color = FarColorCatalogSnapshot.MissingColorFallback;
+
+                    if (missingMaterialUsage != null &&
+                        (!resolved || farColors.IsMissing(material)))
+                    {
+                        string name = string.IsNullOrWhiteSpace(material)
+                            ? "<empty material>"
+                            : material;
+                        long count;
+                        missingMaterialUsage.TryGetValue(name, out count);
+                        missingMaterialUsage[name] = count + 1L;
+                    }
 
                     bitmap.SetPixel(x, y, color.R, color.G, color.B, color.A);
                 }

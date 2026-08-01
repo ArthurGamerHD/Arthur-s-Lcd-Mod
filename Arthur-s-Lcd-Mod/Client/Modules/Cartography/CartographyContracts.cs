@@ -37,6 +37,12 @@ namespace LcdMod.Client.Modules.Cartography
         /// This is intended for live LCD apps that render full-color sprite masks.
         /// </summary>
         public bool ReturnColorCubemap;
+
+        /// <summary>
+        /// Captures verbose material-color fallback diagnostics. This is intended
+        /// for the debug cartography command and is disabled for normal requests.
+        /// </summary>
+        public bool IncludeDiagnostics;
     }
 
     public sealed class CartographyResult
@@ -49,6 +55,11 @@ namespace LcdMod.Client.Modules.Cartography
         public int FaceWidth;
         public int FaceHeight;
         public PlanetColorCubemap ColorCubemap;
+
+        /// <summary>
+        /// Optional diagnostic text produced when IncludeDiagnostics was requested.
+        /// </summary>
+        public string DiagnosticReport;
     }
 
     public sealed class CartographyColorCubemapCachedEvent

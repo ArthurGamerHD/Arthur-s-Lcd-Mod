@@ -171,8 +171,10 @@ namespace LcdMod.Common.Png
             Dictionary<string, RawPngBitmap> result =
                 new Dictionary<string, RawPngBitmap>(StringComparer.OrdinalIgnoreCase);
 
-            int expectedWidth = -1;
-            int expectedHeight = -1;
+            int expectedHeightWidth = -1;
+            int expectedHeightHeight = -1;
+            int expectedMaterialWidth = -1;
+            int expectedMaterialHeight = -1;
 
             for (int i = 0; i < FileNames.Length; i++)
             {
@@ -191,15 +193,33 @@ namespace LcdMod.Common.Png
                         error);
                 }
 
+                bool materialMap = Path.GetFileNameWithoutExtension(fileName)
+                    .EndsWith("_mat", StringComparison.OrdinalIgnoreCase);
+                int expectedWidth = materialMap
+                    ? expectedMaterialWidth
+                    : expectedHeightWidth;
+                int expectedHeight = materialMap
+                    ? expectedMaterialHeight
+                    : expectedHeightHeight;
+
                 if (expectedWidth < 0)
                 {
-                    expectedWidth = bitmap.Width;
-                    expectedHeight = bitmap.Height;
+                    if (materialMap)
+                    {
+                        expectedMaterialWidth = bitmap.Width;
+                        expectedMaterialHeight = bitmap.Height;
+                    }
+                    else
+                    {
+                        expectedHeightWidth = bitmap.Width;
+                        expectedHeightHeight = bitmap.Height;
+                    }
                 }
                 else if (bitmap.Width != expectedWidth || bitmap.Height != expectedHeight)
                 {
                     throw new InvalidDataException(
-                        fileName + " does not have the same dimensions as the other faces.");
+                        fileName + " does not have the same dimensions as the other " +
+                        (materialMap ? "material" : "height") + " faces.");
                 }
 
                 result.Add(Path.GetFileNameWithoutExtension(fileName), bitmap);
@@ -210,14 +230,14 @@ namespace LcdMod.Common.Png
     }
 
     /// <summary>
-    /// Pure managed, non-interlaced PNG decoder.
+    /// Pure managed PNG decoder with standard and Adam7-interlaced support.
     /// Supported PNG color types:
     ///   0 grayscale:       1, 2, 4, 8, 16 bits
     ///   2 truecolor RGB:   8, 16 bits
     ///   3 indexed/palette: 1, 2, 4, 8 bits
     ///   4 gray + alpha:    8, 16 bits
     ///   6 RGBA:            8, 16 bits
-    /// Adam7 interlacing is intentionally not implemented.
+    /// Both PNG interlace methods (none and Adam7) are supported.
     /// </summary>
     internal static class PngDecoder
     {
@@ -225,6 +245,11 @@ namespace LcdMod.Common.Png
         {
             0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A
         };
+
+        static readonly int[] Adam7StartX = { 0, 4, 0, 2, 0, 1, 0 };
+        static readonly int[] Adam7StartY = { 0, 0, 4, 0, 2, 0, 1 };
+        static readonly int[] Adam7StepX = { 8, 8, 4, 4, 2, 2, 1 };
+        static readonly int[] Adam7StepY = { 8, 8, 8, 4, 4, 2, 2 };
 
         public static RawPngBitmap Load(Stream file)
         {
@@ -240,6 +265,7 @@ namespace LcdMod.Common.Png
             int height = 0;
             int bitDepth = 0;
             int colorType = -1;
+            int interlaceMethod = -1;
             bool sawHeader = false;
             bool sawImageData = false;
             bool sawEnd = false;
@@ -277,7 +303,7 @@ namespace LcdMod.Common.Png
                     colorType = data[9];
                     byte compressionMethod = data[10];
                     byte filterMethod = data[11];
-                    byte interlaceMethod = data[12];
+                    interlaceMethod = data[12];
 
                     if (width <= 0 || height <= 0)
                         throw new InvalidDataException("Invalid PNG dimensions.");
@@ -287,11 +313,10 @@ namespace LcdMod.Common.Png
                     if (compressionMethod != 0 || filterMethod != 0)
                         throw new NotSupportedException("Unsupported PNG compression or filter method.");
 
-                    if (interlaceMethod != 0)
+                    if (interlaceMethod != 0 && interlaceMethod != 1)
                     {
                         throw new NotSupportedException(
-                            "Adam7-interlaced PNG files are not supported. " +
-                            "Re-save the file as non-interlaced PNG, or add an Adam7 pass decoder.");
+                            "Unsupported PNG interlace method: " + interlaceMethod + ".");
                     }
 
                     sawHeader = true;
@@ -345,17 +370,110 @@ namespace LcdMod.Common.Png
 
             int channels = GetChannelCount(colorType);
             int bitsPerPixel = checked(channels * bitDepth);
-            int rowBytes = checked((width * bitsPerPixel + 7) / 8);
             int filterBytesPerPixel = Math.Max(1, (bitsPerPixel + 7) / 8);
-            int filteredSize = checked(height * (rowBytes + 1));
+            int filteredSize = interlaceMethod == 0
+                ? GetStandardFilteredSize(width, height, bitsPerPixel)
+                : GetAdam7FilteredSize(width, height, bitsPerPixel);
 
             byte[] compressed = CombineChunks(idatChunks, idatSize);
             byte[] filtered = ZipZlib.Inflate(compressed, filteredSize);
-            byte[] packed = new byte[checked(rowBytes * height)];
-            Unfilter(filtered, packed, rowBytes, height, filterBytesPerPixel);
 
             ushort[] red16;
-            byte[] rgba = ConvertToRgba(
+            byte[] rgba;
+            if (interlaceMethod == 0)
+            {
+                rgba = DecodeStandard(
+                    filtered,
+                    width,
+                    height,
+                    bitsPerPixel,
+                    filterBytesPerPixel,
+                    bitDepth,
+                    colorType,
+                    palette,
+                    transparency,
+                    out red16);
+            }
+            else
+            {
+                rgba = DecodeAdam7(
+                    filtered,
+                    width,
+                    height,
+                    bitsPerPixel,
+                    filterBytesPerPixel,
+                    bitDepth,
+                    colorType,
+                    palette,
+                    transparency,
+                    out red16);
+            }
+
+            return new RawPngBitmap(width, height, rgba, bitDepth, colorType, red16);
+        }
+
+        static int GetStandardFilteredSize(int width, int height, int bitsPerPixel)
+        {
+            int rowBytes = GetRowBytes(width, bitsPerPixel);
+            return checked(height * (rowBytes + 1));
+        }
+
+        static int GetAdam7FilteredSize(int width, int height, int bitsPerPixel)
+        {
+            int size = 0;
+            for (int pass = 0; pass < 7; pass++)
+            {
+                int passWidth = GetPassSize(width, Adam7StartX[pass], Adam7StepX[pass]);
+                int passHeight = GetPassSize(height, Adam7StartY[pass], Adam7StepY[pass]);
+                if (passWidth == 0 || passHeight == 0)
+                    continue;
+
+                int rowBytes = GetRowBytes(passWidth, bitsPerPixel);
+                size = checked(size + checked(passHeight * (rowBytes + 1)));
+            }
+
+            return size;
+        }
+
+        static int GetRowBytes(int width, int bitsPerPixel)
+        {
+            return checked((checked(width * bitsPerPixel) + 7) / 8);
+        }
+
+        static int GetPassSize(int fullSize, int start, int step)
+        {
+            if (fullSize <= start)
+                return 0;
+
+            return checked((fullSize - start + step - 1) / step);
+        }
+
+        static byte[] DecodeStandard(
+            byte[] filtered,
+            int width,
+            int height,
+            int bitsPerPixel,
+            int filterBytesPerPixel,
+            int bitDepth,
+            int colorType,
+            byte[] palette,
+            byte[] transparency,
+            out ushort[] red16)
+        {
+            int rowBytes = GetRowBytes(width, bitsPerPixel);
+            byte[] packed = new byte[checked(rowBytes * height)];
+            int consumed = Unfilter(
+                filtered,
+                0,
+                packed,
+                rowBytes,
+                height,
+                filterBytesPerPixel);
+
+            if (consumed != filtered.Length)
+                throw new InvalidDataException("PNG scanline data has an unexpected length.");
+
+            return ConvertToRgba(
                 packed,
                 width,
                 height,
@@ -365,8 +483,63 @@ namespace LcdMod.Common.Png
                 palette,
                 transparency,
                 out red16);
+        }
 
-            return new RawPngBitmap(width, height, rgba, bitDepth, colorType, red16);
+        static byte[] DecodeAdam7(
+            byte[] filtered,
+            int width,
+            int height,
+            int bitsPerPixel,
+            int filterBytesPerPixel,
+            int bitDepth,
+            int colorType,
+            byte[] palette,
+            byte[] transparency,
+            out ushort[] red16)
+        {
+            byte[] rgba = new byte[checked(width * height * 4)];
+            red16 = bitDepth == 16 ? new ushort[checked(width * height)] : null;
+            int source = 0;
+
+            for (int pass = 0; pass < 7; pass++)
+            {
+                int passWidth = GetPassSize(width, Adam7StartX[pass], Adam7StepX[pass]);
+                int passHeight = GetPassSize(height, Adam7StartY[pass], Adam7StepY[pass]);
+                if (passWidth == 0 || passHeight == 0)
+                    continue;
+
+                int rowBytes = GetRowBytes(passWidth, bitsPerPixel);
+                byte[] packed = new byte[checked(rowBytes * passHeight)];
+                source = Unfilter(
+                    filtered,
+                    source,
+                    packed,
+                    rowBytes,
+                    passHeight,
+                    filterBytesPerPixel);
+
+                ConvertToRgbaInto(
+                    packed,
+                    passWidth,
+                    passHeight,
+                    rowBytes,
+                    bitDepth,
+                    colorType,
+                    palette,
+                    transparency,
+                    rgba,
+                    red16,
+                    width,
+                    Adam7StartX[pass],
+                    Adam7StartY[pass],
+                    Adam7StepX[pass],
+                    Adam7StepY[pass]);
+            }
+
+            if (source != filtered.Length)
+                throw new InvalidDataException("Adam7 PNG scanline data has an unexpected length.");
+
+            return rgba;
         }
 
         static byte[] CombineChunks(List<byte[]> chunks, int totalSize)
@@ -466,6 +639,43 @@ namespace LcdMod.Common.Png
             byte[] rgba = new byte[checked(width * height * 4)];
             red16 = bitDepth == 16 ? new ushort[checked(width * height)] : null;
 
+            ConvertToRgbaInto(
+                packed,
+                width,
+                height,
+                rowBytes,
+                bitDepth,
+                colorType,
+                palette,
+                transparency,
+                rgba,
+                red16,
+                width,
+                0,
+                0,
+                1,
+                1);
+
+            return rgba;
+        }
+
+        static void ConvertToRgbaInto(
+            byte[] packed,
+            int width,
+            int height,
+            int rowBytes,
+            int bitDepth,
+            int colorType,
+            byte[] palette,
+            byte[] transparency,
+            byte[] rgba,
+            ushort[] red16,
+            int destinationWidth,
+            int destinationStartX,
+            int destinationStartY,
+            int destinationStepX,
+            int destinationStepY)
+        {
             ushort transparentGray = 0;
             ushort transparentRed = 0;
             ushort transparentGreen = 0;
@@ -483,10 +693,12 @@ namespace LcdMod.Common.Png
             for (int y = 0; y < height; y++)
             {
                 int row = y * rowBytes;
+                int destinationY = destinationStartY + y * destinationStepY;
                 for (int x = 0; x < width; x++)
                 {
-                    int pixelIndex = y * width + x;
-                    int destination = pixelIndex * 4;
+                    int destinationX = destinationStartX + x * destinationStepX;
+                    int destinationPixel = destinationY * destinationWidth + destinationX;
+                    int destination = destinationPixel * 4;
                     byte r;
                     byte g;
                     byte b;
@@ -555,11 +767,9 @@ namespace LcdMod.Common.Png
                     rgba[destination + 2] = b;
                     rgba[destination + 3] = a;
                     if (red16 != null)
-                        red16[pixelIndex] = exactRed;
+                        red16[destinationPixel] = exactRed;
                 }
             }
-
-            return rgba;
         }
 
         static int ReadSample(
@@ -607,14 +817,14 @@ namespace LcdMod.Common.Png
             return (byte)((sample * 255 + maximum / 2) / maximum);
         }
 
-        static void Unfilter(
+        static int Unfilter(
             byte[] filtered,
+            int source,
             byte[] output,
             int rowBytes,
             int height,
             int bytesPerPixel)
         {
-            int source = 0;
             for (int y = 0; y < height; y++)
             {
                 int filter = filtered[source++];
@@ -657,6 +867,8 @@ namespace LcdMod.Common.Png
                     output[row + x] = unchecked((byte)(encoded + predictor));
                 }
             }
+
+            return source;
         }
 
         static int Paeth(int left, int up, int upLeft)

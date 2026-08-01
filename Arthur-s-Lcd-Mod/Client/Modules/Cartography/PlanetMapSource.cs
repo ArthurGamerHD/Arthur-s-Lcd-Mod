@@ -32,10 +32,22 @@ namespace LcdMod.Client.Modules.Cartography
 
         readonly ushort[][] _heights = new ushort[6][];
         readonly byte[][] _materialIds = new byte[6][];
+        int _heightResolution;
+        int _materialResolution;
         ushort _minimumHeight = ushort.MaxValue;
         ushort _maximumHeight;
 
         public int Resolution { get; private set; }
+
+        public int HeightResolution
+        {
+            get { return _heightResolution; }
+        }
+
+        public int MaterialResolution
+        {
+            get { return _materialResolution; }
+        }
 
         public static string GetFaceName(PlanetCubeFace face)
         {
@@ -91,7 +103,7 @@ namespace LcdMod.Client.Modules.Cartography
                 if (loadHeight)
                 {
                     RawPngBitmap height = LoadPng(planet, faceName + ".png");
-                    source.ValidateResolution(height, faceName + ".png");
+                    source.ValidateHeightResolution(height, faceName + ".png");
                     source._heights[(int)face] = ExtractHeight(height);
                 }
 
@@ -99,11 +111,12 @@ namespace LcdMod.Client.Modules.Cartography
                 {
                     cancellation.ThrowIfCancelled();
                     RawPngBitmap material = LoadPng(planet, faceName + "_mat.png");
-                    source.ValidateResolution(material, faceName + "_mat.png");
+                    source.ValidateMaterialResolution(material, faceName + "_mat.png");
                     source._materialIds[(int)face] = ExtractMaterialRed(material);
                 }
             }
 
+            source.Resolution = source.GetLayerResolution(layer);
             if (loadHeight)
                 source.CalculateHeightRange();
             return source;
@@ -116,20 +129,21 @@ namespace LcdMod.Client.Modules.Cartography
             float v;
             DirectionToFaceUv(direction, out face, out u, out v);
 
-            float x = u * (Resolution - 1);
-            float y = v * (Resolution - 1);
-            int x0 = Clamp((int)Math.Floor(x), 0, Resolution - 1);
-            int y0 = Clamp((int)Math.Floor(y), 0, Resolution - 1);
-            int x1 = Math.Min(x0 + 1, Resolution - 1);
-            int y1 = Math.Min(y0 + 1, Resolution - 1);
+            int resolution = _heightResolution;
+            float x = u * (resolution - 1);
+            float y = v * (resolution - 1);
+            int x0 = Clamp((int)Math.Floor(x), 0, resolution - 1);
+            int y0 = Clamp((int)Math.Floor(y), 0, resolution - 1);
+            int x1 = Math.Min(x0 + 1, resolution - 1);
+            int y1 = Math.Min(y0 + 1, resolution - 1);
             float tx = x - x0;
             float ty = y - y0;
             ushort[] data = _heights[(int)face];
 
-            float h00 = data[y0 * Resolution + x0] / 65535f;
-            float h10 = data[y0 * Resolution + x1] / 65535f;
-            float h01 = data[y1 * Resolution + x0] / 65535f;
-            float h11 = data[y1 * Resolution + x1] / 65535f;
+            float h00 = data[y0 * resolution + x0] / 65535f;
+            float h10 = data[y0 * resolution + x1] / 65535f;
+            float h01 = data[y1 * resolution + x0] / 65535f;
+            float h11 = data[y1 * resolution + x1] / 65535f;
 
             float top = h00 + (h10 - h00) * tx;
             float bottom = h01 + (h11 - h01) * tx;
@@ -150,9 +164,10 @@ namespace LcdMod.Client.Modules.Cartography
 
         public byte SampleMaterialNearest(PlanetCubeFace face, float u, float v)
         {
-            int x = Clamp((int)(u * Resolution), 0, Resolution - 1);
-            int y = Clamp((int)(v * Resolution), 0, Resolution - 1);
-            return _materialIds[(int)face][y * Resolution + x];
+            int resolution = _materialResolution;
+            int x = Clamp((int)(u * resolution), 0, resolution - 1);
+            int y = Clamp((int)(v * resolution), 0, resolution - 1);
+            return _materialIds[(int)face][y * resolution + x];
         }
 
         public static Vector3 FaceUvToDirection(PlanetCubeFace face, float u, float v)
@@ -312,17 +327,74 @@ namespace LcdMod.Client.Modules.Cartography
                 return RawPngBitmap.Load(reader.BaseStream);
         }
 
-        void ValidateResolution(RawPngBitmap bitmap, string fileName)
+        void ValidateHeightResolution(RawPngBitmap bitmap, string fileName)
+        {
+            ValidateResolution(
+                bitmap,
+                fileName,
+                "height",
+                ref _heightResolution);
+        }
+
+        void ValidateMaterialResolution(RawPngBitmap bitmap, string fileName)
+        {
+            ValidateResolution(
+                bitmap,
+                fileName,
+                "material",
+                ref _materialResolution);
+        }
+
+        static void ValidateResolution(
+            RawPngBitmap bitmap,
+            string fileName,
+            string familyName,
+            ref int resolution)
         {
             if (bitmap == null)
                 throw new InvalidDataException(fileName + " decoded to null.");
             if (bitmap.Width != bitmap.Height)
                 throw new InvalidDataException(fileName + " is not square.");
 
-            if (Resolution == 0)
-                Resolution = bitmap.Width;
-            else if (bitmap.Width != Resolution || bitmap.Height != Resolution)
-                throw new InvalidDataException(fileName + " does not match the other cubemap faces.");
+            if (resolution == 0)
+                resolution = bitmap.Width;
+            else if (bitmap.Width != resolution || bitmap.Height != resolution)
+            {
+                throw new InvalidDataException(
+                    fileName + " does not match the other " + familyName +
+                    " cubemap faces.");
+            }
+        }
+
+        int GetLayerResolution(CartographyLayer layer)
+        {
+            switch (layer)
+            {
+                case CartographyLayer.Satellite:
+                    if (_heightResolution <= 0 || _materialResolution <= 0)
+                    {
+                        throw new InvalidDataException(
+                            "Satellite cartography requires both height and material cubemap faces.");
+                    }
+
+                    // Height and material maps are sampled independently in normalized
+                    // face UV space. Limit full-resolution output to the lower-detail
+                    // family instead of expanding a 4K categorical map to a 16K array.
+                    return Math.Min(_heightResolution, _materialResolution);
+
+                case CartographyLayer.Terrain:
+                    if (_heightResolution <= 0)
+                        throw new InvalidDataException("Terrain cartography requires height cubemap faces.");
+                    return _heightResolution;
+
+                case CartographyLayer.Biomes:
+                    if (_materialResolution <= 0)
+                        throw new InvalidDataException("Biome cartography requires material cubemap faces.");
+                    return _materialResolution;
+
+                default:
+                    throw new NotSupportedException("The requested cartography layer is not implemented.");
+            }
         }
 
         static ushort[] ExtractHeight(RawPngBitmap bitmap)

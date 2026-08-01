@@ -100,6 +100,15 @@ namespace LcdMod.Client.Modules.Cartography
             new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase);
         readonly List<FarColorTextureFallbackSnapshot> _textureFallbacks =
             new List<FarColorTextureFallbackSnapshot>();
+        readonly List<string> _diagnostics;
+        readonly HashSet<string> _missingMaterials =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        public FarColorCatalogSnapshot(bool collectDiagnostics)
+        {
+            if (collectDiagnostics)
+                _diagnostics = new List<string>();
+        }
 
         public void Add(string subtype, Vector4 color)
         {
@@ -118,6 +127,49 @@ namespace LcdMod.Client.Modules.Cartography
             _colors[subtype] = color;
         }
 
+        public void AddMissing(string subtype)
+        {
+            if (string.IsNullOrWhiteSpace(subtype))
+                return;
+
+            _missingMaterials.Add(subtype);
+            Add(subtype, MissingColorFallback);
+        }
+
+        public bool IsMissing(string subtype)
+        {
+            return !string.IsNullOrWhiteSpace(subtype) && _missingMaterials.Contains(subtype);
+        }
+
+        public void AddUsageDiagnostics(Dictionary<string, long> missingMaterialUsage)
+        {
+            if (_diagnostics == null || missingMaterialUsage == null || missingMaterialUsage.Count == 0)
+                return;
+
+            AddDiagnostic("Missing-material texel usage:");
+            var names = new List<string>(missingMaterialUsage.Keys);
+            names.Sort(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < names.Count; i++)
+            {
+                string name = names[i];
+                AddDiagnostic("  " + name + ": " + missingMaterialUsage[name] + " texels");
+            }
+            AddDiagnostic(" ");
+        }
+
+        public void AddDiagnostic(string line)
+        {
+            if (_diagnostics != null && line != null)
+                _diagnostics.Add(line);
+        }
+
+        public string BuildDiagnosticReport()
+        {
+            return _diagnostics == null || _diagnostics.Count == 0
+                ? null
+                : string.Join(Environment.NewLine, _diagnostics.ToArray());
+        }
+
         public void AddTextureFallback(FarColorTextureFallbackSnapshot fallback)
         {
             if (fallback == null || string.IsNullOrWhiteSpace(fallback.Subtype))
@@ -132,7 +184,7 @@ namespace LcdMod.Client.Modules.Cartography
                 throw new ArgumentNullException(nameof(cancellation));
 
             var colorCache = new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase);
-            var failedCache = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var failedCache = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             for (int i = 0; i < _textureFallbacks.Count; i++)
             {
@@ -141,21 +193,28 @@ namespace LcdMod.Client.Modules.Cartography
                 if (_colors.ContainsKey(fallback.Subtype))
                     continue;
 
+                AddDiagnostic("Material: " + fallback.Subtype);
+                AddDiagnostic("  Definition source: " + DescribeDefinitionSource(fallback));
+                AddDiagnostic("  Far3Color: missing or black; trying texture fallbacks.");
+
                 Color color;
                 if (TryResolveMipFallback(
                         fallback,
+                        "Far2",
                         fallback.Far2Path,
                         colorCache,
                         failedCache,
                         out color) ||
                     TryResolveMipFallback(
                         fallback,
+                        "Far1",
                         fallback.Far1Path,
                         colorCache,
                         failedCache,
                         out color) ||
                     TryResolveMipFallback(
                         fallback,
+                        "Base",
                         fallback.BasePath,
                         colorCache,
                         failedCache,
@@ -167,11 +226,16 @@ namespace LcdMod.Client.Modules.Cartography
                         out color))
                 {
                     Add(fallback.Subtype, color);
+                    AddDiagnostic("  Result: resolved to RGB " +
+                                  color.R + "," + color.G + "," + color.B + ".");
                 }
                 else
                 {
-                    Add(fallback.Subtype, MissingColorFallback);
+                    AddMissing(fallback.Subtype);
+                    AddDiagnostic("  Result: all candidates failed; using magenta fallback.");
                 }
+
+                AddDiagnostic(" ");
             }
 
             _textureFallbacks.Clear();
@@ -188,15 +252,17 @@ namespace LcdMod.Client.Modules.Cartography
             return _colors.TryGetValue(subtype, out color);
         }
 
-        static bool TryResolveMipFallback(
+        bool TryResolveMipFallback(
             FarColorTextureFallbackSnapshot fallback,
+            string candidateName,
             string texturePath,
             Dictionary<string, Color> colorCache,
-            HashSet<string> failedCache,
+            Dictionary<string, string> failedCache,
             out Color color)
         {
             return TryResolveTextureColor(
                 fallback,
+                candidateName,
                 NormalizeContentPath(texturePath),
                 true,
                 colorCache,
@@ -204,14 +270,15 @@ namespace LcdMod.Client.Modules.Cartography
                 out color);
         }
 
-        static bool TryResolveThumbnailFallback(
+        bool TryResolveThumbnailFallback(
             FarColorTextureFallbackSnapshot fallback,
             Dictionary<string, Color> colorCache,
-            HashSet<string> failedCache,
+            Dictionary<string, string> failedCache,
             out Color color)
         {
             return TryResolveTextureColor(
                 fallback,
+                "Thumbnail",
                 NormalizeContentPath(fallback.ThumbnailPath),
                 false,
                 colorCache,
@@ -219,31 +286,71 @@ namespace LcdMod.Client.Modules.Cartography
                 out color);
         }
 
-        static bool TryResolveTextureColor(
+        bool TryResolveTextureColor(
             FarColorTextureFallbackSnapshot fallback,
+            string candidateName,
             string path,
             bool useSmallestMip,
             Dictionary<string, Color> colorCache,
-            HashSet<string> failedCache,
+            Dictionary<string, string> failedCache,
             out Color color)
         {
             color = default(Color);
             if (string.IsNullOrWhiteSpace(path))
+            {
+                AddDiagnostic("  " + candidateName + ": no texture path in the material definition.");
                 return false;
+            }
 
+            string originalPath = path;
+            string normalizedPath;
+            string normalizationFailure;
+            if (!ContentTexturePath.TryNormalize(path, out normalizedPath, out normalizationFailure))
+            {
+                AddDiagnostic("  " + candidateName + ": " + originalPath +
+                              " failed: " + normalizationFailure);
+                return false;
+            }
+
+            if (!string.Equals(originalPath, normalizedPath, StringComparison.Ordinal))
+                AddDiagnostic("  " + candidateName + ": normalized " + originalPath +
+                              " -> " + normalizedPath + ".");
+
+            path = normalizedPath;
             string cacheKey = BuildTextureCacheKey(fallback, path, useSmallestMip);
             if (colorCache.TryGetValue(cacheKey, out color))
-                return true;
-            if (failedCache.Contains(cacheKey))
-                return false;
-
-            if (!TryReadTextureColor(fallback, path, useSmallestMip, out color))
             {
-                failedCache.Add(cacheKey);
+                AddDiagnostic("  " + candidateName + ": cache hit for " + path +
+                              " -> RGB " + color.R + "," + color.G + "," + color.B + ".");
+                return true;
+            }
+
+            string cachedFailure;
+            if (failedCache.TryGetValue(cacheKey, out cachedFailure))
+            {
+                AddDiagnostic("  " + candidateName + ": cached failure for " + path +
+                              ": " + cachedFailure);
+                return false;
+            }
+
+            string resolvedSource;
+            string failureReason;
+            if (!TryReadTextureColor(
+                    fallback,
+                    path,
+                    useSmallestMip,
+                    out color,
+                    out resolvedSource,
+                    out failureReason))
+            {
+                failedCache[cacheKey] = failureReason;
+                AddDiagnostic("  " + candidateName + ": " + path + " failed: " + failureReason);
                 return false;
             }
 
             colorCache[cacheKey] = color;
+            AddDiagnostic("  " + candidateName + ": " + path + " from " + resolvedSource +
+                          " -> RGB " + color.R + "," + color.G + "," + color.B + ".");
             return true;
         }
 
@@ -266,77 +373,170 @@ namespace LcdMod.Client.Modules.Cartography
             FarColorTextureFallbackSnapshot fallback,
             string path,
             bool useSmallestMip,
-            out Color color)
+            out Color color,
+            out string resolvedSource,
+            out string failureReason)
         {
             color = default(Color);
+            resolvedSource = null;
+            failureReason = null;
             var utilities = MyAPIGateway.Utilities;
-            if (utilities == null || string.IsNullOrWhiteSpace(path))
+            if (utilities == null)
+            {
+                failureReason = "MyAPIGateway.Utilities is unavailable.";
                 return false;
+            }
 
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                failureReason = "Texture path is empty.";
+                return false;
+            }
+
+            var failures = new List<string>();
             if (!fallback.IsBaseGame && fallback.HasModItem)
             {
+                string source = DescribeModItem(fallback.ModItem);
                 try
                 {
-                    if (utilities.FileExistsInModLocation(path, fallback.ModItem))
+                    if (!utilities.FileExistsInModLocation(path, fallback.ModItem))
                     {
+                        failures.Add("not found in defining mod " + source);
+                    }
+                    else
+                    {
+                        string decodeFailure;
                         using (var reader = utilities.ReadBinaryFileInModLocation(path, fallback.ModItem))
-                            return TryDecodeTextureColor(reader, useSmallestMip, out color);
+                        {
+                            if (TryDecodeTextureColor(
+                                    reader,
+                                    useSmallestMip,
+                                    out color,
+                                    out decodeFailure))
+                            {
+                                resolvedSource = "defining mod " + source;
+                                return true;
+                            }
+                        }
+
+                        failures.Add("defining mod " + source + " decode failed: " + decodeFailure);
                     }
                 }
-                catch
+                catch (Exception error)
                 {
-                    color = default(Color);
+                    failures.Add("defining mod " + source + " threw " +
+                                 error.GetType().Name + ": " + error.Message);
                 }
+            }
+            else if (!fallback.IsBaseGame)
+            {
+                failures.Add("material is mod-defined but has no ModItem context");
             }
 
             try
             {
                 if (!utilities.FileExistsInGameContent(path))
-                    return false;
+                {
+                    failures.Add("not found in base game content");
+                }
+                else
+                {
+                    string decodeFailure;
+                    using (var reader = utilities.ReadBinaryFileInGameContent(path))
+                    {
+                        if (TryDecodeTextureColor(
+                                reader,
+                                useSmallestMip,
+                                out color,
+                                out decodeFailure))
+                        {
+                            resolvedSource = "base game content";
+                            return true;
+                        }
+                    }
 
-                using (var reader = utilities.ReadBinaryFileInGameContent(path))
-                    return TryDecodeTextureColor(reader, useSmallestMip, out color);
+                    failures.Add("base game content decode failed: " + decodeFailure);
+                }
             }
-            catch
+            catch (Exception error)
             {
-                color = default(Color);
-                return false;
+                failures.Add("base game content threw " +
+                             error.GetType().Name + ": " + error.Message);
             }
+
+            failureReason = failures.Count == 0
+                ? "No readable source was attempted."
+                : string.Join("; ", failures.ToArray());
+            return false;
         }
 
         static bool TryDecodeTextureColor(
             BinaryReader reader,
             bool useSmallestMip,
-            out Color color)
+            out Color color,
+            out string failureReason)
         {
             color = default(Color);
+            failureReason = null;
             if (reader == null)
+            {
+                failureReason = "BinaryReader is null.";
                 return false;
+            }
 
             byte r;
             byte g;
             byte b;
             bool decoded = useSmallestMip
-                ? DdsAverageColor.TryAverageSmallestMip(reader.BaseStream, out r, out g, out b)
-                : DdsAverageColor.TryAverageFirstMip(reader.BaseStream, out r, out g, out b);
+                ? DdsAverageColor.TryAverageSmallestMip(
+                    reader.BaseStream,
+                    out r,
+                    out g,
+                    out b,
+                    out failureReason)
+                : DdsAverageColor.TryAverageFirstMip(
+                    reader.BaseStream,
+                    out r,
+                    out g,
+                    out b,
+                    out failureReason);
 
             if (!decoded)
+            {
+                if (string.IsNullOrWhiteSpace(failureReason))
+                    failureReason = "DDS color decoder returned false without a reason.";
                 return false;
+            }
 
             color = new Color(r, g, b, 255);
             return true;
         }
 
+        static string DescribeDefinitionSource(FarColorTextureFallbackSnapshot fallback)
+        {
+            if (fallback.IsBaseGame)
+                return "base game";
+            if (!fallback.HasModItem)
+                return "mod definition without ModItem context";
+            return DescribeModItem(fallback.ModItem);
+        }
+
+        static string DescribeModItem(MyObjectBuilder_Checkpoint.ModItem modItem)
+        {
+            return NullDisplay(modItem.PublishedServiceName) + ":" + modItem.PublishedFileId +
+                   " (" + NullDisplay(modItem.Name) + ")";
+        }
+
+        static string NullDisplay(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? "<empty>" : value;
+        }
+
         static string NormalizeContentPath(string path)
         {
-            if (string.IsNullOrWhiteSpace(path))
-                return null;
-
-            path = path.Trim().Replace('\\', '/');
-            while (path.Length > 0 && path[0] == '/')
-                path = path.Substring(1);
-
-            return path;
+            return string.IsNullOrWhiteSpace(path)
+                ? null
+                : path.Trim().Replace('\\', '/');
         }
 
         static byte ToByte(float linearValue)
@@ -399,6 +599,13 @@ namespace LcdMod.Client.Modules.Cartography
 
         public static FarColorCatalogSnapshot BuildFarColors(PlanetDefinitionSnapshot planet)
         {
+            return BuildFarColors(planet, false);
+        }
+
+        public static FarColorCatalogSnapshot BuildFarColors(
+            PlanetDefinitionSnapshot planet,
+            bool includeDiagnostics)
+        {
             if (planet == null)
                 throw new ArgumentNullException(nameof(planet));
             if (MyDefinitionManager.Static == null)
@@ -406,7 +613,7 @@ namespace LcdMod.Client.Modules.Cartography
 
             HashSet<string> requiredMaterials = CollectSurfaceMaterials(planet);
             var foundMaterials = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var result = new FarColorCatalogSnapshot();
+            var result = new FarColorCatalogSnapshot(includeDiagnostics);
             foreach (var voxel in MyDefinitionManager.Static.GetVoxelMaterialDefinitions())
             {
                 if (voxel == null ||
@@ -426,6 +633,12 @@ namespace LcdMod.Client.Modules.Cartography
                 if (!IsMissingFarColor(far3Color))
                 {
                     result.Add(voxel.Id.SubtypeName, far3Color);
+                    if (includeDiagnostics)
+                    {
+                        result.AddDiagnostic("Material: " + voxel.Id.SubtypeName);
+                        result.AddDiagnostic("  Far3Color: explicit; texture fallback not required.");
+                        result.AddDiagnostic(" ");
+                    }
                     continue;
                 }
 
@@ -447,8 +660,13 @@ namespace LcdMod.Client.Modules.Cartography
 
             foreach (string material in requiredMaterials)
             {
-                if (!foundMaterials.Contains(material))
-                    result.Add(material, FarColorCatalogSnapshot.MissingColorFallback);
+                if (foundMaterials.Contains(material))
+                    continue;
+
+                result.AddMissing(material);
+                result.AddDiagnostic("Material: " + material);
+                result.AddDiagnostic("  Result: no loaded voxel material definition; using magenta fallback.");
+                result.AddDiagnostic(" ");
             }
 
             return result;

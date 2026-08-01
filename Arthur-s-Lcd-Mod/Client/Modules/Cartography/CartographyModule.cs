@@ -202,7 +202,11 @@ namespace LcdMod.Client.Modules.Cartography
                 {
                     planet = CartographySnapshotBuilder.BuildPlanet(workRequest);
                     if (workRequest.Layer == CartographyLayer.Satellite)
-                        farColors = CartographySnapshotBuilder.BuildFarColors(planet);
+                    {
+                        farColors = CartographySnapshotBuilder.BuildFarColors(
+                            planet,
+                            workRequest.IncludeDiagnostics);
+                    }
                 }
                 catch (Exception error)
                 {
@@ -412,7 +416,8 @@ namespace LcdMod.Client.Modules.Cartography
                 Projection = source.Projection,
                 Layer = source.Layer,
                 MaximumFaceSide = source.MaximumFaceSide,
-                ReturnColorCubemap = source.ReturnColorCubemap
+                ReturnColorCubemap = source.ReturnColorCubemap,
+                IncludeDiagnostics = source.IncludeDiagnostics
             };
         }
 
@@ -532,6 +537,9 @@ namespace LcdMod.Client.Modules.Cartography
                     job.Request,
                     job.Cancellation);
 
+                if (job.FarColors != null && job.Request.IncludeDiagnostics)
+                    job.FarColors.AddUsageDiagnostics(painted.MissingMaterialUsage);
+
                 job.Cancellation.ThrowIfCancelled();
                 PlanetColorCubemap colorCubemap = job.Request.ReturnColorCubemap
                     ? PlanetColorCubemapBuilder.Build(
@@ -550,7 +558,10 @@ namespace LcdMod.Client.Modules.Cartography
                 {
                     Success = false,
                     Cancelled = true,
-                    PlanetGeneratorSubtype = job.Planet.GeneratorSubtype
+                    PlanetGeneratorSubtype = job.Planet.GeneratorSubtype,
+                    DiagnosticReport = job.FarColors != null
+                        ? job.FarColors.BuildDiagnosticReport()
+                        : null
                 };
             }
             catch (Exception error)
@@ -562,7 +573,10 @@ namespace LcdMod.Client.Modules.Cartography
                     Error = error.Message,
                     PlanetGeneratorSubtype = job.Planet != null
                         ? job.Planet.GeneratorSubtype
-                        : job.Request.PlanetGeneratorSubtype
+                        : job.Request.PlanetGeneratorSubtype,
+                    DiagnosticReport = job.FarColors != null
+                        ? job.FarColors.BuildDiagnosticReport()
+                        : null
                 };
             }
         }
@@ -689,7 +703,10 @@ namespace LcdMod.Client.Modules.Cartography
                 PlanetGeneratorSubtype = job.Planet.GeneratorSubtype,
                 FaceWidth = faceWidth,
                 FaceHeight = faceHeight,
-                ColorCubemap = colorCubemap
+                ColorCubemap = colorCubemap,
+                DiagnosticReport = job.FarColors != null
+                    ? job.FarColors.BuildDiagnosticReport()
+                    : null
             };
         }
     }
