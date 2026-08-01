@@ -685,6 +685,7 @@ namespace LcdMod.Common.Config.Components
         [ProtoMember(12)] public bool IncludeRadioSignals { get; set; }
         [ProtoMember(13)] public GpsDisplayWaypoint[] AlwaysDisplayedGpsWaypoints { get; set; } =
             Array.Empty<GpsDisplayWaypoint>();
+        [ProtoMember(14)] public int MapLayer { get; set; }
 
         public override ConfigComponent Clone()
         {
@@ -702,7 +703,8 @@ namespace LcdMod.Common.Config.Components
                 DisplayMyGps = DisplayMyGps,
                 IncludeRadioSignals = IncludeRadioSignals,
                 AlwaysDisplayedGpsHashes = ConfigComponentClone.Copy(AlwaysDisplayedGpsHashes),
-                AlwaysDisplayedGpsWaypoints = ConfigComponentClone.Copy(AlwaysDisplayedGpsWaypoints)
+                AlwaysDisplayedGpsWaypoints = ConfigComponentClone.Copy(AlwaysDisplayedGpsWaypoints),
+                MapLayer = MapLayer
             };
         }
     }

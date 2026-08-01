@@ -1162,4 +1162,70 @@ Chvíli počkáme a potom ji za vás restartujeme.</value>
   <data name="LcdMod_Gps_Unknown_Name" xml:space="preserve">
     <value>Neznámé</value>
   </data>
+  <data name="LcdMod_PlanetaryMap_MapLayerFormat" xml:space="preserve">
+    <value>Vrstva mapy: {0}</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_MapLayer_Tooltip" xml:space="preserve">
+    <value>Vyberte barvy satelitní, terénní nebo biomové vrstvy.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Terrain" xml:space="preserve">
+    <value>Terén</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Terrain_Tooltip" xml:space="preserve">
+    <value>Výšková mapa normalizovaná od minimální do maximální výšky planety.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Biomes" xml:space="preserve">
+    <value>Biomy</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Biomes_Tooltip" xml:space="preserve">
+    <value>Nezpracovaná ID biomů zobrazená stálými kategoriálními barvami.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Satellite" xml:space="preserve">
+    <value>Satelit</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Satellite_Tooltip" xml:space="preserve">
+    <value>Povrchové materiály zobrazené barvami používanými na vzdálené mapě.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_StreetView_Title" xml:space="preserve">
+    <value>Pohled z ulice</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_StreetView_Available_Tooltip" xml:space="preserve">
+    <value>Přetáhněte na planetu pro přechod do pohledu diváka.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_StreetView_Unavailable_Tooltip" xml:space="preserve">
+    <value>Kamera diváka je v tomto světě vypnutá.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_StreetView_ActiveNotification" xml:space="preserve">
+    <value>Pohled z ulice je aktivní; vypnete jej klávesou [F6].</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CardinalNorthShort" xml:space="preserve">
+    <value>S</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CardinalSouthShort" xml:space="preserve">
+    <value>J</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CardinalEastShort" xml:space="preserve">
+    <value>V</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CardinalWestShort" xml:space="preserve">
+    <value>Z</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CoordinateFormat" xml:space="preserve">
+    <value>{0}°{1:0.0} {2}°{3:0.0}</value>
+  </data>
+  <data name="LcdMod_RadioSignal_Unnamed" xml:space="preserve">
+    <value>Rádiový signál</value>
+  </data>
+  <data name="LcdMod_RadioSignal_ClusterFormat" xml:space="preserve">
+    <value>{0} rádiových signálů</value>
+  </data>
+  <data name="LcdMod_StarMap_MagnificationFormat" xml:space="preserve">
+    <value>ZVĚTŠ.: {0:0.##}x</value>
+  </data>
+  <data name="LcdMod_StarMap_JumpCalculatingFormat" xml:space="preserve">
+    <value>Výpočet... (odhad: {0} s)</value>
+  </data>
+  <data name="LcdMod_StarMap_JumpPointNameFormat" xml:space="preserve">
+    <value>Bod skoku: {0}</value>
+  </data>
 </root>

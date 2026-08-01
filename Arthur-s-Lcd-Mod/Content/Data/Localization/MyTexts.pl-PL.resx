@@ -1162,4 +1162,70 @@ Poczekamy chwilę, a następnie uruchomimy ją ponownie za ciebie.</value>
   <data name="LcdMod_Gps_Unknown_Name" xml:space="preserve">
     <value>Nieznany</value>
   </data>
+  <data name="LcdMod_PlanetaryMap_MapLayerFormat" xml:space="preserve">
+    <value>Warstwa mapy: {0}</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_MapLayer_Tooltip" xml:space="preserve">
+    <value>Wybierz kolory satelitarne, terenu lub biomów.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Terrain" xml:space="preserve">
+    <value>Teren</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Terrain_Tooltip" xml:space="preserve">
+    <value>Mapa wysokości znormalizowana od minimalnej do maksymalnej wysokości planety.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Biomes" xml:space="preserve">
+    <value>Biomy</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Biomes_Tooltip" xml:space="preserve">
+    <value>Surowe identyfikatory biomów wyświetlane stałymi kolorami kategorii.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Satellite" xml:space="preserve">
+    <value>Satelita</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Satellite_Tooltip" xml:space="preserve">
+    <value>Materiały powierzchni wyświetlane w kolorach mapy z oddali.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_StreetView_Title" xml:space="preserve">
+    <value>Widok ulicy</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_StreetView_Available_Tooltip" xml:space="preserve">
+    <value>Przeciągnij na planetę, aby przejść do widoku obserwatora.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_StreetView_Unavailable_Tooltip" xml:space="preserve">
+    <value>Kamera obserwatora jest wyłączona w tym świecie.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_StreetView_ActiveNotification" xml:space="preserve">
+    <value>Widok ulicy jest aktywny; naciśnij [F6], aby go wyłączyć.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CardinalNorthShort" xml:space="preserve">
+    <value>Pn</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CardinalSouthShort" xml:space="preserve">
+    <value>Pd</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CardinalEastShort" xml:space="preserve">
+    <value>W</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CardinalWestShort" xml:space="preserve">
+    <value>Z</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CoordinateFormat" xml:space="preserve">
+    <value>{0} {1:0.0}° {2} {3:0.0}°</value>
+  </data>
+  <data name="LcdMod_RadioSignal_Unnamed" xml:space="preserve">
+    <value>Sygnał radiowy</value>
+  </data>
+  <data name="LcdMod_RadioSignal_ClusterFormat" xml:space="preserve">
+    <value>{0} sygnałów</value>
+  </data>
+  <data name="LcdMod_StarMap_MagnificationFormat" xml:space="preserve">
+    <value>POW.: {0:0.##}x</value>
+  </data>
+  <data name="LcdMod_StarMap_JumpCalculatingFormat" xml:space="preserve">
+    <value>Obliczanie... (pozostało ok. {0} s)</value>
+  </data>
+  <data name="LcdMod_StarMap_JumpPointNameFormat" xml:space="preserve">
+    <value>Punkt skoku: {0}</value>
+  </data>
 </root>

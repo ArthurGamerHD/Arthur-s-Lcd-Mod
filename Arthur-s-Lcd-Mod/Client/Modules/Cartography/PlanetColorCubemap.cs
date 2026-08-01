@@ -148,6 +148,15 @@ namespace LcdMod.Client.Modules.Cartography
             float v;
             PlanetMapSource.DirectionToFaceUv(direction, out face, out u, out v);
 
+            return SampleFace(face, u, v, mipLevel);
+        }
+
+        internal Color SampleFace(
+            PlanetCubeFace face,
+            float u,
+            float v,
+            int mipLevel)
+        {
             PlanetColorMip[] levels = _faces[(int)face];
             return levels[ClampMipLevel(mipLevel)].SampleNearest(u, v);
         }

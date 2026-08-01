@@ -1162,4 +1162,70 @@
   <data name="LcdMod_Gps_Unknown_Name" xml:space="preserve">
     <value>Невідомо</value>
   </data>
+  <data name="LcdMod_PlanetaryMap_MapLayerFormat" xml:space="preserve">
+    <value>Шар карти: {0}</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_MapLayer_Tooltip" xml:space="preserve">
+    <value>Виберіть кольори супутникового вигляду, рельєфу або біомів.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Terrain" xml:space="preserve">
+    <value>Рельєф</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Terrain_Tooltip" xml:space="preserve">
+    <value>Карта висот, нормалізована від мінімальної до максимальної висоти планети.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Biomes" xml:space="preserve">
+    <value>Біоми</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Biomes_Tooltip" xml:space="preserve">
+    <value>Необроблені ідентифікатори біомів зі сталими кольорами категорій.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Satellite" xml:space="preserve">
+    <value>Супутник</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Satellite_Tooltip" xml:space="preserve">
+    <value>Матеріали поверхні в кольорах карти далекого вигляду.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_StreetView_Title" xml:space="preserve">
+    <value>Вуличний огляд</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_StreetView_Available_Tooltip" xml:space="preserve">
+    <value>Перетягніть на планету, щоб перейти в режим спостерігача.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_StreetView_Unavailable_Tooltip" xml:space="preserve">
+    <value>Камеру спостерігача вимкнено в цьому світі.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_StreetView_ActiveNotification" xml:space="preserve">
+    <value>Вуличний огляд активний; натисніть [F6], щоб вимкнути його.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CardinalNorthShort" xml:space="preserve">
+    <value>Пн</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CardinalSouthShort" xml:space="preserve">
+    <value>Пд</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CardinalEastShort" xml:space="preserve">
+    <value>Сх</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CardinalWestShort" xml:space="preserve">
+    <value>Зх</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CoordinateFormat" xml:space="preserve">
+    <value>{0} {1:0.0}° {2} {3:0.0}°</value>
+  </data>
+  <data name="LcdMod_RadioSignal_Unnamed" xml:space="preserve">
+    <value>Радіосигнал</value>
+  </data>
+  <data name="LcdMod_RadioSignal_ClusterFormat" xml:space="preserve">
+    <value>{0} сигналів</value>
+  </data>
+  <data name="LcdMod_StarMap_MagnificationFormat" xml:space="preserve">
+    <value>ЗБІЛЬШ.: {0:0.##}x</value>
+  </data>
+  <data name="LcdMod_StarMap_JumpCalculatingFormat" xml:space="preserve">
+    <value>Обчислення... (залишилося близько {0} с)</value>
+  </data>
+  <data name="LcdMod_StarMap_JumpPointNameFormat" xml:space="preserve">
+    <value>Точка стрибка: {0}</value>
+  </data>
 </root>

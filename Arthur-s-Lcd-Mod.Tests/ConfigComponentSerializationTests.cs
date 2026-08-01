@@ -78,6 +78,7 @@ public sealed class ConfigComponentSerializationTests
             StaticCameraPositionY = -456.25d,
             StaticCameraPositionZ = 789.125d,
             Zoom = 2.5f,
+            MapLayer = 2,
             DisplayMyGps = true,
             IncludeRadioSignals = true,
             AlwaysDisplayedGpsHashes = new[] { 101 },
@@ -111,6 +112,7 @@ public sealed class ConfigComponentSerializationTests
         Assert.Equal(-456.25d, planetaryMap.StaticCameraPositionY);
         Assert.Equal(789.125d, planetaryMap.StaticCameraPositionZ);
         Assert.Equal(2.5f, planetaryMap.Zoom);
+        Assert.Equal(2, planetaryMap.MapLayer);
         Assert.True(planetaryMap.DisplayMyGps);
         Assert.True(planetaryMap.IncludeRadioSignals);
         Assert.Equal(new[] { 101 }, planetaryMap.AlwaysDisplayedGpsHashes);

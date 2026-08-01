@@ -9,7 +9,13 @@ namespace LcdMod.Client.Modules.Cartography
 
     public enum CartographyLayer
     {
-        SurfaceFarColor
+        Satellite = 0,
+
+        // Compatibility alias for callers using the original layer name.
+        SurfaceFarColor = Satellite,
+
+        Terrain = 1,
+        Biomes = 2
     }
 
     public sealed class CartographyRequest
@@ -18,7 +24,7 @@ namespace LcdMod.Client.Modules.Cartography
         public string PlanetGeneratorSubtype;
         public double PlanetRadiusMeters;
         public CartographyProjection Projection = CartographyProjection.CubemapFaces;
-        public CartographyLayer Layer = CartographyLayer.SurfaceFarColor;
+        public CartographyLayer Layer = CartographyLayer.Satellite;
 
         /// <summary>
         /// Zero keeps the source face resolution. A positive value renders each
@@ -42,6 +48,16 @@ namespace LcdMod.Client.Modules.Cartography
         public string PlanetGeneratorSubtype;
         public int FaceWidth;
         public int FaceHeight;
+        public PlanetColorCubemap ColorCubemap;
+    }
+
+    public sealed class CartographyColorCubemapCachedEvent
+    {
+        public long PlanetEntityId;
+        public string PlanetGeneratorSubtype;
+        public CartographyProjection Projection;
+        public CartographyLayer Layer;
+        public int MaximumFaceSide;
         public PlanetColorCubemap ColorCubemap;
     }
 

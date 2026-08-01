@@ -1162,4 +1162,70 @@ Vi väntar en stund och startar sedan om den åt dig.</value>
   <data name="LcdMod_Gps_Unknown_Name" xml:space="preserve">
     <value>Okänd</value>
   </data>
+  <data name="LcdMod_PlanetaryMap_MapLayerFormat" xml:space="preserve">
+    <value>Kartlager: {0}</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_MapLayer_Tooltip" xml:space="preserve">
+    <value>Välj satellit-, terräng- eller biomfärger.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Terrain" xml:space="preserve">
+    <value>Terräng</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Terrain_Tooltip" xml:space="preserve">
+    <value>Höjdkarta normaliserad från planetens lägsta till högsta höjd.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Biomes" xml:space="preserve">
+    <value>Biomer</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Biomes_Tooltip" xml:space="preserve">
+    <value>Råa biom-ID:n visas med fasta kategorifärger.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Satellite" xml:space="preserve">
+    <value>Satellit</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Satellite_Tooltip" xml:space="preserve">
+    <value>Ytmaterial visas med färgerna från avståndskartan.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_StreetView_Title" xml:space="preserve">
+    <value>Gatuvy</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_StreetView_Available_Tooltip" xml:space="preserve">
+    <value>Dra till planeten för att öppna åskådarläget.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_StreetView_Unavailable_Tooltip" xml:space="preserve">
+    <value>Åskådarkameran är inaktiverad i den här världen.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_StreetView_ActiveNotification" xml:space="preserve">
+    <value>Gatuvyn är aktiv; tryck på [F6] för att inaktivera den.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CardinalNorthShort" xml:space="preserve">
+    <value>N</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CardinalSouthShort" xml:space="preserve">
+    <value>S</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CardinalEastShort" xml:space="preserve">
+    <value>Ö</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CardinalWestShort" xml:space="preserve">
+    <value>V</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_CoordinateFormat" xml:space="preserve">
+    <value>{0}°{1:0.0} {2}°{3:0.0}</value>
+  </data>
+  <data name="LcdMod_RadioSignal_Unnamed" xml:space="preserve">
+    <value>Radiosignal</value>
+  </data>
+  <data name="LcdMod_RadioSignal_ClusterFormat" xml:space="preserve">
+    <value>{0} radiosignaler</value>
+  </data>
+  <data name="LcdMod_StarMap_MagnificationFormat" xml:space="preserve">
+    <value>FÖRST.: {0:0.##}x</value>
+  </data>
+  <data name="LcdMod_StarMap_JumpCalculatingFormat" xml:space="preserve">
+    <value>Beräknar... (uppskattat: {0} s)</value>
+  </data>
+  <data name="LcdMod_StarMap_JumpPointNameFormat" xml:space="preserve">
+    <value>Hopppunkt: {0}</value>
+  </data>
 </root>

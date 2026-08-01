@@ -32,6 +32,8 @@ namespace LcdMod.Client.Modules.Cartography
 
         readonly ushort[][] _heights = new ushort[6][];
         readonly byte[][] _materialIds = new byte[6][];
+        ushort _minimumHeight = ushort.MaxValue;
+        ushort _maximumHeight;
 
         public int Resolution { get; private set; }
 
@@ -51,12 +53,33 @@ namespace LcdMod.Client.Modules.Cartography
 
         public static PlanetMapSource Load(
             PlanetDefinitionSnapshot planet,
+            CartographyLayer layer,
             CartographyCancellation cancellation)
         {
             if (planet == null)
                 throw new ArgumentNullException(nameof(planet));
             if (cancellation == null)
                 throw new ArgumentNullException(nameof(cancellation));
+
+            bool loadHeight;
+            bool loadMaterials;
+            switch (layer)
+            {
+                case CartographyLayer.Satellite:
+                    loadHeight = true;
+                    loadMaterials = true;
+                    break;
+                case CartographyLayer.Terrain:
+                    loadHeight = true;
+                    loadMaterials = false;
+                    break;
+                case CartographyLayer.Biomes:
+                    loadHeight = false;
+                    loadMaterials = true;
+                    break;
+                default:
+                    throw new NotSupportedException("The requested cartography layer is not implemented.");
+            }
 
             var source = new PlanetMapSource();
             for (int i = 0; i < ExportOrder.Length; i++)
@@ -65,16 +88,24 @@ namespace LcdMod.Client.Modules.Cartography
                 PlanetCubeFace face = ExportOrder[i];
                 string faceName = GetFaceName(face);
 
-                RawPngBitmap height = LoadPng(planet, faceName + ".png");
-                source.ValidateResolution(height, faceName + ".png");
-                source._heights[(int)face] = ExtractHeight(height);
+                if (loadHeight)
+                {
+                    RawPngBitmap height = LoadPng(planet, faceName + ".png");
+                    source.ValidateResolution(height, faceName + ".png");
+                    source._heights[(int)face] = ExtractHeight(height);
+                }
 
-                cancellation.ThrowIfCancelled();
-                RawPngBitmap material = LoadPng(planet, faceName + "_mat.png");
-                source.ValidateResolution(material, faceName + "_mat.png");
-                source._materialIds[(int)face] = ExtractMaterialRed(material);
+                if (loadMaterials)
+                {
+                    cancellation.ThrowIfCancelled();
+                    RawPngBitmap material = LoadPng(planet, faceName + "_mat.png");
+                    source.ValidateResolution(material, faceName + "_mat.png");
+                    source._materialIds[(int)face] = ExtractMaterialRed(material);
+                }
             }
 
+            if (loadHeight)
+                source.CalculateHeightRange();
             return source;
         }
 
@@ -103,6 +134,18 @@ namespace LcdMod.Client.Modules.Cartography
             float top = h00 + (h10 - h00) * tx;
             float bottom = h01 + (h11 - h01) * tx;
             return top + (bottom - top) * ty;
+        }
+
+        public float SampleHeightMinMaxNormalized(Vector3 direction)
+        {
+            float height = SampleHeightNormalized(direction);
+            float minimum = _minimumHeight / 65535f;
+            float maximum = _maximumHeight / 65535f;
+            float range = maximum - minimum;
+            if (range <= 0.0000001f)
+                return 0.5f;
+
+            return Clamp01((height - minimum) / range);
         }
 
         public byte SampleMaterialNearest(PlanetCubeFace face, float u, float v)
@@ -214,6 +257,34 @@ namespace LcdMod.Client.Modules.Cartography
 
             u = Clamp01((rawU + 1f) * 0.5f);
             v = Clamp01((rawV + 1f) * 0.5f);
+        }
+
+        void CalculateHeightRange()
+        {
+            ushort minimum = ushort.MaxValue;
+            ushort maximum = ushort.MinValue;
+
+            for (int face = 0; face < _heights.Length; face++)
+            {
+                ushort[] values = _heights[face];
+                if (values == null)
+                    continue;
+
+                for (int i = 0; i < values.Length; i++)
+                {
+                    ushort value = values[i];
+                    if (value < minimum)
+                        minimum = value;
+                    if (value > maximum)
+                        maximum = value;
+                }
+            }
+
+            if (minimum == ushort.MaxValue)
+                minimum = 0;
+
+            _minimumHeight = minimum;
+            _maximumHeight = maximum;
         }
 
         static RawPngBitmap LoadPng(PlanetDefinitionSnapshot planet, string fileName)

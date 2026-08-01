@@ -64,15 +64,52 @@ namespace LcdMod.Client.Modules.Cartography
             }
         }
 
+
+        struct FailedPlanetTypeCacheKey : IEquatable<FailedPlanetTypeCacheKey>
+        {
+            public string PlanetGeneratorSubtype;
+            public CartographyLayer Layer;
+
+            public bool Equals(FailedPlanetTypeCacheKey other)
+            {
+                return Layer == other.Layer &&
+                       string.Equals(
+                           PlanetGeneratorSubtype,
+                           other.PlanetGeneratorSubtype,
+                           StringComparison.OrdinalIgnoreCase);
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is FailedPlanetTypeCacheKey &&
+                       Equals((FailedPlanetTypeCacheKey)obj);
+            }
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    int hash = (int)Layer;
+                    hash = hash * 397 ^ (PlanetGeneratorSubtype == null
+                        ? 0
+                        : StringComparer.OrdinalIgnoreCase.GetHashCode(
+                            PlanetGeneratorSubtype));
+                    return hash;
+                }
+            }
+        }
+
         readonly object _sync = new object();
         readonly Queue<PendingJob> _queue = new Queue<PendingJob>();
         readonly Dictionary<ColorCubemapCacheKey, PlanetColorCubemap> _colorCubemapCache =
             new Dictionary<ColorCubemapCacheKey, PlanetColorCubemap>();
-        readonly Dictionary<string, string> _failedPlanetTypeCache =
-            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        readonly Dictionary<FailedPlanetTypeCacheKey, string> _failedPlanetTypeCache =
+            new Dictionary<FailedPlanetTypeCacheKey, string>();
         PendingJob _running;
         long _nextId;
         bool _unloaded;
+
+        public event Action<CartographyColorCubemapCachedEvent> ColorCubemapCached;
 
         public bool TryGetCachedColorCubemap(
             CartographyRequest request,
@@ -129,6 +166,7 @@ namespace LcdMod.Client.Modules.Cartography
 
                 return TryGetFailedPlanetTypeNoLock(
                     planetType,
+                    request.Layer,
                     out failureReason);
             }
         }
@@ -150,7 +188,10 @@ namespace LcdMod.Client.Modules.Cartography
                 if (_unloaded)
                     throw new InvalidOperationException("Cartography module is unloaded.");
 
-                TryGetFailedPlanetTypeNoLock(requestedPlanetType, out cachedFailure);
+                TryGetFailedPlanetTypeNoLock(
+                    requestedPlanetType,
+                    workRequest.Layer,
+                    out cachedFailure);
             }
 
             PlanetDefinitionSnapshot planet = null;
@@ -160,7 +201,8 @@ namespace LcdMod.Client.Modules.Cartography
                 try
                 {
                     planet = CartographySnapshotBuilder.BuildPlanet(workRequest);
-                    farColors = CartographySnapshotBuilder.BuildFarColors(planet);
+                    if (workRequest.Layer == CartographyLayer.Satellite)
+                        farColors = CartographySnapshotBuilder.BuildFarColors(planet);
                 }
                 catch (Exception error)
                 {
@@ -170,6 +212,7 @@ namespace LcdMod.Client.Modules.Cartography
                         {
                             StoreFailedPlanetTypeNoLock(
                                 planet != null ? planet.GeneratorSubtype : requestedPlanetType,
+                                workRequest.Layer,
                                 error.Message);
                         }
                     }
@@ -207,6 +250,7 @@ namespace LcdMod.Client.Modules.Cartography
                 }
                 else if (TryGetFailedPlanetTypeNoLock(
                              resolvedPlanetType,
+                             workRequest.Layer,
                              out latestFailure))
                 {
                     job.Result = CreateFailedResult(
@@ -264,22 +308,36 @@ namespace LcdMod.Client.Modules.Cartography
 
         bool TryGetFailedPlanetTypeNoLock(
             string planetType,
+            CartographyLayer layer,
             out string failureReason)
         {
             failureReason = null;
-            return !string.IsNullOrWhiteSpace(planetType) &&
-                   _failedPlanetTypeCache.TryGetValue(planetType, out failureReason);
+            if (string.IsNullOrWhiteSpace(planetType))
+                return false;
+
+            return _failedPlanetTypeCache.TryGetValue(
+                new FailedPlanetTypeCacheKey
+                {
+                    PlanetGeneratorSubtype = planetType,
+                    Layer = layer
+                },
+                out failureReason);
         }
 
         void StoreFailedPlanetTypeNoLock(
             string planetType,
+            CartographyLayer layer,
             string failureReason)
         {
             if (string.IsNullOrWhiteSpace(planetType))
                 return;
 
-            _failedPlanetTypeCache[planetType] = string.IsNullOrWhiteSpace(failureReason)
-                ? "Cartography failed for this planet type."
+            _failedPlanetTypeCache[new FailedPlanetTypeCacheKey
+            {
+                PlanetGeneratorSubtype = planetType,
+                Layer = layer
+            }] = string.IsNullOrWhiteSpace(failureReason)
+                ? "Cartography failed for this planet type and layer."
                 : failureReason;
         }
 
@@ -292,7 +350,7 @@ namespace LcdMod.Client.Modules.Cartography
             {
                 Success = false,
                 Error = string.IsNullOrWhiteSpace(failureReason)
-                    ? "Cartography failed for this planet type."
+                    ? "Cartography failed for this planet type and layer."
                     : failureReason,
                 PlanetEntityId = request == null ? 0L : request.PlanetEntityId,
                 PlanetGeneratorSubtype = planetType ??
@@ -316,7 +374,7 @@ namespace LcdMod.Client.Modules.Cartography
                        StringComparison.OrdinalIgnoreCase);
         }
 
-        void StoreColorCubemap(
+        bool StoreColorCubemap(
             ColorCubemapCacheKey key,
             PlanetColorCubemap cubemap)
         {
@@ -331,7 +389,7 @@ namespace LcdMod.Client.Modules.Cartography
                 // of its lower display mips. Otherwise, discard levels superseded
                 // by the new higher-resolution cubemap.
                 if (pair.Value.SatisfiesFaceSide(cubemap.RequestedMaximumFaceSide))
-                    return;
+                    return false;
 
                 if (cubemap.SatisfiesFaceSide(pair.Value.RequestedMaximumFaceSide))
                     remove.Add(pair.Key);
@@ -341,6 +399,7 @@ namespace LcdMod.Client.Modules.Cartography
                 _colorCubemapCache.Remove(remove[i]);
 
             _colorCubemapCache[key] = cubemap;
+            return true;
         }
 
         static CartographyRequest CopyRequest(CartographyRequest source)
@@ -421,6 +480,7 @@ namespace LcdMod.Client.Modules.Cartography
                             : ResolvePlanetType(candidate.Request);
                         if (TryGetFailedPlanetTypeNoLock(
                                 planetType,
+                                candidate.Request.Layer,
                                 out failureReason))
                         {
                             candidate.Result = CreateFailedResult(
@@ -454,9 +514,15 @@ namespace LcdMod.Client.Modules.Cartography
             try
             {
                 job.Cancellation.ThrowIfCancelled();
-                job.FarColors.ResolveTextureFallbacks(job.Cancellation);
-                job.Cancellation.ThrowIfCancelled();
-                PlanetMapSource source = PlanetMapSource.Load(job.Planet, job.Cancellation);
+                if (job.FarColors != null)
+                {
+                    job.FarColors.ResolveTextureFallbacks(job.Cancellation);
+                    job.Cancellation.ThrowIfCancelled();
+                }
+                PlanetMapSource source = PlanetMapSource.Load(
+                    job.Planet,
+                    job.Request.Layer,
+                    job.Cancellation);
                 job.Cancellation.ThrowIfCancelled();
 
                 PaintedPlanetFaces painted = PlanetSurfacePainter.Render(
@@ -504,6 +570,7 @@ namespace LcdMod.Client.Modules.Cartography
         void Complete(PendingJob job)
         {
             Action<CartographyResult> callback = null;
+            CartographyColorCubemapCachedEvent cachedEvent = null;
             bool allowCallback;
             lock (_sync)
             {
@@ -516,9 +583,14 @@ namespace LcdMod.Client.Modules.Cartography
                     job.Result.ColorCubemap != null &&
                     job.Request.ReturnColorCubemap)
                 {
-                    StoreColorCubemap(
-                        CreateColorCubemapCacheKey(job.Request),
-                        job.Result.ColorCubemap);
+                    if (StoreColorCubemap(
+                            CreateColorCubemapCacheKey(job.Request),
+                            job.Result.ColorCubemap))
+                    {
+                        cachedEvent = CreateColorCubemapCachedEvent(
+                            job.Request,
+                            job.Result.ColorCubemap);
+                    }
                 }
                 else if (!_unloaded &&
                          job.Result != null &&
@@ -529,6 +601,7 @@ namespace LcdMod.Client.Modules.Cartography
                         job.Planet != null
                             ? job.Planet.GeneratorSubtype
                             : ResolvePlanetType(job.Request),
+                        job.Request.Layer,
                         job.Result.Error);
                 }
 
@@ -552,7 +625,45 @@ namespace LcdMod.Client.Modules.Cartography
                 }
             }
 
+            if (allowCallback && cachedEvent != null)
+                RaiseColorCubemapCached(cachedEvent);
+
             TryStartNext();
+        }
+
+        void RaiseColorCubemapCached(CartographyColorCubemapCachedEvent cachedEvent)
+        {
+            var handler = ColorCubemapCached;
+            if (handler == null)
+                return;
+
+            Delegate[] subscribers = handler.GetInvocationList();
+            for (int i = 0; i < subscribers.Length; i++)
+            {
+                try
+                {
+                    ((Action<CartographyColorCubemapCachedEvent>)subscribers[i])(cachedEvent);
+                }
+                catch (Exception error)
+                {
+                    ErrorHandlerHelper.LogError(error, typeof(CartographyModule));
+                }
+            }
+        }
+
+        static CartographyColorCubemapCachedEvent CreateColorCubemapCachedEvent(
+            CartographyRequest request,
+            PlanetColorCubemap cubemap)
+        {
+            return new CartographyColorCubemapCachedEvent
+            {
+                PlanetEntityId = request.PlanetEntityId,
+                PlanetGeneratorSubtype = request.PlanetGeneratorSubtype,
+                Projection = request.Projection,
+                Layer = request.Layer,
+                MaximumFaceSide = request.MaximumFaceSide,
+                ColorCubemap = cubemap
+            };
         }
 
         static CartographyResult BuildResult(

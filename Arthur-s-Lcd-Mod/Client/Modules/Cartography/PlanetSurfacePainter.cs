@@ -24,8 +24,6 @@ namespace LcdMod.Client.Modules.Cartography
                 throw new ArgumentNullException(nameof(source));
             if (planet == null)
                 throw new ArgumentNullException(nameof(planet));
-            if (farColors == null)
-                throw new ArgumentNullException(nameof(farColors));
             if (request == null)
                 throw new ArgumentNullException(nameof(request));
             if (cancellation == null)
@@ -33,8 +31,8 @@ namespace LcdMod.Client.Modules.Cartography
 
             if (request.Projection != CartographyProjection.CubemapFaces)
                 throw new NotSupportedException("Only cubemap-face cartography is implemented.");
-            if (request.Layer != CartographyLayer.SurfaceFarColor)
-                throw new NotSupportedException("Only SurfaceFarColor cartography is implemented.");
+            if (request.Layer == CartographyLayer.Satellite && farColors == null)
+                throw new ArgumentNullException(nameof(farColors));
 
             int outputSide = request.MaximumFaceSide > 0
                 ? Math.Min(request.MaximumFaceSide, source.Resolution)
@@ -49,6 +47,7 @@ namespace LcdMod.Client.Modules.Cartography
                     source,
                     planet,
                     farColors,
+                    request.Layer,
                     face,
                     outputSide,
                     cancellation);
@@ -58,6 +57,34 @@ namespace LcdMod.Client.Modules.Cartography
         }
 
         static RawRgbaBitmap RenderFace(
+            PlanetMapSource source,
+            PlanetDefinitionSnapshot planet,
+            FarColorCatalogSnapshot farColors,
+            CartographyLayer layer,
+            PlanetCubeFace face,
+            int outputSide,
+            CartographyCancellation cancellation)
+        {
+            switch (layer)
+            {
+                case CartographyLayer.Satellite:
+                    return RenderSatelliteFace(
+                        source,
+                        planet,
+                        farColors,
+                        face,
+                        outputSide,
+                        cancellation);
+                case CartographyLayer.Terrain:
+                    return RenderTerrainFace(source, face, outputSide, cancellation);
+                case CartographyLayer.Biomes:
+                    return RenderBiomeFace(source, face, outputSide, cancellation);
+                default:
+                    throw new NotSupportedException("The requested cartography layer is not implemented.");
+            }
+        }
+
+        static RawRgbaBitmap RenderSatelliteFace(
             PlanetMapSource source,
             PlanetDefinitionSnapshot planet,
             FarColorCatalogSnapshot farColors,
@@ -108,6 +135,72 @@ namespace LcdMod.Client.Modules.Cartography
             }
 
             return bitmap;
+        }
+
+        static RawRgbaBitmap RenderTerrainFace(
+            PlanetMapSource source,
+            PlanetCubeFace face,
+            int outputSide,
+            CartographyCancellation cancellation)
+        {
+            var bitmap = new RawRgbaBitmap(outputSide, outputSide);
+
+            for (int y = 0; y < outputSide; y++)
+            {
+                if ((y & 31) == 0)
+                    cancellation.ThrowIfCancelled();
+
+                float v = (y + 0.5f) / outputSide;
+                for (int x = 0; x < outputSide; x++)
+                {
+                    float u = (x + 0.5f) / outputSide;
+                    Vector3 direction = PlanetMapSource.FaceUvToDirection(face, u, v);
+                    float normalizedHeight = source.SampleHeightMinMaxNormalized(direction);
+                    byte shade = (byte)Math.Round(normalizedHeight * 255f);
+                    bitmap.SetPixel(x, y, shade, shade, shade, 255);
+                }
+            }
+
+            return bitmap;
+        }
+
+        static RawRgbaBitmap RenderBiomeFace(
+            PlanetMapSource source,
+            PlanetCubeFace face,
+            int outputSide,
+            CartographyCancellation cancellation)
+        {
+            var bitmap = new RawRgbaBitmap(outputSide, outputSide);
+
+            for (int y = 0; y < outputSide; y++)
+            {
+                if ((y & 31) == 0)
+                    cancellation.ThrowIfCancelled();
+
+                float v = (y + 0.5f) / outputSide;
+                for (int x = 0; x < outputSide; x++)
+                {
+                    float u = (x + 0.5f) / outputSide;
+                    byte biome = source.SampleMaterialNearest(face, u, v);
+                    Color color = GetBiomeColor(biome);
+                    bitmap.SetPixel(x, y, color.R, color.G, color.B, color.A);
+                }
+            }
+
+            return bitmap;
+        }
+
+        internal static Color GetBiomeColor(byte biome)
+        {
+            // An odd multiplier makes the red channel an injective permutation of
+            // all 256 biome values. The other channels are independent permutations,
+            // producing stable, high-contrast categorical colors without a palette.
+            byte red = (byte)((biome * 73 + 41) & 255);
+            byte greenSeed = (byte)((biome * 151 + 97) & 255);
+            byte blueSeed = (byte)((biome * 199 + 17) & 255);
+            byte green = (byte)(48 + greenSeed * 175 / 255);
+            byte blue = (byte)(48 + blueSeed * 175 / 255);
+            return new Color(red, green, blue, 255);
         }
 
         static float CalculateSlopeCosine(

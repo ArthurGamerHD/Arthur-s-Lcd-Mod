@@ -271,5 +271,11 @@
             <SpritePath>Textures/Sprites/Weather/ToxicRain.dds</SpritePath>
             <Selectable>false</Selectable>
         </LCDTextureDefinition>
+        
+        <LCDTextureDefinition> <!-- Planetary Map: Street View sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="StreetView"/>
+            <SpritePath>Textures/Sprites/StreetView.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
     </LCDTextures>
 </Definitions>

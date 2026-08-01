@@ -17,6 +17,15 @@ namespace LcdMod.Client.Gui.Tooltip
         Click,
         RightClick
     }
+
+    public enum TooltipPlacement
+    {
+        Auto,
+        Above,
+        Below,
+        Left,
+        Right
+    }
     
     public sealed class InteractiveTooltip
     {
@@ -113,6 +122,10 @@ namespace LcdMod.Client.Gui.Tooltip
         public TooltipActivationMode OpenMode { get; private set; }
 
         public TooltipActivationMode CloseMode { get; private set; }
+
+        public TooltipPlacement Placement { get; set; } = TooltipPlacement.Auto;
+
+        public Func<ControlTemplate, RectangleF> AnchorBoundsGetter { get; set; }
 
         public RectangleF Bounds { get; private set; }
 
@@ -277,33 +290,75 @@ namespace LcdMod.Client.Gui.Tooltip
             float cardWidth = Math.Max(20f * scale, contentWidth + 2f * padding.X);
             float cardHeight = Math.Max(20f * scale, contentHeight + 2f * padding.Y);
 
-            var parentBounds = parentEntry.Bounds;
+            var parentBounds = AnchorBoundsGetter != null
+                ? AnchorBoundsGetter(parentEntry)
+                : parentEntry.Bounds;
 
-            bool placeOnRight = parentBounds.Center.X <= viewBox.Center.X;
-            float anchorX = placeOnRight
-                ? parentBounds.Right + offset
-                : parentBounds.X - offset - cardWidth;
+            TooltipPlacement resolvedPlacement = Placement;
+            if (resolvedPlacement == TooltipPlacement.Auto)
+            {
+                resolvedPlacement = parentBounds.Center.X <= viewBox.Center.X
+                    ? TooltipPlacement.Right
+                    : TooltipPlacement.Left;
+            }
 
-            float startX = MathHelper.Clamp(
-                anchorX,
-                viewBox.X + padding.X,
-                viewBox.Right - cardWidth - padding.X);
+            float minimumX = viewBox.X + padding.X;
+            float maximumX = viewBox.Right - cardWidth - padding.X;
+            float minimumY = viewBox.Y + padding.Y;
+            float maximumY = viewBox.Bottom - cardHeight - padding.Y;
+            float startX;
+            float startY;
 
-            float startY = MathHelper.Clamp(
-                parentBounds.Center.Y - cardHeight * 0.5f,
-                viewBox.Y + padding.Y,
-                viewBox.Bottom - cardHeight - padding.Y);
+            switch (resolvedPlacement)
+            {
+                case TooltipPlacement.Above:
+                    startX = ClampCardCoordinate(
+                        parentBounds.Center.X - cardWidth * 0.5f,
+                        minimumX,
+                        maximumX);
+                    startY = ClampCardCoordinate(
+                        parentBounds.Y - offset - cardHeight,
+                        minimumY,
+                        maximumY);
+                    break;
+                case TooltipPlacement.Below:
+                    startX = ClampCardCoordinate(
+                        parentBounds.Center.X - cardWidth * 0.5f,
+                        minimumX,
+                        maximumX);
+                    startY = ClampCardCoordinate(
+                        parentBounds.Bottom + offset,
+                        minimumY,
+                        maximumY);
+                    break;
+                case TooltipPlacement.Left:
+                    startX = ClampCardCoordinate(
+                        parentBounds.X - offset - cardWidth,
+                        minimumX,
+                        maximumX);
+                    startY = ClampCardCoordinate(
+                        parentBounds.Center.Y - cardHeight * 0.5f,
+                        minimumY,
+                        maximumY);
+                    break;
+                default:
+                    startX = ClampCardCoordinate(
+                        parentBounds.Right + offset,
+                        minimumX,
+                        maximumX);
+                    startY = ClampCardCoordinate(
+                        parentBounds.Center.Y - cardHeight * 0.5f,
+                        minimumY,
+                        maximumY);
+                    break;
+            }
 
             var cardRect = new RectangleF(startX, startY, cardWidth, cardHeight);
             var shadowRect = new RectangleF(cardRect.Position + 2f, cardRect.Size);
             var shadowColor = panelColor.MulValue(0.2f);
 
             Bounds = cardRect;
-            KeepOpenBounds = new RectangleF(
-                Math.Min(parentBounds.X, cardRect.X),
-                parentBounds.Y,
-                Math.Max(parentBounds.Right, cardRect.Right) - Math.Min(parentBounds.X, cardRect.X),
-                parentBounds.Height);
+            KeepOpenBounds = BuildKeepOpenBounds(cardRect, parentBounds, resolvedPlacement);
             HasBounds = true;
 
             var containerRect = CloseMode == TooltipActivationMode.Auto
@@ -507,6 +562,57 @@ namespace LcdMod.Client.Gui.Tooltip
 
             PruneUnusedLineEntries();
             return sprites;
+        }
+
+
+        static float ClampCardCoordinate(float value, float minimum, float maximum)
+        {
+            if (maximum < minimum)
+                return minimum;
+
+            return MathHelper.Clamp(value, minimum, maximum);
+        }
+
+        static RectangleF BuildKeepOpenBounds(
+            RectangleF cardBounds,
+            RectangleF parentBounds,
+            TooltipPlacement placement)
+        {
+            switch (placement)
+            {
+                case TooltipPlacement.Above:
+                {
+                    float left = Math.Min(parentBounds.X, cardBounds.X);
+                    float right = Math.Max(parentBounds.Right, cardBounds.Right);
+                    float top = Math.Min(cardBounds.Bottom, parentBounds.Y);
+                    float bottom = Math.Max(cardBounds.Bottom, parentBounds.Y);
+                    return new RectangleF(left, top, right - left, bottom - top);
+                }
+                case TooltipPlacement.Below:
+                {
+                    float left = Math.Min(parentBounds.X, cardBounds.X);
+                    float right = Math.Max(parentBounds.Right, cardBounds.Right);
+                    float top = Math.Min(parentBounds.Bottom, cardBounds.Y);
+                    float bottom = Math.Max(parentBounds.Bottom, cardBounds.Y);
+                    return new RectangleF(left, top, right - left, bottom - top);
+                }
+                case TooltipPlacement.Left:
+                {
+                    float left = Math.Min(cardBounds.Right, parentBounds.X);
+                    float right = Math.Max(cardBounds.Right, parentBounds.X);
+                    float top = Math.Min(parentBounds.Y, cardBounds.Y);
+                    float bottom = Math.Max(parentBounds.Bottom, cardBounds.Bottom);
+                    return new RectangleF(left, top, right - left, bottom - top);
+                }
+                default:
+                {
+                    float left = Math.Min(parentBounds.Right, cardBounds.X);
+                    float right = Math.Max(parentBounds.Right, cardBounds.X);
+                    float top = Math.Min(parentBounds.Y, cardBounds.Y);
+                    float bottom = Math.Max(parentBounds.Bottom, cardBounds.Bottom);
+                    return new RectangleF(left, top, right - left, bottom - top);
+                }
+            }
         }
 
         void EnsureContainer(RectangleF bounds, IApp parentApp)

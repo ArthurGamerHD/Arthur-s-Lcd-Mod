@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Config;
 using LcdMod.Client.Gui;
@@ -8,16 +7,21 @@ using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Custom.Camera;
 using LcdMod.Client.Gui.ControlsTemplates.Custom.Planet;
+using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Modules.Cartography;
 using LcdMod.Client.Terminal.Controls;
+using LcdMod.Client.Utility;
 using LcdMod.Common.Config.Components;
 using LcdMod.Common.Config.Generation;
 using LcdMod.Common.Helpers;
+using Sandbox.Engine.Utils;
 using Sandbox.Game.Entities;
+using Sandbox.Game.World;
 using Sandbox.ModAPI;
+using VRage;
 using VRage.Game;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
@@ -30,7 +34,7 @@ namespace LcdMod.Client.Apps
     /// Displays the nearest planet through the reusable PlanetGlobeControl.
     /// Cubemap detail follows the projected sphere diameter up to the client-local
     /// texture-quality cap. Higher detail is requested lazily; the last completed cubemap remains
-    /// visible until its replacement is ready. Only the initial load uses gray.
+    /// visible until its replacement is ready. Only the first load of a layer uses gray.
     /// </summary>
     [LcdApp(29, Name = "PlanetaryMap")]
     [ConfigComponent(APP, typeof(PlanetaryMapConfigComponent), PropertyName = "PlanetaryMapComponent")]
@@ -47,11 +51,14 @@ namespace LcdMod.Client.Apps
         const float SHIP_MARKER_TRIANGLE_OFFSET = 0.18f;
         const float SHIP_MARKER_SPHERE_OFFSET = 0.26f;
         const float SHIP_MARKER_SPHERE_SIZE = 0.56f;
-        const float CAMERA_BUTTON_MARGIN_PIXELS = 12f;
-        const float CAMERA_BUTTON_GAP_PIXELS = 8f;
-        const float CAMERA_BUTTON_SIZE_PIXELS = 42f;
-        const float CAMERA_BUTTON_ICON_RATIO = 0.56f;
+        const float ORIENTATION_ICON_RATIO = 0.58f;
+        const float ICON_MARGIN_PIXELS = 12f;
+        const float ICON_GAP_PIXELS = 8f;
+        const float ICON_SIZE_PIXELS = 42f;
+        const float ICON_RATIO = 0.75f;
         const float CAMERA_BUTTON_SHADOW_RATIO = 0.055f;
+        const double STREET_CAMERA_HEIGHT_METERS = 2.5d;
+        const float ICON_DRAG_GHOST_OPACITY = 0.82f;
         const float ORBIT_CONFIG_EPSILON = 0.000001f;
         const float ZOOM_CONFIG_EPSILON = 0.0001f;
         const double STATIC_CAMERA_CONFIG_EPSILON_METERS = 0.001d;
@@ -70,9 +77,25 @@ namespace LcdMod.Client.Apps
         const float RADIO_SIGNAL_LABEL_GAP_PIXELS = 5f;
         const float RADIO_SIGNAL_CLUSTER_DISTANCE_PIXELS = 30f;
         const long GPS_CREATED_STATUS_FRAMES = 180L;
+        const int LAYER_PREVIEW_REQUEST_FACE_SIDE = 16;
+        const int LAYER_PREVIEW_MIP_SIDE = 8;
+
+        static readonly CartographyLayer[] MapLayers =
+        {
+            CartographyLayer.Satellite,
+            CartographyLayer.Terrain,
+            CartographyLayer.Biomes
+        };
 
         readonly List<MySprite> _sprites = new List<MySprite>();
         readonly List<MySprite> _cachedShipMarkerSprites = new List<MySprite>();
+        readonly Dictionary<CartographyLayer, PlanetColorCubemap> _loadedCubemaps =
+            new Dictionary<CartographyLayer, PlanetColorCubemap>();
+        readonly Dictionary<CartographyLayer, CartographyTicket> _layerPreviewTickets =
+            new Dictionary<CartographyLayer, CartographyTicket>();
+        readonly Dictionary<CartographyLayer, long> _layerPreviewRetryFrames =
+            new Dictionary<CartographyLayer, long>();
+        CartographyModule _cartographyModule;
         readonly List<IMyGps> _gpsEntries = new List<IMyGps>();
         readonly List<GpsMarkerProjection> _gpsMarkerProjections =
             new List<GpsMarkerProjection>();
@@ -93,6 +116,9 @@ namespace LcdMod.Client.Apps
         readonly ButtonModel _followButtonModel;
         readonly ToggleButton _orientationButton;
         readonly ToggleButton _followButton;
+        readonly SquareComboBox<CartographyLayer> _layerSelector;
+        readonly RectangleControl _streetViewControl;
+        readonly Random _streetViewRandom = new Random();
         readonly Dictionary<long, StaticMarkerInteractiveState> _radioSignalMarkerInteractiveStates =
             new Dictionary<long, StaticMarkerInteractiveState>();
 
@@ -112,9 +138,11 @@ namespace LcdMod.Client.Apps
         int _retryFaceSide = int.MinValue;
         int _requestedFaceSide = -1;
         int _requestVersion;
+        int _layerPreviewRequestVersion;
         CartographyTicket _ticket;
         PlanetColorCubemap _loadedCubemap;
         string _error;
+        CartographyLayer _layer = CartographyLayer.Satellite;
         float _zoom = MAXIMUM_ZOOM;
         bool _northUp = true;
         bool _followCamera = true;
@@ -124,6 +152,7 @@ namespace LcdMod.Client.Apps
         bool _syncConfigNextRun;
         bool _lastKnownConfigNorthUp = true;
         bool _lastKnownConfigFollowCamera = true;
+        CartographyLayer _lastKnownConfigLayer = CartographyLayer.Satellite;
         float _lastKnownConfigOrbitYawRadians;
         float _lastKnownConfigOrbitPitchRadians;
         float _lastKnownConfigZoom = MAXIMUM_ZOOM;
@@ -134,6 +163,9 @@ namespace LcdMod.Client.Apps
         bool _hasLastCreatedSurfaceGps;
         string _gpsCreatedStatus;
         long _gpsCreatedStatusUntilFrame = long.MinValue;
+        bool _streetViewDragging;
+        bool _streetViewAvailable;
+        Vector2 _streetViewDragPointer;
         bool _closed;
 
         public event Action SurfaceGpsCreated;
@@ -177,7 +209,7 @@ namespace LcdMod.Client.Apps
 
             _orientationButtonModel = new ButtonModel
             {
-                Text = "N",
+                Text = LocHelper.GetLoc(MOD_PREFIX + "PlanetaryMap_CardinalNorthShort"),
                 Clicked = OnOrientationButtonClicked
             };
             _orientationButton = AddLogicalChild(
@@ -209,13 +241,59 @@ namespace LcdMod.Client.Apps
                     new StaticTooltipLine(GetFollowTooltipText())
                 }));
 
+            _layerSelector = AddLogicalChild(
+                new SquareComboBox<CartographyLayer>(
+                    MapLayers,
+                    GetMapLayerLabel,
+                    null,
+                    OnMapLayerChanged,
+                    delegate { Host.RenderSprites(); },
+                    CreateMapLayerTooltip,
+                    RenderMapLayerPreview));
+            _layerSelector.OpenDirection = SquareComboBoxOpenDirection.Right;
+            _layerSelector.OptionGapPixels = ICON_GAP_PIXELS;
+            _layerSelector.BorderThicknessPixels = 0f;
+            _layerSelector.ConfigureTooltips(TooltipPlacement.Above, true);
+            _layerSelector.SetSelectedValue(_layer);
+            _layerSelector.SetTooltip(_layerSelector.PrepareTooltip(new InteractiveTooltip(
+                () => string.Format(
+                    FormatingHelper.Culture,
+                    LocHelper.GetLoc(MOD_PREFIX + "PlanetaryMap_MapLayerFormat"),
+                    GetMapLayerLabel(_layer)),
+                () => new ITooltipLine[]
+                {
+                    new StaticTooltipLine(LocHelper.GetLoc(
+                        MOD_PREFIX + "PlanetaryMap_MapLayer_Tooltip"))
+                })));
+
+            _streetViewControl = AddLogicalChild(
+                new RectangleControl(default(RectangleF), CursorType.Hand));
+            _streetViewControl.CustomRender = RenderStreetViewControl;
+            _streetViewControl.SetDraggable();
+            _streetViewControl.SetOnBeginDrag(OnStreetViewDragBegin);
+            _streetViewControl.SetOnDrag(OnStreetViewDragged);
+            _streetViewControl.SetOnEndDrag(OnStreetViewDragEnd);
+            var streetViewTooltip = new InteractiveTooltip(
+                () => LocHelper.GetLoc(MOD_PREFIX + "PlanetaryMap_StreetView_Title"),
+                () => new ITooltipLine[]
+                {
+                    new StaticTooltipLine(LocHelper.GetLoc(MOD_PREFIX + (_streetViewAvailable
+                        ? "PlanetaryMap_StreetView_Available_Tooltip"
+                        : "PlanetaryMap_StreetView_Unavailable_Tooltip")))
+                });
+            streetViewTooltip.Placement = TooltipPlacement.Above;
+            _streetViewControl.SetTooltip(streetViewTooltip);
+
             _children.Add(_planetControl);
             _children.Add(_orbitControl);
             _children.Add(_orientationButton);
             _children.Add(_followButton);
+            _children.Add(_layerSelector);
+            _children.Add(_streetViewControl);
 
             ApplyPlanetaryMapConfig(true);
 
+            EnsureCartographyEventSubscription();
             LocalConfigManager.TextureQualityChanged += OnTextureQualityChanged;
             ApplyTextureQuality(LocalConfigManager.TextureQuality, false);
         }
@@ -244,6 +322,7 @@ namespace LcdMod.Client.Apps
 
         public override void Update()
         {
+            EnsureCartographyEventSubscription();
             ApplyPlanetaryMapConfig(false);
             SyncConfigIfNeeded();
 
@@ -257,21 +336,26 @@ namespace LcdMod.Client.Apps
                 ResolveNearestPlanet();
             }
 
+            UpdateStreetViewAvailability();
             UpdatePlanetControl();
             UpdateShipMarkerCache();
             UpdateCubemapDetail(frame);
+            UpdateLayerPreviewCubemaps(frame);
         }
 
         public override List<MySprite> GetSprites()
         {
             _sprites.Clear();
             BeginMarkerInteractiveFrame();
+            UpdateStreetViewAvailability();
 
             if (_planet != null && !_planet.MarkedForClose)
             {
                 UpdatePlanetControl();
                 UpdateShipMarkerCache();
-                UpdateCubemapDetail(GetCurrentFrame());
+                long frame = GetCurrentFrame();
+                UpdateCubemapDetail(frame);
+                UpdateLayerPreviewCubemaps(frame);
             }
 
             if (_planet == null)
@@ -282,8 +366,8 @@ namespace LcdMod.Client.Apps
                 return _sprites;
             }
 
-            // PlanetGlobeControl draws one gray Circle only before the first
-            // cubemap is available. Detail upgrades keep the previous map visible.
+            // PlanetGlobeControl draws one gray Circle only before the current layer
+            // has a cubemap. Detail upgrades keep the previous map visible.
             _planetControl.Render(_sprites);
             AddGpsMarkers(_sprites);
             AddRadioSignalMarkers(_sprites);
@@ -320,12 +404,17 @@ namespace LcdMod.Client.Apps
         public override void Close()
         {
             _closed = true;
+            ClearCartographyEventSubscription();
             LocalConfigManager.TextureQualityChanged -= OnTextureQualityChanged;
             _planetId = 0L;
             _orbitControl.StopCameraInertia();
             CancelPendingRequest();
+            CancelLayerPreviewRequests();
             _planetControl.SetCubemap(null);
             _loadedCubemap = null;
+            _loadedCubemaps.Clear();
+            _layerSelector.Close();
+            _streetViewDragging = false;
             _planet = null;
             _cachedShipMarkerSprites.Clear();
             _gpsEntries.Clear();
@@ -390,9 +479,11 @@ namespace LcdMod.Client.Apps
             }
 
             CancelPendingRequest();
+            CancelLayerPreviewRequests();
             _planet = nearest;
             _planetId = nearestId;
             _loadedCubemap = null;
+            _loadedCubemaps.Clear();
             _planetControl.SetCubemap(null);
             _error = null;
             _retryFaceSide = int.MinValue;
@@ -440,9 +531,7 @@ namespace LcdMod.Client.Apps
 
         void RequestCubemap(MyPlanet planet, int faceSide)
         {
-            CartographyModule module = LcdModSessionComponent.Client != null
-                ? LcdModSessionComponent.Client.Cartography
-                : null;
+            CartographyModule module = GetCartographyModule();
             if (module == null)
             {
                 _error = LocHelper.GetLoc(MOD_PREFIX + "PlanetaryMap_CartographyNotReady");
@@ -451,6 +540,7 @@ namespace LcdMod.Client.Apps
             }
 
             long requestedPlanetId = planet.EntityId;
+            CartographyLayer requestedLayer = _layer;
             _requestedFaceSide = faceSide;
             _error = null;
 
@@ -461,7 +551,7 @@ namespace LcdMod.Client.Apps
                     PlanetEntityId = requestedPlanetId,
                     PlanetRadiusMeters = planet.AverageRadius,
                     Projection = CartographyProjection.CubemapFaces,
-                    Layer = CartographyLayer.SurfaceFarColor,
+                    Layer = requestedLayer,
                     MaximumFaceSide = faceSide,
                     ReturnColorCubemap = true
                 };
@@ -481,8 +571,8 @@ namespace LcdMod.Client.Apps
                         return;
                     }
 
-                    _loadedCubemap = cachedCubemap;
-                    _planetControl.SetCubemap(cachedCubemap);
+                    StoreLayerCubemap(requestedLayer, cachedCubemap);
+                    _planetControl.SetCubemap(_loadedCubemap);
                     _requestedFaceSide = -1;
                     _retryFaceSide = int.MinValue;
                     _error = null;
@@ -499,7 +589,7 @@ namespace LcdMod.Client.Apps
 
                         _ticket = null;
                         _requestedFaceSide = -1;
-                        if (_planetId != requestedPlanetId)
+                        if (_planetId != requestedPlanetId || _layer != requestedLayer)
                             return;
 
                         if (result == null || !result.Success || result.ColorCubemap == null)
@@ -515,11 +605,7 @@ namespace LcdMod.Client.Apps
                         }
                         else
                         {
-                            if (_loadedCubemap == null ||
-                                result.ColorCubemap.DetailRank > _loadedCubemap.DetailRank)
-                            {
-                                _loadedCubemap = result.ColorCubemap;
-                            }
+                            StoreLayerCubemap(requestedLayer, result.ColorCubemap);
 
                             _retryFaceSide = int.MinValue;
                             _error = null;
@@ -555,6 +641,210 @@ namespace LcdMod.Client.Apps
             _requestedFaceSide = -1;
         }
 
+        CartographyModule GetCartographyModule()
+        {
+            EnsureCartographyEventSubscription();
+            return _cartographyModule;
+        }
+
+        void EnsureCartographyEventSubscription()
+        {
+            CartographyModule module = LcdModSessionComponent.Client != null
+                ? LcdModSessionComponent.Client.Cartography
+                : null;
+            if (ReferenceEquals(_cartographyModule, module))
+                return;
+
+            ClearCartographyEventSubscription();
+            _cartographyModule = module;
+            if (_cartographyModule != null)
+                _cartographyModule.ColorCubemapCached += OnCartographyColorCubemapCached;
+        }
+
+        void ClearCartographyEventSubscription()
+        {
+            if (_cartographyModule != null)
+                _cartographyModule.ColorCubemapCached -= OnCartographyColorCubemapCached;
+
+            _cartographyModule = null;
+        }
+
+        void OnCartographyColorCubemapCached(CartographyColorCubemapCachedEvent cached)
+        {
+            if (_closed ||
+                cached == null ||
+                cached.ColorCubemap == null ||
+                cached.Projection != CartographyProjection.CubemapFaces ||
+                cached.PlanetEntityId != _planetId)
+            {
+                return;
+            }
+
+            bool redraw = false;
+            if (cached.Layer == _layer &&
+                _retryFaceSide != int.MinValue &&
+                cached.ColorCubemap.SatisfiesFaceSide(_retryFaceSide))
+            {
+                _retryFaceSide = int.MinValue;
+                _nextRequestFrame = 0L;
+                _error = null;
+                StoreLayerCubemap(cached.Layer, cached.ColorCubemap);
+                _planetControl.SetCubemap(_loadedCubemap);
+                redraw = true;
+            }
+
+            if (_layerPreviewRetryFrames.ContainsKey(cached.Layer) &&
+                cached.ColorCubemap.SatisfiesFaceSide(LAYER_PREVIEW_REQUEST_FACE_SIDE))
+            {
+                _layerPreviewRetryFrames.Remove(cached.Layer);
+                if (StoreLayerCubemap(cached.Layer, cached.ColorCubemap))
+                    redraw = true;
+            }
+
+            if (redraw)
+                Host.RenderSprites();
+        }
+
+        void UpdateLayerPreviewCubemaps(long frame)
+        {
+            if (_planet == null || _planet.MarkedForClose || _ticket != null ||
+                _loadedCubemap == null ||
+                !_loadedCubemap.SatisfiesFaceSide(_planetControl.GetPreferredFaceSide()))
+            {
+                return;
+            }
+
+            CartographyModule module = GetCartographyModule();
+            if (module == null)
+                return;
+
+            for (int i = 0; i < MapLayers.Length; i++)
+            {
+                CartographyLayer layer = MapLayers[i];
+                if (layer == _layer || _layerPreviewTickets.ContainsKey(layer))
+                    continue;
+
+                PlanetColorCubemap cubemap;
+                if (_loadedCubemaps.TryGetValue(layer, out cubemap) &&
+                    cubemap != null &&
+                    cubemap.SatisfiesFaceSide(LAYER_PREVIEW_REQUEST_FACE_SIDE))
+                {
+                    continue;
+                }
+
+                long retryFrame;
+                if (_layerPreviewRetryFrames.TryGetValue(layer, out retryFrame) &&
+                    frame < retryFrame)
+                {
+                    continue;
+                }
+
+                RequestLayerPreview(module, _planet, layer);
+            }
+        }
+
+        void RequestLayerPreview(
+            CartographyModule module,
+            MyPlanet planet,
+            CartographyLayer layer)
+        {
+            long requestedPlanetId = planet.EntityId;
+            var request = new CartographyRequest
+            {
+                PlanetEntityId = requestedPlanetId,
+                PlanetRadiusMeters = planet.AverageRadius,
+                Projection = CartographyProjection.CubemapFaces,
+                Layer = layer,
+                MaximumFaceSide = LAYER_PREVIEW_REQUEST_FACE_SIDE,
+                ReturnColorCubemap = true
+            };
+
+            try
+            {
+                PlanetColorCubemap cachedCubemap;
+                string cachedFailure;
+                if (module.TryGetCachedColorCubemap(
+                        request,
+                        out cachedCubemap,
+                        out cachedFailure))
+                {
+                    if (cachedFailure != null)
+                    {
+                        _layerPreviewRetryFrames[layer] = long.MaxValue;
+                        return;
+                    }
+
+                    _layerPreviewRetryFrames.Remove(layer);
+                    StoreLayerCubemap(layer, cachedCubemap);
+                    return;
+                }
+
+                int requestVersion = _layerPreviewRequestVersion;
+                _layerPreviewTickets[layer] = module.RequestMap(
+                    request,
+                    delegate(CartographyResult result)
+                    {
+                        if (_closed || requestVersion != _layerPreviewRequestVersion ||
+                            _planetId != requestedPlanetId)
+                        {
+                            return;
+                        }
+
+                        _layerPreviewTickets.Remove(layer);
+                        if (result == null || !result.Success || result.ColorCubemap == null)
+                        {
+                            _layerPreviewRetryFrames[layer] =
+                                GetCurrentFrame() + REQUEST_RETRY_FRAMES;
+                            return;
+                        }
+
+                        _layerPreviewRetryFrames.Remove(layer);
+                        if (StoreLayerCubemap(layer, result.ColorCubemap))
+                            Host.RenderSprites();
+                    });
+            }
+            catch (Exception error)
+            {
+                LogHelper.Log(VRage.Utils.MyLogSeverity.Warning,
+                    "Planetary map layer preview request failed: " + error.Message);
+                _layerPreviewTickets.Remove(layer);
+                _layerPreviewRetryFrames[layer] =
+                    GetCurrentFrame() + REQUEST_RETRY_FRAMES;
+            }
+        }
+
+        bool StoreLayerCubemap(CartographyLayer layer, PlanetColorCubemap cubemap)
+        {
+            if (cubemap == null)
+                return false;
+
+            PlanetColorCubemap existing;
+            if (_loadedCubemaps.TryGetValue(layer, out existing) &&
+                existing != null &&
+                existing.DetailRank >= cubemap.DetailRank)
+            {
+                return false;
+            }
+
+            _loadedCubemaps[layer] = cubemap;
+            if (_layer == layer)
+                _loadedCubemap = cubemap;
+            return true;
+        }
+
+        void CancelLayerPreviewRequests()
+        {
+            _layerPreviewRequestVersion++;
+            foreach (CartographyTicket ticket in _layerPreviewTickets.Values)
+            {
+                if (ticket != null)
+                    ticket.Cancel();
+            }
+
+            _layerPreviewTickets.Clear();
+            _layerPreviewRetryFrames.Clear();
+        }
+
         void UpdatePlanetControl()
         {
             UpdatePlanetControlBounds();
@@ -578,17 +868,34 @@ namespace LcdMod.Client.Apps
             _orbitControl.SetRect(viewBox);
 
             float scale = Math.Max(0.5f, Host.ConfiguredScale);
-            float margin = CAMERA_BUTTON_MARGIN_PIXELS * scale;
-            float gap = CAMERA_BUTTON_GAP_PIXELS * scale;
+            float margin = ICON_MARGIN_PIXELS * scale;
+            float gap = ICON_GAP_PIXELS * scale;
             float availableSize = Math.Min(
                 Math.Max(1f, viewBox.Width - margin * 2f),
                 Math.Max(1f, (viewBox.Height - margin * 2f - gap) / 2f));
-            float size = Math.Min(CAMERA_BUTTON_SIZE_PIXELS * scale, availableSize);
+            float size = Math.Min(ICON_SIZE_PIXELS * scale, availableSize);
 
             float x = viewBox.Right - margin - size;
             float y = viewBox.Bottom - margin - size;
             _followButton.SetRect(new RectangleF(x, y, size, size));
             _orientationButton.SetRect(new RectangleF(x, y - gap - size, size, size));
+
+            float layerX = viewBox.X + margin;
+            float layerRowWidth = Math.Max(1f, x - gap - layerX);
+            float layerSquareWidth = Math.Max(1f,
+                layerRowWidth - gap * MapLayers.Length);
+            float layerSize = Math.Min(
+                size,
+                layerSquareWidth / (MapLayers.Length + 1));
+            float layerY = viewBox.Bottom - margin - layerSize;
+            _layerSelector.Configure(
+                new RectangleF(layerX, layerY, layerSize, layerSize),
+                scale);
+            _streetViewControl.SetRect(new RectangleF(
+                layerX,
+                layerY - gap - layerSize,
+                layerSize,
+                layerSize));
         }
 
         void UpdatePlanetProjection(MyPlanet planet)
@@ -713,11 +1020,19 @@ namespace LcdMod.Client.Apps
             Host.RenderSprites();
         }
 
+        void OnMapLayerChanged(CartographyLayer layer)
+        {
+            SetMapLayer(layer);
+            PersistPlanetaryMapConfig();
+            Host.RenderSprites();
+        }
+
         void ApplyPlanetaryMapConfig(bool force)
         {
             PlanetaryMapConfigComponent config = PlanetaryMapComponent;
             Vector3D staticCameraPosition = GetConfigStaticCameraPosition(config);
             float zoom = ClampZoom(config.Zoom);
+            CartographyLayer layer = NormalizeMapLayer(config.MapLayer);
             bool staticCameraChanged =
                 config.HasStaticCameraPosition != _lastKnownConfigHasStaticCameraPosition ||
                 (config.HasStaticCameraPosition &&
@@ -727,6 +1042,12 @@ namespace LcdMod.Client.Apps
             {
                 SetNorthUp(config.NorthUp);
                 _lastKnownConfigNorthUp = config.NorthUp;
+            }
+
+            if (force || layer != _lastKnownConfigLayer)
+            {
+                SetMapLayer(layer);
+                _lastKnownConfigLayer = layer;
             }
 
             if (force ||
@@ -772,6 +1093,12 @@ namespace LcdMod.Client.Apps
             if (config.FollowCamera != _followCamera)
             {
                 config.FollowCamera = _followCamera;
+                changed = true;
+            }
+
+            if (config.MapLayer != (int)_layer)
+            {
+                config.MapLayer = (int)_layer;
                 changed = true;
             }
 
@@ -827,8 +1154,29 @@ namespace LcdMod.Client.Apps
         void SetNorthUp(bool northUp)
         {
             _northUp = northUp;
-            _orientationButtonModel.Text = GetOrientationTooltipTitle();
+            _orientationButtonModel.Text = "N";
             _orientationButton.MarkDirty();
+        }
+
+        void SetMapLayer(CartographyLayer layer)
+        {
+            layer = NormalizeMapLayer((int)layer);
+            _layerSelector.SetSelectedValue(layer);
+            if (_layer == layer)
+                return;
+
+            CancelPendingRequest();
+            CancelLayerPreviewRequests();
+            _layer = layer;
+
+            PlanetColorCubemap cached;
+            _loadedCubemap = _loadedCubemaps.TryGetValue(layer, out cached)
+                ? cached
+                : null;
+            _planetControl.SetCubemap(_loadedCubemap);
+            _error = null;
+            _retryFaceSide = int.MinValue;
+            _nextRequestFrame = 0L;
         }
 
         void SetZoom(float zoom)
@@ -907,11 +1255,25 @@ namespace LcdMod.Client.Apps
         {
             _lastKnownConfigNorthUp = config.NorthUp;
             _lastKnownConfigFollowCamera = config.FollowCamera;
+            _lastKnownConfigLayer = NormalizeMapLayer(config.MapLayer);
             _lastKnownConfigOrbitYawRadians = config.OrbitYawRadians;
             _lastKnownConfigOrbitPitchRadians = config.OrbitPitchRadians;
             _lastKnownConfigZoom = ClampZoom(config.Zoom);
             _lastKnownConfigHasStaticCameraPosition = config.HasStaticCameraPosition;
             _lastKnownConfigStaticCameraPosition = GetConfigStaticCameraPosition(config);
+        }
+
+        static CartographyLayer NormalizeMapLayer(int value)
+        {
+            switch ((CartographyLayer)value)
+            {
+                case CartographyLayer.Terrain:
+                    return CartographyLayer.Terrain;
+                case CartographyLayer.Biomes:
+                    return CartographyLayer.Biomes;
+                default:
+                    return CartographyLayer.Satellite;
+            }
         }
 
         static Vector3D GetConfigStaticCameraPosition(PlanetaryMapConfigComponent config)
@@ -946,6 +1308,132 @@ namespace LcdMod.Client.Apps
                    STATIC_CAMERA_CONFIG_EPSILON_METERS * STATIC_CAMERA_CONFIG_EPSILON_METERS;
         }
 
+        static string GetMapLayerLabel(CartographyLayer layer)
+        {
+            switch (NormalizeMapLayer((int)layer))
+            {
+                case CartographyLayer.Terrain:
+                    return LocHelper.GetLoc(MOD_PREFIX + "PlanetaryMap_Layer_Terrain");
+                case CartographyLayer.Biomes:
+                    return LocHelper.GetLoc(MOD_PREFIX + "PlanetaryMap_Layer_Biomes");
+                default:
+                    return LocHelper.GetLoc(MOD_PREFIX + "PlanetaryMap_Layer_Satellite");
+            }
+        }
+
+        void RenderMapLayerPreview(
+            ControlTemplate control,
+            RectangleF bounds,
+            CartographyLayer layer,
+            Color outlineColor,
+            List<MySprite> sprites)
+        {
+            PlanetColorCubemap cubemap;
+            if (!_loadedCubemaps.TryGetValue(
+                    NormalizeMapLayer((int)layer),
+                    out cubemap) || cubemap == null)
+            {
+                AddMapLayerPreviewRect(
+                    sprites,
+                    bounds,
+                    control.GetResourceColor(
+                        ThemeResources.SurfaceContainerHighestColor,
+                        new Color(24, 24, 24)));
+                return;
+            }
+
+            PlanetCubeFace face = GetPlayerPreviewFace();
+            int mipLevel = cubemap.SelectMipLevel(LAYER_PREVIEW_MIP_SIDE);
+            int mipResolution = cubemap.GetMipResolution(mipLevel);
+            int sampleSide = Math.Max(1, Math.Min(LAYER_PREVIEW_MIP_SIDE, mipResolution));
+            float cellWidth = bounds.Width / sampleSide;
+            float cellHeight = bounds.Height / sampleSide;
+
+            for (int y = 0; y < sampleSide; y++)
+            {
+                float v = (y + 0.5f) / sampleSide;
+                for (int x = 0; x < sampleSide; x++)
+                {
+                    float u = (x + 0.5f) / sampleSide;
+                    Color color = cubemap.SampleFace(face, u, v, mipLevel);
+                    AddMapLayerPreviewRect(
+                        sprites,
+                        new RectangleF(
+                            bounds.X + x * cellWidth,
+                            bounds.Y + y * cellHeight,
+                            Math.Max(1f, cellWidth + 0.5f),
+                            Math.Max(1f, cellHeight + 0.5f)),
+                        color);
+                }
+            }
+        }
+
+        PlanetCubeFace GetPlayerPreviewFace()
+        {
+            if (_planet == null || _planet.MarkedForClose)
+                return PlanetCubeFace.Front;
+
+            MatrixD playerWorld;
+            Vector3D playerPosition = TryGetShipWorldMatrix(out playerWorld)
+                ? playerWorld.Translation
+                : (Host.Block != null
+                    ? Host.Block.WorldMatrix.Translation
+                    : _planet.WorldMatrix.Translation + _planet.WorldMatrix.Backward);
+            Vector3D worldDirection = playerPosition - _planet.WorldMatrix.Translation;
+            if (worldDirection.Normalize() <= 1e-9)
+                worldDirection = _planet.WorldMatrix.Backward;
+
+            Vector3 localDirection = WorldDirectionToPlanetLocal(_planet, worldDirection);
+            if (localDirection.Normalize() <= 1e-6f)
+                return PlanetCubeFace.Front;
+
+            PlanetCubeFace face;
+            float u;
+            float v;
+            PlanetMapSource.DirectionToFaceUv(localDirection, out face, out u, out v);
+            return face;
+        }
+
+        static void AddMapLayerPreviewRect(
+            List<MySprite> sprites,
+            RectangleF bounds,
+            Color color)
+        {
+            sprites.Add(new MySprite
+            {
+                Type = SpriteType.TEXTURE,
+                Data = "SquareSimple",
+                Position = bounds.Center,
+                Size = bounds.Size,
+                Color = color,
+                Alignment = TextAlignment.CENTER
+            });
+        }
+
+        static InteractiveTooltip CreateMapLayerTooltip(CartographyLayer layer)
+        {
+            string description;
+            switch (NormalizeMapLayer((int)layer))
+            {
+                case CartographyLayer.Terrain:
+                    description = LocHelper.GetLoc(
+                        MOD_PREFIX + "PlanetaryMap_Layer_Terrain_Tooltip");
+                    break;
+                case CartographyLayer.Biomes:
+                    description = LocHelper.GetLoc(
+                        MOD_PREFIX + "PlanetaryMap_Layer_Biomes_Tooltip");
+                    break;
+                default:
+                    description = LocHelper.GetLoc(
+                        MOD_PREFIX + "PlanetaryMap_Layer_Satellite_Tooltip");
+                    break;
+            }
+
+            return new InteractiveTooltip(
+                GetMapLayerLabel(layer),
+                new ITooltipLine[] { new StaticTooltipLine(description) });
+        }
+
         string GetOrientationTooltipTitle()
         {
             return LocHelper.GetLoc(MOD_PREFIX + (_northUp
@@ -978,6 +1466,69 @@ namespace LcdMod.Client.Apps
         {
             _orientationButton.Render(_sprites);
             _followButton.Render(_sprites);
+            _layerSelector.Render(_sprites);
+            _streetViewControl.Render(_sprites);
+
+            if (_streetViewDragging)
+                RenderStreetViewDragGhost(_sprites);
+        }
+
+        void RenderStreetViewControl(ControlTemplate control, List<MySprite> sprites)
+        {
+            RectangleF bounds = control.Bounds;
+            Color iconColor = control.Enabled
+                ? control.GetResourceColor(ThemeResources.AccentColor, Host.ForegroundColor)
+                : control.GetResourceColor(ThemeResources.DisabledColor, Host.ForegroundColor);
+            AddMarkerTexture(
+                sprites,
+                "StreetView",
+                bounds.Center,
+                new Vector2(Math.Min(bounds.Width, bounds.Height) * ICON_RATIO),
+                iconColor,
+                0f);
+        }
+
+        void RenderStreetViewDragGhost(List<MySprite> sprites)
+        {
+            float size = Math.Min(_streetViewControl.Bounds.Width, _streetViewControl.Bounds.Height);
+            if (size <= 0f)
+                return;
+
+            Vector3 localDirection;
+            Vector3D surfacePosition;
+            bool validDrop = _streetViewAvailable &&
+                             _planet != null &&
+                             !_planet.MarkedForClose &&
+                             TryGetSurfaceClickPosition(
+                                 _planet,
+                                 _streetViewDragPointer,
+                                 out localDirection,
+                                 out surfacePosition);
+
+            Color mask = validDrop
+                ? _streetViewControl.GetResourceColor(ThemeResources.AccentColor, Host.ForegroundColor)
+                : _streetViewControl.GetResourceColor(ThemeResources.DisabledColor, Host.ForegroundColor);
+            mask.A = (byte)(byte.MaxValue * ICON_DRAG_GHOST_OPACITY);
+
+            Color shadow = _streetViewControl.GetResourceColor(
+                ThemeResources.SuccessColor,
+                new Color(0, 0, 0, 160));
+            shadow.A = (byte)(shadow.A * ICON_DRAG_GHOST_OPACITY);
+
+            AddMarkerTexture(
+                sprites,
+                "CircleHollow",
+                _streetViewDragPointer,
+                new Vector2(size/3),
+                shadow,
+                0f);
+            AddMarkerTexture(
+                sprites,
+                "StreetView",
+                _streetViewDragPointer + new Vector2(size/3, -size/3),
+                new Vector2(size * ICON_RATIO),
+                mask,
+                0f);
         }
 
         void RenderOrientationButton(ControlTemplate control, List<MySprite> sprites)
@@ -990,7 +1541,7 @@ namespace LcdMod.Client.Apps
                 AddCenteredButtonText(
                     control,
                     sprites,
-                    "N",
+                    _orientationButtonModel.Text,
                     control.GetResourceColor(ThemeResources.ErrorColor, contentColor));
                 return;
             }
@@ -998,7 +1549,7 @@ namespace LcdMod.Client.Apps
             AddCurrentPositionGlyph(
                 sprites,
                 control.Bounds.Center,
-                Math.Min(control.Bounds.Width, control.Bounds.Height) * CAMERA_BUTTON_ICON_RATIO,
+                Math.Min(control.Bounds.Width, control.Bounds.Height) * ORIENTATION_ICON_RATIO,
                 contentColor);
         }
 
@@ -1010,7 +1561,7 @@ namespace LcdMod.Client.Apps
                 sprites,
                 _followCamera ? "Lock" : "RotationPlane",
                 control.Bounds.Center,
-                new Vector2(Math.Min(control.Bounds.Width, control.Bounds.Height) * CAMERA_BUTTON_ICON_RATIO),
+                new Vector2(Math.Min(control.Bounds.Width, control.Bounds.Height) * ICON_RATIO),
                 contentColor,
                 0f);
         }
@@ -1538,9 +2089,12 @@ namespace LcdMod.Client.Apps
             }
 
             string name = isCluster
-                ? cluster.Count + " signals"
-                : (string.IsNullOrWhiteSpace(marker.Name) ? "Radio signal" : marker.Name);
-            string signalName = string.IsNullOrWhiteSpace(marker.Name) ? "Radio signal" : marker.Name;
+                ? string.Format(
+                    FormatingHelper.Culture,
+                    LocHelper.GetLoc(MOD_PREFIX + "RadioSignal_ClusterFormat"),
+                    cluster.Count)
+                : GetRadioSignalName(marker.Name);
+            string signalName = GetRadioSignalName(marker.Name);
             RegisterMarkerHitbox(
                 _radioSignalMarkerInteractiveStates,
                 marker.EntityId,
@@ -1637,6 +2191,197 @@ namespace LcdMod.Client.Apps
 
         static void RenderMarkerHitbox(ControlTemplate control, List<MySprite> sprites)
         {
+        }
+
+        void UpdateStreetViewAvailability()
+        {
+            bool available = CanUseStreetView();
+            if (_streetViewAvailable == available && _streetViewControl.Enabled == available)
+                return;
+
+            _streetViewAvailable = available;
+            _streetViewControl.SetEnabled(available);
+            if (!available)
+                _streetViewDragging = false;
+        }
+
+        bool CanUseStreetView()
+        {
+            if (_planet == null || _planet.MarkedForClose)
+                return false;
+
+            var session = MyAPIGateway.Session;
+            if (session == null)
+                return false;
+
+            if (session.SessionSettings != null && session.SessionSettings.EnableSpectator)
+                return true;
+
+            var player = session.Player;
+            ulong steamUserId = player != null ? player.SteamUserId : 0UL;
+            if (steamUserId == 0UL || !session.IsUserAdmin(steamUserId))
+                return false;
+
+            return session.CreativeMode || MyAPIGateway.Session.HasCreativeRights;
+        }
+
+        void OnStreetViewDragBegin(object dataContext, object sender)
+        {
+            if (!_streetViewAvailable)
+                return;
+
+            _layerSelector.Close();
+            _streetViewDragging = true;
+            if (!TryGetPointerPosition(sender, out _streetViewDragPointer))
+                _streetViewDragPointer = _streetViewControl.Bounds.Center;
+            Host.RenderSprites();
+        }
+
+        bool OnStreetViewDragged(object dataContext, object sender, Vector2 delta)
+        {
+            if (!_streetViewDragging || !_streetViewAvailable)
+                return false;
+
+            Vector2 pointer;
+            if (TryGetPointerPosition(sender, out pointer))
+                _streetViewDragPointer = pointer;
+            else
+                _streetViewDragPointer += delta;
+
+            Host.RenderSprites();
+            return true;
+        }
+
+        void OnStreetViewDragEnd(object dataContext, object sender)
+        {
+            if (!_streetViewDragging)
+                return;
+
+            Vector2 pointer;
+            if (TryGetPointerPosition(sender, out pointer))
+                _streetViewDragPointer = pointer;
+
+            bool shouldSpawn = _streetViewAvailable;
+            _streetViewDragging = false;
+            Host.RenderSprites();
+
+            if (shouldSpawn)
+                TrySpawnStreetView(_streetViewDragPointer);
+        }
+
+        bool TrySpawnStreetView(Vector2 screenPoint)
+        {
+            if (!CanUseStreetView() || _planet == null || _planet.MarkedForClose)
+                return false;
+
+            Vector3 localDirection;
+            Vector3D surfacePosition;
+            if (!TryGetSurfaceClickPosition(
+                    _planet,
+                    screenPoint,
+                    out localDirection,
+                    out surfacePosition))
+            {
+                return false;
+            }
+
+            Vector3D up = surfacePosition - _planet.WorldMatrix.Translation;
+            if (up.Normalize() <= 1e-9)
+                return false;
+
+            Vector3D forward = GetRandomHorizonDirection(up);
+            if (forward.Normalize() <= 1e-9)
+                return false;
+
+            Vector3D cameraPosition =
+                surfacePosition + up * STREET_CAMERA_HEIGHT_METERS;
+            MatrixD cameraWorld = MatrixD.CreateWorld(cameraPosition, forward, up);
+            MatrixD viewMatrix = MatrixD.Invert(cameraWorld);
+
+            var session = MyAPIGateway.Session;
+            if (session == null)
+                return false;
+
+            session.SetCameraController(
+                MyCameraControllerEnum.Spectator,
+                null,
+                cameraPosition);
+
+            MySpectatorCameraController
+                spectator = MyAPIGateway.Session.CameraController as MySpectatorCameraController;
+            if (spectator != null)
+            {
+                spectator.SpectatorCameraMovement =
+                    MySpectatorCameraMovementEnum.UserControlled;
+                spectator.SetViewMatrix((Matrix)viewMatrix);
+                ScheduleStreetViewNotification();
+            }
+
+            return true;
+        }
+
+        static void ScheduleStreetViewNotification()
+        {
+            var utilities = MyAPIGateway.Utilities;
+            if (utilities == null)
+                return;
+
+            IMyHudNotification notification = utilities.CreateNotification(
+                LocHelper.GetLoc(MOD_PREFIX + "PlanetaryMap_StreetView_ActiveNotification"),
+                500);
+            notification.Show();
+            Action caller = null;
+            caller = delegate
+            {
+                if (!(MyAPIGateway.Session.CameraController is MySpectatorCameraController))
+                {
+                    notification.Hide();
+                    return;
+                }
+
+                notification.AliveTime = 64;
+                notification.ResetAliveTime();
+                notification.Show();
+                LcdModClientComponent.RunNextFrame.Add(caller);
+            };
+
+            LcdModClientComponent.RunNextFrame.Add(caller);
+        }
+
+        Vector3D GetRandomHorizonDirection(Vector3D up)
+        {
+            Vector3D reference = Math.Abs(Vector3D.Dot(up, Vector3D.Up)) < 0.95d
+                ? Vector3D.Up
+                : Vector3D.Right;
+            Vector3D tangent = Vector3D.Cross(reference, up);
+            if (tangent.Normalize() <= 1e-9)
+            {
+                reference = Vector3D.Forward;
+                tangent = Vector3D.Cross(reference, up);
+                if (tangent.Normalize() <= 1e-9)
+                    return Vector3D.Zero;
+            }
+
+            Vector3D bitangent = Vector3D.Cross(up, tangent);
+            if (bitangent.Normalize() <= 1e-9)
+                return Vector3D.Zero;
+
+            double angle = _streetViewRandom.NextDouble() * MathHelper.TwoPi;
+            return tangent * Math.Cos(angle) + bitangent * Math.Sin(angle);
+        }
+
+        static bool TryGetPointerPosition(object sender, out Vector2 position)
+        {
+            position = default(Vector2);
+            var screen = sender as IEyeTracking;
+            if (screen == null)
+                return false;
+
+            position = screen.CursorPosition + screen.HitTestOffset;
+            return !float.IsNaN(position.X) &&
+                   !float.IsInfinity(position.X) &&
+                   !float.IsNaN(position.Y) &&
+                   !float.IsInfinity(position.Y);
         }
 
         bool OnPlanetSurfaceClicked(PlanetGlobeControl control, Vector2 screenPoint, object sender)
@@ -1801,18 +2546,32 @@ namespace LcdMod.Client.Apps
 
         static string FormatSurfaceGpsName(Vector3 localDirection)
         {
-            if (localDirection.Normalize() <= 1e-6f)
-                return "N\u00BA0.0 E\u00BA0.0";
+            double latitude = 0d;
+            double longitude = 0d;
+            if (localDirection.Normalize() > 1e-6f)
+            {
+                latitude = Math.Asin(ClampUnit(localDirection.Y)) * 180d / Math.PI;
+                longitude = Math.Atan2(localDirection.X, localDirection.Z) * 180d / Math.PI;
+            }
 
-            double latitude = Math.Asin(ClampUnit(localDirection.Y)) * 180d / Math.PI;
-            double longitude = Math.Atan2(localDirection.X, localDirection.Z) * 180d / Math.PI;
             return string.Format(
-                CultureInfo.InvariantCulture,
-                "{0}\u00BA{1:0.0} {2}\u00BA{3:0.0}",
-                latitude < 0d ? 'S' : 'N',
+                FormatingHelper.Culture,
+                LocHelper.GetLoc(MOD_PREFIX + "PlanetaryMap_CoordinateFormat"),
+                LocHelper.GetLoc(MOD_PREFIX + (latitude < 0d
+                    ? "PlanetaryMap_CardinalSouthShort"
+                    : "PlanetaryMap_CardinalNorthShort")),
                 Math.Abs(latitude),
-                longitude < 0d ? 'W' : 'E',
+                LocHelper.GetLoc(MOD_PREFIX + (longitude < 0d
+                    ? "PlanetaryMap_CardinalWestShort"
+                    : "PlanetaryMap_CardinalEastShort")),
                 Math.Abs(longitude));
+        }
+
+        static string GetRadioSignalName(string name)
+        {
+            return string.IsNullOrWhiteSpace(name)
+                ? LocHelper.GetLoc(MOD_PREFIX + "RadioSignal_Unnamed")
+                : name;
         }
 
         static double ClampUnit(double value)

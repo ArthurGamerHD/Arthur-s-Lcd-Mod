@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Animation;
+using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 
@@ -22,6 +23,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Camera
         const float STOP_ZOOM_VELOCITY_LOG_PER_FRAME = 0.0006f;
         const float MAXIMUM_ORBIT_VELOCITY_RADIANS_PER_FRAME = 0.35f;
         const float MAXIMUM_ZOOM_VELOCITY_LOG_PER_FRAME = 0.09f;
+        const long MAXIMUM_ORBIT_VELOCITY_SAMPLE_AGE_FRAMES = 1L;
         const string ORBIT_INERTIA_CHANNEL = "OrbitCameraOrbitInertia";
         const string ZOOM_INERTIA_CHANNEL = "OrbitCameraZoomInertia";
         const float MAXIMUM_PITCH_RADIANS = 1.553343f; // 89 degrees
@@ -32,6 +34,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Camera
         float _pitchRadians;
         Vector2 _orbitVelocityRadiansPerFrame;
         float _zoomVelocityLogPerFrame;
+        long _lastOrbitVelocityFrame = long.MinValue;
         bool _secondaryOrbitDragActive;
         AnimationHandle _orbitInertiaAnimation;
         AnimationHandle _zoomInertiaAnimation;
@@ -316,6 +319,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Camera
 
             if (startOrbitInertia)
                 StartOrbitInertia();
+            else
+                ClearOrbitVelocity();
         }
 
         bool OnOrbitDragged(object dataContext, object sender, Vector2 delta)
@@ -345,6 +350,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Camera
             _orbitVelocityRadiansPerFrame = new Vector2(
                 ClampMagnitude(yawDelta, MAXIMUM_ORBIT_VELOCITY_RADIANS_PER_FRAME),
                 ClampMagnitude(pitchDelta, MAXIMUM_ORBIT_VELOCITY_RADIANS_PER_FRAME));
+            _lastOrbitVelocityFrame = GetCurrentGameFrame();
             RaiseCameraChanged();
             return true;
         }
@@ -353,10 +359,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Camera
         {
             if (!CameraInertiaEnabled ||
                 AnimationController == null ||
+                !HasFreshOrbitVelocitySample() ||
                 Math.Abs(_orbitVelocityRadiansPerFrame.X) <= STOP_ORBIT_VELOCITY_RADIANS_PER_FRAME &&
                 Math.Abs(_orbitVelocityRadiansPerFrame.Y) <= STOP_ORBIT_VELOCITY_RADIANS_PER_FRAME)
             {
-                _orbitVelocityRadiansPerFrame = Vector2.Zero;
+                ClearOrbitVelocity();
                 return;
             }
 
@@ -370,7 +377,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Camera
 
         void StopOrbitInertia()
         {
-            _orbitVelocityRadiansPerFrame = Vector2.Zero;
+            ClearOrbitVelocity();
             if (_orbitInertiaAnimation != null)
             {
                 this.CancelAnimation(ORBIT_INERTIA_CHANNEL, false);
@@ -380,7 +387,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Camera
 
         void CompleteOrbitInertia()
         {
-            _orbitVelocityRadiansPerFrame = Vector2.Zero;
+            ClearOrbitVelocity();
             _orbitInertiaAnimation = null;
         }
 
@@ -391,6 +398,22 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Camera
                 RaiseCameraChanged();
             else
                 MarkDirty();
+        }
+
+        void ClearOrbitVelocity()
+        {
+            _orbitVelocityRadiansPerFrame = Vector2.Zero;
+            _lastOrbitVelocityFrame = long.MinValue;
+        }
+
+        bool HasFreshOrbitVelocitySample()
+        {
+            if (_lastOrbitVelocityFrame == long.MinValue)
+                return false;
+
+            long frame = GetCurrentGameFrame();
+            return frame <= _lastOrbitVelocityFrame ||
+                   frame - _lastOrbitVelocityFrame <= MAXIMUM_ORBIT_VELOCITY_SAMPLE_AGE_FRAMES;
         }
 
         bool ApplyZoomLogDelta(float logDelta)
@@ -512,6 +535,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Camera
                 : Math.Max(0, Math.Min(
                     durationFrames,
                     (int)Math.Floor(progress * durationFrames)));
+        }
+
+        static long GetCurrentGameFrame()
+        {
+            return MyAPIGateway.Session != null
+                ? MyAPIGateway.Session.GameplayFrameCounter
+                : 0L;
         }
 
         static int CalculateDuration(float absoluteVelocity)

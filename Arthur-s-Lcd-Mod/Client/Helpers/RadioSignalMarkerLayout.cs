@@ -236,7 +236,7 @@ namespace LcdMod.Client.Helpers
             if (signalGrid != null && !string.IsNullOrWhiteSpace(signalGrid.DisplayName))
                 return signalGrid.DisplayName;
 
-            return string.IsNullOrWhiteSpace(entity.DisplayName) ? "Radio signal" : entity.DisplayName;
+            return string.IsNullOrWhiteSpace(entity.DisplayName) ? string.Empty : entity.DisplayName;
         }
     }
 

@@ -108,6 +108,7 @@ namespace LcdMod.Client.Apps
             new Dictionary<long, PlanetCubemapState>();
         readonly Dictionary<long, PlanetGlobeControl> _planetGlobeControls =
             new Dictionary<long, PlanetGlobeControl>();
+        CartographyModule _cartographyModule;
         bool _closed;
 
         // Static orbit rings are cached between renders and rebuilt whenever the
@@ -297,6 +298,7 @@ namespace LcdMod.Client.Apps
             _staticOrbitControl.PreservePrimaryClickUntilDragged = true;
 
             LocalConfigManager.TextureQualityChanged += OnTextureQualityChanged;
+            EnsureCartographyEventSubscription();
             ApplyTextureQuality(LocalConfigManager.TextureQuality, false);
         }
 
@@ -448,6 +450,7 @@ namespace LcdMod.Client.Apps
         
         public override void Update()
         {
+            EnsureCartographyEventSubscription();
             _jumpPointRunCounter++;
 
             if (_syncConfigNextRun)
@@ -470,6 +473,7 @@ namespace LcdMod.Client.Apps
         public override void Close()
         {
             _closed = true;
+            ClearCartographyEventSubscription();
             LocalConfigManager.TextureQualityChanged -= OnTextureQualityChanged;
             _staticOrbitControl.StopCameraInertia();
 
@@ -632,7 +636,10 @@ namespace LcdMod.Client.Apps
             double baseHalfFov = MathHelper.ToRadians(MAP_VERTICAL_FOV_DEFAULT_DEG) * 0.5;
             double currentHalfFov = MathHelper.ToRadians(Math.Max(0.1f, fovDeg)) * 0.5;
             double magnification = Math.Tan(baseHalfFov) / Math.Tan(currentHalfFov);
-            string text = "MAG: " + magnification.ToString("0.##", FormatingHelper.Culture) + "x";
+            string text = string.Format(
+                FormatingHelper.Culture,
+                LocHelper.GetLoc(MOD_PREFIX + "StarMap_MagnificationFormat"),
+                magnification);
             var textSize = FormatingHelper.GetSizeInPixel(text, TextFont, textScale, Surface);
             const float margin = 8f;
             var pos = new Vector2(
@@ -3168,9 +3175,12 @@ namespace LcdMod.Client.Apps
             }
 
             string name = isCluster
-                ? cluster.Count + " signals"
-                : (string.IsNullOrWhiteSpace(marker.Name) ? "Radio signal" : marker.Name);
-            string signalName = string.IsNullOrWhiteSpace(marker.Name) ? "Radio signal" : marker.Name;
+                ? string.Format(
+                    FormatingHelper.Culture,
+                    LocHelper.GetLoc(MOD_PREFIX + "RadioSignal_ClusterFormat"),
+                    cluster.Count)
+                : GetRadioSignalName(marker.Name);
+            string signalName = GetRadioSignalName(marker.Name);
             RegisterStaticMarkerHitbox(
                 _staticRadioMarkerInteractiveStates,
                 marker.EntityId,
@@ -4261,7 +4271,13 @@ namespace LcdMod.Client.Apps
 
                     return (value, sender) =>
                     {
-                        ClickOnGps("JumpPoint_" + planet.Name, jumpPoint, planet.GpsColor);
+                        ClickOnGps(
+                            string.Format(
+                                FormatingHelper.Culture,
+                                LocHelper.GetLoc(MOD_PREFIX + "StarMap_JumpPointNameFormat"),
+                                planet.Name),
+                            jumpPoint,
+                            planet.GpsColor);
                     };
                 },
                 getCursor: () =>
@@ -4289,7 +4305,10 @@ namespace LcdMod.Client.Apps
             if (IsJumpPointUiThrottled(planet.PlanetId, planet.Distance, _jumpPointRunCounter, out etaSeconds))
             {
                 text = FormatPropertyLine("Jump",
-                    string.Format(FormatingHelper.Culture, "Calculating... (eta {0} sec)", etaSeconds));
+                    string.Format(
+                        FormatingHelper.Culture,
+                        LocHelper.GetLoc(MOD_PREFIX + "StarMap_JumpCalculatingFormat"),
+                        etaSeconds));
                 return false;
             }
 
@@ -4364,6 +4383,13 @@ namespace LcdMod.Client.Apps
         {
             return string.IsNullOrWhiteSpace(name)
                 ? LocHelper.GetLoc(MOD_PREFIX + "Gps_Unknown_Name")
+                : name;
+        }
+
+        static string GetRadioSignalName(string name)
+        {
+            return string.IsNullOrWhiteSpace(name)
+                ? LocHelper.GetLoc(MOD_PREFIX + "RadioSignal_Unnamed")
                 : name;
         }
 
@@ -4599,9 +4625,7 @@ namespace LcdMod.Client.Apps
                 return null;
             }
 
-            CartographyModule module = LcdModSessionComponent.Client != null
-                ? LcdModSessionComponent.Client.Cartography
-                : null;
+            CartographyModule module = GetCartographyModule();
             if (module == null)
             {
                 state.RetryFaceSide = preferredFaceSide;
@@ -4616,7 +4640,7 @@ namespace LcdMod.Client.Apps
                     PlanetEntityId = planetId,
                     PlanetRadiusMeters = planet.AverageRadius,
                     Projection = CartographyProjection.CubemapFaces,
-                    Layer = CartographyLayer.SurfaceFarColor,
+                    Layer = CartographyLayer.Satellite,
                     MaximumFaceSide = preferredFaceSide,
                     ReturnColorCubemap = true
                 };
@@ -4674,6 +4698,67 @@ namespace LcdMod.Client.Apps
             }
 
             return state.Cubemap;
+        }
+
+        CartographyModule GetCartographyModule()
+        {
+            EnsureCartographyEventSubscription();
+            return _cartographyModule;
+        }
+
+        void EnsureCartographyEventSubscription()
+        {
+            CartographyModule module = LcdModSessionComponent.Client != null
+                ? LcdModSessionComponent.Client.Cartography
+                : null;
+            if (ReferenceEquals(_cartographyModule, module))
+                return;
+
+            ClearCartographyEventSubscription();
+            _cartographyModule = module;
+            if (_cartographyModule != null)
+                _cartographyModule.ColorCubemapCached += OnCartographyColorCubemapCached;
+        }
+
+        void ClearCartographyEventSubscription()
+        {
+            if (_cartographyModule != null)
+                _cartographyModule.ColorCubemapCached -= OnCartographyColorCubemapCached;
+
+            _cartographyModule = null;
+        }
+
+        void OnCartographyColorCubemapCached(CartographyColorCubemapCachedEvent cached)
+        {
+            if (_closed ||
+                cached == null ||
+                cached.ColorCubemap == null ||
+                cached.Projection != CartographyProjection.CubemapFaces ||
+                cached.Layer != CartographyLayer.Satellite)
+            {
+                return;
+            }
+
+            PlanetCubemapState state;
+            if (!_planetCubemapStates.TryGetValue(cached.PlanetEntityId, out state) ||
+                state == null ||
+                state.RetryFaceSide == int.MinValue ||
+                !cached.ColorCubemap.SatisfiesFaceSide(state.RetryFaceSide))
+            {
+                return;
+            }
+
+            if (state.Cubemap == null ||
+                !state.Cubemap.SatisfiesFaceSide(cached.ColorCubemap.RequestedMaximumFaceSide))
+            {
+                state.Cubemap = cached.ColorCubemap;
+            }
+
+            state.RetryFaceSide = int.MinValue;
+            state.RetryFrame = 0L;
+            InvalidateStaticOrbitCache();
+            InvalidateDynamicMapCache();
+            Host.RenderSprites();
         }
 
         PlanetCubemapState GetPlanetCubemapState(long planetId)
