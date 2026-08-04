@@ -846,10 +846,16 @@ Chvíli počkáme a potom ji za vás restartujeme.</value>
     <value>Zkontrolujte nabití, vstup, výstup a zbývající čas.</value>
   </data>
   <data name="LcdMod_Ftue_RadarRange_Line1" xml:space="preserve">
-    <value>Posunutím změňte dosah radaru.</value>
+    <value>Podržte Ctrl a posunutím změňte dosah radaru.</value>
   </data>
   <data name="LcdMod_Ftue_RadarRange_Line2" xml:space="preserve">
     <value>Za hranicí {0} lze detekovat pouze rádiové signály.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarCamera_Line1" xml:space="preserve">
+    <value>Tažením pravým tlačítkem posunete kameru radaru.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarCamera_Line2" xml:space="preserve">
+    <value>Posunutím kolečka přiblížíte nebo oddálíte mapu radaru.</value>
   </data>
   <data name="LcdMod_MediaPlayer_Title" xml:space="preserve">
     <value>Přehrávač médií - (experimentální)</value>

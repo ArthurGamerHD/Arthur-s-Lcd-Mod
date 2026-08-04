@@ -610,7 +610,20 @@ namespace LcdMod.Common.Config.Components
     public sealed class RadarConfigComponent : ConfigComponent
     {
         [ProtoMember(1)] public float RangeScale { get; set; } = 1f;
-        public override ConfigComponent Clone() => new RadarConfigComponent { RangeScale = RangeScale };
+        [ProtoMember(2)] public double CameraPanX { get; set; }
+        [ProtoMember(3)] public double CameraPanY { get; set; }
+        [ProtoMember(4)] public float CameraZoomScale { get; set; } = 1f;
+
+        public override ConfigComponent Clone()
+        {
+            return new RadarConfigComponent
+            {
+                RangeScale = RangeScale,
+                CameraPanX = CameraPanX,
+                CameraPanY = CameraPanY,
+                CameraZoomScale = CameraZoomScale
+            };
+        }
     }
 
     public interface IGpsDisplayConfig
@@ -654,6 +667,12 @@ namespace LcdMod.Common.Config.Components
         [ProtoMember(4)] public bool IncludeRadioSignals { get; set; }
         [ProtoMember(5)] public GpsDisplayWaypoint[] AlwaysDisplayedGpsWaypoints { get; set; } =
             Array.Empty<GpsDisplayWaypoint>();
+        [ProtoMember(6)] public float StaticOrbitYawRadians { get; set; }
+        [ProtoMember(7)] public float StaticOrbitPitchRadians { get; set; }
+        [ProtoMember(8)] public long StaticFocusPlanetId { get; set; }
+        [ProtoMember(9)] public double StaticCameraTargetOffsetX { get; set; }
+        [ProtoMember(10)] public double StaticCameraTargetOffsetY { get; set; }
+        [ProtoMember(11)] public double StaticCameraTargetOffsetZ { get; set; }
 
         public override ConfigComponent Clone()
         {
@@ -662,6 +681,12 @@ namespace LcdMod.Common.Config.Components
                 FoV = FoV,
                 DisplayMyGps = DisplayMyGps,
                 IncludeRadioSignals = IncludeRadioSignals,
+                StaticOrbitYawRadians = StaticOrbitYawRadians,
+                StaticOrbitPitchRadians = StaticOrbitPitchRadians,
+                StaticFocusPlanetId = StaticFocusPlanetId,
+                StaticCameraTargetOffsetX = StaticCameraTargetOffsetX,
+                StaticCameraTargetOffsetY = StaticCameraTargetOffsetY,
+                StaticCameraTargetOffsetZ = StaticCameraTargetOffsetZ,
                 AlwaysDisplayedGpsHashes = ConfigComponentClone.Copy(AlwaysDisplayedGpsHashes),
                 AlwaysDisplayedGpsWaypoints = ConfigComponentClone.Copy(AlwaysDisplayedGpsWaypoints)
             };

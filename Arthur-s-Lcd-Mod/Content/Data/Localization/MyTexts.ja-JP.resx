@@ -847,10 +847,16 @@
     <value>充電量、入力、出力、残り時間を確認できます。</value>
   </data>
   <data name="LcdMod_Ftue_RadarRange_Line1" xml:space="preserve">
-    <value>スクロールしてレーダーの範囲を変更します。</value>
+    <value>Ctrlを押しながらスクロールしてレーダーの範囲を変更します。</value>
   </data>
   <data name="LcdMod_Ftue_RadarRange_Line2" xml:space="preserve">
     <value>{0} を超える範囲では無線信号のみを検出できます。</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarCamera_Line1" xml:space="preserve">
+    <value>右ドラッグでレーダーカメラを移動します。</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarCamera_Line2" xml:space="preserve">
+    <value>スクロールしてレーダーマップをズームします。</value>
   </data>
   <data name="LcdMod_MediaPlayer_Title" xml:space="preserve">
     <value>メディアプレーヤー - (試験的)</value>

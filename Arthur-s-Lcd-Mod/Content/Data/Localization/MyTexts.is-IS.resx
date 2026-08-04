@@ -850,10 +850,16 @@ Við bíðum í smá stund og endurræsum hana síðan fyrir þig.</value>
     <value>Skoðaðu hleðslu, inntak, úttak og tíma sem eftir er.</value>
   </data>
   <data name="LcdMod_Ftue_RadarRange_Line1" xml:space="preserve">
-    <value>Skrunaðu til að breyta drægni ratsjárinnar.</value>
+    <value>Haltu Ctrl inni og skrunaðu til að breyta drægni ratsjárinnar.</value>
   </data>
   <data name="LcdMod_Ftue_RadarRange_Line2" xml:space="preserve">
     <value>Aðeins útvarpsmerki greinast handan {0}.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarCamera_Line1" xml:space="preserve">
+    <value>Dragðu með hægri músarhnappi til að hreyfa ratsjármyndavélina.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarCamera_Line2" xml:space="preserve">
+    <value>Skrunaðu til að aðdraga eða fjarlægja ratsjárkortið.</value>
   </data>
   <data name="LcdMod_MediaPlayer_Title" xml:space="preserve">
     <value>Miðlaspilari - (tilraunaútgáfa)</value>

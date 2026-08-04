@@ -34,6 +34,7 @@ namespace LcdMod.Client.Ftue
                 CreatePlanetaryMapCreateGpsTip(),
                 CreatePlanetaryMapCameraTip(),
                 CreatePictureFrameCustomTexturesTip(),
+                CreateRadarCameraTip(),
                 CreateRadarRangeTip()
             };
         }
@@ -200,7 +201,7 @@ namespace LcdMod.Client.Ftue
         static FtueTip CreateRadarRangeTip()
         {
             var tip = CreateAppInputHint<RadarApp>(
-                "radar.scroll-range",
+                "radar.ctrl-scroll-range",
                 Loc("RadarRange_Line1"),
                 Loc("RadarRange_Line2"),
                 null,
@@ -226,6 +227,25 @@ namespace LcdMod.Client.Ftue
 
                 app.RangeScrolled += handler;
                 return () => app.RangeScrolled -= handler;
+            };
+
+            return tip;
+        }
+
+        static FtueTip CreateRadarCameraTip()
+        {
+            var tip = CreateAppInputHint<RadarApp>(
+                "radar.camera-pan-zoom",
+                Loc("RadarCamera_Line1"),
+                Loc("RadarCamera_Line2"),
+                null);
+
+            tip.Placement = HintPlacement.Bottom;
+            tip.CompletionBinder = (surface, app, complete) =>
+            {
+                Action handler = () => CompleteSafely(surface, complete);
+                app.CameraMoved += handler;
+                return () => app.CameraMoved -= handler;
             };
 
             return tip;

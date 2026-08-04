@@ -847,10 +847,16 @@ Nous allons patienter un moment, puis la redémarrer pour vous.</value>
     <value>Consultez sa charge, son entrée, sa sortie et le temps restant.</value>
   </data>
   <data name="LcdMod_Ftue_RadarRange_Line1" xml:space="preserve">
-    <value>Faites défiler pour modifier la portée du radar.</value>
+    <value>Maintenez Ctrl et faites défiler pour modifier la portée du radar.</value>
   </data>
   <data name="LcdMod_Ftue_RadarRange_Line2" xml:space="preserve">
     <value>Seuls les signaux radio peuvent être détectés au-delà de {0}.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarCamera_Line1" xml:space="preserve">
+    <value>Faites glisser avec le bouton droit pour déplacer la caméra du radar.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarCamera_Line2" xml:space="preserve">
+    <value>Faites défiler pour zoomer sur la carte radar.</value>
   </data>
   <data name="LcdMod_MediaPlayer_Title" xml:space="preserve">
     <value>Lecteur multimédia - (expérimental)</value>

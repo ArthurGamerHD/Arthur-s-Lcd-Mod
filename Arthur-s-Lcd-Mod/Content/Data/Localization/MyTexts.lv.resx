@@ -846,10 +846,16 @@ Mēs brīdi pagaidīsim un pēc tam to restartēsim jūsu vietā.</value>
     <value>Pārbaudiet uzlādi, ievadi, izvadi un atlikušo laiku.</value>
   </data>
   <data name="LcdMod_Ftue_RadarRange_Line1" xml:space="preserve">
-    <value>Ritiniet, lai mainītu radara darbības rādiusu.</value>
+    <value>Turiet Ctrl un ritiniet, lai mainītu radara darbības rādiusu.</value>
   </data>
   <data name="LcdMod_Ftue_RadarRange_Line2" xml:space="preserve">
     <value>Ārpus {0} var uztvert tikai radio signālus.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarCamera_Line1" xml:space="preserve">
+    <value>Velciet ar labo pogu, lai pārvietotu radara kameru.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarCamera_Line2" xml:space="preserve">
+    <value>Ritiniet, lai tuvinātu vai tālinātu radara karti.</value>
   </data>
   <data name="LcdMod_MediaPlayer_Title" xml:space="preserve">
     <value>Multivides atskaņotājs - (eksperimentāls)</value>

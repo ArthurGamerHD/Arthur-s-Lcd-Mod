@@ -846,10 +846,16 @@ Bir süre bekleyeceğiz ve ardından sizin için yeniden başlatacağız.</value
     <value>Şarjını, girişini, çıkışını ve kalan süreyi kontrol edin.</value>
   </data>
   <data name="LcdMod_Ftue_RadarRange_Line1" xml:space="preserve">
-    <value>Radar menzilini değiştirmek için kaydırın.</value>
+    <value>Radar menzilini değiştirmek için Ctrl tuşunu basılı tutup kaydırın.</value>
   </data>
   <data name="LcdMod_Ftue_RadarRange_Line2" xml:space="preserve">
     <value>{0}'nin ötesinde yalnızca radyo sinyalleri algılanabilir.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarCamera_Line1" xml:space="preserve">
+    <value>Radar kamerasını hareket ettirmek için sağ tuşla sürükleyin.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarCamera_Line2" xml:space="preserve">
+    <value>Radar haritasını yakınlaştırmak için kaydırın.</value>
   </data>
   <data name="LcdMod_MediaPlayer_Title" xml:space="preserve">
     <value>Medya oynatıcı - (deneysel)</value>

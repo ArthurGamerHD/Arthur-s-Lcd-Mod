@@ -846,10 +846,16 @@ Pričekat ćemo neko vrijeme, a zatim je ponovno pokrenuti za vas.</value>
     <value>Provjerite napunjenost, ulaz, izlaz i preostalo vrijeme.</value>
   </data>
   <data name="LcdMod_Ftue_RadarRange_Line1" xml:space="preserve">
-    <value>Pomaknite kotačić za promjenu dometa radara.</value>
+    <value>Držite Ctrl i pomaknite kotačić za promjenu dometa radara.</value>
   </data>
   <data name="LcdMod_Ftue_RadarRange_Line2" xml:space="preserve">
     <value>Izvan {0} mogu se otkriti samo radijski signali.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarCamera_Line1" xml:space="preserve">
+    <value>Povucite desnom tipkom za pomicanje kamere radara.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarCamera_Line2" xml:space="preserve">
+    <value>Pomaknite kotačić za zumiranje radarske karte.</value>
   </data>
   <data name="LcdMod_MediaPlayer_Title" xml:space="preserve">
     <value>Medijski reproduktor - (eksperimentalno)</value>

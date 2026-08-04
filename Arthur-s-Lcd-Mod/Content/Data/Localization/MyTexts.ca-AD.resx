@@ -847,10 +847,16 @@ Esperarem una estona i després la reiniciarem per tu.</value>
     <value>Consulta'n la càrrega, l'entrada, la sortida i el temps restant.</value>
   </data>
   <data name="LcdMod_Ftue_RadarRange_Line1" xml:space="preserve">
-    <value>Desplaça't per canviar l'abast del radar.</value>
+    <value>Mantén premut Ctrl i desplaça't per canviar l'abast del radar.</value>
   </data>
   <data name="LcdMod_Ftue_RadarRange_Line2" xml:space="preserve">
     <value>Només es poden detectar senyals de ràdio més enllà de {0}.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarCamera_Line1" xml:space="preserve">
+    <value>Arrossega amb el botó dret per desplaçar la càmera del radar.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarCamera_Line2" xml:space="preserve">
+    <value>Desplaça't per fer zoom al mapa del radar.</value>
   </data>
   <data name="LcdMod_MediaPlayer_Title" xml:space="preserve">
     <value>Reproductor multimèdia - (experimental)</value>

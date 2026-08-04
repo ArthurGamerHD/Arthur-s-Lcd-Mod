@@ -846,10 +846,16 @@ Poczekamy chwilę, a następnie uruchomimy ją ponownie za ciebie.</value>
     <value>Sprawdź poziom naładowania, wejście, wyjście i pozostały czas.</value>
   </data>
   <data name="LcdMod_Ftue_RadarRange_Line1" xml:space="preserve">
-    <value>Przewiń, aby zmienić zasięg radaru.</value>
+    <value>Przytrzymaj Ctrl i przewiń, aby zmienić zasięg radaru.</value>
   </data>
   <data name="LcdMod_Ftue_RadarRange_Line2" xml:space="preserve">
     <value>Poza zasięgiem {0} można wykrywać tylko sygnały radiowe.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarCamera_Line1" xml:space="preserve">
+    <value>Przeciągnij prawym przyciskiem, aby przesunąć kamerę radaru.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarCamera_Line2" xml:space="preserve">
+    <value>Przewiń, aby powiększyć lub pomniejszyć mapę radaru.</value>
   </data>
   <data name="LcdMod_MediaPlayer_Title" xml:space="preserve">
     <value>Odtwarzacz multimedialny - (eksperymentalny)</value>

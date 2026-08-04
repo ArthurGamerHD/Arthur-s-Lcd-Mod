@@ -846,10 +846,16 @@ Odotamme hetken ja käynnistämme sen sitten uudelleen puolestasi.</value>
     <value>Tarkista varaus, syöttö, tuotto ja jäljellä oleva aika.</value>
   </data>
   <data name="LcdMod_Ftue_RadarRange_Line1" xml:space="preserve">
-    <value>Vieritä muuttaaksesi tutkan kantamaa.</value>
+    <value>Pidä Ctrl pohjassa ja vieritä muuttaaksesi tutkan kantamaa.</value>
   </data>
   <data name="LcdMod_Ftue_RadarRange_Line2" xml:space="preserve">
     <value>Yli {0}:n etäisyydeltä voidaan havaita vain radiosignaaleja.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarCamera_Line1" xml:space="preserve">
+    <value>Vedä oikealla painikkeella siirtääksesi tutkan kameraa.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarCamera_Line2" xml:space="preserve">
+    <value>Vieritä zoomataksesi tutkakarttaa.</value>
   </data>
   <data name="LcdMod_MediaPlayer_Title" xml:space="preserve">
     <value>Mediasoitin - (kokeellinen)</value>

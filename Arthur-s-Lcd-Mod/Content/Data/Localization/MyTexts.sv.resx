@@ -846,10 +846,16 @@ Vi väntar en stund och startar sedan om den åt dig.</value>
     <value>Kontrollera laddning, ingång, utgång och återstående tid.</value>
   </data>
   <data name="LcdMod_Ftue_RadarRange_Line1" xml:space="preserve">
-    <value>Rulla för att ändra radarns räckvidd.</value>
+    <value>Håll Ctrl och rulla för att ändra radarns räckvidd.</value>
   </data>
   <data name="LcdMod_Ftue_RadarRange_Line2" xml:space="preserve">
     <value>Endast radiosignaler kan upptäckas bortom {0}.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarCamera_Line1" xml:space="preserve">
+    <value>Högerdra för att flytta radarkameran.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarCamera_Line2" xml:space="preserve">
+    <value>Rulla för att zooma radarkartan.</value>
   </data>
   <data name="LcdMod_MediaPlayer_Title" xml:space="preserve">
     <value>Mediaspelare - (experimentell)</value>

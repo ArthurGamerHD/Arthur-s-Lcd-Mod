@@ -858,10 +858,16 @@ We are waiting for a while, and then we will restart it for you.</value>
     <value>Inspect its charge, input, output, and remaining time.</value>
   </data>
   <data name="LcdMod_Ftue_RadarRange_Line1" xml:space="preserve">
-    <value>Scroll to change the radar range.</value>
+    <value>Hold Ctrl and scroll to change the radar range.</value>
   </data>
   <data name="LcdMod_Ftue_RadarRange_Line2" xml:space="preserve">
     <value>Only radio signals can be detected beyond {0} range</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarCamera_Line1" xml:space="preserve">
+    <value>Right-drag to pan the radar camera.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarCamera_Line2" xml:space="preserve">
+    <value>Scroll to zoom the radar map.</value>
   </data>
   <data name="LcdMod_MediaPlayer_Title" xml:space="preserve">
     <value>Media player - (experimental)</value>

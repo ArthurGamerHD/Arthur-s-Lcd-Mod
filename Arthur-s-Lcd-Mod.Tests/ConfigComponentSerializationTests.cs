@@ -59,6 +59,43 @@ public sealed class ConfigComponentSerializationTests
     }
 
     [Fact]
+    public void RadarConfigComponent_RoundTrips_RangeAndCameraState()
+    {
+        var surface = new SurfaceConfig
+        {
+            SurfaceIndex = 5,
+            AppTypeId = 12
+        };
+
+        surface.Set(LcdMod.Common.Helpers.Constants.APP, new RadarConfigComponent
+        {
+            RangeScale = 2.25f,
+            CameraPanX = 123.5d,
+            CameraPanY = -456.25d,
+            CameraZoomScale = 1.75f
+        });
+
+        using var stream = new MemoryStream();
+        Serializer.Serialize(stream, surface);
+        stream.Position = 0;
+
+        var result = Serializer.Deserialize<SurfaceConfig>(stream);
+        var radar = result.Get<RadarConfigComponent>(LcdMod.Common.Helpers.Constants.APP);
+
+        Assert.Equal(2.25f, radar.RangeScale);
+        Assert.Equal(123.5d, radar.CameraPanX);
+        Assert.Equal(-456.25d, radar.CameraPanY);
+        Assert.Equal(1.75f, radar.CameraZoomScale);
+
+        var clone = (RadarConfigComponent)radar.Clone();
+
+        Assert.Equal(2.25f, clone.RangeScale);
+        Assert.Equal(123.5d, clone.CameraPanX);
+        Assert.Equal(-456.25d, clone.CameraPanY);
+        Assert.Equal(1.75f, clone.CameraZoomScale);
+    }
+
+    [Fact]
     public void PlanetaryMapConfigComponent_RoundTrips_OrientationAndCameraLock()
     {
         var surface = new SurfaceConfig
@@ -126,7 +163,7 @@ public sealed class ConfigComponentSerializationTests
     }
 
     [Fact]
-    public void StarMapConfigComponent_RoundTrips_GpsWaypoints()
+    public void StarMapConfigComponent_RoundTrips_GpsWaypointsAndStaticCameraState()
     {
         var surface = new SurfaceConfig
         {
@@ -139,6 +176,12 @@ public sealed class ConfigComponentSerializationTests
             FoV = 55f,
             DisplayMyGps = true,
             IncludeRadioSignals = true,
+            StaticOrbitYawRadians = 1.25f,
+            StaticOrbitPitchRadians = -0.5f,
+            StaticFocusPlanetId = 123456789L,
+            StaticCameraTargetOffsetX = 11.5d,
+            StaticCameraTargetOffsetY = -22.25d,
+            StaticCameraTargetOffsetZ = 33.125d,
             AlwaysDisplayedGpsWaypoints = new[]
             {
                 new GpsDisplayWaypoint
@@ -163,6 +206,12 @@ public sealed class ConfigComponentSerializationTests
         Assert.Equal(55f, starMap.FoV);
         Assert.True(starMap.DisplayMyGps);
         Assert.True(starMap.IncludeRadioSignals);
+        Assert.Equal(1.25f, starMap.StaticOrbitYawRadians);
+        Assert.Equal(-0.5f, starMap.StaticOrbitPitchRadians);
+        Assert.Equal(123456789L, starMap.StaticFocusPlanetId);
+        Assert.Equal(11.5d, starMap.StaticCameraTargetOffsetX);
+        Assert.Equal(-22.25d, starMap.StaticCameraTargetOffsetY);
+        Assert.Equal(33.125d, starMap.StaticCameraTargetOffsetZ);
         GpsDisplayWaypoint waypoint = Assert.Single(starMap.AlwaysDisplayedGpsWaypoints);
         Assert.Equal(303, waypoint.SourceHash);
         Assert.Equal("Depot", waypoint.Name);
@@ -170,5 +219,28 @@ public sealed class ConfigComponentSerializationTests
         Assert.Equal(34d, waypoint.Y);
         Assert.Equal(56d, waypoint.Z);
         Assert.Equal(0xFFAA5500u, waypoint.Color.PackedValue);
+    }
+
+    [Fact]
+    public void StarMapConfigComponent_Clone_CopiesStaticCameraState()
+    {
+        var config = new StarMapConfigComponent
+        {
+            StaticOrbitYawRadians = 0.125f,
+            StaticOrbitPitchRadians = -0.375f,
+            StaticFocusPlanetId = 987654321L,
+            StaticCameraTargetOffsetX = -10.5d,
+            StaticCameraTargetOffsetY = 20.25d,
+            StaticCameraTargetOffsetZ = -30.125d
+        };
+
+        var clone = (StarMapConfigComponent)config.Clone();
+
+        Assert.Equal(0.125f, clone.StaticOrbitYawRadians);
+        Assert.Equal(-0.375f, clone.StaticOrbitPitchRadians);
+        Assert.Equal(987654321L, clone.StaticFocusPlanetId);
+        Assert.Equal(-10.5d, clone.StaticCameraTargetOffsetX);
+        Assert.Equal(20.25d, clone.StaticCameraTargetOffsetY);
+        Assert.Equal(-30.125d, clone.StaticCameraTargetOffsetZ);
     }
 }

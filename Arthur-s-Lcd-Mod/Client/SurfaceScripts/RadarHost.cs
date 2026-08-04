@@ -26,14 +26,31 @@ namespace LcdMod.Client.SurfaceScripts
         public const string TITLE = MOD_PREFIX + "Radar";
         protected override string DefaultTitle => TITLE;
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
+        protected override bool RendersInteractiveEntriesInGetSprites => true;
 
         public override IApp App => _app;       
+        readonly List<Control> _emptyInteractive = new List<Control>();
         RadarApp _app;
 
-        public override List<Control> InteractiveList => _app.VisualChildren as List<Control>;
+        public override List<Control> InteractiveList
+        {
+            get
+            {
+                return _app != null
+                    ? _app.VisualChildren as List<Control> ?? _emptyInteractive
+                    : _emptyInteractive;
+            }
+        }
 
         public RadarSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)
         {
+        }
+
+        protected override void LayoutChanged()
+        {
+            base.LayoutChanged();
+            if (_app != null)
+                _app.LayoutChanged();
         }
 
         public override void SafeRun()
@@ -49,9 +66,12 @@ namespace LcdMod.Client.SurfaceScripts
         {
             var sprites = new List<MySprite>();
             AddBackground(sprites);
-            DrawTitle(sprites);
             if (_app != null)
+            {
                 sprites.AddRange(_app.GetSprites());
+                RenderInteractiveEntryVisuals(sprites);
+            }
+            DrawTitle(sprites);
             return sprites;
         }
 

@@ -846,10 +846,16 @@
     <value>检查其电量、输入、输出和剩余时间。</value>
   </data>
   <data name="LcdMod_Ftue_RadarRange_Line1" xml:space="preserve">
-    <value>滚动以更改雷达范围。</value>
+    <value>按住 Ctrl 并滚动以更改雷达范围。</value>
   </data>
   <data name="LcdMod_Ftue_RadarRange_Line2" xml:space="preserve">
     <value>超过 {0} 范围时只能检测到无线电信号。</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarCamera_Line1" xml:space="preserve">
+    <value>按住右键拖动以移动雷达摄像机。</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarCamera_Line2" xml:space="preserve">
+    <value>滚动以缩放雷达地图。</value>
   </data>
   <data name="LcdMod_MediaPlayer_Title" xml:space="preserve">
     <value>媒体播放器 - (实验性)</value>

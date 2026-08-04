@@ -846,10 +846,16 @@
     <value>Перевірте заряд, вхід, вихід і час, що залишився.</value>
   </data>
   <data name="LcdMod_Ftue_RadarRange_Line1" xml:space="preserve">
-    <value>Прокрутіть, щоб змінити дальність радара.</value>
+    <value>Утримуйте Ctrl і прокрутіть, щоб змінити дальність радара.</value>
   </data>
   <data name="LcdMod_Ftue_RadarRange_Line2" xml:space="preserve">
     <value>За межами {0} можуть виявлятися лише радіосигнали.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarCamera_Line1" xml:space="preserve">
+    <value>Перетягуйте правою кнопкою миші, щоб переміщувати камеру радара.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarCamera_Line2" xml:space="preserve">
+    <value>Прокручуйте, щоб масштабувати карту радара.</value>
   </data>
   <data name="LcdMod_MediaPlayer_Title" xml:space="preserve">
     <value>Медіапрогравач - (експериментальний)</value>

@@ -847,10 +847,16 @@ Wir warten einen Moment und starten sie dann für dich neu.</value>
     <value>Prüfe Ladung, Eingang, Ausgang und verbleibende Zeit.</value>
   </data>
   <data name="LcdMod_Ftue_RadarRange_Line1" xml:space="preserve">
-    <value>Scrolle, um die Radarreichweite zu ändern.</value>
+    <value>Halte Strg gedrückt und scrolle, um die Radarreichweite zu ändern.</value>
   </data>
   <data name="LcdMod_Ftue_RadarRange_Line2" xml:space="preserve">
     <value>Jenseits von {0} können nur Funksignale erkannt werden.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarCamera_Line1" xml:space="preserve">
+    <value>Ziehe mit der rechten Maustaste, um die Radarkamera zu verschieben.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarCamera_Line2" xml:space="preserve">
+    <value>Scrolle, um die Radarkarte zu zoomen.</value>
   </data>
   <data name="LcdMod_MediaPlayer_Title" xml:space="preserve">
     <value>Medienplayer - (experimentell)</value>

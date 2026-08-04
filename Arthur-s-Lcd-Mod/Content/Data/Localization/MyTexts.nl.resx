@@ -846,10 +846,16 @@ We wachten even en starten het daarna voor je opnieuw op.</value>
     <value>Controleer lading, invoer, uitvoer en resterende tijd.</value>
   </data>
   <data name="LcdMod_Ftue_RadarRange_Line1" xml:space="preserve">
-    <value>Scroll om het radarbereik te wijzigen.</value>
+    <value>Houd Ctrl ingedrukt en scroll om het radarbereik te wijzigen.</value>
   </data>
   <data name="LcdMod_Ftue_RadarRange_Line2" xml:space="preserve">
     <value>Buiten {0} kunnen alleen radiosignalen worden gedetecteerd.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarCamera_Line1" xml:space="preserve">
+    <value>Sleep met de rechtermuisknop om de radarcamera te verplaatsen.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarCamera_Line2" xml:space="preserve">
+    <value>Scroll om op de radarkaart in of uit te zoomen.</value>
   </data>
   <data name="LcdMod_MediaPlayer_Title" xml:space="preserve">
     <value>Mediaspeler - (experimenteel)</value>

@@ -847,10 +847,16 @@ Esperaremos un momento y después la reiniciaremos por ti.</value>
     <value>Consulta su carga, entrada, salida y tiempo restante.</value>
   </data>
   <data name="LcdMod_Ftue_RadarRange_Line1" xml:space="preserve">
-    <value>Desplázate para cambiar el alcance del radar.</value>
+    <value>Mantén Ctrl y desplázate para cambiar el alcance del radar.</value>
   </data>
   <data name="LcdMod_Ftue_RadarRange_Line2" xml:space="preserve">
     <value>Solo se pueden detectar señales de radio a más de {0}.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarCamera_Line1" xml:space="preserve">
+    <value>Arrastra con el botón derecho para desplazar la cámara del radar.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarCamera_Line2" xml:space="preserve">
+    <value>Desplázate para hacer zoom en el mapa del radar.</value>
   </data>
   <data name="LcdMod_MediaPlayer_Title" xml:space="preserve">
     <value>Reproductor multimedia - (experimental)</value>

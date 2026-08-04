@@ -847,10 +847,16 @@ Attenderemo un momento e poi la riavvieremo per te.</value>
     <value>Controlla carica, ingresso, uscita e tempo rimanente.</value>
   </data>
   <data name="LcdMod_Ftue_RadarRange_Line1" xml:space="preserve">
-    <value>Scorri per modificare la portata del radar.</value>
+    <value>Tieni premuto Ctrl e scorri per modificare la portata del radar.</value>
   </data>
   <data name="LcdMod_Ftue_RadarRange_Line2" xml:space="preserve">
     <value>Oltre {0} possono essere rilevati solo segnali radio.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarCamera_Line1" xml:space="preserve">
+    <value>Trascina con il tasto destro per spostare la visuale del radar.</value>
+  </data>
+  <data name="LcdMod_Ftue_RadarCamera_Line2" xml:space="preserve">
+    <value>Scorri per ingrandire o ridurre la mappa radar.</value>
   </data>
   <data name="LcdMod_MediaPlayer_Title" xml:space="preserve">
     <value>Lettore multimediale - (sperimentale)</value>

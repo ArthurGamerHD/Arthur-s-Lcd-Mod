@@ -50,6 +50,10 @@ namespace LcdMod.Client.Apps
         float _lastKnownConfigFov = float.NaN;
         long _lastFovChangedFrame = long.MinValue;
         bool _syncConfigNextRun;
+        float _lastKnownConfigStaticOrbitYawRadians;
+        float _lastKnownConfigStaticOrbitPitchRadians;
+        long _lastKnownConfigStaticFocusPlanetId;
+        Vector3D _lastKnownConfigStaticCameraTargetOffsetWorld;
         IMyGravityProviderSystem _gravityProvider;
         readonly EyeTrackingFrameState _eyeTracking = new EyeTrackingFrameState();
 
@@ -251,6 +255,8 @@ namespace LcdMod.Client.Apps
         const float STATIC_PLANET_BODY_RADIUS_PX = 10f;
         const float STATIC_MOON_BODY_RADIUS_PX = 5f;
         public static float StaticOrbitLineThicknessPx = 2f;
+        const float STATIC_ORBIT_CONFIG_EPSILON = 0.000001f;
+        const double STATIC_CAMERA_TARGET_CONFIG_EPSILON_METERS = 0.001d;
         const double STATIC_CAMERA_NEAR_CLIP_DEPTH = 0d;
         const double STATIC_ORBIT_MIN_RING_METERS = 100000d;
         const double STATIC_PARENT_ORBIT_MAX_METERS = 300000d;
@@ -453,12 +459,8 @@ namespace LcdMod.Client.Apps
             EnsureCartographyEventSubscription();
             _jumpPointRunCounter++;
 
-            if (_syncConfigNextRun)
-            {
-                _syncConfigNextRun = false;
-                if (Block != null && _host.ProviderConfig != null)
-                    ConfigManager.Sync(Block, _host.ProviderConfig);
-            }
+            ApplyStarMapConfig();
+            SyncConfigIfNeeded();
 
             bool hadKnownFov = !float.IsNaN(_lastKnownConfigFov);
             if (!hadKnownFov || Math.Abs(_lastKnownConfigFov - StarMapComponent.FoV) > 0.001f)
@@ -468,6 +470,113 @@ namespace LcdMod.Client.Apps
 
                 LayoutChanged();
             }
+        }
+
+        void ApplyStarMapConfig()
+        {
+            StarMapConfigComponent config = StarMapComponent;
+            bool cameraChanged = false;
+
+            if (!NearlyEqual(config.StaticOrbitYawRadians, _lastKnownConfigStaticOrbitYawRadians) ||
+                !NearlyEqual(config.StaticOrbitPitchRadians, _lastKnownConfigStaticOrbitPitchRadians))
+            {
+                _staticOrbitControl.SetOrbit(
+                    config.StaticOrbitYawRadians,
+                    config.StaticOrbitPitchRadians,
+                    false);
+                cameraChanged = true;
+            }
+
+            Vector3D targetOffset = GetConfigStaticCameraTargetOffset(config);
+            if (config.StaticFocusPlanetId != _lastKnownConfigStaticFocusPlanetId ||
+                !NearlyEqual(targetOffset, _lastKnownConfigStaticCameraTargetOffsetWorld))
+            {
+                _staticFocusPlanetId = config.StaticFocusPlanetId;
+                _staticCameraTargetOffsetWorld = targetOffset;
+                cameraChanged = true;
+            }
+
+            CaptureStaticCameraConfigSnapshot(config);
+
+            if (cameraChanged)
+                InvalidateStaticOrbitCache();
+        }
+
+        void PersistStaticCameraConfig()
+        {
+            StarMapConfigComponent config = StarMapComponent;
+            bool changed = false;
+            float orbitYawRadians = _staticOrbitControl.YawRadians;
+            float orbitPitchRadians = _staticOrbitControl.PitchRadians;
+
+            if (!NearlyEqual(config.StaticOrbitYawRadians, orbitYawRadians))
+            {
+                config.StaticOrbitYawRadians = orbitYawRadians;
+                changed = true;
+            }
+
+            if (!NearlyEqual(config.StaticOrbitPitchRadians, orbitPitchRadians))
+            {
+                config.StaticOrbitPitchRadians = orbitPitchRadians;
+                changed = true;
+            }
+
+            if (config.StaticFocusPlanetId != _staticFocusPlanetId)
+            {
+                config.StaticFocusPlanetId = _staticFocusPlanetId;
+                changed = true;
+            }
+
+            if (!NearlyEqual(GetConfigStaticCameraTargetOffset(config), _staticCameraTargetOffsetWorld))
+            {
+                config.StaticCameraTargetOffsetX = _staticCameraTargetOffsetWorld.X;
+                config.StaticCameraTargetOffsetY = _staticCameraTargetOffsetWorld.Y;
+                config.StaticCameraTargetOffsetZ = _staticCameraTargetOffsetWorld.Z;
+                changed = true;
+            }
+
+            CaptureStaticCameraConfigSnapshot(config);
+
+            if (changed)
+                _syncConfigNextRun = true;
+        }
+
+        void SyncConfigIfNeeded()
+        {
+            if (!_syncConfigNextRun)
+                return;
+
+            _syncConfigNextRun = false;
+            if (Block != null && _host.ProviderConfig != null)
+                ConfigManager.Sync(Block, _host.ProviderConfig);
+        }
+
+        void CaptureStaticCameraConfigSnapshot(StarMapConfigComponent config)
+        {
+            _lastKnownConfigStaticOrbitYawRadians = config.StaticOrbitYawRadians;
+            _lastKnownConfigStaticOrbitPitchRadians = config.StaticOrbitPitchRadians;
+            _lastKnownConfigStaticFocusPlanetId = config.StaticFocusPlanetId;
+            _lastKnownConfigStaticCameraTargetOffsetWorld = GetConfigStaticCameraTargetOffset(config);
+        }
+
+        static Vector3D GetConfigStaticCameraTargetOffset(StarMapConfigComponent config)
+        {
+            return new Vector3D(
+                config.StaticCameraTargetOffsetX,
+                config.StaticCameraTargetOffsetY,
+                config.StaticCameraTargetOffsetZ);
+        }
+
+        static bool NearlyEqual(float left, float right)
+        {
+            return Math.Abs(left - right) <= STATIC_ORBIT_CONFIG_EPSILON;
+        }
+
+        static bool NearlyEqual(Vector3D left, Vector3D right)
+        {
+            return Vector3D.DistanceSquared(left, right) <=
+                   STATIC_CAMERA_TARGET_CONFIG_EPSILON_METERS *
+                   STATIC_CAMERA_TARGET_CONFIG_EPSILON_METERS;
         }
 
         public override void Close()
@@ -4841,6 +4950,7 @@ namespace LcdMod.Client.Apps
 
             _staticFocusPlanetId = planetId;
             _staticCameraTargetOffsetWorld = Vector3D.Zero;
+            PersistStaticCameraConfig();
 
             var tooltipHost = _host as InteractiveSurfaceScript;
             if (tooltipHost != null)
@@ -4901,6 +5011,7 @@ namespace LcdMod.Client.Apps
 
             _staticFocusPlanetId = projection.PlanetId;
             _staticCameraTargetOffsetWorld = worldDirection * targetRadius;
+            PersistStaticCameraConfig();
             InvalidateStaticOrbitCache();
             Host.RenderSprites();
             return true;
@@ -4918,6 +5029,7 @@ namespace LcdMod.Client.Apps
                 return false;
 
             _staticCameraTargetOffsetWorld += movement;
+            PersistStaticCameraConfig();
             InvalidateStaticOrbitCache();
             Host.RenderSprites();
             return true;
@@ -4928,6 +5040,7 @@ namespace LcdMod.Client.Apps
             if (_closed)
                 return;
 
+            PersistStaticCameraConfig();
             InvalidateStaticOrbitCache();
             Host.RenderSprites();
 
