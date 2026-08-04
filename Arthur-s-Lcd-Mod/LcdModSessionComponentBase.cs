@@ -63,28 +63,44 @@ namespace LcdMod
 
         public static GridLogic GetOrCreateGridLogic(IMyCubeGrid grid)
         {
-            if (grid == null || Components == null)
+            if (grid == null || grid.Closed || grid.MarkedForClose || Components == null)
                 return null;
 
+            var gridId = grid.EntityId;
             GridLogic logic;
-            if (Components.TryGetValue(grid.EntityId, out logic))
+            if (Components.TryGetValue(gridId, out logic))
             {
-                logic.MarkRequested();
-                return logic;
+                if (logic != null && logic.TargetGrid == gridId && logic.IsAlive)
+                {
+                    EnsureGridLogicTracked(grid, logic);
+                    logic.MarkRequested();
+                    return logic;
+                }
+
+                if (logic != null)
+                    logic.Unload();
             }
 
             logic = new GridLogic(grid);
             logic.MarkRequested();
-            Components[grid.EntityId] = logic;
-
-            var session = _instance;
-            if (session != null && !session._grids.ContainsKey(grid.EntityId))
-            {
-                session._grids[grid.EntityId] = new MyTuple<IMyCubeGrid, GridLogic>(grid, logic);
-                grid.OnMarkForClose += session.GridMarkedForClose;
-            }
-
+            Components[gridId] = logic;
+            EnsureGridLogicTracked(grid, logic);
             return logic;
+        }
+
+        static void EnsureGridLogicTracked(IMyCubeGrid grid, GridLogic logic)
+        {
+            var session = _instance;
+            if (session == null)
+                return;
+
+            MyTuple<IMyCubeGrid, GridLogic> tracked;
+            if (session._grids.TryGetValue(grid.EntityId, out tracked) && tracked.Item1 != null)
+                tracked.Item1.OnMarkForClose -= session.GridMarkedForClose;
+
+            session._grids[grid.EntityId] = new MyTuple<IMyCubeGrid, GridLogic>(grid, logic);
+            grid.OnMarkForClose -= session.GridMarkedForClose;
+            grid.OnMarkForClose += session.GridMarkedForClose;
         }
 
         public override void SaveData()
@@ -142,13 +158,21 @@ namespace LcdMod
         {
             try
             {
-                GridLogic logic;
-                if (Components != null && Components.TryGetValue(ent.EntityId, out logic) && logic != null)
-                    logic.Unload();
+                MyTuple<IMyCubeGrid, GridLogic> tracked;
+                if (!_grids.TryGetValue(ent.EntityId, out tracked) || !ReferenceEquals(tracked.Item1, ent))
+                    return;
 
+                if (tracked.Item1 != null)
+                    tracked.Item1.OnMarkForClose -= GridMarkedForClose;
                 _grids.Remove(ent.EntityId);
-                if (Components != null)
+
+                GridLogic registered;
+                if (Components != null && Components.TryGetValue(ent.EntityId, out registered) &&
+                    ReferenceEquals(registered, tracked.Item2))
                     Components.Remove(ent.EntityId);
+
+                if (tracked.Item2 != null)
+                    tracked.Item2.Unload();
             }
             catch (Exception e)
             {

@@ -120,6 +120,7 @@ namespace LcdMod.Client.GridData
         private List<IMyTerminalBlock> _nextTerminalBlocks = new List<IMyTerminalBlock>();
         private List<IMyPowerProducer> _powerProducers = new List<IMyPowerProducer>();
         private List<IMyRadioAntenna> _radio = new List<IMyRadioAntenna>();
+        private bool _refreshHealthy;
         private bool _refreshQueued;
         private IEnumerator<bool> _refreshUpdater;
         private List<IMyTerminalBlock> _terminalBlocks = new List<IMyTerminalBlock>();
@@ -132,10 +133,16 @@ namespace LcdMod.Client.GridData
         public GridLogic(IMyCubeGrid grid)
         {
             Grid = grid;
+            TargetGrid = grid != null ? grid.EntityId : 0L;
+            _refreshHealthy = IsGridAlive();
             _gridGroupResolver = new GridGroupLogic(this);
             _clock = new Random().Next(DELAY);
             // Initial Randomization so not every single grid ticks on the same time
         }
+
+        public long TargetGrid { get; private set; }
+
+        public bool IsAlive => _refreshHealthy && IsGridAlive();
 
         public int LastRefreshIterations { get; private set; }
 
@@ -211,9 +218,22 @@ namespace LcdMod.Client.GridData
 
         public void Unload()
         {
+            _refreshHealthy = false;
+            _refreshQueued = false;
+            if (_refreshUpdater != null)
+            {
+                _refreshUpdater.Dispose();
+                _refreshUpdater = null;
+            }
+
             foreach (var player in _mediaPlayers.Values)
                 player.Unload();
             _mediaPlayers.Clear();
+        }
+
+        private bool IsGridAlive()
+        {
+            return Grid != null && !Grid.Closed && !Grid.MarkedForClose;
         }
 
         /// <summary>
@@ -254,6 +274,7 @@ namespace LcdMod.Client.GridData
             }
             catch (Exception e)
             {
+                _refreshHealthy = false;
                 ErrorHandlerHelper.LogError(e, this);
             }
         }
@@ -326,6 +347,7 @@ namespace LcdMod.Client.GridData
             }
             catch (Exception e)
             {
+                _refreshHealthy = false;
                 ErrorHandlerHelper.LogError(e, this);
                 _refreshUpdater.Dispose();
                 _refreshUpdater = null;
@@ -340,7 +362,7 @@ namespace LcdMod.Client.GridData
             _refreshUpdater = null;
             FinalizeRefreshEstimate();
 
-            if (_refreshQueued)
+            if (_refreshQueued && IsAlive)
                 StartRefresh(true);
         }
 
@@ -687,7 +709,18 @@ namespace LcdMod.Client.GridData
             _nextPowerProducers.Clear();
             _nextFarmPlots.Clear();
 
+            if (!IsGridAlive())
+            {
+                _refreshHealthy = false;
+                yield break;
+            }
+
             Grid.GetBlocks(_nextBlocks, a => a.FatBlock is IMyTerminalBlock);
+            if (_nextBlocks.Count == 0)
+            {
+                _refreshHealthy = false;
+                yield break;
+            }
 
             var processed = 0;
             for (var i = 0; i < _nextBlocks.Count; i++)
@@ -782,6 +815,12 @@ namespace LcdMod.Client.GridData
                 }
             }
 
+            if (!IsGridAlive())
+            {
+                _refreshHealthy = false;
+                yield break;
+            }
+
             // Atomically swap the visible snapshot once fully built.
             SwapBuffer(ref _radio, ref _nextRadio);
             SwapBuffer(ref _lasers, ref _nextLasers);
@@ -796,6 +835,7 @@ namespace LcdMod.Client.GridData
             SwapBuffer(ref _terminalBlocks, ref _nextTerminalBlocks);
             SwapBuffer(ref _powerProducers, ref _nextPowerProducers);
             SwapBuffer(ref _cargoContainers, ref _nextCargoContainers);
+            _refreshHealthy = true;
         }
 
         internal List<T> GetTerminalBlocksInternal<T>() where T : IMyTerminalBlock

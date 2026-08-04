@@ -467,15 +467,17 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 TitleVisible != GeneralComponent.TitleVisible)
                 LayoutChanged();
 
-            if (GridLogic == null)
+
+            var cubeGrid = Block?.CubeGrid;
+            if (cubeGrid == null || cubeGrid.Closed || cubeGrid.MarkedForClose)
             {
-                GridLogic gridLogic;
-                if (LcdModSessionComponent.Components.TryGetValue(Block.CubeGrid.EntityId, out gridLogic))
-                    GridLogic = gridLogic;
+                GridLogic = null;
+                DrawLoadingScreen(GeneralComponent.GetScale());
+                return;
             }
 
-            if (GridLogic == null)
-                GridLogic = LcdModSessionComponent.GetOrCreateGridLogic(Block?.CubeGrid);
+            if (GridLogic == null || GridLogic.TargetGrid != cubeGrid.EntityId || !GridLogic.IsAlive)
+                GridLogic = LcdModSessionComponent.GetOrCreateGridLogic(cubeGrid);
             else
                 GridLogic.MarkRequested();
 
