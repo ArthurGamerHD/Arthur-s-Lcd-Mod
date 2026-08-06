@@ -628,8 +628,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
                 return CHANNEL_TEXT_CELL_PIXELS_16;
             if (cellPixels < CHANNEL_TEXT_CELL_PIXELS_32)
                 return CHANNEL_TEXT_CELL_PIXELS_32;
-            if (cellPixels < CHANNEL_TEXT_CELL_PIXELS_64)
-                return CHANNEL_TEXT_CELL_PIXELS_64;
+
             return CHANNEL_TEXT_CELL_PIXELS_64;
         }
 
@@ -856,8 +855,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
             double visibleOffsetY = window.RowStart * renderPreset.CellPixels;
             Vector2 center = sphereBounds.Center;
             Vector2 position = new Vector2(
-                (float)((double)center.X - fullTextWidth * 0.5d + visibleOffsetX),
-                (float)((double)center.Y - fullTextHeight * 0.5d + visibleOffsetY));
+                (float)(center.X - fullTextWidth * 0.5d + visibleOffsetX),
+                (float)(center.Y - fullTextHeight * 0.5d + visibleOffsetY));
 
             if (!BeginContentClip(_cachedSprites, clip))
                 return;

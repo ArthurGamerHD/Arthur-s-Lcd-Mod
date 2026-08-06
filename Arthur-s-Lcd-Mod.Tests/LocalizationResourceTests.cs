@@ -15,6 +15,12 @@ public sealed class LocalizationResourceTests
     static readonly Regex ConfigMetadataPattern = new(
         @"MOD_PREFIX\s*\+\s*""(?<suffix>[A-Za-z0-9_]+)""",
         RegexOptions.Compiled);
+    static readonly Regex DocumentationLocValuePattern = new(
+        @"<loc>\s*(?<key>LcdMod_[A-Za-z0-9_]+)\s*</loc>",
+        RegexOptions.Compiled);
+    static readonly Regex DocumentationLocAttributePattern = new(
+        @"<loc\s+key\s*=\s*""(?<key>LcdMod_[A-Za-z0-9_]+)""",
+        RegexOptions.Compiled);
 
     [Fact]
     public void EveryLocale_HasExactlyTheBaseKeySet()
@@ -74,6 +80,10 @@ public sealed class LocalizationResourceTests
                 .Select(match => ("LcdMod_" + match.Groups["suffix"].Value, sourcePath)));
             references.AddRange(FullLookupPattern.Matches(source)
                 .Select(match => (match.Groups["key"].Value, sourcePath)));
+            references.AddRange(DocumentationLocValuePattern.Matches(source)
+                .Select(match => (match.Groups["key"].Value, sourcePath)));
+            references.AddRange(DocumentationLocAttributePattern.Matches(source)
+                .Select(match => (match.Groups["key"].Value, sourcePath)));
         }
 
         string configModelsPath = Path.Combine(
@@ -94,6 +104,31 @@ public sealed class LocalizationResourceTests
             .ToArray();
 
         Assert.Empty(missing);
+    }
+
+
+    [Fact]
+    public void ChatCommands_DoNotUseHardcodedShowMessageText()
+    {
+        string chatCommandsDirectory = Path.Combine(
+            FindRepositoryRoot(),
+            "Arthur-s-Lcd-Mod",
+            "Client",
+            "ChatCommands");
+
+        var hardcodedMessages = new List<string>();
+        var pattern = new Regex(
+            @"MyAPIGateway\.Utilities\.ShowMessage\s*\(\s*[^,]+,\s*\$?\x22",
+            RegexOptions.Compiled | RegexOptions.Singleline);
+
+        foreach (string sourcePath in Directory.EnumerateFiles(chatCommandsDirectory, "*.cs"))
+        {
+            string source = File.ReadAllText(sourcePath);
+            if (pattern.IsMatch(source))
+                hardcodedMessages.Add(Path.GetFileName(sourcePath));
+        }
+
+        Assert.Empty(hardcodedMessages);
     }
 
     [Fact]

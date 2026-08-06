@@ -56,15 +56,15 @@ namespace LcdMod.Client.Audio
             public ulong[] ListenerSteamIds;
         }
 
-        public void StreamAudioCommand(string[] args)
+        internal void StreamAudio(string query)
         {
-            if (args == null || args.Length == 0 || string.IsNullOrWhiteSpace(args[0]))
+            if (string.IsNullOrWhiteSpace(query))
             {
                 Show(LocHelper.GetLoc("LcdMod_AudioBroadcast_Usage"), "Red");
                 return;
             }
 
-            var query = args[0].Trim();
+            query = query.Trim();
             var asset = ResolveAsset(query);
             if (asset == null)
             {

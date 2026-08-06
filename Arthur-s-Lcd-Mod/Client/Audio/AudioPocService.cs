@@ -37,15 +37,15 @@ namespace LcdMod.Client.Audio
             public GameAudioContainerKind ContainerKind;
         }
 
-        public void PlayAudioCommand(string[] args)
+        internal void PlayAudio(string fileName)
         {
-            if (args == null || args.Length == 0 || string.IsNullOrWhiteSpace(args[0]))
+            if (string.IsNullOrWhiteSpace(fileName))
             {
                 Show("Usage: /lcdmod playaudio filename.wav", "Red");
                 return;
             }
 
-            var fileName = args[0].Trim();
+            fileName = fileName.Trim();
 
             if (!IsSafeFlatWaveFileName(fileName))
             {
@@ -91,15 +91,15 @@ namespace LcdMod.Client.Audio
             Show("Playing " + fileName + " (" + wave.DurationSeconds.ToString("0.00") + "s)");
         }
 
-        public void PlayGameAudioCommand(string[] args)
+        internal void PlayGameAudio(string subtype)
         {
-            if (args == null || args.Length == 0 || string.IsNullOrWhiteSpace(args[0]))
+            if (string.IsNullOrWhiteSpace(subtype))
             {
                 Show("Usage: /lcdmod playgameaudio sound-subtype", "Red");
                 return;
             }
 
-            string subtype = args[0].Trim();
+            subtype = subtype.Trim();
             MyAudioDefinition definition = FindSoundDefinition(subtype);
             if (definition == null)
             {

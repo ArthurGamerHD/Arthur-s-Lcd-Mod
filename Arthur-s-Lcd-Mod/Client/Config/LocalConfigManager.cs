@@ -33,13 +33,13 @@ namespace LcdMod.Client.Config
 
             try
             {
-                if (!MyAPIGateway.Utilities.FileExistsInLocalStorage(Constants.CONFIG_FILE, typeof(LocalConfigManager)))
+                if (!MyAPIGateway.Utilities.FileExistsInLocalStorage(LcdMod.Common.Helpers.Constants.CONFIG_FILE, typeof(LocalConfigManager)))
                 {
                     Config = new LcdModLocalConfig();
                 }
                 else
                 {
-                    using (var reader = MyAPIGateway.Utilities.ReadFileInLocalStorage(Constants.CONFIG_FILE, typeof(LocalConfigManager)))
+                    using (var reader = MyAPIGateway.Utilities.ReadFileInLocalStorage(LcdMod.Common.Helpers.Constants.CONFIG_FILE, typeof(LocalConfigManager)))
                     {
                         var xml = reader.ReadToEnd();
                         hadLegacyLocalTextures = ContainsLegacyLocalTextures(xml);
@@ -88,8 +88,16 @@ namespace LcdMod.Client.Config
 
         public static void Save()
         {
-            using (var writer = MyAPIGateway.Utilities.WriteFileInLocalStorage(Constants.CONFIG_FILE, typeof(LocalConfigManager)))
+            using (var writer = MyAPIGateway.Utilities.WriteFileInLocalStorage(LcdMod.Common.Helpers.Constants.CONFIG_FILE, typeof(LocalConfigManager)))
                 writer.Write(MyAPIGateway.Utilities.SerializeToXML(Config ?? new LcdModLocalConfig()));
+        }
+
+        internal static LcdModLocalConfig EnsureConfig()
+        {
+            if (Config == null)
+                Config = new LcdModLocalConfig();
+
+            return Config;
         }
 
         public static void SetTextureQuality(PlanetTextureQuality quality)
@@ -184,168 +192,18 @@ namespace LcdMod.Client.Config
                 throw;
             }
         }
-
-        public static void SetAdvancedTweakablesCommand(string[] args)
+        
+        public static bool ClearCompletedFtueTip(string tipId)
         {
-            bool enabled;
-            if (args == null || args.Length != 1 || !TryParseBoolean(args[0], out enabled))
-            {
-                MyAPIGateway.Utilities.ShowMessage("lcdMod", "Usage: /lcdmod advanced <true|false>");
-                return;
-            }
+            if (Config?.CompletedFtueTips == null || Config.CompletedFtueTips.Count == 0)
+                return false;
 
-            if (Config == null)
-                Config = new LcdModLocalConfig();
-
-            Config.AdvancedTweekables = enabled;
+            var completedTips = new HashSet<string>(Config.CompletedFtueTips, StringComparer.Ordinal);
+            if (!completedTips.Remove(tipId)) return false;
             Save();
-            LcdModSessionComponent.LastSelectedBlock?.RefreshTerminal();
-
-            MyAPIGateway.Utilities.ShowMessage(
-                "lcdMod",
-                "AdvancedTweekables mode " + (AdvancedTweakables ? "enabled." : "disabled."));
+            return true;
         }
 
-        public static void RenderUserGeneratedTextures(string[] args)
-        {
-            bool enabled;
-            if (!TryParseOptionalBoolean(args, RenderOtherUserTextures, out enabled))
-            {
-                MyAPIGateway.Utilities.ShowMessage("lcdMod", "Usage: /lcdmod renderusergeneratedtextures [true|false]");
-                return;
-            }
-
-            if (Config == null)
-                Config = new LcdModLocalConfig();
-
-            Config.RenderOtherUserTextures = enabled;
-            Save();
-
-            MyAPIGateway.Utilities.ShowMessage(
-                "lcdMod",
-                "Rendering textures owned by other users " + (RenderOtherUserTextures ? "enabled." : "disabled."));
-        }
-
-        public static void SetLegacyLocalTextureStorageCommand(string[] args)
-        {
-            bool enabled;
-            if (!TryParseOptionalBoolean(args, UseLegacyLocalTextureStorage, out enabled))
-            {
-                MyAPIGateway.Utilities.ShowMessage("lcdMod", "Usage: /lcdmod legacylocaltexturestorage [true|false]");
-                return;
-            }
-
-            if (Config == null)
-                Config = new LcdModLocalConfig();
-
-            if (Config.LocalTextures == null)
-                Config.LocalTextures = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-            Config.UseLegacyLocalTextureStorage = enabled;
-            TextureTransferHelper.UseLegacyLocalTextureStorage = enabled;
-
-            if (enabled)
-            {
-                TextureHelper.EnableLegacyLocalTextureStorage();
-            }
-            else
-            {
-                var legacyLocalTextures = new HashSet<string>(Config.LocalTextures, StringComparer.OrdinalIgnoreCase);
-                Config.LocalTextures = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                foreach (var localTexture in legacyLocalTextures)
-                    TextureHelper.MigrateLegacyLocalTexture(localTexture);
-            }
-
-            Save();
-
-            MyAPIGateway.Utilities.ShowMessage(
-                "lcdMod",
-                "Legacy local texture storage " + (UseLegacyLocalTextureStorage ? "enabled." : "disabled.") +
-                ". Restart the game if already loaded local textures do not refresh.");
-        }
-
-#if DEBUG
-        public static void SetDebugInteractiveCommand(string[] args)
-        {
-            bool enabled;
-            if (!TryParseOptionalBoolean(args, DebugInteractive, out enabled))
-            {
-                MyAPIGateway.Utilities.ShowMessage("lcdMod", "Usage: /lcdmod debuginteractive [true|false]");
-                return;
-            }
-
-            if (Config == null)
-                Config = new LcdModLocalConfig();
-
-            Config.DebugInteractive = enabled;
-            Save();
-
-            MyAPIGateway.Utilities.ShowMessage(
-                "lcdMod",
-                "DebugInteractive mode " + (DebugInteractive ? "enabled." : "disabled."));
-        }
-
-        public static void SetDebugSurfaceCommand(string[] args)
-        {
-            bool enabled;
-            if (!TryParseOptionalBoolean(args, DebugSurface, out enabled))
-            {
-                MyAPIGateway.Utilities.ShowMessage("lcdMod", "Usage: /lcdmod debugsurface [true|false]");
-                return;
-            }
-
-            if (Config == null)
-                Config = new LcdModLocalConfig();
-
-            Config.DebugSurface = enabled;
-            Save();
-
-            MyAPIGateway.Utilities.ShowMessage(
-                "lcdMod",
-                "DebugSurface mode " + (DebugSurface ? "enabled." : "disabled."));
-        }
-
-        public static void SetSpriteCountDebugCommand(string[] args)
-        {
-            bool enabled;
-            if (!TryParseOptionalBoolean(args, SpriteCountDebug, out enabled))
-            {
-                MyAPIGateway.Utilities.ShowMessage("lcdMod", "Usage: /lcdmod spritecountdebug [true|false]");
-                return;
-            }
-
-            if (Config == null)
-                Config = new LcdModLocalConfig();
-
-            Config.SpriteCountDebug = enabled;
-            Save();
-
-            MyAPIGateway.Utilities.ShowMessage(
-                "lcdMod",
-                "SpriteCountDebug mode " + (SpriteCountDebug ? "enabled." : "disabled."));
-        }
-
-        public static void SetVisibleClipCommand(string[] args)
-        {
-            bool enabled;
-            if (!TryParseOptionalBoolean(args, VisibleClip, out enabled))
-            {
-                MyAPIGateway.Utilities.ShowMessage("lcdMod", "Usage: /lcdmod visibleclip [true|false]");
-                return;
-            }
-
-            if (Config == null)
-                Config = new LcdModLocalConfig();
-
-            Config.VisibleClip = enabled;
-            Save();
-
-            MyAPIGateway.Utilities.ShowMessage(
-                "lcdMod",
-                "VisibleClip mode " + (VisibleClip ? "enabled." : "disabled."));
-        }
-#endif
         static bool ContainsLegacyLocalTextures(string xml)
         {
             return !string.IsNullOrWhiteSpace(xml) &&
@@ -360,38 +218,5 @@ namespace LcdMod.Client.Config
             return MyAPIGateway.Utilities.SerializeFromXML<LcdModLocalConfig>(xml) ?? new LcdModLocalConfig();
         }
 
-        static bool TryParseBoolean(string value, out bool result)
-        {
-            result = false;
-            if (string.IsNullOrWhiteSpace(value))
-                return false;
-
-            switch (value.Trim().ToLowerInvariant())
-            {
-                case "true":
-                case "on":
-                case "yes":
-                case "1":
-                    result = true;
-                    return true;
-                case "false":
-                case "off":
-                case "no":
-                case "0":
-                    result = false;
-                    return true;
-                default:
-                    return false;
-            }
-        }
-
-        static bool TryParseOptionalBoolean(string[] args, bool currentValue, out bool result)
-        {
-            result = !currentValue;
-            if (args == null || args.Length == 0)
-                return true;
-
-            return args.Length == 1 && TryParseBoolean(args[0], out result);
-        }
     }
 }

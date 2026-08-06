@@ -56,7 +56,7 @@ namespace LcdMod.Client.Audio
             public string ReportFileName;
         }
 
-        public void TestAllGameAudioCommand(string[] args)
+        internal void TestAllGameAudio()
         {
             if (_isRunning)
             {

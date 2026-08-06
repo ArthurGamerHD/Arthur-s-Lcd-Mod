@@ -36,7 +36,7 @@ namespace LcdMod.Client.Helpers
 
         static readonly HashSet<string> DeferredLocalTextureRegistrations =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        const long COLORFUL_ICONS_REPLY_CHANNEL = (Constants.WORKSHOP_ID << 8) | 1L;
+        const long COLORFUL_ICONS_REPLY_CHANNEL = (LcdMod.Common.Helpers.Constants.WORKSHOP_ID << 8) | 1L;
         static ColorfulIconsApiClient _colorfulIcons;
 
         sealed class TextureImportCandidate
@@ -577,29 +577,8 @@ namespace LcdMod.Client.Helpers
             return textureDefinition;
         }
 
-        public static void ImportLocalTexture(string[] obj)
-        {
-            if (obj.Length == 1)
-            {
-                var file = obj[0];
-                ImportTexture(file, true);
-            }
 #if DEBUG
-            else if (obj.Length == 2)
-            {
-                var id = obj[1];
-                var file = obj[0];
-                ForceLoadTexture(file, id);
-            }
-#endif
-            else
-            {
-                MyAPIGateway.Utilities.ShowNotification("Invalid argument");
-            }
-        }
-
-#if DEBUG
-        static void ForceLoadTexture(string path, string name)
+        internal static void ForceLoadTexture(string path, string name)
         {
             // fun fact, you can load
             // C:\Windows\Web\Wallpaper\Windows\img0.jpg
@@ -632,47 +611,6 @@ namespace LcdMod.Client.Helpers
             MyAPIGateway.Utilities.ShowNotification($"Force loaded texture {name} at {path}");
         }
 #endif
-
-        public static void RemoveLocalTexture(string[] obj)
-        {
-            if (obj.Length == 1)
-            {
-                var file = obj[0];
-                var baseName = Path.GetFileNameWithoutExtension(file);
-                var sourceFileName = file;
-                TextureTransferHelper.TextureMetadata metadata;
-                if (TextureTransferHelper.TryReadTextureMetadata(baseName, out metadata) &&
-                    metadata != null &&
-                    !string.IsNullOrWhiteSpace(metadata.SourceFileName))
-                {
-                    sourceFileName = metadata.SourceFileName;
-                }
-
-                var removed = false;
-                if (MyAPIGateway.Utilities.FileExistsInLocalStorage(sourceFileName, typeof(LcdModSessionComponent)))
-                {
-                    MyAPIGateway.Utilities.DeleteFileInLocalStorage(sourceFileName, typeof(LcdModSessionComponent));
-                    removed = true;
-                }
-
-                removed = TextureTransferHelper.TryRemoveLocalTextureFile(sourceFileName) || removed;
-                if (!removed)
-                {
-                    MyAPIGateway.Utilities.ShowNotification($"Texture {file} not loaded");
-                    return;
-                }
-
-                if (!string.IsNullOrEmpty(baseName))
-                    TextureTransferHelper.TryRemoveTextureMetadata(baseName);
-
-                MyAPIGateway.Utilities.ShowNotification(
-                    $"Texture {file} will not be loaded next time the game is restarted");
-            }
-            else
-            {
-                MyAPIGateway.Utilities.ShowNotification("Invalid argument");
-            }
-        }
 
         public static void MigrateLegacyLocalTexture(string id)
         {
@@ -1473,18 +1411,6 @@ namespace LcdMod.Client.Helpers
             return IsKnownTexture(TextureTransferHelper.BuildTextureKey(ownerId, normalizedTextureName));
         }
 
-        public static void ClearCacheCommand(string[] args)
-        {
-            var deletedFiles = TextureTransferHelper.ClearCachedTextures();
-
-            ClearRuntimeTextureState();
-
-            LoadLocalTextures();
-
-            LogHelper.LogInfo($"Cleared remote texture cache ({deletedFiles} files) and pending texture requests");
-            MyAPIGateway.Utilities.ShowMessage("lcdMod", "Remote texture cache cleared. Local images were kept.");
-        }
-
         public static void UnloadTextureCache()
         {
             var deletedFiles = TextureTransferHelper.ClearCachedTextures();
@@ -1492,7 +1418,7 @@ namespace LcdMod.Client.Helpers
             LogHelper.LogInfo($"Cleared remote texture cache on unload ({deletedFiles} files)");
         }
 
-        static void ClearRuntimeTextureState()
+        internal static void ClearRuntimeTextureState()
         {
             lock (PendingTextureLock)
                 PendingTextureRequests.Clear();
@@ -1646,9 +1572,9 @@ Before starting, a few notes:
 - Tested conversion parameters are '-nologo -y -f BC7_UNORM -pmalpha', but you can try other parameters if you want, as long as it is a valid .dds image
 - The mod will refuse to import texture filenames not ending with .dds or not having a valid dds header
 - Use simple texture filenames without special characters when possible to avoid issues
-- By default imported local DDS files are moved into {Constants.LOCAL_TEXTURES}; on Linux/Proton, run /lcdmod legacylocaltexturestorage true to keep loose DDS files in this Storage folder
+- By default imported local DDS files are moved into {LcdMod.Common.Helpers.Constants.LOCAL_TEXTURES}; on Linux/Proton, run /lcdmod legacylocaltexturestorage true to keep loose DDS files in this Storage folder
 - When replacing an existing texture, you need to restart the game
-- Images with dimension greater than {Constants.MAX_SYNC_TEXTURE_DIMENSION}x{Constants.MAX_SYNC_TEXTURE_DIMENSION} or size greater than {Constants.MAX_TEXTURE_BYTES/1000}kb
+- Images with dimension greater than {LcdMod.Common.Helpers.Constants.MAX_SYNC_TEXTURE_DIMENSION}x{LcdMod.Common.Helpers.Constants.MAX_SYNC_TEXTURE_DIMENSION} or size greater than {LcdMod.Common.Helpers.Constants.MAX_TEXTURE_BYTES/1000}kb
 will NOT be synced in multiplayer
 
 ============================

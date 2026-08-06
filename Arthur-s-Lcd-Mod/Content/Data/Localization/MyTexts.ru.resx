@@ -114,18 +114,6 @@
     <data name="LcdMod_PowerFilled" xml:space="preserve">
     <value>Заполненность энергией %</value>
   </data>
-    <data name="LcdMod_FactionColor_Usage" xml:space="preserve">
-    <value>Использование: /lcdmod factioncolor &lt;r g b | #rrggbb | #rgb | hsv h s v&gt;</value>
-  </data>
-    <data name="LcdMod_FactionColor_HsvFormat" xml:space="preserve">
-    <value>Формат HSV: hsv &lt;h&gt; &lt;s&gt; &lt;v&gt; (числа с плавающей точкой)</value>
-  </data>
-    <data name="LcdMod_FactionColor_HsvRange" xml:space="preserve">
-    <value>Значения HSV должны быть в диапазоне [0..1]. Оттенок также принимает [0..360].</value>
-  </data>
-    <data name="LcdMod_FactionColor_Invalid" xml:space="preserve">
-    <value>Недопустимый цвет. Используйте: 255 0 0 | #ff0000 | #f00 | hsv 0 1 1</value>
-  </data>
     <data name="LcdMod_FactionColor_NoFaction" xml:space="preserve">
     <value>Фракция локального игрока не найдена.</value>
   </data>
@@ -1233,5 +1221,182 @@
   </data>
   <data name="LcdMod_StarMap_JumpPointNameFormat" xml:space="preserve">
     <value>Точка прыжка: {0}</value>
+  </data>
+  <data name="LcdMod_ChatCommand_ImportLocalAudio_Summary" xml:space="preserve">
+    <value>Imports a local WAV file into the audio library.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_ImportAudios_Summary" xml:space="preserve">
+    <value>Imports the WAV files listed in audio_import.txt.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_PlayAudio_Summary" xml:space="preserve">
+    <value>Plays a local WAV file for the current player.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_PlayGameAudio_Summary" xml:space="preserve">
+    <value>Plays a game audio definition by subtype.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_StreamAudio_Summary" xml:space="preserve">
+    <value>Broadcasts an imported audio asset to LCD media players.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_TestAudio_Summary" xml:space="preserve">
+    <value>Tests referenced game audio files and writes a compatibility report.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_TestCartography_Summary" xml:space="preserve">
+    <value>Tests loaded planet cartography definitions and writes diagnostic archives.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_Advanced_Summary" xml:space="preserve">
+    <value>Enables or disables advanced terminal tweakables.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_RenderUserGeneratedTextures_Summary" xml:space="preserve">
+    <value>Enables, disables, or toggles rendering of textures owned by other users.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_LegacyLocalTextureStorage_Summary" xml:space="preserve">
+    <value>Enables, disables, or toggles legacy local texture storage.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_DebugInteractive_Summary" xml:space="preserve">
+    <value>Enables, disables, or toggles interactive control-boundary debugging.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_DebugSurface_Summary" xml:space="preserve">
+    <value>Enables, disables, or toggles debug surface mode.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_SpriteCountDebug_Summary" xml:space="preserve">
+    <value>Enables, disables, or toggles the sprite-count debug overlay.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_VisibleClip_Summary" xml:space="preserve">
+    <value>Enables, disables, or toggles visible clipping debug overlays.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_TextInput_Summary" xml:space="preserve">
+    <value>Opens a diagnostic text input dialog.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_Profile_Summary" xml:space="preserve">
+    <value>Profiles LCD app rendering for a specified duration or cancels the active profile.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_FactionColor_Summary" xml:space="preserve">
+    <value>Sets the local player's faction icon color.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_ResetFtue_Summary" xml:space="preserve">
+    <value>Resets completed first-time user experience tips.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_Help_Summary" xml:space="preserve">
+    <value>Shows the list of available chat commands.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_PreloadTextures_Summary" xml:space="preserve">
+    <value>Preloads block textures as LCD sprites.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_ImportLocalTexture_Summary" xml:space="preserve">
+    <value>Imports a local texture file.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_RemoveLocalTexture_Summary" xml:space="preserve">
+    <value>Removes a local texture so it is not loaded after restart.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_ImportTextures_Summary" xml:space="preserve">
+    <value>Imports the texture files listed in import.txt.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_ClearCache_Summary" xml:space="preserve">
+    <value>Clears cached remote textures while keeping local textures.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+
+  <data name="LcdMod_ChatCommand_Advanced_Enabled_Message" xml:space="preserve">
+    <value>Advanced tweakables mode enabled.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_Advanced_Disabled_Message" xml:space="preserve">
+    <value>Advanced tweakables mode disabled.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_RenderUserGeneratedTextures_Enabled_Message" xml:space="preserve">
+    <value>Rendering textures owned by other users enabled.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_RenderUserGeneratedTextures_Disabled_Message" xml:space="preserve">
+    <value>Rendering textures owned by other users disabled.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_LegacyLocalTextureStorage_Enabled_Message" xml:space="preserve">
+    <value>Legacy local texture storage enabled. Restart the game if already loaded local textures do not refresh.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_LegacyLocalTextureStorage_Disabled_Message" xml:space="preserve">
+    <value>Legacy local texture storage disabled. Restart the game if already loaded local textures do not refresh.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_DebugInteractive_Enabled_Message" xml:space="preserve">
+    <value>DebugInteractive mode enabled.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_DebugInteractive_Disabled_Message" xml:space="preserve">
+    <value>DebugInteractive mode disabled.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_DebugSurface_Enabled_Message" xml:space="preserve">
+    <value>DebugSurface mode enabled.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_DebugSurface_Disabled_Message" xml:space="preserve">
+    <value>DebugSurface mode disabled.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_SpriteCountDebug_Enabled_Message" xml:space="preserve">
+    <value>SpriteCountDebug mode enabled.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_SpriteCountDebug_Disabled_Message" xml:space="preserve">
+    <value>SpriteCountDebug mode disabled.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_VisibleClip_Enabled_Message" xml:space="preserve">
+    <value>VisibleClip mode enabled.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_VisibleClip_Disabled_Message" xml:space="preserve">
+    <value>VisibleClip mode disabled.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_ResetFtue_Cleared_Message_Format" xml:space="preserve">
+    <value>FTUE tip {0} cleared.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_ResetFtue_NotFound_Message_Format" xml:space="preserve">
+    <value>FTUE tip {0} was not found. Try:&#10;{1}</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_ResetFtue_NoneFound_Message" xml:space="preserve">
+    <value>No completed FTUE tips were found.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_ClearCache_Completed_Message" xml:space="preserve">
+    <value>Remote texture cache cleared. Local images were kept.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_Help_Title" xml:space="preserve">
+    <value>Available commands</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ChatCommand_Help_Subtitle" xml:space="preserve">
+    <value>List of all available chat commands</value>
+    <comment>TODO_TRANSLATION</comment>
   </data>
 </root>

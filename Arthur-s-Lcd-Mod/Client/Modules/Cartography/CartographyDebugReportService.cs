@@ -89,7 +89,7 @@ namespace LcdMod.Client.Modules.Cartography
             _cartography = cartography;
         }
 
-        public void Command(string[] args)
+        internal void RunCommand(string[] args)
         {
             if (_isRunning)
             {

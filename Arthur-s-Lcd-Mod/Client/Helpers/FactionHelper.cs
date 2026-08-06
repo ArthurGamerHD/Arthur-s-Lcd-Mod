@@ -1,12 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using LcdMod.Common.Networking;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.ModAPI;
 using VRageMath;
-using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.Helpers
 {
@@ -45,124 +40,5 @@ namespace LcdMod.Client.Helpers
         }
 
         public static Color GetIconColor(IMyTerminalBlock block) => block != null ? GetIconColor(GetOwnerFaction(block)) : DefaultColor;
-
-        public static void SetColor(string[] obj)
-        {
-            Vector3 factionColor;
-            string error;
-            if (!TryParseFactionColor(obj, out factionColor, out error))
-            {
-                MyAPIGateway.Utilities.ShowMessage("lcdMod", LocHelper.GetLoc(error));
-                return;
-            }
-
-            var faction = GetPlayerFaction(MyAPIGateway.Session.LocalHumanPlayer.IdentityId);
-            if (faction == null)
-            {
-                MyAPIGateway.Utilities.ShowMessage("lcdMod", LocHelper.GetLoc(MOD_PREFIX + "FactionColor_NoFaction"));
-                return;
-            }
-
-            var packet = new PacketEditFaction(
-                faction.FactionId,
-                faction.Tag,
-                faction.Name,
-                faction.Description,
-                faction.PrivateInfo,
-                faction.FactionIcon.ToString(),
-                faction.CustomColor, 
-                factionColor);
-            
-            if(MyAPIGateway.Session.IsServer)
-                Common.Helpers.FactionHelperCommon.EditFaction(packet);
-            else
-                LcdModSessionComponent.NetworkManager.TransmitToServer(packet, false);
-
-            MyAPIGateway.Utilities.ShowMessage("lcdMod", LocHelper.GetLoc(MOD_PREFIX + "FactionColor_Updated"));
-        }
-
-        static bool TryParseFactionColor(string[] args, out Vector3 factionColor, out string error)
-        {
-            factionColor = Vector3.Zero;
-            var tokens = NormalizeArgs(args);
-            if (tokens.Length == 0)
-            {
-                error = MOD_PREFIX + "FactionColor_Usage";
-                return false;
-            }
-
-            if (tokens.Length == 1 && Extensions.ColorExtensions.TryParseHexFactionColor(tokens[0], out factionColor))
-            {
-                error = null;
-                return true;
-            }
-
-            if (tokens.Length == 4 && tokens[0] == "hsv")
-            {
-                float h;
-                float s;
-                float v;
-                if (!float.TryParse(tokens[1], NumberStyles.Float, CultureInfo.InvariantCulture, out h) ||
-                    !float.TryParse(tokens[2], NumberStyles.Float, CultureInfo.InvariantCulture, out s) ||
-                    !float.TryParse(tokens[3], NumberStyles.Float, CultureInfo.InvariantCulture, out v))
-                {
-                    error = MOD_PREFIX + "FactionColor_HsvFormat";
-                    return false;
-                }
-
-                if (h > 1f && h <= 360f)
-                    h /= 360f;
-
-                if (h < 0f || h > 1f || s < 0f || s > 1f || v < 0f || v > 1f)
-                {
-                    error = MOD_PREFIX + "FactionColor_HsvRange";
-                    return false;
-                }
-
-                factionColor = MyColorPickerConstants.HSVToHSVOffset(new Vector3(h, s, v));
-                error = null;
-                return true;
-            }
-
-            if (tokens.Length == 3)
-            {
-                int r;
-                int g;
-                int b;
-                if (int.TryParse(tokens[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out r) &&
-                    int.TryParse(tokens[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out g) &&
-                    int.TryParse(tokens[2], NumberStyles.Integer, CultureInfo.InvariantCulture, out b) &&
-                    r >= 0 && r <= 255 &&
-                    g >= 0 && g <= 255 &&
-                    b >= 0 && b <= 255)
-                {
-                    factionColor = Extensions.ColorExtensions.ToFactionColor(new Color((byte)r, (byte)g, (byte)b));
-                    error = null;
-                    return true;
-                }
-            }
-
-            error = MOD_PREFIX + "FactionColor_Invalid";
-            return false;
-        }
-
-        static string[] NormalizeArgs(string[] args)
-        {
-            if (args == null || args.Length == 0)
-                return Array.Empty<string>();
-
-            var tokens = new List<string>();
-            for (int i = 0; i < args.Length; i++)
-            {
-                if (string.IsNullOrWhiteSpace(args[i]))
-                    continue;
-
-                var parts = args[i].Split(new[] { ' ', ',', ';', '|', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-                for (int j = 0; j < parts.Length; j++)
-                    tokens.Add(parts[j]);
-            }
-
-            return tokens.ToArray();
-        }
     }
 }

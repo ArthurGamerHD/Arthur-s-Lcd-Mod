@@ -79,7 +79,7 @@ namespace LcdMod.Client.Diagnostics
             get { return _captureTimer != null; }
         }
 
-        public void Command(string[] args)
+        internal void RunCommand(string[] args)
         {
             if (args != null && args.Length == 1 &&
                 string.Equals(args[0], "cancel", StringComparison.OrdinalIgnoreCase))

@@ -76,6 +76,16 @@ namespace LcdMod.Client
         public CartographyModule Cartography { get; private set; }
         public GridRoomEnvironmentClientModule RoomEnvironment { get; }
         internal FtueService Ftue { get; }
+        internal AudioPocService AudioPoc { get { return _audioPoc; } }
+        internal AudioImportService AudioImport { get { return _audioImport; } }
+        internal AudioBroadcastClientService AudioBroadcast { get { return _audioBroadcast; } }
+        internal GameAudioTestReportService AudioTestReport { get { return _audioTestReport; } }
+#if DEBUG
+        internal CartographyDebugReportService CartographyDebugReport { get { return _cartographyDebugReport; } }
+#endif
+#if EXPERIMENTAL
+        internal AppRunProfilerService AppRunProfiler { get { return _appRunProfiler; } }
+#endif
         public static event Action OnUpdateBeforeSimulation;
 
         public void LoadData()
@@ -84,41 +94,6 @@ namespace LcdMod.Client
             _session.RegisterModules();
             PowerData = new PowerDataModule();
             RunNextFrame.Add(TextureHelper.InitializeColorfulIconsApi);
-
-            var group = CommandManager.GetOrCreateGroup("/lcdMod", new CmdGroupInitializer(7));
-            group.TryAdd("FactionColor", FactionHelper.SetColor);
-            group.TryAdd("Advanced", LocalConfigManager.SetAdvancedTweakablesCommand, 1);
-            group.TryAdd("RenderUserGeneratedTextures", LocalConfigManager.RenderUserGeneratedTextures);
-            group.TryAdd("LegacyLocalTextureStorage", LocalConfigManager.SetLegacyLocalTextureStorageCommand);
-            group.TryAdd("PreloadTextures", _ => TextureHelper.PreloadAllTextures());
-            group.TryAdd("ClearCache", TextureHelper.ClearCacheCommand);
-            group.TryAdd("ResetFtue", Ftue.ResetCommand);
-            group.TryAdd("ImportTextures", _ => TextureHelper.Import(true));
-            group.TryAdd("RemoveLocalTexture", TextureHelper.RemoveLocalTexture);
-            group.TryAdd("ImportLocalTexture", TextureHelper.ImportLocalTexture);
-            group.TryAdd("PlayAudio", _audioPoc.PlayAudioCommand, 1);
-            group.TryAdd("PlayGameAudio", _audioPoc.PlayGameAudioCommand, 1);
-            group.TryAdd("ImportLocalAudio", _audioImport.ImportLocalAudioCommand, 1);
-            group.TryAdd("ImportAudios", _audioImport.ImportAudiosCommand);
-            group.TryAdd("StreamAudio", _audioBroadcast.StreamAudioCommand, 1);
-            group.TryAdd("TestAudio", _audioTestReport.TestAllGameAudioCommand);
-            group.TryAdd("TestGameAudio", _audioTestReport.TestAllGameAudioCommand);
-#if EXPERIMENTAL
-            group.TryAdd("Profile", _appRunProfiler.Command);
-#endif
-#if DEBUG
-            group.TryAdd("TestCartography", _cartographyDebugReport.Command);
-#endif
-#if DEBUG
-            group.TryAdd("DebugInteractive", LocalConfigManager.SetDebugInteractiveCommand);
-            group.TryAdd("DebugSurface", LocalConfigManager.SetDebugSurfaceCommand);
-            group.TryAdd("SpriteCountDebug", LocalConfigManager.SetSpriteCountDebugCommand);
-            group.TryAdd("VisibleClip", LocalConfigManager.SetVisibleClipCommand);
-            group.TryAdd("TextInput",
-                strings => TextInputHelper.SpawnForLocalPlayer(strings.FirstOrDefault(),
-                    s => MyAPIGateway.Utilities.ShowNotification("User typed: " + s), "Hello World!",
-                    strings.Length > 1 ? strings[1] : string.Empty));
-#endif
 
             DebuggerHelper.Break();
             MyAPIGateway.Entities.OnEntityAdd += EntityAdded;

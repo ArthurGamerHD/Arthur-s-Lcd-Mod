@@ -28,6 +28,7 @@ namespace LcdMod.Client.Helpers
         static TextInputModel _clientTextInput;
 
         static Action<string> _currentCallback;
+        static bool _currentReadonly;
 
         static string _currentTitle = string.Empty;
         static string _currentSubTitle = string.Empty;
@@ -37,12 +38,14 @@ namespace LcdMod.Client.Helpers
             string title,
             Action<string> callback,
             string initialText = "",
-            string subtitle = "")
+            string subtitle = "",
+            bool @readonly = false)
         {
             _currentTitle = title;
             _currentSubTitle = subtitle;
             _initialText = initialText ?? string.Empty;
             _currentCallback = callback;
+            _currentReadonly = @readonly;
             
             _clientTextInput?.Close();
 
@@ -92,7 +95,7 @@ namespace LcdMod.Client.Helpers
             if (_clientTextInput?.Cockpit == null || _clientTextInput.Lcd == null)
                 return;
             
-            _clientTextInput.Cockpit.OpenWindow(true, false, true);
+            _clientTextInput.Cockpit.OpenWindow(!_currentReadonly, false, true);
             LcdModClientComponent.RunNextFrame.Add(CheckIfIsOpened);
         }
 

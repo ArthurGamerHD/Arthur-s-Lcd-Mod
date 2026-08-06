@@ -65,14 +65,8 @@ namespace LcdMod.Client.Ftue
             FtueTipSlotScheduler.Clear();
         }
 
-        public void ResetCommand(string[] args)
+        internal void ResetCommand()
         {
-            if (args != null && args.Length > 0)
-            {
-                MyAPIGateway.Utilities.ShowMessage("lcdMod", "Usage: /lcdmod resetftue");
-                return;
-            }
-
             try
             {
                 int cleared = Reset();

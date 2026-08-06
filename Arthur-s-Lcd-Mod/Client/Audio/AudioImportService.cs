@@ -12,18 +12,18 @@ namespace LcdMod.Client.Audio
         const string AUDIO_IMPORT_LIST_FILE = "audio_import.txt";
         const int MAX_SOURCE_WAVE_BYTES = 64 * 1024 * 1024;
 
-        public void ImportLocalAudioCommand(string[] args)
+        internal void ImportLocalAudio(string sourcePath)
         {
-            if (args == null || args.Length == 0 || string.IsNullOrWhiteSpace(args[0]))
+            if (string.IsNullOrWhiteSpace(sourcePath))
             {
                 Show("Usage: /lcdmod importlocalaudio filename.wav", "Red");
                 return;
             }
 
-            ImportAudio(args[0].Trim(), GetLocalOwnerSteamId(), true);
+            ImportAudio(sourcePath.Trim(), GetLocalOwnerSteamId(), true);
         }
 
-        public void ImportAudiosCommand(string[] args)
+        internal void ImportAudios()
         {
             var utilities = MyAPIGateway.Utilities;
             if (utilities == null)
