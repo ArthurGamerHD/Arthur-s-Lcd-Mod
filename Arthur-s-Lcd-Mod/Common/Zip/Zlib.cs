@@ -82,6 +82,208 @@ namespace LcdMod.Common.Zip
         static readonly HuffmanTree<int> FixedDistanceTree =
             CreateFixedDistanceTree();
 
+        /// <summary>
+        /// Decodes a gzip member containing a DEFLATE stream.
+        /// Supports the standard optional gzip header fields and validates
+        /// both CRC-32 and ISIZE from the trailer.
+        /// </summary>
+        public static byte[] InflateGzip(byte[] gzipData)
+        {
+            if (gzipData == null)
+                throw new ArgumentNullException(nameof(gzipData));
+
+            if (gzipData.Length < 18)
+                throw new InvalidDataException("Truncated gzip stream.");
+
+            int position = 0;
+
+            if (gzipData[position++] != 0x1F || gzipData[position++] != 0x8B)
+                throw new InvalidDataException("Invalid gzip signature.");
+
+            int compressionMethod = gzipData[position++];
+            if (compressionMethod != 8)
+                throw new NotSupportedException("The gzip stream does not use DEFLATE compression.");
+
+            int flags = gzipData[position++];
+            if ((flags & 0xE0) != 0)
+                throw new InvalidDataException("Invalid gzip reserved flags.");
+
+            // MTIME(4), XFL(1), OS(1)
+            position += 6;
+
+            const int FlagHeaderCrc = 0x02;
+            const int FlagExtra = 0x04;
+            const int FlagName = 0x08;
+            const int FlagComment = 0x10;
+
+            if ((flags & FlagExtra) != 0)
+            {
+                EnsureGzipBytesAvailable(gzipData, position, 2, 8);
+                int extraLength = gzipData[position] | (gzipData[position + 1] << 8);
+                position += 2;
+                EnsureGzipBytesAvailable(gzipData, position, extraLength, 8);
+                position += extraLength;
+            }
+
+            if ((flags & FlagName) != 0)
+                SkipGzipZeroTerminatedField(gzipData, ref position);
+
+            if ((flags & FlagComment) != 0)
+                SkipGzipZeroTerminatedField(gzipData, ref position);
+
+            if ((flags & FlagHeaderCrc) != 0)
+            {
+                EnsureGzipBytesAvailable(gzipData, position, 2, 8);
+                position += 2;
+            }
+
+            int trailerOffset = gzipData.Length - 8;
+            if (position > trailerOffset)
+                throw new InvalidDataException("Truncated gzip DEFLATE payload.");
+
+            uint expectedCrc = ReadUInt32LittleEndian(gzipData, trailerOffset);
+            uint expectedSize = ReadUInt32LittleEndian(gzipData, trailerOffset + 4);
+
+            if (expectedSize > int.MaxValue)
+                throw new NotSupportedException("gzip output larger than 2 GiB is not supported.");
+
+            byte[] output = InflateRawDeflate(
+                gzipData,
+                position,
+                trailerOffset - position,
+                (int)expectedSize);
+
+            uint actualCrc = ComputeCrc32(output, output.Length);
+            if (expectedCrc != actualCrc)
+                throw new InvalidDataException("gzip CRC-32 check failed.");
+
+            return output;
+        }
+
+        /// <summary>
+        /// Encodes data as a valid gzip member using DEFLATE stored blocks.
+        /// This intentionally performs no compression. It exists for
+        /// whitelist-safe environments where System.IO.Compression is not
+        /// available and correctness is more important than output size.
+        /// </summary>
+        public static byte[] DeflateGzipStored(byte[] data)
+        {
+            if (data == null)
+                throw new ArgumentNullException(nameof(data));
+
+            // Worst case: one five-byte stored-block header per 65535 bytes,
+            // plus the ten-byte gzip header and eight-byte trailer.
+            int blockCount = Math.Max(1, (data.Length + 65534) / 65535);
+            int capacity = checked(data.Length + blockCount * 5 + 18);
+
+            byte[] output = new byte[capacity];
+            int position = 0;
+
+            // ID1, ID2, CM=DEFLATE, FLG=0
+            output[position++] = 0x1F;
+            output[position++] = 0x8B;
+            output[position++] = 8;
+            output[position++] = 0;
+
+            // MTIME = 0
+            output[position++] = 0;
+            output[position++] = 0;
+            output[position++] = 0;
+            output[position++] = 0;
+
+            // XFL = 0, OS = unknown
+            output[position++] = 0;
+            output[position++] = 255;
+
+            int inputPosition = 0;
+
+            if (data.Length == 0)
+            {
+                WriteStoredDeflateBlock(output, ref position, data, 0, 0, true);
+            }
+            else
+            {
+                while (inputPosition < data.Length)
+                {
+                    int count = Math.Min(65535, data.Length - inputPosition);
+                    bool final = inputPosition + count == data.Length;
+
+                    WriteStoredDeflateBlock(
+                        output,
+                        ref position,
+                        data,
+                        inputPosition,
+                        count,
+                        final);
+
+                    inputPosition += count;
+                }
+            }
+
+            uint crc = ComputeCrc32(data, data.Length);
+            WriteUInt32LittleEndian(output, ref position, crc);
+            WriteUInt32LittleEndian(output, ref position, unchecked((uint)data.Length));
+
+            if (position != output.Length)
+                throw new InvalidDataException("Internal gzip encoder length mismatch.");
+
+            return output;
+        }
+
+        static void WriteStoredDeflateBlock(
+            byte[] output,
+            ref int position,
+            byte[] input,
+            int inputOffset,
+            int count,
+            bool final)
+        {
+            // At a byte boundary, BFINAL occupies bit 0 and BTYPE=00 the next
+            // two bits. Remaining bits in this byte are padding to the stored
+            // block byte boundary.
+            output[position++] = final ? (byte)0x01 : (byte)0x00;
+
+            ushort length = (ushort)count;
+            ushort complement = (ushort)~length;
+
+            output[position++] = (byte)length;
+            output[position++] = (byte)(length >> 8);
+            output[position++] = (byte)complement;
+            output[position++] = (byte)(complement >> 8);
+
+            if (count > 0)
+            {
+                Buffer.BlockCopy(input, inputOffset, output, position, count);
+                position += count;
+            }
+        }
+
+        static void EnsureGzipBytesAvailable(
+            byte[] data,
+            int position,
+            int count,
+            int requiredTrailerBytes)
+        {
+            if (count < 0 || position < 0 ||
+                position > data.Length - requiredTrailerBytes - count)
+            {
+                throw new InvalidDataException("Truncated gzip header.");
+            }
+        }
+
+        static void SkipGzipZeroTerminatedField(byte[] data, ref int position)
+        {
+            int trailerOffset = data.Length - 8;
+
+            while (position < trailerOffset)
+            {
+                if (data[position++] == 0)
+                    return;
+            }
+
+            throw new InvalidDataException("Unterminated gzip header field.");
+        }
+
         public static byte[] Inflate(byte[] zlibData, int expectedOutputSize)
         {
             if (zlibData == null)
@@ -351,6 +553,40 @@ namespace LcdMod.Common.Zip
             }
 
             return (b << 16) | a;
+        }
+
+        static uint ComputeCrc32(byte[] data, int count)
+        {
+            uint crc = 0xFFFFFFFFu;
+
+            for (int i = 0; i < count; i++)
+            {
+                crc ^= data[i];
+
+                for (int bit = 0; bit < 8; bit++)
+                {
+                    uint mask = (uint)-(int)(crc & 1u);
+                    crc = (crc >> 1) ^ (0xEDB88320u & mask);
+                }
+            }
+
+            return ~crc;
+        }
+
+        static uint ReadUInt32LittleEndian(byte[] data, int offset)
+        {
+            return data[offset] |
+                   ((uint)data[offset + 1] << 8) |
+                   ((uint)data[offset + 2] << 16) |
+                   ((uint)data[offset + 3] << 24);
+        }
+
+        static void WriteUInt32LittleEndian(byte[] data, ref int offset, uint value)
+        {
+            data[offset++] = (byte)value;
+            data[offset++] = (byte)(value >> 8);
+            data[offset++] = (byte)(value >> 16);
+            data[offset++] = (byte)(value >> 24);
         }
 
         static uint ReadUInt32BigEndian(byte[] data, int offset)
