@@ -225,6 +225,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
 
                 item.BorderRadiusPixels = BorderRadiusPixels;
                 item.Padding = Padding;
+                item.SetClass(itemModel.Selected
+                    ? "ControlBase Button Row Selected"
+                    : "ControlBase Button Row");
 
                 if (!ReferenceEquals(item.Parent, _scrollPanel))
                     _scrollPanel.AddChild(item);

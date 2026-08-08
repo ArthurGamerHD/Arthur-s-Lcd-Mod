@@ -1,4 +1,5 @@
 using System;
+using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Gui.Tooltip;
 using VRageMath;
 

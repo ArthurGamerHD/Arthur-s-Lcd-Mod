@@ -1,4 +1,6 @@
 using LcdMod.Client.Gui.ControlsTemplates;
+using LcdMod.Client.Gui.ControlsTemplates.Basic;
+using LcdMod.Client.Gui.ControlsTemplates.Inputs;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using VRageMath;
 
@@ -46,6 +48,14 @@ namespace LcdMod.Client.Gui.Styling.Styles
             styles.For<Border>()
                 .Set(ControlTemplate.BackgroundColorProperty, ThemeResources.AccentContainerColor)
                 .Set(ControlTemplate.BorderThicknessPixelsProperty, 0);
+
+            styles.For<NumericUpDown>()
+                .ClassSelector("Compact")
+                .Set(NumericUpDown.CompactProperty, true);
+
+            styles.For<ComboBoxBase>()
+                .ClassSelector("Compact")
+                .Set(ComboBoxBase.FullScreenProperty, true);
 
             control.ClassSelector("Menu")
                 .Set(ControlTemplate.BackgroundColorProperty, ThemeResources.AccentColor)

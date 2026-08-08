@@ -6,6 +6,7 @@ using System.Linq;
 using System.Xml.Serialization;
 using ProtoBuf;
 using Generated;
+using LcdMod.Common.Layout;
 using VRage.Game.ModAPI;
 using VRageMath;
 using static LcdMod.Common.Helpers.Constants;
@@ -371,6 +372,7 @@ namespace LcdMod.Common.Config.Components
             "TitleSwitch",
             "BlockPropertyTitle_TextPanelPublicTitle",
             Slot = GENERAL,
+            MinimumHeightToWidthRatio = MIN_SCREEN_HEIGHT_TO_WIDTH_RATIO,
             TitleSuffix = "RadialMenuAction_Hud_Visible")]
         public bool TitleVisible { get; set; } = true;
         [ProtoMember(2)] public float InternalScale { get; set; } = 1f;
@@ -845,7 +847,18 @@ Click [color:#0000FF]""[loc]BlockPropertyTitle_TextPanelShowTextPanel[/loc]""[/c
     public sealed class ButtonPanelConfigComponent : ConfigComponent
     {
         [ProtoMember(1)] public bool HideEmpty { get; set; }
-        public override ConfigComponent Clone() => new ButtonPanelConfigComponent { HideEmpty = HideEmpty };
+        [ProtoMember(2)] public int ButtonCount { get; set; } = ButtonPanelLayout.DefaultButtonCount;
+        [ProtoMember(3)] public int ButtonStyle { get; set; } = (int)ButtonPanelStyle.Default;
+
+        public override ConfigComponent Clone()
+        {
+            return new ButtonPanelConfigComponent
+            {
+                HideEmpty = HideEmpty,
+                ButtonCount = ButtonCount,
+                ButtonStyle = ButtonStyle
+            };
+        }
     }
 
     [ProtoContract]

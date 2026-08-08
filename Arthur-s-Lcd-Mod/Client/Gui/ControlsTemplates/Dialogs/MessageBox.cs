@@ -82,8 +82,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var layout = MeasureLayout(viewBox, scale, fontScale, surface);
             RegisterDialogCard(layout.CardRect);
 
-            ConfigureSurfaceControls(viewBox, layout.CardRect, cardColor, shadowColor);
-            ConfigureTextControls(cardTextColor, shadowColor);
+            ConfigureSurfaceControls(viewBox, layout.CardRect, cardColor, shadowColor, layout.Compact);
+            ConfigureTextControls(cardTextColor, shadowColor, layout);
             ConfigureButton(_button1Control, _button1);
             ConfigureButton(_button2Control, _button2);
             _button2Control.SetVisible(layout.ShowButton2);
@@ -162,18 +162,19 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             float fontScale,
             Sandbox.ModAPI.Ingame.IMyTextSurface surface)
         {
+            var compact = IsTinyDialogAspectRatio(viewBox);
             var titleScale = 0.82f * scale * fontScale;
             var contentScale = 0.58f * scale * fontScale;
             var buttonScale = 0.58f * scale * fontScale;
-            var padding = new Vector2(18f, 14f) * scale;
-            var spacing = 10f * scale;
-            var buttonSpacing = 10f * scale;
+            var padding = GetDialogPadding(viewBox, scale);
+            var spacing = GetDialogSpacing(viewBox, scale);
+            var buttonSpacing = GetDialogSpacing(viewBox, scale);
             var buttonHeight = Math.Max(24f * scale, MeasureLineHeight(buttonScale, surface) + 10f * scale);
             var minButtonWidth = 78f * scale;
 
             var titleSize = MeasureText(_title, titleScale, surface);
             var closeSize = GetDialogCloseButtonSize(scale);
-            var headerHeight = Math.Max(titleSize.Y, closeSize.Y);
+            var headerHeight = compact ? 0f : Math.Max(titleSize.Y, closeSize.Y);
             var contentLines = SplitLines(_content);
             var lineStep = MeasureLineHeight(contentScale, surface) + 2f * scale;
             var maxContentWidth = MeasureWidestLine(contentLines, contentScale, surface);
@@ -190,7 +191,51 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var button2Width = showButton2 ? Math.Max(minButtonWidth, button2Size.X + 28f * scale) : 0f;
             var buttonsWidth = showButton2 ? button1Width + buttonSpacing + button2Width : button1Width;
 
-            var maxCardWidth = Math.Max(1f, viewBox.Width - padding.X * 2f);
+            if (compact)
+            {
+                var compactCardRect = GetDialogCardRect(viewBox, scale, 1f, 1f, 240f, 80f);
+                var compactContentRect = GetDialogContentRect(compactCardRect, viewBox, scale, padding);
+                var compactButtonWidth = Math.Min(
+                    Math.Max(minButtonWidth, Math.Max(button1Size.X, button2Size.X) + 22f * scale),
+                    Math.Max(1f, compactContentRect.Width * (showButton2 ? 0.20f : 0.26f)));
+                button1Width = compactButtonWidth;
+                button2Width = showButton2 ? compactButtonWidth : 0f;
+                buttonsWidth = showButton2 ? button1Width + buttonSpacing + button2Width : button1Width;
+
+                var bodyWidth = Math.Max(1f, compactContentRect.Width - buttonsWidth - spacing);
+                iconSize = hasIcon ? Math.Min(iconSize, Math.Min(compactContentRect.Height, bodyWidth * 0.24f)) : 0f;
+                hasIcon = hasIcon && iconSize >= 14f * scale && bodyWidth > iconSize + iconGap + 24f * scale;
+                if (!hasIcon)
+                {
+                    iconSize = 0f;
+                    iconGap = 0f;
+                }
+
+                var compactContentTextWidth = Math.Max(1f, bodyWidth - iconSize - iconGap);
+                return new MessageBoxLayout
+                {
+                    Button1Width = button1Width,
+                    Button2Width = button2Width,
+                    ButtonHeight = Math.Max(1f, compactContentRect.Height),
+                    ButtonSpacing = buttonSpacing,
+                    CardRect = compactCardRect,
+                    Compact = true,
+                    CompactContentRect = compactContentRect,
+                    ContentBlockHeight = Math.Max(1f, compactContentRect.Height),
+                    ContentBlockWidth = bodyWidth,
+                    ContentTextWidth = compactContentTextWidth,
+                    HasIcon = hasIcon,
+                    HeaderHeight = 0f,
+                    IconSize = iconSize,
+                    IconGap = iconGap,
+                    Padding = padding,
+                    ShadowOffset = 2f * titleScale,
+                    ShowButton2 = showButton2,
+                    Spacing = spacing
+                };
+            }
+
+            var maxCardWidth = Math.Max(1f, viewBox.Width - GetDialogOuterPadding(viewBox, scale) * 2f);
             var cardWidth = Math.Max(240f * scale,
                 Math.Max(titleSize.X, Math.Max(naturalContentBlockWidth, buttonsWidth)) + padding.X * 2f);
             cardWidth = Math.Min(cardWidth, maxCardWidth);
@@ -205,7 +250,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var contentTextHeight = Math.Max(lineStep, lineStep * contentLineCount);
             var contentBlockWidth = contentTextWidth + iconSize + iconGap;
             var desiredContentBlockHeight = Math.Max(contentTextHeight, iconSize);
-            var maxCardHeight = Math.Max(1f, viewBox.Height - padding.Y * 2f);
+            var maxCardHeight = Math.Max(1f, viewBox.Height - GetDialogOuterPadding(viewBox, scale) * 2f);
             var desiredCardHeight = padding.Y * 2f + headerHeight + spacing + desiredContentBlockHeight + spacing + buttonHeight;
             var cardHeight = Math.Min(desiredCardHeight, maxCardHeight);
             var maxContentBlockHeight = Math.Max(1f,
@@ -226,6 +271,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 ButtonHeight = buttonHeight,
                 ButtonSpacing = buttonSpacing,
                 CardRect = cardRect,
+                Compact = false,
                 ContentBlockHeight = contentBlockHeight,
                 ContentBlockWidth = contentBlockWidth,
                 ContentTextWidth = contentTextWidth,
@@ -240,7 +286,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             };
         }
 
-        void ConfigureSurfaceControls(RectangleF viewBox, RectangleF cardRect, Color cardColor, Color shadowColor)
+        void ConfigureSurfaceControls(RectangleF viewBox, RectangleF cardRect, Color cardColor, Color shadowColor,
+            bool compact)
         {
             _overlayControl.SetRect(viewBox);
             _overlayControl.BackgroundColor = new Color(0, 0, 0, 128);
@@ -252,26 +299,28 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _shadowControl.BackgroundColor = shadowColor;
             _shadowControl.BorderRadiusPixels = BorderRenderer.DEFAULT_RADIUS_PIXELS;
             _shadowControl.BorderThicknessPixels = 0f;
-            _shadowControl.SetVisible(true);
+            _shadowControl.SetVisible(!compact);
 
             _cardBackgroundControl.SetRect(cardRect);
             _cardBackgroundControl.BackgroundColor = cardColor;
-            _cardBackgroundControl.BorderRadiusPixels = BorderRenderer.DEFAULT_RADIUS_PIXELS;
+            _cardBackgroundControl.BorderRadiusPixels = compact ? 0f : BorderRenderer.DEFAULT_RADIUS_PIXELS;
             _cardBackgroundControl.BorderThicknessPixels = 0f;
             _cardBackgroundControl.SetVisible(true);
         }
 
-        void ConfigureTextControls(Color cardTextColor, Color shadowColor)
+        void ConfigureTextControls(Color cardTextColor, Color shadowColor, MessageBoxLayout layout)
         {
+            var compact = layout != null && layout.Compact;
+
             _titleShadowControl.Text = _title;
             _titleShadowControl.FontId = TextFont;
             _titleShadowControl.TextColor = shadowColor;
-            _titleShadowControl.SetVisible(!string.IsNullOrEmpty(_title));
+            _titleShadowControl.SetVisible(!compact && !string.IsNullOrEmpty(_title));
 
             _titleControl.Text = _title;
             _titleControl.FontId = TextFont;
             _titleControl.TextColor = cardTextColor;
-            _titleControl.SetVisible(true);
+            _titleControl.SetVisible(!compact && !string.IsNullOrEmpty(_title));
 
             _contentControl.Text = _content;
             _contentControl.FontId = TextFont;
@@ -280,7 +329,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
             _iconControl.SpriteName = _icon;
             _iconControl.Tint = cardTextColor;
-            _iconControl.SetVisible(!string.IsNullOrEmpty(_icon));
+            _iconControl.SetVisible(layout != null && layout.HasIcon);
         }
 
         float MeasureWidestLine(string[] lines, float textScale, Sandbox.ModAPI.Ingame.IMyTextSurface surface)
@@ -413,6 +462,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             public float Button2Width;
             public float ButtonHeight;
             public float ButtonSpacing;
+            public bool Compact;
+            public RectangleF CompactContentRect;
             public bool ShowButton2;
             public float ShadowOffset;
         }
@@ -464,6 +515,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                     return;
 
                 var rect = Bounds;
+                if (layout.Compact)
+                {
+                    ArrangeCompactChildren(layout);
+                    return;
+                }
+
                 var contentWidth = Math.Max(1f, rect.Width - layout.Padding.X * 2f);
                 var currentY = rect.Y + layout.Padding.Y;
                 var titleRect = new RectangleF(
@@ -508,6 +565,50 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 _button2.Arrange(layout.ShowButton2
                     ? new RectangleF(buttonsStartX + layout.Button1Width + layout.ButtonSpacing, currentY, layout.Button2Width, layout.ButtonHeight)
                     : default(RectangleF));
+            }
+
+            void ArrangeCompactChildren(MessageBoxLayout layout)
+            {
+                _titleShadow.Arrange(default(RectangleF));
+                _title.Arrange(default(RectangleF));
+
+                var contentRect = layout.CompactContentRect;
+                var buttonsWidth = layout.ShowButton2
+                    ? layout.Button1Width + layout.ButtonSpacing + layout.Button2Width
+                    : layout.Button1Width;
+                var buttonsStartX = contentRect.Right - buttonsWidth;
+                _button1.Arrange(new RectangleF(buttonsStartX, contentRect.Y, layout.Button1Width, contentRect.Height));
+                _button2.Arrange(layout.ShowButton2
+                    ? new RectangleF(buttonsStartX + layout.Button1Width + layout.ButtonSpacing, contentRect.Y, layout.Button2Width, contentRect.Height)
+                    : default(RectangleF));
+
+                var bodyRight = buttonsStartX - layout.Spacing;
+                var bodyRect = new RectangleF(
+                    contentRect.X,
+                    contentRect.Y,
+                    Math.Max(1f, bodyRight - contentRect.X),
+                    contentRect.Height);
+
+                var iconSize = layout.HasIcon ? Math.Min(layout.IconSize, bodyRect.Height) : 0f;
+                if (layout.HasIcon && iconSize > 0f)
+                {
+                    _icon.Arrange(new RectangleF(
+                        bodyRect.X,
+                        bodyRect.Center.Y - iconSize * 0.5f,
+                        iconSize,
+                        iconSize));
+                }
+                else
+                {
+                    _icon.Arrange(default(RectangleF));
+                }
+
+                var textX = bodyRect.X + (layout.HasIcon ? iconSize + layout.IconGap : 0f);
+                _content.Arrange(new RectangleF(
+                    textX,
+                    bodyRect.Y,
+                    Math.Max(1f, bodyRect.Right - textX),
+                    Math.Max(1f, bodyRect.Height)));
             }
         }
 

@@ -19,6 +19,8 @@ using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
 using LabelSeparator = LcdMod.Client.Terminal.Controls.Filter.LabelSeparator;
 using SeparatorFilter = LcdMod.Client.Terminal.Controls.Filter.SeparatorFilter;
 using CheckboxHideEmpty = LcdMod.Client.Terminal.Controls.Generic.CheckboxHideEmpty;
+using ComboboxButtonStyle = LcdMod.Client.Terminal.Controls.Generic.ComboboxButtonStyle;
+using SliderButtonCount = LcdMod.Client.Terminal.Controls.Generic.SliderButtonCount;
 using SwitchToggleLines = LcdMod.Client.Terminal.Controls.Generic.SwitchToggleLines;
 
 using LcdMod.Common.Config.Generation;
@@ -31,6 +33,8 @@ namespace LcdMod.Client.SurfaceScripts
 #endif
     public partial class ButtonPad : InteractiveSurfaceScript,
         IUsesTerminalControl<SwitchToggleLines>,
+        IUsesTerminalControl<SliderButtonCount>,
+        IUsesTerminalControl<ComboboxButtonStyle>,
         IUsesTerminalControl<CheckboxHideEmpty>,
         IUsesTerminalControl<SeparatorFilter>,
         IUsesTerminalControl<LabelSeparator>,

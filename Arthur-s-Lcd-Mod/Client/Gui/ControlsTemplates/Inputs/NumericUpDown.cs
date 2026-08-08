@@ -1,4 +1,5 @@
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
+using LcdMod.Client.Gui.Styling;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
@@ -8,6 +9,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Inputs
 {
     public sealed class NumericUpDown : RectangleControl
     {
+        public static readonly StyleProperty<bool> CompactProperty =
+            StyleProperty.Register<NumericUpDown, bool>("Compact", false);
         static readonly float[] ColumnWidths = { 0.16f, 0.68f, 0.16f };
         static readonly Vector4 ButtonPadding = new Vector4(0.05f, 0.05f, 0.05f, 0.05f);
 
@@ -43,8 +46,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Inputs
             _grid.SetRect(bounds);
         }
 
+        // Compact layout is selected by the Compact style class. It keeps the
+        // numeric field usable on narrow/tiny dialogs without step buttons.
         protected override void RenderDefault(List<MySprite> sprites)
         {
+            var compact = ResolveStyleValue(CompactProperty);
+            _grid.SetColumns(compact ? new[] { 1f } : ColumnWidths);
+            _buttons[0].SetVisible(!compact);
+            _buttons[1].SetVisible(!compact);
             ConfigureChildModels();
             _grid.Render(sprites);
         }

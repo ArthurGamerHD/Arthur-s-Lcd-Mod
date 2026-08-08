@@ -140,10 +140,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             EnsureContainer(viewBox);
             ContainerControl.ClearChildren();
             EnsureInitialized();
+            var compact = IsTinyDialogAspectRatio(viewBox);
             var layoutScale = scale * fontScale;
-            var padding = new Vector2(18f * scale, 14f * scale);
-            var spacing = 10f * scale;
-            var smallSpacing = 6f * scale;
+            var padding = GetDialogPadding(viewBox, scale);
+            var spacing = GetDialogSpacing(viewBox, scale);
+            var smallSpacing = GetDialogSpacing(viewBox, scale, 6f, 3f);
             var titleScale = 0.82f * layoutScale;
             var labelScale = 0.50f * layoutScale;
             var fieldTextScale = 0.56f * layoutScale;
@@ -153,17 +154,20 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var closeSize = GetDialogCloseButtonSize(scale);
             var headerHeight = Math.Max(titleHeight, closeSize.Y);
 
-            var maxCardWidth = Math.Max(1f, viewBox.Width - padding.X * 2f);
-            var cardWidth = Math.Min(Math.Max(370f * scale, viewBox.Width * 0.58f), maxCardWidth);
+            var maxCardWidth = Math.Max(1f, viewBox.Width - GetDialogOuterPadding(viewBox, scale) * 2f);
+            var cardWidth = compact
+                ? maxCardWidth
+                : Math.Min(Math.Max(370f * scale, viewBox.Width * 0.58f), maxCardWidth);
             var contentWidth = Math.Max(1f, cardWidth - padding.X * 2f);
             var controlRows = GetParameterControlRowCount();
             var contentHeight = labelHeight + smallSpacing +
                                 controlRows * (labelHeight + fieldHeight) +
                                 Math.Max(0, controlRows - 1) * smallSpacing +
                                 spacing + fieldHeight;
-            var cardHeight = Math.Min(
-                padding.Y * 2f + headerHeight + spacing + contentHeight,
-                Math.Max(1f, viewBox.Height - padding.Y * 2f));
+            var maxCardHeight = Math.Max(1f, viewBox.Height - GetDialogOuterPadding(viewBox, scale) * 2f);
+            var cardHeight = compact
+                ? maxCardHeight
+                : Math.Min(padding.Y * 2f + headerHeight + spacing + contentHeight, maxCardHeight);
 
             var cardRect = new RectangleF(
                 viewBox.Center.X - cardWidth * 0.5f,
@@ -173,6 +177,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
             RegisterDialogCard(cardRect);
             DrawBackdrop(surface, scale, cardRect);
+
+            if (compact)
+            {
+                _scrollComboOpen = false;
+                RenderCompactConfiguration(GetDialogContentRect(cardRect, viewBox, scale, padding), scale,
+                    surface, spacing);
+                return;
+            }
 
             Sprites.Add(new MySprite
             {
@@ -210,6 +222,71 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
             if (_scrollComboOpen)
                 RenderScrollComboOptions(scale);
+        }
+
+        void RenderCompactConfiguration(RectangleF contentRect, float scale, IMyTextSurface surface, float spacing)
+        {
+            var gap = Math.Min(spacing, Math.Min(contentRect.Width * .02f, contentRect.Height * .08f));
+            var rowHeight = Math.Max(1f, (contentRect.Height - gap) * .5f);
+            var topRow = new RectangleF(contentRect.X, contentRect.Y, contentRect.Width, rowHeight);
+            var bottomRow = new RectangleF(contentRect.X, topRow.Bottom + gap, contentRect.Width, rowHeight);
+            var slotWidth = Math.Max(1f, (bottomRow.Width - gap * 3f) * .25f);
+            var applyRect = GetCompactSlot(bottomRow, 0, slotWidth, gap);
+
+            EnsureApplyButton(applyRect);
+            ContainerControl.AddChild(_applyButton);
+            _applyButton.Render(Sprites);
+
+            if (_parameterTypeName == TYPE_BOOLEAN)
+            {
+                var choicesWidth = slotWidth * 3f + gap * 2f;
+                var choicesRect = new RectangleF(
+                    topRow.Center.X - choicesWidth * .5f,
+                    topRow.Y,
+                    choicesWidth,
+                    topRow.Height);
+                RenderBooleanModeButtons(choicesRect, scale);
+                return;
+            }
+
+            if (_parameterTypeName == TYPE_INCREASE_DECREASE)
+            {
+                var clickWidth = slotWidth * 2f + gap;
+                RenderClickActionButtons(new RectangleF(
+                    topRow.Center.X - clickWidth * .5f,
+                    topRow.Y,
+                    clickWidth,
+                    topRow.Height), scale);
+
+                RenderScrollModeButtons(new RectangleF(
+                    GetCompactSlot(bottomRow, 1, slotWidth, gap).X,
+                    bottomRow.Y,
+                    Math.Max(1f, bottomRow.Right - GetCompactSlot(bottomRow, 1, slotWidth, gap).X),
+                    bottomRow.Height), scale);
+                return;
+            }
+
+            var sparse = _parameterTypeName == TYPE_COLOR || string.IsNullOrEmpty(_parameterTypeName);
+            var fieldRect = sparse
+                ? new RectangleF(topRow.Center.X - (slotWidth * 2f + gap) * .5f, topRow.Y,
+                    slotWidth * 2f + gap, topRow.Height)
+                : topRow;
+            RenderParameterControl(fieldRect, scale, surface);
+
+            if (NeedsScrollControl())
+            {
+                var scrollStart = GetCompactSlot(bottomRow, 1, slotWidth, gap).X;
+                RenderScrollModeButtons(new RectangleF(scrollStart, bottomRow.Y,
+                    Math.Max(1f, bottomRow.Right - scrollStart), bottomRow.Height), scale);
+            }
+        }
+
+        static RectangleF GetCompactSlot(RectangleF row, int index, float slotWidth, float gap)
+        {
+            var x = row.X + index * (slotWidth + gap);
+            return new RectangleF(x, row.Y,
+                index == 3 ? Math.Max(1f, row.Right - x) : slotWidth,
+                row.Height);
         }
 
         void EnsureInitialized()
@@ -456,6 +533,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 _numericInput.SetRect(rect);
 
             _numericInput.SetDataContext(_numericModel);
+            _numericInput.SetClass(CurrentDialogIsTiny ? "ControlBase Compact" : "ControlBase");
             _numericInput.SetStyleId("Primary");
             _numericInput.SetCursor(CursorType.Hand);
             _numericInput.SetVisible(true);
@@ -708,6 +786,25 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _scrollComboButton.Render(Sprites);
         }
 
+        void RenderScrollModeButtons(RectangleF rect, float scale)
+        {
+            var gap = 4f * scale;
+            var buttonWidth = Math.Max(1f, (rect.Width - gap * (ScrollModes.Length - 1)) / ScrollModes.Length);
+
+            for (var i = 0; i < ScrollModes.Length; i++)
+            {
+                var buttonRect = new RectangleF(
+                    rect.X + i * (buttonWidth + gap),
+                    rect.Y,
+                    i == ScrollModes.Length - 1 ? Math.Max(1f, rect.Right - (rect.X + i * (buttonWidth + gap))) : buttonWidth,
+                    rect.Height);
+
+                var button = EnsureScrollOptionButton(i, buttonRect, ScrollModes[i]);
+                ContainerControl.AddChild(button);
+                button.Render(Sprites);
+            }
+        }
+
         void EnsureScrollComboButton(RectangleF rect)
         {
             if (_scrollComboButton == null)
@@ -887,15 +984,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         void OnNumberChanged(double value)
         {
             _numberValue = Clamp(value, _numberMin, _numberMax);
-            if (_requestRedraw != null)
-                _requestRedraw();
+            RequestRender();
         }
 
         void OnTextChanged(string value)
         {
             _textValue = value ?? string.Empty;
-            if (_requestRedraw != null)
-                _requestRedraw();
+            RequestRender();
         }
 
         void OnColorClicked(ButtonModel model, object sender)
@@ -913,8 +1008,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             if (Extensions.ColorExtensions.TryParseHexColor(value, out parsed))
             {
                 _colorValue = parsed;
-                if (_requestRedraw != null)
-                    _requestRedraw();
+                RequestRender();
                 return;
             }
 
@@ -929,8 +1023,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 return;
 
             _booleanMode = NormalizeBooleanMode(booleanModel.Mode, BOOLEAN_TOGGLE);
-            if (_requestRedraw != null)
-                _requestRedraw();
+            RequestRender();
         }
 
         void OnClickActionClicked(ButtonModel model, object sender)
@@ -940,15 +1033,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 return;
 
             _clickAction = NormalizeClickAction(clickModel.ClickAction, CLICK_INCREASE);
-            if (_requestRedraw != null)
-                _requestRedraw();
+            RequestRender();
         }
 
         void OnScrollComboClicked(ButtonModel model, object sender)
         {
             _scrollComboOpen = !_scrollComboOpen;
-            if (_requestRedraw != null)
-                _requestRedraw();
+            RequestRender();
         }
 
         void OnScrollOptionClicked(ButtonModel model, object sender)
@@ -959,8 +1050,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
             _scrollMode = NormalizeScrollMode(scrollModel.ScrollMode, SCROLL_NONE);
             _scrollComboOpen = false;
-            if (_requestRedraw != null)
-                _requestRedraw();
+            RequestRender();
         }
 
         void OnApplyClicked(ButtonModel model, object sender)
@@ -1046,10 +1136,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Alignment = TextAlignment.CENTER
             });
 
-            BorderRenderer.CreateSpritesFromRect(new RectangleF(cardRect.Position + 3f * scale, cardRect.Size), Sprites,
-                ResolveColor(ThemeResources.ShadowColor), radiusScale: scale);
+            if (!CurrentDialogIsTiny)
+                BorderRenderer.CreateSpritesFromRect(new RectangleF(cardRect.Position + 3f * scale, cardRect.Size), Sprites,
+                    ResolveColor(ThemeResources.ShadowColor), radiusScale: scale);
             BorderRenderer.CreateSpritesFromRect(cardRect, Sprites,
-                ResolveColor(ThemeResources.SurfaceContainerHighColor), radiusScale: scale);
+                ResolveColor(ThemeResources.SurfaceContainerHighColor), radiusPixels: DialogCardRadiusPixels,
+                radiusScale: scale);
         }
 
         void DrawInfoText(string text, float x, float y, float width, float textScale, IMyTextSurface surface)

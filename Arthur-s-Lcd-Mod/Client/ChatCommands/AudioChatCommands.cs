@@ -79,7 +79,6 @@ namespace LcdMod.Client.ChatCommands
         /// </summary>
         /// <loc>LcdMod_ChatCommand_TestAudio_Summary</loc>
         [ChatCommand("TestAudio")]
-        [ChatCommand("TestGameAudio")]
         public static void TestAllGameAudio()
         {
             var client = LcdModSessionComponent.Client;

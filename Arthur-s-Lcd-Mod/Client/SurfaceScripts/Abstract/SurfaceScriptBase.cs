@@ -113,6 +113,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         float _cachedTitleAvailableWidth = -1f;
         float _cachedTitleFontSize = -1f;
         bool _cachedTitleLocalized;
+        public bool TitleCanBeVisible { get; private set; } = true;
         public bool TitleVisible { get; private set; } = true;
         public override ScriptUpdate NeedsUpdate => ScriptUpdate.Update10;
 
@@ -458,13 +459,17 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             if (_init)
                 Instances.RefreshActiveInstance(this);
 
+            var titleCanBeVisible = SurfaceAspectRatioHelper.CanShowTitle(Surface);
+            var titleVisible = GeneralComponent.TitleVisible && titleCanBeVisible;
+
             if (Math.Abs(_userPadding - Surface.TextPadding) > .01f ||
                 Math.Abs(_userScale - GeneralComponent.GetScale()) > .001f ||
                 Math.Abs(_userFontScale - Surface.FontSize) > .001f ||
                 !string.Equals(_userFont, Surface.Font, StringComparison.Ordinal) ||
                 BackgroundColor != _backgroundColor ||
                 ForegroundColor != _foregroundColor ||
-                TitleVisible != GeneralComponent.TitleVisible)
+                TitleCanBeVisible != titleCanBeVisible ||
+                TitleVisible != titleVisible)
                 LayoutChanged();
 
 
@@ -1022,7 +1027,8 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             _backgroundColor = BackgroundColor;
             _foregroundColor = ForegroundColor;
             LocalizedTitleCache = string.Empty;
-            TitleVisible = GeneralComponent.TitleVisible;
+            TitleCanBeVisible = SurfaceAspectRatioHelper.CanShowTitle(Surface);
+            TitleVisible = GeneralComponent.TitleVisible && TitleCanBeVisible;
             InvalidateTitleCache();
             UpdateViewBox();
             _backgroundGrids.Clear();

@@ -146,8 +146,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
             DrawBackdrop(surface);
 
-            var padding = new Vector2(18f, 14f) * scale;
-            var spacing = 10f * scale;
+            var compact = IsTinyDialogAspectRatio(viewBox);
+            var padding = GetDialogPadding(viewBox, scale);
+            var spacing = GetDialogSpacing(viewBox, scale);
             var titleScale = 0.82f * scale * fontScale;
             var labelScale = 0.54f * scale * fontScale;
             var nameScale = 0.66f * scale * fontScale;
@@ -155,12 +156,17 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var cardColor = ResolveColor(ThemeResources.SurfaceContainerHighColor);
             var cardTextColor = ResolveColor(ThemeResources.OnSurfaceColor);
 
-            var cardWidth = _useRequestGrid
-                ? Math.Min(viewBox.Width - padding.X * 2f, Math.Max(460f * scale, viewBox.Width * 0.82f))
-                : Math.Min(viewBox.Width - padding.X * 2f, Math.Max(360f * scale, viewBox.Width * 0.62f));
-            var cardHeight = _useRequestGrid
-                ? Math.Min(viewBox.Height - padding.Y * 2f, Math.Max(310f * scale, viewBox.Height * 0.72f))
-                : Math.Min(viewBox.Height - padding.Y * 2f, Math.Max(235f * scale, viewBox.Height * 0.52f));
+            var outerPadding = GetDialogOuterPadding(viewBox, scale);
+            var cardWidth = compact
+                ? Math.Max(1f, viewBox.Width - outerPadding * 2f)
+                : _useRequestGrid
+                    ? Math.Min(viewBox.Width - outerPadding * 2f, Math.Max(460f * scale, viewBox.Width * 0.82f))
+                    : Math.Min(viewBox.Width - outerPadding * 2f, Math.Max(360f * scale, viewBox.Width * 0.62f));
+            var cardHeight = compact
+                ? Math.Max(1f, viewBox.Height - outerPadding * 2f)
+                : _useRequestGrid
+                    ? Math.Min(viewBox.Height - outerPadding * 2f, Math.Max(310f * scale, viewBox.Height * 0.72f))
+                    : Math.Min(viewBox.Height - outerPadding * 2f, Math.Max(235f * scale, viewBox.Height * 0.52f));
             var cardRect = new RectangleF(
                 viewBox.Center.X - cardWidth * 0.5f,
                 viewBox.Center.Y - cardHeight * 0.5f,
@@ -170,10 +176,18 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             RegisterDialogCard(cardRect);
 
             var shadowColor = ResolveColor(ThemeResources.ShadowColor);
-            BorderRenderer.CreateSpritesFromRect(new RectangleF(cardRect.Position + 2f, cardRect.Size), Sprites, shadowColor,
-                radiusScale: scale);
+            if (!compact)
+                BorderRenderer.CreateSpritesFromRect(new RectangleF(cardRect.Position + 2f, cardRect.Size), Sprites, shadowColor,
+                    radiusScale: scale);
             BorderRenderer.CreateSpritesFromRect(cardRect, Sprites, cardColor,
-                radiusScale: scale);
+                radiusPixels: DialogCardRadiusPixels, radiusScale: scale);
+
+            if (compact)
+            {
+                RenderCompactCraftContent(container, owner, cardRect, viewBox, scale, fontScale, surface, cardTextColor,
+                    nameScale, buttonScale);
+                return;
+            }
 
             var title = _useRequestGrid ? "Craft all" : Loc(MOD_PREFIX + "CraftDialog_Title");
             var titleSize = MeasureText(title, titleScale, surface);
@@ -251,6 +265,96 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             ConfigureButton(_craftButton, _useRequestGrid ? "Craft all" : Loc(MOD_PREFIX + "CraftDialog_Button_Craft"),
                 buttonScale, owner, CanCraft());
             _craftButton.Render(Sprites);
+        }
+
+        void RenderCompactCraftContent(
+            DialogContainerControl container,
+            InteractiveSurfaceScript owner,
+            RectangleF cardRect,
+            RectangleF viewBox,
+            float scale,
+            float fontScale,
+            Sandbox.ModAPI.Ingame.IMyTextSurface surface,
+            Color cardTextColor,
+            float nameScale,
+            float buttonScale)
+        {
+            var padding = GetDialogPadding(viewBox, scale);
+            var spacing = GetDialogSpacing(viewBox, scale);
+            var contentRect = GetDialogContentRect(cardRect, viewBox, scale, padding);
+            var gap = Math.Min(spacing, contentRect.Width * 0.03f);
+            var assemblerWidth = Math.Min(Math.Max(96f * scale, contentRect.Width * 0.16f), contentRect.Width * 0.24f);
+            var craftWidth = Math.Min(Math.Max(86f * scale, contentRect.Width * 0.14f), contentRect.Width * 0.22f);
+
+            var assemblerRect = new RectangleF(contentRect.X, contentRect.Y, assemblerWidth, contentRect.Height);
+            EnsureAssemblerControl(assemblerRect);
+            container.AddChild(_assemblerControl);
+            _assemblerControl.Render(Sprites);
+
+            var craftRect = new RectangleF(
+                contentRect.Right - craftWidth,
+                contentRect.Y,
+                craftWidth,
+                contentRect.Height);
+            EnsureButtons(craftRect);
+            container.AddChild(_craftButton);
+            ConfigureButton(_craftButton, _useRequestGrid ? "Craft all" : Loc(MOD_PREFIX + "CraftDialog_Button_Craft"),
+                buttonScale, owner, CanCraft());
+            _craftButton.Render(Sprites);
+
+            var bodyLeft = assemblerRect.Right + gap;
+            var bodyRight = craftRect.X - gap;
+            var bodyRect = new RectangleF(
+                bodyLeft,
+                contentRect.Y,
+                Math.Max(1f, bodyRight - bodyLeft),
+                contentRect.Height);
+
+            if (_useRequestGrid)
+            {
+                DrawRequestGrid(bodyRect, scale, fontScale, surface, cardTextColor);
+                return;
+            }
+
+            if (_requests.Count == 0)
+                return;
+
+            var request = _requests[0];
+            var amountWidth = _amountModel == null
+                ? 0f
+                : Math.Min(Math.Max(116f * scale, bodyRect.Width * 0.34f), bodyRect.Width * 0.55f);
+            var itemWidth = Math.Max(1f, bodyRect.Width - amountWidth - (_amountModel == null ? 0f : gap));
+            var itemRect = new RectangleF(bodyRect.X, bodyRect.Y, itemWidth, bodyRect.Height);
+
+            var iconSize = Math.Min(Math.Min(52f * scale, itemRect.Height), Math.Max(1f, itemRect.Width * 0.24f));
+            if (iconSize > 6f)
+            {
+                var iconRect = new RectangleF(itemRect.X, itemRect.Center.Y - iconSize * 0.5f, iconSize, iconSize);
+                DrawItemIcon(iconRect, request.Icon);
+
+                var textX = iconRect.Right + 6f * scale;
+                var textWidth = Math.Max(0f, itemRect.Right - textX);
+                var nameText = TrimText(request.Name, textWidth, nameScale, surface);
+                var nameHeight = MeasureLineHeight(nameScale, surface);
+                DrawText(nameText, new Vector2(textX, itemRect.Center.Y - nameHeight * 0.5f), nameScale, cardTextColor,
+                    TextAlignment.LEFT);
+            }
+            else
+            {
+                var nameText = TrimText(request.Name, itemRect.Width, nameScale, surface);
+                var nameHeight = MeasureLineHeight(nameScale, surface);
+                DrawText(nameText, new Vector2(itemRect.X, itemRect.Center.Y - nameHeight * 0.5f), nameScale, cardTextColor,
+                    TextAlignment.LEFT);
+            }
+
+            if (_amountModel == null)
+                return;
+
+            var amountRect = new RectangleF(bodyRect.Right - amountWidth, bodyRect.Y, amountWidth, bodyRect.Height);
+            EnsureAmountControl(amountRect);
+            ConfigureAmountControl();
+            container.AddChild(_amountControl);
+            _amountControl.Render(Sprites);
         }
 
         void DrawBackdrop(Sandbox.ModAPI.Ingame.IMyTextSurface surface)
@@ -380,6 +484,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             if (_amountControl == null)
                 return;
 
+            _amountControl.SetClass(CurrentDialogIsTiny ? "ControlBase Compact" : "ControlBase");
             _amountControl.SetStyleId("Primary");
             _amountControl.BorderRadiusPixels = BorderRenderer.DEFAULT_RADIUS_PIXELS;
         }
@@ -464,9 +569,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 delegate(List<CraftAssemblerOption> options)
                 {
                     SetSelectedAssemblers(options);
-                    _showDialog(this);
-                },
-                delegate { _showDialog(this); }));
+                    RequestRender();
+                }, null));
         }
 
         bool CanCraft()
@@ -805,14 +909,20 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 surface.TextureSize,
                 new Color(0, 0, 0, 128)));
 
-            var padding = new Vector2(18f, 14f) * scale;
-            var spacing = 10f * scale;
+            var compact = IsTinyDialogAspectRatio(viewBox);
+            var padding = GetDialogPadding(viewBox, scale);
+            var spacing = GetDialogSpacing(viewBox, scale);
             var titleScale = 0.78f * scale * fontScale;
             var buttonScale = 0.58f * scale * fontScale;
             var cardColor = ResolveColor(ThemeResources.SurfaceContainerHighColor);
             var cardTextColor = ResolveColor(ThemeResources.OnSurfaceColor);
-            var cardWidth = Math.Min(viewBox.Width - padding.X * 2f, Math.Max(320f * scale, viewBox.Width * 0.58f));
-            var cardHeight = Math.Min(viewBox.Height - padding.Y * 2f, Math.Max(230f * scale, viewBox.Height * 0.5f));
+            var outerPadding = GetDialogOuterPadding(viewBox, scale);
+            var cardWidth = compact
+                ? Math.Max(1f, viewBox.Width - outerPadding * 2f)
+                : Math.Min(viewBox.Width - outerPadding * 2f, Math.Max(320f * scale, viewBox.Width * 0.58f));
+            var cardHeight = compact
+                ? Math.Max(1f, viewBox.Height - outerPadding * 2f)
+                : Math.Min(viewBox.Height - outerPadding * 2f, Math.Max(230f * scale, viewBox.Height * 0.5f));
             var cardRect = new RectangleF(
                 viewBox.Center.X - cardWidth * 0.5f,
                 viewBox.Center.Y - cardHeight * 0.5f,
@@ -821,10 +931,50 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
             RegisterDialogCard(cardRect);
 
-            BorderRenderer.CreateSpritesFromRect(new RectangleF(cardRect.Position + 2f, cardRect.Size), Sprites,
-                ResolveColor(ThemeResources.ShadowColor), radiusScale: scale);
+            if (!compact)
+                BorderRenderer.CreateSpritesFromRect(new RectangleF(cardRect.Position + 2f, cardRect.Size), Sprites,
+                    ResolveColor(ThemeResources.ShadowColor), radiusScale: scale);
             BorderRenderer.CreateSpritesFromRect(cardRect, Sprites, cardColor,
-                radiusScale: scale);
+                radiusPixels: DialogCardRadiusPixels, radiusScale: scale);
+
+            if (compact)
+            {
+                var contentRect = GetDialogContentRect(cardRect, viewBox, scale, padding);
+                var compactButtonWidth = Math.Min(Math.Max(86f * scale, contentRect.Width * 0.16f), contentRect.Width * 0.26f);
+                var compactGap = Math.Min(spacing, contentRect.Width * 0.03f);
+                var compactSelectRect = new RectangleF(contentRect.Right - compactButtonWidth, contentRect.Y,
+                    compactButtonWidth, contentRect.Height);
+                var compactListRect = new RectangleF(contentRect.X, contentRect.Y,
+                    Math.Max(1f, compactSelectRect.X - compactGap - contentRect.X), contentRect.Height);
+
+                EnsureList(compactListRect, Math.Max(1f, Math.Min(30f * scale, compactListRect.Height)));
+                ConfigureListBox();
+                container.AddChild(_listBox);
+                if (_options.Count > 0)
+                {
+                    _listBox.Render(Sprites);
+                }
+                else
+                {
+                    Sprites.Add(new MySprite
+                    {
+                        Type = SpriteType.TEXT,
+                        Data = LocHelper.GetLoc(MOD_PREFIX + "CraftDialog_AssemblerSelection_Empty"),
+                        Position = new Vector2(compactListRect.Center.X,
+                            compactListRect.Center.Y - MeasureLineHeight(buttonScale, surface) * 0.5f),
+                        Color = cardTextColor,
+                        FontId = TextFont,
+                        Alignment = TextAlignment.CENTER,
+                        RotationOrScale = buttonScale
+                    });
+                }
+
+                EnsureButtons(compactSelectRect);
+                container.AddChild(_selectButton);
+                CraftDialog.ConfigureButton(_selectButton, LocHelper.GetLoc(MOD_PREFIX + "Common_Button_Select"), buttonScale, owner, HasSelection());
+                _selectButton.Render(Sprites);
+                return;
+            }
 
             var title = LocHelper.GetLoc(MOD_PREFIX + "CraftDialog_AssemblerSelection_Title");
             var titleSize = MeasureText(title, titleScale, surface);

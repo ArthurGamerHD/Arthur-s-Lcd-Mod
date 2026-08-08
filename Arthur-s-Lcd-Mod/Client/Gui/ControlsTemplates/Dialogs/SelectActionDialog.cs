@@ -112,8 +112,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             ContainerControl.ClearChildren();
             EnsureItemsLoaded();
             var layoutScale = scale * fontScale;
-            var padding = new Vector2(18f * scale, 14f * scale);
-            var spacing = 10f * scale;
+            var compact = IsTinyDialogAspectRatio(viewBox);
+            var padding = GetDialogPadding(viewBox, scale);
+            var spacing = GetDialogSpacing(viewBox, scale);
             var titleScale = 0.82f * layoutScale;
             var titleHeight = MeasureLineHeight(titleScale, surface);
             var inputTextScale = 0.58f * layoutScale;
@@ -121,18 +122,25 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var closeSize = GetDialogCloseButtonSize(scale);
             var headerHeight = Math.Max(titleHeight, closeSize.Y);
 
-            var maxCardWidth = Math.Max(1f, viewBox.Width - padding.X * 2f);
-            var maxCardHeight = Math.Max(1f, viewBox.Height - padding.Y * 2f);
-            var cardWidth = Math.Min(Math.Max(MIN_CARD_WIDTH_PIXELS * scale, viewBox.Width * CARD_WIDTH_PERCENT), maxCardWidth);
-            var cardHeight = Math.Min(Math.Max(MIN_CARD_HEIGHT_PIXELS * scale, viewBox.Height * CARD_HEIGHT_PERCENT), maxCardHeight);
-            var cardRect = new RectangleF(
-                viewBox.Center.X - cardWidth * 0.5f,
-                viewBox.Center.Y - cardHeight * 0.5f,
-                cardWidth,
-                cardHeight);
+            var cardRect = GetDialogCardRect(
+                viewBox,
+                scale,
+                CARD_WIDTH_PERCENT,
+                CARD_HEIGHT_PERCENT,
+                MIN_CARD_WIDTH_PIXELS,
+                MIN_CARD_HEIGHT_PIXELS);
 
             RegisterDialogCard(cardRect);
             DrawBackdrop(surface, scale, cardRect);
+
+            if (compact)
+            {
+                if (_searchInput != null)
+                    _searchInput.SetVisible(false);
+
+                RenderActionList(GetDialogContentRect(cardRect, viewBox, scale, padding), scale, surface);
+                return;
+            }
 
             Sprites.Add(new MySprite
             {
@@ -176,10 +184,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Alignment = TextAlignment.CENTER
             });
 
-            BorderRenderer.CreateSpritesFromRect(new RectangleF(cardRect.Position + 3f * scale, cardRect.Size), Sprites,
-                ResolveColor(ThemeResources.ShadowColor), radiusScale: scale);
+            if (!CurrentDialogIsTiny)
+                BorderRenderer.CreateSpritesFromRect(new RectangleF(cardRect.Position + 3f * scale, cardRect.Size), Sprites,
+                    ResolveColor(ThemeResources.ShadowColor), radiusScale: scale);
             BorderRenderer.CreateSpritesFromRect(cardRect, Sprites,
-                ResolveColor(ThemeResources.SurfaceContainerHighColor), radiusScale: scale);
+                ResolveColor(ThemeResources.SurfaceContainerHighColor), radiusPixels: DialogCardRadiusPixels,
+                radiusScale: scale);
         }
 
         void EnsureItemsLoaded()
@@ -516,17 +526,24 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
             BorderRenderer.CreateSpritesFromRect(listRect, Sprites, ResolveColor(ThemeResources.SurfaceContainerHighColor), radiusScale: scale);
 
+            var borderInset = Math.Max(1f, 2f * scale);
+            var scrollRect = new RectangleF(
+                listRect.X + borderInset,
+                listRect.Y + borderInset,
+                Math.Max(1f, listRect.Width - borderInset * 2f),
+                Math.Max(1f, listRect.Height - borderInset * 2f));
+
             var rowHeight = GetRowHeight(scale);
-            var scrollerWidth = Math.Min(_scrollPanel.AutomaticScrollerWidthPixels * scale, Math.Max(0f, listRect.Width * 0.25f));
+            var scrollerWidth = Math.Min(_scrollPanel.AutomaticScrollerWidthPixels * scale, Math.Max(0f, scrollRect.Width * 0.25f));
             _scrollPanel.ClearChildren();
-            _scrollPanel.Configure(listRect, listRect.Y, 0f, rowHeight, _filteredItems.Count, scrollerWidth, 0f);
+            _scrollPanel.Configure(scrollRect, scrollRect.Y, 0f, rowHeight, _filteredItems.Count, scrollerWidth, 0f);
             _scrollPanel.SetScrollBarColors(ResolveColor(ThemeResources.SurfaceContainerHighColor), ResolveColor(ThemeResources.OnSurfaceColor));
             _scrollPanel.SetVisible(true);
             ContainerControl.AddChild(_scrollPanel);
 
             if (_filteredItems.Count == 0)
             {
-                DrawEmptyMessage(listRect, scale, surface);
+                DrawEmptyMessage(scrollRect, scale, surface);
                 _scrollPanel.Render(Sprites);
                 return;
             }
@@ -588,7 +605,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             model.Clicked = OnActionClicked;
 
             button.SetRect(rect);
-            button.SetClass("ControlBase Button Row");
+            var selected = IsSelected(action);
+            button.SetClass(selected ? "ControlBase Button Row Selected" : "ControlBase Button Row");
             button.SetStyleId(null);
             button.SetCursor(CursorType.Hand);
             button.CustomRender = RenderActionRow;
@@ -604,15 +622,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
             var rect = control.Bounds;
             rect.Contains(new Vector2(float.NaN, float.NaN));
-            var selected = _initialSelection != null &&
-                           string.Equals(_initialSelection.BaseId, action.BaseId, StringComparison.OrdinalIgnoreCase);
-            control.SetStyleId(selected ? "Primary" : null);
-            var panelColor = selected
-                ? ResolveColor(ThemeResources.AccentContainerColor)
-                : control.BackgroundColor;
-            var textColor = selected
-                ? ResolveColor(ThemeResources.OnAccentContainerColor)
-                : control.TextColor;
+            var panelColor = control.BackgroundColor;
+            var textColor = control.TextColor;
 
             BorderRenderer.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: control.LayoutScale);
 
@@ -675,6 +686,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _searchText = value ?? string.Empty;
             ApplyFilter();
             _requestRedraw?.Invoke();
+            RequestRender();
         }
 
         void OnActionClicked(ButtonModel model, object sender)
@@ -691,6 +703,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         void OnScrollChanged(ScrollPanel panel)
         {
             _requestRedraw?.Invoke();
+        }
+
+        bool IsSelected(ButtonPanelActionSettings action)
+        {
+            return _initialSelection != null && action != null &&
+                   string.Equals(_initialSelection.BaseId, action.BaseId, StringComparison.OrdinalIgnoreCase);
         }
 
         protected override void OnDismiss()

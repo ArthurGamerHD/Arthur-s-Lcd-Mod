@@ -67,28 +67,42 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             ResetControlOverlayRange();
             ResetExternalOverlayRange();
 
+            NormalizeDialogStack();
             if (_dialog != null)
             {
-                if (_dialog.Dismissed)
-                {
-                    _dialog = null;
-                }
-                else
-                {
-                    if (includeDisabled)
-                        AddBaseInteractiveEntries(_interactiveEntriesWithOverlay);
-
-                    _dialog.AddInteractiveEntries(_interactiveEntriesWithOverlay);
-                    AddControlOverlayEntries(_interactiveEntriesWithOverlay);
-                    RaiseCollectOverlayEntries(_interactiveEntriesWithOverlay);
-                    return _interactiveEntriesWithOverlay;
-                }
+                if (includeDisabled)
+                    AddBaseInteractiveEntries(_interactiveEntriesWithOverlay);
+                AddDialogInteractiveEntries(_dialog, _interactiveEntriesWithOverlay, includeDisabled);
+                AddControlOverlayEntries(_interactiveEntriesWithOverlay);
+                RaiseCollectOverlayEntries(_interactiveEntriesWithOverlay);
+                return _interactiveEntriesWithOverlay;
             }
 
             AddBaseInteractiveEntries(_interactiveEntriesWithOverlay);
             AddControlOverlayEntries(_interactiveEntriesWithOverlay);
             RaiseCollectOverlayEntries(_interactiveEntriesWithOverlay);
             return _interactiveEntriesWithOverlay;
+        }
+
+        void AddDialogInteractiveEntries(Dialog dialog, List<Control> entries, bool includeDisabled)
+        {
+            if (dialog == null)
+            {
+                if (!includeDisabled)
+                    AddBaseInteractiveEntries(entries);
+                return;
+            }
+
+            if (dialog.Passthrough)
+                AddDialogInteractiveEntries(dialog.Parent, entries, includeDisabled);
+
+            dialog.AddInteractiveEntries(entries);
+        }
+
+        void NormalizeDialogStack()
+        {
+            while (_dialog != null && _dialog.Dismissed)
+                _dialog = _dialog.Parent;
         }
 
         void ResetControlOverlayRange()
@@ -750,36 +764,27 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             Action<object, object> button2Callback = null,
             string icon = null)
         {
-            var previousDialog = _dialog;
             var messageBox = new MessageBox(App);
             var wrappedButton2Callback = button2Callback != null || !string.IsNullOrWhiteSpace(button2)
-                ? WrapMessageBoxCallback(messageBox, previousDialog, button2Callback)
+                ? WrapMessageBoxCallback(button2Callback)
                 : null;
             messageBox.Show(
                 title,
                 content,
                 button1,
                 button2,
-                WrapMessageBoxCallback(messageBox, previousDialog, button1Callback),
+                WrapMessageBoxCallback(button1Callback),
                 wrappedButton2Callback,
                 icon);
             ShowDialog(messageBox);
         }
 
-        Action<object, object> WrapMessageBoxCallback(Dialog messageBox, Dialog previousDialog, Action<object, object> callback)
+        Action<object, object> WrapMessageBoxCallback(Action<object, object> callback)
         {
             return delegate(object dataContext, object sender)
             {
                 if (callback != null)
                     callback(dataContext, sender);
-
-                if (previousDialog != null &&
-                    !previousDialog.Dismissed &&
-                    (_dialog == null || ReferenceEquals(_dialog, messageBox)))
-                {
-                    ShowDialog(previousDialog);
-                    return;
-                }
 
                 RenderSprites();
             };
@@ -787,9 +792,9 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         internal void ShowDialog(Dialog dialog)
         {
-            if (dialog != null && _dialog != null && !_dialog.Dismissed && !ReferenceEquals(dialog, _dialog))
-                dialog.SetStyleParent(_dialog);
-
+            NormalizeDialogStack();
+            if (dialog != null && !ReferenceEquals(dialog, _dialog))
+                dialog.SetParent(_dialog);
             _dialog = dialog;
             RenderSprites();
         }
@@ -1012,10 +1017,8 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             if (!RendersInteractiveEntriesInGetSprites)
                 RenderInteractiveEntryVisuals(spriteList);
 
-            if (_dialog != null && _dialog.Dismissed)
-                _dialog = null;
-
-            _dialog?.Render(
+            NormalizeDialogStack();
+            RenderDialogStack(_dialog,
                 this,
                 spriteList,
                 _baseViewBox,
@@ -1048,6 +1051,28 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 InteractionComponent.CursorScale);
 
             return spriteList;
+        }
+
+        static void RenderDialogStack(
+            Dialog dialog,
+            InteractiveSurfaceScript owner,
+            List<MySprite> sprites,
+            RectangleF viewBox,
+            float scale,
+            float fontScale,
+            Sandbox.ModAPI.Ingame.IMyTextSurface surface,
+            Color textColor,
+            Color backgroundColor,
+            Color panelColor,
+            Vector2 cursorPosition)
+        {
+            if (dialog == null)
+                return;
+
+            RenderDialogStack(dialog.Parent, owner, sprites, viewBox, scale, fontScale, surface, textColor,
+                backgroundColor, panelColor, cursorPosition);
+            dialog.Render(owner, sprites, viewBox, scale, fontScale, surface, textColor, backgroundColor, panelColor,
+                cursorPosition);
         }
 
         protected virtual bool RendersInteractiveEntriesInGetSprites => false;

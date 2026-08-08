@@ -18,6 +18,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         [ProtoMember(3)] public string SpriteName { get; set; }
         [ProtoMember(4)] public ButtonPanelTargetSettings Target { get; set; }
         [ProtoMember(5)] public ButtonPanelActionSettings Action { get; set; }
+        [ProtoMember(6)] public string BackgroundColor { get; set; }
 
         public ButtonPanelEntrySettings Clone()
         {
@@ -27,7 +28,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 Title = Title,
                 SpriteName = SpriteName,
                 Target = Target?.Clone(),
-                Action = Action?.Clone()
+                Action = Action?.Clone(),
+                BackgroundColor = BackgroundColor
             };
         }
 
@@ -36,7 +38,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             return !string.IsNullOrWhiteSpace(Title) ||
                    !string.IsNullOrWhiteSpace(SpriteName) ||
                    Target != null ||
-                   Action != null;
+                   Action != null ||
+                   !string.IsNullOrWhiteSpace(BackgroundColor);
         }
     }
 

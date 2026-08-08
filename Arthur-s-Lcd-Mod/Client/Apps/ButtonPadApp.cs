@@ -7,6 +7,7 @@ using System.Text;
 #endif
 using LcdMod.Client.Config;
 using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui;
 using LcdMod.Client.GridData;
 using LcdMod.Client.Gui.ControlsTemplates;
@@ -26,6 +27,7 @@ using LcdMod.Client.Terminal.Models.Property;
 using Sandbox.ModAPI.Interfaces;
 #endif
 using LcdMod.Common.Helpers;
+using LcdMod.Common.Layout;
 #if EXPERIMENTAL
 using Sandbox.Game.Entities;
 #endif
@@ -52,8 +54,6 @@ namespace LcdMod.Client.Apps
     [ConfigComponent(Constants.APP, typeof(ButtonPanelConfigComponent), PropertyName = "ButtonPanelComponent")]
     public sealed partial class ButtonPadApp : App, IApp
     {
-        const float BUTTON_SIZE_PIXELS = 92f;
-        const float BUTTON_SPACING_PIXELS = 3f;
         const string CUSTOM_DATA_KEY = "Buttonpanel";
         const string TYPE_BOOLEAN = "Boolean";
         const string TYPE_INT64 = "Int64";
@@ -77,9 +77,11 @@ namespace LcdMod.Client.Apps
 #if EXPERIMENTAL
         readonly List<IMyBlockGroup> _actionGroups = new List<IMyBlockGroup>();
         readonly List<IMyIngameTerminalBlock> _actionGroupBlocks = new List<IMyIngameTerminalBlock>();
+        readonly StringBuilder _actionStatusBuilder = new StringBuilder();
 #endif
 
         int _lastLayoutColumns = 1;
+        float _lastButtonSize = ButtonPanelLayout.PreferredButtonSizePixels;
 
         public ButtonPadApp(IAppHost host) : base(host)
         {
@@ -89,6 +91,7 @@ namespace LcdMod.Client.Apps
             _entryPanel.CreateControl = CreateEntryButton;
             _entryPanel.BindControl = BindEntryButton;
             LoadButtonPanelSettings();
+            EnsureButtonTexturesLoaded();
         }
 
         public override IReadOnlyList<Control> VisualChildren => _children;
@@ -103,6 +106,15 @@ namespace LcdMod.Client.Apps
 
         public override void Update()
         {
+        }
+
+        public override void LayoutChanged()
+        {
+            base.LayoutChanged();
+            LoadButtonPanelSettings();
+            EnsureButtonTexturesLoaded();
+            _entryPanel.InvalidateLayout();
+            MarkDirty();
         }
 
         public override List<MySprite> GetSprites()
@@ -124,28 +136,24 @@ namespace LcdMod.Client.Apps
             handled = _scrollPanel.Scroll(this, delta);
         }
 
-        void BuildRenderEntryIndices()
+        void BuildRenderEntryIndices(int buttonCount)
         {
             _renderEntryIndices.Clear();
 
-            var populated = new List<int>();
-            foreach (var entry in _entries)
-            {
-                if (entry.Value != null && entry.Value.HasContent())
-                    populated.Add(entry.Key);
-            }
-
-            populated.Sort();
-            _renderEntryIndices.AddRange(populated);
-            _renderEntryIndices.Add(GetNextEntryIndex(populated));
+            for (var index = 0; index < Math.Max(1, buttonCount); index++)
+                _renderEntryIndices.Add(index);
         }
 
-        static int GetNextEntryIndex(List<int> populated)
+        int GetMinimumConfiguredButtonCount()
         {
-            if (populated == null || populated.Count == 0)
-                return 0;
+            var highestConfiguredIndex = -1;
+            foreach (var entry in _entries)
+            {
+                if (entry.Key > highestConfiguredIndex && entry.Value != null && entry.Value.HasContent())
+                    highestConfiguredIndex = entry.Key;
+            }
 
-            return populated[populated.Count - 1] + 1;
+            return Math.Max(ButtonPanelLayout.MinimumButtonCount, highestConfiguredIndex + 1);
         }
 
         void DrawEntries(List<MySprite> sprites, float contentTop)
@@ -157,52 +165,40 @@ namespace LcdMod.Client.Apps
             if (availableHeight <= 0f)
                 return;
 
-            BuildRenderEntryIndices();
-
-            var scrollerWidth = Math.Min(ScrollPanel.DEFAULT_SCROLLER_WIDTH_PIXELS * Scale, Math.Max(0f, ViewBox.Width * 0.25f));
-            var layout = CreateButtonGridLayout(ViewBox.Width, availableHeight);
-            var totalRows = GetRowsForEntryCount(_renderEntryIndices.Count, layout.Columns);
-            var needsScroller = totalRows * layout.RowHeight > availableHeight + 0.001f;
-            if (needsScroller && scrollerWidth > 0f)
-            {
-                layout = CreateButtonGridLayout(Math.Max(1f, ViewBox.Width - scrollerWidth), availableHeight);
-                totalRows = GetRowsForEntryCount(_renderEntryIndices.Count, layout.Columns);
-            }
+            var spacing = ButtonPanelLayout.SpacingPixels * Scale;
+            var layout = ButtonPanelLayout.Create(
+                ButtonPanelComponent.ButtonCount,
+                ViewBox.Width,
+                availableHeight,
+                ButtonPanelLayout.PreferredButtonSizePixels * Scale,
+                spacing,
+                GetMinimumConfiguredButtonCount());
+            BuildRenderEntryIndices(layout.ButtonCount);
 
             _lastLayoutColumns = Math.Max(1, layout.Columns);
-
-            var contentWidth = Math.Max(1f, needsScroller ? ViewBox.Width - scrollerWidth : ViewBox.Width);
-            var columnWidth = contentWidth / Math.Max(1, layout.Columns);
+            _lastButtonSize = Math.Max(1f, layout.ButtonSize);
+            var panelRect = new RectangleF(
+                ViewBox.X,
+                contentTop,
+                ViewBox.Width,
+                availableHeight);
 
             _scrollPanel.SetContent(_entryPanel);
             _entryPanel.ItemsSource = _renderEntryIndices;
-            _entryPanel.RowHeight = layout.RowHeight;
-            _entryPanel.MinimumColumnWidth = Math.Max(1f, columnWidth - 0.01f);
-            _entryPanel.HorizontalGap = Math.Max(0f, columnWidth - layout.ButtonSize);
-            _entryPanel.VerticalGap = Math.Max(0f, layout.RowHeight - layout.ButtonSize);
+            _entryPanel.RowHeight = layout.CellHeight;
+            _entryPanel.MinimumColumnWidth = Math.Max(1f, layout.CellWidth - 0.01f);
+            _entryPanel.HorizontalGap = 0f;
+            _entryPanel.VerticalGap = 0f;
+            _entryPanel.InvalidateLayout();
 
             _scrollPanel.AutoScrollSecondsPerStep = 0f;
-            _scrollPanel.ConfigureAutomatic(
-                new RectangleF(ViewBox.X, contentTop, ViewBox.Width, availableHeight),
-                scrollerWidth,
-                layout.RowHeight);
+            _scrollPanel.ConfigureAutomatic(panelRect, 0f, layout.CellHeight);
 
             _scrollPanel.SetVisible(true);
             _children.Add(_scrollPanel);
 
             _scrollPanel.Render(sprites);
             ClearDirtyAfterRender();
-        }
-
-        int GetRowsForEntryCount(int entryCount, int columns)
-        {
-            columns = Math.Max(1, columns);
-            entryCount = Math.Max(0, entryCount);
-
-            if (entryCount == 0)
-                return 1;
-
-            return Math.Max(1, (entryCount + columns - 1) / columns);
         }
 
         ButtonPanelEntrySettings GetEntry(int index, bool create)
@@ -222,6 +218,16 @@ namespace LcdMod.Client.Apps
             return entry;
         }
 
+        static string GetEntrySpriteName(ButtonPanelEntrySettings entry)
+        {
+            if (entry == null)
+                return null;
+
+            return !string.IsNullOrEmpty(entry.SpriteName)
+                ? entry.SpriteName
+                : entry.Target?.SpriteName;
+        }
+
         void ApplyEntry(int index, ButtonPanelEntrySettings entry)
         {
             if (index < 0)
@@ -237,6 +243,9 @@ namespace LcdMod.Client.Apps
             }
 
             SaveButtonPanelSettings();
+            MarkDirty();
+            _entryPanel.InvalidateLayout();
+            Host.RenderSprites();
         }
 
         void LoadButtonPanelSettings()
@@ -271,6 +280,31 @@ namespace LcdMod.Client.Apps
             }
         }
 
+        void EnsureButtonTexturesLoaded()
+        {
+            foreach (var pair in _entries)
+            {
+                var entry = pair.Value;
+                if (entry == null)
+                    continue;
+
+                EnsureBlockTextureLoaded(entry.SpriteName);
+
+                var targetSpriteName = entry.Target?.SpriteName;
+                if (!string.Equals(entry.SpriteName, targetSpriteName, StringComparison.Ordinal))
+                    EnsureBlockTextureLoaded(targetSpriteName);
+            }
+        }
+
+        static void EnsureBlockTextureLoaded(string spriteName)
+        {
+            if (string.IsNullOrWhiteSpace(spriteName))
+                return;
+
+            string registeredSpriteName;
+            TextureHelper.TryGetOrAddTextureForBlockName(spriteName, out registeredSpriteName);
+        }
+
         void SaveButtonPanelSettings()
         {
             var list = new List<ButtonPanelEntrySettings>();
@@ -286,7 +320,7 @@ namespace LcdMod.Client.Apps
 
             var settings = new ButtonPanelSettings
             {
-                EntryCount = GetSavedEntryCount(),
+                EntryCount = Math.Max(ButtonPanelLayout.MinimumButtonCount, _renderEntryIndices.Count),
                 Entries = list.ToArray()
             };
 
@@ -297,46 +331,6 @@ namespace LcdMod.Client.Apps
                 ConfigManager.Sync(terminalBlock, Host.ProviderConfig);
         }
 
-        int GetSavedEntryCount()
-        {
-            var max = -1;
-            foreach (var entry in _entries)
-            {
-                if (entry.Value != null && entry.Value.HasContent() && entry.Key > max)
-                    max = entry.Key;
-            }
-
-            return max + 1;
-        }
-
-        ButtonGridLayout CreateButtonGridLayout(float availableWidth, float availableHeight)
-        {
-            var preferredButtonSize = BUTTON_SIZE_PIXELS * Scale;
-            var preferredSpacing = BUTTON_SPACING_PIXELS * Scale;
-            var usableWidth = Math.Max(1f, availableWidth);
-            var usableHeight = Math.Max(1f, availableHeight);
-
-            var buttonSize = Math.Min(preferredButtonSize, Math.Min(usableWidth, usableHeight));
-            var columns = Math.Max(1, (int)Math.Floor((usableWidth - preferredSpacing) / (buttonSize + preferredSpacing)));
-
-            var requiredWidth = columns * buttonSize + (columns + 1) * preferredSpacing;
-            if (requiredWidth > usableWidth)
-            {
-                var clampedSize = (usableWidth - (columns + 1) * preferredSpacing) / columns;
-                buttonSize = clampedSize > 1f
-                    ? Math.Min(buttonSize, clampedSize)
-                    : Math.Max(1f, usableWidth / columns);
-            }
-
-            return new ButtonGridLayout
-            {
-                ButtonSize = buttonSize,
-                Columns = columns,
-                VerticalSpacing = preferredSpacing,
-                RowHeight = buttonSize + preferredSpacing
-            };
-        }
-
         void ClearInteractiveTree()
         {
             _children.Clear();
@@ -345,7 +339,7 @@ namespace LcdMod.Client.Apps
 
         ControlTemplate CreateEntryButton(int entryIndex)
         {
-            return new Button(
+            return new PadButton(
                 default(RectangleF),
                 new PadButtonModel
                 {
@@ -383,8 +377,15 @@ namespace LcdMod.Client.Apps
             model.Row = row;
             model.Column = column;
             var entry = GetEntry(index, false);
-            model.SpriteName = entry?.SpriteName;
+            model.Configured = entry != null && entry.HasContent();
+            model.SpriteName = GetEntrySpriteName(entry);
             model.Title = entry?.Title;
+            model.BackgroundColor = entry?.BackgroundColor;
+#if EXPERIMENTAL
+            model.Status = GetEntryStatus(entry);
+#else
+            model.Status = null;
+#endif
             model.Text = string.Empty;
             model.Enabled = true;
             model.Clicked = OnPadButtonClicked;
@@ -402,62 +403,61 @@ namespace LcdMod.Client.Apps
 
         void RenderEntryButton(ControlTemplate control, List<MySprite> sprites)
         {
-            var rect = control.Bounds;
-            var hovered = rect.Contains(new Vector2(float.NaN, float.NaN));
+            var rect = CenterSquare(control.Bounds, _lastButtonSize);
+            var hovered = control.IsPointerOver;
             var button = control as Button;
-            var defaultPanelColor = button?.BackgroundColor ?? control.BackgroundColor;
-            var panelColor = hovered
-                ? control.GetResourceColor(ThemeResources.AccentColor, defaultPanelColor)
-                : defaultPanelColor;
-            var plusColor = control.TextColor;
-            var shadowColor = control.GetResourceColor(ThemeResources.ShadowColor, new Color(0, 0, 0, 160));
-
-            BorderRenderer.CreateSpritesFromRect(
-                new RectangleF(rect.Position + 2f * control.LayoutScale, rect.Size),
-                sprites,
-                shadowColor,
-                radiusScale: control.LayoutScale
-            );
-
-            BorderRenderer.CreateSpritesFromRect(
-                rect,
-                sprites,
-                panelColor,
-                radiusScale: control.LayoutScale
-            );
-
             var model = control.DataContext as PadButtonModel;
+            var buttonStyle = GetButtonPanelStyle();
+            var isConfigured = model?.Configured ?? false;
+            Color customPanelColor;
+            var hasCustomPanelColor = Extensions.ColorExtensions.TryParseHexColor(model?.BackgroundColor, out customPanelColor);
+            var defaultPanelColor = hasCustomPanelColor
+                ? customPanelColor
+                : button?.BackgroundColor ?? control.BackgroundColor;
+            var panelColor = hovered
+                ? hasCustomPanelColor
+                    ? GetHoverColor(defaultPanelColor)
+                    : control.GetResourceColor(ThemeResources.AccentColor, defaultPanelColor)
+                : defaultPanelColor;
+            var useDisabledColor = !isConfigured &&
+                                   (buttonStyle == ButtonPanelStyle.Default ||
+                                    buttonStyle == ButtonPanelStyle.Border);
+            if (useDisabledColor)
+            {
+                panelColor = control.GetResourceColor(
+                    ThemeResources.SurfaceContainerLowColor,
+                    defaultPanelColor);
+            }
+
+            var titleColor = buttonStyle == ButtonPanelStyle.Default
+                ? hasCustomPanelColor ? GetContrastingTextColor(panelColor) : control.TextColor
+                : panelColor.DeriveAccentColor();
+
+            RenderButtonBackground(
+                control,
+                sprites,
+                rect,
+                panelColor,
+                buttonStyle,
+                hovered);
+
             var spriteName = model?.SpriteName;
             var title = model?.Title;
+            var status = model?.Status;
 
-            var hasTitle = !string.IsNullOrWhiteSpace(title);
-            var titleAreaHeight = hasTitle ? Math.Max(12f, rect.Height * 0.24f) : 0f;
+            var showText = buttonStyle != ButtonPanelStyle.Transparent;
+            var hasTitle = showText && !string.IsNullOrWhiteSpace(title);
+            var hasStatus = showText && !string.IsNullOrWhiteSpace(status);
+            var titleAreaHeight = hasTitle ? Math.Max(12f, rect.Height * 0.22f) : 0f;
+            var statusAreaHeight = hasStatus ? Math.Max(12f, rect.Height * 0.22f) : 0f;
             var iconArea = new RectangleF(
                 rect.X,
                 rect.Y + titleAreaHeight,
                 rect.Width,
-                Math.Max(1f, rect.Height - titleAreaHeight)
+                Math.Max(1f, rect.Height - titleAreaHeight - statusAreaHeight)
             );
 
-            if (hasTitle)
-            {
-                var titleScale = 0.34f * control.LayoutScale * control.FontScale;
-                var titleHeight = FormatingHelper.LineHeight(titleScale, control, control.TextSurface);
-                var trimmedTitle = TrimText(title, Math.Max(0f, rect.Width - 8f * control.LayoutScale), titleScale, control.TextSurface);
-
-                sprites.Add(new MySprite
-                {
-                    Type = SpriteType.TEXT,
-                    Data = trimmedTitle,
-                    Position = new Vector2(rect.Center.X, rect.Y + Math.Max(1f, (titleAreaHeight - titleHeight) * 0.5f)),
-                    Color = plusColor,
-                    FontId = TextFont,
-                    RotationOrScale = titleScale,
-                    Alignment = TextAlignment.CENTER
-                });
-            }
-
-            var iconSize = Math.Max(1f, Math.Min(iconArea.Width, iconArea.Height) * 0.68f);
+            var iconSize = Math.Max(1f, Math.Min(iconArea.Width, iconArea.Height) * BUTTON_OCUPANCY);
             var iconRect = new RectangleF(
                 iconArea.Center.X - iconSize * 0.5f,
                 iconArea.Center.Y - iconSize * 0.5f,
@@ -473,35 +473,200 @@ namespace LcdMod.Client.Apps
                     Data = spriteName,
                     Position = iconRect.Center,
                     Size = iconRect.Size,
+                    Color = Color.White,
+                    Alignment = TextAlignment.CENTER
+                });
+            }
+            else if (buttonStyle == ButtonPanelStyle.Transparent)
+            {
+                var plusLength = Math.Min(iconRect.Width, iconRect.Height) * 0.5f;
+                var plusThickness = Math.Max(2f, 6f * control.LayoutScale);
+                var plusColor = control.GetResourceColor(ThemeResources.DisabledColor, Color.Gray);
+
+                sprites.Add(new MySprite
+                {
+                    Type = SpriteType.TEXTURE,
+                    Data = "SquareSimple",
+                    Position = iconRect.Center,
+                    Size = new Vector2(plusLength, plusThickness),
                     Color = plusColor,
                     Alignment = TextAlignment.CENTER
                 });
-                return;
+
+                sprites.Add(new MySprite
+                {
+                    Type = SpriteType.TEXTURE,
+                    Data = "SquareSimple",
+                    Position = iconRect.Center,
+                    Size = new Vector2(plusThickness, plusLength),
+                    Color = plusColor,
+                    Alignment = TextAlignment.CENTER
+                });
             }
 
-            var plusLength = Math.Min(iconRect.Width, iconRect.Height) * 0.5f;
-            var plusThickness = Math.Max(2f, 6f * control.LayoutScale);
+            var padButton = control as PadButton;
+            if (padButton == null)
+                return;
+
+            var borderInset = buttonStyle == ButtonPanelStyle.Border
+                ? 2f * control.LayoutScale
+                : 0f;
+            var textInset = 4f * control.LayoutScale + borderInset;
+            var textWidth = Math.Max(0f, rect.Width - textInset * 2f);
+            RenderAdaptiveButtonText(
+                padButton.TitleText,
+                hasTitle ? title : null,
+                new RectangleF(
+                    rect.X + textInset,
+                    rect.Y + textInset,
+                    textWidth,
+                    Math.Max(0f, titleAreaHeight - textInset)),
+                titleColor,
+                control,
+                sprites);
+            RenderAdaptiveButtonText(
+                padButton.StatusText,
+                hasStatus ? status : null,
+                new RectangleF(
+                    rect.X + textInset,
+                    rect.Bottom - statusAreaHeight,
+                    textWidth,
+                    Math.Max(0f, statusAreaHeight - textInset)),
+                titleColor,
+                control,
+                sprites);
+        }
+
+        static void RenderAdaptiveButtonText(
+            FitTextControl textControl,
+            string text,
+            RectangleF rect,
+            Color color,
+            ControlTemplate owner,
+            List<MySprite> sprites)
+        {
+            if (textControl == null)
+                return;
+
+            var clampedText = ClampButtonText(text);
+            var hasText = clampedText.Length > 0;
+            textControl.Text = clampedText;
+            textControl.TextColor = color;
+            textControl.MinFontScale = 0.01f;
+            textControl.MaxFontScale = 6f * owner.FontScale;
+            textControl.SetRect(hasText ? rect : default(RectangleF));
+            textControl.Render(sprites);
+        }
+
+        static string ClampButtonText(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+                return string.Empty;
+
+            var trimmed = text.Trim();
+            if (trimmed.Length <= BUTTON_TEXT_MAX_LENGTH)
+                return trimmed;
+
+            return trimmed.Substring(0, BUTTON_TEXT_MAX_LENGTH - 1) + FormatingHelper.ELLIPSIS;
+        }
+
+        ButtonPanelStyle GetButtonPanelStyle()
+        {
+            switch ((ButtonPanelStyle)ButtonPanelComponent.ButtonStyle)
+            {
+                case ButtonPanelStyle.Classic:
+                    return ButtonPanelStyle.Classic;
+                case ButtonPanelStyle.Transparent:
+                    return ButtonPanelStyle.Transparent;
+                case ButtonPanelStyle.Border:
+                    return ButtonPanelStyle.Border;
+                default:
+                    return ButtonPanelStyle.Default;
+            }
+        }
+
+        static void RenderButtonBackground(
+            ControlTemplate control,
+            List<MySprite> sprites,
+            RectangleF rect,
+            Color panelColor,
+            ButtonPanelStyle buttonStyle,
+            bool hovered)
+        {
+            switch (buttonStyle)
+            {
+                case ButtonPanelStyle.Classic:
+                    var classicBackground = new Color(
+                        panelColor.R,
+                        panelColor.G,
+                        panelColor.B,
+                        hovered ? (byte)255 : (byte)220);
+                    AddSquare(sprites, rect, classicBackground);
+
+                    var indicatorColor = panelColor.DeriveAccentColor(0.8f, 1.5);
+                    indicatorColor.A = byte.MaxValue;
+                    var indicatorHeight = Math.Min(rect.Height, Math.Max(1f, 1f * control.LayoutScale));
+                    AddSquare(sprites, new RectangleF(rect.X, rect.Y, rect.Width, indicatorHeight), indicatorColor);
+                    return;
+
+                case ButtonPanelStyle.Transparent:
+                    return;
+
+                case ButtonPanelStyle.Border:
+                    RenderSquareBorder(sprites, rect, panelColor, 2f * control.LayoutScale);
+                    return;
+
+                default:
+                    var shadowColor = control.GetResourceColor(
+                        ThemeResources.ShadowColor,
+                        new Color(0, 0, 0, 160));
+                    BorderRenderer.CreateSpritesFromRect(
+                        new RectangleF(rect.Position + 2f * control.LayoutScale, rect.Size),
+                        sprites,
+                        shadowColor,
+                        radiusScale: control.LayoutScale);
+                    BorderRenderer.CreateSpritesFromRect(
+                        rect,
+                        sprites,
+                        panelColor,
+                        radiusScale: control.LayoutScale);
+                    return;
+            }
+        }
+
+        static void RenderSquareBorder(
+            List<MySprite> sprites,
+            RectangleF rect,
+            Color color,
+            float requestedThickness)
+        {
+            var thickness = Math.Min(
+                Math.Min(rect.Width, rect.Height) * 0.5f,
+                Math.Max(1f, requestedThickness));
+            AddSquare(sprites, new RectangleF(rect.X, rect.Y, rect.Width, thickness), color);
+            AddSquare(sprites, new RectangleF(rect.X, rect.Bottom - thickness, rect.Width, thickness), color);
+            AddSquare(sprites, new RectangleF(rect.X, rect.Y, thickness, rect.Height), color);
+            AddSquare(sprites, new RectangleF(rect.Right - thickness, rect.Y, thickness, rect.Height), color);
+        }
+
+        static void AddSquare(List<MySprite> sprites, RectangleF rect, Color color)
+        {
+            if (rect.Width <= 0f || rect.Height <= 0f || color.A == 0)
+                return;
 
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXTURE,
                 Data = "SquareSimple",
-                Position = iconRect.Center,
-                Size = new Vector2(plusLength, plusThickness),
-                Color = plusColor,
-                Alignment = TextAlignment.CENTER
-            });
-
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = "SquareSimple",
-                Position = iconRect.Center,
-                Size = new Vector2(plusThickness, plusLength),
-                Color = plusColor,
+                Position = rect.Center,
+                Size = rect.Size,
+                Color = color,
                 Alignment = TextAlignment.CENTER
             });
         }
+
+        const int BUTTON_TEXT_MAX_LENGTH = 16;
+        const float BUTTON_OCUPANCY = 0.9f;
 
         void OnPadButtonClicked(ButtonModel model, object sender)
         {
@@ -555,7 +720,6 @@ namespace LcdMod.Client.Apps
                 entry =>
                 {
                     ApplyEntry(index, entry);
-                    Host.RenderSprites();
                 },
                 dialog => interactiveHost.ShowDialog(dialog),
                 Host.RenderSprites
@@ -656,6 +820,161 @@ namespace LcdMod.Client.Apps
         }
 
 #if EXPERIMENTAL
+        string GetEntryStatus(ButtonPanelEntrySettings entry)
+        {
+            if (!HasConfiguredAction(entry))
+                return null;
+
+            ICustomAction customAction;
+            if (!ActionHelper.CustomActions.TryGetValue(entry.Action.BaseId, out customAction))
+                return null;
+
+            var valueWriter = customAction as ICustomActionValueWriter;
+            if (valueWriter == null)
+                return null;
+
+            var block = FindStatusBlock(entry.Target, customAction);
+            if (block == null)
+                return null;
+
+            try
+            {
+                _actionStatusBuilder.Clear();
+                valueWriter.WriteValue(block, _actionStatusBuilder);
+                return NormalizeStatusText(_actionStatusBuilder);
+            }
+            catch
+            {
+                _actionStatusBuilder.Clear();
+                return null;
+            }
+        }
+
+        static string NormalizeStatusText(StringBuilder text)
+        {
+            if (text == null || text.Length == 0)
+                return null;
+
+            var value = text.ToString().Trim();
+            if (value.Length == 0)
+                return null;
+
+            var carriageReturn = value.IndexOf('\r');
+            var lineFeed = value.IndexOf('\n');
+            var lineEnd = carriageReturn < 0
+                ? lineFeed
+                : lineFeed < 0
+                    ? carriageReturn
+                    : Math.Min(carriageReturn, lineFeed);
+            return lineEnd < 0 ? value : value.Substring(0, lineEnd).Trim();
+        }
+
+        IMyIngameTerminalBlock FindStatusBlock(
+            ButtonPanelTargetSettings target,
+            ICustomAction customAction)
+        {
+            if (target == null || customAction == null)
+                return null;
+
+            switch ((PickActionTargetKind)target.Kind)
+            {
+                case PickActionTargetKind.Block:
+                {
+                    var block = FindBlock(target.Id);
+                    return CanWriteStatus(customAction, block) ? block : null;
+                }
+                case PickActionTargetKind.Group:
+                    return FindGroupStatusBlock(target.Id, customAction);
+                case PickActionTargetKind.BlockType:
+                    return FindTypeStatusBlock(
+                        FindRegisteredType(target.TypeName ?? target.Id),
+                        customAction);
+                case PickActionTargetKind.BlockSubtype:
+                    return FindSubtypeStatusBlock(target.Id, customAction);
+                default:
+                    return null;
+            }
+        }
+
+        IMyIngameTerminalBlock FindGroupStatusBlock(string groupName, ICustomAction customAction)
+        {
+            if (Host.GridLogic == null || Host.GridLogic.Grid == null || string.IsNullOrEmpty(groupName))
+                return null;
+
+            var terminalSystem = MyAPIGateway.TerminalActionsHelper.GetTerminalSystemForGrid(Host.GridLogic.Grid);
+            if (terminalSystem == null)
+                return null;
+
+            _actionGroups.Clear();
+            terminalSystem.GetBlockGroups(_actionGroups);
+            for (var groupIndex = 0; groupIndex < _actionGroups.Count; groupIndex++)
+            {
+                var group = _actionGroups[groupIndex];
+                if (group == null || !string.Equals(group.Name, groupName, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                _actionGroupBlocks.Clear();
+                group.GetBlocks(_actionGroupBlocks);
+                for (var blockIndex = 0; blockIndex < _actionGroupBlocks.Count; blockIndex++)
+                {
+                    var block = _actionGroupBlocks[blockIndex];
+                    if (CanWriteStatus(customAction, block))
+                        return block;
+                }
+            }
+
+            return null;
+        }
+
+        IMyIngameTerminalBlock FindTypeStatusBlock(Type targetType, ICustomAction customAction)
+        {
+            if (Host.GridLogic == null || targetType == null)
+                return null;
+
+            var blocks = Host.GridLogic.GetTerminalBlocks<IMyTerminalBlock>();
+            if (blocks == null)
+                return null;
+
+            for (var i = 0; i < blocks.Count; i++)
+            {
+                var block = blocks[i];
+                if (block != null && IsTypeMatch(targetType, block.GetType()) && CanWriteStatus(customAction, block))
+                    return block;
+            }
+
+            return null;
+        }
+
+        IMyIngameTerminalBlock FindSubtypeStatusBlock(string subtype, ICustomAction customAction)
+        {
+            if (Host.GridLogic == null || string.IsNullOrEmpty(subtype))
+                return null;
+
+            var blocks = Host.GridLogic.GetTerminalBlocks<IMyTerminalBlock>();
+            if (blocks == null)
+                return null;
+
+            for (var i = 0; i < blocks.Count; i++)
+            {
+                var block = blocks[i];
+                var cubeBlock = block as MyCubeBlock;
+                if (cubeBlock == null || cubeBlock.BlockDefinition == null ||
+                    !string.Equals(cubeBlock.BlockDefinition.Id.SubtypeName, subtype, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                if (CanWriteStatus(customAction, block))
+                    return block;
+            }
+
+            return null;
+        }
+
+        bool CanWriteStatus(ICustomAction customAction, IMyIngameTerminalBlock block)
+        {
+            return customAction != null && block != null &&
+                   IsActionCompatibleWithType(customAction, block.GetType());
+        }
+
         bool TryRunConfiguredAction(ButtonPanelEntrySettings entry, bool scroll, int delta)
         {
             if (!HasConfiguredAction(entry))
@@ -1246,12 +1565,49 @@ namespace LcdMod.Client.Apps
             return FormatingHelper.TrimName(text, Math.Max(1, (int)(text.Length * availableWidth / Math.Max(1f, size.X))));
         }
 
-        struct ButtonGridLayout
+        static Color GetHoverColor(Color color)
         {
-            public float ButtonSize;
-            public float RowHeight;
-            public float VerticalSpacing;
-            public int Columns;
+            return Color.White.ContrastRatio(color) >= Color.Black.ContrastRatio(color)
+                ? color.MulValue(1.18)
+                : color.MulValue(0.82);
+        }
+
+        static Color GetContrastingTextColor(Color background)
+        {
+            return Color.White.ContrastRatio(background) >= Color.Black.ContrastRatio(background)
+                ? Color.White
+                : Color.Black;
+        }
+
+        static RectangleF CenterSquare(RectangleF bounds, float size)
+        {
+            var safeSize = Math.Max(1f, Math.Min(size, Math.Min(bounds.Width, bounds.Height)));
+            return new RectangleF(
+                bounds.Center.X - safeSize * 0.5f,
+                bounds.Center.Y - safeSize * 0.5f,
+                safeSize,
+                safeSize);
+        }
+
+        sealed class PadButton : Button
+        {
+            public PadButton(RectangleF bounds, ButtonModel model)
+                : base(bounds, model)
+            {
+                TitleText = new FitTextControl();
+                StatusText = new FitTextControl();
+                AddChild(TitleText);
+                AddChild(StatusText);
+            }
+
+            public FitTextControl TitleText { get; private set; }
+
+            public FitTextControl StatusText { get; private set; }
+
+            protected override bool ShouldRenderStyleBorder()
+            {
+                return false;
+            }
         }
 
         sealed class PadButtonModel : ButtonModel
@@ -1262,9 +1618,15 @@ namespace LcdMod.Client.Apps
 
             public int Column { get; set; }
 
+            public bool Configured { get; set; }
+
             public string SpriteName { get; set; }
 
             public string Title { get; set; }
+
+            public string BackgroundColor { get; set; }
+
+            public string Status { get; set; }
         }
 
         sealed class ButtonPadEntryDialog : Dialog
@@ -1281,6 +1643,7 @@ namespace LcdMod.Client.Apps
             TextInput _titleInput;
             TextInputModel _titleInputModel;
             Button _selectedSpriteButton;
+            Button _colorButton;
             Button _pickTargetButton;
             Button _selectActionButton;
             Button _applyButton;
@@ -1323,12 +1686,13 @@ namespace LcdMod.Client.Apps
                 EnsureContainer(viewBox);
                 ContainerControl.ClearChildren();
 
+                var compact = IsTinyDialogAspectRatio(viewBox);
                 var layoutScale = scale * fontScale;
                 var titleScale = 0.82f * layoutScale;
                 var fieldTextScale = 0.56f * layoutScale;
-                var padding = new Vector2(18f * scale, 14f * scale);
-                var spacing = 10f * scale;
-                var smallSpacing = 6f * scale;
+                var padding = GetDialogPadding(viewBox, scale);
+                var spacing = GetDialogSpacing(viewBox, scale);
+                var smallSpacing = GetDialogSpacing(viewBox, scale, 6f, 3f);
 
                 var titleHeight = MeasureLineHeight(titleScale, surface);
                 var fieldHeight = Math.Max(34f * scale, MeasureLineHeight(fieldTextScale, surface) + 18f * scale);
@@ -1336,21 +1700,26 @@ namespace LcdMod.Client.Apps
                 var headerHeight = Math.Max(titleHeight, closeIconSize.Y);
                 var previewSize = GetSpritePreviewTargetSize(scale);
 
-                var cardWidth = Math.Min(
-                    Math.Max(400f * scale, viewBox.Width * 0.62f),
-                    Math.Max(1f, viewBox.Width - padding.X * 2f));
+                var outerPadding = GetDialogOuterPadding(viewBox, scale);
+                var cardWidth = compact
+                    ? Math.Max(1f, viewBox.Width - outerPadding * 2f)
+                    : Math.Min(
+                        Math.Max(400f * scale, viewBox.Width * 0.62f),
+                        Math.Max(1f, viewBox.Width - outerPadding * 2f));
 
                 var contentWidth = Math.Max(1f, cardWidth - padding.X * 2f);
                 previewSize = Math.Min(previewSize, contentWidth);
                 var narrowLayout = contentWidth < previewSize + spacing + 150f * scale;
 
-                var stackHeight = fieldHeight * 3f + smallSpacing * 2f;
+                var stackHeight = fieldHeight * 4f + smallSpacing * 3f;
                 var contentHeight = narrowLayout
                     ? previewSize + spacing + stackHeight + spacing + fieldHeight
                     : Math.Max(previewSize, stackHeight) + spacing + fieldHeight;
 
                 var cardHeight = padding.Y * 2f + headerHeight + spacing + contentHeight;
-                cardHeight = Math.Min(cardHeight, Math.Max(1f, viewBox.Height - padding.Y * 2f));
+                cardHeight = compact
+                    ? Math.Max(1f, viewBox.Height - outerPadding * 2f)
+                    : Math.Min(cardHeight, Math.Max(1f, viewBox.Height - outerPadding * 2f));
 
                 var cardRect = new RectangleF(
                     viewBox.Center.X - cardWidth * 0.5f,
@@ -1359,7 +1728,13 @@ namespace LcdMod.Client.Apps
                     cardHeight);
 
                 RegisterDialogCard(cardRect);
-                DrawDialogBackdrop(surface, scale, cardRect, 128);
+                DrawDialogBackdrop(surface, scale, cardRect, 128, !compact);
+
+                if (compact)
+                {
+                    RenderCompactEditor(cardRect, viewBox, scale);
+                    return;
+                }
 
                 var dialogTitle = _index >= 0 ? "Button " + (_index + 1) : "Button";
                 Sprites.Add(new MySprite
@@ -1376,6 +1751,7 @@ namespace LcdMod.Client.Apps
                 var contentTop = cardRect.Y + padding.Y + headerHeight + spacing;
                 RectangleF previewRect;
                 RectangleF titleInputRect;
+                RectangleF colorRect;
                 RectangleF targetRect;
                 RectangleF actionRect;
                 RectangleF applyRect;
@@ -1393,6 +1769,8 @@ namespace LcdMod.Client.Apps
                     var y = previewRect.Bottom + spacing;
                     titleInputRect = new RectangleF(cardRect.X + padding.X, y, contentWidth, fieldHeight);
                     y = titleInputRect.Bottom + smallSpacing;
+                    colorRect = new RectangleF(cardRect.X + padding.X, y, contentWidth, fieldHeight);
+                    y = colorRect.Bottom + smallSpacing;
                     targetRect = new RectangleF(cardRect.X + padding.X, y, contentWidth, fieldHeight);
                     y = targetRect.Bottom + smallSpacing;
                     actionRect = new RectangleF(cardRect.X + padding.X, y, contentWidth, fieldHeight);
@@ -1409,7 +1787,8 @@ namespace LcdMod.Client.Apps
                     var rightX = previewRect.Right + spacing;
                     var rightWidth = Math.Max(1f, cardRect.Right - padding.X - rightX);
                     titleInputRect = new RectangleF(rightX, contentTop, rightWidth, fieldHeight);
-                    targetRect = new RectangleF(rightX, titleInputRect.Bottom + smallSpacing, rightWidth, fieldHeight);
+                    colorRect = new RectangleF(rightX, titleInputRect.Bottom + smallSpacing, rightWidth, fieldHeight);
+                    targetRect = new RectangleF(rightX, colorRect.Bottom + smallSpacing, rightWidth, fieldHeight);
                     actionRect = new RectangleF(rightX, targetRect.Bottom + smallSpacing, rightWidth, fieldHeight);
                     footerTop = Math.Max(actionRect.Bottom + spacing, previewRect.Bottom + spacing);
                 }
@@ -1431,6 +1810,7 @@ namespace LcdMod.Client.Apps
 
                 EnsureSelectedSpriteButton(previewRect);
                 EnsureTitleInput(titleInputRect);
+                EnsureColorButton(colorRect);
                 EnsurePickTargetButton(targetRect);
                 EnsureSelectActionButton(actionRect);
                 EnsureApplyButton(applyRect);
@@ -1438,6 +1818,7 @@ namespace LcdMod.Client.Apps
 
                 ContainerControl.AddChild(_selectedSpriteButton);
                 ContainerControl.AddChild(_titleInput);
+                ContainerControl.AddChild(_colorButton);
                 ContainerControl.AddChild(_pickTargetButton);
                 ContainerControl.AddChild(_selectActionButton);
                 ContainerControl.AddChild(_applyButton);
@@ -1445,13 +1826,69 @@ namespace LcdMod.Client.Apps
 
                 _selectedSpriteButton.Render(Sprites);
                 _titleInput.Render(Sprites);
+                _colorButton.Render(Sprites);
                 _pickTargetButton.Render(Sprites);
                 _selectActionButton.Render(Sprites);
                 _applyButton.Render(Sprites);
                 _deleteButton.Render(Sprites);
             }
 
-            void DrawDialogBackdrop(IMyTextSurface surface, float scale, RectangleF cardRect, byte overlayAlpha)
+            void RenderCompactEditor(RectangleF cardRect, RectangleF viewBox, float scale)
+            {
+                var padding = GetDialogPadding(viewBox, scale);
+                var spacing = GetDialogSpacing(viewBox, scale);
+                var contentRect = GetDialogContentRect(cardRect, viewBox, scale, padding);
+                var gap = Math.Min(spacing, contentRect.Width * 0.02f);
+                var rowHeight = Math.Max(1f, (contentRect.Height - gap) * 0.5f);
+                var previewSize = Math.Min(Math.Min(GetSpritePreviewTargetSize(scale), contentRect.Height),
+                    Math.Max(1f, contentRect.Width * 0.12f));
+                var actionButtonWidth = Math.Min(Math.Max(64f * scale, contentRect.Width * 0.09f), contentRect.Width * 0.14f);
+
+                var previewRect = new RectangleF(contentRect.X, contentRect.Center.Y - previewSize * 0.5f,
+                    previewSize, previewSize);
+                var deleteRect = new RectangleF(contentRect.Right - actionButtonWidth, contentRect.Y,
+                    actionButtonWidth, rowHeight);
+                var applyRect = new RectangleF(deleteRect.X, contentRect.Y + rowHeight + gap,
+                    actionButtonWidth, rowHeight);
+
+                var fieldsLeft = previewRect.Right + gap;
+                var fieldsRight = deleteRect.X - gap;
+                var titleWidth = Math.Max(1f, Math.Min((fieldsRight - fieldsLeft) * 0.42f,
+                    Math.Max(100f * scale, contentRect.Width * 0.22f)));
+                var targetX = fieldsLeft + titleWidth + gap;
+                var targetWidth = Math.Max(1f, fieldsRight - targetX);
+                var titleInputRect = new RectangleF(fieldsLeft, contentRect.Y, titleWidth, rowHeight);
+                var colorRect = new RectangleF(fieldsLeft, contentRect.Y + rowHeight + gap, titleWidth, rowHeight);
+                var targetRect = new RectangleF(targetX, contentRect.Y, targetWidth, rowHeight);
+                var actionRect = new RectangleF(targetX, contentRect.Y + rowHeight + gap, targetWidth, rowHeight);
+
+                EnsureSelectedSpriteButton(previewRect);
+                EnsureTitleInput(titleInputRect);
+                EnsureColorButton(colorRect);
+                EnsurePickTargetButton(targetRect);
+                EnsureSelectActionButton(actionRect);
+                EnsureApplyButton(applyRect);
+                EnsureDeleteButton(deleteRect);
+
+                ContainerControl.AddChild(_selectedSpriteButton);
+                ContainerControl.AddChild(_titleInput);
+                ContainerControl.AddChild(_colorButton);
+                ContainerControl.AddChild(_pickTargetButton);
+                ContainerControl.AddChild(_selectActionButton);
+                ContainerControl.AddChild(_applyButton);
+                ContainerControl.AddChild(_deleteButton);
+
+                _selectedSpriteButton.Render(Sprites);
+                _titleInput.Render(Sprites);
+                _colorButton.Render(Sprites);
+                _pickTargetButton.Render(Sprites);
+                _selectActionButton.Render(Sprites);
+                _applyButton.Render(Sprites);
+                _deleteButton.Render(Sprites);
+            }
+
+            void DrawDialogBackdrop(IMyTextSurface surface, float scale, RectangleF cardRect, byte overlayAlpha,
+                bool drawShadow)
             {
                 Sprites.Add(new MySprite
                 {
@@ -1463,10 +1900,12 @@ namespace LcdMod.Client.Apps
                     Alignment = TextAlignment.CENTER
                 });
 
-                BorderRenderer.CreateSpritesFromRect(new RectangleF(cardRect.Position + 3f * scale, cardRect.Size), Sprites,
-                    ResolveColor(ThemeResources.ShadowColor), radiusScale: scale);
+                if (drawShadow)
+                    BorderRenderer.CreateSpritesFromRect(new RectangleF(cardRect.Position + 3f * scale, cardRect.Size), Sprites,
+                        ResolveColor(ThemeResources.ShadowColor), radiusScale: scale);
                 BorderRenderer.CreateSpritesFromRect(cardRect, Sprites,
-                    ResolveColor(ThemeResources.SurfaceContainerHighColor), radiusScale: scale);
+                    ResolveColor(ThemeResources.SurfaceContainerHighColor),
+                    radiusPixels: DialogCardRadiusPixels, radiusScale: scale);
             }
 
             void EnsureSelectedSpriteButton(RectangleF rect)
@@ -1483,13 +1922,14 @@ namespace LcdMod.Client.Apps
                     _selectedSpriteButton.SetDataContext(model);
                 }
 
-                model.SpriteName = _draftEntry.SpriteName;
+                model.SpriteName = GetEntrySpriteName(_draftEntry);
                 model.Text = string.Empty;
                 model.Enabled = true;
                 model.Clicked = OnSelectedSpriteButtonClicked;
 
                 _selectedSpriteButton.SetStyleId("Primary");
                 _selectedSpriteButton.CustomRender = RenderSelectedSprite;
+                _selectedSpriteButton.OnSecondaryClick = OnSpriteUnassigned;
                 _selectedSpriteButton.SetCursor(CursorType.Hand);
                 _selectedSpriteButton.SetVisible(true);
             }
@@ -1501,20 +1941,27 @@ namespace LcdMod.Client.Apps
                 var spriteName = model?.SpriteName;
                 var hovered = rect.Contains(new Vector2(float.NaN, float.NaN));
                 var button = control as Button;
-                var defaultPanelColor = button?.BackgroundColor ?? control.BackgroundColor;
+                Color customPanelColor;
+                var hasCustomPanelColor = Extensions.ColorExtensions.TryParseHexColor(
+                    _draftEntry.BackgroundColor,
+                    out customPanelColor);
+                var defaultPanelColor = hasCustomPanelColor
+                    ? customPanelColor
+                    : button?.BackgroundColor ?? control.BackgroundColor;
                 var panelColor = hovered
-                    ? control.GetResourceColor(ThemeResources.AccentColor, defaultPanelColor)
+                    ? hasCustomPanelColor
+                        ? GetHoverColor(defaultPanelColor)
+                        : control.GetResourceColor(ThemeResources.AccentColor, defaultPanelColor)
                     : defaultPanelColor;
 
                 BorderRenderer.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: control.LayoutScale);
 
-                var foregroundColor = control.TextColor;
                 var iconSize = Math.Max(1f, Math.Min(rect.Width, rect.Height) * 0.74f);
                 var iconRect = new RectangleF(rect.Center.X - iconSize * 0.5f, rect.Center.Y - iconSize * 0.5f, iconSize, iconSize);
 
                 if (string.IsNullOrEmpty(spriteName))
                 {
-                    DrawPlus(iconRect, foregroundColor, control.LayoutScale, sprites);
+                    DrawPlus(iconRect, Color.White, control.LayoutScale, sprites);
                     return;
                 }
 
@@ -1524,7 +1971,7 @@ namespace LcdMod.Client.Apps
                     Data = spriteName,
                     Position = iconRect.Center,
                     Size = iconRect.Size,
-                    Color = foregroundColor,
+                    Color = Color.White,
                     Alignment = TextAlignment.CENTER
                 });
             }
@@ -1579,8 +2026,96 @@ namespace LcdMod.Client.Apps
 
                 _titleInput.SetDataContext(_titleInputModel);
                 _titleInput.SetStyleId("Primary");
+                _titleInput.OnSecondaryClick = OnTitleUnassigned;
                 _titleInput.SetCursor(CursorType.Hand);
                 _titleInput.SetVisible(true);
+            }
+
+            void EnsureColorButton(RectangleF rect)
+            {
+                if (_colorButton == null)
+                    _colorButton = new Button(rect, new ButtonModel { Clicked = OnColorClicked });
+                else
+                    _colorButton.SetRect(rect);
+
+                var model = _colorButton.DataContext as ButtonModel;
+                if (model != null)
+                {
+                    model.Text = GetDraftBackgroundColor().ToHex();
+                    model.Enabled = true;
+                    model.Clicked = OnColorClicked;
+                }
+
+                _colorButton.SetStyleId("Primary");
+                _colorButton.SetClass(CurrentDialogIsTiny
+                    ? "ControlBase Button Input Compact"
+                    : "ControlBase Button Input");
+                _colorButton.CustomRender = RenderColorButton;
+                _colorButton.OnSecondaryClick = OnColorUnassigned;
+                _colorButton.SetCursor(CursorType.Hand);
+                _colorButton.SetVisible(true);
+            }
+
+            void RenderColorButton(ControlTemplate control, List<MySprite> sprites)
+            {
+                var rect = control.Bounds;
+                var hovered = rect.Contains(new Vector2(float.NaN, float.NaN));
+                var button = control as Button;
+                var defaultPanelColor = button?.BackgroundColor ?? control.BackgroundColor;
+                var panelColor = hovered
+                    ? control.GetResourceColor(ThemeResources.AccentColor, defaultPanelColor)
+                    : defaultPanelColor;
+                BorderRenderer.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: control.LayoutScale);
+
+                var padding = 6f * control.LayoutScale;
+                var swatchSize = Math.Max(1f, Math.Min(rect.Height - padding * 2f, 22f * control.LayoutScale));
+                var swatchCenter = new Vector2(rect.X + padding + swatchSize * 0.5f, rect.Center.Y);
+                sprites.Add(new MySprite
+                {
+                    Type = SpriteType.TEXTURE,
+                    Data = "Circle",
+                    Position = swatchCenter,
+                    Size = new Vector2(swatchSize, swatchSize),
+                    Color = control.TextColor,
+                    Alignment = TextAlignment.CENTER
+                });
+                var swatchInset = Math.Max(1f, 2f * control.LayoutScale);
+                sprites.Add(new MySprite
+                {
+                    Type = SpriteType.TEXTURE,
+                    Data = "Circle",
+                    Position = swatchCenter,
+                    Size = new Vector2(
+                        Math.Max(1f, swatchSize - swatchInset * 2f),
+                        Math.Max(1f, swatchSize - swatchInset * 2f)),
+                    Color = GetDraftBackgroundColor(),
+                    Alignment = TextAlignment.CENTER
+                });
+
+                var textScale = 0.52f * control.LayoutScale * control.FontScale;
+                var textHeight = FormatingHelper.LineHeight(textScale, control, control.TextSurface);
+                var textX = swatchCenter.X + swatchSize * 0.5f + 7f * control.LayoutScale;
+                var availableWidth = Math.Max(0f, rect.Right - textX - padding);
+                var text = TrimText(GetDraftBackgroundColor().ToHex(), availableWidth, textScale, control.TextSurface);
+
+                sprites.Add(new MySprite
+                {
+                    Type = SpriteType.TEXT,
+                    Data = text,
+                    Position = new Vector2(textX, rect.Center.Y - textHeight * 0.5f),
+                    Color = control.TextColor,
+                    FontId = TextFont,
+                    RotationOrScale = textScale,
+                    Alignment = TextAlignment.LEFT
+                });
+            }
+
+            Color GetDraftBackgroundColor()
+            {
+                Color color;
+                return Extensions.ColorExtensions.TryParseHexColor(_draftEntry.BackgroundColor, out color)
+                    ? color
+                    : ResolveColor(ThemeResources.AccentContainerColor);
             }
 
             void EnsurePickTargetButton(RectangleF rect)
@@ -1600,6 +2135,7 @@ namespace LcdMod.Client.Apps
 
                 _pickTargetButton.SetStyleId("Primary");
                 _pickTargetButton.CustomRender = RenderTextButton;
+                _pickTargetButton.OnSecondaryClick = OnTargetUnassigned;
                 _pickTargetButton.SetCursor(_gridLogic != null ? CursorType.Hand : CursorType.Default);
                 _pickTargetButton.SetVisible(true);
             }
@@ -1623,6 +2159,7 @@ namespace LcdMod.Client.Apps
                 _selectActionButton.SetStyleId(enabled ? "Primary" : "Disabled");
                 _selectActionButton.SetEnabled(enabled);
                 _selectActionButton.CustomRender = RenderTextButton;
+                _selectActionButton.OnSecondaryClick = OnActionUnassigned;
                 _selectActionButton.SetCursor(enabled ? CursorType.Hand : CursorType.Default);
                 _selectActionButton.SetVisible(true);
             }
@@ -1723,28 +2260,48 @@ namespace LcdMod.Client.Apps
                 if (_showDialog == null)
                     return;
 
-                bool restored = false;
-                Action restoreEditor = delegate
-                {
-                    if (restored)
-                        return;
-
-                    restored = true;
-                    if (_showDialog != null)
-                        _showDialog(this);
-                    if (_requestRedraw != null)
-                        _requestRedraw();
-                };
-
                 _showDialog(new SpritePicker(
                     ParentApp,
                     delegate(string spriteName)
                     {
                         _draftEntry.SpriteName = spriteName;
-                        restoreEditor();
+                        RequestRender();
                     },
                     _requestRedraw,
-                    restoreEditor));
+                    _requestRedraw));
+            }
+
+            void OnSpriteUnassigned(object dataContext, object sender)
+            {
+                _draftEntry.SpriteName = null;
+                RequestRender();
+            }
+
+            void OnTitleUnassigned(object dataContext, object sender)
+            {
+                _draftEntry.Title = string.Empty;
+                if (_titleInputModel != null)
+                    _titleInputModel.Value = string.Empty;
+                RequestRender();
+            }
+
+            void OnColorUnassigned(object dataContext, object sender)
+            {
+                _draftEntry.BackgroundColor = null;
+                RequestRender();
+            }
+
+            void OnTargetUnassigned(object dataContext, object sender)
+            {
+                _draftEntry.Target = null;
+                _draftEntry.Action = null;
+                RequestRender();
+            }
+
+            void OnActionUnassigned(object dataContext, object sender)
+            {
+                _draftEntry.Action = null;
+                RequestRender();
             }
 
             void OnPickTargetClicked(ButtonModel model, object sender)
@@ -1768,15 +2325,11 @@ namespace LcdMod.Client.Apps
                 if (!string.Equals(oldKey, newKey, StringComparison.OrdinalIgnoreCase))
                     _draftEntry.Action = null;
 
-                if (_showDialog != null)
-                    _showDialog(this);
-                _requestRedraw?.Invoke();
+                RequestRender();
             }
 
             void OnPickTargetCancelled()
             {
-                if (_showDialog != null)
-                    _showDialog(this);
                 _requestRedraw?.Invoke();
             }
 
@@ -1822,37 +2375,52 @@ namespace LcdMod.Client.Apps
                 }
 
                 _draftEntry.Action = selectedAction;
-                if (_showDialog != null)
-                    _showDialog(this);
-                _requestRedraw?.Invoke();
+                RequestRender();
             }
 
             void OnActionConfigured(ButtonPanelActionSettings action)
             {
                 _draftEntry.Action = action?.Clone();
-                if (_showDialog != null)
-                    _showDialog(this);
-                _requestRedraw?.Invoke();
+                RequestRender();
             }
 
             void OnActionConfigurationCancelled()
             {
-                if (_showDialog != null)
-                    _showDialog(this);
                 _requestRedraw?.Invoke();
             }
 
             void OnActionCancelled()
             {
-                if (_showDialog != null)
-                    _showDialog(this);
                 _requestRedraw?.Invoke();
             }
 
             void OnTitleChanged(string value)
             {
                 _draftEntry.Title = value ?? string.Empty;
-                _requestRedraw?.Invoke();
+                RequestRender();
+            }
+
+            void OnColorClicked(ButtonModel model, object sender)
+            {
+                TextInputHelper.SpawnForLocalPlayer(
+                    "Button Color",
+                    OnColorChanged,
+                    GetDraftBackgroundColor().ToHex(),
+                    "Hex color, for example #ff00ff");
+            }
+
+            void OnColorChanged(string value)
+            {
+                Color color;
+                if (Extensions.ColorExtensions.TryParseHexColor(value, out color))
+                {
+                    _draftEntry.BackgroundColor = color.ToHex();
+                    RequestRender();
+                    return;
+                }
+
+                if (MyAPIGateway.Utilities != null)
+                    MyAPIGateway.Utilities.ShowNotification("Invalid color. Use #RRGGBB.", 2500);
             }
 
             void OnApplyClicked(ButtonModel model, object sender)

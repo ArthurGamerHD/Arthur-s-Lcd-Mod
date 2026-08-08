@@ -57,6 +57,51 @@ namespace LcdMod.Client.Gui.Styling.Styles
 
             Style listBoxItem = styles.For<ListBoxItem<ItemsApp.ItemViewModel>>();
             ConfigureListBoxItem(listBoxItem);
+
+            Style listRow = styles.For<ControlTemplate>().ClassSelector("Row");
+            ConfigureListRow(listRow);
+        }
+
+        static void ConfigureListRow(Style style)
+        {
+            style
+                .Set(ControlTemplate.BackgroundColorProperty, ThemeResources.SecondaryContainerColor)
+                .Set(ControlTemplate.TextColorProperty, ThemeResources.OnSecondaryContainerColor)
+                .Set(ControlTemplate.RenderTransformProperty, ScaleTransform.Identity)
+                .Animate(ControlTemplate.RenderTransformProperty, 6, EasingMode.EaseOutCubic,
+                    AnimationInterpolators.RenderTransform)
+                .Animate(ControlTemplate.BackgroundColorProperty, 6, EasingMode.EaseOutCubic,
+                    AnimationInterpolators.Color)
+                .Animate(ControlTemplate.TextColorProperty, 6, EasingMode.EaseOutCubic,
+                    AnimationInterpolators.Color)
+                .Animate(ControlTemplate.BorderColorProperty, 6, EasingMode.EaseOutCubic,
+                    AnimationInterpolators.Color);
+
+            style.State(StyleState.Hover)
+                .Set(ControlTemplate.BackgroundColorProperty, ThemeResources.SurfaceContainerHighColor)
+                .Set(ControlTemplate.TextColorProperty, ThemeResources.OnSurfaceColor)
+                .Set(ControlTemplate.RenderTransformProperty, ScaleTransform.Identity);
+
+            style.State(StyleState.Pressed)
+                .Set(ControlTemplate.BackgroundColorProperty, ThemeResources.SurfaceContainerHighestColor)
+                .Set(ControlTemplate.TextColorProperty, ThemeResources.OnSurfaceColor)
+                .Set(ControlTemplate.RenderTransformProperty, new ScaleTransform(0.95f));
+
+            Style selectedState = style.State(StyleState.Selected)
+                .Set(ControlTemplate.BackgroundColorProperty, ThemeResources.AccentContainerColor)
+                .Set(ControlTemplate.TextColorProperty, ThemeResources.OnAccentContainerColor);
+
+            selectedState.State(StyleState.Hover)
+                .Set(ControlTemplate.BackgroundColorProperty, ThemeResources.AccentColor)
+                .Set(ControlTemplate.TextColorProperty, ThemeResources.OnAccentColor);
+
+            Style selected = style.ClassSelector("Selected")
+                .Set(ControlTemplate.BackgroundColorProperty, ThemeResources.AccentContainerColor)
+                .Set(ControlTemplate.TextColorProperty, ThemeResources.OnAccentContainerColor);
+
+            selected.State(StyleState.Hover)
+                .Set(ControlTemplate.BackgroundColorProperty, ThemeResources.AccentColor)
+                .Set(ControlTemplate.TextColorProperty, ThemeResources.OnAccentColor);
         }
 
         static void ConfigureListBoxItem(Style style)
@@ -84,7 +129,7 @@ namespace LcdMod.Client.Gui.Styling.Styles
             style.State(StyleState.Hover)
                 .Set(ControlTemplate.BackgroundColorProperty, ThemeResources.SurfaceContainerHighColor)
                 .Set(ControlTemplate.TextColorProperty, ThemeResources.OnSurfaceColor)
-                .Set(ControlTemplate.RenderTransformProperty, new ScaleTransform(1.05f))
+                .Set(ControlTemplate.RenderTransformProperty, ScaleTransform.Identity)
                 .Animate(
                     ControlTemplate.RenderTransformProperty,
                     5,
@@ -110,13 +155,13 @@ namespace LcdMod.Client.Gui.Styling.Styles
             style.State(StyleState.Hover | StyleState.Selected)
                 .Set(ControlTemplate.BackgroundColorProperty, ThemeResources.AccentColor)
                 .Set(ControlTemplate.TextColorProperty, ThemeResources.OnAccentColor)
-                .Set(ControlTemplate.RenderTransformProperty, new ScaleTransform(1.05f));
+                .Set(ControlTemplate.RenderTransformProperty, ScaleTransform.Identity);
 
             // Pressed remains the strongest transient interaction state.
             style.State(StyleState.Pressed)
                 .Set(ControlTemplate.BackgroundColorProperty, ThemeResources.SurfaceContainerHighestColor)
                 .Set(ControlTemplate.TextColorProperty, ThemeResources.OnSurfaceColor)
-                .Set(ControlTemplate.RenderTransformProperty, new ScaleTransform(1.05f))
+                .Set(ControlTemplate.RenderTransformProperty, new ScaleTransform(0.95f))
                 .Animate(
                     ControlTemplate.RenderTransformProperty,
                     2,
@@ -136,7 +181,7 @@ namespace LcdMod.Client.Gui.Styling.Styles
             style.State(StyleState.Dragged)
                 .Set(ControlTemplate.BackgroundColorProperty, ThemeResources.SurfaceContainerHighestColor)
                 .Set(ControlTemplate.TextColorProperty, ThemeResources.OnSurfaceColor)
-                .Set(ControlTemplate.RenderTransformProperty, new ScaleTransform(1.05f))
+                .Set(ControlTemplate.RenderTransformProperty, ScaleTransform.Identity)
                 .Animate(
                     ControlTemplate.RenderTransformProperty,
                     2,

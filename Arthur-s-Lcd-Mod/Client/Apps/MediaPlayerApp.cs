@@ -29,7 +29,7 @@ using static LcdMod.Common.Helpers.Constants;
 using ArgumentOutOfRangeException = LcdMod.Common.Exceptions.ArgumentOutOfRangeException;
 using IMyTerminalBlock = Sandbox.ModAPI.IMyTerminalBlock;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
-// todo: this app is just an "stub" to test in game, a real UI for it should be created later 
+
 namespace LcdMod.Client.Apps
 {
     [LcdApp(28)]
@@ -38,7 +38,7 @@ namespace LcdMod.Client.Apps
     {
         const float MIN_BUTTON_HEIGHT = 34f;
         const float MAX_BUTTON_HEIGHT = 56f;
-        const float TINY_HEIGHT_TO_WIDTH_RATIO = 0.2f;
+        const float TINY_HEIGHT_TO_WIDTH_RATIO = MIN_SCREEN_HEIGHT_TO_WIDTH_RATIO;
         const float WIDE_WIDTH_TO_HEIGHT_RATIO = 1.25f;
         const float SIDE_PADDING = 12f;
         const float LINE_GAP = 5f;

@@ -20,9 +20,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         const float CARD_HEIGHT_PERCENT = 0.82f;
         const float MIN_CARD_WIDTH_PIXELS = 340f;
         const float MIN_CARD_HEIGHT_PIXELS = 270f;
-        const float COMPACT_HEIGHT_TO_WIDTH_RATIO = 0.2f;
         const float OUTER_PADDING_PIXELS = 18f;
-        const float COMPACT_OUTER_PADDING_PIXELS = 2f;
+        const float COMPACT_OUTER_PADDING_PIXELS = 0f;
         const float INNER_PADDING_X_PIXELS = 18f;
         const float INNER_PADDING_Y_PIXELS = 14f;
         const float SPACING_PIXELS = 9f;
@@ -113,7 +112,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
         public Action RequestRedraw { get; set; }
         public Action OnClosed { get; set; }
-        public bool FullscreenOnCompactSurfaces { get; set; }
+        public bool FullscreenOnCompactSurfaces { get; set; } = true;
 
         public void SetContextActionsProvider(Func<FilePickerResult, List<FilePickerContextAction>> contextActionsProvider)
         {
@@ -178,8 +177,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             ConfigureHistoryShortcuts(container);
 
             var layoutScale = scale * fontScale;
-            var compactFullscreen = FullscreenOnCompactSurfaces &&
-                                    viewBox.Height / Math.Max(1f, viewBox.Width) < COMPACT_HEIGHT_TO_WIDTH_RATIO;
+            var compactFullscreen = FullscreenOnCompactSurfaces && IsTinyDialogAspectRatio(viewBox);
             _compactFullscreenThisFrame = compactFullscreen;
             var outerPadding = (compactFullscreen ? COMPACT_OUTER_PADDING_PIXELS : OUTER_PADDING_PIXELS) * scale;
             var innerPadding = compactFullscreen
@@ -262,6 +260,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Math.Max(0f, listBottom - listTop));
 
             EnsureSearchInput(searchRect);
+            _searchInput.SetClass("ControlBase");
             ContainerControl.AddChild(_searchInput);
             _searchInput.Render(Sprites);
 
@@ -295,16 +294,18 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 surface.TextureSize,
                 new Color(0, 0, 0, 128)));
 
-            BorderRenderer.CreateSpritesFromRect(
-                new RectangleF(cardRect.Position + 3f * scale, cardRect.Size),
-                Sprites,
-                ResolveColor(ThemeResources.ShadowColor),
-                radiusScale: scale);
+            if (!CurrentDialogIsTiny)
+                BorderRenderer.CreateSpritesFromRect(
+                    new RectangleF(cardRect.Position + 3f * scale, cardRect.Size),
+                    Sprites,
+                    ResolveColor(ThemeResources.ShadowColor),
+                    radiusScale: scale);
 
             BorderRenderer.CreateSpritesFromRect(
                 cardRect,
                 Sprites,
                 ResolveColor(ThemeResources.SurfaceContainerHighColor),
+                radiusPixels: DialogCardRadiusPixels,
                 radiusScale: scale);
         }
 
@@ -334,26 +335,32 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             RegisterDialogCard(rect);
             DrawBackground(surface, scale, rect);
 
-            if (_searchInput != null)
-                _searchInput.SetVisible(false);
-
-            var outerPadding = COMPACT_OUTER_PADDING_PIXELS * scale;
+            var innerPaddingX = 4f * scale;
+            var innerPaddingY = 2f * scale;
             var gap = Math.Max(2f, 4f * scale);
-            var height = Math.Max(1f, rect.Height - outerPadding * 2f);
-            var y = rect.Y + outerPadding;
+            var height = Math.Max(1f, rect.Height - innerPaddingY * 2f);
+            var y = rect.Y + innerPaddingY;
             var closeWidth = Math.Max(24f * scale, Math.Min(height, 38f * scale));
-            var selectWidth = Math.Max(54f * scale, Math.Min(rect.Width * .24f, 112f * scale));
-            var closeRect = new RectangleF(rect.X + outerPadding, y, closeWidth, height);
-            var selectRect = new RectangleF(rect.Right - outerPadding - selectWidth, y, selectWidth, height);
+            var actionWidth = Math.Max(72f * scale, Math.Min(rect.Width * .24f, 128f * scale));
+            var rowHeight = Math.Max(1f, (height - gap) * .5f);
+            var closeRect = new RectangleF(rect.X + innerPaddingX, y, closeWidth, height);
+            var actionX = rect.Right - innerPaddingX - actionWidth;
+            var searchRect = new RectangleF(actionX, y, actionWidth, rowHeight);
+            var selectRect = new RectangleF(actionX, searchRect.Bottom + gap, actionWidth, rowHeight);
             var listRect = new RectangleF(
                 closeRect.Right + gap,
                 y,
-                Math.Max(1f, selectRect.X - closeRect.Right - gap * 2f),
+                Math.Max(1f, actionX - closeRect.Right - gap * 2f),
                 height);
 
             EnsureCompactCloseButton(closeRect);
             ContainerControl.AddChild(_compactCloseButton);
             _compactCloseButton.Render(Sprites);
+
+            EnsureSearchInput(searchRect);
+            _searchInput.SetClass("ControlBase Compact");
+            ContainerControl.AddChild(_searchInput);
+            _searchInput.Render(Sprites);
 
             _grid.CompactRows = true;
             _grid.ChromeVisible = false;
@@ -471,7 +478,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXTURE,
-                Data = "Cross",
+                Data = "LeftArrow",
                 Position = rect.Center,
                 Size = new Vector2(iconSize, iconSize),
                 Color = ColorCorrection,
@@ -490,7 +497,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         {
             _searchText = value ?? string.Empty;
             _grid.SetFilter(_searchText);
-            OnGridChanged();
         }
 
         void OnSelectClicked(ButtonModel model, object sender)
@@ -536,6 +542,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             MarkDirty();
             if (RequestRedraw != null)
                 RequestRedraw();
+            RequestRender();
         }
 
         void ConfigureHistoryShortcuts(ControlTemplate control)

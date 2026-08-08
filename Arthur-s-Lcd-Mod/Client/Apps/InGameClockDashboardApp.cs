@@ -24,7 +24,7 @@ namespace LcdMod.Client.Apps
     internal sealed partial class InGameClockDashboardApp : App, IApp
     {
         const float MIN_CONTENT_HEIGHT = 40f;
-        const float TINY_HEIGHT_TO_WIDTH_RATIO = 0.2f;
+        const float TINY_HEIGHT_TO_WIDTH_RATIO = Constants.MIN_SCREEN_HEIGHT_TO_WIDTH_RATIO;
         const string CLOCK_PROGRESS_BAR_STYLE_ID = "ClockDashboardMetric";
 
         enum ClockDashboardLayoutMode

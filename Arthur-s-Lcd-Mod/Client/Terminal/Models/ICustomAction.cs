@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using IMyTerminalBlock = Sandbox.ModAPI.Ingame.IMyTerminalBlock;
 
 namespace LcdMod.Client.Terminal.Models
@@ -10,5 +11,10 @@ namespace LcdMod.Client.Terminal.Models
         string BaseId { get; set; }
         HashSet<Type> Types { get; }
         bool Enabled(IMyTerminalBlock block);
+    }
+
+    public interface ICustomActionValueWriter
+    {
+        void WriteValue(IMyTerminalBlock block, StringBuilder appendTo);
     }
 }

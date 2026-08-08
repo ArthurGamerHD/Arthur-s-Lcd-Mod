@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using LcdMod.Client.Gui.ControlsTemplates;
+using LcdMod.Client.Gui.ControlsTemplates.Lists;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.Styling;
 using VRage.Game.GUI.TextPanel;
@@ -13,29 +15,69 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
         Up
     }
 
-    public sealed class ComboBox<T> : Button
+    public abstract class ComboBoxBase : Button
+    {
+        public static readonly StyleProperty<bool> FullScreenProperty =
+            StyleProperty.Register<ComboBoxBase, bool>("FullScreen", false);
+
+        protected ComboBoxBase() : base(default(RectangleF), CursorType.Hand)
+        {
+        }
+    }
+
+    public sealed class ComboBox<T> : ComboBoxBase
     {
         readonly List<T> _options = new List<T>();
         readonly List<Button> _optionButtons = new List<Button>();
         readonly Func<T, string> _getLabel;
         readonly Action<T> _selectionChanged;
         readonly Action _stateChanged;
+        readonly Button _fullScreenBackdrop;
+        readonly List<T> _fullScreenSelection = new List<T>();
+        readonly ListBoxModel<T> _fullScreenListModel;
+        readonly ListBox<T> _fullScreenList;
         T _selectedValue;
         float _layoutScale = 1f;
+        RectangleF _fullScreenBounds;
 
         public ComboBox(IEnumerable<T> options, Func<T, string> getLabel, Action<T> selectionChanged,
             Action stateChanged = null)
-            : base(default(RectangleF), CursorType.Hand)
+            : base()
         {
             _getLabel = getLabel ?? (value => value == null ? string.Empty : value.ToString());
             _selectionChanged = selectionChanged;
             _stateChanged = stateChanged;
+            _fullScreenBackdrop = new Button(default(RectangleF), new ButtonModel
+            {
+                Clicked = delegate { Close(); }
+            });
+            _fullScreenBackdrop.CustomRender = RenderFullScreenBackdrop;
+            AddChild(_fullScreenBackdrop);
+            _fullScreenListModel = new ListBoxModel<T>
+            {
+                Items = _options,
+                SelectedEntries = _fullScreenSelection,
+                MultiSelect = false,
+                SelectionEnabled = true,
+                RowHeight = 40f,
+                ScrollerWidthPixels = 6f,
+                TextSelector = GetLabel,
+                EntryClicked = OnFullScreenOptionClicked
+            };
+            _fullScreenList = new ListBox<T>(default(RectangleF), _fullScreenListModel);
+            _fullScreenList.ScrollPanel.ScrollChanged = delegate
+            {
+                if (_stateChanged != null)
+                    _stateChanged();
+            };
+            AddChild(_fullScreenList);
             SetOnClick(OnComboClicked);
             SetOptions(options);
         }
 
         public ComboBoxOpenDirection OpenDirection { get; set; } = ComboBoxOpenDirection.Down;
         public float OptionGapPixels { get; set; } = 2f;
+        public Action FullScreenRequested { get; set; }
         public bool IsOpen { get; private set; }
         public T SelectedValue => _selectedValue;
 
@@ -47,12 +89,24 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
             SetVisible(true);
         }
 
+        /// <summary>
+        /// Configures a mobile-style option list constrained to the supplied
+        /// surface/dialog bounds. The options remain hit-testable inside the
+        /// surface instead of being placed beyond the combo box.
+        /// </summary>
+        public void Configure(RectangleF bounds, float scale, RectangleF fullScreenBounds)
+        {
+            _fullScreenBounds = fullScreenBounds;
+            Configure(bounds, scale);
+        }
+
         public void SetOptions(IEnumerable<T> options)
         {
             _options.Clear();
             if (options != null)
                 _options.AddRange(options);
 
+            SyncFullScreenSelection();
             EnsureOptionButtons();
             ArrangeOptionButtons();
             MarkDirty();
@@ -61,9 +115,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
         public void SetSelectedValue(T value, bool notify = false)
         {
             if (EqualityComparer<T>.Default.Equals(_selectedValue, value))
+            {
+                SyncFullScreenSelection();
                 return;
+            }
 
             _selectedValue = value;
+            SyncFullScreenSelection();
             MarkDirty();
             if (notify)
                 _selectionChanged?.Invoke(value);
@@ -120,9 +178,17 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
             if (!Visible || entries == null || !IsOpen)
                 return;
 
+            var fullScreen = ResolveStyleValue(FullScreenProperty);
+            if (fullScreen && _fullScreenBounds.Width > 0f &&
+                _fullScreenBounds.Height > 0f && _fullScreenBackdrop.Visible)
+            {
+                entries.Add(_fullScreenBackdrop);
+                entries.Add(_fullScreenList);
+            }
+
             for (var i = 0; i < _optionButtons.Count; i++)
             {
-                if (_optionButtons[i].Visible)
+                if (!fullScreen && _optionButtons[i].Visible)
                     entries.Add(_optionButtons[i]);
             }
         }
@@ -131,6 +197,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
         {
             if (!Enabled)
                 return;
+
+            if (FullScreenRequested != null && ResolveStyleValue(FullScreenProperty) &&
+                _fullScreenBounds.Width > 0f && _fullScreenBounds.Height > 0f)
+            {
+                FullScreenRequested();
+                return;
+            }
 
             IsOpen = !IsOpen;
             SetOptionVisibility();
@@ -144,8 +217,19 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
             if (option == null)
                 return;
 
-            var changed = !EqualityComparer<T>.Default.Equals(_selectedValue, option.Value);
-            _selectedValue = option.Value;
+            SelectValue(option.Value);
+        }
+
+        void OnFullScreenOptionClicked(T value)
+        {
+            SelectValue(value);
+        }
+
+        void SelectValue(T value)
+        {
+            var changed = !EqualityComparer<T>.Default.Equals(_selectedValue, value);
+            _selectedValue = value;
+            SyncFullScreenSelection();
             IsOpen = false;
             SetOptionVisibility();
             MarkDirty();
@@ -153,6 +237,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
                 _selectionChanged?.Invoke(_selectedValue);
             else
                 _stateChanged?.Invoke();
+        }
+
+        void SyncFullScreenSelection()
+        {
+            _fullScreenSelection.Clear();
+            if (_options.Contains(_selectedValue))
+                _fullScreenSelection.Add(_selectedValue);
         }
 
         void EnsureOptionButtons()
@@ -175,6 +266,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
         void ArrangeOptionButtons()
         {
             EnsureOptionButtons();
+            if (ResolveStyleValue(FullScreenProperty) && _fullScreenBounds.Width > 0f &&
+                _fullScreenBounds.Height > 0f)
+            {
+                ArrangeFullScreenOptionButtons();
+                return;
+            }
+
             var gap = OptionGapPixels * _layoutScale;
             for (var i = 0; i < _optionButtons.Count; i++)
             {
@@ -204,10 +302,39 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Basic
             SetOptionVisibility();
         }
 
+        void ArrangeFullScreenOptionButtons()
+        {
+            var bounds = _fullScreenBounds;
+            _fullScreenBackdrop.SetRect(bounds);
+            var scale = Math.Max(0.01f, _layoutScale);
+            var margin = 12f * scale;
+            var panel = new RectangleF(bounds.X + margin, bounds.Y + margin,
+                Math.Max(1f, bounds.Width - margin * 2f),
+                Math.Max(1f, bounds.Height - margin * 2f));
+            var rowHeight = Math.Max(32f * scale, 42f * scale);
+
+            _fullScreenListModel.RowHeight = rowHeight;
+            _fullScreenListModel.ScrollerWidthPixels = Math.Max(5f, 7f * scale);
+            _fullScreenList.BackgroundColor =
+                GetResourceColor(ThemeResources.SurfaceContainerHighColor, BackgroundColor);
+            _fullScreenList.SetRect(panel);
+
+            SetOptionVisibility();
+        }
+
         void SetOptionVisibility()
         {
+            _fullScreenBackdrop.SetVisible(IsOpen && ResolveStyleValue(FullScreenProperty));
+            _fullScreenList.SetVisible(IsOpen && ResolveStyleValue(FullScreenProperty));
+            var fullScreen = ResolveStyleValue(FullScreenProperty);
             for (var i = 0; i < _optionButtons.Count; i++)
-                _optionButtons[i].SetVisible(Enabled && IsOpen && i < _options.Count);
+                _optionButtons[i].SetVisible(!fullScreen && Enabled && IsOpen && i < _options.Count);
+        }
+
+        void RenderFullScreenBackdrop(ControlTemplate control, List<MySprite> sprites)
+        {
+            // This button is intentionally visual-free: it only blocks clicks
+            // from reaching controls behind the fullscreen list.
         }
 
         void RenderOptionButton(ControlTemplate control, List<MySprite> sprites)

@@ -76,16 +76,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         readonly List<PickActionTargetResult> _allItems = new List<PickActionTargetResult>();
         readonly List<PickActionTargetResult> _filteredItems = new List<PickActionTargetResult>();
         readonly List<Button> _rowButtons = new List<Button>();
-        readonly List<Button> _comboOptionButtons = new List<Button>();
         readonly ScrollPanel _scrollPanel = new ScrollPanel();
         readonly List<IMyBlockGroup> _groups = new List<IMyBlockGroup>();
 
         PickActionTargetKind _kind = PickActionTargetKind.Block;
         string _searchText = string.Empty;
-        bool _comboOpen;
         bool _itemsLoaded;
 
-        Button _comboButton;
+        ComboBox<PickActionTargetKind> _comboButton;
         TextInput _searchInput;
         TextInputModel _searchInputModel;
 
@@ -133,8 +131,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
             EnsureItemsLoaded();
             var layoutScale = scale * fontScale;
-            var padding = new Vector2(18f * scale, 14f * scale);
-            var spacing = 10f * scale;
+            var compact = IsTinyDialogAspectRatio(viewBox);
+            var padding = GetDialogPadding(viewBox, scale);
+            var spacing = GetDialogSpacing(viewBox, scale);
             var titleScale = 0.82f * layoutScale;
             var titleHeight = MeasureLineHeight(titleScale, surface);
             var inputTextScale = 0.58f * layoutScale;
@@ -143,19 +142,58 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var cancelSize = GetDialogCloseButtonSize(scale);
             var headerHeight = Math.Max(titleHeight, cancelSize.Y);
 
-            var maxCardWidth = Math.Max(1f, viewBox.Width - padding.X * 2f);
-            var maxCardHeight = Math.Max(1f, viewBox.Height - padding.Y * 2f);
-            var cardWidth = Math.Min(Math.Max(MIN_CARD_WIDTH_PIXELS * scale, viewBox.Width * CARD_WIDTH_PERCENT), maxCardWidth);
-            var cardHeight = Math.Min(Math.Max(MIN_CARD_HEIGHT_PIXELS * scale, viewBox.Height * CARD_HEIGHT_PERCENT), maxCardHeight);
-            var cardRect = new RectangleF(
-                viewBox.Center.X - cardWidth * 0.5f,
-                viewBox.Center.Y - cardHeight * 0.5f,
-                cardWidth,
-                cardHeight);
+            var cardRect = GetDialogCardRect(
+                viewBox,
+                scale,
+                CARD_WIDTH_PERCENT,
+                CARD_HEIGHT_PERCENT,
+                MIN_CARD_WIDTH_PIXELS,
+                MIN_CARD_HEIGHT_PIXELS);
 
             RegisterDialogCard(cardRect);
 
             DrawBackdrop(surface, scale, cardRect);
+
+            if (compact)
+            {
+                var contentRect = GetDialogContentRect(cardRect, viewBox, scale, padding);
+                var compactComboWidth = Math.Max(72f * scale, Math.Min(contentRect.Width * .28f, 124f * scale));
+                var compactRowHeight = Math.Max(1f, (contentRect.Height - spacing) * .5f);
+                var compactSearchRect = new RectangleF(
+                    contentRect.X,
+                    contentRect.Y,
+                    compactComboWidth,
+                    compactRowHeight);
+                var compactComboRect = new RectangleF(
+                    contentRect.X,
+                    compactSearchRect.Bottom + spacing,
+                    compactComboWidth,
+                    compactRowHeight);
+                var compactListRect = new RectangleF(
+                    compactComboRect.Right + spacing,
+                    contentRect.Y,
+                    Math.Max(1f, contentRect.Right - compactComboRect.Right - spacing),
+                    contentRect.Height);
+
+                EnsureSearchInput(compactSearchRect);
+                _searchInput.SetClass("ControlBase Compact");
+                ContainerControl.AddChild(_searchInput);
+                _searchInput.Render(Sprites);
+
+                EnsureComboButton(compactComboRect, viewBox);
+                _comboButton.FullScreenRequested = delegate
+                {
+                    owner.ShowDialog(new ComboBoxSelectionDialog<PickActionTargetKind>(ParentApp, Kinds, _kind,
+                        GetKindLabel, OnKindChanged));
+                };
+                ContainerControl.AddChild(_comboButton);
+                _comboButton.Configure(compactComboRect, scale, viewBox);
+                _comboButton.Render(Sprites);
+
+                RenderTargetList(compactListRect, scale, surface);
+
+                return;
+            }
 
             Sprites.Add(new MySprite
             {
@@ -168,37 +206,44 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Alignment = TextAlignment.CENTER
             });
 
-            var comboRect = new RectangleF(
-                cardRect.X + padding.X,
-                cardRect.Y + padding.Y + headerHeight + spacing,
-                Math.Max(1f, cardRect.Width - padding.X * 2f),
-                comboHeight);
+            var contentTop = cardRect.Y + padding.Y + headerHeight + spacing;
+            var contentHeight = Math.Max(0f, cardRect.Bottom - padding.Y - contentTop);
+            var contentWidth = Math.Max(1f, cardRect.Width - padding.X * 2f);
+            var controlsWidth = Math.Max(
+                96f * scale,
+                Math.Min(contentWidth * .28f, 160f * scale));
 
             var searchRect = new RectangleF(
                 cardRect.X + padding.X,
-                comboRect.Bottom + spacing,
-                Math.Max(1f, cardRect.Width - padding.X * 2f),
+                contentTop,
+                controlsWidth,
                 searchHeight);
 
-            var listRect = new RectangleF(
+            var comboRect = new RectangleF(
                 cardRect.X + padding.X,
                 searchRect.Bottom + spacing,
-                Math.Max(1f, cardRect.Width - padding.X * 2f),
-                Math.Max(0f, cardRect.Bottom - padding.Y - searchRect.Bottom - spacing));
+                controlsWidth,
+                comboHeight);
 
-            EnsureComboButton(comboRect);
+            var listRect = new RectangleF(
+                comboRect.Right + spacing,
+                contentTop,
+                Math.Max(1f, cardRect.Right - padding.X - comboRect.Right - spacing),
+                contentHeight);
+
+            EnsureComboButton(comboRect, viewBox);
             EnsureSearchInput(searchRect);
+            _searchInput.SetClass("ControlBase");
 
             ContainerControl.AddChild(_comboButton);
             ContainerControl.AddChild(_searchInput);
+            _comboButton.Configure(comboRect, scale, viewBox);
 
             _comboButton.Render(Sprites);
             _searchInput.Render(Sprites);
 
             RenderTargetList(listRect, scale, surface);
 
-            if (_comboOpen)
-                RenderComboOptions(comboRect, scale);
         }
 
         void DrawBackdrop(IMyTextSurface surface, float scale, RectangleF cardRect)
@@ -213,10 +258,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Alignment = TextAlignment.CENTER
             });
 
-            BorderRenderer.CreateSpritesFromRect(new RectangleF(cardRect.Position + 3f * scale, cardRect.Size), Sprites,
-                ResolveColor(ThemeResources.ShadowColor), radiusScale: scale);
+            if (!CurrentDialogIsTiny)
+                BorderRenderer.CreateSpritesFromRect(new RectangleF(cardRect.Position + 3f * scale, cardRect.Size), Sprites,
+                    ResolveColor(ThemeResources.ShadowColor), radiusScale: scale);
             BorderRenderer.CreateSpritesFromRect(cardRect, Sprites,
-                ResolveColor(ThemeResources.SurfaceContainerHighColor), radiusScale: scale);
+                ResolveColor(ThemeResources.SurfaceContainerHighColor), radiusPixels: DialogCardRadiusPixels,
+                radiusScale: scale);
         }
 
         void EnsureItemsLoaded()
@@ -374,151 +421,20 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             }
         }
 
-        void EnsureComboButton(RectangleF rect)
+        void EnsureComboButton(RectangleF rect, RectangleF viewBox)
         {
             if (_comboButton == null)
-                _comboButton = new Button(rect, new ButtonModel { Text = GetKindLabel(_kind), Clicked = OnComboClicked });
+                _comboButton = new ComboBox<PickActionTargetKind>(Kinds, GetKindLabel, OnKindChanged, _requestRedraw);
             else
                 _comboButton.SetRect(rect);
 
-            var model = _comboButton.DataContext as ButtonModel;
-            if (model != null)
-            {
-                model.Text = GetKindLabel(_kind);
-                model.Enabled = true;
-                model.Clicked = OnComboClicked;
-            }
-
+            _comboButton.SetClass(IsTinyDialogAspectRatio(viewBox) ? "ControlBase Compact" : "ControlBase");
+            if (!IsTinyDialogAspectRatio(viewBox))
+                _comboButton.FullScreenRequested = null;
             _comboButton.SetStyleId("Primary");
-            _comboButton.SetClass("ControlBase Button Combo");
-            _comboButton.CustomRender = RenderComboButton;
+            _comboButton.SetSelectedValue(_kind);
             _comboButton.SetCursor(CursorType.Hand);
             _comboButton.SetVisible(true);
-        }
-
-        void RenderComboButton(ControlTemplate control, List<MySprite> sprites)
-        {
-            var rect = control.Bounds;
-            rect.Contains(new Vector2(float.NaN, float.NaN));
-            BorderRenderer.CreateSpritesFromRect(rect, sprites, control.BackgroundColor, radiusScale: control.LayoutScale);
-
-            var textScale = 0.56f * control.LayoutScale * control.FontScale;
-            var label = TrimText(GetKindLabel(_kind), Math.Max(0f, rect.Width - 32f * control.LayoutScale), textScale, control.TextSurface);
-            var textHeight = FormatingHelper.LineHeight(textScale, control, control.TextSurface);
-            var textColor = control.TextColor;
-
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXT,
-                Data = label,
-                Position = new Vector2(rect.X + 10f * control.LayoutScale, rect.Center.Y - textHeight * 0.5f),
-                Color = textColor,
-                FontId = control.TextFont,
-                RotationOrScale = textScale,
-                Alignment = TextAlignment.LEFT
-            });
-
-            var arrowWidth = 9f * control.LayoutScale;
-            var arrowHeight = 5f * control.LayoutScale;
-            var arrowCenter = new Vector2(rect.Right - 14f * control.LayoutScale, rect.Center.Y);
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = "Triangle",
-                Position = arrowCenter,
-                Size = new Vector2(arrowWidth, arrowHeight),
-                Color = textColor,
-                RotationOrScale = _comboOpen ? 3.14159f : 0f,
-                Alignment = TextAlignment.CENTER
-            });
-        }
-
-        void RenderComboOptions(RectangleF comboRect, float scale)
-        {
-            var rowHeight = comboRect.Height;
-            var listRect = new RectangleF(comboRect.X, comboRect.Bottom + 2f * scale, comboRect.Width, rowHeight * Kinds.Length);
-            BorderRenderer.CreateSpritesFromRect(listRect, Sprites, ResolveColor(ThemeResources.SurfaceContainerHighestColor), radiusScale: scale);
-
-            for (var i = 0; i < Kinds.Length; i++)
-            {
-                var rect = new RectangleF(listRect.X, listRect.Y + i * rowHeight, listRect.Width, rowHeight);
-                var button = GetComboOptionButton(i);
-                ConfigureComboOptionButton(button, rect, Kinds[i]);
-                ContainerControl.AddChild(button);
-                button.Render(Sprites);
-            }
-
-            for (var i = Kinds.Length; i < _comboOptionButtons.Count; i++)
-                _comboOptionButtons[i].SetVisible(false);
-        }
-
-        Button GetComboOptionButton(int index)
-        {
-            while (_comboOptionButtons.Count <= index)
-            {
-                var button = new Button(default(RectangleF), new ComboOptionButtonModel { Clicked = OnComboOptionClicked });
-                button.CustomRender = RenderComboOption;
-                _comboOptionButtons.Add(button);
-            }
-
-            return _comboOptionButtons[index];
-        }
-
-        void ConfigureComboOptionButton(Button button, RectangleF rect, PickActionTargetKind kind)
-        {
-            var model = button.DataContext as ComboOptionButtonModel;
-            if (model == null)
-            {
-                model = new ComboOptionButtonModel();
-                button.SetDataContext(model);
-            }
-
-            model.Kind = kind;
-            model.Text = GetKindLabel(kind);
-            model.Enabled = true;
-            model.Clicked = OnComboOptionClicked;
-
-            button.SetRect(rect);
-            button.SetClass("ControlBase Button ComboOption");
-            button.SetStyleId(kind == _kind ? "Primary" : null);
-            button.SetCursor(CursorType.Hand);
-            button.CustomRender = RenderComboOption;
-            button.SetVisible(true);
-        }
-
-        void RenderComboOption(ControlTemplate control, List<MySprite> sprites)
-        {
-            var rect = control.Bounds;
-            var model = control.DataContext as ComboOptionButtonModel;
-            if (model == null)
-                return;
-
-            var selected = model.Kind == _kind;
-            rect.Contains(new Vector2(float.NaN, float.NaN));
-            control.SetStyleId(selected ? "Primary" : null);
-            var panelColor = selected
-                ? ResolveColor(ThemeResources.AccentContainerColor)
-                : control.BackgroundColor;
-            var textColor = selected
-                ? ResolveColor(ThemeResources.OnAccentContainerColor)
-                : control.TextColor;
-
-            BorderRenderer.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: control.LayoutScale);
-
-            var textScale = 0.52f * control.LayoutScale * control.FontScale;
-            var textHeight = FormatingHelper.LineHeight(textScale, control, control.TextSurface);
-            var text = TrimText(GetKindLabel(model.Kind), Math.Max(0f, rect.Width - 16f * control.LayoutScale), textScale, control.TextSurface);
-
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXT,
-                Data = text,
-                Position = new Vector2(rect.X + 8f * control.LayoutScale, rect.Center.Y - textHeight * 0.5f),
-                Color = textColor,
-                FontId = control.TextFont,
-                RotationOrScale = textScale,
-                Alignment = TextAlignment.LEFT
-            });
         }
 
         void EnsureSearchInput(RectangleF rect)
@@ -562,18 +478,25 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
             BorderRenderer.CreateSpritesFromRect(listRect, Sprites, ResolveColor(ThemeResources.SurfaceContainerHighColor), radiusScale: scale);
 
+            var borderInset = Math.Max(1f, 2f * scale);
+            var scrollRect = new RectangleF(
+                listRect.X + borderInset,
+                listRect.Y + borderInset,
+                Math.Max(1f, listRect.Width - borderInset * 2f),
+                Math.Max(1f, listRect.Height - borderInset * 2f));
+
             var rowHeight = GetRowHeight(scale);
-            var scrollerWidth = Math.Min(_scrollPanel.AutomaticScrollerWidthPixels * scale, Math.Max(0f, listRect.Width * 0.25f));
+            var scrollerWidth = Math.Min(_scrollPanel.AutomaticScrollerWidthPixels * scale, Math.Max(0f, scrollRect.Width * 0.25f));
 
             _scrollPanel.ClearChildren();
-            _scrollPanel.Configure(listRect, listRect.Y, 0f, rowHeight, _filteredItems.Count, scrollerWidth, 0f);
+            _scrollPanel.Configure(scrollRect, scrollRect.Y, 0f, rowHeight, _filteredItems.Count, scrollerWidth, 0f);
             _scrollPanel.SetScrollBarColors(ResolveColor(ThemeResources.SurfaceContainerHighColor), ResolveColor(ThemeResources.OnSurfaceColor));
             _scrollPanel.SetVisible(true);
             ContainerControl.AddChild(_scrollPanel);
 
             if (_filteredItems.Count == 0)
             {
-                DrawEmptyMessage(listRect, scale, surface);
+                DrawEmptyMessage(scrollRect, scale, surface);
                 _scrollPanel.Render(Sprites);
                 return;
             }
@@ -630,8 +553,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             model.Clicked = OnTargetClicked;
 
             button.SetRect(rect);
-            button.SetClass("ControlBase Button Row");
-            button.SetStyleId(IsSelected(item) ? "Primary" : null);
+            var selected = IsSelected(item);
+            button.SetClass(selected ? "ControlBase Button Row Selected" : "ControlBase Button Row");
+            button.SetStyleId(null);
             button.SetCursor(CursorType.Hand);
             button.CustomRender = RenderTargetRow;
             button.SetVisible(true);
@@ -657,14 +581,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 return;
 
             rect.Contains(new Vector2(float.NaN, float.NaN));
-            var selected = IsSelected(target);
-            control.SetStyleId(selected ? "Primary" : null);
-            var panelColor = selected
-                ? ResolveColor(ThemeResources.AccentContainerColor)
-                : control.BackgroundColor;
-            var rowTextColor = selected
-                ? ResolveColor(ThemeResources.OnAccentContainerColor)
-                : control.TextColor;
+            var panelColor = control.BackgroundColor;
+            var rowTextColor = control.TextColor;
 
             BorderRenderer.CreateSpritesFromRect(rect, sprites, panelColor, radiusScale: control.LayoutScale);
 
@@ -874,29 +792,19 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         }
 
 
-        void OnComboClicked(ButtonModel model, object sender)
+        void OnKindChanged(PickActionTargetKind kind)
         {
-            _comboOpen = !_comboOpen;
-            _requestRedraw?.Invoke();
-        }
-
-        void OnComboOptionClicked(ButtonModel model, object sender)
-        {
-            var option = model as ComboOptionButtonModel;
-            if (option == null)
-                return;
-
-            if (_kind != option.Kind)
+            if (_kind != kind)
             {
-                _kind = option.Kind;
+                _kind = kind;
                 _itemsLoaded = false;
                 _searchText = string.Empty;
                 if (_searchInputModel != null)
                     _searchInputModel.Value = string.Empty;
             }
 
-            _comboOpen = false;
             _requestRedraw?.Invoke();
+            RequestRender();
         }
 
         void OnSearchChanged(string value)
@@ -904,6 +812,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _searchText = value ?? string.Empty;
             ApplyFilter();
             _requestRedraw?.Invoke();
+            RequestRender();
         }
 
         void OnTargetClicked(ButtonModel model, object sender)
@@ -929,8 +838,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _scrollPanel.ClearChildren();
             for (var i = 0; i < _rowButtons.Count; i++)
                 _rowButtons[i].SetVisible(false);
-            for (var i = 0; i < _comboOptionButtons.Count; i++)
-                _comboOptionButtons[i].SetVisible(false);
         }
 
         static void BeginClip(List<MySprite> sprites, RectangleF bounds)
@@ -953,9 +860,5 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             public PickActionTargetResult Target { get; set; }
         }
 
-        sealed class ComboOptionButtonModel : ButtonModel
-        {
-            public PickActionTargetKind Kind { get; set; }
-        }
     }
 }

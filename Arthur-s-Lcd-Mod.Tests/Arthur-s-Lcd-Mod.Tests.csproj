@@ -37,6 +37,7 @@
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Helpers\Constants.cs" LinkBase="ConfigSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Imaging\DdsAverageColor.cs" LinkBase="ImagingSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Imaging\ContentTexturePath.cs" LinkBase="ImagingSource" />
+    <Compile Include="..\Arthur-s-Lcd-Mod\Common\Layout\ButtonPanelLayout.cs" LinkBase="LayoutSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Png\RawPngBitmap.cs" LinkBase="PngSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Zip\Crc32.cs" LinkBase="ZipSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Zip\MinimalZip.cs" LinkBase="ZipSource" />

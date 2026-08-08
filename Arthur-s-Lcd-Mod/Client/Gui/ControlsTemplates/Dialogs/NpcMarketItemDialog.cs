@@ -69,20 +69,56 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             ContainerControl.ClearChildren();
             RefreshQuotes();
 
-            var outer = 18f * scale;
-            var cardWidth = Math.Min(620f * scale, Math.Max(1f, viewBox.Width - outer * 2f));
-            var cardHeight = Math.Min(430f * scale, Math.Max(1f, viewBox.Height - outer * 2f));
-            var card = new RectangleF(viewBox.Center.X - cardWidth * 0.5f, viewBox.Center.Y - cardHeight * 0.5f,
-                cardWidth, cardHeight);
+            var compact = IsTinyDialogAspectRatio(viewBox);
+            var card = GetDialogCardRect(viewBox, scale, 1f, 1f, 620f, 430f);
             RegisterDialogCard(card);
 
             Sprites.Add(new MySprite(SpriteType.TEXTURE, "SquareSimple", surface.TextureSize / 2f, surface.TextureSize,
                 new Color(0, 0, 0, 128)));
-            BorderRenderer.CreateSpritesFromRect(new RectangleF(card.Position + 3f * scale, card.Size), Sprites,
-                ResolveColor(ThemeResources.ShadowColor), radiusScale: scale);
+            if (!compact)
+                BorderRenderer.CreateSpritesFromRect(new RectangleF(card.Position + 3f * scale, card.Size), Sprites,
+                    ResolveColor(ThemeResources.ShadowColor), radiusScale: scale);
             BorderRenderer.CreateSpritesFromRect(card, Sprites, ResolveColor(ThemeResources.SurfaceContainerHighColor),
-                radiusScale: scale);
-            var padding = 18f * scale;
+                radiusPixels: DialogCardRadiusPixels, radiusScale: scale);
+            var padding = compact ? 4f * scale : 18f * scale;
+
+            if (compact)
+            {
+                var content = GetDialogContentRect(card, viewBox, scale, new Vector2(padding, 2f * scale));
+                var compactComboWidth = Math.Max(76f * scale, Math.Min(content.Width * .24f, 104f * scale));
+                var compactComboRect = new RectangleF(content.X, content.Y, compactComboWidth, content.Height);
+                _modeCombo.SetClass("ControlBase Compact");
+                _modeCombo.FullScreenRequested = delegate
+                {
+                    owner.ShowDialog(new ComboBoxSelectionDialog<NpcMarketMode>(ParentApp, Modes, _mode,
+                        GetModeLabel, OnModeChanged));
+                };
+                _modeCombo.Configure(compactComboRect, scale, viewBox);
+                _modeCombo.SetStyleId("Primary");
+                _modeCombo.SetSelectedValue(_mode);
+                ContainerControl.AddChild(_modeCombo);
+                _modeCombo.Configure(compactComboRect, scale, viewBox);
+                _modeCombo.Render(Sprites);
+
+                var compactTableHeaderHeight = Math.Min(28f * scale, Math.Max(1f, content.Height * .34f));
+                var compactRowHeight = Math.Max(1f, 34f * scale);
+                var compactTableRect = new RectangleF(
+                    compactComboRect.Right + padding,
+                    content.Y,
+                    Math.Max(1f, content.Right - compactComboRect.Right - padding),
+                    content.Height);
+                var compactTableContentRect = InsetListContent(compactTableRect, scale);
+                var compactListTop = compactTableContentRect.Y + compactTableHeaderHeight;
+                var compactListContentRect = new RectangleF(compactTableContentRect.X, compactListTop,
+                    compactTableContentRect.Width, Math.Max(0f, compactTableContentRect.Bottom - compactListTop));
+
+                DrawListPanel(compactTableRect, scale);
+                ConfigureScrollPanel(compactListContentRect, compactRowHeight, scale);
+                DrawHeaders(compactTableContentRect.Y, compactTableHeaderHeight, compactTableContentRect, scale);
+                DrawRows(compactListContentRect, compactRowHeight, scale, fontScale, surface);
+                return;
+            }
+
             var headerTop = card.Y + 14f * scale;
             var headerHeight = 66f * scale;
             var group = _parent.GetItemGroup(_itemKey);
@@ -92,6 +128,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var comboHeight = 30f * scale;
             var comboRect = new RectangleF(card.Right - padding - comboWidth, headerTop + 24f * scale, comboWidth,
                 comboHeight);
+            _modeCombo.SetClass("ControlBase");
+            _modeCombo.FullScreenRequested = null;
             _modeCombo.Configure(comboRect, scale);
             _modeCombo.SetStyleId("Primary");
             _modeCombo.SetSelectedValue(_mode);

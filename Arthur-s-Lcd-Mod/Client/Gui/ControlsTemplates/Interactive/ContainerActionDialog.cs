@@ -109,22 +109,52 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             Sprites.Add(new MySprite(SpriteType.TEXTURE, "SquareSimple",
                 surface.TextureSize / 2, surface.TextureSize, new Color(0, 0, 0, 128)));
 
-            var pad = 18f * scale;
+            var compact = IsTinyDialogAspectRatio(viewBox);
+            var padding = GetDialogPadding(viewBox, scale);
+            var spacing = GetDialogSpacing(viewBox, scale);
+            var pad = padding.X;
             var titleScale = 0.72f * scale * fontScale;
             var bodyScale = 0.5f * scale * fontScale;
             var buttonScale = 0.6f * scale * fontScale;
 
-            var cardWidth = Math.Min(viewBox.Width - 2f * pad, viewBox.Width * 0.84f);
-            var cardHeight = Math.Min(viewBox.Height - 2f * pad, viewBox.Height * 0.92f);
+            var outerPadding = GetDialogOuterPadding(viewBox, scale);
+            var cardWidth = compact
+                ? Math.Max(1f, viewBox.Width - outerPadding * 2f)
+                : Math.Min(viewBox.Width - 2f * outerPadding, viewBox.Width * 0.84f);
+            var cardHeight = compact
+                ? Math.Max(1f, viewBox.Height - outerPadding * 2f)
+                : Math.Min(viewBox.Height - 2f * outerPadding, viewBox.Height * 0.92f);
             var cardRect = new RectangleF(
                 viewBox.Center.X - cardWidth * 0.5f,
                 viewBox.Center.Y - cardHeight * 0.5f,
                 cardWidth, cardHeight);
             RegisterDialogCard(cardRect);
 
-            BorderRenderer.CreateSpritesFromRect(new RectangleF(cardRect.Position + 2f, cardRect.Size), Sprites, shadowColor,
-                radiusScale: scale);
-            BorderRenderer.CreateSpritesFromRect(cardRect, Sprites, cardColor, radiusScale: scale);
+            if (!compact)
+                BorderRenderer.CreateSpritesFromRect(new RectangleF(cardRect.Position + 2f, cardRect.Size), Sprites, shadowColor,
+                    radiusScale: scale);
+            BorderRenderer.CreateSpritesFromRect(cardRect, Sprites, cardColor,
+                radiusPixels: DialogCardRadiusPixels, radiusScale: scale);
+
+            if (compact)
+            {
+                var contentRect = GetDialogContentRect(cardRect, viewBox, scale, padding);
+                if (_step == 0)
+                {
+                    RenderCompactActionStep(contentRect, scale, buttonScale);
+                }
+                else
+                {
+                    var footerGap = Math.Min(spacing, contentRect.Width * 0.02f);
+                    var footerButtonWidth = Math.Min(Math.Max(62f * scale, contentRect.Width * 0.10f), contentRect.Width * 0.16f);
+                    var footerWidth = footerButtonWidth * 3f + footerGap * 2f;
+                    var compactBodyRect = new RectangleF(contentRect.X, contentRect.Y,
+                        Math.Max(1f, contentRect.Width - footerWidth - spacing), contentRect.Height);
+                    RenderListStep(compactBodyRect, scale, bodyScale, surface);
+                    RenderCompactFooter(contentRect, footerButtonWidth, footerGap, scale, buttonScale);
+                }
+                return;
+            }
 
             var title = GetTitle();
             var titleSize = MeasureText(title, titleScale, surface);
@@ -132,17 +162,17 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             {
                 Type = SpriteType.TEXT,
                 Data = title,
-                Position = new Vector2(cardRect.Center.X, cardRect.Y + pad),
+                Position = new Vector2(cardRect.Center.X, cardRect.Y + padding.Y),
                 Color = cardTextColor,
                 FontId = TextFont,
                 Alignment = TextAlignment.CENTER,
                 RotationOrScale = titleScale
             });
 
-            var bodyTop = cardRect.Y + pad + titleSize.Y + 12f * scale;
+            var bodyTop = cardRect.Y + padding.Y + titleSize.Y + 12f * scale;
             var footerHeight = Math.Max(28f * scale, MeasureLineHeight(buttonScale, surface) + 14f * scale);
-            var footerTop = cardRect.Bottom - pad - footerHeight;
-            var bodyRect = new RectangleF(cardRect.X + pad, bodyTop, cardRect.Width - 2f * pad,
+            var footerTop = cardRect.Bottom - padding.Y - footerHeight;
+            var bodyRect = new RectangleF(cardRect.X + padding.X, bodyTop, cardRect.Width - 2f * padding.X,
                 footerTop - bodyTop - 8f * scale);
 
             if (_step == 0)
@@ -190,6 +220,37 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 });
             y += h + gap;
             DrawButton(new RectangleF(x, y, w, h), LocHelper.GetLoc(MOD_PREFIX + "Transfer_Balance"), buttonScale, true, true,
+                delegate
+                {
+                    _mode = TransferMode.Balance;
+                    GoToStep(1);
+                });
+        }
+
+        void RenderCompactActionStep(RectangleF body, float scale, float buttonScale)
+        {
+            var gap = Math.Min(10f * scale, body.Width * 0.025f);
+            var buttonWidth = Math.Max(1f, (body.Width - gap * 2f) / 3f);
+
+            DrawButton(new RectangleF(body.X, body.Y, buttonWidth, body.Height),
+                LocHelper.GetLoc(MOD_PREFIX + "Transfer_Send"), buttonScale, true, true,
+                delegate
+                {
+                    _mode = TransferMode.Send;
+                    GoToStep(1);
+                });
+
+            DrawButton(new RectangleF(body.X + buttonWidth + gap, body.Y, buttonWidth, body.Height),
+                LocHelper.GetLoc(MOD_PREFIX + "Transfer_Receive"), buttonScale, true, true,
+                delegate
+                {
+                    _mode = TransferMode.Receive;
+                    GoToStep(1);
+                });
+
+            DrawButton(new RectangleF(body.X + (buttonWidth + gap) * 2f, body.Y,
+                    Math.Max(1f, body.Right - (body.X + (buttonWidth + gap) * 2f)), body.Height),
+                LocHelper.GetLoc(MOD_PREFIX + "Transfer_Balance"), buttonScale, true, true,
                 delegate
                 {
                     _mode = TransferMode.Balance;
@@ -297,6 +358,45 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 delegate { ToggleAll(); });
 
             var primaryRect = new RectangleF(cardRect.Right - pad - btnW, y, btnW, footerHeight);
+            if (_step == 1)
+            {
+                var ok = _selectedTargets.Count > 0;
+                DrawButton(primaryRect, LocHelper.GetLoc(MOD_PREFIX + "Transfer_Next"), buttonScale, true, ok,
+                    delegate
+                    {
+                        if (_selectedTargets.Count > 0) GoToItems();
+                    });
+            }
+            else
+            {
+                var ok = _selectedTypeKeys.Count > 0 || _selectedCategories.Count > 0;
+                DrawButton(primaryRect, LocHelper.GetLoc(MOD_PREFIX + "Cargo_Sorter"), buttonScale, true, ok,
+                    delegate
+                    {
+                        if (_selectedTypeKeys.Count > 0 || _selectedCategories.Count > 0) Apply();
+                });
+            }
+        }
+
+        void RenderCompactFooter(RectangleF contentRect, float buttonWidth, float gap, float scale, float buttonScale)
+        {
+            if (_step == 0)
+                return;
+
+            var x = contentRect.Right - (buttonWidth * 3f + gap * 2f);
+            var y = contentRect.Y;
+            var height = contentRect.Height;
+
+            DrawButton(new RectangleF(x, y, buttonWidth, height), LocHelper.GetLoc(MOD_PREFIX + "Transfer_Back"), buttonScale,
+                false, true,
+                delegate { GoToStep(_step - 1); });
+
+            DrawButton(new RectangleF(x + buttonWidth + gap, y, buttonWidth, height), LocHelper.GetLoc(MOD_PREFIX + "Transfer_All"),
+                buttonScale, false, true,
+                delegate { ToggleAll(); });
+
+            var primaryRect = new RectangleF(x + (buttonWidth + gap) * 2f, y,
+                Math.Max(1f, contentRect.Right - (x + (buttonWidth + gap) * 2f)), height);
             if (_step == 1)
             {
                 var ok = _selectedTargets.Count > 0;
@@ -607,12 +707,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 var r = ctrl.Bounds;
                 var hover = enabled && ctrl.IsMouseOver;
                 BorderRenderer.CreateSpritesFromRect(r, sprites, hover ? panel.MulValue(1.18f) : panel, radiusScale: ctrl.LayoutScale);
+                var trimmed = PadButtonStyle.TrimToWidth(label, Math.Max(0f, r.Width - 8f * ctrl.LayoutScale), btnScale,
+                    ctrl.TextFont, ctrl.TextSurface);
                 sprites.Add(new MySprite
                 {
                     Type = SpriteType.TEXT,
-                    Data = label,
+                    Data = trimmed,
                     Position = new Vector2(r.Center.X,
-                        r.Center.Y - FormatingHelper.GetSizeInPixel(label, ctrl, btnScale, surface).Y * 0.5f),
+                        r.Center.Y - FormatingHelper.GetSizeInPixel(trimmed, ctrl, btnScale, surface).Y * 0.5f),
                     Color = txt,
                     FontId = ctrl.TextFont,
                     Alignment = TextAlignment.CENTER,
@@ -659,12 +761,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                         Alignment = TextAlignment.CENTER
                     });
 
+                var textRightPadding = isSelected ? 28f * ctrl.LayoutScale : pad;
+                var trimmed = PadButtonStyle.TrimToWidth(label, Math.Max(0f, r.Width - pad - textRightPadding),
+                    rowScale, ctrl.TextFont, ctrl.TextSurface);
                 sprites.Add(new MySprite
                 {
                     Type = SpriteType.TEXT,
-                    Data = label,
+                    Data = trimmed,
                     Position = new Vector2(r.X + pad,
-                        r.Center.Y - FormatingHelper.GetSizeInPixel(label, ctrl, rowScale, surface).Y * 0.5f),
+                        r.Center.Y - FormatingHelper.GetSizeInPixel(trimmed, ctrl, rowScale, surface).Y * 0.5f),
                     Color = txt,
                     FontId = ctrl.TextFont,
                     Alignment = TextAlignment.LEFT,

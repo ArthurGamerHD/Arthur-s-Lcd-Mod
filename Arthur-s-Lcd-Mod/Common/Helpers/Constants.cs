@@ -48,6 +48,8 @@ namespace LcdMod.Common.Helpers
         public const string BSOD_INFO4_FALLBACK = "If you call a support person, give them this info:";
         public const string BSOD_INFO5_FALLBACK = "Exception code:";
 
+        public const float MIN_SCREEN_HEIGHT_TO_WIDTH_RATIO = 0.2f;
+
 
         #region Theme Colors
 

@@ -124,6 +124,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _spriteModelsByName.Clear();
             _allSprites.Clear();
             _filteredSprites.Clear();
+            RequestRender();
         }
 
         protected override void BuildDialogControls(
@@ -144,26 +145,21 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             EnsureSpritesLoaded(surface);
 
             var layoutScale = scale * fontScale;
-            var outerPadding = OUTER_PADDING_PIXELS * scale;
-            var innerPadding = new Vector2(INNER_PADDING_X_PIXELS, INNER_PADDING_Y_PIXELS) * scale;
-            var spacing = SPACING_PIXELS * scale;
-
-            var maxCardWidth = Math.Max(1f, viewBox.Width - outerPadding * 2f);
-            var maxCardHeight = Math.Max(1f, viewBox.Height - outerPadding * 2f);
-
-            var cardWidth = Math.Min(
-                Math.Max(MIN_CARD_WIDTH_PIXELS * scale, viewBox.Width * CARD_WIDTH_PERCENT),
-                maxCardWidth);
-
-            var cardHeight = Math.Min(
-                Math.Max(MIN_CARD_HEIGHT_PIXELS * scale, viewBox.Height * CARD_HEIGHT_PERCENT),
-                maxCardHeight);
-
-            var cardRect = new RectangleF(
-                viewBox.Center.X - cardWidth * 0.5f,
-                viewBox.Center.Y - cardHeight * 0.5f,
-                cardWidth,
-                cardHeight);
+            var compact = IsTinyDialogAspectRatio(viewBox);
+            var innerPadding = GetDialogPadding(
+                viewBox,
+                scale,
+                INNER_PADDING_X_PIXELS,
+                INNER_PADDING_Y_PIXELS);
+            var spacing = GetDialogSpacing(viewBox, scale, SPACING_PIXELS);
+            var cardRect = GetDialogCardRect(
+                viewBox,
+                scale,
+                CARD_WIDTH_PERCENT,
+                CARD_HEIGHT_PERCENT,
+                MIN_CARD_WIDTH_PIXELS,
+                MIN_CARD_HEIGHT_PIXELS,
+                OUTER_PADDING_PIXELS);
 
             RegisterDialogCard(cardRect);
 
@@ -174,20 +170,71 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var closeSize = GetDialogCloseButtonSize(scale);
             var headerHeight = Math.Max(titleHeight, closeSize.Y);
 
-            Sprites.Add(new MySprite
+            if (!compact)
             {
-                Type = SpriteType.TEXT,
-                Data = TITLE,
-                Position = new Vector2(cardRect.Center.X, cardRect.Y + innerPadding.Y + (headerHeight - titleHeight) * 0.5f),
-                Color = ResolveColor(ThemeResources.OnSurfaceColor),
-                FontId = TextFont,
-                Alignment = TextAlignment.CENTER,
-                RotationOrScale = titleScale
-            });
+                Sprites.Add(new MySprite
+                {
+                    Type = SpriteType.TEXT,
+                    Data = TITLE,
+                    Position = new Vector2(cardRect.Center.X, cardRect.Y + innerPadding.Y + (headerHeight - titleHeight) * 0.5f),
+                    Color = ResolveColor(ThemeResources.OnSurfaceColor),
+                    FontId = TextFont,
+                    Alignment = TextAlignment.CENTER,
+                    RotationOrScale = titleScale
+                });
+            }
 
             var searchHeight = Math.Max(
                 SEARCH_HEIGHT_PIXELS * scale,
                 MeasureLineHeight(0.58f * layoutScale, surface) + 18f * scale);
+
+            if (compact)
+            {
+                var compactContentRect = GetDialogContentRect(cardRect, viewBox, scale, innerPadding);
+                var actionWidth = Math.Max(72f * scale,
+                    Math.Min(compactContentRect.Width * .24f, APPLY_BUTTON_WIDTH_PIXELS * scale));
+                var compactListRect = new RectangleF(
+                    compactContentRect.X,
+                    compactContentRect.Y,
+                    Math.Max(1f, compactContentRect.Width - actionWidth - spacing),
+                    compactContentRect.Height);
+                var actionX = compactListRect.Right + spacing;
+                if (AllowMultiSelection)
+                {
+                    var rowHeight = Math.Max(1f, (compactContentRect.Height - spacing) * .5f);
+                    var compactSearchRect = new RectangleF(actionX, compactContentRect.Y, actionWidth, rowHeight);
+                    var applyRect = new RectangleF(
+                        actionX,
+                        compactSearchRect.Bottom + spacing,
+                        actionWidth,
+                        rowHeight);
+                    EnsureSearchInput(compactSearchRect);
+                    _searchInput.SetClass("ControlBase Compact");
+                    ContainerControl.AddChild(_searchInput);
+                    _searchInput.Render(Sprites);
+                    EnsureApplyButton(applyRect);
+                    ContainerControl.AddChild(_applyButton);
+                    _applyButton.Render(Sprites);
+                }
+                else
+                {
+                    var searchHeightCompact = Math.Max(1f, compactContentRect.Height * .5f);
+                    var compactSearchRect = new RectangleF(
+                        actionX,
+                        compactContentRect.Center.Y - searchHeightCompact * .5f,
+                        actionWidth,
+                        searchHeightCompact);
+                    EnsureSearchInput(compactSearchRect);
+                    _searchInput.SetClass("ControlBase Compact");
+                    ContainerControl.AddChild(_searchInput);
+                    _searchInput.Render(Sprites);
+                    if (_applyButton != null)
+                        _applyButton.SetVisible(false);
+                }
+
+                RenderSpriteList(compactListRect, scale, surface);
+                return;
+            }
 
             var searchRect = new RectangleF(
                 cardRect.X + innerPadding.X,
@@ -206,6 +253,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 Math.Max(0f, listBottom - listTop));
 
             EnsureSearchInput(searchRect);
+            _searchInput.SetClass("ControlBase");
             ContainerControl.AddChild(_searchInput);
             _searchInput.Render(Sprites);
 
@@ -241,16 +289,18 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 surface.TextureSize,
                 new Color(0, 0, 0, 128)));
 
-            BorderRenderer.CreateSpritesFromRect(
-                new RectangleF(cardRect.Position + 3f * scale, cardRect.Size),
-                Sprites,
-                ResolveColor(ThemeResources.ShadowColor),
-                radiusScale: scale);
+            if (!CurrentDialogIsTiny)
+                BorderRenderer.CreateSpritesFromRect(
+                    new RectangleF(cardRect.Position + 3f * scale, cardRect.Size),
+                    Sprites,
+                    ResolveColor(ThemeResources.ShadowColor),
+                    radiusScale: scale);
 
             BorderRenderer.CreateSpritesFromRect(
                 cardRect,
                 Sprites,
                 ResolveColor(ThemeResources.SurfaceContainerHighColor),
+                radiusPixels: DialogCardRadiusPixels,
                 radiusScale: scale);
         }
 
@@ -400,7 +450,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
         ControlTemplate CreateRowControl(SpriteRowModel model)
         {
-            var control = new RectangleControl(
+            var control = new SpriteRowControl(
                 default(RectangleF),
                 CursorType.Hand,
                 model,
@@ -420,7 +470,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             control.SetDataContext(model);
             control.SetCursor(CursorType.Hand);
             control.SetClass(model.IsSelected ? "ControlBase Button Row Selected" : "ControlBase Button Row");
-            control.SetStyleId(model.IsSelected ? "Primary" : null);
+            control.SetStyleId(null);
             control.CustomRender = RenderSpriteRow;
             control.SetVisible(true);
         }
@@ -441,13 +491,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                     Math.Max(1f, rect.Height - ROW_GAP_PIXELS * entry.LayoutScale));
             }
 
-            var selected = AllowMultiSelection && model.IsSelected;
-            var backgroundColor = selected
-                ? ResolveColor(ThemeResources.AccentContainerColor)
-                : entry.BackgroundColor;
-            var foregroundColor = selected
-                ? ResolveColor(ThemeResources.OnAccentContainerColor)
-                : entry.TextColor;
+            var backgroundColor = entry.BackgroundColor;
+            var foregroundColor = entry.TextColor;
 
             BorderRenderer.CreateSpritesFromRect(
                 rect,
@@ -514,7 +559,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         {
             _searchText = value ?? string.Empty;
             ApplyFilter();
-            QueueChildRenderIfNeeded();
+            RequestRender();
         }
 
         void ApplyFilter()
@@ -562,8 +607,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                     SetSelectedSprites(new[] { model.SpriteName });
                     _selectionAnchorSpriteName = model.SpriteName;
                 }
-
-                QueueChildRenderIfNeeded();
 
                 return;
             }
@@ -705,10 +748,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _selectedSpriteNameSet.Clear();
 
             if (spriteNames == null)
+            {
+                RequestRender();
                 return;
+            }
 
             foreach (var spriteName in spriteNames)
                 AddSelectedSprite(spriteName);
+
+            RequestRender();
         }
 
         void ToggleSelectedSprite(string spriteName)
@@ -726,10 +774,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                         _selectedSpriteNames.RemoveAt(i);
                 }
 
+                RequestRender();
                 return;
             }
 
             AddSelectedSprite(normalized);
+            RequestRender();
         }
 
         void AddSelectedSprite(string spriteName)
@@ -839,6 +889,27 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             public override string ToString()
             {
                 return SpriteName ?? string.Empty;
+            }
+        }
+
+        sealed class SpriteRowControl : RectangleControl
+        {
+            public SpriteRowControl(
+                RectangleF bounds,
+                CursorType cursor,
+                SpriteRowModel model,
+                Action<object, object> onClick)
+                : base(bounds, cursor, model, onClick)
+            {
+            }
+
+            protected override StyleState GetStyleState()
+            {
+                var state = base.GetStyleState();
+                var model = DataContext as SpriteRowModel;
+                if (model != null && model.IsSelected)
+                    state |= StyleState.Selected;
+                return state;
             }
         }
     }

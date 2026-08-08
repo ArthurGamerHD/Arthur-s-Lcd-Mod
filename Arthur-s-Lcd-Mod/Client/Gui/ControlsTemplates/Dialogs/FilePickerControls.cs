@@ -293,16 +293,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                     Math.Max(1f, rect.Height - ROW_GAP_PIXELS * control.LayoutScale));
             }
 
-            var selected = model.IsSelected;
-            var backgroundColor = selected
-                ? ResolveColor(ThemeResources.AccentContainerColor)
-                : control.BackgroundColor;
-            var foregroundColor = selected
-                ? ResolveColor(ThemeResources.OnAccentContainerColor)
-                : control.TextColor;
-            var secondaryColor = selected
-                ? ResolveColor(ThemeResources.OnAccentContainerColor)
-                : ResolveColor(ThemeResources.OnSurfaceVariantColor);
+            var backgroundColor = control.BackgroundColor;
+            var foregroundColor = control.TextColor;
+            var secondaryColor = control.TextColor;
 
             BorderRenderer.CreateSpritesFromRect(
                 rect,
@@ -328,9 +321,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                     ? model.Name
                     : model.Name + "  " + model.Subtitle;
                 var compactIcon = string.IsNullOrEmpty(model.Icon) ? "MissingIcon" : model.Icon;
-                var compactBackground = selected
-                    ? backgroundColor
-                    : ResolveColor(ThemeResources.SurfaceContainerHighColor);
+                var compactBackground = backgroundColor;
                 compactBackground.A = byte.MaxValue;
 
                 BorderRenderer.CreateSpritesFromRect(
@@ -662,7 +653,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             row.SetClass(model != null && model.IsSelected
                 ? "ControlBase Button Row Selected"
                 : "ControlBase Button Row");
-            row.SetStyleId(model != null && model.IsSelected ? "Primary" : null);
+            row.SetStyleId(null);
             row.SetVisible(true);
         }
 
@@ -1245,13 +1236,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _folderControl.SetVisible(folder != null);
             _folderControl.SetCursor(CursorType.Hand);
             _folderControl.SetClass(model != null && model.IsSelected ? "ControlBase Button Row Selected" : "ControlBase Button Row");
-            _folderControl.SetStyleId(model != null && model.IsSelected ? "Primary" : null);
+            _folderControl.SetStyleId(null);
 
             _fileControl.SetDataContext(file);
             _fileControl.SetVisible(file != null);
             _fileControl.SetCursor(CursorType.Hand);
             _fileControl.SetClass(model != null && model.IsSelected ? "ControlBase Button Row Selected" : "ControlBase Button Row");
-            _fileControl.SetStyleId(model != null && model.IsSelected ? "Primary" : null);
+            _fileControl.SetStyleId(null);
         }
 
         public override void Arrange(RectangleF bounds)
@@ -1314,6 +1305,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 _owner.RenderEntry(this, DataContext as FolderControlModel, sprites);
         }
 
+        protected override StyleState GetStyleState()
+        {
+            var state = base.GetStyleState();
+            var model = DataContext as FolderControlModel;
+            if (model != null && model.IsSelected)
+                state |= StyleState.Selected;
+            return state;
+        }
+
         void OnClicked(object dataContext, object sender)
         {
             if (_owner != null)
@@ -1353,6 +1353,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         {
             if (_owner != null)
                 _owner.RenderEntry(this, DataContext as FileControlModel, sprites);
+        }
+
+        protected override StyleState GetStyleState()
+        {
+            var state = base.GetStyleState();
+            var model = DataContext as FileControlModel;
+            if (model != null && model.IsSelected)
+                state |= StyleState.Selected;
+            return state;
         }
 
         void OnClicked(object dataContext, object sender)

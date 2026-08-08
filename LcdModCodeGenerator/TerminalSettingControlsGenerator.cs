@@ -126,6 +126,7 @@ public sealed class TerminalSettingControlsGenerator : IIncrementalGenerator
                         null,
                         null,
                         null,
+                        0f,
                         false,
                         false,
                         AttributeLocation(attribute, property));
@@ -147,6 +148,7 @@ public sealed class TerminalSettingControlsGenerator : IIncrementalGenerator
                         GetNamedString(attribute, "OnText"),
                         GetNamedString(attribute, "OffText"),
                         GetNamedString(attribute, "TitleSuffix"),
+                        GetNamedFloat(attribute, "MinimumHeightToWidthRatio"),
                         GetNamedBool(attribute, "RefreshTerminalOnSet"),
                         false,
                         AttributeLocation(attribute, property));
@@ -168,6 +170,7 @@ public sealed class TerminalSettingControlsGenerator : IIncrementalGenerator
                         null,
                         null,
                         null,
+                        0f,
                         false,
                         GetNamedBool(attribute, "RequiresCustomColor"),
                         AttributeLocation(attribute, property));
@@ -624,6 +627,7 @@ public sealed class TerminalSettingControlsGenerator : IIncrementalGenerator
         var componentType = TypeName(model.ComponentType);
         var onText = string.IsNullOrEmpty(input.OnText) ? "HudInfoOn" : input.OnText;
         var offText = string.IsNullOrEmpty(input.OffText) ? "HudInfoOff" : input.OffText;
+        var hasMinimumHeightToWidthRatio = input.MinimumHeightToWidthRatio > 0f;
         var sb = Header();
         sb.AppendLine("namespace LcdMod.Client.Terminal.Controls.GeneratedSettings");
         sb.AppendLine("{");
@@ -641,6 +645,8 @@ public sealed class TerminalSettingControlsGenerator : IIncrementalGenerator
         sb.AppendLine("            control.Getter = Getter;");
         sb.AppendLine("            control.Setter = Setter;");
         sb.AppendLine("            control.Visible = Visible;");
+        if (hasMinimumHeightToWidthRatio)
+            sb.AppendLine("            control.Enabled = Enabled;");
         AppendControlTitle(sb, input, "control");
         if (!string.IsNullOrEmpty(input.Tooltip))
             sb.AppendLine("            control.Tooltip = global::VRage.Utils.MyStringId.GetOrCompute(" + Literal(input.Tooltip) + ");");
@@ -653,6 +659,11 @@ public sealed class TerminalSettingControlsGenerator : IIncrementalGenerator
         sb.AppendLine();
         sb.AppendLine("        void Setter(global::Sandbox.ModAPI.IMyTerminalBlock block, bool value)");
         sb.AppendLine("        {");
+        if (hasMinimumHeightToWidthRatio)
+        {
+            sb.AppendLine("            if (!MeetsMinimumHeightToWidthRatio(block))");
+            sb.AppendLine("                value = false;");
+        }
         if (input.RefreshTerminalOnSet)
         {
             sb.AppendLine("            if (global::LcdMod.Client.Config.ConfigManager.ModifyComponentForCurrentSurface<" + componentType + ">(");
@@ -672,6 +683,11 @@ public sealed class TerminalSettingControlsGenerator : IIncrementalGenerator
         sb.AppendLine();
         sb.AppendLine("        bool Getter(global::Sandbox.ModAPI.IMyTerminalBlock block)");
         sb.AppendLine("        {");
+        if (hasMinimumHeightToWidthRatio)
+        {
+            sb.AppendLine("            if (!MeetsMinimumHeightToWidthRatio(block))");
+            sb.AppendLine("                return false;");
+        }
         sb.AppendLine("            var component = global::LcdMod.Client.Config.ConfigManager.GetComponentForCurrentSurface<" + componentType + ">(");
         sb.AppendLine("                block,");
         sb.AppendLine("                " + Literal(model.Slot) + ");");
@@ -679,6 +695,21 @@ public sealed class TerminalSettingControlsGenerator : IIncrementalGenerator
         sb.AppendLine("                ? DefaultComponent." + Identifier(input.Property.Name));
         sb.AppendLine("                : component." + Identifier(input.Property.Name) + ";");
         sb.AppendLine("        }");
+        if (hasMinimumHeightToWidthRatio)
+        {
+            sb.AppendLine();
+            sb.AppendLine("        bool Enabled(global::Sandbox.ModAPI.IMyTerminalBlock block)");
+            sb.AppendLine("        {");
+            sb.AppendLine("            return MeetsMinimumHeightToWidthRatio(block);");
+            sb.AppendLine("        }");
+            sb.AppendLine();
+            sb.AppendLine("        static bool MeetsMinimumHeightToWidthRatio(global::Sandbox.ModAPI.IMyTerminalBlock block)");
+            sb.AppendLine("        {");
+            sb.AppendLine("            return global::LcdMod.Client.Helpers.SurfaceAspectRatioHelper.MeetsMinimumHeightToWidthRatio(");
+            sb.AppendLine("                block,");
+            sb.AppendLine("                " + FloatLiteral(input.MinimumHeightToWidthRatio) + ");");
+            sb.AppendLine("        }");
+        }
         sb.AppendLine("    }");
         sb.AppendLine("}");
         return sb.ToString();
@@ -1013,6 +1044,7 @@ namespace Generated
         public string OnText { get; set; }
         public string OffText { get; set; }
         public bool RequiresAdvancedTweakables { get; set; }
+        public float MinimumHeightToWidthRatio { get; set; }
         public bool RefreshTerminalOnSet { get; set; }
     }
 
@@ -1112,6 +1144,7 @@ namespace Generated
             string onText,
             string offText,
             string titleSuffix,
+            float minimumHeightToWidthRatio,
             bool refreshTerminalOnSet,
             bool requiresCustomColor,
             Location location)
@@ -1132,6 +1165,7 @@ namespace Generated
             OnText = onText;
             OffText = offText;
             TitleSuffix = titleSuffix;
+            MinimumHeightToWidthRatio = minimumHeightToWidthRatio;
             RefreshTerminalOnSet = refreshTerminalOnSet;
             RequiresCustomColor = requiresCustomColor;
             Location = location;
@@ -1153,6 +1187,7 @@ namespace Generated
         public string OnText { get; }
         public string OffText { get; }
         public string TitleSuffix { get; }
+        public float MinimumHeightToWidthRatio { get; }
         public bool RefreshTerminalOnSet { get; }
         public bool RequiresCustomColor { get; }
         public Location Location { get; }

@@ -11,6 +11,8 @@ namespace LcdMod.Client.Terminal.Controls.Generic
         readonly SettingsClipboard _clipboard;
         readonly ButtonPasteSettings _pasteButton;
 
+        protected override bool RequiresAdvancedTweakables => false;
+
         public override IMyTerminalControl TerminalControl { get; }
 
         public ButtonCopySettings(SettingsClipboard clipboard, ButtonPasteSettings pasteButton)

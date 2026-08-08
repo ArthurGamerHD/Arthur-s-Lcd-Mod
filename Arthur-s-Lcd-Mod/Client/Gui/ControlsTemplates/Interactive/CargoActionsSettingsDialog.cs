@@ -70,46 +70,56 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
                 Alignment = TextAlignment.CENTER
             });
 
-            var pad = 16f * scale;
-            var cardWidth = Math.Min(viewBox.Width - 2f * pad, Math.Max(CardMinWidth * scale, viewBox.Width * CardWidthFraction));
-            var cardHeight = Math.Min(viewBox.Height - 2f * pad, Math.Max(CardMinHeight * scale, viewBox.Height * CardHeightFraction));
-            var cardRect = new RectangleF(
-                viewBox.Center.X - cardWidth * 0.5f,
-                viewBox.Center.Y - cardHeight * 0.5f,
-                cardWidth,
-                cardHeight);
+            var compact = IsTinyDialogAspectRatio(viewBox);
+            var padding = GetDialogPadding(viewBox, scale, 16f, 16f, 4f, 2f);
+            var outerPadding = GetDialogOuterPadding(viewBox, scale, 16f, 2f);
+            var cardRect = compact
+                ? GetDialogCardRect(viewBox, scale, 1f, 1f, CardMinWidth, CardMinHeight, 16f, 2f)
+                : CenterDialogCard(
+                    viewBox,
+                    Math.Min(viewBox.Width - 2f * outerPadding, Math.Max(CardMinWidth * scale, viewBox.Width * CardWidthFraction)),
+                    Math.Min(viewBox.Height - 2f * outerPadding, Math.Max(CardMinHeight * scale, viewBox.Height * CardHeightFraction)));
 
             RegisterDialogCard(cardRect);
 
+            var cardWidth = cardRect.Width;
+            var cardHeight = cardRect.Height;
             var cardMin = Math.Min(cardWidth, cardHeight);
-            var cardRadius = cardMin * 0.04f;
+            var cardRadius = compact ? 0f : cardMin * 0.04f;
             var cardShadow = Math.Max(1f, cardMin * 0.012f);
-            BorderRenderer.CreateSpritesFromRect(new RectangleF(cardRect.X + cardShadow, cardRect.Y + cardShadow, cardWidth, cardHeight),
-                Sprites, ResolveColor(ThemeResources.ShadowColor), radiusPixels: cardRadius, radiusScale: 1f);
+            if (!compact)
+                BorderRenderer.CreateSpritesFromRect(new RectangleF(cardRect.X + cardShadow, cardRect.Y + cardShadow, cardWidth, cardHeight),
+                    Sprites, ResolveColor(ThemeResources.ShadowColor), radiusPixels: cardRadius, radiusScale: 1f);
             BorderRenderer.CreateSpritesFromRect(cardRect, Sprites,
                 ResolveColor(ThemeResources.SurfaceContainerHighColor), radiusPixels: cardRadius, radiusScale: 1f);
+
+            if (compact)
+            {
+                RenderContent(GetDialogContentRect(cardRect, viewBox, scale, padding), scale, fontScale, surface);
+                return;
+            }
 
             var titleScale = PadButtonStyle.TextScaleForHeight(
                 MathHelper.Clamp(cardRect.Height * 0.06f, 14f, 24f), TextFont, surface);
             var titleHeight = MeasureLineHeight(titleScale, surface);
-            var titleText = PadButtonStyle.TrimToWidth(MyTexts.GetString(TitleKey), cardRect.Width - 2f * pad, titleScale, TextFont, surface);
+            var titleText = PadButtonStyle.TrimToWidth(MyTexts.GetString(TitleKey), cardRect.Width - 2f * padding.X, titleScale, TextFont, surface);
             Sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
                 Data = titleText,
-                Position = new Vector2(cardRect.Center.X, cardRect.Y + pad),
+                Position = new Vector2(cardRect.Center.X, cardRect.Y + padding.Y),
                 Color = ResolveColor(ThemeResources.OnSurfaceColor),
                 RotationOrScale = titleScale,
                 Alignment = TextAlignment.CENTER,
                 FontId = TextFont
             });
 
-            var contentTop = cardRect.Y + pad + titleHeight + 10f * scale;
+            var contentTop = cardRect.Y + padding.Y + titleHeight + 10f * scale;
             var contentRect = new RectangleF(
-                cardRect.X + pad,
+                cardRect.X + padding.X,
                 contentTop,
-                cardRect.Width - 2f * pad,
-                Math.Max(0f, cardRect.Bottom - pad - contentTop));
+                cardRect.Width - 2f * padding.X,
+                Math.Max(0f, cardRect.Bottom - padding.Y - contentTop));
 
             RenderContent(contentRect, scale, fontScale, surface);
         }
@@ -180,14 +190,30 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 
         void BackToMenu()
         {
-            if (_showDialog != null)
-                _showDialog(this);
+            if (_requestRedraw != null)
+                _requestRedraw();
         }
 
         protected override void RenderContent(RectangleF contentRect, float scale, float fontScale,
             IMyTextSurface surface)
         {
             var gap = 10f * scale;
+
+            if (CurrentDialogIsTiny)
+            {
+                gap = Math.Min(gap, contentRect.Width * 0.025f);
+                var buttonWidth = Math.Max(1f, (contentRect.Width - 2f * gap) / 3f);
+                var compactSortText = MyTexts.GetString(MOD_PREFIX + "CargoActions_Sort") + ": " + SortModeLabel(Config.SortMode);
+                RenderButton(BUTTON_SORT, new RectangleF(contentRect.X, contentRect.Y, buttonWidth, contentRect.Height),
+                    compactSortText, CycleSort);
+                RenderButton(BUTTON_URANIUM, new RectangleF(contentRect.X + buttonWidth + gap, contentRect.Y, buttonWidth, contentRect.Height),
+                    MyTexts.GetString(MOD_PREFIX + "CargoActions_Uranium"), OpenUranium);
+                RenderButton(BUTTON_WEAPONS, new RectangleF(contentRect.X + (buttonWidth + gap) * 2f, contentRect.Y,
+                        Math.Max(1f, contentRect.Right - (contentRect.X + (buttonWidth + gap) * 2f)), contentRect.Height),
+                    MyTexts.GetString(MOD_PREFIX + "CargoActions_Ammo"), OpenWeapons);
+                return;
+            }
+
             var buttonHeight = Math.Min(110f * scale, (contentRect.Height - 2f * gap) / 3f);
 
             var sortText = MyTexts.GetString(MOD_PREFIX + "CargoActions_Sort") + ": " + SortModeLabel(Config.SortMode);
@@ -321,6 +347,34 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             IMyTextSurface surface)
         {
             var rowGap = 12f * scale;
+            if (CurrentDialogIsTiny)
+            {
+                rowGap = Math.Min(rowGap, contentRect.Width * 0.02f);
+                var columnWidth = Math.Max(1f, (contentRect.Width - 3f * rowGap) / 4f);
+                var labelHeight = contentRect.Height >= 34f * scale
+                    ? Math.Min(16f * scale, contentRect.Height * 0.34f)
+                    : 0f;
+
+                for (int i = 0; i < 4; i++)
+                {
+                    var x = contentRect.X + i * (columnWidth + rowGap);
+                    var columnRect = new RectangleF(x, contentRect.Y,
+                        i == 3 ? Math.Max(1f, contentRect.Right - x) : columnWidth,
+                        contentRect.Height);
+
+                    if (labelHeight > 0f)
+                    {
+                        DrawLeftLabel(_labels[i], new Vector2(columnRect.X, columnRect.Y + labelHeight * 0.5f),
+                            columnRect.Width, labelHeight, ON_SURFACE);
+                    }
+
+                    var inputTop = columnRect.Y + labelHeight + (labelHeight > 0f ? 2f * scale : 0f);
+                    RenderInput(i, new RectangleF(columnRect.X, inputTop, columnRect.Width,
+                        Math.Max(1f, columnRect.Bottom - inputTop)));
+                }
+                return;
+            }
+
             var rowH = Math.Min(40f * scale, (contentRect.Height - 3f * rowGap) / 4f);
 
             for (int i = 0; i < 4; i++)
@@ -358,6 +412,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             }
 
             input.SetVisible(true);
+            input.SetClass(CurrentDialogIsTiny ? "ControlBase Compact" : "ControlBase");
             ContainerControl.AddChild(input);
             input.Render(Sprites);
         }
@@ -449,6 +504,21 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             var rowH = 34f * scale;
             var gap = 8f * scale;
 
+            if (CurrentDialogIsTiny)
+            {
+                gap = Math.Min(gap, contentRect.Width * 0.02f);
+                var sideWidth = Math.Min(Math.Max(100f * scale, contentRect.Width * 0.18f), contentRect.Width * 0.26f);
+                var compactDefaultRect = new RectangleF(contentRect.X, contentRect.Y, sideWidth, contentRect.Height);
+                var selectedRect = new RectangleF(contentRect.Right - sideWidth, contentRect.Y, sideWidth, contentRect.Height);
+                var compactListRect = new RectangleF(compactDefaultRect.Right + gap, contentRect.Y,
+                    Math.Max(1f, selectedRect.X - gap - (compactDefaultRect.Right + gap)), contentRect.Height);
+
+                RenderDefaultInput(compactDefaultRect);
+                RenderList(compactListRect, Math.Max(1f, Math.Min(28f * scale, compactListRect.Height)));
+                RenderSelectedInput(selectedRect);
+                return;
+            }
+
             DrawLeftLabel(MyTexts.GetString(MOD_PREFIX + "CargoActions_Default"),
                 new Vector2(contentRect.X, contentRect.Y + rowH * 0.5f), contentRect.Width * 0.5f, rowH, ON_SURFACE);
             var defaultRect = new RectangleF(contentRect.X + contentRect.Width * 0.55f, contentRect.Y, contentRect.Width * 0.45f, rowH);
@@ -490,6 +560,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             }
 
             _defaultInput.SetVisible(true);
+            _defaultInput.SetClass(CurrentDialogIsTiny ? "ControlBase Compact" : "ControlBase");
             ContainerControl.AddChild(_defaultInput);
             _defaultInput.Render(Sprites);
         }
@@ -572,6 +643,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
             }
 
             _selectedInput.SetVisible(true);
+            _selectedInput.SetClass(CurrentDialogIsTiny ? "ControlBase Compact" : "ControlBase");
             ContainerControl.AddChild(_selectedInput);
             _selectedInput.Render(Sprites);
         }
