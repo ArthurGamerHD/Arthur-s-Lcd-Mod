@@ -8,6 +8,7 @@ using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel;
 using LcdMod.Client.Gui.ControlsTemplates.Progress;
+using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
@@ -687,20 +688,31 @@ namespace LcdMod.Client.Apps.Abstract
 
         void DrawCellPie(List<MySprite> sprites, RectangleF iconRect, float usage)
         {
-            var pieSize = new Vector2(iconRect.Width, iconRect.Height);
             var pieOrigo = new Vector2(iconRect.X + iconRect.Width / 2f, iconRect.Y + iconRect.Height / 2f);
-            var margin = ToScreenMargin(pieOrigo);
+            float outerRadius = Math.Max(0f, Math.Min(iconRect.Width, iconRect.Height) * 0.5f);
+            float innerRadius = outerRadius * 0.68f;
+            Color trackColor = ResolveResource(
+                ThemeResources.SurfaceContainerHighestColor,
+                ColorExtensions.MulValue(ForegroundColor, 0.5f));
 
-            PieChartPanel.CreateSprites(
+            DonutPanel.DrawDonut(
                 sprites,
-                string.Empty,
-                (IMyTextSurface)Surface,
-                margin,
-                pieSize,
+                pieOrigo,
+                innerRadius,
+                outerRadius,
                 usage,
                 _ascentColor,
-                true,
-                false);
+                trackColor,
+                gapPixels: 2f * Scale);
+            DonutPanel.DrawCenterPercentage(
+                sprites,
+                Surface,
+                pieOrigo,
+                innerRadius,
+                usage,
+                ForegroundColor,
+                TextFont,
+                0.55f * LayoutScale);
         }
 
         float ContentTop()

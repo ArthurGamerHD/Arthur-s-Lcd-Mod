@@ -1399,4 +1399,7 @@ Poczekamy chwilę, a następnie uruchomimy ją ponownie za ciebie.</value>
     <value>List of all available chat commands</value>
     <comment>TODO_TRANSLATION</comment>
   </data>
+  <data name="LcdMod_DefenseDashboard" xml:space="preserve">
+    <value>Panel obrony</value>
+  </data>
 </root>

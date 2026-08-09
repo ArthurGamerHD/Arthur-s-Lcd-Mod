@@ -1400,4 +1400,7 @@
     <value>List of all available chat commands</value>
     <comment>TODO_TRANSLATION</comment>
   </data>
+  <data name="LcdMod_DefenseDashboard" xml:space="preserve">
+    <value>防衛ダッシュボード</value>
+  </data>
 </root>

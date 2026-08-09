@@ -1,9 +1,10 @@
 using System;
 using LcdMod.Client.Gui.Tooltip;
+using LcdMod.Common.Mvvm;
 
 namespace LcdMod.Client.Gui.ControlsTemplates
 {
-    public abstract class ControlModelBase
+    public abstract class ControlModelBase : ObservableObject
     {
         protected ControlModelBase()
         {

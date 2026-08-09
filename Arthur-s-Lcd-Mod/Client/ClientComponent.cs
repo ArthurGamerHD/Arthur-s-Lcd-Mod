@@ -10,6 +10,7 @@ using LcdMod.Client.Diagnostics;
 using LcdMod.Client.Market;
 using LcdMod.Client.Ftue;
 using LcdMod.Client.Modules.Power;
+using LcdMod.Client.Modules.Defense;
 using LcdMod.Client.Modules.Cartography;
 using LcdMod.Client.Modules.RoomEnvironment;
 using LcdMod.Client.SurfaceScripts.Abstract;
@@ -73,6 +74,7 @@ namespace LcdMod.Client
         }
 
         public PowerDataModule PowerData { get; private set; }
+        public DefenseDataModule DefenseData { get; private set; }
         public CartographyModule Cartography { get; private set; }
         public GridRoomEnvironmentClientModule RoomEnvironment { get; }
         internal FtueService Ftue { get; }
@@ -93,6 +95,8 @@ namespace LcdMod.Client
             LocalConfigManager.Load();
             _session.RegisterModules();
             PowerData = new PowerDataModule();
+            DefenseData = new DefenseDataModule();
+            DefenseData.Load();
             RunNextFrame.Add(TextureHelper.InitializeColorfulIconsApi);
 
             DebuggerHelper.Break();
@@ -125,6 +129,9 @@ namespace LcdMod.Client
             if (PowerData != null)
                 PowerData.Clear();
             PowerData = null;
+            if (DefenseData != null)
+                DefenseData.Unload();
+            DefenseData = null;
 #if DEBUG
             _cartographyDebugReport.Unload();
 #endif
@@ -175,6 +182,9 @@ namespace LcdMod.Client
 
                 if (PowerData != null)
                     PowerData.Update(MyAPIGateway.Session.GameplayFrameCounter);
+
+                if (DefenseData != null)
+                    DefenseData.Update(MyAPIGateway.Session.GameplayFrameCounter);
 
                 _session.UpdateModules();
                 UpdateDebugSnapshot();

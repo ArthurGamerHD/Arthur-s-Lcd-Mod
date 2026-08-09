@@ -34,7 +34,8 @@ public sealed class AppTypeStabilityTests
         ["Games"] = 26,
         ["BSoDTest"] = 27,
         ["MediaPlayer"] = 28,
-        ["PlanetaryMap"] = 29
+        ["PlanetaryMap"] = 29,
+        ["DefenseDashboard"] = 30
     };
 
     [Fact]

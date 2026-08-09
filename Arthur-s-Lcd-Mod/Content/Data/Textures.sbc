@@ -14,6 +14,12 @@
             <Selectable>false</Selectable>
         </LCDTextureDefinition>
 
+        <LCDTextureDefinition> <!-- Defense Dashboard: Shield status icon -->
+            <Id Type="LCDTextureDefinition" Subtype="ShieldIcon"/>
+            <SpritePath>Textures/Sprites/ShieldIcon.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
         <LCDTextureDefinition> <!-- Custom Lock Sprite -->
             <Id Type="LCDTextureDefinition" Subtype="Lock"/>
             <SpritePath>Textures/Sprites/Lock.dds</SpritePath>

@@ -78,6 +78,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         readonly List<IMyPowerProducer> _producers = new List<IMyPowerProducer>();
 
         Color _ascentColor = Color.White;
+        Color _donutTrackColor = Color.Gray;
         string _usagePrefix = string.Empty;
         string _maxLabelCache = string.Empty;
         string _currentLabelCache = string.Empty;
@@ -97,7 +98,14 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         protected override void LayoutChanged()
         {
             base.LayoutChanged();
-            _ascentColor = ColorExtensions.DeriveAccentColor(ColorComponent.ResolveHeaderColor(Block as IMyTerminalBlock), .4f, 0.5);
+            Color headerColor = ColorComponent.ResolveHeaderColor(Block as IMyTerminalBlock);
+            _ascentColor = ColorExtensions.DeriveAccentColor(headerColor, .4f, 0.5);
+            Color foregroundColor = Surface.ScriptForegroundColor;
+            bool dark = ColorExtensions.ContrastRatio(foregroundColor, Color.Black) >=
+                        ColorExtensions.ContrastRatio(foregroundColor, Color.White);
+            Dictionary<string, Color> theme = ColorExtensions.ToTheme(headerColor, dark);
+            if (!theme.TryGetValue(Constants.SURFACE_CONTAINER_HIGHEST, out _donutTrackColor))
+                _donutTrackColor = ColorExtensions.MulValue(foregroundColor, 0.5f);
 
             RefreshEntryLabels();
             _maxLabelCache = string.Empty;
@@ -495,20 +503,28 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         void DrawCellPie(List<MySprite> sprites, RectangleF iconRect, float usage)
         {
-            var pieSize = new Vector2(iconRect.Width, iconRect.Height);
             var pieOrigo = new Vector2(iconRect.X + iconRect.Width / 2f, iconRect.Y + iconRect.Height / 2f);
-            var margin = ToScreenMargin(pieOrigo);
+            float outerRadius = Math.Max(0f, Math.Min(iconRect.Width, iconRect.Height) * 0.5f);
+            float innerRadius = outerRadius * 0.68f;
 
-            PieChartPanel.CreateSprites(
+            DonutPanel.DrawDonut(
                 sprites,
-                string.Empty,
-                (IMyTextSurface)Surface,
-                margin,
-                pieSize,
+                pieOrigo,
+                innerRadius,
+                outerRadius,
                 usage,
                 _ascentColor,
-                true,
-                false);
+                _donutTrackColor,
+                gapPixels: 2f * ConfiguredScale);
+            DonutPanel.DrawCenterPercentage(
+                sprites,
+                Surface,
+                pieOrigo,
+                innerRadius,
+                usage,
+                Surface.ScriptForegroundColor,
+                "White",
+                0.55f * LayoutScale);
         }
 
         protected static double ToWatts(float powerUnit)

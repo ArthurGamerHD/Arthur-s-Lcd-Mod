@@ -1399,4 +1399,7 @@ Vi väntar en stund och startar sedan om den åt dig.</value>
     <value>List of all available chat commands</value>
     <comment>TODO_TRANSLATION</comment>
   </data>
+  <data name="LcdMod_DefenseDashboard" xml:space="preserve">
+    <value>Försvarspanel</value>
+  </data>
 </root>

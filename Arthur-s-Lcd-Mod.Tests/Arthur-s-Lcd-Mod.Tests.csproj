@@ -29,6 +29,8 @@
   <ItemGroup>
     <Compile Include="..\Arthur-s-Lcd-Mod\Client\Markdown\**\*.cs" LinkBase="MarkdownSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Config\OptionalValue.cs" LinkBase="ConfigSource" />
+    <Compile Include="..\Arthur-s-Lcd-Mod\Common\Mvvm\ObservableObject.cs" LinkBase="MvvmSource" />
+    <Compile Include="..\Arthur-s-Lcd-Mod\Common\Mvvm\ObservablePropertyAttribute.cs" LinkBase="MvvmSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Config\Generation\ConfigMetadataAttributes.cs" LinkBase="ConfigSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Config\Components\ConfigComponentModels.cs" LinkBase="ConfigSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Config\Components\GeneralConfigComponentExtensions.cs" LinkBase="ConfigSource" />
@@ -38,6 +40,10 @@
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Imaging\DdsAverageColor.cs" LinkBase="ImagingSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Imaging\ContentTexturePath.cs" LinkBase="ImagingSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Layout\ButtonPanelLayout.cs" LinkBase="LayoutSource" />
+    <Compile Include="..\Arthur-s-Lcd-Mod\Client\Modules\Defense\Providers\Deflector\DeflectorShieldCustomInfoParser.cs" LinkBase="DefenseSource" />
+    <Compile Include="..\Arthur-s-Lcd-Mod\Client\Modules\Defense\Providers\DefenseShields\DefenseShieldValueConverter.cs" LinkBase="DefenseSource" />
+    <Compile Include="..\Arthur-s-Lcd-Mod\Client\Modules\Defense\ShieldValueFormatter.cs" LinkBase="DefenseSource" />
+    <Compile Include="..\Arthur-s-Lcd-Mod\Client\Modules\Defense\ShieldInfo.cs" LinkBase="DefenseSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Png\RawPngBitmap.cs" LinkBase="PngSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Zip\Crc32.cs" LinkBase="ZipSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Zip\MinimalZip.cs" LinkBase="ZipSource" />

@@ -1399,4 +1399,7 @@ Mēs brīdi pagaidīsim un pēc tam to restartēsim jūsu vietā.</value>
     <value>List of all available chat commands</value>
     <comment>TODO_TRANSLATION</comment>
   </data>
+  <data name="LcdMod_DefenseDashboard" xml:space="preserve">
+    <value>Aizsardzības panelis</value>
+  </data>
 </root>

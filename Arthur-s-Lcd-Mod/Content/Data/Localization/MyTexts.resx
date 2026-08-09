@@ -1347,4 +1347,7 @@ We are waiting for a while, and then we will restart it for you.</value>
   <data name="LcdMod_ChatCommand_Help_Subtitle" xml:space="preserve">
     <value>List of all available chat commands</value>
   </data>
+  <data name="LcdMod_DefenseDashboard" xml:space="preserve">
+    <value>Defense Dashboard</value>
+  </data>
 </root>

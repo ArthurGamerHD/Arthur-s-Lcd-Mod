@@ -5,6 +5,7 @@ using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Helpers;
+using LcdMod.Common.Mvvm;
 using Sandbox.Game.Entities;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
@@ -67,6 +68,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         RectangleF? _renderBoundsOverride;
         float _renderBorderRadiusInsetPixels;
         bool _isLayoutDirty = true;
+        ObservableObject _observableDataContext;
 
         public bool WasMouseOver { get; private set; }
         public bool IsMouseOver { get; private set; }
@@ -399,7 +401,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates
         protected ControlTemplate(CursorType? cursor = null, object dataContext = null, Action<object, object> onClick = null,
             InteractiveTooltip tooltip = null)
         {
-            DataContext = dataContext;
+            ReplaceDataContext(dataContext);
             OnClick = onClick;
             Tooltip = tooltip ?? Model?.Tooltip;
             Cursor = cursor ?? GetDefaultCursor(onClick, Model);
@@ -417,9 +419,38 @@ namespace LcdMod.Client.Gui.ControlsTemplates
 
         public ControlTemplate SetDataContext(object dataContext)
         {
-            DataContext = dataContext;
+            bool changed = ReplaceDataContext(dataContext);
             ApplyModelDefaults();
+            if (changed)
+                MarkDirty();
             return this;
+        }
+
+        bool ReplaceDataContext(object dataContext)
+        {
+            if (ReferenceEquals(DataContext, dataContext))
+                return false;
+
+            if (_observableDataContext != null)
+                _observableDataContext.PropertyChanged -= OnDataContextPropertyChanged;
+
+            DataContext = dataContext;
+            _observableDataContext = dataContext as ObservableObject;
+            if (_observableDataContext != null)
+                _observableDataContext.PropertyChanged += OnDataContextPropertyChanged;
+            return true;
+        }
+
+        void OnDataContextPropertyChanged(ObservableObject sender, string propertyName)
+        {
+            if (ReferenceEquals(sender, _observableDataContext) &&
+                ShouldInvalidateForDataContextProperty(propertyName))
+                MarkDirty();
+        }
+
+        protected virtual bool ShouldInvalidateForDataContextProperty(string propertyName)
+        {
+            return true;
         }
 
         public Action<object, object> OnClick { get; private set; }

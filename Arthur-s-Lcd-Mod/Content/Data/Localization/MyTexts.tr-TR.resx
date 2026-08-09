@@ -1399,4 +1399,7 @@ Bir süre bekleyeceğiz ve ardından sizin için yeniden başlatacağız.</value
     <value>List of all available chat commands</value>
     <comment>TODO_TRANSLATION</comment>
   </data>
+  <data name="LcdMod_DefenseDashboard" xml:space="preserve">
+    <value>Savunma Paneli</value>
+  </data>
 </root>

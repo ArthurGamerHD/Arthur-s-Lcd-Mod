@@ -227,7 +227,7 @@ namespace LcdMod.Client.Apps
                 Alignment = TextAlignment.CENTER,
             });
 
-            PieDualChartPanel.CreateSprites(
+            DonutDualPanel.CreateSprites(
                 frame,
                 "",
                 (IMyTextSurface)Surface,

@@ -1399,4 +1399,7 @@ Vom aștepta puțin, apoi o vom reporni pentru tine.</value>
     <value>List of all available chat commands</value>
     <comment>TODO_TRANSLATION</comment>
   </data>
+  <data name="LcdMod_DefenseDashboard" xml:space="preserve">
+    <value>Panou de apărare</value>
+  </data>
 </root>
