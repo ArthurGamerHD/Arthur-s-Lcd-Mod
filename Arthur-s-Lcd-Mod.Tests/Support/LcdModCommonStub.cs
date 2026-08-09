@@ -168,7 +168,7 @@ namespace LcdMod.Common.Helpers
     {
         public static VRageMath.Color DefaultColor => default;
 
-        public static VRageMath.Color GetIconColor(Sandbox.ModAPI.IMyTerminalBlock block)
+        public static VRageMath.Color GetAccent(Sandbox.ModAPI.IMyTerminalBlock block)
         {
             return default;
         }

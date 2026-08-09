@@ -25,9 +25,9 @@ namespace LcdMod.Client.Terminal.Controls.Generic
             slider.Visible = Visible;
             slider.SetLimits(0f, 1f);
             slider.Writer = Writer;
-            slider.Title = MyStringId.GetOrCompute("Button count");
+            slider.Title = MyStringId.GetOrCompute(LcdMod.Common.Helpers.Constants.MOD_PREFIX + "ButtonPad_ButtonCount");
             slider.Tooltip = MyStringId.GetOrCompute(
-                "Number of buttons. Values are snapped to complete rows and columns.");
+                LcdMod.Common.Helpers.Constants.MOD_PREFIX + "ButtonPad_ButtonCountTooltip");
             TerminalControl = slider;
         }
 
@@ -50,12 +50,12 @@ namespace LcdMod.Client.Terminal.Controls.Generic
             if (configuredCount == ButtonPanelLayout.AutomaticButtonCount)
                 text.Append(LocHelper.GetLoc("LcdMod_AutoOffset")).Append(": ");
 
-            text.Append(layout.ButtonCount);
-            text.Append(" buttons (");
-            text.Append(layout.Columns);
-            text.Append(" × ");
-            text.Append(layout.Rows);
-            text.Append(')');
+            text.Append(string.Format(
+                FormatingHelper.Culture,
+                LocHelper.GetLoc(LcdMod.Common.Helpers.Constants.MOD_PREFIX + "ButtonPad_ButtonCountFormat"),
+                layout.ButtonCount,
+                layout.Columns,
+                layout.Rows));
         }
 
         void Setter(IMyTerminalBlock block, float value)

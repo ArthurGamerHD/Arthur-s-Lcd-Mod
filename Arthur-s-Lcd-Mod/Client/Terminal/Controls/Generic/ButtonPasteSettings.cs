@@ -1,4 +1,5 @@
 using System;
+using LcdMod.Client.Helpers;
 using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
@@ -22,9 +23,8 @@ namespace LcdMod.Client.Terminal.Controls.Generic
             button.Action = Paste;
             button.Enabled = Enabled;
             button.Visible = Visible;
-            button.Title = MyStringId.GetOrCompute("Paste settings");
-            button.Tooltip = MyStringId.GetOrCompute(
-                "Paste compatible LCD Mod settings and text-surface display properties without changing the destination app type.");
+            button.Title = MyStringId.GetOrCompute(Constants.MOD_PREFIX + "SettingsClipboard_Paste");
+            button.Tooltip = MyStringId.GetOrCompute(Constants.MOD_PREFIX + "SettingsClipboard_PasteTooltip");
             button.SupportsMultipleBlocks = false;
 
             TerminalControl = button;
@@ -46,15 +46,20 @@ namespace LcdMod.Client.Terminal.Controls.Generic
             {
                 if (!_clipboard.Paste(block))
                 {
-                    MyAPIGateway.Utilities.ShowMessage("lcdMod", "No copied settings are available for this surface.");
+                    MyAPIGateway.Utilities.ShowMessage("lcdMod",
+                        LocHelper.GetLoc(Constants.MOD_PREFIX + "SettingsClipboard_NoCopiedSettings"));
                     return;
                 }
 
-                MyAPIGateway.Utilities.ShowMessage("lcdMod", "Compatible settings pasted.");
+                MyAPIGateway.Utilities.ShowMessage("lcdMod",
+                    LocHelper.GetLoc(Constants.MOD_PREFIX + "SettingsClipboard_Pasted"));
             }
             catch (Exception e)
             {
-                MyAPIGateway.Utilities.ShowMessage("lcdMod", "Failed to paste settings: " + e.Message);
+                MyAPIGateway.Utilities.ShowMessage("lcdMod", string.Format(
+                    FormatingHelper.Culture,
+                    LocHelper.GetLoc(Constants.MOD_PREFIX + "SettingsClipboard_PasteFailedFormat"),
+                    e.Message));
                 LogHelper.Log(MyLogSeverity.Error, e.ToString());
             }
         }

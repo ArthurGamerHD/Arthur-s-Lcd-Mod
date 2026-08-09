@@ -36,9 +36,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 {
     sealed class SelectActionDialog : Dialog
     {
-        const string TITLE = "Select Action";
-        const string SEARCH_TITLE = "Search Action";
-        const string SEARCH_PLACEHOLDER = "Search actions";
         const string MISSING_ICON_PLACEHOLDER = "MissingIcon";
         const string STRING_INPUT_ICON = "StringInput";
         const string COLOR_INPUT_ICON = "ColorInput";
@@ -145,7 +142,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             Sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
-                Data = TITLE,
+                Data = ButtonPadLocalization.SelectAction,
                 Position = new Vector2(cardRect.Center.X, cardRect.Y + padding.Y + (headerHeight - titleHeight) * 0.5f),
                 Color = ResolveColor(ThemeResources.OnSurfaceColor),
                 FontId = TextFont,
@@ -493,16 +490,16 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             if (_searchInputModel == null)
                 _searchInputModel = new TextInputModel
                 {
-                    Title = SEARCH_TITLE,
-                    Subtitle = "Filter actions containing this text",
-                    Placeholder = SEARCH_PLACEHOLDER,
+                    Title = ButtonPadLocalization.ActionDialogSearchTitle,
+                    Subtitle = ButtonPadLocalization.ActionDialogSearchHelp,
+                    Placeholder = ButtonPadLocalization.ActionDialogSearchPlaceholder,
                     Value = _searchText,
                     ValueChanged = OnSearchChanged
                 };
 
-            _searchInputModel.Title = SEARCH_TITLE;
-            _searchInputModel.Subtitle = "Filter actions containing this text";
-            _searchInputModel.Placeholder = SEARCH_PLACEHOLDER;
+            _searchInputModel.Title = ButtonPadLocalization.ActionDialogSearchTitle;
+            _searchInputModel.Subtitle = ButtonPadLocalization.ActionDialogSearchHelp;
+            _searchInputModel.Placeholder = ButtonPadLocalization.ActionDialogSearchPlaceholder;
             _searchInputModel.Value = _searchText;
             _searchInputModel.Enabled = true;
             _searchInputModel.ValueChanged = OnSearchChanged;
@@ -666,7 +663,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
         void DrawEmptyMessage(RectangleF rect, float scale, IMyTextSurface surface)
         {
-            var text = string.IsNullOrWhiteSpace(_searchText) ? "No compatible actions" : "No matches";
+            var text = string.IsNullOrWhiteSpace(_searchText)
+                ? ButtonPadLocalization.ActionDialogNoCompatibleActions
+                : ButtonPadLocalization.NoMatches;
             var textScale = 0.46f * scale * surface.FontSize;
             var textHeight = MeasureLineHeight(textScale, surface);
             Sprites.Add(new MySprite

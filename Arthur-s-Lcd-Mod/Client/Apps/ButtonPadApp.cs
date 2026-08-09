@@ -983,19 +983,19 @@ namespace LcdMod.Client.Apps
             ICustomAction customAction;
             if (!ActionHelper.CustomActions.TryGetValue(entry.Action.BaseId, out customAction) || customAction == null)
             {
-                NotifyActionFailure("Action unavailable");
+                NotifyActionFailure(ButtonPadLocalization.ActionUnavailable);
                 return true;
             }
 
             try
             {
                 if (!ApplyActionToTarget(entry.Target, entry.Action, customAction, scroll, delta))
-                    NotifyActionFailure("No compatible target");
+                    NotifyActionFailure(ButtonPadLocalization.NoCompatibleTarget);
             }
             catch (Exception e)
             {
                 LogHelper.Log(MyLogSeverity.Error, "Button panel action failed: " + e);
-                NotifyActionFailure("Action failed");
+                NotifyActionFailure(ButtonPadLocalization.ActionFailed);
             }
 
             return true;
@@ -1736,7 +1736,9 @@ namespace LcdMod.Client.Apps
                     return;
                 }
 
-                var dialogTitle = _index >= 0 ? "Button " + (_index + 1) : "Button";
+                var dialogTitle = _index >= 0
+                    ? ButtonPadLocalization.Button(_index + 1)
+                    : ButtonPadLocalization.ButtonLabel;
                 Sprites.Add(new MySprite
                 {
                     Type = SpriteType.TEXT,
@@ -2005,16 +2007,16 @@ namespace LcdMod.Client.Apps
                 if (_titleInputModel == null)
                     _titleInputModel = new TextInputModel
                     {
-                        Title = "Title",
-                        Subtitle = "Button title displayed above the icon",
-                        Placeholder = "Title",
+                        Title = ButtonPadLocalization.Title,
+                        Subtitle = ButtonPadLocalization.TitleHelp,
+                        Placeholder = ButtonPadLocalization.Title,
                         Value = _draftEntry.Title ?? string.Empty,
                         ValueChanged = OnTitleChanged
                     };
 
-                _titleInputModel.Title = "Title";
-                _titleInputModel.Subtitle = "Button title displayed above the icon";
-                _titleInputModel.Placeholder = "Title";
+                _titleInputModel.Title = ButtonPadLocalization.Title;
+                _titleInputModel.Subtitle = ButtonPadLocalization.TitleHelp;
+                _titleInputModel.Placeholder = ButtonPadLocalization.Title;
                 _titleInputModel.Value = _draftEntry.Title ?? string.Empty;
                 _titleInputModel.Enabled = true;
                 _titleInputModel.ValueChanged = OnTitleChanged;
@@ -2167,14 +2169,14 @@ namespace LcdMod.Client.Apps
             void EnsureApplyButton(RectangleF rect)
             {
                 if (_applyButton == null)
-                    _applyButton = new Button(rect, new ButtonModel { Text = "Apply", Clicked = OnApplyClicked });
+                    _applyButton = new Button(rect, new ButtonModel { Text = ButtonPadLocalization.Apply, Clicked = OnApplyClicked });
                 else
                     _applyButton.SetRect(rect);
 
                 var model = _applyButton.DataContext as ButtonModel;
                 if (model != null)
                 {
-                    model.Text = "Apply";
+                    model.Text = ButtonPadLocalization.Apply;
                     model.Enabled = true;
                     model.Clicked = OnApplyClicked;
                 }
@@ -2188,14 +2190,14 @@ namespace LcdMod.Client.Apps
             void EnsureDeleteButton(RectangleF rect)
             {
                 if (_deleteButton == null)
-                    _deleteButton = new Button(rect, new ButtonModel { Text = "Delete", Clicked = OnDeleteClicked });
+                    _deleteButton = new Button(rect, new ButtonModel { Text = ButtonPadLocalization.Delete, Clicked = OnDeleteClicked });
                 else
                     _deleteButton.SetRect(rect);
 
                 var model = _deleteButton.DataContext as ButtonModel;
                 if (model != null)
                 {
-                    model.Text = "Delete";
+                    model.Text = ButtonPadLocalization.Delete;
                     model.Enabled = true;
                     model.Clicked = OnDeleteClicked;
                 }
@@ -2240,19 +2242,19 @@ namespace LcdMod.Client.Apps
             string GetPickTargetButtonText()
             {
                 if (_draftEntry.Target == null || string.IsNullOrEmpty(_draftEntry.Target.DisplayName))
-                    return "Select Target";
-                return "Target: " + _draftEntry.Target.DisplayName;
+                    return ButtonPadLocalization.SelectTarget;
+                return ButtonPadLocalization.Target(_draftEntry.Target.DisplayName);
             }
 
             string GetSelectActionButtonText()
             {
                 if (_draftEntry.Target == null)
-                    return "Select Action";
+                    return ButtonPadLocalization.SelectAction;
                 if (_draftEntry.Action == null || string.IsNullOrEmpty(_draftEntry.Action.DisplayName))
-                    return "Select Action";
+                    return ButtonPadLocalization.SelectAction;
                 if (!string.IsNullOrEmpty(_draftEntry.Action.ParameterDisplayValue))
-                    return "Action: " + _draftEntry.Action.DisplayName + " = " + _draftEntry.Action.ParameterDisplayValue;
-                return "Action: " + _draftEntry.Action.DisplayName;
+                    return ButtonPadLocalization.ActionValue(_draftEntry.Action.DisplayName, _draftEntry.Action.ParameterDisplayValue);
+                return ButtonPadLocalization.Action(_draftEntry.Action.DisplayName);
             }
 
             void OnSelectedSpriteButtonClicked(ButtonModel model, object sender)
@@ -2403,10 +2405,10 @@ namespace LcdMod.Client.Apps
             void OnColorClicked(ButtonModel model, object sender)
             {
                 TextInputHelper.SpawnForLocalPlayer(
-                    "Button Color",
+                    ButtonPadLocalization.ButtonColor,
                     OnColorChanged,
                     GetDraftBackgroundColor().ToHex(),
-                    "Hex color, for example #ff00ff");
+                    ButtonPadLocalization.ColorHexHelp);
             }
 
             void OnColorChanged(string value)
@@ -2420,7 +2422,7 @@ namespace LcdMod.Client.Apps
                 }
 
                 if (MyAPIGateway.Utilities != null)
-                    MyAPIGateway.Utilities.ShowNotification("Invalid color. Use #RRGGBB.", 2500);
+                    MyAPIGateway.Utilities.ShowNotification(ButtonPadLocalization.InvalidColor, 2500);
             }
 
             void OnApplyClicked(ButtonModel model, object sender)

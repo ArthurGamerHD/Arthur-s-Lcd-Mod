@@ -1402,4 +1402,328 @@
   <data name="LcdMod_DefenseDashboard" xml:space="preserve">
     <value>Панель защиты</value>
   </data>
+  <data name="LcdMod_ButtonPad" xml:space="preserve">
+    <value>Button Pad</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_ActionUnavailable" xml:space="preserve">
+    <value>Action unavailable</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_NoCompatibleTarget" xml:space="preserve">
+    <value>No compatible target</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_ActionFailed" xml:space="preserve">
+    <value>Action failed</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_Button" xml:space="preserve">
+    <value>Button</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_ButtonFormat" xml:space="preserve">
+    <value>Button {0}</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_Title" xml:space="preserve">
+    <value>Title</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_TitleHelp" xml:space="preserve">
+    <value>Button title displayed above the icon</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_Apply" xml:space="preserve">
+    <value>Apply</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_Delete" xml:space="preserve">
+    <value>Delete</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_SelectTarget" xml:space="preserve">
+    <value>Select Target</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_TargetFormat" xml:space="preserve">
+    <value>Target: {0}</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_SelectAction" xml:space="preserve">
+    <value>Select Action</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_ActionFormat" xml:space="preserve">
+    <value>Action: {0}</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_ActionValueFormat" xml:space="preserve">
+    <value>Action: {0} = {1}</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_ButtonColor" xml:space="preserve">
+    <value>Button Color</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_Color" xml:space="preserve">
+    <value>Color</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_ColorHexHelp" xml:space="preserve">
+    <value>Hex color, for example #ff00ff</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_InvalidColor" xml:space="preserve">
+    <value>Invalid color. Use #RRGGBB.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_TargetDialog_Title" xml:space="preserve">
+    <value>Pick Target</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_TargetDialog_SearchTitle" xml:space="preserve">
+    <value>Search Target</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_TargetDialog_SearchPlaceholder" xml:space="preserve">
+    <value>Search targets</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_TargetDialog_SearchHelp" xml:space="preserve">
+    <value>Filter targets containing this text</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_TargetDialog_NoTargets" xml:space="preserve">
+    <value>No targets</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_NoMatches" xml:space="preserve">
+    <value>No matches</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_TargetKind_Block" xml:space="preserve">
+    <value>Block</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_TargetKind_Group" xml:space="preserve">
+    <value>Group</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_TargetKind_BlockType" xml:space="preserve">
+    <value>Block Type</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_TargetKind_BlockSubtype" xml:space="preserve">
+    <value>Block Subtype</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_ActionDialog_SearchTitle" xml:space="preserve">
+    <value>Search Action</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_ActionDialog_SearchPlaceholder" xml:space="preserve">
+    <value>Search actions</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_ActionDialog_SearchHelp" xml:space="preserve">
+    <value>Filter actions containing this text</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_ActionDialog_NoCompatibleActions" xml:space="preserve">
+    <value>No compatible actions</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_ConfigureAction_Title" xml:space="preserve">
+    <value>Configure Action</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_ConfigureAction_Scroll" xml:space="preserve">
+    <value>Scroll</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_ConfigureAction_NoParameters" xml:space="preserve">
+    <value>No configurable parameters</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_ConfigureAction_EnterValue" xml:space="preserve">
+    <value>Enter value</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_ConfigureAction_Parameter" xml:space="preserve">
+    <value>Parameter</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_ConfigureAction_NumberValue" xml:space="preserve">
+    <value>Number value</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_ConfigureAction_TextValue" xml:space="preserve">
+    <value>Text value</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_ConfigureAction_ColorValue" xml:space="preserve">
+    <value>Color value</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_ConfigureAction_BooleanMode" xml:space="preserve">
+    <value>Boolean mode</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_ConfigureAction_ClickAction" xml:space="preserve">
+    <value>Click Action</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_ConfigureAction_On" xml:space="preserve">
+    <value>On</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_ConfigureAction_Off" xml:space="preserve">
+    <value>Off</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_ConfigureAction_Toggle" xml:space="preserve">
+    <value>Toggle</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_ConfigureAction_Decrease" xml:space="preserve">
+    <value>Decrease</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_ConfigureAction_Increase" xml:space="preserve">
+    <value>Increase</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_ConfigureAction_Normal" xml:space="preserve">
+    <value>Normal</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_ConfigureAction_Reversed" xml:space="preserve">
+    <value>Reversed</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_ConfigureAction_None" xml:space="preserve">
+    <value>None</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_ConfigureAction_ScrollFormat" xml:space="preserve">
+    <value>{0}, Scroll: {1}</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_ButtonCount" xml:space="preserve">
+    <value>Button count</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_ButtonCountTooltip" xml:space="preserve">
+    <value>Number of buttons. Values are snapped to complete rows and columns.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_ButtonCountFormat" xml:space="preserve">
+    <value>{0} buttons ({1} × {2})</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_ButtonStyle" xml:space="preserve">
+    <value>Button Style</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_ButtonStyleTooltip" xml:space="preserve">
+    <value>Visual style used by Button Panel buttons.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_Style_Default" xml:space="preserve">
+    <value>Default</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_Style_Classic" xml:space="preserve">
+    <value>Classic</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_Style_Transparent" xml:space="preserve">
+    <value>Transparent</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_Style_Border" xml:space="preserve">
+    <value>Border</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_SettingsClipboard_Copy" xml:space="preserve">
+    <value>Copy settings</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_SettingsClipboard_CopyTooltip" xml:space="preserve">
+    <value>Copy the selected LCD Mod settings and text-surface display properties into a temporary client-side clipboard.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_SettingsClipboard_NoSettings" xml:space="preserve">
+    <value>No LCD Mod settings found for this surface.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_SettingsClipboard_Copied" xml:space="preserve">
+    <value>Settings copied.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_SettingsClipboard_CopyFailedFormat" xml:space="preserve">
+    <value>Failed to copy settings: {0}</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_SettingsClipboard_Paste" xml:space="preserve">
+    <value>Paste settings</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_SettingsClipboard_PasteTooltip" xml:space="preserve">
+    <value>Paste compatible LCD Mod settings and text-surface display properties without changing the destination app type.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_SettingsClipboard_NoCopiedSettings" xml:space="preserve">
+    <value>No copied settings are available for this surface.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_SettingsClipboard_Pasted" xml:space="preserve">
+    <value>Compatible settings pasted.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_SettingsClipboard_PasteFailedFormat" xml:space="preserve">
+    <value>Failed to paste settings: {0}</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_DefenseDashboard_ShieldFallback" xml:space="preserve">
+    <value>Shield</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_DefenseDashboard_Offline" xml:space="preserve">
+    <value>Offline</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_DefenseDashboard_FullyCharged" xml:space="preserve">
+    <value>Fully charged</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_DefenseDashboard_RechargeInSecondsFormat" xml:space="preserve">
+    <value>Recharge in {0}s</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_DefenseDashboard_RechargeUnavailable" xml:space="preserve">
+    <value>Recharge unavailable</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_DefenseDashboard_Ready" xml:space="preserve">
+    <value>Ready</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_DefenseDashboard_Firing" xml:space="preserve">
+    <value>Firing</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_DefenseDashboard_NotReady" xml:space="preserve">
+    <value>Not Ready</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_DefenseDashboard_Disabled" xml:space="preserve">
+    <value>Disabled</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_ButtonPad_ConfigureAction_ColorHexHelp" xml:space="preserve">
+    <value>Hex color, for example #ff8800</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
 </root>

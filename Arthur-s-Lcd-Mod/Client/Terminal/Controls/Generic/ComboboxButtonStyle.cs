@@ -20,17 +20,18 @@ namespace LcdMod.Client.Terminal.Controls.Generic
             combo.Setter = Setter;
             combo.ComboBoxContent = Content;
             combo.Visible = Visible;
-            combo.Title = MyStringId.GetOrCompute("Button Style");
-            combo.Tooltip = MyStringId.GetOrCompute("Visual style used by Button Panel buttons.");
+            combo.Title = MyStringId.GetOrCompute(LcdMod.Common.Helpers.Constants.MOD_PREFIX + "ButtonPad_ButtonStyle");
+            combo.Tooltip = MyStringId.GetOrCompute(
+                LcdMod.Common.Helpers.Constants.MOD_PREFIX + "ButtonPad_ButtonStyleTooltip");
             TerminalControl = combo;
         }
 
         static void Content(List<MyTerminalControlComboBoxItem> items)
         {
-            items.Add(CreateItem(ButtonPanelStyle.Default, "Default"));
-            items.Add(CreateItem(ButtonPanelStyle.Classic, "Classic"));
-            items.Add(CreateItem(ButtonPanelStyle.Transparent, "Transparent"));
-            items.Add(CreateItem(ButtonPanelStyle.Border, "Border"));
+            items.Add(CreateItem(ButtonPanelStyle.Default, "ButtonPad_Style_Default"));
+            items.Add(CreateItem(ButtonPanelStyle.Classic, "ButtonPad_Style_Classic"));
+            items.Add(CreateItem(ButtonPanelStyle.Transparent, "ButtonPad_Style_Transparent"));
+            items.Add(CreateItem(ButtonPanelStyle.Border, "ButtonPad_Style_Border"));
         }
 
         static MyTerminalControlComboBoxItem CreateItem(ButtonPanelStyle style, string name)
@@ -38,7 +39,7 @@ namespace LcdMod.Client.Terminal.Controls.Generic
             return new MyTerminalControlComboBoxItem
             {
                 Key = (long)style,
-                Value = MyStringId.GetOrCompute(name)
+                Value = MyStringId.GetOrCompute(LcdMod.Common.Helpers.Constants.MOD_PREFIX + name)
             };
         }
 

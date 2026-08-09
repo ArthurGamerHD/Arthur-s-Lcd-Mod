@@ -34,7 +34,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 {
     sealed class ActionConfigurationDialog : Dialog
     {
-        const string TITLE = "Configure Action";
         const string TYPE_BOOLEAN = "Boolean";
         const string TYPE_STRING = "String";
         const string TYPE_INT64 = "Int64";
@@ -50,6 +49,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         const string SCROLL_NONE = "none";
         const string SCROLL_NORMAL = "normal";
         const string SCROLL_REVERSED = "reversed";
+        const float APPLY_BUTTON_WIDTH_PIXELS = 116f;
         static readonly string[] BooleanModes = { BOOLEAN_ON, BOOLEAN_OFF, BOOLEAN_TOGGLE };
         static readonly string[] ClickActions = { CLICK_INCREASE, CLICK_DECREASE };
         static readonly string[] ScrollModes = { SCROLL_NONE, SCROLL_NORMAL, SCROLL_REVERSED };
@@ -189,7 +189,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             Sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
-                Data = TITLE,
+                Data = ButtonPadLocalization.ConfigureActionTitle,
                 Position = new Vector2(cardRect.Center.X, cardRect.Y + padding.Y + (headerHeight - titleHeight) * 0.5f),
                 Color = ResolveColor(ThemeResources.OnSurfaceColor),
                 FontId = TextFont,
@@ -209,13 +209,20 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             if (NeedsScrollControl())
             {
                 y += smallSpacing;
-                DrawInfoText("Scroll", cardRect.X + padding.X, y, contentWidth, labelScale * 0.88f, surface);
+                DrawInfoText(ButtonPadLocalization.ConfigureActionScroll, cardRect.X + padding.X, y, contentWidth, labelScale * 0.88f, surface);
                 var scrollRect = new RectangleF(cardRect.X + padding.X, y + labelHeight, contentWidth, fieldHeight);
                 RenderScrollCombo(scrollRect);
                 y = scrollRect.Bottom;
             }
 
-            var applyRect = new RectangleF(cardRect.X + padding.X, y + spacing, contentWidth, fieldHeight);
+            var applyButtonWidth = Math.Min(
+                Math.Max(APPLY_BUTTON_WIDTH_PIXELS * scale, 92f * scale),
+                contentWidth);
+            var applyRect = new RectangleF(
+                cardRect.Right - padding.X - applyButtonWidth,
+                y + spacing,
+                applyButtonWidth,
+                fieldHeight);
             EnsureApplyButton(applyRect);
             ContainerControl.AddChild(_applyButton);
             _applyButton.Render(Sprites);
@@ -231,7 +238,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             var topRow = new RectangleF(contentRect.X, contentRect.Y, contentRect.Width, rowHeight);
             var bottomRow = new RectangleF(contentRect.X, topRow.Bottom + gap, contentRect.Width, rowHeight);
             var slotWidth = Math.Max(1f, (bottomRow.Width - gap * 3f) * .25f);
-            var applyRect = GetCompactSlot(bottomRow, 0, slotWidth, gap);
+            var applyRect = GetCompactSlot(bottomRow, 3, slotWidth, gap);
 
             EnsureApplyButton(applyRect);
             ContainerControl.AddChild(_applyButton);
@@ -259,9 +266,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                     topRow.Height), scale);
 
                 RenderScrollModeButtons(new RectangleF(
-                    GetCompactSlot(bottomRow, 1, slotWidth, gap).X,
+                    bottomRow.X,
                     bottomRow.Y,
-                    Math.Max(1f, bottomRow.Right - GetCompactSlot(bottomRow, 1, slotWidth, gap).X),
+                    Math.Max(1f, applyRect.X - gap - bottomRow.X),
                     bottomRow.Height), scale);
                 return;
             }
@@ -275,9 +282,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
             if (NeedsScrollControl())
             {
-                var scrollStart = GetCompactSlot(bottomRow, 1, slotWidth, gap).X;
-                RenderScrollModeButtons(new RectangleF(scrollStart, bottomRow.Y,
-                    Math.Max(1f, bottomRow.Right - scrollStart), bottomRow.Height), scale);
+                RenderScrollModeButtons(new RectangleF(
+                    bottomRow.X,
+                    bottomRow.Y,
+                    Math.Max(1f, applyRect.X - gap - bottomRow.X),
+                    bottomRow.Height), scale);
             }
         }
 
@@ -303,7 +312,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _parameterTypeName = GetParameterTypeName(customAction);
             if (_parameterTypeName == null)
             {
-                _message = "No configurable parameters";
+                _message = ButtonPadLocalization.ConfigureActionNoParameters;
                 return;
             }
 
@@ -311,7 +320,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             InitializeParameter(customAction, block);
 #else
             _parameterTypeName = null;
-            _message = "No configurable parameters";
+            _message = ButtonPadLocalization.ConfigureActionNoParameters;
 #endif
         }
 
@@ -518,7 +527,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 _numericModel = new NumericUpDownModel { ValueChanged = OnNumberChanged };
 
             _numericModel.Title = GetParameterTitle();
-            _numericModel.Subtitle = "Enter value";
+            _numericModel.Subtitle = ButtonPadLocalization.ConfigureActionEnterValue;
             _numericModel.Enabled = true;
             _numericModel.MinValue = _numberMin;
             _numericModel.MaxValue = _numberMax;
@@ -545,7 +554,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                 _textInputModel = new TextInputModel { ValueChanged = OnTextChanged };
 
             _textInputModel.Title = GetParameterTitle();
-            _textInputModel.Subtitle = "Enter value";
+            _textInputModel.Subtitle = ButtonPadLocalization.ConfigureActionEnterValue;
             _textInputModel.Placeholder = GetParameterTitle();
             _textInputModel.Value = _textValue ?? string.Empty;
             _textInputModel.Enabled = true;
@@ -587,14 +596,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         void EnsureApplyButton(RectangleF rect)
         {
             if (_applyButton == null)
-                _applyButton = new Button(rect, new ButtonModel { Text = "Apply", Clicked = OnApplyClicked });
+                _applyButton = new Button(rect, new ButtonModel { Text = ButtonPadLocalization.Apply, Clicked = OnApplyClicked });
             else
                 _applyButton.SetRect(rect);
 
             var model = _applyButton.DataContext as ButtonModel;
             if (model != null)
             {
-                model.Text = "Apply";
+                model.Text = ButtonPadLocalization.Apply;
                 model.Enabled = true;
                 model.Clicked = OnApplyClicked;
             }
@@ -996,10 +1005,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         void OnColorClicked(ButtonModel model, object sender)
         {
             TextInputHelper.SpawnForLocalPlayer(
-                "Color",
+                ButtonPadLocalization.Color,
                 OnColorTextChanged,
                 _colorValue.ToHex(),
-                "Hex color, for example #ff8800");
+                ButtonPadLocalization.ConfigureActionColorHexHelp);
         }
 
         void OnColorTextChanged(string value)
@@ -1013,7 +1022,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             }
 
             if (MyAPIGateway.Utilities != null)
-                MyAPIGateway.Utilities.ShowNotification("Invalid color. Use #RRGGBB.", 2500);
+                MyAPIGateway.Utilities.ShowNotification(ButtonPadLocalization.InvalidColor, 2500);
         }
 
         void OnBooleanModeClicked(ButtonModel model, object sender)
@@ -1163,7 +1172,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         {
             BorderRenderer.CreateSpritesFromRect(rect, Sprites, ResolveColor(ThemeResources.SurfaceContainerColor), radiusScale: scale);
 
-            var text = string.IsNullOrEmpty(_message) ? "No configurable parameters" : _message;
+            var text = string.IsNullOrEmpty(_message) ? ButtonPadLocalization.ConfigureActionNoParameters : _message;
             var textScale = 0.46f * scale * surface.FontSize;
             var textHeight = MeasureLineHeight(textScale, surface);
             var trimmed = TrimText(text, Math.Max(0f, rect.Width - 12f * scale), textScale, surface);
@@ -1193,23 +1202,23 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             if (!string.IsNullOrWhiteSpace(_parameterTitle))
                 return _parameterTitle;
 
-            return string.IsNullOrWhiteSpace(_parameterTypeName) ? "Parameter" : _parameterTypeName;
+            return string.IsNullOrWhiteSpace(_parameterTypeName) ? ButtonPadLocalization.ConfigureActionParameter : _parameterTypeName;
         }
 
         string GetParameterCaption()
         {
             if (_parameterTypeName == TYPE_INT64 || _parameterTypeName == TYPE_SINGLE)
-                return "Number value";
+                return ButtonPadLocalization.ConfigureActionNumberValue;
             if (_parameterTypeName == TYPE_STRING || _parameterTypeName == TYPE_STRING_BUILDER)
-                return "Text value";
+                return ButtonPadLocalization.ConfigureActionTextValue;
             if (_parameterTypeName == TYPE_COLOR)
-                return "Color value";
+                return ButtonPadLocalization.ConfigureActionColorValue;
             if (_parameterTypeName == TYPE_BOOLEAN)
-                return "Boolean mode";
+                return ButtonPadLocalization.ConfigureActionBooleanMode;
             if (_parameterTypeName == TYPE_INCREASE_DECREASE)
-                return "Click Action";
+                return ButtonPadLocalization.ConfigureActionClickAction;
 
-            return "Parameter";
+            return ButtonPadLocalization.ConfigureActionParameter;
         }
 
         int GetParameterControlRowCount()
@@ -1313,10 +1322,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         {
             mode = NormalizeBooleanMode(mode, BOOLEAN_TOGGLE);
             if (mode == BOOLEAN_ON)
-                return "On";
+                return ButtonPadLocalization.ConfigureActionOn;
             if (mode == BOOLEAN_OFF)
-                return "Off";
-            return "Toggle";
+                return ButtonPadLocalization.ConfigureActionOff;
+            return ButtonPadLocalization.ConfigureActionToggle;
         }
 
         static string NormalizeClickAction(string value, string fallback)
@@ -1336,7 +1345,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         static string GetClickActionLabel(string clickAction)
         {
             clickAction = NormalizeClickAction(clickAction, CLICK_INCREASE);
-            return clickAction == CLICK_DECREASE ? "Decrease" : "Increase";
+            return clickAction == CLICK_DECREASE
+                ? ButtonPadLocalization.ConfigureActionDecrease
+                : ButtonPadLocalization.ConfigureActionIncrease;
         }
 
         static string NormalizeScrollMode(string value, string fallback)
@@ -1360,10 +1371,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         {
             scrollMode = NormalizeScrollMode(scrollMode, SCROLL_NONE);
             if (scrollMode == SCROLL_NORMAL)
-                return "Normal";
+                return ButtonPadLocalization.ConfigureActionNormal;
             if (scrollMode == SCROLL_REVERSED)
-                return "Reversed";
-            return "None";
+                return ButtonPadLocalization.ConfigureActionReversed;
+            return ButtonPadLocalization.ConfigureActionNone;
         }
 
         string FormatDisplayWithScroll(string primary)
@@ -1372,7 +1383,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             if (scrollMode == SCROLL_NONE)
                 return primary ?? string.Empty;
 
-            return (primary ?? string.Empty) + ", Scroll: " + GetScrollModeLabel(scrollMode);
+            return ButtonPadLocalization.ConfigureActionWithScroll(
+                primary ?? string.Empty,
+                GetScrollModeLabel(scrollMode));
         }
 
         sealed class BooleanModeButtonModel : ButtonModel

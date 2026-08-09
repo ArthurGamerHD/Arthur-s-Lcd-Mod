@@ -46,9 +46,6 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
     sealed class PickActionTargetDialog : Dialog
     {
-        const string TITLE = "Pick Target";
-        const string SEARCH_TITLE = "Search Target";
-        const string SEARCH_PLACEHOLDER = "Search targets";
         const string MISSING_ICON_PLACEHOLDER = "MissingIcon";
 
         const float CARD_WIDTH_PERCENT = 0.76f;
@@ -198,7 +195,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             Sprites.Add(new MySprite
             {
                 Type = SpriteType.TEXT,
-                Data = TITLE,
+                Data = ButtonPadLocalization.TargetDialogTitle,
                 Position = new Vector2(cardRect.Center.X, cardRect.Y + padding.Y + (headerHeight - titleHeight) * 0.5f),
                 Color = ResolveColor(ThemeResources.OnSurfaceColor),
                 FontId = TextFont,
@@ -443,17 +440,17 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             {
                 _searchInputModel = new TextInputModel
                 {
-                    Title = SEARCH_TITLE,
-                    Subtitle = "Filter targets containing this text",
-                    Placeholder = SEARCH_PLACEHOLDER,
+                    Title = ButtonPadLocalization.TargetDialogSearchTitle,
+                    Subtitle = ButtonPadLocalization.TargetDialogSearchHelp,
+                    Placeholder = ButtonPadLocalization.TargetDialogSearchPlaceholder,
                     Value = _searchText,
                     ValueChanged = OnSearchChanged
                 };
             }
 
-            _searchInputModel.Title = SEARCH_TITLE;
-            _searchInputModel.Subtitle = "Filter targets containing this text";
-            _searchInputModel.Placeholder = SEARCH_PLACEHOLDER;
+            _searchInputModel.Title = ButtonPadLocalization.TargetDialogSearchTitle;
+            _searchInputModel.Subtitle = ButtonPadLocalization.TargetDialogSearchHelp;
+            _searchInputModel.Placeholder = ButtonPadLocalization.TargetDialogSearchPlaceholder;
             _searchInputModel.Value = _searchText;
             _searchInputModel.Enabled = true;
             _searchInputModel.ValueChanged = OnSearchChanged;
@@ -640,7 +637,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
         void DrawEmptyMessage(RectangleF rect, float scale, IMyTextSurface surface)
         {
-            var text = string.IsNullOrWhiteSpace(_searchText) ? "No targets" : "No matches";
+            var text = string.IsNullOrWhiteSpace(_searchText)
+                ? ButtonPadLocalization.TargetDialogNoTargets
+                : ButtonPadLocalization.NoMatches;
             var textScale = 0.46f * scale * surface.FontSize;
             var textHeight = MeasureLineHeight(textScale, surface);
 
@@ -755,13 +754,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             switch (kind)
             {
                 case PickActionTargetKind.Block:
-                    return "Block";
+                    return ButtonPadLocalization.TargetKindBlock;
                 case PickActionTargetKind.Group:
-                    return "Group";
+                    return ButtonPadLocalization.TargetKindGroup;
                 case PickActionTargetKind.BlockType:
-                    return "Block Type";
+                    return ButtonPadLocalization.TargetKindBlockType;
                 case PickActionTargetKind.BlockSubtype:
-                    return "Block Subtype";
+                    return ButtonPadLocalization.TargetKindBlockSubtype;
                 default:
                     return kind.ToString();
             }

@@ -54,7 +54,7 @@ namespace LcdMod.Common.Config.Components
         {
             return block == null
                 ? FactionHelperCommon.DefaultColor
-                : FactionHelperCommon.GetIconColor(block);
+                : FactionHelperCommon.GetAccent(block);
         }
     }
 }

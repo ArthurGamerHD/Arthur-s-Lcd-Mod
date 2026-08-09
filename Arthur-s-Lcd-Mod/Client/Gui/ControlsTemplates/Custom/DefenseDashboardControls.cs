@@ -4,6 +4,7 @@ using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.ControlsTemplates.Progress;
 using LcdMod.Client.Gui.Styling;
+using LcdMod.Client.Helpers;
 using LcdMod.Client.Modules.Defense;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
@@ -255,7 +256,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
             float ratio = GetChargeRatio(shield);
             Color statusColor = ResolveStatusColor(shield, ratio);
             Color trackColor = ResolveColor(ThemeResources.SurfaceContainerHighestColor);
-            string providerName = string.IsNullOrEmpty(shield.ProviderName) ? "Shield" : shield.ProviderName;
+            string providerName = string.IsNullOrEmpty(shield.ProviderName)
+                ? DefenseDashboardLocalization.ShieldFallback
+                : shield.ProviderName;
             float renderedRatio = shield.HasCapacity ? ratio : (shield.IsWorking ? 1f : 0f);
             bool drawGhost = shield.HasGhostCharge && shield.GhostChargeRatio > renderedRatio + 0.0001f;
 
@@ -409,15 +412,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
                     ghostDelta, shield.ValueUnit, shield.UseSiPrefixes);
 
             if (!shield.IsWorking)
-                return "Offline";
+                return DefenseDashboardLocalization.Offline;
 
             if (shield.HasCapacity && shield.ChargeRatio >= 0.9999f)
-                return "Fully charged";
+                return DefenseDashboardLocalization.FullyCharged;
 
             if (shield.HasRechargeDelay && shield.TicksUntilRecharge > 0)
             {
                 int seconds = Math.Max(1, (shield.TicksUntilRecharge + 59) / 60);
-                return "Recharge in " + seconds + "s";
+                return DefenseDashboardLocalization.RechargeInSeconds(seconds);
             }
 
             if (shield.HasRecharge)
@@ -428,7 +431,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
                     delta, shield.ValueUnit, shield.UseSiPrefixes) + "/s";
             }
 
-            return "Recharge unavailable";
+            return DefenseDashboardLocalization.RechargeUnavailable;
         }
 
         Color ResolveDeltaColor(ShieldInfo shield)
@@ -552,22 +555,22 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom
             float row = (4f - rowCount) * 0.5f;
             if (_ready > 0)
             {
-                DrawStatusRow(sprites, GetStatusRow(statusRect, row), _ready, "Ready", Success, textScale);
+                DrawStatusRow(sprites, GetStatusRow(statusRect, row), _ready, DefenseDashboardLocalization.Ready, Success, textScale);
                 row++;
             }
             if (_shooting > 0)
             {
-                DrawStatusRow(sprites, GetStatusRow(statusRect, row), _shooting, "Firing", Accent, textScale);
+                DrawStatusRow(sprites, GetStatusRow(statusRect, row), _shooting, DefenseDashboardLocalization.Firing, Accent, textScale);
                 row++;
             }
             if (_warning > 0)
             {
-                DrawStatusRow(sprites, GetStatusRow(statusRect, row), _warning, "Not Ready", Warning, textScale);
+                DrawStatusRow(sprites, GetStatusRow(statusRect, row), _warning, DefenseDashboardLocalization.NotReady, Warning, textScale);
                 row++;
             }
             if (_unavailable > 0)
             {
-                DrawStatusRow(sprites, GetStatusRow(statusRect, row), _unavailable, "Disabled", Error, textScale);
+                DrawStatusRow(sprites, GetStatusRow(statusRect, row), _unavailable, DefenseDashboardLocalization.Disabled, Error, textScale);
             }
 
             DrawStatusBar(sprites, barRect);
