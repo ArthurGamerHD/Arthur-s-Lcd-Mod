@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using LcdMod.Common.Zip;
+using Adk.Compression.Zip;
 using Sandbox.ModAPI;
 using static LcdMod.Common.Helpers.Constants;
 

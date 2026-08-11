@@ -1,6 +1,6 @@
 using System.IO.Compression;
 using System.Text;
-using LcdMod.Common.Zip;
+using Adk.Compression.Zip;
 
 namespace Arthur_s_Lcd_Mod.Tests;
 

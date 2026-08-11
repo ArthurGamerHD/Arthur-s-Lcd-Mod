@@ -5,7 +5,7 @@ using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace LcdModCodeGenerator;
+namespace LcdMod.CodeGenerator;
 
 [Generator]
 public sealed class MarkdownXmlSnapshotSerializerTypes : IIncrementalGenerator

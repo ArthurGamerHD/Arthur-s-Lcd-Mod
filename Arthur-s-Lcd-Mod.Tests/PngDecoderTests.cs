@@ -1,7 +1,7 @@
 using System.IO.Compression;
 using System.Text;
-using LcdMod.Common.Png;
-using LcdMod.Common.Zip;
+using Adk.Compression.Zip;
+using Adk.Image.Png;
 
 namespace Arthur_s_Lcd_Mod.Tests;
 
@@ -186,7 +186,7 @@ public sealed class PngDecoderTests
         var wrongHeightPng = CreateSolidGrayscalePng(2, 2, 17);
         var materialPng = CreateSolidGrayscalePng(2, 2, 91);
 
-        var error = Assert.Throws<LcdMod.Common.Exceptions.InvalidDataException>(() =>
+        var error = Assert.Throws<Adk.Compression.Exceptions.InvalidDataException>(() =>
             PlanetImageSet.LoadAll(fileName => new MemoryStream(
                 string.Equals(fileName, "front.png", StringComparison.OrdinalIgnoreCase)
                     ? wrongHeightPng

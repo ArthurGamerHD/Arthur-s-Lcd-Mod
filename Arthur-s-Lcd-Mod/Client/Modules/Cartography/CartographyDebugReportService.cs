@@ -6,7 +6,7 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using LcdMod.Common.Helpers;
-using LcdMod.Common.Zip;
+using Adk.Compression.Zip;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
 using VRage.Game;

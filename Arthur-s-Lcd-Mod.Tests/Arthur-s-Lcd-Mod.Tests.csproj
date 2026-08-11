@@ -37,26 +37,12 @@
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Config\Components\ComponentConfigEntityReferences.cs" LinkBase="ConfigSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Config\Models\ScreenProviderConfig.cs" LinkBase="ConfigSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Helpers\Constants.cs" LinkBase="ConfigSource" />
-    <Compile Include="..\Arthur-s-Lcd-Mod\Common\Imaging\DdsAverageColor.cs" LinkBase="ImagingSource" />
-    <Compile Include="..\Arthur-s-Lcd-Mod\Common\Imaging\ContentTexturePath.cs" LinkBase="ImagingSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Layout\ButtonPanelLayout.cs" LinkBase="LayoutSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Client\Modules\Defense\Providers\Deflector\DeflectorShieldCustomInfoParser.cs" LinkBase="DefenseSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Client\Modules\Defense\Providers\DefenseShields\DefenseShieldValueConverter.cs" LinkBase="DefenseSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Client\Modules\Defense\ShieldValueFormatter.cs" LinkBase="DefenseSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Client\Modules\Defense\ShieldInfo.cs" LinkBase="DefenseSource" />
-    <Compile Include="..\Arthur-s-Lcd-Mod\Common\Png\RawPngBitmap.cs" LinkBase="PngSource" />
-    <Compile Include="..\Arthur-s-Lcd-Mod\Common\Zip\Crc32.cs" LinkBase="ZipSource" />
-    <Compile Include="..\Arthur-s-Lcd-Mod\Common\Zip\MinimalZip.cs" LinkBase="ZipSource" />
-    <Compile Include="..\Arthur-s-Lcd-Mod\Common\Zip\Zlib.cs" LinkBase="ZipSource" />
-    <Compile Include="..\Arthur-s-Lcd-Mod\Common\Compression\HuffmanTree.cs" LinkBase="CompressionSource" />
-    <Compile Include="..\Arthur-s-Lcd-Mod\Client\Audio\Xwma\**\*.cs" LinkBase="AudioSource\Xwma" />
-    <Compile Include="..\Arthur-s-Lcd-Mod\Client\Audio\Adpcm\**\*.cs" LinkBase="AudioSource\Adpcm" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Client\Audio\GameAudioPcmLoader.cs" LinkBase="AudioSource" />
-    <Compile Include="..\Arthur-s-Lcd-Mod\Client\Audio\PcmWaveData.cs" LinkBase="AudioSource" />
-    <Compile Include="..\Arthur-s-Lcd-Mod\Client\Audio\PcmWaveReader.cs" LinkBase="AudioSource" />
-    <Compile Include="..\Arthur-s-Lcd-Mod\Common\Exceptions\ArgumentOutOfRangeException.cs" LinkBase="ExceptionSource" />
-    <Compile Include="..\Arthur-s-Lcd-Mod\Common\Exceptions\EndOfStreamException.cs" LinkBase="ExceptionSource" />
-    <Compile Include="..\Arthur-s-Lcd-Mod\Common\Exceptions\InvalidDataException.cs" LinkBase="ExceptionSource" />
   </ItemGroup>
 
   <ItemGroup>
@@ -69,9 +55,24 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\LcdModCodeGenerator\LcdModCodeGenerator.csproj"
+    <ProjectReference Include="..\External\Adk\Adk.Analyzer\Adk.Analyzer.csproj"
                       OutputItemType="Analyzer"
-                      ReferenceOutputAssembly="false" />
+                      ReferenceOutputAssembly="false">
+      <SetPlatform>Platform=AnyCPU</SetPlatform>
+    </ProjectReference>
+    <ProjectReference Include="..\LcdMod.CodeGenerator\LcdMod.CodeGenerator.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false">
+      <SetPlatform>Platform=AnyCPU</SetPlatform>
+    </ProjectReference>
+  </ItemGroup>
+
+  <Import Project="..\External\Adk\Adk.Audio\Adk.Audio.projitems" Label="Shared" />
+  <Import Project="..\External\Adk\Adk.Compression\Adk.Compression.projitems" Label="Shared" />
+  <Import Project="..\External\Adk\Adk.Image\Adk.Image.projitems" Label="Shared" />
+
+  <ItemGroup>
+    <Compile Remove="$(MSBuildThisFileDirectory)..\External\Adk\Adk.Image\Imaging\RawRgbaBitmap.cs" />
   </ItemGroup>
 
 </Project>

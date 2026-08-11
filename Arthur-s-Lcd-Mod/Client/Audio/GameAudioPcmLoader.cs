@@ -2,7 +2,8 @@
 // ReSharper disable NotAccessedOutParameterVariable
 using System;
 using System.IO;
-using LcdMod.Client.Audio.Xwma.Decoder;
+using Adk.Audio;
+using Adk.Audio.Xwma.Decoder;
 using Sandbox.ModAPI;
 using VRage.Game;
 

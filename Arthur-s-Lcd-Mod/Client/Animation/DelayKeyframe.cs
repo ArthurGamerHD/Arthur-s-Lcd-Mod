@@ -1,4 +1,4 @@
-using ArgumentOutOfRangeException = LcdMod.Common.Exceptions.ArgumentOutOfRangeException;
+using ArgumentOutOfRangeException = Adk.Compression.Exceptions.ArgumentOutOfRangeException;
 
 namespace LcdMod.Client.Animation
 {

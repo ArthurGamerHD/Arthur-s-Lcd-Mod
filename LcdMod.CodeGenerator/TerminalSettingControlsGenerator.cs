@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace LcdModCodeGenerator;
+namespace LcdMod.CodeGenerator;
 
 [Generator]
 public sealed class TerminalSettingControlsGenerator : IIncrementalGenerator

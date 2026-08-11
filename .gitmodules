@@ -1,0 +1,10 @@
+[submodule "External/Adk"]
+	path = External/Adk
+	url = https://github.com/ArthurGamerHD/Adk.git
+[submodule "External/SE-Procedural-Voxel-Cubemap-Api"]
+	path = External/SE-Procedural-Voxel-Cubemap-Api
+	url = https://github.com/ArthurGamerHD/SE-Procedural-Voxel-Cubemap-Api
+[submodule "External/SE-Water"]
+	path = External/SE-Water
+	url = https://github.com/JakariaMods/SE-Water.git
+	branch = master

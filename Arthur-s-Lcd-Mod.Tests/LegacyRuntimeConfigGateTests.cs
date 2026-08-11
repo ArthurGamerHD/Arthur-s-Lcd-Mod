@@ -13,7 +13,7 @@ public sealed class LegacyRuntimeConfigGateTests
     {
         var root = FindRepositoryRoot();
         var violations = Directory.EnumerateFiles(Path.Combine(root, "Arthur-s-Lcd-Mod"), "*.cs", SearchOption.AllDirectories)
-            .Concat(Directory.EnumerateFiles(Path.Combine(root, "LcdModCodeGenerator"), "*.cs", SearchOption.AllDirectories))
+            .Concat(Directory.EnumerateFiles(Path.Combine(root, "LcdMod.CodeGenerator"), "*.cs", SearchOption.AllDirectories))
             .Where(path => !IsFrozenMigrationFile(root, path))
             .SelectMany(path => File.ReadLines(path)
                 .Select((line, index) => new { Path = path, Line = line, Number = index + 1 })
@@ -32,7 +32,7 @@ public sealed class LegacyRuntimeConfigGateTests
         {
             if (File.Exists(Path.Combine(directory.FullName, "LcdMod.sln")) ||
                 (Directory.Exists(Path.Combine(directory.FullName, "Arthur-s-Lcd-Mod")) &&
-                 Directory.Exists(Path.Combine(directory.FullName, "LcdModCodeGenerator"))))
+                 Directory.Exists(Path.Combine(directory.FullName, "LcdMod.CodeGenerator"))))
                 return directory.FullName;
             directory = directory.Parent;
         }

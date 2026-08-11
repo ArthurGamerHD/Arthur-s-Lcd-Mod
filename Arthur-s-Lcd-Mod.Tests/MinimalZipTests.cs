@@ -1,6 +1,6 @@
 using System.Text;
 using ICSharpCode.SharpZipLib.Zip;
-using LcdMod.Common.Zip;
+using Adk.Compression.Zip;
 
 namespace Arthur_s_Lcd_Mod.Tests;
 

@@ -4,7 +4,6 @@
 ### New Rules
 Rule ID | Category | Severity | Notes
 --------|----------|----------|-------
-LcdMOD004 | LcdModCodeGenerator | Warning | Client and server code must not import each other
 LCDCFG001 | LcdModCodeGenerator | Error | App IDs must be stable positive values
 LCDCFG002 | LcdModCodeGenerator | Error | App IDs must be unique
 LCDCFG003 | LcdModCodeGenerator | Error | Generated app names must be unique
@@ -34,4 +33,3 @@ LCDTERM110 | LcdModCodeGenerator | Error | Slider quantum must be finite and non
 LCDTERM111 | LcdModCodeGenerator | Error | Color properties must use Color or OptionalValue<Color>
 LCDTERM112 | LcdModCodeGenerator | Error | Optional color properties require one compile-time resolver
 LCDTERM113 | LcdModCodeGenerator | Error | RequiresCustomColor requires a public bool CustomizedColors property
-LCDCMD001 | LcdModCodeGenerator | Error | Chat commands must be valid static methods

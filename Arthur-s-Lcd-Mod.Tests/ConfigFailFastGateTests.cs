@@ -39,7 +39,7 @@ public sealed class ConfigFailFastGateTests
         {
             if (File.Exists(Path.Combine(directory.FullName, "LcdMod.sln")) ||
                 (Directory.Exists(Path.Combine(directory.FullName, "Arthur-s-Lcd-Mod")) &&
-                 Directory.Exists(Path.Combine(directory.FullName, "LcdModCodeGenerator"))))
+                 Directory.Exists(Path.Combine(directory.FullName, "LcdMod.CodeGenerator"))))
                 return directory.FullName;
             directory = directory.Parent;
         }

@@ -1,6 +1,6 @@
 // ReSharper disable RedundantUsingDirective
 using System.IO;
-using LcdMod.Client.Audio.Xwma;
+using Adk.Audio.Xwma;
 using Xunit;
 
 namespace Arthur_s_Lcd_Mod.Tests

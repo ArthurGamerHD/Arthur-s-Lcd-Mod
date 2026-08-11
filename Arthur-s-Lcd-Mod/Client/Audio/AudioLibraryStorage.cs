@@ -4,7 +4,7 @@ using System.IO;
 using System.Text;
 using LcdMod.Common.Audio;
 using LcdMod.Common.Helpers;
-using LcdMod.Common.Zip;
+using Adk.Compression.Zip;
 using Sandbox.ModAPI;
 using VRage.Utils;
 

@@ -2,9 +2,11 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Arthur-s-Lcd-Mod", "Arthur-s-Lcd-Mod\Arthur-s-Lcd-Mod.csproj", "{F1DBB535-3C48-4F7F-80D7-F642CCF46A0B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LcdModCodeGenerator", "LcdModCodeGenerator\LcdModCodeGenerator.csproj", "{9B85F0B8-4B83-40A6-B347-96FCC4D5041E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LcdMod.CodeGenerator", "LcdMod.CodeGenerator\LcdMod.CodeGenerator.csproj", "{B28CA896-D547-44D8-91DF-83EC1ADDC278}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Arthur-s-Lcd-Mod.Tests", "Arthur-s-Lcd-Mod.Tests\Arthur-s-Lcd-Mod.Tests.csproj", "{14CA1271-9420-44F7-B3B1-8167F52675C2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Adk.Analyzer", "External\Adk\Adk.Analyzer\Adk.Analyzer.csproj", "{251D6409-8BBD-4B51-8E94-BAFB2E94D67A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -19,20 +21,31 @@ Global
 		{F1DBB535-3C48-4F7F-80D7-F642CCF46A0B}.Experimental|x64.Build.0 = Experimental|x64
 		{F1DBB535-3C48-4F7F-80D7-F642CCF46A0B}.Release|x64.ActiveCfg = Release|x64
 		{F1DBB535-3C48-4F7F-80D7-F642CCF46A0B}.Release|x64.Build.0 = Release|x64
-		{9B85F0B8-4B83-40A6-B347-96FCC4D5041E}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{9B85F0B8-4B83-40A6-B347-96FCC4D5041E}.Debug|x64.Build.0 = Debug|Any CPU
-		{9B85F0B8-4B83-40A6-B347-96FCC4D5041E}.Experimental|x64.ActiveCfg = Experimental|Any CPU
-		{9B85F0B8-4B83-40A6-B347-96FCC4D5041E}.Experimental|x64.Build.0 = Experimental|Any CPU
-		{9B85F0B8-4B83-40A6-B347-96FCC4D5041E}.Release|x64.ActiveCfg = Release|Any CPU
-		{9B85F0B8-4B83-40A6-B347-96FCC4D5041E}.Release|x64.Build.0 = Release|Any CPU
+		{B28CA896-D547-44D8-91DF-83EC1ADDC278}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B28CA896-D547-44D8-91DF-83EC1ADDC278}.Debug|x64.Build.0 = Debug|Any CPU
+		{B28CA896-D547-44D8-91DF-83EC1ADDC278}.Experimental|x64.ActiveCfg = Experimental|Any CPU
+		{B28CA896-D547-44D8-91DF-83EC1ADDC278}.Experimental|x64.Build.0 = Experimental|Any CPU
+		{B28CA896-D547-44D8-91DF-83EC1ADDC278}.Release|x64.ActiveCfg = Release|Any CPU
+		{B28CA896-D547-44D8-91DF-83EC1ADDC278}.Release|x64.Build.0 = Release|Any CPU
 		{14CA1271-9420-44F7-B3B1-8167F52675C2}.Debug|x64.ActiveCfg = Debug|Any CPU
 		{14CA1271-9420-44F7-B3B1-8167F52675C2}.Debug|x64.Build.0 = Debug|Any CPU
 		{14CA1271-9420-44F7-B3B1-8167F52675C2}.Experimental|x64.ActiveCfg = Experimental|Any CPU
 		{14CA1271-9420-44F7-B3B1-8167F52675C2}.Experimental|x64.Build.0 = Experimental|Any CPU
 		{14CA1271-9420-44F7-B3B1-8167F52675C2}.Release|x64.ActiveCfg = Release|Any CPU
 		{14CA1271-9420-44F7-B3B1-8167F52675C2}.Release|x64.Build.0 = Release|Any CPU
+		{251D6409-8BBD-4B51-8E94-BAFB2E94D67A}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{251D6409-8BBD-4B51-8E94-BAFB2E94D67A}.Debug|x64.Build.0 = Debug|Any CPU
+		{251D6409-8BBD-4B51-8E94-BAFB2E94D67A}.Experimental|x64.ActiveCfg = Experimental|Any CPU
+		{251D6409-8BBD-4B51-8E94-BAFB2E94D67A}.Experimental|x64.Build.0 = Experimental|Any CPU
+		{251D6409-8BBD-4B51-8E94-BAFB2E94D67A}.Release|x64.ActiveCfg = Release|Any CPU
+		{251D6409-8BBD-4B51-8E94-BAFB2E94D67A}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		External\Adk\Adk.Audio\Adk.Audio.projitems*{8a3cdcc5-4b55-4d87-a415-698a0e1ff06f}*SharedItemsImports = 13
+		External\Adk\Adk.Compression\Adk.Compression.projitems*{3b928576-fdc2-4d82-9ff5-e65b218d37fb}*SharedItemsImports = 13
+		External\Adk\Adk.Image\Adk.Image.projitems*{87fdc905-a339-4758-885f-0b2b5199f7e7}*SharedItemsImports = 13
 	EndGlobalSection
 EndGlobal

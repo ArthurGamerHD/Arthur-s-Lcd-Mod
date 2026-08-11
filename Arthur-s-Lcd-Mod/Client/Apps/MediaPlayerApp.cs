@@ -26,7 +26,7 @@ using VRage.Game.GUI.TextPanel;
 using VRage.Utils;
 using VRageMath;
 using static LcdMod.Common.Helpers.Constants;
-using ArgumentOutOfRangeException = LcdMod.Common.Exceptions.ArgumentOutOfRangeException;
+using ArgumentOutOfRangeException = Adk.Compression.Exceptions.ArgumentOutOfRangeException;
 using IMyTerminalBlock = Sandbox.ModAPI.IMyTerminalBlock;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
 

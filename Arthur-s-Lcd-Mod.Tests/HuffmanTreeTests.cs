@@ -1,4 +1,4 @@
-using LcdMod.Common.Compression;
+using Adk.Compression;
 
 namespace Arthur_s_Lcd_Mod.Tests;
 

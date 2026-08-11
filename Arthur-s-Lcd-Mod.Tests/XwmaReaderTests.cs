@@ -1,4 +1,4 @@
-using LcdMod.Client.Audio.Xwma;
+using Adk.Audio.Xwma;
 
 namespace Arthur_s_Lcd_Mod.Tests;
 

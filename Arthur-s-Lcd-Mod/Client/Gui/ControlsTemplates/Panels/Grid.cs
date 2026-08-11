@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using LcdMod.Client.Gui.Styling;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
-using ArgumentOutOfRangeException = LcdMod.Common.Exceptions.ArgumentOutOfRangeException;
+using ArgumentOutOfRangeException = Adk.Compression.Exceptions.ArgumentOutOfRangeException;
 
 namespace LcdMod.Client.Gui.ControlsTemplates.Panels
 {

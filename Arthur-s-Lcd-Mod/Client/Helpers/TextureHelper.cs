@@ -7,7 +7,7 @@ using LcdMod.Client.Config;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Common.Helpers;
 using LcdMod.Common.Networking;
-using LcdMod.Common.Zip;
+using Adk.Compression.Zip;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
 using VRage.Game;

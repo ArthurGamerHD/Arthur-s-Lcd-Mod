@@ -1,5 +1,5 @@
 #if EXPERIMENTAL
-using LcdMod.Client.Audio.Xwma.Decoder;
+using Adk.Audio.Xwma.Decoder;
 
 namespace Arthur_s_Lcd_Mod.Tests;
 

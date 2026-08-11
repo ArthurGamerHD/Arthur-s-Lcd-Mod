@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Adk.Audio;
 using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;

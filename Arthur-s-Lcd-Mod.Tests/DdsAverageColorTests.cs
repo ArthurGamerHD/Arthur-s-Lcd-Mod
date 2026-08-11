@@ -1,4 +1,4 @@
-using LcdMod.Common.Imaging;
+using Adk.Image;
 
 namespace Arthur_s_Lcd_Mod.Tests;
 
