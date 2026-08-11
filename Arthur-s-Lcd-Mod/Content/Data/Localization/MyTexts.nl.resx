@@ -1160,13 +1160,19 @@ We wachten even en starten het daarna voor je opnieuw op.</value>
     <value>Kaartlaag: {0}</value>
   </data>
   <data name="LcdMod_PlanetaryMap_MapLayer_Tooltip" xml:space="preserve">
-    <value>Kies satelliet-, terrein- of bioomkleuren.</value>
+    <value>Kies satelliet-, terrein-, materiaal- of bioomkleuren.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Terrain" xml:space="preserve">
     <value>Terrein</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Terrain_Tooltip" xml:space="preserve">
     <value>Hoogtekaart genormaliseerd van de minimale tot maximale hoogte van de planeet.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Materials" xml:space="preserve">
+    <value>Materialen</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Materials_Tooltip" xml:space="preserve">
+    <value>Ruwe materiaal-ID's weergegeven met vaste categoriekleuren.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Biomes" xml:space="preserve">
     <value>Biomen</value>
@@ -1179,6 +1185,9 @@ We wachten even en starten het daarna voor je opnieuw op.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Satellite_Tooltip" xml:space="preserve">
     <value>Oppervlaktematerialen weergegeven met hun kleuren op de afstandskaart.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Water_Title" xml:space="preserve">
+    <value>Water</value>
   </data>
   <data name="LcdMod_PlanetaryMap_StreetView_Title" xml:space="preserve">
     <value>Straatweergave</value>

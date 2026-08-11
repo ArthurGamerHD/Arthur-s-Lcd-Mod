@@ -1160,13 +1160,19 @@ Pričekat ćemo neko vrijeme, a zatim je ponovno pokrenuti za vas.</value>
     <value>Sloj karte: {0}</value>
   </data>
   <data name="LcdMod_PlanetaryMap_MapLayer_Tooltip" xml:space="preserve">
-    <value>Odaberite satelitske, terenske ili biomske boje.</value>
+    <value>Odaberite satelitske, terenske, materijalne ili biomske boje.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Terrain" xml:space="preserve">
     <value>Teren</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Terrain_Tooltip" xml:space="preserve">
     <value>Visinska karta normalizirana od najmanje do najveće nadmorske visine planeta.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Materials" xml:space="preserve">
+    <value>Materijali</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Materials_Tooltip" xml:space="preserve">
+    <value>Neobrađeni ID-ovi materijala prikazani stalnim bojama kategorija.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Biomes" xml:space="preserve">
     <value>Biomi</value>
@@ -1179,6 +1185,9 @@ Pričekat ćemo neko vrijeme, a zatim je ponovno pokrenuti za vas.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Satellite_Tooltip" xml:space="preserve">
     <value>Površinski materijali prikazani bojama s udaljene karte.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Water_Title" xml:space="preserve">
+    <value>Voda</value>
   </data>
   <data name="LcdMod_PlanetaryMap_StreetView_Title" xml:space="preserve">
     <value>Ulični prikaz</value>

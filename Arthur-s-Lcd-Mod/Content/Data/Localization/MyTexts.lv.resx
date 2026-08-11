@@ -1160,13 +1160,19 @@ Mēs brīdi pagaidīsim un pēc tam to restartēsim jūsu vietā.</value>
     <value>Kartes slānis: {0}</value>
   </data>
   <data name="LcdMod_PlanetaryMap_MapLayer_Tooltip" xml:space="preserve">
-    <value>Izvēlieties satelīta, reljefa vai biomu krāsas.</value>
+    <value>Izvēlieties satelīta, reljefa, materiālu vai biomu krāsas.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Terrain" xml:space="preserve">
     <value>Reljefs</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Terrain_Tooltip" xml:space="preserve">
     <value>Augstuma karte, kas normalizēta no planētas zemākā līdz augstākajam augstumam.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Materials" xml:space="preserve">
+    <value>Materiāli</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Materials_Tooltip" xml:space="preserve">
+    <value>Neapstrādāti materiālu ID, kas attēloti ar nemainīgām kategoriju krāsām.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Biomes" xml:space="preserve">
     <value>Biomi</value>
@@ -1179,6 +1185,9 @@ Mēs brīdi pagaidīsim un pēc tam to restartēsim jūsu vietā.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Satellite_Tooltip" xml:space="preserve">
     <value>Virsmas materiāli attēloti ar tālās kartes krāsām.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Water_Title" xml:space="preserve">
+    <value>Ūdens</value>
   </data>
   <data name="LcdMod_PlanetaryMap_StreetView_Title" xml:space="preserve">
     <value>Ielas skats</value>

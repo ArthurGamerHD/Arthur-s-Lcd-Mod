@@ -4826,13 +4826,19 @@ namespace LcdMod.Client.Apps
             ClearCartographyEventSubscription();
             _cartographyModule = module;
             if (_cartographyModule != null)
+            {
                 _cartographyModule.ColorCubemapCached += OnCartographyColorCubemapCached;
+                _cartographyModule.PlanetInvalidated += OnCartographyPlanetInvalidated;
+            }
         }
 
         void ClearCartographyEventSubscription()
         {
             if (_cartographyModule != null)
+            {
                 _cartographyModule.ColorCubemapCached -= OnCartographyColorCubemapCached;
+                _cartographyModule.PlanetInvalidated -= OnCartographyPlanetInvalidated;
+            }
 
             _cartographyModule = null;
         }
@@ -4865,6 +4871,26 @@ namespace LcdMod.Client.Apps
 
             state.RetryFaceSide = int.MinValue;
             state.RetryFrame = 0L;
+            InvalidateStaticOrbitCache();
+            InvalidateDynamicMapCache();
+            Host.RenderSprites();
+        }
+
+        void OnCartographyPlanetInvalidated(CartographyPlanetInvalidatedEvent invalidated)
+        {
+            if (_closed || invalidated == null)
+                return;
+
+            PlanetCubemapState state;
+            if (_planetCubemapStates.TryGetValue(invalidated.PlanetEntityId, out state) &&
+                state != null)
+            {
+                CancelPlanetCubemapRequest(state);
+                state.Cubemap = null;
+                state.RetryFaceSide = int.MinValue;
+                state.RetryFrame = 0L;
+            }
+
             InvalidateStaticOrbitCache();
             InvalidateDynamicMapCache();
             Host.RenderSprites();

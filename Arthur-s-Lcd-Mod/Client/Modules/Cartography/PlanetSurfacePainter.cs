@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using LcdMod.Common.Imaging;
+using Adk.Image;
 using VRageMath;
 
 namespace LcdMod.Client.Modules.Cartography
@@ -8,6 +8,8 @@ namespace LcdMod.Client.Modules.Cartography
     internal sealed class PaintedPlanetFaces
     {
         public readonly Dictionary<PlanetCubeFace, RawRgbaBitmap> Faces =
+            new Dictionary<PlanetCubeFace, RawRgbaBitmap>();
+        public readonly Dictionary<PlanetCubeFace, RawRgbaBitmap> WaterOverlayFaces =
             new Dictionary<PlanetCubeFace, RawRgbaBitmap>();
         public Dictionary<string, long> MissingMaterialUsage;
     }
@@ -18,6 +20,7 @@ namespace LcdMod.Client.Modules.Cartography
             PlanetMapSource source,
             PlanetDefinitionSnapshot planet,
             FarColorCatalogSnapshot farColors,
+            PlanetWaterSnapshot water,
             CartographyRequest request,
             CartographyCancellation cancellation)
         {
@@ -58,6 +61,15 @@ namespace LcdMod.Client.Modules.Cartography
                     outputSide,
                     result.MissingMaterialUsage,
                     cancellation);
+                if (water != null)
+                {
+                    result.WaterOverlayFaces[face] = RenderWaterOverlayFace(
+                        source,
+                        water,
+                        face,
+                        outputSide,
+                        cancellation);
+                }
             }
 
             return result;
@@ -85,9 +97,23 @@ namespace LcdMod.Client.Modules.Cartography
                         missingMaterialUsage,
                         cancellation);
                 case CartographyLayer.Terrain:
-                    return RenderTerrainFace(source, face, outputSide, cancellation);
+                    return RenderTerrainFace(
+                        source,
+                        face,
+                        outputSide,
+                        cancellation);
+                case CartographyLayer.Materials:
+                    return RenderMaterialFace(
+                        source,
+                        face,
+                        outputSide,
+                        cancellation);
                 case CartographyLayer.Biomes:
-                    return RenderBiomeFace(source, face, outputSide, cancellation);
+                    return RenderBiomeFace(
+                        source,
+                        face,
+                        outputSide,
+                        cancellation);
                 default:
                     throw new NotSupportedException("The requested cartography layer is not implemented.");
             }
@@ -203,8 +229,34 @@ namespace LcdMod.Client.Modules.Cartography
                 for (int x = 0; x < outputSide; x++)
                 {
                     float u = (x + 0.5f) / outputSide;
-                    byte biome = source.SampleMaterialNearest(face, u, v);
+                    byte biome = source.SampleBiomeNearest(face, u, v);
                     Color color = GetBiomeColor(biome);
+                    bitmap.SetPixel(x, y, color.R, color.G, color.B, color.A);
+                }
+            }
+
+            return bitmap;
+        }
+
+        static RawRgbaBitmap RenderMaterialFace(
+            PlanetMapSource source,
+            PlanetCubeFace face,
+            int outputSide,
+            CartographyCancellation cancellation)
+        {
+            var bitmap = new RawRgbaBitmap(outputSide, outputSide);
+
+            for (int y = 0; y < outputSide; y++)
+            {
+                if ((y & 31) == 0)
+                    cancellation.ThrowIfCancelled();
+
+                float v = (y + 0.5f) / outputSide;
+                for (int x = 0; x < outputSide; x++)
+                {
+                    float u = (x + 0.5f) / outputSide;
+                    byte material = source.SampleMaterialNearest(face, u, v);
+                    Color color = GetCategoryColor(material);
                     bitmap.SetPixel(x, y, color.R, color.G, color.B, color.A);
                 }
             }
@@ -214,15 +266,64 @@ namespace LcdMod.Client.Modules.Cartography
 
         internal static Color GetBiomeColor(byte biome)
         {
+            return GetCategoryColor(biome);
+        }
+
+        static Color GetCategoryColor(byte value)
+        {
             // An odd multiplier makes the red channel an injective permutation of
-            // all 256 biome values. The other channels are independent permutations,
+            // all 256 category values. The other channels are independent permutations,
             // producing stable, high-contrast categorical colors without a palette.
-            byte red = (byte)((biome * 73 + 41) & 255);
-            byte greenSeed = (byte)((biome * 151 + 97) & 255);
-            byte blueSeed = (byte)((biome * 199 + 17) & 255);
+            byte red = (byte)((value * 73 + 41) & 255);
+            byte greenSeed = (byte)((value * 151 + 97) & 255);
+            byte blueSeed = (byte)((value * 199 + 17) & 255);
             byte green = (byte)(48 + greenSeed * 175 / 255);
             byte blue = (byte)(48 + blueSeed * 175 / 255);
             return new Color(red, green, blue, 255);
+        }
+
+        static RawRgbaBitmap RenderWaterOverlayFace(
+            PlanetMapSource source,
+            PlanetWaterSnapshot water,
+            PlanetCubeFace face,
+            int outputSide,
+            CartographyCancellation cancellation)
+        {
+            var bitmap = new RawRgbaBitmap(outputSide, outputSide);
+            for (int y = 0; y < outputSide; y++)
+            {
+                if ((y & 31) == 0)
+                    cancellation.ThrowIfCancelled();
+
+                float v = (y + 0.5f) / outputSide;
+                for (int x = 0; x < outputSide; x++)
+                {
+                    float u = (x + 0.5f) / outputSide;
+                    Vector3 direction = PlanetMapSource.FaceUvToDirection(face, u, v);
+                    bool covered = water.CoversSurface(
+                        source.SampleHeightNormalized(direction));
+                    bitmap.SetPixel(
+                        x,
+                        y,
+                        255,
+                        255,
+                        255,
+                        covered ? (byte)255 : (byte)0);
+                }
+            }
+
+            return bitmap;
+        }
+
+        static double GetSurfaceRadiusMeters(
+            PlanetMapSource source,
+            PlanetDefinitionSnapshot planet,
+            Vector3 direction)
+        {
+            float height = source.SampleHeightNormalized(direction);
+            double hillRatio = planet.MinimumHillRatio +
+                               height * (planet.MaximumHillRatio - planet.MinimumHillRatio);
+            return planet.RadiusMeters * (1d + hillRatio);
         }
 
         static float CalculateSlopeCosine(
@@ -261,10 +362,7 @@ namespace LcdMod.Client.Modules.Cartography
             PlanetDefinitionSnapshot planet,
             Vector3 direction)
         {
-            float height = source.SampleHeightNormalized(direction);
-            double hillRatio = planet.MinimumHillRatio +
-                               height * (planet.MaximumHillRatio - planet.MinimumHillRatio);
-            float radius = (float)(planet.RadiusMeters * (1d + hillRatio));
+            float radius = (float)GetSurfaceRadiusMeters(source, planet, direction);
             return direction * radius;
         }
 

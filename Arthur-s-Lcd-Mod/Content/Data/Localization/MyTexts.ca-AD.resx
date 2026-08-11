@@ -1161,13 +1161,19 @@ Esperarem una estona i després la reiniciarem per tu.</value>
     <value>Capa del mapa: {0}</value>
   </data>
   <data name="LcdMod_PlanetaryMap_MapLayer_Tooltip" xml:space="preserve">
-    <value>Tria els colors de satèl·lit, terreny o biomes.</value>
+    <value>Tria els colors de satèl·lit, terreny, materials o biomes.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Terrain" xml:space="preserve">
     <value>Terreny</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Terrain_Tooltip" xml:space="preserve">
     <value>Mapa d'altures normalitzat entre l'altitud mínima i màxima del planeta.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Materials" xml:space="preserve">
+    <value>Materials</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Materials_Tooltip" xml:space="preserve">
+    <value>Identificadors de material sense processar mostrats amb colors de categoria estables.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Biomes" xml:space="preserve">
     <value>Biomes</value>
@@ -1180,6 +1186,9 @@ Esperarem una estona i després la reiniciarem per tu.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Satellite_Tooltip" xml:space="preserve">
     <value>Materials de la superfície mostrats amb els colors del mapa a distància.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Water_Title" xml:space="preserve">
+    <value>Aigua</value>
   </data>
   <data name="LcdMod_PlanetaryMap_StreetView_Title" xml:space="preserve">
     <value>Vista de carrer</value>

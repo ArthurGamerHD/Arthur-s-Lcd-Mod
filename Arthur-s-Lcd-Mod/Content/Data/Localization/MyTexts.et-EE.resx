@@ -1160,13 +1160,19 @@ Ootame veidi ja seejärel taaskäivitame selle teie eest.</value>
     <value>Kaardikiht: {0}</value>
   </data>
   <data name="LcdMod_PlanetaryMap_MapLayer_Tooltip" xml:space="preserve">
-    <value>Vali satelliidi-, maastiku- või bioomivärvid.</value>
+    <value>Vali satelliidi-, maastiku-, materjali- või bioomivärvid.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Terrain" xml:space="preserve">
     <value>Maastik</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Terrain_Tooltip" xml:space="preserve">
     <value>Kõrguskaart, mis on normaliseeritud planeedi madalaimast kõrgeima kõrguseni.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Materials" xml:space="preserve">
+    <value>Materjalid</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Materials_Tooltip" xml:space="preserve">
+    <value>Töötlemata materjali-ID-d kuvatakse püsivate kategooriavärvidega.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Biomes" xml:space="preserve">
     <value>Bioomid</value>
@@ -1179,6 +1185,9 @@ Ootame veidi ja seejärel taaskäivitame selle teie eest.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Satellite_Tooltip" xml:space="preserve">
     <value>Pinnamaterjalid kuvatakse kaugkaardi värvidega.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Water_Title" xml:space="preserve">
+    <value>Vesi</value>
   </data>
   <data name="LcdMod_PlanetaryMap_StreetView_Title" xml:space="preserve">
     <value>Tänavavaade</value>

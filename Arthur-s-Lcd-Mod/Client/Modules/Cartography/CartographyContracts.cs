@@ -15,7 +15,8 @@ namespace LcdMod.Client.Modules.Cartography
         SurfaceFarColor = Satellite,
 
         Terrain = 1,
-        Biomes = 2
+        Materials = 2,
+        Biomes = 3
     }
 
     public sealed class CartographyRequest
@@ -55,6 +56,7 @@ namespace LcdMod.Client.Modules.Cartography
         public int FaceWidth;
         public int FaceHeight;
         public PlanetColorCubemap ColorCubemap;
+        public PlanetColorCubemap WaterOverlayCubemap;
 
         /// <summary>
         /// Optional diagnostic text produced when IncludeDiagnostics was requested.
@@ -70,6 +72,13 @@ namespace LcdMod.Client.Modules.Cartography
         public CartographyLayer Layer;
         public int MaximumFaceSide;
         public PlanetColorCubemap ColorCubemap;
+        public PlanetColorCubemap WaterOverlayCubemap;
+    }
+
+    public sealed class CartographyPlanetInvalidatedEvent
+    {
+        public long PlanetEntityId;
+        public string PlanetGeneratorSubtype;
     }
 
     public sealed class CartographyTicket

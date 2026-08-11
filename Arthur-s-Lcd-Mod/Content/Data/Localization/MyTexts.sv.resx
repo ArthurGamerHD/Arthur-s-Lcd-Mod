@@ -1160,13 +1160,19 @@ Vi väntar en stund och startar sedan om den åt dig.</value>
     <value>Kartlager: {0}</value>
   </data>
   <data name="LcdMod_PlanetaryMap_MapLayer_Tooltip" xml:space="preserve">
-    <value>Välj satellit-, terräng- eller biomfärger.</value>
+    <value>Välj satellit-, terräng-, material- eller biomfärger.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Terrain" xml:space="preserve">
     <value>Terräng</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Terrain_Tooltip" xml:space="preserve">
     <value>Höjdkarta normaliserad från planetens lägsta till högsta höjd.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Materials" xml:space="preserve">
+    <value>Material</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Materials_Tooltip" xml:space="preserve">
+    <value>Råa material-ID:n visas med fasta kategorifärger.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Biomes" xml:space="preserve">
     <value>Biomer</value>
@@ -1179,6 +1185,9 @@ Vi väntar en stund och startar sedan om den åt dig.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Satellite_Tooltip" xml:space="preserve">
     <value>Ytmaterial visas med färgerna från avståndskartan.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Water_Title" xml:space="preserve">
+    <value>Vatten</value>
   </data>
   <data name="LcdMod_PlanetaryMap_StreetView_Title" xml:space="preserve">
     <value>Gatuvy</value>

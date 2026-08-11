@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Jakaria.API;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Config;
 using LcdMod.Client.Gui;
@@ -84,6 +85,7 @@ namespace LcdMod.Client.Apps
         {
             CartographyLayer.Satellite,
             CartographyLayer.Terrain,
+            CartographyLayer.Materials,
             CartographyLayer.Biomes
         };
 
@@ -118,6 +120,7 @@ namespace LcdMod.Client.Apps
         readonly ToggleButton _followButton;
         readonly SquareComboBox<CartographyLayer> _layerSelector;
         readonly RectangleControl _streetViewControl;
+        readonly ToggleButton _waterControl;
         readonly Random _streetViewRandom = new Random();
         readonly Dictionary<long, StaticMarkerInteractiveState> _radioSignalMarkerInteractiveStates =
             new Dictionary<long, StaticMarkerInteractiveState>();
@@ -165,6 +168,8 @@ namespace LcdMod.Client.Apps
         long _gpsCreatedStatusUntilFrame = long.MinValue;
         bool _streetViewDragging;
         bool _streetViewAvailable;
+        bool _waterAvailable;
+        bool _waterVisible = true;
         Vector2 _streetViewDragPointer;
         bool _closed;
 
@@ -284,12 +289,25 @@ namespace LcdMod.Client.Apps
             streetViewTooltip.Placement = TooltipPlacement.Above;
             _streetViewControl.SetTooltip(streetViewTooltip);
 
+            _waterControl = AddLogicalChild(
+                new ToggleButton(default(RectangleF)));
+            _waterControl.GetState = () => !(_waterAvailable && _waterVisible);
+            _waterControl.BorderThicknessPixels = 0f;
+            _waterControl.CustomRender = RenderWaterControl;
+            _waterControl.SetOnClick(OnWaterControlClicked);
+            _waterControl.SetVisible(false);
+            var waterTooltip = new InteractiveTooltip(
+                () => LocHelper.GetLoc(MOD_PREFIX + "PlanetaryMap_Water_Title"), Array.Empty<ITooltipLine>());
+            waterTooltip.Placement = TooltipPlacement.Above;
+            _waterControl.SetTooltip(waterTooltip);
+
             _children.Add(_planetControl);
             _children.Add(_orbitControl);
             _children.Add(_orientationButton);
             _children.Add(_followButton);
             _children.Add(_layerSelector);
             _children.Add(_streetViewControl);
+            _children.Add(_waterControl);
 
             ApplyPlanetaryMapConfig(true);
 
@@ -337,6 +355,7 @@ namespace LcdMod.Client.Apps
             }
 
             UpdateStreetViewAvailability();
+            UpdateWaterControlAvailability();
             UpdatePlanetControl();
             UpdateShipMarkerCache();
             UpdateCubemapDetail(frame);
@@ -348,6 +367,7 @@ namespace LcdMod.Client.Apps
             _sprites.Clear();
             BeginMarkerInteractiveFrame();
             UpdateStreetViewAvailability();
+            UpdateWaterControlAvailability();
 
             if (_planet != null && !_planet.MarkedForClose)
             {
@@ -658,13 +678,19 @@ namespace LcdMod.Client.Apps
             ClearCartographyEventSubscription();
             _cartographyModule = module;
             if (_cartographyModule != null)
+            {
                 _cartographyModule.ColorCubemapCached += OnCartographyColorCubemapCached;
+                _cartographyModule.PlanetInvalidated += OnCartographyPlanetInvalidated;
+            }
         }
 
         void ClearCartographyEventSubscription()
         {
             if (_cartographyModule != null)
+            {
                 _cartographyModule.ColorCubemapCached -= OnCartographyColorCubemapCached;
+                _cartographyModule.PlanetInvalidated -= OnCartographyPlanetInvalidated;
+            }
 
             _cartographyModule = null;
         }
@@ -703,6 +729,22 @@ namespace LcdMod.Client.Apps
 
             if (redraw)
                 Host.RenderSprites();
+        }
+
+        void OnCartographyPlanetInvalidated(CartographyPlanetInvalidatedEvent invalidated)
+        {
+            if (_closed || invalidated == null || invalidated.PlanetEntityId != _planetId)
+                return;
+
+            CancelPendingRequest();
+            CancelLayerPreviewRequests();
+            _loadedCubemap = null;
+            _loadedCubemaps.Clear();
+            _planetControl.SetCubemap(null);
+            _retryFaceSide = int.MinValue;
+            _nextRequestFrame = 0L;
+            _error = null;
+            Host.RenderSprites();
         }
 
         void UpdateLayerPreviewCubemaps(long frame)
@@ -883,10 +925,10 @@ namespace LcdMod.Client.Apps
             float layerX = viewBox.X + margin;
             float layerRowWidth = Math.Max(1f, x - gap - layerX);
             float layerSquareWidth = Math.Max(1f,
-                layerRowWidth - gap * MapLayers.Length);
+                layerRowWidth - gap * (MapLayers.Length + 1));
             float layerSize = Math.Min(
                 size,
-                layerSquareWidth / (MapLayers.Length + 1));
+                layerSquareWidth / (MapLayers.Length + 2));
             float layerY = viewBox.Bottom - margin - layerSize;
             _layerSelector.Configure(
                 new RectangleF(layerX, layerY, layerSize, layerSize),
@@ -894,6 +936,11 @@ namespace LcdMod.Client.Apps
             _streetViewControl.SetRect(new RectangleF(
                 layerX,
                 layerY - gap - layerSize,
+                layerSize,
+                layerSize));
+            _waterControl.SetRect(new RectangleF(
+                layerX + layerSize + gap,
+                layerY,
                 layerSize,
                 layerSize));
         }
@@ -1269,6 +1316,8 @@ namespace LcdMod.Client.Apps
             {
                 case CartographyLayer.Terrain:
                     return CartographyLayer.Terrain;
+                case CartographyLayer.Materials:
+                    return CartographyLayer.Materials;
                 case CartographyLayer.Biomes:
                     return CartographyLayer.Biomes;
                 default:
@@ -1314,6 +1363,8 @@ namespace LcdMod.Client.Apps
             {
                 case CartographyLayer.Terrain:
                     return LocHelper.GetLoc(MOD_PREFIX + "PlanetaryMap_Layer_Terrain");
+                case CartographyLayer.Materials:
+                    return LocHelper.GetLoc(MOD_PREFIX + "PlanetaryMap_Layer_Materials");
                 case CartographyLayer.Biomes:
                     return LocHelper.GetLoc(MOD_PREFIX + "PlanetaryMap_Layer_Biomes");
                 default:
@@ -1419,6 +1470,10 @@ namespace LcdMod.Client.Apps
                     description = LocHelper.GetLoc(
                         MOD_PREFIX + "PlanetaryMap_Layer_Terrain_Tooltip");
                     break;
+                case CartographyLayer.Materials:
+                    description = LocHelper.GetLoc(
+                        MOD_PREFIX + "PlanetaryMap_Layer_Materials_Tooltip");
+                    break;
                 case CartographyLayer.Biomes:
                     description = LocHelper.GetLoc(
                         MOD_PREFIX + "PlanetaryMap_Layer_Biomes_Tooltip");
@@ -1468,6 +1523,7 @@ namespace LcdMod.Client.Apps
             _followButton.Render(_sprites);
             _layerSelector.Render(_sprites);
             _streetViewControl.Render(_sprites);
+            _waterControl.Render(_sprites);
 
             if (_streetViewDragging)
                 RenderStreetViewDragGhost(_sprites);
@@ -1485,6 +1541,18 @@ namespace LcdMod.Client.Apps
                 bounds.Center,
                 new Vector2(Math.Min(bounds.Width, bounds.Height) * ICON_RATIO),
                 iconColor,
+                0f);
+        }
+
+        void RenderWaterControl(ControlTemplate control, List<MySprite> sprites)
+        {
+            RectangleF bounds = control.Bounds;
+            AddMarkerTexture(
+                sprites,
+                "WaterIcon",
+                bounds.Center,
+                new Vector2(Math.Min(bounds.Width, bounds.Height) * ICON_RATIO),
+                control.TextColor,
                 0f);
         }
 
@@ -2203,6 +2271,34 @@ namespace LcdMod.Client.Apps
             _streetViewControl.SetEnabled(available);
             if (!available)
                 _streetViewDragging = false;
+        }
+
+        void UpdateWaterControlAvailability()
+        {
+            bool apiAvailable = WaterModAPI.Registered;
+            bool available = apiAvailable &&
+                             _loadedCubemap != null &&
+                             _loadedCubemap.WaterOverlay != null;
+            if (_waterControl.Visible != apiAvailable)
+                _waterControl.SetVisible(apiAvailable);
+            if (_waterAvailable != available || _waterControl.Enabled != available)
+            {
+                _waterAvailable = available;
+                _waterControl.SetEnabled(available);
+            }
+
+            _planetControl.SetWaterOverlayVisible(available && _waterVisible);
+        }
+
+        void OnWaterControlClicked(object dataContext, object sender)
+        {
+            if (!_waterAvailable)
+                return;
+
+            _layerSelector.Close();
+            _waterVisible = !_waterVisible;
+            _planetControl.SetWaterOverlayVisible(_waterVisible);
+            Host.RenderSprites();
         }
 
         bool CanUseStreetView()

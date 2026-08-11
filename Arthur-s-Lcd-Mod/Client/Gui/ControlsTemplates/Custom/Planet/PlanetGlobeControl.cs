@@ -45,11 +45,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
         static readonly Color RedChannelTint = new Color(255, 0, 0, 254);
         static readonly Color GreenChannelTint = new Color(0, 255, 0, 128);
         static readonly Color BlueChannelTint = new Color(0, 0, 255, 85);
+        static readonly Color WaterOverlayTint = new Color(75, 110, 127, 200);
 
         readonly List<MySprite> _cachedSprites = new List<MySprite>();
         readonly MutableChannelText _redChannelText = new MutableChannelText();
         readonly MutableChannelText _greenChannelText = new MutableChannelText();
         readonly MutableChannelText _blueChannelText = new MutableChannelText();
+        readonly MutableChannelText _waterOverlayText = new MutableChannelText();
 
         PlanetColorCubemap _cubemap;
         Vector3 _viewDirection = Vector3.Backward;
@@ -59,6 +61,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
         RectangleF? _clipBounds;
         float _zoom = 1f;
         float _colorAlpha = 1f;
+        bool _waterOverlayVisible = true;
         int _maximumRenderResolution;
         float _channelTextCellPixels = CHANNEL_TEXT_CELL_PIXELS_1;
         Color _loadingColor = new Color(128, 128, 128, 255);
@@ -86,6 +89,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
         public float Zoom => _zoom;
 
         public float ColorAlpha => _colorAlpha;
+
+        public bool WaterOverlayVisible => _waterOverlayVisible;
 
         public Func<PlanetGlobeControl, Vector2, object, bool> SurfaceClicked { get; set; }
 
@@ -125,6 +130,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
                 return;
 
             _cubemap = cubemap;
+            InvalidateRenderCache();
+        }
+
+        public void SetWaterOverlayVisible(bool visible)
+        {
+            if (_waterOverlayVisible == visible)
+                return;
+
+            _waterOverlayVisible = visible;
             InvalidateRenderCache();
         }
 
@@ -723,6 +737,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
             _redChannelText.EnsureSize(columns, rows);
             _greenChannelText.EnsureSize(columns, rows);
             _blueChannelText.EnsureSize(columns, rows);
+            _waterOverlayText.EnsureSize(columns, rows);
         }
 
         void FillChannelText(ChannelTextWindow window, int mipLevel)
@@ -730,8 +745,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
             char[] red = _redChannelText.Buffer;
             char[] green = _greenChannelText.Buffer;
             char[] blue = _blueChannelText.Buffer;
+            char[] water = _waterOverlayText.Buffer;
             int cellCount = window.Columns * window.Rows;
-            if (red == null || green == null || blue == null || cellCount <= 0)
+            if (red == null || green == null || blue == null || water == null || cellCount <= 0)
                 return;
 
             var context = new ChannelTextFillContext(
@@ -740,6 +756,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
                 red,
                 green,
                 blue,
+                water,
                 _cubemap,
                 _viewDirection,
                 _screenRight,
@@ -762,11 +779,12 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
                 FillChannelTextStride(context, 0, 1);
             }
 
-            FillChannelTextNewlines(window, red, green, blue);
+            FillChannelTextNewlines(window, red, green, blue, water);
 
             _redChannelText.Commit();
             _greenChannelText.Commit();
             _blueChannelText.Commit();
+            _waterOverlayText.Commit();
         }
 
         static void FillChannelTextStride(
@@ -790,6 +808,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
                 char redChar = TRANSPARENT_CHANNEL_GLYPH;
                 char greenChar = TRANSPARENT_CHANNEL_GLYPH;
                 char blueChar = TRANSPARENT_CHANNEL_GLYPH;
+                char waterChar = TRANSPARENT_CHANNEL_GLYPH;
 
                 int logicalX = window.ColumnStart + x;
                 float sphereX = ((logicalX + 0.5f) / window.FullColumns) * 2f - 1f;
@@ -816,11 +835,22 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
                         greenChar = IntensityToChar(color.G);
                         blueChar = IntensityToChar(color.B);
                     }
+
+                    PlanetColorCubemap waterOverlay = context.Cubemap.WaterOverlay;
+                    if (waterOverlay != null)
+                    {
+                        Color water = waterOverlay.Sample(
+                            sampleDirection,
+                            context.MipLevel);
+                        if (water.A != 0)
+                            waterChar = IntensityToChar(water.A);
+                    }
                 }
 
                 context.Red[textIndex] = redChar;
                 context.Green[textIndex] = greenChar;
                 context.Blue[textIndex] = blueChar;
+                context.Water[textIndex] = waterChar;
             }
         }
 
@@ -828,7 +858,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
             ChannelTextWindow window,
             char[] red,
             char[] green,
-            char[] blue)
+            char[] blue,
+            char[] water)
         {
             int rowStride = window.Columns + 1;
             for (int y = 0; y + 1 < window.Rows; y++)
@@ -837,6 +868,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
                 red[newlineIndex] = '\n';
                 green[newlineIndex] = '\n';
                 blue[newlineIndex] = '\n';
+                water[newlineIndex] = '\n';
             }
         }
 
@@ -864,6 +896,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
             AddChannelTextSprite(_redChannelText.Text, position, renderPreset.SpriteScale, ApplyChannelAlpha(RedChannelTint));
             AddChannelTextSprite(_greenChannelText.Text, position, renderPreset.SpriteScale, ApplyChannelAlpha(GreenChannelTint));
             AddChannelTextSprite(_blueChannelText.Text, position, renderPreset.SpriteScale, ApplyChannelAlpha(BlueChannelTint));
+            if (_waterOverlayVisible)
+            {
+                AddChannelTextSprite(
+                    _waterOverlayText.Text,
+                    position,
+                    renderPreset.SpriteScale,
+                    ApplyChannelAlpha(WaterOverlayTint));
+            }
             EndContentClip(_cachedSprites);
         }
 
@@ -1086,6 +1126,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
             public readonly char[] Red;
             public readonly char[] Green;
             public readonly char[] Blue;
+            public readonly char[] Water;
             public readonly PlanetColorCubemap Cubemap;
             public readonly Vector3 ViewDirection;
             public readonly Vector3 ScreenRight;
@@ -1098,6 +1139,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
                 char[] red,
                 char[] green,
                 char[] blue,
+                char[] water,
                 PlanetColorCubemap cubemap,
                 Vector3 viewDirection,
                 Vector3 screenRight,
@@ -1109,6 +1151,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Custom.Planet
                 Red = red;
                 Green = green;
                 Blue = blue;
+                Water = water;
                 Cubemap = cubemap;
                 ViewDirection = viewDirection;
                 ScreenRight = screenRight;

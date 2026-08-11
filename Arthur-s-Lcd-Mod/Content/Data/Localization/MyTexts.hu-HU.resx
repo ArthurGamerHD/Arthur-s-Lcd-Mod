@@ -1160,13 +1160,19 @@ Várunk egy kicsit, majd újraindítjuk helyetted.</value>
     <value>Térképréteg: {0}</value>
   </data>
   <data name="LcdMod_PlanetaryMap_MapLayer_Tooltip" xml:space="preserve">
-    <value>Válassz műholdas, domborzati vagy biom-színeket.</value>
+    <value>Válassz műholdas, domborzati, anyag- vagy biom-színeket.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Terrain" xml:space="preserve">
     <value>Domborzat</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Terrain_Tooltip" xml:space="preserve">
     <value>A bolygó legkisebb és legnagyobb magassága közé normalizált magasságtérkép.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Materials" xml:space="preserve">
+    <value>Anyagok</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Materials_Tooltip" xml:space="preserve">
+    <value>Nyers anyagazonosítók állandó kategóriaszínekkel megjelenítve.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Biomes" xml:space="preserve">
     <value>Biomok</value>
@@ -1179,6 +1185,9 @@ Várunk egy kicsit, majd újraindítjuk helyetted.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Satellite_Tooltip" xml:space="preserve">
     <value>A felszíni anyagok a távoli térképen használt színeikkel jelennek meg.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Water_Title" xml:space="preserve">
+    <value>Víz</value>
   </data>
   <data name="LcdMod_PlanetaryMap_StreetView_Title" xml:space="preserve">
     <value>Utcakép</value>

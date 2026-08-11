@@ -2,13 +2,28 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using LcdMod.Common.Helpers;
-using LcdMod.Common.Imaging;
+using Adk.Image;
 using Sandbox.ModAPI;
+using VoxelCubemapApi.Api;
 
 namespace LcdMod.Client.Modules.Cartography
 {
     public sealed class CartographyModule
     {
+        const long VOXEL_CUBEMAP_API_REPLY_CHANNEL =
+            (LcdMod.Common.Helpers.Constants.WORKSHOP_ID << 8) | 2L;
+
+        static readonly Version MinimumVoxelCubemapApiVersion =
+            new Version(0, 0, 7);
+
+        sealed class RuntimePlanetMetadataRegistration
+        {
+            public long PlanetEntityId;
+            public string PlanetGeneratorSubtype;
+            public PlanetMetadataProvider Provider;
+            public Action<long, string> Changed;
+        }
+
         sealed class PendingJob
         {
             public long Id;
@@ -19,6 +34,8 @@ namespace LcdMod.Client.Modules.Cartography
             public Action<CartographyResult> Completed;
             public CartographyResult Result;
             public Exception WorkerError;
+            public RuntimePlanetMetadataRegistration RuntimePlanetMetadata;
+            public PlanetWaterSnapshot Water;
         }
 
         struct ColorCubemapCacheKey : IEquatable<ColorCubemapCacheKey>
@@ -28,6 +45,7 @@ namespace LcdMod.Client.Modules.Cartography
             public CartographyProjection Projection;
             public CartographyLayer Layer;
             public int MaximumFaceSide;
+            public int WaterHeightmapUnit;
 
             public bool Equals(ColorCubemapCacheKey other)
             {
@@ -35,6 +53,7 @@ namespace LcdMod.Client.Modules.Cartography
                        Projection == other.Projection &&
                        Layer == other.Layer &&
                        MaximumFaceSide == other.MaximumFaceSide &&
+                       WaterHeightmapUnit == other.WaterHeightmapUnit &&
                        string.Equals(
                            PlanetGeneratorSubtype,
                            other.PlanetGeneratorSubtype,
@@ -55,6 +74,7 @@ namespace LcdMod.Client.Modules.Cartography
                     hash = hash * 397 ^ (int)Projection;
                     hash = hash * 397 ^ (int)Layer;
                     hash = hash * 397 ^ MaximumFaceSide;
+                    hash = hash * 397 ^ WaterHeightmapUnit;
                     hash = hash * 397 ^ (PlanetGeneratorSubtype == null
                         ? 0
                         : StringComparer.OrdinalIgnoreCase.GetHashCode(
@@ -105,11 +125,16 @@ namespace LcdMod.Client.Modules.Cartography
             new Dictionary<ColorCubemapCacheKey, PlanetColorCubemap>();
         readonly Dictionary<FailedPlanetTypeCacheKey, string> _failedPlanetTypeCache =
             new Dictionary<FailedPlanetTypeCacheKey, string>();
+        readonly Dictionary<long, RuntimePlanetMetadataRegistration> _runtimePlanetMetadata =
+            new Dictionary<long, RuntimePlanetMetadataRegistration>();
         PendingJob _running;
         long _nextId;
         bool _unloaded;
+        bool _voxelCubemapApiResolved;
+        ApiProvider _voxelCubemapApi;
 
         public event Action<CartographyColorCubemapCachedEvent> ColorCubemapCached;
+        public event Action<CartographyPlanetInvalidatedEvent> PlanetInvalidated;
 
         public bool TryGetCachedColorCubemap(
             CartographyRequest request,
@@ -134,7 +159,12 @@ namespace LcdMod.Client.Modules.Cartography
                 return false;
 
             string planetType = ResolvePlanetType(request);
-            ColorCubemapCacheKey key = CreateColorCubemapCacheKey(request);
+            EnsureRuntimePlanetMetadata(request, planetType);
+            PlanetWaterSnapshot water = CartographySnapshotBuilder.BuildWater(request);
+            ColorCubemapCacheKey key = CreateColorCubemapCacheKey(
+                request,
+                planetType,
+                water);
             lock (_sync)
             {
                 if (_colorCubemapCache.TryGetValue(key, out cubemap))
@@ -178,10 +208,13 @@ namespace LcdMod.Client.Modules.Cartography
             if (request == null)
                 throw new ArgumentNullException(nameof(request));
 
-            // Copy caller-owned options and resolve engine-owned entities/definitions
-            // on the game thread. The worker receives only module-owned data.
+            // Copy caller-owned options, resolve engine-owned definitions, and
+            // acquire any immutable runtime-map snapshot on the game thread.
             CartographyRequest workRequest = CopyRequest(request);
             string requestedPlanetType = ResolvePlanetType(workRequest);
+            RuntimePlanetMetadataRegistration runtimePlanetMetadata =
+                EnsureRuntimePlanetMetadata(workRequest, requestedPlanetType);
+            PlanetWaterSnapshot water = CartographySnapshotBuilder.BuildWater(workRequest);
             string cachedFailure;
             lock (_sync)
             {
@@ -237,6 +270,8 @@ namespace LcdMod.Client.Modules.Cartography
                     Request = workRequest,
                     Planet = planet,
                     FarColors = farColors,
+                    RuntimePlanetMetadata = runtimePlanetMetadata,
+                    Water = water,
                     Cancellation = new CartographyCancellation(),
                     Completed = completed
                 };
@@ -272,17 +307,22 @@ namespace LcdMod.Client.Modules.Cartography
 
 
         static ColorCubemapCacheKey CreateColorCubemapCacheKey(
-            CartographyRequest request)
+            CartographyRequest request,
+            string planetGeneratorSubtype,
+            PlanetWaterSnapshot water)
         {
             return new ColorCubemapCacheKey
             {
                 PlanetEntityId = request.PlanetEntityId,
-                PlanetGeneratorSubtype = request.PlanetEntityId != 0L
-                    ? null
-                    : request.PlanetGeneratorSubtype ?? string.Empty,
+                PlanetGeneratorSubtype = planetGeneratorSubtype ??
+                                         request.PlanetGeneratorSubtype ??
+                                         string.Empty,
                 Projection = request.Projection,
                 Layer = request.Layer,
-                MaximumFaceSide = request.MaximumFaceSide
+                MaximumFaceSide = request.MaximumFaceSide,
+                WaterHeightmapUnit = water == null
+                    ? -1
+                    : water.HeightmapUnit
             };
         }
 
@@ -308,6 +348,245 @@ namespace LcdMod.Client.Modules.Cartography
             }
 
             return planet.Generator.Id.SubtypeName;
+        }
+
+        RuntimePlanetMetadataRegistration EnsureRuntimePlanetMetadata(
+            CartographyRequest request,
+            string planetGeneratorSubtype)
+        {
+            if (request == null || request.PlanetEntityId == 0L)
+                return null;
+
+            lock (_sync)
+            {
+                RuntimePlanetMetadataRegistration existing;
+                if (_runtimePlanetMetadata.TryGetValue(
+                        request.PlanetEntityId,
+                        out existing) &&
+                    string.Equals(
+                        existing.PlanetGeneratorSubtype,
+                        planetGeneratorSubtype,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    return existing;
+                }
+            }
+
+            ApiProvider api = ResolveVoxelCubemapApi();
+            if (api == null)
+                return null;
+
+            PlanetMetadataProvider provider =
+                api.GetPlanetMetadata(request.PlanetEntityId, false);
+            if (provider == null)
+                return null;
+
+            RuntimePlanetMetadataRegistration registration = null;
+            Action<long, string> changed = delegate(long planetEntityId, string newSubtype)
+            {
+                OnRuntimePlanetChanged(registration, planetEntityId, newSubtype);
+            };
+            registration = new RuntimePlanetMetadataRegistration
+            {
+                PlanetEntityId = request.PlanetEntityId,
+                PlanetGeneratorSubtype = planetGeneratorSubtype,
+                Provider = provider,
+                Changed = changed
+            };
+
+            if (!provider.SubscribeRuntimePlanetChanged(changed))
+            {
+                provider.Close();
+                throw new InvalidOperationException(
+                    "Could not subscribe to runtime planet metadata changes.");
+            }
+
+            RuntimePlanetMetadataRegistration stale = null;
+            RuntimePlanetMetadataRegistration winner = registration;
+            lock (_sync)
+            {
+                if (_unloaded)
+                {
+                    winner = null;
+                }
+                else
+                {
+                    RuntimePlanetMetadataRegistration existing;
+                    if (_runtimePlanetMetadata.TryGetValue(
+                            request.PlanetEntityId,
+                            out existing))
+                    {
+                        if (string.Equals(
+                                existing.PlanetGeneratorSubtype,
+                                planetGeneratorSubtype,
+                                StringComparison.OrdinalIgnoreCase))
+                        {
+                            winner = existing;
+                        }
+                        else
+                        {
+                            stale = existing;
+                            _runtimePlanetMetadata[request.PlanetEntityId] = registration;
+                            InvalidatePlanetNoLock(
+                                request.PlanetEntityId,
+                                existing.PlanetGeneratorSubtype);
+                        }
+                    }
+                    else
+                    {
+                        _runtimePlanetMetadata.Add(
+                            request.PlanetEntityId,
+                            registration);
+                    }
+                }
+            }
+
+            if (!ReferenceEquals(winner, registration))
+                CloseRuntimePlanetMetadata(registration);
+            if (stale != null)
+                CloseRuntimePlanetMetadata(stale);
+
+            return winner;
+        }
+
+        ApiProvider ResolveVoxelCubemapApi()
+        {
+            lock (_sync)
+            {
+                if (_voxelCubemapApiResolved || _unloaded)
+                    return _voxelCubemapApi;
+            }
+
+            ApiProvider api = null;
+            try
+            {
+                api = VoxelCubemapApiClient.TryGet(
+                    VOXEL_CUBEMAP_API_REPLY_CHANNEL);
+                if (api != null)
+                {
+                    Version version = api.GetApiVersion();
+                    if (version == null ||
+                        version.CompareTo(MinimumVoxelCubemapApiVersion) < 0)
+                    {
+                        api = null;
+                    }
+                }
+            }
+            catch
+            {
+                // This is an optional inter-mod API. Static planet cartography
+                // must remain available when it is absent or incompatible.
+                api = null;
+            }
+
+            lock (_sync)
+            {
+                if (!_voxelCubemapApiResolved)
+                {
+                    _voxelCubemapApi = _unloaded ? null : api;
+                    _voxelCubemapApiResolved = true;
+                }
+
+                return _voxelCubemapApi;
+            }
+        }
+
+        void OnRuntimePlanetChanged(
+            RuntimePlanetMetadataRegistration registration,
+            long planetEntityId,
+            string newPlanetGeneratorSubtype)
+        {
+            CartographyPlanetInvalidatedEvent invalidated = null;
+            lock (_sync)
+            {
+                if (_unloaded)
+                    return;
+
+                RuntimePlanetMetadataRegistration current;
+                if (_runtimePlanetMetadata.TryGetValue(planetEntityId, out current) &&
+                    ReferenceEquals(current, registration))
+                {
+                    _runtimePlanetMetadata.Remove(planetEntityId);
+                }
+
+                InvalidatePlanetNoLock(
+                    planetEntityId,
+                    registration == null
+                        ? null
+                        : registration.PlanetGeneratorSubtype);
+
+                invalidated = new CartographyPlanetInvalidatedEvent
+                {
+                    PlanetEntityId = planetEntityId,
+                    PlanetGeneratorSubtype = newPlanetGeneratorSubtype
+                };
+            }
+
+            RaisePlanetInvalidated(invalidated);
+        }
+
+        void InvalidatePlanetNoLock(long planetEntityId, string oldPlanetGeneratorSubtype)
+        {
+            var colorKeys = new List<ColorCubemapCacheKey>();
+            foreach (ColorCubemapCacheKey key in _colorCubemapCache.Keys)
+            {
+                if (key.PlanetEntityId == planetEntityId)
+                    colorKeys.Add(key);
+            }
+
+            for (int i = 0; i < colorKeys.Count; i++)
+                _colorCubemapCache.Remove(colorKeys[i]);
+
+            if (!string.IsNullOrWhiteSpace(oldPlanetGeneratorSubtype))
+            {
+                var failedKeys = new List<FailedPlanetTypeCacheKey>();
+                foreach (FailedPlanetTypeCacheKey key in _failedPlanetTypeCache.Keys)
+                {
+                    if (string.Equals(
+                            key.PlanetGeneratorSubtype,
+                            oldPlanetGeneratorSubtype,
+                            StringComparison.OrdinalIgnoreCase))
+                    {
+                        failedKeys.Add(key);
+                    }
+                }
+
+                for (int i = 0; i < failedKeys.Count; i++)
+                    _failedPlanetTypeCache.Remove(failedKeys[i]);
+            }
+
+            if (_running != null && _running.Request.PlanetEntityId == planetEntityId)
+                _running.Cancellation.Cancel();
+
+            foreach (PendingJob pending in _queue)
+            {
+                if (pending.Request.PlanetEntityId == planetEntityId)
+                    pending.Cancellation.Cancel();
+            }
+        }
+
+        static void CloseRuntimePlanetMetadata(
+            RuntimePlanetMetadataRegistration registration)
+        {
+            if (registration == null || registration.Provider == null)
+                return;
+
+            try
+            {
+                registration.Provider.UnsubscribeRuntimePlanetChanged(
+                    registration.Changed);
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                registration.Provider.Close();
+            }
+            catch
+            {
+            }
         }
 
         bool TryGetFailedPlanetTypeNoLock(
@@ -369,6 +648,14 @@ namespace LcdMod.Client.Modules.Cartography
             ColorCubemapCacheKey left,
             ColorCubemapCacheKey right)
         {
+            return SameColorCubemapPlanetLayer(left, right) &&
+                   left.WaterHeightmapUnit == right.WaterHeightmapUnit;
+        }
+
+        static bool SameColorCubemapPlanetLayer(
+            ColorCubemapCacheKey left,
+            ColorCubemapCacheKey right)
+        {
             return left.PlanetEntityId == right.PlanetEntityId &&
                    left.Projection == right.Projection &&
                    left.Layer == right.Layer &&
@@ -386,8 +673,14 @@ namespace LcdMod.Client.Modules.Cartography
 
             foreach (var pair in _colorCubemapCache)
             {
-                if (!SameColorCubemapIdentity(pair.Key, key))
+                if (!SameColorCubemapPlanetLayer(pair.Key, key))
                     continue;
+
+                if (!SameColorCubemapIdentity(pair.Key, key))
+                {
+                    remove.Add(pair.Key);
+                    continue;
+                }
 
                 // Keep an already cached level when it contains this level and all
                 // of its lower display mips. Otherwise, discard levels superseded
@@ -446,6 +739,7 @@ namespace LcdMod.Client.Modules.Cartography
 
         public void Clear()
         {
+            List<RuntimePlanetMetadataRegistration> runtimeMetadata;
             lock (_sync)
             {
                 _unloaded = true;
@@ -457,7 +751,13 @@ namespace LcdMod.Client.Modules.Cartography
 
                 _colorCubemapCache.Clear();
                 _failedPlanetTypeCache.Clear();
+                runtimeMetadata = _runtimePlanetMetadata.Values.ToList();
+                _runtimePlanetMetadata.Clear();
+                _voxelCubemapApi = null;
             }
+
+            for (int i = 0; i < runtimeMetadata.Count; i++)
+                CloseRuntimePlanetMetadata(runtimeMetadata[i]);
         }
 
         void TryStartNext()
@@ -527,13 +827,18 @@ namespace LcdMod.Client.Modules.Cartography
                 PlanetMapSource source = PlanetMapSource.Load(
                     job.Planet,
                     job.Request.Layer,
-                    job.Cancellation);
+                    job.Cancellation,
+                    job.RuntimePlanetMetadata == null
+                        ? null
+                        : job.RuntimePlanetMetadata.Provider,
+                    job.Water != null);
                 job.Cancellation.ThrowIfCancelled();
 
                 PaintedPlanetFaces painted = PlanetSurfacePainter.Render(
                     source,
                     job.Planet,
                     job.FarColors,
+                    job.Water,
                     job.Request,
                     job.Cancellation);
 
@@ -591,6 +896,21 @@ namespace LcdMod.Client.Modules.Cartography
                 if (ReferenceEquals(_running, job))
                     _running = null;
 
+                if (job.Cancellation.IsCancelled &&
+                    job.Result != null &&
+                    job.Result.Success)
+                {
+                    job.Result = new CartographyResult
+                    {
+                        Success = false,
+                        Cancelled = true,
+                        PlanetEntityId = job.Request.PlanetEntityId,
+                        PlanetGeneratorSubtype = job.Planet != null
+                            ? job.Planet.GeneratorSubtype
+                            : job.Request.PlanetGeneratorSubtype
+                    };
+                }
+
                 if (!_unloaded &&
                     job.Result != null &&
                     job.Result.Success &&
@@ -598,11 +918,19 @@ namespace LcdMod.Client.Modules.Cartography
                     job.Request.ReturnColorCubemap)
                 {
                     if (StoreColorCubemap(
-                            CreateColorCubemapCacheKey(job.Request),
+                            CreateColorCubemapCacheKey(
+                                job.Request,
+                                job.Planet == null
+                                    ? null
+                                    : job.Planet.GeneratorSubtype,
+                                job.Water),
                             job.Result.ColorCubemap))
                     {
                         cachedEvent = CreateColorCubemapCachedEvent(
                             job.Request,
+                            job.Planet == null
+                                ? null
+                                : job.Planet.GeneratorSubtype,
                             job.Result.ColorCubemap);
                     }
                 }
@@ -665,18 +993,43 @@ namespace LcdMod.Client.Modules.Cartography
             }
         }
 
+        void RaisePlanetInvalidated(CartographyPlanetInvalidatedEvent invalidated)
+        {
+            var handler = PlanetInvalidated;
+            if (handler == null)
+                return;
+
+            Delegate[] subscribers = handler.GetInvocationList();
+            for (int i = 0; i < subscribers.Length; i++)
+            {
+                try
+                {
+                    ((Action<CartographyPlanetInvalidatedEvent>)subscribers[i])(invalidated);
+                }
+                catch (Exception error)
+                {
+                    ErrorHandlerHelper.LogError(error, typeof(CartographyModule));
+                }
+            }
+        }
+
         static CartographyColorCubemapCachedEvent CreateColorCubemapCachedEvent(
             CartographyRequest request,
+            string planetGeneratorSubtype,
             PlanetColorCubemap cubemap)
         {
             return new CartographyColorCubemapCachedEvent
             {
                 PlanetEntityId = request.PlanetEntityId,
-                PlanetGeneratorSubtype = request.PlanetGeneratorSubtype,
+                PlanetGeneratorSubtype = planetGeneratorSubtype ??
+                                         request.PlanetGeneratorSubtype,
                 Projection = request.Projection,
                 Layer = request.Layer,
                 MaximumFaceSide = request.MaximumFaceSide,
-                ColorCubemap = cubemap
+                ColorCubemap = cubemap,
+                WaterOverlayCubemap = cubemap == null
+                    ? null
+                    : cubemap.WaterOverlay
             };
         }
 
@@ -704,6 +1057,9 @@ namespace LcdMod.Client.Modules.Cartography
                 FaceWidth = faceWidth,
                 FaceHeight = faceHeight,
                 ColorCubemap = colorCubemap,
+                WaterOverlayCubemap = colorCubemap == null
+                    ? null
+                    : colorCubemap.WaterOverlay,
                 DiagnosticReport = job.FarColors != null
                     ? job.FarColors.BuildDiagnosticReport()
                     : null

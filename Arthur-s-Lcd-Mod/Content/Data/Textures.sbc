@@ -283,5 +283,11 @@
             <SpritePath>Textures/Sprites/StreetView.dds</SpritePath>
             <Selectable>false</Selectable>
         </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Planetary Map: Water overlay sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="WaterIcon"/>
+            <SpritePath>Textures/Sprites/WaterIcon.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
     </LCDTextures>
 </Definitions>

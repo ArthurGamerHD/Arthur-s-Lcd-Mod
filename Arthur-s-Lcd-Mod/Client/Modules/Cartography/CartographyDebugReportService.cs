@@ -24,6 +24,7 @@ namespace LcdMod.Client.Modules.Cartography
         {
             CartographyLayer.Satellite,
             CartographyLayer.Terrain,
+            CartographyLayer.Materials,
             CartographyLayer.Biomes
         };
 

@@ -1160,13 +1160,19 @@ Chvíľu počkáme a potom ju za vás reštartujeme.</value>
     <value>Vrstva mapy: {0}</value>
   </data>
   <data name="LcdMod_PlanetaryMap_MapLayer_Tooltip" xml:space="preserve">
-    <value>Vyberte farby satelitnej, terénnej alebo biomovej vrstvy.</value>
+    <value>Vyberte farby satelitnej, terénnej, materiálovej alebo biomovej vrstvy.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Terrain" xml:space="preserve">
     <value>Terén</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Terrain_Tooltip" xml:space="preserve">
     <value>Výšková mapa normalizovaná od minimálnej po maximálnu výšku planéty.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Materials" xml:space="preserve">
+    <value>Materiály</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Materials_Tooltip" xml:space="preserve">
+    <value>Nespracované ID materiálov zobrazené stálymi farbami kategórií.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Biomes" xml:space="preserve">
     <value>Biómy</value>
@@ -1179,6 +1185,9 @@ Chvíľu počkáme a potom ju za vás reštartujeme.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Satellite_Tooltip" xml:space="preserve">
     <value>Povrchové materiály zobrazené farbami vzdialenej mapy.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Water_Title" xml:space="preserve">
+    <value>Voda</value>
   </data>
   <data name="LcdMod_PlanetaryMap_StreetView_Title" xml:space="preserve">
     <value>Pohľad z ulice</value>

@@ -1160,13 +1160,19 @@ Vom aștepta puțin, apoi o vom reporni pentru tine.</value>
     <value>Strat hartă: {0}</value>
   </data>
   <data name="LcdMod_PlanetaryMap_MapLayer_Tooltip" xml:space="preserve">
-    <value>Alege culorile pentru satelit, teren sau biomuri.</value>
+    <value>Alege culorile pentru satelit, teren, materiale sau biomuri.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Terrain" xml:space="preserve">
     <value>Teren</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Terrain_Tooltip" xml:space="preserve">
     <value>Hartă de înălțime normalizată între altitudinea minimă și maximă a planetei.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Materials" xml:space="preserve">
+    <value>Materiale</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Materials_Tooltip" xml:space="preserve">
+    <value>ID-uri brute de material afișate cu culori stabile pentru categorii.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Biomes" xml:space="preserve">
     <value>Biomuri</value>
@@ -1179,6 +1185,9 @@ Vom aștepta puțin, apoi o vom reporni pentru tine.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Satellite_Tooltip" xml:space="preserve">
     <value>Materiale de suprafață afișate în culorile hărții de la distanță.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Water_Title" xml:space="preserve">
+    <value>Apă</value>
   </data>
   <data name="LcdMod_PlanetaryMap_StreetView_Title" xml:space="preserve">
     <value>Vedere stradală</value>

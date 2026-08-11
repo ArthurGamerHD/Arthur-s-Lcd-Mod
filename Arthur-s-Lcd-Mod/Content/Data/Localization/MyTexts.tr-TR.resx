@@ -1160,13 +1160,19 @@ Bir süre bekleyeceğiz ve ardından sizin için yeniden başlatacağız.</value
     <value>Harita katmanı: {0}</value>
   </data>
   <data name="LcdMod_PlanetaryMap_MapLayer_Tooltip" xml:space="preserve">
-    <value>Uydu, arazi veya biyom renklerini seçin.</value>
+    <value>Uydu, arazi, malzeme veya biyom renklerini seçin.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Terrain" xml:space="preserve">
     <value>Arazi</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Terrain_Tooltip" xml:space="preserve">
     <value>Gezegenin en düşük ve en yüksek rakımı arasında normalleştirilmiş yükseklik haritası.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Materials" xml:space="preserve">
+    <value>Malzemeler</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Materials_Tooltip" xml:space="preserve">
+    <value>Ham malzeme kimlikleri sabit kategori renkleriyle gösterilir.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Biomes" xml:space="preserve">
     <value>Biyomlar</value>
@@ -1179,6 +1185,9 @@ Bir süre bekleyeceğiz ve ardından sizin için yeniden başlatacağız.</value
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Satellite_Tooltip" xml:space="preserve">
     <value>Yüzey malzemeleri uzak harita renkleriyle gösterilir.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Water_Title" xml:space="preserve">
+    <value>Su</value>
   </data>
   <data name="LcdMod_PlanetaryMap_StreetView_Title" xml:space="preserve">
     <value>Sokak Görünümü</value>

@@ -62,9 +62,16 @@
     </Target>
     
     <ItemGroup>
-        <ProjectReference Include="..\LcdModCodeGenerator\LcdModCodeGenerator.csproj"
+        <ProjectReference Include="..\External\Adk\Adk.Analyzer\Adk.Analyzer.csproj"
                           OutputItemType="Analyzer"
-                          ReferenceOutputAssembly="false"/>
+                          ReferenceOutputAssembly="false">
+            <SetPlatform>Platform=AnyCPU</SetPlatform>
+        </ProjectReference>
+        <ProjectReference Include="..\LcdMod.CodeGenerator\LcdMod.CodeGenerator.csproj"
+                          OutputItemType="Analyzer"
+                          ReferenceOutputAssembly="false">
+            <SetPlatform>Platform=AnyCPU</SetPlatform>
+        </ProjectReference>
     </ItemGroup>
     
     <ItemGroup>
@@ -78,6 +85,8 @@
       <Compile Remove="Client\Terminal\Controls\Generic\SliderImageChangeInterval.cs" />
       <Compile Remove="Client\Terminal\Controls\Groups\ColorsTerminalControlGroup.cs" />
       <Compile Remove="Client\Terminal\Controls\Groups\GpsDisplayTerminalControlGroup.cs" />
+      <Compile Include="..\External\SE-Water\API\WaterModAPI.cs"
+               Link="Client\Api\WaterModAPI.cs" />
     </ItemGroup>
 
     <Target Name="RemoveZhCnResxAlias" AfterTargets="MdkPack;MdkDidNotPack">
@@ -87,4 +96,9 @@
     <Target Name="RemoveThumbAlias" AfterTargets="MdkPack;MdkDidNotPack">
         <Delete Files="$(MSBuildProjectDirectory)\thumb.png" />
     </Target>
+
+    <Import Project="..\External\Adk\Adk.Audio\Adk.Audio.projitems" Label="Shared" />
+    <Import Project="..\External\Adk\Adk.Compression\Adk.Compression.projitems" Label="Shared" />
+    <Import Project="..\External\Adk\Adk.Image\Adk.Image.projitems" Label="Shared" />
+    <Import Project="..\External\SE-Procedural-Voxel-Cubemap-Api\ClientApi\ClientApi.projitems" Label="Shared" />
 </Project>

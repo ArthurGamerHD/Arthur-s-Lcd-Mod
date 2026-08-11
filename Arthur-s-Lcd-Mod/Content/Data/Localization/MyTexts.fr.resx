@@ -1161,13 +1161,19 @@ Nous allons patienter un moment, puis la redémarrer pour vous.</value>
     <value>Couche de carte : {0}</value>
   </data>
   <data name="LcdMod_PlanetaryMap_MapLayer_Tooltip" xml:space="preserve">
-    <value>Choisissez les couleurs satellite, terrain ou biome.</value>
+    <value>Choisissez les couleurs satellite, terrain, matériau ou biome.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Terrain" xml:space="preserve">
     <value>Terrain</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Terrain_Tooltip" xml:space="preserve">
     <value>Carte d'altitude normalisée entre les altitudes minimale et maximale de la planète.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Materials" xml:space="preserve">
+    <value>Matériaux</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Materials_Tooltip" xml:space="preserve">
+    <value>Identifiants de matériau bruts affichés avec des couleurs de catégorie stables.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Biomes" xml:space="preserve">
     <value>Biomes</value>
@@ -1180,6 +1186,9 @@ Nous allons patienter un moment, puis la redémarrer pour vous.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Satellite_Tooltip" xml:space="preserve">
     <value>Matériaux de surface affichés avec leurs couleurs sur la carte distante.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Water_Title" xml:space="preserve">
+    <value>Eau</value>
   </data>
   <data name="LcdMod_PlanetaryMap_StreetView_Title" xml:space="preserve">
     <value>Vue de rue</value>

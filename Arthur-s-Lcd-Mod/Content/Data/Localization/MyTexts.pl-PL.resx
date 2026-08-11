@@ -1160,13 +1160,19 @@ Poczekamy chwilę, a następnie uruchomimy ją ponownie za ciebie.</value>
     <value>Warstwa mapy: {0}</value>
   </data>
   <data name="LcdMod_PlanetaryMap_MapLayer_Tooltip" xml:space="preserve">
-    <value>Wybierz kolory satelitarne, terenu lub biomów.</value>
+    <value>Wybierz kolory satelitarne, terenu, materiałów lub biomów.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Terrain" xml:space="preserve">
     <value>Teren</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Terrain_Tooltip" xml:space="preserve">
     <value>Mapa wysokości znormalizowana od minimalnej do maksymalnej wysokości planety.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Materials" xml:space="preserve">
+    <value>Materiały</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Materials_Tooltip" xml:space="preserve">
+    <value>Surowe identyfikatory materiałów wyświetlane stałymi kolorami kategorii.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Biomes" xml:space="preserve">
     <value>Biomy</value>
@@ -1179,6 +1185,9 @@ Poczekamy chwilę, a następnie uruchomimy ją ponownie za ciebie.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Satellite_Tooltip" xml:space="preserve">
     <value>Materiały powierzchni wyświetlane w kolorach mapy z oddali.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Water_Title" xml:space="preserve">
+    <value>Woda</value>
   </data>
   <data name="LcdMod_PlanetaryMap_StreetView_Title" xml:space="preserve">
     <value>Widok ulicy</value>

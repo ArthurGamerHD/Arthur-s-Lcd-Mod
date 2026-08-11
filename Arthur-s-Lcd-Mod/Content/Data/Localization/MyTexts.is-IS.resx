@@ -1164,13 +1164,19 @@ Við bíðum í smá stund og endurræsum hana síðan fyrir þig.</value>
     <value>Kortslag: {0}</value>
   </data>
   <data name="LcdMod_PlanetaryMap_MapLayer_Tooltip" xml:space="preserve">
-    <value>Veldu gervihnatta-, landslags- eða lífsvæðaliti.</value>
+    <value>Veldu gervihnatta-, landslags-, efnis- eða lífsvæðaliti.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Terrain" xml:space="preserve">
     <value>Landslag</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Terrain_Tooltip" xml:space="preserve">
     <value>Hæðarkort jafnað frá lægstu til hæstu hæð reikistjörnunnar.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Materials" xml:space="preserve">
+    <value>Efni</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Materials_Tooltip" xml:space="preserve">
+    <value>Óunnin efnisauðkenni sýnd með föstum flokkalitum.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Biomes" xml:space="preserve">
     <value>Lífsvæði</value>
@@ -1183,6 +1189,9 @@ Við bíðum í smá stund og endurræsum hana síðan fyrir þig.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Satellite_Tooltip" xml:space="preserve">
     <value>Yfirborðsefni sýnd með litum sínum á fjarlægðarkorti.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Water_Title" xml:space="preserve">
+    <value>Vatn</value>
   </data>
   <data name="LcdMod_PlanetaryMap_StreetView_Title" xml:space="preserve">
     <value>Götusýn</value>

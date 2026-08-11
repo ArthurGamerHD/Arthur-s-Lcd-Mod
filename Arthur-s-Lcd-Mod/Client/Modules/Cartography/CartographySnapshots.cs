@@ -2,12 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Xml.Serialization;
-using LcdMod.Common.Imaging;
+using Adk.Image;
+using Jakaria.API;
 using Sandbox.Definitions;
 using PlanetGeneratorDefinition = Sandbox.Definitions.MyPlanetGeneratorDefinition;
 using VoxelMaterialDefinition = VRage.Game.MyVoxelMaterialDefinition;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
+using VRage;
 using VRage.Game;
 using VRage.Utils;
 using VRageMath;
@@ -53,6 +55,16 @@ namespace LcdMod.Client.Modules.Cartography
         public string DefaultSurfaceMaterial;
         public readonly string[] DirectSurfaceMaterials = new string[256];
         public readonly MaterialRuleSnapshot[][] MaterialGroups = new MaterialRuleSnapshot[256][];
+    }
+
+    internal sealed class PlanetWaterSnapshot
+    {
+        public int HeightmapUnit;
+
+        public bool CoversSurface(float normalizedHeight)
+        {
+            return normalizedHeight <= HeightmapUnit / (float)ushort.MaxValue;
+        }
     }
 
     [XmlRoot("MyRenderVoxelMaterialData")]
@@ -595,6 +607,54 @@ namespace LcdMod.Client.Modules.Cartography
             CopyDirectMaterials(generator, snapshot);
             CopyMaterialGroups(generator, snapshot);
             return snapshot;
+        }
+
+        public static PlanetWaterSnapshot BuildWater(CartographyRequest request)
+        {
+            if (request == null || request.PlanetEntityId == 0L || !WaterModAPI.Registered)
+                return null;
+
+            MyPlanet planet = ResolvePlanet(request);
+            if (planet == null || planet.MarkedForClose)
+                return null;
+
+            try
+            {
+                if (!WaterModAPI.HasWater(planet))
+                    return null;
+
+                MyTuple<Vector3D, float, float, float> physical =
+                    WaterModAPI.GetPhysical(planet);
+                if (physical.Item2 <= 0f ||
+                    planet.MinimumRadius <= 0d ||
+                    planet.MaximumRadius <= planet.MinimumRadius)
+                    return null;
+
+                double waterRadiusMultiplier = physical.Item2 / planet.MinimumRadius;
+                double waterRadiusMeters = planet.MinimumRadius * waterRadiusMultiplier;
+                double normalized = (waterRadiusMeters - planet.MinimumRadius) /
+                                    (planet.MaximumRadius - planet.MinimumRadius);
+                return new PlanetWaterSnapshot
+                {
+                    HeightmapUnit = ClampToHeightmapUnit(
+                        normalized * ushort.MaxValue)
+                };
+            }
+            catch
+            {
+                // Water is optional and can disappear while its mod is syncing.
+                return null;
+            }
+        }
+
+        static int ClampToHeightmapUnit(double value)
+        {
+            if (double.IsNaN(value) || value <= 0d)
+                return 0;
+            if (value >= ushort.MaxValue)
+                return ushort.MaxValue;
+
+            return (int)Math.Round(value);
         }
 
         public static FarColorCatalogSnapshot BuildFarColors(PlanetDefinitionSnapshot planet)

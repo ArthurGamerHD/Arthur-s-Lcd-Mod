@@ -1161,13 +1161,19 @@ Wir warten einen Moment und starten sie dann für dich neu.</value>
     <value>Kartenebene: {0}</value>
   </data>
   <data name="LcdMod_PlanetaryMap_MapLayer_Tooltip" xml:space="preserve">
-    <value>Wähle Satelliten-, Gelände- oder Biomfarben.</value>
+    <value>Wähle Satelliten-, Gelände-, Material- oder Biomfarben.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Terrain" xml:space="preserve">
     <value>Gelände</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Terrain_Tooltip" xml:space="preserve">
     <value>Höhenkarte, normalisiert von der minimalen bis zur maximalen Höhe des Planeten.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Materials" xml:space="preserve">
+    <value>Materialien</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Layer_Materials_Tooltip" xml:space="preserve">
+    <value>Unverarbeitete Material-IDs mit stabilen Kategoriefarben.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Biomes" xml:space="preserve">
     <value>Biome</value>
@@ -1180,6 +1186,9 @@ Wir warten einen Moment und starten sie dann für dich neu.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Satellite_Tooltip" xml:space="preserve">
     <value>Oberflächenmaterialien in ihren Farben der Fernkarte.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_Water_Title" xml:space="preserve">
+    <value>Wasser</value>
   </data>
   <data name="LcdMod_PlanetaryMap_StreetView_Title" xml:space="preserve">
     <value>Straßenansicht</value>

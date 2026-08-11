@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-using LcdMod.Common.Imaging;
+using Adk.Image;
 using VRageMath;
-using ArgumentOutOfRangeException = LcdMod.Common.Exceptions.ArgumentOutOfRangeException;
+using ArgumentOutOfRangeException = Adk.Compression.Exceptions.ArgumentOutOfRangeException;
 
 namespace LcdMod.Client.Modules.Cartography
 {
@@ -56,7 +56,8 @@ namespace LcdMod.Client.Modules.Cartography
 
         internal PlanetColorCubemap(
             PlanetColorMip[][] faces,
-            int requestedMaximumFaceSide)
+            int requestedMaximumFaceSide,
+            PlanetColorCubemap waterOverlay = null)
         {
             if (faces == null || faces.Length != 6)
                 throw new ArgumentException("A color cubemap must contain six faces.", nameof(faces));
@@ -67,6 +68,7 @@ namespace LcdMod.Client.Modules.Cartography
             BaseResolution = faces[0][0].Resolution;
             MipCount = faces[0].Length;
             RequestedMaximumFaceSide = requestedMaximumFaceSide;
+            WaterOverlay = waterOverlay;
         }
 
         public int BaseResolution { get; private set; }
@@ -77,6 +79,13 @@ namespace LcdMod.Client.Modules.Cartography
         /// source planet-data resolution was requested.
         /// </summary>
         public int RequestedMaximumFaceSide { get; private set; }
+
+        /// <summary>
+        /// Optional alpha-mask cubemap rendered after the base planet texture.
+        /// Its alpha channel represents water coverage; RGB is intentionally white
+        /// so the display renderer can apply its own translucent water tint.
+        /// </summary>
+        public PlanetColorCubemap WaterOverlay { get; private set; }
 
         public bool IsFullResolution
         {
@@ -184,18 +193,51 @@ namespace LcdMod.Client.Modules.Cartography
             if (cancellation == null)
                 throw new ArgumentNullException(nameof(cancellation));
 
+            PlanetColorCubemap waterOverlay = null;
+            if (painted.WaterOverlayFaces.Count > 0)
+            {
+                PlanetColorMip[][] waterFaces = BuildFaces(
+                    painted.WaterOverlayFaces,
+                    releasePaintedFaces,
+                    cancellation);
+                waterOverlay = new PlanetColorCubemap(
+                    waterFaces,
+                    requestedMaximumFaceSide);
+            }
+
+            PlanetColorMip[][] faces = BuildFaces(
+                painted.Faces,
+                releasePaintedFaces,
+                cancellation);
+            return new PlanetColorCubemap(
+                faces,
+                requestedMaximumFaceSide,
+                waterOverlay);
+        }
+
+        static PlanetColorMip[][] BuildFaces(
+            Dictionary<PlanetCubeFace, RawRgbaBitmap> paintedFaces,
+            bool releasePaintedFaces,
+            CartographyCancellation cancellation)
+        {
+            if (paintedFaces == null ||
+                paintedFaces.Count != PlanetMapSource.ExportOrder.Length)
+            {
+                throw new ArgumentException("A painted cubemap must contain six faces.");
+            }
+
             var faces = new PlanetColorMip[6][];
             for (int i = 0; i < PlanetMapSource.ExportOrder.Length; i++)
             {
                 cancellation.ThrowIfCancelled();
                 PlanetCubeFace face = PlanetMapSource.ExportOrder[i];
-                RawRgbaBitmap bitmap = painted.Faces[face];
+                RawRgbaBitmap bitmap = paintedFaces[face];
                 faces[(int)face] = BuildMipChain(bitmap, cancellation);
                 if (releasePaintedFaces)
-                    painted.Faces.Remove(face);
+                    paintedFaces.Remove(face);
             }
 
-            return new PlanetColorCubemap(faces, requestedMaximumFaceSide);
+            return faces;
         }
 
         static PlanetColorMip[] BuildMipChain(

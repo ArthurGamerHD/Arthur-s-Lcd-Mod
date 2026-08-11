@@ -1,10 +1,11 @@
 using System;
 using System.IO;
-using LcdMod.Common.Png;
+using Adk.Image.Png;
 using Sandbox.ModAPI;
+using VoxelCubemapApi.Api;
 using VRageMath;
-using ArgumentOutOfRangeException = LcdMod.Common.Exceptions.ArgumentOutOfRangeException;
-using InvalidDataException = LcdMod.Common.Exceptions.InvalidDataException;
+using ArgumentOutOfRangeException = Adk.Compression.Exceptions.ArgumentOutOfRangeException;
+using InvalidDataException = Adk.Compression.Exceptions.InvalidDataException;
 
 namespace LcdMod.Client.Modules.Cartography
 {
@@ -32,8 +33,10 @@ namespace LcdMod.Client.Modules.Cartography
 
         readonly ushort[][] _heights = new ushort[6][];
         readonly byte[][] _materialIds = new byte[6][];
+        readonly byte[][] _biomeIds = new byte[6][];
         int _heightResolution;
         int _materialResolution;
+        int _biomeResolution;
         ushort _minimumHeight = ushort.MaxValue;
         ushort _maximumHeight;
 
@@ -66,7 +69,9 @@ namespace LcdMod.Client.Modules.Cartography
         public static PlanetMapSource Load(
             PlanetDefinitionSnapshot planet,
             CartographyLayer layer,
-            CartographyCancellation cancellation)
+            CartographyCancellation cancellation,
+            PlanetMetadataProvider runtimePlanetMetadata = null,
+            bool requireHeightForOverlay = false)
         {
             if (planet == null)
                 throw new ArgumentNullException(nameof(planet));
@@ -75,44 +80,98 @@ namespace LcdMod.Client.Modules.Cartography
 
             bool loadHeight;
             bool loadMaterials;
+            bool loadBiomes;
             switch (layer)
             {
                 case CartographyLayer.Satellite:
                     loadHeight = true;
                     loadMaterials = true;
+                    loadBiomes = false;
                     break;
                 case CartographyLayer.Terrain:
                     loadHeight = true;
                     loadMaterials = false;
+                    loadBiomes = false;
+                    break;
+                case CartographyLayer.Materials:
+                    loadHeight = requireHeightForOverlay;
+                    loadMaterials = true;
+                    loadBiomes = false;
                     break;
                 case CartographyLayer.Biomes:
-                    loadHeight = false;
-                    loadMaterials = true;
+                    loadHeight = requireHeightForOverlay;
+                    loadMaterials = false;
+                    loadBiomes = true;
                     break;
                 default:
                     throw new NotSupportedException("The requested cartography layer is not implemented.");
             }
 
             var source = new PlanetMapSource();
+            int runtimeFaceResolution = 0;
             for (int i = 0; i < ExportOrder.Length; i++)
             {
                 cancellation.ThrowIfCancelled();
                 PlanetCubeFace face = ExportOrder[i];
                 string faceName = GetFaceName(face);
 
+                if (runtimePlanetMetadata != null && runtimeFaceResolution == 0)
+                {
+                    int[] size = runtimePlanetMetadata.GetFaceSize(faceName);
+                    runtimeFaceResolution = ValidateRuntimeFaceSize(size, faceName);
+                }
+
                 if (loadHeight)
                 {
-                    RawPngBitmap height = LoadPng(planet, faceName + ".png");
-                    source.ValidateHeightResolution(height, faceName + ".png");
-                    source._heights[(int)face] = ExtractHeight(height);
+                    if (runtimePlanetMetadata != null)
+                    {
+                        ushort[] height = runtimePlanetMetadata.LoadHeightFace(faceName);
+                        ValidateRuntimeFaceSamples(height, runtimeFaceResolution, faceName + ".png");
+                        source._heightResolution = runtimeFaceResolution;
+                        source._heights[(int)face] = height;
+                    }
+                    else
+                    {
+                        RawPngBitmap height = LoadPng(planet, faceName + ".png");
+                        source.ValidateHeightResolution(height, faceName + ".png");
+                        source._heights[(int)face] = ExtractHeight(height);
+                    }
                 }
 
                 if (loadMaterials)
                 {
                     cancellation.ThrowIfCancelled();
-                    RawPngBitmap material = LoadPng(planet, faceName + "_mat.png");
-                    source.ValidateMaterialResolution(material, faceName + "_mat.png");
-                    source._materialIds[(int)face] = ExtractMaterialRed(material);
+                    if (runtimePlanetMetadata != null)
+                    {
+                        byte[] material = runtimePlanetMetadata.LoadMaterialFace(faceName);
+                        ValidateRuntimeFaceSamples(material, runtimeFaceResolution, faceName + "_mat.png");
+                        source._materialResolution = runtimeFaceResolution;
+                        source._materialIds[(int)face] = material;
+                    }
+                    else
+                    {
+                        RawPngBitmap material = LoadPng(planet, faceName + "_mat.png");
+                        source.ValidateMaterialResolution(material, faceName + "_mat.png");
+                        source._materialIds[(int)face] = ExtractMaterialChannel(material, 0);
+                    }
+                }
+
+                if (loadBiomes)
+                {
+                    cancellation.ThrowIfCancelled();
+                    if (runtimePlanetMetadata != null)
+                    {
+                        byte[] biome = runtimePlanetMetadata.LoadBiomeFace(faceName);
+                        ValidateRuntimeFaceSamples(biome, runtimeFaceResolution, faceName + "_mat.png");
+                        source._biomeResolution = runtimeFaceResolution;
+                        source._biomeIds[(int)face] = biome;
+                    }
+                    else
+                    {
+                        RawPngBitmap material = LoadPng(planet, faceName + "_mat.png");
+                        source.ValidateBiomeResolution(material, faceName + "_mat.png");
+                        source._biomeIds[(int)face] = ExtractMaterialChannel(material, 1);
+                    }
                 }
             }
 
@@ -168,6 +227,14 @@ namespace LcdMod.Client.Modules.Cartography
             int x = Clamp((int)(u * resolution), 0, resolution - 1);
             int y = Clamp((int)(v * resolution), 0, resolution - 1);
             return _materialIds[(int)face][y * resolution + x];
+        }
+
+        public byte SampleBiomeNearest(PlanetCubeFace face, float u, float v)
+        {
+            int resolution = _biomeResolution;
+            int x = Clamp((int)(u * resolution), 0, resolution - 1);
+            int y = Clamp((int)(v * resolution), 0, resolution - 1);
+            return _biomeIds[(int)face][y * resolution + x];
         }
 
         public static Vector3 FaceUvToDirection(PlanetCubeFace face, float u, float v)
@@ -345,6 +412,39 @@ namespace LcdMod.Client.Modules.Cartography
                 ref _materialResolution);
         }
 
+        void ValidateBiomeResolution(RawPngBitmap bitmap, string fileName)
+        {
+            ValidateResolution(
+                bitmap,
+                fileName,
+                "biome",
+                ref _biomeResolution);
+        }
+
+        static int ValidateRuntimeFaceSize(int[] size, string faceName)
+        {
+            if (size == null || size.Length < 2 || size[0] <= 0 || size[1] <= 0)
+                throw new InvalidDataException(faceName + " returned an invalid runtime cubemap size.");
+            if (size[0] != size[1])
+                throw new InvalidDataException(faceName + " runtime cubemap face is not square.");
+
+            return size[0];
+        }
+
+        static void ValidateRuntimeFaceSamples(Array samples, int resolution, string fileName)
+        {
+            if (samples == null)
+                throw new InvalidDataException(fileName + " returned null runtime cubemap samples.");
+
+            int expected = checked(resolution * resolution);
+            if (samples.Length != expected)
+            {
+                throw new InvalidDataException(
+                    fileName + " returned " + samples.Length +
+                    " runtime cubemap samples; expected " + expected + ".");
+            }
+        }
+
         static void ValidateResolution(
             RawPngBitmap bitmap,
             string fileName,
@@ -387,10 +487,15 @@ namespace LcdMod.Client.Modules.Cartography
                         throw new InvalidDataException("Terrain cartography requires height cubemap faces.");
                     return _heightResolution;
 
-                case CartographyLayer.Biomes:
+                case CartographyLayer.Materials:
                     if (_materialResolution <= 0)
-                        throw new InvalidDataException("Biome cartography requires material cubemap faces.");
+                        throw new InvalidDataException("Material cartography requires material cubemap faces.");
                     return _materialResolution;
+
+                case CartographyLayer.Biomes:
+                    if (_biomeResolution <= 0)
+                        throw new InvalidDataException("Biome cartography requires biome cubemap faces.");
+                    return _biomeResolution;
 
                 default:
                     throw new NotSupportedException("The requested cartography layer is not implemented.");
@@ -412,12 +517,12 @@ namespace LcdMod.Client.Modules.Cartography
             return result;
         }
 
-        static byte[] ExtractMaterialRed(RawPngBitmap bitmap)
+        static byte[] ExtractMaterialChannel(RawPngBitmap bitmap, int channel)
         {
             int count = checked(bitmap.Width * bitmap.Height);
             var result = new byte[count];
             for (int i = 0; i < count; i++)
-                result[i] = bitmap.Pixels[i * 4];
+                result[i] = bitmap.Pixels[i * 4 + channel];
             return result;
         }
 
