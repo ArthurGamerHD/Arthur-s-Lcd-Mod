@@ -80,7 +80,7 @@ namespace LcdMod.Client.Modules.Defense.Providers.EnergyShield
 
         public bool TryUpdateShieldInfo(
             IReadOnlyList<IMyCubeGrid> grids,
-            IReadOnlyList<IMyTerminalBlock> terminalBlocks,
+            IEnumerable<IMyTerminalBlock> terminalBlocks,
             long gameplayFrame,
             bool refreshCachedData,
             ShieldInfo info)
@@ -130,15 +130,14 @@ namespace LcdMod.Client.Modules.Defense.Providers.EnergyShield
             }
         }
 
-        void CollectShieldBlocks(IReadOnlyList<IMyTerminalBlock> terminalBlocks)
+        void CollectShieldBlocks(IEnumerable<IMyTerminalBlock> terminalBlocks)
         {
             _shieldBlocks.Clear();
             if (terminalBlocks == null)
                 return;
 
-            for (int i = 0; i < terminalBlocks.Count; i++)
+            foreach (var block in terminalBlocks)
             {
-                var block = terminalBlocks[i];
                 if (IsOwnedShieldBlock(block))
                     _shieldBlocks.Add(block);
             }

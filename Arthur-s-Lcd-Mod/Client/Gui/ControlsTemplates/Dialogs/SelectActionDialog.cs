@@ -318,7 +318,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             if (_gridLogic == null || string.IsNullOrEmpty(subtype))
                 return false;
 
-            var blocks = _gridLogic.GetTerminalBlocks<IMyTerminalBlock>();
+            var blocks = _gridLogic.Blocks.TerminalBlocks;
             if (blocks == null)
                 return false;
 
@@ -358,7 +358,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             if (_gridLogic == null)
                 return false;
 
-            var blocks = _gridLogic.GetTerminalBlocks<IMyTerminalBlock>();
+            var blocks = _gridLogic.Blocks.TerminalBlocks;
             if (blocks == null)
                 return false;
 
@@ -445,7 +445,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             if (_gridLogic == null || !long.TryParse(id, out entityId))
                 return null;
 
-            var blocks = _gridLogic.GetTerminalBlocks<IMyTerminalBlock>();
+            var blocks = _gridLogic.Blocks.TerminalBlocks;
             if (blocks == null)
                 return null;
 

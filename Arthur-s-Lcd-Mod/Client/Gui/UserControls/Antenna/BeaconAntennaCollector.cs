@@ -12,6 +12,12 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
 {
     internal sealed class BeaconCollector : AntennaCollector
     {
+        readonly LinkedTypedBlockSourceSet<IMyBeacon> _beacons =
+            new LinkedTypedBlockSourceSet<IMyBeacon>(delegate(TypedBlockCollection blocks)
+            {
+                return blocks.Beacons;
+            });
+
         public BeaconCollector(
             IAppHost antennaSurfaceScript,
             Func<BlockSelectionConfigComponent> getConfig,
@@ -27,24 +33,33 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
             Dictionary<long, AntennaEntry> models,
             HashSet<long> activeEntryIds)
         {
-            var beacons = grid.GetTerminalBlocks<IMyBeacon>(GridLinkType);
-
-            for (int i = 0; i < beacons.Count; i++)
+            _beacons.Bind(grid, GridLinkType);
+            var sources = _beacons.Sources;
+            for (int sourceIndex = 0; sourceIndex < sources.Count; sourceIndex++)
             {
-                var beacon = beacons[i];
+                var beacons = sources[sourceIndex];
+                for (int i = 0; i < beacons.Count; i++)
+                {
+                    var beacon = beacons[i];
 
-                if(!IsValid(beacon))
-                    continue;
+                    if(!IsValid(beacon))
+                        continue;
                 
-                var entry = GetOrCreateEntry(beacon.EntityId, entries, models, activeEntryIds);
-                entry.Update(
-                    GetName(beacon),
-                    GetStatusIcon(beacon),
-                    GetStatusText(beacon),
-                    GetStatusColor(beacon),
-                    beacon.IsFunctional,
-                    false);
+                    var entry = GetOrCreateEntry(beacon.EntityId, entries, models, activeEntryIds);
+                    entry.Update(
+                        GetName(beacon),
+                        GetStatusIcon(beacon),
+                        GetStatusText(beacon),
+                        GetStatusColor(beacon),
+                        beacon.IsFunctional,
+                        false);
+                }
             }
+        }
+
+        public override void Dispose()
+        {
+            _beacons.Dispose();
         }
 
         string GetName(IMyBeacon beacon)

@@ -34,6 +34,7 @@
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Config\Generation\ConfigMetadataAttributes.cs" LinkBase="ConfigSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Config\Components\ConfigComponentModels.cs" LinkBase="ConfigSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Config\Components\GeneralConfigComponentExtensions.cs" LinkBase="ConfigSource" />
+    <Compile Include="..\Arthur-s-Lcd-Mod\Common\Config\Components\ItemDisplayConfigComponentExtensions.cs" LinkBase="ConfigSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Config\Components\ComponentConfigEntityReferences.cs" LinkBase="ConfigSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Config\Models\ScreenProviderConfig.cs" LinkBase="ConfigSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Helpers\Constants.cs" LinkBase="ConfigSource" />
@@ -43,6 +44,7 @@
     <Compile Include="..\Arthur-s-Lcd-Mod\Client\Modules\Defense\ShieldValueFormatter.cs" LinkBase="DefenseSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Client\Modules\Defense\ShieldInfo.cs" LinkBase="DefenseSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Client\Audio\GameAudioPcmLoader.cs" LinkBase="AudioSource" />
+    <Compile Include="..\Arthur-s-Lcd-Mod\Client\GridData\InventoryEventTracker.cs" LinkBase="GridDataSource" />
   </ItemGroup>
 
   <ItemGroup>

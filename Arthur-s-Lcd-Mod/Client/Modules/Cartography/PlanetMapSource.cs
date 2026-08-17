@@ -376,21 +376,28 @@ namespace LcdMod.Client.Modules.Cartography
             if (utilities == null)
                 throw new InvalidOperationException("Utilities are not ready.");
 
-            if (planet.IsBaseGame)
+            // Planet placer and compatibility mods can define a generator whose
+            // PlanetDataFiles are supplied by another active mod. Search from the
+            // highest-priority (last-loaded) mod to the lowest before falling back
+            // to vanilla content, matching definition override precedence.
+            var mods = planet.ModLoadOrder;
+            if (mods != null)
             {
-                if (!utilities.FileExistsInGameContent(path))
-                    throw new FileNotFoundException("Planet PNG was not found.", path);
-
-                using (var reader = utilities.ReadBinaryFileInGameContent(path))
-                    return RawPngBitmap.Load(reader.BaseStream);
+                for (int i = mods.Length - 1; i >= 0; i--)
+                {
+                    try
+                    {
+                        using (var reader = utilities.ReadBinaryFileInModLocation(path, mods[i]))
+                            return RawPngBitmap.Load(reader.BaseStream);
+                    }
+                    catch (FileNotFoundException)
+                    {
+                        // Linux contains flaky FileExistsInModLocation
+                    }
+                }
             }
 
-            if (!planet.HasModItem)
-                throw new InvalidOperationException("Mod planet source does not have a mod item.");
-            if (!utilities.FileExistsInModLocation(path, planet.ModItem))
-                throw new FileNotFoundException("Mod planet PNG was not found.", path);
-
-            using (var reader = utilities.ReadBinaryFileInModLocation(path, planet.ModItem))
+            using (var reader = utilities.ReadBinaryFileInGameContent(path))
                 return RawPngBitmap.Load(reader.BaseStream);
         }
 

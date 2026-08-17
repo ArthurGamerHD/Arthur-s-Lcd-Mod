@@ -24,9 +24,6 @@ namespace LcdMod.Client.Apps
     [LcdApp(30)]
     internal sealed partial class DefenseDashboardApp : App
     {
-        const long WEAPON_REFRESH_FRAMES = 100L;
-        const long INITIAL_WEAPON_RETRY_FRAMES = 5L;
-
         readonly Grid _rootGrid;
         readonly TilingPanel _shieldPanel;
         readonly TilingPanel _weaponPanel;
@@ -39,19 +36,17 @@ namespace LcdMod.Client.Apps
         readonly Dictionary<string, WeaponAggregate> _weaponAggregates =
             new Dictionary<string, WeaponAggregate>(StringComparer.OrdinalIgnoreCase);
         readonly List<WeaponAggregate> _sortedWeapons = new List<WeaponAggregate>();
-        readonly List<IMyTerminalBlock> _weaponBlocks = new List<IMyTerminalBlock>();
 
         DefenseDataLease _lease;
-        GridLogic _weaponGridLogic;
         Color _cardColor;
         Color _warningColor;
         Color _errorColor;
-        long _lastWeaponRefreshFrame = long.MinValue;
         bool _hasShields;
         bool _hasWeapons;
 
         public DefenseDashboardApp(IAppHost host) : base(host)
         {
+            NeedGridData(GridCapability.Blocks);
             _rootGrid = AddLogicalChild(new Grid(default(RectangleF), new[] { 1f }, new[] { 1f, 1f }));
             _shieldPanel = new TilingPanel
             {
@@ -75,19 +70,7 @@ namespace LcdMod.Client.Apps
             CaptureLease();
             UpdatePresentationColors();
 
-            long frame = MyAPIGateway.Session != null ? MyAPIGateway.Session.GameplayFrameCounter : 0L;
-            GridLogic gridLogic = Host.GridLogic;
-            if (!ReferenceEquals(_weaponGridLogic, gridLogic))
-            {
-                _weaponGridLogic = gridLogic;
-                _lastWeaponRefreshFrame = long.MinValue;
-            }
-
-            if (_lastWeaponRefreshFrame == long.MinValue ||
-                frame - _lastWeaponRefreshFrame >= WEAPON_REFRESH_FRAMES)
-                RefreshWeaponBlocks(frame);
-
-            UpdateWeaponStatuses();
+            UpdateWeaponStatuses(Host.GridLogic);
         }
 
         public override void LayoutChanged()
@@ -119,6 +102,7 @@ namespace LcdMod.Client.Apps
         public override void Close()
         {
             ReleaseLease();
+            base.Close();
         }
 
         void CaptureLease()
@@ -224,36 +208,14 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        void RefreshWeaponBlocks(long frame)
-        {
-            List<IMyTerminalBlock> blocks = _weaponGridLogic != null
-                ? _weaponGridLogic.GetTerminalBlocks<IMyTerminalBlock>()
-                : null;
-
-            _weaponBlocks.Clear();
-            int blockCount = blocks != null ? blocks.Count : 0;
-            for (int i = 0; i < blockCount; i++)
-            {
-                IMyTerminalBlock block = blocks[i];
-                if (block == null || block.Closed || block.MarkedForClose || !(block is IMyUserControllableGun))
-                    continue;
-
-                _weaponBlocks.Add(block);
-            }
-
-            bool waitingForInitialGridScan = blockCount == 0 && _weaponGridLogic != null &&
-                                             _weaponGridLogic.Blocks.IsRefreshRunning;
-            _lastWeaponRefreshFrame = waitingForInitialGridScan
-                ? frame - (WEAPON_REFRESH_FRAMES - INITIAL_WEAPON_RETRY_FRAMES)
-                : frame;
-        }
-
-        void UpdateWeaponStatuses()
+        void UpdateWeaponStatuses(GridLogic gridLogic)
         {
             _weaponAggregates.Clear();
-            for (int i = 0; i < _weaponBlocks.Count; i++)
+            var weaponBlocks = gridLogic != null ? gridLogic.Blocks.UserControllableGuns : null;
+            int blockCount = weaponBlocks != null ? weaponBlocks.Count : 0;
+            for (int i = 0; i < blockCount; i++)
             {
-                IMyTerminalBlock block = _weaponBlocks[i];
+                IMyTerminalBlock block = weaponBlocks[i];
                 if (block == null || block.Closed || block.MarkedForClose)
                     continue;
 

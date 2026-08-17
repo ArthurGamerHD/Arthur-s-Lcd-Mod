@@ -98,7 +98,8 @@ namespace LcdMod.Client.Apps.Abstract
         string[] _entryOrder;
         PowerEntry[] _entriesOrdered;
         readonly List<PowerEntry> _visibleEntries = new List<PowerEntry>();
-        readonly List<IMyPowerProducer> _producers = new List<IMyPowerProducer>();
+        readonly LinkedTypedBlockSourceSet<IMyPowerProducer> _producerSources =
+            new LinkedTypedBlockSourceSet<IMyPowerProducer>(blocks => blocks.PowerProducers);
         readonly Dictionary<string, RectangleControl> _entryControls = new Dictionary<string, RectangleControl>();
         readonly List<Control> _children = new List<Control>();
         readonly ScrollPanel _scrollPanel;
@@ -156,7 +157,8 @@ namespace LcdMod.Client.Apps.Abstract
 
         public override void Update()
         {
-            SumPowerSources(Host.GridLogic, _totalsByKey);
+            _producerSources.Bind(Host.GridLogic, (GridLinkTypeEnum)PowerComponent.GridLinkTypeInternal);
+            SumPowerSources(_totalsByKey);
             UpdateEntryValues();
             BuildVisibleEntries();
 
@@ -288,7 +290,7 @@ namespace LcdMod.Client.Apps.Abstract
                 _entriesOrdered[i] = _entriesByKey[_entryOrder[i]];
         }
 
-        void SumPowerSources(GridLogic gridLogic, Dictionary<string, PowerTotals> totals)
+        void SumPowerSources(Dictionary<string, PowerTotals> totals)
         {
             for (int i = 0; i < _entryOrder.Length; i++)
             {
@@ -296,38 +298,43 @@ namespace LcdMod.Client.Apps.Abstract
                 totals[key] = new PowerTotals();
             }
 
-            if (gridLogic == null)
-                return;
-
-            _producers.Clear();
-            _producers.AddRange(gridLogic.GetTerminalBlocks<IMyPowerProducer>((GridLinkTypeEnum)PowerComponent.GridLinkTypeInternal));
-
-            for (int i = 0; i < _producers.Count; i++)
+            var sources = _producerSources.Sources;
+            for (int sourceIndex = 0; sourceIndex < sources.Count; sourceIndex++)
             {
-                var prod = _producers[i];
-                var typeId = string.Empty;
-
-                try
+                var producers = sources[sourceIndex];
+                for (int i = 0; i < producers.Count; i++)
                 {
-                    typeId = prod.BlockDefinition.TypeIdString ?? string.Empty;
-                }
-                catch (Exception e)
-                {
-                    ErrorHandlerHelper.LogError(e, GetType());
-                }
+                    var prod = producers[i];
+                    var typeId = string.Empty;
 
-                string key;
-                if (!TryMapProducerType(typeId, prod, out key))
-                    continue;
-                if (!totals.ContainsKey(key))
-                    continue;
+                    try
+                    {
+                        typeId = prod.BlockDefinition.TypeIdString ?? string.Empty;
+                    }
+                    catch (Exception e)
+                    {
+                        ErrorHandlerHelper.LogError(e, GetType());
+                    }
 
-                var values = totals[key];
-                values.Current += ToWatts(prod?.CurrentOutput ?? 0);
-                values.Max += ToWatts(prod?.MaxOutput ?? 0);
-                values.Count++;
-                totals[key] = values;
+                    string key;
+                    if (!TryMapProducerType(typeId, prod, out key))
+                        continue;
+                    if (!totals.ContainsKey(key))
+                        continue;
+
+                    var values = totals[key];
+                    values.Current += ToWatts(prod != null ? prod.CurrentOutput : 0);
+                    values.Max += ToWatts(prod != null ? prod.MaxOutput : 0);
+                    values.Count++;
+                    totals[key] = values;
+                }
             }
+        }
+
+        public override void Close()
+        {
+            _producerSources.Dispose();
+            base.Close();
         }
 
         void DrawDefaultView(List<MySprite> sprites, List<PowerEntry> entries, string maxLabel, string currentLabel)

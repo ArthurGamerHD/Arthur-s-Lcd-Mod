@@ -85,6 +85,7 @@ namespace LcdMod.Client.Apps
 
         public ButtonPadApp(IAppHost host) : base(host)
         {
+            NeedGridData(GridCapability.Blocks);
             _scrollPanel = AddLogicalChild(new ScrollPanel());
             _scrollPanel.ManualScrollInertiaEnabled = false;
             _scrollPanel.ScrollChanged = OnScrollPanelChanged;
@@ -931,7 +932,7 @@ namespace LcdMod.Client.Apps
             if (Host.GridLogic == null || targetType == null)
                 return null;
 
-            var blocks = Host.GridLogic.GetTerminalBlocks<IMyTerminalBlock>();
+            var blocks = Host.GridLogic.Blocks.TerminalBlocks;
             if (blocks == null)
                 return null;
 
@@ -950,7 +951,7 @@ namespace LcdMod.Client.Apps
             if (Host.GridLogic == null || string.IsNullOrEmpty(subtype))
                 return null;
 
-            var blocks = Host.GridLogic.GetTerminalBlocks<IMyTerminalBlock>();
+            var blocks = Host.GridLogic.Blocks.TerminalBlocks;
             if (blocks == null)
                 return null;
 
@@ -1071,7 +1072,7 @@ namespace LcdMod.Client.Apps
             if (Host.GridLogic == null || targetType == null)
                 return false;
 
-            var blocks = Host.GridLogic.GetTerminalBlocks<IMyTerminalBlock>();
+            var blocks = Host.GridLogic.Blocks.TerminalBlocks;
             if (blocks == null)
                 return false;
 
@@ -1099,7 +1100,7 @@ namespace LcdMod.Client.Apps
             if (Host.GridLogic == null || string.IsNullOrEmpty(subtype))
                 return false;
 
-            var blocks = Host.GridLogic.GetTerminalBlocks<IMyTerminalBlock>();
+            var blocks = Host.GridLogic.Blocks.TerminalBlocks;
             if (blocks == null)
                 return false;
 
@@ -1130,7 +1131,7 @@ namespace LcdMod.Client.Apps
             if (Host.GridLogic == null || !long.TryParse(id, out entityId))
                 return null;
 
-            var blocks = Host.GridLogic.GetTerminalBlocks<IMyTerminalBlock>();
+            var blocks = Host.GridLogic.Blocks.TerminalBlocks;
             if (blocks == null)
                 return null;
 

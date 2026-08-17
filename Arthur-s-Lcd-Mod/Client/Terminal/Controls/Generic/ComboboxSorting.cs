@@ -45,7 +45,11 @@ namespace LcdMod.Client.Terminal.Controls.Generic
             ConfigManager.ModifyComponentForCurrentSurface<FilterConfigComponent>(
                 block,
                 Constants.FILTERS,
-                config => config.SortMethod = (int)l);
+                config =>
+                {
+                    config.SortMethod = (int)l;
+                    config.SortDirection = -1;
+                });
         }
 
         long Getter(IMyTerminalBlock block)

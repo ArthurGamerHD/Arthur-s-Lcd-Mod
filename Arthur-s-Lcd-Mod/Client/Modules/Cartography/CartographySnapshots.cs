@@ -49,6 +49,7 @@ namespace LcdMod.Client.Modules.Cartography
         public bool IsBaseGame;
         public bool HasModItem;
         public MyObjectBuilder_Checkpoint.ModItem ModItem;
+        public MyObjectBuilder_Checkpoint.ModItem[] ModLoadOrder;
         public double RadiusMeters;
         public float MinimumHillRatio;
         public float MaximumHillRatio;
@@ -601,12 +602,24 @@ namespace LcdMod.Client.Modules.Cartography
                 DefaultSurfaceMaterial = GetSurfaceMaterial(generator.DefaultSurfaceMaterial),
                 IsBaseGame = generator.Context == null || generator.Context.IsBaseGame,
                 HasModItem = generator.Context != null && !generator.Context.IsBaseGame,
-                ModItem = generator.Context != null ? generator.Context.ModItem : default(MyObjectBuilder_Checkpoint.ModItem)
+                ModItem = generator.Context != null ? generator.Context.ModItem : default(MyObjectBuilder_Checkpoint.ModItem),
+                ModLoadOrder = CopyModLoadOrder()
             };
 
             CopyDirectMaterials(generator, snapshot);
             CopyMaterialGroups(generator, snapshot);
             return snapshot;
+        }
+
+        static MyObjectBuilder_Checkpoint.ModItem[] CopyModLoadOrder()
+        {
+            var session = MyAPIGateway.Session;
+            if (session == null || session.Mods == null || session.Mods.Count == 0)
+                return new MyObjectBuilder_Checkpoint.ModItem[0];
+
+            var result = new MyObjectBuilder_Checkpoint.ModItem[session.Mods.Count];
+            session.Mods.CopyTo(result);
+            return result;
         }
 
         public static PlanetWaterSnapshot BuildWater(CartographyRequest request)

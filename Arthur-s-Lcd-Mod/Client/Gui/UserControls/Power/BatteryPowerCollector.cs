@@ -19,6 +19,11 @@ namespace LcdMod.Client.Gui.UserControls.Power
         static readonly FillableTexture Texture = new FillableTexture("Battery", 1f, 55f, 55f, 32f, 10f, "IconEnergy");
 
         readonly List<IMyBatteryBlock> _visible = new List<IMyBatteryBlock>();
+        readonly LinkedTypedBlockSourceSet<IMyBatteryBlock> _batteries =
+            new LinkedTypedBlockSourceSet<IMyBatteryBlock>(delegate(TypedBlockCollection blocks)
+            {
+                return blocks.BatteryBlocks;
+            });
 
         Dictionary<long, PowerEntry> _activeEntriesBuffer = new Dictionary<long, PowerEntry>();
         Dictionary<long, PowerEntry> _standbyEntriesBuffer = new Dictionary<long, PowerEntry>();
@@ -74,7 +79,7 @@ namespace LcdMod.Client.Gui.UserControls.Power
                 return;
             }
 
-            var batteries = grid.GetTerminalBlocks<IMyBatteryBlock>(GridLinkType);
+            _batteries.Bind(grid, GridLinkType);
             const float eps = 0.001f;
             float totalIn = 0f;
             float totalOut = 0f;
@@ -87,52 +92,57 @@ namespace LcdMod.Client.Gui.UserControls.Power
             int batteriesDecreasing = 0;
             int batteriesRecharging = 0;
 
-            for (int i = 0; i < batteries.Count; i++)
+            var batterySources = _batteries.Sources;
+            for (int sourceIndex = 0; sourceIndex < batterySources.Count; sourceIndex++)
             {
-                var battery = batteries[i];
-                if (!HideEmpty || battery.MaxStoredPower > 0f)
+                var batteries = batterySources[sourceIndex];
+                for (int i = 0; i < batteries.Count; i++)
                 {
-                    _visible.Add(battery);
-                    totalIn += battery.CurrentInput;
-                    totalOut += battery.CurrentOutput;
-                    totalStored += battery.CurrentStoredPower;
-                    totalMax += battery.MaxStoredPower;
-
-                    var isRecharging = battery.ChargeMode == ChargeMode.Recharge;
-                    if (isRecharging)
-                        batteriesRecharging++;
-
-                    var drawChargingIcon = isRecharging;
-                    
-                    var storedDelta = battery.CurrentInput - battery.CurrentOutput;
-                    if (storedDelta > CHARGE_TREND_EPSILON_MWH)
+                    var battery = batteries[i];
+                    if (!HideEmpty || battery.MaxStoredPower > 0f)
                     {
-                        totalStoredDelta += storedDelta;
-                        batteriesIncreasing++;
-                        drawChargingIcon = true;
-                    }
-                    else if (storedDelta < -CHARGE_TREND_EPSILON_MWH)
-                    {
-                        totalStoredDelta += storedDelta;
-                        batteriesDecreasing++;
-                        drawChargingIcon = isRecharging;
-                    }
+                        _visible.Add(battery);
+                        totalIn += battery.CurrentInput;
+                        totalOut += battery.CurrentOutput;
+                        totalStored += battery.CurrentStoredPower;
+                        totalMax += battery.MaxStoredPower;
 
-                    var ratio = GetRatio(battery);
-                    sumRatio += ratio;
-                    bool full = ratio >= 1;
+                        var isRecharging = battery.ChargeMode == ChargeMode.Recharge;
+                        if (isRecharging)
+                            batteriesRecharging++;
+
+                        var drawChargingIcon = isRecharging;
                     
-                    if (full)
-                        fullCount++;
+                        var storedDelta = battery.CurrentInput - battery.CurrentOutput;
+                        if (storedDelta > CHARGE_TREND_EPSILON_MWH)
+                        {
+                            totalStoredDelta += storedDelta;
+                            batteriesIncreasing++;
+                            drawChargingIcon = true;
+                        }
+                        else if (storedDelta < -CHARGE_TREND_EPSILON_MWH)
+                        {
+                            totalStoredDelta += storedDelta;
+                            batteriesDecreasing++;
+                            drawChargingIcon = isRecharging;
+                        }
 
-                    var entry = GetOrUpdateBatteryEntry(
-                        battery,
-                        ratio,
-                        FormatingHelper.PercentageToString(ratio),
-                        GetBatteryIconColor(ratio),
-                        drawChargingIcon || full);
+                        var ratio = GetRatio(battery);
+                        sumRatio += ratio;
+                        bool full = ratio >= 1;
+                    
+                        if (full)
+                            fullCount++;
 
-                    entries.Add(entry);
+                        var entry = GetOrUpdateBatteryEntry(
+                            battery,
+                            ratio,
+                            FormatingHelper.PercentageToString(ratio),
+                            GetBatteryIconColor(ratio),
+                            drawChargingIcon || full);
+
+                        entries.Add(entry);
+                    }
                 }
             }
             
@@ -340,6 +350,11 @@ namespace LcdMod.Client.Gui.UserControls.Power
         static string FormatLabelWithColon(string label)
         {
             return string.Format(FormatingHelper.Culture, LocHelper.GetLoc(MOD_PREFIX + "Common_Label_WithColon"), label);
+        }
+
+        public override void Dispose()
+        {
+            _batteries.Dispose();
         }
 
         string GetStatusText()

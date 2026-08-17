@@ -5,7 +5,7 @@ namespace LcdMod.Client.GridData
 {
     /// <summary>
     /// Per-block snapshot of a refinery/assembler input (index 0) and output (index 1) inventories,
-    /// already aggregated and sorted by amount (descending). Built and cached by <see cref="GridLogic"/>.
+    /// already aggregated and sorted by amount (descending).
     /// </summary>
     public sealed class ProductionBlockItems
     {

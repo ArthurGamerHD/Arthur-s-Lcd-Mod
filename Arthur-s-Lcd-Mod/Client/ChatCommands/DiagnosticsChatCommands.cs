@@ -26,7 +26,7 @@ namespace LcdMod.Client.ChatCommands
 
 #if EXPERIMENTAL
         /// <summary>
-        /// Profiles LCD app rendering for a specified duration or cancels the active profile.
+        /// Profiles LCD app rendering and named runtime/event work for a specified duration.
         /// </summary>
         /// <loc>LcdMod_ChatCommand_Profile_Summary</loc>
         [ChatCommand("Profile")]

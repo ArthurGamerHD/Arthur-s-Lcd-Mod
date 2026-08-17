@@ -42,6 +42,13 @@ namespace LcdMod.Client.SurfaceScripts
         protected override string DefaultTitle => NAME;
         protected override bool RendersInteractiveEntriesInGetSprites => true;
 
+        protected override IApp DetachGridBoundApp()
+        {
+            var app = _app;
+            _app = null;
+            return app;
+        }
+
         public override void SafeRun()
         {
             base.SafeRun();

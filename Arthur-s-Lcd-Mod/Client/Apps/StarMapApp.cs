@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Extensions;
+using LcdMod.Client.GridData;
 using LcdMod.Client.Config;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
@@ -154,6 +155,9 @@ namespace LcdMod.Client.Apps
 
         readonly Dictionary<long, JumpPointThrottleState> _jumpPointThrottleByPlanet =
             new Dictionary<long, JumpPointThrottleState>();
+        readonly LinkedTypedBlockSourceSet<IMyJumpDrive> _jumpDriveSources =
+            new LinkedTypedBlockSourceSet<IMyJumpDrive>(blocks => blocks.JumpDrives);
+        readonly JumpPointGpsHelper _jumpPointGps = new JumpPointGpsHelper();
         readonly Dictionary<string, string> _propertyLabelCache = new Dictionary<string, string>();
         readonly List<RectangleF> _selectedInfoKeepAliveBounds = new List<RectangleF>();
         readonly List<RectangleF> _selectedInfoBoundsThisFrame = new List<RectangleF>();
@@ -582,6 +586,8 @@ namespace LcdMod.Client.Apps
         public override void Close()
         {
             _closed = true;
+            _jumpDriveSources.Dispose();
+            _jumpPointGps.Clear();
             ClearCartographyEventSubscription();
             LocalConfigManager.TextureQualityChanged -= OnTextureQualityChanged;
             _staticOrbitControl.StopCameraInertia();
@@ -4392,8 +4398,7 @@ namespace LcdMod.Client.Apps
                 getCursor: () =>
                 {
                     refresh();
-                    var jumpDrives = _host.GridLogic?.GetTerminalBlocks<IMyJumpDrive>(GridLinkTypeEnum.Physical);
-                    return jumpDrives == null || jumpDrives.Count == 0
+                    return !HasJumpDrives()
                         ? CursorType.Arrow
                         : _busy ? CursorType.WaitCursor : CursorType.Hand;
                 },
@@ -4404,8 +4409,7 @@ namespace LcdMod.Client.Apps
         {
             jumpPoint = Vector3D.Zero;
             int etaSeconds;
-            var jumpDrives = _host.GridLogic?.GetTerminalBlocks<IMyJumpDrive>(GridLinkTypeEnum.Physical);
-            if (jumpDrives == null || jumpDrives.Count == 0)
+            if (!HasJumpDrives())
             {
                 text = FormatPropertyLine("Jump", LocHelper.GetLoc(MOD_PREFIX + "NotAvailable"));
                 return false;
@@ -4421,7 +4425,8 @@ namespace LcdMod.Client.Apps
                 return false;
             }
 
-            if (_host.GridLogic.TryGetPlanetJumpPoint(
+            if (_jumpPointGps.TryGetJumpPoint(
+                    _host.Block != null ? _host.Block.CubeGrid : null,
                     planet.PlanetId,
                     planet.Name,
                     planet.WorldPosition,
@@ -4435,6 +4440,19 @@ namespace LcdMod.Client.Apps
             }
 
             text = FormatPropertyLine("Jump", LocHelper.GetLoc(MOD_PREFIX + "NotAvailable"));
+            return false;
+        }
+
+        bool HasJumpDrives()
+        {
+            _jumpDriveSources.Bind(_host.GridLogic, GridLinkTypeEnum.Physical);
+            var sources = _jumpDriveSources.Sources;
+            for (var sourceIndex = 0; sourceIndex < sources.Count; sourceIndex++)
+            {
+                if (sources[sourceIndex].Count > 0)
+                    return true;
+            }
+
             return false;
         }
 

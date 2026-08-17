@@ -14,6 +14,11 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
 {
     internal sealed class LaserAntennaCollector : AntennaCollector
     {
+        readonly LinkedTypedBlockSourceSet<IMyLaserAntenna> _lasers =
+            new LinkedTypedBlockSourceSet<IMyLaserAntenna>(delegate(TypedBlockCollection blocks)
+            {
+                return blocks.LaserAntennas;
+            });
         long _statusAnimTick;
 
         public LaserAntennaCollector(
@@ -31,23 +36,32 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
             Dictionary<long, AntennaEntry> models,
             HashSet<long> activeEntryIds)
         {
-            var lasers = grid.GetTerminalBlocks<IMyLaserAntenna>(GridLinkType);
-
-            for (int i = 0; i < lasers.Count; i++)
+            _lasers.Bind(grid, GridLinkType);
+            var sources = _lasers.Sources;
+            for (int sourceIndex = 0; sourceIndex < sources.Count; sourceIndex++)
             {
-                var laser = lasers[i];
-                if(!IsValid(laser))
-                    continue;
+                var lasers = sources[sourceIndex];
+                for (int i = 0; i < lasers.Count; i++)
+                {
+                    var laser = lasers[i];
+                    if(!IsValid(laser))
+                        continue;
 
-                var entry = GetOrCreateEntry(laser.EntityId, entries, models, activeEntryIds);
-                entry.Update(
-                    GetName(laser),
-                    GetStatusIcon(laser),
-                    GetStatusText(laser),
-                    GetStatusColor(laser),
-                    laser.IsFunctional,
-                    true);
+                    var entry = GetOrCreateEntry(laser.EntityId, entries, models, activeEntryIds);
+                    entry.Update(
+                        GetName(laser),
+                        GetStatusIcon(laser),
+                        GetStatusText(laser),
+                        GetStatusColor(laser),
+                        laser.IsFunctional,
+                        true);
+                }
             }
+        }
+
+        public override void Dispose()
+        {
+            _lasers.Dispose();
         }
 
         string GetName(IMyLaserAntenna laser)

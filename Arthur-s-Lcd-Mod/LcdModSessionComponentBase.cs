@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using Generated;
 using LcdMod.Client;
 using LcdMod.Client.Config;
@@ -14,8 +15,10 @@ using LcdMod.Server;
 using Sandbox.Game;
 using Sandbox.ModAPI;
 using VRage;
+using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.ModAPI;
+using VRage.Library.Utils;
 using VRage.ModAPI;
 using VRage.Utils;
 using static LcdMod.Common.Helpers.Constants;
@@ -73,7 +76,6 @@ namespace LcdMod
                 if (logic != null && logic.TargetGrid == gridId && logic.IsAlive)
                 {
                     EnsureGridLogicTracked(grid, logic);
-                    logic.MarkRequested();
                     return logic;
                 }
 
@@ -82,7 +84,6 @@ namespace LcdMod
             }
 
             logic = new GridLogic(grid);
-            logic.MarkRequested();
             Components[gridId] = logic;
             EnsureGridLogicTracked(grid, logic);
             return logic;
@@ -159,20 +160,20 @@ namespace LcdMod
             try
             {
                 MyTuple<IMyCubeGrid, GridLogic> tracked;
-                if (!_grids.TryGetValue(ent.EntityId, out tracked) || !ReferenceEquals(tracked.Item1, ent))
-                    return;
+                if (_grids.TryGetValue(ent.EntityId, out tracked) && ReferenceEquals(tracked.Item1, ent))
+                {
+                    if (tracked.Item1 != null)
+                        tracked.Item1.OnMarkForClose -= GridMarkedForClose;
+                    _grids.Remove(ent.EntityId);
 
-                if (tracked.Item1 != null)
-                    tracked.Item1.OnMarkForClose -= GridMarkedForClose;
-                _grids.Remove(ent.EntityId);
+                    GridLogic registered;
+                    if (Components != null && Components.TryGetValue(ent.EntityId, out registered) &&
+                        ReferenceEquals(registered, tracked.Item2))
+                        Components.Remove(ent.EntityId);
 
-                GridLogic registered;
-                if (Components != null && Components.TryGetValue(ent.EntityId, out registered) &&
-                    ReferenceEquals(registered, tracked.Item2))
-                    Components.Remove(ent.EntityId);
-
-                if (tracked.Item2 != null)
-                    tracked.Item2.Unload();
+                    if (tracked.Item2 != null)
+                        tracked.Item2.Unload();
+                }
             }
             catch (Exception e)
             {

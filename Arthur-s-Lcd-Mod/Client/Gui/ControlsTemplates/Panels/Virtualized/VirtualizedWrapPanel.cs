@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel;
+using LcdMod.Common.Mvvm;
 using VRageMath;
 
 namespace LcdMod.Client.Gui.ControlsTemplates.Panels.Virtualized
@@ -13,8 +14,26 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels.Virtualized
         bool _forceSingleColumn;
         float _horizontalGap;
         float _verticalGap;
+        IList<T> _itemsSource;
+        IObservableList<T> _observableItemsSource;
 
-        public IList<T> ItemsSource { get; set; }
+        public IList<T> ItemsSource
+        {
+            get { return _itemsSource; }
+            set
+            {
+                if (ReferenceEquals(_itemsSource, value))
+                    return;
+
+                UnbindObservableItemsSource();
+                _itemsSource = value;
+                _observableItemsSource = value as IObservableList<T>;
+                BindObservableItemsSource();
+                if (_itemsSource == null)
+                    UnbindPool();
+                InvalidateLayout();
+            }
+        }
         public CreateVirtualizedControlHandler<T> CreateControl { get; set; }
         public BindVirtualizedControlHandler<T> BindControl { get; set; }
 
@@ -160,6 +179,49 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels.Virtualized
             return ItemsSource?.Count ?? 0;
         }
 
+        void BindObservableItemsSource()
+        {
+            if (_observableItemsSource == null)
+                return;
+
+            _observableItemsSource.ItemAdded += OnItemAdded;
+            _observableItemsSource.ItemRemoved += OnItemRemoved;
+            _observableItemsSource.ItemChanged += OnItemChanged;
+        }
+
+        void UnbindObservableItemsSource()
+        {
+            if (_observableItemsSource == null)
+                return;
+
+            _observableItemsSource.ItemAdded -= OnItemAdded;
+            _observableItemsSource.ItemRemoved -= OnItemRemoved;
+            _observableItemsSource.ItemChanged -= OnItemChanged;
+            _observableItemsSource = null;
+        }
+
+        void OnItemAdded(IObservableCollection<T> sender, T item)
+        {
+            InvalidateLayout();
+        }
+
+        void OnItemRemoved(IObservableCollection<T> sender, T item)
+        {
+            for (int i = 0; i < _pool.Count; i++)
+            {
+                var control = _pool[i] as ControlTemplate;
+                if (control != null && Equals(control.DataContext, item))
+                    control.SetDataContext(null);
+            }
+
+            InvalidateLayout();
+        }
+
+        void OnItemChanged(IObservableCollection<T> sender, T item)
+        {
+            MarkDirty();
+        }
+
         ControlTemplate GetPooledControl(int poolIndex, T item)
         {
             while (_pool.Count <= poolIndex)
@@ -187,6 +249,16 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Panels.Virtualized
             {
                 if (_pool[i] != null)
                     _pool[i].SetVisible(false);
+            }
+        }
+
+        void UnbindPool()
+        {
+            for (int i = 0; i < _pool.Count; i++)
+            {
+                var control = _pool[i] as ControlTemplate;
+                if (control != null)
+                    control.SetDataContext(null);
             }
         }
     }

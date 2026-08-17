@@ -29,7 +29,7 @@ namespace LcdMod.Client.Modules.Defense.Providers.NerdsShield
 
         public bool TryUpdateShieldInfo(
             IReadOnlyList<IMyCubeGrid> grids,
-            IReadOnlyList<IMyTerminalBlock> terminalBlocks,
+            IEnumerable<IMyTerminalBlock> terminalBlocks,
             long gameplayFrame,
             bool refreshCachedData,
             ShieldInfo info)

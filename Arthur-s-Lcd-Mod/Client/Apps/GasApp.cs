@@ -37,6 +37,11 @@ namespace LcdMod.Client.Apps
         readonly Dictionary<string, string> _gasDisplayNameCache =
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         readonly List<Entry> _entries = new List<Entry>();
+        readonly LinkedTypedBlockSourceSet<IMyGasTank> _tanks =
+            new LinkedTypedBlockSourceSet<IMyGasTank>(delegate(TypedBlockCollection blocks)
+            {
+                return blocks.GasTanks;
+            });
         readonly List<RectangleControl> _entryControls = new List<RectangleControl>();
         readonly ScrollPanel _scrollPanel;
         readonly VisualStackPanel _listPanel;
@@ -83,6 +88,12 @@ namespace LcdMod.Client.Apps
 
             ClearDirtyAfterRender();
             return sprites;
+        }
+
+        public override void Close()
+        {
+            _tanks.Dispose();
+            base.Close();
         }
 
         void DrawList(List<MySprite> sprites)
@@ -475,53 +486,55 @@ namespace LcdMod.Client.Apps
             if (gridLogic == null)
                 return;
 
-            var tanks = gridLogic.GetTerminalBlocks<IMyGasTank>((GridLinkTypeEnum)BlockSelectionComponent.GridLinkTypeInternal);
-            if (tanks == null)
-                return;
-
-            for (var i = 0; i < tanks.Count; i++)
+            _tanks.Bind(gridLogic, (GridLinkTypeEnum)BlockSelectionComponent.GridLinkTypeInternal);
+            var sources = _tanks.Sources;
+            for (var sourceIndex = 0; sourceIndex < sources.Count; sourceIndex++)
             {
-                var tank = tanks[i];
-                if (tank == null)
-                    continue;
-
-                var terminal = (IMyTerminalBlock)tank;
-
-                if (!string.IsNullOrEmpty(token))
+                var tanks = sources[sourceIndex];
+                for (var i = 0; i < tanks.Count; i++)
                 {
-                    var customName = terminal.CustomName ?? string.Empty;
-                    if (customName.IndexOf(token, StringComparison.OrdinalIgnoreCase) < 0)
+                    var tank = tanks[i];
+                    if (tank == null)
                         continue;
+
+                    var terminal = (IMyTerminalBlock)tank;
+
+                    if (!string.IsNullOrEmpty(token))
+                    {
+                        var customName = terminal.CustomName ?? string.Empty;
+                        if (customName.IndexOf(token, StringComparison.OrdinalIgnoreCase) < 0)
+                            continue;
+                    }
+
+                    float ratio;
+                    try
+                    {
+                        ratio = (float)tank.FilledRatio;
+                    }
+                    catch (Exception e)
+                    {
+                        ErrorHandlerHelper.LogError(e, logType);
+                        continue;
+                    }
+
+                    var tankName = terminal.CustomName;
+                    if (string.IsNullOrEmpty(tankName))
+                        tankName = terminal.DisplayNameText;
+                    if (string.IsNullOrEmpty(tankName))
+                        tankName = terminal.BlockDefinition.SubtypeName;
+                    if (string.IsNullOrEmpty(tankName))
+                        tankName = "Gas Tank";
+
+                    var gasSubtype = GetStoredGasSubtype(terminal, logType);
+                    var gasName = GetGasDisplayNameCached(gasSubtype, logType);
+                    var displayName = string.IsNullOrEmpty(gasName) ? tankName : gasName + " - " + tankName;
+
+                    entries.Add(new Entry
+                    {
+                        Name = displayName,
+                        Percentage = ratio
+                    });
                 }
-
-                float ratio;
-                try
-                {
-                    ratio = (float)tank.FilledRatio;
-                }
-                catch (Exception e)
-                {
-                    ErrorHandlerHelper.LogError(e, logType);
-                    continue;
-                }
-
-                var tankName = terminal.CustomName;
-                if (string.IsNullOrEmpty(tankName))
-                    tankName = terminal.DisplayNameText;
-                if (string.IsNullOrEmpty(tankName))
-                    tankName = terminal.BlockDefinition.SubtypeName;
-                if (string.IsNullOrEmpty(tankName))
-                    tankName = "Gas Tank";
-
-                var gasSubtype = GetStoredGasSubtype(terminal, logType);
-                var gasName = GetGasDisplayNameCached(gasSubtype, logType);
-                var displayName = string.IsNullOrEmpty(gasName) ? tankName : gasName + " - " + tankName;
-
-                entries.Add(new Entry
-                {
-                    Name = displayName,
-                    Percentage = ratio
-                });
             }
         }
 

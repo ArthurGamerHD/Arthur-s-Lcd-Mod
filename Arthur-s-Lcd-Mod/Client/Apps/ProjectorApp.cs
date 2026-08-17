@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.Apps.ViewModel;
+using LcdMod.Client.Config;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.GridData;
 using LcdMod.Client.Gui;
@@ -16,15 +18,11 @@ using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Common.Helpers;
-using Sandbox.Definitions;
 using Sandbox.ModAPI;
 using VRage;
-using VRage.Game;
 using VRage.Game.GUI.TextPanel;
-using VRage.Game.ModAPI;
 using VRage.Utils;
 using VRageMath;
-using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
 using static LcdMod.Common.Helpers.Constants;
 
 using LcdMod.Common.Config.Generation;
@@ -32,38 +30,17 @@ namespace LcdMod.Client.Apps
 {
     [LcdApp(17)]
     [ConfigComponent(PROJECTOR_REFERENCE, typeof(BlockReferenceConfigComponent), PropertyName = "ProjectorReferenceComponent")]
+    [ConfigComponent(ITEM_DISPLAY, typeof(ItemDisplayConfigComponent), PropertyName = "ItemDisplayComponent")]
     internal sealed partial class ProjectorApp : ItemsApp
     {
         public const string TITLE = "DisplayName_Block_Projector";
 
-        public string[] AllowedTypes = { "Component" };
-
         protected override string DefaultTitle => _customTitle ?? TITLE;
-        protected override bool AlwaysRefreshItems => true;
+        protected override ItemDisplayMode PresentationMode =>
+            ItemDisplayComponent.ResolveDisplayMode(GeneralComponent);
 
         string _customTitle;
-
-        IMyProjector _projector;
-        readonly List<IMyCubeGrid> _projectorGrids = new List<IMyCubeGrid>();
-        readonly List<IMySlimBlock> _projectorBlocks = new List<IMySlimBlock>();
-
-        public override Dictionary<MyItemType, double> ItemSource => _missing;
-
-        // Active view (components or ore-bars/ingots, depending on _showIngots).
-        readonly Dictionary<MyItemType, double> _missing = new Dictionary<MyItemType, double>();
-        readonly Dictionary<MyItemType, double> _needed = new Dictionary<MyItemType, double>();
-
-        // Always tracked as components, independent of the active view (used by "Craft all").
-        readonly Dictionary<MyItemType, double> _componentNeeded = new Dictionary<MyItemType, double>();
-        readonly Dictionary<MyItemType, double> _componentMissing = new Dictionary<MyItemType, double>();
-        readonly Dictionary<MyItemType, double> _ingotNeeded = new Dictionary<MyItemType, double>();
-
-        int _totalBlocks = 1;
-        int _remainingBlocks;
-
-        int _totalComponents;
-        int _missingComponents;
-        int _componentMissingTotal;
+        readonly ProjectorViewModel _projectorViewModel;
         bool _showIngots;
 
         string _required = "Req";
@@ -77,15 +54,38 @@ namespace LcdMod.Client.Apps
 
         const float PIE_RADIUS = 40;
         const string CRAFT_ALL_TEXT = "Craft all";
-        const string INGOT_TYPE_ID = "MyObjectBuilder_Ingot";
         const string LOC_INGOTS_LABEL = MOD_PREFIX + "Projector_Ingots";
         const string LOC_COMPONENTS_LABEL = "DisplayName_InventoryConstraint_Components";
 
         public bool IsLoading { get; private set; }
 
-        public ProjectorApp(IAppHost host) : base(host)
+        public ProjectorApp(IAppHost host) : base(host, CreateViewModel)
         {
+            _projectorViewModel = (ProjectorViewModel)ViewModel;
+
+            if (!ItemDisplayComponent.MigrateLegacyDisplayMode(GeneralComponent))
+                return;
+
+            var block = Host.Block as IMyTerminalBlock;
+            var provider = Host.ProviderConfig;
+            if (block == null || provider == null || !provider.CanWrite)
+                return;
+
+            LcdModClientComponent.RunNextFrame.Add(delegate
+            {
+                ConfigManager.Sync(block, provider);
+            });
         }
+
+        static IItemsAppViewModel CreateViewModel(
+            GridLogic gridLogic,
+            ItemSelectionConfigComponent selection,
+            BlockSelectionConfigComponent blockSelection)
+        {
+            return new ProjectorViewModel(gridLogic, selection, blockSelection);
+        }
+
+        IMyProjector Projector => _projectorViewModel.Projector;
 
         struct ProjectorFooterLayout
         {
@@ -103,7 +103,7 @@ namespace LcdMod.Client.Apps
         {
             base.LayoutChanged();
             _projectorDataInitialized = false;
-            _customTitle = _projector?.CustomName;
+            _customTitle = Projector?.CustomName;
 
             var raA = MyTexts.Get(MyStringId.GetOrCompute("ScreenTerminalProduction_RequiredAndAvailable")).ToString()
                 .Split('/');
@@ -119,18 +119,18 @@ namespace LcdMod.Client.Apps
 
         protected override void DrawFooter(List<MySprite> frame)
         {
-            if (_projector?.CustomName != _customTitle)
+            if (Projector?.CustomName != _customTitle)
                 LayoutChanged();
 
-            if (_projector == null)
+            if (Projector == null)
                 return;
 
             // Guard on the component requirement (always tracked) so the footer — and its toggle
             // button — stays visible even when the active ore-bar view computes to zero.
-            if (_totalBlocks == 0 || _componentNeeded.Count == 0)
+            if (_projectorViewModel.TotalBlocks == 0 || _projectorViewModel.ComponentMissing.Count == 0)
                 return;
 
-            int built = Math.Max(_totalBlocks - _remainingBlocks, 0);
+            int built = Math.Max(_projectorViewModel.TotalBlocks - _projectorViewModel.RemainingBlocks, 0);
             float textScale = Scale * 0.9f * FontScale;
             var lineSpacer = GetFooterLineSpacer();
             var legendSize = GetFooterLegendSize();
@@ -160,10 +160,13 @@ namespace LcdMod.Client.Apps
 
             pos.X += legendSize.X + legendTextSpacing + pieToTextGap;
 
-            var blocksPct = built / (float)_totalBlocks;
-            var componentsPct = _totalComponents > 0 ? 1 - (float)_missingComponents / _totalComponents : 1f;
+            var blocksPct = built / (float)_projectorViewModel.TotalBlocks;
+            var componentsPct = _projectorViewModel.TotalMaterials > 0
+                ? 1 - (float)_projectorViewModel.MissingMaterials / _projectorViewModel.TotalMaterials
+                : 1f;
 
-            StringBuilder sb = new StringBuilder($"{blocksString}{blocksPct:P2}  ({built}/{_totalBlocks} )");
+            StringBuilder sb = new StringBuilder(
+                $"{blocksString}{blocksPct:P2}  ({built}/{_projectorViewModel.TotalBlocks} )");
 
             TrimText(ref sb, layout.TextRight - pos.X, 0.9f);
 
@@ -184,8 +187,8 @@ namespace LcdMod.Client.Apps
 
             sb.Clear();
             sb.Append(
-                $"{components}: {componentsPct:P2}  ({FormatingHelper.FormatItemQty(_totalComponents - _missingComponents)}" +
-                $"/{FormatingHelper.FormatItemQty(_totalComponents)})");
+                $"{components}: {componentsPct:P2}  ({FormatingHelper.FormatItemQty(_projectorViewModel.TotalMaterials - _projectorViewModel.MissingMaterials)}" +
+                $"/{FormatingHelper.FormatItemQty(_projectorViewModel.TotalMaterials)})");
 
 
             TrimText(ref sb, layout.TextRight - pos.X, 0.9f);
@@ -240,7 +243,7 @@ namespace LcdMod.Client.Apps
                 false);
 
             DrawToggleViewButton(frame, layout);
-            DrawCraftAllButton(frame, layout, _componentMissingTotal > 0);
+            DrawCraftAllButton(frame, layout, _projectorViewModel.MissingComponents > 0);
         }
 
         string GetMaterialLabel()
@@ -256,9 +259,15 @@ namespace LcdMod.Client.Apps
         public override void Update()
         {
             IsLoading = false;
-            EnsureData();
+            base.Update();
+            var changed = _projectorViewModel.UpdateProjector(
+                Block?.CubeGrid,
+                ProjectorReferenceComponent.EntityId,
+                _showIngots);
+            if (Projector?.CustomName != _customTitle)
+                LayoutChanged();
 
-            if (!_projectorDataInitialized && ProjectorReferenceComponent.EntityId != 0 && _projector == null)
+            if (!_projectorDataInitialized && ProjectorReferenceComponent.EntityId != 0 && Projector == null)
             {
                 _projectorDataInitialized = true;
                 IsLoading = true;
@@ -266,110 +275,8 @@ namespace LcdMod.Client.Apps
             }
 
             _projectorDataInitialized = true;
-            base.Update();
-        }
-
-        protected override List<KeyValuePair<MyItemType, double>> ReadItems(
-            IMyTerminalBlock lcd,
-            ItemSnapshot snapshot)
-        {
-            if (lcd == null || snapshot == null)
-                return new List<KeyValuePair<MyItemType, double>>();
-
-            var list = snapshot.Items.ToList();
-            switch (SortMethod)
-            {
-                case SortMethod.Type:
-                    list.Sort((a, b) =>
-                    {
-                        var typeCmp = string.Compare(a.Key.TypeId, b.Key.TypeId, StringComparison.CurrentCulture);
-                        if (typeCmp != 0)
-                            return typeCmp;
-                        return string.Compare(a.Key.SubtypeId, b.Key.SubtypeId, StringComparison.CurrentCulture);
-                    });
-                    break;
-                default:
-                    list.Sort((a, b) => b.Value.CompareTo(a.Value));
-                    break;
-            }
-
-            return list;
-        }
-
-        protected override ItemViewModel GetOrCreateItemViewModel(KeyValuePair<MyItemType, double> item)
-        {
-            var viewModel = base.GetOrCreateItemViewModel(item);
-            var shortageColor = GetShortageColor(item.Key, item.Value);
-            var rowColor = shortageColor ?? Surface.ScriptForegroundColor;
-            var useAlertText = shortageColor.HasValue && GeneralComponent.DrawLines;
-            var panelColor = GetHeaderColor();
-            var panelTextColor = Surface.ScriptForegroundColor;
-            var neededText = FormatingHelper.FormatItemQty(GetNeededQty(item.Key));
-            var availableText = FormatingHelper.FormatItemQty(GetAvailableQty(item.Key, item.Value));
-
-            viewModel.SetQuotaAmount(availableText, neededText);
-            viewModel.ListTextColor = rowColor;
-            viewModel.ListAmountColor = rowColor;
-            viewModel.ListIconColor = Color.White;
-            viewModel.IconBackgroundColor = shortageColor.HasValue && shortageColor.Value.Equals(ColorComponent.ResolveErrorColor())
-                ? ColorComponent.ResolveErrorColor()
-                : Color.White;
-            viewModel.GridTextColor = useAlertText ? shortageColor.Value : panelTextColor;
-            viewModel.GridAmountColor = viewModel.GridTextColor;
-            viewModel.GridIconColor = Color.White;
-            viewModel.PanelColor = shortageColor ?? panelColor;
-            return viewModel;
-        }
-
-        protected override double GetDefaultCraftAmount(ItemViewModel item)
-        {
-            return item == null ? 1d : Math.Max(1d, Math.Ceiling(item.Amount));
-        }
-
-        protected override void DrawCellBackground(List<MySprite> frame, ItemViewModel item,
-            float xStart, float xEnd, float yStart, float cellHeight, float cellPadding)
-        {
-            var rl = xStart + cellPadding / 2;
-            var rr = xEnd - cellPadding / 2;
-            var rt = yStart + cellPadding / 2;
-            var rb = yStart + cellHeight - cellPadding / 2;
-
-            var backgroundColor = item.PanelColor;
-            var a = backgroundColor.ColorToHSV();
-            a.Z *= 0.2f;
-            var cellRect = new RectangleF(rl, rt, rr - rl, rb - rt);
-            var dropShadow = new RectangleF(cellRect.Position + 2, cellRect.Size);
-            BorderRenderer.CreateSpritesFromRect(dropShadow, frame, a.HSVtoColor(), radiusScale: Scale);
-            BorderRenderer.CreateSpritesFromRect(cellRect, frame, backgroundColor, radiusScale: Scale);
-        }
-
-        double GetNeededQty(MyItemType itemType)
-        {
-            double needed;
-            return _needed.TryGetValue(itemType, out needed) ? needed : 0d;
-        }
-
-        double GetAvailableQty(MyItemType itemType, double missingQty)
-        {
-            var needed = GetNeededQty(itemType);
-            var have = needed - missingQty;
-            return have < 0 ? 0 : have;
-        }
-
-        Color? GetShortageColor(MyItemType itemType, double missingQty)
-        {
-            var needed = GetNeededQty(itemType);
-            if (needed <= 0)
-                return null;
-
-            var available = GetAvailableQty(itemType, missingQty);
-            if (available <= 0)
-                return ColorComponent.ResolveErrorColor();
-
-            if (available < needed)
-                return ColorComponent.ResolveWarningColor();
-
-            return null;
+            if (changed)
+                InvalidateContentAndFooterSprites();
         }
 
         ProjectorFooterLayout CreateFooterLayout()
@@ -634,7 +541,7 @@ namespace LcdMod.Client.Apps
 
         void OnCraftAllClicked(ButtonModel model, object sender)
         {
-            if (_componentMissingTotal <= 0)
+            if (_projectorViewModel.MissingComponents <= 0)
                 return;
 
             var interactiveHost = Host as InteractiveSurfaceScript;
@@ -657,7 +564,7 @@ namespace LcdMod.Client.Apps
             // "Craft all" always operates on the missing components, regardless of the active view.
             var requests = new List<CraftDialog.CraftRequest>();
 
-            foreach (var item in _componentMissing)
+            foreach (var item in _projectorViewModel.ComponentMissing)
             {
                 if (item.Value <= 0d)
                     continue;
@@ -672,289 +579,5 @@ namespace LcdMod.Client.Apps
             return requests;
         }
 
-        void EnsureData()
-        {
-            _missing.Clear();
-            _needed.Clear();
-            _componentNeeded.Clear();
-            _componentMissing.Clear();
-            _ingotNeeded.Clear();
-            _totalBlocks = 1;
-            _remainingBlocks = 0;
-            _totalComponents = 0;
-            _missingComponents = 0;
-            _componentMissingTotal = 0;
-
-            var lcd = Block as IMyTerminalBlock;
-
-            IMyCubeGrid grid = Block?.CubeGrid;
-
-            if (grid == null)
-                return;
-
-            FindProjector(grid, ref _projector);
-
-            if (_projector == null)
-                return;
-
-            try
-            {
-                _totalBlocks = Math.Max(_projector.TotalBlocks, 1);
-                _remainingBlocks = Math.Max(_projector.RemainingBlocks, 0);
-            }
-            catch
-            {
-                _totalBlocks = 1;
-                _remainingBlocks = 0;
-            }
-
-            try
-            {
-                foreach (var block in _projector.RemainingBlocksPerType)
-                {
-                    var def = block.Key as MyCubeBlockDefinition;
-                    if (def == null)
-                        continue;
-
-                    AccumulateComponents(def, block.Value);
-                }
-
-                // RemainingBlocksPerType comes back empty in several valid projector states (the
-                // projection isn't currently weldable, the projector just loaded the blueprint, etc.).
-                // Fall back to the projected hologram grid: its blocks ARE the ones still to build, so the
-                // requirements never render blank while a projection is up.
-                if (_componentNeeded.Count == 0 && _projector.ProjectedGrid != null)
-                {
-                    _projectorBlocks.Clear();
-                    _projector.ProjectedGrid.GetBlocks(_projectorBlocks);
-                    for (int i = 0; i < _projectorBlocks.Count; i++)
-                    {
-                        var def = _projectorBlocks[i].BlockDefinition as MyCubeBlockDefinition;
-                        if (def == null)
-                            continue;
-
-                        AccumulateComponents(def, 1);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                ErrorHandlerHelper.LogError(e, GetType());
-            }
-
-            // Component shortage is always tracked so "Craft all" works in either view.
-            var availableComponents = GetAvailableComponents(lcd);
-            long componentMissing = 0;
-            foreach (var needed in _componentNeeded)
-            {
-                double available;
-                availableComponents.TryGetValue(needed.Key, out available);
-
-                double missing = needed.Value - available;
-                if (missing < 0) missing = 0;
-
-                _componentMissing[needed.Key] = missing;
-                componentMissing += (long)Math.Round(missing);
-            }
-
-            _componentMissingTotal = (int)Math.Max(0, componentMissing);
-
-            if (_showIngots)
-            {
-                BuildIngotNeeded(_componentNeeded, _ingotNeeded);
-                PopulateActiveView(_ingotNeeded, GetAvailableIngots(lcd));
-            }
-            else
-            {
-                PopulateActiveView(_componentNeeded, availableComponents);
-            }
-        }
-
-        void AccumulateComponents(MyCubeBlockDefinition def, int blockCount)
-        {
-            if (def.Components == null)
-                return;
-
-            foreach (var perType in def.Components)
-            {
-                double qty;
-                _componentNeeded.TryGetValue(perType.Definition.Id, out qty);
-                _componentNeeded[perType.Definition.Id] = qty + perType.Count * blockCount;
-            }
-        }
-
-        void PopulateActiveView(Dictionary<MyItemType, double> neededByType, Dictionary<MyItemType, double> availableByType)
-        {
-            long totalNeeded = 0;
-            long totalMissing = 0;
-
-            foreach (var needed in neededByType)
-            {
-                double available;
-                availableByType.TryGetValue(needed.Key, out available);
-
-                double missing = needed.Value - available;
-                if (missing < 0) missing = 0;
-
-                _needed[needed.Key] = needed.Value;
-                _missing[needed.Key] = missing;
-
-                totalNeeded += (long)Math.Round(needed.Value);
-                totalMissing += (long)Math.Round(missing);
-            }
-
-            _totalComponents = (int)Math.Max(0, totalNeeded);
-            _missingComponents = (int)Math.Max(0, totalMissing);
-        }
-
-        // Estimates the ore-bars (ingots) consumed by the still-needed components, expanding each
-        // component through its blueprint (primary, or any producer as a fallback - see GridLogic). A
-        // component that no blueprint produces as a primary result is skipped, so the total is a
-        // lower-bound estimate. Only "MyObjectBuilder_Ingot" prerequisites are counted (gravel is the
-        // Stone ingot, so reactor components now contribute it correctly).
-        void BuildIngotNeeded(Dictionary<MyItemType, double> componentNeeded, Dictionary<MyItemType, double> ingotNeeded)
-        {
-            ingotNeeded.Clear();
-            if (componentNeeded.Count == 0)
-                return;
-
-            try
-            {
-                GridLogic.EnsureBlueprintResultDatabase();
-
-                foreach (var component in componentNeeded)
-                {
-                    if (component.Value <= 0d)
-                        continue;
-
-                    MyDefinitionId componentId = component.Key;
-                    MyBlueprintDefinitionBase blueprint;
-                    if (!GridLogic.PrimaryBlueprintByCreatedItem.TryGetValue(componentId, out blueprint) ||
-                        blueprint == null)
-                        continue;
-
-                    double resultAmount = GetBlueprintResultAmount(blueprint, componentId);
-                    if (resultAmount <= 0d)
-                        resultAmount = 1d;
-
-                    double cycles = component.Value / resultAmount;
-
-                    var prerequisites = blueprint.Prerequisites;
-                    if (prerequisites == null)
-                        continue;
-
-                    for (int i = 0; i < prerequisites.Length; i++)
-                    {
-                        MyItemType ingotType = prerequisites[i].Id;
-                        if (ingotType.TypeId != INGOT_TYPE_ID)
-                            continue;
-
-                        double amount = (double)prerequisites[i].Amount * cycles;
-                        double current;
-                        ingotNeeded.TryGetValue(ingotType, out current);
-                        ingotNeeded[ingotType] = current + amount;
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                ErrorHandlerHelper.LogError(e, GetType());
-            }
-        }
-
-        static double GetBlueprintResultAmount(MyBlueprintDefinitionBase blueprint, MyDefinitionId itemId)
-        {
-            var results = blueprint.Results;
-            if (results == null)
-                return 1d;
-
-            for (int i = 0; i < results.Length; i++)
-                if (results[i].Id.Equals(itemId))
-                    return (double)results[i].Amount;
-
-            return 1d;
-        }
-
-        Dictionary<MyItemType, double> GetAvailableIngots(IMyTerminalBlock referenceBlock)
-        {
-            try
-            {
-                var hasFilter = BlockSelectionComponent.SelectedBlocks.Length > 0 || BlockSelectionComponent.SelectedGroups.Length > 0;
-                return hasFilter ? GridLogic.GetIngots(BlockSelectionComponent, ItemSelectionComponent, referenceBlock) : GridLogic.Ingots;
-            }
-            catch (Exception e)
-            {
-                ErrorHandlerHelper.LogError(e, GetType());
-            }
-
-            return new Dictionary<MyItemType, double>();
-        }
-
-        Dictionary<MyItemType, double> GetAvailableComponents(IMyTerminalBlock referenceBlock)
-        {
-            try
-            {
-                var hasFilter = BlockSelectionComponent.SelectedBlocks.Length > 0 || BlockSelectionComponent.SelectedGroups.Length > 0;
-                return hasFilter ? GridLogic.GetItems(BlockSelectionComponent, ItemSelectionComponent, referenceBlock, AllowedTypes) : GridLogic.Components;
-            }
-            catch (Exception e)
-            {
-                ErrorHandlerHelper.LogError(e, GetType());
-            }
-
-            return new Dictionary<MyItemType, double>();
-        }
-
-        void FindProjector(IMyCubeGrid grid, ref IMyProjector projector)
-        {
-            if (ProjectorReferenceComponent.EntityId == 0)
-            {
-                projector = ResolveSingleLoadedProjector(grid);
-                return;
-            }
-
-            if (projector != null && projector.EntityId == ProjectorReferenceComponent.EntityId)
-                return;
-
-            var entity = MyAPIGateway.Entities.GetEntityById(ProjectorReferenceComponent.EntityId) as IMyProjector;
-            projector = entity?.CubeGrid.IsInSameLogicalGroupAs(grid) ?? false ? entity : null;
-        }
-
-        IMyProjector ResolveSingleLoadedProjector(IMyCubeGrid rootGrid)
-        {
-            if (rootGrid == null)
-                return null;
-
-            IMyProjector found = null;
-            _projectorGrids.Clear();
-
-            MyAPIGateway.GridGroups.GetGroup(rootGrid, GridLinkTypeEnum.Logical, _projectorGrids);
-            if (_projectorGrids.Count == 0 || !_projectorGrids.Contains(rootGrid))
-                _projectorGrids.Add(rootGrid);
-
-            for (int i = 0; i < _projectorGrids.Count; i++)
-            {
-                var grid = _projectorGrids[i];
-                if (grid == null)
-                    continue;
-
-                _projectorBlocks.Clear();
-                grid.GetBlocks(_projectorBlocks);
-
-                for (int j = 0; j < _projectorBlocks.Count; j++)
-                {
-                    var candidate = _projectorBlocks[j].FatBlock as IMyProjector;
-                    if (candidate == null || candidate.Closed || candidate.ProjectedGrid == null)
-                        continue;
-
-                    if (found != null)
-                        return null;
-
-                    found = candidate;
-                }
-            }
-
-            return found;
-        }
     }
 }

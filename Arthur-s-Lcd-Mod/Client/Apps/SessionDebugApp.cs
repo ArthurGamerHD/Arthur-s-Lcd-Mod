@@ -141,7 +141,7 @@ namespace LcdMod.Client.Apps
                 new DebugLine("Avg Next Batch: " + Fixed4(snapshot.AverageNextBatchSize), Color.White),
                 new DebugLine(string.Empty, Color.White),
                 new DebugLine("Per Grid:", Color.White),
-                new DebugLine("Name ite prc bat nxt", Color.White)
+                new DebugLine("Name blk itm", Color.White)
             };
 
             var components = LcdModSessionComponent.Components;
@@ -153,7 +153,7 @@ namespace LcdMod.Client.Apps
 
             foreach (var pair in components
                          .Where(p => p.Value != null && p.Value.Grid != null)
-                         .OrderByDescending(p => p.Value.LastRefreshIterations)
+                         .OrderByDescending(p => p.Value.TrackedBlockCount)
                          .ThenBy(p => p.Key))
             {
                 var logic = pair.Value;
@@ -163,11 +163,9 @@ namespace LcdMod.Client.Apps
                 var gridName = ClampToWidth(logic.Grid != null ? logic.Grid.CustomName ?? string.Empty : string.Empty, 22);
                 lines.Add(new DebugLine(
                     gridName + " " +
-                    Fixed4(logic.LastRefreshIterations) + " " +
-                    Fixed4(logic.LastRefreshProcessed) + " " +
-                    Fixed4(logic.CurrentRefreshBatchSize) + " " +
-                    Fixed4(logic.EstimatedNextRefreshBatchSize),
-                    logic.IsSleeping ? SleepingColor : (logic.IsRefreshRunning ? RunningColor : IdleColor)));
+                    Fixed4(logic.TrackedBlockCount) + " " +
+                    Fixed4(logic.TrackedItemCount),
+                    IdleColor));
             }
 
             lines.Add(new DebugLine(string.Empty, Color.White));

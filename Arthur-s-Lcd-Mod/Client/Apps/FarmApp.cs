@@ -192,6 +192,7 @@ namespace LcdMod.Client.Apps
 
         public FarmApp(IAppHost surfaceHost) : base(surfaceHost)
         {
+            NeedGridData(GridCapability.Blocks);
             _surfaceHost = surfaceHost;
             _interactiveHost = surfaceHost as InteractiveSurfaceScript;
             if (_interactiveHost == null)
@@ -251,7 +252,7 @@ namespace LcdMod.Client.Apps
                 return;
             }
 
-            var farmPlots = gridLogic.GetFarmPlots();
+            var farmPlots = gridLogic.FarmPlots;
             for (int i = 0; i < farmPlots.Count; i++)
             {
                 var plot = farmPlots[i];

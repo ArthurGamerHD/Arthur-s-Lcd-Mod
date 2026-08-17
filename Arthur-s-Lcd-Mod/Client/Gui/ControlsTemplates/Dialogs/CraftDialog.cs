@@ -11,6 +11,7 @@ using LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
 using LcdMod.Common.Helpers;
+using LcdMod.Common.Mvvm;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
 using VRage.Game;
@@ -26,6 +27,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
     sealed class CraftDialog : Dialog
     {
         readonly GridLogic _gridLogic;
+        readonly List<IMyCubeGrid> _linkedGrids = new List<IMyCubeGrid>();
+        readonly HashSet<IObservableList<IMyAssembler>> _assemblerSources =
+            new HashSet<IObservableList<IMyAssembler>>();
+        readonly HashSet<GridLogic> _assemblerLogics = new HashSet<GridLogic>();
         readonly Action<Dialog> _showDialog;
         readonly List<CraftRequest> _requests = new List<CraftRequest>();
         readonly List<CraftAssemblerOption> _assemblerOptions = new List<CraftAssemblerOption>();
@@ -90,8 +95,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             _useRequestGrid = useRequestGrid;
             AddRequests(requests);
 
-            BuildAssemblerOptions();
-            SelectDefaultAssemblers();
+            BindAssemblerSources(false);
             if (!_useRequestGrid && _requests.Count > 0)
             {
                 var request = _requests[0];
@@ -106,6 +110,15 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                     Subtitle = request.Name
                 };
             }
+        }
+
+        protected override void OnDismiss()
+        {
+            if (_gridLogic != null)
+                _gridLogic.LinkChanged -= OnGridLinkChanged;
+
+            UnbindAssemblerSources();
+            base.OnDismiss();
         }
 
         static List<CraftRequest> CreateSingleRequest(MyItemType itemType, string itemName, string itemIcon,
@@ -678,45 +691,156 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             return selected;
         }
 
-        void BuildAssemblerOptions()
+        void BindAssemblerSources(bool preserveSelection)
         {
-            _assemblerOptions.Clear();
-
-            var assemblers = _gridLogic?.GetTerminalBlocks<IMyAssembler>(GridLinkTypeEnum.Physical);
-            if (assemblers == null || assemblers.Count == 0)
-                return;
-
-            for (var i = 0; i < assemblers.Count; i++)
+            UnbindAssemblerSources();
+            if (_gridLogic == null)
             {
-                var assembler = assemblers[i];
-                if (assembler == null)
+                RebuildAssemblerOptions(preserveSelection);
+                return;
+            }
+
+            _gridLogic.WatchLinkType(GridLinkTypeEnum.Physical);
+            _gridLogic.LinkChanged -= OnGridLinkChanged;
+            _gridLogic.LinkChanged += OnGridLinkChanged;
+            _gridLogic.GetLinkedGrids(GridLinkTypeEnum.Physical, _linkedGrids);
+            if (_linkedGrids.Count == 0 && _gridLogic.Grid != null)
+                _linkedGrids.Add(_gridLogic.Grid);
+
+            var seenGrids = new HashSet<long>();
+            for (var i = 0; i < _linkedGrids.Count; i++)
+            {
+                var grid = _linkedGrids[i];
+                if (grid == null || grid.Closed || grid.MarkedForClose || !seenGrids.Add(grid.EntityId))
                     continue;
 
-                GridLogic.EnsureAssemblerBlueprintDatabase(assembler);
-                var option = CreateAssemblerOption(assembler);
-                if (option != null)
-                    _assemblerOptions.Add(option);
+                var logic = LcdModSessionComponent.GetOrCreateGridLogic(grid);
+                if (logic == null)
+                    continue;
+
+                logic.RequestCapability(GridCapability.Blocks);
+                var retained = false;
+                try
+                {
+                    var source = logic.Blocks.Assemblers;
+                    if (source == null || !_assemblerSources.Add(source))
+                        continue;
+
+                    retained = _assemblerLogics.Add(logic);
+                    source.ItemAdded += OnAssemblerAdded;
+                    source.ItemRemoved += OnAssemblerRemoved;
+                }
+                finally
+                {
+                    if (!retained)
+                        logic.Release(GridCapability.Blocks);
+                }
+            }
+
+            RebuildAssemblerOptions(preserveSelection);
+        }
+
+        void UnbindAssemblerSources()
+        {
+            foreach (var source in _assemblerSources)
+            {
+                source.ItemAdded -= OnAssemblerAdded;
+                source.ItemRemoved -= OnAssemblerRemoved;
+            }
+
+            foreach (var logic in _assemblerLogics)
+                logic.Release(GridCapability.Blocks);
+
+            _assemblerSources.Clear();
+            _assemblerLogics.Clear();
+            _linkedGrids.Clear();
+        }
+
+        void OnGridLinkChanged(object sender, GridLinkChangedArgs args)
+        {
+            if (args == null || args.LinkType != GridLinkTypeEnum.Physical)
+                return;
+
+            BindAssemblerSources(true);
+            RequestRender();
+        }
+
+        void OnAssemblerAdded(IObservableCollection<IMyAssembler> sender, IMyAssembler assembler)
+        {
+            RebuildAssemblerOptions(true);
+            RequestRender();
+        }
+
+        void OnAssemblerRemoved(IObservableCollection<IMyAssembler> sender, IMyAssembler assembler)
+        {
+            RebuildAssemblerOptions(true);
+            RequestRender();
+        }
+
+        void RebuildAssemblerOptions(bool preserveSelection)
+        {
+            var existingOptions = new Dictionary<long, CraftAssemblerOption>();
+            for (var i = 0; i < _assemblerOptions.Count; i++)
+            {
+                var option = _assemblerOptions[i];
+                if (option?.Assembler != null)
+                    existingOptions[option.Assembler.EntityId] = option;
+            }
+
+            var selectedIds = new HashSet<long>();
+            if (preserveSelection)
+            {
+                for (var i = 0; i < _selectedAssemblers.Count; i++)
+                {
+                    var assembler = _selectedAssemblers[i]?.Assembler;
+                    if (assembler != null)
+                        selectedIds.Add(assembler.EntityId);
+                }
+            }
+
+            _assemblerOptions.Clear();
+            var seenAssemblers = new HashSet<long>();
+            foreach (var source in _assemblerSources)
+            {
+                foreach (var assembler in source)
+                {
+                    if (assembler == null || !seenAssemblers.Add(assembler.EntityId))
+                        continue;
+
+                    CraftAssemblerOption existing;
+                    existingOptions.TryGetValue(assembler.EntityId, out existing);
+                    var option = CreateAssemblerOption(assembler, existing);
+                    if (option != null)
+                        _assemblerOptions.Add(option);
+                }
             }
 
             _assemblerOptions.Sort(CompareAssemblerOptions);
+            _selectedAssemblers.Clear();
+            if (preserveSelection && selectedIds.Count > 0)
+            {
+                for (var i = 0; i < _assemblerOptions.Count; i++)
+                {
+                    var option = _assemblerOptions[i];
+                    if (option?.Assembler != null && selectedIds.Contains(option.Assembler.EntityId))
+                        _selectedAssemblers.Add(option);
+                }
+            }
+
+            if (_selectedAssemblers.Count == 0)
+                SelectDefaultAssemblers();
         }
 
-        CraftAssemblerOption CreateAssemblerOption(IMyAssembler assembler)
+        CraftAssemblerOption CreateAssemblerOption(IMyAssembler assembler, CraftAssemblerOption option)
         {
-            var assemblerSubtype = GridLogic.GetAssemblerSubtype(assembler);
-            HashSet<MyDefinitionId> craftableBlueprints;
-            if (string.IsNullOrEmpty(assemblerSubtype) ||
-                !GridLogic.CraftableBlueprintsByAssemblerSubtype.TryGetValue(assemblerSubtype, out craftableBlueprints) ||
-                craftableBlueprints == null)
-                return null;
+            if (option == null)
+                option = new CraftAssemblerOption();
 
-            var option = new CraftAssemblerOption
-            {
-                Assembler = assembler,
-                DisplayName = GetAssemblerName(assembler),
-                Idle = IsAssemblerIdle(assembler),
-                Speed = GetAssemblerSpeed(assembler)
-            };
+            option.Assembler = assembler;
+            option.DisplayName = GetAssemblerName(assembler);
+            option.Idle = IsAssemblerIdle(assembler);
+            option.Speed = GetAssemblerSpeed(assembler);
+            option.BlueprintsByItem.Clear();
 
             for (var i = 0; i < _requests.Count; i++)
             {
@@ -725,7 +849,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                     continue;
 
                 MyBlueprintDefinitionBase blueprint;
-                if (!GridLogic.PrimaryBlueprintByCreatedItem.TryGetValue(request.DefinitionId, out blueprint))
+                if (!AssemblerBlueprintCatalog.TryGetBlueprint(assembler, request.DefinitionId, out blueprint))
                     continue;
                    
 
@@ -805,7 +929,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
                     return terminal.DisplayNameText;
             }
 
-            var subtype = GridLogic.GetAssemblerSubtype(assembler);
+            var subtype = AssemblerBlueprintCatalog.GetAssemblerSubtype(assembler);
             return string.IsNullOrEmpty(subtype) ? Loc(MOD_PREFIX + "CraftDialog_Assembler_FallbackName") : subtype;
         }
 

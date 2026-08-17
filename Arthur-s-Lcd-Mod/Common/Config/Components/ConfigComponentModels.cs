@@ -37,6 +37,7 @@ namespace LcdMod.Common.Config.Components
     [ProtoInclude(121, typeof(TabContainerConfigComponent))]
     [ProtoInclude(122, typeof(MediaPlayerConfigComponent))]
     [ProtoInclude(123, typeof(PlanetaryMapConfigComponent))]
+    [ProtoInclude(124, typeof(ItemDisplayConfigComponent))]
     [XmlInclude(typeof(GeneralConfigComponent))]
     [XmlInclude(typeof(ColorConfigComponent))]
     [XmlInclude(typeof(InteractiveConfigComponent))]
@@ -60,6 +61,7 @@ namespace LcdMod.Common.Config.Components
     [XmlInclude(typeof(TabContainerConfigComponent))]
     [XmlInclude(typeof(MediaPlayerConfigComponent))]
     [XmlInclude(typeof(PlanetaryMapConfigComponent))]
+    [XmlInclude(typeof(ItemDisplayConfigComponent))]
     public abstract class ConfigComponent
     {
         public abstract ConfigComponent Clone();
@@ -532,10 +534,17 @@ namespace LcdMod.Common.Config.Components
     {
         [ProtoMember(1)] public int SortMethod { get; set; }
         [ProtoMember(2)] public bool HideEmpty { get; set; } = true;
+        // -1 preserves the historical defaults: amount descending, item ascending.
+        [ProtoMember(3)] public int SortDirection { get; set; } = -1;
 
         public override ConfigComponent Clone()
         {
-            return new FilterConfigComponent { SortMethod = SortMethod, HideEmpty = HideEmpty };
+            return new FilterConfigComponent
+            {
+                SortMethod = SortMethod,
+                HideEmpty = HideEmpty,
+                SortDirection = SortDirection
+            };
         }
     }
 
@@ -573,6 +582,22 @@ namespace LcdMod.Common.Config.Components
             {
                 SelectedDefinition = ConfigComponentClone.Copy(SelectedDefinition),
                 SelectedCategories = ConfigComponentClone.Copy(SelectedCategories)
+            };
+        }
+    }
+
+    [ProtoContract]
+    public sealed class ItemDisplayConfigComponent : ConfigComponent
+    {
+        // -1 means this component was newly added and still needs to import the
+        // former General.DisplayMode + General.DrawLines combination.
+        [ProtoMember(1)] public int DisplayMode { get; set; } = -1;
+
+        public override ConfigComponent Clone()
+        {
+            return new ItemDisplayConfigComponent
+            {
+                DisplayMode = DisplayMode
             };
         }
     }

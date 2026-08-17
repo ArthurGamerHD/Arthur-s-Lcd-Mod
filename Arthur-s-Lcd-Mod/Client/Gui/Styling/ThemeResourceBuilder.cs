@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using LcdMod.Client.Extensions;
+using LcdMod.Client.Gui.Styling.DataTemplates;
 using LcdMod.Client.Market;
 using LcdMod.Common.Helpers;
 using VRageMath;
@@ -11,6 +12,7 @@ namespace LcdMod.Client.Gui.Styling
         public static ResourceTree FromThemeDictionary(IReadOnlyDictionary<string, Color> theme)
         {
             ResourceTree resources = new ResourceTree();
+            ItemDataTemplate.AddResources(resources);
 
             resources.Set(ThemeResources.AccentColor, theme[Constants.PRIMARY]);
             resources.Set(ThemeResources.OnAccentColor, theme[Constants.ON_PRIMARY]);

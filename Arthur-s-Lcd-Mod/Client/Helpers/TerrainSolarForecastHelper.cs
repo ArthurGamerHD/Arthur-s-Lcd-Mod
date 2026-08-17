@@ -5,17 +5,10 @@ using Sandbox.ModAPI;
 using VRage.Game.ModAPI;
 using VRageMath;
 
-namespace LcdMod.Client.GridData
+namespace LcdMod.Client.Helpers
 {
-    internal sealed class TerrainSolarForecastComponent
+    internal sealed class TerrainSolarForecastHelper
     {
-        readonly GridLogic _owner;
-
-        internal TerrainSolarForecastComponent(GridLogic owner)
-        {
-            _owner = owner;
-        }
-
         private const double SOLAR_FORECAST_MOVE_TOLERANCE_SQUARED = 25d;
         private const double SOLAR_FORECAST_AXIS_DOT_TOLERANCE = 0.9999d;
         private const double SOLAR_FORECAST_SAMPLE_STEP_HOURS = 0.5d;
@@ -37,6 +30,7 @@ namespace LcdMod.Client.GridData
         private sealed class TerrainSolarForecastScan
         {
             public int Version;
+            public IMyCubeGrid Grid;
             public long PlanetId;
             public MyPlanet Planet;
             public Vector3D ReferenceSurfacePoint;
@@ -68,6 +62,7 @@ namespace LcdMod.Client.GridData
 
         private IMyGravityProviderSystem _terrainSolarGravityProvider;
         private bool _terrainSolarForecastInitialized;
+        private long _terrainSolarForecastGridId;
         private long _terrainSolarForecastPlanetId;
         private Vector3D _terrainSolarForecastSurfacePoint;
         private Vector3D _terrainSolarForecastAxis;
@@ -79,6 +74,7 @@ namespace LcdMod.Client.GridData
         private int _terrainSolarForecastScanVersion;
 
         private long _terrainSolarReferenceFrame = long.MinValue;
+        private long _terrainSolarReferenceGridId;
         private long _terrainSolarReferencePlanetId;
         private bool _terrainSolarReferenceValid;
         private Vector3D _terrainSolarReferenceSurfacePoint;
@@ -86,6 +82,7 @@ namespace LcdMod.Client.GridData
         private double _terrainSolarReferenceGravityRadius;
 
         internal bool TryGetTerrainSolarForecast(
+            IMyCubeGrid grid,
             MyPlanet planet,
             Vector3D rotationAxis,
             out bool hasSunrise,
@@ -102,6 +99,7 @@ namespace LcdMod.Client.GridData
             Vector3D rayOrigin;
             double gravityRadius;
             if (!TryResolveTerrainSolarReference(
+                    grid,
                     planet,
                     out surfacePoint,
                     out rayOrigin,
@@ -113,7 +111,7 @@ namespace LcdMod.Client.GridData
             }
 
             rotationAxis.Normalize();
-            if (IsTerrainSolarCacheContextMatch(planet.EntityId, surfacePoint, rotationAxis))
+            if (IsTerrainSolarCacheContextMatch(grid.EntityId, planet.EntityId, surfacePoint, rotationAxis))
             {
                 hasSunrise = _cachedHasTerrainSunrise;
                 sunriseHour = _cachedTerrainSunriseHour;
@@ -122,15 +120,16 @@ namespace LcdMod.Client.GridData
                 return true;
             }
 
-            if (!IsTerrainSolarGridStationary())
+            if (!IsTerrainSolarGridStationary(grid))
             {
                 CancelTerrainSolarForecast();
                 return false;
             }
 
-            if (!IsMatchingTerrainSolarForecastScan(planet.EntityId, surfacePoint, rotationAxis))
+            if (!IsMatchingTerrainSolarForecastScan(grid.EntityId, planet.EntityId, surfacePoint, rotationAxis))
             {
                 StartTerrainSolarForecast(
+                    grid,
                     surfacePoint,
                     rayOrigin,
                     gravityRadius,
@@ -142,6 +141,7 @@ namespace LcdMod.Client.GridData
         }
 
         private bool TryResolveTerrainSolarReference(
+            IMyCubeGrid grid,
             MyPlanet planet,
             out Vector3D surfacePoint,
             out Vector3D rayOrigin,
@@ -151,13 +151,14 @@ namespace LcdMod.Client.GridData
             rayOrigin = Vector3D.Zero;
             gravityRadius = 0d;
 
-            if (_owner.Grid == null || _owner.Grid.MarkedForClose || planet == null || planet.MarkedForClose)
+            if (grid == null || grid.Closed || grid.MarkedForClose || planet == null || planet.MarkedForClose)
                 return false;
 
             long frame = MyAPIGateway.Session != null
                 ? MyAPIGateway.Session.GameplayFrameCounter
                 : long.MinValue;
             if (_terrainSolarReferenceFrame == frame &&
+                _terrainSolarReferenceGridId == grid.EntityId &&
                 _terrainSolarReferencePlanetId == planet.EntityId)
             {
                 surfacePoint = _terrainSolarReferenceSurfacePoint;
@@ -167,13 +168,14 @@ namespace LcdMod.Client.GridData
             }
 
             _terrainSolarReferenceFrame = frame;
+            _terrainSolarReferenceGridId = grid.EntityId;
             _terrainSolarReferencePlanetId = planet.EntityId;
             _terrainSolarReferenceValid = false;
             _terrainSolarReferenceSurfacePoint = Vector3D.Zero;
             _terrainSolarReferenceRayOrigin = Vector3D.Zero;
             _terrainSolarReferenceGravityRadius = 0d;
 
-            Vector3D gridPosition = _owner.Grid.WorldAABB.Center;
+            Vector3D gridPosition = grid.WorldAABB.Center;
             Vector3D planetCenter = planet.WorldMatrix.Translation;
             surfacePoint = planet.GetClosestSurfacePointGlobal(gridPosition);
 
@@ -215,15 +217,15 @@ namespace LcdMod.Client.GridData
             return _terrainSolarGravityProvider;
         }
 
-        private bool IsTerrainSolarGridStationary()
+        private static bool IsTerrainSolarGridStationary(IMyCubeGrid grid)
         {
-            if (_owner.Grid == null || _owner.Grid.MarkedForClose)
+            if (grid == null || grid.Closed || grid.MarkedForClose)
                 return false;
 
-            if (_owner.Grid.IsStatic)
+            if (grid.IsStatic)
                 return true;
 
-            var physics = _owner.Grid.Physics;
+            var physics = grid.Physics;
             if (physics == null)
                 return false;
 
@@ -234,11 +236,13 @@ namespace LcdMod.Client.GridData
         }
 
         private bool IsTerrainSolarCacheContextMatch(
+            long gridId,
             long planetId,
             Vector3D surfacePoint,
             Vector3D rotationAxis)
         {
             if (!_terrainSolarForecastInitialized ||
+                _terrainSolarForecastGridId != gridId ||
                 _terrainSolarForecastPlanetId != planetId ||
                 Vector3D.DistanceSquared(_terrainSolarForecastSurfacePoint, surfacePoint) >
                     SOLAR_FORECAST_MOVE_TOLERANCE_SQUARED ||
@@ -252,12 +256,15 @@ namespace LcdMod.Client.GridData
         }
 
         private bool IsMatchingTerrainSolarForecastScan(
+            long gridId,
             long planetId,
             Vector3D surfacePoint,
             Vector3D rotationAxis)
         {
             var scan = _terrainSolarForecastScan;
             if (scan == null ||
+                scan.Grid == null ||
+                scan.Grid.EntityId != gridId ||
                 scan.PlanetId != planetId ||
                 Vector3D.DistanceSquared(scan.ReferenceSurfacePoint, surfacePoint) >
                     SOLAR_FORECAST_MOVE_TOLERANCE_SQUARED ||
@@ -271,6 +278,7 @@ namespace LcdMod.Client.GridData
         }
 
         private void StartTerrainSolarForecast(
+            IMyCubeGrid grid,
             Vector3D surfacePoint,
             Vector3D rayOrigin,
             double gravityRadius,
@@ -283,6 +291,7 @@ namespace LcdMod.Client.GridData
             var scan = new TerrainSolarForecastScan
             {
                 Version = ++_terrainSolarForecastScanVersion,
+                Grid = grid,
                 PlanetId = planet.EntityId,
                 Planet = planet,
                 ReferenceSurfacePoint = surfacePoint,
@@ -332,8 +341,9 @@ namespace LcdMod.Client.GridData
             if (scan.Version != _terrainSolarForecastScanVersion ||
                 scan.Planet == null ||
                 scan.Planet.MarkedForClose ||
-                !IsTerrainSolarGridStationary() ||
+                !IsTerrainSolarGridStationary(scan.Grid) ||
                 !TryResolveTerrainSolarReference(
+                    scan.Grid,
                     scan.Planet,
                     out currentSurfacePoint,
                     out currentRayOrigin,
@@ -473,6 +483,7 @@ namespace LcdMod.Client.GridData
                 return;
 
             _terrainSolarForecastInitialized = true;
+            _terrainSolarForecastGridId = scan.Grid != null ? scan.Grid.EntityId : 0L;
             _terrainSolarForecastPlanetId = scan.PlanetId;
             _terrainSolarForecastSurfacePoint = scan.ReferenceSurfacePoint;
             _terrainSolarForecastAxis = scan.RotationAxis;

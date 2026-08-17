@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using LcdMod.Common.Mvvm;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
@@ -13,6 +14,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
 
     public sealed class ListBoxModel<T> : ControlModelBase
     {
+        IList<T> _items;
+
         public ListBoxModel()
         {
             Items = new List<T>();
@@ -23,13 +26,30 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
             SelectionEnabled = true;
         }
 
-        public IList<T> Items { get; set; }
+        public IList<T> Items
+        {
+            get { return _items; }
+            set
+            {
+                if (ReferenceEquals(_items, value))
+                    return;
+
+                UnbindObservableItems(_items as IObservableList<T>);
+                _items = value;
+                BindObservableItems(_items as IObservableList<T>);
+
+                RaisePropertyChanged<IList<T>>(nameof(Items));
+                RaisePropertyChanged<int>(nameof(Count));
+            }
+        }
         public IList<T> SelectedEntries { get; set; }
         public bool MultiSelect { get; set; }
         public bool SelectionEnabled { get; set; }
         public float RowHeight { get; set; }
         public float ScrollerWidthPixels { get; set; }
         public Func<T, string> TextSelector { get; set; }
+        public Func<T, string> ItemStyleIdSelector { get; set; }
+        public Func<T, int, string> ItemClassSelector { get; set; }
         public Action<T> EntryClicked { get; set; }
         public Action<T, int, int> EntryMoved { get; set; }
         public Func<Vector2, int> DragTargetIndexResolver { get; set; }
@@ -47,6 +67,48 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
         public Color? SelectedTextColor { get; set; }
 
         public int Count => Items?.Count ?? 0;
+
+        void BindObservableItems(IObservableList<T> items)
+        {
+            if (items == null)
+                return;
+
+            items.ItemAdded += OnItemAdded;
+            items.ItemRemoved += OnItemRemoved;
+            items.ItemChanged += OnItemChanged;
+        }
+
+        void UnbindObservableItems(IObservableList<T> items)
+        {
+            if (items == null)
+                return;
+
+            items.ItemAdded -= OnItemAdded;
+            items.ItemRemoved -= OnItemRemoved;
+            items.ItemChanged -= OnItemChanged;
+        }
+
+        void OnItemAdded(IObservableCollection<T> sender, T item)
+        {
+            RaiseItemsChanged(true);
+        }
+
+        void OnItemRemoved(IObservableCollection<T> sender, T item)
+        {
+            RaiseItemsChanged(true);
+        }
+
+        void OnItemChanged(IObservableCollection<T> sender, T item)
+        {
+            RaiseItemsChanged(false);
+        }
+
+        void RaiseItemsChanged(bool countChanged)
+        {
+            RaisePropertyChanged<IList<T>>(nameof(Items));
+            if (countChanged)
+                RaisePropertyChanged<int>(nameof(Count));
+        }
 
         public T GetItem(int index)
         {

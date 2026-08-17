@@ -301,7 +301,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             if (_gridLogic == null)
                 return;
 
-            var blocks = _gridLogic.GetTerminalBlocks<IMyTerminalBlock>();
+            var blocks = _gridLogic.Blocks.TerminalBlocks;
             if (blocks == null)
                 return;
 
@@ -375,9 +375,13 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
         void BuildBlockSubtypeItems()
         {
-            foreach (var subtype in GridLogic.KnowSubtypes)
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var block in _gridLogic.Blocks.TerminalBlocks)
             {
+                var subtype = block != null ? block.BlockDefinition.SubtypeName : null;
                 if (string.IsNullOrWhiteSpace(subtype))
+                    continue;
+                if (!seen.Add(subtype))
                     continue;
 
                 _allItems.Add(new PickActionTargetResult
@@ -683,7 +687,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             if (_gridLogic == null || type == null)
                 return MISSING_ICON_PLACEHOLDER;
 
-            var blocks = _gridLogic.GetTerminalBlocks<IMyTerminalBlock>();
+            var blocks = _gridLogic.Blocks.TerminalBlocks;
             if (blocks == null)
                 return MISSING_ICON_PLACEHOLDER;
 

@@ -1,7 +1,11 @@
+using LcdMod.Common.Mvvm;
+
 namespace LcdMod.Client.Gui.ControlsTemplates.Lists
 {
     public sealed class ListBoxItemModel<T> : ControlModelBase
     {
+        ObservableObject _observableItem;
+
         public ListBoxItemModel(ListBoxModel<T> owner, T item, int index)
         {
             Cursor = CursorType.Hand;
@@ -14,9 +18,33 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
 
         public void Update(ListBoxModel<T> owner, T item, int index)
         {
+            var observableItem = (object)item as ObservableObject;
+            if (!ReferenceEquals(_observableItem, observableItem))
+            {
+                UnbindItem();
+                _observableItem = observableItem;
+                if (_observableItem != null)
+                    _observableItem.PropertyChanged += OnItemPropertyChanged;
+            }
+
             Owner = owner;
             Item = item;
             Index = index;
+        }
+
+        public void UnbindItem()
+        {
+            if (_observableItem == null)
+                return;
+
+            _observableItem.PropertyChanged -= OnItemPropertyChanged;
+            _observableItem = null;
+        }
+
+        void OnItemPropertyChanged(ObservableObject sender, string propertyName)
+        {
+            if (ReferenceEquals(sender, _observableItem))
+                RaisePropertyChanged<T>(nameof(Item));
         }
 
         public bool Selected => Owner != null && Owner.IsSelected(Item);

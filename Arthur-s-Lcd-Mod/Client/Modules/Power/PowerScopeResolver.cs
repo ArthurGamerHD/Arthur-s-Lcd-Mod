@@ -22,16 +22,11 @@ namespace LcdMod.Client.Modules.Power
             if (requester == null)
                 return new List<IMyCubeGrid>();
 
-            var resolver = GridGroupLogic.ResolveFor(requester);
-            if (resolver == null)
-            {
-                var fallback = new List<IMyCubeGrid>();
-                if (requester.Grid != null)
-                    fallback.Add(requester.Grid);
-                return fallback;
-            }
-
-            return resolver.GetGrids(requester, linkType);
+            var grids = new List<IMyCubeGrid>();
+            requester.GetLinkedGrids(linkType, grids);
+            if (grids.Count == 0 && requester.Grid != null)
+                grids.Add(requester.Grid);
+            return grids;
         }
     }
 }

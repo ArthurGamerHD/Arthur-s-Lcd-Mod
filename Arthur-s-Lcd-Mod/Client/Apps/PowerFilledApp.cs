@@ -57,7 +57,7 @@ namespace LcdMod.Client.Apps
 
         public override void LayoutChanged()
         {
-            _collectors.Clear();
+            CloseCollectors();
             _entries.Clear();
             _entryById.Clear();
         }
@@ -109,6 +109,20 @@ namespace LcdMod.Client.Apps
             DrawFooter(_surfaceHost, sprites);
             DrawBatteries(_surfaceHost, sprites);
             return sprites;
+        }
+
+        public override void Close()
+        {
+            CloseCollectors();
+            base.Close();
+        }
+
+        void CloseCollectors()
+        {
+            for (int i = 0; i < _collectors.Count; i++)
+                _collectors[i].Dispose();
+
+            _collectors.Clear();
         }
 
         void BuildCollectors()

@@ -59,6 +59,31 @@ public sealed class ConfigComponentSerializationTests
     }
 
     [Fact]
+    public void FilterConfigComponent_RoundTrips_HeaderSortDirection()
+    {
+        var surface = new SurfaceConfig
+        {
+            SurfaceIndex = 0,
+            AppTypeId = 4
+        };
+        surface.Set(LcdMod.Common.Helpers.Constants.FILTERS, new FilterConfigComponent
+        {
+            SortMethod = 1,
+            SortDirection = 1
+        });
+
+        using var stream = new MemoryStream();
+        Serializer.Serialize(stream, surface);
+        stream.Position = 0;
+
+        var result = Serializer.Deserialize<SurfaceConfig>(stream)
+            .Get<FilterConfigComponent>(LcdMod.Common.Helpers.Constants.FILTERS);
+
+        Assert.Equal(1, result.SortMethod);
+        Assert.Equal(1, result.SortDirection);
+    }
+
+    [Fact]
     public void RadarConfigComponent_RoundTrips_RangeAndCameraState()
     {
         var surface = new SurfaceConfig

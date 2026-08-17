@@ -10,9 +10,11 @@ using LcdMod.Client.Helpers;
 using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using VRage;
+using VRage.Game.Entity;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
+using GridLinkTypeEnum = VRage.Game.ModAPI.GridLinkTypeEnum;
 using VisualStackPanel = LcdMod.Client.Gui.ControlsTemplates.Panels.StackPanel.StackPanel;
 using static LcdMod.Common.Helpers.Constants;
 
@@ -63,16 +65,31 @@ namespace LcdMod.Client.Apps
         readonly List<BlockSpan> _spans = new List<BlockSpan>();
         readonly HashSet<long> _liveIds = new HashSet<long>();
         readonly List<long> _removeIds = new List<long>();
+        readonly LinkedTypedBlockSourceSet<IMyAssembler> _assemblerSources =
+            new LinkedTypedBlockSourceSet<IMyAssembler>(blocks => blocks.Assemblers);
+        readonly LinkedTypedBlockSourceSet<IMyRefinery> _refinerySources =
+            new LinkedTypedBlockSourceSet<IMyRefinery>(blocks => blocks.Refineries);
+        readonly List<IMyTerminalBlock> _terminalGroupBlocks = new List<IMyTerminalBlock>();
+        readonly HashSet<long> _selectedBlockIds = new HashSet<long>();
+        readonly HashSet<long> _seenProductionBlockIds = new HashSet<long>();
+        readonly HashSet<TypedItemCollection> _productionItemSources = new HashSet<TypedItemCollection>();
+        readonly HashSet<GridLogic> _productionItemLogics = new HashSet<GridLogic>();
+        readonly GridLogic _subscribedGridLogic;
+        readonly Dictionary<MyItemType, MyFixedPoint> _inventoryAmountsScratch =
+            new Dictionary<MyItemType, MyFixedPoint>();
 
         List<ProductionBlockItems> _blocks = EmptyBlocks;
         List<ProductionBlockItems> _lastPrunedBlocks;
         bool _refreshQueued;
+        bool _productionDataDirty = true;
+        bool _hasQueryToken;
+        SearchQueryToken _queryToken;
         Color _itemCardColor;
         Color _itemTextColor;
         VisualStackPanel _listPanel;
         float _currentRowHeight;
 
-        public override Dictionary<MyItemType, double> ItemSource => null;
+        public Dictionary<MyItemType, double> ItemSource => null;
 
         protected override string DefaultTitle => NAME;
 
@@ -80,6 +97,16 @@ namespace LcdMod.Client.Apps
 
         public InputOutputApp(IAppHost host) : base(host)
         {
+            // Input/Output owns the item capabilities for the production grids it reads.
+            // The inherited item view model is otherwise unused by this experimental app.
+            if (ViewModel != null)
+                ViewModel.Dispose();
+
+            _assemblerSources.Changed += OnProductionSourceChanged;
+            _refinerySources.Changed += OnProductionSourceChanged;
+            _subscribedGridLogic = GridLogic;
+            if (_subscribedGridLogic != null)
+                _subscribedGridLogic.TerminalGroupChanged += OnTerminalGroupChanged;
             _scroll = AddLogicalChild(new ScrollPanel(CursorType.Default, this));
             _scroll.ManualScrollInertiaEnabled = false;
             _scroll.ScrollChanged = OnScrollChanged;
@@ -91,7 +118,24 @@ namespace LcdMod.Client.Apps
         {
             try
             {
-                _blocks = GridLogic?.GetProductionBlockItems(BlockSelectionComponent, ItemSelectionComponent, Block as IMyTerminalBlock) ?? EmptyBlocks;
+                var queryToken = SearchQueryToken.GetToken(BlockSelectionComponent, ItemSelectionComponent);
+                if (!_hasQueryToken || !_queryToken.Equals(queryToken))
+                {
+                    _queryToken = queryToken;
+                    _hasQueryToken = true;
+                    _productionDataDirty = true;
+                }
+
+                var gridLogic = GridLogic;
+                var linkType = (GridLinkTypeEnum)BlockSelectionComponent.GridLinkTypeInternal;
+                _assemblerSources.Bind(gridLogic, linkType);
+                _refinerySources.Bind(gridLogic, linkType);
+
+                if (_productionDataDirty)
+                {
+                    _blocks = BuildProductionBlockItems();
+                    _productionDataDirty = false;
+                }
 
                 if (!ReferenceEquals(_blocks, _lastPrunedBlocks))
                 {
@@ -107,6 +151,175 @@ namespace LcdMod.Client.Apps
                 _blocks = EmptyBlocks;
                 _rows.Clear();
             }
+        }
+
+        List<ProductionBlockItems> BuildProductionBlockItems()
+        {
+            var gridLogic = GridLogic;
+            if (gridLogic == null)
+                return EmptyBlocks;
+
+            UnbindProductionItemSources();
+
+            _selectedBlockIds.Clear();
+            var selectedBlocks = BlockSelectionComponent.SelectedBlocks ?? new long[0];
+            for (var i = 0; i < selectedBlocks.Length; i++)
+                _selectedBlockIds.Add(selectedBlocks[i]);
+
+            var selectedGroups = BlockSelectionComponent.SelectedGroups ?? new string[0];
+            if (selectedGroups.Length > 0)
+            {
+                gridLogic.GetTerminalGroupBlocks(selectedGroups, _terminalGroupBlocks);
+                for (var i = 0; i < _terminalGroupBlocks.Count; i++)
+                {
+                    var groupBlock = _terminalGroupBlocks[i];
+                    if (groupBlock != null)
+                        _selectedBlockIds.Add(groupBlock.EntityId);
+                }
+            }
+
+            var hasWhitelist = selectedBlocks.Length > 0 || selectedGroups.Length > 0;
+            var result = new List<ProductionBlockItems>();
+            _seenProductionBlockIds.Clear();
+            AddProductionBlocks(_assemblerSources.Sources, gridLogic, hasWhitelist, result);
+            AddProductionBlocks(_refinerySources.Sources, gridLogic, hasWhitelist, result);
+            return result;
+        }
+
+        void AddProductionBlocks<T>(
+            IReadOnlyList<LcdMod.Common.Mvvm.IObservableList<T>> sources,
+            GridLogic root,
+            bool hasWhitelist,
+            List<ProductionBlockItems> result)
+            where T : class, IMyTerminalBlock
+        {
+            for (var sourceIndex = 0; sourceIndex < sources.Count; sourceIndex++)
+            {
+                var source = sources[sourceIndex];
+                for (var blockIndex = 0; blockIndex < source.Count; blockIndex++)
+                {
+                    var block = source[blockIndex];
+                    if (block == null ||
+                        !_seenProductionBlockIds.Add(block.EntityId) ||
+                        (hasWhitelist && !_selectedBlockIds.Contains(block.EntityId)))
+                    {
+                        continue;
+                    }
+
+                    var owner = block.CubeGrid != null
+                        ? LcdModSessionComponent.GetOrCreateGridLogic(block.CubeGrid)
+                        : root;
+                    BindProductionItemSource(owner);
+                    var entry = new ProductionBlockItems(block.EntityId, GetBlockDisplayName(block));
+                    AddInventoryItems(owner, block, 0, entry.Input);
+                    AddInventoryItems(owner, block, 1, entry.Output);
+                    result.Add(entry);
+                }
+            }
+        }
+
+        void AddInventoryItems(
+            GridLogic owner,
+            IMyTerminalBlock block,
+            int inventoryIndex,
+            List<KeyValuePair<MyItemType, double>> destination)
+        {
+            if (owner == null || block == null || inventoryIndex >= block.InventoryCount)
+                return;
+
+            var inventory = block.GetInventory(inventoryIndex) as MyInventoryBase;
+            if (inventory == null)
+                return;
+
+            _inventoryAmountsScratch.Clear();
+            var items = inventory.GetItems();
+            for (var itemIndex = 0; itemIndex < items.Count; itemIndex++)
+            {
+                var item = items[itemIndex];
+                if (item.Content == null)
+                    continue;
+
+                var itemType = (MyItemType)item.Content;
+                MyFixedPoint currentAmount;
+                _inventoryAmountsScratch.TryGetValue(itemType, out currentAmount);
+                _inventoryAmountsScratch[itemType] = MyFixedPoint.AddSafe(currentAmount, item.Amount);
+            }
+
+            foreach (var amount in _inventoryAmountsScratch)
+            {
+                if (amount.Value > MyFixedPoint.Zero)
+                    destination.Add(new KeyValuePair<MyItemType, double>(amount.Key, (double)amount.Value));
+            }
+            destination.Sort((left, right) => right.Value.CompareTo(left.Value));
+        }
+
+        static string GetBlockDisplayName(IMyTerminalBlock block)
+        {
+            if (!string.IsNullOrEmpty(block.CustomName))
+                return block.CustomName;
+            if (!string.IsNullOrEmpty(block.DisplayNameText))
+                return block.DisplayNameText;
+            return block.BlockDefinition.SubtypeName ?? string.Empty;
+        }
+
+        public override void Close()
+        {
+            _assemblerSources.Changed -= OnProductionSourceChanged;
+            _refinerySources.Changed -= OnProductionSourceChanged;
+            if (_subscribedGridLogic != null)
+                _subscribedGridLogic.TerminalGroupChanged -= OnTerminalGroupChanged;
+            UnbindProductionItemSources();
+            _assemblerSources.Dispose();
+            _refinerySources.Dispose();
+            base.Close();
+        }
+
+        void BindProductionItemSource(GridLogic logic)
+        {
+            if (logic == null || !_productionItemLogics.Add(logic))
+                return;
+
+            logic.RequestCapability(GridCapability.Items);
+            try
+            {
+                var source = logic.Items;
+                if (_productionItemSources.Add(source))
+                    source.InventoryChanged += OnProductionInventoryChanged;
+            }
+            catch
+            {
+                _productionItemLogics.Remove(logic);
+                logic.Release(GridCapability.Items);
+                throw;
+            }
+        }
+
+        void UnbindProductionItemSources()
+        {
+            foreach (var source in _productionItemSources)
+                source.InventoryChanged -= OnProductionInventoryChanged;
+            _productionItemSources.Clear();
+            foreach (var logic in _productionItemLogics)
+                logic.Release(GridCapability.Items);
+            _productionItemLogics.Clear();
+        }
+
+        void OnProductionSourceChanged()
+        {
+            _productionDataDirty = true;
+            MarkDirty();
+        }
+
+        void OnProductionInventoryChanged(MyInventoryBase inventory)
+        {
+            _productionDataDirty = true;
+            MarkDirty();
+        }
+
+        void OnTerminalGroupChanged(object sender, TerminalGroupChangedArgs args)
+        {
+            _productionDataDirty = true;
+            MarkDirty();
         }
 
         void PruneStaleState()

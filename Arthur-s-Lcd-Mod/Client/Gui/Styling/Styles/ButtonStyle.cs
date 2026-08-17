@@ -1,5 +1,6 @@
 using LcdMod.Client.Animation;
 using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.Apps.ViewModel;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Lists;
@@ -55,7 +56,7 @@ namespace LcdMod.Client.Gui.Styling.Styles
             Style scrollBarThumb = button.SetId("ScrollBarThumb");
             ConfigureScaleUpOnly(scrollBarThumb);
 
-            Style listBoxItem = styles.For<ListBoxItem<ItemsApp.ItemViewModel>>();
+            Style listBoxItem = styles.For<ListBoxItem<ItemEntry>>();
             ConfigureListBoxItem(listBoxItem);
 
             Style listRow = styles.For<ControlTemplate>().ClassSelector("Row");

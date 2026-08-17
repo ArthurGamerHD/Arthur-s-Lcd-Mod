@@ -1,558 +1,131 @@
-using LcdMod.Common.Config.Components;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using LcdMod.Client.Helpers;
 #if EXPERIMENTAL
-using LcdMod.Client.Terminal;
+using LcdMod.Client.Diagnostics;
 #endif
 using LcdMod.Common.Helpers;
+using LcdMod.Common.Mvvm;
 using LcdMod.Common.Networking;
-using Sandbox.Definitions;
-using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
-using VRage.Game;
-using VRage.Game.ModAPI;
-using VRage.Game.ModAPI.Ingame;
-using VRageMath;
+using VRage;
+using VRage.Game.Entity;
 using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
 using IMyCubeGrid = VRage.Game.ModAPI.IMyCubeGrid;
+using IMyGridGroupData = VRage.Game.ModAPI.IMyGridGroupData;
+using IMySlimBlock = VRage.Game.ModAPI.IMySlimBlock;
+using IMyTerminalBlock = Sandbox.ModAPI.IMyTerminalBlock;
+using IMyGridTerminalSystem = Sandbox.ModAPI.IMyGridTerminalSystem;
+using IMyBlockGroup = Sandbox.ModAPI.IMyBlockGroup;
 using IMyFarmPlotLogic = Sandbox.ModAPI.IMyFarmPlotLogic;
 using IMyFunctionalBlock = Sandbox.ModAPI.IMyFunctionalBlock;
-using IMySlimBlock = VRage.Game.ModAPI.IMySlimBlock;
-using IngameItem = VRage.Game.ModAPI.Ingame.MyInventoryItem;
-using NotImplementedException = LcdMod.Common.Exceptions.NotImplementedException;
+using IMyResourceStorageComponent = Sandbox.ModAPI.IMyResourceStorageComponent;
+using GridLinkTypeEnum = VRage.Game.ModAPI.GridLinkTypeEnum;
+using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
+
 namespace LcdMod.Client.GridData
 {
+    [Flags]
+    public enum GridCapability
+    {
+        None = 0,
+        Blocks = 1,
+        Items = 2,
+        InventoryTopology = 4
+    }
+
     /// <summary>
-    ///     Logic attached to <see cref="Grid" />
+    ///     Event-driven logic attached to a grid.
     /// </summary>
     public class GridLogic
     {
-        private const int DELAY = 120;
-        private const int REQUEST_TTL_TICKS = 120;
-        private const int TARGET_REFRESH_TICKS = 119;
-        private const int REFRESH_BATCH_SIZE = 128;
-        private static readonly object AssemblerBlueprintDatabaseLock = new object();
-        private static bool _blueprintResultDatabaseInitialized;
-
-        public static readonly Dictionary<string, HashSet<MyDefinitionId>> CraftableBlueprintsByAssemblerSubtype =
-            new Dictionary<string, HashSet<MyDefinitionId>>(StringComparer.Ordinal);
-
-        public static readonly Dictionary<MyDefinitionId, HashSet<string>> AssemblerSubtypesByCraftableBlueprint =
-            new Dictionary<MyDefinitionId, HashSet<string>>();
-
-        public static readonly Dictionary<MyDefinitionId, HashSet<MyDefinitionId>> CreatedItemsByBlueprint =
-            new Dictionary<MyDefinitionId, HashSet<MyDefinitionId>>();
-
-        public static readonly Dictionary<MyDefinitionId, HashSet<MyDefinitionId>> BlueprintsByCreatedItem =
-            new Dictionary<MyDefinitionId, HashSet<MyDefinitionId>>();
-
-        public static readonly Dictionary<MyDefinitionId, MyBlueprintDefinitionBase> PrimaryBlueprintByCreatedItem =
-            new Dictionary<MyDefinitionId, MyBlueprintDefinitionBase>();
-
-        public static readonly HashSet<string> KnowSubtypes = new HashSet<string>();
-        private static readonly HashSet<string> KnowFarmSubtypes = new HashSet<string>();
-
-        private static readonly string[] IngotTypeFilter = { "Ingot" };
-        private static readonly TimeSpan JumpPointGpsTtl = TimeSpan.FromSeconds(60);
-
-        private ItemsComponent _itemsComponent;
-        private BlocksComponent _blocksComponent;
-        private PowerComponent _powerComponent;
-        private GridRoomEnvironmentComponent _roomEnvironmentComponent;
-        private TerrainSolarForecastComponent _terrainSolarForecastComponent;
-        private readonly Dictionary<MediaPlayerPartitionKey, GridMediaPlayer> _mediaPlayers =
-            new Dictionary<MediaPlayerPartitionKey, GridMediaPlayer>();
-
-        private readonly Dictionary<MyItemType, double> _compCache = new Dictionary<MyItemType, double>();
-
-        private readonly Dictionary<MyItemType, double> _ingotCache = new Dictionary<MyItemType, double>();
-
-        private readonly Dictionary<SearchQueryToken, Dictionary<MyItemType, double>> _ingotQueryCache =
-            new Dictionary<SearchQueryToken, Dictionary<MyItemType, double>>();
-
-        private readonly Dictionary<long, Vector3D> _jumpPointByPlanetCache = new Dictionary<long, Vector3D>();
-
-        private readonly Dictionary<long, JumpPointGpsEntry> _jumpPointGpsEntries =
-            new Dictionary<long, JumpPointGpsEntry>();
-
-        private readonly Dictionary<SearchQueryToken, List<ProductionBlockItems>> _productionByBlockCache =
-            new Dictionary<SearchQueryToken, List<ProductionBlockItems>>();
-
-        private readonly Dictionary<SearchQueryToken, Dictionary<MyItemType, double>> _queryCache =
-            new Dictionary<SearchQueryToken, Dictionary<MyItemType, double>>();
-
-        private readonly Dictionary<SearchQueryToken, ItemSnapshot> _itemSnapshots =
-            new Dictionary<SearchQueryToken, ItemSnapshot>();
-
+        const int INVENTORY_RECONCILIATION_INTERVAL_FRAMES = 600;
+        bool _isUnloaded;
+        bool _gridBlockEventsBound;
+        bool _inventoryTopologyRefreshScheduled;
+        long _nextInventoryReconciliationFrame;
+        int _blockNeedCount;
+        int _itemNeedCount;
+        int _inventoryTopologyNeedCount;
+        IMyGridGroupData _parentGroup;
+        IMyGridGroupData _terminalParentGroup;
+        IMyGridTerminalSystem _terminalSystem;
+        readonly Dictionary<GridLinkTypeEnum, IMyGridGroupData> _watchedLinkGroups =
+            new Dictionary<GridLinkTypeEnum, IMyGridGroupData>();
+        readonly Dictionary<IMyCubeBlock, List<MyInventoryBase>> _inventoriesByBlock =
+            new Dictionary<IMyCubeBlock, List<MyInventoryBase>>();
+        readonly Dictionary<IMyCubeBlock, FarmPlotEntry> _farmPlotsByBlock =
+            new Dictionary<IMyCubeBlock, FarmPlotEntry>();
+        GridRoomEnvironmentComponent _roomEnvironmentComponent;
 
         public readonly IMyCubeGrid Grid;
-        private List<IMyAssembler> _assemblers = new List<IMyAssembler>();
-        private List<IMyBatteryBlock> _batteries = new List<IMyBatteryBlock>();
-        private List<IMyBeacon> _beacons = new List<IMyBeacon>();
-        private List<IMySlimBlock> _blocks = new List<IMySlimBlock>();
-        private List<IMyCargoContainer> _cargoContainers = new List<IMyCargoContainer>();
-        private long _clock;
-        private int _currentRefreshIterations;
-        private int _currentRefreshProcessed;
-        private List<FarmPlotEntry> _farmPlots = new List<FarmPlotEntry>();
-        private List<IMyGasTank> _gasTanks = new List<IMyGasTank>();
-        private GridGroupLogic _gridGroupResolver;
-        private List<IMyTerminalBlock> _invBlocks = new List<IMyTerminalBlock>();
-        private List<IMyJumpDrive> _jumpDrives = new List<IMyJumpDrive>();
-        private long _jumpPointCacheFrame = -1;
+        TypedBlockCollection _blocks;
+        TypedItemCollection _items;
+        ObservableList<FarmPlotEntry> _farmPlots;
+        public readonly MediaPlayerRegistry MediaPlayers = new MediaPlayerRegistry();
 
-        private List<IMyLaserAntenna> _lasers = new List<IMyLaserAntenna>();
-        private List<IMyAssembler> _nextAssemblers = new List<IMyAssembler>();
-        private List<IMyBatteryBlock> _nextBatteries = new List<IMyBatteryBlock>();
-        private List<IMyBeacon> _nextBeacons = new List<IMyBeacon>();
-        private List<IMySlimBlock> _nextBlocks = new List<IMySlimBlock>();
-        private List<IMyCargoContainer> _nextCargoContainers = new List<IMyCargoContainer>();
-        private List<FarmPlotEntry> _nextFarmPlots = new List<FarmPlotEntry>();
-        private List<IMyGasTank> _nextGasTanks = new List<IMyGasTank>();
-        private List<IMyTerminalBlock> _nextInvBlocks = new List<IMyTerminalBlock>();
-        private List<IMyJumpDrive> _nextJumpDrives = new List<IMyJumpDrive>();
-        private List<IMyLaserAntenna> _nextLasers = new List<IMyLaserAntenna>();
-        private List<IMyPowerProducer> _nextPowerProducers = new List<IMyPowerProducer>();
-        private List<IMyRadioAntenna> _nextRadio = new List<IMyRadioAntenna>();
-        private List<IMyTerminalBlock> _nextTerminalBlocks = new List<IMyTerminalBlock>();
-        private List<IMyPowerProducer> _powerProducers = new List<IMyPowerProducer>();
-        private List<IMyRadioAntenna> _radio = new List<IMyRadioAntenna>();
-        private bool _refreshHealthy;
-        private bool _refreshQueued;
-        private IEnumerator<bool> _refreshUpdater;
-        private List<IMyTerminalBlock> _terminalBlocks = new List<IMyTerminalBlock>();
-        private int _ticksSinceRequested = int.MaxValue;
+        public event GridGroupChanged GroupChanged;
+        public event GridLinkChanged LinkChanged;
+        public event TerminalGroupChanged TerminalGroupChanged;
+        public event InventoryTopologyChanged InventoryTopologyChanged;
 
-        /// <summary>
-        ///     Logic attached to <see cref="grid" />
-        /// </summary>
-        /// <param name="grid"></param>
         public GridLogic(IMyCubeGrid grid)
         {
             Grid = grid;
-            TargetGrid = grid != null ? grid.EntityId : 0L;
-            _refreshHealthy = IsGridAlive();
-            _gridGroupResolver = new GridGroupLogic(this);
-            _clock = new Random().Next(DELAY);
-            // Initial Randomization so not every single grid ticks on the same time
+
+            if (Grid == null)
+                return;
+
+            BindParentGroup(GetParentGroup());
+            BindTerminalParentGroup(GetTerminalParentGroup());
+            BindTerminalSystem(GetTerminalSystem());
         }
 
-        public long TargetGrid { get; private set; }
+        public long TargetGrid => Grid?.EntityId ?? 0L;
 
-        public bool IsAlive => _refreshHealthy && IsGridAlive();
+        public bool IsAlive => !_isUnloaded && Grid != null && !Grid.Closed && !Grid.MarkedForClose;
 
-        public int LastRefreshIterations { get; private set; }
+        public bool HasBlockNeed => _blockNeedCount > 0;
+        public bool HasItemNeed => _itemNeedCount > 0;
+        public bool HasInventoryTopologyNeed => _inventoryTopologyNeedCount > 0;
+        public int BlockNeedCount => _blockNeedCount;
+        public int ItemNeedCount => _itemNeedCount;
+        public int InventoryTopologyNeedCount => _inventoryTopologyNeedCount;
+        public int TrackedBlockCount => _blocks?.Count ?? 0;
+        public int TrackedItemCount => _items?.Count ?? 0;
 
-        public int LastRefreshProcessed { get; private set; }
+        public TypedBlockCollection Blocks
+        {
+            get
+            {
+                if (_blocks == null)
+                    throw new InvalidOperationException("Blocks were accessed without an active GridDataNeed.Blocks request.");
+                return _blocks;
+            }
+        }
 
-        public int EstimatedNextRefreshBatchSize { get; private set; } = REFRESH_BATCH_SIZE;
+        public TypedItemCollection Items
+        {
+            get
+            {
+                if (_items == null)
+                    throw new InvalidOperationException("Items were accessed without an active GridDataNeed.Items request.");
+                return _items;
+            }
+        }
 
-        public int CurrentRefreshBatchSize { get; private set; } = REFRESH_BATCH_SIZE;
+        public ObservableList<FarmPlotEntry> FarmPlots
+        {
+            get
+            {
+                if (_farmPlots == null)
+                    throw new InvalidOperationException("Farm plots were accessed without an active GridDataNeed.Blocks request.");
+                return _farmPlots;
+            }
+        }
 
-        public bool IsRefreshRunning => _refreshUpdater != null;
-        public bool IsSleeping => _ticksSinceRequested > REQUEST_TTL_TICKS;
-
-        public ItemsComponent Items => _itemsComponent ?? (_itemsComponent = new ItemsComponent(this));
-
-        public BlocksComponent Blocks => _blocksComponent ?? (_blocksComponent = new BlocksComponent(this));
-
-        public PowerComponent Power => _powerComponent ?? (_powerComponent = new PowerComponent(this));
-
-        internal GridRoomEnvironmentComponent RoomEnvironment =>
+        private GridRoomEnvironmentComponent RoomEnvironment =>
             _roomEnvironmentComponent ?? (_roomEnvironmentComponent = new GridRoomEnvironmentComponent(this));
-
-        internal TerrainSolarForecastComponent TerrainSolarForecast =>
-            _terrainSolarForecastComponent ?? (_terrainSolarForecastComponent = new TerrainSolarForecastComponent(this));
-
-        public GridMediaPlayer MediaPlayer => GetMediaPlayer(0L, 0);
-
-        public GridMediaPlayer GetMediaPlayer(long blockId, int screenIndex)
-        {
-            if (screenIndex < 0)
-                screenIndex = 0;
-
-            var key = new MediaPlayerPartitionKey(blockId, screenIndex);
-            GridMediaPlayer player;
-            if (!_mediaPlayers.TryGetValue(key, out player))
-            {
-                player = new GridMediaPlayer();
-                _mediaPlayers[key] = player;
-            }
-
-            return player;
-        }
-
-        private IMyGridTerminalSystem GridTerminalSystem =>
-            MyAPIGateway.TerminalActionsHelper.GetTerminalSystemForGrid(Grid);
-
-        public Dictionary<MyItemType, double> Components
-        {
-            get { return Items.Components; }
-        }
-
-        public Dictionary<MyItemType, double> Ingots
-        {
-            get { return Items.Ingots; }
-        }
-
-        internal GridGroupLogic GetLocalGridGroupResolver()
-        {
-            if (_gridGroupResolver == null || _gridGroupResolver.Owner != this)
-                _gridGroupResolver = new GridGroupLogic(this);
-            return _gridGroupResolver;
-        }
-
-        internal void SetGridGroupResolver(GridGroupLogic resolver)
-        {
-            if (resolver != null)
-                _gridGroupResolver = resolver;
-        }
-
-        public void MarkRequested()
-        {
-            _ticksSinceRequested = 0;
-        }
-
-        public void Unload()
-        {
-            _refreshHealthy = false;
-            _refreshQueued = false;
-            if (_refreshUpdater != null)
-            {
-                _refreshUpdater.Dispose();
-                _refreshUpdater = null;
-            }
-
-            foreach (var player in _mediaPlayers.Values)
-                player.Unload();
-            _mediaPlayers.Clear();
-        }
-
-        private bool IsGridAlive()
-        {
-            return Grid != null && !Grid.Closed && !Grid.MarkedForClose;
-        }
-
-        /// <summary>
-        ///     Update Grid component after specific <see cref="DELAY" />, Called every tick
-        /// </summary>
-        public void Update()
-        {
-            if (_ticksSinceRequested < int.MaxValue)
-                _ticksSinceRequested++;
-
-            foreach (var player in _mediaPlayers.Values)
-                player.Update();
-
-            if (_ticksSinceRequested > REQUEST_TTL_TICKS)
-            {
-                if (_refreshUpdater != null)
-                {
-                    _refreshUpdater.Dispose();
-                    _refreshUpdater = null;
-                    _refreshQueued = false;
-                }
-
-                return;
-            }
-
-            _clock++;
-
-            try
-            {
-                // Schedule a refresh cycle periodically, but keep current data until the new snapshot is ready.
-                if (_clock % DELAY == 0)
-                {
-                    InvalidateItemCaches();
-                    StartRefresh(true);
-                }
-
-                AdvanceRefreshUpdater();
-            }
-            catch (Exception e)
-            {
-                _refreshHealthy = false;
-                ErrorHandlerHelper.LogError(e, this);
-            }
-        }
-
-        private void InvalidateItemCaches()
-        {
-            _compCache.Clear();
-            _ingotCache.Clear();
-            _queryCache.Clear();
-            _ingotQueryCache.Clear();
-            _productionByBlockCache.Clear();
-        }
-
-        private struct MediaPlayerPartitionKey : IEquatable<MediaPlayerPartitionKey>
-        {
-            readonly long _blockId;
-            readonly int _screenIndex;
-
-            public MediaPlayerPartitionKey(long blockId, int screenIndex)
-            {
-                _blockId = blockId;
-                _screenIndex = screenIndex;
-            }
-
-            public bool Equals(MediaPlayerPartitionKey other)
-            {
-                return _blockId == other._blockId && _screenIndex == other._screenIndex;
-            }
-
-            public override bool Equals(object obj)
-            {
-                return obj is MediaPlayerPartitionKey && Equals((MediaPlayerPartitionKey)obj);
-            }
-
-            public override int GetHashCode()
-            {
-                return (_blockId.GetHashCode() * 397) ^ _screenIndex;
-            }
-        }
-
-        private void StartRefresh(bool force = false)
-        {
-            if (_refreshUpdater != null)
-            {
-                if (force)
-                    _refreshQueued = true;
-                return;
-            }
-
-            if (!force && _blocks.Count > 0)
-                return;
-
-            CurrentRefreshBatchSize = Math.Max(1, EstimatedNextRefreshBatchSize);
-            _currentRefreshIterations = 0;
-            _currentRefreshProcessed = 0;
-            _refreshUpdater = RefreshInventoriesCoroutine().GetEnumerator();
-            _refreshQueued = false;
-        }
-
-        private void AdvanceRefreshUpdater()
-        {
-            if (_refreshUpdater == null)
-                return;
-
-            bool hasMore;
-            try
-            {
-                _currentRefreshIterations++;
-                hasMore = _refreshUpdater.MoveNext();
-            }
-            catch (Exception e)
-            {
-                _refreshHealthy = false;
-                ErrorHandlerHelper.LogError(e, this);
-                _refreshUpdater.Dispose();
-                _refreshUpdater = null;
-                _refreshQueued = false;
-                return;
-            }
-
-            if (hasMore)
-                return;
-
-            _refreshUpdater.Dispose();
-            _refreshUpdater = null;
-            FinalizeRefreshEstimate();
-
-            if (_refreshQueued && IsAlive)
-                StartRefresh(true);
-        }
-
-        private void FinalizeRefreshEstimate()
-        {
-            LastRefreshIterations = _currentRefreshIterations;
-            LastRefreshProcessed = _currentRefreshProcessed;
-
-            if (LastRefreshProcessed <= 0)
-                return;
-
-            // Estimate batch size so the next refresh tends to complete in about TARGET_REFRESH_TICKS updates.
-            EstimatedNextRefreshBatchSize = Math.Max(1,
-                (int)Math.Ceiling(LastRefreshProcessed / (double)TARGET_REFRESH_TICKS));
-        }
-
-        /// <summary>
-        ///     Collect items from <see cref="blocks" /> with specific <see cref="categories" />> or specific
-        ///     <see cref="idWhiteList" /> and add to <see cref="dictionary" />
-        /// </summary>
-        /// <param name="blocks">Blocks to collect from</param>
-        /// <param name="dictionary">Dictionary to store item Type/Ammount</param>
-        /// <param name="categories">Suffix of the item to be collected</param>
-        /// <param name="idWhiteList">Items to be collected</param>
-        private void AggregateItems(List<IMyTerminalBlock> blocks, Dictionary<MyItemType, double> dictionary,
-            string[] categories, MyDefinitionId[] idWhiteList)
-        {
-            dictionary.Clear();
-
-            for (var b = 0; b < blocks.Count; b++)
-            {
-                var tb = blocks[b];
-
-                if (!tb.HasInventory)
-                    continue;
-
-                var invCount = tb.InventoryCount;
-                for (var i = 0; i < invCount; i++)
-                {
-                    var inv = tb.GetInventory(i);
-                    if (inv == null) continue;
-
-                    var items = new List<IngameItem>();
-                    inv.GetItems(items);
-                    for (var k = 0; k < items.Count; k++)
-                    {
-                        var it = items[k];
-
-                        var typeIdStr = it.Type.TypeId;
-
-                        var filter = categories.Length > 0 || idWhiteList.Length > 0;
-
-                        if (filter)
-                        {
-                            var match =
-                                categories.Any(category =>
-                                    typeIdStr.EndsWith(category, StringComparison.OrdinalIgnoreCase)) ||
-                                idWhiteList.Any(definition => definition.Equals(it.Type));
-
-                            if (!match)
-                                continue;
-                        }
-
-
-                        var type = it.Type;
-
-                        var amount = (double)it.Amount;
-                        if (amount <= 0) continue;
-
-                        double acc;
-                        if (dictionary.TryGetValue(type, out acc)) dictionary[type] = acc + amount;
-                        else dictionary[type] = amount;
-                    }
-                }
-            }
-        }
-
-
-        public Dictionary<MyItemType, double> GetItems(BlockSelectionConfigComponent blocksConfig, ItemSelectionConfigComponent itemsConfig, IMyTerminalBlock referenceBlock,
-            string[] types = null)
-        {
-            return Items.GetItems(blocksConfig, itemsConfig, referenceBlock, types);
-        }
-
-        public ItemSnapshot GetItemsSnapshot(
-            BlockSelectionConfigComponent blocksConfig,
-            ItemSelectionConfigComponent itemsConfig,
-            IMyTerminalBlock referenceBlock,
-            string[] types = null)
-        {
-            return Items.GetItemsSnapshot(blocksConfig, itemsConfig, referenceBlock, types);
-        }
-
-        public Dictionary<MyItemType, double> GetIngots(BlockSelectionConfigComponent blocksConfig, ItemSelectionConfigComponent itemsConfig, IMyTerminalBlock referenceBlock)
-        {
-            return Items.GetIngots(blocksConfig, itemsConfig, referenceBlock);
-        }
-
-        private Dictionary<MyItemType, double> GetItemsCore(BlockSelectionConfigComponent blocksConfig, ItemSelectionConfigComponent itemsConfig,
-            IMyTerminalBlock referenceBlock,
-            string[] types, Dictionary<SearchQueryToken, Dictionary<MyItemType, double>> cache, bool forceTypes)
-        {
-            try
-            {
-                var linkType = (GridLinkTypeEnum)blocksConfig.GridLinkTypeInternal;
-                var queryToken = SearchQueryToken.GetToken(blocksConfig, itemsConfig);
-                Dictionary<MyItemType, double> dictionary;
-                if (!cache.TryGetValue(queryToken, out dictionary))
-                {
-                    dictionary = new Dictionary<MyItemType, double>();
-
-                    var blocks =
-                        blocksConfig.SelectedBlocks.Length == 0 && blocksConfig.SelectedGroups.Length == 0
-                            ? GetInventories(linkType)
-                            : new List<IMyTerminalBlock>();
-
-                    blocks.AddRange(blocksConfig.SelectedBlocks.Select(id => MyAPIGateway.Entities.GetEntityById(id))
-                        .Select(entity => entity as IMyTerminalBlock)
-                        .Where(block =>
-                            block != null && block.HasInventory &&
-                            IsBlockInGridLinkScope(block, referenceBlock, linkType)));
-
-                    if (blocksConfig.SelectedGroups.Any())
-                    {
-                        var blockFromGroups = new List<IMyTerminalBlock>();
-                        foreach (var groupName in blocksConfig.SelectedGroups)
-                        {
-                            blockFromGroups.Clear();
-                            GridTerminalSystem.GetBlockGroupWithName(groupName)?
-                                .GetBlocks(blockFromGroups, b => b.HasInventory &&
-                                                                 b.GetUserRelationToOwner(referenceBlock.OwnerId)
-                                                                 <= MyRelationsBetweenPlayerAndBlock.FactionShare &&
-                                                                 IsBlockInGridLinkScope(b, referenceBlock, linkType) &&
-                                                                 !blocks.Contains(b));
-                            blocks.AddRange(blockFromGroups);
-                        }
-                    }
-
-                    var aggregateTypes = forceTypes ? types : types ?? itemsConfig.SelectedCategories;
-                    AggregateItems(blocks, dictionary, aggregateTypes, itemsConfig.GetSelectedItems());
-
-                    cache[queryToken] = dictionary;
-                }
-
-                return dictionary;
-            }
-            catch (Exception e)
-            {
-                ErrorHandlerHelper.LogError(e, this);
-                return new Dictionary<MyItemType, double>();
-            }
-        }
-
-        public List<IMyTerminalBlock> GetInventories()
-        {
-            return Blocks.GetInventories();
-        }
-
-        public List<IMyTerminalBlock> GetInventories(GridLinkTypeEnum linkType)
-        {
-            return Blocks.GetInventories(linkType);
-        }
-
-        private bool IsBlockInGridLinkScope(IMyTerminalBlock block, IMyTerminalBlock referenceBlock,
-            GridLinkTypeEnum linkType)
-        {
-            if (block == null || referenceBlock == null || block.CubeGrid == null || referenceBlock.CubeGrid == null)
-                return false;
-
-            if (block.CubeGrid.EntityId == referenceBlock.CubeGrid.EntityId)
-                return true;
-
-            var terminals = GetTerminalBlocks<IMyTerminalBlock>(linkType);
-            if (terminals == null)
-                return false;
-
-            for (var i = 0; i < terminals.Count; i++)
-            {
-                var terminal = terminals[i];
-                if (terminal != null && terminal.EntityId == block.EntityId)
-                    return true;
-            }
-
-            return false;
-        }
-
-        public void RefreshIfNeeded()
-        {
-            Blocks.RefreshIfNeeded();
-        }
 
         internal bool TryGetGridRoomEnvironment(IMyCubeBlock block, out GridRoomEnvironmentSample sample)
         {
@@ -564,771 +137,894 @@ namespace LcdMod.Client.GridData
             RoomEnvironment.ApplyGridRoomEnvironment(packet);
         }
 
-        internal bool TryGetTerrainSolarForecast(
-            MyPlanet planet,
-            Vector3D rotationAxis,
-            out bool hasSunrise,
-            out double sunriseHour,
-            out bool hasSunset,
-            out double sunsetHour)
+        public void Update()
         {
-            return TerrainSolarForecast.TryGetTerrainSolarForecast(
-                planet,
-                rotationAxis,
-                out hasSunrise,
-                out sunriseHour,
-                out hasSunset,
-                out sunsetHour);
-        }
-
-        public static bool EnsureAssemblerBlueprintDatabase(IMyAssembler assembler)
-        {
-            if (assembler == null || MyDefinitionManager.Static == null)
-                return false;
-
-            var assemblerSubtype = GetAssemblerSubtype(assembler);
-            if (string.IsNullOrEmpty(assemblerSubtype))
-                return false;
-
-            lock (AssemblerBlueprintDatabaseLock)
-            {
-                EnsureBlueprintResultDatabaseNoLock();
-
-                if (CraftableBlueprintsByAssemblerSubtype.ContainsKey(assemblerSubtype))
-                    return false;
-
-                var craftableBlueprints = new HashSet<MyDefinitionId>();
-                foreach (var blueprint in MyDefinitionManager.Static.GetBlueprintDefinitions())
-                {
-                    if (blueprint == null || !CanAssemblerUseBlueprint(assembler, blueprint))
-                        continue;
-
-                    craftableBlueprints.Add(blueprint.Id);
-                    AddToSet(AssemblerSubtypesByCraftableBlueprint, blueprint.Id, assemblerSubtype);
-                }
-
-                CraftableBlueprintsByAssemblerSubtype[assemblerSubtype] = craftableBlueprints;
-                return true;
-            }
-        }
-
-        public static void EnsureBlueprintResultDatabase()
-        {
-            lock (AssemblerBlueprintDatabaseLock)
-            {
-                EnsureBlueprintResultDatabaseNoLock();
-            }
-        }
-
-        private static void EnsureBlueprintResultDatabaseNoLock()
-        {
-            if (_blueprintResultDatabaseInitialized || MyDefinitionManager.Static == null)
+            if (!IsAlive || MyAPIGateway.Session == null)
                 return;
 
-            foreach (var blueprint in MyDefinitionManager.Static.GetBlueprintDefinitions())
-            {
-                if (blueprint == null || CreatedItemsByBlueprint.ContainsKey(blueprint.Id))
-                    continue;
+            MediaPlayers.Update();
 
-                var createdItems = new HashSet<MyDefinitionId>();
-                var results = blueprint.Results;
-                if (results != null)
-                    for (var i = 0; i < results.Length; i++)
-                    {
-                        var itemId = results[i].Id;
-                        createdItems.Add(itemId);
-                        AddToSet(BlueprintsByCreatedItem, itemId, blueprint.Id);
-                    }
+            if (_items == null)
+                return;
 
-                // Map each produced item to the blueprint that makes it. A primary blueprint always
-                // wins; a non-primary one only fills the gap when an item has no primary blueprint at
-                // all. Vanilla's ReactorComponent ships without <IsPrimary>, so without this fallback
-                // reactor components never expand and their gravel/iron/silver vanish from the
-                // "ingots needed" estimate (the gravel is used by nothing else, so it disappears).
-                if (results != null && results.Length >= 1)
-                {
-                    var primaryResultId = results.First().Id;
-                    if (blueprint.IsPrimary || !PrimaryBlueprintByCreatedItem.ContainsKey(primaryResultId))
-                        PrimaryBlueprintByCreatedItem[primaryResultId] = blueprint;
-                }
+            var currentFrame = MyAPIGateway.Session.GameplayFrameCounter;
+            if (currentFrame < _nextInventoryReconciliationFrame)
+                return;
 
-                CreatedItemsByBlueprint[blueprint.Id] = createdItems;
-            }
-
-            _blueprintResultDatabaseInitialized = true;
+            _nextInventoryReconciliationFrame = currentFrame + INVENTORY_RECONCILIATION_INTERVAL_FRAMES;
+            _items.ReconcileNextInventory();
         }
 
-        private static bool CanAssemblerUseBlueprint(IMyAssembler assembler, MyBlueprintDefinitionBase blueprint)
+        public void RequestCapability(GridCapability capability)
+        {
+            if (_isUnloaded)
+                throw new InvalidOperationException("Cannot request data from an unloaded GridLogic.");
+
+            if ((capability & GridCapability.Blocks) != 0)
+            {
+                _blockNeedCount++;
+                if (_blockNeedCount == 1)
+                    StartBlockModuleIfNeeded();
+            }
+
+            if ((capability & GridCapability.Items) != 0)
+            {
+                _itemNeedCount++;
+                if (_itemNeedCount == 1)
+                    StartItemModuleIfNeeded();
+            }
+
+            if ((capability & GridCapability.InventoryTopology) != 0)
+            {
+                _inventoryTopologyNeedCount++;
+                if (_inventoryTopologyNeedCount == 1)
+                    BindGridBlockEvents();
+            }
+        }
+
+        public void Release(GridCapability need)
+        {
+            if ((need & GridCapability.InventoryTopology) != 0 && _inventoryTopologyNeedCount > 0)
+            {
+                _inventoryTopologyNeedCount--;
+                if (_inventoryTopologyNeedCount == 0)
+                    UnbindGridBlockEventsIfUnused();
+            }
+
+            if ((need & GridCapability.Items) != 0 && _itemNeedCount > 0)
+            {
+                _itemNeedCount--;
+                if (_itemNeedCount == 0)
+                    ScheduleItemModuleStop();
+            }
+
+            if ((need & GridCapability.Blocks) != 0 && _blockNeedCount > 0)
+            {
+                _blockNeedCount--;
+                if (_blockNeedCount == 0)
+                    ScheduleBlockModuleStop();
+            }
+        }
+
+        void ScheduleBlockModuleStop()
+        {
+            if (HasBlockNeed)
+                return;
+
+            LcdModClientComponent.RunNextFrame.Add(delegate
+            {
+                if (HasBlockNeed)
+                    return;
+
+                StopBlockModule();
+            });
+        }
+
+        void ScheduleItemModuleStop()
+        {
+            if (HasItemNeed)
+                return;
+
+            LcdModClientComponent.RunNextFrame.Add(delegate
+            {
+                if (HasItemNeed)
+                    return;
+
+                StopItemModule();
+            });
+        }
+
+        void StartBlockModuleIfNeeded()
+        {
+            if(_blocks != null)
+                return;
+
+            _blocks = new TypedBlockCollection();
+            _farmPlots = new ObservableList<FarmPlotEntry>();
+            BindGridBlockEvents();
+            RefreshInventoryTopologyCore();
+        }
+
+        void StopBlockModule()
+        {
+            _farmPlotsByBlock.Clear();
+            _farmPlots?.Clear();
+            _blocks?.Clear();
+            _farmPlots = null;
+            _blocks = null;
+            UnbindGridBlockEventsIfUnused();
+        }
+
+        void StartItemModuleIfNeeded()
+        {
+            if(_items != null)
+                return;
+
+            _items = new TypedItemCollection();
+            var currentFrame = MyAPIGateway.Session != null
+                ? MyAPIGateway.Session.GameplayFrameCounter
+                : 0L;
+            var reconciliationOffset = (int)((TargetGrid & long.MaxValue) %
+                                             INVENTORY_RECONCILIATION_INTERVAL_FRAMES);
+            _nextInventoryReconciliationFrame = currentFrame + reconciliationOffset;
+            BindGridBlockEvents();
+            RefreshInventoryTopologyCore();
+        }
+
+        void StopItemModule()
+        {
+            foreach (var inventory in _inventoriesByBlock.Values.SelectMany(inventories => inventories))
+            {
+                inventory.InventoryContentChanged -= OnInventoryContentChanged;
+                inventory.ContentsChanged -= OnInventoryContentsChanged;
+            }
+
+            _inventoriesByBlock.Clear();
+            if (_items != null)
+                _items.Clear();
+            _items = null;
+            _inventoryTopologyRefreshScheduled = false;
+            UnbindGridBlockEventsIfUnused();
+        }
+
+        void BindGridBlockEvents()
+        {
+            if (_gridBlockEventsBound || Grid == null)
+                return;
+
+            Grid.OnBlockAdded += OnBlockAdded;
+            Grid.OnBlockRemoved += OnBlockRemoved;
+            _gridBlockEventsBound = true;
+        }
+
+        void UnbindGridBlockEventsIfUnused()
+        {
+            if (!_gridBlockEventsBound || _blocks != null || _items != null || HasInventoryTopologyNeed || Grid == null)
+                return;
+
+            Grid.OnBlockAdded -= OnBlockAdded;
+            Grid.OnBlockRemoved -= OnBlockRemoved;
+            _gridBlockEventsBound = false;
+        }
+
+        public void Unload()
+        {
+            if (_isUnloaded)
+                return;
+
+            _isUnloaded = true;
+
+            if (Grid != null && _gridBlockEventsBound)
+            {
+                Grid.OnBlockAdded -= OnBlockAdded;
+                Grid.OnBlockRemoved -= OnBlockRemoved;
+                _gridBlockEventsBound = false;
+            }
+
+            BindParentGroup(null);
+            UnbindWatchedLinkGroups();
+            BindTerminalParentGroup(null);
+            BindTerminalSystem(null);
+
+            StopItemModule();
+            StopBlockModule();
+            _blockNeedCount = 0;
+            _itemNeedCount = 0;
+            MediaPlayers.Unload();
+        }
+
+        IMyGridGroupData GetParentGroup()
+        {
+            return MyAPIGateway.GridGroups != null && Grid != null
+                ? MyAPIGateway.GridGroups.GetGridGroup(GridLinkTypeEnum.Mechanical, Grid)
+                : null;
+        }
+
+        IMyGridGroupData GetTerminalParentGroup()
+        {
+            return MyAPIGateway.GridGroups != null && Grid != null
+                ? MyAPIGateway.GridGroups.GetGridGroup(GridLinkTypeEnum.Logical, Grid)
+                : null;
+        }
+
+        IMyGridTerminalSystem GetTerminalSystem()
+        {
+            return MyAPIGateway.TerminalActionsHelper != null && Grid != null
+                ? MyAPIGateway.TerminalActionsHelper.GetTerminalSystemForGrid(Grid)
+                : null;
+        }
+
+        void BindParentGroup(IMyGridGroupData group)
+        {
+            if (ReferenceEquals(_parentGroup, group))
+                return;
+
+            if (_parentGroup != null)
+            {
+                _parentGroup.OnGridAdded -= OnParentGridAdded;
+                _parentGroup.OnGridRemoved -= OnParentGridRemoved;
+                _parentGroup.OnReleased -= OnParentGroupReleased;
+            }
+
+            _parentGroup = group;
+            if (_parentGroup != null)
+            {
+                _parentGroup.OnGridAdded += OnParentGridAdded;
+                _parentGroup.OnGridRemoved += OnParentGridRemoved;
+                _parentGroup.OnReleased += OnParentGroupReleased;
+            }
+        }
+
+        void OnParentGridAdded(IMyGridGroupData group, IMyCubeGrid grid, IMyGridGroupData previousGroup)
+        {
+            if (ReferenceEquals(group, _parentGroup))
+                RaiseGroupChanged();
+        }
+
+        void OnParentGridRemoved(IMyGridGroupData group, IMyCubeGrid grid, IMyGridGroupData nextGroup)
+        {
+            if (!ReferenceEquals(group, _parentGroup))
+                return;
+
+            if (grid != null && Grid != null && grid.EntityId == Grid.EntityId)
+                BindParentGroup(nextGroup ?? GetParentGroup());
+
+            RaiseGroupChanged();
+        }
+
+        void OnParentGroupReleased(IMyGridGroupData group)
+        {
+            if (!ReferenceEquals(group, _parentGroup))
+                return;
+
+            BindParentGroup(null);
+            var nextGroup = GetParentGroup();
+            if (!ReferenceEquals(nextGroup, group))
+                BindParentGroup(nextGroup);
+
+            RaiseGroupChanged();
+        }
+
+        void RaiseGroupChanged()
         {
             try
             {
-                return assembler.CanUseBlueprint(blueprint.Id);
+                var handler = GroupChanged;
+                if (handler != null)
+                    handler(this, new GridGroupChangedArgs());
             }
-            catch (Exception e)
+            finally
             {
-                ErrorHandlerHelper.LogError(e, typeof(GridLogic));
-                return false;
+                RaiseLinkChanged(GridLinkTypeEnum.Mechanical);
             }
         }
 
-        public static string GetAssemblerSubtype(IMyAssembler assembler)
+        public void WatchLinkType(GridLinkTypeEnum linkType)
         {
-            if (assembler == null)
-                return string.Empty;
-
-            var definitionId = assembler.BlockDefinition;
-            var subtype = definitionId.SubtypeName;
-            return string.IsNullOrEmpty(subtype) ? definitionId.ToString() : subtype;
-        }
-
-        private static void AddToSet<TKey, TValue>(Dictionary<TKey, HashSet<TValue>> dictionary, TKey key, TValue value)
-        {
-            HashSet<TValue> values;
-            if (!dictionary.TryGetValue(key, out values))
-            {
-                values = new HashSet<TValue>();
-                dictionary[key] = values;
-            }
-
-            values.Add(value);
-        }
-
-        private IEnumerable<bool> RefreshInventoriesCoroutine()
-        {
-            _nextBlocks.Clear();
-            _nextInvBlocks.Clear();
-            _nextLasers.Clear();
-            _nextRadio.Clear();
-            _nextBeacons.Clear();
-            _nextBatteries.Clear();
-            _nextJumpDrives.Clear();
-            _nextAssemblers.Clear();
-            _nextTerminalBlocks.Clear();
-            _nextCargoContainers.Clear();
-            _nextGasTanks.Clear();
-            _nextPowerProducers.Clear();
-            _nextFarmPlots.Clear();
-
-            if (!IsGridAlive())
-            {
-                _refreshHealthy = false;
-                yield break;
-            }
-
-            Grid.GetBlocks(_nextBlocks, a => a.FatBlock is IMyTerminalBlock);
-            if (_nextBlocks.Count == 0)
-            {
-                _refreshHealthy = false;
-                yield break;
-            }
-
-            var processed = 0;
-            for (var i = 0; i < _nextBlocks.Count; i++)
-            {
-                var block = _nextBlocks[i].FatBlock as IMyTerminalBlock;
-                if (block == null)
-                    continue;
-
-                _nextTerminalBlocks.Add(block);
-
-                var cargo = block as IMyCargoContainer;
-                if (cargo != null)
-                    _nextCargoContainers.Add(cargo);
-
-                var gasTank = block as IMyGasTank;
-                if (gasTank != null)
-                    _nextGasTanks.Add(gasTank);
-
-                var producer = block as IMyPowerProducer;
-                if (producer != null)
-                    _nextPowerProducers.Add(producer);
-
-                var antenna = block as IMyRadioAntenna;
-                if (antenna != null)
-                    _nextRadio.Add(antenna);
-
-                var beacon = block as IMyBeacon;
-                if (beacon != null)
-                    _nextBeacons.Add(beacon);
-
-                var laser = block as IMyLaserAntenna;
-                if (laser != null)
-                    _nextLasers.Add(laser);
-
-                var battery = block as IMyBatteryBlock;
-                if (battery != null)
-                    _nextBatteries.Add(battery);
-
-                var jumpDrive = block as IMyJumpDrive;
-                if (jumpDrive != null)
-                    _nextJumpDrives.Add(jumpDrive);
-
-                var assembler = block as IMyAssembler;
-                if (assembler != null)
-                {
-                    _nextAssemblers.Add(assembler);
-                    EnsureAssemblerBlueprintDatabase(assembler);
-                }
-
-                var newBlock = KnowSubtypes.Add(block.BlockDefinition.SubtypeName);
-
-                var myFunctionalBlock = block as IMyFunctionalBlock;
-
-#if EXPERIMENTAL
-                if (newBlock && myFunctionalBlock != null) ActionHelper.RegisterNewBlock(myFunctionalBlock);
-#endif
-
-
-                if (myFunctionalBlock != null)
-                    if (KnowFarmSubtypes.Contains(myFunctionalBlock.BlockDefinition.SubtypeName) || newBlock)
-                    {
-                        IMyFarmPlotLogic planterComponent = null;
-                        IMyResourceStorageComponent storageComponent = null;
-
-                        foreach (var component in block.Components)
-                        {
-                            if (planterComponent == null)
-                                planterComponent = component as IMyFarmPlotLogic;
-
-                            if (storageComponent == null)
-                                storageComponent = component as IMyResourceStorageComponent;
-
-                            if (planterComponent == null || storageComponent == null)
-                                continue;
-
-                            KnowFarmSubtypes.Add(myFunctionalBlock.BlockDefinition.SubtypeName);
-                            _nextFarmPlots.Add(new FarmPlotEntry(myFunctionalBlock, planterComponent,
-                                storageComponent));
-                            break;
-                        }
-                    }
-
-                if (block.HasInventory && block.InventoryCount != 0)
-                    _nextInvBlocks.Add(block);
-
-                processed++;
-                _currentRefreshProcessed++;
-                if (processed >= CurrentRefreshBatchSize)
-                {
-                    processed = 0;
-                    yield return true;
-                }
-            }
-
-            if (!IsGridAlive())
-            {
-                _refreshHealthy = false;
-                yield break;
-            }
-
-            // Atomically swap the visible snapshot once fully built.
-            SwapBuffer(ref _radio, ref _nextRadio);
-            SwapBuffer(ref _lasers, ref _nextLasers);
-            SwapBuffer(ref _blocks, ref _nextBlocks);
-            SwapBuffer(ref _beacons, ref _nextBeacons);
-            SwapBuffer(ref _gasTanks, ref _nextGasTanks);
-            SwapBuffer(ref _invBlocks, ref _nextInvBlocks);
-            SwapBuffer(ref _farmPlots, ref _nextFarmPlots);
-            SwapBuffer(ref _batteries, ref _nextBatteries);
-            SwapBuffer(ref _jumpDrives, ref _nextJumpDrives);
-            SwapBuffer(ref _assemblers, ref _nextAssemblers);
-            SwapBuffer(ref _terminalBlocks, ref _nextTerminalBlocks);
-            SwapBuffer(ref _powerProducers, ref _nextPowerProducers);
-            SwapBuffer(ref _cargoContainers, ref _nextCargoContainers);
-            _refreshHealthy = true;
-        }
-
-        internal List<T> GetTerminalBlocksInternal<T>() where T : IMyTerminalBlock
-        {
-            return Blocks.GetTerminalBlocksInternal<T>();
-        }
-
-        public List<T> GetTerminalBlocks<T>(GridLinkTypeEnum linkType = (GridLinkTypeEnum)(-1))
-            where T : IMyTerminalBlock
-        {
-            return Blocks.GetTerminalBlocks<T>(linkType);
-        }
-
-        public List<FarmPlotEntry> GetFarmPlots()
-        {
-            return Blocks.GetFarmPlots();
-        }
-
-        public bool TryGetPlanetJumpPoint(
-            long planetId,
-            string planetName,
-            Vector3D planetCenter,
-            double planetRadiusMeters,
-            double gravityRangeMeters,
-            out Vector3D jumpPoint,
-            bool publish = true)
-        {
-            jumpPoint = Vector3D.Zero;
-            if (Grid == null)
-                return false;
-
-            var jumpDrives = GetTerminalBlocksInternal<IMyJumpDrive>();
-            if (jumpDrives == null || jumpDrives.Count == 0)
-                return false;
-
-            long frame = MyAPIGateway.Session != null ? MyAPIGateway.Session.GameplayFrameCounter : -1;
-            if (_jumpPointCacheFrame != frame)
-            {
-                _jumpPointByPlanetCache.Clear();
-                _jumpPointCacheFrame = frame;
-            }
-
-            JumpPointGpsEntry gpsEntry;
-            if (!_jumpPointGpsEntries.TryGetValue(planetId, out gpsEntry))
-                gpsEntry = new JumpPointGpsEntry();
-            _jumpPointGpsEntries[planetId] = gpsEntry;
-
-            if (_jumpPointByPlanetCache.TryGetValue(planetId, out jumpPoint))
-                return true;
-
-            var gridPos = Grid.GetPosition();
-            var dir = gridPos - planetCenter;
-            if (dir.LengthSquared() <= 1e-6)
-                dir = Vector3D.Forward;
-            else
-                dir.Normalize();
-
-            var offsetMeters = Math.Max(0d, planetRadiusMeters + gravityRangeMeters + 10d);
-            jumpPoint = planetCenter + dir * offsetMeters;
-            _jumpPointByPlanetCache[planetId] = jumpPoint;
-
-            if (publish)
-                PublishJumpPointGps(planetId, planetName, jumpPoint, frame);
-            return true;
-        }
-
-        private void PublishJumpPointGps(long planetId, string planetName, Vector3D jumpPoint, long frame)
-        {
-            if (frame < 0 || MyAPIGateway.Session == null || MyAPIGateway.Session.GPS == null)
+            if (linkType == GridLinkTypeEnum.Mechanical)
                 return;
 
-            JumpPointGpsEntry entry;
-            if (!_jumpPointGpsEntries.TryGetValue(planetId, out entry))
+            var current = GetLinkGroup(linkType);
+            IMyGridGroupData watched;
+            if (!_watchedLinkGroups.TryGetValue(linkType, out watched) || !ReferenceEquals(watched, current))
+                BindWatchedLinkGroup(linkType, current);
+        }
+
+        public void GetLinkedGrids(GridLinkTypeEnum linkType, ICollection<IMyCubeGrid> grids)
+        {
+            if (grids == null)
                 return;
 
-            if (frame - entry.LastPublishedFrame < 60)
+            grids.Clear();
+            if (MyAPIGateway.GridGroups == null || Grid == null)
                 return;
 
-            var gps = entry.Gps;
-            var discardAt = MyAPIGateway.Session.ElapsedPlayTime + JumpPointGpsTtl;
-            if (gps == null || (gps.DiscardAt.HasValue && gps.DiscardAt.Value <= MyAPIGateway.Session.ElapsedPlayTime))
+            MyAPIGateway.GridGroups.GetGroup(Grid, linkType, grids);
+        }
+
+        IMyGridGroupData GetLinkGroup(GridLinkTypeEnum linkType)
+        {
+            return MyAPIGateway.GridGroups != null && Grid != null
+                ? MyAPIGateway.GridGroups.GetGridGroup(linkType, Grid)
+                : null;
+        }
+
+        void BindWatchedLinkGroup(GridLinkTypeEnum linkType, IMyGridGroupData group)
+        {
+            IMyGridGroupData previous;
+            if (_watchedLinkGroups.TryGetValue(linkType, out previous))
             {
-                var gpsName = BuildJumpPointGpsName(planetName);
-                gps = MyAPIGateway.Session.GPS.Create(gpsName, string.Empty, jumpPoint, true, true);
-                if (gps == null)
+                if (ReferenceEquals(previous, group))
                     return;
-                gps.DiscardAt = discardAt;
-                MyAPIGateway.Session.GPS.AddLocalGps(gps);
-                entry.Gps = gps;
-            }
-            else
-            {
-                gps.Coords = jumpPoint;
-                gps.DiscardAt = discardAt;
-            }
 
-            entry.LastPublishedFrame = frame;
-            _jumpPointGpsEntries[planetId] = entry;
-        }
-
-        private string BuildJumpPointGpsName(string planetName)
-        {
-            var gridToken = GetGridNameToken();
-            var planetToken = string.IsNullOrWhiteSpace(planetName)
-                ? "Unknown"
-                : FormatingHelper.TrimName(SanitizeGpsNameToken(planetName));
-            return "JumpPoint_" + gridToken + "_" + planetToken;
-        }
-
-        private string GetGridNameToken()
-        {
-            var gridName = Grid?.CustomName;
-            if (string.IsNullOrWhiteSpace(gridName))
-                return "Unknown";
-
-            var token = FormatingHelper.TrimName(SanitizeGpsNameToken(gridName));
-            if (token.Length == 0)
-                token = "Unknown";
-            return token;
-        }
-
-        private static string SanitizeGpsNameToken(string raw)
-        {
-            if (string.IsNullOrEmpty(raw))
-                return string.Empty;
-
-            var chars = new List<char>(raw.Length);
-            for (var i = 0; i < raw.Length; i++)
-            {
-                var c = raw[i];
-                if (char.IsLetterOrDigit(c) || c == '_' || c == '-')
-                    chars.Add(c);
-                else if (char.IsWhiteSpace(c))
-                    chars.Add('_');
-            }
-
-            return new string(chars.ToArray());
-        }
-
-        /// <summary>
-        ///     Per-block input/output snapshot of the grid's refineries and assemblers, respecting
-        ///     block/group selection. Cached by query token and rebuilt on the batched refresh cycle.
-        /// </summary>
-        public List<ProductionBlockItems> GetProductionBlockItems(BlockSelectionConfigComponent blocksConfig, ItemSelectionConfigComponent itemsConfig,
-            IMyTerminalBlock referenceBlock)
-        {
-            return Items.GetProductionBlockItems(blocksConfig, itemsConfig, referenceBlock);
-        }
-
-        /// <summary>
-        ///     Builds the list of refinery/assembler blocks honouring SelectedBlocks / SelectedGroups / GridLinkType.
-        /// </summary>
-        private void BuildProductionBlockList(BlockSelectionConfigComponent blocksConfig, IMyTerminalBlock referenceBlock,
-            List<IMyTerminalBlock> blocks)
-        {
-            blocks.Clear();
-
-            if (blocksConfig.SelectedBlocks.Length == 0 && blocksConfig.SelectedGroups.Length == 0)
-            {
-                var all = GetInventories((GridLinkTypeEnum)blocksConfig.GridLinkTypeInternal);
-                for (var i = 0; i < all.Count; i++)
-                    if (all[i] is IMyRefinery || all[i] is IMyAssembler)
-                        blocks.Add(all[i]);
-
-                return;
-            }
-
-            blocks.AddRange(blocksConfig.SelectedBlocks
-                .Select(id => MyAPIGateway.Entities.GetEntityById(id) as IMyTerminalBlock)
-                .Where(b => (b is IMyRefinery || b is IMyAssembler) &&
-                            IsBlockInGridLinkScope(b, referenceBlock, (GridLinkTypeEnum)blocksConfig.GridLinkTypeInternal)));
-
-            if (blocksConfig.SelectedGroups.Length > 0 && referenceBlock != null)
-            {
-                var groupBlocks = new List<IMyTerminalBlock>();
-                foreach (var groupName in blocksConfig.SelectedGroups)
+                if (previous != null)
                 {
-                    groupBlocks.Clear();
-                    GridTerminalSystem.GetBlockGroupWithName(groupName)?
-                        .GetBlocks(groupBlocks, b => (b is IMyRefinery || b is IMyAssembler) &&
-                                                     b.GetUserRelationToOwner(referenceBlock.OwnerId)
-                                                     <= MyRelationsBetweenPlayerAndBlock.FactionShare &&
-                                                     IsBlockInGridLinkScope(b, referenceBlock, (GridLinkTypeEnum)blocksConfig.GridLinkTypeInternal) &&
-                                                     !blocks.Contains(b));
-                    blocks.AddRange(groupBlocks);
+                    previous.OnGridAdded -= OnWatchedLinkGridAdded;
+                    previous.OnGridRemoved -= OnWatchedLinkGridRemoved;
+                    previous.OnReleased -= OnWatchedLinkGroupReleased;
                 }
             }
+
+            _watchedLinkGroups[linkType] = group;
+            if (group != null)
+            {
+                group.OnGridAdded += OnWatchedLinkGridAdded;
+                group.OnGridRemoved += OnWatchedLinkGridRemoved;
+                group.OnReleased += OnWatchedLinkGroupReleased;
+            }
         }
 
-        private static void ReadInventoryAmounts(IMyTerminalBlock block, int inventoryIndex, List<IngameItem> scratch,
-            Dictionary<MyItemType, double> destination)
+        void UnbindWatchedLinkGroups()
         {
-            if (inventoryIndex >= block.InventoryCount)
-                return;
-
-            var inv = block.GetInventory(inventoryIndex);
-            if (inv == null)
-                return;
-
-            scratch.Clear();
-            inv.GetItems(scratch);
-            for (var k = 0; k < scratch.Count; k++)
+            foreach (var group in _watchedLinkGroups.Values)
             {
-                var it = scratch[k];
-                var amount = (double)it.Amount;
-                if (amount <= 0)
+                if (group == null)
                     continue;
 
-                var type = it.Type;
-                double acc;
-                if (destination.TryGetValue(type, out acc))
-                    destination[type] = acc + amount;
-                else
-                    destination[type] = amount;
-            }
-        }
-
-        private static void FillSortedByAmount(Dictionary<MyItemType, double> source,
-            List<KeyValuePair<MyItemType, double>> destination)
-        {
-            foreach (var kv in source)
-                destination.Add(kv);
-
-            destination.Sort((a, b) => b.Value.CompareTo(a.Value));
-        }
-
-        private static string GetBlockDisplayName(IMyTerminalBlock block)
-        {
-            if (!string.IsNullOrEmpty(block.CustomName))
-                return block.CustomName;
-            if (!string.IsNullOrEmpty(block.DisplayNameText))
-                return block.DisplayNameText;
-            return block.BlockDefinition.SubtypeName ?? string.Empty;
-        }
-
-        private static void SwapBuffer<T>(ref T active, ref T next) where T : class, IList
-        {
-            var old = active;
-            active = next;
-            next = old;
-            next?.Clear();
-        }
-
-        public sealed class ItemsComponent
-        {
-            readonly GridLogic _owner;
-
-            internal ItemsComponent(GridLogic owner)
-            {
-                _owner = owner;
+                group.OnGridAdded -= OnWatchedLinkGridAdded;
+                group.OnGridRemoved -= OnWatchedLinkGridRemoved;
+                group.OnReleased -= OnWatchedLinkGroupReleased;
             }
 
-            public Dictionary<MyItemType, double> Components
+            _watchedLinkGroups.Clear();
+        }
+
+        void OnWatchedLinkGridAdded(IMyGridGroupData group, IMyCubeGrid grid, IMyGridGroupData previousGroup)
+        {
+            GridLinkTypeEnum linkType;
+            if (TryGetWatchedLinkType(group, out linkType))
+                RaiseLinkChanged(linkType);
+        }
+
+        void OnWatchedLinkGridRemoved(IMyGridGroupData group, IMyCubeGrid grid, IMyGridGroupData nextGroup)
+        {
+            GridLinkTypeEnum linkType;
+            if (!TryGetWatchedLinkType(group, out linkType))
+                return;
+
+            if (grid != null && Grid != null && grid.EntityId == Grid.EntityId)
+                BindWatchedLinkGroup(linkType, nextGroup ?? GetLinkGroup(linkType));
+
+            RaiseLinkChanged(linkType);
+        }
+
+        void OnWatchedLinkGroupReleased(IMyGridGroupData group)
+        {
+            GridLinkTypeEnum linkType;
+            if (!TryGetWatchedLinkType(group, out linkType))
+                return;
+
+            BindWatchedLinkGroup(linkType, null);
+            var nextGroup = GetLinkGroup(linkType);
+            if (!ReferenceEquals(nextGroup, group))
+                BindWatchedLinkGroup(linkType, nextGroup);
+            RaiseLinkChanged(linkType);
+        }
+
+        bool TryGetWatchedLinkType(IMyGridGroupData group, out GridLinkTypeEnum linkType)
+        {
+            foreach (var watched in _watchedLinkGroups)
             {
-                get
+                if (ReferenceEquals(watched.Value, group))
                 {
-                    if (!_owner._compCache.Any())
-                        _owner.AggregateItems(_owner.GetInventories(), _owner._compCache, new[] { "Component" },
-                            Array.Empty<MyDefinitionId>());
-
-                    return _owner._compCache;
+                    linkType = watched.Key;
+                    return true;
                 }
             }
 
-            public Dictionary<MyItemType, double> Ingots
-            {
-                get
-                {
-                    if (!_owner._ingotCache.Any())
-                        _owner.AggregateItems(_owner.GetInventories(), _owner._ingotCache, IngotTypeFilter,
-                            Array.Empty<MyDefinitionId>());
+            linkType = default(GridLinkTypeEnum);
+            return false;
+        }
 
-                    return _owner._ingotCache;
-                }
-            }
-
-            public Dictionary<MyItemType, double> GetItems(
-                BlockSelectionConfigComponent blocksConfig,
-                ItemSelectionConfigComponent itemsConfig,
-                IMyTerminalBlock referenceBlock,
-                string[] types = null)
-            {
-                return _owner.GetItemsCore(blocksConfig, itemsConfig, referenceBlock, types, _owner._queryCache, false);
-            }
-
-            public ItemSnapshot GetItemsSnapshot(
-                BlockSelectionConfigComponent blocksConfig,
-                ItemSelectionConfigComponent itemsConfig,
-                IMyTerminalBlock referenceBlock,
-                string[] types = null)
-            {
-                var searchToken = SearchQueryToken.GetToken(blocksConfig, itemsConfig);
-                var items = _owner.GetItemsCore(blocksConfig, itemsConfig, referenceBlock, types, _owner._queryCache, false);
-
-                ItemSnapshot previous;
-                if (_owner._itemSnapshots.TryGetValue(searchToken, out previous) &&
-                    ItemSnapshot.ContentEquals(previous.Items, items))
-                {
-                    if (!ReferenceEquals(previous.Items, items))
-                        _owner._queryCache[searchToken] = previous.Items;
-
-                    return previous;
-                }
-
-                var revision = DateTime.UtcNow;
-                if (previous != null && revision <= previous.Revision)
-                    revision = previous.Revision.AddTicks(1);
-
-                var snapshot = new ItemSnapshot(searchToken, revision, items);
-                _owner._itemSnapshots[searchToken] = snapshot;
-                return snapshot;
-            }
-
-            public Dictionary<MyItemType, double> GetIngots(
-                BlockSelectionConfigComponent blocksConfig,
-                ItemSelectionConfigComponent itemsConfig,
-                IMyTerminalBlock referenceBlock)
-            {
-                return _owner.GetItemsCore(blocksConfig, itemsConfig, referenceBlock, IngotTypeFilter,
-                    _owner._ingotQueryCache, true);
-            }
-
-            public List<ProductionBlockItems> GetProductionBlockItems(
-                BlockSelectionConfigComponent blocksConfig,
-                ItemSelectionConfigComponent itemsConfig,
-                IMyTerminalBlock referenceBlock)
+        void RaiseLinkChanged(GridLinkTypeEnum linkType)
+        {
+#if EXPERIMENTAL
+            using (RuntimeProfiler.Measure(
+                       "event.grid",
+                       "link_changed." + linkType,
+                       null,
+                       TargetGrid))
+#endif
             {
                 try
                 {
-                    var token = SearchQueryToken.GetToken(blocksConfig, itemsConfig);
+                    var handler = LinkChanged;
+                    if (handler != null)
+                        handler(this, new GridLinkChangedArgs(linkType));
+                }
+                finally
+                {
+                    ScheduleInventoryTopologyRefresh();
+                }
+            }
+        }
 
-                    List<ProductionBlockItems> cached;
-                    if (_owner._productionByBlockCache.TryGetValue(token, out cached))
-                        return cached;
+        void BindTerminalParentGroup(IMyGridGroupData group)
+        {
+            if (ReferenceEquals(_terminalParentGroup, group))
+                return;
 
-                    var blocks = new List<IMyTerminalBlock>();
-                    _owner.BuildProductionBlockList(blocksConfig, referenceBlock, blocks);
+            if (_terminalParentGroup != null)
+            {
+                _terminalParentGroup.OnGridAdded -= OnTerminalParentGridAdded;
+                _terminalParentGroup.OnGridRemoved -= OnTerminalParentGridRemoved;
+                _terminalParentGroup.OnReleased -= OnTerminalParentGroupReleased;
+            }
 
-                    var result = new List<ProductionBlockItems>(blocks.Count);
-                    var scratchItems = new List<IngameItem>();
-                    var scratchInput = new Dictionary<MyItemType, double>();
-                    var scratchOutput = new Dictionary<MyItemType, double>();
+            _terminalParentGroup = group;
+            if (_terminalParentGroup != null)
+            {
+                _terminalParentGroup.OnGridAdded += OnTerminalParentGridAdded;
+                _terminalParentGroup.OnGridRemoved += OnTerminalParentGridRemoved;
+                _terminalParentGroup.OnReleased += OnTerminalParentGroupReleased;
+            }
+        }
 
-                    for (var b = 0; b < blocks.Count; b++)
+        void BindTerminalSystem(IMyGridTerminalSystem terminalSystem)
+        {
+            if (ReferenceEquals(_terminalSystem, terminalSystem))
+                return;
+
+            if (_terminalSystem != null)
+            {
+                _terminalSystem.GroupAdded -= OnTerminalGroupAdded;
+                _terminalSystem.GroupRemoved -= OnTerminalGroupRemoved;
+            }
+
+            _terminalSystem = terminalSystem;
+            if (_terminalSystem != null)
+            {
+                _terminalSystem.GroupAdded += OnTerminalGroupAdded;
+                _terminalSystem.GroupRemoved += OnTerminalGroupRemoved;
+            }
+        }
+
+        void OnTerminalParentGridAdded(IMyGridGroupData group, IMyCubeGrid grid, IMyGridGroupData previousGroup)
+        {
+            RefreshTerminalSystem();
+        }
+
+        void OnTerminalParentGridRemoved(IMyGridGroupData group, IMyCubeGrid grid, IMyGridGroupData nextGroup)
+        {
+            if (grid != null && Grid != null && grid.EntityId == Grid.EntityId)
+                BindTerminalParentGroup(nextGroup ?? GetTerminalParentGroup());
+
+            RefreshTerminalSystem();
+        }
+
+        void OnTerminalParentGroupReleased(IMyGridGroupData group)
+        {
+            if (!ReferenceEquals(group, _terminalParentGroup))
+                return;
+
+            BindTerminalParentGroup(null);
+            BindTerminalParentGroup(GetTerminalParentGroup());
+            RefreshTerminalSystem();
+        }
+
+        void RefreshTerminalSystem()
+        {
+            BindTerminalSystem(GetTerminalSystem());
+            try
+            {
+                RaiseTerminalGroupChanged(null);
+            }
+            finally
+            {
+                ScheduleInventoryTopologyRefresh();
+            }
+        }
+
+        void OnTerminalGroupAdded(IMyBlockGroup group)
+        {
+            RaiseTerminalGroupChanged(group?.Name);
+        }
+
+        void OnTerminalGroupRemoved(IMyBlockGroup group) => RaiseTerminalGroupChanged(group?.Name);
+
+        void RaiseTerminalGroupChanged(string groupName)
+        {
+            var handler = TerminalGroupChanged;
+            if (handler != null)
+                handler(this, new TerminalGroupChangedArgs(groupName));
+        }
+
+        public void GetTerminalGroupBlocks(IEnumerable<string> groupNames, List<IMyTerminalBlock> blocks)
+        {
+            if (blocks == null)
+                return;
+
+            blocks.Clear();
+            var terminalSystem = _terminalSystem ?? GetTerminalSystem();
+            if (terminalSystem == null || groupNames == null)
+                return;
+
+            var seen = new HashSet<long>();
+            var groupBlocks = new List<IMyTerminalBlock>();
+            foreach (var groupName in groupNames)
+            {
+                if (string.IsNullOrEmpty(groupName))
+                    continue;
+
+                var group = terminalSystem.GetBlockGroupWithName(groupName);
+                if (group == null)
+                    continue;
+
+                groupBlocks.Clear();
+                group.GetBlocks(groupBlocks);
+                foreach (var block in groupBlocks)
+                {
+                    if (block != null && seen.Add(block.EntityId))
+                        blocks.Add(block);
+                }
+            }
+        }
+
+        void OnBlockAdded(IMySlimBlock block)
+        {
+#if EXPERIMENTAL
+            using (RuntimeProfiler.Measure("event.grid", "block_added", null, TargetGrid))
+#endif
+            {
+                try
+                {
+                    if (block.FatBlock != null)
                     {
-                        var tb = blocks[b];
-                        scratchInput.Clear();
-                        scratchOutput.Clear();
-                        ReadInventoryAmounts(tb, 0, scratchItems, scratchInput);
-                        ReadInventoryAmounts(tb, 1, scratchItems, scratchOutput);
-
-                        var entry = new ProductionBlockItems(tb.EntityId, GetBlockDisplayName(tb));
-                        FillSortedByAmount(scratchInput, entry.Input);
-                        FillSortedByAmount(scratchOutput, entry.Output);
-                        result.Add(entry);
+                        var fatBlock = block.FatBlock;
+                        if (_blocks != null && !_blocks.All.Contains(fatBlock))
+                            _blocks.Add(fatBlock);
+                        if (_blocks != null)
+                            AddFarmPlot(fatBlock);
+                        if (_items != null)
+                            RefreshBlockInventories(fatBlock);
                     }
+                }
+                finally
+                {
+                    if (_items != null || HasInventoryTopologyNeed)
+                        ScheduleInventoryTopologyRefresh();
+                }
+            }
+        }
 
-                    _owner._productionByBlockCache[token] = result;
-                    return result;
+        void OnBlockRemoved(IMySlimBlock block)
+        {
+#if EXPERIMENTAL
+            using (RuntimeProfiler.Measure("event.grid", "block_removed", null, TargetGrid))
+#endif
+            {
+                try
+                {
+                    if (block.FatBlock == null)
+                        return;
+
+                    var fatBlock = block.FatBlock;
+                    if (_items != null)
+                        RemoveBlockInventories(fatBlock);
+                    if (_blocks != null)
+                    {
+                        RemoveFarmPlot(fatBlock);
+                        _blocks.Remove(fatBlock);
+                    }
+                }
+                finally
+                {
+                    if (_items != null || HasInventoryTopologyNeed)
+                        ScheduleInventoryTopologyRefresh();
+                }
+            }
+        }
+
+        void RefreshBlockInventories(IMyCubeBlock block)
+        {
+            if (block == null)
+                return;
+
+            var currentInventories = new List<MyInventoryBase>();
+            if (block.HasInventory)
+            {
+                for (var inventoryIndex = 0; inventoryIndex < block.InventoryCount; inventoryIndex++)
+                {
+                    var inventory = block.GetInventory(inventoryIndex) as MyInventoryBase;
+                    if (inventory != null && !currentInventories.Contains(inventory))
+                        currentInventories.Add(inventory);
+                }
+            }
+
+            List<MyInventoryBase> trackedInventories;
+            if (!_inventoriesByBlock.TryGetValue(block, out trackedInventories))
+            {
+                trackedInventories = new List<MyInventoryBase>();
+                if (currentInventories.Count > 0)
+                    _inventoriesByBlock.Add(block, trackedInventories);
+            }
+
+            for (var i = trackedInventories.Count - 1; i >= 0; i--)
+            {
+                var inventory = trackedInventories[i];
+                if (currentInventories.Contains(inventory))
+                    continue;
+
+                trackedInventories.RemoveAt(i);
+                UnbindInventory(inventory);
+            }
+
+            foreach (var inventory in currentInventories)
+            {
+                if (trackedInventories.Contains(inventory))
+                    continue;
+
+                trackedInventories.Add(inventory);
+                BindInventory(inventory);
+            }
+
+            if (trackedInventories.Count == 0)
+                _inventoriesByBlock.Remove(block);
+        }
+
+        void AddFarmPlot(IMyCubeBlock block)
+        {
+            if (block == null || _farmPlotsByBlock.ContainsKey(block))
+                return;
+
+            var functionalBlock = block as IMyFunctionalBlock;
+            if (functionalBlock == null)
+                return;
+
+            IMyFarmPlotLogic farmLogic = null;
+            IMyResourceStorageComponent storage = null;
+            foreach (var component in block.Components)
+            {
+                if (farmLogic == null)
+                    farmLogic = component as IMyFarmPlotLogic;
+                if (storage == null)
+                    storage = component as IMyResourceStorageComponent;
+                if (farmLogic != null && storage != null)
+                    break;
+            }
+
+            if (farmLogic == null || storage == null)
+                return;
+
+            var entry = new FarmPlotEntry(functionalBlock, farmLogic, storage);
+            _farmPlotsByBlock.Add(block, entry);
+            _farmPlots.Add(entry);
+        }
+
+        void RemoveFarmPlot(IMyCubeBlock block)
+        {
+            FarmPlotEntry entry;
+            if (block == null || !_farmPlotsByBlock.TryGetValue(block, out entry))
+                return;
+
+            _farmPlotsByBlock.Remove(block);
+            _farmPlots.Remove(entry);
+        }
+
+        void RemoveBlockInventories(IMyCubeBlock block)
+        {
+            List<MyInventoryBase> inventories;
+            if (!_inventoriesByBlock.TryGetValue(block, out inventories))
+                return;
+
+            _inventoriesByBlock.Remove(block);
+            foreach (var inventory in inventories)
+                UnbindInventory(inventory);
+        }
+
+        void BindInventory(MyInventoryBase inventory)
+        {
+            _items.AddInventory(inventory);
+            inventory.InventoryContentChanged += OnInventoryContentChanged;
+            inventory.ContentsChanged += OnInventoryContentsChanged;
+        }
+
+        void UnbindInventory(MyInventoryBase inventory)
+        {
+            inventory.InventoryContentChanged -= OnInventoryContentChanged;
+            inventory.ContentsChanged -= OnInventoryContentsChanged;
+            if (_items != null)
+                _items.RemoveInventory(inventory);
+        }
+
+        void OnInventoryContentChanged(
+            MyInventoryBase inventory,
+            MyPhysicalInventoryItem item,
+            MyFixedPoint amount)
+        {
+            if (_items == null)
+                return;
+
+#if EXPERIMENTAL
+            using (RuntimeProfiler.Measure(
+                       "event.inventory",
+                       "content_changed",
+                       null,
+                       inventory.Entity?.EntityId ?? TargetGrid))
+#endif
+            {
+                if (item.Content != null)
+                    _items.ScheduleRecalculation(inventory, (MyItemType)item.Content);
+            }
+        }
+
+        void OnInventoryContentsChanged(MyInventoryBase inventory)
+        {
+            if (_items == null)
+                return;
+
+#if EXPERIMENTAL
+            using (RuntimeProfiler.Measure(
+                       "event.inventory",
+                       "contents_changed",
+                       null,
+                       inventory.Entity?.EntityId ?? TargetGrid))
+#endif
+            {
+                _items.ScheduleInventoryRecalculation(inventory);
+            }
+        }
+
+        void ScheduleInventoryTopologyRefresh()
+        {
+            if (_isUnloaded || _inventoryTopologyRefreshScheduled)
+                return;
+
+            _inventoryTopologyRefreshScheduled = true;
+            LcdModClientComponent.RunNextFrame.Add(RefreshInventoryTopology);
+        }
+
+        void RefreshInventoryTopology()
+        {
+#if EXPERIMENTAL
+            using (RuntimeProfiler.Measure("items.topology", "refresh", null, TargetGrid))
+#endif
+            {
+                _inventoryTopologyRefreshScheduled = false;
+                if (!IsAlive || (_items == null && !HasInventoryTopologyNeed))
+                    return;
+
+                try
+                {
+                    if (_items != null)
+                        RefreshInventoryTopologyCore();
+                    RaiseInventoryTopologyChanged();
                 }
                 catch (Exception e)
                 {
-                    ErrorHandlerHelper.LogError(e, _owner);
-                    return new List<ProductionBlockItems>();
+                    LogHelper.LogOnce(
+                        "GridLogic.RefreshInventoryTopology." + TargetGrid + "." + e.GetType().FullName,
+                        "Inventory topology refresh failed and will be retried: " + e);
+                    ScheduleInventoryTopologyRefresh();
                 }
             }
         }
 
-        public sealed class BlocksComponent
+        void RefreshInventoryTopologyCore()
         {
-            readonly GridLogic _owner;
-
-            internal BlocksComponent(GridLogic owner)
+            var blocks = new List<IMySlimBlock>();
+            Grid.GetBlocks(blocks);
+            var currentBlocks = new HashSet<IMyCubeBlock>();
+            foreach (var block in blocks)
             {
-                _owner = owner;
+                var fatBlock = block.FatBlock;
+                if (fatBlock == null)
+                    continue;
+
+                currentBlocks.Add(fatBlock);
+                if (_blocks != null && !_blocks.All.Contains(fatBlock))
+                    _blocks.Add(fatBlock);
+                if (_blocks != null)
+                    AddFarmPlot(fatBlock);
+                if (_items != null)
+                    RefreshBlockInventories(fatBlock);
             }
 
-            public int LastRefreshIterations => _owner.LastRefreshIterations;
-            public int LastRefreshProcessed => _owner.LastRefreshProcessed;
-            public int EstimatedNextRefreshBatchSize => _owner.EstimatedNextRefreshBatchSize;
-            public int CurrentRefreshBatchSize => _owner.CurrentRefreshBatchSize;
-            public bool IsRefreshRunning => _owner.IsRefreshRunning;
-
-            public void RefreshIfNeeded()
+            if (_items != null)
             {
-                _owner.StartRefresh();
+                var removedInventoryBlocks = _inventoriesByBlock.Keys
+                    .Where(block => !currentBlocks.Contains(block))
+                    .ToList();
+                foreach (var block in removedInventoryBlocks)
+                    RemoveBlockInventories(block);
             }
 
-            public List<IMyTerminalBlock> GetInventories()
+            if (_blocks != null)
             {
-                RefreshIfNeeded();
-                return _owner._invBlocks;
-            }
-
-            public List<IMyTerminalBlock> GetInventories(GridLinkTypeEnum linkType)
-            {
-                var terminals = GetTerminalBlocks<IMyTerminalBlock>(linkType);
-                var inventories = new List<IMyTerminalBlock>();
-                if (terminals == null)
-                    return inventories;
-
-                for (var i = 0; i < terminals.Count; i++)
+                var removedBlocks = _blocks.All
+                    .Where(block => !currentBlocks.Contains(block))
+                    .ToList();
+                foreach (var block in removedBlocks)
                 {
-                    var block = terminals[i];
-                    if (block != null && block.HasInventory)
-                        inventories.Add(block);
+                    if (_items != null)
+                        RemoveBlockInventories(block);
+                    RemoveFarmPlot(block);
+                    _blocks.Remove(block);
                 }
-
-                return inventories;
             }
+        }
 
-            internal List<T> GetTerminalBlocksInternal<T>() where T : IMyTerminalBlock
+        void RaiseInventoryTopologyChanged()
+        {
+            var handlers = InventoryTopologyChanged;
+            if (handlers == null)
+                return;
+
+            Exception firstError = null;
+            var args = new InventoryTopologyChangedArgs();
+            foreach (var @delegate in handlers.GetInvocationList())
             {
-                RefreshIfNeeded();
-                switch (typeof(T).Name)
+                var handler = (InventoryTopologyChanged)@delegate;
+                try
                 {
-                    case nameof(IMyTerminalBlock):
-                        return _owner._terminalBlocks as List<T>;
-                    case nameof(IMyCargoContainer):
-                        return _owner._cargoContainers as List<T>;
-                    case nameof(IMyGasTank):
-                        return _owner._gasTanks as List<T>;
-                    case nameof(IMyPowerProducer):
-                        return _owner._powerProducers as List<T>;
-                    case nameof(IMyLaserAntenna):
-                        return _owner._lasers as List<T>;
-                    case nameof(IMyRadioAntenna):
-                        return _owner._radio as List<T>;
-                    case nameof(IMyBeacon):
-                        return _owner._beacons as List<T>;
-                    case nameof(IMyBatteryBlock):
-                        return _owner._batteries as List<T>;
-                    case nameof(IMyJumpDrive):
-                        return _owner._jumpDrives as List<T>;
-                    case nameof(IMyAssembler):
-                        return _owner._assemblers as List<T>;
+                    handler(this, args);
                 }
-
-                throw new NotImplementedException(typeof(T).Name);
+                catch (Exception e)
+                {
+                    if (firstError == null)
+                        firstError = e;
+                }
             }
 
-            public List<T> GetTerminalBlocks<T>(GridLinkTypeEnum linkType = (GridLinkTypeEnum)(-1))
-                where T : IMyTerminalBlock
-            {
-                if (linkType == (GridLinkTypeEnum)(-1))
-                    return GetTerminalBlocksInternal<T>();
-
-                if (linkType != GridLinkTypeEnum.Physical && linkType != GridLinkTypeEnum.Mechanical)
-                    throw new NotImplementedException(typeof(T).Name);
-
-                var resolver = GridGroupLogic.ResolveFor(_owner);
-                if (resolver == null)
-                    return GetTerminalBlocksInternal<T>();
-
-                return resolver.GetTerminalBlocks<T>(_owner, linkType);
-            }
-
-            public List<FarmPlotEntry> GetFarmPlots()
-            {
-                RefreshIfNeeded();
-                return _owner._farmPlots;
-            }
+            if (firstError != null)
+                throw firstError;
         }
 
-        public sealed class PowerComponent
+    }
+
+    public delegate void GridGroupChanged(object sender, GridGroupChangedArgs args);
+
+    public class GridGroupChangedArgs
+    {
+    }
+
+    public delegate void GridLinkChanged(object sender, GridLinkChangedArgs args);
+
+    public sealed class GridLinkChangedArgs
+    {
+        public GridLinkChangedArgs(GridLinkTypeEnum linkType)
         {
-            readonly GridLogic _owner;
-
-            internal PowerComponent(GridLogic owner)
-            {
-                _owner = owner;
-            }
-
-            public List<IMyPowerProducer> GetProducers(GridLinkTypeEnum linkType = (GridLinkTypeEnum)(-1))
-            {
-                return _owner.GetTerminalBlocks<IMyPowerProducer>(linkType);
-            }
-
-            public List<IMyBatteryBlock> GetBatteries(GridLinkTypeEnum linkType = (GridLinkTypeEnum)(-1))
-            {
-                return _owner.GetTerminalBlocks<IMyBatteryBlock>(linkType);
-            }
-
-            public List<IMyJumpDrive> GetJumpDrives(GridLinkTypeEnum linkType = (GridLinkTypeEnum)(-1))
-            {
-                return _owner.GetTerminalBlocks<IMyJumpDrive>(linkType);
-            }
+            LinkType = linkType;
         }
 
-        private struct JumpPointGpsEntry
+        public GridLinkTypeEnum LinkType { get; private set; }
+    }
+
+    public delegate void TerminalGroupChanged(object sender, TerminalGroupChangedArgs args);
+
+    public sealed class TerminalGroupChangedArgs
+    {
+        public TerminalGroupChangedArgs(string groupName)
         {
-            public IMyGps Gps;
-            public long LastPublishedFrame;
+            GroupName = groupName;
         }
+
+        public string GroupName { get; private set; }
+    }
+
+    public delegate void InventoryTopologyChanged(object sender, InventoryTopologyChangedArgs args);
+
+    public sealed class InventoryTopologyChangedArgs
+    {
     }
 }

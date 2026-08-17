@@ -12,6 +12,12 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
 {
     internal sealed class RadioAntennaCollector : AntennaCollector
     {
+        readonly LinkedTypedBlockSourceSet<IMyRadioAntenna> _radios =
+            new LinkedTypedBlockSourceSet<IMyRadioAntenna>(delegate(TypedBlockCollection blocks)
+            {
+                return blocks.RadioAntennas;
+            });
+
         public RadioAntennaCollector(
             IAppHost antennaSurfaceScript,
             Func<BlockSelectionConfigComponent> getConfig,
@@ -26,23 +32,32 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
             Dictionary<long, AntennaEntry> models,
             HashSet<long> activeEntryIds)
         {
-            var radios = grid.GetTerminalBlocks<IMyRadioAntenna>(GridLinkType);
-
-            for (int i = 0; i < radios.Count; i++)
+            _radios.Bind(grid, GridLinkType);
+            var sources = _radios.Sources;
+            for (int sourceIndex = 0; sourceIndex < sources.Count; sourceIndex++)
             {
-                var radio = radios[i];
-                if(!IsValid(radio))
-                    continue;
+                var radios = sources[sourceIndex];
+                for (int i = 0; i < radios.Count; i++)
+                {
+                    var radio = radios[i];
+                    if(!IsValid(radio))
+                        continue;
 
-                var entry = GetOrCreateEntry(radio.EntityId, entries, models, activeEntryIds);
-                entry.Update(
-                    GetName(radio),
-                    GetStatusIcon(radio),
-                    GetStatusText(radio),
-                    GetStatusColor(radio),
-                    radio.IsFunctional,
-                    false);
+                    var entry = GetOrCreateEntry(radio.EntityId, entries, models, activeEntryIds);
+                    entry.Update(
+                        GetName(radio),
+                        GetStatusIcon(radio),
+                        GetStatusText(radio),
+                        GetStatusColor(radio),
+                        radio.IsFunctional,
+                        false);
+                }
             }
+        }
+
+        public override void Dispose()
+        {
+            _radios.Dispose();
         }
 
         string GetName(IMyRadioAntenna radio)

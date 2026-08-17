@@ -30,6 +30,11 @@ namespace LcdMod.Client.Gui.UserControls.Power
             new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
 
         readonly List<IMyJumpDrive> _visible = new List<IMyJumpDrive>();
+        readonly LinkedTypedBlockSourceSet<IMyJumpDrive> _jumpDrives =
+            new LinkedTypedBlockSourceSet<IMyJumpDrive>(delegate(TypedBlockCollection blocks)
+            {
+                return blocks.JumpDrives;
+            });
         Dictionary<long, PowerEntry> _activeEntriesBuffer = new Dictionary<long, PowerEntry>();
         Dictionary<long, PowerEntry> _standbyEntriesBuffer = new Dictionary<long, PowerEntry>();
 
@@ -79,21 +84,26 @@ namespace LcdMod.Client.Gui.UserControls.Power
                 return;
             }
 
-            var jumpDrives = grid.GetTerminalBlocks<IMyJumpDrive>(GridLinkType);
+            _jumpDrives.Bind(grid, GridLinkType);
             int fullCount = 0;
             int notFullCount = 0;
             BeginCenterIconSpinFrame();
 
-            for (int i = 0; i < jumpDrives.Count; i++)
+            var jumpDriveSources = _jumpDrives.Sources;
+            for (int sourceIndex = 0; sourceIndex < jumpDriveSources.Count; sourceIndex++)
             {
-                var jumpDrive = jumpDrives[i];
-                if (!HideEmpty || jumpDrive.MaxStoredPower > 0f)
+                var jumpDrives = jumpDriveSources[sourceIndex];
+                for (int i = 0; i < jumpDrives.Count; i++)
                 {
-                    _visible.Add(jumpDrive);
-                    if (GetRatio(jumpDrive) >= FULL_THRESHOLD)
-                        fullCount++;
-                    else
-                        notFullCount++;
+                    var jumpDrive = jumpDrives[i];
+                    if (!HideEmpty || jumpDrive.MaxStoredPower > 0f)
+                    {
+                        _visible.Add(jumpDrive);
+                        if (GetRatio(jumpDrive) >= FULL_THRESHOLD)
+                            fullCount++;
+                        else
+                            notFullCount++;
+                    }
                 }
             }
 
@@ -255,6 +265,11 @@ namespace LcdMod.Client.Gui.UserControls.Power
                 lines.Add(new StaticTooltipLine("Ready in: --:--"));
 
             return lines;
+        }
+
+        public override void Dispose()
+        {
+            _jumpDrives.Dispose();
         }
 
         static string FormatMegawattHours(float value)

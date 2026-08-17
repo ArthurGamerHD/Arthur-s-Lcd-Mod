@@ -18,8 +18,8 @@ namespace LcdMod.Client.Modules.Defense
             new Dictionary<IShieldProvider, ShieldInfo>();
         readonly List<ShieldInfo> _shields = new List<ShieldInfo>();
         readonly List<ShieldInfo> _nextShields = new List<ShieldInfo>();
-        readonly List<IMyTerminalBlock> _terminalBlocks = new List<IMyTerminalBlock>();
-        readonly List<IMySlimBlock> _slimBlocks = new List<IMySlimBlock>();
+        readonly LinkedTypedBlockSourceSet<IMyTerminalBlock> _terminalSources =
+            new LinkedTypedBlockSourceSet<IMyTerminalBlock>(blocks => blocks.TerminalBlocks);
         List<IMyCubeGrid> _grids = new List<IMyCubeGrid>();
         long _lastCachedInfoRefreshFrame = long.MinValue;
 
@@ -54,6 +54,8 @@ namespace LcdMod.Client.Modules.Defense
                 Requester = requester;
             CaptureCount++;
             ReleasedFrame = 0L;
+            if (CaptureCount == 1)
+                _terminalSources.Bind(Requester, LinkType);
         }
 
         internal void Release(long frame)
@@ -61,12 +63,17 @@ namespace LcdMod.Client.Modules.Defense
             if (CaptureCount > 0)
                 CaptureCount--;
             if (CaptureCount == 0)
+            {
                 ReleasedFrame = frame;
+                _terminalSources.Unbind();
+            }
         }
 
         internal void Update(long gameplayFrame)
         {
             if (gameplayFrame < 0L)
+                return;
+            if (!HasCaptures)
                 return;
 
             bool refreshCachedData = _lastCachedInfoRefreshFrame == long.MinValue ||
@@ -91,7 +98,7 @@ namespace LcdMod.Client.Modules.Defense
                     }
 
                     if (provider.TryUpdateShieldInfo(
-                            _grids, _terminalBlocks, gameplayFrame, refreshCachedData, model))
+                            _grids, EnumerateTerminalBlocks(), gameplayFrame, refreshCachedData, model))
                     {
                         model.UpdateChargeGhost(gameplayFrame);
                         _nextShields.Add(model);
@@ -145,27 +152,25 @@ namespace LcdMod.Client.Modules.Defense
             _grids = _resolver.ResolveGrids(Requester, LinkType);
             Key = _resolver.ResolveKey(Requester, LinkType);
 
-            _terminalBlocks.Clear();
-
-            for (int gridIndex = 0; gridIndex < _grids.Count; gridIndex++)
-            {
-                var grid = _grids[gridIndex];
-                if (grid == null || grid.Closed || grid.MarkedForClose)
-                    continue;
-
-                _slimBlocks.Clear();
-                grid.GetBlocks(_slimBlocks, slim => slim != null && slim.FatBlock is IMyTerminalBlock);
-                for (int blockIndex = 0; blockIndex < _slimBlocks.Count; blockIndex++)
-                {
-                    var block = _slimBlocks[blockIndex].FatBlock as IMyTerminalBlock;
-                    if (block == null || block.Closed || block.MarkedForClose)
-                        continue;
-
-                    _terminalBlocks.Add(block);
-                }
-            }
-
+            if (HasCaptures)
+                _terminalSources.Bind(Requester, LinkType);
             return Key;
+        }
+
+        IEnumerable<IMyTerminalBlock> EnumerateTerminalBlocks()
+        {
+            var sources = _terminalSources.Sources;
+            for (var sourceIndex = 0; sourceIndex < sources.Count; sourceIndex++)
+            {
+                var source = sources[sourceIndex];
+                for (var blockIndex = 0; blockIndex < source.Count; blockIndex++)
+                    yield return source[blockIndex];
+            }
+        }
+
+        internal void Dispose()
+        {
+            _terminalSources.Dispose();
         }
     }
 }

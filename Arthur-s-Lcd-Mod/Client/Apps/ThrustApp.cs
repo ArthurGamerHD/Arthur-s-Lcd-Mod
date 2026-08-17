@@ -5,6 +5,7 @@ using System.Text;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui;
+using LcdMod.Client.GridData;
 using LcdMod.Client.Helpers;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
@@ -72,6 +73,7 @@ namespace LcdMod.Client.Apps
         public ThrustApp(IAppHost host)
             : base(host)
         {
+            NeedGridData(GridCapability.Blocks);
         }
 
         public override void Update()
@@ -89,15 +91,14 @@ namespace LcdMod.Client.Apps
 
             try
             {
-                var grid = Block?.CubeGrid;
-                if (grid != null)
+                var gridLogic = Host.GridLogic;
+                if (gridLogic != null)
                 {
-                    var slims = new List<IMySlimBlock>();
-                    grid.GetBlocks(slims, b => b.FatBlock is IMyThrust);
+                    var thrusts = gridLogic.Blocks.Thrusts;
 
-                    for (int i = 0; i < slims.Count; i++)
+                    for (int i = 0; i < thrusts.Count; i++)
                     {
-                        var thr = slims[i].FatBlock as IMyThrust;
+                        var thr = thrusts[i];
                         if (thr == null) continue;
                         if (!thr.Enabled) continue; // turned off
                         if (!thr.IsFunctional) continue; // damaged below functional line

@@ -102,6 +102,15 @@ namespace LcdMod.Client.Apps
             return sprites;
         }
 
+        public override void Close()
+        {
+            for (int i = 0; i < _collectors.Count; i++)
+                _collectors[i].Dispose();
+
+            _collectors.Clear();
+            base.Close();
+        }
+
         void BuildCollectors()
         {
             _collectors.Add(new LaserAntennaCollector(Host, () => BlockSelectionComponent, () => ColorComponent));

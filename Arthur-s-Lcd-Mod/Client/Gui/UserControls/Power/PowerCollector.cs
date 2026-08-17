@@ -8,7 +8,7 @@ using VRageMath;
 using VRage.Game.ModAPI;
 namespace LcdMod.Client.Gui.UserControls.Power
 {
-    internal abstract class PowerCollector
+    internal abstract class PowerCollector : IDisposable
     {
         const float CENTER_ICON_MAX_SPIN_RPS = 0.35f;
         const float CENTER_ICON_VELOCITY_EASE_SECONDS = 0.4f;
@@ -47,6 +47,7 @@ namespace LcdMod.Client.Gui.UserControls.Power
         IMyTerminalBlock ParentBlock => _host.Block as IMyTerminalBlock;
 
         public abstract void Collect(GridLogic grid, List<PowerEntry> entries);
+        public abstract void Dispose();
 
         protected bool HideEmpty => PowerComponent.HideEmpty;
         protected GridLinkTypeEnum GridLinkType => (GridLinkTypeEnum)PowerComponent.GridLinkTypeInternal;

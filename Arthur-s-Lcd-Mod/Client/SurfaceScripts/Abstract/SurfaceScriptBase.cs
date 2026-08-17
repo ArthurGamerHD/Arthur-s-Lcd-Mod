@@ -73,7 +73,25 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         /// </summary>
         public virtual RectangleF ViewBox { get; protected set; }
 
-        public GridLogic GridLogic { get; private set; }
+        GridLogic _gridLogic;
+        long _appGridEntityId;
+        public GridLogic GridLogic
+        {
+            get
+            {
+                var cubeGrid = Block?.CubeGrid;
+                if (cubeGrid == null || cubeGrid.Closed || cubeGrid.MarkedForClose)
+                {
+                    _gridLogic = null;
+                    return null;
+                }
+
+                if (_gridLogic == null || _gridLogic.TargetGrid != cubeGrid.EntityId || !_gridLogic.IsAlive)
+                    _gridLogic = LcdModSessionComponent.GetOrCreateGridLogic(cubeGrid);
+
+                return _gridLogic;
+            }
+        }
 
         bool _init;
         int _rotationOrSurfaceIndex;
@@ -476,21 +494,21 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             var cubeGrid = Block?.CubeGrid;
             if (cubeGrid == null || cubeGrid.Closed || cubeGrid.MarkedForClose)
             {
-                GridLogic = null;
+                _gridLogic = null;
                 DrawLoadingScreen(GeneralComponent.GetScale());
                 return;
             }
 
-            if (GridLogic == null || GridLogic.TargetGrid != cubeGrid.EntityId || !GridLogic.IsAlive)
-                GridLogic = LcdModSessionComponent.GetOrCreateGridLogic(cubeGrid);
-            else
-                GridLogic.MarkRequested();
+            if (_gridLogic == null || _gridLogic.TargetGrid != cubeGrid.EntityId || !_gridLogic.IsAlive)
+                _gridLogic = LcdModSessionComponent.GetOrCreateGridLogic(cubeGrid);
 
-            if (GridLogic == null)
+            if (_gridLogic == null)
             {
                 DrawLoadingScreen(GeneralComponent.GetScale());
                 return;
             }
+
+            ReplaceGridBoundAppIfNeeded(cubeGrid.EntityId);
 
             IsScreenReadyToRender = true;
 
@@ -563,6 +581,47 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             var previousApp = _publishedApp;
             _publishedApp = null;
             Instances.NotifyAppChanged(this, previousApp, null);
+        }
+
+        void ReplaceGridBoundAppIfNeeded(long gridEntityId)
+        {
+            var previousGridEntityId = _appGridEntityId;
+            _appGridEntityId = gridEntityId;
+            if (previousGridEntityId == 0L || previousGridEntityId == gridEntityId)
+                return;
+
+            IApp detachedApp;
+            try
+            {
+                detachedApp = DetachGridBoundApp();
+            }
+            catch (Exception e)
+            {
+                ErrorHandlerHelper.LogError(e, this);
+                return;
+            }
+
+            if (detachedApp == null)
+                return;
+
+            UnpublishApp();
+            try
+            {
+                CloseApp(detachedApp);
+            }
+            catch (Exception e)
+            {
+                ErrorHandlerHelper.LogError(e, this);
+            }
+        }
+
+        /// <summary>
+        /// Detaches an app whose subscriptions belong to the grid on which it was created.
+        /// SafeRun creates its replacement against the current grid.
+        /// </summary>
+        protected virtual IApp DetachGridBoundApp()
+        {
+            return null;
         }
 
         void Init()

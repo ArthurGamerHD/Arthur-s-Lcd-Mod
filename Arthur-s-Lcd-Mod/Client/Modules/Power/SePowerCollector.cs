@@ -20,10 +20,6 @@ namespace LcdMod.Client.Modules.Power
         readonly HashSet<long> _jumpDriveIds = new HashSet<long>();
         readonly HashSet<long> _terminalIds = new HashSet<long>();
         readonly Dictionary<string, int> _syntheticSpriteKeyCounts = new Dictionary<string, int>(StringComparer.Ordinal);
-        readonly List<IMyPowerProducer> _producers = new List<IMyPowerProducer>();
-        readonly List<IMyBatteryBlock> _batteries = new List<IMyBatteryBlock>();
-        readonly List<IMyJumpDrive> _jumpDrives = new List<IMyJumpDrive>();
-        readonly List<IMyTerminalBlock> _terminals = new List<IMyTerminalBlock>();
 
         public PowerSnapshot Collect(IReadOnlyList<IMyCubeGrid> scopedGrids, long gameplayFrame)
         {
@@ -50,10 +46,6 @@ namespace LcdMod.Client.Modules.Power
             _jumpDriveIds.Clear();
             _terminalIds.Clear();
             _syntheticSpriteKeyCounts.Clear();
-            _producers.Clear();
-            _batteries.Clear();
-            _jumpDrives.Clear();
-            _terminals.Clear();
         }
 
         static void FinalizeScopedTotals(ref PowerSnapshot snapshot)
@@ -78,11 +70,10 @@ namespace LcdMod.Client.Modules.Power
                 if (logic == null)
                     continue;
 
-                _producers.Clear();
-                _producers.AddRange(logic.GetTerminalBlocks<IMyPowerProducer>());
-                for (int p = 0; p < _producers.Count; p++)
+                var producers = logic.Blocks.PowerProducers;
+                for (int p = 0; p < producers.Count; p++)
                 {
-                    var producer = _producers[p];
+                    var producer = producers[p];
                     if (producer == null || !_producerIds.Add(producer.EntityId))
                         continue;
 
@@ -132,11 +123,10 @@ namespace LcdMod.Client.Modules.Power
                 if (logic == null)
                     continue;
 
-                _batteries.Clear();
-                _batteries.AddRange(logic.GetTerminalBlocks<IMyBatteryBlock>());
-                for (int b = 0; b < _batteries.Count; b++)
+                var batteries = logic.Blocks.BatteryBlocks;
+                for (int b = 0; b < batteries.Count; b++)
                 {
-                    var battery = _batteries[b];
+                    var battery = batteries[b];
                     if (battery == null || !_batteryIds.Add(battery.EntityId))
                         continue;
 
@@ -160,11 +150,10 @@ namespace LcdMod.Client.Modules.Power
                 if (logic == null)
                     continue;
 
-                _jumpDrives.Clear();
-                _jumpDrives.AddRange(logic.GetTerminalBlocks<IMyJumpDrive>());
-                for (int j = 0; j < _jumpDrives.Count; j++)
+                var jumpDrives = logic.Blocks.JumpDrives;
+                for (int j = 0; j < jumpDrives.Count; j++)
                 {
-                    var jumpDrive = _jumpDrives[j];
+                    var jumpDrive = jumpDrives[j];
                     if (jumpDrive == null || !_jumpDriveIds.Add(jumpDrive.EntityId))
                         continue;
 
@@ -185,11 +174,10 @@ namespace LcdMod.Client.Modules.Power
                 if (logic == null)
                     continue;
 
-                _terminals.Clear();
-                _terminals.AddRange(logic.GetTerminalBlocks<IMyTerminalBlock>());
-                for (int t = 0; t < _terminals.Count; t++)
+                var terminals = logic.Blocks.TerminalBlocks;
+                for (int t = 0; t < terminals.Count; t++)
                 {
-                    var terminal = _terminals[t];
+                    var terminal = terminals[t];
                     if (terminal == null || terminal is IMyPowerProducer || !_terminalIds.Add(terminal.EntityId))
                         continue;
                     if (terminal is IMyGyro)

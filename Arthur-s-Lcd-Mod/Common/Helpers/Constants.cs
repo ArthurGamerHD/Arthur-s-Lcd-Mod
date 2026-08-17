@@ -122,6 +122,7 @@ namespace LcdMod.Common.Helpers
         public const string FILTERS = "data.filters";
         public const string BLOCKS = "data.blocks";
         public const string ITEMS = "data.items";
+        public const string ITEM_DISPLAY = "view.items";
         public const string APP = "app.settings";
         public const string TABS = "app.tabs";
 

@@ -1461,8 +1461,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             if (_gridLogic == null || !long.TryParse(id, out entityId))
                 return null;
 
-            var blocks = _gridLogic.GetTerminalBlocks<IMyTerminalBlock>();
-            return blocks?.FirstOrDefault(block => block != null && block.EntityId == entityId);
+            var blocks = _gridLogic.Blocks.TerminalBlocks;
+            return blocks.FirstOrDefault(block => block != null && block.EntityId == entityId);
         }
 
         IMyIngameTerminalBlock FindGroupBlock(ICustomAction action, string groupName)
@@ -1492,8 +1492,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             if (_gridLogic == null || targetType == null)
                 return null;
 
-            var blocks = _gridLogic.GetTerminalBlocks<IMyTerminalBlock>();
-            return blocks?.Where(block => block != null && IsTypeMatch(targetType, block.GetType())).FirstOrDefault(block => IsActionCompatibleWithBlock(action, block));
+            var blocks = _gridLogic.Blocks.TerminalBlocks;
+            return blocks.Where(block => block != null && IsTypeMatch(targetType, block.GetType())).FirstOrDefault(block => IsActionCompatibleWithBlock(action, block));
         }
 
         IMyIngameTerminalBlock FindSubtypeBlock(ICustomAction action, string subtype)
@@ -1501,7 +1501,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             if (_gridLogic == null || string.IsNullOrEmpty(subtype))
                 return null;
 
-            var blocks = _gridLogic.GetTerminalBlocks<IMyTerminalBlock>();
+            var blocks = _gridLogic.Blocks.TerminalBlocks;
             if (blocks == null)
                 return null;
 

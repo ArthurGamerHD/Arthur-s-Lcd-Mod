@@ -2113,7 +2113,6 @@ namespace LcdMod.Client.Apps
             if (block == null)
                 return;
 
-            Host.GridLogic.MarkRequested();
             _player = GetHostMediaPlayer();
             if (_player == null)
                 return;
@@ -3678,7 +3677,7 @@ namespace LcdMod.Client.Apps
             if (Host.GridLogic == null)
                 return null;
 
-            return Host.GridLogic.GetMediaPlayer(Host.Block?.EntityId ?? 0L, Host.SurfaceIndex);
+            return Host.GridLogic.MediaPlayers.Get(Host.Block?.EntityId ?? 0L, Host.SurfaceIndex);
         }
 
         bool TrySendMediaPlayerCommand(MediaPlayerCommandKind command, double positionSeconds, bool includeSource)

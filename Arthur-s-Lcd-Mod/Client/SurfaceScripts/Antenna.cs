@@ -55,7 +55,8 @@ namespace LcdMod.Client.SurfaceScripts
         protected override void LayoutChanged()
         {
             base.LayoutChanged();
-            _app = null;
+            if (_app != null)
+                _app.LayoutChanged();
         }
 
         public override void SafeRun()

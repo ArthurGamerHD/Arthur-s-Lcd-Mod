@@ -277,7 +277,7 @@ namespace LcdMod.Client.Audio
                 return;
             }
 
-            var player = gridLogic.GetMediaPlayer(packet.BlockEntityId, packet.SurfaceIndex);
+            var player = gridLogic.MediaPlayers.Get(packet.BlockEntityId, packet.SurfaceIndex);
             if (player == null)
             {
                 SendStreamControl(new PacketMediaStreamControl { Intent = MediaStreamControlIntent.Refused, ServerStreamId = packet.ServerStreamId });
@@ -289,7 +289,6 @@ namespace LcdMod.Client.Audio
                 packet.SurfaceIndex,
                 stopPlayback: true);
             player.StartStream(block, packet.Title);
-            gridLogic.MarkRequested();
             _incomingMediaStreams[packet.ServerStreamId] = new IncomingMediaStream
             {
                 BlockEntityId = packet.BlockEntityId,
@@ -468,7 +467,7 @@ namespace LcdMod.Client.Audio
             if (gridLogic == null)
                 return null;
 
-            stream.Player = gridLogic.GetMediaPlayer(stream.BlockEntityId, stream.SurfaceIndex);
+            stream.Player = gridLogic.MediaPlayers.Get(stream.BlockEntityId, stream.SurfaceIndex);
             return stream.Player;
         }
 

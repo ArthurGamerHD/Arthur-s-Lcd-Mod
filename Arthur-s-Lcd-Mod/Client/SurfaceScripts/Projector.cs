@@ -7,7 +7,6 @@ using LcdMod.Client.Gui;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Terminal.Controls.Groups;
-using LcdMod.Client.Utility;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
@@ -17,7 +16,7 @@ using VRageMath;
 using LabelSeparator = LcdMod.Client.Terminal.Controls.Filter.LabelSeparator;
 using ListboxProjectorSelection = LcdMod.Client.Terminal.Controls.Blueprint.ListboxProjectorSelection;
 using SeparatorFilter = LcdMod.Client.Terminal.Controls.Filter.SeparatorFilter;
-using SwitchToggleLines = LcdMod.Client.Terminal.Controls.Generic.SwitchToggleLines;
+using ComboboxItemDisplayMode = LcdMod.Client.Terminal.Controls.Generic.ComboboxItemDisplayMode;
 
 using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.SurfaceScripts
@@ -25,12 +24,11 @@ namespace LcdMod.Client.SurfaceScripts
     [LcdSurface(typeof(ProjectorApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class ProjectorLcdSurfaceScript : InteractiveSurfaceScript,
-        IUsesTerminalControl<SwitchToggleLines>,
+        IUsesTerminalControl<ComboboxItemDisplayMode>,
         IUsesTerminalControl<ListboxProjectorSelection>,
         IUsesTerminalControl<SeparatorFilter>,
         IUsesTerminalControl<LabelSeparator>,
-        IUsesTerminalControlGroup<BlocksFilterTerminalControlGroup>,
-        IMultiDisplayMode
+        IUsesTerminalControlGroup<BlocksFilterTerminalControlGroup>
     {
         public const string ID = "ProjectorCharts";
         public const string TITLE = ProjectorApp.TITLE;
@@ -50,16 +48,18 @@ namespace LcdMod.Client.SurfaceScripts
         {
         }
 
-        public List<MyTerminalControlComboBoxItem> GetDisplayModes()
-        {
-            return DisplayModes.GridAndLegacy;
-        }
-
         protected override void LayoutChanged()
         {
             base.LayoutChanged();
             if (_app != null)
                 _app.LayoutChanged();
+        }
+
+        protected override IApp DetachGridBoundApp()
+        {
+            var app = _app;
+            _app = null;
+            return app;
         }
 
         public override void SafeRun()

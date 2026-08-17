@@ -164,6 +164,7 @@ namespace LcdMod.Client
             RunThisFrame.Clear();
             Blocker.Clear();
             RunOnePerFrame.Clear();
+            InventoryWorkScheduler.Clear();
             OnUpdateBeforeSimulation = null;
         }
 
@@ -171,24 +172,34 @@ namespace LcdMod.Client
         {
             try
             {
-                _session._updateTick++;
-                foreach (var grid in _session._grids.Values)
+#if EXPERIMENTAL
+                using (RuntimeProfiler.Measure("frame.phase", "update_before_simulation"))
+#endif
                 {
-                    if (grid.Item1.MarkedForClose)
-                        continue;
+                    _session._updateTick++;
+                    foreach (var grid in _session._grids.Values)
+                    {
+                        if (grid.Item1.MarkedForClose)
+                            continue;
 
-                    grid.Item2.Update();
+                        grid.Item2.Update();
+                    }
+
+                    if (PowerData != null)
+                        PowerData.Update(MyAPIGateway.Session.GameplayFrameCounter);
+
+                    if (DefenseData != null)
+                        DefenseData.Update(MyAPIGateway.Session.GameplayFrameCounter);
+
+                    _session.UpdateModules();
+                    UpdateDebugSnapshot();
+#if EXPERIMENTAL
+                    using (RuntimeProfiler.Measure("event.session", "update_before_simulation"))
+#endif
+                    {
+                        OnUpdateBeforeSimulation?.Invoke();
+                    }
                 }
-
-                if (PowerData != null)
-                    PowerData.Update(MyAPIGateway.Session.GameplayFrameCounter);
-
-                if (DefenseData != null)
-                    DefenseData.Update(MyAPIGateway.Session.GameplayFrameCounter);
-
-                _session.UpdateModules();
-                UpdateDebugSnapshot();
-                OnUpdateBeforeSimulation?.Invoke();
             }
             catch (Exception e)
             {
@@ -214,7 +225,11 @@ namespace LcdMod.Client
 
                 try
                 {
+#if EXPERIMENTAL
+                    RuntimeProfiler.RunScheduled("scheduler.next_frame", action);
+#else
                     action();
+#endif
                 }
                 catch (Exception e)
                 {
@@ -275,7 +290,11 @@ namespace LcdMod.Client
 
             try
             {
+#if EXPERIMENTAL
+                RuntimeProfiler.RunScheduled("scheduler.one_per_frame", action);
+#else
                 action();
+#endif
             }
             catch (Exception e)
             {
@@ -285,21 +304,37 @@ namespace LcdMod.Client
 
         public void Simulate()
         {
-            RunNextFrameActions();
-            RunOnePerFrameAction();
 #if EXPERIMENTAL
-            _appRunProfiler.Update();
+            using (RuntimeProfiler.Measure("frame.phase", "simulate"))
 #endif
-            _audioPoc.Update();
-            _audioBroadcast.Update();
+            {
+                RunNextFrameActions();
+                InventoryWorkScheduler.RunFrame();
+                RunOnePerFrameAction();
+#if EXPERIMENTAL
+                _appRunProfiler.Update();
+#endif
+                _audioPoc.Update();
+                _audioBroadcast.Update();
+            }
         }
 
         public void UpdateAfterSimulation()
         {
             try
             {
-                _session.PostUpdateModules();
-                LcdModSessionComponent.RaiseAfterSimulationUpdate();
+#if EXPERIMENTAL
+                using (RuntimeProfiler.Measure("frame.phase", "update_after_simulation"))
+#endif
+                {
+                    _session.PostUpdateModules();
+#if EXPERIMENTAL
+                    using (RuntimeProfiler.Measure("event.session", "update_after_simulation"))
+#endif
+                    {
+                        LcdModSessionComponent.RaiseAfterSimulationUpdate();
+                    }
+                }
             }
             catch (Exception e)
             {
@@ -515,7 +550,7 @@ namespace LcdMod.Client
             if (gridLogic == null)
                 return;
 
-            var player = gridLogic.GetMediaPlayer(packet.BlockEntityId, packet.SurfaceIndex);
+            var player = gridLogic.MediaPlayers.Get(packet.BlockEntityId, packet.SurfaceIndex);
             if (player == null)
                 return;
 
@@ -529,7 +564,6 @@ namespace LcdMod.Client
             }
 
             ApplyMediaPlayerCommand(block, player, packet);
-            gridLogic.MarkRequested();
         }
 
         static void ApplyMediaPlayerCommand(IMyTerminalBlock block, GridMediaPlayer player, PacketSyncMediaPlayerCommand packet)
@@ -642,28 +676,7 @@ namespace LcdMod.Client
             int refreshing = 0;
             int totalLastIterations = 0;
             int totalLastProcessed = 0;
-            int totalNextBatch = 0;
-            int logicCount = 0;
-
-            if (LcdModSessionComponent.Components != null)
-            {
-                foreach (var pair in LcdModSessionComponent.Components)
-                {
-                    var logic = pair.Value;
-                    if (logic == null)
-                        continue;
-
-                    logicCount++;
-                    if (logic.IsRefreshRunning)
-                        refreshing++;
-
-                    totalLastIterations += logic.LastRefreshIterations;
-                    totalLastProcessed += logic.LastRefreshProcessed;
-                    totalNextBatch += logic.EstimatedNextRefreshBatchSize;
-                }
-            }
-
-            int averageNextBatch = logicCount > 0 ? (int)Math.Round(totalNextBatch / (double)logicCount) : 0;
+            int averageNextBatch = 0;
             var moduleLines = LcdModSessionComponent.GetModuleDebugLines().ToArray();
             LcdModSessionComponent.DebugSnapshot = new SessionDebugSnapshot(
                 _session._updateTick,

@@ -13,10 +13,38 @@ namespace LcdMod.Common.Mvvm
                 return false;
 
             field = value;
-            var handler = PropertyChanged;
-            if (handler != null)
-                handler(this, propertyName);
+            RaisePropertyChangedCore(propertyName);
             return true;
+        }
+
+        public bool RaisePropertyChanged<T>(string propertyName)
+        {
+            RaisePropertyChangedCore(propertyName);
+            return true;
+        }
+
+        void RaisePropertyChangedCore(string propertyName)
+        {
+            var handlers = PropertyChanged;
+            if (handlers == null)
+                return;
+
+            Exception firstError = null;
+            foreach (Action<ObservableObject, string> handler in handlers.GetInvocationList())
+            {
+                try
+                {
+                    handler(this, propertyName);
+                }
+                catch (Exception e)
+                {
+                    if (firstError == null)
+                        firstError = e;
+                }
+            }
+
+            if (firstError != null)
+                throw firstError;
         }
     }
 }

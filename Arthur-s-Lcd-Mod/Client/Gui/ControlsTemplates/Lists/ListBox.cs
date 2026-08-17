@@ -225,9 +225,14 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
 
                 item.BorderRadiusPixels = BorderRadiusPixels;
                 item.Padding = Padding;
-                item.SetClass(itemModel.Selected
+                item.SetStyleId(model.ItemStyleIdSelector?.Invoke(itemModel.Item));
+                var itemClass = itemModel.Selected
                     ? "ControlBase Button Row Selected"
-                    : "ControlBase Button Row");
+                    : "ControlBase Button Row";
+                var additionalClass = model.ItemClassSelector?.Invoke(itemModel.Item, itemIndex);
+                if (!string.IsNullOrEmpty(additionalClass))
+                    itemClass += " " + additionalClass;
+                item.SetClass(itemClass);
 
                 if (!ReferenceEquals(item.Parent, _scrollPanel))
                     _scrollPanel.AddChild(item);
@@ -250,6 +255,10 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
                 if (_rowControlsByIndex.TryGetValue(key, out item) && item != null)
                     _scrollPanel.RemoveChild(item);
 
+                ListBoxItemModel<T> itemModel;
+                if (_rowModelsByIndex.TryGetValue(key, out itemModel))
+                    itemModel.UnbindItem();
+
                 _rowModelsByIndex.Remove(key);
                 _rowControlsByIndex.Remove(key);
             }
@@ -259,6 +268,9 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
 
         void ClearRowCache()
         {
+            foreach (var model in _rowModelsByIndex.Values)
+                model?.UnbindItem();
+
             foreach (var item in _rowControlsByIndex.Values)
             {
                 if (item != null)
@@ -302,6 +314,11 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Lists
             _dragGhostItem.SetRect(bounds);
             _dragGhostItem.BorderRadiusPixels = BorderRadiusPixels;
             _dragGhostItem.Padding = Padding;
+            _dragGhostItem.SetStyleId(model.ItemStyleIdSelector?.Invoke(item));
+            var additionalClass = model.ItemClassSelector?.Invoke(item, index);
+            _dragGhostItem.SetClass(string.IsNullOrEmpty(additionalClass)
+                ? "ControlBase Button Row"
+                : "ControlBase Button Row " + additionalClass);
             _dragGhostItem.RenderTransform = new ScaleTransform(1.1f);
             return true;
         }

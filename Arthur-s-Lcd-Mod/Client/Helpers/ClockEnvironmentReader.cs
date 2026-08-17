@@ -15,6 +15,7 @@ namespace LcdMod.Client.Helpers
     {
         bool _sunRotationAxisInitialized;
         Vector3D _sunRotationAxis;
+        readonly TerrainSolarForecastHelper _terrainSolarForecast = new TerrainSolarForecastHelper();
         public ClockDashboardSnapshot Read(
             IMyCubeBlock block,
             GridLogic gridLogic,
@@ -96,7 +97,7 @@ namespace LcdMod.Client.Helpers
                     snapshot.HasLocalSolarTime,
                     snapshot.LocalSolarHour,
                     snapshot.SolarDayLengthSeconds);
-                ReadTerrainSolarEvents(gridLogic, planet, rotationAxis, snapshot);
+                ReadTerrainSolarEvents(block.CubeGrid, planet, rotationAxis, snapshot);
                 return snapshot;
             }
 
@@ -505,20 +506,21 @@ namespace LcdMod.Client.Helpers
             }
         }
 
-        static void ReadTerrainSolarEvents(
-            GridLogic gridLogic,
+        void ReadTerrainSolarEvents(
+            IMyCubeGrid grid,
             MyPlanet planet,
             Vector3D rotationAxis,
             ClockDashboardSnapshot snapshot)
         {
-            if (gridLogic == null || planet == null)
+            if (grid == null || planet == null)
                 return;
 
             bool hasSunrise;
             double sunriseHour;
             bool hasSunset;
             double sunsetHour;
-            if (!gridLogic.TryGetTerrainSolarForecast(
+            if (!_terrainSolarForecast.TryGetTerrainSolarForecast(
+                    grid,
                     planet,
                     rotationAxis,
                     out hasSunrise,

@@ -1031,6 +1031,10 @@ namespace LcdMod.Client.ScreenAreas
                     return reader;
                 }
             }
+            catch (FileNotFoundException)
+            {
+                // linux can be flaky
+            }
             catch (Exception e)
             {
                 LogHelper.LogOnce("fail:file:mod:exists:" + content + ":" + mod.PublishedFileId,

@@ -7,8 +7,11 @@ namespace LcdMod.Client.Modules.Power
     public sealed class PowerDataModule
     {
         const long RELEASE_GRACE_FRAMES = 600;
+        // The dictionary selects a service for new captures. The list owns every live service,
+        // including services whose keys converged while they still have active leases.
         readonly Dictionary<PowerScopeKey, PowerDataService> _services = new Dictionary<PowerScopeKey, PowerDataService>();
-        readonly List<PowerScopeKey> _removeKeys = new List<PowerScopeKey>();
+        readonly List<PowerDataService> _allServices = new List<PowerDataService>();
+        readonly List<PowerDataService> _removeServices = new List<PowerDataService>();
         readonly List<PowerDataService> _serviceSnapshot = new List<PowerDataService>();
         readonly PowerScopeResolver _resolver = new PowerScopeResolver();
         long _lastFrame;
@@ -17,11 +20,12 @@ namespace LcdMod.Client.Modules.Power
         {
             var key = _resolver.ResolveKey(requester, linkType);
             PowerDataService service;
-            if (!_services.TryGetValue(key, out service))
+            if (!_services.TryGetValue(key, out service) && !TryIndexExistingService(key, out service))
             {
                 service = new PowerDataService(_resolver, requester, linkType, key);
                 service.RefreshScope(_lastFrame);
                 _services[key] = service;
+                _allServices.Add(service);
             }
 
             service.AddCapture(requester);
@@ -38,8 +42,7 @@ namespace LcdMod.Client.Modules.Power
         {
             _lastFrame = gameplayFrame;
             _serviceSnapshot.Clear();
-            foreach (var kv in _services)
-                _serviceSnapshot.Add(kv.Value);
+            _serviceSnapshot.AddRange(_allServices);
 
             for (int i = 0; i < _serviceSnapshot.Count; i++)
             {
@@ -57,41 +60,72 @@ namespace LcdMod.Client.Modules.Power
 
         public void Clear()
         {
+            foreach (var service in _allServices)
+                service.Dispose();
             _services.Clear();
-            _removeKeys.Clear();
+            _allServices.Clear();
+            _removeServices.Clear();
             _serviceSnapshot.Clear();
         }
 
         void ReindexIfNeeded(PowerScopeKey oldKey, PowerDataService service)
         {
-            if (service == null || oldKey.Equals(service.Key))
+            if (service == null)
                 return;
 
-            PowerDataService existing;
-            _services.Remove(oldKey);
-            if (_services.TryGetValue(service.Key, out existing) && !ReferenceEquals(existing, service))
-            {
-                // Keep the already indexed service; released duplicate will age out after grace.
-                service.Release(_lastFrame);
+            PowerDataService indexed;
+            if (!oldKey.Equals(service.Key) &&
+                _services.TryGetValue(oldKey, out indexed) &&
+                ReferenceEquals(indexed, service))
+                _services.Remove(oldKey);
+
+            if (_services.TryGetValue(service.Key, out indexed))
                 return;
-            }
 
             _services[service.Key] = service;
         }
 
         void RemoveExpired(long gameplayFrame)
         {
-            _removeKeys.Clear();
-            foreach (var kv in _services)
+            _removeServices.Clear();
+            foreach (var service in _allServices)
             {
-                var service = kv.Value;
                 if (service != null && !service.HasCaptures && gameplayFrame - service.ReleasedFrame > RELEASE_GRACE_FRAMES)
-                    _removeKeys.Add(kv.Key);
+                    _removeServices.Add(service);
             }
 
-            for (int i = 0; i < _removeKeys.Count; i++)
-                _services.Remove(_removeKeys[i]);
-            _removeKeys.Clear();
+            for (int i = 0; i < _removeServices.Count; i++)
+            {
+                var service = _removeServices[i];
+                PowerDataService indexed;
+                if (_services.TryGetValue(service.Key, out indexed) && ReferenceEquals(indexed, service))
+                    _services.Remove(service.Key);
+                service.Dispose();
+                _allServices.Remove(service);
+            }
+            _removeServices.Clear();
+        }
+
+        bool TryIndexExistingService(PowerScopeKey key, out PowerDataService service)
+        {
+            service = null;
+            for (var i = 0; i < _allServices.Count; i++)
+            {
+                var candidate = _allServices[i];
+                if (candidate == null || !candidate.Key.Equals(key))
+                    continue;
+
+                if (service == null || candidate.HasCaptures)
+                    service = candidate;
+                if (candidate.HasCaptures)
+                    break;
+            }
+
+            if (service == null)
+                return false;
+
+            _services[key] = service;
+            return true;
         }
     }
 }

@@ -1,22 +1,25 @@
-using LcdMod.Client.Animation;
 using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using LcdMod.Client.Extensions;
+using LcdMod.Client.Apps.ViewModel;
+using LcdMod.Client.Config;
 using LcdMod.Client.GridData;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
+using LcdMod.Client.Gui.ControlsTemplates.Basic;
 using LcdMod.Client.Gui.ControlsTemplates.Dialogs;
 using LcdMod.Client.Gui.ControlsTemplates.Lists;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
-using LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel;
+using LcdMod.Client.Gui.ControlsTemplates.Panels.Virtualized;
 using LcdMod.Client.Gui.Styling;
+using LcdMod.Client.Gui.Styling.DataTemplates;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Utility;
+using LcdMod.Common.Mvvm;
 using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
@@ -27,8 +30,6 @@ using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRageMath;
 using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
-using VisualWrapPanel = LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel.WrapPanel;
-
 using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.Apps.Abstract
 {
@@ -38,45 +39,41 @@ namespace LcdMod.Client.Apps.Abstract
     public abstract partial class ItemsApp : App, IApp
     {
         protected virtual SortMethod SortMethod => (SortMethod)FilterComponent.SortMethod;
-        protected virtual bool AlwaysRefreshItems => false;
 
-        public static Dictionary<MyItemType, string> SpriteCache =
-            new Dictionary<MyItemType, string>();
-
-        static readonly Dictionary<MyDefinitionId, MyItemType> TypeCache = new Dictionary<MyDefinitionId, MyItemType>();
-        static readonly StyleTree ItemListStyles = BuildItemListStyles();
-
-        readonly Dictionary<MyItemType, double> _itemsCache = new Dictionary<MyItemType, double>();
-        readonly List<ItemViewModel> _items = new List<ItemViewModel>();
+        public static Dictionary<MyItemType, string> SpriteCache = new Dictionary<MyItemType, string>();
         readonly List<MySprite> _contentSpriteCache = new List<MySprite>();
         readonly List<MySprite> _footerSpriteCache = new List<MySprite>();
-        readonly Dictionary<MyItemType, ItemViewModel> _models = new Dictionary<MyItemType, ItemViewModel>();
-        readonly Dictionary<MyItemType, ItemControl> _gridItemControls =
-            new Dictionary<MyItemType, ItemControl>();
-        readonly internal List<Control> _children = new List<Control>();
+        readonly ObservableList<ItemEntry> _displayItems = new ObservableList<ItemEntry>();
+        internal readonly List<Control> _children = new List<Control>();
         readonly ScrollPanel _scrollPanel;
-        readonly ListBoxModel<ItemViewModel> _listModel;
-        readonly ListBox<ItemViewModel> _listBox;
-        readonly VisualWrapPanel _gridPanel;
+        readonly ListBoxModel<ItemEntry> _listModel;
+        readonly ListBox<ItemEntry> _listBox;
+        readonly VirtualizedWrapPanel<ItemEntry> _gridPanel;
+        readonly Button _itemSortHeader;
+        readonly Button _amountSortHeader;
+        readonly ObservableObject _observableViewModel;
+        readonly GridLogic _gridLogic;
         ScrollPanel _activeScrollPanel;
-        int _viewModelLayoutVersion = 1;
         bool _scrollRenderQueued;
         bool _contentSpritesDirty = true;
         bool _footerSpritesDirty = true;
         bool _hasRenderConfigSnapshot;
         bool _lastHideEmpty;
-        bool _lastDrawLines;
-        int _lastDisplayMode;
+        ItemDisplayMode _lastPresentationMode;
         SortMethod _lastSortMethod;
-        ItemSnapshot _lastItemSnapshot;
-        ItemSnapshot _fallbackItemSnapshot;
+        bool _lastSortDescending;
+        SortMethod _activeSortMethod;
+        bool _sortDescending;
+        bool _sortSyncQueued;
+        bool _hasAppliedGridStyleMode;
+        ItemDisplayMode _appliedGridStyleMode;
         float _cachedFooterHeight;
         float _caretY;
         float _footerHeight;
         protected string LocalizedTitleCache = string.Empty;
-
-        public abstract Dictionary<MyItemType, double> ItemSource { get; }
         protected virtual string DefaultTitle => "<Title not Set>";
+        protected virtual ItemDisplayMode PresentationMode =>
+            ItemDisplayConfigComponentExtensions.ResolveLegacyDisplayMode(GeneralComponent);
         protected IMyCubeBlock Block => Host.Block;
         protected Sandbox.ModAPI.Ingame.IMyTextSurface Surface => Host.Surface;
         protected RectangleF ViewBox => Host.ViewBox;
@@ -85,7 +82,8 @@ namespace LcdMod.Client.Apps.Abstract
         protected float LayoutScale => Scale * FontScale;
         protected Color ForegroundColor => Host.ForegroundColor;
         protected Color BackgroundColor => Host.BackgroundColor;
-        protected GridLogic GridLogic => Host.GridLogic;
+        protected GridLogic GridLogic => _gridLogic;
+        protected IItemsAppViewModel ViewModel { get; private set; }
         protected bool TitleVisible => Host.TitleVisible;
         protected float CaretY
         {
@@ -97,14 +95,9 @@ namespace LcdMod.Client.Apps.Abstract
             get { return _footerHeight; }
             set { _footerHeight = value; }
         }
-        public bool HasItems => _items.Count > 0;
+        public bool HasItems => ViewModel.HasItems;
         public bool HasFilters { get; private set; }
         public override IReadOnlyList<Control> VisualChildren => _children;
-
-        public List<MyTerminalControlComboBoxItem> GetDisplayModes()
-        {
-            return DisplayModes.GridAndLegacy;
-        }
 
         const int SPRITE_CACHE_MAX_SIZE = 256;
 
@@ -116,6 +109,7 @@ namespace LcdMod.Client.Apps.Abstract
                 var oldest = SpriteCache.Keys.First();
                 SpriteCache.Remove(oldest);
             }
+
         }
 
         protected readonly Dictionary<MyItemType, string> LocKeysCache = new Dictionary<MyItemType, string>();
@@ -153,209 +147,133 @@ namespace LcdMod.Client.Apps.Abstract
             }
         }
 
-        protected const int TITLE_HEIGHT = 35;
         protected const int LINE_HEIGHT = 30;
         protected const int MINIMUM_COL_WIDTH = 220;
-        protected string PreviousType = "";
 
-        protected ItemsApp(IAppHost host) : base(host)
+        protected ItemsApp(IAppHost host)
+            : this(host, null)
+        {
+        }
+
+        protected ItemsApp(
+            IAppHost host,
+            Func<GridLogic, ItemSelectionConfigComponent, BlockSelectionConfigComponent, IItemsAppViewModel>
+                createViewModel)
+            : base(host)
         {
             TextureHelper.TextureIconCacheChanged += OnTextureIconCacheChanged;
+            var gridLogic = LcdModSessionComponent.GetOrCreateGridLogic(host.Block?.CubeGrid);
+            _gridLogic = gridLogic;
+            ViewModel = createViewModel != null
+                ? createViewModel(gridLogic, ItemSelectionComponent, BlockSelectionComponent)
+                : new ItemsAppViewModel(gridLogic, ItemSelectionComponent, BlockSelectionComponent);
+            _observableViewModel = ViewModel as ObservableObject;
+            if (_observableViewModel != null)
+                _observableViewModel.PropertyChanged += OnViewModelPropertyChanged;
+            ViewModel.Items.ItemAdded += OnViewModelItemAdded;
+            ViewModel.Items.ItemRemoved += OnViewModelItemRemoved;
+            _activeSortMethod = NormalizeSortMethod(FilterComponent.SortMethod);
+            _sortDescending = ResolveConfiguredSortDescending(_activeSortMethod);
             _scrollPanel = AddLogicalChild(new ScrollPanel(CursorType.Default, this));
             _scrollPanel.ScrollChanged = OnScrollPanelChanged;
             _scrollPanel.SetVisible(false);
 
-            _listModel = new ListBoxModel<ItemViewModel>
+            _listModel = new ListBoxModel<ItemEntry>
             {
-                Items = _items,
+                Items = _displayItems,
                 MultiSelect = false,
                 SelectionEnabled = false,
                 EntryClicked = OnLegacyListItemClicked,
-                ItemRenderer = RenderLegacyListItem
+                ItemStyleIdSelector = ItemDataTemplate.GetItemStyleId,
+                ItemRenderer = ItemDataTemplate.DrawItemListEntry
             };
-            _listBox = AddLogicalChild(new ListBox<ItemViewModel>(default(RectangleF), _listModel));
-            _listBox.SetStyles(ItemListStyles);
+            _listBox = AddLogicalChild(new ListBox<ItemEntry>(default(RectangleF), _listModel));
+            _listBox.SetStyles(ItemDataTemplate.ItemListStyles);
             _listBox.ScrollPanel.ManualScrollInertiaEnabled = true;
             _listBox.ScrollPanel.ScrollChanged = OnScrollPanelChanged;
             _listBox.SetVisible(false);
 
-            _gridPanel = new VisualWrapPanel();
-            _gridPanel.CustomRender = RenderGridPanelContent;
-        }
+            _itemSortHeader = CreateSortHeader(SortMethod.Type, "StoreBlock_Column_Name");
+            _amountSortHeader = CreateSortHeader(SortMethod.Amount, "StoreBlock_Column_Amount");
 
-        static StyleTree BuildItemListStyles()
-        {
-            var styles = new StyleTree();
-            Style<ListBoxItem<ItemViewModel>> item = styles.For<ListBoxItem<ItemViewModel>>()
-                .Set(ControlTemplate.BackgroundColorProperty, Color.Transparent)
-                .Set(ControlTemplate.RenderTransformProperty, ScaleTransform.Identity)
-                // ItemsApp rows intentionally switch background colors immediately.
-                // Tweening from/to transparent creates expensive rounded-corner clips
-                // and does not look good while the list is scrolling.
-                .Animate(
-                    ControlTemplate.BackgroundColorProperty,
-                    0,
-                    EasingMode.Linear,
-                    AnimationInterpolators.Color);
+            _gridPanel = new VirtualizedWrapPanel<ItemEntry>
+            {
+                ItemsSource = _displayItems,
+                CreateControl = CreateGridItemControl,
+                BindControl = BindGridItemControl
+            };
 
-            item.State(StyleState.Hover)
-                .Set(
-                    ControlTemplate.BackgroundColorProperty,
-                    ThemeResources.SurfaceContainerHighColor);
-
-            item.State(StyleState.Pressed)
-                .Set(
-                    ControlTemplate.BackgroundColorProperty,
-                    ThemeResources.SurfaceContainerHighestColor);
-
-            return styles;
+            ViewModel.UpdateSelection(ItemSelectionComponent, BlockSelectionComponent, FilterComponent.HideEmpty);
+            foreach (var item in ViewModel.Items)
+                InsertDisplayItem(item);
         }
 
         public override void Close()
         {
             TextureHelper.TextureIconCacheChanged -= OnTextureIconCacheChanged;
+            if (_observableViewModel != null)
+                _observableViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+            ViewModel.Items.ItemAdded -= OnViewModelItemAdded;
+            ViewModel.Items.ItemRemoved -= OnViewModelItemRemoved;
+            foreach (var item in _displayItems)
+                UnbindDisplayItem(item);
+            _gridPanel.ItemsSource = null;
+            ViewModel.Dispose();
             base.Close();
+        }
+
+        void OnViewModelItemAdded(IObservableCollection<ItemEntry> sender, ItemEntry item)
+        {
+            InsertDisplayItem(item);
+            InvalidateContentAndFooterSprites();
+        }
+
+        void OnViewModelPropertyChanged(ObservableObject sender, string propertyName)
+        {
+            InvalidateContentAndFooterSprites();
+        }
+
+        void OnViewModelItemRemoved(IObservableCollection<ItemEntry> sender, ItemEntry item)
+        {
+            UnbindDisplayItem(item);
+            _displayItems.Remove(item);
+            if (!ViewModel.HasItems)
+                ClearInteractiveTree();
+
+            InvalidateContentAndFooterSprites();
         }
 
         void OnTextureIconCacheChanged()
         {
+            ItemDataTemplate.InvalidateItemAssets();
             if (SpriteCache != null)
                 SpriteCache.Clear();
 
-            _viewModelLayoutVersion++;
-            foreach (var model in _models.Values)
-            {
-                if (model == null)
-                    continue;
-
-                model.Icon = ResolveSprite(model.ItemType);
-                model.LayoutVersion = _viewModelLayoutVersion;
-            }
-
             InvalidateContentSprites();
             Host.RenderSprites();
-        }
-
-
-        protected virtual ItemSnapshot ReadItemSnapshot(IMyTerminalBlock lcd)
-        {
-            var searchToken = SearchQueryToken.GetToken(BlockSelectionComponent, ItemSelectionComponent);
-            var source = ItemSource ?? new Dictionary<MyItemType, double>();
-            if (_fallbackItemSnapshot != null &&
-                _fallbackItemSnapshot.SearchToken.Equals(searchToken) &&
-                ItemSnapshot.ContentEquals(_fallbackItemSnapshot.Items, source))
-                return _fallbackItemSnapshot;
-
-            var revision = DateTime.UtcNow;
-            if (_fallbackItemSnapshot != null && revision <= _fallbackItemSnapshot.Revision)
-                revision = _fallbackItemSnapshot.Revision.AddTicks(1);
-
-            _fallbackItemSnapshot = new ItemSnapshot(
-                searchToken,
-                revision,
-                new Dictionary<MyItemType, double>(source));
-            return _fallbackItemSnapshot;
-        }
-
-
-        protected virtual List<KeyValuePair<MyItemType, double>> ReadItems(
-            IMyTerminalBlock lcd,
-            ItemSnapshot snapshot)
-        {
-            if (FilterComponent.HideEmpty || ItemSelectionComponent.GetSelectedItems().Any())
-                _itemsCache.Clear();
-
-            if (lcd == null || snapshot == null)
-                return new List<KeyValuePair<MyItemType, double>>();
-
-            if (_itemsCache.Any())
-            {
-                var ar = _itemsCache.Keys.ToArray();
-                foreach (var key in ar) // will be 0 unless Clear() was NOT called
-                    _itemsCache[key] = 0;
-            }
-
-
-            if (!FilterComponent.HideEmpty)
-            {
-                foreach (var configSelectedItem in ItemSelectionComponent.GetSelectedItems())
-                {
-                    MyItemType type;
-                    if (!TypeCache.TryGetValue(configSelectedItem, out type))
-                    {
-                        type = MyItemType.Parse(configSelectedItem.ToString());
-                        TypeCache[configSelectedItem] = type;
-                    }
-
-                    _itemsCache[type] = 0;
-                }
-            }
-
-            foreach (var keyValuePair in snapshot.Items)
-                _itemsCache[keyValuePair.Key] = (keyValuePair.Value);
-
-
-            switch (SortMethod)
-            {
-                case SortMethod.Type:
-                    var sortedByType = new SortedDictionary<MyItemType, double>(ItemTypeComparer.Instance);
-                    foreach (var entry in _itemsCache)
-                    {
-                        sortedByType[entry.Key] = entry.Value;
-                    }
-
-                    return sortedByType.ToList();
-                default:
-                    var sortedByValue = new SortedDictionary<double, List<KeyValuePair<MyItemType, double>>>(
-                        DescendingDoubleComparer.Instance);
-                    foreach (var entry in _itemsCache)
-                    {
-                        List<KeyValuePair<MyItemType, double>> bucket;
-                        if (!sortedByValue.TryGetValue(entry.Value, out bucket))
-                        {
-                            bucket = new List<KeyValuePair<MyItemType, double>>();
-                            sortedByValue[entry.Value] = bucket;
-                        }
-
-                        bucket.Add(entry);
-                    }
-
-                    return sortedByValue.SelectMany(b => b.Value).ToList();
-            }
         }
 
         public override void Update()
         {
             try
             {
+                ViewModel.UpdateSelection(
+                    ItemSelectionComponent,
+                    BlockSelectionComponent,
+                    FilterComponent.HideEmpty);
+                ApplyConfiguredSort();
+
                 if (_activeScrollPanel != null && _activeScrollPanel.UpdateAutoScroll())
                     InvalidateContentSprites();
 
-                var snapshot = ReadItemSnapshot(Block as IMyTerminalBlock);
-                bool hasFilters = ItemSelectionComponent.SelectedCategories.Any() || BlockSelectionComponent.SelectedBlocks.Any() ||
-                                  ItemSelectionComponent.GetSelectedItems().Any() || BlockSelectionComponent.SelectedGroups.Any() ||
-                                  ItemSelectionComponent.SelectedDefinition.Any();
-                bool renderConfigChanged = HasRenderConfigChanged();
-                bool snapshotChanged = AlwaysRefreshItems ||
-                                       _lastItemSnapshot == null ||
-                                       !_lastItemSnapshot.Matches(snapshot);
-                bool filterStateChanged = HasFilters != hasFilters;
-
-                if (!snapshotChanged && !renderConfigChanged && !filterStateChanged)
-                    return;
-
-                _items.Clear();
-                var items = ReadItems(Block as IMyTerminalBlock, snapshot);
-                for (int i = 0; i < items.Count; i++)
-                    _items.Add(GetOrCreateItemViewModel(items[i]));
-
-                if (_items.Count == 0)
-                    ClearInteractiveTree();
-
-                HasFilters = hasFilters;
-                _lastItemSnapshot = snapshot;
-                CaptureRenderConfig();
-                InvalidateContentAndFooterSprites();
+                var hasFilters = HasConfiguredFilters();
+                var filterStateChanged = HasFilters != hasFilters;
+                if (HasRenderConfigChanged() || filterStateChanged)
+                {
+                    HasFilters = hasFilters;
+                    CaptureRenderConfig();
+                    InvalidateContentAndFooterSprites();
+                }
             }
             catch (Exception e)
             {
@@ -363,12 +281,27 @@ namespace LcdMod.Client.Apps.Abstract
             }
         }
 
+        bool HasConfiguredFilters()
+        {
+            return (ItemSelectionComponent.SelectedCategories?.Length ?? 0) > 0 ||
+                   (ItemSelectionComponent.SelectedDefinition?.Length ?? 0) > 0 ||
+                   (BlockSelectionComponent.SelectedBlocks?.Length ?? 0) > 0 ||
+                   (BlockSelectionComponent.SelectedGroups?.Length ?? 0) > 0;
+        }
+
         public override void LayoutChanged()
         {
             base.LayoutChanged();
+            ItemDataTemplate.InvalidateItemAssets();
+            var itemHeader = _itemSortHeader.DataContext as ItemSortHeaderModel;
+            if (itemHeader != null)
+                itemHeader.Text = MyTexts.GetString("StoreBlock_Column_Name");
+            var amountHeader = _amountSortHeader.DataContext as ItemSortHeaderModel;
+            if (amountHeader != null)
+                amountHeader.Text = MyTexts.GetString("StoreBlock_Column_Amount");
+            RebuildDisplayOrder();
             LocKeysCache.Clear();
             LocalizedTitleCache = string.Empty;
-            _viewModelLayoutVersion++;
             _hasRenderConfigSnapshot = false;
             InvalidateContentAndFooterSprites();
         }
@@ -409,12 +342,6 @@ namespace LcdMod.Client.Apps.Abstract
             MarkDirty();
         }
 
-        protected void InvalidateFooterSprites()
-        {
-            _footerSpritesDirty = true;
-            MarkDirty();
-        }
-
         protected void InvalidateContentAndFooterSprites()
         {
             _contentSpritesDirty = true;
@@ -428,17 +355,17 @@ namespace LcdMod.Client.Apps.Abstract
                 return true;
 
             return _lastHideEmpty != FilterComponent.HideEmpty ||
-                   _lastDrawLines != GeneralComponent.DrawLines ||
-                   _lastDisplayMode != GeneralComponent.DisplayMode ||
-                   _lastSortMethod != SortMethod;
+                   _lastPresentationMode != PresentationMode ||
+                   _lastSortMethod != _activeSortMethod ||
+                   _lastSortDescending != _sortDescending;
         }
 
         void CaptureRenderConfig()
         {
             _lastHideEmpty = FilterComponent.HideEmpty;
-            _lastDrawLines = GeneralComponent.DrawLines;
-            _lastDisplayMode = GeneralComponent.DisplayMode;
-            _lastSortMethod = SortMethod;
+            _lastPresentationMode = PresentationMode;
+            _lastSortMethod = _activeSortMethod;
+            _lastSortDescending = _sortDescending;
             _hasRenderConfigSnapshot = true;
         }
 
@@ -450,7 +377,10 @@ namespace LcdMod.Client.Apps.Abstract
                 if (!IsVisibleTreeDirty(child))
                     continue;
 
-                if (ReferenceEquals(child, _scrollPanel) || ReferenceEquals(child, _listBox))
+                if (ReferenceEquals(child, _scrollPanel) ||
+                    ReferenceEquals(child, _listBox) ||
+                    ReferenceEquals(child, _itemSortHeader) ||
+                    ReferenceEquals(child, _amountSortHeader))
                     _contentSpritesDirty = true;
                 else
                     _footerSpritesDirty = true;
@@ -476,95 +406,308 @@ namespace LcdMod.Client.Apps.Abstract
             _caretY = ContentTop();
             _footerHeight = _cachedFooterHeight;
 
-            switch (GeneralComponent.DisplayMode)
+            switch (PresentationMode)
             {
-                case (int)DisplayMode.Legacy:
-                    DrawList(_contentSpriteCache, _items);
+                case ItemDisplayMode.List:
+                case ItemDisplayMode.Table:
+                    DrawList(_contentSpriteCache, _displayItems);
                     break;
-                case (int)DisplayMode.Grid:
-                    DrawGrid(_contentSpriteCache, _items);
+                case ItemDisplayMode.Card:
+                case ItemDisplayMode.Grid:
+                    DrawGrid(_contentSpriteCache, _displayItems);
                     break;
             }
 
             _contentSpritesDirty = false;
         }
 
-        protected virtual ItemViewModel GetOrCreateItemViewModel(KeyValuePair<MyItemType, double> item)
+        Button CreateSortHeader(SortMethod column, string localizationKey)
         {
-            ItemViewModel model;
-
-            if (!_models.TryGetValue(item.Key, out model))
+            var button = AddLogicalChild(new Button(default(RectangleF), new ItemSortHeaderModel
             {
-                model = new ItemViewModel(item.Key);
-                _models.Add(item.Key, model);
+                Column = column,
+                Text = MyTexts.GetString(localizationKey),
+                Clicked = OnSortHeaderClicked
+            }));
+            button.CustomRender = ItemDataTemplate.DrawItemSortHeader;
+            button.SetClass("ControlBase Button Sort");
+            button.SetVisible(false);
+            return button;
+        }
+
+        void DrawSortHeader(List<MySprite> sprites)
+        {
+            var height = LINE_HEIGHT * Scale;
+            var header = new RectangleF(ViewBox.X, CaretY, ViewBox.Width, height);
+            var amountWidth = Math.Min(header.Width, Math.Max(105f * LayoutScale, header.Width * 0.22f));
+            var nameLeft = Math.Min(header.Right, header.X + 38f * LayoutScale);
+            var amountLeft = Math.Max(nameLeft, header.Right - amountWidth);
+
+            sprites.Add(new MySprite(SpriteType.TEXTURE, "SquareSimple")
+            {
+                Position = new Vector2(header.Center.X, header.Bottom - Math.Max(1f, LayoutScale)),
+                Size = new Vector2(header.Width, Math.Max(1f, LayoutScale)),
+                Color = ResolveResource(ThemeResources.DividerColor, ForegroundColor),
+                Alignment = TextAlignment.CENTER
+            });
+
+            ConfigureSortHeader(
+                _itemSortHeader,
+                new RectangleF(nameLeft, header.Y, Math.Max(0f, amountLeft - nameLeft), height),
+                SortMethod.Type);
+            ConfigureSortHeader(
+                _amountSortHeader,
+                new RectangleF(amountLeft, header.Y, Math.Max(0f, header.Right - amountLeft), height),
+                SortMethod.Amount);
+
+            RenderSortHeader(_itemSortHeader, sprites);
+            RenderSortHeader(_amountSortHeader, sprites);
+            CaretY += height;
+        }
+
+        void ConfigureSortHeader(Button button, RectangleF bounds, SortMethod column)
+        {
+            button.SetRect(bounds);
+            button.SetClass(_activeSortMethod != column
+                ? "ControlBase Button Sort"
+                : _sortDescending
+                    ? "ControlBase Button Sort SortDescending"
+                    : "ControlBase Button Sort SortAscending");
+            button.SetVisible(bounds.Width > 0f && bounds.Height > 0f);
+            if (!_children.Contains(button))
+                _children.Add(button);
+        }
+
+        static void RenderSortHeader(Button button, List<MySprite> sprites)
+        {
+            if (button != null && button.Visible)
+                button.Render(sprites);
+        }
+
+        static string GetTableItemClass(ItemEntry item, int index)
+        {
+            return (index & 1) == 0 ? "ItemRowEven" : "ItemRowOdd";
+        }
+
+        void OnSortHeaderClicked(ButtonModel model, object sender)
+        {
+            var header = model as ItemSortHeaderModel;
+            if (header == null)
+                return;
+
+            if (_activeSortMethod == header.Column)
+                _sortDescending = !_sortDescending;
+            else
+            {
+                _activeSortMethod = header.Column;
+                _sortDescending = GetDefaultSortDescending(header.Column);
             }
 
-            if (model.LayoutVersion != _viewModelLayoutVersion)
-                RefreshItemViewModelLayout(model);
-
-            RefreshItemViewModelValue(model, item.Value);
-            return model;
+            FilterComponent.SortMethod = (int)_activeSortMethod;
+            FilterComponent.SortDirection = _sortDescending ? 1 : 0;
+            RebuildDisplayOrder();
+            CaptureRenderConfig();
+            InvalidateContentSprites();
+            QueueSortConfigSync();
+            Host.RenderSprites();
         }
 
-        protected virtual void RefreshItemViewModelLayout(ItemViewModel model)
+        void QueueSortConfigSync()
         {
-            if (model == null)
+            if (_sortSyncQueued)
                 return;
 
-            model.Icon = ResolveSprite(model.ItemType);
-            model.DisplayName = ResolveDisplayName(model.ItemType);
-            model.Cursor = CursorType.Hand;
-            model.OnClick = OnItemClicked;
-            model.LayoutVersion = _viewModelLayoutVersion;
-        }
-
-        protected virtual void RefreshItemViewModelValue(ItemViewModel model, double amount)
-        {
-            if (model == null)
+            var block = Host.Block as IMyTerminalBlock;
+            var provider = Host.ProviderConfig;
+            if (block == null || provider == null || !provider.CanWrite)
                 return;
 
-            model.Amount = amount;
-            var amountText = FormatingHelper.FormatItemQty(amount);
-            model.ListTextColor = amount == 0 ? ColorComponent.ResolveErrorColor() : Surface.ScriptForegroundColor;
-            model.ListAmountColor = model.ListTextColor;
-            model.ListIconColor = Color.White;
-            model.IconBackgroundColor = amount == 0 ? ColorComponent.ResolveErrorColor() : Color.White;
-            var panelColor = GetHeaderColor();
-            var panelTextColor = Surface.ScriptForegroundColor;
-            model.GridTextColor = GeneralComponent.DrawLines && amount == 0
-                ? new Color(96, 32, 32)
-                : panelTextColor;
-            model.GridAmountColor = model.GridTextColor;
-            model.GridIconColor = Color.White;
-            model.PanelColor = amount == 0 ? ColorComponent.ResolveErrorColor() : panelColor;
-            model.SetSimpleAmount(amountText);
+            _sortSyncQueued = true;
+            LcdModClientComponent.RunNextFrame.Add(delegate
+            {
+                _sortSyncQueued = false;
+                ConfigManager.Sync(block, provider);
+            });
         }
 
-        void DrawList(List<MySprite> sprites, List<ItemViewModel> items)
+        void ApplyConfiguredSort()
+        {
+            var method = NormalizeSortMethod((int)SortMethod);
+            var descending = ResolveConfiguredSortDescending(method);
+            if (_activeSortMethod == method && _sortDescending == descending)
+                return;
+
+            _activeSortMethod = method;
+            _sortDescending = descending;
+            RebuildDisplayOrder();
+        }
+
+        bool ResolveConfiguredSortDescending(SortMethod method)
+        {
+            switch (FilterComponent.SortDirection)
+            {
+                case 0:
+                    return false;
+                case 1:
+                    return true;
+                default:
+                    return GetDefaultSortDescending(method);
+            }
+        }
+
+        static bool GetDefaultSortDescending(SortMethod method)
+        {
+            return method == SortMethod.Amount;
+        }
+
+        static SortMethod NormalizeSortMethod(int value)
+        {
+            return value == (int)SortMethod.Type ? SortMethod.Type : SortMethod.Amount;
+        }
+
+        void InsertDisplayItem(ItemEntry item)
+        {
+            if (item == null || _displayItems.Contains(item))
+                return;
+
+            BindDisplayItem(item);
+            var index = 0;
+            while (index < _displayItems.Count && CompareDisplayItems(_displayItems[index], item) <= 0)
+                index++;
+            _displayItems.Insert(index, item);
+        }
+
+        void BindDisplayItem(ItemEntry item)
+        {
+            if (item != null)
+                item.PropertyChanged += OnDisplayItemChanged;
+        }
+
+        void UnbindDisplayItem(ItemEntry item)
+        {
+            if (item != null)
+                item.PropertyChanged -= OnDisplayItemChanged;
+        }
+
+        void OnDisplayItemChanged(ObservableObject sender, string propertyName)
+        {
+            var item = sender as ItemEntry;
+            if (item == null)
+                return;
+
+            if ((_activeSortMethod == SortMethod.Amount && propertyName == nameof(ItemEntry.Amount)) ||
+                (_activeSortMethod == SortMethod.Type && propertyName == nameof(ItemEntry.DisplayName)))
+            {
+                RepositionDisplayItem(item);
+            }
+        }
+
+        void RepositionDisplayItem(ItemEntry item)
+        {
+            var oldIndex = _displayItems.IndexOf(item);
+            if (oldIndex < 0)
+                return;
+
+            var targetIndex = 0;
+            for (var i = 0; i < _displayItems.Count; i++)
+            {
+                var other = _displayItems[i];
+                if (ReferenceEquals(other, item))
+                    continue;
+                if (CompareDisplayItems(other, item) <= 0)
+                    targetIndex++;
+            }
+
+            if (targetIndex != oldIndex)
+                _displayItems.Move(oldIndex, targetIndex);
+        }
+
+        void RebuildDisplayOrder()
+        {
+            if (_displayItems.Count <= 1)
+                return;
+
+            var ordered = _displayItems.ToList();
+            ordered.Sort(CompareDisplayItems);
+            for (var targetIndex = 0; targetIndex < ordered.Count; targetIndex++)
+            {
+                var currentIndex = _displayItems.IndexOf(ordered[targetIndex]);
+                if (currentIndex != targetIndex)
+                    _displayItems.Move(currentIndex, targetIndex);
+            }
+        }
+
+        int CompareDisplayItems(ItemEntry left, ItemEntry right)
+        {
+            if (ReferenceEquals(left, right))
+                return 0;
+            if (left == null)
+                return 1;
+            if (right == null)
+                return -1;
+
+            int result;
+            if (_activeSortMethod == SortMethod.Amount)
+                result = ((double)left.Amount).CompareTo((double)right.Amount);
+            else
+                result = string.Compare(
+                    ItemDataTemplate.GetItemDisplayName(left),
+                    ItemDataTemplate.GetItemDisplayName(right),
+                    StringComparison.CurrentCultureIgnoreCase);
+
+            if (result != 0 && _sortDescending)
+                return -result;
+            if (result != 0)
+                return result;
+
+            result = string.Compare(left.ItemType.TypeId, right.ItemType.TypeId, StringComparison.OrdinalIgnoreCase);
+            return result != 0
+                ? result
+                : string.Compare(left.ItemType.SubtypeId, right.ItemType.SubtypeId, StringComparison.OrdinalIgnoreCase);
+        }
+
+        void DrawList(List<MySprite> sprites, ObservableList<ItemEntry> items)
         {
             var rowHeight = LINE_HEIGHT * Scale;
             if (items.Count <= 0)
                 return;
 
+            DrawSortHeader(sprites);
             var contentBounds = GetScrollPanelBounds(CaretY, FooterHeight);
             _listModel.RowHeight = rowHeight;
             _listModel.ScrollerWidthPixels = ScrollPanel.DEFAULT_SCROLLER_WIDTH_PIXELS * Scale;
             _listBox.SetRect(contentBounds);
             _listBox.BackgroundColor = Color.Transparent;
+            _listBox.BorderRadiusPixels = PresentationMode == ItemDisplayMode.Table
+                ? 0f
+                : BorderRenderer.DEFAULT_RADIUS_PIXELS;
+            _listModel.ItemClassSelector = PresentationMode == ItemDisplayMode.Table
+                ? (Func<ItemEntry, int, string>)GetTableItemClass
+                : null;
+            _listBox.SetStyles(PresentationMode == ItemDisplayMode.Table
+                ? ItemDataTemplate.ItemTableStyles
+                : ItemDataTemplate.ItemListStyles);
 
             BeginInteractiveTree(_listBox);
             _activeScrollPanel = _listBox.ScrollPanel;
-            PreviousType = items[0].TypeId;
             _listBox.Render(sprites);
 
             CaretY = contentBounds.Bottom;
         }
 
-        void DrawGrid(List<MySprite> sprites, List<ItemViewModel> items)
+        void DrawGrid(List<MySprite> sprites, ObservableList<ItemEntry> items)
         {
             var rowHeight = 3f * LINE_HEIGHT * Scale;
             if (items.Count <= 0)
                 return;
+
+            var presentationMode = PresentationMode;
+            if (!_hasAppliedGridStyleMode || _appliedGridStyleMode != presentationMode)
+            {
+                _hasAppliedGridStyleMode = true;
+                _appliedGridStyleMode = presentationMode;
+                _scrollPanel.InvalidateLayout();
+            }
 
             var contentBounds = GetScrollPanelBounds(CaretY, FooterHeight);
             _scrollPanel.SetContent(_gridPanel);
@@ -572,7 +715,7 @@ namespace LcdMod.Client.Apps.Abstract
             _gridPanel.MinimumColumnWidth = MINIMUM_COL_WIDTH * Scale;
             _gridPanel.HorizontalGap = 0f;
             _gridPanel.VerticalGap = 0f;
-            SyncPanelChildren(_gridPanel, items, _gridItemControls, RenderGridItemControl);
+            _gridPanel.ItemsSource = items;
 
             _scrollPanel.ConfigureAutomatic(
                 contentBounds,
@@ -581,93 +724,48 @@ namespace LcdMod.Client.Apps.Abstract
 
             BeginInteractiveTree(_scrollPanel);
             _activeScrollPanel = _scrollPanel;
-            PreviousType = items[0].TypeId;
             _scrollPanel.Render(sprites);
 
             CaretY = _scrollPanel.PanelBounds.Bottom;
+        }
+
+        ControlTemplate CreateGridItemControl(ItemEntry item)
+        {
+            return new RectangleControl(
+                default(RectangleF),
+                CursorType.Hand,
+                item,
+                OnGridItemClicked)
+            {
+                CustomRender = ItemDataTemplate.DrawItemGridEntry
+            };
+        }
+
+        void BindGridItemControl(ControlTemplate control, ItemEntry item, int index)
+        {
+            if (control == null)
+                return;
+
+            control.SetDataContext(item);
+            control.SetCursor(CursorType.Hand);
+            control.SetOnClick(OnGridItemClicked);
+            control.SetStyleId(ItemDataTemplate.GetItemStyleId(item));
+            control.SetStyles(_appliedGridStyleMode == ItemDisplayMode.Grid
+                ? ItemDataTemplate.ItemGridLineStyles
+                : ItemDataTemplate.ItemGridCardStyles);
+            control.CustomRender = ItemDataTemplate.DrawItemGridEntry;
+            control.SetVisible(item != null);
+        }
+
+        void OnGridItemClicked(object dataContext, object sender)
+        {
+            OnLegacyListItemClicked(dataContext as ItemEntry);
         }
 
         RectangleF GetScrollPanelBounds(float contentTop, float footerHeight)
         {
             float viewportHeight = Math.Max(0f, ViewBox.Bottom - contentTop - Math.Max(0f, footerHeight));
             return new RectangleF(ViewBox.X, contentTop, ViewBox.Width, viewportHeight);
-        }
-
-        void RenderGridPanelContent(ControlTemplate control, List<MySprite> sprites)
-        {
-            var children = control?.VisualChildren;
-            if (children == null)
-                return;
-
-            if (GeneralComponent.DrawLines)
-            {
-                var layout = WrapPanelLayout.Create(
-                    control.Bounds,
-                    3f * LINE_HEIGHT * Scale,
-                    MINIMUM_COL_WIDTH * Scale,
-                    children.Count);
-                DrawWrapPanelLines(sprites, _scrollPanel, layout);
-            }
-
-            for (int i = 0; i < children.Count; i++)
-            {
-                var child = children[i] as ControlTemplate;
-                child?.Render(sprites);
-            }
-        }
-
-        void DrawWrapPanelLines(List<MySprite> sprites, ScrollPanel panel, WrapPanelLayout panelLayout)
-        {
-            var lineColor = GetHeaderColor();
-            var contentStart = panel.ContentBounds.X;
-            var contentEnd = panel.ContentBounds.Right;
-            var gridHeight = panel.ContentBounds.Height;
-
-            for (int row = 0; row <= panel.MaxVisibleRows; row++)
-            {
-                var y = panel.ContentBounds.Y + row * panelLayout.RowHeight;
-                sprites.Add(new MySprite
-                {
-                    Type = SpriteType.TEXTURE,
-                    Data = "SquareSimple",
-                    Position = new Vector2((contentStart + contentEnd) / 2f, y),
-                    Size = new Vector2(contentEnd - contentStart, 2f),
-                    Color = lineColor,
-                    Alignment = TextAlignment.CENTER
-                });
-            }
-
-            for (int col = 0; col <= panelLayout.Columns; col++)
-            {
-                var x = col == panelLayout.Columns ? contentEnd : contentStart + col * panelLayout.ColumnWidth;
-                sprites.Add(new MySprite
-                {
-                    Type = SpriteType.TEXTURE,
-                    Data = "SquareSimple",
-                    Position = new Vector2(x, panel.ContentBounds.Y + gridHeight / 2f),
-                    Size = new Vector2(2f, gridHeight),
-                    Color = lineColor,
-                    Alignment = TextAlignment.CENTER
-                });
-            }
-        }
-
-        void RenderGridItemControl(ControlTemplate control, List<MySprite> frame)
-        {
-            var model = control.Model as ItemViewModel;
-            if (model == null)
-                return;
-
-            var rect = control.Bounds;
-            var cellPadding = (LINE_HEIGHT * Scale) / 2f;
-            var cellViewBox = GetCellViewBox(rect.X, rect.Right, rect.Y, rect.Height, cellPadding);
-
-            if (!GeneralComponent.DrawLines)
-                DrawCellBackground(frame, model, rect.X, rect.Right, rect.Y, rect.Height, cellPadding);
-
-            PreviousType = model.TypeId;
-            var slots = GetCellSlots(cellViewBox.X, cellViewBox.Right, cellViewBox.Y, cellViewBox.Bottom, LINE_HEIGHT);
-            DrawCellContent(frame, model, slots);
         }
 
         protected string ResolveSprite(MyItemType itemType)
@@ -703,132 +801,8 @@ namespace LcdMod.Client.Apps.Abstract
             return localizedName;
         }
 
-        void SyncPanelChildren(
-            Panel panel,
-            List<ItemViewModel> items,
-            Dictionary<MyItemType, ItemControl> controls,
-            InteractiveRenderHandler render)
+        void OnLegacyListItemClicked(ItemEntry item)
         {
-            if (panel == null)
-                return;
-
-            var desired = new List<Control>(items?.Count ?? 0);
-            var desiredTypes = new Dictionary<MyItemType, bool>();
-            if (items != null)
-            {
-                for (int i = 0; i < items.Count; i++)
-                {
-                    var item = items[i];
-                    if (item == null)
-                        continue;
-
-                    desiredTypes[item.ItemType] = true;
-                    desired.Add(GetOrCreateItemControl(controls, item, default(RectangleF), render));
-                }
-            }
-
-            RemoveStalePanelChildren(panel, controls, desiredTypes);
-            EnsurePanelChildOrder(panel, desired);
-        }
-
-        void RemoveStalePanelChildren(
-            Panel panel,
-            Dictionary<MyItemType, ItemControl> controls,
-            Dictionary<MyItemType, bool> desiredTypes)
-        {
-            var children = panel.VisualChildren;
-            if (children == null)
-                return;
-
-            for (int i = children.Count - 1; i >= 0; i--)
-            {
-                var child = children[i];
-                var model = child?.DataContext as ItemViewModel;
-                if (model == null || desiredTypes.ContainsKey(model.ItemType))
-                    continue;
-
-                panel.RemoveChild(child);
-                if (controls != null)
-                    controls.Remove(model.ItemType);
-            }
-        }
-
-        void EnsurePanelChildOrder(Panel panel, List<Control> desired)
-        {
-            if (desired == null)
-                return;
-
-            var children = panel.VisualChildren;
-            bool changed = false;
-            for (int i = 0; i < desired.Count; i++)
-            {
-                var child = desired[i] as ControlTemplate;
-                if (child == null)
-                    continue;
-
-                if (!ReferenceEquals(child.Parent, panel))
-                {
-                    panel.AddChild(child);
-                    children = panel.VisualChildren;
-                    changed = true;
-                }
-
-                if (children == null || i >= children.Count || ReferenceEquals(children[i], child))
-                    continue;
-
-                int currentIndex = IndexOfChild(children, child);
-                if (currentIndex < 0)
-                    continue;
-
-                if (panel.MoveChild(child, i))
-                    changed = true;
-            }
-
-            if (changed)
-                panel.InvalidateLayout();
-        }
-
-        static int IndexOfChild(IReadOnlyList<Control> children, ControlTemplate child)
-        {
-            if (children == null || child == null)
-                return -1;
-
-            for (int i = 0; i < children.Count; i++)
-            {
-                if (ReferenceEquals(children[i], child))
-                    return i;
-            }
-
-            return -1;
-        }
-
-        ItemControl GetOrCreateItemControl(
-            Dictionary<MyItemType, ItemControl> controls,
-            ItemViewModel item,
-            RectangleF bounds,
-            InteractiveRenderHandler render)
-        {
-            if (item == null)
-                return null;
-
-            ItemControl control;
-            if (!controls.TryGetValue(item.ItemType, out control) || control == null)
-            {
-                control = new ItemControl(bounds, item, render);
-                controls[item.ItemType] = control;
-            }
-            else
-            {
-                control.UpdateItem(item, render);
-            }
-
-            control.SetVisible(true);
-            return control;
-        }
-
-        void OnItemClicked(object dataContext, object sender)
-        {
-            var item = dataContext as ItemViewModel;
             if (item == null)
                 return;
 
@@ -836,211 +810,41 @@ namespace LcdMod.Client.Apps.Abstract
             if (interactiveHost == null)
                 return;
 
+            var displayName = ResolveDisplayName(item.ItemType);
             interactiveHost.ShowDialog(new CraftDialog(
                 this,
                 GridLogic,
                 item.ItemType,
-                item.DisplayName,
-                item.Icon,
-                GetDefaultCraftAmount(item),
+                displayName,
+                ResolveSprite(item.ItemType),
+                item.CraftAmount,
                 delegate(Dialog dialog) { interactiveHost.ShowDialog(dialog); }));
         }
 
-        protected virtual double GetDefaultCraftAmount(ItemViewModel item)
-        {
-            return 1d;
-        }
-
-        void RenderLegacyListItem(
-            ListBoxItem<ItemViewModel> control,
-            ItemViewModel item,
-            List<MySprite> frame)
-        {
-            if (control == null || item == null)
-                return;
-
-            DrawListItemContent(frame, item, control.Bounds);
-        }
-
-        void OnLegacyListItemClicked(ItemViewModel item)
-        {
-            OnItemClicked(item, _listBox);
-        }
-
-        protected virtual void DrawListItemContent(List<MySprite> frame, ItemViewModel item, RectangleF bounds)
-        {
-            var margin = 0f;
-            var xStart = bounds.X + margin;
-            var xEnd = bounds.Right - margin;
-            Vector2 position = bounds.Position;
-            position.X = xStart;
-
-            bool drawSeparatorLine = FilterComponent.SortMethod == (int)SortMethod.Type && PreviousType != item.TypeId;
-
-            if (GeneralComponent.DrawLines || drawSeparatorLine)
-            {
-                frame.Add(new MySprite()
-                {
-                    Type = SpriteType.TEXTURE,
-                    Data = "Circle",
-                    Position = new Vector2((xStart + xEnd) / 2f, position.Y),
-                    Size = new Vector2(xEnd - xStart, 1),
-                    Color = drawSeparatorLine ? GetHeaderColor() : Surface.ScriptForegroundColor,
-                    Alignment = TextAlignment.CENTER
-                });
-            }
-
-            PreviousType = item.TypeId;
-
-            DrawItemIcon(frame,
-                item.Icon,
-                position + new Vector2(20f, 15) * Scale,
-                new Vector2(LINE_HEIGHT * Scale),
-                TextAlignment.CENTER,
-                item.IconBackgroundColor);
-            position.X += (xEnd - xStart) / 8f;
-
-            var amountWidth = GetListAmountWidth(item);
-            var nameWidth = Math.Max(0f, xEnd - position.X - amountWidth);
-            var localizedName = TrimText(item.DisplayName, nameWidth);
-
-            frame.Add(new MySprite()
-            {
-                Type = SpriteType.TEXT,
-                Data = localizedName,
-                Position = position,
-                RotationOrScale = Scale * FontScale,
-                Color = item.ListTextColor,
-                Alignment = TextAlignment.LEFT,
-                FontId = TextFont
-            });
-            position.X = xEnd;
-            frame.Add(new MySprite()
-            {
-                Type = SpriteType.TEXT,
-                Data = item.AmountText,
-                Position = position,
-                RotationOrScale = Scale * FontScale,
-                Color = item.ListAmountColor,
-                Alignment = TextAlignment.RIGHT,
-                FontId = TextFont
-            });
-
-        }
-
-        float GetListAmountWidth(ItemViewModel item)
-        {
-            if (item == null || string.IsNullOrEmpty(item.AmountText))
-                return 105f * Scale;
-
-            var size = FormatingHelper.GetSizeInPixel(item.AmountText, TextFont, 1, Surface);
-            return Math.Max(105f * Scale, size.X * Scale * FontScale + 8f * Scale);
-        }
-
-        protected virtual void DrawItemIcon(List<MySprite> frame, string icon, Vector2 position, Vector2 size,
-            TextAlignment alignment, Color backgroundColor)
+        protected virtual void DrawItemIcon(
+            List<MySprite> frame,
+            string icon,
+            Vector2 position,
+            Vector2 size,
+            TextAlignment alignment,
+            Color backgroundColor)
         {
             if (frame == null || size.X <= 0f || size.Y <= 0f)
                 return;
 
-            if (string.IsNullOrEmpty(icon))
-            {
-                frame.Add(new MySprite
-                {
-                    Type = SpriteType.TEXTURE,
-                    Data = "Danger",
-                    Position = position,
-                    Size = size,
-                    Alignment = alignment,
-                    Color = backgroundColor
-                });
-                return;
-            }
-
             frame.Add(new MySprite
             {
                 Type = SpriteType.TEXTURE,
-                Data = icon,
+                Data = string.IsNullOrEmpty(icon) ? "MissingIcon" : icon,
                 Position = position,
                 Size = size,
                 Alignment = alignment,
-                Color = Color.White
+                Color = string.IsNullOrEmpty(icon) ? backgroundColor : Color.White
             });
-        }
-
-        protected virtual void DrawCellContent(List<MySprite> frame, ItemViewModel item,
-            MyTuple<RectangleF, RectangleF, RectangleF> slots)
-        {
-            var iconRect = slots.Item1;
-            var numberRect = slots.Item2;
-            var nameRect = slots.Item3;
-
-            DrawItemIcon(frame,
-                item.Icon,
-                new Vector2(iconRect.X, iconRect.Y + iconRect.Height / 2f),
-                new Vector2(iconRect.Width),
-                TextAlignment.LEFT,
-                item.IconBackgroundColor);
-
-            var localizedName = TrimText(item.DisplayName, nameRect.Width);
-
-            Vector2 size = FormatingHelper.GetSizeInPixel(localizedName, TextFont, 1, Surface);
-            float minProportion = Math.Min(nameRect.Width / size.X, nameRect.Height / size.Y);
-            float fontSize = minProportion;
-            float renderedHeight = size.Y * fontSize * FontScale;
-            Vector2 pos = nameRect.Center;
-            pos.Y -= renderedHeight * 0.5f;
-            pos.X = nameRect.Right;
-
-            frame.Add(new MySprite(
-                SpriteType.TEXT,
-                localizedName,
-                pos,
-                null,
-                item.GridTextColor,
-                TextFont,
-                TextAlignment.RIGHT,
-                fontSize * .95f * FontScale
-            ));
-
-            var qty = item.AmountText;
-            size = FormatingHelper.GetSizeInPixel(qty, TextFont, 1, Surface);
-            minProportion = Math.Min(numberRect.Width / size.X, numberRect.Height / size.Y);
-            fontSize = minProportion;
-            renderedHeight = size.Y * fontSize * FontScale;
-            pos = numberRect.Center;
-            pos.Y -= renderedHeight * 0.5f;
-            pos.X = numberRect.Right;
-
-            frame.Add(new MySprite(
-                SpriteType.TEXT,
-                qty,
-                pos,
-                null,
-                item.GridAmountColor,
-                TextFont,
-                TextAlignment.RIGHT,
-                fontSize * .95f * FontScale
-            ));
         }
 
         protected virtual void DrawFooter(List<MySprite> frame)
         {
-        }
-
-        sealed class ItemControl : RectangleControl
-        {
-            public ItemControl(RectangleF bounds, ItemViewModel item, InteractiveRenderHandler render)
-                : base(bounds, CursorType.Default, item)
-            {
-                CustomRender = render;
-            }
-
-            public void UpdateItem(ItemViewModel item, InteractiveRenderHandler render)
-            {
-                SetDataContext(item);
-                CustomRender = render;
-            }
         }
 
         void ClearInteractiveTree()
@@ -1048,17 +852,9 @@ namespace LcdMod.Client.Apps.Abstract
             _activeScrollPanel = null;
             _scrollPanel.SetVisible(false);
             _listBox.SetVisible(false);
+            _itemSortHeader.SetVisible(false);
+            _amountSortHeader.SetVisible(false);
             _children.Clear();
-            SetItemControlsVisible(_gridItemControls, false);
-        }
-
-        static void SetItemControlsVisible(Dictionary<MyItemType, ItemControl> controls, bool visible)
-        {
-            if (controls == null)
-                return;
-
-            foreach (var kv in controls)
-                kv.Value?.SetVisible(visible);
         }
 
         void BeginInteractiveTree(ControlTemplate root)
@@ -1133,32 +929,6 @@ namespace LcdMod.Client.Apps.Abstract
             return TitleVisible ? ViewBox.Y + 40f * Scale * FontScale : ViewBox.Y;
         }
 
-        protected virtual RectangleF GetCellViewBox(float xStart, float xEnd, float yStart, float cellHeight,
-            float cellPadding)
-        {
-            var innerLeft = xStart + cellPadding;
-            var innerRight = xEnd - cellPadding;
-            var innerTop = yStart + cellPadding;
-            var innerBottom = yStart + cellHeight - cellPadding;
-            return new RectangleF(innerLeft, innerTop, innerRight - innerLeft, innerBottom - innerTop);
-        }
-
-        protected virtual MyTuple<RectangleF, RectangleF, RectangleF> GetCellSlots(float innerLeft, float innerRight,
-            float innerTop, float innerBottom, float spacing)
-        {
-            var topRowHeight = spacing * Scale;
-            var bottomRowTop = innerTop + topRowHeight;
-            var bottomRowHeight = Math.Max(0f, innerBottom - bottomRowTop);
-            var iconSize = innerBottom - innerTop;
-            var contentLeft = innerLeft + iconSize;
-            var contentWidth = Math.Max(0f, innerRight - contentLeft);
-
-            var iconRect = new RectangleF(innerLeft, innerTop, iconSize, iconSize);
-            var numberRect = new RectangleF(contentLeft, innerTop, contentWidth, topRowHeight);
-            var nameRect = new RectangleF(contentLeft, bottomRowTop, contentWidth, bottomRowHeight);
-            return new MyTuple<RectangleF, RectangleF, RectangleF>(iconRect, numberRect, nameRect);
-        }
-
         protected void TrimText(ref StringBuilder sb, float availableWidth, float fontSize = 1)
         {
             Vector2 textSize = Surface.MeasureStringInPixels(sb, TextFont, fontSize * Scale * FontScale);
@@ -1185,98 +955,10 @@ namespace LcdMod.Client.Apps.Abstract
             return sb.ToString();
         }
 
-        protected virtual void DrawCellBackground(List<MySprite> frame, ItemViewModel item,
-            float xStart, float xEnd, float yStart, float cellHeight, float cellPadding)
-        {
-            var rl = xStart + cellPadding / 2;
-            var rr = xEnd - cellPadding / 2;
-            var rt = yStart + cellPadding / 2;
-            var rb = yStart + cellHeight - cellPadding / 2;
-
-            var backgroundColor = item.PanelColor;
-            var accent = backgroundColor.MulValue(0.2f);
-            var cellRect = new RectangleF(rl, rt, rr - rl, rb - rt);
-            var dropShadow = new RectangleF(cellRect.Position + 2, cellRect.Size);
-            BorderRenderer.CreateSpritesFromRect(dropShadow, frame, accent,
-                radiusScale: Scale);
-            BorderRenderer.CreateSpritesFromRect(cellRect, frame, backgroundColor,
-                radiusScale: Scale);
-        }
-
         protected Vector2 ToScreenMargin(Vector2 absoluteCenterInViewBox)
         {
             return new Vector2(absoluteCenterInViewBox.X, 512f - absoluteCenterInViewBox.Y);
         }
 
-        public class ItemViewModel : ControlModelBase
-        {
-            public ItemViewModel(MyItemType itemType)
-            {
-                ItemType = itemType;
-            }
-
-            public MyItemType ItemType { get; private set; }
-            public double Amount { get; set; }
-            public int LayoutVersion { get; set; }
-            public string TypeId => ItemType.TypeId;
-
-            public string Icon { get; set; }
-            public string DisplayName { get; set; }
-            public string AmountText { get; set; }
-            public string PrimaryAmountText { get; set; }
-            public string SecondaryAmountText { get; set; }
-            public ItemAmountDisplayMode AmountDisplayMode { get; set; }
-            public Color ListTextColor { get; set; }
-            public Color ListAmountColor { get; set; }
-            public Color ListIconColor { get; set; }
-            public Color GridTextColor { get; set; }
-            public Color GridAmountColor { get; set; }
-            public Color GridIconColor { get; set; }
-            public Color IconBackgroundColor { get; set; }
-            public Color PanelColor { get; set; }
-
-            public void SetSimpleAmount(string amountText)
-            {
-                AmountDisplayMode = ItemAmountDisplayMode.Simple;
-                AmountText = amountText;
-                PrimaryAmountText = amountText;
-                SecondaryAmountText = null;
-            }
-
-            public void SetQuotaAmount(string hasText, string needText)
-            {
-                AmountDisplayMode = ItemAmountDisplayMode.Quota;
-                PrimaryAmountText = hasText;
-                SecondaryAmountText = needText;
-                AmountText = hasText + "/" + needText;
-            }
-        }
-
-        public enum ItemAmountDisplayMode
-        {
-            Simple,
-            Quota
-        }
-    }
-
-
-    sealed class ItemTypeComparer : IComparer<MyItemType>
-    {
-        public static readonly ItemTypeComparer Instance = new ItemTypeComparer();
-
-        public int Compare(MyItemType a, MyItemType b)
-        {
-            int typeCmp = string.Compare(a.TypeId, b.TypeId, StringComparison.CurrentCulture);
-            if (typeCmp != 0)
-                return typeCmp;
-            return string.Compare(a.SubtypeId, b.SubtypeId, StringComparison.CurrentCulture);
-        }
-    }
-
-    sealed class DescendingDoubleComparer : IComparer<double>
-    {
-        public static readonly DescendingDoubleComparer Instance = new DescendingDoubleComparer();
-
-        public int Compare(double a, double b) => b.CompareTo(a);
     }
 }

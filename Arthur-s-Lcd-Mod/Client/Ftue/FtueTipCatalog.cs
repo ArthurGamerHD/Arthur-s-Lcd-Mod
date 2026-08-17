@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using LcdMod.Client.Apps;
 using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.Apps.ViewModel;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Custom.Planet;
 using LcdMod.Client.Gui.Tooltip;
@@ -86,7 +87,7 @@ namespace LcdMod.Client.Ftue
                 Loc("ItemsCraft_Line2"),
                 (surface, app, control) =>
                     (app is InventoryApp || app is ProjectorApp) &&
-                    control.DataContext is ItemsApp.ItemViewModel);
+                    control.DataContext is ItemEntry);
         }
 
         static FtueTip CreateFarmPlotDetailsTip()

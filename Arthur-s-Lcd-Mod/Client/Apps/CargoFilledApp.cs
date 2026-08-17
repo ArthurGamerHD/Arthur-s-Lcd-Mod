@@ -36,6 +36,21 @@ namespace LcdMod.Client.Apps
         private readonly HashSet<long> _activeEntryIds = new HashSet<long>();
 
         private readonly List<Entry> _entries = new List<Entry>();
+        private readonly LinkedTypedBlockSourceSet<IMyCargoContainer> _cargoContainers =
+            new LinkedTypedBlockSourceSet<IMyCargoContainer>(delegate(TypedBlockCollection blocks)
+            {
+                return blocks.CargoContainers;
+            });
+        private readonly LinkedTypedBlockSourceSet<IMyRefinery> _refineries =
+            new LinkedTypedBlockSourceSet<IMyRefinery>(delegate(TypedBlockCollection blocks)
+            {
+                return blocks.Refineries;
+            });
+        private readonly LinkedTypedBlockSourceSet<IMyShipConnector> _shipConnectors =
+            new LinkedTypedBlockSourceSet<IMyShipConnector>(delegate(TypedBlockCollection blocks)
+            {
+                return blocks.ShipConnectors;
+            });
         private readonly List<long> _entriesToRemove = new List<long>();
         private readonly Dictionary<long, RectangleControl> _entryControls = new Dictionary<long, RectangleControl>();
         private readonly Dictionary<long, Entry> _entryModels = new Dictionary<long, Entry>();
@@ -97,6 +112,14 @@ namespace LcdMod.Client.Apps
             DrawStatusMessage(sprites);
             ClearDirtyAfterRender();
             return sprites;
+        }
+
+        public override void Close()
+        {
+            _cargoContainers.Dispose();
+            _refineries.Dispose();
+            _shipConnectors.Dispose();
+            base.Close();
         }
 
         public override bool HasVisibleItems() => HasEntries;
@@ -636,23 +659,32 @@ namespace LcdMod.Client.Apps
             if (gridLogic == null)
                 return;
 
-            var blocks = gridLogic.GetTerminalBlocks<IMyTerminalBlock>((GridLinkTypeEnum)BlockSelectionComponent.GridLinkTypeInternal);
-            if (blocks == null)
-                return;
+            var linkType = (GridLinkTypeEnum)BlockSelectionComponent.GridLinkTypeInternal;
+            _cargoContainers.Bind(gridLogic, linkType);
+            _shipConnectors.Bind(gridLogic, linkType);
 
+            var cargoSources = _cargoContainers.Sources;
+            for (var i = 0; i < cargoSources.Count; i++)
+                AddContainerCandidates(cargoSources[i], result);
+
+            var connectorSources = _shipConnectors.Sources;
+            for (var i = 0; i < connectorSources.Count; i++)
+                AddContainerCandidates(connectorSources[i], result);
+        }
+
+        private void AddContainerCandidates<T>(IList<T> blocks, List<IMyTerminalBlock> result)
+            where T : class, IMyTerminalBlock
+        {
             for (var i = 0; i < blocks.Count; i++)
             {
-                var fat = blocks[i];
-                if (fat == null || !fat.HasInventory)
+                var block = blocks[i];
+                if (block == null || !block.HasInventory)
+                    continue;
+                if (BlockSelectionComponent.SelectedBlocks.Length > 0 &&
+                    Array.IndexOf(BlockSelectionComponent.SelectedBlocks, block.EntityId) < 0)
                     continue;
 
-                if (!(fat is IMyCargoContainer || fat is IMyShipConnector))
-                    continue;
-
-                if (BlockSelectionComponent.SelectedBlocks.Length > 0 && Array.IndexOf(BlockSelectionComponent.SelectedBlocks, fat.EntityId) < 0)
-                    continue;
-
-                result.Add(fat);
+                result.Add(block);
             }
         }
 
@@ -687,95 +719,106 @@ namespace LcdMod.Client.Apps
             if (gridLogic == null)
                 return;
 
-            var blocks = gridLogic.GetTerminalBlocks<IMyTerminalBlock>((GridLinkTypeEnum)BlockSelectionComponent.GridLinkTypeInternal);
-            if (blocks == null)
+            var linkType = (GridLinkTypeEnum)BlockSelectionComponent.GridLinkTypeInternal;
+            _cargoContainers.Bind(gridLogic, linkType);
+            _refineries.Bind(gridLogic, linkType);
+
+            var cargoSources = _cargoContainers.Sources;
+            for (var sourceIndex = 0; sourceIndex < cargoSources.Count; sourceIndex++)
+            {
+                var cargoContainers = cargoSources[sourceIndex];
+                for (var i = 0; i < cargoContainers.Count; i++)
+                    AggregateContainer(cargoContainers[i], false, details);
+            }
+
+            var refinerySources = _refineries.Sources;
+            for (var sourceIndex = 0; sourceIndex < refinerySources.Count; sourceIndex++)
+            {
+                var refineries = refinerySources[sourceIndex];
+                for (var i = 0; i < refineries.Count; i++)
+                    AggregateContainer(refineries[i], true, details);
+            }
+        }
+
+        private void AggregateContainer(IMyTerminalBlock fat, bool isRefinery, List<Entry> details)
+        {
+            if (fat == null)
                 return;
 
-            for (var i = 0; i < blocks.Count; i++)
+            if (BlockSelectionComponent.SelectedBlocks.Length > 0 &&
+                Array.IndexOf(BlockSelectionComponent.SelectedBlocks, fat.EntityId) < 0)
+                return;
+
+            if (!fat.HasInventory)
+                return;
+
+            double localUsed = 0;
+            double localCap = 0;
+            if (isRefinery)
             {
-                var fat = blocks[i];
-                if (fat == null)
-                    continue;
-
-                var isRefinery = fat is IMyRefinery;
-                if (!(fat is IMyCargoContainer || isRefinery))
-                    continue;
-
-                if (BlockSelectionComponent.SelectedBlocks.Length > 0 &&
-                    Array.IndexOf(BlockSelectionComponent.SelectedBlocks, fat.EntityId) < 0)
-                    continue;
-
-                if (!fat.HasInventory)
-                    continue;
-
-                double localUsed = 0;
-                double localCap = 0;
-                if (isRefinery)
-                {
-                    var inv = fat.GetInventory(0);
-                    if (inv != null)
-                        try
-                        {
-                            localUsed = (double)inv.CurrentVolume;
-                            localCap = (double)inv.MaxVolume;
-                        }
-                        catch (Exception e)
-                        {
-                            ErrorHandlerHelper.LogError(e, Host);
-                        }
-                }
-                else
-                {
-                    var invCount = 0;
+                var inv = fat.GetInventory(0);
+                if (inv != null)
                     try
                     {
-                        invCount = fat.InventoryCount;
+                        localUsed = (double)inv.CurrentVolume;
+                        localCap = (double)inv.MaxVolume;
                     }
                     catch (Exception e)
                     {
                         ErrorHandlerHelper.LogError(e, Host);
                     }
-
-                    for (var k = 0; k < invCount; k++)
-                    {
-                        var inv = fat.GetInventory(k);
-                        if (inv == null)
-                            continue;
-                        try
-                        {
-                            localUsed += (double)inv.CurrentVolume;
-                            localCap += (double)inv.MaxVolume;
-                        }
-                        catch (Exception e)
-                        {
-                            ErrorHandlerHelper.LogError(e, Host);
-                        }
-                    }
-                }
-
-                if (localCap <= 0)
-                    continue;
-
-                string name;
+            }
+            else
+            {
+                var invCount = 0;
                 try
                 {
-                    name = fat.CustomName;
-                    if (string.IsNullOrEmpty(name))
-                        name = fat.DisplayNameText;
-                    if (string.IsNullOrEmpty(name))
-                        name = fat.BlockDefinition.SubtypeName;
-                    if (string.IsNullOrEmpty(name))
-                        name = "Container";
+                    invCount = fat.InventoryCount;
                 }
-                catch
+                catch (Exception e)
                 {
-                    name = "Container";
+                    ErrorHandlerHelper.LogError(e, Host);
                 }
 
-                var entry = GetOrCreateEntry(fat.EntityId);
-                entry.Update(name, localUsed, localCap);
-                details.Add(entry);
+                for (var k = 0; k < invCount; k++)
+                {
+                    var inv = fat.GetInventory(k);
+                    if (inv == null)
+                        continue;
+                    try
+                    {
+                        localUsed += (double)inv.CurrentVolume;
+                        localCap += (double)inv.MaxVolume;
+                    }
+                    catch (Exception e)
+                    {
+                        ErrorHandlerHelper.LogError(e, Host);
+                    }
+                }
             }
+
+            if (localCap <= 0)
+                return;
+
+            string name;
+            try
+            {
+                name = fat.CustomName;
+                if (string.IsNullOrEmpty(name))
+                    name = fat.DisplayNameText;
+                if (string.IsNullOrEmpty(name))
+                    name = fat.BlockDefinition.SubtypeName;
+                if (string.IsNullOrEmpty(name))
+                    name = "Container";
+            }
+            catch
+            {
+                name = "Container";
+            }
+
+            var entry = GetOrCreateEntry(fat.EntityId);
+            entry.Update(name, localUsed, localCap);
+            details.Add(entry);
         }
 
         private Entry GetOrCreateEntry(long entryId)

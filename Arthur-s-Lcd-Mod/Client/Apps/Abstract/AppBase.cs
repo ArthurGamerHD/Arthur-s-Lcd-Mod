@@ -7,6 +7,7 @@ using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Gui.Styling.Styles;
 using LcdMod.Client.Helpers;
+using LcdMod.Client.GridData;
 using LcdMod.Common.Config.Components;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
@@ -28,12 +29,16 @@ namespace LcdMod.Client.Apps.Abstract
         Dictionary<string, Color> _theme;
         Color _themeHeaderColor;
         Color _themeForegroundColor;
+        Color _themeWarningColor;
+        Color _themeErrorColor;
         bool _themeDark;
         float _themeLayoutScale;
         float _themeFontScale;
         float _themeAutoScrollSecondsPerStep;
         string _themeTextFont;
         bool _hasTheme;
+        GridLogic _neededGridLogic;
+        GridCapability _gridCapabilities;
 
         protected App(IAppHost host)
         {
@@ -58,6 +63,31 @@ namespace LcdMod.Client.Apps.Abstract
 
             Host = host;
             _animationController = Host.Animations;
+        }
+
+        protected void NeedGridData(GridCapability need)
+        {
+            var logic = Host != null ? Host.GridLogic : null;
+            if (!ReferenceEquals(_neededGridLogic, logic))
+                ReleaseGridDataNeeds();
+            if (logic == null)
+                return;
+
+            var additionalNeeds = need & ~_gridCapabilities;
+            if (additionalNeeds == GridCapability.None)
+                return;
+
+            logic.RequestCapability(additionalNeeds);
+            _neededGridLogic = logic;
+            _gridCapabilities |= additionalNeeds;
+        }
+
+        void ReleaseGridDataNeeds()
+        {
+            if (_neededGridLogic != null && _gridCapabilities != GridCapability.None)
+                _neededGridLogic.Release(_gridCapabilities);
+            _neededGridLogic = null;
+            _gridCapabilities = GridCapability.None;
         }
 
         public override bool IsDirty
@@ -204,6 +234,7 @@ namespace LcdMod.Client.Apps.Abstract
 
         public virtual void Close()
         {
+            ReleaseGridDataNeeds();
         }
 
         protected Color GetHeaderColor()
@@ -231,6 +262,8 @@ namespace LcdMod.Client.Apps.Abstract
         {
             var headerColor = GetHeaderColor();
             var foregroundColor = GetForegroundColor();
+            var warningColor = ColorComponent.ResolveWarningColor();
+            var errorColor = ColorComponent.ResolveErrorColor();
             bool dark = ShouldUseDarkTheme();
             float layoutScale = GetLayoutScaleResourceValue();
             float fontScale = GetFontScaleResourceValue();
@@ -239,6 +272,8 @@ namespace LcdMod.Client.Apps.Abstract
             if (!_hasTheme ||
                 !headerColor.Equals(_themeHeaderColor) ||
                 !foregroundColor.Equals(_themeForegroundColor) ||
+                !warningColor.Equals(_themeWarningColor) ||
+                !errorColor.Equals(_themeErrorColor) ||
                 dark != _themeDark ||
                 !layoutScale.Equals(_themeLayoutScale) ||
                 !fontScale.Equals(_themeFontScale) ||
@@ -248,12 +283,16 @@ namespace LcdMod.Client.Apps.Abstract
                 _theme = headerColor.ToTheme(dark);
                 _resources = ThemeResourceBuilder.FromThemeDictionary(_theme);
                 _resources.Set(ThemeResources.FontColor, foregroundColor);
+                _resources.Set(ThemeResources.WarningColor, warningColor);
+                _resources.Set(ThemeResources.ErrorColor, errorColor);
                 _resources.Set(ThemeResources.LayoutScale, layoutScale);
                 _resources.Set(ThemeResources.FontScale, fontScale);
                 _resources.Set(ThemeResources.AutoScrollSecondsPerStep, InteractionComponent.AutoScrollStep);
                 _resources.Set(ThemeResources.TextFont, textFont);
                 _themeHeaderColor = headerColor;
                 _themeForegroundColor = foregroundColor;
+                _themeWarningColor = warningColor;
+                _themeErrorColor = errorColor;
                 _themeDark = dark;
                 _themeLayoutScale = layoutScale;
                 _themeFontScale = fontScale;

@@ -23,6 +23,8 @@ namespace LcdMod.Client.Modules.Power
         readonly PowerSnapshotAccumulator _oneMinuteAccumulator = new PowerSnapshotAccumulator();
         readonly PowerSnapshotAccumulator _fiveMinuteAccumulator = new PowerSnapshotAccumulator();
         readonly PowerSnapshotAccumulator _thirtyMinuteAccumulator = new PowerSnapshotAccumulator();
+        readonly HashSet<GridLogic> _neededBlockLogics = new HashSet<GridLogic>();
+        readonly HashSet<GridLogic> _nextNeededBlockLogics = new HashSet<GridLogic>();
         List<IMyCubeGrid> _grids = new List<IMyCubeGrid>();
         long _lastSampleFrame = -1;
         long _lastScopeRefreshFrame = -1;
@@ -52,6 +54,8 @@ namespace LcdMod.Client.Modules.Power
                 Requester = requester;
             CaptureCount++;
             ReleasedFrame = 0;
+            if (CaptureCount == 1)
+                RebindBlockNeeds();
         }
 
         internal void Release(long frame)
@@ -59,12 +63,17 @@ namespace LcdMod.Client.Modules.Power
             if (CaptureCount > 0)
                 CaptureCount--;
             if (CaptureCount == 0)
+            {
                 ReleasedFrame = frame;
+                ReleaseBlockNeeds();
+            }
         }
 
         internal void Update(long gameplayFrame)
         {
             if (gameplayFrame < 0)
+                return;
+            if (!HasCaptures)
                 return;
 
             if (_lastScopeRefreshFrame < 0 || gameplayFrame - _lastScopeRefreshFrame >= 120)
@@ -113,7 +122,53 @@ namespace LcdMod.Client.Modules.Power
             _lastScopeRefreshFrame = gameplayFrame;
             _grids = _resolver.ResolveGrids(Requester, LinkType);
             Key = _resolver.ResolveKey(Requester, LinkType);
+            if (HasCaptures)
+                RebindBlockNeeds();
             return Key;
+        }
+
+        internal void Dispose()
+        {
+            CaptureCount = 0;
+            ReleaseBlockNeeds();
+        }
+
+        void RebindBlockNeeds()
+        {
+            _nextNeededBlockLogics.Clear();
+            for (var i = 0; i < _grids.Count; i++)
+            {
+                var logic = LcdModSessionComponent.GetOrCreateGridLogic(_grids[i]);
+                if (logic != null)
+                    _nextNeededBlockLogics.Add(logic);
+            }
+
+            foreach (var logic in _nextNeededBlockLogics)
+            {
+                if (_neededBlockLogics.Add(logic))
+                    logic.RequestCapability(GridCapability.Blocks);
+            }
+
+            var removed = new List<GridLogic>();
+            foreach (var logic in _neededBlockLogics)
+            {
+                if (!_nextNeededBlockLogics.Contains(logic))
+                    removed.Add(logic);
+            }
+            foreach (var logic in removed)
+            {
+                _neededBlockLogics.Remove(logic);
+                logic.Release(GridCapability.Blocks);
+            }
+            _nextNeededBlockLogics.Clear();
+        }
+
+        void ReleaseBlockNeeds()
+        {
+            foreach (var logic in _neededBlockLogics)
+                logic.Release(GridCapability.Blocks);
+            _neededBlockLogics.Clear();
+            _nextNeededBlockLogics.Clear();
         }
     }
 }

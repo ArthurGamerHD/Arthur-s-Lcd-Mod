@@ -11,7 +11,7 @@ using VRage.Game.ModAPI;
 using static LcdMod.Common.Helpers.Constants;
 namespace LcdMod.Client.Gui.UserControls.Antenna
 {
-    internal abstract class AntennaCollector
+    internal abstract class AntennaCollector : IDisposable
     {
         readonly IAppHost _host;
         readonly Func<BlockSelectionConfigComponent> _getConfig;
@@ -27,6 +27,8 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
             List<AntennaEntry> entries,
             Dictionary<long, AntennaEntry> models,
             HashSet<long> activeEntryIds);
+
+        public abstract void Dispose();
 
         protected AntennaCollector(
             IAppHost antennaSurfaceScript,

@@ -2,9 +2,11 @@ using Generated;
 using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Config;
 using LcdMod.Client.Extensions;
+using LcdMod.Client.GridData;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
@@ -74,6 +76,8 @@ namespace LcdMod.Client.Apps
         readonly HashSet<long> _constructGridIds = new HashSet<long>();
         readonly List<IMyTerminalBlock> _pendingSyncBlocks = new List<IMyTerminalBlock>();
         readonly List<MySprite> _sprites = new List<MySprite>();
+        readonly LinkedTypedBlockSourceSet<IMyTerminalBlock> _terminalSources =
+            new LinkedTypedBlockSourceSet<IMyTerminalBlock>(blocks => blocks.TerminalBlocks);
         readonly InteractiveSurfaceScript _interactiveHost;
 
         long _lastActionFrame = long.MinValue;
@@ -91,6 +95,7 @@ namespace LcdMod.Client.Apps
 
         public override void Update()
         {
+            _terminalSources.Bind(Host.GridLogic, (GridLinkTypeEnum)CargoActionsComponent.GridLinkTypeInternal);
             TryAdoptSharedSettings();
         }
 
@@ -289,7 +294,7 @@ namespace LcdMod.Client.Apps
                     return;
 
                 var blocks = GetGridBlocks();
-                if (blocks == null || blocks.Count == 0)
+                if (!blocks.Any())
                 {
                     _nextAdoptAttemptFrame = frame + ADOPT_RETRY_FRAMES;
                     return;
@@ -335,7 +340,7 @@ namespace LcdMod.Client.Apps
         void PropagateSettingsToConstruct(CargoActionsConfigComponent source)
         {
             var blocks = GetGridBlocks();
-            if (blocks == null || blocks.Count == 0)
+            if (!blocks.Any())
                 return;
 
             CollectConstructGridIds(blocks);
@@ -371,12 +376,12 @@ namespace LcdMod.Client.Apps
             _pendingSyncBlocks.Clear();
         }
 
-        void CollectConstructGridIds(List<IMyTerminalBlock> blocks)
+        void CollectConstructGridIds(IEnumerable<IMyTerminalBlock> blocks)
         {
             _constructGridIds.Clear();
-            for (var i = 0; i < blocks.Count; i++)
+            foreach (var block in blocks)
             {
-                var cubeGrid = blocks[i] != null ? blocks[i].CubeGrid : null;
+                var cubeGrid = block != null ? block.CubeGrid : null;
                 if (cubeGrid != null)
                     _constructGridIds.Add(cubeGrid.EntityId);
             }
@@ -484,12 +489,8 @@ namespace LcdMod.Client.Apps
         void CollectSorterSources(List<IMyTerminalBlock> result)
         {
             var blocks = GetGridBlocks();
-            if (blocks == null)
-                return;
-
-            for (var i = 0; i < blocks.Count; i++)
+            foreach (var fat in blocks)
             {
-                var fat = blocks[i];
                 if (fat == null || !fat.HasInventory)
                     continue;
 
@@ -502,12 +503,8 @@ namespace LcdMod.Client.Apps
         void CollectFillSources(List<IMyTerminalBlock> result)
         {
             var blocks = GetGridBlocks();
-            if (blocks == null)
-                return;
-
-            for (var i = 0; i < blocks.Count; i++)
+            foreach (var fat in blocks)
             {
-                var fat = blocks[i];
                 if (fat == null || !fat.HasInventory)
                     continue;
 
@@ -519,12 +516,8 @@ namespace LcdMod.Client.Apps
         void CollectFillTargets<T>(List<IMyTerminalBlock> result) where T : class
         {
             var blocks = GetGridBlocks();
-            if (blocks == null)
-                return;
-
-            for (var i = 0; i < blocks.Count; i++)
+            foreach (var fat in blocks)
             {
-                var fat = blocks[i];
                 if (fat == null || !fat.HasInventory)
                     continue;
 
@@ -533,13 +526,16 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        List<IMyTerminalBlock> GetGridBlocks()
+        IEnumerable<IMyTerminalBlock> GetGridBlocks()
         {
-            var gridLogic = Host.GridLogic;
-            if (gridLogic == null)
-                return null;
-
-            return gridLogic.GetTerminalBlocks<IMyTerminalBlock>((GridLinkTypeEnum)CargoActionsComponent.GridLinkTypeInternal);
+            _terminalSources.Bind(Host.GridLogic, (GridLinkTypeEnum)CargoActionsComponent.GridLinkTypeInternal);
+            var sources = _terminalSources.Sources;
+            for (var sourceIndex = 0; sourceIndex < sources.Count; sourceIndex++)
+            {
+                var source = sources[sourceIndex];
+                for (var blockIndex = 0; blockIndex < source.Count; blockIndex++)
+                    yield return source[blockIndex];
+            }
         }
 
         static long[] ToEntityIds(List<IMyTerminalBlock> blocks)
@@ -557,9 +553,8 @@ namespace LcdMod.Client.Apps
             var blocks = GetGridBlocks();
             if (blocks != null)
             {
-                for (var i = 0; i < blocks.Count; i++)
+                foreach (var fat in blocks)
                 {
-                    var fat = blocks[i];
                     if (fat == null || !fat.HasInventory || !(fat is IMyUserControllableGun))
                         continue;
 
@@ -580,6 +575,12 @@ namespace LcdMod.Client.Apps
                 return string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase);
             });
             return result;
+        }
+
+        public override void Close()
+        {
+            _terminalSources.Dispose();
+            base.Close();
         }
 
         void SetStatusMessage(string message)

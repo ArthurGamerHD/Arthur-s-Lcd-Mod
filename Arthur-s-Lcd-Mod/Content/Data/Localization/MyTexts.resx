@@ -462,6 +462,12 @@
     <data name="LcdMod_List" xml:space="preserve">
     <value>List</value>
   </data>
+    <data name="LcdMod_Card" xml:space="preserve">
+    <value>Card</value>
+  </data>
+    <data name="LcdMod_Table" xml:space="preserve">
+    <value>Table</value>
+  </data>
     <data name="LcdMod_RenderProxy" xml:space="preserve">
     <value>Render Proxy</value>
   </data>

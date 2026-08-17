@@ -72,6 +72,13 @@ namespace LcdMod.Client.SurfaceScripts
                 _app.LayoutChanged();
         }
 
+        protected override IApp DetachGridBoundApp()
+        {
+            var app = _app;
+            _app = null;
+            return app;
+        }
+
         public override void SafeRun()
         {
 
