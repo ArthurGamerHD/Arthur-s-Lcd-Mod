@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <Version>0.2.5</Version>
+    <Version>0.2.6</Version>
     <MdkSourceRoot Condition="'$(MdkSourceRoot)' == ''">/home/arthur/RiderProjects/mdk2/Source/</MdkSourceRoot>
     <MdkLocalConfiguration Condition="'$(MdkLocalConfiguration)' == ''">Debug</MdkLocalConfiguration>
     <MdkLocalPlatform Condition="'$(MdkLocalPlatform)' == ''">x64</MdkLocalPlatform>
