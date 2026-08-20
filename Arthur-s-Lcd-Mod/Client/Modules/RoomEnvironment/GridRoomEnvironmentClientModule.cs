@@ -1,4 +1,5 @@
 using LcdMod.Client.GridData;
+using Generated;
 using LcdMod.Common.Networking;
 using Sandbox.Game.Entities;
 using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;

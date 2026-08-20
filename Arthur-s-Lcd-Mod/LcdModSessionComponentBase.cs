@@ -20,13 +20,12 @@ using VRage.Game.Components;
 using VRage.Game.ModAPI;
 using VRage.Library.Utils;
 using VRage.ModAPI;
-using VRage.Utils;
 using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod
 {
     [MySessionComponentDescriptor(MyUpdateOrder.BeforeSimulation | MyUpdateOrder.Simulation | MyUpdateOrder.AfterSimulation)]
-    public partial class LcdModSessionComponent : MySessionComponentBase, IModuleManager
+    public partial class LcdModSessionComponent : MySessionComponentBase, IModuleManager, ISingleton<LcdModSessionComponent>
     {
         static LcdModSessionComponent _instance;
         internal readonly Dictionary<long, MyTuple<IMyCubeGrid, GridLogic>> _grids = new Dictionary<long, MyTuple<IMyCubeGrid, GridLogic>>();
@@ -35,7 +34,11 @@ namespace LcdMod
         public static LcdModClientComponent Client;
         public static LcdModServerComponent Server;
 
-        public static NetworkManager NetworkManager = new NetworkManager(PORT);
+        public static NetworkManager NetworkManager = new NetworkManager(new NetworkParameters(
+            PORT,
+            96 * 1024,
+            32 * 1024 * 1024,
+            384));
 
         public static event Action OnSave;
         public static event Action OnLanguageChanged;
@@ -121,6 +124,7 @@ namespace LcdMod
             LogHelper.LogInfo("Init - Version " + VersionName);
             
             _instance = this;
+            RegisterSingleton();
             if (Components == null)
                 Components = new Dictionary<long, GridLogic>();
 
@@ -152,6 +156,7 @@ namespace LcdMod
             Server?.UnloadData();
             Client = null;
             Server = null;
+            UnregisterSingleton();
             _instance = null;
         }
 
@@ -204,8 +209,6 @@ namespace LcdMod
         {
             try
             {
-                NetworkManager.OnReceivedPacket += OnReceivedPacket;
-                
                 NetworkManager.Init();
 
                 Server?.BeforeStart();
@@ -217,114 +220,9 @@ namespace LcdMod
             }
         }
 
-        void OnReceivedPacket(ReceivedPacketEventArgs args)
+        [NetworkCallback(typeof(PacketPlayerInputBlacklist), NetworkCallbackFilter.FromClient | NetworkCallbackFilter.IsServer)]
+        public void HandlePlayerInputBlacklist(PacketPlayerInputBlacklist packet)
         {
-            try
-            {
-                switch (args.Code)
-                {
-                    case PackageCode.SyncConfig:
-                        if (!MyAPIGateway.Utilities.IsDedicated)
-                            Client?.HandleSyncConfig(args);
-                        if (!args.IsFromServer)
-                            Server?.HandleSyncConfig(args);
-                        break;
-                    case PackageCode.RequestTexture:
-                        if (args.IsFromServer)
-                            Client?.HandleRequestTexture(args);
-                        else
-                            Server?.HandleRequestTexture(args);
-                        break;
-                    case PackageCode.SyncTexture:
-                        if (args.IsFromServer)
-                            Client?.HandleSyncTexture(args);
-                        else
-                            Server?.HandleSyncTexture(args);
-                        break;
-                    case PackageCode.EditFaction:
-                        Server?.HandleEditFaction(args);
-                        break;
-                    case PackageCode.PlayerInputBlacklist:
-                        HandlePlayerInputBlacklist(args);
-                        break;
-                    case PackageCode.SortInventory:
-                        Server?.HandleSortInventory(args);
-                        break;
-                    case PackageCode.TransferItems:
-                        Server?.HandleTransferItems(args);
-                        break;
-                    case PackageCode.FillBlocks:
-                        Server?.HandleFillBlocks(args);
-                        break;
-                    case PackageCode.RequestNpcMarket:
-                        Server?.HandleRequestNpcMarket(args);
-                        break;
-                    case PackageCode.SyncNpcMarket:
-                        if (args.IsFromServer && !MyAPIGateway.Utilities.IsDedicated)
-                            Client?.HandleSyncNpcMarket(args);
-                        break;
-                    case PackageCode.RequestGridRoomEnvironment:
-                        if (!args.IsFromServer)
-                            Server?.RoomEnvironment.HandleRequestGridRoomEnvironment(args);
-                        break;
-                    case PackageCode.SyncGridRoomEnvironment:
-                        if (args.IsFromServer && !MyAPIGateway.Utilities.IsDedicated)
-                            Client?.RoomEnvironment.HandleSyncGridRoomEnvironment(args);
-                        break;
-                    case PackageCode.RequestBroadcastAudio:
-                        if (!args.IsFromServer)
-                            Server?.HandleRequestBroadcastAudio(args);
-                        break;
-                    case PackageCode.SyncBroadcastAudio:
-                        if (args.IsFromServer && !MyAPIGateway.Utilities.IsDedicated)
-                            Client?.HandleSyncBroadcastAudio(args);
-                        break;
-                    case PackageCode.RequestMediaPlayerCommand:
-                        if (!args.IsFromServer)
-                            Server?.HandleRequestMediaPlayerCommand(args);
-                        break;
-                    case PackageCode.SyncMediaPlayerCommand:
-                        if (args.IsFromServer && !MyAPIGateway.Utilities.IsDedicated)
-                            Client?.HandleSyncMediaPlayerCommand(args);
-                        break;
-                    case PackageCode.MediaStreamControl:
-                        if (args.IsFromServer)
-                        {
-                            if (!MyAPIGateway.Utilities.IsDedicated)
-                                Client?.HandleMediaStreamControl(args);
-                        }
-                        else
-                        {
-                            Server?.HandleMediaStreamControl(args);
-                        }
-                        break;
-                    case PackageCode.RequestMediaStreamChunk:
-                        if (!args.IsFromServer)
-                            Server?.HandleRequestMediaStreamChunk(args);
-                        break;
-                    case PackageCode.SyncMediaStreamChunk:
-                        if (args.IsFromServer && !MyAPIGateway.Utilities.IsDedicated)
-                            Client?.HandleSyncMediaStreamChunk(args);
-                        break;
-                    default:
-                        {
-                            LogHelper.Log(MyLogSeverity.Error, $"Unexpected Packet Code Received");
-                            break;
-                        }
-                }
-            }
-            catch (Exception e)
-            {
-                ErrorHandlerHelper.LogError(e, this);
-            }
-        }
-
-        public static void HandlePlayerInputBlacklist(ReceivedPacketEventArgs args)
-        {
-            if (!MyAPIGateway.Session.IsServer)
-                return;
-
-            var packet = args.UnWrap<PacketPlayerInputBlacklist>();
             ApplyPlayerUseInputEnabled(packet.PlayerId, packet.Enabled);
         }
         

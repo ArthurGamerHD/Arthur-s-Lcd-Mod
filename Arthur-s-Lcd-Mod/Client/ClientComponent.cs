@@ -32,7 +32,7 @@ using ItemsSurfaceScriptBase = LcdMod.Client.SurfaceScripts.Abstract.ItemsSurfac
 
 namespace LcdMod.Client
 {
-    public sealed class LcdModClientComponent
+    public partial class LcdModClientComponent : ISingleton<LcdModClientComponent>
     {
         public static readonly List<Action> RunNextFrame = new List<Action>();
         static readonly List<Action> RunThisFrame = new List<Action>();
@@ -63,6 +63,7 @@ namespace LcdMod.Client
 
         public LcdModClientComponent(LcdModSessionComponent session)
         {
+            RegisterSingleton();
             _session = session;
             _terminalManager = new TerminalManager(session);
             RoomEnvironment = new GridRoomEnvironmentClientModule();
@@ -166,6 +167,7 @@ namespace LcdMod.Client
             RunOnePerFrame.Clear();
             InventoryWorkScheduler.Clear();
             OnUpdateBeforeSimulation = null;
+            UnregisterSingleton();
         }
 
         public void UpdateBeforeSimulation()
@@ -355,9 +357,9 @@ namespace LcdMod.Client
             Blocker.Clear();
         }
 
-        public void HandleSyncConfig(ReceivedPacketEventArgs args)
+        [NetworkCallback(typeof(NetworkPackageSyncComponentConfig), NetworkCallbackFilter.IsClient)]
+        internal void HandleSyncConfig(NetworkPackageSyncComponentConfig packet)
         {
-            var packet = args.UnWrap<NetworkPackageSyncComponentConfig>();
             var block = MyEntities.GetEntityById(packet.BlockId) as IMyFunctionalBlock;
             if (block == null)
                 return;
@@ -370,9 +372,9 @@ namespace LcdMod.Client
             LcdModSessionComponent.ApplySyncedConfig(block, settings, packet.Config);
         }
 
-        public void HandleRequestTexture(ReceivedPacketEventArgs args)
+        [NetworkCallback(typeof(PacketRequestTexture), NetworkCallbackFilter.FromServer | NetworkCallbackFilter.IsClient)]
+        public void HandleRequestTexture(PacketRequestTexture packet)
         {
-            var packet = args.UnWrap<PacketRequestTexture>();
             if (packet == null || string.IsNullOrWhiteSpace(packet.TextureName))
                 return;
 
@@ -432,9 +434,10 @@ namespace LcdMod.Client
             LcdModSessionComponent.NetworkManager.TransmitToServer(syncPacket, false);
         }
 
-        public void HandleSyncTexture(ReceivedPacketEventArgs args)
+        
+        [NetworkCallback(typeof(PacketSyncTexture), NetworkCallbackFilter.FromServer | NetworkCallbackFilter.IsClient)]
+        public void HandleSyncTexture(PacketSyncTexture packet)
         {
-            var packet = args.UnWrap<PacketSyncTexture>();
             if (packet == null || string.IsNullOrWhiteSpace(packet.TextureName) || !TextureTransferHelper.IsValidTexturePayload(packet.Data))
                 return;
 
@@ -455,11 +458,7 @@ namespace LcdMod.Client
             TextureHelper.SaveRemoteTexture(packet);
         }
 
-        public void HandleSyncNpcMarket(ReceivedPacketEventArgs args)
-        {
-            HandleLocalSyncNpcMarket(args.UnWrap<PacketSyncNpcMarket>());
-        }
-
+        [NetworkCallback(typeof(PacketSyncNpcMarket), NetworkCallbackFilter.FromServer | NetworkCallbackFilter.IsClient)]
         public void HandleLocalSyncNpcMarket(PacketSyncNpcMarket packet)
         {
 #if DEBUG
@@ -472,12 +471,10 @@ namespace LcdMod.Client
             NpcMarketClientCache.HandleSync(packet);
         }
 
-        public void HandleSyncBroadcastAudio(ReceivedPacketEventArgs args)
+        [NetworkCallback(typeof(PacketSyncBroadcastAudio), NetworkCallbackFilter.FromServer | NetworkCallbackFilter.IsClient)]
+        public void HandleSyncBroadcastAudio(PacketSyncBroadcastAudio packet)
         {
-            if (!args.IsFromServer)
-                return;
-
-            _audioBroadcast.HandleSync(args.UnWrap<PacketSyncBroadcastAudio>());
+            _audioBroadcast.HandleSync(packet);
         }
 
         public void HandleLocalSyncBroadcastAudio(PacketSyncBroadcastAudio packet)
@@ -498,12 +495,11 @@ namespace LcdMod.Client
                 stopPlayback);
         }
 
-        public void HandleSyncMediaStreamChunk(ReceivedPacketEventArgs args)
+        
+        [NetworkCallback(typeof(PacketSyncMediaStreamChunk), NetworkCallbackFilter.FromServer | NetworkCallbackFilter.IsClient)]
+        public void HandleSyncMediaStreamChunk(PacketSyncMediaStreamChunk packet)
         {
-            if (!args.IsFromServer)
-                return;
-
-            HandleLocalSyncMediaStreamChunk(args.UnWrap<PacketSyncMediaStreamChunk>());
+            HandleLocalSyncMediaStreamChunk(packet);
         }
 
         public void HandleLocalSyncMediaStreamChunk(PacketSyncMediaStreamChunk packet)
@@ -511,12 +507,10 @@ namespace LcdMod.Client
             _audioBroadcast.HandleStreamChunk(packet);
         }
 
-        public void HandleMediaStreamControl(ReceivedPacketEventArgs args)
+        [NetworkCallback(typeof(PacketMediaStreamControl), NetworkCallbackFilter.FromServer | NetworkCallbackFilter.IsClient)]
+        public void HandleMediaStreamControl(PacketMediaStreamControl packet)
         {
-            if (!args.IsFromServer)
-                return;
-
-            HandleLocalMediaStreamControl(args.UnWrap<PacketMediaStreamControl>());
+            HandleLocalMediaStreamControl(packet);
         }
 
         public void HandleLocalMediaStreamControl(PacketMediaStreamControl packet)
@@ -524,12 +518,16 @@ namespace LcdMod.Client
             _audioBroadcast.HandleStreamControl(packet);
         }
 
-        public void HandleSyncMediaPlayerCommand(ReceivedPacketEventArgs args)
-        {
-            if (!args.IsFromServer)
-                return;
+        [NetworkCallback(typeof(PacketSyncGridRoomEnvironment), NetworkCallbackFilter.FromServer | NetworkCallbackFilter.IsClient)]
+        internal void HandleSyncGridRoomEnvironment(ReceivedPacketEventArgs args) =>
+            Instance.RoomEnvironment.HandleSyncGridRoomEnvironment(args);
+        
+        
 
-            HandleLocalSyncMediaPlayerCommand(args.UnWrap<PacketSyncMediaPlayerCommand>());
+        [NetworkCallback(typeof(PacketSyncMediaPlayerCommand), NetworkCallbackFilter.FromServer | NetworkCallbackFilter.IsClient)]
+        public void HandleSyncMediaPlayerCommand(PacketSyncMediaPlayerCommand packet)
+        {
+            HandleLocalSyncMediaPlayerCommand(packet);
         }
 
         public void HandleLocalSyncMediaPlayerCommand(PacketSyncMediaPlayerCommand packet)
@@ -547,10 +545,8 @@ namespace LcdMod.Client
                 return;
 
             var gridLogic = LcdModSessionComponent.GetOrCreateGridLogic(block.CubeGrid);
-            if (gridLogic == null)
-                return;
 
-            var player = gridLogic.MediaPlayers.Get(packet.BlockEntityId, packet.SurfaceIndex);
+            var player = gridLogic?.MediaPlayers.Get(packet.BlockEntityId, packet.SurfaceIndex);
             if (player == null)
                 return;
 

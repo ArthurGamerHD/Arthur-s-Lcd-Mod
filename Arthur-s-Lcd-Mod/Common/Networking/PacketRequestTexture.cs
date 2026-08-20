@@ -1,15 +1,15 @@
+using Generated;
 using ProtoBuf;
 
 namespace LcdMod.Common.Networking
 {
     [ProtoContract]
-    public class PacketRequestTexture : NetworkPackage
+    [NetworkPayload(6)]
+    public partial class PacketRequestTexture
     {
         [ProtoMember(1)] public ulong OwnerSteamId { get; set; }
         [ProtoMember(2)] public string TextureName { get; set; }
         [ProtoMember(3)] public ulong RequesterSteamId { get; set; }
-
-        public override PackageCode Code => PackageCode.RequestTexture;
 
         // ReSharper disable once UnusedMember.Global
         public PacketRequestTexture()

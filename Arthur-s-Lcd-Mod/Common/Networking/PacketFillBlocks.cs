@@ -1,4 +1,5 @@
 using System;
+using Generated;
 using LcdMod.Common.Helpers;
 using ProtoBuf;
 
@@ -10,14 +11,13 @@ namespace LcdMod.Common.Networking
     /// <see cref="Settings"/> carries the player's per-reactor/per-ammo targets. Server-authoritative.
     /// </summary>
     [ProtoContract]
-    public class PacketFillBlocks : NetworkPackage
+    [NetworkPayload(8)]
+    public partial class PacketFillBlocks
     {
         [ProtoMember(1)] public long[] SourceIds { get; set; }
         [ProtoMember(2)] public long[] TargetIds { get; set; }
         [ProtoMember(3)] public int Kind { get; set; }
         [ProtoMember(4)] public FillSettings Settings { get; set; }
-
-        public override PackageCode Code => PackageCode.FillBlocks;
 
         public PacketFillBlocks() 
         {

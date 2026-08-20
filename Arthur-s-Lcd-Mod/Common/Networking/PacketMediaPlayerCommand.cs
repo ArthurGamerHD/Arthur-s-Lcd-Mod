@@ -1,3 +1,4 @@
+using Generated;
 using ProtoBuf;
 
 namespace LcdMod.Common.Networking
@@ -20,7 +21,8 @@ namespace LcdMod.Common.Networking
     }
 
     [ProtoContract]
-    public sealed class PacketRequestMediaPlayerCommand : NetworkPackage
+    [NetworkPayload(15)]
+    public sealed partial class PacketRequestMediaPlayerCommand
     {
         [ProtoMember(1)] public long BlockEntityId;
         [ProtoMember(2)] public int SurfaceIndex;
@@ -32,11 +34,11 @@ namespace LcdMod.Common.Networking
         [ProtoMember(8)] public double PositionSeconds;
         [ProtoMember(9)] public long ClientFrame;
 
-        public override PackageCode Code => PackageCode.RequestMediaPlayerCommand;
     }
 
     [ProtoContract]
-    public sealed class PacketSyncMediaPlayerCommand : NetworkPackage
+    [NetworkPayload(16)]
+    public sealed partial class PacketSyncMediaPlayerCommand
     {
         [ProtoMember(1)] public long BlockEntityId;
         [ProtoMember(2)] public int SurfaceIndex;
@@ -50,6 +52,5 @@ namespace LcdMod.Common.Networking
         [ProtoMember(10)] public ulong RequestedBySteamId;
         [ProtoMember(11)] public long ServerFrame;
 
-        public override PackageCode Code => PackageCode.SyncMediaPlayerCommand;
     }
 }

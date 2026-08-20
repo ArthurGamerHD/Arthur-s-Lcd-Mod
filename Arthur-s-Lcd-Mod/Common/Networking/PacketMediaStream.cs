@@ -1,3 +1,4 @@
+using Generated;
 using ProtoBuf;
 
 namespace LcdMod.Common.Networking
@@ -14,7 +15,8 @@ namespace LcdMod.Common.Networking
     }
 
     [ProtoContract]
-    public sealed class PacketMediaStreamControl : NetworkPackage
+    [NetworkPayload(17)]
+    public sealed partial class PacketMediaStreamControl
     {
         [ProtoMember(1)] public MediaStreamControlIntent Intent;
         [ProtoMember(2)] public long ClientStreamId;
@@ -29,11 +31,11 @@ namespace LcdMod.Common.Networking
         [ProtoMember(11)] public bool StopPlayback;
         [ProtoMember(12)] public ulong[] ListenerSteamIds;
 
-        public override PackageCode Code => PackageCode.MediaStreamControl;
     }
 
     [ProtoContract]
-    public sealed class PacketRequestMediaStreamChunk : NetworkPackage
+    [NetworkPayload(18)]
+    public sealed partial class PacketRequestMediaStreamChunk
     {
         [ProtoMember(1)] public long ClientStreamId;
         [ProtoMember(2)] public int ChunkIndex;
@@ -41,11 +43,11 @@ namespace LcdMod.Common.Networking
         [ProtoMember(4)] public long DurationTicks;
         [ProtoMember(5)] public bool IsFinal;
 
-        public override PackageCode Code => PackageCode.RequestMediaStreamChunk;
     }
 
     [ProtoContract]
-    public sealed class PacketSyncMediaStreamChunk : NetworkPackage
+    [NetworkPayload(19)]
+    public sealed partial class PacketSyncMediaStreamChunk
     {
         [ProtoMember(1)] public long ServerStreamId;
         [ProtoMember(2)] public int ChunkIndex;
@@ -54,6 +56,5 @@ namespace LcdMod.Common.Networking
         [ProtoMember(5)] public bool IsFinal;
         [ProtoMember(6)] public long ServerFrame;
 
-        public override PackageCode Code => PackageCode.SyncMediaStreamChunk;
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using Generated;
 using ProtoBuf;
 
 namespace LcdMod.Common.Networking
@@ -8,12 +9,11 @@ namespace LcdMod.Common.Networking
     /// <see cref="Mode"/> is the <c>InventorySortMode</c> value chosen on the screen.
     /// </summary>
     [ProtoContract]
-    public class PacketSortInventory : NetworkPackage
+    [NetworkPayload(4)]
+    public partial class PacketSortInventory
     {
         [ProtoMember(1)] public long[] ContainerIds { get; set; }
         [ProtoMember(2)] public int Mode { get; set; }
-
-        public override PackageCode Code => PackageCode.SortInventory;
 
         // ReSharper disable once UnusedMember.Global
         public PacketSortInventory() // Needed for Protobuf

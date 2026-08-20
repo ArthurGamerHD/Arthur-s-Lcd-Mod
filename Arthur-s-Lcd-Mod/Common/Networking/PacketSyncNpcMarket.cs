@@ -1,14 +1,14 @@
 using System.Collections.Generic;
+using Generated;
 using LcdMod.Common.Market;
 using ProtoBuf;
 
 namespace LcdMod.Common.Networking
 {
     [ProtoContract]
-    public sealed class PacketSyncNpcMarket : NetworkPackage
+    [NetworkPayload(10)]
+    public sealed partial class PacketSyncNpcMarket
     {
-        public override PackageCode Code => PackageCode.SyncNpcMarket;
-
         [ProtoMember(1)]
         public uint RequestId;
 

@@ -1,13 +1,13 @@
+using Generated;
 using ProtoBuf;
 
 namespace LcdMod.Common.Networking
 {
     [ProtoContract]
-    public sealed class PacketRequestGridRoomEnvironment : NetworkPackage
+    [NetworkPayload(13)]
+    public sealed partial class PacketRequestGridRoomEnvironment
     {
         public const long REQUEST_INTERVAL_TICKS = 100L;
-
-        public override PackageCode Code => PackageCode.RequestGridRoomEnvironment;
 
         [ProtoMember(1)]
         public long BlockEntityId;

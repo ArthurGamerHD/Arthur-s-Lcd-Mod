@@ -1,3 +1,4 @@
+using Generated;
 using ProtoBuf;
 
 namespace LcdMod.Common.Networking
@@ -10,10 +11,9 @@ namespace LcdMod.Common.Networking
     }
 
     [ProtoContract]
-    public sealed class PacketSyncGridRoomEnvironment : NetworkPackage
+    [NetworkPayload(14)]
+    public sealed partial class PacketSyncGridRoomEnvironment
     {
-        public override PackageCode Code => PackageCode.SyncGridRoomEnvironment;
-
         [ProtoMember(1)]
         public long BlockEntityId;
 

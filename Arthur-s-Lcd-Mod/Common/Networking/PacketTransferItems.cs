@@ -1,4 +1,5 @@
 using System;
+using Generated;
 using ProtoBuf;
 
 namespace LcdMod.Common.Networking
@@ -8,14 +9,13 @@ namespace LcdMod.Common.Networking
     /// source container and the targets (Send / Receive / Balance). Server-authoritative.
     /// </summary>
     [ProtoContract]
-    public class PacketTransferItems : NetworkPackage
+    [NetworkPayload(5)]
+    public partial class PacketTransferItems
     {
         [ProtoMember(1)] public long SourceId { get; set; }
         [ProtoMember(2)] public long[] TargetIds { get; set; }
         [ProtoMember(3)] public string[] TypeKeys { get; set; }
         [ProtoMember(4)] public int Mode { get; set; }
-
-        public override PackageCode Code => PackageCode.TransferItems;
 
         // ReSharper disable once UnusedMember.Global
         public PacketTransferItems() // Needed for Protobuf

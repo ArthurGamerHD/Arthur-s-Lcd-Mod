@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Generated;
 using LcdMod.Server.Audio;
 using LcdMod.Common.Config;
 using LcdMod.Common.Helpers;
@@ -17,7 +18,7 @@ using VRageMath;
 
 namespace LcdMod.Server
 {
-    public sealed class LcdModServerComponent
+    public partial class LcdModServerComponent : ISingleton<LcdModServerComponent>
     {
         readonly LcdModSessionComponent _session;
         readonly Dictionary<long, IMyCubeGrid> _trackedGrids = new Dictionary<long, IMyCubeGrid>();
@@ -29,6 +30,7 @@ namespace LcdMod.Server
 
         public LcdModServerComponent(LcdModSessionComponent session)
         {
+            RegisterSingleton();
             _session = session;
             _npcMarket = new NpcMarketService();
             RoomEnvironment = new GridRoomEnvironmentServerModule();
@@ -53,6 +55,7 @@ namespace LcdMod.Server
             _gridRemaps.Clear();
             _pendingTextureRequests.Clear();
             _entities.Clear();
+            UnregisterSingleton();
         }
 
         public void BeforeStart()
@@ -73,9 +76,9 @@ namespace LcdMod.Server
             }
         }
 
-        public void HandleSyncConfig(ReceivedPacketEventArgs args)
+        [NetworkCallback(typeof(NetworkPackageSyncComponentConfig), NetworkCallbackFilter.FromClient | NetworkCallbackFilter.IsServer)]
+        internal void HandleSyncConfig(NetworkPackageSyncComponentConfig packet)
         {
-            var packet = args.UnWrap<NetworkPackageSyncComponentConfig>();
             var block = MyEntities.GetEntityById(packet.BlockId) as IMyFunctionalBlock;
             if (block == null)
                 return;
@@ -89,6 +92,8 @@ namespace LcdMod.Server
             _npcMarket.SaveData();
         }
 
+        
+        [NetworkCallback(typeof(PacketRequestNpcMarket), NetworkCallbackFilter.FromClient | NetworkCallbackFilter.IsServer)]
         public void HandleRequestNpcMarket(ReceivedPacketEventArgs args)
         {
             _npcMarket.HandleRequest(args.SenderId, args.UnWrap<PacketRequestNpcMarket>());
@@ -100,6 +105,7 @@ namespace LcdMod.Server
             _npcMarket.HandleRequest(player?.SteamUserId ?? MyAPIGateway.Multiplayer.MyId, packet);
         }
 
+        [NetworkCallback(typeof(PacketRequestBroadcastAudio), NetworkCallbackFilter.FromClient | NetworkCallbackFilter.IsServer)]
         public void HandleRequestBroadcastAudio(ReceivedPacketEventArgs args)
         {
             _audioBroadcast.HandleRequest(args.SenderId, args.UnWrap<PacketRequestBroadcastAudio>());
@@ -111,6 +117,8 @@ namespace LcdMod.Server
             _audioBroadcast.HandleRequest(player?.SteamUserId ?? MyAPIGateway.Multiplayer.MyId, packet);
         }
 
+        
+        [NetworkCallback(typeof(PacketRequestMediaPlayerCommand), NetworkCallbackFilter.FromClient | NetworkCallbackFilter.IsServer)]
         public void HandleRequestMediaPlayerCommand(ReceivedPacketEventArgs args)
         {
             _audioBroadcast.HandleMediaPlayerCommandRequest(args.SenderId, args.UnWrap<PacketRequestMediaPlayerCommand>());
@@ -122,6 +130,7 @@ namespace LcdMod.Server
             _audioBroadcast.HandleMediaPlayerCommandRequest(player?.SteamUserId ?? MyAPIGateway.Multiplayer.MyId, packet);
         }
 
+        [NetworkCallback(typeof(PacketRequestMediaStreamChunk), NetworkCallbackFilter.FromClient | NetworkCallbackFilter.IsServer)]
         public void HandleRequestMediaStreamChunk(ReceivedPacketEventArgs args)
         {
             _audioBroadcast.HandleMediaStreamChunkRequest(args.SenderId, args.UnWrap<PacketRequestMediaStreamChunk>());
@@ -133,6 +142,8 @@ namespace LcdMod.Server
             _audioBroadcast.HandleMediaStreamChunkRequest(player?.SteamUserId ?? MyAPIGateway.Multiplayer.MyId, packet);
         }
 
+          
+        [NetworkCallback(typeof(PacketMediaStreamControl), NetworkCallbackFilter.FromClient | NetworkCallbackFilter.IsServer)]
         public void HandleMediaStreamControl(ReceivedPacketEventArgs args)
         {
             _audioBroadcast.HandleMediaStreamControl(args.SenderId, args.UnWrap<PacketMediaStreamControl>());
@@ -226,6 +237,7 @@ namespace LcdMod.Server
             return remap;
         }
 
+        [NetworkCallback(typeof(PacketEditFaction), NetworkCallbackFilter.FromClient | NetworkCallbackFilter.IsServer)]
         public void HandleEditFaction(ReceivedPacketEventArgs args)
         {
             var packet = args.UnWrap<PacketEditFaction>();
@@ -241,6 +253,7 @@ namespace LcdMod.Server
             FactionHelperCommon.EditFaction(packet);
         }
 
+        [NetworkCallback(typeof(PacketSortInventory), NetworkCallbackFilter.FromClient | NetworkCallbackFilter.IsServer)]
         public void HandleSortInventory(ReceivedPacketEventArgs args)
         {
             var packet = args.UnWrap<PacketSortInventory>();
@@ -268,6 +281,7 @@ namespace LcdMod.Server
             InventorySorterCommon.Consolidate(blocks, (InventorySortMode)packet.Mode);
         }
 
+        [NetworkCallback(typeof(PacketTransferItems), NetworkCallbackFilter.FromClient | NetworkCallbackFilter.IsServer)]
         public void HandleTransferItems(ReceivedPacketEventArgs args)
         {
             var packet = args.UnWrap<PacketTransferItems>();
@@ -302,7 +316,8 @@ namespace LcdMod.Server
             var typeKeys = new HashSet<string>(packet.TypeKeys);
             InventoryDistributorCommon.Execute(source, targets, typeKeys, (TransferMode)packet.Mode);
         }
-
+        
+        [NetworkCallback(typeof(PacketFillBlocks), NetworkCallbackFilter.FromClient | NetworkCallbackFilter.IsServer)]
         public void HandleFillBlocks(ReceivedPacketEventArgs args)
         {
             var packet = args.UnWrap<PacketFillBlocks>();
@@ -342,6 +357,11 @@ namespace LcdMod.Server
             return blocks;
         }
 
+        [NetworkCallback(typeof(PacketRequestGridRoomEnvironment), NetworkCallbackFilter.FromClient | NetworkCallbackFilter.IsServer)]
+        internal void HandleRequestGridRoomEnvironment(ReceivedPacketEventArgs args) =>
+            Instance.RoomEnvironment.HandleRequestGridRoomEnvironment(args);
+        
+        [NetworkCallback(typeof(PacketRequestTexture), NetworkCallbackFilter.FromClient | NetworkCallbackFilter.IsServer)]
         public void HandleRequestTexture(ReceivedPacketEventArgs args)
         {
             var packet = args.UnWrap<PacketRequestTexture>();
@@ -437,6 +457,7 @@ namespace LcdMod.Server
                 owner.SteamUserId);
         }
 
+        [NetworkCallback(typeof(PacketSyncTexture), NetworkCallbackFilter.FromClient | NetworkCallbackFilter.IsServer)]
         public void HandleSyncTexture(ReceivedPacketEventArgs args)
         {
             var packet = args.UnWrap<PacketSyncTexture>();

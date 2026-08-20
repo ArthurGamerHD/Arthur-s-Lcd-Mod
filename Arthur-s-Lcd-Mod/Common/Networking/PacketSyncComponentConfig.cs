@@ -1,12 +1,13 @@
+using Generated;
 using LcdMod.Common.Config.Models;
 using ProtoBuf;
 
 namespace LcdMod.Common.Networking
 {
     [ProtoContract]
-    internal class NetworkPackageSyncComponentConfig : NetworkPackage
+    [NetworkPayload(1)]
+    internal partial class NetworkPackageSyncComponentConfig
     {
-        public override PackageCode Code => PackageCode.SyncConfig;
         [ProtoMember(1)] public long BlockId { get; set; }
         [ProtoMember(2)] public ScreenProviderConfig Config { get; set; }
 

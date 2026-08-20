@@ -1,16 +1,16 @@
 using System;
+using Generated;
 using LcdMod.Common.Audio;
 using ProtoBuf;
 
 namespace LcdMod.Common.Networking
 {
     [ProtoContract]
-    public sealed class PacketRequestBroadcastAudio : NetworkPackage
+    [NetworkPayload(11)]
+    public sealed partial class PacketRequestBroadcastAudio
     {
         [ProtoMember(1)] public AudioBroadcastMetadata Metadata;
         [ProtoMember(2)] public byte[] RuntimeWaveBytes;
-
-        public override PackageCode Code => PackageCode.RequestBroadcastAudio;
 
         public PacketRequestBroadcastAudio()
         {

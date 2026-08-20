@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Generated;
 using LcdMod.Common.Networking;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;

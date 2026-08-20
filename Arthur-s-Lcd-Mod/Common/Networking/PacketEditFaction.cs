@@ -1,10 +1,12 @@
+using Generated;
 using ProtoBuf;
 using VRageMath;
 
 namespace LcdMod.Common.Networking
 {
     [ProtoContract]
-    public class PacketEditFaction : NetworkPackage
+    [NetworkPayload(2)]
+    public partial class PacketEditFaction
     {
         [ProtoMember(1)]
         public long FactionId { get; set; }
@@ -22,8 +24,6 @@ namespace LcdMod.Common.Networking
         public Vector3 Color { get; set; }
         [ProtoMember(8)]
         public Vector3 IconColor { get; set; }
-        public override PackageCode Code => PackageCode.EditFaction;
-
         // ReSharper disable once UnusedMember.Global
         public PacketEditFaction()// Needed for Protobuf
         {

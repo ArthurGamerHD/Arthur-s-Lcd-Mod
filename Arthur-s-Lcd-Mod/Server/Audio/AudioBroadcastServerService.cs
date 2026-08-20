@@ -1,7 +1,7 @@
 using System;
+using Generated;
 using System.Collections.Generic;
 using System.Linq;
-using Generated;
 using LcdMod.Common.Audio;
 using LcdMod.Common.Config;
 using LcdMod.Common.Helpers;
@@ -38,7 +38,7 @@ namespace LcdMod.Server.Audio
 
         public void HandleRequest(ulong senderSteamId, PacketRequestBroadcastAudio packet)
         {
-            if (senderSteamId == 0 || packet == null || packet.Metadata == null || packet.RuntimeWaveBytes == null)
+            if (senderSteamId == 0 || packet?.Metadata == null || packet.RuntimeWaveBytes == null)
                 return;
 
             if (!IsAllowedSender(senderSteamId))

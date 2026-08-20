@@ -1,14 +1,14 @@
+using Generated;
 using ProtoBuf;
 
 namespace LcdMod.Common.Networking
 {
     [ProtoContract]
-    public class PacketPlayerInputBlacklist : NetworkPackage
+    [NetworkPayload(3)]
+    public partial class PacketPlayerInputBlacklist
     {
         [ProtoMember(1)] public long PlayerId { get; set; }
         [ProtoMember(2)] public bool Enabled { get; set; }
-
-        public override PackageCode Code => PackageCode.PlayerInputBlacklist;
 
         public PacketPlayerInputBlacklist()
         {

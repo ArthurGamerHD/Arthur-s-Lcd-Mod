@@ -1,12 +1,12 @@
+using Generated;
 using ProtoBuf;
 
 namespace LcdMod.Common.Networking
 {
     [ProtoContract]
-    public sealed class PacketRequestNpcMarket : NetworkPackage
+    [NetworkPayload(9)]
+    public sealed partial class PacketRequestNpcMarket
     {
-        public override PackageCode Code => PackageCode.RequestNpcMarket;
-
         [ProtoMember(1)]
         public uint RequestId;
 
