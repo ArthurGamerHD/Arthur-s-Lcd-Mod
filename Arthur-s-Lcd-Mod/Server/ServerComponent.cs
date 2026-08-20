@@ -37,11 +37,7 @@ namespace LcdMod.Server
 
         public GridRoomEnvironmentServerModule RoomEnvironment { get; }
 
-        public void LoadData()
-        {
-            _npcMarket.LoadData();
-            MyAPIGateway.Entities.OnEntityAdd += EntityAdded;
-        }
+        public void LoadData() => MyAPIGateway.Entities.OnEntityAdd += EntityAdded;
 
         public void UnloadData()
         {
