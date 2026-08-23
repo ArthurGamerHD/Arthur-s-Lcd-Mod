@@ -1,8 +1,5 @@
 using System;
 using System.Collections.Generic;
-#if EXPERIMENTAL
-using LcdMod.Client.Diagnostics;
-#endif
 using LcdMod.Common.Helpers;
 using LcdMod.Common.Mvvm;
 using VRage.Game.ModAPI;
@@ -112,13 +109,6 @@ namespace LcdMod.Client.GridData
         {
             try
             {
-#if EXPERIMENTAL
-                using (RuntimeProfiler.Measure(
-                           "blocks.topology",
-                           "rebind_linked_typed_sources",
-                           typeof(T).Name,
-                           _root != null ? _root.TargetGrid : 0L))
-#endif
                 {
                     RebindSources();
                 }

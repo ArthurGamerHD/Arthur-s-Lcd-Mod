@@ -2,9 +2,6 @@ using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-#if EXPERIMENTAL
-using System.Text;
-#endif
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
@@ -12,9 +9,6 @@ using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.ControlsTemplates.Panels.Virtualized;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts;
-#if EXPERIMENTAL
-using LcdMod.Client.Terminal;
-#endif
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 
@@ -189,38 +183,6 @@ namespace LcdMod.Client.Apps
                 lines.Add(new DebugLine(moduleName + " " + Fixed4(count) + " " + Fixed4(active), Color.White));
             }
             
-#if EXPERIMENTAL
-            lines.Add(new DebugLine(string.Empty, Color.White));
-            lines.Add(new DebugLine("Custom Actions:", Color.White));
-
-            var sb = new StringBuilder();
-            foreach (var action in ActionHelper.CustomActions)
-            {
-                sb.Clear();
-                foreach (var type in action.Value.Types)
-                {
-                    sb.Append(type.Name + ", ");
-                }
-                
-                lines.Add(new DebugLine("   " + action.Key + $" ({action.Value.Name}) - " + action.Value.GetType().Name + " - " + sb, Color.White));
-            }
-            
-            lines.Add(new DebugLine(string.Empty, Color.White));
-            lines.Add(new DebugLine("Actions:", Color.White));
-
-            foreach (var action in ActionHelper.TerminalActions)
-            {
-                lines.Add(new DebugLine("   " + action.Key + " - " + action.Value.Name, Color.White));
-            }
-
-            lines.Add(new DebugLine(string.Empty, Color.White));
-            lines.Add(new DebugLine("Properties:", Color.White));
-
-            foreach (var property in ActionHelper.TerminalProperties)
-            {
-                lines.Add(new DebugLine("   " + property.Key + " - " + property.Value.TypeName, Color.White));
-            }
-#endif
             
             return lines;
         }

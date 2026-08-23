@@ -1,9 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-#if EXPERIMENTAL
-using LcdMod.Client.Diagnostics;
-#endif
 using LcdMod.Client.GridData;
 using LcdMod.Common.Config.Components;
 using LcdMod.Common.Helpers;
@@ -480,13 +477,6 @@ namespace LcdMod.Client.Apps.ViewModel
             MyPhysicalInventoryItem item,
             MyFixedPoint amount)
         {
-#if EXPERIMENTAL
-            using (RuntimeProfiler.Measure(
-                       "event.inventory.scoped",
-                       "content_changed",
-                       null,
-                       inventory.Entity != null ? inventory.Entity.EntityId : 0L))
-#endif
             {
                 if (item.Content != null)
                     _scopedItems.ScheduleRecalculation(inventory, (MyItemType)item.Content);
@@ -495,13 +485,6 @@ namespace LcdMod.Client.Apps.ViewModel
 
         void OnScopedInventoryContentsChanged(MyInventoryBase inventory)
         {
-#if EXPERIMENTAL
-            using (RuntimeProfiler.Measure(
-                       "event.inventory.scoped",
-                       "contents_changed",
-                       null,
-                       inventory.Entity != null ? inventory.Entity.EntityId : 0L))
-#endif
             {
                 _scopedItems.ScheduleInventoryRecalculation(inventory);
             }
@@ -523,13 +506,6 @@ namespace LcdMod.Client.Apps.ViewModel
 
         void RunScheduledBlockSourceRebuild()
         {
-#if EXPERIMENTAL
-            using (RuntimeProfiler.Measure(
-                       "items.topology",
-                       "rebuild_block_sources",
-                       null,
-                       _rootGridLogic != null ? _rootGridLogic.TargetGrid : 0L))
-#endif
             {
                 _blockSourceRebuildScheduled = false;
                 if (_isDisposed || !HasBlockWhitelist())

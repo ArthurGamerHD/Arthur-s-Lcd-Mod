@@ -1,8 +1,5 @@
 using System;
 using System.Collections.Generic;
-#if EXPERIMENTAL
-using LcdMod.Client.Diagnostics;
-#endif
 using Sandbox.ModAPI;
 
 namespace LcdMod.Client.GridData
@@ -62,9 +59,6 @@ namespace LcdMod.Client.GridData
             var dequeued = 0;
             var urgentBurst = 0;
 
-#if EXPERIMENTAL
-            using (RuntimeProfiler.Measure("items.scheduler", "pump"))
-#endif
             {
                 while (inventoryScans < MAX_INVENTORY_SCANS_PER_FRAME && dequeued < MAX_DEQUEUES_PER_FRAME)
                 {

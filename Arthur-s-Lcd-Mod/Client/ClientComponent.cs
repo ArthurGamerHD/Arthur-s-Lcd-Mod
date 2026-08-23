@@ -4,9 +4,6 @@ using System.IO;
 using System.Linq;
 using Generated;
 using LcdMod.Client.Audio;
-#if EXPERIMENTAL
-using LcdMod.Client.Diagnostics;
-#endif
 using LcdMod.Client.Market;
 using LcdMod.Client.Ftue;
 using LcdMod.Client.Modules.Power;
@@ -57,9 +54,6 @@ namespace LcdMod.Client
 #if DEBUG
         readonly CartographyDebugReportService _cartographyDebugReport;
 #endif
-#if EXPERIMENTAL
-        readonly AppRunProfilerService _appRunProfiler = new AppRunProfilerService();
-#endif
 
         public LcdModClientComponent(LcdModSessionComponent session)
         {
@@ -85,9 +79,6 @@ namespace LcdMod.Client
         internal GameAudioTestReportService AudioTestReport { get { return _audioTestReport; } }
 #if DEBUG
         internal CartographyDebugReportService CartographyDebugReport { get { return _cartographyDebugReport; } }
-#endif
-#if EXPERIMENTAL
-        internal AppRunProfilerService AppRunProfiler { get { return _appRunProfiler; } }
 #endif
         public static event Action OnUpdateBeforeSimulation;
 
@@ -120,9 +111,6 @@ namespace LcdMod.Client
         public void UnloadData()
         {
             Ftue.Unload();
-#if EXPERIMENTAL
-            _appRunProfiler.Unload();
-#endif
             _audioPoc.Unload();
             _audioBroadcast.Unload();
             LocalConfigManager.Save();
@@ -174,9 +162,6 @@ namespace LcdMod.Client
         {
             try
             {
-#if EXPERIMENTAL
-                using (RuntimeProfiler.Measure("frame.phase", "update_before_simulation"))
-#endif
                 {
                     _session._updateTick++;
                     foreach (var grid in _session._grids.Values)
@@ -195,9 +180,6 @@ namespace LcdMod.Client
 
                     _session.UpdateModules();
                     UpdateDebugSnapshot();
-#if EXPERIMENTAL
-                    using (RuntimeProfiler.Measure("event.session", "update_before_simulation"))
-#endif
                     {
                         OnUpdateBeforeSimulation?.Invoke();
                     }
@@ -227,11 +209,7 @@ namespace LcdMod.Client
 
                 try
                 {
-#if EXPERIMENTAL
-                    RuntimeProfiler.RunScheduled("scheduler.next_frame", action);
-#else
                     action();
-#endif
                 }
                 catch (Exception e)
                 {
@@ -292,11 +270,7 @@ namespace LcdMod.Client
 
             try
             {
-#if EXPERIMENTAL
-                RuntimeProfiler.RunScheduled("scheduler.one_per_frame", action);
-#else
                 action();
-#endif
             }
             catch (Exception e)
             {
@@ -306,16 +280,10 @@ namespace LcdMod.Client
 
         public void Simulate()
         {
-#if EXPERIMENTAL
-            using (RuntimeProfiler.Measure("frame.phase", "simulate"))
-#endif
             {
                 RunNextFrameActions();
                 InventoryWorkScheduler.RunFrame();
                 RunOnePerFrameAction();
-#if EXPERIMENTAL
-                _appRunProfiler.Update();
-#endif
                 _audioPoc.Update();
                 _audioBroadcast.Update();
             }
@@ -325,14 +293,8 @@ namespace LcdMod.Client
         {
             try
             {
-#if EXPERIMENTAL
-                using (RuntimeProfiler.Measure("frame.phase", "update_after_simulation"))
-#endif
                 {
                     _session.PostUpdateModules();
-#if EXPERIMENTAL
-                    using (RuntimeProfiler.Measure("event.session", "update_after_simulation"))
-#endif
                     {
                         LcdModSessionComponent.RaiseAfterSimulationUpdate();
                     }

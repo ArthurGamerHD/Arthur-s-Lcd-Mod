@@ -774,15 +774,6 @@ namespace LcdMod.Common.Config.Components
         [ProtoMember(1)] public int RelationOverlay { get; set; } = 1;
         [ProtoMember(2)] public float RenderScale { get; set; } = .2f;
         [ProtoMember(3)]
-        [TerminalControlSlider(
-            3100,
-            "RaysPerTickSlider",
-            MOD_PREFIX + "RaysPerTick",
-            2f,
-            256f,
-            "0",
-            Slot = APP,
-            RequiresAdvancedTweakables = true)]
         public int RaysPerTick { get; set; } = 32;
 
         public override ConfigComponent Clone()
@@ -927,12 +918,6 @@ Click [color:#0000FF]""[loc]BlockPropertyTitle_TextPanelShowTextPanel[/loc]""[/c
         [ProtoMember(8)] public int[] WeaponOverrideCounts { get; set; } = Array.Empty<int>();
         [ProtoMember(9)] public int SettingsRevision { get; set; }
         [ProtoMember(10)]
-        [TerminalControlSwitch(
-            6100,
-            "CargoActionsShowConfigButton",
-            MOD_PREFIX + "CargoActions_ShowConfigButton",
-            Slot = APP,
-            Tooltip = MOD_PREFIX + "CargoActions_ShowConfigButton_Tooltip")]
         public bool ShowConfigButton { get; set; } = true;
         [ProtoMember(11)] public int GridLinkTypeInternal { get; set; } = 1;
 

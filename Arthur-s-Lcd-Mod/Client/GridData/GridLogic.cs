@@ -1,9 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-#if EXPERIMENTAL
-using LcdMod.Client.Diagnostics;
-#endif
 using LcdMod.Common.Helpers;
 using LcdMod.Common.Mvvm;
 using LcdMod.Common.Networking;
@@ -538,13 +535,6 @@ namespace LcdMod.Client.GridData
 
         void RaiseLinkChanged(GridLinkTypeEnum linkType)
         {
-#if EXPERIMENTAL
-            using (RuntimeProfiler.Measure(
-                       "event.grid",
-                       "link_changed." + linkType,
-                       null,
-                       TargetGrid))
-#endif
             {
                 try
                 {
@@ -682,9 +672,6 @@ namespace LcdMod.Client.GridData
 
         void OnBlockAdded(IMySlimBlock block)
         {
-#if EXPERIMENTAL
-            using (RuntimeProfiler.Measure("event.grid", "block_added", null, TargetGrid))
-#endif
             {
                 try
                 {
@@ -709,9 +696,6 @@ namespace LcdMod.Client.GridData
 
         void OnBlockRemoved(IMySlimBlock block)
         {
-#if EXPERIMENTAL
-            using (RuntimeProfiler.Measure("event.grid", "block_removed", null, TargetGrid))
-#endif
             {
                 try
                 {
@@ -855,13 +839,6 @@ namespace LcdMod.Client.GridData
             if (_items == null)
                 return;
 
-#if EXPERIMENTAL
-            using (RuntimeProfiler.Measure(
-                       "event.inventory",
-                       "content_changed",
-                       null,
-                       inventory.Entity?.EntityId ?? TargetGrid))
-#endif
             {
                 if (item.Content != null)
                     _items.ScheduleRecalculation(inventory, (MyItemType)item.Content);
@@ -873,13 +850,6 @@ namespace LcdMod.Client.GridData
             if (_items == null)
                 return;
 
-#if EXPERIMENTAL
-            using (RuntimeProfiler.Measure(
-                       "event.inventory",
-                       "contents_changed",
-                       null,
-                       inventory.Entity?.EntityId ?? TargetGrid))
-#endif
             {
                 _items.ScheduleInventoryRecalculation(inventory);
             }
@@ -896,9 +866,6 @@ namespace LcdMod.Client.GridData
 
         void RefreshInventoryTopology()
         {
-#if EXPERIMENTAL
-            using (RuntimeProfiler.Measure("items.topology", "refresh", null, TargetGrid))
-#endif
             {
                 _inventoryTopologyRefreshScheduled = false;
                 if (!IsAlive || (_items == null && !HasInventoryTopologyNeed))

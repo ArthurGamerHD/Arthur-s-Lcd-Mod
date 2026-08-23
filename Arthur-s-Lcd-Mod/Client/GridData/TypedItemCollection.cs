@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-#if EXPERIMENTAL
-using LcdMod.Client.Diagnostics;
-#endif
 using LcdMod.Common.Helpers;
 using LcdMod.Common.Mvvm;
 using VRage;
@@ -153,11 +150,6 @@ namespace LcdMod.Client.GridData
                     return InventoryRecalculationStep.Completed;
                 }
 
-#if EXPERIMENTAL
-                using (RuntimeProfiler.Measure(
-                           "items.recalculation",
-                           _workFullRecalculation ? "full_inventory_step" : "changed_types_inventory_step"))
-#endif
                 {
                     ScanCurrentInventory();
                 }

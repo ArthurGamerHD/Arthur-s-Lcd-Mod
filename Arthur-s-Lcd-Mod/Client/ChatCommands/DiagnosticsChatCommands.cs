@@ -24,21 +24,6 @@ namespace LcdMod.Client.ChatCommands
         }
 #endif
 
-#if EXPERIMENTAL
-        /// <summary>
-        /// Profiles LCD app rendering and named runtime/event work for a specified duration.
-        /// </summary>
-        /// <loc>LcdMod_ChatCommand_Profile_Summary</loc>
-        [ChatCommand("Profile")]
-        public static void Profile(string[] args)
-        {
-            var client = LcdModSessionComponent.Client;
-            if (client == null || client.AppRunProfiler == null)
-                return;
-
-            client.AppRunProfiler.RunCommand(args);
-        }
-#endif
     }
 }
 #endif
