@@ -7,6 +7,7 @@ using LcdMod.Client.Gui.ControlsTemplates.Inputs;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
+using LcdMod.Client.Terminal;
 using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
 using Sandbox.Game.Entities;
@@ -352,6 +353,20 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
 
         void BuildBlockTypeItems()
         {
+            foreach (var type in ActionHelper.Types)
+            {
+                if (type == null)
+                    continue;
+
+                _allItems.Add(new PickActionTargetResult
+                {
+                    Kind = PickActionTargetKind.BlockType,
+                    Id = type.FullName ?? type.Name,
+                    DisplayName = FormatTypeName(type),
+                    SpriteName = GetTypeSprite(type),
+                    TypeName = type.FullName ?? type.Name
+                });
+            }
         }
 
         void BuildBlockSubtypeItems()

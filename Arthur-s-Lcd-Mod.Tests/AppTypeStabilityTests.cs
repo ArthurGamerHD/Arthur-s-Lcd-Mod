@@ -25,6 +25,7 @@ public sealed class AppTypeStabilityTests
         ["ClockDashboard"] = 20,
         ["SessionDebug"] = 21,
         ["Thrust"] = 22,
+        ["ButtonPanel"] = 23,
         ["VisibleTreeDebug"] = 24,
         ["RenderProxy"] = 25,
         ["Games"] = 26,

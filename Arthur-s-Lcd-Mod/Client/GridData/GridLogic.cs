@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using LcdMod.Client.Terminal;
 using LcdMod.Common.Helpers;
 using LcdMod.Common.Mvvm;
 using LcdMod.Common.Networking;
@@ -681,7 +682,10 @@ namespace LcdMod.Client.GridData
                         if (_blocks != null && !_blocks.All.Contains(fatBlock))
                             _blocks.Add(fatBlock);
                         if (_blocks != null)
+                        {
+                            RegisterActionsIfNeeded(fatBlock);
                             AddFarmPlot(fatBlock);
+                        }
                         if (_items != null)
                             RefreshBlockInventories(fatBlock);
                     }
@@ -902,7 +906,10 @@ namespace LcdMod.Client.GridData
                 if (_blocks != null && !_blocks.All.Contains(fatBlock))
                     _blocks.Add(fatBlock);
                 if (_blocks != null)
+                {
+                    RegisterActionsIfNeeded(fatBlock);
                     AddFarmPlot(fatBlock);
+                }
                 if (_items != null)
                     RefreshBlockInventories(fatBlock);
             }
@@ -929,6 +936,15 @@ namespace LcdMod.Client.GridData
                     _blocks.Remove(block);
                 }
             }
+        }
+
+        static void RegisterActionsIfNeeded(IMyCubeBlock block)
+        {
+            var functionalBlock = block as IMyFunctionalBlock;
+            if (functionalBlock == null || ActionHelper.Types.Contains(functionalBlock.GetType()))
+                return;
+
+            ActionHelper.RegisterNewBlock(functionalBlock);
         }
 
         void RaiseInventoryTopologyChanged()

@@ -1,5 +1,8 @@
+using LcdMod.Client.Terminal.Models.Actions;
+using LcdMod.Client.Terminal.Models.Property;
 using System;
 using System.Collections.Generic;
+using System.Text;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.GridData;
 using LcdMod.Client.Gui.ControlsTemplates.Basic;
@@ -8,7 +11,11 @@ using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
+using LcdMod.Client.Terminal;
+using LcdMod.Client.Terminal.Models;
 using LcdMod.Common.Helpers;
+using Sandbox.Game.Entities;
+using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
@@ -190,10 +197,235 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
             if (_target == null)
                 return;
 
+            foreach (var entry in ActionHelper.CustomActions)
+            {
+                var action = entry.Value;
+                if (action == null || string.IsNullOrEmpty(action.BaseId))
+                    continue;
+
+                if (!IsActionCompatible(action))
+                    continue;
+
+                _allItems.Add(new ButtonPanelActionSettings
+                {
+                    BaseId = action.BaseId,
+                    DisplayName = string.IsNullOrWhiteSpace(action.Name) ? action.BaseId : action.Name,
+                    ActionTypeName = action.GetType().FullName,
+                    SpriteName = GetActionSpriteName(action)
+                });
+            }
 
             _allItems.Sort(CompareActions);
         }
 
+        static string GetActionSpriteName(ICustomAction action)
+        {
+            if (action is PropertyCustomAction<bool> ||
+                action is OnOffAction)
+                return BOOLEAN_INPUT_ICON;
+
+            if (action is PropertyCustomAction<string> ||
+                action is PropertyCustomAction<StringBuilder>)
+                return STRING_INPUT_ICON;
+
+            if (action is PropertyCustomAction<Color>)
+                return COLOR_INPUT_ICON;
+
+            if (IsNumericPropertyAction(action))
+                return NUMBER_INPUT_ICON;
+
+            return MISSING_ICON_PLACEHOLDER;
+        }
+
+        static bool IsNumericPropertyAction(ICustomAction action)
+        {
+            return action is PropertyCustomAction<byte> ||
+                   action is PropertyCustomAction<sbyte> ||
+                   action is PropertyCustomAction<short> ||
+                   action is PropertyCustomAction<ushort> ||
+                   action is PropertyCustomAction<int> ||
+                   action is PropertyCustomAction<uint> ||
+                   action is PropertyCustomAction<long> ||
+                   action is PropertyCustomAction<ulong> ||
+                   action is PropertyCustomAction<float> ||
+                   action is PropertyCustomAction<double> ||
+                   action is PropertyCustomAction<decimal>;
+        }
+
+        bool IsActionCompatible(ICustomAction action)
+        {
+            if (action == null || _target == null)
+                return false;
+
+            switch ((PickActionTargetKind)_target.Kind)
+            {
+                case PickActionTargetKind.Block:
+                    return IsActionCompatibleWithBlock(action, FindBlock(_target.Id));
+                case PickActionTargetKind.Group:
+                    return IsActionCompatibleWithGroup(action, _target.Id);
+                case PickActionTargetKind.BlockType:
+                    return IsActionCompatibleWithTypeTarget(action, FindRegisteredType(_target.TypeName ?? _target.Id));
+                case PickActionTargetKind.BlockSubtype:
+                    return IsActionCompatibleWithSubtype(action, _target.Id);
+                default:
+                    return false;
+            }
+        }
+
+        bool IsActionCompatibleWithGroup(ICustomAction action, string groupName)
+        {
+            if (_gridLogic == null || _gridLogic.Grid == null || string.IsNullOrEmpty(groupName))
+                return false;
+
+            var terminalSystem = MyAPIGateway.TerminalActionsHelper.GetTerminalSystemForGrid(_gridLogic.Grid);
+            if (terminalSystem == null)
+                return false;
+
+            _groups.Clear();
+            terminalSystem.GetBlockGroups(_groups);
+            for (var i = 0; i < _groups.Count; i++)
+            {
+                var group = _groups[i];
+                if (group == null || !string.Equals(group.Name, groupName, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                _groupBlocks.Clear();
+                group.GetBlocks(_groupBlocks);
+                for (var blockIndex = 0; blockIndex < _groupBlocks.Count; blockIndex++)
+                {
+                    var groupBlock = _groupBlocks[blockIndex];
+                    if (IsActionCompatibleWithBlock(action, groupBlock))
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
+        bool IsActionCompatibleWithSubtype(ICustomAction action, string subtype)
+        {
+            if (_gridLogic == null || string.IsNullOrEmpty(subtype))
+                return false;
+
+            var blocks = _gridLogic.Blocks.TerminalBlocks;
+            if (blocks == null)
+                return false;
+
+            for (var i = 0; i < blocks.Count; i++)
+            {
+                var block = blocks[i];
+                if (block == null)
+                    continue;
+
+                var cubeBlock = block as MyCubeBlock;
+                if (cubeBlock == null || cubeBlock.BlockDefinition == null)
+                    continue;
+
+                if (!string.Equals(cubeBlock.BlockDefinition.Id.SubtypeName, subtype, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                if (IsActionCompatibleWithBlock(action, block))
+                    return true;
+            }
+
+            return false;
+        }
+
+        bool IsActionCompatibleWithBlock(ICustomAction action, IMyIngameTerminalBlock block)
+        {
+            if (block == null)
+                return false;
+
+            return IsActionCompatibleWithType(action, block.GetType()) && IsActionVisibleForBlock(action, block);
+        }
+
+        bool IsActionCompatibleWithTypeTarget(ICustomAction action, Type targetType)
+        {
+            if (action == null || targetType == null || !IsActionCompatibleWithType(action, targetType))
+                return false;
+
+            if (_gridLogic == null)
+                return false;
+
+            var blocks = _gridLogic.Blocks.TerminalBlocks;
+            if (blocks == null)
+                return false;
+
+            for (var i = 0; i < blocks.Count; i++)
+            {
+                var block = blocks[i];
+                if (block == null)
+                    continue;
+
+                var blockType = block.GetType();
+                if (!IsTypeMatch(targetType, blockType))
+                    continue;
+
+                if (IsActionCompatibleWithBlock(action, block))
+                    return true;
+            }
+
+            return false;
+        }
+
+        bool IsTypeMatch(Type expectedType, Type actualType)
+        {
+            if (expectedType == null || actualType == null)
+                return false;
+
+            if (string.Equals(expectedType.FullName, actualType.FullName, StringComparison.Ordinal))
+                return true;
+
+            return MyAPIGateway.Reflection.IsAssignableFrom(expectedType, actualType) ||
+                   MyAPIGateway.Reflection.IsAssignableFrom(actualType, expectedType);
+        }
+
+        bool IsActionVisibleForBlock(ICustomAction action, IMyIngameTerminalBlock block)
+        {
+            if (action == null || block == null)
+                return false;
+
+            return action.Enabled(block);
+        }
+
+        bool IsActionCompatibleWithType(ICustomAction action, Type targetType)
+        {
+            if (action == null || targetType == null || action.Types == null)
+                return false;
+
+            foreach (var actionType in action.Types)
+            {
+                if (actionType == null)
+                    continue;
+
+                if (string.Equals(actionType.FullName, targetType.FullName, StringComparison.Ordinal))
+                    return true;
+
+                if (MyAPIGateway.Reflection.IsAssignableFrom(actionType, targetType) ||
+                    MyAPIGateway.Reflection.IsAssignableFrom(targetType, actionType))
+                    return true;
+            }
+
+            return false;
+        }
+
+        Type FindRegisteredType(string typeName)
+        {
+            if (string.IsNullOrEmpty(typeName))
+                return null;
+
+            foreach (var type in ActionHelper.Types)
+            {
+                if (type == null)
+                    continue;
+
+                if (string.Equals(type.FullName, typeName, StringComparison.Ordinal) ||
+                    string.Equals(type.Name, typeName, StringComparison.Ordinal))
+                    return type;
+            }
+
+            return null;
+        }
 
         IMyTerminalBlock FindBlock(string id)
         {
