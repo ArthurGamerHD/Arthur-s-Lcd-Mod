@@ -1294,7 +1294,7 @@ namespace LcdMod.Client.Apps
                 !float.TryParse(settings.ParameterValue, NumberStyles.Float, CultureInfo.InvariantCulture, out value))
                 return false;
 
-            action.Property.SetValue(block, Clamp(value, GetSingleMinimum(action, block), GetSingleMaximum(action, block)));
+            action.Property.SetValue(block, MathHelper.Clamp(value, GetSingleMinimum(action, block), GetSingleMaximum(action, block)));
             return true;
         }
 
@@ -1340,7 +1340,7 @@ namespace LcdMod.Client.Apps
             var step = GetSingleStep(min, max);
             var value = action.Property.GetValue(block) + (direction < 0 ? -step : step);
 
-            action.Property.SetValue(block, Clamp(value, min, max));
+            action.Property.SetValue(block, MathHelper.Clamp(value, min, max));
             return true;
         }
 
@@ -1473,22 +1473,6 @@ namespace LcdMod.Client.Apps
         }
 
         static long Clamp(long value, long min, long max)
-        {
-            if (min > max)
-            {
-                var temp = min;
-                min = max;
-                max = temp;
-            }
-
-            if (value < min)
-                return min;
-            if (value > max)
-                return max;
-            return value;
-        }
-
-        static float Clamp(float value, float min, float max)
         {
             if (min > max)
             {
