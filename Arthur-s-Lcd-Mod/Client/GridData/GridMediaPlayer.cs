@@ -30,6 +30,7 @@ namespace LcdMod.Client.GridData
         const int STREAM_BLOCK_ALIGN = 2;
 
         readonly Queue<PlaybackBuffer> _pendingBuffers = new Queue<PlaybackBuffer>();
+        readonly List<PlaybackBuffer> _visualizerBuffers = new List<PlaybackBuffer>();
         readonly Stopwatch _playbackClock = new Stopwatch();
 
         MyEntity3DSoundEmitter _emitter;
@@ -52,6 +53,7 @@ namespace LcdMod.Client.GridData
         {
             public byte[] Samples;
             public double DurationSeconds;
+            public double StartSeconds;
         }
 
         sealed class DecodeWork
@@ -124,6 +126,29 @@ namespace LcdMod.Client.GridData
                        CurrentDurationSeconds > 0.0 ||
                        !string.IsNullOrEmpty(CurrentSoundSubtype) ||
                        !string.IsNullOrEmpty(CurrentWavePath);
+            }
+        }
+
+        public void FillVisualizerPcm(byte[] destination)
+        {
+            Array.Clear(destination, 0, destination.Length);
+            if (!IsPlaying || _decodePending || !IsEmitterPlaying)
+                return;
+            if (_currentPcm != null && _currentPcm.BitsPerSample == 16)
+            {
+                VisualizerPcmWindow.Copy(_currentPcm.Samples, (int)_currentPcm.SampleRate,
+                    _currentPcm.Channels, _currentPcm.BlockAlign, 0, GetCurrentPositionSeconds(), destination);
+                return;
+            }
+
+            // Streams have no total duration, so CurrentPositionSeconds is zero.
+            // Use the emitter segment clock, not the newest received network chunk.
+            double position = _playbackSegmentStartSeconds + _playbackClock.Elapsed.TotalSeconds;
+            for (int i = 0; i < _visualizerBuffers.Count; i++)
+            {
+                PlaybackBuffer buffer = _visualizerBuffers[i];
+                VisualizerPcmWindow.Copy(buffer.Samples, STREAM_SAMPLE_RATE, 1, STREAM_BLOCK_ALIGN,
+                    buffer.StartSeconds, position, destination);
             }
         }
 
@@ -630,6 +655,7 @@ namespace LcdMod.Client.GridData
         void RebuildPendingBuffersFromPosition(double seconds)
         {
             _pendingBuffers.Clear();
+            _visualizerBuffers.Clear();
             _playbackClock.Reset();
             _submittedSeconds = 0.0;
 
@@ -766,6 +792,15 @@ namespace LcdMod.Client.GridData
                 if (starting)
                     ApplyEmitterVolume(force: true);
 
+                if (_currentPcm == null)
+                {
+                    buffer.StartSeconds = _playbackSegmentStartSeconds + _submittedSeconds;
+                    double oldest = _playbackSegmentStartSeconds + _playbackClock.Elapsed.TotalSeconds - 1.0;
+                    while (_visualizerBuffers.Count > 0 &&
+                           _visualizerBuffers[0].StartSeconds + _visualizerBuffers[0].DurationSeconds < oldest)
+                        _visualizerBuffers.RemoveAt(0);
+                    _visualizerBuffers.Add(buffer);
+                }
                 _submittedSeconds += buffer.DurationSeconds;
 
                 if (starting)
@@ -915,6 +950,7 @@ namespace LcdMod.Client.GridData
             _pendingBuffers.Clear();
 
             CloseEmitter();
+            _visualizerBuffers.Clear();
             _playbackClock.Reset();
             _submittedSeconds = 0.0;
             _playbackSegmentStartSeconds = 0.0;

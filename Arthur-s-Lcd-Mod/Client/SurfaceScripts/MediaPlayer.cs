@@ -32,10 +32,7 @@ namespace LcdMod.Client.SurfaceScripts
         protected override string DefaultTitle => TITLE;
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
         public override IApp App => _app;
-        public override List<Control> InteractiveList => _app == null ? new List<Control>() : _app.VisualChildren as List<Control>;
         public override string Title => _app != null ? _app.Title : base.Title;
-        protected override bool RendersInteractiveEntriesInGetSprites => true;
-
         public MediaPlayerSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
             : base((Sandbox.ModAPI.IMyTextSurface)surface, block, size)
         {
@@ -70,6 +67,7 @@ namespace LcdMod.Client.SurfaceScripts
             var cached = GetOrCreateCachedApp();
             _app = cached.App;
 
+            EnsureRetainedAppView(_app);
             UpdateViewBox();
             _app.Update();
             RenderSprites();
@@ -137,11 +135,13 @@ namespace LcdMod.Client.SurfaceScripts
         {
             var sprites = new List<MySprite>();
             AddBackground(sprites);
-            DrawTitle(sprites);
             if (_app == null)
+            {
+                DrawTitle(sprites);
                 DrawLoading(sprites);
+            }
             else
-                sprites.AddRange(_app.GetSprites());
+                DrawRetainedAppView(sprites);
             return sprites;
         }
 
@@ -260,6 +260,8 @@ namespace LcdMod.Client.SurfaceScripts
 
             public void Attach(MediaPlayerSurfaceScript host)
             {
+                if (ReferenceEquals(_attachedHost, host))
+                    return;
                 _attachedHost = host;
                 App.RebindHost(host);
             }
@@ -267,7 +269,10 @@ namespace LcdMod.Client.SurfaceScripts
             public void Detach(MediaPlayerSurfaceScript host)
             {
                 if (ReferenceEquals(_attachedHost, host))
+                {
                     _attachedHost = null;
+                    App.SuspendVisualizer();
+                }
             }
 
             public bool IsParentBlockUnavailable()

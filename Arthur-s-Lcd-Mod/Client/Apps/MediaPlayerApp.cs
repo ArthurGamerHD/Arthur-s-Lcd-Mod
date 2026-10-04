@@ -6,13 +6,8 @@ using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Config;
 using LcdMod.Client.Audio;
 using LcdMod.Client.GridData;
-using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
-using LcdMod.Client.Gui.ControlsTemplates.Basic;
-using LcdMod.Client.Gui.ControlsTemplates.Dialogs;
-using LcdMod.Client.Gui.ControlsTemplates.Lists;
-using LcdMod.Client.Gui.ControlsTemplates.Progress;
-using LcdMod.Client.Gui.ControlsTemplates.Panels;
+using LcdMod.Client.Apps.Dialogs;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
 using LcdMod.Common.Config.Components;
@@ -36,19 +31,7 @@ namespace LcdMod.Client.Apps
     [ConfigComponent(APP, typeof(MediaPlayerConfigComponent), PropertyName = "MediaPlayerComponent")]
     public sealed partial class MediaPlayerApp : App, IApp
     {
-        const float MIN_BUTTON_HEIGHT = 34f;
-        const float MAX_BUTTON_HEIGHT = 56f;
-        const float TINY_HEIGHT_TO_WIDTH_RATIO = MIN_SCREEN_HEIGHT_TO_WIDTH_RATIO;
-        const float WIDE_WIDTH_TO_HEIGHT_RATIO = 1.25f;
-        const float SIDE_PADDING = 12f;
-        const float LINE_GAP = 5f;
         const int DEFAULT_VISUALIZER_BARS = 32;
-        const string PICK_ICON = "Folder";
-        const string SHUFFLE_ICON = "Shuffle";
-        const string REPEAT_ICON = "Repeat";
-        const string SAVE_ICON = "Diskette";
-        const string SOUND_LOW_ICON = "SoundLow";
-        const string SOUND_HIGH_ICON = "SoundHigh";
         const string PLAYLIST_SAVE_FILE_PREFIX = "music_cache_playlist_";
         const string PLAYLIST_INDEX_FILE = "music_cache_playlists.txt";
         const string PLAYLIST_FILE_EXTENSION = ".m3u";
@@ -59,35 +42,8 @@ namespace LcdMod.Client.Apps
         static MediaItem[] _cachedLibrary;
         static SoundCategoryNameLookup _soundCategoryNameLookup;
 
-        readonly List<MySprite> _sprites = new List<MySprite>();
-        readonly List<Control> _children = new List<Control>();
-        readonly MediaPlayerRootPanel _rootPanel;
-        readonly TextBlock _trackPathText;
-        readonly TextBlock _playlistEmptyText;
-        readonly MediaIconControl _audioIcon;
-        readonly MediaIconControl _volumeLowIcon;
-        readonly MediaIconControl _volumeHighIcon;
-        readonly Button _pickButton;
-        readonly Button _previousButton;
-        readonly ToggleButton _shuffleButton;
-        readonly ToggleButton _playButton;
-        readonly ToggleButton _repeatButton;
-        readonly Button _nextButton;
-        readonly ToggleButton _playlistButton;
-        readonly Button _stopButton;
-        readonly Button _clearQueueButton;
-        readonly Button _saveQueueButton;
-        readonly ListBoxModel<PlaylistEntry> _playlistListModel;
-        readonly ListBox<PlaylistEntry> _playlistListBox;
-        readonly AudioProgressModel _audioProgressModel;
-        readonly AudioProgress _audioProgress;
-        readonly AudioVisualizerModel _audioVisualizerModel;
-        readonly AudioVisualizer _audioVisualizer;
-        readonly HorizontalSliderModel _volumeSliderModel;
-        readonly HorizontalSlider _volumeSlider;
+        float _volume = 1f;
         readonly float[] _visualizerLevels = new float[DEFAULT_VISUALIZER_BARS];
-        readonly float[] _visualizerTargetLevels = new float[DEFAULT_VISUALIZER_BARS];
-        static readonly StyleTree PlaylistListStyles = BuildPlaylistListStyles();
         bool _visualizerFrameScheduled;
         bool _handledPlaybackCompletion;
         bool _handlingPlaybackCompletion;
@@ -101,10 +57,6 @@ namespace LcdMod.Client.Apps
         bool _lastScreenInteractionWasLocal = true;
         bool _suppressConfigSync;
         bool _playlistVisible;
-        bool _playlistForceVisibleForLayout;
-        bool _playlistCompactMode;
-        bool _playlistAutoScrollAllowed;
-        int _playlistAutoScrollQueueIndex = -1;
         bool _startingQueueEntry;
 
         MediaItem[] _library = EmptyLibrary;
@@ -115,10 +67,11 @@ namespace LcdMod.Client.Apps
         GridMediaPlayer _player;
         MediaAudioFileReference _pickedAudio;
         InteractiveSurfaceScript _interactiveHost;
+        MediaPlayer.MediaPlayerViewModel _nativeViewModel;
 
         static readonly MediaItem[] EmptyLibrary = Array.Empty<MediaItem>();
 
-        public string Title
+        public override string Title
         {
             get
             {
@@ -142,15 +95,6 @@ namespace LcdMod.Client.Apps
         const string LOC_QUEUE_EMPTY = MOD_PREFIX + "MediaPlayer_QueueEmpty";
         const string LOC_CLEAR_QUEUE = MOD_PREFIX + "MediaPlayer_ClearQueue";
         const string LOC_SAVE_QUEUE = MOD_PREFIX + "MediaPlayer_SaveQueue";
-        const string LOC_PICK = MOD_PREFIX + "MediaPlayer_Pick";
-        const string LOC_SHUFFLE = MOD_PREFIX + "MediaPlayer_Shuffle";
-        const string LOC_PREVIOUS = MOD_PREFIX + "MediaPlayer_Previous";
-        const string LOC_PLAY = MOD_PREFIX + "MediaPlayer_Play";
-        const string LOC_PAUSE = MOD_PREFIX + "MediaPlayer_Pause";
-        const string LOC_NEXT = MOD_PREFIX + "MediaPlayer_Next";
-        const string LOC_PLAYLIST = MOD_PREFIX + "MediaPlayer_Playlist";
-        const string LOC_STOP = MOD_PREFIX + "MediaPlayer_Stop";
-        const string LOC_REPEAT = MOD_PREFIX + "MediaPlayer_Repeat";
         const string LOC_UNKNOWN_LENGTH = MOD_PREFIX + "MediaPlayer_UnknownLength";
         const string LOC_PICK_AUDIO = MOD_PREFIX + "MediaPlayer_PickAudio";
         const string LOC_LOADING_AUDIO_FILES = MOD_PREFIX + "MediaPlayer_LoadingAudioFiles";
@@ -214,29 +158,6 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        enum MediaButtonShape
-        {
-            Rounded,
-            Circle,
-            LeftRounded,
-            RightRounded,
-            Transparent
-        }
-
-        enum MediaButtonContent
-        {
-            Text,
-            Folder,
-            StopSquare,
-            Playlist,
-            PreviousTrack,
-            NextTrack,
-            PlayToggle,
-            Shuffle,
-            Repeat,
-            SaveIcon
-        }
-
         enum MediaRepeatMode
         {
             Disabled = 0,
@@ -244,239 +165,123 @@ namespace LcdMod.Client.Apps
             Folder = 2
         }
 
-        enum MediaPlayerLayoutMode
-        {
-            Default,
-            Wide,
-            Small
-        }
-
-        sealed class MediaButtonModel : ButtonModel
-        {
-            public MediaButtonContent Content;
-            public string DisplayText;
-            public MediaButtonShape Shape;
-            public RectangleF? DecoratorRect;
-        }
-
-        sealed class MediaPlayerRootPanel : Panel
-        {
-            readonly MediaPlayerApp _owner;
-
-            public MediaPlayerRootPanel(MediaPlayerApp owner, RectangleF bounds)
-                : base(bounds)
-            {
-                _owner = owner;
-            }
-
-            protected override void ArrangeChildren()
-            {
-                if (_owner != null)
-                    _owner.UpdateMediaVisualTree(Bounds);
-
-                base.ArrangeChildren();
-            }
-        }
-
-        sealed class MediaButtonControl : Button
-        {
-            readonly MediaPlayerApp _owner;
-
-            public MediaButtonControl(MediaPlayerApp owner, RectangleF bounds, MediaButtonModel model)
-                : base(bounds, model)
-            {
-                _owner = owner;
-            }
-
-            protected override void RenderDefault(List<MySprite> sprites)
-            {
-                if (_owner == null || _owner.ShouldUseDefaultMediaButtonRender(DataContext as MediaButtonModel))
-                {
-                    base.RenderDefault(sprites);
-                    return;
-                }
-
-                _owner.RenderMediaButtonVisual(this, sprites);
-            }
-        }
-
-        sealed class MediaToggleButtonControl : ToggleButton
-        {
-            readonly MediaPlayerApp _owner;
-
-            public MediaToggleButtonControl(MediaPlayerApp owner, RectangleF bounds, MediaButtonModel model)
-                : base(bounds, model)
-            {
-                _owner = owner;
-            }
-
-            protected override void RenderDefault(List<MySprite> sprites)
-            {
-                if (_owner == null || _owner.ShouldUseDefaultMediaButtonRender(DataContext as MediaButtonModel))
-                {
-                    base.RenderDefault(sprites);
-                    return;
-                }
-
-                _owner.RenderMediaButtonVisual(this, sprites);
-            }
-        }
-
-        sealed class MediaIconControl : RectangleControl
-        {
-            public string Icon;
-            public float SizeRatio = 1f;
-            public Color IconColor = Color.White;
-
-            public MediaIconControl(RectangleF bounds)
-                : base(bounds, CursorType.Default)
-            {
-            }
-
-            protected override void RenderDefault(List<MySprite> sprites)
-            {
-                if (string.IsNullOrEmpty(Icon))
-                    return;
-
-                var rect = Bounds;
-                if (rect.Width <= 0f || rect.Height <= 0f)
-                    return;
-
-                var size = Math.Max(1f, Math.Min(rect.Width, rect.Height) * Math.Max(.01f, SizeRatio));
-                sprites.Add(new MySprite
-                {
-                    Type = SpriteType.TEXTURE,
-                    Data = Icon,
-                    Position = rect.Center,
-                    Size = new Vector2(size, size),
-                    Color = IconColor,
-                    Alignment = TextAlignment.CENTER
-                });
-            }
-        }
-
         public MediaPlayerApp(IAppHost host) : base(host)
         {
+            BindView();
             _interactiveHost = host as InteractiveSurfaceScript;
-            _rootPanel = AddLogicalChild(new MediaPlayerRootPanel(this, default(RectangleF)));
-            _children.Add(_rootPanel);
-            _trackPathText = new TextBlock(default(RectangleF))
-            {
-                Ellipsize = true,
-                HorizontalAlignment = TextAlignment.LEFT,
-                VerticalAlignment = TextBlockVerticalAlignment.Top,
-                FontScale = .65f
-            };
-            _playlistEmptyText = new TextBlock(default(RectangleF))
-            {
-                Ellipsize = true,
-                HorizontalAlignment = TextAlignment.CENTER,
-                VerticalAlignment = TextBlockVerticalAlignment.Center,
-                FontScale = .58f
-            };
-            _audioIcon = new MediaIconControl(default(RectangleF)) { SizeRatio = .72f };
-            _volumeLowIcon = new MediaIconControl(default(RectangleF)) { Icon = SOUND_LOW_ICON, SizeRatio = 1f };
-            _volumeHighIcon = new MediaIconControl(default(RectangleF)) { Icon = SOUND_HIGH_ICON, SizeRatio = 1f };
-            _pickButton = CreateButton(LOC_PICK, PickAudio);
-            _shuffleButton = new MediaToggleButtonControl(this, default(RectangleF), new MediaButtonModel
-            {
-                Text = ResolveLoc(LOC_SHUFFLE),
-                DisplayText = string.Empty,
-                Content = MediaButtonContent.Shuffle,
-                Clicked = ToggleShuffle,
-                Enabled = true
-            })
-            {
-                GetState = IsShuffleEnabled
-            };
-            _previousButton = CreateButton(LOC_PREVIOUS, Previous);
-            _playButton = new MediaToggleButtonControl(this, default(RectangleF), new MediaButtonModel
-            {
-                Text = ResolveLoc(LOC_PLAY),
-                DisplayText = ResolveLoc(LOC_PLAY),
-                Content = MediaButtonContent.Text,
-                Clicked = TogglePlay,
-                Enabled = true
-            })
-            {
-                GetState = IsPlayToggleActive
-            };
-            _nextButton = CreateButton(LOC_NEXT, Next);
-            _playlistButton = new MediaToggleButtonControl(this, default(RectangleF), new MediaButtonModel
-            {
-                Text = ResolveLoc(LOC_PLAYLIST),
-                DisplayText = string.Empty,
-                Content = MediaButtonContent.Playlist,
-                Clicked = TogglePlaylist,
-                Enabled = true
-            })
-            {
-                GetState = IsPlaylistVisible
-            };
-            _stopButton = CreateButton(LOC_STOP, StopClicked);
-            _repeatButton = new MediaToggleButtonControl(this, default(RectangleF), new MediaButtonModel
-            {
-                Text = ResolveLoc(LOC_REPEAT),
-                DisplayText = string.Empty,
-                Content = MediaButtonContent.Repeat,
-                Clicked = CycleRepeatMode,
-                Enabled = true
-            })
-            {
-                GetState = IsRepeatActive
-            };
-            _clearQueueButton = CreateButton(LOC_CLEAR_QUEUE, ClearQueue);
-            _saveQueueButton = CreateButton(LOC_SAVE_QUEUE, SaveQueue);
-            _playlistListModel = new ListBoxModel<PlaylistEntry>
-            {
-                Items = _queue,
-                SelectedEntries = _selectedQueueEntries,
-                MultiSelect = false,
-                SelectionEnabled = true,
-                TextSelector = GetPlaylistEntryText,
-                EntryClicked = OnPlaylistEntryClicked,
-                ItemRenderer = RenderPlaylistEntryItem,
-                EntryMoved = MovePlaylistEntry,
-                DragTargetIndexFilter = ResolvePlaylistDragTargetIndex
-            };
-            _playlistListBox = new ListBox<PlaylistEntry>(default(RectangleF), _playlistListModel);
-            _playlistListBox.SetStyles(PlaylistListStyles);
-            _playlistListBox.ScrollPanel.ScrollChanged = OnPlaylistScrollChanged;
-            _audioProgressModel = new AudioProgressModel
-            {
-                SeekRequested = SeekToPosition
-            };
-            _audioProgress = new AudioProgress(default(RectangleF), _audioProgressModel);
-            _audioVisualizerModel = new AudioVisualizerModel
-            {
-                BarCount = DEFAULT_VISUALIZER_BARS,
-                BarLevels = _visualizerLevels
-            };
-            _audioVisualizer = new AudioVisualizer(default(RectangleF), _audioVisualizerModel);
-            _volumeSliderModel = new HorizontalSliderModel
-            {
-                Value = 1f,
-                ValueChanged = SetPlaybackVolume
-            };
-            _volumeSlider = new HorizontalSlider(default(RectangleF), _volumeSliderModel);
-            AddMediaVisualChildren();
-        }
-
-        public override IReadOnlyList<Control> VisualChildren => _children;
-
-        public override void MarkDirty()
-        {
-            base.MarkDirty();
-            if (_rootPanel != null)
-                _rootPanel.InvalidateLayout();
         }
 
         internal void RebindHost(IAppHost host)
         {
+            _visualizerDetached = false;
             RebindAppHost(host);
             _interactiveHost = host as InteractiveSurfaceScript;
+            BindView();
             LayoutChanged();
             MarkDirty();
+        }
+
+        void RestoreQueueFromConfig()
+        {
+            if (_restoreQueueAttempted)
+                return;
+
+            _restoreQueueAttempted = true;
+            var paths = MediaPlayerComponent.PlaylistPaths;
+            if (paths == null || paths.Length == 0)
+                return;
+
+            var titles = MediaPlayerComponent.PlaylistTitles;
+            var entries = new List<PlaylistEntry>();
+            for (int i = 0; i < paths.Length; i++)
+            {
+                var path = paths[i];
+                var title = titles != null && i < titles.Length ? titles[i] : null;
+                var entry = CreatePlaylistEntryFromM3UPath(path, title);
+                if (entry != null)
+                    entries.Add(entry);
+            }
+
+            _queue.Clear();
+            _queue.AddRange(entries);
+            _selectedQueueEntries.Clear();
+            ClearPreShuffleQueue();
+
+            if (_queue.Count == 0)
+            {
+                _queueIndex = -1;
+                return;
+            }
+
+            _queueIndex = MediaPlayerComponent.PlaylistIndex;
+            if (_queueIndex < 0)
+                _queueIndex = 0;
+            if (_queueIndex >= _queue.Count)
+                _queueIndex = _queue.Count - 1;
+            var current = _queue[_queueIndex];
+            var previousSuppress = _suppressConfigSync;
+            _suppressConfigSync = true;
+            try
+            {
+                ApplyPlaylistEntrySelection(current);
+            }
+            finally
+            {
+                _suppressConfigSync = previousSuppress;
+            }
+        }
+
+        void RemoveDeletedLocalAudioReferences(MediaAudioFileReference reference)
+        {
+            var target = CreatePlaylistEntry(reference);
+            var removedCurrentQueueEntry = false;
+            for (int i = _queue.Count - 1; i >= 0; i--)
+            {
+                if (!PlaylistEntriesMatch(_queue[i], target))
+                    continue;
+
+                if (i == _queueIndex)
+                    removedCurrentQueueEntry = true;
+
+                _queue.RemoveAt(i);
+                if (i < _queueIndex)
+                    _queueIndex--;
+            }
+
+            if (removedCurrentQueueEntry)
+            {
+                _queueIndex = -1;
+                Stop();
+            }
+            else if (_queueIndex >= _queue.Count)
+            {
+                _queueIndex = _queue.Count - 1;
+            }
+
+            if (_queue.Count == 0)
+                _queueIndex = -1;
+
+            _selectedQueueEntries.Clear();
+            ClearPreShuffleQueue();
+
+            if (_pickedAudio != null && AudioReferencesMatch(_pickedAudio, reference))
+            {
+                _pickedAudio = null;
+                _restorePickedAudioAttempted = true;
+                MediaPlayerComponent.SelectedAudioSource = string.Empty;
+                MediaPlayerComponent.SelectedPickerFullPath = string.Empty;
+                Stop();
+            }
+        }
+
+        void BindView()
+        {
+            _nativeViewModel = new MediaPlayer.MediaPlayerViewModel(this);
+            SetBackgroundContent(new MediaPlayer.MediaVisualizerView { DataContext = _nativeViewModel });
+            SetContent(new MediaPlayer.MediaPlayerView
+            {
+                DataContext = _nativeViewModel
+            });
         }
 
         public override void LayoutChanged()
@@ -538,87 +343,27 @@ namespace LcdMod.Client.Apps
         {
             EnsureLibrary();
             _player = GetHostMediaPlayer();
-            if (_player != null && _volumeSliderModel != null)
-                _player.Volume = _volumeSliderModel.Value;
+            if (_player != null)
+                _player.Volume = _volume;
             ObserveMediaConfigOrigin();
             EnsureShuffleSeed();
             RestorePickedAudioFromConfig();
             NormalizeSelectionFromConfig();
             RestoreQueueFromConfig();
             HandlePlaybackCompletion();
+            _nativeViewModel.Refresh();
+            if (!CanRenderVisualizer)
+                ReleaseVisualizerTexture();
+            ScheduleVisualizerFrameIfNeeded();
         }
+
 
         public override List<MySprite> GetSprites()
         {
-            _sprites.Clear();
-
-            if (_rootPanel != null)
-            {
-                _rootPanel.SetRect(GetContentArea());
-                UpdateFrameBoundControls();
-                _rootPanel.Render(_sprites);
-            }
-
-            ClearDirtyAfterRender();
-            return _sprites;
+            return new List<MySprite>();
         }
 
-        Button CreateButton(string locKey, Action<ButtonModel, object> clicked)
-        {
-            var text = ResolveLoc(locKey);
-            return new MediaButtonControl(this, default(RectangleF), new MediaButtonModel
-            {
-                Text = text,
-                DisplayText = text,
-                Content = MediaButtonContent.Text,
-                Clicked = clicked,
-                Enabled = true
-            });
-        }
 
-        void AddMediaVisualChildren()
-        {
-            if (_rootPanel == null)
-                return;
-
-            _rootPanel.AddChild(_trackPathText);
-            _rootPanel.AddChild(_audioIcon);
-            _rootPanel.AddChild(_audioVisualizer);
-            _rootPanel.AddChild(_clearQueueButton);
-            _rootPanel.AddChild(_saveQueueButton);
-            _rootPanel.AddChild(_playlistListBox);
-            _rootPanel.AddChild(_playlistEmptyText);
-            _rootPanel.AddChild(_audioProgress);
-            _rootPanel.AddChild(_volumeLowIcon);
-            _rootPanel.AddChild(_volumeSlider);
-            _rootPanel.AddChild(_volumeHighIcon);
-            _rootPanel.AddChild(_pickButton);
-            _rootPanel.AddChild(_shuffleButton);
-            _rootPanel.AddChild(_previousButton);
-            _rootPanel.AddChild(_nextButton);
-            _rootPanel.AddChild(_playButton);
-            _rootPanel.AddChild(_repeatButton);
-            _rootPanel.AddChild(_playlistButton);
-            _rootPanel.AddChild(_stopButton);
-        }
-
-        RectangleF GetContentArea()
-        {
-            var area = Host.ViewBox;
-            if (area.Width <= 0f || area.Height <= 0f)
-                return area;
-
-            var scale = GeneralComponent.GetScale();
-            var padding = Math.Max(4f, SIDE_PADDING * scale);
-            var titleHeight = Host.TitleVisible
-                ? 40f * scale * Host.Surface.FontSize
-                : 0f;
-            return new RectangleF(
-                area.X + padding,
-                area.Y + titleHeight + padding,
-                Math.Max(0f, area.Width - padding * 2f),
-                Math.Max(0f, area.Height - titleHeight - padding * 2f));
-        }
 
         string GetCurrentSongName()
         {
@@ -667,276 +412,12 @@ namespace LcdMod.Client.Apps
             return string.Empty;
         }
 
-        void UpdateMediaVisualTree(RectangleF area)
-        {
-            _playlistForceVisibleForLayout = false;
-            _playlistCompactMode = false;
 
-            var layoutMode = GetMediaLayoutMode(area);
-            if (layoutMode == MediaPlayerLayoutMode.Small)
-            {
-                HideControl(_trackPathText);
-                ArrangeSmallMediaControls(area);
-                return;
-            }
 
-            if (layoutMode == MediaPlayerLayoutMode.Wide)
-            {
-                _playlistForceVisibleForLayout = true;
-                ArrangeWideMediaControls(area);
-                return;
-            }
 
-            var y = ArrangeTrackPath(area, true);
-            ArrangeMediaControls(area, y);
-        }
 
-        float ArrangeTrackPath(RectangleF area, bool hideWhenPlaylistVisible)
-        {
-            var scale = GeneralComponent.GetScale();
-            var y = area.Y + Math.Max(0f, 6f * scale);
-            var textX = area.X + SIDE_PADDING * scale;
-            var textWidth = Math.Max(1f, area.Width - 2f * SIDE_PADDING * scale);
-            var detailScale = Math.Max(.45f, .65f * scale);
 
-            if (_trackPathText != null)
-            {
-                if (hideWhenPlaylistVisible && _playlistVisible)
-                {
-                    _trackPathText.SetVisible(false);
-                }
-                else
-                {
-                    var songPath = GetCurrentSongPath();
-                    if (string.IsNullOrEmpty(songPath))
-                        songPath = ResolveLoc(LOC_NO_SUPPORTED_AUDIO);
 
-                    _trackPathText.Text = songPath;
-                    _trackPathText.FontScale = .65f;
-                    _trackPathText.TextColor = Host.ForegroundColor;
-                    _trackPathText.SetRect(new RectangleF(textX, y, textWidth, Math.Max(1f, MeasureLineHeight(detailScale))));
-                    _trackPathText.SetVisible(true);
-                    _trackPathText.SetEnabled(false);
-                    y += Math.Max(12f, MeasureLineHeight(detailScale)) + LINE_GAP * scale;
-                }
-            }
-
-            return y;
-        }
-
-        static MediaPlayerLayoutMode GetMediaLayoutMode(RectangleF area)
-        {
-            if (area.Width <= 0f || area.Height <= 0f)
-                return MediaPlayerLayoutMode.Default;
-
-            var heightToWidth = area.Height / Math.Max(1f, area.Width);
-            if (heightToWidth < TINY_HEIGHT_TO_WIDTH_RATIO)
-                return MediaPlayerLayoutMode.Small;
-
-            var widthToHeight = area.Width / Math.Max(1f, area.Height);
-            return widthToHeight >= WIDE_WIDTH_TO_HEIGHT_RATIO
-                ? MediaPlayerLayoutMode.Wide
-                : MediaPlayerLayoutMode.Default;
-        }
-
-        void ArrangeMediaControls(RectangleF area, float contentBottom, bool allowPlaylistBody = true, bool useStopButton = false)
-        {
-            var scale = GeneralComponent.GetScale();
-            var gap = Math.Max(4f, 8f * scale);
-            var buttonHeight = MathHelper.Clamp(area.Height * .18f, MIN_BUTTON_HEIGHT * scale, MAX_BUTTON_HEIGHT * scale);
-            var volumeHeight = Math.Max(12f, 16f * scale);
-            var volumeY = area.Bottom - volumeHeight;
-            var volumeFits = volumeY - gap - buttonHeight >= area.Y;
-            var buttonY = volumeFits
-                ? volumeY - gap - buttonHeight
-                : area.Bottom - buttonHeight;
-            var progressHeight = Math.Max(16f, 20f * scale);
-            var progressY = buttonY - gap - progressHeight;
-            var progressFits = progressY >= area.Y;
-            var bottomControlsTop = progressFits ? progressY : buttonY;
-            var visualizerTop = Math.Max(area.Y, contentBottom + gap);
-            var visualizerBottom = bottomControlsTop - gap;
-            var canSeek = _player != null && _player.CanSeek;
-
-            if (visualizerBottom - visualizerTop >= Math.Max(18f, 30f * scale))
-            {
-                var mediaBodyRect = new RectangleF(area.X, visualizerTop, area.Width, visualizerBottom - visualizerTop);
-                if (allowPlaylistBody && _playlistVisible)
-                    ArrangePlaylistArea(mediaBodyRect, false);
-                else
-                    ArrangeVisualizerArea(mediaBodyRect);
-            }
-            else
-            {
-                HidePlaylistControls();
-                HideVisualizerControls();
-            }
-
-            if (progressFits)
-                ArrangeAudioProgress(new RectangleF(area.X, progressY, area.Width, progressHeight), canSeek);
-            else
-                HideControl(_audioProgress);
-
-            if (volumeFits)
-                ArrangeVolumeSlider(new RectangleF(area.X, volumeY, area.Width, volumeHeight));
-            else
-                HideVolumeControls();
-
-            ArrangeTransportButtons(area, buttonY, buttonHeight, gap, useStopButton);
-        }
-
-        void ArrangeSmallMediaControls(RectangleF area)
-        {
-            var scale = GeneralComponent.GetScale();
-            var gap = Math.Max(3f, 5f * scale);
-            var buttonHeight = MathHelper.Clamp(area.Height * .55f, MIN_BUTTON_HEIGHT * scale, MAX_BUTTON_HEIGHT * scale);
-            buttonHeight = Math.Min(buttonHeight, Math.Max(1f, area.Height));
-            var volumeHeight = Math.Max(10f, 14f * scale);
-            var volumeY = area.Bottom - volumeHeight;
-            var volumeFits = volumeY - gap - buttonHeight >= area.Y;
-            var buttonY = volumeFits
-                ? volumeY - gap - buttonHeight
-                : area.Bottom - buttonHeight;
-            var progressHeight = Math.Max(10f, 14f * scale);
-            var progressY = buttonY - gap - progressHeight;
-            var canSeek = _player != null && _player.CanSeek;
-
-            HideVisualizerControls();
-
-            if (_playlistVisible)
-            {
-                HideControl(_audioProgress);
-                HideTransportControls();
-                if (volumeFits)
-                {
-                    ArrangeVolumeSlider(new RectangleF(area.X, volumeY, area.Width, volumeHeight));
-                    ArrangeTinyPlaylistOverlay(new RectangleF(area.X, area.Y, area.Width, Math.Max(1f, volumeY - gap - area.Y)));
-                }
-                else
-                {
-                    HideVolumeControls();
-                    ArrangeTinyPlaylistOverlay(area);
-                }
-                return;
-            }
-
-            if (progressY >= area.Y)
-                ArrangeAudioProgress(new RectangleF(area.X, progressY, area.Width, progressHeight), canSeek);
-            else
-                HideControl(_audioProgress);
-
-            var bodyBottom = progressY >= area.Y ? progressY - gap : buttonY - gap;
-            var showCompactPlaylist = _playlistVisible && bodyBottom > area.Y + Math.Max(20f, 28f * scale);
-
-            ArrangeTransportButtons(area, buttonY, buttonHeight, gap, hidePlaylistButton: showCompactPlaylist);
-            if (volumeFits)
-                ArrangeVolumeSlider(new RectangleF(area.X, volumeY, area.Width, volumeHeight));
-            else
-                HideVolumeControls();
-
-            if (showCompactPlaylist)
-                ArrangePlaylistArea(new RectangleF(area.X, area.Y, area.Width, bodyBottom - area.Y), true);
-            else
-                HidePlaylistControls();
-        }
-
-        void ArrangeTinyPlaylistOverlay(RectangleF area)
-        {
-            if (area.Width <= 0f || area.Height <= 0f)
-            {
-                HidePlaylistControls();
-                return;
-            }
-
-            UpdatePlaylistListModel();
-            _playlistCompactMode = true;
-
-            var scale = GeneralComponent.GetScale();
-            var gap = Math.Max(2f, 4f * scale);
-            var rowHeight = Math.Max(1f, (area.Height - gap) * .5f);
-            var actionWidth = MathHelper.Clamp(
-                area.Width * .14f,
-                Math.Max(rowHeight, 26f * scale),
-                Math.Max(rowHeight, 72f * scale));
-            var playlistSize = rowHeight;
-
-            var clearRect = new RectangleF(area.X, area.Y, actionWidth, rowHeight);
-            var saveRect = new RectangleF(area.X, area.Y + rowHeight + gap, actionWidth, rowHeight);
-            var playlistRect = new RectangleF(area.Right - playlistSize, saveRect.Y, playlistSize, rowHeight);
-            var listX = clearRect.Right + gap;
-            var listRight = playlistRect.X - gap;
-            var listRect = new RectangleF(listX, area.Y, Math.Max(1f, listRight - listX), area.Height);
-
-            ArrangeMediaButton(_clearQueueButton, clearRect, string.Empty, _queue.Count > 0, MediaButtonShape.Rounded, MediaButtonContent.StopSquare);
-            ArrangeMediaButton(_saveQueueButton, saveRect, string.Empty, _queue.Count > 0, MediaButtonShape.Rounded, MediaButtonContent.SaveIcon);
-            ArrangeMediaButton(_playlistButton, playlistRect, string.Empty, true, MediaButtonShape.Transparent, MediaButtonContent.Playlist);
-
-            ArrangePlaylistList(listRect, true);
-        }
-
-        void ArrangeWideMediaControls(RectangleF area)
-        {
-            var scale = GeneralComponent.GetScale();
-            var gap = Math.Max(4f, 8f * scale);
-            var playlistWidth = Math.Max(120f * scale, Math.Min(area.Width * .42f, 280f * scale));
-            var playlistRect = new RectangleF(area.Right - playlistWidth, area.Y, playlistWidth, area.Height);
-            var controlsRect = new RectangleF(
-                area.X,
-                area.Y,
-                Math.Max(1f, playlistRect.X - area.X - gap),
-                area.Height);
-
-            ArrangeMediaControls(controlsRect, ArrangeTrackPath(controlsRect, false), false, true);
-            ArrangePlaylistArea(playlistRect, false, false);
-        }
-
-        void ArrangeTransportButtons(RectangleF area, float buttonY, float buttonHeight, float gap, bool useStopButton = false, bool hidePlaylistButton = false)
-        {
-            var buttonWidth = Math.Max(1f, (area.Width - gap * 6f) / 7f);
-            var libraryEnabled = _pickedAudio != null || HasLibrarySelection() || _queue.Count > 0;
-            var canStart = _pickedAudio != null || HasLibrarySelection() || HasQueuedCurrentOrNext();
-            var shiftedStop = IsShiftPressed();
-            var canTogglePlay = _player != null && (shiftedStop ? CanResetPlayer() : (canStart || _player.IsPlaying || _player.IsPaused));
-
-            var pickRect = new RectangleF(area.X, buttonY, buttonWidth, buttonHeight);
-            var shuffleRect = new RectangleF(area.X + (buttonWidth + gap), buttonY, buttonWidth, buttonHeight);
-            var previousRect = new RectangleF(area.X + 2f * (buttonWidth + gap), buttonY, buttonWidth, buttonHeight);
-            var playRect = new RectangleF(area.X + 3f * (buttonWidth + gap), buttonY, buttonWidth, buttonHeight);
-            var nextRect = new RectangleF(area.X + 4f * (buttonWidth + gap), buttonY, buttonWidth, buttonHeight);
-            var repeatRect = new RectangleF(area.X + 5f * (buttonWidth + gap), buttonY, buttonWidth, buttonHeight);
-            var stopRect = new RectangleF(area.X + 6f * (buttonWidth + gap), buttonY, buttonWidth, buttonHeight);
-            var trackDecoratorHeight = Math.Max(1f, previousRect.Height * .82f);
-            var trackDecoratorY = previousRect.Center.Y - trackDecoratorHeight * .5f;
-            var previousDecoratorRect = new RectangleF(
-                previousRect.X,
-                trackDecoratorY,
-                Math.Max(1f, playRect.Center.X - previousRect.X),
-                trackDecoratorHeight);
-            var nextDecoratorRect = new RectangleF(
-                playRect.Center.X,
-                trackDecoratorY,
-                Math.Max(1f, nextRect.Right - playRect.Center.X),
-                trackDecoratorHeight);
-
-            ArrangeMediaButton(_pickButton, pickRect, string.Empty, _interactiveHost != null, MediaButtonShape.Transparent, MediaButtonContent.Folder);
-            ArrangeMediaButton(_shuffleButton, shuffleRect, string.Empty, true, MediaButtonShape.Transparent, MediaButtonContent.Shuffle);
-            ArrangeMediaButton(_previousButton, previousRect, string.Empty, libraryEnabled, MediaButtonShape.LeftRounded, MediaButtonContent.PreviousTrack, previousDecoratorRect);
-            ArrangeMediaButton(_nextButton, nextRect, string.Empty, libraryEnabled, MediaButtonShape.RightRounded, MediaButtonContent.NextTrack, nextDecoratorRect);
-            ArrangeMediaButton(_repeatButton, repeatRect, GetRepeatButtonText(), true, MediaButtonShape.Transparent, MediaButtonContent.Repeat);
-            if (useStopButton)
-            {
-                ArrangeMediaButton(_stopButton, stopRect, string.Empty, CanResetPlayer(), MediaButtonShape.Transparent, MediaButtonContent.StopSquare);
-            }
-            else
-            {
-                HideControl(_stopButton);
-                if (hidePlaylistButton)
-                    HideControl(_playlistButton);
-                else
-                    ArrangeMediaButton(_playlistButton, stopRect, string.Empty, true, MediaButtonShape.Transparent, MediaButtonContent.Playlist);
-            }
-            ArrangeMediaButton(_playButton, playRect, GetPlayButtonText(), canTogglePlay, MediaButtonShape.Circle, shiftedStop ? MediaButtonContent.StopSquare : MediaButtonContent.PlayToggle);
-        }
 
         bool CanResetPlayer()
         {
@@ -944,41 +425,6 @@ namespace LcdMod.Client.Apps
                 return false;
 
             return _player.IsActive || _player.HasLoadedAudio;
-        }
-
-        static StyleTree BuildPlaylistListStyles()
-        {
-            var styles = new StyleTree();
-            Style<ListBoxItem<PlaylistEntry>> item = styles.For<ListBoxItem<PlaylistEntry>>()
-                .Set(ControlTemplate.BackgroundColorProperty, Color.Transparent)
-                .Set(ControlTemplate.TextColorProperty, ThemeResources.OnSecondaryContainerColor)
-                .Set(ControlTemplate.BorderThicknessPixelsProperty, 0f);
-
-            item.State(StyleState.Hover)
-                .Set(ControlTemplate.BackgroundColorProperty, ThemeResources.SurfaceContainerHighColor)
-                .Set(ControlTemplate.TextColorProperty, ThemeResources.OnSurfaceColor);
-
-            item.State(StyleState.Selected)
-                .Set(ControlTemplate.BackgroundColorProperty, ThemeResources.SurfaceContainerHighestColor)
-                .Set(ControlTemplate.TextColorProperty, ThemeResources.OnSurfaceColor);
-
-            item.State(StyleState.Hover | StyleState.Selected)
-                .Set(ControlTemplate.BackgroundColorProperty, ThemeResources.AccentColor)
-                .Set(ControlTemplate.TextColorProperty, ThemeResources.OnAccentColor);
-
-            item.State(StyleState.Pressed)
-                .Set(ControlTemplate.BackgroundColorProperty, ThemeResources.SurfaceContainerHighestColor)
-                .Set(ControlTemplate.TextColorProperty, ThemeResources.OnSurfaceColor);
-
-            // The regular playlist rows are transparent, but the overlay drag
-            // ghost needs an opaque surface so it does not disappear over
-            // other controls. Declare this last so it wins over selected/hover
-            // combinations while dragging.
-            item.State(StyleState.Dragged)
-                .Set(ControlTemplate.BackgroundColorProperty, ThemeResources.SurfaceContainerHighestColor)
-                .Set(ControlTemplate.TextColorProperty, ThemeResources.OnSurfaceColor);
-
-            return styles;
         }
 
         Color GetMediaActiveColor()
@@ -997,240 +443,14 @@ namespace LcdMod.Client.Apps
         }
 
 
-        void ArrangeVisualizerArea(RectangleF rect)
-        {
-            HidePlaylistControls();
 
-            if (rect.Width <= 0f || rect.Height <= 0f)
-            {
-                HideVisualizerControls();
-                return;
-            }
 
-            var scale = GeneralComponent.GetScale();
-            var innerPad = Math.Max(1f, 3f * scale);
-            var contentRect = new RectangleF(
-                rect.X + innerPad,
-                rect.Y + innerPad,
-                Math.Max(1f, rect.Width - innerPad * 2f),
-                Math.Max(1f, rect.Height - innerPad * 2f));
 
-            if (MediaPlayerComponent.VisualizerEnabled)
-                ArrangeVisualizer(contentRect);
-            else
-                ArrangeAudioFileIcon(contentRect);
-        }
 
-        void ArrangePlaylistArea(RectangleF rect, bool compact, bool hideVisualizer = true)
-        {
-            if (hideVisualizer)
-                HideVisualizerControls();
 
-            if (rect.Width <= 0f || rect.Height <= 0f)
-            {
-                HidePlaylistControls();
-                return;
-            }
 
-            UpdatePlaylistListModel();
-            _playlistCompactMode = compact;
 
-            var scale = GeneralComponent.GetScale();
-            var gap = Math.Max(3f, 5f * scale);
-            var actionHeight = Math.Max(22f * scale, Math.Min(compact ? 26f * scale : 32f * scale, rect.Height * .22f));
-            RectangleF listRect;
 
-            if (compact)
-            {
-                var buttonSize = Math.Max(1f, actionHeight);
-                var clearRect = new RectangleF(rect.X, rect.Y, buttonSize, actionHeight);
-                var saveRect = new RectangleF(clearRect.Right + gap, rect.Y, buttonSize, actionHeight);
-                var playlistRect = new RectangleF(rect.Right - buttonSize, rect.Y, buttonSize, actionHeight);
-
-                ArrangeMediaButton(_clearQueueButton, clearRect, string.Empty, _queue.Count > 0, MediaButtonShape.Rounded, MediaButtonContent.StopSquare);
-                ArrangeMediaButton(_saveQueueButton, saveRect, string.Empty, _queue.Count > 0, MediaButtonShape.Rounded, MediaButtonContent.SaveIcon);
-                ArrangeMediaButton(_playlistButton, playlistRect, string.Empty, true, MediaButtonShape.Transparent, MediaButtonContent.Playlist);
-
-                var listTop = clearRect.Bottom + gap;
-                listRect = new RectangleF(rect.X, listTop, rect.Width, Math.Max(1f, rect.Bottom - listTop));
-            }
-            else
-            {
-                HideControl(_playlistButton);
-                var buttonWidth = Math.Max(1f, (rect.Width - gap) * .5f);
-                var clearRect = new RectangleF(rect.X, rect.Y, buttonWidth, actionHeight);
-                var saveRect = new RectangleF(clearRect.Right + gap, rect.Y, buttonWidth, actionHeight);
-
-                ArrangeMediaButton(_clearQueueButton, clearRect, ResolveLoc(LOC_CLEAR_QUEUE), _queue.Count > 0, MediaButtonShape.Rounded, MediaButtonContent.Text);
-                ArrangeMediaButton(_saveQueueButton, saveRect, ResolveLoc(LOC_SAVE_QUEUE), _queue.Count > 0, MediaButtonShape.Rounded, MediaButtonContent.Text);
-
-                var listTop = clearRect.Bottom + gap;
-                listRect = new RectangleF(rect.X, listTop, rect.Width, Math.Max(1f, rect.Bottom - listTop));
-            }
-            ArrangePlaylistList(listRect, compact);
-        }
-
-        void ArrangePlaylistList(RectangleF listRect, bool compact)
-        {
-            var scale = GeneralComponent.GetScale();
-            if (_playlistListBox == null || _playlistListModel == null || listRect.Height <= 0f)
-            {
-                HideControl(_playlistListBox);
-                HideControl(_playlistEmptyText);
-                return;
-            }
-
-            _playlistListModel.RowHeight = compact
-                ? Math.Max(26f * scale, 30f * scale * Host.Surface.FontSize)
-                : Math.Max(40f * scale, 48f * scale * Host.Surface.FontSize);
-            _playlistListModel.DragHandleWidthPixels = compact ? Math.Max(18f * scale, 22f * scale) : Math.Max(24f * scale, 30f * scale);
-            _playlistListModel.ScrollerWidthPixels = Math.Max(6f, 7f * scale);
-            _playlistListModel.SelectedPanelColor = ResolveResource(ThemeResources.SurfaceContainerHighestColor, GetMediaActiveColor());
-            _playlistListModel.SelectedTextColor = ResolveResource(ThemeResources.OnSurfaceColor, Host.ForegroundColor);
-
-            _playlistListBox.BackgroundColor = GetMediaInactiveSurfaceColor();
-            _playlistListBox.TextColor = Host.ForegroundColor;
-            _playlistListBox.BorderColor = Color.Transparent;
-            _playlistListBox.BorderThicknessPixels = 0f;
-            _playlistListBox.BorderRadiusPixels = Math.Max(3f, 5f * scale);
-            _playlistListBox.SetRect(listRect);
-            _playlistListBox.SetVisible(true);
-            _playlistListBox.SetEnabled(true);
-            _playlistListBox.SetCursor(CursorType.Hand);
-            _playlistListBox.ScrollPanel.SetScrollBarColors(
-                ResolveResource(ThemeResources.SurfaceContainerHighestColor, GetMediaInactiveSurfaceColor()),
-                ResolveResource(ThemeResources.OnSurfaceColor, Host.ForegroundColor));
-            MaybeScrollPlaylistToCurrent();
-
-            ArrangePlaylistEmptyMessage(listRect);
-        }
-
-        void ArrangePlaylistEmptyMessage(RectangleF rect)
-        {
-            if (_playlistEmptyText == null)
-                return;
-
-            if (_queue.Count != 0)
-            {
-                _playlistEmptyText.SetVisible(false);
-                return;
-            }
-
-            _playlistEmptyText.Text = ResolveLoc(LOC_QUEUE_EMPTY);
-            _playlistEmptyText.FontScale = .58f;
-            _playlistEmptyText.TextColor = GetMediaInactiveForegroundColor();
-            _playlistEmptyText.SetRect(rect);
-            _playlistEmptyText.SetVisible(true);
-            _playlistEmptyText.SetEnabled(false);
-        }
-
-        void MaybeScrollPlaylistToCurrent()
-        {
-            if (!_playlistAutoScrollAllowed ||
-                _playlistAutoScrollQueueIndex == _queueIndex ||
-                _playlistListBox == null ||
-                _playlistListModel == null ||
-                _queueIndex < 0 ||
-                _queueIndex >= _queue.Count)
-                return;
-
-            var rowHeight = Math.Max(1f, _playlistListModel.RowHeight);
-            var visibleRows = Math.Max(1, _playlistListBox.ScrollPanel.VisibleRows);
-            var start = Math.Max(0, _queueIndex - visibleRows / 2);
-            _playlistListBox.ScrollPanel.SetScrollOffsetPixels(start * rowHeight, notify: false);
-            _playlistAutoScrollQueueIndex = _queueIndex;
-        }
-
-        void OnPlaylistScrollChanged(ScrollPanel panel)
-        {
-            _playlistAutoScrollAllowed = false;
-            MarkDirty();
-        }
-
-        void UpdatePlaylistListModel()
-        {
-            if (_playlistListModel == null)
-                return;
-
-            if (!ReferenceEquals(_playlistListModel.Items, _queue))
-                _playlistListModel.Items = _queue;
-            if (!ReferenceEquals(_playlistListModel.SelectedEntries, _selectedQueueEntries))
-                _playlistListModel.SelectedEntries = _selectedQueueEntries;
-
-            var current = _queueIndex >= 0 && _queueIndex < _queue.Count ? _queue[_queueIndex] : null;
-            if (_selectedQueueEntries.Count == 1 && ReferenceEquals(_selectedQueueEntries[0], current))
-                return;
-
-            _selectedQueueEntries.Clear();
-            if (current != null)
-                _selectedQueueEntries.Add(current);
-        }
-
-        void ArrangeVolumeSlider(RectangleF rect)
-        {
-            if (_volumeSlider == null || _volumeSliderModel == null || rect.Width <= 0f || rect.Height <= 0f)
-            {
-                HideVolumeControls();
-                return;
-            }
-
-            var scale = GeneralComponent.GetScale();
-            var iconSize = Math.Max(1f, Math.Min(rect.Height, 18f * scale));
-            var iconGap = Math.Max(2f, 5f * scale);
-            var iconColor = GetMediaInactiveForegroundColor();
-            var leftIconRect = new RectangleF(rect.X, rect.Center.Y - iconSize * .5f, iconSize, iconSize);
-            var rightIconRect = new RectangleF(rect.Right - iconSize, rect.Center.Y - iconSize * .5f, iconSize, iconSize);
-
-            ArrangeIcon(_volumeLowIcon, SOUND_LOW_ICON, leftIconRect, iconColor, 1f);
-            ArrangeIcon(_volumeHighIcon, SOUND_HIGH_ICON, rightIconRect, iconColor, 1f);
-
-            var sliderRect = new RectangleF(
-                leftIconRect.Right + iconGap,
-                rect.Y,
-                Math.Max(1f, rightIconRect.X - leftIconRect.Right - iconGap * 2f),
-                rect.Height);
-
-            _volumeSliderModel.Value = MathHelper.Clamp(_volumeSliderModel.Value, 0f, 1f);
-            _volumeSliderModel.TrackColor = GetMediaInactiveSurfaceColor();
-            _volumeSliderModel.FillColor = GetMediaActiveColor();
-            _volumeSliderModel.ThumbColor = GetMediaActiveColor();
-
-            _volumeSlider.SetRect(sliderRect);
-            _volumeSlider.SetVisible(true);
-            _volumeSlider.SetEnabled(true);
-            _volumeSlider.SetCursor(CursorType.Hand);
-        }
-
-        void ArrangeVisualizer(RectangleF rect)
-        {
-            HideControl(_audioIcon);
-
-            if (_audioVisualizer == null || _audioVisualizerModel == null)
-                return;
-
-            RefreshVisualizerLevels();
-
-            _audioVisualizerModel.BarCount = DEFAULT_VISUALIZER_BARS;
-            _audioVisualizerModel.BarLevels = _visualizerLevels;
-            _audioVisualizerModel.CenterLineColor = Color.Black;
-            _audioVisualizerModel.BarSaturation = 1f;
-            _audioVisualizerModel.BarValue = 1f;
-            _audioVisualizerModel.BarAlpha = .9f;
-            _audioVisualizerModel.BackgroundColor = null;
-
-            _audioVisualizer.SetRect(rect);
-            _audioVisualizer.SetVisible(true);
-            _audioVisualizer.SetEnabled(true);
-            _audioVisualizer.SetCursor(CursorType.Default);
-
-            ScheduleVisualizerFrameIfNeeded();
-        }
-
-        void ArrangeAudioFileIcon(RectangleF rect)
-        {
-            HideControl(_audioVisualizer);
-            ArrangeIcon(_audioIcon, GetCurrentAudioFileIcon(), rect, Host.ForegroundColor, .72f);
-        }
 
         string GetCurrentAudioFileIcon()
         {
@@ -1252,104 +472,13 @@ namespace LcdMod.Client.Apps
                 : "FileWav";
         }
 
-        void ArrangeAudioProgress(RectangleF rect, bool canSeek)
-        {
-            if (_audioProgress == null || _audioProgressModel == null)
-                return;
 
-            UpdateAudioProgressModel(canSeek);
 
-            _audioProgress.SetRect(rect);
-            _audioProgress.SetVisible(true);
-            _audioProgress.SetEnabled(true);
-            _audioProgress.SetCursor(canSeek ? CursorType.Hand : CursorType.Default);
-        }
 
-        void UpdateFrameBoundControls()
-        {
-            if (_audioProgress != null && _audioProgress.Visible)
-                UpdateAudioProgressModel(_player != null && _player.CanSeek);
 
-            if (_audioVisualizer != null && _audioVisualizer.Visible)
-            {
-                RefreshVisualizerLevels();
-                _audioVisualizer.MarkDirty();
-            }
 
-            ScheduleVisualizerFrameIfNeeded();
-        }
 
-        void UpdateAudioProgressModel(bool canSeek)
-        {
-            if (_audioProgressModel == null)
-                return;
 
-            double duration = _player?.CurrentDurationSeconds ?? 0.0;
-            double position = _player?.CurrentPositionSeconds ?? 0.0;
-
-            _audioProgressModel.PositionSeconds = position;
-            _audioProgressModel.DurationSeconds = duration;
-            _audioProgressModel.SeekEnabled = canSeek;
-            _audioProgressModel.TextColor = Host.ForegroundColor;
-            _audioProgressModel.BackgroundColor = GetMediaInactiveSurfaceColor();
-            _audioProgressModel.FillColor = GetMediaActiveColor();
-            _audioProgressModel.ThumbColor = GetMediaActiveColor();
-        }
-
-        void ArrangeIcon(MediaIconControl control, string icon, RectangleF rect, Color color, float sizeRatio)
-        {
-            if (control == null)
-                return;
-
-            control.Icon = icon;
-            control.IconColor = color;
-            control.SizeRatio = sizeRatio;
-            control.SetRect(rect);
-            control.SetVisible(!string.IsNullOrEmpty(icon) && rect.Width > 0f && rect.Height > 0f);
-            control.SetEnabled(false);
-            control.SetCursor(CursorType.Default);
-        }
-
-        void HidePlaylistControls()
-        {
-            HideControl(_clearQueueButton);
-            HideControl(_saveQueueButton);
-            HideControl(_playlistListBox);
-            HideControl(_playlistEmptyText);
-        }
-
-        void HideVisualizerControls()
-        {
-            HideControl(_audioVisualizer);
-            HideControl(_audioIcon);
-        }
-
-        void HideVolumeControls()
-        {
-            HideControl(_volumeLowIcon);
-            HideControl(_volumeSlider);
-            HideControl(_volumeHighIcon);
-        }
-
-        void HideTransportControls()
-        {
-            HideControl(_pickButton);
-            HideControl(_shuffleButton);
-            HideControl(_previousButton);
-            HideControl(_playButton);
-            HideControl(_nextButton);
-            HideControl(_repeatButton);
-            HideControl(_stopButton);
-        }
-
-        static void HideControl(Control control)
-        {
-            if (control == null)
-                return;
-
-            control.SetVisible(false);
-            control.SetEnabled(false);
-        }
 
         void ScheduleVisualizerFrameIfNeeded()
         {
@@ -1363,511 +492,57 @@ namespace LcdMod.Client.Apps
                 if (!ShouldScheduleVisualizerFrames())
                     return;
 
+                TickVisualizerTexture();
+                _nativeViewModel.RefreshFrame();
                 if (_interactiveHost != null)
-                    _interactiveHost.RequestRedraw();
+                    _interactiveHost.RenderSprites();
+                ScheduleVisualizerFrameIfNeeded();
             });
         }
 
         bool ShouldScheduleVisualizerFrames()
         {
-            if (_player == null || _audioProgress == null || _audioVisualizer == null)
+            if (_visualizerClosed || _visualizerDetached || _player == null || _nativeViewModel == null || _interactiveHost == null)
                 return false;
 
-            bool hasFrameBoundControl = _audioProgress.Visible || _audioVisualizer.Visible;
+            bool hasFrameBoundControl = _nativeViewModel.HasFrameBoundContent;
             return hasFrameBoundControl &&
                    (_player.IsPlaying ||
-                    MediaPlayerComponent.VisualizerEnabled && HasVisibleVisualizerLevels());
+                    NeedsVisualizerFrames);
         }
 
-        bool HasVisibleVisualizerLevels()
-        {
-            for (int i = 0; i < _visualizerLevels.Length; i++)
-            {
-                if (_visualizerLevels[i] > .004f)
-                    return true;
-            }
 
-            return false;
-        }
 
-        void RefreshVisualizerLevels()
-        {
-            bool hasLevels = _player != null && _player.IsPlaying && _player.FillSpectrumLevels(_visualizerTargetLevels);
-            for (int i = 0; i < _visualizerLevels.Length; i++)
-            {
-                float target = hasLevels && i < _visualizerTargetLevels.Length
-                    ? MathHelper.Clamp(_visualizerTargetLevels[i], 0f, 1f)
-                    : 0f;
-                float previous = _visualizerLevels[i];
-                float next = target > previous ? target : previous * .86f;
-                _visualizerLevels[i] = next < .004f ? 0f : next;
-            }
-        }
-
-        void ArrangeMediaButton(
-            Button button,
-            RectangleF rect,
-            string text,
-            bool enabled,
-            MediaButtonShape shape,
-            MediaButtonContent content,
-            RectangleF? decoratorRect = null)
-        {
-            if (button == null)
-                return;
-
-            var model = button.DataContext as MediaButtonModel;
-            if (model != null)
-            {
-                model.Text = text ?? string.Empty;
-                model.DisplayText = text ?? string.Empty;
-                model.Content = content;
-                model.Enabled = enabled;
-                model.Shape = shape;
-                model.DecoratorRect = decoratorRect;
-            }
-            else
-            {
-                var buttonModel = button.DataContext as ButtonModel;
-                if (buttonModel != null)
-                {
-                    buttonModel.Text = text ?? string.Empty;
-                    buttonModel.Enabled = enabled;
-                }
-            }
-
-            var fillColor = enabled ? GetMediaActiveColor() : GetMediaInactiveSurfaceColor();
-            fillColor.A = byte.MaxValue;
-
-            button.CustomRender = null;
-            button.BackgroundColor = shape == MediaButtonShape.Transparent ? Color.Transparent : fillColor;
-            button.TextColor = Host.ForegroundColor;
-            button.BorderColor = Color.Transparent;
-            button.BorderThicknessPixels = 0f;
-            button.BorderRadiusPixels = GetMediaButtonBorderRadiusPixels(shape, rect);
-            button.SetRect(rect);
-            button.SetVisible(true);
-            button.SetEnabled(enabled);
-            button.SetCursor(enabled ? CursorType.Hand : CursorType.Default);
-            button.SetClass(GetMediaButtonClass(content));
-            button.SetStyleId(null);
-        }
-
-        bool ShouldUseDefaultMediaButtonRender(MediaButtonModel model)
-        {
-            return model == null ||
-                   model.Content == MediaButtonContent.Text &&
-                   model.Shape == MediaButtonShape.Rounded &&
-                   !model.DecoratorRect.HasValue;
-        }
-
-        float GetMediaButtonBorderRadiusPixels(MediaButtonShape shape, RectangleF rect)
-        {
-            if (shape == MediaButtonShape.Circle ||
-                shape == MediaButtonShape.LeftRounded ||
-                shape == MediaButtonShape.RightRounded ||
-                shape == MediaButtonShape.Rounded)
-                return Math.Max(0f, Math.Min(rect.Width, rect.Height) * .5f);
-
-            return 0f;
-        }
-
-        void RenderMediaButtonVisual(ControlTemplate control, List<MySprite> sprites)
-        {
-            var model = control.DataContext as MediaButtonModel;
-            if (model == null)
-            {
-                RenderSearchStyleTextButton(control, sprites, control.DataContext == null ? string.Empty : control.DataContext.ToString());
-                return;
-            }
-
-            DrawMediaButtonDecorator(
-                sprites,
-                model.DecoratorRect ?? control.Bounds,
-                control.BackgroundColor,
-                model.Shape);
-
-            var foreground = control.TextColor;
-            if (model.Content == MediaButtonContent.Shuffle)
-                foreground = IsShuffleEnabled()
-                    ? GetMediaActiveColor()
-                    : GetMediaInactiveForegroundColor();
-            else if (model.Content == MediaButtonContent.Playlist)
-                foreground = IsPlaylistVisible()
-                    ? GetMediaActiveColor()
-                    : GetMediaInactiveForegroundColor();
-            else if (model.Content == MediaButtonContent.Repeat)
-                foreground = GetRepeatMode() == MediaRepeatMode.Disabled
-                    ? GetMediaInactiveForegroundColor()
-                    : GetMediaActiveColor();
-            else if (!control.Enabled)
-                foreground = new Color(foreground.R, foreground.G, foreground.B, byte.MaxValue);
-
-            if (model.Content == MediaButtonContent.Folder)
-                DrawCenteredIcon(sprites, control.Bounds, PICK_ICON, foreground, .62f);
-            else if (model.Content == MediaButtonContent.StopSquare)
-            {
-                var errorColor = ColorComponent.ResolveErrorColor();
-                errorColor.A = byte.MaxValue;
-                DrawCenteredSquare(sprites, control.Bounds, errorColor, control.Enabled ? .42f : .34f);
-            }
-            else if (model.Content == MediaButtonContent.Playlist)
-                DrawPlaylistIcon(sprites, control.Bounds, foreground);
-            else if (model.Content == MediaButtonContent.PreviousTrack)
-                DrawTrackIcon(sprites, control.Bounds, foreground, false);
-            else if (model.Content == MediaButtonContent.NextTrack)
-                DrawTrackIcon(sprites, control.Bounds, foreground, true);
-            else if (model.Content == MediaButtonContent.PlayToggle)
-                DrawPlayPauseIcon(sprites, control.Bounds, foreground, IsPlayToggleActive());
-            else if (model.Content == MediaButtonContent.Shuffle)
-                DrawCenteredIcon(sprites, control.Bounds, SHUFFLE_ICON, foreground, .62f);
-            else if (model.Content == MediaButtonContent.SaveIcon)
-                DrawCenteredIcon(sprites, control.Bounds, SAVE_ICON, foreground, .62f);
-            else if (model.Content == MediaButtonContent.Repeat)
-                DrawRepeatIcon(sprites, control.Bounds, foreground, model.DisplayText);
-            else
-                RenderSearchStyleTextButton(control, sprites, model.DisplayText);
-        }
-
-        string GetMediaButtonClass(MediaButtonContent content)
-        {
-            if (content == MediaButtonContent.Repeat)
-                return "ControlBase Button MediaButton Repeat " + GetRepeatModeClass(GetRepeatMode());
-
-            if (content == MediaButtonContent.Shuffle)
-                return IsShuffleEnabled()
-                    ? "ControlBase Button MediaButton Shuffle active"
-                    : "ControlBase Button MediaButton Shuffle disabled";
-
-            if (content == MediaButtonContent.Playlist)
-                return IsPlaylistVisible()
-                    ? "ControlBase Button MediaButton Playlist active"
-                    : "ControlBase Button MediaButton Playlist disabled";
-
-            return "ControlBase Button MediaButton";
-        }
-
-        static string GetRepeatModeClass(MediaRepeatMode mode)
-        {
-            switch (mode)
-            {
-                case MediaRepeatMode.Single:
-                    return "single";
-                case MediaRepeatMode.Folder:
-                    return "folder";
-                default:
-                    return "disabled";
-            }
-        }
 
         string GetRepeatButtonText()
         {
             return GetRepeatMode() == MediaRepeatMode.Single ? "1" : string.Empty;
         }
 
-        void RenderSearchStyleTextButton(ControlTemplate control, List<MySprite> sprites, string text)
-        {
-            DrawCenteredText(sprites, text, control.Bounds, control.TextColor);
-        }
-
-        void DrawMediaButtonDecorator(List<MySprite> sprites, RectangleF rect, Color color, MediaButtonShape shape)
-        {
-            if (rect.Width <= 0f || rect.Height <= 0f || color.A == 0)
-                return;
-
-            if (shape == MediaButtonShape.Transparent)
-                return;
-
-            if (shape == MediaButtonShape.Circle)
-            {
-                float diameter = Math.Max(1f, Math.Min(rect.Width, rect.Height) * 1.1f);
-                sprites.Add(new MySprite
-                {
-                    Type = SpriteType.TEXTURE,
-                    Data = "Circle",
-                    Position = rect.Center,
-                    Size = new Vector2(diameter, diameter),
-                    Color = color,
-                    Alignment = TextAlignment.CENTER
-                });
-                return;
-            }
-
-            if (shape == MediaButtonShape.LeftRounded)
-            {
-                DrawSafeCapsule(sprites, rect, color, true, false);
-                return;
-            }
-
-            if (shape == MediaButtonShape.RightRounded)
-            {
-                DrawSafeCapsule(sprites, rect, color, false, true);
-                return;
-            }
-
-            DrawSafeCapsule(sprites, rect, color, true, true);
-        }
-
-        static void DrawSafeCapsule(List<MySprite> sprites, RectangleF rect, Color color, bool roundLeft, bool roundRight)
-        {
-            var radius = Math.Max(0f, Math.Min(rect.Width, rect.Height) * .5f);
-            if (radius <= 0f)
-            {
-                sprites.Add(new MySprite(SpriteType.TEXTURE, "SquareSimple", rect.Center, rect.Size, color));
-                return;
-            }
-
-            var left = rect.X;
-            var right = rect.Right;
-            var centerY = rect.Center.Y;
-
-            if (roundLeft)
-            {
-                sprites.Add(new MySprite(SpriteType.TEXTURE, "Circle", new Vector2(left + radius, centerY), new Vector2(radius * 2f, rect.Height), color));
-                left += radius;
-            }
-
-            if (roundRight)
-            {
-                sprites.Add(new MySprite(SpriteType.TEXTURE, "Circle", new Vector2(right - radius, centerY), new Vector2(radius * 2f, rect.Height), color));
-                right -= radius;
-            }
-
-            if (right > left)
-            {
-                sprites.Add(new MySprite(
-                    SpriteType.TEXTURE,
-                    "SquareSimple",
-                    new Vector2((left + right) * .5f, centerY),
-                    new Vector2(right - left, rect.Height),
-                    color));
-            }
-        }
 
 
-        void DrawRepeatIcon(List<MySprite> sprites, RectangleF rect, Color color, string suffixText)
-        {
-            DrawCenteredIcon(sprites, rect, REPEAT_ICON, color, .62f);
-            if (string.IsNullOrEmpty(suffixText) || rect.Width <= 0f || rect.Height <= 0f)
-                return;
 
-            var scale = Math.Max(.8f, 1.05f * GeneralComponent.GetScale() * Host.Surface.FontSize);
-            var size = MeasureText(suffixText, scale);
-            var x = rect.Center.X + Math.Min(rect.Width, rect.Height) * .20f;
-            var y = rect.Center.Y - size.Y * .5f + Math.Min(rect.Width, rect.Height) * .12f;
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXT,
-                Data = suffixText,
-                Position = new Vector2(x, y),
-                Color = color,
-                FontId = TextFont,
-                Alignment = TextAlignment.LEFT,
-                RotationOrScale = scale
-            });
-        }
-
-        void DrawCenteredIcon(List<MySprite> sprites, RectangleF rect, string icon, Color color, float sizeRatio)
-        {
-            if (string.IsNullOrEmpty(icon) || rect.Width <= 0f || rect.Height <= 0f)
-                return;
-
-            var size = Math.Max(1f, Math.Min(rect.Width, rect.Height) * sizeRatio);
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = icon,
-                Position = rect.Center,
-                Size = new Vector2(size, size),
-                Color = color,
-                Alignment = TextAlignment.CENTER
-            });
-        }
-
-        static void DrawCenteredSquare(List<MySprite> sprites, RectangleF rect, Color color, float sizeRatio)
-        {
-            if (rect.Width <= 0f || rect.Height <= 0f)
-                return;
-
-            var size = Math.Max(1f, Math.Min(rect.Width, rect.Height) * sizeRatio);
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = "SquareSimple",
-                Position = rect.Center,
-                Size = new Vector2(size, size),
-                Color = color,
-                Alignment = TextAlignment.CENTER
-            });
-        }
-        static void DrawTrackIcon(List<MySprite> sprites, RectangleF rect, Color color, bool forward)
-        {
-            if (rect.Width <= 0f || rect.Height <= 0f)
-                return;
-
-            var size = Math.Max(1f, Math.Min(rect.Width, rect.Height));
-            var triangleSize = size * .27f;
-            var triangleOverlap = triangleSize * .16f;
-            var barOverlap = triangleSize * .08f;
-            var triangleStep = Math.Max(1f, triangleSize - triangleOverlap);
-            var groupWidth = triangleSize * 2f - triangleOverlap - barOverlap;
-            var startX = rect.Center.X - groupWidth * .5f;
-            var centerY = rect.Center.Y;
-            var triangleSpriteSize = new Vector2(triangleSize, triangleSize);
-
-            if (forward)
-            {
-                var firstTriangleX = startX + triangleSize * .5f;
-                var secondTriangleX = firstTriangleX + triangleStep;
-                DrawSideTriangle(sprites, new Vector2(firstTriangleX, centerY), triangleSpriteSize, color, true);
-                DrawSideTriangle(sprites, new Vector2(secondTriangleX, centerY), triangleSpriteSize, color, true);
-            }
-            else
-            {
-                var firstTriangleX = startX + triangleSize * .5f;
-                var secondTriangleX = firstTriangleX + triangleStep;
-                DrawSideTriangle(sprites, new Vector2(firstTriangleX, centerY), triangleSpriteSize, color, false);
-                DrawSideTriangle(sprites, new Vector2(secondTriangleX, centerY), triangleSpriteSize, color, false);
-            }
-        }
-
-        static void DrawPlayPauseIcon(List<MySprite> sprites, RectangleF rect, Color color, bool playing)
-        {
-            if (rect.Width <= 0f || rect.Height <= 0f)
-                return;
-
-            var size = Math.Max(1f, Math.Min(rect.Width, rect.Height));
-            if (!playing)
-            {
-                var triangleSize = size * .38f;
-                DrawSideTriangle(sprites, rect.Center + new Vector2(size * .035f, 0f), new Vector2(triangleSize, triangleSize), color, true);
-                return;
-            }
-
-            var barWidth = Math.Max(1f, size * .105f);
-            var barHeight = size * .43f;
-            var gap = size * .12f;
-            DrawVerticalRect(sprites, rect.Center + new Vector2(-(barWidth + gap) * .5f, 0f), barWidth, barHeight, color);
-            DrawVerticalRect(sprites, rect.Center + new Vector2((barWidth + gap) * .5f, 0f), barWidth, barHeight, color);
-        }
-
-        static void DrawPlaylistIcon(List<MySprite> sprites, RectangleF rect, Color color)
-        {
-            if (rect.Width <= 0f || rect.Height <= 0f)
-                return;
-
-            var size = Math.Max(1f, Math.Min(rect.Width, rect.Height));
-            var width = size * .44f;
-            var height = Math.Max(1f, size * .055f);
-            var gap = size * .15f;
-            var center = rect.Center;
-            DrawVerticalRect(sprites, center + new Vector2(0f, -gap), width, height, color);
-            DrawVerticalRect(sprites, center, width, height, color);
-            DrawVerticalRect(sprites, center + new Vector2(0f, gap), width, height, color);
-        }
-
-        static void DrawVerticalRect(List<MySprite> sprites, Vector2 center, float width, float height, Color color)
-        {
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = "SquareSimple",
-                Position = center,
-                Size = new Vector2(Math.Max(1f, width), Math.Max(1f, height)),
-                Color = color,
-                Alignment = TextAlignment.CENTER
-            });
-        }
-
-        static void DrawSideTriangle(List<MySprite> sprites, Vector2 center, Vector2 size, Color color, bool right)
-        {
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = "Triangle",
-                Position = center,
-                Size = size,
-                Color = color,
-                Alignment = TextAlignment.CENTER,
-                RotationOrScale = right ? MathHelper.PiOver2 : -MathHelper.PiOver2
-            });
-        }
-
-
-        void DrawCenteredText(List<MySprite> sprites, string text, RectangleF rect, Color color)
-        {
-            if (string.IsNullOrEmpty(text) || rect.Width <= 0f || rect.Height <= 0f)
-                return;
-
-            var scale = Math.Max(.42f, .58f * GeneralComponent.GetScale() * Host.Surface.FontSize);
-            var trimmed = TrimToWidth(text, Math.Max(1f, rect.Width - 6f * GeneralComponent.GetScale()), scale);
-            var size = MeasureText(trimmed, scale);
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXT,
-                Data = trimmed,
-                Position = new Vector2(rect.Center.X, rect.Center.Y - size.Y * .5f),
-                Color = color,
-                FontId = TextFont,
-                Alignment = TextAlignment.CENTER,
-                RotationOrScale = scale
-            });
-        }
-
-
-        string TrimToWidth(string text, float width, float scale)
-        {
-            if (string.IsNullOrEmpty(text))
-                return string.Empty;
-
-            if (width <= 0f)
-                return text;
-
-            if (MeasureText(text, scale).X <= width)
-                return text;
-
-            const string ellipsis = "...";
-            var max = text.Length;
-            while (max > 0)
-            {
-                var candidate = text.Substring(0, max) + ellipsis;
-                if (MeasureText(candidate, scale).X <= width)
-                    return candidate;
-                max--;
-            }
-
-            return ellipsis;
-        }
-
-        void PickAudio(ButtonModel model, object sender)
+        void PickAudio()
         {
             if (_interactiveHost == null)
                 return;
 
-            var dialog = new FilePickerDialog(
-                this,
+            FilePickerViewModel dialog = null;
+            dialog = new FilePickerViewModel(
                 ResolveLoc(LOC_PICK_AUDIO),
                 FilePickerMode.PickFile,
                 EmptyFolderRoots,
                 OnAudioPicked,
-                _interactiveHost.RequestRedraw,
-                null,
-                false,
                 MediaAudioFilePickerTreeProvider.CurrentPath,
-                MediaAudioFilePickerTreeProvider.SetCurrentPath)
-            {
-                FullscreenOnCompactSurfaces = true
-            };
-            dialog.SetContextActionsProvider(delegate(FilePickerResult result)
-            {
-                return BuildAudioPickerContextActions(result, dialog);
-            });
+                MediaAudioFilePickerTreeProvider.SetCurrentPath,
+                result => BuildAudioPickerContextActions(result, dialog));
             dialog.SetLoading(true, ResolveLoc(LOC_LOADING_AUDIO_FILES));
-            _interactiveHost.ShowDialog(dialog);
+            if (!ShowDialog(new FilePickerView(dialog)))
+                return;
 
             MediaAudioFilePickerTreeProvider.BuildRootsAsync(delegate(List<FolderModel> roots, Exception error)
             {
-                if (dialog.Dismissed)
+                if (dialog.IsClosed)
                     return;
 
                 dialog.SetRoots(roots ?? EmptyFolderRoots);
@@ -1880,7 +555,7 @@ namespace LcdMod.Client.Apps
             });
         }
 
-        void Previous(ButtonModel model, object sender)
+        void Previous()
         {
             MarkLocalMediaInteraction();
             if (_queue.Count > 0)
@@ -1897,7 +572,7 @@ namespace LcdMod.Client.Apps
                 applyToActivePlayer: true);
         }
 
-        void Next(ButtonModel model, object sender)
+        void Next()
         {
             MarkLocalMediaInteraction();
             if (_queue.Count > 0)
@@ -2051,7 +726,7 @@ namespace LcdMod.Client.Apps
             return FindAudioRoot(roots, _pickedAudio.Source);
         }
 
-        void TogglePlay(ButtonModel model, object sender)
+        void TogglePlay()
         {
             MarkLocalMediaInteraction();
             if (IsShiftPressed())
@@ -2117,8 +792,7 @@ namespace LcdMod.Client.Apps
             if (_player == null)
                 return;
 
-            if (_volumeSliderModel != null)
-                _player.Volume = _volumeSliderModel.Value;
+            _player.Volume = _volume;
 
             CancelPendingLocalAudioStream();
             if (_pickedAudio != null && _pickedAudio.IsLocal)
@@ -2164,11 +838,6 @@ namespace LcdMod.Client.Apps
             return _player != null && _player.IsPlaying;
         }
 
-        string GetPlayButtonText()
-        {
-            return IsPlayToggleActive() ? ResolveLoc(LOC_PAUSE) : ResolveLoc(LOC_PLAY);
-        }
-
 
         bool IsShiftPressed()
         {
@@ -2177,21 +846,18 @@ namespace LcdMod.Client.Apps
 
         bool IsPlaylistVisible()
         {
-            return _playlistVisible || _playlistForceVisibleForLayout;
+            return _playlistVisible;
         }
 
-        void TogglePlaylist(ButtonModel model, object sender)
+        void TogglePlaylist()
         {
             MarkLocalMediaInteraction();
             _playlistVisible = !_playlistVisible;
             if (_playlistVisible)
             {
-                _playlistAutoScrollAllowed = true;
-                _playlistAutoScrollQueueIndex = -1;
             }
             else
             {
-                _playlistAutoScrollAllowed = false;
             }
 
             MarkDirty();
@@ -2210,104 +876,6 @@ namespace LcdMod.Client.Apps
             return string.IsNullOrEmpty(entry.Title) ? entry.Path : entry.Title;
         }
 
-        void RenderPlaylistEntryItem(ListBoxItem<PlaylistEntry> control, PlaylistEntry entry, List<MySprite> sprites)
-        {
-            if (control == null || entry == null || sprites == null)
-                return;
-
-            var rect = control.GetViewBox();
-            if (rect.Width <= 0f || rect.Height <= 0f)
-                return;
-
-            var scale = GeneralComponent.GetScale();
-            var padding = Math.Max(4f, 6f * scale);
-            var dragWidth = Math.Max(18f * scale, _playlistListModel?.DragHandleWidthPixels ?? 24f * scale);
-            var dragRect = new RectangleF(rect.Right - padding - dragWidth, rect.Y, dragWidth, rect.Height);
-            var index = GetPlaylistEntryIndex(control, entry);
-            var title = string.IsNullOrEmpty(entry.Title) ? entry.Path : entry.Title;
-            var detail = GetPlaylistEntryDetailText(entry, index);
-            var foreground = control.TextColor;
-            var secondary = GetMediaInactiveForegroundColor();
-            if (index == _queueIndex)
-                secondary = foreground;
-
-            if (_playlistCompactMode)
-            {
-                var textX = rect.X + padding;
-                var textRight = Math.Max(textX + 1f, dragRect.X - Math.Max(5f, 7f * scale));
-                var titleScale = Math.Max(.36f, .46f * scale * Host.Surface.FontSize);
-                var text = string.IsNullOrEmpty(detail) ? title : title + "  " + detail;
-                var textHeight = MeasureLineHeight(titleScale);
-                sprites.Add(new MySprite
-                {
-                    Type = SpriteType.TEXT,
-                    Data = TrimToWidth(text, Math.Max(1f, textRight - textX), titleScale),
-                    Position = new Vector2(textX, rect.Center.Y - textHeight * .5f),
-                    Color = foreground,
-                    FontId = TextFont,
-                    Alignment = TextAlignment.LEFT,
-                    RotationOrScale = titleScale
-                });
-
-                DrawPlaylistIcon(sprites, dragRect, secondary);
-                return;
-            }
-
-            var iconSize = Math.Max(12f, Math.Min(rect.Height - padding * 2f, 30f * scale));
-            var iconRect = new RectangleF(rect.X + padding, rect.Center.Y - iconSize * .5f, iconSize, iconSize);
-            var textXNormal = iconRect.Right + Math.Max(6f, 8f * scale);
-            var textRightNormal = Math.Max(textXNormal + 1f, dragRect.X - Math.Max(5f, 7f * scale));
-            var titleScaleNormal = Math.Max(.40f, .52f * scale * Host.Surface.FontSize);
-            var detailScale = Math.Max(.34f, .42f * scale * Host.Surface.FontSize);
-            var titleHeight = MeasureLineHeight(titleScaleNormal);
-            var detailHeight = MeasureLineHeight(detailScale);
-            var totalTextHeight = titleHeight + detailHeight + Math.Max(1f, 2f * scale);
-            var titleY = rect.Center.Y - totalTextHeight * .5f;
-            var detailY = titleY + titleHeight + Math.Max(1f, 2f * scale);
-
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = string.IsNullOrEmpty(entry.Icon) ? GetPlaylistEntryIcon(entry) : entry.Icon,
-                Position = iconRect.Center,
-                Size = new Vector2(iconSize, iconSize),
-                Color = Host.ForegroundColor,
-                Alignment = TextAlignment.CENTER
-            });
-
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXT,
-                Data = TrimToWidth(title, Math.Max(1f, textRightNormal - textXNormal), titleScaleNormal),
-                Position = new Vector2(textXNormal, titleY),
-                Color = foreground,
-                FontId = TextFont,
-                Alignment = TextAlignment.LEFT,
-                RotationOrScale = titleScaleNormal
-            });
-
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXT,
-                Data = TrimToWidth(detail, Math.Max(1f, textRightNormal - textXNormal), detailScale),
-                Position = new Vector2(textXNormal, detailY),
-                Color = secondary,
-                FontId = TextFont,
-                Alignment = TextAlignment.LEFT,
-                RotationOrScale = detailScale
-            });
-
-            DrawPlaylistIcon(sprites, dragRect, secondary);
-        }
-
-        int GetPlaylistEntryIndex(ListBoxItem<PlaylistEntry> control, PlaylistEntry entry)
-        {
-            var model = control?.ItemModel;
-            if (model != null && model.Index >= 0 && model.Index < _queue.Count && ReferenceEquals(_queue[model.Index], entry))
-                return model.Index;
-
-            return _queue.IndexOf(entry);
-        }
 
         string GetPlaylistEntryDetailText(PlaylistEntry entry, int index)
         {
@@ -2342,7 +910,7 @@ namespace LcdMod.Client.Apps
                 PlayQueueEntry(index, false);
         }
 
-        void ClearQueue(ButtonModel model, object sender)
+        void ClearQueue()
         {
             MarkLocalMediaInteraction();
             _queue.Clear();
@@ -2354,17 +922,17 @@ namespace LcdMod.Client.Apps
             MarkDirty();
         }
 
-        void SaveQueue(ButtonModel model, object sender)
+        void SaveQueue()
         {
             MarkLocalMediaInteraction();
             if (_queue.Count == 0)
                 return;
 
-            TextInputHelper.SpawnForLocalPlayer(
+            AskText(
                 ResolveLoc(LOC_SAVE_PLAYLIST_TITLE),
-                OnSavePlaylistNameEntered,
+                ResolveLoc(LOC_SAVE_PLAYLIST_PROMPT),
                 "playlist_" + DateTime.UtcNow.ToFileTime(),
-                ResolveLoc(LOC_SAVE_PLAYLIST_PROMPT));
+                OnSavePlaylistNameEntered);
         }
 
         void OnSavePlaylistNameEntered(string name)
@@ -2825,7 +1393,7 @@ namespace LcdMod.Client.Apps
             return -1;
         }
 
-        List<FilePickerContextAction> BuildAudioPickerContextActions(FilePickerResult result, FilePickerDialog dialog)
+        List<FilePickerContextAction> BuildAudioPickerContextActions(FilePickerResult result, FilePickerViewModel dialog)
         {
             if (result == null)
                 return null;
@@ -2875,7 +1443,7 @@ namespace LcdMod.Client.Apps
             };
         }
 
-        void DeleteLocalAudioFromPicker(MediaAudioFileReference reference, FilePickerDialog dialog)
+        void DeleteLocalAudioFromPicker(MediaAudioFileReference reference, FilePickerViewModel dialog)
         {
             if (reference == null || !reference.IsLocal)
                 return;
@@ -2893,7 +1461,7 @@ namespace LcdMod.Client.Apps
                 delegate { DeleteLocalAudio(reference, dialog, displayName); });
         }
 
-        void DeletePlaylistFromPicker(MediaAudioPlaylistReference playlist, FilePickerDialog dialog)
+        void DeletePlaylistFromPicker(MediaAudioPlaylistReference playlist, FilePickerViewModel dialog)
         {
             if (playlist == null)
                 return;
@@ -2930,7 +1498,7 @@ namespace LcdMod.Client.Apps
                 "Danger");
         }
 
-        void DeleteLocalAudio(MediaAudioFileReference reference, FilePickerDialog dialog, string displayName)
+        void DeleteLocalAudio(MediaAudioFileReference reference, FilePickerViewModel dialog, string displayName)
         {
             MarkLocalMediaInteraction();
 
@@ -2949,7 +1517,7 @@ namespace LcdMod.Client.Apps
                 });
         }
 
-        void DeletePlaylist(MediaAudioPlaylistReference playlist, FilePickerDialog dialog, string displayName)
+        void DeletePlaylist(MediaAudioPlaylistReference playlist, FilePickerViewModel dialog, string displayName)
         {
             MarkLocalMediaInteraction();
 
@@ -2966,7 +1534,7 @@ namespace LcdMod.Client.Apps
                 });
         }
 
-        void QueueAudioDelete(FilePickerDialog dialog, AudioDeleteOperation deleteOperation, Action completed)
+        void QueueAudioDelete(FilePickerViewModel dialog, AudioDeleteOperation deleteOperation, Action completed)
         {
             if (deleteOperation == null)
                 return;
@@ -2992,7 +1560,7 @@ namespace LcdMod.Client.Apps
                 delegate { CompleteQueuedAudioDelete(dialog, work, completed); });
         }
 
-        void CompleteQueuedAudioDelete(FilePickerDialog dialog, AudioDeleteWork work, Action completed)
+        void CompleteQueuedAudioDelete(FilePickerViewModel dialog, AudioDeleteWork work, Action completed)
         {
             if (work == null)
             {
@@ -3021,59 +1589,15 @@ namespace LcdMod.Client.Apps
             RefreshAudioPickerDialog(dialog);
         }
 
-        void SetAudioPickerBusy(FilePickerDialog dialog, bool busy)
+        void SetAudioPickerBusy(FilePickerViewModel dialog, bool busy)
         {
-            if (dialog != null && !dialog.Dismissed)
+            if (dialog != null && !dialog.IsClosed)
                 dialog.SetLoading(busy, ResolveLoc(LOC_LOADING_AUDIO_FILES));
 
             if (_interactiveHost != null)
                 _interactiveHost.RequestRedraw();
         }
 
-        void RemoveDeletedLocalAudioReferences(MediaAudioFileReference reference)
-        {
-            var target = CreatePlaylistEntry(reference);
-            var removedCurrentQueueEntry = false;
-            for (int i = _queue.Count - 1; i >= 0; i--)
-            {
-                if (!PlaylistEntriesMatch(_queue[i], target))
-                    continue;
-
-                if (i == _queueIndex)
-                    removedCurrentQueueEntry = true;
-
-                _queue.RemoveAt(i);
-                if (i < _queueIndex)
-                    _queueIndex--;
-            }
-
-            if (removedCurrentQueueEntry)
-            {
-                _queueIndex = -1;
-                Stop();
-            }
-            else if (_queueIndex >= _queue.Count)
-            {
-                _queueIndex = _queue.Count - 1;
-            }
-
-            if (_queue.Count == 0)
-                _queueIndex = -1;
-
-            _selectedQueueEntries.Clear();
-            ClearPreShuffleQueue();
-
-            if (_pickedAudio != null && AudioReferencesMatch(_pickedAudio, reference))
-            {
-                _pickedAudio = null;
-                _restorePickedAudioAttempted = true;
-                MediaPlayerComponent.SelectedAudioSource = string.Empty;
-                MediaPlayerComponent.SelectedPickerFullPath = string.Empty;
-                Stop();
-            }
-
-            UpdatePlaylistListModel();
-        }
 
         bool AudioReferencesMatch(MediaAudioFileReference left, MediaAudioFileReference right)
         {
@@ -3083,10 +1607,10 @@ namespace LcdMod.Client.Apps
             return PlaylistEntriesMatch(CreatePlaylistEntry(left), CreatePlaylistEntry(right));
         }
 
-        void RefreshAudioPickerDialog(FilePickerDialog dialog)
+        void RefreshAudioPickerDialog(FilePickerViewModel dialog)
         {
             MediaAudioFilePickerTreeProvider.InvalidateCache();
-            if (dialog == null || dialog.Dismissed)
+            if (dialog == null || dialog.IsClosed)
             {
                 if (_interactiveHost != null)
                     _interactiveHost.RequestRedraw();
@@ -3096,7 +1620,7 @@ namespace LcdMod.Client.Apps
             dialog.SetLoading(true, ResolveLoc(LOC_LOADING_AUDIO_FILES));
             MediaAudioFilePickerTreeProvider.BuildRootsAsync(delegate(List<FolderModel> roots, Exception error)
             {
-                if (!dialog.Dismissed)
+                if (!dialog.IsClosed)
                 {
                     dialog.RefreshRoots(roots ?? EmptyFolderRoots);
                     dialog.SetLoading(false);
@@ -3541,7 +2065,7 @@ namespace LcdMod.Client.Apps
             return MediaPlayerComponent.ShuffleEnabled;
         }
 
-        void ToggleShuffle(ButtonModel model, object sender)
+        void ToggleShuffle()
         {
             MarkLocalMediaInteraction();
             if (MediaPlayerComponent.ShuffleEnabled)
@@ -3571,12 +2095,7 @@ namespace LcdMod.Client.Apps
             return MediaRepeatMode.Disabled;
         }
 
-        bool IsRepeatActive()
-        {
-            return GetRepeatMode() != MediaRepeatMode.Disabled;
-        }
-
-        void CycleRepeatMode(ButtonModel model, object sender)
+        void CycleRepeatMode()
         {
             MarkLocalMediaInteraction();
             var mode = GetRepeatMode();
@@ -3659,8 +2178,7 @@ namespace LcdMod.Client.Apps
         void SetPlaybackVolume(float value)
         {
             value = MathHelper.Clamp(value, 0f, 1f);
-            if (_volumeSliderModel != null)
-                _volumeSliderModel.Value = value;
+            _volume = value;
 
             var player = _player;
             if (player == null && Host.GridLogic != null)
@@ -3816,7 +2334,7 @@ namespace LcdMod.Client.Apps
             MarkDirty();
         }
 
-        void StopClicked(ButtonModel model, object sender)
+        void StopClicked()
         {
             MarkLocalMediaInteraction();
             CancelPendingLocalAudioStream();
@@ -4317,56 +2835,6 @@ namespace LcdMod.Client.Apps
                 SelectSubtypeWithoutClearingPicked(reference.FirstSoundSubtype);
         }
 
-        void RestoreQueueFromConfig()
-        {
-            if (_restoreQueueAttempted)
-                return;
-
-            _restoreQueueAttempted = true;
-            var paths = MediaPlayerComponent.PlaylistPaths;
-            if (paths == null || paths.Length == 0)
-                return;
-
-            var titles = MediaPlayerComponent.PlaylistTitles;
-            var entries = new List<PlaylistEntry>();
-            for (int i = 0; i < paths.Length; i++)
-            {
-                var path = paths[i];
-                var title = titles != null && i < titles.Length ? titles[i] : null;
-                var entry = CreatePlaylistEntryFromM3UPath(path, title);
-                if (entry != null)
-                    entries.Add(entry);
-            }
-
-            _queue.Clear();
-            _queue.AddRange(entries);
-            _selectedQueueEntries.Clear();
-            ClearPreShuffleQueue();
-
-            if (_queue.Count == 0)
-            {
-                _queueIndex = -1;
-                return;
-            }
-
-            _queueIndex = MediaPlayerComponent.PlaylistIndex;
-            if (_queueIndex < 0)
-                _queueIndex = 0;
-            if (_queueIndex >= _queue.Count)
-                _queueIndex = _queue.Count - 1;
-            var current = _queue[_queueIndex];
-            var previousSuppress = _suppressConfigSync;
-            _suppressConfigSync = true;
-            try
-            {
-                ApplyPlaylistEntrySelection(current);
-            }
-            finally
-            {
-                _suppressConfigSync = previousSuppress;
-            }
-            UpdatePlaylistListModel();
-        }
 
         void PersistPlaylistStateToConfig()
         {

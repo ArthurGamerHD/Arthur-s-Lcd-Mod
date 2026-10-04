@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Styles xmlns="https://github.com/ArthurGamerHD/Adk"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:media="using:LcdMod.Client.Apps.MediaPlayer">
+  <Style Selector="TextBlock.media-path">
+    <Setter Property="FontFamily" Value="{DynamicResource textFont}" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+  </Style>
+  <Style Selector="TextBlock.media-row-text">
+    <Setter Property="FontFamily" Value="{DynamicResource textFont}" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+  </Style>
+  <Style Selector="TextBlock.media-action-text">
+    <Setter Property="FontFamily" Value="{DynamicResource textFont}" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.media-empty">
+    <Setter Property="FontFamily" Value="{DynamicResource textFont}" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.media-button">
+    <Setter Property="Background" Value="#00000000" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="#00000000">
+          <ContentPresenter Name="PART_ContentPresenter" />
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="Button.media-action">
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}">
+          <ContentPresenter Name="PART_ContentPresenter" />
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="media|MediaPlaylistRow.media-row">
+    <Setter Property="Background" Value="#00000000" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+          <ContentPresenter Name="PART_ContentPresenter" />
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="media|MediaPlaylistRow.media-row:pointerover">
+    <Setter Property="Background" Value="{DynamicResource surfaceContainerHighColor}" />
+  </Style>
+  <Style Selector="media|MediaPlaylistRow.media-row:selected">
+    <Setter Property="Background" Value="{DynamicResource surfaceContainerHighestColor}" />
+  </Style>
+  <Style Selector="media|MediaPlaylistRow.media-row:selected:pointerover">
+    <Setter Property="Background" Value="{DynamicResource accentColor}" />
+  </Style>
+</Styles>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl xmlns="https://github.com/ArthurGamerHD/Adk"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:media="using:LcdMod.Client.Apps.MediaPlayer"
+             xmlns:controls="using:LcdMod.Client.Apps.Controls"
+             x:Class="LcdMod.Client.Apps.MediaPlayer.MediaVolumeView"
+             x:DataType="media:MediaPlayerViewModel">
+  <Grid ColumnDefinitions="Auto * Auto">
+    <controls:SpriteIcon Source="SoundLow" SizeRatio="1" Tint="{Binding InactiveForegroundColor}"
+                         Width="{Binding VolumeIconSize}" Height="{Binding VolumeIconSize}" />
+    <media:MediaVolumeSlider x:Name="Slider" Grid.Column="1" Margin="{Binding VolumeSliderMargin}" Value="{Binding Volume}"
+                             TrackColor="{Binding InactiveSurfaceColor}" FillColor="{Binding ActiveColor}"
+                             LayoutScale="{Binding LayoutScale}" />
+    <controls:SpriteIcon Grid.Column="2" Source="SoundHigh" SizeRatio="1" Tint="{Binding InactiveForegroundColor}"
+                         Width="{Binding VolumeIconSize}" Height="{Binding VolumeIconSize}" />
+  </Grid>
+</UserControl>

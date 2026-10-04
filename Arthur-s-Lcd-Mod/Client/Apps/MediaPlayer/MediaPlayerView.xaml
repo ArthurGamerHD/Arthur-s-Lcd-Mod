@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl xmlns="https://github.com/ArthurGamerHD/Adk"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:media="using:LcdMod.Client.Apps.MediaPlayer"
+             xmlns:controls="using:LcdMod.Client.Apps.Controls"
+             x:Class="LcdMod.Client.Apps.MediaPlayer.MediaPlayerView"
+             x:DataType="media:MediaPlayerViewModel">
+  <UserControl.Styles>
+    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/MediaPlayer.xaml" />
+  </UserControl.Styles>
+  <Grid Margin="{Binding AreaMargin}">
+    <Grid ColumnDefinitions="* Auto" IsVisible="{Binding IsRegular}">
+      <Grid RowDefinitions="Auto * Auto Auto Auto">
+        <TextBlock Classes="media-path" Text="{Binding SongPath}" FontSize="{Binding PathFontSize}"
+                   Foreground="{Binding Foreground}" Margin="{Binding PathMargin}" IsVisible="{Binding PathVisible}" />
+        <Grid Grid.Row="1" Margin="{Binding BodyMargin}" IsVisible="{Binding BodyVisible}">
+          <media:MediaGlyph Kind="FileIcon" Texture="{Binding FileIcon}" SizeRatio="0.72" GlyphColor="{Binding Foreground}"
+                            Margin="{Binding MediaIconMargin}" IsVisible="{Binding ShowFileIcon}" />
+          <media:MediaPlaylistView IsVisible="{Binding ShowPlaylistBody}" />
+        </Grid>
+        <media:MediaProgressView Grid.Row="2" Height="{Binding ProgressHeight}" Margin="{Binding ProgressMargin}"
+                                 IsVisible="{Binding ProgressVisible}" />
+        <media:MediaTransportView Grid.Row="3" Height="{Binding ButtonHeight}" Margin="{Binding ButtonsMargin}" />
+        <media:MediaVolumeView Grid.Row="4" Height="{Binding VolumeHeight}" Margin="{Binding VolumeMargin}"
+                               IsVisible="{Binding VolumeVisible}" />
+      </Grid>
+      <media:MediaPlaylistView Grid.Column="1" Width="{Binding PlaylistWidth}" Margin="{Binding PlaylistMargin}"
+                               IsVisible="{Binding PlaylistPanelVisible}" />
+    </Grid>
+
+    <Grid RowDefinitions="* Auto Auto Auto" IsVisible="{Binding IsSmall}">
+      <media:MediaProgressView Grid.Row="1" Height="{Binding ProgressHeight}" IsVisible="{Binding ProgressVisible}" />
+      <media:MediaTransportView Grid.Row="2" Height="{Binding ButtonHeight}" Margin="{Binding ButtonsMargin}"
+                                IsVisible="{Binding TransportVisible}" />
+      <media:MediaPlaylistOverlayView Grid.RowSpan="3" IsVisible="{Binding PlaylistOverlay}" />
+      <media:MediaVolumeView Grid.Row="3" Height="{Binding VolumeHeight}" Margin="{Binding VolumeMargin}"
+                             IsVisible="{Binding VolumeVisible}" />
+    </Grid>
+  </Grid>
+</UserControl>

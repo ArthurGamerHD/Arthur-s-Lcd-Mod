@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl xmlns="https://github.com/ArthurGamerHD/Adk"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:media="using:LcdMod.Client.Apps.MediaPlayer"
+             xmlns:controls="using:LcdMod.Client.Apps.Controls"
+             x:Class="LcdMod.Client.Apps.MediaPlayer.MediaPlaylistView"
+             x:DataType="media:MediaPlayerViewModel">
+  <Grid RowDefinitions="Auto *">
+    <UniformGrid Columns="2" Rows="1" ColumnSpacing="{Binding PlaylistGap}" Height="{Binding ActionHeight}">
+      <Button Classes="media-action" Command="{Binding ClearQueueCommand}" IsEnabled="{Binding QueueHasItems}"
+              Background="{Binding QueueActionColor}" CornerRadius="{Binding ActionRadius}">
+        <TextBlock Classes="media-action-text" Text="{Binding ClearQueueText}" FontSize="{Binding ActionFontSize}"
+                   Foreground="{Binding Foreground}" />
+      </Button>
+      <Button Classes="media-action" Command="{Binding SaveQueueCommand}" IsEnabled="{Binding QueueHasItems}"
+              Background="{Binding QueueActionColor}" CornerRadius="{Binding ActionRadius}">
+        <TextBlock Classes="media-action-text" Text="{Binding SaveQueueText}" FontSize="{Binding ActionFontSize}"
+                   Foreground="{Binding Foreground}" />
+      </Button>
+    </UniformGrid>
+    <Border Grid.Row="1" Classes="media-list" Background="{Binding InactiveSurfaceColor}" CornerRadius="{Binding ListRadius}"
+            Margin="{Binding PlaylistGapMargin}">
+      <Grid>
+          <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl ItemsSource="{Binding Rows}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="media:MediaPlaylistRowModel">
+                  <media:MediaPlaylistRow Classes="media-row" Height="{Binding RowHeight}" IsCurrent="{Binding IsCurrent}"
+                                          HandleWidth="{Binding HandleWidth}" Command="{Binding Command}" Padding="{Binding RowPadding}">
+                    <Grid ColumnDefinitions="Auto * Auto">
+                      <controls:SpriteIcon Source="{Binding Icon}" Tint="{Binding IconColor}" SizeRatio="1" Width="{Binding IconSize}"
+                                           Height="{Binding IconSize}" Margin="0 0 8 0" IsVisible="{Binding IsNormal}" />
+                      <StackPanel Grid.Column="1" VerticalAlignment="Center" IsVisible="{Binding IsNormal}">
+                        <TextBlock Classes="media-row-text" Text="{Binding Title}" FontSize="{Binding TitleFontSize}"
+                                   Foreground="{Binding TitleColor}" />
+                        <TextBlock Classes="media-row-text" Text="{Binding Detail}" FontSize="{Binding DetailFontSize}"
+                                   Foreground="{Binding DetailColor}" Margin="0 2 0 0" />
+                      </StackPanel>
+                      <TextBlock Grid.Column="1" Classes="media-row-text" Text="{Binding CompactText}" FontSize="{Binding CompactFontSize}"
+                                 Foreground="{Binding TitleColor}" VerticalAlignment="Center" IsVisible="{Binding IsCompact}" />
+                      <media:MediaGlyph Grid.Column="2" Kind="Playlist" GlyphColor="{Binding DetailColor}" Width="{Binding HandleWidth}"
+                                        Margin="7 0 0 0" />
+                    </Grid>
+                  </media:MediaPlaylistRow>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+          <TextBlock Classes="media-empty" Text="{Binding QueueEmptyText}" FontSize="{Binding EmptyFontSize}"
+                     Foreground="{Binding InactiveForegroundColor}" IsVisible="{Binding QueueEmpty}" />
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

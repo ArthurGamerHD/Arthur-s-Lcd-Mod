@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl xmlns="https://github.com/ArthurGamerHD/Adk"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:media="using:LcdMod.Client.Apps.MediaPlayer"
+             xmlns:controls="using:LcdMod.Client.Apps.Controls"
+             x:Class="LcdMod.Client.Apps.MediaPlayer.MediaTransportView"
+             x:DataType="media:MediaPlayerViewModel">
+  <Grid>
+    <media:MediaTransportBackground x:Name="TransportBackground" Gap="{Binding Gap}" PreviousColor="{Binding PreviousColor}" NextColor="{Binding NextColor}"
+                                    PlayColor="{Binding PlayColor}" />
+    <UniformGrid Columns="7" Rows="1" ColumnSpacing="{Binding Gap}">
+      <Button Classes="media-button" Command="{Binding PickCommand}" IsEnabled="{Binding PickEnabled}">
+        <media:MediaGlyph Kind="Folder" GlyphColor="{Binding Foreground}" />
+      </Button>
+      <Button Classes="media-button" Command="{Binding ShuffleCommand}">
+        <media:MediaGlyph Kind="Shuffle" GlyphColor="{Binding ShuffleColor}" />
+      </Button>
+      <Button x:Name="PreviousButton" Classes="media-button" Command="{Binding PreviousCommand}" IsEnabled="{Binding LibraryEnabled}">
+        <media:MediaGlyph Kind="PreviousTrack" GlyphColor="{Binding Foreground}" />
+      </Button>
+      <Button x:Name="PlayButton" Classes="media-button" Command="{Binding TogglePlayCommand}" IsEnabled="{Binding PlayEnabled}">
+        <media:MediaGlyph Kind="{Binding PlayGlyph}" GlyphColor="{Binding PlayGlyphColor}" SizeRatio="{Binding PlayGlyphRatio}" />
+      </Button>
+      <Button x:Name="NextButton" Classes="media-button" Command="{Binding NextCommand}" IsEnabled="{Binding LibraryEnabled}">
+        <media:MediaGlyph Kind="NextTrack" GlyphColor="{Binding Foreground}" />
+      </Button>
+      <Button Classes="media-button" Command="{Binding RepeatCommand}">
+        <media:MediaGlyph Kind="Repeat" GlyphColor="{Binding RepeatColor}" Suffix="{Binding RepeatSuffix}"
+                          SuffixFontSize="{Binding RepeatSuffixFontSize}" FontFamily="{Binding TextFont}" />
+      </Button>
+      <Grid>
+        <Button Classes="media-button" Command="{Binding PlaylistCommand}" IsVisible="{Binding ShowPlaylistButton}">
+          <media:MediaGlyph Kind="Playlist" GlyphColor="{Binding PlaylistColor}" />
+        </Button>
+        <Button Classes="media-button" Command="{Binding StopCommand}" IsEnabled="{Binding StopEnabled}"
+                IsVisible="{Binding ShowStopButton}">
+          <media:MediaGlyph Kind="StopSquare" GlyphColor="{Binding ErrorColor}" SizeRatio="{Binding StopRatio}" />
+        </Button>
+      </Grid>
+    </UniformGrid>
+  </Grid>
+</UserControl>
