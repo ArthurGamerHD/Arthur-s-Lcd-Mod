@@ -8,3 +8,6 @@
 	path = External/SE-Water
 	url = https://github.com/JakariaMods/SE-Water.git
 	branch = master
+[submodule "External/CAudioVisualizer.SE"]
+	path = External/CAudioVisualizer.SE
+	url = https://github.com/ArthurGamerHD/CAudioVisualizer-SE.git

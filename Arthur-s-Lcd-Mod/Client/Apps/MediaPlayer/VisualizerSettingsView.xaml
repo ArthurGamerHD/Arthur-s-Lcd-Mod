@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window xmlns="https://github.com/ArthurGamerHD/Adk"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:media="using:LcdMod.Client.Apps.MediaPlayer"
+        xmlns:ext="using:LcdMod.Client.Apps.Views.Extensions"
+        x:Class="LcdMod.Client.Apps.MediaPlayer.VisualizerSettingsView"
+        x:DataType="media:VisualizerSettingsViewModel"
+        Title="{ext:loc LcdMod_MediaPlayer_VisualizerSettings}" Width="560" Height="520" MinWidth="360" MinHeight="300"
+        Padding="14 4 14 14">
+  <Window.Styles>
+    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/Dialogs.xaml" />
+    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/VisualizerSettings.xaml" />
+  </Window.Styles>
+  <Grid RowDefinitions="*,Auto,Auto">
+    <TabControl ItemsSource="{Binding Tabs}" SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}"
+                FontSize="{Binding FontSize}">
+      <TabControl.ContentTemplate>
+        <DataTemplate x:DataType="media:VisualizerTabModel">
+          <Border DataContext="{Binding Owner}">
+            <Grid x:DataType="media:VisualizerSettingsViewModel" RowDefinitions="Auto,*">
+              <CheckBox Classes="visualizer-toggle" IsVisible="{Binding IsEditing}"
+                        IsChecked="{Binding InstanceEnabled, Mode=TwoWay}" Margin="0 8 0 4">
+                <TextBlock Classes="dialog-text" Text="{ext:loc LcdMod_MediaPlayer_VisualizerInstanceEnabled}" FontSize="{Binding FontSize}" />
+              </CheckBox>
+              <ScrollViewer Grid.Row="1" IsVisible="{Binding IsManaging}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="8">
+                  <TextBlock Classes="dialog-text visualizer-header" Text="{ext:loc LcdMod_MediaPlayer_VisualizerManageInstances}" FontSize="{Binding FontSize}" />
+                  <ItemsControl ItemsSource="{Binding ManagedInstances}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="media:VisualizerManagedInstanceModel">
+                        <Grid ColumnDefinitions="*,Auto" MinHeight="36" Margin="0 2 0 2">
+                          <TextBlock Classes="dialog-text" Text="{Binding Label}" FontSize="{Binding FontSize}" VerticalAlignment="Center" />
+                          <Button Grid.Column="1" Classes="dialog-button danger" Command="{Binding RemoveCommand}" MinWidth="84">
+                            <TextBlock Classes="dialog-text" Text="{ext:loc LcdMod_MediaPlayer_VisualizerRemoveInstance}" FontSize="{Binding FontSize}" />
+                          </Button>
+                        </Grid>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <TextBlock Classes="dialog-text visualizer-header" Text="{ext:loc LcdMod_MediaPlayer_VisualizerAddInstance}" FontSize="{Binding FontSize}" />
+                  <ItemsControl ItemsSource="{Binding AddTypes}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <UniformGrid Columns="3" />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="media:VisualizerChoiceModel">
+                        <Button Classes="dialog-button" Command="{Binding Command}" Height="34" Margin="2">
+                          <TextBlock Classes="dialog-text" Text="{Binding Label}" FontSize="{Binding FontSize}" />
+                        </Button>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <Button Classes="dialog-button" Command="{Binding RestoreDefaultsCommand}" Height="36" Margin="0 10 0 0">
+                    <TextBlock Classes="dialog-text" Text="{ext:loc LcdMod_MediaPlayer_VisualizerReset}" FontSize="{Binding FontSize}" />
+                  </Button>
+                </StackPanel>
+              </ScrollViewer>
+              <ScrollViewer Grid.Row="1" IsVisible="{Binding IsEditing}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding Rows}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="media:VisualizerSettingRow">
+                      <StackPanel>
+                        <TextBlock Classes="dialog-text visualizer-header" Text="{Binding Label}" FontSize="{Binding FontSize}"
+                                   IsVisible="{Binding IsHeader}" />
+                        <Grid ColumnDefinitions="2*,3*,Auto" IsVisible="{Binding IsSlider}" Classes="visualizer-row">
+                          <TextBlock Classes="dialog-text" Text="{Binding Label}" FontSize="{Binding FontSize}" VerticalAlignment="Center"
+                                     TextTrimming="CharacterEllipsis" />
+                          <Slider Grid.Column="1" Classes="visualizer-slider" Minimum="{Binding Minimum}" Maximum="{Binding Maximum}"
+                                  TickFrequency="{Binding Step}" IsSnapToTickEnabled="{Binding SnapToStep}"
+                                  Value="{Binding Value, Mode=TwoWay}" />
+                          <TextBlock Grid.Column="2" Classes="dialog-text visualizer-value" Text="{Binding ValueText}"
+                                     FontSize="{Binding FontSize}" VerticalAlignment="Center" />
+                        </Grid>
+                        <CheckBox Classes="visualizer-toggle" IsChecked="{Binding IsChecked, Mode=TwoWay}" IsVisible="{Binding IsToggle}">
+                          <TextBlock Classes="dialog-text" Text="{Binding Label}" FontSize="{Binding FontSize}" />
+                        </CheckBox>
+                        <Grid ColumnDefinitions="2*,3*" IsVisible="{Binding IsColorMode}" Classes="visualizer-row">
+                          <TextBlock Classes="dialog-text" Text="{Binding Label}" FontSize="{Binding FontSize}" VerticalAlignment="Center" />
+                          <media:VisualizerColorModePicker Grid.Column="1" Margin="6 0" />
+                        </Grid>
+                        <Border IsVisible="{Binding IsColor}">
+                          <Grid ColumnDefinitions="2*,Auto,*,*,*" Classes="visualizer-row"
+                                IsVisible="{Binding ColorMode, Converter={StaticResource EnumEquals}, ConverterParameter=Fixed}">
+                            <TextBlock Classes="dialog-text" Text="{Binding Label}" FontSize="{Binding FontSize}" VerticalAlignment="Center"
+                                       TextTrimming="CharacterEllipsis" />
+                            <Border Grid.Column="1" Classes="visualizer-swatch" Background="{Binding Swatch}" />
+                            <Slider Grid.Column="2" Classes="visualizer-slider" Minimum="0" Maximum="1" Value="{Binding Red, Mode=TwoWay}" />
+                            <Slider Grid.Column="3" Classes="visualizer-slider" Minimum="0" Maximum="1" Value="{Binding Green, Mode=TwoWay}" />
+                            <Slider Grid.Column="4" Classes="visualizer-slider" Minimum="0" Maximum="1" Value="{Binding Blue, Mode=TwoWay}" />
+                          </Grid>
+                        </Border>
+                      </StackPanel>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </ScrollViewer>
+            </Grid>
+          </Border>
+        </DataTemplate>
+      </TabControl.ContentTemplate>
+    </TabControl>
+    <Grid Grid.Row="1" ColumnDefinitions="*,*,*" Margin="0 10 0 0">
+      <Button Classes="dialog-button" IsVisible="{Binding IsEditing}" Margin="0 0 4 0" Command="{Binding ResetCommand}">
+        <TextBlock Classes="dialog-text" Text="{ext:loc LcdMod_MediaPlayer_VisualizerReset}" FontSize="{Binding FontSize}" />
+      </Button>
+      <Button Grid.Column="1" Classes="dialog-button" Margin="4 0 4 0" Command="{Binding SaveUserCommand}">
+        <TextBlock Classes="dialog-text" Text="{ext:loc LcdMod_MediaPlayer_VisualizerSaveUser}" FontSize="{Binding FontSize}" />
+      </Button>
+      <Button Grid.Column="2" Classes="dialog-button" Margin="4 0 0 0" Command="{Binding LoadUserCommand}"
+              IsEnabled="{Binding HasUserSettings}">
+        <TextBlock Classes="dialog-text" Text="{ext:loc LcdMod_MediaPlayer_VisualizerLoadUser}" FontSize="{Binding FontSize}" />
+      </Button>
+    </Grid>
+    <Grid Grid.Row="2" ColumnDefinitions="*,*" Margin="0 8 0 0">
+      <Button Classes="dialog-button" Margin="0 0 4 0" Command="{Binding XmlCommand}">
+        <TextBlock Classes="dialog-text" Text="{ext:loc LcdMod_MediaPlayer_VisualizerXml}" FontSize="{Binding FontSize}" />
+      </Button>
+      <Button Grid.Column="1" Classes="dialog-button primary" Margin="4 0 0 0" Command="{Binding CloseCommand}">
+        <TextBlock Classes="dialog-text" Text="{ext:loc LcdMod_Common_Button_Close}" FontSize="{Binding FontSize}" />
+      </Button>
+    </Grid>
+  </Grid>
+</Window>

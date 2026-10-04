@@ -1051,6 +1051,9 @@ Click [color:#0000FF]""[loc]BlockPropertyTitle_TextPanelShowTextPanel[/loc]""[/c
         [ProtoMember(10)] public string[] PlaylistTitles { get; set; } = Array.Empty<string>();
         [ProtoMember(11)] public int PlaylistIndex { get; set; } = -1;
         [ProtoMember(12)] public int ShuffleSeed { get; set; }
+        [ProtoMember(13)] public MediaVisualizerInstanceSettings[] VisualizerInstances { get; set; } =
+            Array.Empty<MediaVisualizerInstanceSettings>();
+        [ProtoMember(14)] public bool VisualizerInstancesConfigured { get; set; }
 
         public override ConfigComponent Clone()
         {
@@ -1067,7 +1070,9 @@ Click [color:#0000FF]""[loc]BlockPropertyTitle_TextPanelShowTextPanel[/loc]""[/c
                 PlaylistPaths = ConfigComponentClone.Copy(PlaylistPaths),
                 PlaylistTitles = ConfigComponentClone.Copy(PlaylistTitles),
                 PlaylistIndex = PlaylistIndex,
-                ShuffleSeed = ShuffleSeed
+                ShuffleSeed = ShuffleSeed,
+                VisualizerInstances = MediaVisualizerInstanceSettings.Copy(VisualizerInstances),
+                VisualizerInstancesConfigured = VisualizerInstancesConfigured
             };
         }
     }

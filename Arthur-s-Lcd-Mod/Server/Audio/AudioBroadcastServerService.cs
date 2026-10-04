@@ -505,10 +505,7 @@ namespace LcdMod.Server.Audio
             return Vector3D.DistanceSquared(character.GetPosition(), block.GetPosition()) <= maxDistanceSquared;
         }
 
-        static bool IsAllowedSender(ulong senderSteamId)
-        {
-            return MyAPIGateway.Session != null && MyAPIGateway.Session.IsUserAdmin(senderSteamId);
-        }
+        static bool IsAllowedSender(ulong senderSteamId) => MyAPIGateway.Session.IsUserAdmin(senderSteamId);
 
         bool TryConsumeCooldown(ulong senderSteamId)
         {

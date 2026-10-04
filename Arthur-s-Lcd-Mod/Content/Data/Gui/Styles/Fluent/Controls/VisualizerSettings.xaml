@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Styles xmlns="https://github.com/ArthurGamerHD/Adk">
+  <Style Selector="TextBlock.visualizer-header">
+    <Setter Property="Foreground" Value="{DynamicResource accentColor}" />
+    <Setter Property="Margin" Value="0 10 0 2" />
+  </Style>
+  <Style Selector="Grid.visualizer-row">
+    <Setter Property="MinHeight" Value="28" />
+  </Style>
+  <Style Selector="Slider.visualizer-slider">
+    <Setter Property="Width" Value="NaN" />
+    <Setter Property="Height" Value="26" />
+    <Setter Property="Margin" Value="6 0" />
+  </Style>
+  <Style Selector="TextBlock.visualizer-value">
+    <Setter Property="MinWidth" Value="56" />
+    <Setter Property="TextAlignment" Value="Right" />
+  </Style>
+  <Style Selector="Border.visualizer-swatch">
+    <Setter Property="Width" Value="22" />
+    <Setter Property="Height" Value="22" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="Margin" Value="6 0" />
+  </Style>
+  <Style Selector="CheckBox.visualizer-toggle">
+    <Setter Property="MinHeight" Value="28" />
+    <Setter Property="Margin" Value="0 1" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+  </Style>
+</Styles>
