@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window xmlns="https://github.com/ArthurGamerHD/Adk"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:cargo="using:LcdMod.Client.Apps.CargoFilled"
+        xmlns:ext="using:LcdMod.Client.Apps.Views.Extensions"
+        x:Class="LcdMod.Client.Apps.CargoFilled.ContainerActionView"
+        x:DataType="cargo:ContainerActionViewModel"
+        Title="{Binding Title}" Width="480" Height="440" MinWidth="320" MinHeight="260"
+        Padding="14 4 14 14">
+  <Window.Styles>
+    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/Dialogs.xaml" />
+  </Window.Styles>
+  <Grid RowDefinitions="*,Auto">
+    <StackPanel Spacing="10" Width="300" VerticalAlignment="Center" IsVisible="{Binding IsChoosingTransfer}">
+      <Button Classes="dialog-button primary" Height="44" Command="{Binding SendCommand}">
+        <TextBlock Classes="dialog-text" Text="{ext:loc LcdMod_Transfer_Send}" FontSize="{Binding FontSize}" />
+      </Button>
+      <Button Classes="dialog-button primary" Height="44" Command="{Binding ReceiveCommand}">
+        <TextBlock Classes="dialog-text" Text="{ext:loc LcdMod_Transfer_Receive}" FontSize="{Binding FontSize}" />
+      </Button>
+      <Button Classes="dialog-button primary" Height="44" Command="{Binding BalanceCommand}">
+        <TextBlock Classes="dialog-text" Text="{ext:loc LcdMod_Transfer_Balance}" FontSize="{Binding FontSize}" />
+      </Button>
+    </StackPanel>
+    <Border Classes="dialog-panel" IsVisible="{Binding IsChoosingRows}">
+      <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <ItemsControl ItemsSource="{Binding Rows}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <VirtualizingStackPanel />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="cargo:ContainerChoiceRow">
+              <Button Margin="0 0 0 2" Classes="{Binding Classes}" Command="{Binding Command}" Height="32">
+                <TextBlock Classes="dialog-text" Text="{Binding Label}" FontSize="{Binding FontSize}" VerticalAlignment="Center" />
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+    </Border>
+    <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,*,Auto" Margin="0 10 0 0" IsVisible="{Binding IsChoosingRows}">
+      <Button Classes="dialog-button" Command="{Binding BackCommand}">
+        <TextBlock Classes="dialog-text" Text="{ext:loc LcdMod_Transfer_Back}" FontSize="{Binding FontSize}" />
+      </Button>
+      <Button Grid.Column="1" Classes="dialog-button" Margin="8 0 0 0" Command="{Binding ToggleAllCommand}">
+        <TextBlock Classes="dialog-text" Text="{ext:loc LcdMod_Transfer_All}" FontSize="{Binding FontSize}" />
+      </Button>
+      <Button Grid.Column="3" Classes="dialog-button primary" Command="{Binding NextCommand}"
+              IsEnabled="{Binding CanContinue}" IsVisible="{Binding IsChoosingTargets}">
+        <TextBlock Classes="dialog-text" Text="{ext:loc LcdMod_Transfer_Next}" FontSize="{Binding FontSize}" />
+      </Button>
+      <Button Grid.Column="3" Classes="dialog-button primary" Command="{Binding ApplyCommand}"
+              IsEnabled="{Binding CanApply}" IsVisible="{Binding IsChoosingItems}">
+        <TextBlock Classes="dialog-text" Text="{Binding ApplyText}" FontSize="{Binding FontSize}" />
+      </Button>
+    </Grid>
+  </Grid>
+</Window>

@@ -1,15 +1,14 @@
+using LcdMod.Common.Mvvm;
 using System;
 using System.Collections.Generic;
-using LcdMod.Client.Gui.ControlsTemplates;
-using LcdMod.Client.Gui.Tooltip;
 using Sandbox.ModAPI;
 using VRageMath;
 
 namespace LcdMod.Client.Gui.UserControls.Power
 {
-    internal sealed class PowerEntry : ControlModelBase
+    internal sealed class PowerEntry : ObservableObject
     {
-        Func<IList<ITooltipLine>> _getDetails;
+        Func<IList<PowerDetailLine>> _getDetails;
 
         public long EntryId { get; private set; }
         public IMyTerminalBlock Entity { get; private set; }
@@ -39,7 +38,7 @@ namespace LcdMod.Client.Gui.UserControls.Power
             float centerIconScale = 1f,
             string blockIcon = "",
             IMyTerminalBlock entity = null,
-            Func<IList<ITooltipLine>> getDetails = null)
+            Func<IList<PowerDetailLine>> getDetails = null)
         {
             Update(
                 entryId,
@@ -66,7 +65,7 @@ namespace LcdMod.Client.Gui.UserControls.Power
             float centerIconScale = 1f,
             string blockIcon = "",
             IMyTerminalBlock entity = null,
-            Func<IList<ITooltipLine>> getDetails = null)
+            Func<IList<PowerDetailLine>> getDetails = null)
         {
             EntryId = entryId;
             Entity = entity;
@@ -81,16 +80,16 @@ namespace LcdMod.Client.Gui.UserControls.Power
             _getDetails = getDetails ?? _getDetails;
         }
 
-        public IList<ITooltipLine> GetDetails()
+        /// <summary>True when the entry has its own details (batteries, jump drives) worth a flyout.</summary>
+        public bool HasDetails => _getDetails != null;
+
+        public IList<PowerDetailLine> GetDetails()
         {
             var details = _getDetails?.Invoke();
             if (details != null)
                 return details;
 
-            return new List<ITooltipLine>
-            {
-                new StaticTooltipLine(PercentText)
-            };
+            return new List<PowerDetailLine> { new PowerDetailLine(PercentText) };
         }
     }
 }

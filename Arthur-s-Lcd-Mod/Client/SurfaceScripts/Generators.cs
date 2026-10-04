@@ -29,8 +29,6 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override IApp App => _app;
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
-        public override List<Control> InteractiveList => _app.VisualChildren as List<Control>;
-        protected override bool RendersInteractiveEntriesInGetSprites => true;
         protected override string DefaultTitle => TITLE;
 
         public GeneratorsSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
@@ -50,6 +48,7 @@ namespace LcdMod.Client.SurfaceScripts
             if (_app == null)
                 _app = new GeneratorsApp(this);
 
+            EnsureRetainedAppView(_app);
             _app.Update();
             RenderSprites();
         }
@@ -58,9 +57,8 @@ namespace LcdMod.Client.SurfaceScripts
         {
             var sprites = new List<MySprite>();
             AddBackground(sprites);
-            DrawTitle(sprites);
             if (_app != null)
-                sprites.AddRange(_app.GetSprites());
+                DrawRetainedAppView(sprites);
             return sprites;
         }
     }

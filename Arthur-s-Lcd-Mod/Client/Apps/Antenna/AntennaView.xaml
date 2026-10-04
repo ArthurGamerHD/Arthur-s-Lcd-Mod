@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    xmlns="https://github.com/ArthurGamerHD/Adk"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:antenna="using:LcdMod.Client.Gui.UserControls.Antenna"
+    xmlns:styling="using:Adk.Gui.Styling"
+    x:Class="LcdMod.Client.Apps.Antenna.AntennaView"
+    x:DataType="LcdMod.Client.Apps.Antenna.AntennaViewModel">
+  <UserControl.Styles>
+    <styling:StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/AntennaEntryControl.xaml" />
+  </UserControl.Styles>
+  <Grid>
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+      <ItemsControl ItemsSource="{Binding Entries}" x:Name="PART_AntennaPresenter">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <UniformGrid Columns="{Binding Columns}" VerticalAlignment="Top" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="LcdMod.Client.Gui.UserControls.Antenna.AntennaEntry">
+            <antenna:AntennaEntryControl Title="{Binding Name}"
+                                         StatusIcon="{Binding StatusIcon}"
+                                         StatusText="{Binding StatusText}"
+                                         StatusColor="{Binding StatusColor}"
+                                         Foreground="{Binding TextColor}"
+                                         CardBackground="{Binding CardBackground}"
+                                         CardShadow="{Binding CardShadow}"
+                                         LineColor="{Binding LineColor}"
+                                         LineThickness="{Binding LineThickness}"
+                                         IconMargin="{Binding IconMargin}" />
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

@@ -1,0 +1,58 @@
+<Styles xmlns="https://github.com/ArthurGamerHD/Adk"
+        xmlns:controls="using:LcdMod.Client.Apps.Controls">
+  <Style Selector="controls|MultiProgressPanel">
+    <Setter Property="FontSize" Value="{DynamicResource fontScale}" />
+    <Setter Property="FontFamily" Value="{DynamicResource textFont}" />
+    <Setter Property="Foreground" Value="{DynamicResource fontColor}" />
+    <Setter Property="FirstBrush" Value="{DynamicResource headerColor}" />
+    <Setter Property="SecondBrush" Value="{DynamicResource fontColor}" />
+    <Setter Property="ThirdBrush" Value="{DynamicResource warningColor}" />
+    <Setter Property="Track" Value="{DynamicResource surfaceContainerHighestColor}" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Grid ColumnDefinitions="Auto,*">
+          <Grid Width="{TemplateBinding FontSize, Converter={StaticResource Multiply}, ConverterParameter=64}"
+                Height="{TemplateBinding FontSize, Converter={StaticResource Multiply}, ConverterParameter=64}" VerticalAlignment="Center">
+            <!-- Paint all completion values on one ring. Earlier stages cover later stages. -->
+            <Arc HorizontalAlignment="Stretch" VerticalAlignment="Stretch" StartAngle="-90"
+                 StrokeThickness="{TemplateBinding FontSize, Converter={StaticResource Multiply}, ConverterParameter=10.24}"
+                 Stroke="{TemplateBinding Track}"
+                 SweepAngle="360" />
+            <Arc HorizontalAlignment="Stretch" VerticalAlignment="Stretch" StartAngle="-90"
+                 StrokeThickness="{TemplateBinding FontSize, Converter={StaticResource Multiply}, ConverterParameter=10.24}"
+                 Stroke="{TemplateBinding ThirdBrush}" StrokeLineCap="Round"
+                 SweepAngle="{TemplateBinding ThirdValue, Converter={StaticResource Multiply}, ConverterParameter=360}" />
+            <Arc HorizontalAlignment="Stretch" VerticalAlignment="Stretch" StartAngle="-90"
+                 StrokeThickness="{TemplateBinding FontSize, Converter={StaticResource Multiply}, ConverterParameter=10.24}"
+                 Stroke="{TemplateBinding SecondBrush}" StrokeLineCap="Round"
+                 SweepAngle="{TemplateBinding SecondValue, Converter={StaticResource Multiply}, ConverterParameter=360}" />
+            <Arc HorizontalAlignment="Stretch" VerticalAlignment="Stretch" StartAngle="-90"
+                 StrokeThickness="{TemplateBinding FontSize, Converter={StaticResource Multiply}, ConverterParameter=10.24}"
+                 Stroke="{TemplateBinding FirstBrush}" StrokeLineCap="Round"
+                 SweepAngle="{TemplateBinding FirstValue, Converter={StaticResource Multiply}, ConverterParameter=360}" />
+          </Grid>
+          <Grid Grid.Column="1" RowDefinitions="Auto,Auto,Auto" Margin="10,0,0,0" VerticalAlignment="Center">
+            <Grid Grid.Row="0" ColumnDefinitions="Auto,*">
+              <Border Background="{TemplateBinding FirstBrush}" Width="8" Height="8" CornerRadius="4" VerticalAlignment="Center" Margin="0,0,6,0" />
+              <TextBlock Grid.Column="1" Text="{TemplateBinding FirstText}" TextTrimming="CharacterEllipsis"
+                         FontFamily="{TemplateBinding FontFamily}" Foreground="{TemplateBinding Foreground}"
+                         FontSize="{TemplateBinding FontSize, Converter={StaticResource FontSizeMultiplier}, ConverterParameter=0.65, ConverterCulture=en-US}" />
+            </Grid>
+            <Grid Grid.Row="1" ColumnDefinitions="Auto,*">
+              <Border Background="{TemplateBinding SecondBrush}" Width="8" Height="8" CornerRadius="4" VerticalAlignment="Center" Margin="0,0,6,0" />
+              <TextBlock Grid.Column="1" Text="{TemplateBinding SecondText}" TextTrimming="CharacterEllipsis"
+                         FontFamily="{TemplateBinding FontFamily}" Foreground="{TemplateBinding Foreground}"
+                         FontSize="{TemplateBinding FontSize, Converter={StaticResource FontSizeMultiplier}, ConverterParameter=0.65, ConverterCulture=en-US}" />
+            </Grid>
+            <Grid Grid.Row="2" ColumnDefinitions="Auto,*">
+              <Border Background="{TemplateBinding ThirdBrush}" Width="8" Height="8" CornerRadius="4" VerticalAlignment="Center" Margin="0,0,6,0" />
+              <TextBlock Grid.Column="1" Text="{TemplateBinding ThirdText}" TextTrimming="CharacterEllipsis"
+                         FontFamily="{TemplateBinding FontFamily}" Foreground="{TemplateBinding Foreground}"
+                         FontSize="{TemplateBinding FontSize, Converter={StaticResource FontSizeMultiplier}, ConverterParameter=0.65, ConverterCulture=en-US}" />
+            </Grid>
+          </Grid>
+        </Grid>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+</Styles>

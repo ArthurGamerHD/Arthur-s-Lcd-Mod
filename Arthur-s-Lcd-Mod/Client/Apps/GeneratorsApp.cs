@@ -9,6 +9,7 @@ namespace LcdMod.Client.Apps
     // ReSharper disable once PartialTypeWithSinglePart
     internal sealed partial class GeneratorsApp : PowerApp
     {
+        readonly Generators.GeneratorsViewModel _viewModel;
         static readonly PowerEntryDefinition[] Definitions =
         {
             new PowerEntryDefinition("solar", "DisplayName_BlockGroup_SolarPanels", "Solar Panels"),
@@ -19,10 +20,19 @@ namespace LcdMod.Client.Apps
         };
 
         protected override PowerEntryDefinition[] EntryDefinitions => Definitions;
+        internal override float WindowRenderScaling => CardScale;
 
         public GeneratorsApp(IAppHost host) : base(host)
         {
+            _viewModel = new Generators.GeneratorsViewModel(this);
+            SetContent(new Generators.GeneratorsView { DataContext = _viewModel });
             InitializeEntries();
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            _viewModel.Refresh();
         }
 
         protected override bool TryMapProducerType(string typeId, IMyPowerProducer producer, out string entryKey)

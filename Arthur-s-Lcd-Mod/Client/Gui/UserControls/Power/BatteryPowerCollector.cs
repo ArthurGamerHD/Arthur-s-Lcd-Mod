@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.GridData;
-using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Helpers;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI.Ingame;
@@ -281,46 +280,34 @@ namespace LcdMod.Client.Gui.UserControls.Power
             return HeaderColor;
         }
 
-        static readonly Dictionary<long, DynamicTooltipLine> ToggleModeCache = new Dictionary<long, DynamicTooltipLine>();
-        
-        static IList<ITooltipLine> BuildBatteryDetails(IMyBatteryBlock battery)
+        static IList<PowerDetailLine> BuildBatteryDetails(IMyBatteryBlock battery)
         {
-            var lines = new List<ITooltipLine>();
+            var lines = new List<PowerDetailLine>();
             if (battery == null)
                 return lines;
 
             float ratio = GetRatio(battery);
-            lines.Add(new StaticTooltipLine(FormatLabelWithColon(LocHelper.GetLoc("RadialMenuGroupTitle_Power")) + " " + FormatingHelper.PercentageToString(ratio)));
-            lines.Add(new StaticTooltipLine(LocHelper.GetLoc("BlockPropertiesText_StoredPower") + FormatingHelper.MegaWattHoursToString(battery.CurrentStoredPower) + " / " + FormatingHelper.WattHoursToString(battery.MaxStoredPower)));
-            lines.Add(new StaticTooltipLine(LocHelper.GetLoc("BlockPropertyProperties_CurrentInput") + FormatingHelper.MegaWattsToString((battery.CurrentInput - battery.CurrentOutput)) 
+            lines.Add(new PowerDetailLine(FormatLabelWithColon(LocHelper.GetLoc("RadialMenuGroupTitle_Power")) + " " + FormatingHelper.PercentageToString(ratio)));
+            lines.Add(new PowerDetailLine(LocHelper.GetLoc("BlockPropertiesText_StoredPower") + FormatingHelper.MegaWattHoursToString(battery.CurrentStoredPower) + " / " + FormatingHelper.WattHoursToString(battery.MaxStoredPower)));
+            lines.Add(new PowerDetailLine(LocHelper.GetLoc("BlockPropertyProperties_CurrentInput") + FormatingHelper.MegaWattsToString((battery.CurrentInput - battery.CurrentOutput)) 
                                                       // display I/O if is both charging and discharging at the same time
                                                       + (battery.CurrentInput  != 0 && battery.CurrentOutput != 0 ?  $" (+{FormatingHelper.MegaWattsToString(battery.CurrentInput)},-{FormatingHelper.MegaWattsToString(battery.CurrentOutput)})" : "")));
-            DynamicTooltipLine toggleMode;
-            if (!ToggleModeCache.TryGetValue(battery.EntityId, out toggleMode))
-            {
-                toggleMode = new DynamicTooltipLine(
-                    () => FormatLabelWithColon(LocHelper.GetLoc("BlockPropertyTitle_ChargeMode")) + " " + battery.ChargeMode,
-                    () => true,
-                    () => battery,
-                    () => (o, o1) => CycleBatteryMode(battery),
-                    () => battery.HasLocalPlayerAccess() ? CursorType.Hand : CursorType.No,
-                    () => AudioHelper.HudClick);
-                ToggleModeCache[battery.EntityId] = toggleMode;
-            }
-
-            lines.Add(toggleMode);
+            lines.Add(new PowerDetailLine(
+                () => FormatLabelWithColon(LocHelper.GetLoc("BlockPropertyTitle_ChargeMode")) + " " + battery.ChargeMode,
+                () => CycleBatteryMode(battery),
+                battery.HasLocalPlayerAccess));
             
             float netRate = battery.CurrentInput - battery.CurrentOutput;
 
             if (netRate > 0)
             {
-                lines.Add(new StaticTooltipLine(LocHelper.GetLoc("BlockPropertiesText_RechargedIn") +
+                lines.Add(new PowerDetailLine(LocHelper.GetLoc("BlockPropertiesText_RechargedIn") +
                                                 FormatingHelper.FormatTimeHours(
                                                     (battery.MaxStoredPower - battery.CurrentStoredPower) / netRate)));
             }
             else
             {
-                lines.Add(new StaticTooltipLine(LocHelper.GetLoc("BlockPropertiesText_DepletedIn") +
+                lines.Add(new PowerDetailLine(LocHelper.GetLoc("BlockPropertiesText_DepletedIn") +
                                                 FormatingHelper.FormatTimeHours(battery.CurrentStoredPower /
                                                     -netRate)));
             }

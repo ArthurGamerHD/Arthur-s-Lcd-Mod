@@ -41,9 +41,6 @@ namespace LcdMod.Client.SurfaceScripts
 
         CargoFilledApp _app;
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
-public override List<Control> InteractiveList => _app.VisualChildren as List<Control>;
-        protected override bool RendersInteractiveEntriesInGetSprites => true;
-
         public CargoFilledSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)
         {
         }
@@ -60,6 +57,7 @@ public override List<Control> InteractiveList => _app.VisualChildren as List<Con
             if (_app == null)
                 _app = new CargoFilledApp(this);
 
+            EnsureRetainedAppView(_app);
             UpdateViewBox();
             _app.Update();
 
@@ -76,8 +74,7 @@ public override List<Control> InteractiveList => _app.VisualChildren as List<Con
             }
 
             AddBackground(sprites);
-            DrawTitle(sprites);
-            sprites.AddRange(_app.GetSprites());
+            DrawRetainedAppView(sprites);
             return sprites;
         }
     }

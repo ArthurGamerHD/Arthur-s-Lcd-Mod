@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl xmlns="https://github.com/ArthurGamerHD/Adk"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:LcdMod.Client.Apps.Controls"
+             xmlns:power="using:LcdMod.Client.Apps.PowerFilled"
+             x:Class="LcdMod.Client.Apps.PowerFilled.PowerFilledView"
+             x:DataType="LcdMod.Client.Apps.PowerFilled.PowerFilledViewModel">
+  <UserControl.Styles>
+    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/Cards.xaml" />
+    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/Slots.xaml" />
+    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/PowerDetails.xaml" />
+  </UserControl.Styles>
+  <Grid RowDefinitions="* Auto">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+      <Grid>
+        <ItemsControl ItemsSource="{Binding CompactEntries}" IsVisible="{Binding IsCompact}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <UniformGrid Columns="{Binding Columns}" VerticalAlignment="Top" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="LcdMod.Client.Apps.PowerFilled.PowerDisplayEntry">
+              <power:PowerDetailsButton Classes="power-details-button" HasDetails="{Binding HasDetails}">
+                <controls:FillableSlot Classes="card" Texture="{Binding Texture}" Ratio="{Binding Percentage}"
+                                       FillColor="{Binding FillColor}" IconColor="{Binding Foreground}"
+                                       DrawCenterIcon="{Binding DrawCenterIcon}"
+                                       CenterIconRotation="{Binding CenterIconRotation}"
+                                       CenterIconScale="{Binding CenterIconScale}"
+                                       Label="{Binding PercentText}" />
+              </power:PowerDetailsButton>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <ItemsControl ItemsSource="{Binding CardEntries}" IsVisible="{Binding IsCard}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <UniformGrid Columns="{Binding Columns}" VerticalAlignment="Top" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="LcdMod.Client.Apps.PowerFilled.PowerDisplayEntry">
+              <power:PowerDetailsButton Classes="power-details-button" HasDetails="{Binding HasDetails}">
+                <controls:BlockPropertyPercentage Classes="card" ItemIcon="{Binding Icon}" Label="{Binding Label}"
+                                                  Value="{Binding Percentage}" ValueText="{Binding PercentText}" />
+              </power:PowerDetailsButton>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </Grid>
+    </ScrollViewer>
+    <Border Grid.Row="1" Background="{Binding FooterBackground}" IsVisible="{Binding HasFooter}">
+      <ItemsControl ItemsSource="{Binding FooterRows}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="LcdMod.Client.Apps.PowerFilled.PowerFooterRow">
+            <Grid Classes="power-footer-row" Height="{Binding Height}">
+              <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <controls:FillableSlot Width="{Binding IconSize}" Height="{Binding IconSize}"
+                                       Texture="{Binding Texture}" Ratio="{Binding Ratio}"
+                                       FillColor="{Binding StatusColor}" IconColor="{Binding Foreground}"
+                                       DrawCenterIcon="{Binding DrawCenterIcon}"
+                                       CenterIconScale="{Binding CenterIconScale}" />
+                <TextBlock Classes="power-footer-text" Text="{Binding ChargeText}" Margin="{Binding TextMargin}"
+                           FontSize="{Binding FontSize}" Foreground="{Binding Foreground}" />
+              </StackPanel>
+              <TextBlock Classes="power-footer-text" Text="{Binding StatusText}" HorizontalAlignment="Center"
+                         FontSize="{Binding FontSize}" Foreground="{Binding StatusColor}" />
+              <TextBlock Classes="power-footer-text" Text="{Binding RightText}" HorizontalAlignment="Right"
+                         FontSize="{Binding FontSize}" Foreground="{Binding RightColor}" />
+            </Grid>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </Border>
+  </Grid>
+</UserControl>

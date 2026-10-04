@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.GridData;
-using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Helpers;
 using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
@@ -246,23 +245,23 @@ namespace LcdMod.Client.Gui.UserControls.Power
             _standbyEntriesBuffer.Clear();
         }
 
-        static IList<ITooltipLine> BuildJumpDriveDetails(IMyJumpDrive jumpDrive)
+        static IList<PowerDetailLine> BuildJumpDriveDetails(IMyJumpDrive jumpDrive)
         {
-            var lines = new List<ITooltipLine>();
+            var lines = new List<PowerDetailLine>();
             if (jumpDrive == null)
                 return lines;
 
             float ratio = GetRatio(jumpDrive);
-            lines.Add(new StaticTooltipLine("Charge: " + FormatingHelper.PercentageToString(ratio)));
-            lines.Add(new StaticTooltipLine("Stored: " + FormatMegawattHours(jumpDrive.CurrentStoredPower) + " / " + FormatMegawattHours(jumpDrive.MaxStoredPower)));
+            lines.Add(new PowerDetailLine("Charge: " + FormatingHelper.PercentageToString(ratio)));
+            lines.Add(new PowerDetailLine("Stored: " + FormatMegawattHours(jumpDrive.CurrentStoredPower) + " / " + FormatMegawattHours(jumpDrive.MaxStoredPower)));
 
             float hours;
             if (ratio >= FULL_THRESHOLD)
-                lines.Add(new StaticTooltipLine("Ready"));
+                lines.Add(new PowerDetailLine("Ready"));
             else if (TryGetTimeToFull(jumpDrive, out hours))
-                lines.Add(new StaticTooltipLine("Ready in: " + FormatingHelper.FormatTimeHours(hours)));
+                lines.Add(new PowerDetailLine("Ready in: " + FormatingHelper.FormatTimeHours(hours)));
             else
-                lines.Add(new StaticTooltipLine("Ready in: --:--"));
+                lines.Add(new PowerDetailLine("Ready in: --:--"));
 
             return lines;
         }

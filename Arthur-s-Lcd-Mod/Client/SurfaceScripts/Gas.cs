@@ -38,11 +38,19 @@ namespace LcdMod.Client.SurfaceScripts
             return DisplayModes.GridAndLegacy;
         }
 
+        protected override void LayoutChanged()
+        {
+            base.LayoutChanged();
+            if (_app != null)
+                _app.LayoutChanged();
+        }
+
         public override void SafeRun()
         {
             if (_app == null)
                 _app = new GasApp(this);
 
+            EnsureRetainedAppView(_app);
             UpdateViewBox();
             _app.Update();
 
@@ -59,8 +67,7 @@ namespace LcdMod.Client.SurfaceScripts
             }
 
             AddBackground(sprites);
-            DrawTitle(sprites);
-            sprites.AddRange(_app.GetSprites());
+            DrawRetainedAppView(sprites);
             return sprites;
         }
     }

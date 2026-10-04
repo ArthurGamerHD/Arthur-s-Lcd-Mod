@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Styles xmlns="https://github.com/ArthurGamerHD/Adk"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:LcdMod.Client.Apps.Controls">
+  <Style Selector="ProgressBar.donut">
+    <Setter Property="Background" Value="{DynamicResource surfaceContainerHighestColor}" />
+    <Setter Property="Foreground" Value="{DynamicResource accentColor}" />
+    <Setter Property="Minimum" Value="0" />
+    <Setter Property="Maximum" Value="1" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Grid>
+          <Arc Classes="donut-ring" StartAngle="-90" SweepAngle="360" Stroke="{TemplateBinding Background}" />
+          <Arc Classes="donut-ring" StartAngle="-90" StrokeLineCap="Round" Stroke="{TemplateBinding Foreground}"
+               SweepAngle="{TemplateBinding Percentage, Converter={StaticResource Multiply}, ConverterParameter=3.6, ConverterCulture=en-US}" />
+          <controls:FitTextBlock Text="{TemplateBinding Percentage, Converter={StaticResource PercentText}}"
+                                 Classes="donut-text" MinFontSize="0.2" MaxFontSize="0.55" />
+        </Grid>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="Arc.donut-ring">
+    <Setter Property="StrokeThickness" Value="{DynamicResource donutThickness}" />
+  </Style>
+  <Style Selector="controls|FitTextBlock.donut-text">
+    <Setter Property="Margin" Value="{DynamicResource donutTextMargin}" />
+    <Setter Property="FontFamily" Value="{DynamicResource textFont}" />
+    <Setter Property="Foreground" Value="{DynamicResource fontColor}" />
+  </Style>
+</Styles>

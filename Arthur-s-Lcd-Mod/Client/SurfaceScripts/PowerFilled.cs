@@ -5,6 +5,9 @@ using IAutoScroll = LcdMod.Client.Terminal.Controls.Generic.IAutoScroll;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Apps;
+using LcdMod.Client.Terminal.Controls;
+using LcdMod.Client.Utility;
+using VRage.ModAPI;
 using LcdMod.Client.Apps.Abstract;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
@@ -22,8 +25,14 @@ namespace LcdMod.Client.SurfaceScripts
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class PowerFilledSurfaceScript : InteractiveSurfaceScript,
         IAutoScroll,
+        IMultiDisplayMode,
         IUsesTerminalControl<ComboboxLinkType>
     {
+        public List<MyTerminalControlComboBoxItem> GetDisplayModes()
+        {
+            return DisplayModes.CompactAndCard;
+        }
+
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
         public const string ID = "BatteryGraph";
         public const string TITLE = MOD_PREFIX + "PowerFilled";
@@ -31,10 +40,7 @@ namespace LcdMod.Client.SurfaceScripts
         protected override string DefaultTitle => TITLE;
 
         public override IApp App => _app;
-        IApp _app;
-
-        public override List<Control> InteractiveList => _app?.VisualChildren as List<Control>;
-        protected override bool RendersInteractiveEntriesInGetSprites => true;
+        PowerFilledApp _app;
 
         public PowerFilledSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)
         {
@@ -54,6 +60,7 @@ namespace LcdMod.Client.SurfaceScripts
             if (_app == null)
                 _app = new PowerFilledApp(this);
 
+            EnsureRetainedAppView(_app);
             _app.Update();
             RenderSprites();
         }
@@ -62,11 +69,9 @@ namespace LcdMod.Client.SurfaceScripts
         {
             var sprites = new List<MySprite>();
             AddBackground(sprites);
-            DrawTitle(sprites);
+            DrawRetainedAppView(sprites);
             if (!_app.HasVisibleItems())
                 DrawMessage(sprites, LocHelper.Empty, "Warning", ColorComponent.ResolveWarningColor(), GeneralComponent.GetScale());
-            else
-                sprites.AddRange(_app.GetSprites());
             return sprites;
         }
     }

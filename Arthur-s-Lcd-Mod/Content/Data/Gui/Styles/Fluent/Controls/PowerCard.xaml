@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Styles xmlns="https://github.com/ArthurGamerHD/Adk"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:generators="using:LcdMod.Client.Apps.Generators">
+  <Style Selector="generators|PowerCardControl">
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Grid>
+          <Border Background="{TemplateBinding CardShadow}" CornerRadius="6" Margin="7.5 7.5 3.5 3.5" />
+          <Border Background="{TemplateBinding CardBackground}" CornerRadius="6" Margin="5.5" />
+          <Border BorderBrush="{TemplateBinding LineColor}" BorderThickness="{TemplateBinding LineThickness}" />
+          <Grid Margin="11" ColumnDefinitions="Auto *" RowDefinitions="22 *">
+            <ProgressBar Classes="donut" Width="110" Height="110" VerticalAlignment="Center" Grid.RowSpan="2"
+                         Value="{TemplateBinding Usage}" Foreground="{TemplateBinding UsageBrush}" />
+            <TextBlock Text="{TemplateBinding Title}"
+                       FontFamily="{TemplateBinding FontFamily}"
+                       FontSize="{TemplateBinding FontSize, Converter={StaticResource FontSizeMultiplier}, ConverterParameter=1.1, ConverterCulture=en-US}"
+                       Foreground="{TemplateBinding Foreground}"
+                       TextAlignment="Right" TextTrimming="CharacterEllipsis" VerticalAlignment="Top" Margin="0 0 4 0"
+                       Grid.Column="1" />
+            <TextBlock Text="{TemplateBinding InfoText}"
+                       FontFamily="{TemplateBinding FontFamily}"
+                       FontSize="{TemplateBinding FontSize, Converter={StaticResource FontSizeMultiplier}, ConverterParameter=0.9, ConverterCulture=en-US}"
+                       Foreground="{TemplateBinding Foreground}"
+                       TextAlignment="Right" VerticalAlignment="Top" Margin="0 8.8 6 0"
+                       Grid.Column="1" Grid.Row="1" />
+          </Grid>
+        </Grid>
+      </ControlTemplate>
+    </Setter>
+    <Setter Property="Height" Value="132" />
+    <Setter Property="FontSize" Value="{DynamicResource fontScale}" />
+    <Setter Property="FontFamily" Value="{DynamicResource textFont}" />
+  </Style>
+</Styles>
