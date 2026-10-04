@@ -1,13 +1,20 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 
 namespace LcdMod.Common.Mvvm
 {
-    public abstract class ObservableObject
+    public abstract class ObservableObject : INotifyPropertyChanged
     {
         public event Action<ObservableObject, string> PropertyChanged;
+        event PropertyChangedEventHandler INotifyPropertyChanged.PropertyChanged
+        {
+            add { StandardPropertyChanged += value; }
+            remove { StandardPropertyChanged -= value; }
+        }
+        event PropertyChangedEventHandler StandardPropertyChanged;
 
-        protected bool SetObservableProperty<T>(ref T field, T value, string propertyName)
+        protected bool RaiseAndSetIfChanged<T>(ref T field, T value, string propertyName)
         {
             if (EqualityComparer<T>.Default.Equals(field, value))
                 return false;
@@ -26,20 +33,38 @@ namespace LcdMod.Common.Mvvm
         void RaisePropertyChangedCore(string propertyName)
         {
             var handlers = PropertyChanged;
-            if (handlers == null)
-                return;
-
             Exception firstError = null;
-            foreach (Action<ObservableObject, string> handler in handlers.GetInvocationList())
+            if (handlers != null)
             {
-                try
+                foreach (Action<ObservableObject, string> handler in handlers.GetInvocationList())
                 {
-                    handler(this, propertyName);
+                    try
+                    {
+                        handler(this, propertyName);
+                    }
+                    catch (Exception e)
+                    {
+                        if (firstError == null)
+                            firstError = e;
+                    }
                 }
-                catch (Exception e)
+            }
+
+            var standardHandlers = StandardPropertyChanged;
+            if (standardHandlers != null)
+            {
+                var args = new PropertyChangedEventArgs(propertyName);
+                foreach (PropertyChangedEventHandler handler in standardHandlers.GetInvocationList())
                 {
-                    if (firstError == null)
-                        firstError = e;
+                    try
+                    {
+                        handler(this, args);
+                    }
+                    catch (Exception e)
+                    {
+                        if (firstError == null)
+                            firstError = e;
+                    }
                 }
             }
 

@@ -133,7 +133,7 @@ public sealed class ObservableProperties : IIncrementalGenerator
         builder.Append("            get { return ");
         builder.Append(property.Field.Name);
         builder.AppendLine("; }");
-        builder.Append("            set { SetObservableProperty(ref ");
+        builder.Append("            set { RaiseAndSetIfChanged(ref ");
         builder.Append(property.Field.Name);
         builder.Append(", value, \"");
         builder.Append(property.PropertyName);

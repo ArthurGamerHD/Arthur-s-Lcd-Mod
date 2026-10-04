@@ -296,12 +296,6 @@
     <data name="LcdMod_EightBallPool_CheatModeOff" xml:space="preserve">
     <value>Mode trampes: DESACTIVAT</value>
   </data>
-    <data name="LcdMod_EightBallPool_NewGamePrompt" xml:space="preserve">
-    <value>Vols començar una partida nova de billar de 8 boles?</value>
-  </data>
-    <data name="LcdMod_EightBallPool_Dismiss" xml:space="preserve">
-    <value>Tanca</value>
-  </data>
     <data name="LcdMod_EightBallPool_PlayerBreak" xml:space="preserve">
     <value>El jugador {0} trenca.</value>
   </data>
@@ -467,6 +461,9 @@
     <data name="LcdMod_Card" xml:space="preserve">
     <value>Targeta</value>
   </data>
+    <data name="LcdMod_Compact" xml:space="preserve">
+      <value>Compacte</value>
+    </data>
     <data name="LcdMod_Table" xml:space="preserve">
     <value>Taula</value>
   </data>
@@ -494,6 +491,9 @@
     <data name="LcdMod_CraftDialog_Title" xml:space="preserve">
     <value>Fabricació</value>
   </data>
+    <data name="LcdMod_CraftDialog_Multiplier" xml:space="preserve">
+      <value>Multiplicador</value>
+    </data>
     <data name="LcdMod_CraftDialog_Button_Craft" xml:space="preserve">
     <value>Fabricar</value>
   </data>
@@ -823,7 +823,7 @@ Esperarem una estona i després la reiniciarem per tu.</value>
     <value>Consulta el creixement, l’inventari, l’aigua i l’entorn.</value>
   </data>
   <data name="LcdMod_Ftue_StarMapPlanetDetails_Line1" xml:space="preserve">
-    <value>Fes clic en un planeta per veure informació detallada.</value>
+    <value>Selecciona un planeta i fes clic al botó d’informació de l’angle superior dret.</value>
   </data>
   <data name="LcdMod_Ftue_StarMapPlanetDetails_Line2" xml:space="preserve">
     <value>Consulta la gravetat, l’atmosfera, la temperatura, el vent i la posició.</value>
@@ -847,13 +847,54 @@ Esperarem una estona i després la reiniciarem per tu.</value>
     <value>Només es poden detectar senyals de ràdio més enllà de {0}.</value>
   </data>
   <data name="LcdMod_Ftue_RadarCamera_Line1" xml:space="preserve">
-    <value>Arrossega amb el botó dret per desplaçar la càmera del radar.</value>
+    <value>Drag to orbit the radar camera, middle-drag to pan.</value>
+    <comment>TODO_TRANSLATION</comment>
   </data>
   <data name="LcdMod_Ftue_RadarCamera_Line2" xml:space="preserve">
     <value>Desplaça't per fer zoom al mapa del radar.</value>
   </data>
   <data name="LcdMod_MediaPlayer_Title" xml:space="preserve">
     <value>Reproductor multimèdia - (experimental)</value>
+  </data>
+  <data name="LcdMod_Common_Button_Close" xml:space="preserve">
+    <value>Close</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_ConfigureVisualizer" xml:space="preserve">
+    <value>Configure visualizer</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_VisualizerSettings" xml:space="preserve">
+    <value>Visualizer settings</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_VisualizerInstanceEnabled" xml:space="preserve">
+    <value>Enabled</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_VisualizerReset" xml:space="preserve">
+    <value>Reset to defaults</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_VisualizerXml" xml:space="preserve">
+    <value>Export / import XML</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_VisualizerXmlTitle" xml:space="preserve">
+    <value>Visualizer settings XML</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_VisualizerXmlInvalid" xml:space="preserve">
+    <value>The visualizer settings XML could not be read: {0}</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_VisualizerSaveUser" xml:space="preserve">
+    <value>Save as my settings</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_VisualizerLoadUser" xml:space="preserve">
+    <value>Load my settings</value>
+    <comment>TODO_TRANSLATION</comment>
   </data>
   <data name="LcdMod_MediaPlayer_PausedTitleFormat" xml:space="preserve">
     <value>(En pausa) - {0}</value>
@@ -1383,6 +1424,24 @@ Esperarem una estona i després la reiniciarem per tu.</value>
     <value>SpriteCountDebug mode disabled.</value>
     <comment>TODO_TRANSLATION</comment>
   </data>
+  <data name="LcdMod_ChatCommand_VerifyFrameCache_Enabled_Message" xml:space="preserve">
+    <value>Frame cache verification enabled.</value>
+  </data>
+  <data name="LcdMod_ChatCommand_VerifyFrameCache_Disabled_Message" xml:space="preserve">
+    <value>Frame cache verification disabled.</value>
+  </data>
+  <data name="LcdMod_ChatCommand_StyleCache_Enabled_Message" xml:space="preserve">
+    <value>Style cache enabled.</value>
+  </data>
+  <data name="LcdMod_ChatCommand_StyleCache_Disabled_Message" xml:space="preserve">
+    <value>Style cache disabled; views reload styles from disk.</value>
+  </data>
+  <data name="LcdMod_ChatCommand_HotReload_Enabled_Message" xml:space="preserve">
+    <value>View hot reload enabled; rebuilt {0} of {1} views.</value>
+  </data>
+  <data name="LcdMod_ChatCommand_HotReload_Disabled_Message" xml:space="preserve">
+    <value>View hot reload disabled.</value>
+  </data>
   <data name="LcdMod_ChatCommand_VisibleClip_Enabled_Message" xml:space="preserve">
     <value>VisibleClip mode enabled.</value>
     <comment>TODO_TRANSLATION</comment>
@@ -1462,20 +1521,8 @@ Esperarem una estona i després la reiniciarem per tu.</value>
     <value>Select Target</value>
     <comment>TODO_TRANSLATION</comment>
   </data>
-  <data name="LcdMod_ButtonPad_TargetFormat" xml:space="preserve">
-    <value>Target: {0}</value>
-    <comment>TODO_TRANSLATION</comment>
-  </data>
   <data name="LcdMod_ButtonPad_SelectAction" xml:space="preserve">
     <value>Select Action</value>
-    <comment>TODO_TRANSLATION</comment>
-  </data>
-  <data name="LcdMod_ButtonPad_ActionFormat" xml:space="preserve">
-    <value>Action: {0}</value>
-    <comment>TODO_TRANSLATION</comment>
-  </data>
-  <data name="LcdMod_ButtonPad_ActionValueFormat" xml:space="preserve">
-    <value>Action: {0} = {1}</value>
     <comment>TODO_TRANSLATION</comment>
   </data>
   <data name="LcdMod_ButtonPad_ButtonColor" xml:space="preserve">
@@ -1741,5 +1788,68 @@ Esperarem una estona i després la reiniciarem per tu.</value>
   <data name="LcdMod_ButtonPad_ConfigureAction_ColorHexHelp" xml:space="preserve">
     <value>Hex color, for example #ff8800</value>
     <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_SpritePicker_Title" xml:space="preserve">
+    <value>Sprite Picker</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_SpritePicker_SearchPlaceholder" xml:space="preserve">
+    <value>Search sprites</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_SpritePicker_Empty" xml:space="preserve">
+    <value>No sprites found</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_SpritePicker_NoMatchesFormat" xml:space="preserve">
+    <value>No sprites match "{0}"</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_SpritePicker_SelectedFormat" xml:space="preserve">
+    <value>{0} selected</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_SpritePicker_MultiSelectHint" xml:space="preserve">
+    <value>Ctrl+click adds a sprite, Shift+click selects a range</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_Common_Button_Apply" xml:space="preserve">
+    <value>Apply</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_CraftDialog_CraftAll" xml:space="preserve">
+    <value>Craft all</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_CraftDialog_Amount" xml:space="preserve">
+    <value>Amount</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_PlanetaryMap_RenderSkybox" xml:space="preserve">
+    <value>Mostra el cel de fons</value>
+  </data>
+  <data name="LcdMod_StarMap_PlanetInfo" xml:space="preserve">
+    <value>Informació del planeta</value>
+  </data>
+  <data name="LcdMod_Games_NewGamePrompt" xml:space="preserve">
+    <value>Start a new game? The current game will be lost.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_Games_GameOver" xml:space="preserve">
+    <value>Game Over</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_Games_PlayAgain" xml:space="preserve">
+    <value>Play again?</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_VisualizerManageInstances" xml:space="preserve">
+    <value>Gestiona les instàncies</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_VisualizerAddInstance" xml:space="preserve">
+    <value>Afegeix una instància</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_VisualizerRemoveInstance" xml:space="preserve">
+    <value>Elimina</value>
   </data>
 </root>

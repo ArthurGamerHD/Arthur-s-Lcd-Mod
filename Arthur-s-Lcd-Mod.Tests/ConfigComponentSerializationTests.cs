@@ -8,6 +8,65 @@ namespace Arthur_s_Lcd_Mod.Tests;
 public sealed class ConfigComponentSerializationTests
 {
     [Fact]
+    public void EmptyVisualizerListRemainsConfiguredThroughCloneAndSerialization()
+    {
+        var config = new MediaPlayerConfigComponent
+        {
+            VisualizerInstances = Array.Empty<MediaVisualizerInstanceSettings>(),
+            VisualizerInstancesConfigured = true
+        };
+
+        var copy = (MediaPlayerConfigComponent)config.Clone();
+        Assert.True(copy.VisualizerInstancesConfigured);
+        Assert.Empty(copy.VisualizerInstances);
+
+        var restored = Serializer.DeepClone(config);
+        Assert.True(restored.VisualizerInstancesConfigured);
+        Assert.Empty(restored.VisualizerInstances);
+        Assert.False(new MediaPlayerConfigComponent().VisualizerInstancesConfigured);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void StarChartSkyboxToggleSurvivesSerializationAndClone(bool enabled)
+    {
+        var config = new StarMapConfigComponent { RenderSkybox = enabled };
+        Assert.Equal(enabled, ((StarMapConfigComponent)config.Clone()).RenderSkybox);
+        Assert.Equal(enabled, Serializer.DeepClone(config).RenderSkybox);
+    }
+
+    [Fact]
+    public void ExistingStarChartSettingsDefaultToRenderingTheSkybox()
+    {
+        Assert.True(new StarMapConfigComponent().RenderSkybox);
+        // ConfigComponent subtype 110, with an existing MapLayer field but no skybox field.
+        using var stream = new MemoryStream(new byte[] { 0xf2, 0x06, 0x02, 0x78, 0x02 });
+        var config = Serializer.Deserialize<StarMapConfigComponent>(stream);
+        Assert.True(config.RenderSkybox);
+        Assert.Equal(2, config.MapLayer);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void PlanetarySkyboxToggleSurvivesSerializationAndClone(bool enabled)
+    {
+        var config = new PlanetaryMapConfigComponent { RenderSkybox = enabled };
+        Assert.Equal(enabled, ((PlanetaryMapConfigComponent)config.Clone()).RenderSkybox);
+        Assert.Equal(enabled, Serializer.DeepClone(config).RenderSkybox);
+    }
+
+    [Fact]
+    public void ExistingPlanetarySettingsDefaultToRenderingTheSkybox()
+    {
+        Assert.True(new PlanetaryMapConfigComponent().RenderSkybox);
+        // Empty derived message at ConfigComponent's subtype tag 123: no field 16.
+        using var stream = new MemoryStream(new byte[] { 0xda, 0x07, 0x00 });
+        Assert.True(Serializer.Deserialize<PlanetaryMapConfigComponent>(stream).RenderSkybox);
+    }
+
+    [Fact]
     public void SurfaceConfig_RoundTripsLegacyAndConcreteIdentityFieldsIndependently()
     {
         var surface = new SurfaceConfig

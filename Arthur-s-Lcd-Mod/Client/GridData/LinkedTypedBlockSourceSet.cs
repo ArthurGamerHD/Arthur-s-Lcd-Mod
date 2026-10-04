@@ -1,4 +1,5 @@
 using System;
+using Adk.Gui.Collections.Reactive;
 using System.Collections.Generic;
 using LcdMod.Common.Helpers;
 using LcdMod.Common.Mvvm;
@@ -149,8 +150,7 @@ namespace LcdMod.Client.GridData
                         retained = true;
                         _sourceLogics.Add(logic);
                         _sources.Add(source);
-                        source.ItemAdded += OnSourceItemAdded;
-                        source.ItemRemoved += OnSourceItemRemoved;
+                        source.CollectionChanged += OnSourceCollectionChanged;
                     }
                 }
                 finally
@@ -179,8 +179,7 @@ namespace LcdMod.Client.GridData
         {
             foreach (var source in _sources)
             {
-                source.ItemAdded -= OnSourceItemAdded;
-                source.ItemRemoved -= OnSourceItemRemoved;
+                source.CollectionChanged -= OnSourceCollectionChanged;
             }
             foreach (var logic in _sourceLogics)
                 logic.Release(GridCapability.Blocks);
@@ -191,12 +190,7 @@ namespace LcdMod.Client.GridData
             _linkedGridIds.Clear();
         }
 
-        void OnSourceItemAdded(IObservableCollection<T> sender, T item)
-        {
-            RaiseChanged();
-        }
-
-        void OnSourceItemRemoved(IObservableCollection<T> sender, T item)
+        void OnSourceCollectionChanged(object sender, NotifyCollectionChangedEventArgs args)
         {
             RaiseChanged();
         }

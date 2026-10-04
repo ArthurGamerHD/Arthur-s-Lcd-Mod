@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using Generated;
 using LcdMod.Client.Gui;
@@ -20,41 +19,20 @@ namespace LcdMod.Client.Modules.EyeTracking
 {
     public class EyeTrackingModule : IModule<IEyeTracking>
     {
-        public static event Action<InteractiveSurfaceScript, ControlTemplate> OnControlPointerEnter;
-        public static event Action<InteractiveSurfaceScript, ControlTemplate> OnControlPointerLeave;
-        public static event Action<InteractiveSurfaceScript, ControlTemplate, ControlClickButton> OnControlClick;
+        public static InteractiveSurfaceScript CurrentPointerSurface { get; private set; }
+        public static InteractiveSurfaceScript LastPointerSurface { get; private set; }
 
         const double MAX_TRACKING_DISTANCE_METERS = 20d;
         const double MAX_TRACKING_DISTANCE_SQ = MAX_TRACKING_DISTANCE_METERS * MAX_TRACKING_DISTANCE_METERS;
         const long ACTIVE_SURFACE_TIMEOUT_FRAMES = 30;
-        const float MIN_DRAG_DELTA_PIXELS = 0.001f;
-        const float PRESERVED_CLICK_DRAG_THRESHOLD_PIXELS = 3f;
 
         readonly HashSet<IEyeTracking> _modules = new HashSet<IEyeTracking>();
         readonly List<IEyeTracking> _pendingModules = new List<IEyeTracking>();
 
         int _lastActiveNearbyCount;
-        ControlTemplate _pressedClickable;
-        object _pressedClickableDataContext;
         InteractiveSurfaceScript _pointerSurface;
-        ControlTemplate _pointerControl;
-        ControlTemplate _draggingControl;
-        IEyeTracking _draggingEntity;
-        Vector2 _lastDragPosition;
-        Vector2 _pendingDragDelta;
-        bool _draggingSecondary;
-        bool _draggingMoved;
-        bool _draggingPreservesPrimaryClick;
-        bool _suppressPrimaryReleaseClick;
-        bool _suppressSecondaryReleaseClick;
-        bool _suppressMiddleReleaseClick;
-        bool _suppressBackReleaseClick;
-        bool _suppressForwardReleaseClick;
-        bool _primaryWasPressed;
-        bool _secondaryWasPressed;
-        bool _middleWasPressed;
-        bool _backWasPressed;
-        bool _forwardWasPressed;
+        readonly PointerInputCapture<InteractiveSurfaceScript> _pointerButtons =
+            new PointerInputCapture<InteractiveSurfaceScript>(surface => surface.ResetPointerButtonInput());
 
         readonly IMyControl _moveCameraControl =
             MyAPIGateway.Input.GetGameControl(MyStringId.GetOrCompute("LOOKAROUND"));
@@ -73,13 +51,22 @@ namespace LcdMod.Client.Modules.EyeTracking
                 return;
 
             if (ReferenceEquals(_pointerSurface, instance))
-                UpdatePointerTarget(null, null);
+                UpdatePointerTarget(null);
+
+            if (ReferenceEquals(_pointerButtons.Current, instance))
+                UpdatePointerButtonTarget(null, false, false, false, false, false);
 
             _modules.Remove(instance);
         }
 
         public int Count => _modules.Count;
         public int ActiveCount => _lastActiveNearbyCount;
+
+        public static void ClearPointerHistory()
+        {
+            CurrentPointerSurface = null;
+            LastPointerSurface = null;
+        }
 
         public void Update()
         {
@@ -88,45 +75,28 @@ namespace LcdMod.Client.Modules.EyeTracking
 
             _pendingModules.Clear();
 
+            if (LcdTextEntryScreen.IsActive)
+                return;
+
             var player = MyAPIGateway.Session?.LocalHumanPlayer;
             var entity = player?.Controller?.ControlledEntity?.Entity as IMyShipController as MyCubeBlock;
 
-            if (MyAPIGateway.Gui.IsCursorVisible || (!_moveCameraControl.IsPressed() &&
-                ((entity?.BlockDefinition as MyCockpitDefinition)?.EnableShipControl ?? false)))
-            {
-                UpdatePointerTarget(null, null);
-                UpdateClickState(null, null, null);
-                _lastActiveNearbyCount = 0;
-                return;
-            }
-
-            if (LocalPlayerBlockStateHelper.IsBlockPlacerActive())
-            {
-                UpdatePointerTarget(null, null);
-                UpdateClickState(null, null, null);
-                _lastActiveNearbyCount = 0;
-                return;
-            }
-
             Vector3D cameraPos;
             Vector3D cameraForward;
-
-            if (!TryGetCameraRay(out cameraPos, out cameraForward))
+            if (MyAPIGateway.Gui.IsCursorVisible ||
+                !_moveCameraControl.IsPressed() &&
+                ((entity?.BlockDefinition as MyCockpitDefinition)?.EnableShipControl ?? false) ||
+                LocalPlayerBlockStateHelper.IsBlockPlacerActive() ||
+                !TryGetCameraRay(out cameraPos, out cameraForward))
             {
-                UpdatePointerTarget(null, null);
-                UpdateClickState(null, null, null);
+                _pointerButtons.Select(null, false);
+                UpdatePointerTarget(null);
                 _lastActiveNearbyCount = 0;
                 return;
             }
 
             var resolvedCount = 0;
-            ControlTemplate hoveredClickable = null;
-            IEyeTracking eyeTrackingEntity = null;
-            IEyeTracking tooltipInputEntity = null;
             IEyeTracking lookingScreen = null;
-            ControlClickButton? activeClickButton = GetActiveClickButton();
-            double hoveredDistanceSq = double.MaxValue;
-            double tooltipDistanceSq = double.MaxValue;
             double lookingDistanceSq = double.MaxValue;
 
             foreach (var screen in _modules)
@@ -143,8 +113,9 @@ namespace LcdMod.Client.Modules.EyeTracking
                     continue;
 
                 var blockPos = screen.Block.WorldMatrix.Translation;
+                var distanceSq = Vector3D.DistanceSquared(blockPos, cameraPos);
 
-                if (Vector3D.DistanceSquared(blockPos, cameraPos) > MAX_TRACKING_DISTANCE_SQ)
+                if (distanceSq > MAX_TRACKING_DISTANCE_SQ)
                     continue;
 
                 Vector2 lookAtCoordinates;
@@ -158,76 +129,31 @@ namespace LcdMod.Client.Modules.EyeTracking
                     screen.LookAt(lookAtCoordinates);
                     resolvedCount++;
 
-                    var distanceSq = Vector3D.DistanceSquared(blockPos, cameraPos);
-
                     if (distanceSq < lookingDistanceSq)
                     {
                         lookingDistanceSq = distanceSq;
                         lookingScreen = screen;
                     }
-
-                    var interactiveSurface = screen as InteractiveSurfaceScript;
-
-                    if (distanceSq < tooltipDistanceSq)
-                    {
-                        try
-                        {
-                            bool blocksPrimary = interactiveSurface.HasTooltipInputAtCursor(false);
-                            bool blocksSecondary = interactiveSurface.HasTooltipInputAtCursor(true);
-
-                            if (blocksPrimary || blocksSecondary)
-                            {
-                                tooltipDistanceSq = distanceSq;
-                                tooltipInputEntity = screen;
-                            }
-                        }
-                        catch (Exception e)
-                        {
-                            interactiveSurface.OnException(e);
-                        }
-                    }
-
-                    ControlTemplate clickable;
-
-                    if (TryGetHoveredClickable(screen, activeClickButton, out clickable))
-                    {
-                        if (distanceSq < hoveredDistanceSq)
-                        {
-                            hoveredDistanceSq = distanceSq;
-                            hoveredClickable = clickable;
-                            eyeTrackingEntity = screen;
-                        }
-                    }
                 }
             }
-
-            if (tooltipInputEntity != null && tooltipDistanceSq < hoveredDistanceSq)
-                eyeTrackingEntity = tooltipInputEntity;
 
             var pointerSurface = lookingScreen as InteractiveSurfaceScript;
-            ControlTemplate pointerControl = null;
-            if (pointerSurface != null)
-            {
-                try
-                {
-                    pointerSurface.TryResolveHitAtCursor(out pointerControl);
-                }
-                catch (Exception e)
-                {
-                    pointerSurface.OnException(e);
-                }
-            }
-
-            UpdatePointerTarget(pointerSurface, pointerControl);
+            UpdatePointerTarget(pointerSurface);
 
             try
             {
                 UpdateScrollState(lookingScreen);
-                UpdateClickState(hoveredClickable, eyeTrackingEntity, lookingScreen);
+                UpdatePointerButtonTarget(
+                    pointerSurface,
+                    HoldingClick,
+                    HoldingRightClick,
+                    HoldingMiddleClick,
+                    HoldingBackClick,
+                    HoldingForwardClick);
             }
-            catch (Exception e)
+            catch (System.Exception e)
             {
-                (lookingScreen as InteractiveSurfaceScript)?.OnException(e);
+                pointerSurface?.OnException(e);
             }
 
             _lastActiveNearbyCount = resolvedCount;
@@ -247,375 +173,42 @@ namespace LcdMod.Client.Modules.EyeTracking
         {
         }
 
-        void UpdateClickState(
-            ControlTemplate hoveredClickable,
-            IEyeTracking eyeTrackingEntity,
-            IEyeTracking lookingScreen)
+        void UpdatePointerButtonTarget(
+            InteractiveSurfaceScript surface,
+            bool primaryPressed,
+            bool secondaryPressed,
+            bool middlePressed,
+            bool backPressed,
+            bool forwardPressed)
         {
-            bool primaryPressed = MyAPIGateway.Input != null && HoldingClick;
-            bool secondaryPressed = MyAPIGateway.Input != null && HoldingRightClick;
-            bool middlePressed = MyAPIGateway.Input != null && HoldingMiddleClick;
-            bool backPressed = MyAPIGateway.Input != null && HoldingBackClick;
-            bool forwardPressed = MyAPIGateway.Input != null && HoldingForwardClick;
-            bool primaryStarted = primaryPressed && !_primaryWasPressed;
-            bool secondaryStarted = secondaryPressed && !_secondaryWasPressed;
-            bool middleStarted = middlePressed && !_middleWasPressed;
-            bool backStarted = backPressed && !_backWasPressed;
-            bool forwardStarted = forwardPressed && !_forwardWasPressed;
-            bool primaryReleased = !primaryPressed && _primaryWasPressed;
-            bool secondaryReleased = !secondaryPressed && _secondaryWasPressed;
-            bool middleReleased = !middlePressed && _middleWasPressed;
-            bool backReleased = !backPressed && _backWasPressed;
-            bool forwardReleased = !forwardPressed && _forwardWasPressed;
-            bool hasInputTarget = hoveredClickable != null || eyeTrackingEntity != null || lookingScreen != null || _draggingControl != null;
-            bool finishedDrag = false;
+            bool panelGap = surface == null;
+            if (surface != null)
+                surface = surface.PointerInputOwner;
+            if (surface != null && !surface.HandlesPointerButtonInput)
+                surface = null;
 
-            if (primaryStarted)
-            {
-                if (!TryBeginDrag(lookingScreen ?? eyeTrackingEntity, false))
-                {
-                    if (hoveredClickable != null && hoveredClickable.ClickOnPress)
-                    {
-                        HandleClickOnPress(hoveredClickable, eyeTrackingEntity);
-                        _suppressPrimaryReleaseClick = true;
-                        SetPressedClickable(hoveredClickable);
-                    }
-                    else
-                    {
-                        SetPressedClickable(hoveredClickable);
-                    }
-                }
-                else
-                {
-                    if (_draggingPreservesPrimaryClick)
-                    {
-                        SetPressedClickable(hoveredClickable);
-                    }
-                    else
-                    {
-                        _suppressPrimaryReleaseClick = true;
-                        SetPressedClickable(null);
-                    }
-                }
-            }
+            bool held = primaryPressed || secondaryPressed || middlePressed || backPressed || forwardPressed;
+            InteractiveSurfaceScript previous = _pointerButtons.Current;
+            bool previousAlive = previous != null && previous.Block != null && !previous.Block.MarkedForClose;
+            _pointerButtons.Select(surface, panelGap && held && previousAlive);
 
-            if (secondaryStarted)
-            {
-                if (!TryBeginDrag(lookingScreen ?? eyeTrackingEntity, true))
-                {
-                    SetPressedClickable(hoveredClickable);
-                }
-                else
-                {
-                    _suppressSecondaryReleaseClick = true;
-                    SetPressedClickable(null);
-                }
-            }
-
-            if (middleStarted && _draggingControl == null)
-                SetPressedClickable(hoveredClickable);
-
-            if (backStarted && _draggingControl == null)
-                SetPressedClickable(hoveredClickable);
-
-            if (forwardStarted && _draggingControl == null)
-                SetPressedClickable(hoveredClickable);
-
-            bool activeDragPressed = _draggingSecondary ? secondaryPressed : primaryPressed;
-            if (activeDragPressed && _draggingControl != null)
-            {
-                if (!ReferenceEquals(lookingScreen, _draggingEntity))
-                {
-                    bool suppressClick = !_draggingPreservesPrimaryClick || _draggingMoved;
-                    EndActiveDrag();
-                    finishedDrag = suppressClick;
-                }
-                else
-                {
-                    Vector2 currentPosition;
-
-                    if (!TryGetHitTestCursorPosition(_draggingEntity, out currentPosition))
-                    {
-                        bool suppressClick = !_draggingPreservesPrimaryClick || _draggingMoved;
-                        EndActiveDrag();
-                        finishedDrag = suppressClick;
-                    }
-                    else
-                    {
-                        var delta = currentPosition - _lastDragPosition;
-                        _lastDragPosition = currentPosition;
-
-                        if (!IsValidVector(delta))
-                        {
-                            bool suppressClick = !_draggingPreservesPrimaryClick || _draggingMoved;
-                            EndActiveDrag();
-                            finishedDrag = suppressClick;
-                        }
-                        else
-                        {
-                            _pendingDragDelta += delta;
-                            float dragThreshold = _draggingPreservesPrimaryClick && !_draggingMoved
-                                ? PRESERVED_CLICK_DRAG_THRESHOLD_PIXELS
-                                : MIN_DRAG_DELTA_PIXELS;
-                            bool exceededThreshold =
-                                Math.Abs(_pendingDragDelta.X) > dragThreshold ||
-                                Math.Abs(_pendingDragDelta.Y) > dragThreshold;
-
-                            if (exceededThreshold)
-                            {
-                                Vector2 dragDelta = _pendingDragDelta;
-                                _pendingDragDelta = Vector2.Zero;
-
-                                if (_draggingControl.Drag(_draggingEntity, dragDelta, _draggingSecondary))
-                                {
-                                    _draggingMoved = true;
-
-                                    if (_draggingPreservesPrimaryClick)
-                                    {
-                                        _suppressPrimaryReleaseClick = true;
-                                        SetPressedClickable(null);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            bool activeDragReleased = _draggingControl != null &&
-                                      (_draggingSecondary ? secondaryReleased : primaryReleased);
-            if (activeDragReleased)
-            {
-                bool suppressClick = !_draggingPreservesPrimaryClick || _draggingMoved;
-                EndActiveDrag();
-                finishedDrag = suppressClick;
-            }
-
-            if (primaryReleased || secondaryReleased || middleReleased || backReleased || forwardReleased)
-            {
-                ControlClickButton clickButton = GetReleasedClickButton(
-                    primaryReleased,
-                    secondaryReleased,
-                    middleReleased,
-                    backReleased,
-                    forwardReleased);
-                bool suppressReleaseClick = finishedDrag ||
-                                            clickButton == ControlClickButton.Primary && _suppressPrimaryReleaseClick ||
-                                            clickButton == ControlClickButton.Secondary && _suppressSecondaryReleaseClick ||
-                                            clickButton == ControlClickButton.Middle && _suppressMiddleReleaseClick ||
-                                            clickButton == ControlClickButton.Back && _suppressBackReleaseClick ||
-                                            clickButton == ControlClickButton.Forward && _suppressForwardReleaseClick;
-                var hoveredDataContext = hoveredClickable != null ? hoveredClickable.DataContext ?? hoveredClickable : null;
-
-                try
-                {
-                    var interactiveSurface = eyeTrackingEntity as InteractiveSurfaceScript;
-                    var rightClick = clickButton == ControlClickButton.Secondary;
-
-                    ControlTemplate clickedControl = null;
-                    var click = false;
-                    if (!suppressReleaseClick &&
-                        _pressedClickable != null &&
-                        hoveredClickable != null &&
-                        Equals(objA: _pressedClickableDataContext, objB: hoveredDataContext))
-                    {
-                        if (interactiveSurface != null)
-                        {
-                            click = interactiveSurface.TryClickAtCursor(
-                                clickButton,
-                                eyeTrackingEntity,
-                                out clickedControl);
-                        }
-                        else
-                        {
-                            clickedControl = hoveredClickable;
-                            switch (clickButton)
-                            {
-                                case ControlClickButton.Secondary:
-                                    click = hoveredClickable.SecondaryClick(eyeTrackingEntity);
-                                    break;
-                                case ControlClickButton.Middle:
-                                    click = hoveredClickable.MiddleClick(eyeTrackingEntity);
-                                    break;
-                                case ControlClickButton.Back:
-                                    click = hoveredClickable.BackClick(eyeTrackingEntity);
-                                    break;
-                                case ControlClickButton.Forward:
-                                    click = hoveredClickable.ForwardClick(eyeTrackingEntity);
-                                    break;
-                                default:
-                                    click = hoveredClickable.Click(eyeTrackingEntity);
-                                    break;
-                            }
-                        }
-                    }
-
-                    ControlTemplate tooltipParent;
-                    if (!suppressReleaseClick &&
-                        IsTooltipActivationButton(clickButton) &&
-                        !click &&
-                        TryHandleTooltipActivation(
-                            eyeTrackingEntity,
-                            rightClick: rightClick,
-                            tooltipParent: out tooltipParent))
-                    {
-                        click = true;
-                        clickedControl = tooltipParent;
-                    }
-
-                    if (click && interactiveSurface != null && clickedControl != null)
-                        RaiseControlClick(interactiveSurface, clickedControl, clickButton);
-
-                    if (eyeTrackingEntity != null && !suppressReleaseClick)
-                    {
-                        eyeTrackingEntity.PlaySounds(
-                            hoveredClickable == null
-                                ? AudioHelper.HudClick
-                                : click
-                                    ? hoveredClickable.GetClickSound(clickButton)
-                                    : hoveredClickable.ClickFailSound);
-                    }
-                }
-                catch (Exception e)
-                {
-                    if (eyeTrackingEntity != null && !suppressReleaseClick)
-                    {
-                        eyeTrackingEntity.PlaySounds(
-                            hoveredClickable != null
-                                ? hoveredClickable.ClickFailSound
-                                : AudioHelper.HudClick);
-                    }
-
-                    ErrorHandlerHelper.LogError(error: e, source: this);
-                }
-
-                SetPressedClickable(null);
-
-                if (primaryReleased)
-                    _suppressPrimaryReleaseClick = false;
-
-                if (secondaryReleased)
-                    _suppressSecondaryReleaseClick = false;
-
-                if (middleReleased)
-                    _suppressMiddleReleaseClick = false;
-
-                if (backReleased)
-                    _suppressBackReleaseClick = false;
-
-                if (forwardReleased)
-                    _suppressForwardReleaseClick = false;
-            }
-
-            if (!hasInputTarget)
-            {
-                SetPressedClickable(null);
-
-                if (_draggingControl != null)
-                    EndActiveDrag();
-
-                if (!primaryPressed)
-                    _suppressPrimaryReleaseClick = false;
-
-                if (!secondaryPressed)
-                    _suppressSecondaryReleaseClick = false;
-
-                if (!middlePressed)
-                    _suppressMiddleReleaseClick = false;
-
-                if (!backPressed)
-                    _suppressBackReleaseClick = false;
-
-                if (!forwardPressed)
-                    _suppressForwardReleaseClick = false;
-            }
-
-            _primaryWasPressed = primaryPressed;
-            _secondaryWasPressed = secondaryPressed;
-            _middleWasPressed = middlePressed;
-            _backWasPressed = backPressed;
-            _forwardWasPressed = forwardPressed;
-        }
-
-        void UpdatePointerTarget(InteractiveSurfaceScript surface, ControlTemplate control)
-        {
-            if (ReferenceEquals(_pointerSurface, surface) && ReferenceEquals(_pointerControl, control))
+            InteractiveSurfaceScript target = _pointerButtons.Current;
+            if (target == null)
                 return;
 
-            if (_pointerSurface != null && _pointerControl != null)
-                RaiseControlPointerEvent(OnControlPointerLeave, _pointerSurface, _pointerControl);
+            target.SetPointerButtonState(ControlClickButton.Primary, primaryPressed);
+            target.SetPointerButtonState(ControlClickButton.Secondary, secondaryPressed);
+            target.SetPointerButtonState(ControlClickButton.Middle, middlePressed);
+            target.SetPointerButtonState(ControlClickButton.Back, backPressed);
+            target.SetPointerButtonState(ControlClickButton.Forward, forwardPressed);
+        }
 
+        void UpdatePointerTarget(InteractiveSurfaceScript surface)
+        {
             _pointerSurface = surface;
-            _pointerControl = control;
-
-            if (_pointerSurface != null && _pointerControl != null)
-                RaiseControlPointerEvent(OnControlPointerEnter, _pointerSurface, _pointerControl);
-        }
-
-        static void RaiseControlPointerEvent(
-            Action<InteractiveSurfaceScript, ControlTemplate> handlers,
-            InteractiveSurfaceScript surface,
-            ControlTemplate control)
-        {
-            if (handlers == null || surface == null || control == null)
-                return;
-
-            foreach (var @delegate in handlers.GetInvocationList())
-            {
-                try
-                {
-                    ((Action<InteractiveSurfaceScript, ControlTemplate>)@delegate)(surface, control);
-                }
-                catch (Exception e)
-                {
-                    ErrorHandlerHelper.LogError(e, surface);
-                }
-            }
-        }
-
-        static void RaiseControlClick(
-            InteractiveSurfaceScript surface,
-            ControlTemplate control,
-            ControlClickButton button)
-        {
-            if (surface == null || control == null)
-                return;
-
-            var handlers = OnControlClick;
-            if (handlers == null)
-                return;
-
-            foreach (var @delegate in handlers.GetInvocationList())
-            {
-                try
-                {
-                    ((Action<InteractiveSurfaceScript, ControlTemplate, ControlClickButton>)@delegate)(
-                        surface,
-                        control,
-                        button);
-                }
-                catch (Exception e)
-                {
-                    ErrorHandlerHelper.LogError(e, surface);
-                }
-            }
-        }
-
-        void SetPressedClickable(ControlTemplate control)
-        {
-            if (ReferenceEquals(_pressedClickable, control))
-                return;
-
-            if (_pressedClickable != null)
-                _pressedClickable.SetPressed(false);
-
-            _pressedClickable = control;
-            _pressedClickableDataContext = control != null
-                ? control.DataContext ?? control
-                : null;
-
-            if (_pressedClickable != null)
-                _pressedClickable.SetPressed(true);
+            CurrentPointerSurface = surface;
+            if (surface != null)
+                LastPointerSurface = surface;
         }
 
         static void UpdateScrollState(IEyeTracking lookingScreen)
@@ -629,91 +222,6 @@ namespace LcdMod.Client.Modules.EyeTracking
                 lookingScreen.MouseScroll(delta);
         }
 
-        bool TryBeginDrag(IEyeTracking screen, bool secondary)
-        {
-            if (_draggingControl != null)
-                return false;
-
-            ControlTemplate draggable;
-            Vector2 position;
-
-            if (!TryGetHoveredDraggable(screen, secondary, out draggable) ||
-                !TryGetHitTestCursorPosition(screen, out position))
-                return false;
-
-            if (!draggable.BeginDrag(screen, secondary))
-                return false;
-
-            _draggingControl = draggable;
-            _draggingEntity = screen;
-            _lastDragPosition = position;
-            _pendingDragDelta = Vector2.Zero;
-            _draggingSecondary = secondary;
-            _draggingMoved = false;
-            _draggingPreservesPrimaryClick = !secondary && draggable.PreservePrimaryClickUntilDragged;
-            return true;
-        }
-
-        void EndActiveDrag()
-        {
-            if (_draggingControl != null)
-                _draggingControl.EndDrag(_draggingEntity);
-
-            _draggingControl = null;
-            _draggingEntity = null;
-            _lastDragPosition = default(Vector2);
-            _pendingDragDelta = Vector2.Zero;
-            _draggingSecondary = false;
-            _draggingMoved = false;
-            _draggingPreservesPrimaryClick = false;
-        }
-
-        void HandleClickOnPress(ControlTemplate clickedControl, IEyeTracking eyeTrackingEntity)
-        {
-            if (clickedControl == null)
-                return;
-
-            bool click;
-
-            try
-            {
-                Vector2 position;
-                click = TryGetHitTestCursorPosition(eyeTrackingEntity, out position) &&
-                        clickedControl.ClickAt(position, eyeTrackingEntity);
-
-                var interactiveSurface = eyeTrackingEntity as InteractiveSurfaceScript;
-                if (click && interactiveSurface != null)
-                    RaiseControlClick(interactiveSurface, clickedControl, ControlClickButton.Primary);
-
-                if (eyeTrackingEntity != null)
-                {
-                    eyeTrackingEntity.PlaySounds(
-                        click
-                            ? clickedControl.GetClickSound(ControlClickButton.Primary)
-                            : clickedControl.ClickFailSound);
-                }
-            }
-            catch (Exception e)
-            {
-                if (eyeTrackingEntity != null)
-                    eyeTrackingEntity.PlaySounds(clickedControl.ClickFailSound);
-
-                ErrorHandlerHelper.LogError(error: e, source: this);
-            }
-        }
-
-        static bool TryHandleTooltipActivation(
-            IEyeTracking eyeTrackingEntity,
-            bool rightClick,
-            out ControlTemplate tooltipParent)
-        {
-            tooltipParent = null;
-            var interactiveSurface = eyeTrackingEntity as InteractiveSurfaceScript;
-
-            return interactiveSurface != null &&
-                   interactiveSurface.TryHandleTooltipActivationClick(rightClick, out tooltipParent);
-        }
-
         public static bool HoldingClick => MyAPIGateway.Input.IsLeftMousePressed() ||
                                            MyAPIGateway.Input.IsJoystickButtonPressed(
                                                button: MyJoystickButtonsEnum.J06);
@@ -725,152 +233,6 @@ namespace LcdMod.Client.Modules.EyeTracking
         public static bool HoldingBackClick => MyAPIGateway.Input.IsXButton1MousePressed();
 
         public static bool HoldingForwardClick => MyAPIGateway.Input.IsXButton2MousePressed();
-
-        public static bool HoldingReturnClick => HoldingBackClick;
-
-        ControlClickButton? GetActiveClickButton()
-        {
-            if (MyAPIGateway.Input == null)
-                return null;
-
-            if (HoldingClick || _primaryWasPressed)
-                return ControlClickButton.Primary;
-
-            if (HoldingRightClick || _secondaryWasPressed)
-                return ControlClickButton.Secondary;
-
-            if (HoldingMiddleClick || _middleWasPressed)
-                return ControlClickButton.Middle;
-
-            if (HoldingBackClick || _backWasPressed)
-                return ControlClickButton.Back;
-
-            if (HoldingForwardClick || _forwardWasPressed)
-                return ControlClickButton.Forward;
-
-            return null;
-        }
-
-        static ControlClickButton GetReleasedClickButton(
-            bool primaryReleased,
-            bool secondaryReleased,
-            bool middleReleased,
-            bool backReleased,
-            bool forwardReleased)
-        {
-            if (primaryReleased)
-                return ControlClickButton.Primary;
-            if (secondaryReleased)
-                return ControlClickButton.Secondary;
-            if (middleReleased)
-                return ControlClickButton.Middle;
-            if (backReleased)
-                return ControlClickButton.Back;
-            return forwardReleased
-                ? ControlClickButton.Forward
-                : ControlClickButton.Primary;
-        }
-
-        static bool IsTooltipActivationButton(ControlClickButton button)
-        {
-            return button == ControlClickButton.Primary ||
-                   button == ControlClickButton.Secondary;
-        }
-
-        static bool TryGetHoveredClickable(IEyeTracking screen, ControlClickButton? button, out ControlTemplate clickable)
-        {
-            clickable = null;
-            var interactiveSurface = screen as InteractiveSurfaceScript;
-
-            if (interactiveSurface != null)
-            {
-                return button.HasValue
-                    ? interactiveSurface.TryResolveClickableAtCursor(button.Value, out clickable)
-                    : interactiveSurface.TryResolveClickableAtCursor(out clickable);
-            }
-
-            var entries = screen.InteractiveEntries;
-
-            if (entries == null || entries.Count == 0)
-                return false;
-
-            Vector2 position;
-            if (!TryGetHitTestCursorPosition(screen, out position))
-                return false;
-
-            var list = entries as IList<Control>;
-
-            if (list == null)
-                return false;
-
-            for (int i = list.Count - 1; i >= 0; i--)
-            {
-                var entry = list[i] as ControlTemplate;
-
-                if (entry == null)
-                    continue;
-
-                bool resolved = button.HasValue
-                    ? entry.TryResolveClickable(position, button.Value, out clickable)
-                    : entry.TryResolveClickable(position, out clickable);
-
-                if (resolved)
-                    return true;
-            }
-
-            return false;
-        }
-
-        static bool TryGetHoveredDraggable(
-            IEyeTracking screen,
-            bool secondary,
-            out ControlTemplate draggable)
-        {
-            draggable = null;
-
-            if (screen == null)
-                return false;
-
-            var entries = screen.InteractiveEntries;
-
-            if (entries == null || entries.Count == 0)
-                return false;
-
-            Vector2 position;
-            if (!TryGetHitTestCursorPosition(screen, out position))
-                return false;
-
-            var list = entries as IList<Control>;
-
-            if (list == null)
-                return false;
-
-            for (int i = list.Count - 1; i >= 0; i--)
-            {
-                var entry = list[i] as ControlTemplate;
-
-                if (entry != null && entry.TryResolveDraggable(position, secondary, out draggable))
-                    return true;
-            }
-
-            return false;
-        }
-
-        static bool TryGetHitTestCursorPosition(IEyeTracking screen, out Vector2 position)
-        {
-            position = default(Vector2);
-
-            if (screen == null)
-                return false;
-
-            position = screen.CursorPosition + screen.HitTestOffset;
-            return IsValidVector(position);
-        }
-
-        static bool IsValidVector(Vector2 value)
-        {
-            return !float.IsNaN(value.X) && !float.IsNaN(value.Y);
-        }
 
         static bool TryGetCameraRay(out Vector3D origin, out Vector3D direction)
         {

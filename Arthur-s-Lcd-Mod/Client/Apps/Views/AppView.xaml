@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    xmlns="https://github.com/ArthurGamerHD/Adk"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:styling="using:Adk.Gui.Styling"
+    x:Class="LcdMod.Client.Apps.Views.AppView"
+    x:DataType="LcdMod.Client.Apps.Abstract.App"
+    WindowState="FullScreen">
+  <Window.Styles>
+    <styling:StyleInclude Source="/Data/Gui/Styles/Fluent/FluentStyle.xaml" />
+  </Window.Styles>
+  <Grid ColumnDefinitions="Auto *"
+        RowDefinitions="Auto * Auto">
+    <ContentPresenter Content="{Binding BackgroundContent}"
+                      Grid.RowSpan="3"
+                      Grid.ColumnSpan="2"
+                      Name="PART_BackgroundPresenter" />
+    <Border Grid.Row="0"
+            Grid.Column="0"
+            Background="{DynamicResource headerColor}"
+            OpacityMask="{DynamicResource factionIconMask}"
+            Width="{Binding SurfaceFontSize, Converter={StaticResource FontSizeMultiplier}, ConverterParameter=32, ConverterCulture=en-US}"
+            Height="{Binding SurfaceFontSize, Converter={StaticResource FontSizeMultiplier}, ConverterParameter=32, ConverterCulture=en-US}"
+            VerticalAlignment="Center"
+            Margin="0 0 8 0"
+            IsVisible="{Binding ChromeVisible}" />
+    <TextBlock Grid.Row="0"
+               Grid.Column="1"
+               Text="{Binding Title}"
+               FontFamily="{DynamicResource textFont}"
+               Foreground="{DynamicResource headerColor}"
+               FontSize="{Binding SurfaceFontSize, Converter={StaticResource FontSizeMultiplier}, ConverterParameter=1.3, ConverterCulture=en-US}"
+               IsVisible="{Binding ChromeVisible}" />
+    <ContentPresenter Content="{Binding Content}"
+                      Grid.Row="{Binding ContentRow}"
+                      Grid.RowSpan="{Binding RowSpan}"
+                      Grid.ColumnSpan="2"
+                      Name="PART_ContentPresenter" />
+    <ContentPresenter Content="{Binding Footer}"
+                      Grid.Row="2"
+                      Grid.ColumnSpan="2"
+                      IsVisible="{Binding ChromeVisible}"
+                      Name="PART_FooterPresenter" />
+  </Grid>
+</Window>

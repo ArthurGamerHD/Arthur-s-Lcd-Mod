@@ -87,8 +87,6 @@ namespace LcdMod.Client.Helpers
         {
             
             {
-                if (ItemsSurfaceScriptBase.SpriteCache != null)
-                    ItemsSurfaceScriptBase.SpriteCache.Clear();
                 if (ItemsAppBase.SpriteCache != null)
                     ItemsAppBase.SpriteCache.Clear();
 

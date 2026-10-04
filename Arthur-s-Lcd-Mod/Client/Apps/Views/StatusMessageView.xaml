@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl xmlns="https://github.com/ArthurGamerHD/Adk"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:LcdMod.Client.Apps.Controls"
+             xmlns:views="using:LcdMod.Client.Apps.Views"
+             x:Class="LcdMod.Client.Apps.Views.StatusMessageView"
+             x:DataType="views:StatusMessage">
+  <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8" IsVisible="{Binding IsVisible}">
+    <Grid Width="96" Height="96" HorizontalAlignment="Center">
+      <Border Background="{Binding Color}" OpacityMask="{Binding IconMask}" IsVisible="{Binding HasIcon}" />
+      <controls:LoadingWheel Foreground="{Binding Color}" IsVisible="{Binding IsLoading}" />
+    </Grid>
+    <TextBlock Text="{Binding Text}" Foreground="{Binding Color}" TextAlignment="Center" TextWrapping="Wrap"
+               FontFamily="{DynamicResource textFont}" />
+  </StackPanel>
+</UserControl>

@@ -15,9 +15,6 @@ using LcdMod.Client.Terminal.Controls.Interactive;
 using LcdMod.Client.Terminal.Controls.Markdown;
 using LcdMod.Client.Terminal.Controls.Proxy;
 using LcdMod.Client.Terminal.Controls.Scale;
-#if DEBUG
-using LcdMod.Client.Terminal.Controls.VisibleTreeDebug;
-#endif
 using LcdMod.Common.Helpers;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.Game.Localization;
@@ -115,10 +112,6 @@ namespace LcdMod.Client.Terminal
             AddRegistration(registrations, 3400, new ComboboxReferenceMode());
             AddRegistration(registrations, 3500, new ComboboxGraphWindow());
             AddRegistration(registrations, 3600, new ListboxReferenceBlockSelection());
-#if DEBUG
-            AddRegistration(registrations, 3650, new ListboxVisibleTreeDebugBlockSelection());
-            AddRegistration(registrations, 3660, new ListboxVisibleTreeDebugScreenSelection());
-#endif
             AddRegistration(registrations, 3700, new SwitchToggleLines());
 
             AddRegistration(registrations, 3800, new ComboboxLinkType());

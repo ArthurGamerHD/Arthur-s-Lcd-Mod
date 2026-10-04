@@ -13,8 +13,12 @@ using LcdMod.Client.Modules.RoomEnvironment;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Config;
 using LcdMod.Client.GridData;
+using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Terminal;
+#if DEBUG
+using LcdMod.Client.Debugging;
+#endif
 using LcdMod.Common.Helpers;
 using LcdMod.Common.Networking;
 using ParallelTasks;
@@ -25,7 +29,6 @@ using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.Utils;
 using ItemsAppBase = LcdMod.Client.Apps.Abstract.ItemsApp;
-using ItemsSurfaceScriptBase = LcdMod.Client.SurfaceScripts.Abstract.ItemsSurfaceScriptBase;
 
 namespace LcdMod.Client
 {
@@ -53,6 +56,7 @@ namespace LcdMod.Client
         readonly GameAudioTestReportService _audioTestReport = new GameAudioTestReportService();
 #if DEBUG
         readonly CartographyDebugReportService _cartographyDebugReport;
+        VisibleTreeDebugService _visibleTreeDebug;
 #endif
 
         public LcdModClientComponent(LcdModSessionComponent session)
@@ -79,16 +83,28 @@ namespace LcdMod.Client
         internal GameAudioTestReportService AudioTestReport { get { return _audioTestReport; } }
 #if DEBUG
         internal CartographyDebugReportService CartographyDebugReport { get { return _cartographyDebugReport; } }
+        internal VisibleTreeDebugService VisibleTreeDebug { get { return _visibleTreeDebug; } }
 #endif
         public static event Action OnUpdateBeforeSimulation;
 
         public void LoadData()
         {
+            AdkFluentStyles.ConfigureSourceLoader();
+            Apps.Dialogs.DialogViewModel.Localize = LocHelper.GetLoc;
             LocalConfigManager.Load();
+            Adk.Gui.Controls.WindowPlatforms.CaptionButtons = LocalConfigManager.CaptionButtons;
+            Apps.Markdown.MarkdownImage.BlockSpriteResolver = name =>
+            {
+                string registered;
+                return TextureHelper.TryGetOrAddTextureForBlockName(name, out registered) ? registered : name;
+            };
             _session.RegisterModules();
             PowerData = new PowerDataModule();
             DefenseData = new DefenseDataModule();
             DefenseData.Load();
+#if DEBUG
+            _visibleTreeDebug = new VisibleTreeDebugService();
+#endif
             RunNextFrame.Add(TextureHelper.InitializeColorfulIconsApi);
 
             DebuggerHelper.Break();
@@ -111,10 +127,16 @@ namespace LcdMod.Client
         public void UnloadData()
         {
             Ftue.Unload();
+#if DEBUG
+            if (_visibleTreeDebug != null)
+                _visibleTreeDebug.Dispose();
+            _visibleTreeDebug = null;
+#endif
             _audioPoc.Unload();
             _audioBroadcast.Unload();
             LocalConfigManager.Save();
             TextureHelper.UnloadColorfulIconsApi();
+            Games.Chess.ChessGame.ReleasePieceTextures();
             if (PowerData != null)
                 PowerData.Clear();
             PowerData = null;
@@ -141,10 +163,9 @@ namespace LcdMod.Client
             LcdModSessionComponent.Components = null;
             LcdModSessionComponent.DebugSnapshot = SessionDebugSnapshot.Empty;
 
-            ItemsSurfaceScriptBase.SpriteCache?.Clear();
-            ItemsSurfaceScriptBase.SpriteCache = null;
             ItemsAppBase.SpriteCache?.Clear();
             LcdModSessionComponent.ClearClientEvents();
+            Modules.EyeTracking.EyeTrackingModule.ClearPointerHistory();
 
             ListBoxItemHelper.PerTypeCache.Clear();
             NpcMarketClientCache.Reset();
@@ -154,6 +175,8 @@ namespace LcdMod.Client
             Blocker.Clear();
             RunOnePerFrame.Clear();
             InventoryWorkScheduler.Clear();
+            AdkFluentStyles.Reset();
+            Apps.Dialogs.DialogViewModel.Localize = key => key;
             OnUpdateBeforeSimulation = null;
             UnregisterSingleton();
         }
@@ -179,6 +202,10 @@ namespace LcdMod.Client
                         DefenseData.Update(MyAPIGateway.Session.GameplayFrameCounter);
 
                     _session.UpdateModules();
+#if DEBUG
+                    if (_visibleTreeDebug != null)
+                        _visibleTreeDebug.Update();
+#endif
                     UpdateDebugSnapshot();
                     {
                         OnUpdateBeforeSimulation?.Invoke();

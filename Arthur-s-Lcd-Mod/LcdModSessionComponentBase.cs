@@ -20,6 +20,7 @@ using VRage.Game.Components;
 using VRage.Game.ModAPI;
 using VRage.Library.Utils;
 using VRage.ModAPI;
+using VRage.Utils;
 using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod
@@ -28,6 +29,15 @@ namespace LcdMod
     public partial class LcdModSessionComponent : MySessionComponentBase, IModuleManager, ISingleton<LcdModSessionComponent>
     {
         static LcdModSessionComponent _instance;
+        internal static MyObjectBuilder_Checkpoint.ModItem CurrentModItem
+        {
+            get
+            {
+                return _instance == null
+                    ? default(MyObjectBuilder_Checkpoint.ModItem)
+                    : _instance.ModContext.ModItem;
+            }
+        }
         internal readonly Dictionary<long, MyTuple<IMyCubeGrid, GridLogic>> _grids = new Dictionary<long, MyTuple<IMyCubeGrid, GridLogic>>();
         internal int _updateTick;
         internal MyLanguagesEnum? _loadedLanguage;
@@ -122,7 +132,7 @@ namespace LcdMod
         public override void LoadData()
         {
             LogHelper.LogInfo("Init - Version " + VersionName);
-            
+
             _instance = this;
             RegisterSingleton();
             if (Components == null)
@@ -197,6 +207,7 @@ namespace LcdMod
 #if DEBUG
             if (Client != null && !MyAPIGateway.Utilities.IsDedicated)
             {
+                Adk.Gui.Markup.HotReload.Update();
                 if (LocalConfigManager.DebugSurface)
                     ScreenAreaGeometry.DebugDraw();
                 else

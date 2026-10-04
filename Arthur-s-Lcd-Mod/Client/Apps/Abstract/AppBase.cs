@@ -1,14 +1,14 @@
 using System;
 using System.Collections.Generic;
-using LcdMod.Client.Animation;
+using System.ComponentModel;
+using Adk.Gui.Animation;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui;
-using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.Styling;
-using LcdMod.Client.Gui.Styling.Styles;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.GridData;
 using LcdMod.Common.Config.Components;
+using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 
@@ -20,12 +20,12 @@ namespace LcdMod.Client.Apps.Abstract
     [ConfigComponent(Constants.GENERAL, typeof(GeneralConfigComponent), PropertyName = "GeneralComponent")]
     [ConfigComponent(Constants.COLORS, typeof(ColorConfigComponent), PropertyName = "ColorComponent")]
     [ConfigComponent(Constants.INTERACTION, typeof(InteractiveConfigComponent), PropertyName = "InteractionComponent")]
-    public abstract partial class App : Control, IApp, ITextSurfaceProvider, ITextStyleProvider
+    public abstract partial class App : IApp, ITextSurfaceProvider, ITextStyleProvider,
+        INotifyPropertyChanged, Adk.Gui.Styling.IResourceProvider
     {
-        readonly List<Control> _logicalChildren = new List<Control>();
         AnimationController _animationController;
-        StyleTree _styles;
         ResourceTree _resources;
+        bool _isDirty;
         Dictionary<string, Color> _theme;
         Color _themeHeaderColor;
         Color _themeForegroundColor;
@@ -39,6 +39,43 @@ namespace LcdMod.Client.Apps.Abstract
         bool _hasTheme;
         GridLogic _neededGridLogic;
         GridCapability _gridCapabilities;
+        Adk.Gui.Core.VisualElement _content;
+        Adk.Gui.Core.VisualElement _footer;
+        Adk.Gui.Core.VisualElement _backgroundContent;
+        int _contentRow = 1;
+        int _rowSpan = 1;
+        RectangleF _retainedContentBounds;
+        bool _hasRetainedContentBounds;
+        readonly List<Adk.Gui.Controls.Window> _dialogs = new List<Adk.Gui.Controls.Window>();
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        public event Action<string> ResourceChanged;
+
+        public virtual string Title => Host.Title;
+        public float SurfaceFontSize => GetFontScaleResourceValue();
+        public string TitleIcon => Host.TitleIcon;
+        public bool TitleEnabled => Host.TitleVisible;
+        public Adk.Gui.Core.VisualElement Content => _content;
+        // Legacy sprite apps already bake their scale into their coordinates.
+        // Migrated logical-unit views opt in to the window's DPI scale.
+        internal virtual float WindowRenderScaling => 1f;
+        internal Color ThemeColor(ResourceKey<Color> key)
+        {
+            Color color;
+            return Resources.TryGet(key, out color) ? color : Color.White;
+        }
+
+        internal float CardScale => GeneralComponent.GetScale() > 0f ? GeneralComponent.GetScale() : 1f;
+        internal bool IsGridDisplay => GeneralComponent.DisplayMode == (int)LcdMod.Client.Terminal.Controls.DisplayMode.Grid;
+        public Adk.Gui.Core.VisualElement Footer => _footer;
+
+        /// <summary>Full-surface layer drawn beneath the title and the content, e.g. a scene the title overlays.</summary>
+        public Adk.Gui.Core.VisualElement BackgroundContent => _backgroundContent;
+        public int ContentRow => _contentRow;
+        public int RowSpan => _rowSpan;
+        public bool ChromeVisible => TitleEnabled && (_contentRow != 0 || _rowSpan != 3);
+        protected RectangleF RetainedContentBounds =>
+            _hasRetainedContentBounds ? _retainedContentBounds : Host.ViewBox;
 
         protected App(IAppHost host)
         {
@@ -47,14 +84,121 @@ namespace LcdMod.Client.Apps.Abstract
                 throw new ArgumentNullException(nameof(host));
 
             _animationController = Host.Animations;
-            _styles = DefaultStyleBuilder.Build();
         }
 
         protected IAppHost Host { get; private set; }
+
+        /// <summary>Plays a sound on the surface's block, when the surface can play sounds.</summary>
+        internal void PlaySound(Sandbox.Game.Entities.MySoundPair sound)
+        {
+            var interactive = Host as SurfaceScripts.Abstract.InteractiveSurfaceScript;
+            if (interactive != null)
+                interactive.PlaySounds(sound);
+        }
         protected IComponentContainer Config => Host.Config;
-        internal override AnimationController AnimationController => _animationController;
-        public override IReadOnlyList<Control> LogicalChildren => _logicalChildren;
-        public override StyleTree Styles => _styles;
+        internal AnimationController AnimationController => _animationController;
+
+        public IVisualStyleScope StyleParent => null;
+
+        public virtual void MarkDirty()
+        {
+            _isDirty = true;
+        }
+
+        protected void SetContent(Adk.Gui.Core.VisualElement content)
+        {
+            if (ReferenceEquals(_content, content))
+                return;
+            _content = content;
+            RaisePropertyChanged(nameof(Content));
+        }
+
+        protected void SetBackgroundContent(Adk.Gui.Core.VisualElement content)
+        {
+            if (ReferenceEquals(_backgroundContent, content))
+                return;
+            _backgroundContent = content;
+            RaisePropertyChanged(nameof(BackgroundContent));
+        }
+
+        protected void SetFooter(Adk.Gui.Core.VisualElement footer)
+        {
+            if (ReferenceEquals(_footer, footer))
+                return;
+            _footer = footer;
+            RaisePropertyChanged(nameof(Footer));
+        }
+
+        protected void SetContentLayout(bool occupyAllRows)
+        {
+            int contentRow = occupyAllRows ? 0 : 1;
+            int rowSpan = occupyAllRows ? 3 : 1;
+            if (_contentRow == contentRow && _rowSpan == rowSpan)
+                return;
+            _contentRow = contentRow;
+            _rowSpan = rowSpan;
+            RaisePropertyChanged(nameof(ContentRow));
+            RaisePropertyChanged(nameof(RowSpan));
+            RaisePropertyChanged(nameof(ChromeVisible));
+        }
+
+        internal void SetRetainedContentBounds(RectangleF bounds)
+        {
+            if (_hasRetainedContentBounds &&
+                Math.Abs(_retainedContentBounds.X - bounds.X) < 0.001f &&
+                Math.Abs(_retainedContentBounds.Y - bounds.Y) < 0.001f &&
+                Math.Abs(_retainedContentBounds.Width - bounds.Width) < 0.001f &&
+                Math.Abs(_retainedContentBounds.Height - bounds.Height) < 0.001f)
+                return;
+
+            _retainedContentBounds = bounds;
+            _hasRetainedContentBounds = true;
+            OnRetainedContentBoundsChanged();
+        }
+
+        protected virtual void OnRetainedContentBoundsChanged()
+        {
+            MarkDirty();
+        }
+
+        protected void RaisePropertyChanged(string propertyName)
+        {
+            PropertyChangedEventHandler handlers = PropertyChanged;
+            if (handlers != null)
+                handlers(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        public bool TryGetResource<T>(string key, out T value)
+        {
+            if (string.Equals(key, "factionIcon", StringComparison.Ordinal) &&
+                typeof(T) == typeof(string))
+            {
+                value = (T)(object)TitleIcon;
+                return true;
+            }
+            if (string.Equals(key, "factionIconMask", StringComparison.Ordinal) &&
+                MyAPIGateway.Reflection.IsAssignableFrom(typeof(T), typeof(Adk.Gui.Styling.ImageBrush)))
+            {
+                value = (T)(object)new Adk.Gui.Styling.ImageBrush(TitleIcon) { Stretch = Adk.Gui.Styling.Stretch.Uniform };
+                return true;
+            }
+
+            ResourceKey<T> resourceKey;
+            if (ResourceKey.TryGet(key, out resourceKey))
+            {
+                EnsureResources();
+                return _resources.TryGet(resourceKey, out value);
+            }
+            value = default(T);
+            return false;
+        }
+
+        protected void RaiseResourceChanged(string key = null)
+        {
+            Action<string> handlers = ResourceChanged;
+            if (handlers != null)
+                handlers(key);
+        }
 
         protected void RebindAppHost(IAppHost host)
         {
@@ -90,45 +234,25 @@ namespace LcdMod.Client.Apps.Abstract
             _gridCapabilities = GridCapability.None;
         }
 
-        public override bool IsDirty
+        public virtual bool IsDirty
         {
             get
             {
                 if (_isDirty)
                     return true;
 
-                for (int i = 0; i < _logicalChildren.Count; i++)
-                {
-                    if (IsVisibleTreeDirty(_logicalChildren[i]))
-                        return true;
-                }
-
-                return false;
-            }
-        }
-
-        protected static bool IsVisibleTreeDirty(Control control)
-        {
-            if (control == null || !control.Visible)
-                return false;
-
-            if (control._isDirty)
-                return true;
-
-            var children = control.LogicalChildren;
-            if (children == null)
-                return false;
-
-            for (int i = 0; i < children.Count; i++)
-            {
-                if (IsVisibleTreeDirty(children[i]))
+                if (_content != null && _content.Visible &&
+                    _content.PendingInvalidation != Adk.Gui.Core.Invalidation.UiInvalidation.None)
                     return true;
+                if (_footer != null && _footer.Visible &&
+                    _footer.PendingInvalidation != Adk.Gui.Core.Invalidation.UiInvalidation.None)
+                    return true;
+                return _backgroundContent != null && _backgroundContent.Visible &&
+                       _backgroundContent.PendingInvalidation != Adk.Gui.Core.Invalidation.UiInvalidation.None;
             }
-
-            return false;
         }
 
-        public override ResourceTree Resources
+        public ResourceTree Resources
         {
             get
             {
@@ -142,49 +266,9 @@ namespace LcdMod.Client.Apps.Abstract
             _isDirty = false;
         }
 
-        protected T AddLogicalChild<T>(T control)
-            where T : ControlTemplate
+        internal void CompleteRetainedRender()
         {
-            if (control == null)
-                return null;
-
-            var previousOwner = control.StyleParent as App;
-            if (previousOwner != null && !ReferenceEquals(previousOwner, this))
-                previousOwner.RemoveLogicalChild(control);
-
-            if (!_logicalChildren.Contains(control))
-                _logicalChildren.Add(control);
-
-            control.SetStyleParent(this);
-            MarkDirty();
-            return control;
-        }
-
-        protected bool RemoveLogicalChild(Control control)
-        {
-            if (control == null || !_logicalChildren.Remove(control))
-                return false;
-
-            var visualChildren = VisualChildren as IList<Control>;
-            if (visualChildren != null &&
-                !ReferenceEquals(visualChildren, _logicalChildren) &&
-                !visualChildren.IsReadOnly)
-            {
-                visualChildren.Remove(control);
-            }
-
-            control.CancelAnimationTree(_animationController);
-            if (ReferenceEquals(control.StyleParent, this))
-                control.SetStyleParent(null);
-
-            MarkDirty();
-            return true;
-        }
-
-        protected void ClearLogicalChildren()
-        {
-            for (int i = _logicalChildren.Count - 1; i >= 0; i--)
-                RemoveLogicalChild(_logicalChildren[i]);
+            ClearDirtyAfterRender();
         }
 
         public Sandbox.ModAPI.Ingame.IMyTextSurface TextSurface => Host.Surface;
@@ -218,6 +302,12 @@ namespace LcdMod.Client.Apps.Abstract
 
         public virtual void LayoutChanged()
         {
+            SetContentLayout(!Host.TitleVisible);
+            RaisePropertyChanged(nameof(Title));
+            RaisePropertyChanged(nameof(TitleIcon));
+            RaisePropertyChanged(nameof(TitleEnabled));
+            RaisePropertyChanged(nameof(SurfaceFontSize));
+            RaiseResourceChanged();
         }
 
         public abstract List<MySprite> GetSprites();
@@ -234,7 +324,64 @@ namespace LcdMod.Client.Apps.Abstract
 
         public virtual void Close()
         {
+            CloseDialogs();
             ReleaseGridDataNeeds();
+        }
+
+        internal bool HasOpenDialog => _dialogs.Count > 0;
+
+        /// <summary>Shows a message with one to three buttons; each closes the box, then runs its action.</summary>
+        internal bool ShowMessage(string title, string message, params Dialogs.DialogButton[] buttons)
+        {
+            return ShowDialog(new Dialogs.MessageBoxView(new Dialogs.MessageBoxViewModel(title, message, buttons)));
+        }
+
+        /// <summary>Asks for one line of text; <paramref name="confirmed"/> receives it when the user confirms.</summary>
+        internal bool AskText(string title, string prompt, string initialText, Action<string> confirmed, string confirmText = null)
+        {
+            return ShowDialog(new Dialogs.TextPromptView(
+                new Dialogs.TextPromptViewModel(title, prompt, initialText, confirmed, confirmText)));
+        }
+
+        /// <summary>Opens a dialog above this app (or above its top-most dialog); it is disposed when it closes.</summary>
+        internal bool ShowDialog(Adk.Gui.Controls.Window dialog)
+        {
+            var script = Host as SurfaceScripts.Abstract.SurfaceScriptBase;
+            var root = script == null || script.RetainedAppGuiHost == null
+                ? null
+                : script.RetainedAppGuiHost.Root as Adk.Gui.Controls.Window;
+            if (root == null || !root.IsOpen)
+            {
+                dialog.Dispose();
+                return false;
+            }
+
+            dialog.Closed += () =>
+            {
+                _dialogs.Remove(dialog);
+                dialog.Dispose();
+                Host.RenderSprites();
+            };
+            _dialogs.Add(dialog);
+            try
+            {
+                Dialogs.DialogService.ShowModal(dialog, root, .65f * SurfaceFontSize);
+            }
+            catch
+            {
+                _dialogs.Remove(dialog);
+                dialog.Dispose();
+                throw;
+            }
+            Host.RenderSprites();
+            return true;
+        }
+
+        void CloseDialogs()
+        {
+            for (int i = _dialogs.Count - 1; i >= 0; i--)
+                if (i < _dialogs.Count)
+                    _dialogs[i].Close();
         }
 
         protected Color GetHeaderColor()
@@ -283,6 +430,11 @@ namespace LcdMod.Client.Apps.Abstract
                 _theme = headerColor.ToTheme(dark);
                 _resources = ThemeResourceBuilder.FromThemeDictionary(_theme);
                 _resources.Set(ThemeResources.FontColor, foregroundColor);
+                _resources.Set(ThemeResources.HeaderColor, headerColor);
+                _resources.Set(ThemeResources.CardShadowColor, headerColor.MulValue(.2f));
+                Color accent;
+                if (_resources.TryGet(ThemeResources.AccentColor, out accent))
+                    _resources.Set(ThemeResources.CardFillColor, accent.EnsureMinimalContrast(headerColor));
                 _resources.Set(ThemeResources.WarningColor, warningColor);
                 _resources.Set(ThemeResources.ErrorColor, errorColor);
                 _resources.Set(ThemeResources.LayoutScale, layoutScale);

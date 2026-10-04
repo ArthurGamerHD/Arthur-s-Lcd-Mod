@@ -1,8 +1,6 @@
-using System.Linq;
 using Generated;
 using LcdMod.ChatCommandsGenerated;
 using LcdMod.Client.Helpers;
-using Sandbox.ModAPI;
 
 namespace LcdMod.Client.ChatCommands
 {

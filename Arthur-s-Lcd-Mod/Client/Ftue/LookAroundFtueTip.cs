@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
-using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Common.Helpers;
@@ -43,7 +42,7 @@ namespace LcdMod.Client.Ftue
                 return;
 
             _contactStates[surface] = new ContactState();
-            Show(surface, app, null);
+            Show(surface, app);
         }
 
         internal override void OnUnhooked(InteractiveSurfaceScript surface, IApp app)
@@ -59,7 +58,7 @@ namespace LcdMod.Client.Ftue
             IApp app,
             Vector2 coordinates)
         {
-            Show(surface, app, null);
+            Show(surface, app);
 
             ContactState state;
             if (!IsTriggered(surface) || !_contactStates.TryGetValue(surface, out state))
@@ -84,8 +83,7 @@ namespace LcdMod.Client.Ftue
 
         protected override string BuildMarkdown(
             InteractiveSurfaceScript surface,
-            IApp app,
-            ControlTemplate targetControl)
+            IApp app)
         {
             string keyName = EscapeMarkdownText(GetLookAroundKeyName());
             string alwaysActiveLabel = LocHelper.GetLoc(ALWAYS_ACTIVE_LOCALIZATION_KEY);

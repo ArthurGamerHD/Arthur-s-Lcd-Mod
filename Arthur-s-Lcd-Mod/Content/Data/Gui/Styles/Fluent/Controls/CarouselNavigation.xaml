@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Styles xmlns="https://github.com/ArthurGamerHD/Adk"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Style Selector="Button.carousel-arrow">
+    <Setter Property="Background" Value="#00000000" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <ContentPresenter Name="PART_ContentPresenter" />
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="Button.carousel-dot">
+    <Setter Property="Background" Value="#00000000" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <ContentPresenter Name="PART_ContentPresenter" />
+      </ControlTemplate>
+    </Setter>
+  </Style>
+</Styles>

@@ -18,7 +18,11 @@ if [ -z "$MANAGED" ]; then
   exit 1
 fi
 
-OUT="${MANAGED%/}/../SE.Source"
+while [ "${MANAGED%/}" != "$MANAGED" ]; do
+  MANAGED="${MANAGED%/}"
+done
+
+OUT="$(realpath -m "$MANAGED/../SE.Source")"
 
 mkdir -p "$OUT"
 

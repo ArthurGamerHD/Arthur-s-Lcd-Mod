@@ -23,6 +23,21 @@ namespace LcdMod.Client.Utility
                 }
             };
 
+        public static readonly List<MyTerminalControlComboBoxItem> CompactAndCard =
+            new List<MyTerminalControlComboBoxItem>
+            {
+                new MyTerminalControlComboBoxItem
+                {
+                    Key = 0,
+                    Value = MyStringId.GetOrCompute(MOD_PREFIX + "Compact")
+                },
+                new MyTerminalControlComboBoxItem
+                {
+                    Key = 1,
+                    Value = MyStringId.GetOrCompute(MOD_PREFIX + "Card")
+                }
+            };
+
         public static readonly List<MyTerminalControlComboBoxItem> Items =
             new List<MyTerminalControlComboBoxItem>
             {

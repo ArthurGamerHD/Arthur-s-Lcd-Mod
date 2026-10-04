@@ -9,6 +9,26 @@ namespace LcdMod.Client.Gui.Styling
         public static readonly ResourceKey<Color> AccentColor =
             ResourceKey.Register<Color>("accentColor");
 
+        /// <summary><see cref="BackgroundColor"/> at 25% transparency behind input controls (combo boxes and their popups).</summary>
+        public static readonly ResourceKey<Color> ControlBackgroundColor =
+            ResourceKey.Register<Color>("controlBackgroundColor");
+
+        /// <summary><see cref="BackgroundColor"/> at 10% transparency behind popups, which must stay readable over content.</summary>
+        public static readonly ResourceKey<Color> PopupBackgroundColor =
+            ResourceKey.Register<Color>("popupBackgroundColor");
+
+        /// <summary>Shadow behind header-colored cards.</summary>
+        public static readonly ResourceKey<Color> CardShadowColor =
+            ResourceKey.Register<Color>("cardShadowColor");
+
+        /// <summary>Accent fill raised to readable contrast against header-colored cards.</summary>
+        public static readonly ResourceKey<Color> CardFillColor =
+            ResourceKey.Register<Color>("cardFillColor");
+
+        /// <summary>The block's configured header color, which the theme is generated from.</summary>
+        public static readonly ResourceKey<Color> HeaderColor =
+            ResourceKey.Register<Color>("headerColor");
+
         public static readonly ResourceKey<Color> OnAccentColor =
             ResourceKey.Register<Color>("onAccentColor");
 
@@ -108,8 +128,6 @@ namespace LcdMod.Client.Gui.Styling
         public static readonly ResourceKey<int> PageTransitionFrames =
             ResourceKey.Register<int>("pageTransitionFrames");
 
-        public static readonly ResourceKey<int> PictureTransitionFrames =
-            ResourceKey.Register<int>("pictureTransitionFrames");
         
         public static readonly ResourceKey<string> TextFont =
             ResourceKey.Register<string>("textFont");

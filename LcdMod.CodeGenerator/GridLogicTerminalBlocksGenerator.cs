@@ -11,6 +11,18 @@ public sealed class TypedBlockCollectionGenerator : IIncrementalGenerator
 {
     const string TARGET_TYPE = "LcdMod.Client.GridData.GridLogic";
     const string TERMINAL_BLOCK_TYPE = "Sandbox.ModAPI.IMyTerminalBlock";
+    const string VIRTUAL_MASS_NAMESPACE = "SpaceEngineers.Game.ModAPI";
+    const string VIRTUAL_MASS_TYPE = "IMyVirtualMass";
+
+    // EMERGENCY WORKAROUND: remove this diagnostic and the matching type filter as
+    // soon as the Space Engineers ModAPI regression in the dynamic-texture build is fixed.
+    static readonly DiagnosticDescriptor VirtualMassCollectionDisabled = new(
+        "LCDBLOCK001",
+        "IMyVirtualMass collection is temporarily disabled",
+        "EMERGENCY WORKAROUND: IMyVirtualMass collection is disabled because the required Space Engineers ModAPI build blocks the mod during startup; remove this workaround after the game API is fixed",
+        "LcdModCodeGenerator",
+        DiagnosticSeverity.Warning,
+        true);
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
@@ -21,7 +33,16 @@ public sealed class TypedBlockCollectionGenerator : IIncrementalGenerator
             if (target == null || terminalBlock == null)
                 return;
 
-            var blockTypes = GetTerminalBlockTypes(compilation, terminalBlock);
+            var blockTypes = GetTerminalBlockTypes(
+                compilation,
+                terminalBlock,
+                out var virtualMassExcluded);
+            if (virtualMassExcluded)
+            {
+                sourceContext.ReportDiagnostic(Diagnostic.Create(
+                    VirtualMassCollectionDisabled,
+                    Location.None));
+            }
             if (blockTypes.Count == 0)
                 return;
 
@@ -31,8 +52,10 @@ public sealed class TypedBlockCollectionGenerator : IIncrementalGenerator
 
     static IReadOnlyList<BlockType> GetTerminalBlockTypes(
         Compilation compilation,
-        INamedTypeSymbol terminalBlock)
+        INamedTypeSymbol terminalBlock,
+        out bool virtualMassExcluded)
     {
+        virtualMassExcluded = false;
         var symbols = new List<INamedTypeSymbol>();
         CollectTypes(compilation.Assembly.GlobalNamespace, terminalBlock, symbols);
 
@@ -47,6 +70,12 @@ public sealed class TypedBlockCollectionGenerator : IIncrementalGenerator
                      symbol => symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                      StringComparer.Ordinal))
         {
+            if (IsVirtualMass(symbol))
+            {
+                virtualMassExcluded = true;
+                continue;
+            }
+
             var typeName = symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
             if (!typeNames.Add(typeName))
                 continue;
@@ -60,6 +89,15 @@ public sealed class TypedBlockCollectionGenerator : IIncrementalGenerator
 
         AssignParents(result);
         return result;
+    }
+
+    static bool IsVirtualMass(INamedTypeSymbol symbol)
+    {
+        return string.Equals(symbol.Name, VIRTUAL_MASS_TYPE, StringComparison.Ordinal) &&
+               string.Equals(
+                   symbol.ContainingNamespace.ToDisplayString(),
+                   VIRTUAL_MASS_NAMESPACE,
+                   StringComparison.Ordinal);
     }
 
     static void AssignParents(List<BlockType> blockTypes)

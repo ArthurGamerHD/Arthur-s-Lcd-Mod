@@ -26,13 +26,17 @@ public sealed class AppTypeStabilityTests
         ["SessionDebug"] = 21,
         ["Thrust"] = 22,
         ["ButtonPanel"] = 23,
-        ["VisibleTreeDebug"] = 24,
         ["RenderProxy"] = 25,
         ["Games"] = 26,
         ["BSoDTest"] = 27,
         ["MediaPlayer"] = 28,
         ["PlanetaryMap"] = 29,
         ["DefenseDashboard"] = 30
+    };
+
+    static readonly IReadOnlyDictionary<string, int> RetiredAppIds = new Dictionary<string, int>
+    {
+        ["VisibleTreeDebug"] = 24
     };
 
     [Fact]
@@ -64,6 +68,11 @@ public sealed class AppTypeStabilityTests
             Assert.True(discovered.TryGetValue(expected.Key, out var actual) && actual == expected.Value,
                 $"Stable app ID mismatch for {expected.Key}: expected {expected.Value}, got {(discovered.TryGetValue(expected.Key, out actual) ? actual : -1)}.");
         Assert.Equal(discovered.Count, discovered.Values.Distinct().Count());
+        foreach (var retired in RetiredAppIds)
+        {
+            Assert.DoesNotContain(retired.Key, discovered.Keys);
+            Assert.DoesNotContain(retired.Value, discovered.Values);
+        }
     }
 
     static string FindRepositoryRoot()

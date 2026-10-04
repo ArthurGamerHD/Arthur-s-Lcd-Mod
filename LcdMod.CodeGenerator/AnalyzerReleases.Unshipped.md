@@ -4,6 +4,7 @@
 ### New Rules
 Rule ID | Category | Severity | Notes
 --------|----------|----------|-------
+LCDBLOCK001 | LcdModCodeGenerator | Warning | TypedBlockCollectionGenerator
 LCDCFG001 | LcdModCodeGenerator | Error | App IDs must be stable positive values
 LCDCFG002 | LcdModCodeGenerator | Error | App IDs must be unique
 LCDCFG003 | LcdModCodeGenerator | Error | Generated app names must be unique

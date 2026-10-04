@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using Generated;
 using LcdMod.Client.Gui;
 using VRageMath;
@@ -17,8 +16,6 @@ namespace LcdMod.Client.Utility
 
         Vector2 HitTestOffset { get; }
 
-        ICollection<Control> InteractiveEntries { get; }
-        
         CursorType CursorType { get; }
         
         void LookAt(Vector2 onScreenCoordinates);

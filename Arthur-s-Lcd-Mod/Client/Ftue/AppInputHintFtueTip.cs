@@ -1,6 +1,5 @@
 using System;
 using LcdMod.Client.Apps.Abstract;
-using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using VRageMath;
 
@@ -10,18 +9,15 @@ namespace LcdMod.Client.Ftue
         where TApp : class, IApp
     {
         readonly Func<InteractiveSurfaceScript, TApp, string> _markdownFactory;
-        readonly Func<InteractiveSurfaceScript, TApp, ControlTemplate, bool> _completionCondition;
 
         public AppInputHintFtueTip(
             string id,
-            Func<InteractiveSurfaceScript, TApp, string> markdownFactory,
-            Func<InteractiveSurfaceScript, TApp, ControlTemplate, bool> completionCondition = null)
+            Func<InteractiveSurfaceScript, TApp, string> markdownFactory)
             : base(id, typeof(TApp))
         {
             if (markdownFactory == null)
                 throw new ArgumentNullException(nameof(markdownFactory));
             _markdownFactory = markdownFactory;
-            _completionCondition = completionCondition;
         }
 
         public Func<InteractiveSurfaceScript, TApp, Action, Action> CompletionBinder { get; set; }
@@ -35,25 +31,7 @@ namespace LcdMod.Client.Ftue
         {
             var typedApp = app as TApp;
             if (typedApp != null && IsActiveFor(surface, typedApp))
-                Show(surface, typedApp, null);
-        }
-
-        internal override void OnControlClick(
-            InteractiveSurfaceScript surface,
-            IApp app,
-            ControlTemplate control,
-            ControlClickButton button)
-        {
-            if (button != ControlClickButton.Primary || !IsTriggered(surface))
-                return;
-
-            var typedApp = app as TApp;
-            if (_completionCondition != null && typedApp != null &&
-                IsActiveFor(surface, typedApp) && control != null &&
-                _completionCondition(surface, typedApp, control))
-            {
-                Complete(surface);
-            }
+                Show(surface, typedApp);
         }
 
         protected override Action BindExternalCompletion(
@@ -79,8 +57,7 @@ namespace LcdMod.Client.Ftue
 
         protected override string BuildMarkdown(
             InteractiveSurfaceScript surface,
-            IApp app,
-            ControlTemplate targetControl)
+            IApp app)
         {
             var typedApp = app as TApp;
             return typedApp == null

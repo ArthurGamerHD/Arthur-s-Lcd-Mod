@@ -12,6 +12,7 @@ namespace LcdMod.Client.Gui
         Arrow,
         Default,
         Hand,
+        Grab,
         Cross,
         Help,
         WaitCursor,

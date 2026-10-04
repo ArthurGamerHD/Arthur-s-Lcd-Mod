@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window xmlns="https://github.com/ArthurGamerHD/Adk"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:dialogs="using:LcdMod.Client.Apps.Dialogs"
+        x:Class="LcdMod.Client.Apps.Dialogs.MessageBoxView"
+        x:DataType="dialogs:MessageBoxViewModel"
+        Title="{Binding Title}" Width="440" MinWidth="280" SizeToContent="Height"
+        Padding="14 4 14 14">
+  <Window.Styles>
+    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/Dialogs.xaml" />
+  </Window.Styles>
+  <Grid RowDefinitions="*,Auto">
+    <Grid ColumnDefinitions="Auto,*">
+      <Image Source="{Binding Icon}" Width="32" Height="32" Margin="0 0 12 0" VerticalAlignment="Top" IsVisible="{Binding HasIcon}" />
+      <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <TextBlock Classes="dialog-text" Text="{Binding Message}" FontSize="{Binding FontSize}" TextWrapping="Wrap" />
+      </ScrollViewer>
+    </Grid>
+    <ItemsControl Grid.Row="1" ItemsSource="{Binding Buttons}" HorizontalAlignment="Right" Margin="0 12 0 0">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate>
+          <StackPanel Orientation="Horizontal" Spacing="10" />
+        </ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="dialogs:DialogButtonModel">
+          <Button Classes="{Binding Classes}" Command="{Binding Command}">
+            <TextBlock Classes="dialog-text" Text="{Binding Text}" FontSize="{Binding FontSize}" />
+          </Button>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+  </Grid>
+</Window>

@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Adk.Gui.Collections.Reactive;
 
 namespace LcdMod.Common.Mvvm
 {
@@ -22,7 +23,7 @@ namespace LcdMod.Common.Mvvm
         public void Add(TKey key, TValue value)
         {
             Items.Add(key, value);
-            RaiseMutation(delegate { RaiseItemAdded(key, value); });
+            RaiseMutation(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, new KeyValuePair<TKey, TValue>(key, value)));
         }
 
         public bool ContainsKey(TKey key)
@@ -37,7 +38,7 @@ namespace LcdMod.Common.Mvvm
                 return false;
 
             Items.Remove(key);
-            RaiseMutation(delegate { RaiseItemRemoved(key, value); });
+            RaiseMutation(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, new KeyValuePair<TKey, TValue>(key, value)));
             return true;
         }
 
@@ -59,9 +60,10 @@ namespace LcdMod.Common.Mvvm
                     return;
 
                 if (replacedItem)
-                    RaiseMutation(delegate { RaiseItemChanged(key, value); });
+                    RaiseMutation(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace,
+                        new KeyValuePair<TKey, TValue>(key, value), new KeyValuePair<TKey, TValue>(key, removedItem)));
                 else
-                    RaiseMutation(delegate { RaiseItemAdded(key, value); });
+                    RaiseMutation(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, new KeyValuePair<TKey, TValue>(key, value)));
             }
         }
 
@@ -80,25 +82,7 @@ namespace LcdMod.Common.Mvvm
 
             var removedItems = Items.ToList();
             Items.Clear();
-            RaiseMutation(delegate
-            {
-                Exception firstError = null;
-                foreach (var item in removedItems)
-                {
-                    try
-                    {
-                        RaiseItemRemoved(item);
-                    }
-                    catch (Exception e)
-                    {
-                        if (firstError == null)
-                            firstError = e;
-                    }
-                }
-
-                if (firstError != null)
-                    throw firstError;
-            });
+            RaiseMutation(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, removedItems));
         }
 
         public bool Contains(KeyValuePair<TKey, TValue> item)
@@ -111,15 +95,13 @@ namespace LcdMod.Common.Mvvm
             if (!((ICollection<KeyValuePair<TKey, TValue>>)Items).Remove(item))
                 return false;
 
-            RaiseMutation(delegate { RaiseItemRemoved(item); });
+            RaiseMutation(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, item));
             return true;
         }
 
         public bool IsReadOnly => false;
 
-        public event Action<IObservableCollection<KeyValuePair<TKey, TValue>>, KeyValuePair<TKey, TValue>> ItemAdded;
-        public event Action<IObservableCollection<KeyValuePair<TKey, TValue>>, KeyValuePair<TKey, TValue>> ItemRemoved;
-        public event Action<IObservableCollection<KeyValuePair<TKey, TValue>>, KeyValuePair<TKey, TValue>> ItemChanged;
+        public event NotifyCollectionChangedEventHandler CollectionChanged;
 
         public bool NotifyItemChanged(TKey key)
         {
@@ -127,23 +109,18 @@ namespace LcdMod.Common.Mvvm
             if (!Items.TryGetValue(key, out value))
                 return false;
 
-            RaiseItemChanged(key, value);
+            var item = new KeyValuePair<TKey, TValue>(key, value);
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, item, item));
             return true;
         }
 
         public void NotifyItemRemoved(TKey key, TValue previousValue)
         {
-            RaiseItemRemoved(key, previousValue);
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove,
+                new KeyValuePair<TKey, TValue>(key, previousValue)));
         }
 
-        void RaiseItemAdded(KeyValuePair<TKey, TValue> item) => InvokeHandlers(ItemAdded, item);
-        void RaiseItemAdded(TKey key, TValue value) => RaiseItemAdded(new KeyValuePair<TKey, TValue>(key, value));
-        void RaiseItemRemoved(KeyValuePair<TKey, TValue> item) => InvokeHandlers(ItemRemoved, item);
-        void RaiseItemRemoved(TKey key, TValue value) => RaiseItemRemoved(new KeyValuePair<TKey, TValue>(key, value));
-        void RaiseItemChanged(KeyValuePair<TKey, TValue> item) => InvokeHandlers(ItemChanged, item);
-        void RaiseItemChanged(TKey key, TValue value) => RaiseItemChanged(new KeyValuePair<TKey, TValue>(key, value));
-
-        void RaiseMutation(Action itemNotification)
+        void RaiseMutation(NotifyCollectionChangedEventArgs args)
         {
             Exception firstError = null;
             try
@@ -157,7 +134,7 @@ namespace LcdMod.Common.Mvvm
 
             try
             {
-                itemNotification();
+                OnCollectionChanged(args);
             }
             catch (Exception e)
             {
@@ -169,20 +146,18 @@ namespace LcdMod.Common.Mvvm
                 throw firstError;
         }
 
-        void InvokeHandlers(
-            Action<IObservableCollection<KeyValuePair<TKey, TValue>>, KeyValuePair<TKey, TValue>> handlers,
-            KeyValuePair<TKey, TValue> item)
+        protected virtual void OnCollectionChanged(NotifyCollectionChangedEventArgs args)
         {
+            var handlers = CollectionChanged;
             if (handlers == null)
                 return;
 
             Exception firstError = null;
-            foreach (Action<IObservableCollection<KeyValuePair<TKey, TValue>>, KeyValuePair<TKey, TValue>> handler
-                     in handlers.GetInvocationList())
+            foreach (NotifyCollectionChangedEventHandler handler in handlers.GetInvocationList())
             {
                 try
                 {
-                    handler(this, item);
+                    handler(this, args);
                 }
                 catch (Exception e)
                 {

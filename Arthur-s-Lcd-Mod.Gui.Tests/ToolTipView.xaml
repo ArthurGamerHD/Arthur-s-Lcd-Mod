@@ -1,0 +1,12 @@
+<UserControl xmlns="https://github.com/ArthurGamerHD/Adk"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="using:Arthur_s_Lcd_Mod.Gui.Tests"
+             x:Class="Arthur_s_Lcd_Mod.Gui.Tests.ToolTipView"
+             x:DataType="local:ToolTipModel">
+  <StackPanel>
+    <Border x:Name="Literal" Height="40" ToolTip.Tip="Static tip" ToolTip.ShowDelay="0" ToolTip.Placement="Bottom" />
+    <Border x:Name="Bound" Height="40" ToolTip.Tip="{Binding Tip}" ToolTip.ShowDelay="0" />
+    <Border x:Name="Slow" Height="40" ToolTip.Tip="Slow tip" ToolTip.ShowDelay="60000" />
+    <Border x:Name="Plain" Height="40" />
+  </StackPanel>
+</UserControl>

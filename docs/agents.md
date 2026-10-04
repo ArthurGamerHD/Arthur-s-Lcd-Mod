@@ -60,3 +60,16 @@ Space engineers uses Sandbox.ModAPI.Ingame.IMyTextSurface for TextSurfaceScript:
 2. Do not let the default resolver find a match for `IMyTextSurface`
 3. Do NOT import `Sandbox.ModAPI.Ingame` unless explicit necessary
 4. Always prefer the `Sandbox.ModAPI` over `Sandbox.ModAPI.Ingame` when possible
+
+# ADK GUI / Avalonia Compatibility Instruction
+
+ADK GUI is intended to implement a **subset of Avalonia-compatible XAML**. Avalonia's XAML parser and source are the reference for supported syntax and behavior.
+
+Rules:
+
+1. Do not add features, syntax, properties, or functions to ADK GUI unless they are explicitly supported by Avalonia and, for XAML-facing features, accepted by Avalonia's XAML parser. Verify the corresponding parser support and control/API behavior in the Avalonia source before implementing an addition.
+2. Prefer composing existing compatible controls, templates, styles, and bindings. Do not add convenience functions or app-specific shortcuts to ADK GUI merely to simplify a legacy-app migration. Existing ADK-only behavior is not precedent for new incompatible features.
+3. The only compatibility exceptions are explicitly identified extensions, such as `Markdown` controls or `LocalizedStrings`. Keep these separate from the core compatible API and expose them through explicit extension types/namespaces; they must not introduce incompatible core XAML syntax or change standard control semantics.
+4. Resolve the Avalonia reference checkout from the repository-root `avalonia-source.local` file if it contains a valid path; otherwise check `<repo-root>/../Avalonia-main/`. Verify that the checkout contains the relevant source, including `src/Markup/Avalonia.Markup.Xaml` when checking parser support.
+5. If no usable checkout is found, ask the user for the Avalonia source location before proceeding with work that depends on compatibility verification. Save the verified absolute checkout path as a single line in `<repo-root>/avalonia-source.local` and reuse it on later tasks. This machine-local file must remain untracked.
+6. When the proper solution needs an Avalonia feature missing from ADK, implement that compatible feature in ADK instead of duplicating framework responsibilities in app code. Verify its API, XAML syntax, and behavior against the Avalonia source first, add focused coverage, and then use it in the app. Keep the implementation scoped to the required capability; this is not permission to invent ADK-only shortcuts.

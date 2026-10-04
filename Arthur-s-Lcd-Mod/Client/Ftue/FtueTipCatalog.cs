@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Adk.Gui.Core;
 using LcdMod.Client.Apps;
 using LcdMod.Client.Apps.Abstract;
-using LcdMod.Client.Apps.ViewModel;
-using LcdMod.Client.Gui.ControlsTemplates;
-using LcdMod.Client.Gui.ControlsTemplates.Custom.Planet;
-using LcdMod.Client.Gui.Tooltip;
+using LcdMod.Client.Apps.NpcMarket;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls.Generic;
@@ -17,10 +15,6 @@ namespace LcdMod.Client.Ftue
 {
     internal static class FtueTipCatalog
     {
-        const string FARM_PLOT_DETAILS_CLASS = "FarmPlotDetails";
-        const string POWER_FILLED_DETAILS_CLASS = "PowerFilledDetails";
-        const string PICTURE_FRAME_PICK_TEXTURE_CLASS = "PictureFramePickTexture";
-
         public static IEnumerable<FtueTip> CreateTips()
         {
             return new[]
@@ -44,32 +38,22 @@ namespace LcdMod.Client.Ftue
 
         static FtueTip CreateMarketSearchTip()
         {
-            var tip = CreateControlHint<NpcMarketApp>(
+            var tip = CreateAppInputHint<NpcMarketApp>(
                 "market.search.macros",
                 Loc("MarketSearch_Line1"),
                 Loc("MarketSearch_Line2"),
-                (surface, app, control) => control.HasStyleClass("Search"),
-                (surface, app, control) => new object[]
+                (surface, app) => new object[]
                 {
                     LocHelper.GetLoc("DisplayName_Item_ZoneChip")
                 });
 
-            tip.CompleteOnPrimaryClick = false;
+            tip.ActivationCondition = (surface, app) => IsPointerOver<MarketSearchHeader>(surface);
             tip.CompletionBinder = (surface, app, complete) =>
             {
                 Action<string> handler = query =>
                 {
-                    if (!UsesAdvancedMarketSearchSyntax(query))
-                        return;
-
-                    try
-                    {
-                        complete();
-                    }
-                    catch (Exception e)
-                    {
-                        ErrorHandlerHelper.LogError(e, surface);
-                    }
+                    if (UsesAdvancedMarketSearchSyntax(query))
+                        CompleteSafely(surface, complete);
                 };
 
                 app.SearchChanged += handler;
@@ -81,31 +65,48 @@ namespace LcdMod.Client.Ftue
 
         static FtueTip CreateItemsCraftTip()
         {
-            return CreateControlHint<ItemsApp>(
+            var tip = CreateAppInputHint<ItemsApp>(
                 "items.open-craft",
                 Loc("ItemsCraft_Line1"),
-                Loc("ItemsCraft_Line2"),
-                (surface, app, control) =>
-                    (app is InventoryApp || app is ProjectorApp) &&
-                    control.DataContext is ItemEntry);
+                Loc("ItemsCraft_Line2"));
+            tip.ActivationCondition = (surface, app) => app is InventoryApp || app is ProjectorApp;
+            tip.CompletionBinder = (surface, app, complete) =>
+            {
+                Action handler = () => CompleteSafely(surface, complete);
+                app.CraftOpened += handler;
+                return () => app.CraftOpened -= handler;
+            };
+            return tip;
         }
 
         static FtueTip CreateFarmPlotDetailsTip()
         {
-            return CreateAppInputHint<FarmApp>(
+            var tip = CreateAppInputHint<FarmApp>(
                 "farm.plot-details",
                 Loc("FarmPlotDetails_Line1"),
-                Loc("FarmPlotDetails_Line2"),
-                (surface, app, control) => control.HasStyleClass(FARM_PLOT_DETAILS_CLASS));
+                Loc("FarmPlotDetails_Line2"));
+            tip.CompletionBinder = (surface, app, complete) =>
+            {
+                Action handler = () => CompleteSafely(surface, complete);
+                app.PlotDetailsOpened += handler;
+                return () => app.PlotDetailsOpened -= handler;
+            };
+            return tip;
         }
 
         static FtueTip CreatePowerFilledDetailsTip()
         {
-            return CreateAppInputHint<PowerFilledApp>(
+            var tip = CreateAppInputHint<PowerFilledApp>(
                 "power-filled.entry-details",
                 Loc("PowerFilledDetails_Line1"),
-                Loc("PowerFilledDetails_Line2"),
-                (surface, app, control) => control.HasStyleClass(POWER_FILLED_DETAILS_CLASS));
+                Loc("PowerFilledDetails_Line2"));
+            tip.CompletionBinder = (surface, app, complete) =>
+            {
+                Action handler = () => CompleteSafely(surface, complete);
+                app.EntryDetailsOpened += handler;
+                return () => app.EntryDetailsOpened -= handler;
+            };
+            return tip;
         }
 
         static FtueTip CreateStarMapPlanetDetailsTip()
@@ -113,9 +114,13 @@ namespace LcdMod.Client.Ftue
             var tip = CreateAppInputHint<StarMapApp>(
                 "starmap.planet-details",
                 Loc("StarMapPlanetDetails_Line1"),
-                Loc("StarMapPlanetDetails_Line2"),
-                (surface, app, control) =>
-                    control is InteractiveCircleEntry || control is PlanetGlobeControl);
+                Loc("StarMapPlanetDetails_Line2"));
+            tip.CompletionBinder = (surface, app, complete) =>
+            {
+                Action handler = () => CompleteSafely(surface, complete);
+                app.PlanetDetailsOpened += handler;
+                return () => app.PlanetDetailsOpened -= handler;
+            };
             return tip;
         }
 
@@ -124,8 +129,7 @@ namespace LcdMod.Client.Ftue
             var tip = CreateAppInputHint<StarMapApp>(
                 "starmap.static-camera",
                 Loc("StarMapStaticCamera_Line1"),
-                Loc("StarMapStaticCamera_Line2"),
-                null);
+                Loc("StarMapStaticCamera_Line2"));
             tip.Placement = HintPlacement.Top;
             tip.ActivationCondition = (surface, app) => app.PlanetariumMode;
             tip.CompletionBinder = (surface, app, complete) =>
@@ -142,8 +146,7 @@ namespace LcdMod.Client.Ftue
             var tip = CreateAppInputHint<PlanetaryMapApp>(
                 "planetary-map.create-gps",
                 Loc("PlanetaryMapCreateGps_Line1"),
-                Loc("PlanetaryMapCreateGps_Line2"),
-                null);
+                Loc("PlanetaryMapCreateGps_Line2"));
             tip.Placement = HintPlacement.Bottom;
             tip.ActivationCondition = (surface, app) => app.CanCreateSurfaceGps;
             tip.CompletionBinder = (surface, app, complete) =>
@@ -160,8 +163,7 @@ namespace LcdMod.Client.Ftue
             var tip = CreateAppInputHint<PlanetaryMapApp>(
                 "planetary-map.camera",
                 Loc("PlanetaryMapCamera_Line1"),
-                Loc("PlanetaryMapCamera_Line2"),
-                null);
+                Loc("PlanetaryMapCamera_Line2"));
             tip.Placement = HintPlacement.Top;
             tip.ActivationCondition = (surface, app) => app.CanOrbitCamera;
             tip.CompletionBinder = (surface, app, complete) =>
@@ -187,15 +189,12 @@ namespace LcdMod.Client.Ftue
 
         static FtueTip CreatePictureFrameCustomTexturesTip()
         {
-            var tip = CreateControlHint<DigitalPictureFramesApp>(
+            var tip = CreateAppInputHint<DigitalPictureFramesApp>(
                 "picture-frame.custom-textures",
                 Loc("PictureFrameCustomTextures_Line1"),
                 Loc("PictureFrameCustomTextures_Line2"),
-                (surface, app, control) => control.HasStyleClass(PICTURE_FRAME_PICK_TEXTURE_CLASS),
-                (surface, app, control) => new object[] { GetTextureStoragePath() });
-
-            tip.Trigger = ControlHintTrigger.PrimaryClick;
-            tip.CompleteOnPrimaryClick = false;
+                (surface, app) => new object[] { GetTextureStoragePath() });
+            tip.ActivationCondition = (surface, app) => app.PickerOpened;
             return tip;
         }
 
@@ -205,7 +204,6 @@ namespace LcdMod.Client.Ftue
                 "radar.ctrl-scroll-range",
                 Loc("RadarRange_Line1"),
                 Loc("RadarRange_Line2"),
-                null,
                 (surface, app) => new object[]
                 {
                     FormatingHelper.DistanceToString(SliderRadarRange.BASE_RANGE_METERS)
@@ -238,8 +236,7 @@ namespace LcdMod.Client.Ftue
             var tip = CreateAppInputHint<RadarApp>(
                 "radar.camera-pan-zoom",
                 Loc("RadarCamera_Line1"),
-                Loc("RadarCamera_Line2"),
-                null);
+                Loc("RadarCamera_Line2"));
 
             tip.Placement = HintPlacement.Bottom;
             tip.CompletionBinder = (surface, app, complete) =>
@@ -256,7 +253,6 @@ namespace LcdMod.Client.Ftue
             string id,
             string line1LocalizationKey,
             string line2LocalizationKey,
-            Func<InteractiveSurfaceScript, TApp, ControlTemplate, bool> completionCondition,
             Func<InteractiveSurfaceScript, TApp, object[]> parametersFactory = null)
             where TApp : class, IApp
         {
@@ -272,32 +268,27 @@ namespace LcdMod.Client.Ftue
                         line1LocalizationKey,
                         line2LocalizationKey,
                         parameters);
-                },
-                completionCondition);
+                });
         }
 
-        static AppControlHintFtueTip<TApp> CreateControlHint<TApp>(
-            string id,
-            string line1LocalizationKey,
-            string line2LocalizationKey,
-            Func<InteractiveSurfaceScript, TApp, ControlTemplate, bool> condition,
-            Func<InteractiveSurfaceScript, TApp, ControlTemplate, object[]> parametersFactory = null)
-            where TApp : class, IApp
+        static bool IsPointerOver<TElement>(InteractiveSurfaceScript surface)
+            where TElement : VisualElement
         {
-            return new AppControlHintFtueTip<TApp>(
-                id,
-                condition,
-                (surface, app, control) =>
-                {
-                    var parameters = parametersFactory == null
-                        ? Array.Empty<object>()
-                        : parametersFactory(surface, app, control) ?? Array.Empty<object>();
+            var root = surface.RetainedAppGuiHost == null ? null : surface.RetainedAppGuiHost.Root;
+            return root != null && FindPointerOver<TElement>(root);
+        }
 
-                    return BuildLocalizedMarkdown(
-                        line1LocalizationKey,
-                        line2LocalizationKey,
-                        parameters);
-                });
+        static bool FindPointerOver<TElement>(VisualElement element)
+            where TElement : VisualElement
+        {
+            if (!element.IsPointerOver)
+                return false;
+            if (element is TElement)
+                return true;
+            foreach (var child in element.VisualChildren)
+                if (FindPointerOver<TElement>(child))
+                    return true;
+            return false;
         }
 
         static string BuildLocalizedMarkdown(

@@ -4,6 +4,7 @@
 *.DotSettings.user
 *.local.ini
 /SE.Source
+/avalonia-source.local
 .claude/
 
 # Dev-only localization helper scripts (not part of the mod)

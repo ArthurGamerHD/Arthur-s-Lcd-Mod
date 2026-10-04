@@ -2,9 +2,6 @@ using System;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Config;
-using LcdMod.Client.Gui;
-using LcdMod.Client.Gui.ControlsTemplates;
-using LcdMod.Client.Modules.EyeTracking;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
@@ -43,9 +40,6 @@ namespace LcdMod.Client.Ftue
 
             SurfaceScriptBase.Instances.AppRegistered += HandleAppRegistered;
             SurfaceScriptBase.Instances.AppUnregistered += HandleAppUnregistered;
-            EyeTrackingModule.OnControlPointerEnter += HandleControlPointerEnter;
-            EyeTrackingModule.OnControlPointerLeave += HandleControlPointerLeave;
-            EyeTrackingModule.OnControlClick += HandleControlClick;
             HookEveryApp();
         }
 
@@ -57,9 +51,6 @@ namespace LcdMod.Client.Ftue
             _loaded = false;
             SurfaceScriptBase.Instances.AppRegistered -= HandleAppRegistered;
             SurfaceScriptBase.Instances.AppUnregistered -= HandleAppUnregistered;
-            EyeTrackingModule.OnControlPointerEnter -= HandleControlPointerEnter;
-            EyeTrackingModule.OnControlPointerLeave -= HandleControlPointerLeave;
-            EyeTrackingModule.OnControlClick -= HandleControlClick;
             UnhookEveryApp();
             _tips.Clear();
             FtueTipSlotScheduler.Clear();
@@ -148,7 +139,6 @@ namespace LcdMod.Client.Ftue
             interactive.OnUpdateStart += HandleUpdateStart;
             interactive.OnUpdateEnd += HandleUpdateEnd;
             interactive.OnVisualContact += HandleVisualContact;
-            interactive.OnCollectOverlayEntries += HandleCollectOverlayEntries;
             interactive.OnRenderOverlay += HandleRenderOverlay;
 
             var binding = new AppBinding(app, applicableTips);
@@ -194,7 +184,6 @@ namespace LcdMod.Client.Ftue
             interactive.OnUpdateStart -= HandleUpdateStart;
             interactive.OnUpdateEnd -= HandleUpdateEnd;
             interactive.OnVisualContact -= HandleVisualContact;
-            interactive.OnCollectOverlayEntries -= HandleCollectOverlayEntries;
             interactive.OnRenderOverlay -= HandleRenderOverlay;
             _bindings.Remove(interactive);
         }
@@ -281,94 +270,6 @@ namespace LcdMod.Client.Ftue
                 try
                 {
                     tip.OnVisualContact(surface, binding.App, coordinates);
-                }
-                catch (Exception e)
-                {
-                    ErrorHandlerHelper.LogError(e, surface);
-                }
-            }
-        }
-
-        void HandleCollectOverlayEntries(InteractiveSurfaceScript surface, List<Control> entries)
-        {
-            AppBinding binding;
-            if (entries == null || !TryGetActiveBinding(surface, out binding))
-                return;
-
-            for (int i = 0; i < binding.Tips.Count; i++)
-            {
-                var tip = binding.Tips[i];
-                if (tip.IsCompleted)
-                    continue;
-
-                try
-                {
-                    tip.OnCollectInteractiveEntries(surface, binding.App, entries);
-                }
-                catch (Exception e)
-                {
-                    ErrorHandlerHelper.LogError(e, surface);
-                }
-            }
-        }
-
-        void HandleControlPointerEnter(InteractiveSurfaceScript surface, ControlTemplate control)
-        {
-            DispatchControlPointer(surface, control, true);
-        }
-
-        void HandleControlPointerLeave(InteractiveSurfaceScript surface, ControlTemplate control)
-        {
-            DispatchControlPointer(surface, control, false);
-        }
-
-        void DispatchControlPointer(
-            InteractiveSurfaceScript surface,
-            ControlTemplate control,
-            bool entered)
-        {
-            AppBinding binding;
-            if (control == null || !TryGetActiveBinding(surface, out binding))
-                return;
-
-            for (int i = 0; i < binding.Tips.Count; i++)
-            {
-                var tip = binding.Tips[i];
-                if (tip.IsCompleted)
-                    continue;
-
-                try
-                {
-                    if (entered)
-                        tip.OnControlPointerEnter(surface, binding.App, control);
-                    else
-                        tip.OnControlPointerLeave(surface, binding.App, control);
-                }
-                catch (Exception e)
-                {
-                    ErrorHandlerHelper.LogError(e, surface);
-                }
-            }
-        }
-
-        void HandleControlClick(
-            InteractiveSurfaceScript surface,
-            ControlTemplate control,
-            ControlClickButton button)
-        {
-            AppBinding binding;
-            if (control == null || !TryGetActiveBinding(surface, out binding))
-                return;
-
-            for (int i = 0; i < binding.Tips.Count; i++)
-            {
-                var tip = binding.Tips[i];
-                if (tip.IsCompleted)
-                    continue;
-
-                try
-                {
-                    tip.OnControlClick(surface, binding.App, control, button);
                 }
                 catch (Exception e)
                 {

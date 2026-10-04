@@ -6,6 +6,7 @@
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
         <Configurations>Release;Debug;Experimental</Configurations>
         <Platforms>x64</Platforms>
+        <MdkInteractive>no</MdkInteractive>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
         <DefineConstants>TRACE;EXPERIMENTAL</DefineConstants>
@@ -35,6 +36,9 @@
         <AdditionalFiles Include="Content\*\**\*">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </AdditionalFiles>
+        <AdditionalFiles Include="readme.txt" Condition="Exists('readme.txt')">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </AdditionalFiles>
         <AdditionalFiles Include="thumb.png" Condition="Exists('thumb.png')">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </AdditionalFiles>
@@ -44,34 +48,29 @@
         <AdditionalFiles Remove="Content\Data\SBC files can go here"/>
         <None Remove="thumb.jpg"/>
         <None Remove="thumb.png"/>
+        <None Remove="readme.txt"/>
 
         <!-- why keen? why chinese language is not up to spec? ...  -->
         <AdditionalFiles Remove="Content\Data\Localization\MyTexts.zh.resx"/>
     </ItemGroup>
 
     <Target Name="MapzhTozhCN" BeforeTargets="PostBuildEvent">
-        <Copy SourceFiles="$(MSBuildProjectDirectory)\Content\Data\Localization\MyTexts.zh.resx"
-              DestinationFiles="$(MSBuildProjectDirectory)\Content\Data\Localization\MyTexts.zh-CN.resx"
-              SkipUnchangedFiles="true"/>
+        <Copy SourceFiles="$(MSBuildProjectDirectory)\Content\Data\Localization\MyTexts.zh.resx" DestinationFiles="$(MSBuildProjectDirectory)\Content\Data\Localization\MyTexts.zh-CN.resx" SkipUnchangedFiles="true" />
     </Target>
 
     <Target Name="Mapjpgtopng" BeforeTargets="PostBuildEvent">
-        <Copy SourceFiles="$(MSBuildProjectDirectory)\thumb.jpg"
-              DestinationFiles="$(MSBuildProjectDirectory)\thumb.png"
-              SkipUnchangedFiles="true"/>
+        <Copy SourceFiles="$(MSBuildProjectDirectory)\thumb.jpg" DestinationFiles="$(MSBuildProjectDirectory)\thumb.png" SkipUnchangedFiles="true" />
     </Target>
     
     <ItemGroup>
-        <ProjectReference Include="..\External\Adk\Adk.Analyzer\Adk.Analyzer.csproj"
-                          OutputItemType="Analyzer"
-                          ReferenceOutputAssembly="false">
+        <ProjectReference Include="..\LcdMod.CodeGenerator\LcdMod.CodeGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false">
             <SetPlatform>Platform=AnyCPU</SetPlatform>
         </ProjectReference>
-        <ProjectReference Include="..\LcdMod.CodeGenerator\LcdMod.CodeGenerator.csproj"
-                          OutputItemType="Analyzer"
-                          ReferenceOutputAssembly="false">
-            <SetPlatform>Platform=AnyCPU</SetPlatform>
-        </ProjectReference>
+    </ItemGroup>
+
+    <ItemGroup>
+        <AdditionalFiles Include="Client\**\*.adk.xaml" />
+        <AdditionalFiles Include="Client\Apps\**\*View.xaml" />
     </ItemGroup>
     
     <ItemGroup>
@@ -85,8 +84,7 @@
       <Compile Remove="Client\Terminal\Controls\Generic\SliderImageChangeInterval.cs" />
       <Compile Remove="Client\Terminal\Controls\Groups\ColorsTerminalControlGroup.cs" />
       <Compile Remove="Client\Terminal\Controls\Groups\GpsDisplayTerminalControlGroup.cs" />
-      <Compile Include="..\External\SE-Water\API\WaterModAPI.cs"
-               Link="Client\Api\WaterModAPI.cs" />
+      <Compile Include="..\External\SE-Water\API\WaterModAPI.cs" Link="Client\Api\WaterModAPI.cs" />
     </ItemGroup>
 
     <Target Name="RemoveZhCnResxAlias" AfterTargets="MdkPack;MdkDidNotPack">
@@ -97,8 +95,27 @@
         <Delete Files="$(MSBuildProjectDirectory)\thumb.png" />
     </Target>
 
+    <Target Name="WriteReadme" BeforeTargets="PostBuildEvent">
+        <WriteLinesToFile
+                File="readme.txt"
+                Lines="The content of this folder is generated automatically by MDK using attached Analyzers/Code generators
+Do not edit it manually, use the mod source on 'https://github.com/ArthurGamerHD/Arthur-s-Lcd-Mod' instead"
+                Overwrite="true"
+                Encoding="Unicode"/>
+    </Target>
+    
+    <Target Name="RemoveReadmeAlias" AfterTargets="MdkPack;MdkDidNotPack">
+        <Delete Files="$(MSBuildProjectDirectory)\readme.txt" />
+    </Target>
+    
+    <Import Project="..\External\Adk\Adk.CodeGeneration.props" />
     <Import Project="..\External\Adk\Adk.Audio\Adk.Audio.projitems" Label="Shared" />
+    <Import Project="..\External\CAudioVisualizer.SE\CAudioVisualizer.Core\CAudioVisualizer.Core.projitems" Label="Shared" />
+    <Import Project="..\External\CAudioVisualizer.SE\CAudioVisualizer.SpaceEngineers\CAudioVisualizer.SpaceEngineers.projitems" Label="Shared" />
     <Import Project="..\External\Adk\Adk.Compression\Adk.Compression.projitems" Label="Shared" />
+    <Import Project="..\External\Adk\Adk.Gui\Adk.Gui.projitems" Label="Shared" />
+    <Import Project="..\External\Adk\Adk.Gui.Lcd\Adk.Gui.Lcd.projitems" Label="Shared" />
+    <Import Project="..\External\Adk\Adk.Gui.ScreenSpace\Adk.Gui.ScreenSpace.projitems" Label="Shared" />
     <Import Project="..\External\Adk\Adk.Image\Adk.Image.projitems" Label="Shared" />
     <Import Project="..\External\SE-Procedural-Voxel-Cubemap-Api\ClientApi\ClientApi.projitems" Label="Shared" />
 </Project>

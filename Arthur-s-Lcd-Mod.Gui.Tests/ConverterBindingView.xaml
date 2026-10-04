@@ -1,0 +1,8 @@
+<UserControl xmlns="https://github.com/ArthurGamerHD/Adk"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="using:Arthur_s_Lcd_Mod.Gui.Tests"
+             x:Class="Arthur_s_Lcd_Mod.Gui.Tests.ConverterBindingView"
+             x:DataType="local:ConverterBindingModel">
+  <TextBlock x:Name="ConvertedText" Text="Test"
+             FontSize="{Binding Path=Size, Converter={StaticResource Multiply}, ConverterParameter='0,46', ConverterCulture=pt-BR}" />
+</UserControl>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window xmlns="https://github.com/ArthurGamerHD/Adk"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:dialogs="using:LcdMod.Client.Apps.Dialogs"
+        xmlns:ext="using:LcdMod.Client.Apps.Views.Extensions"
+        x:Class="LcdMod.Client.Apps.Dialogs.TextPromptView"
+        x:DataType="dialogs:TextPromptViewModel"
+        Title="{Binding Title}" Width="440" MinWidth="280" SizeToContent="Height"
+        Padding="14 4 14 14">
+  <Window.Styles>
+    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/Dialogs.xaml" />
+  </Window.Styles>
+  <StackPanel Spacing="8">
+    <TextBlock Classes="dialog-text" Text="{Binding Prompt}" FontSize="{Binding SmallFontSize}" TextWrapping="Wrap"
+               IsVisible="{Binding HasPrompt}" />
+    <TextBox Classes="clearButton" Text="{Binding Text, Mode=TwoWay}" Height="36" />
+    <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right" Margin="0 4 0 0">
+      <Button Classes="dialog-button" Command="{Binding CloseCommand}">
+        <TextBlock Classes="dialog-text" Text="{ext:loc LcdMod_Common_Button_Cancel}" FontSize="{Binding FontSize}" />
+      </Button>
+      <Button Classes="dialog-button primary" Command="{Binding ConfirmCommand}">
+        <TextBlock Classes="dialog-text" Text="{Binding ConfirmText}" FontSize="{Binding FontSize}" />
+      </Button>
+    </StackPanel>
+  </StackPanel>
+</Window>

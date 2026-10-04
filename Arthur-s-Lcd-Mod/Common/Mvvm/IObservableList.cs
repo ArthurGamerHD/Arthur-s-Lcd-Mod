@@ -1,10 +1,9 @@
-using System;
+using Adk.Gui.Collections.Reactive;
 using System.Collections.Generic;
 
 namespace LcdMod.Common.Mvvm
 {
-    public interface IObservableList<T> : IObservableCollection<T>, IList<T>
+    public interface IObservableList<T> : INotifyCollectionChanged, IList<T>
     {
-        event Action<IObservableCollection<T>, T> ItemChanged;
     }
 }

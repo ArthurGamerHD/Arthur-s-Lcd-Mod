@@ -4,13 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using Generated;
-using LcdMod.Client.Animation;
+using Adk.Gui.Animation;
+using Adk.Gui.Lcd;
 using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.Apps.Views;
 using LcdMod.Client.Config;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.GridData;
-using LcdMod.Client.Gui;
-using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Gui.UserControls;
 using LcdMod.Client.Helpers;
@@ -35,7 +35,6 @@ using static LcdMod.Common.Helpers.Constants;
 using IMyCockpit = Sandbox.ModAPI.IMyCockpit;
 using IMyShipController = Sandbox.ModAPI.IMyShipController;
 using IMyTextSurfaceProvider = Sandbox.ModAPI.Ingame.IMyTextSurfaceProvider;
-using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
 using NotImplementedException = LcdMod.Common.Exceptions.NotImplementedException;
 
 namespace LcdMod.Client.SurfaceScripts.Abstract
@@ -47,7 +46,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         readonly List<MySprite> _backgroundGrids = new List<MySprite>();
         readonly Dictionary<long, Vector2> _registeredProxyOffsets = new Dictionary<long, Vector2>();
         readonly List<MySprite> _cachedFrame = new List<MySprite>();
-        Grid _footerRoot;
         Color _backgroundColor;
         Color _foregroundColor;
 
@@ -130,6 +128,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         bool _cachedTitleLocalized;
         public bool TitleCanBeVisible { get; private set; } = true;
         public bool TitleVisible { get; private set; } = true;
+        public string TitleIcon => string.IsNullOrWhiteSpace(Icon) ? "MissingIcon" : Icon;
         public override ScriptUpdate NeedsUpdate => ScriptUpdate.Update10;
 
         public SurfaceConfig Config { get; protected set; }
@@ -144,6 +143,8 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         bool _disposed;
         volatile bool _asyncRenderPending;
         IApp _publishedApp;
+        App _retainedViewApp;
+        LcdAppViewHost _retainedViewHost;
 
         public AnimationController Animations { get; private set; }
         public ScreenProviderConfig ProviderConfig { get; private set; }
@@ -185,19 +186,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         public int SurfaceIndex => Config == null ? RotationOrSurfaceIndex : Config.SurfaceIndex;
 
         public abstract IApp App { get; }
-
-        protected Grid FooterRoot
-        {
-            get
-            {
-                if (_footerRoot == null)
-                    _footerRoot = new Grid(default(RectangleF));
-
-                return _footerRoot;
-            }
-        }
-
-        protected bool HasFooterRoot => _footerRoot != null && _footerRoot.Visible && _footerRoot.HasChildren;
 
         protected int ResolveRotationOrSurfaceIndex()
         {
@@ -272,7 +260,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             DrawTitle(sprites);
             DrawMessage(sprites, LocHelper.GetLoc("ScreenBlueprintsRew_NoBlueprints"),
                 "Warning", GetWarningColor(), ConfiguredScale);
-            DrawFooter(sprites);
         }
 
         protected void AddEmptySprites(List<MySprite> sprites)
@@ -281,7 +268,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             DrawTitle(sprites);
             DrawMessage(sprites, LocHelper.Empty,
                 "Warning", GetWarningColor(), ConfiguredScale);
-            DrawFooter(sprites);
         }
 
         public virtual void RequestRedraw()
@@ -319,6 +305,11 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 return;
             _disposed = true;
             UnpublishApp();
+
+            if (_retainedViewHost != null)
+                _retainedViewHost.Dispose();
+            _retainedViewHost = null;
+            _retainedViewApp = null;
 
             try
             {
@@ -384,14 +375,33 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             if (appBase == null)
                 return;
 
-            try
-            {
-                appBase.Close();
-            }
-            finally
-            {
-                appBase.CancelAnimationTree();
-            }
+            appBase.Close();
+        }
+
+        internal App RetainedViewApp => _retainedViewApp;
+
+        internal LcdGuiHost RetainedAppGuiHost =>
+            _retainedViewHost == null ? null : _retainedViewHost.GuiHost;
+
+        protected void EnsureRetainedAppView(App app)
+        {
+            if (ReferenceEquals(_retainedViewApp, app) && _retainedViewHost != null)
+                return;
+
+            if (_retainedViewHost != null)
+                _retainedViewHost.Dispose();
+            _retainedViewApp = app;
+            _retainedViewHost = app == null
+                ? null
+                : new LcdAppViewHost(Surface, app, Animations);
+        }
+
+        protected bool DrawRetainedAppView(List<MySprite> sprites)
+        {
+            if (_retainedViewHost == null)
+                return false;
+            _retainedViewHost.Draw(ViewBox, sprites);
+            return true;
         }
 
         protected virtual void UpdateViewBox()
@@ -444,8 +454,13 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         {
             var currentFrame = MyAPIGateway.Session.GameplayFrameCounter;
             if (currentFrame < WaitForFrame || _disposed)
+            {
+                ReuploadBSoD();
                 return;
+            }
 
+            if (currentFrame - LastRunTick > MaxRunGap)
+                InvalidateUploadedFrame();
             LastRunTick = currentFrame;
 
             base.Run();
@@ -633,6 +648,25 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             detailedInfo.AppendLine(customText);
         }
 
+        readonly List<MySprite> _bSoDReupload = new List<MySprite>();
+
+        // The crash frame is uploaded once; when it introduced the QR texture, SE drew it without the code.
+        void ReuploadBSoD()
+        {
+            if (_bSoDReupload.Count == 0 || _disposed)
+                return;
+            try
+            {
+                _renderComp.RenderSpritesToTexture(RotationOrSurfaceIndex, _bSoDReupload, _textureSize, _aspectRatio,
+                    Surface.ScriptBackgroundColor, Surface.BackgroundAlpha);
+            }
+            catch (Exception e)
+            {
+                ErrorHandlerHelper.LogError(e, this);
+            }
+            _bSoDReupload.Clear();
+        }
+
         public void OnException(Exception e)
         {
             try
@@ -641,6 +675,9 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
                 _renderComp.RenderSpritesToTexture(RotationOrSurfaceIndex, bSoD.Frame, _textureSize, _aspectRatio,
                     Surface.ScriptBackgroundColor, Surface.BackgroundAlpha);
+                _bSoDReupload.Clear();
+                if (bSoD.NeedsReupload)
+                    _bSoDReupload.AddRange(bSoD.Frame);
                 
                 CacheFrameForProxies(bSoD.Frame);
                 NotifyRendered();
@@ -723,26 +760,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             frame.Add(MySprite.CreateClearClipRect());
 
             CaretY += titleBarHeight;
-        }
-
-        protected virtual void DrawFooter(List<MySprite> frame)
-        {
-            if (!HasFooterRoot)
-                return;
-
-            RenderFooterRoot(frame, FooterRoot.Rect);
-        }
-
-        protected void RenderFooterRoot(List<MySprite> frame, RectangleF bounds)
-        {
-            if (frame == null || _footerRoot == null || !_footerRoot.Visible)
-                return;
-
-            IVisualStyleScope scope = App;
-            _footerRoot.SetStyleParent(scope);
-            _footerRoot.SetDataContext(App);
-            _footerRoot.SetRect(bounds);
-            _footerRoot.Render(frame);
         }
 
         protected static readonly Regex RxGroup = new Regex(@"\(\s*G\s*:\s*(.+?)\s*\)", RegexOptions.IgnoreCase);
@@ -947,24 +964,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             return ColorComponent.ResolveErrorColor();
         }
 
-        protected virtual void DrawCellBackground(List<MySprite> frame, KeyValuePair<MyItemType, double> item,
-            float xStart, float xEnd, float yStart, float cellHeight, float cellPadding)
-        {
-            var rl = xStart + cellPadding / 2;
-            var rr = xEnd - cellPadding / 2;
-            var rt = yStart + cellPadding / 2;
-            var rb = yStart + cellHeight - cellPadding / 2;
-
-            var backgroundColor = item.Value == 0 ? GetErrorColor() : GetHeaderColor();
-            var a = backgroundColor.MulValue(0.2f);
-            var cellRect = new RectangleF(rl, rt, rr - rl, rb - rt);
-            var dropShadow = new RectangleF(cellRect.Position + 2, cellRect.Size);
-            BorderRenderer.CreateSpritesFromRect(dropShadow, frame, a,
-                radiusScale: ConfiguredScale);
-            BorderRenderer.CreateSpritesFromRect(cellRect, frame, backgroundColor,
-                radiusScale: ConfiguredScale);
-        }
-
         protected static void ParseFilter(IMyTerminalBlock lcd, out string mode, out string token)
         {
             mode = null;
@@ -1057,6 +1056,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             TitleVisible = GeneralComponent.TitleVisible && TitleCanBeVisible;
             InvalidateTitleCache();
             UpdateViewBox();
+            InvalidateUploadedFrame();
             _backgroundGrids.Clear();
             (Block as IMyTerminalBlock)?.RefreshTerminal();
         }
@@ -1250,9 +1250,14 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         public void UpdateFaction(IMyFaction faction)
         {
+            string previousIcon = Icon;
             Faction = faction;
             Icon = FactionHelper.GetIcon(faction);
-            FactionHelper.GetIcon(faction);
+            if (!string.Equals(previousIcon, Icon, StringComparison.Ordinal) && App != null)
+            {
+                App.LayoutChanged();
+                RenderSprites();
+            }
         }
 
         readonly Vector2I _textureSize;
@@ -1280,7 +1285,14 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 CacheFrameForProxies(spriteList);
                 var renderList = ClipToBounds ? ClipSpriteListToSurfaceBounds(spriteList) : spriteList;
                 LastRenderFrame = currentFrame;
-                NotifyRendered();
+                var backgroundColor = Surface.ScriptBackgroundColor;
+                var renderOpacity = GetRenderOpacity();
+                bool published = PublishProxyFrame(spriteList);
+                bool uploaded = UpdateUploadedFrame(renderList, backgroundColor, renderOpacity, currentFrame);
+                if (published || uploaded)
+                    NotifyRendered();
+                if (!uploaded)
+                    return;
 
 #if DEBUG
                 AddSpriteCountDebug(renderList);
@@ -1293,8 +1305,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                     _asyncRenderPending = true;
 
                     var surfaceIndex = RotationOrSurfaceIndex;
-                    var backgroundColor = Surface.ScriptBackgroundColor;
-                    var renderOpacity = GetRenderOpacity();
                     LcdModClientComponent.Blocker.Add(MyAPIGateway.Parallel.Start(() =>
                     {
                         try
@@ -1312,7 +1322,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 else
                 {
                     _renderComp.RenderSpritesToTexture(RotationOrSurfaceIndex, renderList, _textureSize, _aspectRatio,
-                        Surface.ScriptBackgroundColor, GetRenderOpacity());
+                        backgroundColor, renderOpacity);
                 }
 
             }
@@ -1321,6 +1331,103 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 OnException(e);
             }
         }
+
+        /// <summary>
+        /// Records the frame about to be uploaded and returns false when it matches the texture
+        /// content already on the LCD. SE releases the texture while the block is out of range or
+        /// not working and stops running the script meanwhile, so a gap between runs forces an upload.
+        /// </summary>
+        bool UpdateUploadedFrame(List<MySprite> sprites, Color backgroundColor, byte opacity, long frame)
+        {
+            bool same = _hasUploadedFrame &&
+                        frame - _uploadedFrameTick < ForcedUploadInterval &&
+                        backgroundColor == _uploadedBackground &&
+                        opacity == _uploadedOpacity &&
+                        sprites.Count == _uploadedFrame.Count;
+            for (int i = 0; same && i < sprites.Count; i++)
+                same = SameSprite(sprites[i], _uploadedFrame[i]);
+
+            long textureVersion = _uploadedTextureVersion;
+            if (!same || Adk.Gui.Lcd.LcdDynamicTexture.GlobalContentVersion != _uploadedGlobalTextureVersion)
+            {
+                textureVersion = 0;
+                for (int i = 0; i < sprites.Count; i++)
+                {
+                    if (sprites[i].Type == SpriteType.TEXTURE)
+                        textureVersion += Adk.Gui.Lcd.LcdDynamicTexture.GetContentVersion(sprites[i].Data);
+                }
+            }
+            if (same && textureVersion == _uploadedTextureVersion)
+            {
+                _uploadedGlobalTextureVersion = Adk.Gui.Lcd.LcdDynamicTexture.GlobalContentVersion;
+                return false;
+            }
+
+            _uploadedFrame.Clear();
+            _uploadedFrame.AddRange(sprites);
+            _uploadedBackground = backgroundColor;
+            _uploadedOpacity = opacity;
+            _uploadedTextureVersion = textureVersion;
+            _uploadedGlobalTextureVersion = Adk.Gui.Lcd.LcdDynamicTexture.GlobalContentVersion;
+            _uploadedFrameTick = frame;
+            _hasUploadedFrame = true;
+            return true;
+        }
+
+        protected void InvalidateUploadedFrame()
+        {
+            _hasUploadedFrame = false;
+            _hasPublishedFrame = false;
+        }
+
+        /// <summary>
+        /// Proxies render from this surface's unclipped frame, so they must be notified when content
+        /// outside this surface changes (such as the cursor over a proxy) even if the clipped upload is identical.
+        /// </summary>
+        bool PublishProxyFrame(List<MySprite> sprites)
+        {
+            if (_registeredProxyOffsets.Count <= 0)
+            {
+                _hasPublishedFrame = false;
+                return false;
+            }
+
+            bool same = _hasPublishedFrame && sprites.Count == _publishedFrame.Count;
+            for (int i = 0; same && i < sprites.Count; i++)
+                same = SameSprite(sprites[i], _publishedFrame[i]);
+            if (same)
+                return false;
+
+            _publishedFrame.Clear();
+            _publishedFrame.AddRange(sprites);
+            _hasPublishedFrame = true;
+            return true;
+        }
+
+        readonly List<MySprite> _publishedFrame = new List<MySprite>();
+        bool _hasPublishedFrame;
+
+        static bool SameSprite(MySprite left, MySprite right)
+        {
+            return left.Type == right.Type &&
+                   left.Alignment == right.Alignment &&
+                   left.RotationOrScale == right.RotationOrScale &&
+                   left.Position == right.Position &&
+                   left.Size == right.Size &&
+                   left.Color == right.Color &&
+                   string.Equals(left.Data, right.Data, StringComparison.Ordinal) &&
+                   string.Equals(left.FontId, right.FontId, StringComparison.Ordinal);
+        }
+
+        const long ForcedUploadInterval = 600;
+        const long MaxRunGap = 30;
+        readonly List<MySprite> _uploadedFrame = new List<MySprite>();
+        Color _uploadedBackground;
+        byte _uploadedOpacity;
+        long _uploadedTextureVersion;
+        long _uploadedGlobalTextureVersion = -1;
+        long _uploadedFrameTick;
+        bool _hasUploadedFrame;
 
         void OnAsyncRendered()
         {

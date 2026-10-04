@@ -1,0 +1,17 @@
+<UserControl xmlns="https://github.com/ArthurGamerHD/Adk"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="using:Arthur_s_Lcd_Mod.Gui.Tests"
+             x:Class="Arthur_s_Lcd_Mod.Gui.Tests.HotReloadView"
+             x:DataType="local:HotReloadModel">
+  <StackPanel>
+    <TextBlock x:Name="Title" Text="{Binding Title}" />
+    <ItemsControl ItemsSource="{Binding Items}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="local:HotReloadItem">
+          <TextBlock Text="{Binding Name}" />
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+    <ContentPresenter Content="{Binding Hosted}" />
+  </StackPanel>
+</UserControl>

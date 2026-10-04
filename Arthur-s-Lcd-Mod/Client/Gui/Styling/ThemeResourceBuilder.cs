@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using LcdMod.Client.Extensions;
-using LcdMod.Client.Gui.Styling.DataTemplates;
 using LcdMod.Client.Market;
 using LcdMod.Common.Helpers;
 using VRageMath;
@@ -12,7 +11,6 @@ namespace LcdMod.Client.Gui.Styling
         public static ResourceTree FromThemeDictionary(IReadOnlyDictionary<string, Color> theme)
         {
             ResourceTree resources = new ResourceTree();
-            ItemDataTemplate.AddResources(resources);
 
             resources.Set(ThemeResources.AccentColor, theme[Constants.PRIMARY]);
             resources.Set(ThemeResources.OnAccentColor, theme[Constants.ON_PRIMARY]);
@@ -25,6 +23,8 @@ namespace LcdMod.Client.Gui.Styling
             resources.Set(ThemeResources.DividerColor, theme[Constants.OUTLINE_VARIANT]);
             resources.Set(ThemeResources.DisabledColor, theme[Constants.DISABLED_FOREGROUND]);
             resources.Set(ThemeResources.BackgroundColor, theme[Constants.BACKGROUND]);
+            resources.Set(ThemeResources.ControlBackgroundColor, new Color(theme[Constants.BACKGROUND], 0.75f));
+            resources.Set(ThemeResources.PopupBackgroundColor, new Color(theme[Constants.BACKGROUND], 0.9f));
             resources.Set(ThemeResources.FontColor, theme[Constants.ON_BACKGROUND]);
             resources.Set(ThemeResources.SurfaceColor, theme[Constants.SURFACE]);
             resources.Set(ThemeResources.OnSurfaceColor, theme[Constants.ON_SURFACE]);
@@ -40,15 +40,14 @@ namespace LcdMod.Client.Gui.Styling
             resources.Set(ThemeResources.BorderColor, theme[Constants.OUTLINE]);
             resources.Set(ThemeResources.BorderVariantColor, theme[Constants.OUTLINE_VARIANT]);
             resources.Set(ThemeResources.ShadowColor, theme[Constants.SHADOW]);
-            var scrollBarThumbColor = new Color(theme[Constants.PRIMARY], 250);
-            resources.Set(ThemeResources.ScrollBarTrackColor, new Color(theme[Constants.OUTLINE_VARIANT], 127));
+            var scrollBarThumbColor = new Color(theme[Constants.PRIMARY], 250 / 255f);
+            resources.Set(ThemeResources.ScrollBarTrackColor, new Color(theme[Constants.OUTLINE_VARIANT], 127 / 255f));
             resources.Set(ThemeResources.ScrollBarThumbColor, scrollBarThumbColor);
             resources.Set(ThemeResources.ScrollBarThumbHoverColor, scrollBarThumbColor.DeriveAccentColor());
             resources.Set(ThemeResources.ScrollBarThumbPressedColor, scrollBarThumbColor.DeriveAccentColor().DeriveAccentColor());
 
             resources.Set(ThemeResources.TextFont, "White");
             resources.Set(ThemeResources.PageTransitionFrames, 24);
-            resources.Set(ThemeResources.PictureTransitionFrames, 24);
             
             resources.Set(MarketThemeResources.PriceTrendUpColor, theme[Constants.SUCCESS]);
             resources.Set(MarketThemeResources.PriceTrendDownColor, theme[Constants.ERROR]);

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using LcdMod.Client.Extensions;
 using LcdMod.Client.Helpers;
 using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
@@ -15,6 +14,8 @@ namespace LcdMod.Client.Config
         public static bool RenderOtherUserTextures => Config == null || Config.RenderOtherUserTextures;
         public static bool UseLegacyLocalTextureStorage => Config != null && Config.UseLegacyLocalTextureStorage;
         public static bool AcceptMediaStreams => Config == null || Config.AcceptMediaStreams;
+        public static Adk.Gui.Controls.CaptionButtonsPlacement CaptionButtons =>
+            Config?.CaptionButtons ?? Adk.Gui.Controls.CaptionButtonsPlacement.Left;
         public static PlanetTextureQuality TextureQuality => PlanetTextureQualitySettings.Normalize(
             Config?.TextureQuality ?? PlanetTextureQuality.High);
 

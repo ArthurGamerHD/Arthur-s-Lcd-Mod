@@ -8,6 +8,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Arthur-s-Lcd-Mod.Tests", "A
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Adk.Analyzer", "External\Adk\Adk.Analyzer\Adk.Analyzer.csproj", "{251D6409-8BBD-4B51-8E94-BAFB2E94D67A}"
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Adk.Gui", "External\Adk\Adk.Gui\Adk.Gui.shproj", "{5D175573-C301-4CB0-B4B1-88CBE2D6A81E}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Adk.Gui.Lcd", "External\Adk\Adk.Gui.Lcd\Adk.Gui.Lcd.shproj", "{0B94A9EF-926C-4D88-BC49-9AF4E52BED6C}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Adk.Gui.ScreenSpace", "External\Adk\Adk.Gui.ScreenSpace\Adk.Gui.ScreenSpace.shproj", "{4A8F3D24-0D2C-4D1A-8D71-5FC6A0BE03AA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -46,6 +52,9 @@ Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		External\Adk\Adk.Audio\Adk.Audio.projitems*{8a3cdcc5-4b55-4d87-a415-698a0e1ff06f}*SharedItemsImports = 13
 		External\Adk\Adk.Compression\Adk.Compression.projitems*{3b928576-fdc2-4d82-9ff5-e65b218d37fb}*SharedItemsImports = 13
+		External\Adk\Adk.Gui\Adk.Gui.projitems*{5d175573-c301-4cb0-b4b1-88cbe2d6a81e}*SharedItemsImports = 13
+		External\Adk\Adk.Gui.Lcd\Adk.Gui.Lcd.projitems*{0b94a9ef-926c-4d88-bc49-9af4e52bed6c}*SharedItemsImports = 13
+		External\Adk\Adk.Gui.ScreenSpace\Adk.Gui.ScreenSpace.projitems*{4a8f3d24-0d2c-4d1a-8d71-5fc6a0be03aa}*SharedItemsImports = 13
 		External\Adk\Adk.Image\Adk.Image.projitems*{87fdc905-a339-4758-885f-0b2b5199f7e7}*SharedItemsImports = 13
 	EndGlobalSection
 EndGlobal

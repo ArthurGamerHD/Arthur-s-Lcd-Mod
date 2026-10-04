@@ -1,28 +1,22 @@
 using System;
 using System.Collections.Generic;
 
-namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
+namespace LcdMod.Client.Apps.Dialogs
 {
-    enum FilePickerMode
+    internal enum FilePickerMode
     {
         PickFile,
         PickFolder
     }
 
-    sealed class FolderModel
+    internal sealed class FolderModel
     {
-        public FolderModel()
-        {
-            Folders = new List<FolderModel>();
-            Files = new List<FileModel>();
-        }
-
         public string Name { get; set; }
         public string FullPath { get; set; }
         public string Subtitle { get; set; }
         public object Tag { get; set; }
-        public List<FolderModel> Folders { get; private set; }
-        public List<FileModel> Files { get; private set; }
+        public List<FolderModel> Folders { get; } = new List<FolderModel>();
+        public List<FileModel> Files { get; } = new List<FileModel>();
         public FolderModel Parent { get; internal set; }
 
         public override string ToString()
@@ -31,7 +25,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         }
     }
 
-    sealed class FileModel
+    internal sealed class FileModel
     {
         public string Name { get; set; }
         public string FullPath { get; set; }
@@ -45,7 +39,7 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         }
     }
 
-    sealed class FilePickerResult
+    internal sealed class FilePickerResult
     {
         public FilePickerMode Mode { get; set; }
         public string RootName { get; set; }
@@ -55,12 +49,8 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         public object Tag { get; set; }
     }
 
-    sealed class FilePickerContextAction
+    internal sealed class FilePickerContextAction
     {
-        public FilePickerContextAction()
-        {
-        }
-
         public FilePickerContextAction(string text, Action clicked)
         {
             Text = text;
@@ -71,25 +61,5 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Dialogs
         public Action Clicked { get; set; }
         public bool Enabled { get; set; } = true;
         public bool UseErrorTextStyle { get; set; }
-    }
-
-    abstract class FilePickerEntryModel
-    {
-        public bool IsSelected;
-        public bool IsUpEntry;
-        public string Name;
-        public string FullPath;
-        public string Subtitle;
-        public string Icon;
-    }
-
-    sealed class FolderControlModel : FilePickerEntryModel
-    {
-        public FolderModel Folder;
-    }
-
-    sealed class FileControlModel : FilePickerEntryModel
-    {
-        public FileModel File;
     }
 }

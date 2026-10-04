@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Styles xmlns="https://github.com/ArthurGamerHD/Adk">
+  <!-- Destructive actions (delete, remove): error-colored in every state but disabled. -->
+  <Style Selector="Button.danger">
+    <Setter Property="Background" Value="{DynamicResource errorColor}" />
+  </Style>
+  <Style Selector="Button.danger:pointerover">
+    <Setter Property="Background" Value="{DynamicResource errorColor}" />
+  </Style>
+  <Style Selector="Button.danger:pressed">
+    <Setter Property="Background" Value="{DynamicResource errorColor}" />
+  </Style>
+  <Style Selector="Button.danger:disabled">
+    <Setter Property="Background" Value="{DynamicResource surfaceContainerLowColor}" />
+    <Setter Property="Foreground" Value="{DynamicResource disabledColor}" />
+  </Style>
+  <Style Selector="Button.danger:disabled TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource disabledColor}" />
+  </Style>
+</Styles>

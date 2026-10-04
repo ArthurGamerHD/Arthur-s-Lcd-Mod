@@ -1,0 +1,114 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <Configurations>Release;Debug;Experimental</Configurations>
+    <GameIniPath>$(MSBuildThisFileDirectory)../Arthur-s-Lcd-Mod/mdk.local.ini</GameIniPath>
+    <SpaceEngineersBinPath Condition="'$(SpaceEngineersBinPath)' == '' And Exists('$(GameIniPath)')">$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(GameIniPath)')), '(?m)^binarypath=(.+)').Groups[1].Value.Trim())</SpaceEngineersBinPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="Link" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <Using Include="Xunit" />
+    <Reference Include="VRage.Math" HintPath="$(SpaceEngineersBinPath)/VRage.Math.dll" />
+    <Reference Include="VRage.Library" HintPath="$(SpaceEngineersBinPath)/VRage.Library.dll" />
+    <Reference Include="VRage" HintPath="$(SpaceEngineersBinPath)/VRage.dll" />
+    <Reference Include="VRage.Game" HintPath="$(SpaceEngineersBinPath)/VRage.Game.dll" />
+    <Reference Include="VRage.Input" HintPath="$(SpaceEngineersBinPath)/VRage.Input.dll" />
+    <Reference Include="Sandbox.Common" HintPath="$(SpaceEngineersBinPath)/Sandbox.Common.dll" />
+    <Reference Include="ProtoBuf.Net.Core" HintPath="$(SpaceEngineersBinPath)/ProtoBuf.Net.Core.dll" />
+    <Compile Include="../External/Adk/Adk.Gui.Lcd/LcdRenderer.cs" Link="Source/Lcd/LcdRenderer.cs" />
+    <Compile Include="../External/Adk/Adk.Gui.Lcd/LcdTextMetrics.cs" Link="Source/Lcd/LcdTextMetrics.cs" />
+    <Compile Include="../External/Adk/Adk.Gui.Lcd/LcdTextureResolver.cs" Link="Source/Lcd/LcdTextureResolver.cs" />
+    <Compile Include="../External/Adk/Adk.Gui.Lcd/LcdDynamicTexture.cs" Link="Source/Lcd/LcdDynamicTexture.cs" />
+    <Compile Include="../External/Adk/Adk.Gui.Lcd/LcdGuiHost.cs" Link="Source/Lcd/LcdGuiHost.cs" />
+    <Compile Include="../External/Adk/Adk.Gui.Lcd/LcdSpriteCanvas.cs" Link="Source/Lcd/LcdSpriteCanvas.cs" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Apps/Views/FontSizeMultiplierConverter.cs" Link="Source/FontSizeMultiplierConverter.cs" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Apps/Views/AppView.cs" Link="Source/AppView.cs" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Apps/Views/PercentTextConverter.cs" Link="Source/PercentTextConverter.cs" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Apps/Views/MultiplyConverter.cs" Link="Source/MultiplyConverter.cs" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Apps/Views/EnumEqualsConverter.cs" Link="Source/EnumEqualsConverter.cs" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Apps/Controls/FitTextBlock.cs" Link="Source/FitTextBlock.cs" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Apps/Controls/SegmentedBar.cs" Link="Source/SegmentedBar.cs" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Apps/Controls/TilingPanel.cs" Link="Source/TilingPanel.cs" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Apps/Controls/BlockPropertyPercentage.cs" Link="Source/BlockPropertyPercentage.cs" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Apps/Controls/ActionButton.cs" Link="Source/ActionButton.cs" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Apps/Controls/CloseGlyph.cs" Link="Source/CloseGlyph.cs" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Games/GameInput.cs;../Arthur-s-Lcd-Mod/Client/Apps/Games/GameInputLayer.cs" Link="Source/Games/%(Filename)%(Extension)" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Gui/KeyTextTranslator.cs" Link="Source/KeyTextTranslator.cs" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Gui/UserControls/BSoDQrCode.cs" Link="Source/BSoDQrCode.cs" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Gui/UserControls/Antenna/AntennaEntryControl.cs" Link="Source/Antenna/AntennaEntryControl.cs" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Apps/Views/MinimumContrastConverter.cs" Link="Source/MinimumContrastConverter.cs" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Apps/Views/Extensions/locExtension.cs" Link="Source/locExtension.cs" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Extensions/ColorExtensions.cs" Link="Source/ColorExtensions.cs" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Common/Helpers/Constants.cs" Link="Source/Constants.cs" />
+    <AdditionalFiles Include="../Arthur-s-Lcd-Mod/Client/Apps/Views/AppView.xaml" />
+    <AdditionalFiles Include="../Arthur-s-Lcd-Mod/Content/Data/Gui/Styles/**/*.xaml"
+                     Link="Content/Data/Gui/Styles/%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="../External/Adk/Adk.Gui.Lcd/LcdInputSource.cs" Link="Source/Lcd/LcdInputSource.cs" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Common/Mvvm/ObservableObject.cs" Link="Source/ObservableObject.cs" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Common/Mvvm/ObservableCollection.cs" Link="Source/ObservableCollection.cs" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Common/Mvvm/IObservableList.cs" Link="Source/IObservableList.cs" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Common/Mvvm/ObservableDictionary.cs" Link="Source/ObservableDictionary.cs" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Common/Mvvm/IObservableDictionary.cs" Link="Source/IObservableDictionary.cs" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Apps/Thrust/*.cs" Link="Source/Thrust/%(Filename)%(Extension)" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Apps/DockingAlignment/*.cs" Link="Source/DockingAlignment/%(Filename)%(Extension)" />
+    <AdditionalFiles Include="../Arthur-s-Lcd-Mod/Client/Apps/DockingAlignment/*View.xaml" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Apps/Inventory/*.cs" Link="Source/Inventory/%(Filename)%(Extension)" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Apps/Projector/*.cs" Link="Source/Projector/%(Filename)%(Extension)" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Apps/Controls/MultiProgressPanel.cs" Link="Source/MultiProgressPanel.cs" />
+    <AdditionalFiles Include="../Arthur-s-Lcd-Mod/Client/Apps/Projector/*View.xaml" />
+    <AdditionalFiles Include="../Arthur-s-Lcd-Mod/Client/Apps/Inventory/*View.xaml" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Apps/EnergyDashboard/*.cs" Link="Source/EnergyDashboard/%(Filename)%(Extension)" />
+    <AdditionalFiles Include="../Arthur-s-Lcd-Mod/Client/Apps/EnergyDashboard/*View.xaml" />
+    <AdditionalFiles Include="../Arthur-s-Lcd-Mod/Client/Apps/Thrust/*View.xaml" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Apps/Dialogs/*.cs" Link="Source/Dialogs/%(Filename)%(Extension)" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Common/Config/Components/MediaVisualizerSettings.cs;../Arthur-s-Lcd-Mod/Client/Apps/MediaPlayer/MediaVisualizerSchema.cs;../Arthur-s-Lcd-Mod/Client/Apps/MediaPlayer/VisualizerSettings*.cs" Link="Source/MediaPlayer/%(Filename)%(Extension)" />
+    <AdditionalFiles Include="../Arthur-s-Lcd-Mod/Client/Apps/MediaPlayer/VisualizerSettingsView.xaml" />
+    <AdditionalFiles Include="../Arthur-s-Lcd-Mod/Client/Apps/Dialogs/*.xaml" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Apps/CargoFilled/ContainerAction*.cs" Exclude="../Arthur-s-Lcd-Mod/Client/Apps/CargoFilled/ContainerActionLauncher.cs" Link="Source/Cargo/%(Filename)%(Extension)" />
+    <AdditionalFiles Include="../Arthur-s-Lcd-Mod/Client/Apps/CargoFilled/ContainerActionView.xaml" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Gui/ControlsTemplates/Interactive/ButtonPanelModels.cs" Link="Source/ButtonPad/ButtonPanelModels.cs" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Apps/ButtonPad/ButtonPadEntryView*.cs;../Arthur-s-Lcd-Mod/Client/Apps/ButtonPad/ButtonPadPickerViewModels.cs;../Arthur-s-Lcd-Mod/Client/Apps/ButtonPad/*PickerView.cs;../Arthur-s-Lcd-Mod/Client/Apps/ButtonPad/ActionConfiguration*.cs" Link="Source/ButtonPad/%(Filename)%(Extension)" />
+    <AdditionalFiles Include="../Arthur-s-Lcd-Mod/Client/Apps/ButtonPad/ButtonPadEntryView.xaml;../Arthur-s-Lcd-Mod/Client/Apps/ButtonPad/*PickerView.xaml;../Arthur-s-Lcd-Mod/Client/Apps/ButtonPad/ActionConfigurationView.xaml" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Apps/Views/StatusMessage*.cs;../Arthur-s-Lcd-Mod/Client/Apps/Controls/LoadingWheel.cs" Link="Source/Status/%(Filename)%(Extension)" />
+    <AdditionalFiles Include="../Arthur-s-Lcd-Mod/Client/Apps/Views/StatusMessageView.xaml" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Apps/IntegrityMonitor/*.cs" Link="Source/IntegrityMonitor/%(Filename)%(Extension)" />
+    <AdditionalFiles Include="../Arthur-s-Lcd-Mod/Client/Apps/IntegrityMonitor/*.xaml" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Apps/Radar/*.cs" Link="Source/Radar/%(Filename)%(Extension)" />
+    <AdditionalFiles Include="../Arthur-s-Lcd-Mod/Client/Apps/Radar/*.xaml" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Apps/Maps/MapMarker.cs;../Arthur-s-Lcd-Mod/Client/Apps/Maps/CartographyMapView.cs" Link="Source/Maps/%(Filename)%(Extension)" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Apps/Maps/AsyncMapTexture.cs;../Arthur-s-Lcd-Mod/Client/Modules/Cartography/Maps/MapRenderFrame.cs" Link="Source/Maps/%(Filename)%(Extension)" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Apps/Maps/PlanetSurfaceDrag.cs" Link="Source/Maps/PlanetSurfaceDrag.cs" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Common/Imaging/*.cs" Link="Source/Imaging/%(Filename)%(Extension)" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Apps/Maps/MapOrbitInertia.cs" Link="Source/Maps/MapOrbitInertia.cs" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Modules/EyeTracking/PointerInputCapture.cs" Link="Source/PointerInputCapture.cs" />
+    <AdditionalFiles Include="ConverterBindingView.xaml" />
+    <AdditionalFiles Include="StringFormatBindingView.xaml" />
+    <AdditionalFiles Include="NamedColorView.xaml" />
+    <AdditionalFiles Include="CornerRadiusView.xaml" />
+    <AdditionalFiles Include="HotReloadView.xaml" />
+    <AdditionalFiles Include="ToolTipView.xaml" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Markdown/**/*.cs;../Arthur-s-Lcd-Mod/Client/Apps/Markdown/MarkdownPresenter.cs;../Arthur-s-Lcd-Mod/Client/Helpers/LocHelper.cs;../Arthur-s-Lcd-Mod/Client/Apps/Farm/FarmPlotButton.cs;../Arthur-s-Lcd-Mod/Client/Ftue/FtueHintWindow.cs" Link="Source/Markdown/%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Apps/NpcMarket/NpcMarketView.cs" Link="Source/NpcMarket/NpcMarketView.cs" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Apps/NpcMarket/NpcMarketControls.cs" Link="Source/NpcMarket/NpcMarketControls.cs" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Apps/NpcMarket/MarketSearchHeader.cs" Link="Source/NpcMarket/MarketSearchHeader.cs" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Market/NpcMarketMode.cs" Link="Source/NpcMarket/NpcMarketMode.cs" />
+    <AdditionalFiles Include="../Arthur-s-Lcd-Mod/Client/Apps/NpcMarket/NpcMarketView.xaml" />
+    <Compile Include="../Arthur-s-Lcd-Mod/Client/Apps/NpcMarket/MarketItemDialog*.cs" Link="Source/NpcMarket/%(Filename)%(Extension)" />
+    <AdditionalFiles Include="../Arthur-s-Lcd-Mod/Client/Apps/NpcMarket/MarketItemDialogView.xaml" />
+    <None Include="../Arthur-s-Lcd-Mod/Content/Data/Gui/Styles/Fluent/Controls/Thrust*Control.xaml"
+          Link="Styles/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <ProjectReference Include="../External/Adk/Adk.Analyzer/Adk.Analyzer.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+  <Import Project="../External/Adk/Adk.Gui/Adk.Gui.projitems" Label="Shared" />
+  <Import Project="../External/CAudioVisualizer.SE/CAudioVisualizer.Core/CAudioVisualizer.Core.projitems" Label="Shared" />
+  <Target Name="CheckGameMathAssembly" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(SpaceEngineersBinPath)/VRage.Math.dll')"
+           Text="Set SpaceEngineersBinPath to the Space Engineers Bin64 folder, or configure Arthur-s-Lcd-Mod/mdk.local.ini." />
+  </Target>
+</Project>

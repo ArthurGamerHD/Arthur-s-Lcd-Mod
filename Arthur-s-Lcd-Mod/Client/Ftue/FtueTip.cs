@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
-using LcdMod.Client.Gui;
-using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
@@ -56,35 +54,6 @@ namespace LcdMod.Client.Ftue
         }
 
         internal virtual void OnVisualContact(InteractiveSurfaceScript surface, IApp app, Vector2 coordinates)
-        {
-        }
-
-        internal virtual void OnCollectInteractiveEntries(
-            InteractiveSurfaceScript surface,
-            IApp app,
-            List<Control> entries)
-        {
-        }
-
-        internal virtual void OnControlPointerEnter(
-            InteractiveSurfaceScript surface,
-            IApp app,
-            ControlTemplate control)
-        {
-        }
-
-        internal virtual void OnControlPointerLeave(
-            InteractiveSurfaceScript surface,
-            IApp app,
-            ControlTemplate control)
-        {
-        }
-
-        internal virtual void OnControlClick(
-            InteractiveSurfaceScript surface,
-            IApp app,
-            ControlTemplate control,
-            ControlClickButton button)
         {
         }
 

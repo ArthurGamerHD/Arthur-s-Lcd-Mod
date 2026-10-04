@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Adk.Gui.Collections.Reactive;
 
 namespace LcdMod.Common.Mvvm
 {
@@ -22,7 +23,7 @@ namespace LcdMod.Common.Mvvm
         public void Add(T value)
         {
             Items.Add(value);
-            RaiseMutation(delegate { RaiseItemAdded(value); });
+            RaiseMutation(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, value, Items.Count - 1));
         }
 
         public bool Contains(T value)
@@ -37,25 +38,8 @@ namespace LcdMod.Common.Mvvm
 
             var removedItems = Items.ToArray();
             Items.Clear();
-            RaiseMutation(delegate
-            {
-                Exception firstError = null;
-                for (var i = 0; i < removedItems.Length; i++)
-                {
-                    try
-                    {
-                        RaiseItemRemoved(removedItems[i]);
-                    }
-                    catch (Exception e)
-                    {
-                        if (firstError == null)
-                            firstError = e;
-                    }
-                }
-
-                if (firstError != null)
-                    throw firstError;
-            });
+            // Keep the removed items available to consumers that detach item subscriptions.
+            RaiseMutation(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, removedItems, 0));
         }
 
         public int IndexOf(T value)
@@ -66,7 +50,7 @@ namespace LcdMod.Common.Mvvm
         public void Insert(int index, T value)
         {
             Items.Insert(index, value);
-            RaiseMutation(delegate { RaiseItemAdded(value); });
+            RaiseMutation(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, value, index));
         }
 
         public bool Remove(T value)
@@ -76,7 +60,7 @@ namespace LcdMod.Common.Mvvm
                 return false;
 
             Items.RemoveAt(index);
-            RaiseMutation(delegate { RaiseItemRemoved(value); });
+            RaiseMutation(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, value, index));
             return true;
         }
 
@@ -84,7 +68,7 @@ namespace LcdMod.Common.Mvvm
         {
             var removedItem = Items[index];
             Items.RemoveAt(index);
-            RaiseMutation(delegate { RaiseItemRemoved(removedItem); });
+            RaiseMutation(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, removedItem, index));
         }
 
         public void Move(int oldIndex, int newIndex)
@@ -99,7 +83,7 @@ namespace LcdMod.Common.Mvvm
             var item = Items[oldIndex];
             Items.RemoveAt(oldIndex);
             Items.Insert(newIndex, item);
-            RaiseMutation(delegate { RaiseItemChanged(item); });
+            RaiseMutation(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Move, item, newIndex, oldIndex));
         }
 
         public T this[int index]
@@ -113,21 +97,15 @@ namespace LcdMod.Common.Mvvm
                 if (EqualityComparer<T>.Default.Equals(removedItem, value))
                     return;
 
-                RaiseMutation(delegate { RaiseItemChanged(value); });
+                RaiseMutation(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, value, removedItem, index));
             }
         }
 
         public bool IsReadOnly => false;
 
-        public event Action<IObservableCollection<T>, T> ItemAdded;
-        public event Action<IObservableCollection<T>, T> ItemRemoved;
-        public event Action<IObservableCollection<T>, T> ItemChanged;
+        public event NotifyCollectionChangedEventHandler CollectionChanged;
 
-        void RaiseItemAdded(T item) => InvokeHandlers(ItemAdded, item);
-        void RaiseItemRemoved(T item) => InvokeHandlers(ItemRemoved, item);
-        void RaiseItemChanged(T item) => InvokeHandlers(ItemChanged, item);
-
-        void RaiseMutation(Action itemNotification)
+        void RaiseMutation(NotifyCollectionChangedEventArgs args)
         {
             Exception firstError = null;
             try
@@ -141,7 +119,7 @@ namespace LcdMod.Common.Mvvm
 
             try
             {
-                itemNotification();
+                OnCollectionChanged(args);
             }
             catch (Exception e)
             {
@@ -153,17 +131,18 @@ namespace LcdMod.Common.Mvvm
                 throw firstError;
         }
 
-        void InvokeHandlers(Action<IObservableCollection<T>, T> handlers, T item)
+        protected virtual void OnCollectionChanged(NotifyCollectionChangedEventArgs args)
         {
+            var handlers = CollectionChanged;
             if (handlers == null)
                 return;
 
             Exception firstError = null;
-            foreach (Action<IObservableCollection<T>, T> handler in handlers.GetInvocationList())
+            foreach (NotifyCollectionChangedEventHandler handler in handlers.GetInvocationList())
             {
                 try
                 {
-                    handler(this, item);
+                    handler(this, args);
                 }
                 catch (Exception e)
                 {

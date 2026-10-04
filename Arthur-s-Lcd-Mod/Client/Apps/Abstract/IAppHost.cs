@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System.Text;
-using LcdMod.Client.Animation;
+using Adk.Gui.Animation;
 using LcdMod.Client.GridData;
 using LcdMod.Common.Config.Components;
 using LcdMod.Common.Config.Models;
@@ -22,6 +22,7 @@ namespace LcdMod.Client.Apps.Abstract
         Color BackgroundColor { get; }
         bool TitleVisible { get; }
         string Title { get; }
+        string TitleIcon { get; }
         IComponentContainer Config { get; }
         int SurfaceIndex { get; }
         float ConfiguredScale { get; }

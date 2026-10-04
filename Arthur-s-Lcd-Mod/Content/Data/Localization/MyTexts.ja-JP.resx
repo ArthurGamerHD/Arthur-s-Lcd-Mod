@@ -296,12 +296,6 @@
     <data name="LcdMod_EightBallPool_CheatModeOff" xml:space="preserve">
     <value>チートモード: オフ</value>
   </data>
-    <data name="LcdMod_EightBallPool_NewGamePrompt" xml:space="preserve">
-    <value>新しい8ボールプールのゲームを開始しますか？</value>
-  </data>
-    <data name="LcdMod_EightBallPool_Dismiss" xml:space="preserve">
-    <value>閉じる</value>
-  </data>
     <data name="LcdMod_EightBallPool_PlayerBreak" xml:space="preserve">
     <value>プレイヤー{0}がブレイク。</value>
   </data>
@@ -467,6 +461,9 @@
     <data name="LcdMod_Card" xml:space="preserve">
     <value>カード</value>
   </data>
+    <data name="LcdMod_Compact" xml:space="preserve">
+      <value>コンパクト</value>
+    </data>
     <data name="LcdMod_Table" xml:space="preserve">
     <value>表</value>
   </data>
@@ -494,6 +491,9 @@
     <data name="LcdMod_CraftDialog_Title" xml:space="preserve">
     <value>製作</value>
   </data>
+    <data name="LcdMod_CraftDialog_Multiplier" xml:space="preserve">
+      <value>倍率</value>
+    </data>
     <data name="LcdMod_CraftDialog_Button_Craft" xml:space="preserve">
     <value>製作</value>
   </data>
@@ -823,7 +823,7 @@
     <value>成長度、インベントリ、水、環境を確認できます。</value>
   </data>
   <data name="LcdMod_Ftue_StarMapPlanetDetails_Line1" xml:space="preserve">
-    <value>惑星をクリックすると、詳細情報を表示できます。</value>
+    <value>惑星を選択し、右上の情報ボタンをクリックしてください。</value>
   </data>
   <data name="LcdMod_Ftue_StarMapPlanetDetails_Line2" xml:space="preserve">
     <value>重力、大気、温度、風、位置を確認できます。</value>
@@ -847,13 +847,54 @@
     <value>{0} を超える範囲では無線信号のみを検出できます。</value>
   </data>
   <data name="LcdMod_Ftue_RadarCamera_Line1" xml:space="preserve">
-    <value>右ドラッグでレーダーカメラを移動します。</value>
+    <value>Drag to orbit the radar camera, middle-drag to pan.</value>
+    <comment>TODO_TRANSLATION</comment>
   </data>
   <data name="LcdMod_Ftue_RadarCamera_Line2" xml:space="preserve">
     <value>スクロールしてレーダーマップをズームします。</value>
   </data>
   <data name="LcdMod_MediaPlayer_Title" xml:space="preserve">
     <value>メディアプレーヤー - (試験的)</value>
+  </data>
+  <data name="LcdMod_Common_Button_Close" xml:space="preserve">
+    <value>Close</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_ConfigureVisualizer" xml:space="preserve">
+    <value>Configure visualizer</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_VisualizerSettings" xml:space="preserve">
+    <value>Visualizer settings</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_VisualizerInstanceEnabled" xml:space="preserve">
+    <value>Enabled</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_VisualizerReset" xml:space="preserve">
+    <value>Reset to defaults</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_VisualizerXml" xml:space="preserve">
+    <value>Export / import XML</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_VisualizerXmlTitle" xml:space="preserve">
+    <value>Visualizer settings XML</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_VisualizerXmlInvalid" xml:space="preserve">
+    <value>The visualizer settings XML could not be read: {0}</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_VisualizerSaveUser" xml:space="preserve">
+    <value>Save as my settings</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_VisualizerLoadUser" xml:space="preserve">
+    <value>Load my settings</value>
+    <comment>TODO_TRANSLATION</comment>
   </data>
   <data name="LcdMod_MediaPlayer_PausedTitleFormat" xml:space="preserve">
     <value>(一時停止中) - {0}</value>
@@ -1383,6 +1424,24 @@
     <value>SpriteCountDebug mode disabled.</value>
     <comment>TODO_TRANSLATION</comment>
   </data>
+  <data name="LcdMod_ChatCommand_VerifyFrameCache_Enabled_Message" xml:space="preserve">
+    <value>Frame cache verification enabled.</value>
+  </data>
+  <data name="LcdMod_ChatCommand_VerifyFrameCache_Disabled_Message" xml:space="preserve">
+    <value>Frame cache verification disabled.</value>
+  </data>
+  <data name="LcdMod_ChatCommand_StyleCache_Enabled_Message" xml:space="preserve">
+    <value>Style cache enabled.</value>
+  </data>
+  <data name="LcdMod_ChatCommand_StyleCache_Disabled_Message" xml:space="preserve">
+    <value>Style cache disabled; views reload styles from disk.</value>
+  </data>
+  <data name="LcdMod_ChatCommand_HotReload_Enabled_Message" xml:space="preserve">
+    <value>View hot reload enabled; rebuilt {0} of {1} views.</value>
+  </data>
+  <data name="LcdMod_ChatCommand_HotReload_Disabled_Message" xml:space="preserve">
+    <value>View hot reload disabled.</value>
+  </data>
   <data name="LcdMod_ChatCommand_VisibleClip_Enabled_Message" xml:space="preserve">
     <value>VisibleClip mode enabled.</value>
     <comment>TODO_TRANSLATION</comment>
@@ -1462,20 +1521,8 @@
     <value>Select Target</value>
     <comment>TODO_TRANSLATION</comment>
   </data>
-  <data name="LcdMod_ButtonPad_TargetFormat" xml:space="preserve">
-    <value>Target: {0}</value>
-    <comment>TODO_TRANSLATION</comment>
-  </data>
   <data name="LcdMod_ButtonPad_SelectAction" xml:space="preserve">
     <value>Select Action</value>
-    <comment>TODO_TRANSLATION</comment>
-  </data>
-  <data name="LcdMod_ButtonPad_ActionFormat" xml:space="preserve">
-    <value>Action: {0}</value>
-    <comment>TODO_TRANSLATION</comment>
-  </data>
-  <data name="LcdMod_ButtonPad_ActionValueFormat" xml:space="preserve">
-    <value>Action: {0} = {1}</value>
     <comment>TODO_TRANSLATION</comment>
   </data>
   <data name="LcdMod_ButtonPad_ButtonColor" xml:space="preserve">
@@ -1741,5 +1788,68 @@
   <data name="LcdMod_ButtonPad_ConfigureAction_ColorHexHelp" xml:space="preserve">
     <value>Hex color, for example #ff8800</value>
     <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_SpritePicker_Title" xml:space="preserve">
+    <value>Sprite Picker</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_SpritePicker_SearchPlaceholder" xml:space="preserve">
+    <value>Search sprites</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_SpritePicker_Empty" xml:space="preserve">
+    <value>No sprites found</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_SpritePicker_NoMatchesFormat" xml:space="preserve">
+    <value>No sprites match "{0}"</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_SpritePicker_SelectedFormat" xml:space="preserve">
+    <value>{0} selected</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_SpritePicker_MultiSelectHint" xml:space="preserve">
+    <value>Ctrl+click adds a sprite, Shift+click selects a range</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_Common_Button_Apply" xml:space="preserve">
+    <value>Apply</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_CraftDialog_CraftAll" xml:space="preserve">
+    <value>Craft all</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_CraftDialog_Amount" xml:space="preserve">
+    <value>Amount</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_PlanetaryMap_RenderSkybox" xml:space="preserve">
+    <value>スカイボックスを表示</value>
+  </data>
+  <data name="LcdMod_StarMap_PlanetInfo" xml:space="preserve">
+    <value>惑星情報</value>
+  </data>
+  <data name="LcdMod_Games_NewGamePrompt" xml:space="preserve">
+    <value>Start a new game? The current game will be lost.</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_Games_GameOver" xml:space="preserve">
+    <value>Game Over</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_Games_PlayAgain" xml:space="preserve">
+    <value>Play again?</value>
+    <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_MediaPlayer_VisualizerManageInstances" xml:space="preserve">
+    <value>インスタンスの管理</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_VisualizerAddInstance" xml:space="preserve">
+    <value>インスタンスを追加</value>
+  </data>
+  <data name="LcdMod_MediaPlayer_VisualizerRemoveInstance" xml:space="preserve">
+    <value>削除</value>
   </data>
 </root>
