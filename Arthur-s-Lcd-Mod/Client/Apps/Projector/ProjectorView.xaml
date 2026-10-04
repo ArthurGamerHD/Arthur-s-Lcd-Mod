@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl xmlns="https://github.com/ArthurGamerHD/Adk"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:LcdMod.Client.Apps.Controls"
+    x:Class="LcdMod.Client.Apps.Projector.ProjectorView"
+    x:DataType="LcdMod.Client.Apps.Projector.ProjectorViewModel">
+  <UserControl.Styles>
+    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/Projector.xaml" />
+  </UserControl.Styles>
+  <Grid RowDefinitions="*,Auto">
+    <ContentPresenter x:Name="InventoryPresenter" />
+    <Border Grid.Row="1" Classes="projector-footer" IsVisible="{Binding ShowFooter}">
+      <Grid RowDefinitions="Auto,Auto">
+        <controls:MultiProgressPanel FirstValue="{Binding BlocksProgress}" FirstText="{Binding BlocksText}"
+            SecondValue="{Binding ComponentsProgress}" SecondText="{Binding ComponentsText}"
+            ThirdValue="{Binding IngotsProgress}" ThirdText="{Binding IngotsText}" />
+        <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="0,8,0,0">
+          <Border x:Name="ModeHost" Margin="0,0,4,0" />
+          <Button Grid.Column="1" Classes="projector-action" Command="{Binding CraftAllCommand}"
+                  IsEnabled="{Binding CanCraft}" Margin="4,0,0,0">
+            <TextBlock Classes="projector-action-label" Text="{Binding CraftText}" TextTrimming="CharacterEllipsis" />
+          </Button>
+        </Grid>
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

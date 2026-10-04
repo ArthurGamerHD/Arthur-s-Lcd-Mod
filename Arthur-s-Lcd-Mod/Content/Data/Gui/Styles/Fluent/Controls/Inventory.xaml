@@ -1,0 +1,109 @@
+<Styles xmlns="https://github.com/ArthurGamerHD/Adk"
+        xmlns:inventory="using:LcdMod.Client.Apps.Inventory">
+  <Style Selector="ScrollBar.scroll-viewer-scrollbar:vertical"><Setter Property="Width" Value="5" /></Style>
+  <Style Selector="inventory|InventoryItemControl">
+    <Setter Property="FontSize" Value="{DynamicResource fontScale}" />
+    <Setter Property="FontFamily" Value="{DynamicResource textFont}" />
+    <Setter Property="Foreground" Value="{DynamicResource fontColor}" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Background" Value="#00000000" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Grid>
+          <Border Background="{TemplateBinding Background}" />
+          <Image Source="{TemplateBinding ItemIcon}" Width="{TemplateBinding IconSize}" Height="{TemplateBinding IconSize}" Margin="{TemplateBinding IconMargin}" HorizontalAlignment="Left" VerticalAlignment="Top" />
+          <TextBlock Text="{TemplateBinding FittedName}" FontFamily="{TemplateBinding FontFamily}"
+                     FontSize="{TemplateBinding NameFontSize}" Foreground="{TemplateBinding Foreground}"
+                     TextAlignment="{TemplateBinding NameAlignment}" Margin="{TemplateBinding NameMargin}" VerticalAlignment="Top" />
+          <TextBlock Text="{TemplateBinding Amount}" FontFamily="{TemplateBinding FontFamily}"
+                     FontSize="{TemplateBinding AmountFontSize}" Foreground="{TemplateBinding Foreground}"
+                     TextAlignment="Right" Margin="{TemplateBinding AmountMargin}" VerticalAlignment="Top" />
+        </Grid>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="inventory|InventoryItemControl:table">
+    <Setter Property="Foreground" Value="{DynamicResource onSurfaceColor}" />
+  </Style>
+  <Style Selector="inventory|InventoryItemControl:table:odd">
+    <Setter Property="Background" Value="{DynamicResource inventoryTableStripe}" />
+  </Style>
+  <Style Selector="inventory|InventoryItemControl:card">
+    <Setter Property="Background" Value="{DynamicResource accentContainerColor}" />
+    <Setter Property="Foreground" Value="{DynamicResource onAccentContainerColor}" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Grid>
+          <Border Background="{TemplateBinding CardShadow}" Margin="{TemplateBinding CardShadowMargin}" CornerRadius="6" />
+          <Border Background="{TemplateBinding Background}" Margin="{TemplateBinding CardMargin}" CornerRadius="6" />
+          <Image Source="{TemplateBinding ItemIcon}" Width="{TemplateBinding IconSize}" Height="{TemplateBinding IconSize}" Margin="{TemplateBinding IconMargin}" HorizontalAlignment="Left" VerticalAlignment="Top" />
+          <TextBlock Text="{TemplateBinding FittedName}" FontFamily="{TemplateBinding FontFamily}"
+                     FontSize="{TemplateBinding NameFontSize}" Foreground="{TemplateBinding Foreground}"
+                     TextAlignment="Right" Margin="{TemplateBinding NameMargin}" VerticalAlignment="Top" />
+          <TextBlock Text="{TemplateBinding Amount}" FontFamily="{TemplateBinding FontFamily}"
+                     FontSize="{TemplateBinding AmountFontSize}" Foreground="{TemplateBinding Foreground}"
+                     TextAlignment="Right" Margin="{TemplateBinding AmountMargin}" VerticalAlignment="Top" />
+        </Grid>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="inventory|InventoryItemControl:grid">
+    <Setter Property="Foreground" Value="{DynamicResource onSurfaceColor}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource surfaceColor}" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Grid>
+          <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" />
+          <Image Source="{TemplateBinding ItemIcon}" Width="{TemplateBinding IconSize}" Height="{TemplateBinding IconSize}" Margin="{TemplateBinding IconMargin}" HorizontalAlignment="Left" VerticalAlignment="Top" />
+          <TextBlock Text="{TemplateBinding FittedName}" FontFamily="{TemplateBinding FontFamily}"
+                     FontSize="{TemplateBinding NameFontSize}" Foreground="{TemplateBinding Foreground}"
+                     TextAlignment="Right" Margin="{TemplateBinding NameMargin}" VerticalAlignment="Top" />
+          <TextBlock Text="{TemplateBinding Amount}" FontFamily="{TemplateBinding FontFamily}"
+                     FontSize="{TemplateBinding AmountFontSize}" Foreground="{TemplateBinding Foreground}"
+                     TextAlignment="Right" Margin="{TemplateBinding AmountMargin}" VerticalAlignment="Top" />
+        </Grid>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="inventory|InventoryItemControl:warning"><Setter Property="Foreground" Value="{DynamicResource warningColor}" /></Style>
+  <Style Selector="inventory|InventoryItemControl:error"><Setter Property="Foreground" Value="{DynamicResource errorColor}" /></Style>
+  <Style Selector="inventory|InventoryItemControl:card:warning">
+    <Setter Property="Background" Value="{DynamicResource warningColor}" />
+    <Setter Property="Foreground" Value="{DynamicResource onAccentContainerColor}" />
+  </Style>
+  <Style Selector="inventory|InventoryItemControl:card:error">
+    <Setter Property="Background" Value="{DynamicResource errorColor}" />
+    <Setter Property="Foreground" Value="{DynamicResource onAccentContainerColor}" />
+  </Style>
+  <Style Selector="inventory|InventoryItemControl:pointerover"><Setter Property="Background" Value="{DynamicResource surfaceContainerHighColor}" /></Style>
+  <Style Selector="inventory|InventoryItemControl:pressed"><Setter Property="Background" Value="{DynamicResource surfaceContainerHighestColor}" /></Style>
+  <Style Selector="inventory|InventorySortHeader">
+    <Setter Property="FontSize" Value="{DynamicResource fontScale}" />
+    <Setter Property="FontFamily" Value="{DynamicResource textFont}" />
+    <Setter Property="Foreground" Value="{DynamicResource fontColor}" />
+    <Setter Property="Background" Value="#00000000" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Grid>
+          <TextBlock Text="{TemplateBinding DisplayCaption}" FontFamily="{TemplateBinding FontFamily}"
+              FontSize="{TemplateBinding FontSize, Converter={StaticResource FontSizeMultiplier}, ConverterParameter=0.58, ConverterCulture=en-US}"
+              Foreground="{TemplateBinding Foreground}" TextAlignment="{TemplateBinding CaptionAlignment}"
+              Margin="{TemplateBinding CaptionMargin}" VerticalAlignment="Center" />
+          <Border Background="{TemplateBinding Foreground}" IsVisible="{TemplateBinding Active}"
+                  Width="{TemplateBinding IndicatorWidth}" Height="{TemplateBinding IndicatorSize}"
+                  RenderTransform="{TemplateBinding IndicatorTransform}" Margin="{TemplateBinding IndicatorMargin}"
+                  HorizontalAlignment="Left" VerticalAlignment="Center">
+            <Border.OpacityMask>
+              <ImageBrush Source="Triangle" />
+            </Border.OpacityMask>
+          </Border>
+        </Grid>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="inventory|InventorySortHeader:active"><Setter Property="Foreground" Value="{DynamicResource accentColor}" /></Style>
+  <Style Selector="inventory|InventorySortHeader:pointerover"><Setter Property="Foreground" Value="{DynamicResource accentColor}" /></Style>
+</Styles>

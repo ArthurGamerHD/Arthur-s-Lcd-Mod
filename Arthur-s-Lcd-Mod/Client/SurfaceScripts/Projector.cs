@@ -5,14 +5,13 @@ using LcdMod.Client.Apps;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Gui;
 using LcdMod.Client.SurfaceScripts.Abstract;
-using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Terminal.Controls.Groups;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
-using VRage.ModAPI;
 using VRageMath;
+using CheckboxHideEmpty = LcdMod.Client.Terminal.Controls.Generic.CheckboxHideEmpty;
 using LabelSeparator = LcdMod.Client.Terminal.Controls.Filter.LabelSeparator;
 using ListboxProjectorSelection = LcdMod.Client.Terminal.Controls.Blueprint.ListboxProjectorSelection;
 using SeparatorFilter = LcdMod.Client.Terminal.Controls.Filter.SeparatorFilter;
@@ -26,6 +25,7 @@ namespace LcdMod.Client.SurfaceScripts
     public partial class ProjectorLcdSurfaceScript : InteractiveSurfaceScript,
         IUsesTerminalControl<ComboboxItemDisplayMode>,
         IUsesTerminalControl<ListboxProjectorSelection>,
+        IUsesTerminalControl<CheckboxHideEmpty>,
         IUsesTerminalControl<SeparatorFilter>,
         IUsesTerminalControl<LabelSeparator>,
         IUsesTerminalControlGroup<BlocksFilterTerminalControlGroup>
@@ -38,10 +38,8 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override IApp App => _app;
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
-        public override List<Control> InteractiveList => _app?.VisualChildren as List<Control>;
         public override string Title => _app != null ? _app.Title : base.Title;
         protected override string DefaultTitle => TITLE;
-        protected override bool RendersInteractiveEntriesInGetSprites => true;
 
         public ProjectorLcdSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
             : base(surface, block, size)
@@ -72,6 +70,7 @@ namespace LcdMod.Client.SurfaceScripts
                 _app.LayoutChanged();
             }
 
+            EnsureRetainedAppView(_app);
             _app.Update();
 
             RenderSprites();
@@ -89,7 +88,7 @@ namespace LcdMod.Client.SurfaceScripts
                 return sprites;
             }
 
-            if (!_app.HasItems)
+            if (!_app.HasItems && !_app.HasProjection)
             {
                 if (_app.HasFilters)
                     AddEmptyWithFiltersSprites(sprites);
@@ -99,8 +98,7 @@ namespace LcdMod.Client.SurfaceScripts
             }
 
             AddBackground(sprites);
-            DrawTitle(sprites);
-            sprites.AddRange(_app.GetSprites());
+            DrawRetainedAppView(sprites);
             return sprites;
         }
     }

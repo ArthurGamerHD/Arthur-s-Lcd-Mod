@@ -1,4 +1,4 @@
-using LcdMod.Client.Gui.ControlsTemplates;
+using System;
 using LcdMod.Common.Mvvm;
 using VRage;
 using VRage.Game.ModAPI.Ingame;
@@ -6,7 +6,7 @@ using VRageMath;
 
 namespace LcdMod.Client.Apps.ViewModel
 {
-    public sealed partial class ItemEntry : ControlModelBase
+    public sealed partial class ItemEntry : ObservableObject
     {
         [ObservableProperty] MyFixedPoint _amount;
         [ObservableProperty] double _craftAmount = 1d;
@@ -31,6 +31,7 @@ namespace LcdMod.Client.Apps.ViewModel
         }
 
         public MyItemType ItemType { get; private set; }
+        public Action Clicked { get; set; }
 
         public string TypeId => ItemType.TypeId;
 

@@ -1,33 +1,24 @@
 using LcdMod.Common.Config.Components;
 using System;
+using Adk.Gui.Collections.Reactive;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using LcdMod.Client.Apps.ViewModel;
 using LcdMod.Client.Config;
 using LcdMod.Client.GridData;
-using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
-using LcdMod.Client.Gui.ControlsTemplates.Basic;
-using LcdMod.Client.Gui.ControlsTemplates.Dialogs;
-using LcdMod.Client.Gui.ControlsTemplates.Lists;
-using LcdMod.Client.Gui.ControlsTemplates.Panels;
-using LcdMod.Client.Gui.ControlsTemplates.Panels.Virtualized;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Gui.Styling.DataTemplates;
 using LcdMod.Client.Helpers;
-using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
-using LcdMod.Client.Utility;
 using LcdMod.Common.Mvvm;
 using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
 using VRage;
-using VRage.Game;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
-using VRage.ModAPI;
 using VRageMath;
 using MyItemType = VRage.Game.ModAPI.Ingame.MyItemType;
 using LcdMod.Common.Config.Generation;
@@ -41,22 +32,9 @@ namespace LcdMod.Client.Apps.Abstract
         protected virtual SortMethod SortMethod => (SortMethod)FilterComponent.SortMethod;
 
         public static Dictionary<MyItemType, string> SpriteCache = new Dictionary<MyItemType, string>();
-        readonly List<MySprite> _contentSpriteCache = new List<MySprite>();
-        readonly List<MySprite> _footerSpriteCache = new List<MySprite>();
         readonly ObservableList<ItemEntry> _displayItems = new ObservableList<ItemEntry>();
-        internal readonly List<Control> _children = new List<Control>();
-        readonly ScrollPanel _scrollPanel;
-        readonly ListBoxModel<ItemEntry> _listModel;
-        readonly ListBox<ItemEntry> _listBox;
-        readonly VirtualizedWrapPanel<ItemEntry> _gridPanel;
-        readonly Button _itemSortHeader;
-        readonly Button _amountSortHeader;
         readonly ObservableObject _observableViewModel;
         readonly GridLogic _gridLogic;
-        ScrollPanel _activeScrollPanel;
-        bool _scrollRenderQueued;
-        bool _contentSpritesDirty = true;
-        bool _footerSpritesDirty = true;
         bool _hasRenderConfigSnapshot;
         bool _lastHideEmpty;
         ItemDisplayMode _lastPresentationMode;
@@ -65,9 +43,6 @@ namespace LcdMod.Client.Apps.Abstract
         SortMethod _activeSortMethod;
         bool _sortDescending;
         bool _sortSyncQueued;
-        bool _hasAppliedGridStyleMode;
-        ItemDisplayMode _appliedGridStyleMode;
-        float _cachedFooterHeight;
         float _caretY;
         float _footerHeight;
         protected string LocalizedTitleCache = string.Empty;
@@ -96,9 +71,28 @@ namespace LcdMod.Client.Apps.Abstract
             set { _footerHeight = value; }
         }
         public bool HasItems => ViewModel.HasItems;
-        public bool HasFilters { get; private set; }
-        public override IReadOnlyList<Control> VisualChildren => _children;
+        internal IEnumerable<ItemEntry> DisplayItems => _displayItems;
+        internal ItemDisplayMode NativePresentationMode => PresentationMode;
 
+        internal void PrepareNativeItem(ItemEntry item)
+        {
+            if (item == null)
+                return;
+            item.Icon = ResolveSprite(item.ItemType);
+            item.DisplayName = ResolveDisplayName(item.ItemType);
+            if (item.Clicked == null)
+                item.Clicked = delegate { OnItemClicked(item); };
+            if (item.AmountDisplayMode != ItemAmountDisplayMode.Quota)
+                item.SetSimpleAmount(FormatingHelper.FormatItemQty((double)item.Amount));
+        }
+        public bool HasFilters { get; private set; }
+        internal bool NativeSortByAmount => _activeSortMethod == SortMethod.Amount;
+        internal bool NativeSortDescending => _sortDescending;
+        internal void SortNativeItems(bool amount)
+        {
+            SortBy(amount ? SortMethod.Amount : SortMethod.Type);
+        }
+        protected virtual void OnNativeSortChanged() { }
         const int SPRITE_CACHE_MAX_SIZE = 256;
 
         protected static void AddToSpriteCache(MyItemType key, string sprite)
@@ -116,7 +110,7 @@ namespace LcdMod.Client.Apps.Abstract
 
         string[] _selectedCategories;
 
-        public string Title
+        public override string Title
         {
             get
             {
@@ -170,39 +164,9 @@ namespace LcdMod.Client.Apps.Abstract
             _observableViewModel = ViewModel as ObservableObject;
             if (_observableViewModel != null)
                 _observableViewModel.PropertyChanged += OnViewModelPropertyChanged;
-            ViewModel.Items.ItemAdded += OnViewModelItemAdded;
-            ViewModel.Items.ItemRemoved += OnViewModelItemRemoved;
+            ViewModel.Items.CollectionChanged += OnViewModelItemsChanged;
             _activeSortMethod = NormalizeSortMethod(FilterComponent.SortMethod);
             _sortDescending = ResolveConfiguredSortDescending(_activeSortMethod);
-            _scrollPanel = AddLogicalChild(new ScrollPanel(CursorType.Default, this));
-            _scrollPanel.ScrollChanged = OnScrollPanelChanged;
-            _scrollPanel.SetVisible(false);
-
-            _listModel = new ListBoxModel<ItemEntry>
-            {
-                Items = _displayItems,
-                MultiSelect = false,
-                SelectionEnabled = false,
-                EntryClicked = OnLegacyListItemClicked,
-                ItemStyleIdSelector = ItemDataTemplate.GetItemStyleId,
-                ItemRenderer = ItemDataTemplate.DrawItemListEntry
-            };
-            _listBox = AddLogicalChild(new ListBox<ItemEntry>(default(RectangleF), _listModel));
-            _listBox.SetStyles(ItemDataTemplate.ItemListStyles);
-            _listBox.ScrollPanel.ManualScrollInertiaEnabled = true;
-            _listBox.ScrollPanel.ScrollChanged = OnScrollPanelChanged;
-            _listBox.SetVisible(false);
-
-            _itemSortHeader = CreateSortHeader(SortMethod.Type, "StoreBlock_Column_Name");
-            _amountSortHeader = CreateSortHeader(SortMethod.Amount, "StoreBlock_Column_Amount");
-
-            _gridPanel = new VirtualizedWrapPanel<ItemEntry>
-            {
-                ItemsSource = _displayItems,
-                CreateControl = CreateGridItemControl,
-                BindControl = BindGridItemControl
-            };
-
             ViewModel.UpdateSelection(ItemSelectionComponent, BlockSelectionComponent, FilterComponent.HideEmpty);
             foreach (var item in ViewModel.Items)
                 InsertDisplayItem(item);
@@ -213,33 +177,39 @@ namespace LcdMod.Client.Apps.Abstract
             TextureHelper.TextureIconCacheChanged -= OnTextureIconCacheChanged;
             if (_observableViewModel != null)
                 _observableViewModel.PropertyChanged -= OnViewModelPropertyChanged;
-            ViewModel.Items.ItemAdded -= OnViewModelItemAdded;
-            ViewModel.Items.ItemRemoved -= OnViewModelItemRemoved;
+            ViewModel.Items.CollectionChanged -= OnViewModelItemsChanged;
             foreach (var item in _displayItems)
                 UnbindDisplayItem(item);
-            _gridPanel.ItemsSource = null;
             ViewModel.Dispose();
             base.Close();
         }
 
-        void OnViewModelItemAdded(IObservableCollection<ItemEntry> sender, ItemEntry item)
+        void OnViewModelItemsChanged(object sender, NotifyCollectionChangedEventArgs args)
         {
-            InsertDisplayItem(item);
+            if (args.Action == NotifyCollectionChangedAction.Move)
+                return;
+            if (args.Action == NotifyCollectionChangedAction.Reset)
+            {
+                foreach (var item in _displayItems)
+                    UnbindDisplayItem(item);
+                _displayItems.Clear();
+                foreach (var item in ViewModel.Items)
+                    InsertDisplayItem(item);
+            }
+            if (args.OldItems != null)
+                foreach (ItemEntry item in args.OldItems)
+                {
+                    UnbindDisplayItem(item);
+                    _displayItems.Remove(item);
+                }
+            if (args.NewItems != null)
+                foreach (ItemEntry item in args.NewItems)
+                    InsertDisplayItem(item);
             InvalidateContentAndFooterSprites();
         }
 
         void OnViewModelPropertyChanged(ObservableObject sender, string propertyName)
         {
-            InvalidateContentAndFooterSprites();
-        }
-
-        void OnViewModelItemRemoved(IObservableCollection<ItemEntry> sender, ItemEntry item)
-        {
-            UnbindDisplayItem(item);
-            _displayItems.Remove(item);
-            if (!ViewModel.HasItems)
-                ClearInteractiveTree();
-
             InvalidateContentAndFooterSprites();
         }
 
@@ -262,9 +232,6 @@ namespace LcdMod.Client.Apps.Abstract
                     BlockSelectionComponent,
                     FilterComponent.HideEmpty);
                 ApplyConfiguredSort();
-
-                if (_activeScrollPanel != null && _activeScrollPanel.UpdateAutoScroll())
-                    InvalidateContentSprites();
 
                 var hasFilters = HasConfiguredFilters();
                 var filterStateChanged = HasFilters != hasFilters;
@@ -293,12 +260,6 @@ namespace LcdMod.Client.Apps.Abstract
         {
             base.LayoutChanged();
             ItemDataTemplate.InvalidateItemAssets();
-            var itemHeader = _itemSortHeader.DataContext as ItemSortHeaderModel;
-            if (itemHeader != null)
-                itemHeader.Text = MyTexts.GetString("StoreBlock_Column_Name");
-            var amountHeader = _amountSortHeader.DataContext as ItemSortHeaderModel;
-            if (amountHeader != null)
-                amountHeader.Text = MyTexts.GetString("StoreBlock_Column_Amount");
             RebuildDisplayOrder();
             LocKeysCache.Clear();
             LocalizedTitleCache = string.Empty;
@@ -308,27 +269,7 @@ namespace LcdMod.Client.Apps.Abstract
 
         public override List<MySprite> GetSprites()
         {
-            var sprites = new List<MySprite>();
-            CaptureDirtyControlSections();
-
-            if (_contentSpritesDirty)
-            {
-                ClearInteractiveTree();
-                _footerSpritesDirty = true;
-            }
-
-            if (_footerSpritesDirty)
-                RebuildFooterSpriteCache();
-
-            if (_contentSpritesDirty)
-                RebuildContentSpriteCache();
-
-            sprites.AddRange(_footerSpriteCache);
-            sprites.AddRange(_contentSpriteCache);
-
-            QueueControlRenderIfNeeded();
-            ClearDirtyAfterRender();
-            return sprites;
+            return new List<MySprite>();
         }
 
         public void CompleteHostRender()
@@ -338,14 +279,11 @@ namespace LcdMod.Client.Apps.Abstract
 
         protected void InvalidateContentSprites()
         {
-            _contentSpritesDirty = true;
             MarkDirty();
         }
 
         protected void InvalidateContentAndFooterSprites()
         {
-            _contentSpritesDirty = true;
-            _footerSpritesDirty = true;
             MarkDirty();
         }
 
@@ -369,138 +307,14 @@ namespace LcdMod.Client.Apps.Abstract
             _hasRenderConfigSnapshot = true;
         }
 
-        void CaptureDirtyControlSections()
+        void SortBy(SortMethod column)
         {
-            for (int i = 0; i < _children.Count; i++)
-            {
-                var child = _children[i];
-                if (!IsVisibleTreeDirty(child))
-                    continue;
-
-                if (ReferenceEquals(child, _scrollPanel) ||
-                    ReferenceEquals(child, _listBox) ||
-                    ReferenceEquals(child, _itemSortHeader) ||
-                    ReferenceEquals(child, _amountSortHeader))
-                    _contentSpritesDirty = true;
-                else
-                    _footerSpritesDirty = true;
-            }
-        }
-
-        void RebuildFooterSpriteCache()
-        {
-            _footerSpriteCache.Clear();
-            _caretY = ContentTop();
-            _footerHeight = 0f;
-            DrawFooter(_footerSpriteCache);
-            if (Math.Abs(_cachedFooterHeight - _footerHeight) > 0.001f)
-                _contentSpritesDirty = true;
-
-            _cachedFooterHeight = _footerHeight;
-            _footerSpritesDirty = false;
-        }
-
-        void RebuildContentSpriteCache()
-        {
-            _contentSpriteCache.Clear();
-            _caretY = ContentTop();
-            _footerHeight = _cachedFooterHeight;
-
-            switch (PresentationMode)
-            {
-                case ItemDisplayMode.List:
-                case ItemDisplayMode.Table:
-                    DrawList(_contentSpriteCache, _displayItems);
-                    break;
-                case ItemDisplayMode.Card:
-                case ItemDisplayMode.Grid:
-                    DrawGrid(_contentSpriteCache, _displayItems);
-                    break;
-            }
-
-            _contentSpritesDirty = false;
-        }
-
-        Button CreateSortHeader(SortMethod column, string localizationKey)
-        {
-            var button = AddLogicalChild(new Button(default(RectangleF), new ItemSortHeaderModel
-            {
-                Column = column,
-                Text = MyTexts.GetString(localizationKey),
-                Clicked = OnSortHeaderClicked
-            }));
-            button.CustomRender = ItemDataTemplate.DrawItemSortHeader;
-            button.SetClass("ControlBase Button Sort");
-            button.SetVisible(false);
-            return button;
-        }
-
-        void DrawSortHeader(List<MySprite> sprites)
-        {
-            var height = LINE_HEIGHT * Scale;
-            var header = new RectangleF(ViewBox.X, CaretY, ViewBox.Width, height);
-            var amountWidth = Math.Min(header.Width, Math.Max(105f * LayoutScale, header.Width * 0.22f));
-            var nameLeft = Math.Min(header.Right, header.X + 38f * LayoutScale);
-            var amountLeft = Math.Max(nameLeft, header.Right - amountWidth);
-
-            sprites.Add(new MySprite(SpriteType.TEXTURE, "SquareSimple")
-            {
-                Position = new Vector2(header.Center.X, header.Bottom - Math.Max(1f, LayoutScale)),
-                Size = new Vector2(header.Width, Math.Max(1f, LayoutScale)),
-                Color = ResolveResource(ThemeResources.DividerColor, ForegroundColor),
-                Alignment = TextAlignment.CENTER
-            });
-
-            ConfigureSortHeader(
-                _itemSortHeader,
-                new RectangleF(nameLeft, header.Y, Math.Max(0f, amountLeft - nameLeft), height),
-                SortMethod.Type);
-            ConfigureSortHeader(
-                _amountSortHeader,
-                new RectangleF(amountLeft, header.Y, Math.Max(0f, header.Right - amountLeft), height),
-                SortMethod.Amount);
-
-            RenderSortHeader(_itemSortHeader, sprites);
-            RenderSortHeader(_amountSortHeader, sprites);
-            CaretY += height;
-        }
-
-        void ConfigureSortHeader(Button button, RectangleF bounds, SortMethod column)
-        {
-            button.SetRect(bounds);
-            button.SetClass(_activeSortMethod != column
-                ? "ControlBase Button Sort"
-                : _sortDescending
-                    ? "ControlBase Button Sort SortDescending"
-                    : "ControlBase Button Sort SortAscending");
-            button.SetVisible(bounds.Width > 0f && bounds.Height > 0f);
-            if (!_children.Contains(button))
-                _children.Add(button);
-        }
-
-        static void RenderSortHeader(Button button, List<MySprite> sprites)
-        {
-            if (button != null && button.Visible)
-                button.Render(sprites);
-        }
-
-        static string GetTableItemClass(ItemEntry item, int index)
-        {
-            return (index & 1) == 0 ? "ItemRowEven" : "ItemRowOdd";
-        }
-
-        void OnSortHeaderClicked(ButtonModel model, object sender)
-        {
-            var header = model as ItemSortHeaderModel;
-            if (header == null)
-                return;
-
-            if (_activeSortMethod == header.Column)
+            if (_activeSortMethod == column)
                 _sortDescending = !_sortDescending;
             else
             {
-                _activeSortMethod = header.Column;
-                _sortDescending = GetDefaultSortDescending(header.Column);
+                _activeSortMethod = column;
+                _sortDescending = GetDefaultSortDescending(column);
             }
 
             FilterComponent.SortMethod = (int)_activeSortMethod;
@@ -509,6 +323,7 @@ namespace LcdMod.Client.Apps.Abstract
             CaptureRenderConfig();
             InvalidateContentSprites();
             QueueSortConfigSync();
+            OnNativeSortChanged();
             Host.RenderSprites();
         }
 
@@ -666,108 +481,6 @@ namespace LcdMod.Client.Apps.Abstract
                 : string.Compare(left.ItemType.SubtypeId, right.ItemType.SubtypeId, StringComparison.OrdinalIgnoreCase);
         }
 
-        void DrawList(List<MySprite> sprites, ObservableList<ItemEntry> items)
-        {
-            var rowHeight = LINE_HEIGHT * Scale;
-            if (items.Count <= 0)
-                return;
-
-            DrawSortHeader(sprites);
-            var contentBounds = GetScrollPanelBounds(CaretY, FooterHeight);
-            _listModel.RowHeight = rowHeight;
-            _listModel.ScrollerWidthPixels = ScrollPanel.DEFAULT_SCROLLER_WIDTH_PIXELS * Scale;
-            _listBox.SetRect(contentBounds);
-            _listBox.BackgroundColor = Color.Transparent;
-            _listBox.BorderRadiusPixels = PresentationMode == ItemDisplayMode.Table
-                ? 0f
-                : BorderRenderer.DEFAULT_RADIUS_PIXELS;
-            _listModel.ItemClassSelector = PresentationMode == ItemDisplayMode.Table
-                ? (Func<ItemEntry, int, string>)GetTableItemClass
-                : null;
-            _listBox.SetStyles(PresentationMode == ItemDisplayMode.Table
-                ? ItemDataTemplate.ItemTableStyles
-                : ItemDataTemplate.ItemListStyles);
-
-            BeginInteractiveTree(_listBox);
-            _activeScrollPanel = _listBox.ScrollPanel;
-            _listBox.Render(sprites);
-
-            CaretY = contentBounds.Bottom;
-        }
-
-        void DrawGrid(List<MySprite> sprites, ObservableList<ItemEntry> items)
-        {
-            var rowHeight = 3f * LINE_HEIGHT * Scale;
-            if (items.Count <= 0)
-                return;
-
-            var presentationMode = PresentationMode;
-            if (!_hasAppliedGridStyleMode || _appliedGridStyleMode != presentationMode)
-            {
-                _hasAppliedGridStyleMode = true;
-                _appliedGridStyleMode = presentationMode;
-                _scrollPanel.InvalidateLayout();
-            }
-
-            var contentBounds = GetScrollPanelBounds(CaretY, FooterHeight);
-            _scrollPanel.SetContent(_gridPanel);
-            _gridPanel.RowHeight = rowHeight;
-            _gridPanel.MinimumColumnWidth = MINIMUM_COL_WIDTH * Scale;
-            _gridPanel.HorizontalGap = 0f;
-            _gridPanel.VerticalGap = 0f;
-            _gridPanel.ItemsSource = items;
-
-            _scrollPanel.ConfigureAutomatic(
-                contentBounds,
-                ScrollPanel.DEFAULT_SCROLLER_WIDTH_PIXELS * Scale,
-                rowHeight);
-
-            BeginInteractiveTree(_scrollPanel);
-            _activeScrollPanel = _scrollPanel;
-            _scrollPanel.Render(sprites);
-
-            CaretY = _scrollPanel.PanelBounds.Bottom;
-        }
-
-        ControlTemplate CreateGridItemControl(ItemEntry item)
-        {
-            return new RectangleControl(
-                default(RectangleF),
-                CursorType.Hand,
-                item,
-                OnGridItemClicked)
-            {
-                CustomRender = ItemDataTemplate.DrawItemGridEntry
-            };
-        }
-
-        void BindGridItemControl(ControlTemplate control, ItemEntry item, int index)
-        {
-            if (control == null)
-                return;
-
-            control.SetDataContext(item);
-            control.SetCursor(CursorType.Hand);
-            control.SetOnClick(OnGridItemClicked);
-            control.SetStyleId(ItemDataTemplate.GetItemStyleId(item));
-            control.SetStyles(_appliedGridStyleMode == ItemDisplayMode.Grid
-                ? ItemDataTemplate.ItemGridLineStyles
-                : ItemDataTemplate.ItemGridCardStyles);
-            control.CustomRender = ItemDataTemplate.DrawItemGridEntry;
-            control.SetVisible(item != null);
-        }
-
-        void OnGridItemClicked(object dataContext, object sender)
-        {
-            OnLegacyListItemClicked(dataContext as ItemEntry);
-        }
-
-        RectangleF GetScrollPanelBounds(float contentTop, float footerHeight)
-        {
-            float viewportHeight = Math.Max(0f, ViewBox.Bottom - contentTop - Math.Max(0f, footerHeight));
-            return new RectangleF(ViewBox.X, contentTop, ViewBox.Width, viewportHeight);
-        }
-
         protected string ResolveSprite(MyItemType itemType)
         {
             string sprite;
@@ -801,24 +514,20 @@ namespace LcdMod.Client.Apps.Abstract
             return localizedName;
         }
 
-        void OnLegacyListItemClicked(ItemEntry item)
+        public event Action CraftOpened;
+
+        internal void NotifyCraftOpened()
+        {
+            CraftOpened?.Invoke();
+        }
+
+        void OnItemClicked(ItemEntry item)
         {
             if (item == null)
                 return;
 
-            var interactiveHost = Host as InteractiveSurfaceScript;
-            if (interactiveHost == null)
-                return;
-
-            var displayName = ResolveDisplayName(item.ItemType);
-            interactiveHost.ShowDialog(new CraftDialog(
-                this,
-                GridLogic,
-                item.ItemType,
-                displayName,
-                ResolveSprite(item.ItemType),
-                item.CraftAmount,
-                delegate(Dialog dialog) { interactiveHost.ShowDialog(dialog); }));
+            Inventory.Crafting.CraftLauncher.Craft(this, GridLogic, item.ItemType, ResolveDisplayName(item.ItemType),
+                ResolveSprite(item.ItemType), item.CraftAmount);
         }
 
         protected virtual void DrawItemIcon(
@@ -847,86 +556,9 @@ namespace LcdMod.Client.Apps.Abstract
         {
         }
 
-        void ClearInteractiveTree()
-        {
-            _activeScrollPanel = null;
-            _scrollPanel.SetVisible(false);
-            _listBox.SetVisible(false);
-            _itemSortHeader.SetVisible(false);
-            _amountSortHeader.SetVisible(false);
-            _children.Clear();
-        }
-
-        void BeginInteractiveTree(ControlTemplate root)
-        {
-            if (root == null)
-                return;
-
-            root.SetVisible(true);
-            if (!_children.Contains(root))
-                _children.Add(root);
-        }
-
         public override bool HasVisibleItems()
         {
             return HasItems;
-        }
-
-        void OnScrollPanelChanged(ScrollPanel panel)
-        {
-            if (!ReferenceEquals(panel, _activeScrollPanel))
-                return;
-
-            QueueControlRenderIfNeeded();
-        }
-
-        void QueueControlRenderIfNeeded()
-        {
-            var panel = _activeScrollPanel;
-            if (_scrollRenderQueued || panel == null || !panel.IsDirty || !CanSelfRender())
-                return;
-
-            _scrollRenderQueued = true;
-            LcdModClientComponent.RunNextFrame.Add(RunQueuedScrollRender);
-        }
-
-        void RunQueuedScrollRender()
-        {
-            _scrollRenderQueued = false;
-
-            try
-            {
-                var panel = _activeScrollPanel;
-                if (panel == null || !panel.IsDirty || !CanSelfRender())
-                    return;
-
-                Host.RenderSprites();
-            }
-            catch (Exception e)
-            {
-                ErrorHandlerHelper.LogError(e, this);
-            }
-        }
-
-        bool CanSelfRender()
-        {
-            try
-            {
-                return Host != null &&
-                       Host.Surface != null &&
-                       Host.Block != null &&
-                       !Host.Block.MarkedForClose &&
-                       !Host.Block.Closed;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        float ContentTop()
-        {
-            return TitleVisible ? ViewBox.Y + 40f * Scale * FontScale : ViewBox.Y;
         }
 
         protected void TrimText(ref StringBuilder sb, float availableWidth, float fontSize = 1)

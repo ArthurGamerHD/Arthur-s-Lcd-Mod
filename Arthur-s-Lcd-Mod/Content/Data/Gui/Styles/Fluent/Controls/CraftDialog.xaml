@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Styles xmlns="https://github.com/ArthurGamerHD/Adk">
+  <Style Selector="CheckBox.craft-assembler">
+    <Setter Property="MinHeight" Value="32" />
+    <Setter Property="Margin" Value="0 2" />
+    <Setter Property="CornerRadius" Value="5" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="CheckBox.craft-assembler:checked">
+    <Setter Property="Background" Value="{DynamicResource accentContainerColor}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource accentColor}" />
+    <Setter Property="BorderThickness" Value="2" />
+  </Style>
+</Styles>

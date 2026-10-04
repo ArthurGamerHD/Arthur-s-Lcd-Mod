@@ -1,4 +1,6 @@
+using ListMode = LcdMod.Client.Apps.Projector.ProjectorListMode;
 using System;
+using Adk.Gui.Collections.Reactive;
 using System.Collections.Generic;
 using LcdMod.Client.GridData;
 using LcdMod.Client.Helpers;
@@ -32,6 +34,7 @@ namespace LcdMod.Client.Apps.ViewModel
         static bool _componentBlueprintsInitialized;
 
         readonly ItemsAppViewModel _availableItems;
+        readonly HashSet<ItemEntry> _boundAvailableItems = new HashSet<ItemEntry>();
         readonly List<IMyCubeGrid> _projectorGrids = new List<IMyCubeGrid>();
         readonly List<IMySlimBlock> _projectorBlocks = new List<IMySlimBlock>();
         readonly Dictionary<MyItemType, MyFixedPoint> _available =
@@ -43,9 +46,13 @@ namespace LcdMod.Client.Apps.ViewModel
         readonly Dictionary<MyItemType, double> _ingotNeeded =
             new Dictionary<MyItemType, double>();
         readonly HashSet<MyItemType> _activeTypes = new HashSet<MyItemType>();
+        readonly Dictionary<MyItemType, double> _blockRemaining = new Dictionary<MyItemType, double>();
+        readonly Dictionary<MyItemType, double> _blockTotal = new Dictionary<MyItemType, double>();
+        readonly Dictionary<MyItemType, MyCubeBlockDefinition> _blockDefinitions =
+            new Dictionary<MyItemType, MyCubeBlockDefinition>();
 
         bool _isDisposed;
-        bool _showIngots;
+        ListMode _mode;
         int _projectionVersion;
 
         public ProjectorViewModel(
@@ -55,8 +62,7 @@ namespace LcdMod.Client.Apps.ViewModel
         {
             Items = new ObservableList<ItemEntry>();
             _availableItems = new ItemsAppViewModel(gridLogic, MaterialSelection, blockSelection);
-            _availableItems.Items.ItemAdded += OnAvailableItemAdded;
-            _availableItems.Items.ItemRemoved += OnAvailableItemRemoved;
+            _availableItems.Items.CollectionChanged += OnAvailableItemsChanged;
             foreach (var item in _availableItems.Items)
                 BindAvailableItem(item);
 
@@ -79,7 +85,25 @@ namespace LcdMod.Client.Apps.ViewModel
 
         public int MissingComponents { get; private set; }
 
+        public double TotalComponents { get; private set; }
+        public double AvailableComponents { get; private set; }
+        public double TotalIngots { get; private set; }
+        public double AvailableIngots { get; private set; }
+
         public IReadOnlyDictionary<MyItemType, double> ComponentMissing => _componentMissing;
+
+        /// <summary>How many blocks of this type the projection still needs.</summary>
+        public int GetRemainingBlocks(MyItemType type)
+        {
+            double remaining;
+            return _blockRemaining.TryGetValue(type, out remaining) ? (int)Math.Round(remaining) : 0;
+        }
+
+        /// <summary>The block definition behind a Blocks-mode entry.</summary>
+        public bool TryGetBlockDefinition(MyItemType type, out MyCubeBlockDefinition definition)
+        {
+            return _blockDefinitions.TryGetValue(type, out definition);
+        }
 
         public int ProjectionVersion => _projectionVersion;
 
@@ -94,9 +118,16 @@ namespace LcdMod.Client.Apps.ViewModel
             // Availability changes are projected by the observable item callbacks below.
             // Projector requirements themselves are refreshed once by UpdateProjector.
             _availableItems.UpdateSelection(MaterialSelection, blockSelection, true);
+            if (_hideEmpty == hideEmpty)
+                return;
+            _hideEmpty = hideEmpty;
+            RebuildProjection();
         }
 
-        public bool UpdateProjector(IMyCubeGrid rootGrid, long projectorEntityId, bool showIngots)
+        // "Hide empty" hides requirements with nothing missing (all of them once the projection is complete).
+        bool _hideEmpty;
+
+        public bool UpdateProjector(IMyCubeGrid rootGrid, long projectorEntityId, ListMode mode)
         {
             if (_isDisposed)
                 return false;
@@ -111,10 +142,12 @@ namespace LcdMod.Client.Apps.ViewModel
             var previousMissingMaterials = MissingMaterials;
             var previousMissingComponents = MissingComponents;
 
-            _showIngots = showIngots;
+            if (_mode != mode)
+                Items.Clear();
+            _mode = mode;
             ReadProjectorRequirements();
             RebuildAvailableAmounts();
-            var itemsChanged = RebuildProjection(showIngots);
+            var itemsChanged = RebuildProjection();
 
             var changed = itemsChanged ||
                           !ReferenceEquals(previousProjector, Projector) ||
@@ -134,36 +167,47 @@ namespace LcdMod.Client.Apps.ViewModel
                 return;
 
             _isDisposed = true;
-            _availableItems.Items.ItemAdded -= OnAvailableItemAdded;
-            _availableItems.Items.ItemRemoved -= OnAvailableItemRemoved;
-            foreach (var item in _availableItems.Items)
-                UnbindAvailableItem(item);
+            _availableItems.Items.CollectionChanged -= OnAvailableItemsChanged;
+            ClearAvailableItemSubscriptions();
             _availableItems.Dispose();
         }
 
-        void OnAvailableItemAdded(IObservableCollection<ItemEntry> sender, ItemEntry item)
+        void OnAvailableItemsChanged(object sender, NotifyCollectionChangedEventArgs args)
         {
-            BindAvailableItem(item);
+            if (args.Action == NotifyCollectionChangedAction.Move)
+                return;
+            if (args.Action == NotifyCollectionChangedAction.Reset)
+            {
+                ClearAvailableItemSubscriptions();
+                foreach (var item in _availableItems.Items)
+                    BindAvailableItem(item);
+            }
+            if (args.OldItems != null)
+                foreach (ItemEntry item in args.OldItems)
+                    UnbindAvailableItem(item);
+            if (args.NewItems != null)
+                foreach (ItemEntry item in args.NewItems)
+                    BindAvailableItem(item);
             RebuildAvailableAmounts();
-            RebuildProjection(_showIngots);
+            RebuildProjection();
         }
 
-        void OnAvailableItemRemoved(IObservableCollection<ItemEntry> sender, ItemEntry item)
+        void ClearAvailableItemSubscriptions()
         {
-            UnbindAvailableItem(item);
-            RebuildAvailableAmounts();
-            RebuildProjection(_showIngots);
+            foreach (var item in _boundAvailableItems)
+                item.PropertyChanged -= OnAvailableItemChanged;
+            _boundAvailableItems.Clear();
         }
 
         void BindAvailableItem(ItemEntry item)
         {
-            if (item != null)
+            if (item != null && _boundAvailableItems.Add(item))
                 item.PropertyChanged += OnAvailableItemChanged;
         }
 
         void UnbindAvailableItem(ItemEntry item)
         {
-            if (item != null)
+            if (item != null && _boundAvailableItems.Remove(item))
                 item.PropertyChanged -= OnAvailableItemChanged;
         }
 
@@ -173,7 +217,7 @@ namespace LcdMod.Client.Apps.ViewModel
                 return;
 
             RebuildAvailableAmounts();
-            RebuildProjection(_showIngots);
+            RebuildProjection();
         }
 
         void RebuildAvailableAmounts()
@@ -186,9 +230,16 @@ namespace LcdMod.Client.Apps.ViewModel
             }
         }
 
+        // A finished projection lists the blueprint's components as fully satisfied (the inventory's "Hide empty"
+        // filter decides whether they show), instead of an empty list.
+        bool _projectionComplete;
+
         void ReadProjectorRequirements()
         {
             _componentNeeded.Clear();
+            _blockRemaining.Clear();
+            _blockTotal.Clear();
+            _projectionComplete = false;
             TotalBlocks = 1;
             RemainingBlocks = 0;
 
@@ -211,9 +262,14 @@ namespace LcdMod.Client.Apps.ViewModel
                 foreach (var block in Projector.RemainingBlocksPerType)
                 {
                     var definition = block.Key as MyCubeBlockDefinition;
-                    if (definition != null)
-                        AccumulateComponents(definition, block.Value);
+                    if (definition == null)
+                        continue;
+                    AccumulateComponents(definition, block.Value);
+                    AccumulateBlock(_blockRemaining, definition, block.Value);
                 }
+
+                if (_mode == ListMode.Blocks && Projector.ProjectedGrid != null)
+                    ReadBlockTotals();
 
                 if (_componentNeeded.Count == 0 && Projector.ProjectedGrid != null)
                 {
@@ -225,12 +281,42 @@ namespace LcdMod.Client.Apps.ViewModel
                         if (definition != null)
                             AccumulateComponents(definition, 1);
                     }
+                    _projectionComplete = RemainingBlocks == 0;
                 }
             }
             catch (Exception e)
             {
                 ErrorHandlerHelper.LogError(e, GetType());
             }
+        }
+
+        // The projected grid holds the whole blueprint, so it gives each block type's total.
+        void ReadBlockTotals()
+        {
+            _projectorBlocks.Clear();
+            Projector.ProjectedGrid.GetBlocks(_projectorBlocks);
+            foreach (var block in _projectorBlocks)
+            {
+                var definition = block.BlockDefinition as MyCubeBlockDefinition;
+                if (definition != null)
+                    AccumulateBlock(_blockTotal, definition, 1);
+            }
+            foreach (var remaining in _blockRemaining)
+            {
+                double total;
+                _blockTotal.TryGetValue(remaining.Key, out total);
+                if (total < remaining.Value)
+                    _blockTotal[remaining.Key] = remaining.Value;
+            }
+        }
+
+        void AccumulateBlock(Dictionary<MyItemType, double> counts, MyCubeBlockDefinition definition, int count)
+        {
+            MyItemType type = definition.Id;
+            _blockDefinitions[type] = definition;
+            double current;
+            counts.TryGetValue(type, out current);
+            counts[type] = current + count;
         }
 
         void AccumulateComponents(MyCubeBlockDefinition definition, int blockCount)
@@ -246,29 +332,46 @@ namespace LcdMod.Client.Apps.ViewModel
             }
         }
 
-        bool RebuildProjection(bool showIngots)
+        bool RebuildProjection()
         {
             var previousTotal = TotalMaterials;
             var previousMissing = MissingMaterials;
             var previousComponentMissing = MissingComponents;
+            var previousTotalIngots = TotalIngots;
+            var previousAvailableIngots = AvailableIngots;
+            var previousTotalComponents = TotalComponents;
+            var previousAvailableComponents = AvailableComponents;
             BuildComponentMissing();
+            // Footer completion stages are independent of the selected item view.
+            BuildIngotNeeded();
+            TotalComponents = SumRequirements(_componentNeeded, false);
+            AvailableComponents = SumRequirements(_componentNeeded, true);
+            TotalIngots = SumRequirements(_ingotNeeded, false);
+            AvailableIngots = SumRequirements(_ingotNeeded, true);
             bool changed;
-            if (showIngots)
-            {
-                BuildIngotNeeded();
+            if (_mode == ListMode.Blocks)
+                changed = ApplyBlockProjection();
+            else if (_mode == ListMode.Ingots)
                 changed = ApplyActiveProjection(_ingotNeeded);
-            }
             else
-            {
                 changed = ApplyActiveProjection(_componentNeeded);
-            }
 
             if (changed ||
                 previousTotal != TotalMaterials ||
                 previousMissing != MissingMaterials ||
-                previousComponentMissing != MissingComponents)
+                previousComponentMissing != MissingComponents ||
+                previousTotalIngots != TotalIngots || previousAvailableIngots != AvailableIngots ||
+                previousTotalComponents != TotalComponents || previousAvailableComponents != AvailableComponents)
                 RaiseProjectionChanged();
             return changed;
+        }
+
+        double SumRequirements(Dictionary<MyItemType, double> requirements, bool available)
+        {
+            double total = 0d;
+            foreach (var requirement in requirements)
+                total += available ? Math.Min(requirement.Value, Math.Max(0d, GetAvailable(requirement.Key))) : requirement.Value;
+            return total;
         }
 
         void RaiseProjectionChanged()
@@ -304,6 +407,8 @@ namespace LcdMod.Client.Apps.ViewModel
                 var missing = Math.Max(0d, needed.Value - available);
                 total += (long)Math.Round(needed.Value);
                 missingTotal += (long)Math.Round(missing);
+                if (_hideEmpty && missing <= 0d)
+                    continue;
 
                 _activeTypes.Add(needed.Key);
                 changed |= UpsertItem(needed.Key, available, needed.Value, missing);
@@ -314,6 +419,37 @@ namespace LcdMod.Client.Apps.ViewModel
                 if (_activeTypes.Contains(Items[i].ItemType))
                     continue;
 
+                Items.RemoveAt(i);
+                changed = true;
+            }
+
+            TotalMaterials = (int)Math.Max(0, total);
+            MissingMaterials = (int)Math.Max(0, missingTotal);
+            return changed;
+        }
+
+        bool ApplyBlockProjection()
+        {
+            _activeTypes.Clear();
+            long total = 0;
+            long missingTotal = 0;
+            bool changed = false;
+            foreach (var block in _blockTotal)
+            {
+                double remaining;
+                _blockRemaining.TryGetValue(block.Key, out remaining);
+                total += (long)Math.Round(block.Value);
+                missingTotal += (long)Math.Round(remaining);
+                if (_hideEmpty && remaining <= 0d)
+                    continue;
+                _activeTypes.Add(block.Key);
+                changed |= UpsertItem(block.Key, block.Value - remaining, block.Value, remaining);
+            }
+
+            for (var i = Items.Count - 1; i >= 0; i--)
+            {
+                if (_activeTypes.Contains(Items[i].ItemType))
+                    continue;
                 Items.RemoveAt(i);
                 changed = true;
             }
@@ -367,6 +503,8 @@ namespace LcdMod.Client.Apps.ViewModel
 
         double GetAvailable(MyItemType itemType)
         {
+            if (_projectionComplete)
+                return double.MaxValue;
             MyFixedPoint amount;
             return _available.TryGetValue(itemType, out amount) ? (double)amount : 0d;
         }

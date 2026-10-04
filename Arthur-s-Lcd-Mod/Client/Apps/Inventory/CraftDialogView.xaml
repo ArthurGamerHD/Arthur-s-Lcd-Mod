@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window xmlns="https://github.com/ArthurGamerHD/Adk"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:inventory="using:LcdMod.Client.Apps.Inventory"
+        xmlns:ext="using:LcdMod.Client.Apps.Views.Extensions"
+        x:Class="LcdMod.Client.Apps.Inventory.CraftDialogView"
+        x:DataType="inventory:CraftDialogViewModel"
+        Title="{Binding Title}" Width="440" Height="440" MinWidth="300" MinHeight="260"
+        Padding="14 4 14 14">
+  <Window.Styles>
+    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/Dialogs.xaml" />
+    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/CraftDialog.xaml" />
+  </Window.Styles>
+  <Grid RowDefinitions="*,Auto">
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+      <StackPanel Spacing="10">
+        <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding IsSingle}">
+          <Image Source="{Binding ItemIcon}" Width="40" Height="40" Margin="0 0 10 0" />
+          <TextBlock Grid.Column="1" Classes="dialog-text" Text="{Binding ItemName}" FontSize="{Binding FontSize}" VerticalAlignment="Center" />
+        </Grid>
+        <ItemsControl ItemsSource="{Binding Requests}" IsVisible="{Binding IsMultiple}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="inventory:CraftRequestModel">
+              <Grid ColumnDefinitions="Auto,*,Auto" Height="32" Margin="0 1">
+                <Image Source="{Binding Icon}" Width="28" Height="28" Margin="0 0 8 0" />
+                <TextBlock Grid.Column="1" Classes="dialog-text" Text="{Binding Name}" FontSize="{Binding FontSize}" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="2" Classes="dialog-text" Text="{Binding TotalText}" FontSize="{Binding FontSize}" VerticalAlignment="Center" />
+              </Grid>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <TextBlock Classes="dialog-text" Text="{Binding AmountLabel}" FontSize="{Binding FontSize}" />
+        <Grid ColumnDefinitions="36,*,36" Height="36">
+          <Button Classes="dialog-button craft-step" Command="{Binding DecreaseCommand}"><TextBlock Classes="dialog-text" Text="−" FontSize="{Binding FontSize}" /></Button>
+          <TextBox x:Name="Quantity" Grid.Column="1" Margin="6 0 6 0" Text="{Binding Amount, Mode=TwoWay}" MaxLength="7" />
+          <Button Grid.Column="2" Classes="dialog-button craft-step" Command="{Binding IncreaseCommand}"><TextBlock Classes="dialog-text" Text="+" FontSize="{Binding FontSize}" /></Button>
+        </Grid>
+        <TextBlock Classes="dialog-text" Text="{ext:loc LcdMod_CraftDialog_AssemblerSelection_Title}" FontSize="{Binding FontSize}" />
+        <TextBlock Classes="dialog-text" Text="{ext:loc LcdMod_CraftDialog_AssemblerSelection_Empty}" IsVisible="{Binding IsEmpty}" FontSize="{Binding FontSize}" />
+        <ItemsControl ItemsSource="{Binding AssemblerItems}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="inventory:CraftAssemblerModel">
+              <CheckBox Classes="craft-assembler" IsChecked="{Binding IsSelected, Mode=TwoWay}">
+                <TextBlock Classes="dialog-text" Text="{Binding Label}" FontSize="{Binding FontSize}" />
+              </CheckBox>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </ScrollViewer>
+    <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="0 10 0 0">
+      <Button Classes="dialog-button" Margin="0 0 5 0" Command="{Binding CancelCommand}">
+        <TextBlock Classes="dialog-text" Text="{ext:loc LcdMod_Common_Button_Cancel}" FontSize="{Binding FontSize}" />
+      </Button>
+      <Button Grid.Column="1" Classes="dialog-button primary" Margin="5 0 0 0" Command="{Binding CraftCommand}" IsEnabled="{Binding CanCraft}">
+        <TextBlock Classes="dialog-text" Text="{ext:loc LcdMod_CraftDialog_Button_Craft}" FontSize="{Binding FontSize}" />
+      </Button>
+    </Grid>
+  </Grid>
+</Window>

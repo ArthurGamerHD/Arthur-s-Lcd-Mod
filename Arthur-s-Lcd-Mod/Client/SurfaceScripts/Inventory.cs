@@ -5,13 +5,11 @@ using LcdMod.Client.Apps;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Gui;
 using LcdMod.Client.SurfaceScripts.Abstract;
-using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Terminal.Controls.Groups;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
-using VRage.ModAPI;
 using VRageMath;
 using CheckboxHideEmpty = LcdMod.Client.Terminal.Controls.Generic.CheckboxHideEmpty;
 using ComboboxSorting = LcdMod.Client.Terminal.Controls.Generic.ComboboxSorting;
@@ -42,10 +40,8 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override IApp App => _app;
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
-        public override List<Control> InteractiveList => _app?.VisualChildren as List<Control>;
         public override string Title => _app != null ? _app.Title : base.Title;
         protected override string DefaultTitle => NAME;
-        protected override bool RendersInteractiveEntriesInGetSprites => true;
 
         public InventoryLcdSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface,
             block, size)
@@ -73,6 +69,7 @@ namespace LcdMod.Client.SurfaceScripts
             if (_app == null)
                 _app = new InventoryApp(this);
 
+            EnsureRetainedAppView(_app);
             _app.Update();
 
             if (_app.IsDirty || InteractiveVisualsDirty)
@@ -94,8 +91,7 @@ namespace LcdMod.Client.SurfaceScripts
             }
 
             AddBackground(sprites);
-            DrawTitle(sprites);
-            sprites.AddRange(_app.GetSprites());
+            DrawRetainedAppView(sprites);
             return sprites;
         }
     }

@@ -1,4 +1,5 @@
 using System;
+using Adk.Gui.Collections.Reactive;
 using System.Collections.Generic;
 using System.Linq;
 using LcdMod.Client.GridData;
@@ -188,9 +189,7 @@ namespace LcdMod.Client.Apps.ViewModel
             if (source == null || !_boundSubtypeSources.Add(source))
                 return;
 
-            source.ItemAdded += OnSubtypeAdded;
-            source.ItemChanged += OnSubtypeChanged;
-            source.ItemRemoved += OnSubtypeRemoved;
+            source.CollectionChanged += OnSubtypesChanged;
             foreach (var item in source)
             {
                 if (MatchesFilter(item.Key))
@@ -205,9 +204,7 @@ namespace LcdMod.Client.Apps.ViewModel
 
             foreach (var source in _boundSubtypeSources)
             {
-                source.ItemAdded -= OnSubtypeAdded;
-                source.ItemChanged -= OnSubtypeChanged;
-                source.ItemRemoved -= OnSubtypeRemoved;
+                source.CollectionChanged -= OnSubtypesChanged;
             }
 
             foreach (var logic in _boundGridItemLogics)
@@ -235,25 +232,23 @@ namespace LcdMod.Client.Apps.ViewModel
                 RebuildGridSources();
         }
 
-        void OnSubtypeAdded(
-            IObservableCollection<KeyValuePair<MyItemType, MyFixedPoint>> sender,
-            KeyValuePair<MyItemType, MyFixedPoint> item)
+        void OnSubtypesChanged(object sender, NotifyCollectionChangedEventArgs args)
         {
-            RecalculateAggregateAmount(item.Key);
-        }
-
-        void OnSubtypeChanged(
-            IObservableCollection<KeyValuePair<MyItemType, MyFixedPoint>> sender,
-            KeyValuePair<MyItemType, MyFixedPoint> item)
-        {
-            RecalculateAggregateAmount(item.Key);
-        }
-
-        void OnSubtypeRemoved(
-            IObservableCollection<KeyValuePair<MyItemType, MyFixedPoint>> sender,
-            KeyValuePair<MyItemType, MyFixedPoint> item)
-        {
-            RecalculateAggregateAmount(item.Key);
+            var keys = new HashSet<MyItemType>();
+            if (args.Action == NotifyCollectionChangedAction.Reset)
+            {
+                keys.UnionWith(_aggregateAmounts.Keys);
+                foreach (var source in _boundSubtypeSources)
+                    keys.UnionWith(source.Keys);
+            }
+            if (args.OldItems != null)
+                foreach (KeyValuePair<MyItemType, MyFixedPoint> item in args.OldItems)
+                    keys.Add(item.Key);
+            if (args.NewItems != null)
+                foreach (KeyValuePair<MyItemType, MyFixedPoint> item in args.NewItems)
+                    keys.Add(item.Key);
+            foreach (var key in keys)
+                RecalculateAggregateAmount(key);
         }
 
         void RecalculateAggregateAmount(MyItemType itemType)
