@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window xmlns="https://github.com/ArthurGamerHD/Adk"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:market="using:LcdMod.Client.Apps.NpcMarket"
+        x:Class="LcdMod.Client.Apps.NpcMarket.MarketItemDialogView"
+        x:DataType="market:MarketItemDialogViewModel"
+        Title="{Binding Title}" Width="640" Height="460" MinWidth="360" MinHeight="280"
+        Padding="14 4 14 14">
+  <Window.Styles>
+    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/Dialogs.xaml" />
+  </Window.Styles>
+  <Grid RowDefinitions="Auto,Auto,*">
+    <Grid ColumnDefinitions="Auto,*,160" Margin="0 0 0 10">
+      <Image Source="{Binding Icon}" Width="40" Height="40" />
+      <Border x:Name="ModeHost" Grid.Column="2" Height="34" />
+    </Grid>
+    <Grid Grid.Row="1" ColumnDefinitions="80,*,120,90" Height="30" Margin="4 0 14 4">
+      <Button Classes="dialog-header" Command="{Binding SortDistanceCommand}">
+        <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right">
+          <TextBlock Classes="dialog-text" Text="{Binding DistanceLabel}" FontSize="{Binding SmallFontSize}" />
+          <Image Source="Triangle" Width="8" Height="6" IsVisible="{Binding IsDistanceSorted}" RenderTransform="{Binding SortDirection}" />
+        </StackPanel>
+      </Button>
+      <Button Grid.Column="1" Classes="dialog-header" Command="{Binding SortStationCommand}">
+        <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Left">
+          <TextBlock Classes="dialog-text" Text="{Binding StationLabel}" FontSize="{Binding SmallFontSize}" />
+          <Image Source="Triangle" Width="8" Height="6" IsVisible="{Binding IsStationSorted}" RenderTransform="{Binding SortDirection}" />
+        </StackPanel>
+      </Button>
+      <Button Grid.Column="2" Classes="dialog-header" Command="{Binding SortPriceCommand}">
+        <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right">
+          <TextBlock Classes="dialog-text" Text="{Binding PriceLabel}" FontSize="{Binding SmallFontSize}" />
+          <Image Source="Triangle" Width="8" Height="6" IsVisible="{Binding IsPriceSorted}" RenderTransform="{Binding SortDirection}" />
+        </StackPanel>
+      </Button>
+      <Button Grid.Column="3" Classes="dialog-header" Command="{Binding SortTrendCommand}">
+        <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right">
+          <TextBlock Classes="dialog-text" Text="{Binding TrendLabel}" FontSize="{Binding SmallFontSize}" />
+          <Image Source="Triangle" Width="8" Height="6" IsVisible="{Binding IsTrendSorted}" RenderTransform="{Binding SortDirection}" />
+        </StackPanel>
+      </Button>
+    </Grid>
+    <Border Grid.Row="2" Classes="dialog-panel">
+      <Grid>
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+          <ItemsControl ItemsSource="{Binding Rows}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <VirtualizingStackPanel />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="market:MarketQuoteRow">
+                <Button Margin="0 0 0 2" Classes="dialog-row" Command="{Binding Command}" Height="32" HorizontalContentAlignment="Stretch">
+                  <Grid ColumnDefinitions="80,*,120,90">
+                    <TextBlock Classes="dialog-text" Text="{Binding Distance}" FontSize="{Binding FontSize}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Classes="dialog-text" Text="{Binding Station}" FontSize="{Binding FontSize}" Margin="10 0" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="2" Classes="dialog-text" Text="{Binding Price}" FontSize="{Binding FontSize}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="3" HorizontalAlignment="Right" VerticalAlignment="Center">
+                      <Image Source="{Binding TrendIcon}" Width="14" Height="14" RenderTransform="{Binding TrendRotation}" />
+                      <TextBlock Classes="dialog-text" Text="{Binding Trend}" FontSize="{Binding FontSize}" />
+                    </StackPanel>
+                  </Grid>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+        <TextBlock Classes="dialog-muted" Text="{Binding EmptyText}" FontSize="{Binding FontSize}" IsVisible="{Binding IsEmpty}" />
+      </Grid>
+    </Border>
+  </Grid>
+</Window>

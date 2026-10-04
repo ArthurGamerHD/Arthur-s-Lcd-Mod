@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl xmlns="https://github.com/ArthurGamerHD/Adk"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:market="using:LcdMod.Client.Apps.NpcMarket"
+             x:Class="LcdMod.Client.Apps.NpcMarket.NpcMarketView"
+             x:DataType="LcdMod.Client.Apps.NpcMarket.NpcMarketViewModel">
+  <UserControl.Styles>
+    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/NpcMarket.xaml" />
+    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/CarouselNavigation.xaml" />
+  </UserControl.Styles>
+  <Grid RowDefinitions="Auto * 58">
+    <Grid Grid.Row="1" RowDefinitions="*,Auto" IsVisible="{Binding ShowTable}">
+      <Carousel ItemsSource="{Binding Pages}" SelectedIndex="{Binding SelectedPage}" WrapSelection="True"
+                ViewportFraction="{Binding ViewportFraction}" Margin="0 0 -12 0">
+        <Carousel.ItemTemplate>
+          <DataTemplate x:DataType="market:MarketPageModel">
+            <Grid Margin="0 0 12 0" RowDefinitions="Auto *">
+              <market:MarketSearchHeader IsOpen="{Binding IsSearchOpen, Mode=TwoWay}" IsVisible="{Binding IsSingle}">
+                <Button Classes="market-search" Command="{Binding SearchCommand}" Margin="12 0 0 0" />
+                <TextBox Classes="clearButton market-search-box" Text="{Binding SearchText, Mode=TwoWay}"
+                         PlaceholderText="{Binding SearchPlaceholder}">
+                  <TextBox.InnerLeftContent>
+                    <Border Classes="market-search-icon">
+                      <Border.OpacityMask>
+                        <ImageBrush Source="Search" Stretch="Uniform" />
+                      </Border.OpacityMask>
+                    </Border>
+                  </TextBox.InnerLeftContent>
+                </TextBox>
+                <Grid ColumnDefinitions="* 108 96">
+                  <market:NpcMarketSortHeader Header="{Binding NameHeader}" IsRightAligned="False" />
+                  <market:NpcMarketSortHeader Grid.Column="1" Header="{Binding PriceHeader}" Padding="0 0 10 0" />
+                  <market:NpcMarketSortHeader Grid.Column="2" Header="{Binding TrendHeader}" Padding="0 0 14 0" />
+                </Grid>
+              </market:MarketSearchHeader>
+              <market:MarketSearchHeader IsOpen="{Binding IsSearchOpen, Mode=TwoWay}" IsVisible="{Binding IsBoth}">
+                <Button Classes="market-search" Command="{Binding SearchCommand}" Margin="12 0 0 0" />
+                <TextBox Classes="clearButton market-search-box" Text="{Binding SearchText, Mode=TwoWay}"
+                         PlaceholderText="{Binding SearchPlaceholder}">
+                  <TextBox.InnerLeftContent>
+                    <Border Classes="market-search-icon">
+                      <Border.OpacityMask>
+                        <ImageBrush Source="Search" Stretch="Uniform" />
+                      </Border.OpacityMask>
+                    </Border>
+                  </TextBox.InnerLeftContent>
+                </TextBox>
+                <Grid ColumnDefinitions="* 124 82 124 82">
+                  <market:NpcMarketSortHeader Header="{Binding NameHeader}" IsRightAligned="False" />
+                  <market:NpcMarketSortHeader Grid.Column="1" Header="{Binding BuyPriceHeader}" Padding="0 0 14 0" />
+                  <market:NpcMarketSortHeader Grid.Column="2" Header="{Binding BuyTrendHeader}" Padding="0 0 14 0" />
+                  <market:NpcMarketSortHeader Grid.Column="3" Header="{Binding SellPriceHeader}" Padding="0 0 14 0" />
+                  <market:NpcMarketSortHeader Grid.Column="4" Header="{Binding SellTrendHeader}" Padding="0 0 14 0" />
+                </Grid>
+              </market:MarketSearchHeader>
+              <Border Background="{DynamicResource dividerColor}" Height="1" VerticalAlignment="Bottom" />
+              <ItemsControl Grid.Row="1" ItemsSource="{Binding Rows}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="market:MarketRowModel">
+                    <Grid Height="34">
+                      <Grid ColumnDefinitions="48 * 108 96" IsVisible="{Binding IsSingle}">
+                        <Button Classes="market-row" Grid.ColumnSpan="4" Command="{Binding Command}"
+                                IsVisible="{Binding HasQuote}" />
+                        <Image Source="{Binding Icon}" Width="24" Height="24" Margin="16 0 0 0" HorizontalAlignment="Left" />
+                        <TextBlock Grid.Column="1" Classes="market-cell" Text="{Binding Name}" TextTrimming="CharacterEllipsis"
+                                   MaxWidth="240" Margin="0 0 12 0" HorizontalAlignment="Left" />
+                        <TextBlock Grid.Column="2" Classes="market-cell" Text="{Binding Price}" TextAlignment="Right"
+                                   Margin="0 0 10 0" />
+                        <market:NpcMarketTrend Grid.Column="3" Trend="{Binding Trend}" Margin="0 0 14 0" />
+                      </Grid>
+                      <Grid ColumnDefinitions="48 * 124 82 124 82" IsVisible="{Binding IsBoth}">
+                        <Button Classes="market-row" Grid.Column="2" Grid.ColumnSpan="2" Command="{Binding BuyCommand}"
+                                IsVisible="{Binding HasBuy}" />
+                        <Button Classes="market-row" Grid.Column="4" Grid.ColumnSpan="2" Command="{Binding SellCommand}"
+                                IsVisible="{Binding HasSell}" />
+                        <Image Source="{Binding Icon}" Width="24" Height="24" Margin="16 0 0 0" HorizontalAlignment="Left" />
+                        <TextBlock Grid.Column="1" Classes="market-cell" Text="{Binding Name}" TextTrimming="CharacterEllipsis"
+                                   MaxWidth="240" Margin="0 0 12 0" HorizontalAlignment="Left" />
+                        <TextBlock Grid.Column="2" Classes="market-cell" Text="{Binding BuyPrice}" TextAlignment="Right"
+                                   Margin="0 0 8 0" IsVisible="{Binding HasBuy}" />
+                        <Image Grid.Column="2" Source="Steady1" Width="14" Height="14" HorizontalAlignment="Right"
+                               Margin="0 0 19 0" IsVisible="{Binding NoBuy}" />
+                        <market:NpcMarketTrend Grid.Column="3" Trend="{Binding BuyTrend}" Margin="0 0 10 0" />
+                        <TextBlock Grid.Column="4" Classes="market-cell" Text="{Binding SellPrice}" TextAlignment="Right"
+                                   Margin="0 0 8 0" IsVisible="{Binding HasSell}" />
+                        <Image Grid.Column="4" Source="Steady1" Width="14" Height="14" HorizontalAlignment="Right"
+                               Margin="0 0 19 0" IsVisible="{Binding NoSell}" />
+                        <market:NpcMarketTrend Grid.Column="5" Trend="{Binding SellTrend}" Margin="0 0 10 0" />
+                      </Grid>
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </Grid>
+          </DataTemplate>
+        </Carousel.ItemTemplate>
+      </Carousel>
+      <Grid Grid.Row="1" Height="34" Margin="0 8 0 0" HorizontalAlignment="Center" IsVisible="{Binding ShowNavigation}"
+            ColumnDefinitions="Auto,8,Auto,8,Auto">
+        <Button Classes="carousel-arrow" Width="{Binding ArrowButtonWidth}" Command="{Binding PreviousPageCommand}">
+          <Border Background="{Binding ArrowColor}" Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Border.OpacityMask>
+              <ImageBrush Source="LeftArrow" />
+            </Border.OpacityMask>
+          </Border>
+        </Button>
+        <ItemsControl Grid.Column="2" Width="{Binding IndicatorButtonWidth}" ItemsSource="{Binding Pages}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="market:MarketPageModel">
+              <Button Classes="carousel-dot" Width="{Binding DotCellWidth}" Height="16" Command="{Binding SelectCommand}">
+                <Grid>
+                  <Border Background="{Binding DotColor}" OpacityMask="{Binding DotMask}" Width="{Binding DotSize}" Height="{Binding DotSize}"
+                          HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  <Border Background="{Binding DotInnerColor}" Width="{Binding InnerDotSize}" Height="{Binding InnerDotSize}" IsVisible="{Binding IsCurrent}"
+                          HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Border.OpacityMask>
+                      <ImageBrush Source="Circle" />
+                    </Border.OpacityMask>
+                  </Border>
+                </Grid>
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Button Grid.Column="4" Classes="carousel-arrow" Width="{Binding ArrowButtonWidth}" Command="{Binding NextPageCommand}">
+          <Border Background="{Binding ArrowColor}" Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Border.OpacityMask>
+              <ImageBrush Source="RightArrow" />
+            </Border.OpacityMask>
+          </Border>
+        </Button>
+      </Grid>
+    </Grid>
+
+    <StackPanel Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding ShowMessage}">
+      <Border Background="{Binding MessageColor}" OpacityMask="{Binding MessageIconMask}" Width="{Binding MessageIconSize}"
+              Height="{Binding MessageIconSize}" HorizontalAlignment="Center" />
+      <TextBlock Classes="market-message" Text="{Binding MessageText}" Foreground="{Binding MessageColor}" TextAlignment="Center" />
+    </StackPanel>
+
+    <Grid Grid.Row="2" Margin="14 0" ColumnDefinitions="* Auto 8 Auto" RowDefinitions="20 28 10">
+      <Grid Grid.RowSpan="3" RowDefinitions="* *">
+        <TextBlock Classes="market-footer" Text="{Binding UpdatedText}" VerticalAlignment="Center" />
+        <TextBlock Grid.Row="1" Classes="market-footer" Text="{Binding NextTickText}" VerticalAlignment="Center" />
+      </Grid>
+      <Border x:Name="ModeHost" Grid.Column="1" Grid.Row="1" />
+      <Button Grid.Column="3" Grid.Row="1" Classes="market-refresh" Content="{Binding RefreshText}"
+              Command="{Binding RefreshMarketCommand}" IsEnabled="{Binding RefreshEnabled}" MinWidth="96" />
+    </Grid>
+  </Grid>
+</UserControl>

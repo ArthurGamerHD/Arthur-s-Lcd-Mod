@@ -1,15 +1,8 @@
 using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using LcdMod.Client.Apps.Abstract;
-using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
-using LcdMod.Client.Gui.ControlsTemplates.Basic;
-using LcdMod.Client.Gui.ControlsTemplates.Custom.Market;
-using LcdMod.Client.Gui.ControlsTemplates.Dialogs;
-using LcdMod.Client.Gui.ControlsTemplates.Inputs;
-using LcdMod.Client.Gui.ControlsTemplates.Panels;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Market;
@@ -20,7 +13,6 @@ using VRage.Game.GUI.TextPanel;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRageMath;
 using Sandbox.ModAPI;
-using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
 using static LcdMod.Common.Helpers.Constants;
 
 using LcdMod.Common.Config.Generation;
@@ -37,33 +29,12 @@ namespace LcdMod.Client.Apps
         const string LOC_NO_TRADER = MOD_PREFIX + "MarketApp_NoTrader";
         const string LOC_UPDATED = MOD_PREFIX + "MarketApp_Updated";
         const string LOC_NEXT_RESTOCK = "StoreBlockView_TimeRemainingEconomyUpdate";
-        const string LOC_COLUMN_NAME = "StoreBlock_Column_Name";
-        const string LOC_COLUMN_PRICE = "StoreBlock_Column_PricePerUnit";
-        const string LOC_COLUMN_TREND = "StoreBlock_Column_Trend";
         const string LOC_SEARCH = "MarketWatchTab_Button_Search";
-        const float SINGLE_SIDE_LIST_MIN_WIDTH = 480f;
-        const float BOTH_LIST_MIN_WIDTH = 720f;
         const int FOOTER_CLOCK_UPDATE_INTERVAL_RUNS = 6;
-        static readonly NpcMarketMode[] MarketModes = { NpcMarketMode.Buy, NpcMarketMode.Sell, NpcMarketMode.Both };
+        internal static readonly NpcMarketMode[] MarketModes = { NpcMarketMode.Buy, NpcMarketMode.Sell, NpcMarketMode.Both };
 
-        readonly List<Control> _children = new List<Control>();
-        readonly List<MySprite> _contentSpriteCache = new List<MySprite>();
-        readonly List<MySprite> _footerSpriteCache = new List<MySprite>();
         readonly NpcMarketAggregator _aggregator = new NpcMarketAggregator();
         readonly List<NpcMarketRow> _rows = new List<NpcMarketRow>();
-        readonly StringBuilder _text = new StringBuilder();
-        readonly PagesPanel _pagesPanel;
-        readonly NpcMarketListStripPanel _listStripPanel;
-        readonly ComboBox<NpcMarketMode> _modeComboBox;
-        readonly List<Button> _sortHeaderButtons = new List<Button>();
-        readonly TextInputModel _searchInputModel;
-        readonly TextInput _searchInput;
-        readonly Button _searchButton;
-        readonly Button _clearSearchButton;
-        readonly Grid _footerGrid;
-        readonly TextBlock _footerUpdatedText;
-        readonly TextBlock _footerNextTickText;
-        readonly Button _refreshButton;
         NpcMarketMode _mode;
         NpcMarketSortColumn _sortColumn = NpcMarketSortColumn.Price;
         bool _sortDescending;
@@ -73,10 +44,6 @@ namespace LcdMod.Client.Apps
         bool _rowsDirty = true;
         bool _hasMaxDistance;
         double _lastMaxDistanceMeters;
-        int _rowsRevision;
-        bool _contentSpritesDirty = true;
-        bool _footerSpritesDirty = true;
-        bool _pagesConfigurationDirty = true;
         bool _hasContentState;
         MarketContentState _contentState;
         string _footerUpdatedValue = string.Empty;
@@ -84,15 +51,71 @@ namespace LcdMod.Client.Apps
         bool _footerRefreshEnabled;
         bool _footerModeEnabled;
         int _footerClockUpdateRunCount = FOOTER_CLOCK_UPDATE_INTERVAL_RUNS - 1;
+        readonly NpcMarket.NpcMarketViewModel _viewModel;
 
         NpcMarketClientCacheKey CacheKey =>
             new NpcMarketClientCacheKey(
                 Host.Block?.EntityId ?? 0L,
                 Host.SurfaceIndex);
 
-        public override IReadOnlyList<Control> VisualChildren => _children;
         internal NpcMarketMode Mode => _mode;
+        internal override float WindowRenderScaling => GetLayoutScale() > 0f ? GetLayoutScale() : 1f;
         internal IAppHost AppHost => Host;
+        NpcMarket.MarketItemDialogViewModel _itemDialog;
+        internal IReadOnlyList<NpcMarketRow> NativeRows => _rows;
+        internal string NativeModeText => GetModeLabel(_mode);
+        internal string NativeUpdatedText => _footerUpdatedValue;
+        internal string NativeNextTickText => _footerNextTickValue;
+        internal string NativeSearchText => string.IsNullOrEmpty(_searchQuery) ? MyTexts.GetString(LOC_SEARCH) : _searchQuery;
+        internal string NativeRefreshText => MyTexts.GetString(LOC_REFRESH);
+        internal string NativeSearchQuery => _searchQuery;
+        internal string NativeEmptyText => MyTexts.GetString(LOC_EMPTY);
+        internal string NativeNoTraderText => MyTexts.GetString(LOC_NO_TRADER);
+        internal bool NativeRefreshEnabled => _footerRefreshEnabled;
+        internal bool NativeModeEnabled => _footerModeEnabled;
+        internal NpcMarketSortColumn SortColumn => _sortColumn;
+        internal bool SortDescending => _sortDescending;
+        internal MarketContentState ContentState => _contentState;
+
+        internal Color ResolveMarketColor(ResourceKey<Color> key, Color fallback)
+        {
+            return ResolveResource(key, fallback);
+        }
+
+        internal string NativeSearchPlaceholder => MyTexts.GetString(LOC_SEARCH);
+
+        internal void SetNativeSearch(string value)
+        {
+            if (string.Equals(value, _searchQuery, StringComparison.Ordinal))
+                return;
+            OnSearchChanged(value);
+            _viewModel.Refresh();
+        }
+
+        internal void ClearNativeSearch()
+        {
+            OnSearchChanged(string.Empty);
+            _viewModel.Refresh();
+        }
+
+        internal void SortNative(NpcMarketSortColumn column)
+        {
+            OnSortColumnClicked(column);
+            _viewModel.Refresh();
+        }
+
+        internal void OpenNativeRow(string itemKey, NpcMarketMode mode)
+        {
+            if (!string.IsNullOrEmpty(itemKey))
+                OnMarketRowClicked(new NpcMarketRowClickTarget(itemKey, mode));
+        }
+
+        internal void OnNativePageChanged(int pageIndex)
+        {
+            SavePageIndex(pageIndex);
+            ResetAutoPageTimer();
+            Host.RenderSprites();
+        }
         bool _restoredPageIndex;
         int _lastAutoPageStep = -1;
         long _autoPagePauseStartedFrame = long.MinValue;
@@ -100,76 +123,13 @@ namespace LcdMod.Client.Apps
 
         public NpcMarketApp(IAppHost host) : base(host)
         {
+            _viewModel = new NpcMarket.NpcMarketViewModel(this);
+            SetContent(new NpcMarket.NpcMarketView { DataContext = _viewModel });
             _mode = NormalizeConfiguredMode(NpcMarketComponent.SelectedMode);
             NpcMarketComponent.SelectedMode = (int)_mode;
             _searchQuery = NpcMarketComponent.SearchQuery ?? string.Empty;
             NpcMarketComponent.SearchQuery = _searchQuery;
             LoadSortStateForMode(_mode);
-            _pagesPanel = AddLogicalChild(new PagesPanel());
-            _pagesPanel.SetVisible(false);
-            _pagesPanel.PageChanged = OnPageChanged;
-            _listStripPanel = new NpcMarketListStripPanel(Host)
-            {
-                HorizontalGap = 12f * GetLayoutScale(),
-                SortClicked = OnSortColumnClicked,
-                SearchClicked = OpenSearch,
-                RowClicked = OnMarketRowClicked
-            };
-            Func<RectangleF, int> pageProvider = viewport => _listStripPanel.ConfigurePages(_pagesPanel, viewport);
-            _pagesPanel.PageProvider = pageProvider;
-            _modeComboBox = new ComboBox<NpcMarketMode>(MarketModes, GetModeLabel, OnModeChanged, Host.RenderSprites)
-            {
-                OpenDirection = ComboBoxOpenDirection.Up
-            };
-            _modeComboBox.SetSelectedValue(_mode);
-            _modeComboBox.SetVisible(false);
-            _searchInputModel = new TextInputModel
-            {
-                Title = MyTexts.GetString(LOC_SEARCH),
-                Placeholder = MyTexts.GetString(LOC_SEARCH),
-                ValueChanged = OnSearchChanged
-            };
-            _searchInput = AddLogicalChild(new TextInput(default(RectangleF), _searchInputModel));
-            _searchInput.CustomRender = RenderSearchInput;
-            _searchInput.SetVisible(false);
-            _searchButton = AddLogicalChild(new Button(default(RectangleF), new ButtonModel { Clicked = OnSearchClicked }));
-            _searchButton.CustomRender = RenderSearchButton;
-            _searchButton.SetVisible(false);
-            _clearSearchButton = AddLogicalChild(new Button(default(RectangleF), new ButtonModel { Clicked = OnClearSearchClicked }));
-            _clearSearchButton.CustomRender = RenderClearSearchButton;
-            _clearSearchButton.SetVisible(false);
-            _refreshButton = new Button(default(RectangleF), new ButtonModel { Clicked = OnRefreshClicked });
-            _refreshButton.CustomRender = RenderRefreshButton;
-            _refreshButton.SetVisible(false);
-            _footerGrid = AddLogicalChild(new Grid());
-            _footerGrid.SetClass("ControlBase NpcMarketFooter");
-            _footerGrid.BackgroundTexture = null;
-            _footerGrid.SetVisible(false);
-            _footerGrid.SetColumns(1f, 1f, 1f, 1f);
-            _footerGrid.SetRows(1f, 1f, 1f);
-            var footerTextGrid = new Grid();
-            footerTextGrid.SetClass("ControlBase NpcMarketFooterText");
-            footerTextGrid.BackgroundTexture = null;
-            footerTextGrid.SetColumns(1f);
-            footerTextGrid.SetRows(1f, 1f);
-            _footerUpdatedText = new TextBlock(default(RectangleF))
-            {
-                FontScale = 0.63f,
-                HorizontalAlignment = TextAlignment.LEFT,
-                VerticalAlignment = TextBlockVerticalAlignment.Center
-            };
-            _footerNextTickText = new TextBlock(default(RectangleF))
-            {
-                FontScale = 0.63f,
-                HorizontalAlignment = TextAlignment.LEFT,
-                VerticalAlignment = TextBlockVerticalAlignment.Center
-            };
-            footerTextGrid.Set(_footerUpdatedText, 0, 0);
-            footerTextGrid.Set(_footerNextTickText, 0, 1);
-            _footerGrid.Set(footerTextGrid, 0, 0, 1, 3);
-            _footerGrid.Set(_modeComboBox, 1, 1);
-            _footerGrid.Set(_refreshButton, 3, 1);
-            EnsureSortHeaderButtons();
             NpcMarketClientCache.Updated += HandleUpdated;
             TextureHelper.TextureIconCacheChanged += HandleTextureIconCacheChanged;
         }
@@ -182,6 +142,8 @@ namespace LcdMod.Client.Apps
 
         public override void Update()
         {
+            if (_itemDialog != null)
+                _itemDialog.Refresh();
             var key = CacheKey;
             if (IsLocallyAccessDenied())
             {
@@ -189,6 +151,7 @@ namespace LcdMod.Client.Apps
                 ApplyPendingRowChanges();
                 UpdateContentState();
                 UpdateFooterPresentation();
+                _viewModel.Refresh();
                 return;
             }
 
@@ -205,98 +168,33 @@ namespace LcdMod.Client.Apps
             ApplyPendingRowChanges();
             UpdateContentState();
             UpdateFooterPresentation();
+            _viewModel.Refresh();
+            RestorePageIndex();
             AdvancePageFromTimer();
+        }
+
+        internal void RefreshNativeMarket()
+        {
+            NpcMarketClientCache.RequestRefresh(CacheKey, true);
+            UpdateFooterPresentation(true);
+            Host.RenderSprites();
+        }
+        internal void CycleNativeMode()
+        {
+            int index = Array.IndexOf(MarketModes, _mode);
+            OnModeChanged(MarketModes[(index + 1) % MarketModes.Length]);
+            _viewModel.Refresh();
         }
 
         public override void LayoutChanged()
         {
-            _pagesConfigurationDirty = true;
+            base.LayoutChanged();
             InvalidateContentAndFooterSprites();
         }
 
         public override List<MySprite> GetSprites()
         {
-            var sprites = new List<MySprite>();
-            CaptureDirtyControlSections();
-
-            if (_contentSpritesDirty)
-            {
-                ClearInteractiveTree();
-                _footerSpritesDirty = true;
-                RebuildContentSpriteCache();
-            }
-
-            if (_footerSpritesDirty)
-                RebuildFooterSpriteCache();
-
-            sprites.AddRange(_contentSpriteCache);
-            sprites.AddRange(_footerSpriteCache);
-            ClearDirtyAfterRender();
-            return sprites;
-        }
-
-        void RebuildContentSpriteCache()
-        {
-            _contentSpriteCache.Clear();
-            var view = Host.ViewBox;
-            var scale = GetLayoutScale();
-            var fontScale = Host.Surface.FontSize;
-            var textScale = 0.72f * scale * fontScale;
-            var muted = ResolveResource(ThemeResources.MutedTextColor, new Color(Host.ForegroundColor, 0.68f));
-            var footerHeight = GetFooterHeight(textScale);
-
-            var key = CacheKey;
-            var snapshot = NpcMarketClientCache.GetSnapshot(key);
-            var headerTop = view.Y + (Host.TitleVisible ? 48f * GeneralComponent.GetScale() * fontScale : 12f * scale);
-            
-            if (IsLocallyAccessDenied() || (snapshot != null && IsAccessDenied(snapshot)))
-            {
-                DrawNativeMessage(_contentSpriteCache, MyTexts.GetString("AccessDenied"), "Lock",
-                    ResolveResource(ThemeResources.ErrorColor, ColorComponent.ResolveErrorColor()));
-            }
-            else if (snapshot == null)
-            {
-                Host.DrawLoading(_contentSpriteCache, GeneralComponent.GetScale());
-            }
-            else if (ShouldShowNoTraderWarning(snapshot))
-            {
-                DrawNativeMessage(_contentSpriteCache, MyTexts.GetString(LOC_NO_TRADER));
-            }
-            else if (_rows.Count == 0 && string.IsNullOrWhiteSpace(_searchQuery))
-            {
-                DrawNativeMessage(_contentSpriteCache, MyTexts.GetString(LOC_EMPTY));
-            }
-            else
-            {
-                var headerHeight = 28f * scale;
-                var searchHeight = string.IsNullOrWhiteSpace(_searchQuery) ? 0f : 34f * scale;
-                var rowTop = headerTop + searchHeight;
-                var rowHeight = 34f * scale;
-                var contentRight = view.Right;
-                if (searchHeight > 0f)
-                    DrawSearchInput(_contentSpriteCache, headerTop + 2f * scale, searchHeight - 4f * scale,
-                        contentRight);
-
-                if (_rows.Count > 0)
-                {
-                    ConfigurePagesPanel(rowTop, footerHeight, headerHeight, rowHeight, textScale, muted);
-                    _pagesPanel.Render(_contentSpriteCache);
-                    _pagesConfigurationDirty = false;
-                }
-            }
-
-            _contentSpritesDirty = false;
-        }
-
-        void RebuildFooterSpriteCache()
-        {
-            _footerSpriteCache.Clear();
-            var scale = GetLayoutScale();
-            var fontScale = Host.Surface.FontSize;
-            var textScale = 0.72f * scale * fontScale;
-            var muted = ResolveResource(ThemeResources.MutedTextColor, new Color(Host.ForegroundColor, 0.68f));
-            DrawFooter(_footerSpriteCache, textScale, muted);
-            _footerSpritesDirty = false;
+            return new List<MySprite>();
         }
 
         public override bool HasVisibleItems()
@@ -309,10 +207,10 @@ namespace LcdMod.Client.Apps
             if (handled)
                 return;
 
-            if (!_pagesPanel.Visible || !_pagesPanel.CanNavigate)
+            if (!_viewModel.CanNavigate)
                 return;
 
-            _pagesPanel.FirstVisiblePage += delta > 0 ? -1 : 1;
+            _viewModel.MovePage(delta > 0 ? -1 : 1);
             handled = true;
             Host.RenderSprites();
         }
@@ -352,58 +250,28 @@ namespace LcdMod.Client.Apps
         {
             _aggregationDirty = true;
             _rowsDirty = true;
-            _pagesConfigurationDirty = true;
             InvalidateContentSprites();
         }
 
         void MarkRowsDirty()
         {
             _rowsDirty = true;
-            _pagesConfigurationDirty = true;
             InvalidateContentSprites();
         }
 
         void InvalidateContentSprites()
         {
-            _contentSpritesDirty = true;
             MarkDirty();
         }
 
         void InvalidateFooterSprites()
         {
-            _footerSpritesDirty = true;
             MarkDirty();
         }
 
         void InvalidateContentAndFooterSprites()
         {
-            _contentSpritesDirty = true;
-            _footerSpritesDirty = true;
             MarkDirty();
-        }
-
-        void CaptureDirtyControlSections()
-        {
-            if (IsVisibleTreeDirty(_pagesPanel) ||
-                IsVisibleTreeDirty(_searchInput) ||
-                IsVisibleTreeDirty(_searchButton) ||
-                IsVisibleTreeDirty(_clearSearchButton))
-                _contentSpritesDirty = true;
-
-            for (int i = 0; i < _sortHeaderButtons.Count; i++)
-            {
-                var button = _sortHeaderButtons[i];
-                if (IsVisibleTreeDirty(button))
-                {
-                    _contentSpritesDirty = true;
-                    break;
-                }
-            }
-
-            if (IsVisibleTreeDirty(_footerGrid) ||
-                IsVisibleTreeDirty(_refreshButton) ||
-                IsVisibleTreeDirty(_modeComboBox))
-                _footerSpritesDirty = true;
         }
 
         void UpdateContentState()
@@ -502,7 +370,6 @@ namespace LcdMod.Client.Apps
 
             unchecked
             {
-                _rowsRevision++;
             }
         }
 
@@ -544,9 +411,59 @@ namespace LcdMod.Client.Apps
                 return;
             }
 
-            var interactiveHost = Host as InteractiveSurfaceScript;
-            if (interactiveHost != null)
-                interactiveHost.ShowDialog(new NpcMarketItemDialog(this, group.ItemKey, target.Mode));
+            OpenItemDialog(group, target.Mode);
+        }
+
+        void OpenItemDialog(NpcMarketItemGroup group, NpcMarketMode mode)
+        {
+            string itemKey = group.ItemKey;
+            string itemName = group.DisplayName;
+            var model = new NpcMarket.MarketItemDialogViewModel(
+                itemName,
+                group.SpriteName,
+                mode == NpcMarketMode.Sell ? NpcMarketMode.Sell : NpcMarketMode.Buy,
+                new[]
+                {
+                    MyTexts.GetString("MarketWatchTab_Column_Distance"),
+                    MyTexts.GetString("StoreBlock_Column_Name"),
+                    MyTexts.GetString("StoreBlock_Column_PricePerUnit"),
+                    MyTexts.GetString("StoreBlock_Column_Trend")
+                },
+                MyTexts.GetString("MarketWatchTab_SearchMessage_NoResults"),
+                selected => LoadItemQuotes(itemKey, selected),
+                quote => CreateTemporaryGps((NpcMarketStationQuote)quote.Source, itemName),
+                selected => { if (Mode != NpcMarketMode.Both) SetMode(selected); })
+            {
+                ModeLabel = selected => MyTexts.GetString(selected == NpcMarketMode.Buy ? "StoreScreenBuyHeader" : "StoreScreenSellHeader")
+            };
+            var dialog = new NpcMarket.MarketItemDialogView(model);
+            dialog.Closed += () => { if (ReferenceEquals(_itemDialog, model)) _itemDialog = null; };
+            if (ShowDialog(dialog))
+                _itemDialog = model;
+        }
+
+        List<NpcMarket.MarketQuote> LoadItemQuotes(string itemKey, NpcMarketMode mode)
+        {
+            var quotes = new List<NpcMarket.MarketQuote>();
+            var group = GetItemGroup(itemKey);
+            if (group == null)
+                return quotes;
+            var source = group.Mode == NpcMarketMode.Both
+                ? (mode == NpcMarketMode.Buy ? group.BuyQuotes : group.SellQuotes)
+                : group.Quotes;
+            foreach (var quote in source)
+                quotes.Add(new NpcMarket.MarketQuote
+                {
+                    Source = quote,
+                    Key = quote.ItemKey + "|" + quote.SellerFactionId + "|" + quote.StationId,
+                    Distance = quote.DistanceMeters,
+                    DistanceText = FormatingHelper.DistanceToString((float)quote.DistanceMeters),
+                    Station = quote.StationName,
+                    Price = quote.PersonalizedCurrentPricePerUnit,
+                    PriceText = FormatingHelper.FormatSpaceCredits(quote.PersonalizedCurrentPricePerUnit) + " SC",
+                    Trend = quote.EffectiveViewerChangePercent
+                });
+            return quotes;
         }
 
         internal void CreateTemporaryGps(NpcMarketStationQuote quote, string itemName)
@@ -693,448 +610,6 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        void ClearInteractiveTree()
-        {
-            _children.Clear();
-            _pagesPanel.SetVisible(false);
-            foreach (var t in _sortHeaderButtons)
-                t.SetVisible(false);
-
-            _searchButton.SetVisible(false);
-            _searchInput.SetVisible(false);
-            _clearSearchButton.SetVisible(false);
-            _footerGrid.SetVisible(false);
-            _refreshButton.SetVisible(false);
-            _modeComboBox.SetVisible(false);
-        }
-
-        void EnsureSortHeaderButtons()
-        {
-            if (_sortHeaderButtons.Count > 0)
-                return;
-
-            AddSortHeaderButton(NpcMarketSortColumn.Name, LOC_COLUMN_NAME);
-            AddSortHeaderButton(NpcMarketSortColumn.Price, LOC_COLUMN_PRICE);
-            AddSortHeaderButton(NpcMarketSortColumn.Trend, LOC_COLUMN_TREND);
-            AddSortHeaderButton(NpcMarketSortColumn.BuyPrice, null);
-            AddSortHeaderButton(NpcMarketSortColumn.SellPrice, null);
-            AddSortHeaderButton(NpcMarketSortColumn.BuyTrend, null);
-            AddSortHeaderButton(NpcMarketSortColumn.SellTrend, null);
-        }
-
-        void AddSortHeaderButton(NpcMarketSortColumn column, string localizationKey)
-        {
-            var button = AddLogicalChild(new Button(default(RectangleF), new SortHeaderButtonModel
-            {
-                Column = column,
-                LocalizationKey = localizationKey,
-                Clicked = OnSortHeaderClicked
-            }));
-            button.CustomRender = RenderSortHeaderButton;
-            button.SetClass("ControlBase Button Sort");
-            button.SetVisible(false);
-            _sortHeaderButtons.Add(button);
-        }
-
-        void DrawSearchInput(List<MySprite> sprites, float top, float height, float contentRight)
-        {
-            var scale = GetLayoutScale();
-            var rect = new RectangleF(
-                Host.ViewBox.X + 12f * scale,
-                top,
-                Math.Max(0f, contentRight - Host.ViewBox.X - 12f * scale),
-                height);
-            _searchInputModel.Title = MyTexts.GetString(LOC_SEARCH);
-            _searchInputModel.Placeholder = MyTexts.GetString(LOC_SEARCH);
-            _searchInputModel.Value = _searchQuery;
-            _searchInputModel.Enabled = true;
-            _searchInputModel.ValueChanged = OnSearchChanged;
-            _searchInput.SetRect(rect);
-            _searchInput.SetStyleId("Primary");
-            _searchInput.SetVisible(rect.Width > 0f && rect.Height > 0f);
-            if (!_children.Contains(_searchInput))
-                _children.Add(_searchInput);
-            _searchInput.Render(sprites);
-
-            var clearSize = Math.Min(rect.Height, 32f * scale);
-            _clearSearchButton.SetRect(new RectangleF(rect.Right - clearSize, rect.Y, clearSize, rect.Height));
-            _clearSearchButton.SetStyleId("Primary");
-            _clearSearchButton.SetVisible(true);
-            if (!_children.Contains(_clearSearchButton))
-                _children.Add(_clearSearchButton);
-            _clearSearchButton.Render(sprites);
-        }
-
-        void ConfigurePagesPanel(float contentTop, float footerHeight, float headerHeight, float rowHeight, float textScale, Color muted)
-        {
-            if (_rows.Count <= 0)
-                return;
-
-            var bounds = new RectangleF(
-                Host.ViewBox.X,
-                contentTop,
-                Host.ViewBox.Width,
-                Math.Max(0f, Host.ViewBox.Bottom - contentTop - Math.Max(0f, footerHeight)));
-
-            _listStripPanel.SetRows(_rows, _rowsRevision);
-            _listStripPanel.Mode = _mode;
-            _listStripPanel.SortColumn = _sortColumn;
-            _listStripPanel.SortDescending = _sortDescending;
-            var scale = GetLayoutScale();
-            _listStripPanel.LogicalMinimumListWidth = (_mode == NpcMarketMode.Both ? BOTH_LIST_MIN_WIDTH : SINGLE_SIDE_LIST_MIN_WIDTH) * scale;
-            _listStripPanel.HorizontalGap = 12f * scale;
-            _listStripPanel.RepeatedHeaderHeight = headerHeight;
-            _listStripPanel.RowHeight = rowHeight;
-            _listStripPanel.TextScale = textScale;
-            _listStripPanel.LayoutScale = scale;
-            _listStripPanel.MutedColor = muted;
-            _pagesPanel.LayoutScale = scale;
-            RestorePageIndex();
-            if (_pagesConfigurationDirty)
-                _pagesPanel.InvalidateLayout();
-            _pagesPanel.SetRect(bounds);
-            SavePageIndex();
-            _pagesPanel.SetVisible(_rows.Count > 0);
-            if (_rows.Count > 0 && !_children.Contains(_pagesPanel))
-                _children.Add(_pagesPanel);
-        }
-
-        void DrawFooter(List<MySprite> sprites, float textScale, Color muted)
-        {
-            GetLayoutScale();
-            var buttonText = MyTexts.GetString(LOC_REFRESH);
-            var buttonSize = GetRefreshButtonSize(buttonText, textScale);
-            var modeSize = GetModeButtonSize(textScale);
-
-            ConfigureFooterGrid(buttonSize, modeSize);
-
-            ConfigureRefreshButton(_footerRefreshEnabled, buttonText);
-            _modeComboBox.SetOptions(GetAvailableMarketModes());
-            _modeComboBox.SetSelectedValue(_mode);
-            _modeComboBox.SetEnabled(_footerModeEnabled);
-            _modeComboBox.SetStyleId(_footerModeEnabled ? "Primary" : "Disabled");
-            _modeComboBox.SetVisible(true);
-
-            _footerUpdatedText.Text = _footerUpdatedValue;
-            _footerNextTickText.Text = _footerNextTickValue;
-            _footerUpdatedText.TextColor = muted;
-            _footerNextTickText.TextColor = muted;
-
-            _footerGrid.SetVisible(true);
-            if (!_children.Contains(_footerGrid))
-                _children.Add(_footerGrid);
-
-            _footerGrid.Render(sprites);
-        }
-
-        void ConfigureFooterGrid(Vector2 refreshButtonSize, Vector2 modeButtonSize)
-        {
-            var view = Host.ViewBox;
-            var scale = GetLayoutScale();
-            var footerHeight = GetFooterHeight(0f);
-            var horizontalPadding = 14f * scale;
-            var gap = 8f * scale;
-            var footerBounds = new RectangleF(
-                view.X + horizontalPadding,
-                view.Bottom - footerHeight,
-                Math.Max(0f, view.Width - horizontalPadding * 2f),
-                footerHeight);
-            var topPadding = Math.Max(0f, footerHeight - refreshButtonSize.Y - 10f * scale);
-            var bottomPadding = Math.Max(0f, footerHeight - topPadding - refreshButtonSize.Y);
-            var controlsWidth = modeButtonSize.X + gap + refreshButtonSize.X;
-            var textWidth = Math.Max(1f, footerBounds.Width - controlsWidth);
-            var buttonHeight = Math.Max(1f, refreshButtonSize.Y);
-
-            _footerGrid.SetColumns(
-                textWidth,
-                Math.Max(1f, modeButtonSize.X),
-                Math.Max(1f, gap),
-                Math.Max(1f, refreshButtonSize.X));
-            _footerGrid.SetRows(
-                Math.Max(1f, topPadding),
-                buttonHeight,
-                Math.Max(1f, bottomPadding));
-            _footerGrid.SetRect(footerBounds);
-        }
-
-        float GetFooterHeight(float textScale)
-        {
-            var buttonSize = GetRefreshButtonSize(MyTexts.GetString(LOC_REFRESH), textScale);
-            return Math.Max(58f * GetLayoutScale(), buttonSize.Y + 20f * GetLayoutScale());
-        }
-
-        void DrawNativeMessage(List<MySprite> sprites, string message, string icon = "Warning", Color? color = null)
-        {
-            color = color ?? ResolveResource(ThemeResources.WarningColor, ColorComponent.ResolveWarningColor());
-            Host.DrawMessage(
-                sprites,
-                message,
-                icon,
-                color.Value,
-                GeneralComponent.GetScale());
-        }
-
-        void ConfigureRefreshButton(bool enabled, string text)
-        {
-            var model = _refreshButton.DataContext as ButtonModel;
-            if (model != null)
-            {
-                model.Text = text;
-                model.Enabled = enabled;
-            }
-
-            _refreshButton.SetVisible(true);
-            _refreshButton.SetCursor(enabled ? CursorType.Hand : CursorType.Default);
-            _refreshButton.SetStyleId(enabled ? "Primary" : "Disabled");
-            _refreshButton.SetEnabled(enabled);
-        }
-
-        void RenderSearchButton(ControlTemplate control, List<MySprite> sprites)
-        {
-            sprites.Add(new MySprite(SpriteType.TEXTURE, "Search")
-            {
-                Position = control.Bounds.Center,
-                Size = new Vector2(18f * control.LayoutScale),
-                Color = control.TextColor
-            });
-        }
-
-        void RenderSearchInput(ControlTemplate control, List<MySprite> sprites)
-        {
-            var rect = control.Bounds;
-            var hovered = control.IsPointerOver;
-            var innerPadding = Math.Max(2f, Math.Min(rect.Width, rect.Height) * 0.08f);
-            var innerRect = Inset(rect, innerPadding);
-            var textColor = control.TextColor;
-            var textScale = 0.58f * control.LayoutScale * control.FontScale;
-            var horizontalPadding = 10f * control.LayoutScale;
-            var iconSize = 16f * control.LayoutScale;
-            var iconCenter = new Vector2(innerRect.X + horizontalPadding + iconSize * 0.5f, innerRect.Center.Y);
-            var textLeft = iconCenter.X + iconSize * 0.5f + horizontalPadding;
-            var clearSpace = 28f * control.LayoutScale;
-            var availableTextWidth = Math.Max(0f,
-                innerRect.Right - clearSpace - horizontalPadding - textLeft);
-            var text = Trim(_searchInputModel.ToString(), availableTextWidth, textScale);
-            var textSize = FormatingHelper.GetSizeInPixel(text, control, textScale, control.TextSurface);
-
-            var button = control as Button;
-            var outerColor = button?.BackgroundColor ?? control.BackgroundColor;
-            BorderRenderer.CreateSpritesFromRect(rect, sprites, outerColor,
-                radiusScale: control.LayoutScale);
-            BorderRenderer.CreateSpritesFromRect(innerRect, sprites,
-                hovered
-                    ? control.GetResourceColor(ThemeResources.AccentColor, outerColor)
-                    : control.GetResourceColor(ThemeResources.SurfaceColor, outerColor),
-                radiusScale: control.LayoutScale);
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXT,
-                Data = text,
-                Position = new Vector2(textLeft, innerRect.Center.Y - textSize.Y * 0.5f),
-                RotationOrScale = textScale,
-                Color = textColor,
-                Alignment = TextAlignment.LEFT,
-                FontId = control.TextFont
-            });
-            sprites.Add(new MySprite(SpriteType.TEXTURE, "Search")
-            {
-                Position = iconCenter,
-                Size = new Vector2(iconSize),
-                Color = textColor
-            });
-        }
-
-        void RenderClearSearchButton(ControlTemplate control, List<MySprite> sprites)
-        {
-            var color = control.TextColor;
-
-            var length = 11f * control.LayoutScale;
-            var thickness = Math.Max(1f, 1.5f * control.LayoutScale);
-            sprites.Add(new MySprite(SpriteType.TEXTURE, "SquareSimple")
-            {
-                Position = control.Bounds.Center,
-                Size = new Vector2(thickness, length),
-                RotationOrScale = MathHelper.PiOver4,
-                Color = color
-            });
-            sprites.Add(new MySprite(SpriteType.TEXTURE, "SquareSimple")
-            {
-                Position = control.Bounds.Center,
-                Size = new Vector2(thickness, length),
-                RotationOrScale = -MathHelper.PiOver4,
-                Color = color
-            });
-        }
-
-        static RectangleF Inset(RectangleF rect, float amount)
-        {
-            return new RectangleF(
-                rect.X + amount,
-                rect.Y + amount,
-                Math.Max(0f, rect.Width - amount * 2f),
-                Math.Max(0f, rect.Height - amount * 2f));
-        }
-
-        void RenderSortHeaderButton(ControlTemplate control, List<MySprite> sprites)
-        {
-            var model = control.DataContext as SortHeaderButtonModel;
-            if (model == null)
-                return;
-
-            var rect = control.Bounds;
-            var sortAscending = control.HasStyleClass("SortAscending");
-            var sortDescending = control.HasStyleClass("SortDescending");
-            var active = sortAscending || sortDescending;
-            var hovered = control.IsPointerOver;
-            var textScale = 0.58f * control.LayoutScale * control.FontScale;
-            var availableTextWidth = GetSortHeaderAvailableWidth(model.Column, rect, control.LayoutScale, active);
-            var text = Trim(GetSortHeaderLabel(model), availableTextWidth, textScale);
-            var textSize = FormatingHelper.GetSizeInPixel(text, control, textScale, control.TextSurface);
-            var textY = rect.Center.Y - textSize.Y * 0.5f;
-            var textX = GetSortHeaderTextX(model.Column, rect, control.LayoutScale);
-            var alignment = model.Column == NpcMarketSortColumn.Name ? TextAlignment.LEFT : TextAlignment.RIGHT;
-            var textColor = active || hovered
-                ? control.GetResourceColor(ThemeResources.AccentColor, control.TextColor)
-                : control.TextColor;
-
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXT,
-                Data = text,
-                Position = new Vector2(textX, textY),
-                RotationOrScale = textScale,
-                Color = textColor,
-                Alignment = alignment,
-                FontId = control.TextFont
-            });
-            if (active)
-            {
-                sprites.Add(new MySprite
-                {
-                    Type = SpriteType.TEXT,
-                    Data = text,
-                    Position = new Vector2(textX + 0.7f * control.LayoutScale, textY),
-                    RotationOrScale = textScale,
-                    Color = textColor,
-                    Alignment = alignment,
-                    FontId = control.TextFont
-                });
-            }
-
-            if (!active)
-                return;
-
-            var triangleX = alignment == TextAlignment.LEFT
-                ? textX + textSize.X + 8f * control.LayoutScale
-                : textX - textSize.X - 8f * control.LayoutScale;
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = "Triangle",
-                Position = new Vector2(triangleX, rect.Center.Y),
-                Size = new Vector2(8f * control.LayoutScale, 6f * control.LayoutScale),
-                RotationOrScale = sortDescending ? MathHelper.Pi : 0f,
-                Color = textColor,
-                Alignment = TextAlignment.CENTER
-            });
-        }
-
-        static float GetSortHeaderTextX(NpcMarketSortColumn column, RectangleF rect, float scale)
-        {
-            switch (column)
-            {
-                case NpcMarketSortColumn.Name:
-                    return rect.X;
-                case NpcMarketSortColumn.Price:
-                    return rect.Right - 10f * scale;
-                default:
-                    return rect.Right - 14f * scale;
-            }
-        }
-
-        static float GetSortHeaderAvailableWidth(NpcMarketSortColumn column, RectangleF rect, float scale, bool active)
-        {
-            var horizontalPadding = column == NpcMarketSortColumn.Name ? 0f : 14f * scale;
-            var sortIndicatorWidth = active ? 18f * scale : 0f;
-            return Math.Max(0f, rect.Width - horizontalPadding - sortIndicatorWidth);
-        }
-
-        static string GetSortHeaderLabel(SortHeaderButtonModel model)
-        {
-            if (model == null)
-                return string.Empty;
-
-            if (!string.IsNullOrEmpty(model.LocalizationKey))
-                return MyTexts.GetString(model.LocalizationKey);
-
-            switch (model.Column)
-            {
-                case NpcMarketSortColumn.BuyPrice:
-                    return MyTexts.GetString("StoreScreenBuyHeader") + " " + MyTexts.GetString(LOC_COLUMN_PRICE);
-                case NpcMarketSortColumn.SellPrice:
-                    return MyTexts.GetString("StoreScreenSellHeader") + " " + MyTexts.GetString(LOC_COLUMN_PRICE);
-                case NpcMarketSortColumn.BuyTrend:
-                    return MyTexts.GetString("StoreScreenBuyHeader") + " " + MyTexts.GetString(LOC_COLUMN_TREND);
-                case NpcMarketSortColumn.SellTrend:
-                    return MyTexts.GetString("StoreScreenSellHeader") + " " + MyTexts.GetString(LOC_COLUMN_TREND);
-                default:
-                    return string.Empty;
-            }
-        }
-
-        void RenderRefreshButton(ControlTemplate control, List<MySprite> sprites)
-        {
-            var model = control.DataContext as ButtonModel;
-            var rect = control.Bounds;
-            var button = control as Button;
-            var color = button?.BackgroundColor ?? control.BackgroundColor;
-            var textColor = control.TextColor;
-            var text = model == null || string.IsNullOrEmpty(model.Text) ? MyTexts.GetString(LOC_REFRESH) : model.Text;
-            var textScale = 0.58f * control.LayoutScale * control.FontScale;
-
-            BorderRenderer.CreateSpritesFromRect(rect, sprites, color, radiusScale: control.LayoutScale);
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXT,
-                Data = text,
-                Position = new Vector2(rect.Center.X,
-                    rect.Center.Y - FormatingHelper.GetSizeInPixel(text, control, textScale, control.TextSurface).Y * 0.5f),
-                RotationOrScale = textScale,
-                Color = textColor,
-                Alignment = TextAlignment.CENTER,
-                FontId = control.TextFont
-            });
-        }
-
-        void OnRefreshClicked(ButtonModel model, object sender)
-        {
-            if (model == null || !model.Enabled)
-                return;
-
-            NpcMarketClientCache.RequestRefresh(CacheKey, true);
-            UpdateFooterPresentation(forceClockRefresh: true);
-            Host.RenderSprites();
-        }
-
-        void OnSearchClicked(ButtonModel model, object sender)
-        {
-            OpenSearch(sender);
-        }
-
-        void OpenSearch()
-        {
-            OpenSearch(null);
-        }
-
-        void OpenSearch(object sender)
-        {
-            _searchInputModel.Title = MyTexts.GetString(LOC_SEARCH);
-            _searchInputModel.Placeholder = MyTexts.GetString(LOC_SEARCH);
-            _searchInputModel.Value = _searchQuery;
-            _searchInputModel.ValueChanged = OnSearchChanged;
-            _searchInputModel.Click(sender);
-        }
-
         void OnSearchChanged(string value)
         {
             _searchQuery = value ?? string.Empty;
@@ -1144,11 +619,6 @@ namespace LcdMod.Client.Apps
             ApplyPendingRowChanges();
             NotifySearchChanged();
             Host.RenderSprites();
-        }
-
-        void OnClearSearchClicked(ButtonModel model, object sender)
-        {
-            OnSearchChanged(string.Empty);
         }
 
         void OnModeChanged(NpcMarketMode mode)
@@ -1166,15 +636,6 @@ namespace LcdMod.Client.Apps
             InvalidateFooterSprites();
             ApplyPendingRowChanges();
             Host.RenderSprites();
-        }
-
-        void OnSortHeaderClicked(ButtonModel model, object sender)
-        {
-            var header = model as SortHeaderButtonModel;
-            if (header == null)
-                return;
-
-            OnSortColumnClicked(header.Column);
         }
 
         void OnSortColumnClicked(NpcMarketSortColumn column)
@@ -1216,21 +677,13 @@ namespace LcdMod.Client.Apps
             Host.RenderSprites();
         }
 
-        void OnPageChanged(int pageIndex)
-        {
-            SavePageIndex(pageIndex);
-            _pagesConfigurationDirty = true;
-            InvalidateContentSprites();
-            Host.RenderSprites();
-        }
-
         void RestorePageIndex()
         {
-            if (_restoredPageIndex)
+            if (_restoredPageIndex || _viewModel.Pages.Count == 0)
                 return;
 
             _restoredPageIndex = true;
-            _pagesPanel.FirstVisiblePage = Math.Max(0, (int)Math.Round(NpcMarketComponent.HorizontalScrollOffsetPixels));
+            _viewModel.SelectPage(Math.Max(0, (int)Math.Round(NpcMarketComponent.HorizontalScrollOffsetPixels)));
             SavePageIndex();
         }
 
@@ -1241,12 +694,12 @@ namespace LcdMod.Client.Apps
             NpcMarketComponent.VerticalScrollOffsetPixels = 0f;
             _restoredPageIndex = true;
             ResetAutoPageTimer();
-            _pagesPanel.FirstVisiblePage = 0;
+            _viewModel.SelectPage(0);
         }
 
         void SavePageIndex()
         {
-            SavePageIndex(_pagesPanel.FirstVisiblePage);
+            SavePageIndex(_viewModel.SelectedPage);
         }
 
         void SavePageIndex(int pageIndex)
@@ -1258,7 +711,7 @@ namespace LcdMod.Client.Apps
 
         void AdvancePageFromTimer()
         {
-            if (!_pagesPanel.CanNavigate)
+            if (!_viewModel.CanNavigate)
             {
                 ResetAutoPageTimer();
                 return;
@@ -1277,7 +730,8 @@ namespace LcdMod.Client.Apps
 
             var framesPerStep = Math.Max(1, (int)Math.Round(seconds * 60f));
             var frame = session.GameplayFrameCounter;
-            if (_pagesPanel.IsPanelPinned)
+            var content = Content as Adk.Gui.Core.VisualElement;
+            if (content != null && content.IsPointerOver)
             {
                 if (_autoPagePauseStartedFrame == long.MinValue)
                     _autoPagePauseStartedFrame = frame;
@@ -1302,7 +756,7 @@ namespace LcdMod.Client.Apps
                 return;
 
             _lastAutoPageStep = (int)step;
-            _pagesPanel.FirstVisiblePage += 1;
+            _viewModel.MovePage(1);
         }
 
         void ResetAutoPageTimer()
@@ -1320,11 +774,6 @@ namespace LcdMod.Client.Apps
         NpcMarketMode NormalizeAvailableMode(NpcMarketMode mode)
         {
             return mode;
-        }
-
-        NpcMarketMode[] GetAvailableMarketModes()
-        {
-            return MarketModes;
         }
 
         static NpcMarketMode NormalizeMode(int value)
@@ -1423,32 +872,12 @@ namespace LcdMod.Client.Apps
         }
 
 
-        Vector2 GetRefreshButtonSize(string text, float textScale)
-        {
-            var textSize = FormatingHelper.GetSizeInPixel(text, TextFont, textScale, Host.Surface);
-            var scale = GetLayoutScale();
-            return new Vector2(Math.Max(96f * scale, textSize.X + 24f * scale),
-                Math.Max(28f * scale, textSize.Y + 10f * scale));
-        }
-
-        Vector2 GetModeButtonSize(float textScale)
-        {
-            var buy = FormatingHelper.GetSizeInPixel(GetModeLabel(NpcMarketMode.Buy), TextFont, textScale, Host.Surface);
-            var sell = FormatingHelper.GetSizeInPixel(GetModeLabel(NpcMarketMode.Sell), TextFont, textScale, Host.Surface);
-            var both = FormatingHelper.GetSizeInPixel(GetModeLabel(NpcMarketMode.Both), TextFont, textScale, Host.Surface);
-            var maxWidth = Math.Max(Math.Max(buy.X, sell.X), both.X);
-            var maxHeight = Math.Max(Math.Max(buy.Y, sell.Y), both.Y);
-            var scale = GetLayoutScale();
-            return new Vector2(Math.Max(82f * scale, maxWidth + 34f * scale),
-                Math.Max(28f * scale, maxHeight + 10f * scale));
-        }
-
         float GetLayoutScale()
         {
             return GeneralComponent.GetScale();
         }
 
-        static string GetModeLabel(NpcMarketMode mode)
+        internal static string GetModeLabel(NpcMarketMode mode)
         {
             switch (mode)
             {
@@ -1461,29 +890,6 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        string Trim(string value, float width, float scale)
-        {
-            _text.Clear().Append(value ?? string.Empty);
-            if (width <= 0f)
-                return string.Empty;
-
-            if (FormatingHelper.GetSizeInPixel(_text.ToString(), TextFont, scale, Host.Surface).X <= width)
-                return _text.ToString();
-
-            while (_text.Length > 0)
-            {
-                _text.Length--;
-                var contentLength = _text.Length;
-                _text.Append(FormatingHelper.ELLIPSIS);
-                if (FormatingHelper.GetSizeInPixel(_text.ToString(), TextFont, scale, Host.Surface).X <= width)
-                    return _text.ToString();
-
-                _text.Length = contentLength;
-            }
-
-            return _text.ToString();
-        }
-
         static string FormatDuration(long ticks)
         {
             var seconds = Math.Max(0, (int)Math.Ceiling(WorldTime.ToSeconds(ticks)));
@@ -1493,19 +899,13 @@ namespace LcdMod.Client.Apps
             return (seconds / 60) + ":" + (seconds % 60).ToString("00");
         }
 
-        enum MarketContentState
+        internal enum MarketContentState
         {
             Loading,
             AccessDenied,
             NoTrader,
             Empty,
             Rows
-        }
-
-        sealed class SortHeaderButtonModel : ButtonModel
-        {
-            public NpcMarketSortColumn Column { get; set; }
-            public string LocalizationKey { get; set; }
         }
     }
 }

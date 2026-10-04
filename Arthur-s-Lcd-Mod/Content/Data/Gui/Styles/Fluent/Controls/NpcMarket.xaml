@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Styles xmlns="https://github.com/ArthurGamerHD/Adk"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:market="using:LcdMod.Client.Apps.NpcMarket">
+  <Style Selector="TextBlock.market-cell">
+    <Setter Property="FontFamily" Value="{DynamicResource textFont}" />
+    <Setter Property="FontSize" Value="{DynamicResource marketCellFontSize}" />
+    <Setter Property="Foreground" Value="{DynamicResource onSurfaceColor}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.market-header-text">
+    <Setter Property="FontFamily" Value="{DynamicResource textFont}" />
+    <Setter Property="FontSize" Value="{DynamicResource marketHeaderFontSize}" />
+    <Setter Property="Foreground" Value="{DynamicResource onSurfaceColor}" />
+  </Style>
+  <Style Selector="TextBlock.market-footer">
+    <Setter Property="FontFamily" Value="{DynamicResource textFont}" />
+    <Setter Property="FontSize" Value="{DynamicResource marketFooterFontSize}" />
+    <Setter Property="Foreground" Value="{DynamicResource mutedTextColor}" />
+  </Style>
+  <Style Selector="TextBlock.market-message">
+    <Setter Property="FontFamily" Value="White" />
+    <Setter Property="FontSize" Value="{DynamicResource marketMessageFontSize}" />
+  </Style>
+
+  <Style Selector="Button.market-row">
+    <Setter Property="Background" Value="#00000000" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="{TemplateBinding Background}" />
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="Button.market-row:pointerover">
+    <Setter Property="Background" Value="{DynamicResource surfaceContainerColor}" />
+  </Style>
+
+  <Style Selector="Button.market-search">
+    <Setter Property="Background" Value="#00000000" />
+    <Setter Property="Foreground" Value="{DynamicResource onSurfaceColor}" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="#00000000">
+          <Border Background="{TemplateBinding Foreground}" Width="18" Height="18" HorizontalAlignment="Center"
+                  VerticalAlignment="Center">
+            <Border.OpacityMask>
+              <ImageBrush Source="Search" Stretch="Uniform" />
+            </Border.OpacityMask>
+          </Border>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="Button.market-search:pointerover">
+    <Setter Property="Foreground" Value="{DynamicResource accentColor}" />
+  </Style>
+
+  <Style Selector="TextBox.market-search-box">
+    <Setter Property="Height" Value="28" />
+    <Setter Property="Padding" Value="8 0" />
+  </Style>
+  <Style Selector="Border.market-search-icon">
+    <Setter Property="Width" Value="14" />
+    <Setter Property="Height" Value="14" />
+    <Setter Property="Margin" Value="0 0 6 0" />
+    <Setter Property="Background" Value="{DynamicResource onSurfaceVariantColor}" />
+  </Style>
+
+  <Style Selector="Button.market-refresh">
+    <Setter Property="Background" Value="{DynamicResource accentContainerColor}" />
+    <Setter Property="Foreground" Value="{DynamicResource onAccentContainerColor}" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="12 0" />
+  </Style>
+  <Style Selector="Button.market-refresh:disabled">
+    <Setter Property="Background" Value="{DynamicResource surfaceContainerLowColor}" />
+    <Setter Property="Foreground" Value="{DynamicResource disabledColor}" />
+  </Style>
+
+  <Style Selector="market|NpcMarketSortHeader">
+    <Setter Property="Background" Value="#00000000" />
+    <Setter Property="Foreground" Value="{DynamicResource onSurfaceColor}" />
+    <Setter Property="FontFamily" Value="{DynamicResource textFont}" />
+    <Setter Property="FontSize" Value="{DynamicResource marketHeaderFontSize}" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="#00000000" Padding="{TemplateBinding Padding}">
+          <Grid>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center"
+                        IsVisible="{TemplateBinding IsLeftAligned}">
+              <Grid>
+                <TextBlock Text="{TemplateBinding Label}" FontFamily="{TemplateBinding FontFamily}"
+                           FontSize="{TemplateBinding FontSize}" Foreground="{TemplateBinding Foreground}"
+                           TextTrimming="CharacterEllipsis" />
+                <TextBlock Text="{TemplateBinding Label}" FontFamily="{TemplateBinding FontFamily}"
+                           FontSize="{TemplateBinding FontSize}" Foreground="{TemplateBinding Foreground}"
+                           Margin="0.7 0 -0.7 0" IsVisible="{TemplateBinding IsActive}" />
+              </Grid>
+              <Border Background="{TemplateBinding Foreground}" Width="8" Height="6" Margin="4 0 0 0"
+                      VerticalAlignment="Center" RenderTransform="{TemplateBinding IndicatorTransform}"
+                      IsVisible="{TemplateBinding IsActive}">
+                <Border.OpacityMask>
+                  <ImageBrush Source="Triangle" />
+                </Border.OpacityMask>
+              </Border>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center"
+                        IsVisible="{TemplateBinding IsRightAligned}">
+              <Border Background="{TemplateBinding Foreground}" Width="8" Height="6" Margin="0 0 4 0"
+                      VerticalAlignment="Center" RenderTransform="{TemplateBinding IndicatorTransform}"
+                      IsVisible="{TemplateBinding IsActive}">
+                <Border.OpacityMask>
+                  <ImageBrush Source="Triangle" />
+                </Border.OpacityMask>
+              </Border>
+              <Grid>
+                <TextBlock Text="{TemplateBinding Label}" FontFamily="{TemplateBinding FontFamily}"
+                           FontSize="{TemplateBinding FontSize}" Foreground="{TemplateBinding Foreground}"
+                           TextTrimming="CharacterEllipsis" />
+                <TextBlock Text="{TemplateBinding Label}" FontFamily="{TemplateBinding FontFamily}"
+                           FontSize="{TemplateBinding FontSize}" Foreground="{TemplateBinding Foreground}"
+                           Margin="0.7 0 -0.7 0" IsVisible="{TemplateBinding IsActive}" />
+              </Grid>
+            </StackPanel>
+          </Grid>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="market|NpcMarketSortHeader:active">
+    <Setter Property="Foreground" Value="{DynamicResource accentColor}" />
+  </Style>
+  <Style Selector="market|NpcMarketSortHeader:pointerover">
+    <Setter Property="Foreground" Value="{DynamicResource accentColor}" />
+  </Style>
+
+  <Style Selector="market|NpcMarketTrend">
+    <Setter Property="FontFamily" Value="{DynamicResource textFont}" />
+    <Setter Property="FontSize" Value="{DynamicResource marketCellFontSize}" />
+    <Setter Property="HorizontalAlignment" Value="Right" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Grid>
+          <StackPanel Orientation="Horizontal" IsVisible="{TemplateBinding HasValue}">
+            <Border Background="#FFFFFFFF" OpacityMask="{TemplateBinding IconMask}" Width="16" Height="16"
+                    Margin="0 0 3 0" VerticalAlignment="Center" RenderTransform="{TemplateBinding IconTransform}" />
+            <TextBlock Text="{TemplateBinding Text}" FontFamily="{TemplateBinding FontFamily}"
+                       FontSize="{TemplateBinding FontSize}" Foreground="{TemplateBinding TrendColor}"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+          <Border Background="#FFFFFFFF" OpacityMask="{TemplateBinding IconMask}" Width="14" Height="14"
+                  Margin="0 0 11 0" HorizontalAlignment="Right" VerticalAlignment="Center"
+                  IsVisible="{TemplateBinding IsPlaceholder}" />
+        </Grid>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+</Styles>

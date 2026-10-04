@@ -29,11 +29,7 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override IApp App => _app;
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
-        public override List<Control> InteractiveList => _app?.VisualChildren as List<Control>;
         protected override string DefaultTitle => TITLE;
-        protected override bool RendersInteractiveEntriesInGetSprites => true;
-        protected override bool RenderContinuouslyWhileLookedAt => false;
-
         public NpcMarketSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
             : base(surface, block, size)
         {
@@ -61,6 +57,7 @@ namespace LcdMod.Client.SurfaceScripts
             if (_app == null)
                 _app = new NpcMarketApp(this);
 
+            EnsureRetainedAppView(_app);
             _app.Update();
             if (_app.IsDirty || InteractiveVisualsDirty)
                 RenderSprites();
@@ -73,8 +70,7 @@ namespace LcdMod.Client.SurfaceScripts
                 return sprites;
 
             AddBackground(sprites);
-            DrawTitle(sprites);
-            sprites.AddRange(_app.GetSprites());
+            DrawRetainedAppView(sprites);
             return sprites;
         }
     }
