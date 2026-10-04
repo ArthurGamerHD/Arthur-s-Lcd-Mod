@@ -7,7 +7,6 @@ using LcdMod.Common.Layout;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
-using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 
 namespace LcdMod.Client.Terminal.Controls.Generic
 {

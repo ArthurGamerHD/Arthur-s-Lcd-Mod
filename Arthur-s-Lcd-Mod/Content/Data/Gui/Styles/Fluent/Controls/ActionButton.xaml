@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Styles xmlns="https://github.com/ArthurGamerHD/Adk"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:LcdMod.Client.Apps.Controls">
+  <Style Selector="controls|ActionButton">
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Grid>
+          <Border Name="PART_Chrome"
+                  Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  CornerRadius="{TemplateBinding CornerRadius}" />
+          <!-- Fixed row shares like the pre-migration pad: the icon gets most of the tile, and the title and status
+               shrink within their own rows, so their length never changes the icon's size. -->
+          <Grid RowDefinitions="18* 64* 18*"
+                Margin="6">
+            <Viewbox StretchDirection="DownOnly" HorizontalAlignment="Center" VerticalAlignment="Center">
+              <TextBlock Text="{TemplateBinding Title}"
+                         FontFamily="{TemplateBinding FontFamily}"
+                         Foreground="{TemplateBinding Foreground}"
+                         FontSize="0.82"
+                         TextAlignment="Center" />
+            </Viewbox>
+            <Border Background="{TemplateBinding Foreground}" OpacityMask="{TemplateBinding ActionIconMask}" Margin="0 2" Grid.Row="1" />
+            <Viewbox Grid.Row="2" StretchDirection="DownOnly" HorizontalAlignment="Center" VerticalAlignment="Center">
+              <TextBlock Text="{TemplateBinding Status}"
+                         FontFamily="{TemplateBinding FontFamily}"
+                         Foreground="{TemplateBinding Foreground}"
+                         FontSize="0.72"
+                         TextAlignment="Center" />
+            </Viewbox>
+          </Grid>
+        </Grid>
+      </ControlTemplate>
+    </Setter>
+    <Setter Property="Background" Value="{DynamicResource surfaceContainerColor}" />
+    <Setter Property="Foreground" Value="{DynamicResource onSurfaceColor}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource borderVariantColor}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="FontFamily" Value="{DynamicResource textFont}" />
+  </Style>
+  <Style Selector="controls|ActionButton:classic">
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderBrush" Value="{DynamicResource accentColor}" />
+  </Style>
+  <Style Selector="controls|ActionButton:transparent">
+    <Setter Property="Background" Value="#00000000" />
+    <Setter Property="Foreground" Value="{DynamicResource disabledColor}" />
+  </Style>
+  <Style Selector="controls|ActionButton:border">
+    <Setter Property="Background" Value="#00000000" />
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="BorderBrush" Value="{DynamicResource accentColor}" />
+  </Style>
+  <Style Selector="controls|ActionButton:unconfigured">
+    <Setter Property="Foreground" Value="{DynamicResource disabledColor}" />
+  </Style>
+  <Style Selector="controls|ActionButton:pointerover">
+    <Setter Property="Background" Value="{DynamicResource accentContainerColor}" />
+    <Setter Property="Foreground" Value="{DynamicResource onAccentColor}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource accentColor}" />
+    <Setter Property="BorderThickness" Value="2" />
+  </Style>
+  <Style Selector="controls|ActionButton:pressed">
+    <Setter Property="Background" Value="{DynamicResource secondaryContainerColor}" />
+    <Setter Property="Foreground" Value="{DynamicResource onAccentColor}" />
+  </Style>
+</Styles>

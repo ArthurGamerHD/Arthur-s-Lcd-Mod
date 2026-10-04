@@ -1,8 +1,29 @@
-using LcdMod.Client.Gui.ControlsTemplates.Dialogs;
 using ProtoBuf;
 
 namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
 {
+    enum PickActionTargetKind
+    {
+        Block,
+        Group,
+        BlockType,
+        BlockSubtype
+    }
+
+    sealed class PickActionTargetResult
+    {
+        public PickActionTargetKind Kind { get; set; }
+        public string Id { get; set; }
+        public string DisplayName { get; set; }
+        public string SpriteName { get; set; }
+        public string TypeName { get; set; }
+
+        public override string ToString()
+        {
+            return DisplayName ?? Id ?? string.Empty;
+        }
+    }
+
     [ProtoContract]
     sealed class ButtonPanelSettings
     {

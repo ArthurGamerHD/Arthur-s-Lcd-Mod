@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window xmlns="https://github.com/ArthurGamerHD/Adk"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:pad="using:LcdMod.Client.Apps.ButtonPad"
+        xmlns:ext="using:LcdMod.Client.Apps.Views.Extensions"
+        x:Class="LcdMod.Client.Apps.ButtonPad.ActionConfigurationView"
+        x:DataType="pad:ActionConfigurationViewModel"
+        Title="{ext:loc LcdMod_ButtonPad_ConfigureAction_Title}" Width="420" Height="380" MinWidth="320" MinHeight="240"
+        Padding="14 4 14 14">
+  <Window.Styles>
+    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/Dialogs.xaml" />
+  </Window.Styles>
+  <Grid RowDefinitions="*,Auto">
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+      <StackPanel Spacing="8">
+        <TextBlock Classes="dialog-text" Text="{Binding ActionName}" FontSize="{Binding FontSize}" />
+        <TextBlock Classes="dialog-muted" Text="{ext:loc LcdMod_ButtonPad_ConfigureAction_NoParameters}" FontSize="{Binding FontSize}" IsVisible="{Binding HasNoParameter}" />
+        <TextBlock Classes="dialog-text" Text="{Binding ParameterCaption}" FontSize="{Binding SmallFontSize}" IsVisible="{Binding HasParameter}" />
+        <Grid ColumnDefinitions="36,*,36" Height="36" IsVisible="{Binding IsNumber}">
+          <Button Classes="dialog-button craft-step" Command="{Binding DecreaseCommand}"><TextBlock Classes="dialog-text" Text="−" FontSize="{Binding FontSize}" /></Button>
+          <TextBox Grid.Column="1" Margin="6 0" Text="{Binding Number, Mode=TwoWay}" MaxLength="24" />
+          <Button Grid.Column="2" Classes="dialog-button craft-step" Command="{Binding IncreaseCommand}"><TextBlock Classes="dialog-text" Text="+" FontSize="{Binding FontSize}" /></Button>
+        </Grid>
+        <TextBox Text="{Binding Text, Mode=TwoWay}" Height="36" IsVisible="{Binding IsText}" />
+        <Grid ColumnDefinitions="Auto,*" Height="36" IsVisible="{Binding IsColor}">
+          <Border Classes="dialog-icon" Width="36" Height="36" Margin="0 0 6 0">
+            <Border CornerRadius="4" Margin="4" Background="{Binding ColorPreview}" />
+          </Border>
+          <TextBox Grid.Column="1" Text="{Binding ColorText, Mode=TwoWay}" MaxLength="9" />
+        </Grid>
+        <ItemsControl ItemsSource="{Binding BooleanModes}" IsVisible="{Binding IsBoolean}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <UniformGrid Rows="1" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="pad:ChoiceButton">
+              <Button Classes="{Binding Classes}" Command="{Binding Command}" Height="34" Margin="2 0">
+                <TextBlock Classes="dialog-text" Text="{Binding Label}" FontSize="{Binding FontSize}" />
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <ItemsControl ItemsSource="{Binding ClickActions}" IsVisible="{Binding IsIncreaseDecrease}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <UniformGrid Rows="1" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="pad:ChoiceButton">
+              <Button Classes="{Binding Classes}" Command="{Binding Command}" Height="34" Margin="2 0">
+                <TextBlock Classes="dialog-text" Text="{Binding Label}" FontSize="{Binding FontSize}" />
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <TextBlock Classes="dialog-text" Text="{ext:loc LcdMod_ButtonPad_ConfigureAction_Scroll}" FontSize="{Binding SmallFontSize}" IsVisible="{Binding HasScroll}" />
+        <ItemsControl ItemsSource="{Binding ScrollModes}" IsVisible="{Binding HasScroll}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <UniformGrid Rows="1" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="pad:ChoiceButton">
+              <Button Classes="{Binding Classes}" Command="{Binding Command}" Height="34" Margin="2 0">
+                <TextBlock Classes="dialog-text" Text="{Binding Label}" FontSize="{Binding FontSize}" />
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </ScrollViewer>
+    <Button Grid.Row="1" Classes="dialog-button primary" HorizontalAlignment="Right" Margin="0 10 0 0" Command="{Binding ApplyCommand}">
+      <TextBlock Classes="dialog-text" Text="{ext:loc LcdMod_ButtonPad_Apply}" FontSize="{Binding FontSize}" />
+    </Button>
+  </Grid>
+</Window>

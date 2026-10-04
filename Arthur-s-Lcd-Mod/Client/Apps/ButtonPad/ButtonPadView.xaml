@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    xmlns="https://github.com/ArthurGamerHD/Adk"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:LcdMod.Client.Apps.Controls"
+    x:Class="LcdMod.Client.Apps.ButtonPad.ButtonPadView"
+    x:DataType="LcdMod.Client.Apps.ButtonPad.ButtonPadViewModel">
+  <ScrollViewer VerticalScrollBarVisibility="Auto"
+                HorizontalScrollBarVisibility="Disabled">
+    <ItemsControl ItemsSource="{Binding Entries}" HorizontalAlignment="Center" VerticalAlignment="Center">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate>
+          <WrapPanel ItemWidth="{Binding ItemSize}" ItemHeight="{Binding ItemSize}" ItemSpacing="{Binding Spacing}" LineSpacing="{Binding Spacing}" />
+        </ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="LcdMod.Client.Apps.ButtonPad.ActionButtonModel">
+          <controls:ActionButton Title="{Binding Title}"
+                                 ActionIcon="{Binding Icon}"
+                                 Status="{Binding Status}"
+                                 Variant="{Binding Variant}"
+                                 IsConfigured="{Binding IsConfigured}"
+                                 PanelColor="{Binding PanelColor}"
+                                 Command="{Binding Command}"
+                                 SecondaryCommand="{Binding SecondaryCommand}" />
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+  </ScrollViewer>
+</UserControl>

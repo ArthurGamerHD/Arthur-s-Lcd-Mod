@@ -41,10 +41,6 @@ namespace LcdMod.Client.SurfaceScripts
         ButtonPadApp _app;
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
 
-        public override List<Control> InteractiveList => _app.VisualChildren as List<Control>;
-
-        protected override bool RendersInteractiveEntriesInGetSprites => true;
-
         public const string ID = MOD_PREFIX + "ButtonPadApp";
         public const string TITLE = MOD_PREFIX + "ButtonPad";
 
@@ -83,6 +79,7 @@ namespace LcdMod.Client.SurfaceScripts
             if (_app == null)
                 _app = new ButtonPadApp(this);
 
+            EnsureRetainedAppView(_app);
             _app.Update();
 
             RenderSprites();
@@ -94,9 +91,7 @@ namespace LcdMod.Client.SurfaceScripts
             var sprites = new List<MySprite>();
 
             AddBackground(sprites);
-            DrawTitle(sprites);
-            DrawFooter(sprites);
-            sprites.AddRange(_app.GetSprites());
+            DrawRetainedAppView(sprites);
             return sprites;
         }
     }

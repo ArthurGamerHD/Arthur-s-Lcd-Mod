@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window xmlns="https://github.com/ArthurGamerHD/Adk"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:pad="using:LcdMod.Client.Apps.ButtonPad"
+        xmlns:ext="using:LcdMod.Client.Apps.Views.Extensions"
+        x:Class="LcdMod.Client.Apps.ButtonPad.ActionPickerView"
+        x:DataType="pad:ActionPickerViewModel"
+        Title="{ext:loc LcdMod_ButtonPad_SelectAction}" Width="440" Height="440" MinWidth="330" MinHeight="275"
+        Padding="14 4 14 14">
+  <Window.Styles>
+    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/Dialogs.xaml" />
+  </Window.Styles>
+  <Grid RowDefinitions="Auto,*">
+    <TextBox Classes="clearButton" Text="{Binding SearchText, Mode=TwoWay}" PlaceholderText="{ext:loc LcdMod_ButtonPad_ActionDialog_SearchPlaceholder}"
+             Height="36" Margin="0 0 0 8">
+      <TextBox.InnerLeftContent>
+        <Border Classes="search-icon">
+          <Border.OpacityMask>
+            <ImageBrush Source="Search" Stretch="Uniform" />
+          </Border.OpacityMask>
+        </Border>
+      </TextBox.InnerLeftContent>
+    </TextBox>
+    <Border Grid.Row="1" Classes="dialog-panel">
+      <Grid>
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+          <ItemsControl ItemsSource="{Binding Rows}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <VirtualizingStackPanel />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="pad:PickerRow">
+                <Button Margin="0 0 0 3" Classes="{Binding Classes}" Command="{Binding Command}" Height="44">
+                  <Grid ColumnDefinitions="Auto,*">
+                    <Image Source="{Binding Icon}" Width="38" Height="38" Margin="0 0 10 0" />
+                    <TextBlock Grid.Column="1" Classes="dialog-text" Text="{Binding Name}" FontSize="{Binding FontSize}" VerticalAlignment="Center" />
+                  </Grid>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+        <TextBlock Classes="dialog-muted" Text="{Binding EmptyText}" FontSize="{Binding FontSize}" IsVisible="{Binding IsEmpty}" />
+      </Grid>
+    </Border>
+  </Grid>
+</Window>
