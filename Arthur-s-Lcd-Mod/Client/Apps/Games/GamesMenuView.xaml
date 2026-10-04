@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl xmlns="https://github.com/ArthurGamerHD/Adk"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:games="using:LcdMod.Client.Games"
+             xmlns:apps="using:LcdMod.Client.Apps.Games"
+             x:Class="LcdMod.Client.Apps.Games.GamesMenuView"
+             x:DataType="LcdMod.Client.Apps.Games.GamesViewModel">
+  <UserControl.Styles>
+    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/Games.xaml" />
+  </UserControl.Styles>
+  <!-- A docked menu takes its own row above the game; a menu revealed over a full-screen game overlays it. -->
+  <Grid RowDefinitions="Auto *">
+    <apps:GamesView Grid.Row="{Binding GameRow}" Grid.RowSpan="{Binding GameRowSpan}" />
+    <games:GameMenuBar Entries="{Binding MenuEntries}" Version="{Binding MenuVersion}" IsVisible="{Binding MenuVisible}"
+                       VerticalAlignment="Top" />
+  </Grid>
+</UserControl>

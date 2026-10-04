@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui.Styling;
-using LcdMod.Client.Gui.Styling.Styles;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Common.Config.Components;
 using Sandbox.ModAPI;
@@ -24,12 +23,9 @@ namespace LcdMod.Client.Games
         public GameThemeContext(InteractiveSurfaceScript script)
         {
             _script = script;
-            Styles = DefaultStyleBuilder.Build();
         }
 
         public IVisualStyleScope StyleParent => null;
-
-        public StyleTree Styles { get; }
 
         public ResourceTree Resources
         {

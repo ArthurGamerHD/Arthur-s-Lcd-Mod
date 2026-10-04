@@ -4,8 +4,6 @@ using System.Linq;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Games.Chess.Enum;
 using LcdMod.Client.Games.Chess.TinyChessChallenge;
-using LcdMod.Client.Gui;
-using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Helpers;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
@@ -14,8 +12,6 @@ namespace LcdMod.Client.Games.Chess
 {
     public abstract class Overlay : IDisposable
     {
-        public RectangleControl RectangleControl;
-        
         public bool Disposed { get; protected set; }
         public readonly List<RectangleF> Boxes = new List<RectangleF>();
 
@@ -36,6 +32,13 @@ namespace LcdMod.Client.Games.Chess
         }
 
         public abstract void ClickBox(int index);
+
+        /// <summary>The overlay covers the whole board, blocking its cells.</summary>
+        public virtual bool CoversBoard => false;
+
+        public virtual void ClickCover()
+        {
+        }
 
         public virtual void Render(List<MySprite> sprites)
         {
@@ -154,11 +157,10 @@ namespace LcdMod.Client.Games.Chess
             frame.Add(box.ToSprite(Color.White));
 
             var color = (_chessGame.Board[_index] & 0xF0);
-            var data = _chessGame.GetTextureFromId((byte)(color | _promotions.ElementAt(index).Value));
-
-            frame.Add(new MySprite(SpriteType.TEXT, data,
-                new Vector2(box.Center.X, box.Position.Y + _chessGame.Padding),
-                fontId: "Monospace", rotation: _chessGame.Scale));
+            MySprite sprite;
+            if (_chessGame.TryCreatePieceSprite((byte)(color | _promotions.ElementAt(index).Value),
+                    new Vector2(box.Center.X, box.Position.Y + _chessGame.Padding), out sprite))
+                frame.Add(sprite);
         }
 
         public override void Dispose()
@@ -192,15 +194,13 @@ namespace LcdMod.Client.Games.Chess
         {
             _chessGame = chessGame;
             BakeControls();
-            
-            RectangleControl = new RectangleControl(
-                chessGame.BoardViewBox, 
-                CursorType.No, 
-                this, 
-                (o, o1) => chessGame.GameOverMessage())
-            {
-                CustomRender = (entry, sprites) => Render(sprites)
-            };
+        }
+
+        public override bool CoversBoard => true;
+
+        public override void ClickCover()
+        {
+            _chessGame.GameOverMessage();
         }
 
         public override void ClickBox(int index)

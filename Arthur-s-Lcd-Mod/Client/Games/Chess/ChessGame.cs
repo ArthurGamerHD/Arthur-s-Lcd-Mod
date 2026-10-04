@@ -2,27 +2,24 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using ChessChallenge.API;
 using LcdMod.Client.SurfaceScripts;
 using LcdMod.Client.Config;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Games.Chess.Enum;
 using LcdMod.Client.Games.Chess.TinyChessChallenge.Bots;
-using LcdMod.Client.Gui;
-using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.Styling;
-using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Client.Helpers;
 using LcdMod.Common.Config.Components;
 using LcdMod.Common.Helpers;
 using Sandbox.Game.Entities;
+using Adk.Gui.Core.Input;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 using static LcdMod.Common.Helpers.Constants;
-using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
+using GameSurfaceScript = LcdMod.Client.SurfaceScripts.GameSurfaceScript;
 using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 
 namespace LcdMod.Client.Games.Chess
@@ -52,16 +49,11 @@ namespace LcdMod.Client.Games.Chess
             new Color(200, 32, 32, 64),
         };
 
-        readonly Dictionary<byte, string> _textureCache = new Dictionary<byte, string>();
-
-        public List<Control> Interactive { get; } = new List<Control>();
         public GameSurfaceScript.GameEnum Id => GameSurfaceScript.GameEnum.Chess;
 
         readonly GameThemeContext _themeContext;
 
         public IVisualStyleScope StyleParent => _themeContext.StyleParent;
-
-        public StyleTree Styles => _themeContext.Styles;
 
         public ResourceTree Resources => _themeContext.Resources;
 
@@ -72,116 +64,10 @@ namespace LcdMod.Client.Games.Chess
             _themeContext.MarkDirty();
         }
 
-        static string UnpackTexture(string packed)
-        {
-            if (string.IsNullOrEmpty(packed))
-                return string.Empty;
-
-            char headerChar = packed[0];
-            int headerBits = headerChar;
-            int width = (headerBits >> 8) & 0x7F; // width (7 bits)
-            int height = (headerBits >> 1) & 0x7F; // height (7 bits)
-
-            StringBuilder sb = new StringBuilder(width * height + height);
-
-            int index = 1; // skip header
-            for (int y = 0; y < height; y++)
-            {
-                for (int x = 0; x < width; x += 7)
-                {
-                    if (index >= packed.Length)
-                        throw new ArgumentException("Packed string is too short for expected pixels.");
-
-                    int bits = packed[index++];
-                    bits >>= 1; // skip first bit (not used)
-
-                    for (int i = 6; i >= 0; i--) // 7 pixels
-                    {
-                        int pos = x + (6 - i);
-                        if (pos < width)
-                        {
-                            int colorIndex = (bits >> (i * 2)) & 0x3; // 2 bits per pixel
-                            sb.Append((char)colorIndex);
-                        }
-                    }
-
-                    // last bit is ignored (used by the encoder only to avoid reserved char space)
-                }
-
-                sb.AppendLine();
-            }
-
-            return sb.ToString();
-        }
-
-
-        string ApplyTextureTint(string texture, int tint)
-        {
-            var sb = new StringBuilder();
-            sb.Append(texture);
-            sb.Replace($"{'\0'}", ""); // empty spaces
-
-            switch (tint)
-            {
-                case 0x0:
-                {
-                    sb.Replace('\u0001', TEXTURE_ATLAS[0]);
-                    sb.Replace('\u0002', TEXTURE_ATLAS[1]);
-                    sb.Replace('\u0003', TEXTURE_ATLAS[2]);
-                    return sb.ToString();
-                }
-                case 0x10:
-                    sb.Replace('\u0001', TEXTURE_ATLAS[3]);
-                    sb.Replace('\u0002', TEXTURE_ATLAS[4]);
-                    sb.Replace('\u0003', TEXTURE_ATLAS[5]);
-                    return sb.ToString();
-                default: throw new Exception("Argument was Out of Range");
-            }
-        }
-
-        public string GetTextureFromId(byte textureId)
-        {
-            var textureIndex = (byte)(textureId & 0xEF);
-            if (textureIndex == 0)
-                return string.Empty;
-
-            string data;
-            if (_textureCache.TryGetValue(textureId, out data))
-                return data;
-
-            string texture;
-            if (!_textureCache.TryGetValue((byte)(textureIndex + 128), out texture))
-            {
-                try
-                {
-                    var seeker = 0; // 4 colors (-1 transparent) 2 teams, meaning 6 chars for colors)
-                    var textureSize = 6;
-                    for (int i = 0; i < textureIndex; i++)
-                    {
-                        seeker += textureSize;
-                        //search for the texture of "textureIndex"
-                        textureSize = (int)(((TEXTURE_ATLAS[seeker] >> 8) & 0x7F) / 7f + .5f) *
-                            ((TEXTURE_ATLAS[seeker] >> 1) & 0x7F) + 1;
-                    }
-
-                    texture = UnpackTexture(TEXTURE_ATLAS.Substring(seeker, textureSize));
-                    _textureCache[(byte)(textureIndex + 128)] = texture;
-                }
-                catch
-                {
-                    return string.Empty;
-                }
-            }
-
-            data = ApplyTextureTint(texture, textureId & 0x10);
-            _textureCache[textureId] = data;
-
-            return data;
-        }
 
         void BakeBoardVisual()
         {
-            _viewBox = _script.ViewBox;
+            _viewBox = _script.GameViewBox;
 
             var gridSize = Math.Min(_viewBox.Width, _viewBox.Height);
 
@@ -192,13 +78,9 @@ namespace LcdMod.Client.Games.Chess
             _boardSide = (int)Math.Sqrt(Board.Length);
 
             _gridCells = GetGridCells(BoardViewBox, _boardSide);
-            if (_boardCellEntries == null || _boardCellEntries.Length != _gridCells.Length)
-                _boardCellEntries = null;
 
             float cellSize = _gridCells[0].Width;
-            var sb = new StringBuilder(GetTextureFromId(0x01));
-            Vector2 measuredSize = _panel.MeasureStringInPixels(sb, MOD_PREFIX + "Monospace", 1);
-            Scale = cellSize * .8f / measuredSize.X;
+            UpdatePieceScale(cellSize);
             Padding = cellSize * .1f;
         }
 
@@ -281,11 +163,9 @@ namespace LcdMod.Client.Games.Chess
             if (cell == 0)
                 return;
 
-            var data = GetTextureFromId(cell);
-
-            frame.Add(new MySprite(SpriteType.TEXT, data,
-                new Vector2(grid.Center.X, grid.Position.Y + Padding),
-                fontId: MOD_PREFIX + "Monospace", rotation: Scale));
+            MySprite sprite;
+            if (TryCreatePieceSprite(cell, new Vector2(grid.Center.X, grid.Position.Y + Padding), out sprite))
+                frame.Add(sprite);
         }
 
         void RenderBoardCellCoordinates(List<MySprite> frame, int index, RectangleF gridCell)
@@ -321,11 +201,10 @@ namespace LcdMod.Client.Games.Chess
         readonly List<ChessMoveRecord> _history = new List<ChessMoveRecord>();
 
         RectangleF[] _gridCells;
-        RectangleControl[] _boardCellEntries;
-        readonly List<RectangleControl> _overlayControlEntries = new List<RectangleControl>();
+        readonly List<GameRegion> _regions = new List<GameRegion>();
 
         IMyTextSurface _panel;
-        InteractiveSurfaceScript _script;
+        GameSurfaceScript _script;
 
         int _currentMove;
 
@@ -359,7 +238,7 @@ namespace LcdMod.Client.Games.Chess
 
         PieceColor _selectedColor = PieceColor.None;
 
-        public ChessGame(IMyTextSurface panel, InteractiveSurfaceScript script)
+        public ChessGame(IMyTextSurface panel, GameSurfaceScript script)
         {
             _panel = panel;
             _script = script;
@@ -374,7 +253,7 @@ namespace LcdMod.Client.Games.Chess
             _script.SetGlobalMenu(
                 new GlobalMenuEntry(MOD_PREFIX + "Chess", new List<GlobalMenuEntry>
                 {
-                    new GlobalMenuEntry(MOD_PREFIX + "NewGame", (ctx, sender) => NewGame()),
+                    new GlobalMenuEntry(MOD_PREFIX + "NewGame", (ctx, sender) => _script.ConfirmNewGame(NewGame)),
                     new GlobalMenuEntry(MOD_PREFIX + "Export", (ctx, sender) => ExportPgnData()),
                     new GlobalMenuEntry(_playingAsBlack ? MOD_PREFIX + "PlayAsWhite" : MOD_PREFIX + "PlayAsBlack",
                         (ctx, sender) => SwitchSide()),
@@ -737,7 +616,7 @@ namespace LcdMod.Client.Games.Chess
         {
             _sprites.Clear();
 
-            if (_viewBox != _script.ViewBox)
+            if (_viewBox != _script.GameViewBox)
                 RebuildLayout();
 
             if (_overlayOverlay?.Disposed ?? false)
@@ -745,7 +624,18 @@ namespace LcdMod.Client.Games.Chess
 
             _overlayOverlay?.Render(_sprites);
 
-            RebuildInteractiveEntries();
+            if (_gridCells != null)
+                for (int index = 0; index < _gridCells.Length; index++)
+                    RenderBoardCell(_sprites, index);
+            if (_overlayOverlay != null && !IsBotThinking)
+            {
+                for (int index = 0; index < _overlayOverlay.Boxes.Count; index++)
+                    _overlayOverlay.RenderBox(_sprites, index);
+                if (_overlayOverlay.CoversBoard)
+                    _overlayOverlay.Render(_sprites);
+            }
+
+            BuildRegions();
             return _sprites;
         }
 
@@ -774,107 +664,81 @@ namespace LcdMod.Client.Games.Chess
             _coroutine = null;
         }
 
-        void RebuildInteractiveEntries()
+        bool IsBotThinking => _botThinkRunning || _botThinkCoroutine != null;
+
+        void BuildRegions()
         {
-            Interactive.Clear();
-
-            if (_gridCells == null || _gridCells.Length == 0)
-                return;
-
-            EnsureBoardCellEntries();
-
-            for (int index = 0; index < _gridCells.Length; index++)
+            int count = 0;
+            if (_gridCells != null)
             {
-                bool canClick = IsBoardCellInteractive(index);
-                var entry = _boardCellEntries[index];
-                entry.SetRect(_gridCells[index]);
-                entry.SetCursor(GetBoardCellCursor(index));
-                entry.SetDataContext(index);
-                entry.SetOnClick(canClick ? (Action<object, object>)ClickBoardCellFromEntry : null);
-                entry.ClickSound = GetBoardCellClickSound(index);
-                entry.SetVisible(true);
-                Interactive.Add(entry);
-            }
-
-            if (_botThinkRunning || _botThinkCoroutine != null)
-            {
-                HideOverlayControlEntries();
-                return;
-            }
-
-            if (_overlayOverlay == null)
-            {
-                HideOverlayControlEntries();
-                return;
-            }
-
-            for (int index = 0; index < _overlayOverlay.Boxes.Count; index++)
-            {
-                var entry = GetOverlayControlEntry(index);
-                entry.SetRect(_overlayOverlay.Boxes[index]);
-                entry.SetCursor(CursorType.Hand);
-                entry.SetDataContext(index);
-                entry.SetOnClick(ClickControlBoxFromEntry);
-                entry.SetVisible(true);
-                Interactive.Add(entry);
-            }
-
-            for (int index = _overlayOverlay.Boxes.Count; index < _overlayControlEntries.Count; index++)
-                _overlayControlEntries[index].SetVisible(false);
-
-            if(_overlayOverlay.RectangleControl != null)
-                Interactive.Add(_overlayOverlay.RectangleControl);
-        }
-
-        void EnsureBoardCellEntries()
-        {
-            if (_gridCells == null)
-                return;
-
-            if (_boardCellEntries != null && _boardCellEntries.Length == _gridCells.Length)
-                return;
-
-            _boardCellEntries = new RectangleControl[_gridCells.Length];
-            for (int index = 0; index < _boardCellEntries.Length; index++)
-            {
-                _boardCellEntries[index] = new RectangleControl(_gridCells[index], CursorType.Default, index)
+                for (int index = 0; index < _gridCells.Length; index++)
                 {
-                    CustomRender = delegate(ControlTemplate entry, List<MySprite> sprites)
-                    {
-                        RenderBoardCell(sprites, (int)entry.DataContext);
-                    }
-                };
+                    var cell = Region(count++);
+                    int captured = index;
+                    cell.Bounds = _gridCells[index];
+                    cell.Cursor = GetBoardCellCursor(index);
+                    cell.Clicked = () => ClickBoardCellFromRegion(captured);
+                    cell.SecondaryClicked = null;
+                }
             }
-        }
 
-        RectangleControl GetOverlayControlEntry(int index)
-        {
-            while (_overlayControlEntries.Count <= index)
+            if (_overlayOverlay != null && !IsBotThinking)
             {
-                _overlayControlEntries.Add(new RectangleControl(
-                    default(RectangleF),
-                    CursorType.Hand,
-                    _overlayControlEntries.Count)
+                for (int index = 0; index < _overlayOverlay.Boxes.Count; index++)
                 {
-                    CustomRender = delegate(ControlTemplate entry, List<MySprite> sprites)
-                    {
-                        _overlayOverlay?.RenderBox(sprites, (int)entry.DataContext);
-                    }
-                });
+                    var box = Region(count++);
+                    int captured = index;
+                    box.Bounds = _overlayOverlay.Boxes[index];
+                    box.Cursor = PointerCursor.Hand;
+                    box.Clicked = () => ClickControlBoxFromRegion(captured);
+                    box.SecondaryClicked = null;
+                }
+
+                if (_overlayOverlay.CoversBoard)
+                {
+                    var cover = Region(count++);
+                    cover.Bounds = BoardViewBox;
+                    cover.Cursor = PointerCursor.No;
+                    cover.Clicked = _overlayOverlay.ClickCover;
+                    cover.SecondaryClicked = null;
+                }
             }
 
-            return _overlayControlEntries[index];
+            if (_regions.Count > count)
+                _regions.RemoveRange(count, _regions.Count - count);
         }
 
-        void HideOverlayControlEntries()
+        GameRegion Region(int index)
         {
-            for (int index = 0; index < _overlayControlEntries.Count; index++)
-                _overlayControlEntries[index].SetVisible(false);
+            while (_regions.Count <= index)
+                _regions.Add(new GameRegion());
+            return _regions[index];
         }
 
-        void ClickBoardCellFromEntry(object value, object sender) => ClickBoardCell((int)value);
+        void ClickBoardCellFromRegion(int index)
+        {
+            _script.PlaySounds(GetBoardCellClickSound(index));
+            if (IsBoardCellInteractive(index))
+                ClickBoardCell(index);
+        }
 
-        void ClickControlBoxFromEntry(object value, object sender) => ClickControlBox((int)value);
+        void ClickControlBoxFromRegion(int index)
+        {
+            _script.PlaySounds(AudioHelper.HudClick);
+            ClickControlBox(index);
+        }
+
+        public IReadOnlyList<GameRegion> Regions => _regions;
+
+        public void PointerMoved(Vector2? position)
+        {
+        }
+
+        public void PointerClicked(GamePointerButton button, Vector2 position)
+        {
+        }
+
+        public PointerCursor CursorAt(Vector2 position) => PointerCursor.Default;
 
         bool IsBoardCellInteractive(int index)
         {
@@ -904,16 +768,16 @@ namespace LcdMod.Client.Games.Chess
             return cell != 0;
         }
 
-        CursorType GetBoardCellCursor(int index)
+        PointerCursor GetBoardCellCursor(int index)
         {
-            if (_coroutine != null || _botThinkRunning || _botThinkCoroutine != null)
-                return CursorType.WaitCursor;
+            if (_coroutine != null || IsBotThinking)
+                return PointerCursor.Wait;
 
             if (_gridCells == null || index < 0 || index >= _gridCells.Length)
-                return CursorType.Default; // Default is the arrow cursor in the current UI set.
+                return PointerCursor.Default;
 
             if (IsGameOver)
-                return CursorType.Cross;
+                return PointerCursor.Cross;
 
             var point = BoardPointFromGridIndex(index);
             var cell = GetCell(point) ?? 0;
@@ -922,29 +786,21 @@ namespace LcdMod.Client.Games.Chess
             if (SelectedTile != null)
             {
                 if (SelectedTile.Value.Equals(point))
-                    return CursorType.Hand;
+                    return PointerCursor.DragMove;
 
                 List<Point> selectedMoves;
                 if (_availableMoves.TryGetValue(SelectedTile.Value, out selectedMoves) &&
                     selectedMoves != null &&
                     selectedMoves.Any(move => move.X == point.X && move.Y == point.Y))
                 {
-                    return CursorType.Hand;
+                    return PointerCursor.Hand;
                 }
-
-                if (cell != 0)
-                {
-                    var cellColor = GetColor(cell);
-                    return cellColor == currentColor ? CursorType.Hand : CursorType.No;
-                }
-
-                return CursorType.Default;
             }
 
             if (cell == 0)
-                return CursorType.Default;
+                return PointerCursor.Default;
 
-            return GetColor(cell) == currentColor ? CursorType.Hand : CursorType.No;
+            return GetColor(cell) == currentColor ? PointerCursor.DragMove : PointerCursor.No;
         }
 
         MySoundPair GetBoardCellClickSound(int index)
@@ -1033,11 +889,8 @@ namespace LcdMod.Client.Games.Chess
 
         public void GameOverMessage()
         {
-            _script.ShowMessageBox("Game Over!", "Play again?", "New Game", "Dismiss", (o, o1) => NewGame());
+            _script.OfferNewGame(NewGame);
         }
-        
-        public IReadOnlyList<Control> LogicalChildren => Interactive;
-        public IReadOnlyList<Control> VisualChildren => Interactive;
 
         public bool HasVisibleItems()
         {

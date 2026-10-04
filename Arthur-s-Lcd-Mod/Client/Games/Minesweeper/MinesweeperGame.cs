@@ -3,21 +3,19 @@ using System.Collections.Generic;
 using System.Text;
 using LcdMod.Client.SurfaceScripts;
 using LcdMod.Client.Config;
-using LcdMod.Client.Gui;
-using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.Styling;
-using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Modules.EyeTracking;
 using LcdMod.Common.Config.Components;
 using LcdMod.Common.Helpers;
 using Sandbox.Game.Entities;
+using Adk.Gui.Core.Input;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI.Ingame.Utilities;
 using VRageMath;
 using static LcdMod.Common.Helpers.Constants;
-using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
+using GameSurfaceScript = LcdMod.Client.SurfaceScripts.GameSurfaceScript;
 using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 
 namespace LcdMod.Client.Games.Minesweeper
@@ -48,12 +46,11 @@ namespace LcdMod.Client.Games.Minesweeper
         const string CUSTOM_DATA_KEY = "Minesweeper";
 
         readonly IMyTextSurface _panel;
-        readonly InteractiveSurfaceScript _script;
+        readonly GameSurfaceScript _script;
         readonly List<MySprite> _sprites = new List<MySprite>();
         readonly List<MySprite> _boardVisualCache = new List<MySprite>();
         readonly List<MinesweeperHistoryEntry> _history = new List<MinesweeperHistoryEntry>();
         readonly HashSet<int> _unknownCells = new HashSet<int>();
-        readonly object _statusButtonContext = new object();
         readonly Random _emoteRandom = new Random();
 
         readonly Color[] _tileColors =
@@ -75,8 +72,6 @@ namespace LcdMod.Client.Games.Minesweeper
         readonly GameThemeContext _themeContext;
 
         public IVisualStyleScope StyleParent => _themeContext.StyleParent;
-
-        public StyleTree Styles => _themeContext.Styles;
 
         public ResourceTree Resources => _themeContext.Resources;
 
@@ -106,8 +101,8 @@ namespace LcdMod.Client.Games.Minesweeper
         RectangleF _boardViewBox;
         float _boardFrameThickness;
         RectangleF[] _gridCells;
-        RectangleControl _statusButtonControl;
-        RectangleControl[] _cellEntries;
+        readonly List<GameRegion> _regions = new List<GameRegion>();
+        Vector2? _pointer;
         byte[] _cells;
 
         int _width;
@@ -129,16 +124,13 @@ namespace LcdMod.Client.Games.Minesweeper
         float _cellTextScale;
         float _displayTextScale;
 
-        public List<Control> Interactive { get; }
-
         public GameSurfaceScript.GameEnum Id => GameSurfaceScript.GameEnum.Minesweeper;
 
-        public MinesweeperGame(IMyTextSurface panel, InteractiveSurfaceScript script)
+        public MinesweeperGame(IMyTextSurface panel, GameSurfaceScript script)
         {
             _panel = panel;
             _script = script;
             _themeContext = new GameThemeContext(script);
-            Interactive = new List<Control>();
             _difficulty = MinesweeperDifficulty.Easy;
 
             ReloadProgram();
@@ -153,8 +145,11 @@ namespace LcdMod.Client.Games.Minesweeper
                 {
                     new GlobalMenuEntry(MOD_PREFIX + "NewGame", delegate
                     {
-                        NewGame();
-                        Save();
+                        _script.ConfirmNewGame(() =>
+                        {
+                            NewGame();
+                            Save();
+                        });
                     }),
                     new GlobalMenuEntry(MOD_PREFIX + "FlagMode", delegate { ToggleFlagMode(); }),
                     new GlobalMenuEntry("Difficulty", new List<GlobalMenuEntry>
@@ -220,12 +215,17 @@ namespace LcdMod.Client.Games.Minesweeper
         {
             _sprites.Clear();
 
-            if (_viewBox != _script.ViewBox || _gridCells == null)
+            if (_viewBox != _script.GameViewBox || _gridCells == null)
                 BakeBoardVisual();
 
             RenderBoard(_sprites);
             RenderHeader(_sprites);
-            RebuildInteractiveEntries();
+            if (_statusButtonRect.Width > 0f && _statusButtonRect.Height > 0f)
+                DrawStatusButton(_sprites);
+            if (_gridCells != null)
+                for (int i = 0; i < _gridCells.Length; i++)
+                    RenderCell(_sprites, i);
+            BuildRegions();
 
             return _sprites;
         }
@@ -293,7 +293,6 @@ namespace LcdMod.Client.Games.Minesweeper
             int count = Math.Max(1, _width * _height);
             _cells = new byte[count];
             _gridCells = null;
-            _cellEntries = null;
         }
 
         MinesweeperGameConfig BuildConfig()
@@ -412,7 +411,7 @@ namespace LcdMod.Client.Games.Minesweeper
 
         void BakeBoardVisual()
         {
-            _viewBox = _script.ViewBox;
+            _viewBox = _script.GameViewBox;
 
             if (_cells == null || _cells.Length == 0)
                 AllocateBoard();
@@ -826,97 +825,75 @@ namespace LcdMod.Client.Games.Minesweeper
             return sprite;
         }
 
-        void RebuildInteractiveEntries()
+        void BuildRegions()
         {
-            Interactive.Clear();
-
+            int count = 0;
             if (_statusButtonRect.Width > 0f && _statusButtonRect.Height > 0f)
             {
-                if (_statusButtonControl == null)
-                {
-                    _statusButtonControl = new RectangleControl(
-                        _statusButtonRect,
-                        CursorType.Hand,
-                        _statusButtonContext,
-                        RestartGameFromEntry)
-                    {
-                        ClickSound = AudioHelper.HudClick,
-                        CustomRender =
-                            delegate(ControlTemplate entry, List<MySprite> sprites)
-                            {
-                                DrawStatusButton(sprites);
-                            }
-                    };
-                }
-                else
-                {
-                    _statusButtonControl.SetRect(_statusButtonRect);
-                    _statusButtonControl.SetCursor(CursorType.Hand);
-                    _statusButtonControl.SetDataContext(_statusButtonContext);
-                    _statusButtonControl.SetOnClick(RestartGameFromEntry);
-                }
-
-                _statusButtonControl.SetVisible(true);
-                Interactive.Add(_statusButtonControl);
+                var status = Region(count++);
+                status.Bounds = _statusButtonRect;
+                status.Cursor = PointerCursor.Hand;
+                status.Clicked = RestartGameFromRegion;
+                status.SecondaryClicked = null;
             }
-            else if (_statusButtonControl != null)
+
+            if (_gridCells != null)
             {
-                _statusButtonControl.SetVisible(false);
+                for (int i = 0; i < _gridCells.Length; i++)
+                {
+                    bool canClick = _state != MinesweeperState.Playing || !IsSet(_cells[i], REVEALED);
+                    var cell = Region(count++);
+                    int index = i;
+                    cell.Bounds = _gridCells[i];
+                    cell.Cursor = canClick ? GetCellCursor() : PointerCursor.Default;
+                    cell.Clicked = canClick ? (Action)(() => ClickCellFromRegion(index)) : null;
+                    cell.SecondaryClicked = canClick ? (Action)(() => FlagCellFromRegion(index)) : null;
+                }
             }
 
-            if (_gridCells == null)
-                return;
-
-            EnsureCellEntries();
-
-            for (int i = 0; i < _gridCells.Length; i++)
-            {
-                var cell = _cells[i];
-                bool canClick = _state != MinesweeperState.Playing || !IsSet(cell, REVEALED);
-                var entry = _cellEntries[i];
-                entry.SetRect(_gridCells[i]);
-                entry.SetCursor(canClick ? GetCellCursor() : CursorType.Default);
-                entry.SetDataContext(i);
-                entry.SetOnClick(canClick ? (Action<object, object>)ClickCellFromEntry : null);
-                entry.OnSecondaryClick = canClick ? (Action<object, object>)FlagCellFromEntry : null;
-                entry.ClickSound = GetCellClickSound(i);
-                entry.SetVisible(true);
-                Interactive.Add(entry);
-            }
+            if (_regions.Count > count)
+                _regions.RemoveRange(count, _regions.Count - count);
         }
 
-        void EnsureCellEntries()
+        GameRegion Region(int index)
         {
-            if (_gridCells == null)
-                return;
-
-            if (_cellEntries != null && _cellEntries.Length == _gridCells.Length)
-                return;
-
-            _cellEntries = new RectangleControl[_gridCells.Length];
-            for (int i = 0; i < _cellEntries.Length; i++)
-            {
-                _cellEntries[i] = new RectangleControl(
-                    _gridCells[i],
-                    CursorType.Default,
-                    i)
-                {
-                    CustomRender =
-                        delegate(ControlTemplate entry, List<MySprite> sprites)
-                        {
-                            RenderCell(sprites, (int)entry.DataContext);
-                        }
-                };
-            }
+            while (_regions.Count <= index)
+                _regions.Add(new GameRegion());
+            return _regions[index];
         }
 
-        void ClickCellFromEntry(object value, object sender) => ClickCell((int)value, _flagMode);
+        public IReadOnlyList<GameRegion> Regions => _regions;
 
-        void FlagCellFromEntry(object value, object sender) => FlagCell((int)value);
+        public void PointerMoved(Vector2? position)
+        {
+            _pointer = position;
+        }
 
-        void RestartGameFromEntry(object value, object sender) => RestartGame();
+        public void PointerClicked(GamePointerButton button, Vector2 position)
+        {
+        }
 
-        CursorType GetCellCursor() => _state != MinesweeperState.Playing ? CursorType.Cross : CursorType.Hand;
+        public PointerCursor CursorAt(Vector2 position) => PointerCursor.Default;
+
+        void ClickCellFromRegion(int index)
+        {
+            _script.PlaySounds(GetCellClickSound(index));
+            ClickCell(index, _flagMode);
+        }
+
+        void FlagCellFromRegion(int index)
+        {
+            _script.PlaySounds(GetCellClickSound(index));
+            FlagCell(index);
+        }
+
+        void RestartGameFromRegion()
+        {
+            _script.PlaySounds(AudioHelper.HudClick);
+            RestartGame();
+        }
+
+        PointerCursor GetCellCursor() => _state != MinesweeperState.Playing ? PointerCursor.Cross : PointerCursor.Hand;
 
         MySoundPair GetCellClickSound(int index)
         {
@@ -1231,9 +1208,9 @@ namespace LcdMod.Client.Games.Minesweeper
             if (_gridCells == null || _cells == null)
                 return -1;
 
-            var position = _script.CursorPosition;
-            if (float.IsNaN(position.X) || float.IsNaN(position.Y))
+            if (!_pointer.HasValue)
                 return -1;
+            var position = _pointer.Value;
 
             for (int i = 0; i < _gridCells.Length && i < _cells.Length; i++)
             {
@@ -1436,9 +1413,6 @@ namespace LcdMod.Client.Games.Minesweeper
                 Index = index;
             }
         }
-        
-        public IReadOnlyList<Control> LogicalChildren => Interactive;
-        public IReadOnlyList<Control> VisualChildren => Interactive;
 
         public bool HasVisibleItems()
         {

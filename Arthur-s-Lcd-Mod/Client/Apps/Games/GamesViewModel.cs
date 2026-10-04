@@ -1,0 +1,68 @@
+using System.Collections.Generic;
+using LcdMod.Client.Apps.Views;
+using LcdMod.Client.Games;
+
+namespace LcdMod.Client.Apps.Games
+{
+    internal sealed class GamesViewModel : SpriteAppViewModel, IGameInputSource
+    {
+        const long REVEAL_FRAMES = 180;
+
+        IReadOnlyList<GlobalMenuEntry> _menuEntries;
+        int _menuVersion;
+        bool _menuVisible;
+        bool _titleVisible = true;
+        long _revealedUntil = long.MinValue;
+        bool _menuDocked;
+
+        public GamesViewModel(GamesConfigApp app) : base(app) { }
+
+        public IReadOnlyList<GlobalMenuEntry> MenuEntries => _menuEntries;
+
+        /// <summary>The running game; the view takes its input through <see cref="IGameInput"/>.</summary>
+        public object Game { get; set; }
+
+        public IGameInput GameInput => Game as IGameInput;
+        public int MenuVersion => _menuVersion;
+        public bool MenuVisible => _menuVisible;
+        public int GameRow => _menuDocked ? 1 : 0;
+        public int GameRowSpan => _menuDocked ? 1 : 2;
+
+        public void SetMenu(IReadOnlyList<GlobalMenuEntry> entries)
+        {
+            if (ReferenceEquals(entries, _menuEntries))
+                return;
+            _menuEntries = entries;
+            RaisePropertyChanged<IReadOnlyList<GlobalMenuEntry>>(nameof(MenuEntries));
+            RaiseAndSetIfChanged(ref _menuVersion, _menuVersion + 1, nameof(MenuVersion));
+            Refresh(_titleVisible, long.MinValue, false);
+        }
+
+        /// <summary>With the title hidden, a secondary click shows the menu for a while; pointing at it keeps it open.</summary>
+        public void Reveal(long frame)
+        {
+            _revealedUntil = frame + REVEAL_FRAMES;
+            Refresh(_titleVisible, frame, false);
+        }
+
+        public void Refresh(bool titleVisible, long frame, bool pointerOnMenu)
+        {
+            _titleVisible = titleVisible;
+            if (pointerOnMenu && _revealedUntil != long.MinValue)
+                _revealedUntil = frame + REVEAL_FRAMES;
+            if (frame != long.MinValue && frame > _revealedUntil)
+                _revealedUntil = long.MinValue;
+            bool visible = _menuEntries != null && _menuEntries.Count > 0 &&
+                           (titleVisible || _revealedUntil != long.MinValue);
+            RaiseAndSetIfChanged(ref _menuVisible, visible, nameof(MenuVisible));
+            // The menu shown with the title has its own row; one revealed over a full-screen game only overlays it.
+            bool docked = visible && titleVisible;
+            if (docked != _menuDocked)
+            {
+                _menuDocked = docked;
+                RaisePropertyChanged<int>(nameof(GameRow));
+                RaisePropertyChanged<int>(nameof(GameRowSpan));
+            }
+        }
+    }
+}

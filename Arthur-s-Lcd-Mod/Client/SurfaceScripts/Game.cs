@@ -1,10 +1,12 @@
+using System;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Config;
 using LcdMod.Client.Games.Minesweeper;
 using LcdMod.Client.Games.EightBallPool;
 using LcdMod.Client.Gui;
-using LcdMod.Client.Gui.ControlsTemplates.Interactive;
+using LcdMod.Client.Games;
+using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Terminal.Controls;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.ModAPI;
@@ -63,14 +65,10 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override IApp App => _currentGame;
         IGame _currentGame;
-
-        readonly List<Control> _emptyInteractiveList = new List<Control>();
-
-        public override List<Control> InteractiveList => _currentGame != null ? _currentGame.Interactive : _emptyInteractiveList;
+        Apps.GamesConfigApp _viewApp;
 
         GlobalMenuEntry _rootMenu;
-
-        protected override bool RendersInteractiveEntriesInGetSprites => true;
+        List<GlobalMenuEntry> _menuEntries;
 
         public GameSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)
         {
@@ -82,16 +80,35 @@ namespace LcdMod.Client.SurfaceScripts
             var subEntries = new List<GlobalMenuEntry>(GameList.Count);
             foreach (var entry in GameList) subEntries.Add(new GlobalMenuEntry(entry.Value.ToString(), (a,b) => SetGame(entry.Key)));
             _rootMenu = new GlobalMenuEntry(TITLE, subEntries);
+            if (_menuEntries == null)
+                return;
+            var entries = new List<GlobalMenuEntry>(_menuEntries);
+            entries[0] = _rootMenu;
+            _menuEntries = entries;
         }
 
-        public override void SetGlobalMenu(params GlobalMenuEntry[] entries)
+        public void SetGlobalMenu(params GlobalMenuEntry[] entries)
         {
             var newEntries = new List<GlobalMenuEntry>(entries.Length + 1) { _rootMenu };
             foreach (var globalMenuEntry in entries)
                 newEntries.Add(globalMenuEntry);
-            
-            base.SetGlobalMenu(newEntries);
+
+            _menuEntries = newEntries;
+            if (_viewApp != null)
+                _viewApp.ViewModel.SetMenu(_menuEntries);
         }
+
+        public override void SetPointerButtonState(ControlClickButton button, bool pressed)
+        {
+            base.SetPointerButtonState(button, pressed);
+            if (button == ControlClickButton.Secondary && pressed && !TitleVisible && _viewApp != null)
+                _viewApp.ViewModel.Reveal(CurrentFrame);
+        }
+
+        static long CurrentFrame => MyAPIGateway.Session == null ? 0L : MyAPIGateway.Session.GameplayFrameCounter;
+
+        /// <summary>The area the game view occupies, between the title and footer; the games lay out inside it.</summary>
+        internal RectangleF GameViewBox => _viewApp != null ? _viewApp.GameBounds : ViewBox;
 
         void SetGame(long entryValue)
         {
@@ -103,10 +120,27 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override void SafeRun()
         {
-            
+            if (_viewApp == null)
+            {
+                _viewApp = new Apps.GamesConfigApp(this)
+                {
+                    SpriteProvider = delegate
+                    {
+                        return _currentGame != null
+                            ? _currentGame.GetSprites()
+                            : new List<MySprite>();
+                    }
+                };
+            }
+
             if(_currentGame == null)
                 InitGame((GameEnum)GeneralComponent.DisplayMode);
 
+            _viewApp.ViewModel.Game = _currentGame;
+            EnsureRetainedAppView(_viewApp);
+            if (_menuEntries == null)
+                _menuEntries = new List<GlobalMenuEntry> { _rootMenu };
+            _viewApp.ViewModel.SetMenu(_menuEntries);
             _currentGame?.Update();
             
             if (_currentGame != null)
@@ -115,10 +149,23 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override List<MySprite> GetSprites()
         {
-            var sprites = _currentGame?.GetSprites() ?? new List<MySprite>();
-            RenderInteractiveEntryVisuals(sprites);
-            DrawTitle(sprites);
+            var sprites = new List<MySprite>();
+            if (_viewApp != null)
+            {
+                var host = RetainedAppGuiHost;
+                _viewApp.ViewModel.Refresh(TitleVisible, CurrentFrame, host != null && host.OwnsPointer);
+            }
+            DrawRetainedAppView(sprites);
             return sprites;
+        }
+
+        public override void Dispose()
+        {
+            var viewApp = _viewApp;
+            _viewApp = null;
+            base.Dispose();
+            if (viewApp != null)
+                viewApp.Close();
         }
 
         public void InitGame(GameEnum gameEnum)
@@ -147,6 +194,24 @@ namespace LcdMod.Client.SurfaceScripts
         }
         
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
+
+        /// <summary>Asks before replacing the current game with a new one.</summary>
+        internal void ConfirmNewGame(Action startNewGame)
+        {
+            ShowMessageBox(Loc(MOD_PREFIX + "NewGame"), Loc(MOD_PREFIX + "Games_NewGamePrompt"),
+                new Apps.Dialogs.DialogButton(Loc(MOD_PREFIX + "Common_Button_Cancel")),
+                new Apps.Dialogs.DialogButton(Loc(MOD_PREFIX + "NewGame"), startNewGame, true));
+        }
+
+        /// <summary>Offers a new game once the current one has ended.</summary>
+        internal void OfferNewGame(Action startNewGame)
+        {
+            ShowMessageBox(Loc(MOD_PREFIX + "Games_GameOver"), Loc(MOD_PREFIX + "Games_PlayAgain"),
+                new Apps.Dialogs.DialogButton(Loc(MOD_PREFIX + "Common_Button_Cancel")),
+                new Apps.Dialogs.DialogButton(Loc(MOD_PREFIX + "NewGame"), startNewGame, true));
+        }
+
+        static string Loc(string key) => LcdMod.Client.Helpers.LocHelper.GetLoc(key);
 
         internal bool IsCurrentGame(IGame game)
         {
@@ -185,9 +250,8 @@ namespace LcdMod.Client.SurfaceScripts
         public List<MyTerminalControlComboBoxItem> GetDisplayModes() => GameList;
     }
 
-    internal interface IGame : IApp
+    internal interface IGame : IApp, IGameInput
     {
-        List<Control> Interactive { get; }
         GameSurfaceScript.GameEnum Id { get; }
         void Save();
         void Load();

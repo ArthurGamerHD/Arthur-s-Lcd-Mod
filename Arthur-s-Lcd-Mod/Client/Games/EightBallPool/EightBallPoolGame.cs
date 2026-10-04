@@ -3,19 +3,17 @@ using System.Collections.Generic;
 using System.Text;
 using LcdMod.Client.SurfaceScripts;
 using LcdMod.Client.Config;
-using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Extensions;
-using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.Styling;
-using LcdMod.Client.Gui.ControlsTemplates.Interactive;
 using LcdMod.Common.Config.Components;
 using LcdMod.Common.Helpers;
+using Adk.Gui.Core.Input;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 using static LcdMod.Common.Helpers.Constants;
-using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
+using GameSurfaceScript = LcdMod.Client.SurfaceScripts.GameSurfaceScript;
 using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 
 namespace LcdMod.Client.Games.EightBallPool
@@ -51,7 +49,7 @@ namespace LcdMod.Client.Games.EightBallPool
         const float CUE_RESPAWN_RADIUS = 0.126f;
 
         readonly IMyTextSurface _panel;
-        readonly InteractiveSurfaceScript _script;
+        readonly GameSurfaceScript _script;
         readonly List<MySprite> _sprites = new List<MySprite>();
         readonly Ball[] _balls = new Ball[BALL_COUNT];
         readonly int[] _capturedBy = new int[BALL_COUNT];
@@ -69,8 +67,6 @@ namespace LcdMod.Client.Games.EightBallPool
         readonly GameThemeContext _themeContext;
 
         public IVisualStyleScope StyleParent => _themeContext.StyleParent;
-
-        public StyleTree Styles => _themeContext.Styles;
 
         public ResourceTree Resources => _themeContext.Resources;
 
@@ -130,10 +126,9 @@ namespace LcdMod.Client.Games.EightBallPool
         int _playerOneGroup = GROUP_OPEN;
         int _winner;
         string _lastStatusMessage = string.Empty;
-        RectangleControl _tableControl;
-        readonly object _tableContext = new object();
+        static readonly IReadOnlyList<GameRegion> NoRegions = new GameRegion[0];
+        Vector2? _pointer;
 
-        public List<Control> Interactive { get; private set; }
         public GameSurfaceScript.GameEnum Id => GameSurfaceScript.GameEnum.EightBallPool;
 
         struct Ball
@@ -144,12 +139,11 @@ namespace LcdMod.Client.Games.EightBallPool
             public bool Pocketed;
         }
 
-        public EightBallPoolGame(IMyTextSurface panel, InteractiveSurfaceScript script)
+        public EightBallPoolGame(IMyTextSurface panel, GameSurfaceScript script)
         {
             _panel = panel;
             _script = script;
             _themeContext = new GameThemeContext(script);
-            Interactive = new List<Control>();
             InitializeBallNumbers();
             ReloadProgram();
             BuildGlobalMenu();
@@ -182,12 +176,16 @@ namespace LcdMod.Client.Games.EightBallPool
 
         void ShowNewGameMessageBox()
         {
-            _script.ShowMessageBox(Loc(MOD_PREFIX + "NewGame"), Loc(MOD_PREFIX + "EightBallPool_NewGamePrompt"),
-                Loc(MOD_PREFIX + "NewGame"), Loc(MOD_PREFIX + "EightBallPool_Dismiss"), delegate
-            {
-                NewGame();
-                Save();
-            });
+            if (_gameOver)
+                _script.OfferNewGame(StartNewGame);
+            else
+                _script.ConfirmNewGame(StartNewGame);
+        }
+
+        void StartNewGame()
+        {
+            NewGame();
+            Save();
         }
 
         void ReloadProgram()
@@ -222,13 +220,12 @@ namespace LcdMod.Client.Games.EightBallPool
         public List<MySprite> GetSprites()
         {
             _sprites.Clear();
-            if (_viewBox != _script.ViewBox || _playRect.Width <= 0f) BakeLayout();
+            if (_viewBox != _script.GameViewBox || _playRect.Width <= 0f) BakeLayout();
             DrawTable(_sprites);
             DrawAimGuide(_sprites);
             DrawBalls(_sprites);
             DrawHud(_sprites);
             DrawFooter(_sprites);
-            RebuildInteractiveEntries();
             return _sprites;
         }
 
@@ -429,7 +426,7 @@ namespace LcdMod.Client.Games.EightBallPool
 
         void BakeLayout()
         {
-            _viewBox = _script.ViewBox;
+            _viewBox = _script.GameViewBox;
             if (_viewBox.Width <= 0f || _viewBox.Height <= 0f) return;
             var headerHeight = Math.Max(32f, Math.Min(_viewBox.Height * 0.16f, 68f));
             var gap = Math.Max(4f, _viewBox.Height * 0.015f);
@@ -477,43 +474,40 @@ namespace LcdMod.Client.Games.EightBallPool
             _fontScale = textSize.Y <= 0f ? 0.6f : MathHelper.Clamp(_headerRect.Height * 0.27f / textSize.Y, 0.35f, 0.9f);
         }
 
-        void RebuildInteractiveEntries()
+        public IReadOnlyList<GameRegion> Regions => NoRegions;
+
+        public void PointerMoved(Vector2? position)
         {
-            Interactive.Clear();
-            if (_playRect.Width <= 0f || _playRect.Height <= 0f) return;
-            if (_tableControl == null)
-            {
-                _tableControl = new RectangleControl(_playRect, CursorType.Hand, _tableContext, ClickTableFromEntry)
-                {
-                    CustomRender = delegate { },
-                    OnSecondaryClick = PlaceCueBallFromEntry,
-                    ClickSound = AudioHelper.HudClick
-                };
-            }
-            _tableControl.SetRect(_playRect);
-            _tableControl.SetCursor(GetTableCursorType());
-            _tableControl.SetDataContext(_tableContext);
-            _tableControl.SetOnClick(ClickTableFromEntry);
-            _tableControl.OnSecondaryClick = PlaceCueBallFromEntry;
-            _tableControl.SetVisible(true);
-            Interactive.Add(_tableControl);
+            _pointer = position;
         }
 
-        CursorType GetTableCursorType()
+        public void PointerClicked(GamePointerButton button, Vector2 position)
         {
-            if (AreBallsMoving()) return CursorType.WaitCursor;
-            if (_gameOver) return CursorType.Hand;
-            if (_cueBallInHand || _balls[CUE_BALL].Pocketed) return CursorType.Hand;
+            if (!_playRect.Contains(position))
+                return;
+            _script.PlaySounds(AudioHelper.HudClick);
+            if (button == GamePointerButton.Primary)
+                ClickTable();
+            else
+                PlaceCueBallCheat();
+        }
+
+        public PointerCursor CursorAt(Vector2 position)
+        {
+            if (!_playRect.Contains(position)) return PointerCursor.Default;
+            if (AreBallsMoving()) return PointerCursor.Wait;
+            if (_gameOver) return PointerCursor.Hand;
+            if (_cueBallInHand || _balls[CUE_BALL].Pocketed) return PointerCursor.DragMove;
 
             Vector2 tablePoint;
-            if (!TryGetCursorTablePoint(out tablePoint)) return CursorType.Hand;
+            if (!TryGetCursorTablePoint(out tablePoint)) return PointerCursor.Hand;
             if ((tablePoint - _balls[CUE_BALL].Position).Length() >= GetBallPhysicsRadius(CUE_BALL) * 1.5f)
-                return CursorType.None;
+                return PointerCursor.None;
 
-            return CursorType.Hand;
+            return PointerCursor.Hand;
         }
 
-        void ClickTableFromEntry(object value, object sender)
+        void ClickTable()
         {
             if (_gameOver)
             {
@@ -531,7 +525,7 @@ namespace LcdMod.Client.Games.EightBallPool
             ShootCueBall(tablePoint);
         }
 
-        void PlaceCueBallFromEntry(object value, object sender)
+        void PlaceCueBallCheat()
         {
             if (_gameOver || AreBallsMoving()) return;
             if (!_cheatMode)
@@ -547,8 +541,8 @@ namespace LcdMod.Client.Games.EightBallPool
         bool TryGetCursorTablePoint(out Vector2 tablePoint)
         {
             tablePoint = Vector2.Zero;
-            var cursor = _script.CursorPosition;
-            if (float.IsNaN(cursor.X) || float.IsNaN(cursor.Y) || !_playRect.Contains(cursor)) return false;
+            if (!_pointer.HasValue || !_playRect.Contains(_pointer.Value)) return false;
+            var cursor = _pointer.Value;
             var x = (cursor.X - _playRect.X) / Math.Max(1f, _playRect.Width);
             var y = (cursor.Y - _playRect.Y) / Math.Max(1f, _playRect.Height) * TABLE_HEIGHT;
             tablePoint = new Vector2(MathHelper.Clamp(x, BALL_RADIUS, 1f - BALL_RADIUS),
@@ -1741,10 +1735,6 @@ namespace LcdMod.Client.Games.EightBallPool
             sprites.Add(RectSprite(_playRect, _feltColor));
             DrawBevelBorder(sprites, _playRect, playBorder, GetInnerBevelTopLeftColor(), GetInnerBevelBottomRightColor());
             DrawPocketFunnels(sprites);
-#if DEBUG
-            if(LocalConfigManager.DebugInteractive)
-                DrawPhysicsWallsDebug(sprites);
-#endif
             DrawHeadString(sprites);
             DrawCueRespawnArea(sprites);
             DrawFootSpot(sprites);
@@ -1865,86 +1855,6 @@ namespace LcdMod.Client.Games.EightBallPool
             for (var i = 0; i < _pockets.Length; i++)
                 DrawPocketFunnel(sprites, i);
         }
-
-
-#if DEBUG
-        void DrawPhysicsWallsDebug(List<MySprite> sprites)
-        {
-            var debugColor = new Color(255, 0, 255, 210);
-            var debugZoneColor = new Color(255, 0, 255, 95);
-            var wallThickness = Math.Max(2f, _ballScreenRadius * 0.16f);
-            var transitionRadius = Math.Max(1.5f, POCKET_TRANSITION_ZONE_RADIUS * _playRect.Width);
-
-            DrawStraightRailWallsDebug(sprites, wallThickness, debugColor);
-
-            for (var i = 0; i < _pockets.Length; i++)
-            {
-                Vector2 narrowLeft;
-                Vector2 narrowRight;
-                Vector2 mouthLeft;
-                Vector2 mouthRight;
-                Vector2 centerAtMiddle;
-                GetPocketFunnelWallGeometry(i, out narrowLeft, out narrowRight, out mouthLeft, out mouthRight, out centerAtMiddle);
-
-                DrawLine(sprites, ToScreen(narrowLeft), ToScreen(mouthLeft), wallThickness, debugColor);
-                DrawLine(sprites, ToScreen(narrowRight), ToScreen(mouthRight), wallThickness, debugColor);
-
-                Vector2 transitionLeft;
-                Vector2 transitionRight;
-                GetPocketTransitionZoneCenters(i, out transitionLeft, out transitionRight);
-                DrawTransitionZoneDebug(sprites, ToScreen(transitionLeft), transitionRadius, debugZoneColor, debugColor);
-                DrawTransitionZoneDebug(sprites, ToScreen(transitionRight), transitionRadius, debugZoneColor, debugColor);
-            }
-        }
-
-        void DrawStraightRailWallsDebug(List<MySprite> sprites, float wallThickness, Color debugColor)
-        {
-            Vector2 a;
-            Vector2 b;
-
-            GetPocketMouthEndpoints(0, out a, out b);
-            var topLeftStart = Math.Max(a.X, b.X);
-            GetPocketMouthEndpoints(1, out a, out b);
-            var topMiddleLeft = Math.Min(a.X, b.X);
-            var topMiddleRight = Math.Max(a.X, b.X);
-            GetPocketMouthEndpoints(2, out a, out b);
-            var topRightEnd = Math.Min(a.X, b.X);
-
-            DrawLine(sprites, ToScreen(new Vector2(topLeftStart, 0f)), ToScreen(new Vector2(topMiddleLeft, 0f)), wallThickness, debugColor);
-            DrawLine(sprites, ToScreen(new Vector2(topMiddleRight, 0f)), ToScreen(new Vector2(topRightEnd, 0f)), wallThickness, debugColor);
-
-            GetPocketMouthEndpoints(3, out a, out b);
-            var bottomLeftStart = Math.Max(a.X, b.X);
-            GetPocketMouthEndpoints(4, out a, out b);
-            var bottomMiddleLeft = Math.Min(a.X, b.X);
-            var bottomMiddleRight = Math.Max(a.X, b.X);
-            GetPocketMouthEndpoints(5, out a, out b);
-            var bottomRightEnd = Math.Min(a.X, b.X);
-
-            DrawLine(sprites, ToScreen(new Vector2(bottomLeftStart, TABLE_HEIGHT)), ToScreen(new Vector2(bottomMiddleLeft, TABLE_HEIGHT)), wallThickness, debugColor);
-            DrawLine(sprites, ToScreen(new Vector2(bottomMiddleRight, TABLE_HEIGHT)), ToScreen(new Vector2(bottomRightEnd, TABLE_HEIGHT)), wallThickness, debugColor);
-
-            GetPocketMouthEndpoints(0, out a, out b);
-            var leftTopEnd = Math.Max(a.Y, b.Y);
-            GetPocketMouthEndpoints(3, out a, out b);
-            var leftBottomStart = Math.Min(a.Y, b.Y);
-            DrawLine(sprites, ToScreen(new Vector2(0f, leftTopEnd)), ToScreen(new Vector2(0f, leftBottomStart)), wallThickness, debugColor);
-
-            GetPocketMouthEndpoints(2, out a, out b);
-            var rightTopEnd = Math.Max(a.Y, b.Y);
-            GetPocketMouthEndpoints(5, out a, out b);
-            var rightBottomStart = Math.Min(a.Y, b.Y);
-            DrawLine(sprites, ToScreen(new Vector2(1f, rightTopEnd)), ToScreen(new Vector2(1f, rightBottomStart)), wallThickness, debugColor);
-        }
-
-        void DrawTransitionZoneDebug(List<MySprite> sprites, Vector2 center, float radius, Color fillColor, Color outlineColor)
-        {
-            sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "Circle", Position = center, Size = new Vector2(radius * 2f),
-                Color = fillColor, Alignment = TextAlignment.CENTER });
-            sprites.Add(new MySprite { Type = SpriteType.TEXTURE, Data = "CircleHollow", Position = center, Size = new Vector2(radius * 2f),
-                Color = outlineColor, Alignment = TextAlignment.CENTER });
-        }
-#endif
 
         float GetPocketScreenRadius()
         {
@@ -2585,9 +2495,6 @@ namespace LcdMod.Client.Games.EightBallPool
         {
             return string.Format(Loc(key), args);
         }
-        
-        public IReadOnlyList<Control> LogicalChildren => Interactive;
-        public IReadOnlyList<Control> VisualChildren => Interactive;
 
         public bool HasVisibleItems()
         {

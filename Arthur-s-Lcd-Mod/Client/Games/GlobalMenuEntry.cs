@@ -2,8 +2,9 @@ using System;
 using System.Collections.Generic;
 using LcdMod.Client.Helpers;
 
-namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
+namespace LcdMod.Client.Games
 {
+    /// <summary>One entry of a game's menu bar: a command, or a submenu when it has children.</summary>
     public sealed class GlobalMenuEntry
     {
         public string MenuItem { get; set; }
@@ -11,29 +12,23 @@ namespace LcdMod.Client.Gui.ControlsTemplates.Interactive
         public Action<object, object> OnClick { get; set; }
         public object DataContext { get; set; }
         public string Icon { get; set; }
-        public CursorType Cursor { get; set; }
 
         public GlobalMenuEntry()
         {
-            Cursor = CursorType.Hand;
         }
 
         public GlobalMenuEntry(string menuItem, Action<object, object> onClick = null)
-            : this()
         {
             MenuItem = LocHelper.GetLoc(menuItem);
             OnClick = onClick;
         }
 
         public GlobalMenuEntry(string menuItem, List<GlobalMenuEntry> children)
-            : this()
         {
             MenuItem = LocHelper.GetLoc(menuItem);
             Children = children;
         }
 
         public bool HasChildren => Children != null && Children.Count > 0;
-
-        public bool Active { get; set; }
     }
 }

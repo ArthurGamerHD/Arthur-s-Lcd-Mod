@@ -99,7 +99,6 @@ namespace LcdMod.Client.Games.Chess
             {
 
                 _overlayOverlay = new GameOverOverlay(this);
-                Interactive.Add(_overlayOverlay.RectangleControl);
                 GameOverMessage();
             }
         }

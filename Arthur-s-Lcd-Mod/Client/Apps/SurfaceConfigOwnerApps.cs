@@ -40,9 +40,10 @@ namespace LcdMod.Client.Apps
         {
             ViewModel = new Games.GamesViewModel(this);
             SetContent(new Games.GamesMenuView { DataContext = ViewModel });
-            SetContentLayout(true);
+            SetContentLayout(!host.TitleVisible);
         }
         internal Games.GamesViewModel ViewModel { get; }
+        internal VRageMath.RectangleF GameBounds => RetainedContentBounds;
         internal Func<List<MySprite>> SpriteProvider { get; set; }
         public override void Update() { }
         public override List<MySprite> GetSprites()
