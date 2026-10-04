@@ -65,6 +65,12 @@ namespace LcdMod.Client.Markdown
                     continue;
                 }
 
+                if (IsQuoteLine(line))
+                {
+                    document.Blocks.Add(ParseQuote(lines, ref index));
+                    continue;
+                }
+
                 ListBlock list;
                 if (TryParseList(lines, ref index, out list))
                 {
@@ -83,6 +89,29 @@ namespace LcdMod.Client.Markdown
         static bool IsBlank(string line)
         {
             return line == null || line.Trim().Length == 0;
+        }
+
+        static bool IsQuoteLine(string line)
+        {
+            return line != null && line.TrimStart().StartsWith(">");
+        }
+
+        BlockQuoteBlock ParseQuote(string[] lines, ref int index)
+        {
+            var inner = new StringBuilder();
+            while (index < lines.Length && IsQuoteLine(lines[index]))
+            {
+                string content = lines[index].TrimStart().Substring(1);
+                if (content.StartsWith(" "))
+                    content = content.Substring(1);
+                if (inner.Length > 0)
+                    inner.Append('\n');
+                inner.Append(content.TrimEnd('\r'));
+                index++;
+            }
+            var quote = new BlockQuoteBlock();
+            quote.Children.AddRange(Parse(inner.ToString()).Blocks);
+            return quote;
         }
 
 
@@ -312,7 +341,7 @@ namespace LcdMod.Client.Markdown
                 if (TryParseHeading(line, out ignoredHeading))
                     break;
 
-                if (IsThematicBreak(line))
+                if (IsThematicBreak(line) || IsQuoteLine(line))
                     break;
 
                 CodeBlock ignoredCodeBlock;

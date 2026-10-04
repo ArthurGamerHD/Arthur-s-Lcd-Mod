@@ -26,9 +26,6 @@ namespace LcdMod.Client.SurfaceScripts
         SessionDebugApp _app;
 
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
-
-        public override List<Control> InteractiveList => _app?.InteractiveEntries ?? new List<Control>();
-
         public SessionDebugSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
             : base(surface, block, size)
         {
@@ -48,16 +45,29 @@ namespace LcdMod.Client.SurfaceScripts
             if (Surface == null)
                 return;
 
+            if (_app != null)
+                _app.Update();
             RenderSprites();
         }
 
-        public override List<MySprite> GetSprites() => _app?.GetSprites() ?? new List<MySprite>();
+        public override List<MySprite> GetSprites()
+        {
+            var sprites = new List<MySprite>();
+            if (_app != null)
+                DrawRetainedAppView(sprites);
+            return sprites;
+        }
 
         public override void SafeRun()
         {
             base.SafeRun();
 
-            if (_app == null) _app = new SessionDebugApp(this);
+            if (_app == null)
+                _app = new SessionDebugApp(this);
+
+            EnsureRetainedAppView(_app);
+            _app.Update();
+            RenderSprites();
         }
     }
 }

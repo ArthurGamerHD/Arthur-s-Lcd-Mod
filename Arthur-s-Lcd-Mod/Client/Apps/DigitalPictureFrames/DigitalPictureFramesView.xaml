@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl xmlns="https://github.com/ArthurGamerHD/Adk"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:pictures="using:LcdMod.Client.Apps.DigitalPictureFrames"
+             x:Class="LcdMod.Client.Apps.DigitalPictureFrames.DigitalPictureFramesView"
+             x:DataType="pictures:DigitalPictureFramesViewModel">
+  <UserControl.Styles>
+    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/DigitalPictureFrames.xaml" />
+  </UserControl.Styles>
+  <Grid>
+    <Carousel ItemsSource="{Binding Pages}" SelectedIndex="{Binding SelectedPage}" WrapSelection="True"
+              IsVisible="{Binding HasImage}">
+      <Carousel.ItemTemplate>
+        <DataTemplate x:DataType="pictures:PicturePage">
+          <Grid Background="{Binding Image}" />
+        </DataTemplate>
+      </Carousel.ItemTemplate>
+    </Carousel>
+    <Button Classes="picture-overlay"
+            Command="{Binding OpenPickerCommand}"
+            IsEnabled="{Binding CanEdit}"
+            IsVisible="{Binding HasImage}" />
+    <Button Content="{Binding PickText}"
+            Command="{Binding OpenPickerCommand}"
+            IsEnabled="{Binding CanEdit}"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            MinWidth="220"
+            IsVisible="{Binding ShowPickerButton}" />
+  </Grid>
+</UserControl>

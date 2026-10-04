@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Styles xmlns="https://github.com/ArthurGamerHD/Adk"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Style Selector="StackPanel.md-document">
+    <Setter Property="Spacing" Value="7" />
+  </Style>
+  <Style Selector="TextBlock.md-paragraph">
+    <Setter Property="Foreground" Value="{DynamicResource fontColor}" />
+  </Style>
+  <Style Selector="TextBlock.md-h1">
+    <Setter Property="Foreground" Value="{DynamicResource accentColor}" />
+  </Style>
+  <Style Selector="TextBlock.md-h2">
+    <Setter Property="Foreground" Value="{DynamicResource accentColor}" />
+  </Style>
+  <Style Selector="TextBlock.md-h3">
+    <Setter Property="Foreground" Value="{DynamicResource accentColor}" />
+  </Style>
+  <Style Selector="TextBlock.md-h4">
+    <Setter Property="Foreground" Value="{DynamicResource fontColor}" />
+  </Style>
+  <Style Selector="TextBlock.md-h5">
+    <Setter Property="Foreground" Value="{DynamicResource fontColor}" />
+  </Style>
+  <Style Selector="TextBlock.md-h6">
+    <Setter Property="Foreground" Value="{DynamicResource onSurfaceVariantColor}" />
+  </Style>
+  <Style Selector="TextBlock.md-subtext">
+    <Setter Property="Foreground" Value="{DynamicResource onSurfaceVariantColor}" />
+  </Style>
+  <Style Selector="Border.md-code">
+    <Setter Property="Background" Value="{DynamicResource surfaceContainerHighColor}" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="Padding" Value="8 6" />
+  </Style>
+  <Style Selector="TextBlock.md-code-text">
+    <Setter Property="Foreground" Value="{DynamicResource fontColor}" />
+  </Style>
+  <Style Selector="Border.md-quote-bar">
+    <Setter Property="Width" Value="3" />
+    <Setter Property="Margin" Value="0 0 10 0" />
+    <Setter Property="Background" Value="{DynamicResource accentColor}" />
+  </Style>
+  <Style Selector="StackPanel.md-quote-content">
+    <Setter Property="Spacing" Value="5" />
+  </Style>
+  <Style Selector="StackPanel.md-list">
+    <Setter Property="Spacing" Value="3" />
+  </Style>
+  <Style Selector="StackPanel.md-list-item">
+    <Setter Property="Spacing" Value="3" />
+  </Style>
+  <Style Selector="TextBlock.md-bullet">
+    <Setter Property="Foreground" Value="{DynamicResource accentColor}" />
+    <Setter Property="Margin" Value="4 0 8 0" />
+  </Style>
+  <Style Selector="Border.md-rule">
+    <Setter Property="Height" Value="1" />
+    <Setter Property="Background" Value="{DynamicResource dividerColor}" />
+  </Style>
+</Styles>

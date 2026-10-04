@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl xmlns="https://github.com/ArthurGamerHD/Adk"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:md="using:LcdMod.Client.Apps.Markdown"
+             x:Class="LcdMod.Client.Apps.Markdown.MarkdownView"
+             x:DataType="md:MarkdownViewModel">
+  <UserControl.Styles>
+    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/Markdown.xaml" />
+  </UserControl.Styles>
+  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+    <md:MarkdownPresenter Document="{Binding Document}" FontSize="{DynamicResource fontScale}" />
+  </ScrollViewer>
+</UserControl>

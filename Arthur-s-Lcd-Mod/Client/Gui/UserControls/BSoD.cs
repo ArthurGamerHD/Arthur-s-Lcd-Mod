@@ -1,11 +1,16 @@
 using System;
 using System.Collections.Generic;
+using Adk.Gui.Controls;
+using Adk.Gui.Core;
+using Adk.Gui.Lcd;
+using Adk.Gui.Layout;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using VRage.Collections;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 using static LcdMod.Common.Helpers.Constants;
+using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 
 namespace LcdMod.Client.Gui.UserControls
 {
@@ -17,11 +22,14 @@ namespace LcdMod.Client.Gui.UserControls
         const float QR_SPRITE_UNIT_SCALE = 10f;
 
 
-        readonly Sandbox.ModAPI.Ingame.IMyTextSurface _surface;
+        readonly IMyTextSurface _surface;
         readonly float _scale;
         readonly Vector2 _centerPos;
         readonly List<MySprite> _frame = new List<MySprite>();
         public ListReader<MySprite> Frame { get; }
+
+        /// <summary>The frame shows the QR texture created while drawing it; re-upload it once that texture is live.</summary>
+        public bool NeedsReupload { get; private set; }
 
         BSoD(SurfaceScriptBase app, Exception exception)
         {
@@ -35,6 +43,14 @@ namespace LcdMod.Client.Gui.UserControls
 
             var white = new Color(179, 237, 255);
             var blue = new Color(0, 88, 151);
+
+            _scale = 1f;
+            _centerPos = viewBox.Center;
+            if (DrawRetainedErrorView(app, exception, viewBox, white, blue))
+            {
+                Frame = _frame;
+                return;
+            }
 
             _frame.Add(MySprite.CreateClipRect(viewClip));
             DrawRectangle(viewBox.Center, new Vector2(viewBox.Width, viewBox.Height), blue);
@@ -142,6 +158,102 @@ namespace LcdMod.Client.Gui.UserControls
 
             _frame.Add(MySprite.CreateClearClipRect());
             Frame = _frame;
+        }
+
+        bool DrawRetainedErrorView(
+            SurfaceScriptBase app,
+            Exception exception,
+            RectangleF viewBox,
+            Color foreground,
+            Color background)
+        {
+            try
+            {
+                string header = GetLocalizedText(MOD_PREFIX + "BSoD_Header", BSOD_TITLE_FALLBACK);
+                string info = GetLocalizedText(MOD_PREFIX + "BSoD_InfoIntro", BSOD_INFO1_FALLBACK) + " " +
+                              GetLocalizedText(MOD_PREFIX + "BSoD_InfoUrl", BSOD_INFO2_FALLBACK) + GITHUB + " " +
+                              GetLocalizedText(MOD_PREFIX + "BSoD_InfoQr", BSOD_INFO3_FALLBACK);
+                string details = GetLocalizedText(MOD_PREFIX + "BSoD_SupportIntro", BSOD_INFO4_FALLBACK) + "\n" +
+                                 GetLocalizedText(MOD_PREFIX + "BSoD_ExceptionCode", BSOD_INFO5_FALLBACK) + "\n" +
+                                 exception;
+
+                var root = new Border
+                {
+                    BackgroundColor = background,
+                    Padding = new Vector4(14f)
+                };
+                var layout = new Adk.Gui.Layout.Grid();
+                layout.SetColumnDefinitions(GridLength.Star);
+                layout.SetRowDefinitions(GridLength.Auto, GridLength.Auto, GridLength.Star);
+                layout.Set(new TextBlock
+                {
+                    Text = ":(",
+                    FontFamily = FONT_ID,
+                    FontSize = 3f,
+                    Foreground = foreground,
+                    VerticalTextAlignment = VerticalAlignment.Top
+                }, 0, 0);
+                var summary = new Adk.Gui.Layout.StackPanel
+                {
+                    Spacing = 8f,
+                    Margin = new Vector4(0f, 10f, 0f, 0f)
+                };
+                summary.AddChild(new TextBlock
+                {
+                    Text = header,
+                    FontFamily = FONT_ID,
+                    FontSize = 0.8f,
+                    Foreground = foreground,
+                    TextWrapping = TextWrapping.Wrap,
+                    VerticalTextAlignment = VerticalAlignment.Top
+                });
+                float requestedQr = Math.Min(viewBox.Width * 0.24f, viewBox.Height * 0.3f);
+                float qrSize = RoundToPixel(Math.Max(40f, Math.Min(requestedQr, QuantizeQrSize(requestedQr, requestedQr))));
+                var support = new Adk.Gui.Layout.Grid();
+                support.SetColumnDefinitions(GridLength.Auto, GridLength.Star);
+                support.Set(new BSoDQrCode
+                {
+                    Width = qrSize,
+                    Height = qrSize,
+                    Margin = new Vector4(0f, 0f, 12f, 0f),
+                    VerticalAlignment = VerticalAlignment.Top
+                }, 0, 0);
+                support.Set(new TextBlock
+                {
+                    Text = info,
+                    FontFamily = FONT_ID,
+                    FontSize = 0.55f,
+                    Foreground = foreground,
+                    TextWrapping = TextWrapping.Wrap,
+                    VerticalTextAlignment = VerticalAlignment.Top
+                }, 1, 0);
+                summary.AddChild(support);
+                layout.Set(summary, 0, 1);
+                layout.Set(new TextBlock
+                {
+                    Text = details,
+                    FontFamily = FONT_ID,
+                    FontSize = 0.45f,
+                    Foreground = foreground,
+                    TextWrapping = TextWrapping.Wrap,
+                    VerticalTextAlignment = VerticalAlignment.Top,
+                    Margin = new Vector4(0f, 12f, 0f, 0f)
+                }, 0, 2);
+                root.Child = layout;
+
+                using (var host = new LcdGuiHost(app.Surface, root, app.Animations))
+                {
+                    host.Arrange(viewBox);
+                    host.Draw(_frame);
+                }
+                NeedsReupload = BSoDQrCode.CreatedThisFrame;
+                return true;
+            }
+            catch
+            {
+                _frame.Clear();
+                return false;
+            }
         }
 
         static string GetLocalizedText(string loc, string fallback)

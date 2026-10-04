@@ -44,6 +44,7 @@ namespace LcdMod.Client.SurfaceScripts
             if (_app == null)
                 _app = new MarkdownApp(this);
 
+            EnsureRetainedAppView(_app);
             _app.Update();
             RenderSprites();
         }
@@ -58,8 +59,7 @@ namespace LcdMod.Client.SurfaceScripts
             }
             
             AddBackground(_sprites);
-            DrawTitle(_sprites);
-            _sprites.AddRange(_app.GetSprites());
+            DrawRetainedAppView(_sprites);
             return _sprites;
         }
     }

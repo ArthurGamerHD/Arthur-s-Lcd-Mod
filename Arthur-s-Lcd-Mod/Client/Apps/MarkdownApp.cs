@@ -1,13 +1,10 @@
 using LcdMod.Common.Config.Components;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
-using LcdMod.Client.Gui;
-using LcdMod.Client.Gui.UserControls;
 using LcdMod.Client.Markdown;
 using LcdMod.Common.Helpers;
 using VRage.Game.GUI.TextPanel;
 using VRage.Utils;
-using VRageMath;
 
 using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.Apps
@@ -17,54 +14,34 @@ namespace LcdMod.Client.Apps
     public sealed partial class MarkdownApp : App
     {
         readonly MarkdownParser _parser = new MarkdownParser();
-        readonly List<MySprite> _cachedSprites = new List<MySprite>();
-        bool _spritesLoaded;
+        readonly List<MySprite> _noSprites = new List<MySprite>();
         string _loadedText;
+        readonly Markdown.MarkdownViewModel _viewModel;
 
-        // todo: convert to interactive app
-        public override IReadOnlyList<Control> VisualChildren { get; } = new Control[]{};
-        
         public MarkdownApp(IAppHost host) : base(host)
         {
+            _viewModel = new Markdown.MarkdownViewModel(this);
+            SetContent(new Markdown.MarkdownView { DataContext = _viewModel });
         }
 
         public MarkdownDocument Document { get; private set; }
+        internal override float WindowRenderScaling => CardScale;
 
         public override void Update()
         {
             EnsureDocument();
+            _viewModel.Refresh();
         }
 
         public override void LayoutChanged()
         {
             base.LayoutChanged();
             _loadedText = null;
-            _spritesLoaded = false;
-            _cachedSprites.Clear();
         }
 
         public override List<MySprite> GetSprites()
         {
-            if (Document == null)
-                return _cachedSprites;
-
-            if (_spritesLoaded)
-                return _cachedSprites;
-
-            _cachedSprites.Clear();
-
-            Color headerColor = GetHeaderColor();
-            RectangleF contentViewBox = MarkdownPanel.GetContentViewBox(Host);
-            MarkdownPanel.CreateSprites(
-                Document,
-                contentViewBox,
-                headerColor,
-                Host.ForegroundColor,
-                _cachedSprites,
-                Host);
-
-            _spritesLoaded = true;
-            return _cachedSprites;
+            return _noSprites;
         }
 
         void EnsureDocument()
@@ -80,8 +57,6 @@ namespace LcdMod.Client.Apps
         {
             text = text ?? string.Empty;
             _loadedText = text;
-            _spritesLoaded = false;
-            _cachedSprites.Clear();
 
             if (string.IsNullOrWhiteSpace(text))
             {

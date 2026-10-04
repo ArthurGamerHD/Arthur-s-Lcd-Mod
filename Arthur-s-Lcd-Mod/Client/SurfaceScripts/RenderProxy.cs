@@ -35,7 +35,6 @@ namespace LcdMod.Client.SurfaceScripts
         public const string TITLE = MOD_PREFIX + "RenderProxy";
 
         List<MySprite> _sprites = new List<MySprite>();
-        readonly List<Control> _parentInteractiveEntries = new List<Control>();
         RenderProxyConfigComponent RenderProxyComponent => Config.GetComponent<RenderProxyConfigComponent>();
         BlockReferenceConfigComponent RenderProxyReferenceComponent =>
             Config.GetComponent<BlockReferenceConfigComponent>(RENDER_PROXY_REFERENCE);
@@ -88,27 +87,6 @@ namespace LcdMod.Client.SurfaceScripts
         }
 
         IApp AppInteractive => App;
-
-        public override List<Control> InteractiveList
-        {
-            get
-            {
-                var parentInteractive = _parent as InteractiveSurfaceScript;
-                if (IsParentAlive(_parent) && parentInteractive != null)
-                {
-                    _parentInteractiveEntries.Clear();
-                    _parentInteractiveEntries.AddRange(parentInteractive.InteractiveEntries);
-                    return _parentInteractiveEntries;
-                }
-
-                var appInteractive = AppInteractive;
-                if (appInteractive != null)
-                    return appInteractive.VisualChildren as List<Control>;
-
-                var game = App as IGame;
-                return game?.Interactive;
-            }
-        }
 
         public override Vector2 HitTestOffset => IsParentAlive(_parent) ? GetCurrentProxyOffset() : Vector2.Zero;
 
@@ -984,13 +962,16 @@ namespace LcdMod.Client.SurfaceScripts
             ResolveParentFromConfig();
 
             var parent = _parent;
-            parentInteractive = parent as InteractiveSurfaceScript;
-            if (IsParentAlive(parent) && parentInteractive != null)
-                return true;
-
-            InvalidateParentReference(parent);
             parentInteractive = null;
-            return false;
+            if (!IsParentAlive(parent))
+            {
+                InvalidateParentReference(parent);
+                return false;
+            }
+
+            // Non-interactive hosts (preview, static screens) stay linked; the proxy just has no input to forward.
+            parentInteractive = parent as InteractiveSurfaceScript;
+            return parentInteractive != null;
         }
 
         bool ShouldRefreshLinkedProxyMapping(IMyTerminalBlock hostBlock, int hostRotationIndex)
@@ -1292,31 +1273,44 @@ namespace LcdMod.Client.SurfaceScripts
             base.OnLookAt(onScreenCoordinates);
         }
 
-        public override bool HasTooltipInputAtCursor(bool rightClick)
+        public override bool HandlesPointerButtonInput
         {
-            InteractiveSurfaceScript parentInteractive;
-            if (TryGetParentInteractive(out parentInteractive))
-                return parentInteractive.HasTooltipInputAtCursor(rightClick);
-
-            return base.HasTooltipInputAtCursor(rightClick);
+            get
+            {
+                InteractiveSurfaceScript parentInteractive;
+                return TryGetParentInteractive(out parentInteractive)
+                    ? parentInteractive.HandlesPointerButtonInput
+                    : base.HandlesPointerButtonInput;
+            }
         }
 
-        public override bool TryHandleTooltipActivationClick(bool rightClick, out ControlTemplate tooltipParent)
+        public override InteractiveSurfaceScript PointerInputOwner
         {
-            InteractiveSurfaceScript parentInteractive;
-            if (TryGetParentInteractive(out parentInteractive))
-                return parentInteractive.TryHandleTooltipActivationClick(rightClick, out tooltipParent);
-
-            return base.TryHandleTooltipActivationClick(rightClick, out tooltipParent);
+            get
+            {
+                InteractiveSurfaceScript parentInteractive;
+                return TryGetParentInteractive(out parentInteractive)
+                    ? parentInteractive.PointerInputOwner
+                    : this;
+            }
         }
 
-        public override bool IsInsideContainer(ControlTemplate entry, Vector2 position)
+        public override void SetPointerButtonState(ControlClickButton button, bool pressed)
         {
             InteractiveSurfaceScript parentInteractive;
             if (TryGetParentInteractive(out parentInteractive))
-                return parentInteractive.IsInsideContainer(entry, position);
+                parentInteractive.SetPointerButtonState(button, pressed);
+            else
+                base.SetPointerButtonState(button, pressed);
+        }
 
-            return base.IsInsideContainer(entry, position);
+        public override void ResetPointerButtonInput()
+        {
+            InteractiveSurfaceScript parentInteractive;
+            if (TryGetParentInteractive(out parentInteractive))
+                parentInteractive.ResetPointerButtonInput();
+            else
+                base.ResetPointerButtonInput();
         }
 
         public override List<MySprite> GetSprites()

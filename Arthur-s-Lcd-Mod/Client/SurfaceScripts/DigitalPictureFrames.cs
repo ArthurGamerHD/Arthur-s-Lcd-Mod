@@ -63,8 +63,6 @@ namespace LcdMod.Client.SurfaceScripts
         protected override string DefaultTitle => TITLE;
         public override IApp App => _app;
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
-        public override List<Control> InteractiveList => _app.VisualChildren as List<Control>;
-
         public List<MyTerminalControlComboBoxItem> GetDisplayModes()
         {
             return PictureFrameDisplayModes;
@@ -101,6 +99,7 @@ namespace LcdMod.Client.SurfaceScripts
             if (_app == null)
                 _app = new DigitalPictureFramesApp(this);
 
+            EnsureRetainedAppView(_app);
             _app.Update();
             RenderSprites();
         }
@@ -112,8 +111,7 @@ namespace LcdMod.Client.SurfaceScripts
                 return sprites;
 
             AddBackground(sprites);
-            DrawTitle(sprites);
-            sprites.AddRange(_app.GetSprites());
+            DrawRetainedAppView(sprites);
             return sprites;
         }
     }
