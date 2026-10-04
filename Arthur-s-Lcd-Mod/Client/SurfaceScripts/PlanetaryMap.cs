@@ -27,9 +27,7 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override bool AsyncRender => false;
         
-        readonly List<Control> _emptyInteractive = new List<Control>();
         PlanetaryMapApp _app;
-        Matrix _rotationTransform = Matrix.Identity;
 
         protected override string DefaultTitle
         {
@@ -37,21 +35,9 @@ namespace LcdMod.Client.SurfaceScripts
         }
 
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
-        protected override bool RendersInteractiveEntriesInGetSprites { get { return true; } }
-
         public override IApp App
         {
             get { return _app; }
-        }
-
-        public override List<Control> InteractiveList
-        {
-            get
-            {
-                return _app != null
-                    ? _app.VisualChildren as List<Control> ?? _emptyInteractive
-                    : _emptyInteractive;
-            }
         }
 
         public PlanetaryMapSurfaceScript(
@@ -73,12 +59,13 @@ namespace LcdMod.Client.SurfaceScripts
         {
             if (_app == null)
             {
-                _app = new PlanetaryMapApp(this, _rotationTransform);
+                _app = new PlanetaryMapApp(this);
                 _app.LayoutChanged();
             }
 
+            EnsureRetainedAppView(_app);
             _app.Update();
-            CursorType = _app.RequestedCursorType;
+            CursorType = ResolveRetainedCursorType();
             RenderSprites();
         }
 
@@ -87,8 +74,7 @@ namespace LcdMod.Client.SurfaceScripts
             var sprites = new List<MySprite>();
             AddBackground(sprites);
             if (_app != null)
-                sprites.AddRange(_app.GetSprites());
-            DrawTitle(sprites);
+                DrawRetainedAppView(sprites);
             return sprites;
         }
 

@@ -34,12 +34,9 @@ namespace LcdMod.Client.SurfaceScripts
         public const string TITLE = MOD_PREFIX + "StarMapSurface";
         protected override string DefaultTitle => TITLE;
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
-        protected override bool RendersInteractiveEntriesInGetSprites => true;
         public override IApp App => _app;
         public override bool AsyncRender => false;
         StarMapApp _app;
-
-        public override List<Control> InteractiveList => _app.VisualChildren as List<Control>;
 
         public StarMapSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)
         {
@@ -56,7 +53,7 @@ namespace LcdMod.Client.SurfaceScripts
             if (_app != null)
             {
                 _app.LayoutChanged();
-                CursorType = _app.RequestedCursorType;
+                CursorType = ResolveRetainedCursorType();
             }
         }
 
@@ -68,8 +65,9 @@ namespace LcdMod.Client.SurfaceScripts
                 _app.LayoutChanged();
             }
 
+            EnsureRetainedAppView(_app);
             _app.Update();
-            CursorType = _app.RequestedCursorType;
+            CursorType = ResolveRetainedCursorType();
             RenderSprites();
         }
 
@@ -79,27 +77,18 @@ namespace LcdMod.Client.SurfaceScripts
             AddBackground(sprites);
             if (_app != null)
             {
-                sprites.AddRange(_app.GetSprites());
-                RenderInteractiveEntryVisuals(sprites);
-                _app.RenderPostInteractiveSprites(sprites);
+                DrawRetainedAppView(sprites);
             }
-            DrawTitle(sprites);
-            CursorType = _app?.RequestedCursorType ?? CursorType.Default;
+            CursorType = ResolveRetainedCursorType();
             return sprites;
         }
 
-        protected override void OnLookAt(Vector2 onScreenCoordinates)
+        protected override CursorType ResolveRetainedCursorType()
         {
-            if (_app != null)
-                _app.OnLookAt(onScreenCoordinates);
-            base.OnLookAt(onScreenCoordinates);
+            return _app != null && _app.RequestedCursorType == CursorType.None
+                ? CursorType.None
+                : base.ResolveRetainedCursorType();
         }
 
-        protected override void OnMouseScroll(int delta, ref bool handled)
-        {
-            base.OnMouseScroll(delta, ref handled);
-            if (_app != null)
-                _app.OnMouseScroll(delta, ref handled);
-        }
     }
 }

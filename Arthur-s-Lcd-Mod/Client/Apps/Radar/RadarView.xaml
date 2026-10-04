@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    xmlns="https://github.com/ArthurGamerHD/Adk"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:radar="using:LcdMod.Client.Apps.Radar"
+    x:Class="LcdMod.Client.Apps.Radar.RadarView"
+    x:DataType="radar:RadarViewModel">
+  <Grid>
+    <TextBlock Text="{Binding DebugText}" Foreground="{Binding DebugColor}" IsVisible="{Binding HasDebug}"
+               FontFamily="{DynamicResource textFont}" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0 8" />
+    <Border VerticalAlignment="Bottom" Background="{Binding FooterBackground}" Padding="0 0 0 6"
+            IsVisible="{Binding ShowFooter}">
+      <StackPanel>
+        <Grid ColumnDefinitions="Auto,*" Height="20" Margin="6 0" IsVisible="{Binding ShowWarning}">
+          <Border Width="12" Height="12" Margin="0 0 5 0" VerticalAlignment="Center"
+                  Background="{Binding WarningColor}" OpacityMask="{Binding WarningIcon}" />
+          <TextBlock Grid.Column="1" Text="{Binding WarningText}" Foreground="{Binding WarningColor}"
+                     FontSize="{Binding WarningFontSize}" FontFamily="{DynamicResource textFont}"
+                     TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+        </Grid>
+        <Grid ColumnDefinitions="*,Auto" Height="20" Margin="6 0" IsVisible="{Binding HasContacts}">
+          <TextBlock Text="{Binding HeaderTitle}" Foreground="{Binding HeaderColor}" FontSize="{Binding HeaderFontSize}"
+                     FontFamily="{DynamicResource textFont}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+          <TextBlock Grid.Column="1" Margin="8 0 0 0" Text="{Binding RangeText}" Foreground="{Binding HeaderColor}"
+                     FontSize="{Binding HeaderFontSize}" FontFamily="{DynamicResource textFont}"
+                     VerticalAlignment="Center" />
+        </Grid>
+        <ItemsControl ItemsSource="{Binding Contacts}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="radar:RadarContactRow">
+              <Grid ColumnDefinitions="Auto,*" Height="20" Margin="6 0">
+                <Border Width="10" Height="10" Margin="1 0 7 0" VerticalAlignment="Center"
+                        Background="{Binding IconColor}" OpacityMask="{Binding IconMask}" />
+                <TextBlock Grid.Column="1" Text="{Binding Text}" FontSize="{Binding FontSize}"
+                           FontFamily="{DynamicResource textFont}" Foreground="{DynamicResource fontColor}"
+                           TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+              </Grid>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </Border>
+  </Grid>
+</UserControl>

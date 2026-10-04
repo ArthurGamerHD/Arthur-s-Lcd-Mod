@@ -7,6 +7,12 @@
             <SpritePath>Textures/Sprites/MouseCursorHand.dds</SpritePath>
             <Selectable>false</Selectable>
         </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Closed hand while dragging a map -->
+            <Id Type="LCDTextureDefinition" Subtype="CursorGrab"/>
+            <SpritePath>Textures/Sprites/MouseCursorHandGrab.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
         
         <LCDTextureDefinition> <!-- Custom Warning Sprite -->
             <Id Type="LCDTextureDefinition" Subtype="Warning"/>
@@ -287,6 +293,42 @@
         <LCDTextureDefinition> <!-- Planetary Map: Water overlay sprite -->
             <Id Type="LCDTextureDefinition" Subtype="WaterIcon"/>
             <SpritePath>Textures/Sprites/WaterIcon.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Maps: orientation compass -->
+            <Id Type="LCDTextureDefinition" Subtype="CompassIcon"/>
+            <SpritePath>Textures/Sprites/CompassIcon.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Star Map: planet information toggle -->
+            <Id Type="LCDTextureDefinition" Subtype="Info"/>
+            <SpritePath>Textures/Sprites/Info.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Star Map: orbit lines shown -->
+            <Id Type="LCDTextureDefinition" Subtype="OrbitOn"/>
+            <SpritePath>Textures/Sprites/OrbitOn.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Star Map: orbit lines hidden -->
+            <Id Type="LCDTextureDefinition" Subtype="OrbitOff"/>
+            <SpritePath>Textures/Sprites/OrbitOff.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Maps: reference position arrow -->
+            <Id Type="LCDTextureDefinition" Subtype="GpsArrow"/>
+            <SpritePath>Textures/Sprites/GpsArrow.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Maps: GPS waypoint -->
+            <Id Type="LCDTextureDefinition" Subtype="WaypointIcon"/>
+            <SpritePath>Textures/Sprites/WaypointIcon.dds</SpritePath>
             <Selectable>false</Selectable>
         </LCDTextureDefinition>
     </LCDTextures>

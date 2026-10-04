@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    xmlns="https://github.com/ArthurGamerHD/Adk"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:maps="using:LcdMod.Client.Apps.Maps"
+    xmlns:star="using:LcdMod.Client.Apps.StarMap"
+    x:Class="LcdMod.Client.Apps.StarMap.StarMapSceneView"
+    x:DataType="star:StarMapViewModel">
+  <UserControl.Styles>
+    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/Maps.xaml" />
+  </UserControl.Styles>
+  <Grid>
+    <maps:CartographyMapView Surface="{Binding Surface}" Version="{Binding Version}" Markers="{Binding Markers}"
+                             MarkersVersion="{Binding MarkersVersion}" FontFamily="{DynamicResource textFont}" />
+    <star:StarMapHudView Hud="{Binding Hud}" Version="{Binding HudVersion}" />
+  </Grid>
+</UserControl>

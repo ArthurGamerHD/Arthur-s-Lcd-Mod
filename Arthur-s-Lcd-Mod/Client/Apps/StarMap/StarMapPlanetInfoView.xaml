@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    xmlns="https://github.com/ArthurGamerHD/Adk"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:star="using:LcdMod.Client.Apps.StarMap"
+    x:Class="LcdMod.Client.Apps.StarMap.StarMapPlanetInfoView"
+    x:DataType="star:StarMapPlanetInfo">
+  <Border Classes="map-info" IsVisible="{Binding IsVisible}">
+    <StackPanel Spacing="2">
+      <TextBlock Classes="map-info-title" Text="{Binding Name}" />
+      <ItemsControl ItemsSource="{Binding Lines}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="star:StarMapInfoLine">
+            <TextBlock Classes="map-info-line" Text="{Binding Text}" />
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <Button Classes="map-info-action hyperlink" Command="{Binding PositionCommand}">
+        <TextBlock Classes="map-info-link" Text="{Binding PositionText}" />
+      </Button>
+      <Button Classes="map-info-action hyperlink" Command="{Binding JumpCommand}" IsEnabled="{Binding CanJump}">
+        <TextBlock Classes="map-info-link" Text="{Binding JumpText}" />
+      </Button>
+    </StackPanel>
+  </Border>
+</UserControl>

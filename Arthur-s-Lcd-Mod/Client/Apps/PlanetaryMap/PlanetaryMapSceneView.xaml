@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    xmlns="https://github.com/ArthurGamerHD/Adk"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:maps="using:LcdMod.Client.Apps.Maps"
+    xmlns:planetary="using:LcdMod.Client.Apps.PlanetaryMap"
+    x:Class="LcdMod.Client.Apps.PlanetaryMap.PlanetaryMapSceneView"
+    x:DataType="planetary:PlanetaryMapViewModel">
+  <maps:CartographyMapView Surface="{Binding Surface}" Version="{Binding Version}" Markers="{Binding Markers}"
+                           MarkersVersion="{Binding MarkersVersion}" FontFamily="{DynamicResource textFont}"
+                           IsVisible="{Binding HasMap}" />
+</UserControl>

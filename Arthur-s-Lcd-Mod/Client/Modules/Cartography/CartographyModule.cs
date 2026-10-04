@@ -10,6 +10,7 @@ namespace LcdMod.Client.Modules.Cartography
 {
     public sealed class CartographyModule
     {
+        internal readonly Maps.SessionSkybox Skybox = new Maps.SessionSkybox();
         const long VOXEL_CUBEMAP_API_REPLY_CHANNEL =
             (LcdMod.Common.Helpers.Constants.WORKSHOP_ID << 8) | 2L;
 
@@ -739,6 +740,7 @@ namespace LcdMod.Client.Modules.Cartography
 
         public void Clear()
         {
+            Skybox.Clear();
             List<RuntimePlanetMetadataRegistration> runtimeMetadata;
             lock (_sync)
             {

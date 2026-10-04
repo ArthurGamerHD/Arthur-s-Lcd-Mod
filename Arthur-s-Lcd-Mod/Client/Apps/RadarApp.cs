@@ -2,16 +2,10 @@ using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Config;
 using LcdMod.Client.Extensions;
-using LcdMod.Client.Gui;
-using LcdMod.Client.Gui.ControlsTemplates;
-using LcdMod.Client.Gui.ControlsTemplates.Basic;
-using LcdMod.Client.Gui.ControlsTemplates.Custom.Camera;
-using LcdMod.Client.Gui.ControlsTemplates.Panels;
-using StackPanelControl = LcdMod.Client.Gui.ControlsTemplates.Panels.StackPanel.StackPanel;
+using LcdMod.Client.Apps.Radar;
 using LcdMod.Client.Helpers;
 using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
@@ -45,7 +39,7 @@ namespace LcdMod.Client.Apps
 
     [ConfigComponent(APP, typeof(RadarConfigComponent), PropertyName = "RadarComponent")]
 
-    public partial class RadarApp : App, IApp
+    public partial class RadarApp : App, IApp, IRadarCamera
     {
         public const string ID = MOD_PREFIX + "Radar";
         public const string TITLE = MOD_PREFIX + "Radar";
@@ -60,40 +54,20 @@ namespace LcdMod.Client.Apps
         const float DEFAULT_RANGE = 3000f;
         const string LONG_RANGE_WARNING_KEY = MOD_PREFIX + "Radar_AntennaRangeWarning";
 
-        const float LOCK_ANIM_DISTANCE = 20f;
-
         // Timing intervals (Run() calls; each call ≈ 166 ms at Update10)
         const int CONTACT_TIMEOUT = 36;
 
         const int MAX_CONTACTS = 32;
 
-        // Visual sizes in logical pixels scaled by Scale at render time
-        const float RADAR_MARGIN_PX = 14f;
-
-        const float RANGE_TEXT_SIZE = 1.2f;
-        const float DOT_SIZE = 16f;
-        const float QUADRANT_LABEL_TEXT_SIZE = 0.6f;
-        const float QUADRANT_LABEL_MARGIN_PX = 10f;
-        const float SIZE_TO_PX = 28.8f;
-        const float TGT_ELEVATION_LINE_WIDTH = 4f;
-        const float RADAR_RANGE_LINE_WIDTH = 8f;
-        const float QUADRANT_LINE_WIDTH = 4f;
-        const float QUADRANT_LINE_COVERAGE_PER_SIDE = .8f;
-        const float PROJECTION_ANGLE_DEG = 55f;
         const float CAMERA_PAN_CONFIG_EPSILON_METERS = 0.001f;
         const float CAMERA_ZOOM_CONFIG_EPSILON = 0.0001f;
         const float CAMERA_MIN_ZOOM_SCALE = 0.1f;
         const float CAMERA_MAX_ZOOM_SCALE = 10f;
         const float CAMERA_DEFAULT_ZOOM_SCALE = 1f;
         const float CAMERA_MAX_PAN_RANGE_RATIO = 1f;
-        const int FOOTER_MAX_ROWS = 4;
-        const float FOOTER_ROW_HEIGHT_PX = 20f;
-        const float FOOTER_BOTTOM_PADDING_PX = 6f;
-        const float FOOTER_WARNING_TEXT_SIZE = 0.46f;
-        const float FOOTER_WARNING_ICON_SIZE_PX = 13f;
-        const float FOOTER_WARNING_ICON_GAP_PX = 5f;
         const int FOOTER_SCROLL_STEP_SECONDS = 2;
-
+        const int FOOTER_MAX_CONTACT_ROWS = 4;
+        const float CAMERA_ZOOM_STEP = 1.1f;
 
         readonly Dictionary<long, ContactRecord> _contacts = new Dictionary<long, ContactRecord>();
         readonly HashSet<long> _seenThisFrame = new HashSet<long>();
@@ -103,409 +77,36 @@ namespace LcdMod.Client.Apps
         readonly List<ContactRecord> _sortedContacts = new List<ContactRecord>();
         readonly List<IMyCubeGrid> _tempGroupGrids = new List<IMyCubeGrid>();
         readonly List<IMySlimBlock> _tempSlimBlocks = new List<IMySlimBlock>();
+        readonly List<IMyEntity> _tempEntities = new List<IMyEntity>();
+        readonly RadarViewModel _viewModel = new RadarViewModel();
 
         float _maxRange = DEFAULT_RANGE;
         Vector2 _cameraPanMeters;
         float _cameraZoomScale = CAMERA_DEFAULT_ZOOM_SCALE;
+        float _cameraYaw;
+        float _cameraPitch = RadarScene.DEFAULT_PITCH;
         bool _syncConfigNextRun;
         long _debugLockedTargetEntityId;
         float _debugLockedTargetPercent;
         string _debugLockedTargetName = string.Empty;
-
-        readonly List<IMyEntity> _tempEntities = new List<IMyEntity>();
-        readonly Vector2 _tgtIconSize = new Vector2(20f, 20f);
-        readonly Vector2 _shipIconSize = new Vector2(32f, 16f);
-        readonly Vector2 _borderPadding = new Vector2(16f, 64f);
-        readonly List<TargetInfo> _targetsBelowPlane = new List<TargetInfo>();
-        readonly List<TargetInfo> _targetsAbovePlane = new List<TargetInfo>();
-        readonly List<MySprite> _backgroundSprites = new List<MySprite>();
-        readonly List<Control> _children = new List<Control>();
-        readonly List<ControlTemplate> _footerRows = new List<ControlTemplate>();
-        readonly List<ContactEntryControl> _footerContactControls = new List<ContactEntryControl>();
-        readonly PanAndZoomCam _cameraControl;
-        readonly RadarSceneControl _radarSceneControl;
-        readonly RadarFooterControl _footerControl;
-        readonly FooterHeaderControl _footerHeaderControl;
-        readonly IconTextRowControl _footerWarningControl;
         long _cachedCharacterId;
         Sandbox.Game.EntityComponents.MyTargetLockingComponent _cachedCharacterTargetLocking;
-        float _radarProjectionCos;
-        float _radarProjectionSin;
-        float _footerHeight;
-
-        struct RadarLayout
-        {
-            public Vector2 ViewCenter;
-            public Vector2 ContentCenter;
-            public Vector2 PlaneSize;
-            public RectangleF ViewportBounds;
-            public float RadarScale;
-            public float ContentScale;
-            public float CappedScale;
-            public float WorldRange;
-            public float WorldUnitsPerPixelX;
-            public float WorldUnitsPerPixelY;
-        }
-
-        sealed class RadarSceneControl : RectangleControl
-        {
-            readonly RadarApp _owner;
-
-            public RadarSceneControl(RadarApp owner)
-                : base(default(RectangleF), CursorType.Default)
-            {
-                _owner = owner;
-            }
-
-            protected override void RenderDefault(List<MySprite> sprites)
-            {
-                _owner.RenderRadar(sprites);
-            }
-
-            protected override bool HitCore(Vector2 point)
-            {
-                return false;
-            }
-        }
-
-        sealed class RadarFooterControl : Panel
-        {
-            readonly StackPanelControl _rowsPanel;
-
-            public RadarFooterControl()
-                : base(default(RectangleF))
-            {
-                _rowsPanel = new StackPanelControl();
-                _rowsPanel.Gap = 0f;
-                AddChild(_rowsPanel);
-            }
-
-            public Color FooterBackgroundColor { get; set; }
-
-            public void SetRowHeight(float rowHeight)
-            {
-                _rowsPanel.RowHeight = rowHeight;
-            }
-
-            public void SetRows(IList<ControlTemplate> rows)
-            {
-                var children = _rowsPanel.VisualChildren;
-                bool changed = children == null || rows == null || children.Count != rows.Count;
-                if (!changed)
-                {
-                    for (int i = 0; i < rows.Count; i++)
-                    {
-                        if (!ReferenceEquals(children[i], rows[i]))
-                        {
-                            changed = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (!changed)
-                    return;
-
-                _rowsPanel.ClearChildren();
-                if (rows == null)
-                    return;
-
-                for (int i = 0; i < rows.Count; i++)
-                    _rowsPanel.AddChild(rows[i]);
-            }
-
-            protected override void ArrangeChildren()
-            {
-                _rowsPanel.SetRect(Rect);
-            }
-
-            protected override void RenderDefault(List<MySprite> sprites)
-            {
-                var rect = Rect;
-                if (rect.Width <= 0f || rect.Height <= 0f)
-                    return;
-
-                sprites.Add(new MySprite
-                {
-                    Type = SpriteType.TEXTURE,
-                    Data = "SquareSimple",
-                    Position = rect.Center,
-                    Size = rect.Size,
-                    Color = FooterBackgroundColor,
-                    Alignment = TextAlignment.CENTER
-                });
-
-                sprites.Add(MySprite.CreateClipRect(ToClipRectangle(rect)));
-                RenderChildren(sprites);
-                sprites.Add(MySprite.CreateClearClipRect());
-            }
-
-            protected override bool HitCore(Vector2 point)
-            {
-                return false;
-            }
-
-            protected override bool CanResolveChildren(Vector2 point, bool selfHit)
-            {
-                return false;
-            }
-        }
-
-        sealed class SpriteImageControl : RectangleControl
-        {
-            public SpriteImageControl()
-                : base(default(RectangleF))
-            {
-                SpriteName = "MissingIcon";
-                SizeRatio = 0.8f;
-            }
-
-            public string SpriteName { get; set; }
-            public Color Tint { get; set; }
-            public float SizeRatio { get; set; }
-
-            protected override void RenderDefault(List<MySprite> sprites)
-            {
-                var rect = GetViewBox();
-                if (rect.Width <= 0f || rect.Height <= 0f)
-                    return;
-
-                float size = Math.Max(
-                    1f,
-                    Math.Min(rect.Width, rect.Height) * MathHelper.Clamp(SizeRatio, 0.1f, 1f));
-                sprites.Add(new MySprite
-                {
-                    Type = SpriteType.TEXTURE,
-                    Data = string.IsNullOrWhiteSpace(SpriteName) ? "MissingIcon" : SpriteName,
-                    Position = rect.Center,
-                    Size = new Vector2(size),
-                    Color = Tint,
-                    Alignment = TextAlignment.CENTER
-                });
-            }
-
-            protected override bool HitCore(Vector2 point)
-            {
-                return false;
-            }
-        }
-
-        class IconTextRowControl : RectangleControl
-        {
-            readonly SpriteImageControl _image;
-            readonly TextBlock _text;
-
-            public IconTextRowControl()
-                : base(default(RectangleF))
-            {
-                _image = new SpriteImageControl();
-                _text = new TextBlock(default(RectangleF))
-                {
-                    Ellipsize = true,
-                    HorizontalAlignment = TextAlignment.LEFT,
-                    VerticalAlignment = TextBlockVerticalAlignment.Center
-                };
-
-                IconSizePixels = 12f;
-                GapPixels = 6f;
-                HorizontalPaddingPixels = 6f;
-
-                AddChild(_image);
-                AddChild(_text);
-            }
-
-            public float IconSizePixels { get; set; }
-            public float GapPixels { get; set; }
-            public float HorizontalPaddingPixels { get; set; }
-
-            public void SetContent(
-                string spriteName,
-                string text,
-                Color imageTint,
-                Color textColor,
-                float fontScale,
-                float imageSizeRatio)
-            {
-                _image.SpriteName = spriteName;
-                _image.Tint = imageTint;
-                _image.SizeRatio = imageSizeRatio;
-                _text.Text = text ?? string.Empty;
-                _text.TextColor = textColor;
-                _text.FontScale = fontScale;
-            }
-
-            public override void Arrange(RectangleF bounds)
-            {
-                base.Arrange(bounds);
-                ArrangeChildren();
-            }
-
-            protected override void RenderDefault(List<MySprite> sprites)
-            {
-                ArrangeChildren();
-                _image.Render(sprites);
-                _text.Render(sprites);
-            }
-
-            void ArrangeChildren()
-            {
-                var rect = GetViewBox();
-                if (rect.Width <= 0f || rect.Height <= 0f)
-                    return;
-
-                float layoutScale = Math.Max(0.01f, LayoutScale);
-                float pad = HorizontalPaddingPixels * layoutScale;
-                float gap = GapPixels * layoutScale;
-                float iconSize = Math.Max(1f, Math.Min(rect.Height, IconSizePixels * layoutScale));
-                var iconRect = new RectangleF(
-                    rect.X + pad,
-                    rect.Center.Y - iconSize * 0.5f,
-                    iconSize,
-                    iconSize);
-                var textRect = new RectangleF(
-                    iconRect.Right + gap,
-                    rect.Y,
-                    Math.Max(1f, rect.Right - iconRect.Right - gap - pad),
-                    rect.Height);
-
-                _image.Arrange(iconRect);
-                _text.Arrange(textRect);
-            }
-
-            protected override bool HitCore(Vector2 point)
-            {
-                return false;
-            }
-        }
-
-        sealed class ContactEntryControl : IconTextRowControl
-        {
-        }
-
-        sealed class FooterHeaderControl : RectangleControl
-        {
-            readonly TextBlock _title;
-            readonly TextBlock _range;
-
-            public FooterHeaderControl()
-                : base(default(RectangleF))
-            {
-                _title = new TextBlock(default(RectangleF))
-                {
-                    Ellipsize = true,
-                    FontScale = 0.55f,
-                    HorizontalAlignment = TextAlignment.LEFT,
-                    VerticalAlignment = TextBlockVerticalAlignment.Center
-                };
-                _range = new TextBlock(default(RectangleF))
-                {
-                    Ellipsize = true,
-                    FontScale = 0.55f,
-                    HorizontalAlignment = TextAlignment.RIGHT,
-                    VerticalAlignment = TextBlockVerticalAlignment.Center
-                };
-
-                AddChild(_title);
-                AddChild(_range);
-            }
-
-            public void SetHeader(string title, string range, Color textColor)
-            {
-                _title.Text = title ?? string.Empty;
-                _range.Text = range ?? string.Empty;
-                _title.TextColor = textColor;
-                _range.TextColor = textColor;
-            }
-
-            public override void Arrange(RectangleF bounds)
-            {
-                base.Arrange(bounds);
-                ArrangeChildren();
-            }
-
-            protected override void RenderDefault(List<MySprite> sprites)
-            {
-                ArrangeChildren();
-                _title.Render(sprites);
-                _range.Render(sprites);
-            }
-
-            void ArrangeChildren()
-            {
-                var rect = GetViewBox();
-                if (rect.Width <= 0f || rect.Height <= 0f)
-                    return;
-
-                float pad = 6f * Math.Max(0.01f, LayoutScale);
-                float gap = 8f * Math.Max(0.01f, LayoutScale);
-                float contentWidth = Math.Max(1f, rect.Width - pad * 2f);
-                float rangeWidth = Math.Max(1f, contentWidth * 0.45f);
-                float titleWidth = Math.Max(1f, contentWidth - rangeWidth - gap);
-
-                _title.Arrange(new RectangleF(rect.X + pad, rect.Y, titleWidth, rect.Height));
-                _range.Arrange(new RectangleF(
-                    rect.Right - pad - rangeWidth,
-                    rect.Y,
-                    rangeWidth,
-                    rect.Height));
-            }
-
-            protected override bool HitCore(Vector2 point)
-            {
-                return false;
-            }
-        }
 
         readonly IAppHost _host;
         IMyCubeBlock Block => _host.Block;
-        Sandbox.ModAPI.Ingame.IMyTextSurface Surface => _host.Surface;
-        RectangleF ViewBox => _host.ViewBox;
-        float Scale => _host.ConfiguredScale;
         float FontScale => _host.Surface.FontSize;
-        float LayoutScale => Scale * FontScale;
         Color ForegroundColor => _host.ForegroundColor;
         Color BackgroundColor => _host.BackgroundColor;
-        public override IReadOnlyList<Control> VisualChildren => _children;
-
-        struct TargetInfo
-        {
-            public Vector3 Position;
-            public Color IconColor;
-            public string IconTexture;
-            public Color ElevationColor;
-            public bool TargetLock;
-            public float TargetLockPercent;
-            public bool AbovePlane;
-            public Action<List<MySprite>, Vector2, Color, float, float> DrawFunction;
-        }
-
+        internal override float WindowRenderScaling => CardScale;
 
         public RadarApp(IAppHost host)
             : base(host)
         {
             _host = host;
-            _cameraControl = AddLogicalChild(
-                new PanAndZoomCam(default(RectangleF)));
-            _cameraControl.PanChanged = OnCameraDragged;
-            _cameraControl.ZoomStep = 1.1f;
-            _cameraControl.ZoomValueProvider = delegate { return _cameraZoomScale; };
-            _cameraControl.NormalizeZoomValue = ClampCameraZoomScale;
-            _cameraControl.ZoomChanged = OnCameraZoomChanged;
-            _cameraControl.CanZoomByWheel = CanScrollCameraZoom;
-
-            _radarSceneControl = new RadarSceneControl(this);
-            _cameraControl.AddChild(_radarSceneControl);
-
-            _footerControl = AddLogicalChild(new RadarFooterControl());
-            _footerHeaderControl = new FooterHeaderControl();
-            _footerWarningControl = new IconTextRowControl
-            {
-                IconSizePixels = FOOTER_WARNING_ICON_SIZE_PX,
-                GapPixels = FOOTER_WARNING_ICON_GAP_PX
-            };
-
-            _children.Add(_cameraControl);
-            _children.Add(_footerControl);
+            _viewModel.Scene.Camera = this;
+            _viewModel.Scene.RingDistances = new[] { RING_1_M, RING_2_M, RING_3_M };
+            SetBackgroundContent(new RadarSceneView { DataContext = _viewModel });
+            SetContent(new RadarView { DataContext = _viewModel });
         }
 
         public override void Update()
@@ -516,22 +117,13 @@ namespace LcdMod.Client.Apps
             CollectContacts();
             PurgeStaleContacts();
             BuildSortedContacts();
-            UpdateFooterHeights();
-            UpdateFooterControls();
-        }
-
-        public override void LayoutChanged()
-        {
-            UpdateCameraControlBounds();
-            UpdateFooterControlBounds();
+            UpdateScene();
+            UpdateFooter();
         }
 
         public override List<MySprite> GetSprites()
         {
-            _backgroundSprites.Clear();
-            UpdateCameraControlBounds();
-            UpdateFooterControlBounds();
-            return _backgroundSprites;
+            return new List<MySprite>();
         }
 
         void CollectContacts()
@@ -791,6 +383,23 @@ namespace LcdMod.Client.Apps
         {
             _cameraPanMeters = ClampCameraPan(GetConfigCameraPan(RadarComponent));
             _cameraZoomScale = ClampCameraZoomScale(RadarComponent.CameraZoomScale);
+            _cameraYaw = NormalizeYaw(RadarComponent.CameraYawRadians);
+            _cameraPitch = ClampPitch(RadarComponent.CameraPitchRadians);
+        }
+
+        static float NormalizeYaw(float yaw)
+        {
+            if (!IsFinite(yaw))
+                return 0f;
+            yaw %= MathHelper.TwoPi;
+            return yaw < 0f ? yaw + MathHelper.TwoPi : yaw;
+        }
+
+        static float ClampPitch(float pitch)
+        {
+            return IsFinite(pitch)
+                ? MathHelper.Clamp(pitch, RadarCamera.MINIMUM_PITCH, RadarCamera.MAXIMUM_PITCH)
+                : RadarScene.DEFAULT_PITCH;
         }
 
         void PersistRadarCameraConfig()
@@ -809,6 +418,13 @@ namespace LcdMod.Client.Apps
             if (!NearlyEqual(ClampCameraZoomScale(config.CameraZoomScale), cameraZoomScale))
             {
                 config.CameraZoomScale = cameraZoomScale;
+                changed = true;
+            }
+
+            if (!NearlyEqual(config.CameraYawRadians, _cameraYaw) || !NearlyEqual(config.CameraPitchRadians, _cameraPitch))
+            {
+                config.CameraYawRadians = _cameraYaw;
+                config.CameraPitchRadians = _cameraPitch;
                 changed = true;
             }
 
@@ -831,11 +447,6 @@ namespace LcdMod.Client.Apps
                 zoomScale = CAMERA_DEFAULT_ZOOM_SCALE;
 
             return MathHelper.Clamp(zoomScale, CAMERA_MIN_ZOOM_SCALE, CAMERA_MAX_ZOOM_SCALE);
-        }
-
-        static bool CanScrollCameraZoom()
-        {
-            return !IsRangeScrollModifierPressed();
         }
 
         static bool IsRangeScrollModifierPressed()
@@ -1173,176 +784,232 @@ namespace LcdMod.Client.Apps
                 _contacts.Remove(t);
         }
 
-
-        void RenderRadar(List<MySprite> sprites)
+        void UpdateScene()
         {
-            var lineColor = ForegroundColor;
-            var backColor = BackgroundColor;
-            var warnColor = ColorComponent.ResolveWarningColor();
-            var errColor = ColorComponent.ResolveErrorColor();
-            var allyColor = GetHeaderColor();
-            var planeColor = new Color(ForegroundColor, 0.12f);
-
-            RadarLayout layout;
-            if (!TryCalculateRadarLayout(out layout))
-            {
-                _cameraControl.SetVisible(false);
-                return;
-            }
-
-            sprites.Add(MySprite.CreateClipRect(ToClipRectangle(layout.ViewportBounds)));
-
-            DrawRadarPlaneBackground(
-                sprites,
-                layout.ContentCenter,
-                layout.PlaneSize,
-                layout.WorldRange,
-                layout.ContentScale,
-                lineColor,
-                backColor,
-                planeColor);
-            DrawRadarPlane(sprites, layout.ContentCenter, layout.PlaneSize, layout.ContentScale, lineColor);
-
-            BuildTargetLayers(errColor, warnColor, allyColor, layout.WorldRange);
-            foreach (var t in _targetsBelowPlane)
-                DrawTargetIcon(sprites, layout.ContentCenter, layout.PlaneSize, t, layout.ContentScale);
-
-            foreach (var t in _targetsAbovePlane)
-                DrawTargetIcon(sprites, layout.ContentCenter, layout.PlaneSize, t, layout.ContentScale);
-
-            sprites.Add(MySprite.CreateClearClipRect());
+            RadarScene scene = _viewModel.Scene;
+            scene.WorldRange = GetWorldRange();
+            scene.ZoomScale = ClampCameraZoomScale(_cameraZoomScale);
+            scene.PanMeters = _cameraPanMeters;
+            scene.Yaw = _cameraYaw;
+            scene.Pitch = _cameraPitch;
+            scene.LineColor = ForegroundColor;
+            BuildTargets(scene, ColorComponent.ResolveErrorColor(), ColorComponent.ResolveWarningColor(), GetHeaderColor());
 
             if (_debugLockedTargetEntityId != 0)
+                _viewModel.SetDebug(
+                    "TARGET: " + (string.IsNullOrWhiteSpace(_debugLockedTargetName) ? "Unknown" : _debugLockedTargetName) +
+                    " (" + (_debugLockedTargetPercent * 100f).ToString("F0") + "%)",
+                    new Color(_debugLockedTargetPercent >= 0.99f ? ColorComponent.ResolveErrorColor() : ColorComponent.ResolveWarningColor(), .85f));
+            else
+                _viewModel.SetDebug(null, Color.Transparent);
+            _viewModel.InvalidateScene();
+        }
+
+        void BuildTargets(RadarScene scene, Color errColor, Color warnColor, Color allyColor)
+        {
+            scene.Targets.Clear();
+
+            MatrixD gridMatrix;
+            if (!TryGetReferenceWorldMatrix(out gridMatrix))
+                gridMatrix = Block.WorldMatrix;
+            int shown = Math.Min(_sortedContacts.Count, MAX_CONTACTS);
+            bool hasLockedTarget = false;
+            for (int i = 0; i < shown; i++)
             {
-                var debugText = "TARGET: " + (string.IsNullOrWhiteSpace(_debugLockedTargetName)
-                                               ? "Unknown"
-                                               : _debugLockedTargetName)
-                                           + " (" + (_debugLockedTargetPercent * 100f).ToString("F0") + "%)";
-                float debugScale = 0.5f * layout.RadarScale * FontScale;
-                float debugOffsetY =
-                    Surface.MeasureStringInPixels(new StringBuilder(debugText), TextFont, debugScale).Y * 0.5f;
-                var debugColor = _debugLockedTargetPercent >= 0.99f ? ColorComponent.ResolveErrorColor() : ColorComponent.ResolveWarningColor();
-                sprites.Add(new MySprite(
-                    SpriteType.TEXT,
-                    debugText,
-                    layout.ViewCenter + new Vector2(0f, layout.PlaneSize.Y * 0.5f + 12f * layout.RadarScale + debugOffsetY),
-                    null,
-                    new Color(debugColor, 0.85f),
-                    TextFont,
-                    TextAlignment.CENTER,
-                    debugScale));
+                RadarTarget info;
+                if (!TryBuildTargetInfo(_sortedContacts[i], gridMatrix, errColor, warnColor, allyColor, scene.WorldRange, out info))
+                    continue;
+
+                if (info.TargetLock)
+                    hasLockedTarget = true;
+
+                scene.Targets.Add(info);
+            }
+
+            if (hasLockedTarget)
+                Dim(scene.Targets, 1 - 0.5f * _debugLockedTargetPercent);
+        }
+
+        static void Dim(List<RadarTarget> targets, float multiplier)
+        {
+            for (int i = 0; i < targets.Count; i++)
+            {
+                RadarTarget info = targets[i];
+                if (info.TargetLock)
+                    continue;
+                info.IconColor = info.IconColor.MulSaturation(multiplier).MulValue(multiplier);
+                info.ElevationColor = info.ElevationColor.MulSaturation(multiplier).MulValue(multiplier);
+                targets[i] = info;
             }
         }
 
-        bool TryCalculateRadarLayout(out RadarLayout layout)
+        void UpdateFooter()
         {
-            layout = default(RadarLayout);
-            UpdateProjectionAngle();
+            bool showWarning = ShouldShowLongRangeWarning();
+            bool hasContacts = _sortedContacts.Count > 0;
+            _viewModel.SetFooter(showWarning || hasContacts, new Color(BackgroundColor.MulValue(0.8f), 0.5f));
+            _viewModel.SetFontScale(FontScale);
+            _viewModel.SetWarning(
+                showWarning ? LocHelper.GetLoc(LONG_RANGE_WARNING_KEY) : null,
+                new Color(ColorComponent.ResolveWarningColor(), 0.9f));
+            _viewModel.SetHeader(
+                LocHelper.GetLoc(MOD_PREFIX + "Radar_DetectedEntities"),
+                GetFooterRangeText(),
+                new Color(ForegroundColor, 0.75f),
+                ForegroundColor);
 
-            float radarScale = Scale;
-            float cameraZoomScale = ClampCameraZoomScale(_cameraZoomScale);
-            float cappedScale;
-            float cappedLayoutScale;
-            GetRadarCappedScales(out cappedScale, out cappedLayoutScale);
-            float margin = RADAR_MARGIN_PX * cappedScale;
-            float worldRange = GetWorldRange();
-            float areaTop = ViewBox.Y + margin;
-            float areaBottom = ViewBox.Bottom - margin;
-            float areaHeight = areaBottom - areaTop;
-            float areaWidth = ViewBox.Width - margin * 2f;
-            if (areaWidth <= 0f || areaHeight <= 0f)
+            int visibleEntries = GetVisibleFooterEntryCount(_sortedContacts.Count);
+            int startIndex = _sortedContacts.Count > visibleEntries
+                ? GetScrollStep(FOOTER_SCROLL_STEP_SECONDS) % _sortedContacts.Count
+                : 0;
+            var shipPos = Block.WorldMatrix.Translation;
+            var errColor = ColorComponent.ResolveErrorColor();
+            var warnColor = ColorComponent.ResolveWarningColor();
+            var allyColor = GetHeaderColor();
+            for (int i = 0; i < visibleEntries; i++)
+            {
+                ContactRecord contact = _sortedContacts[(startIndex + i) % _sortedContacts.Count];
+                _viewModel.ContactRow(i).Update(
+                    FooterIconTexture(contact),
+                    GetFooterContactText(contact, shipPos),
+                    ContactColor(contact, errColor, warnColor, allyColor),
+                    0.5f * FontScale);
+            }
+            _viewModel.SetContactCount(visibleEntries);
+        }
+
+        bool IRadarCamera.Scroll(int delta)
+        {
+            if (delta == 0)
+                return false;
+            if (IsRangeScrollModifierPressed())
+                return ScrollRangeByWheelDelta(delta);
+
+            float next = ClampCameraZoomScale(_cameraZoomScale * (delta > 0 ? CAMERA_ZOOM_STEP : 1f / CAMERA_ZOOM_STEP));
+            if (NearlyEqual(_cameraZoomScale, next))
                 return false;
 
-            Vector2 viewportCropped = new Vector2(
-                areaWidth,
-                areaHeight - (RANGE_TEXT_SIZE * SIZE_TO_PX + _borderPadding.Y) * cappedScale);
-            if (viewportCropped.X <= 0f || viewportCropped.Y <= 0f)
-                return false;
-
-            float sideLength = viewportCropped.X * _radarProjectionCos < viewportCropped.Y
-                ? viewportCropped.X
-                : viewportCropped.Y / _radarProjectionCos;
-
-            Vector2 viewCenter = new Vector2(ViewBox.Center.X, areaTop + viewportCropped.Y * 0.5f);
-            Vector2 planeSize = new Vector2(sideLength, sideLength * _radarProjectionCos) *
-                                GeneralComponent.GetScale() *
-                                cameraZoomScale;
-            if (planeSize.X <= 0f || planeSize.Y <= 0f)
-                return false;
-
-            float halfPlaneWidth = planeSize.X * 0.5f;
-            float worldUnitsPerPixelX = worldRange > 0f && halfPlaneWidth > 0f
-                ? worldRange / halfPlaneWidth
-                : 0f;
-            float worldUnitsPerPixelY = worldRange > 0f && halfPlaneWidth > 0f && _radarProjectionCos > 0.0001f
-                ? worldRange / (halfPlaneWidth * _radarProjectionCos)
-                : 0f;
-
-            Vector2 cameraOffsetPixels = ProjectCameraPanToScreen(planeSize, worldRange);
-
-            layout.ViewCenter = viewCenter;
-            layout.ContentCenter = viewCenter - cameraOffsetPixels;
-            layout.PlaneSize = planeSize;
-            layout.ViewportBounds = new RectangleF(
-                ViewBox.X,
-                ViewBox.Y,
-                ViewBox.Width,
-                Math.Max(1f, ViewBox.Height));
-            layout.RadarScale = radarScale;
-            layout.ContentScale = radarScale * cameraZoomScale;
-            layout.CappedScale = cappedScale;
-            layout.WorldRange = worldRange;
-            layout.WorldUnitsPerPixelX = worldUnitsPerPixelX;
-            layout.WorldUnitsPerPixelY = worldUnitsPerPixelY;
+            _cameraZoomScale = next;
+            _cameraPanMeters = ClampCameraPan(_cameraPanMeters);
+            CameraChanged();
             return true;
         }
 
-        Vector2 ProjectCameraPanToScreen(Vector2 radarPlaneSize, float worldRange)
+        bool IRadarCamera.Orbit(Vector2 deltaRadians)
+        {
+            float yaw = NormalizeYaw(_cameraYaw + deltaRadians.X);
+            float pitch = ClampPitch(_cameraPitch + deltaRadians.Y);
+            if (NearlyEqual(yaw, _cameraYaw) && NearlyEqual(pitch, _cameraPitch))
+                return false;
+
+            _cameraYaw = yaw;
+            _cameraPitch = pitch;
+            CameraChanged();
+            return true;
+        }
+
+        void IRadarCamera.ResetView()
+        {
+            _cameraYaw = 0f;
+            _cameraPitch = RadarScene.DEFAULT_PITCH;
+            _cameraPanMeters = Vector2.Zero;
+            _cameraZoomScale = CAMERA_DEFAULT_ZOOM_SCALE;
+            CameraChanged();
+        }
+
+        bool IRadarCamera.Pan(Vector2 deltaMeters)
+        {
+            Vector2 next = ClampCameraPan(_cameraPanMeters + deltaMeters);
+            if (NearlyEqual(_cameraPanMeters, next))
+                return false;
+
+            _cameraPanMeters = next;
+            CameraChanged();
+            return true;
+        }
+
+        void CameraChanged()
+        {
+            PersistRadarCameraConfig();
+            UpdateScene();
+            Host.RenderSprites();
+            CameraMoved?.Invoke();
+        }
+
+        static RadarMarker ContactMarker(ContactRecord contact)
+        {
+            switch (contact.Relationship)
+            {
+                case MyRelationsBetweenPlayerAndBlock.Owner:
+                case MyRelationsBetweenPlayerAndBlock.FactionShare:
+                    return RadarMarker.Square;
+                case MyRelationsBetweenPlayerAndBlock.Enemies:
+                    return RadarMarker.Circle;
+                default:
+                    return RadarMarker.Triangle;
+            }
+        }
+
+        bool TryGetReferenceWorldMatrix(out MatrixD world)
+        {
+            return _host.TryGetReferenceWorldMatrix(InteractionComponent.ReferenceMode, out world, true);
+        }
+
+        bool TryBuildTargetInfo(ContactRecord contact, MatrixD gridMatrix, Color errColor, Color warnColor,
+            Color allyColor,
+            float worldRange,
+            out RadarTarget targetInfo)
         {
             if (worldRange <= 0f)
-                return Vector2.Zero;
+            {
+                targetInfo = default(RadarTarget);
+                return false;
+            }
 
-            float scale = radarPlaneSize.X * 0.5f / worldRange;
-            return new Vector2(
-                _cameraPanMeters.X * scale,
-                _cameraPanMeters.Y * scale * _radarProjectionCos);
-        }
+            var transformedDirection =
+                Vector3D.TransformNormal(contact.WorldPosition - gridMatrix.Translation, MatrixD.Transpose(gridMatrix));
+            var position = new Vector3((float)transformedDirection.X, (float)transformedDirection.Z,
+                (float)transformedDirection.Y);
 
-        void UpdateCameraControlBounds()
-        {
-            RadarLayout layout;
-            if (TryCalculateRadarLayout(out layout))
-                ApplyCameraControlBounds();
+            bool inRange = position.X * position.X + position.Y * position.Y < worldRange * worldRange;
+            RadarMarker marker;
+
+            if (inRange)
+            {
+                position /= worldRange;
+                marker = ContactMarker(contact);
+            }
             else
-                _cameraControl.SetVisible(false);
-        }
+            {
+                Vector3 directionFlat = position;
+                directionFlat.Z = 0f;
+                if (directionFlat.LengthSquared() < 1e-6f)
+                {
+                    targetInfo = default(RadarTarget);
+                    return false;
+                }
 
-        void ApplyCameraControlBounds()
-        {
-            _cameraControl.SetVisible(true);
-            _cameraControl.SetRect(ViewBox);
-            _radarSceneControl.SetRect(ViewBox);
+                position = Vector3.Normalize(directionFlat);
+                marker = RadarMarker.OutOfRange;
+            }
+
+            Color iconColor = ContactColor(contact, errColor, warnColor, allyColor);
+            targetInfo = new RadarTarget
+            {
+                Position = position,
+                IconColor = iconColor,
+                IconTexture = contact.IconTexture,
+                ElevationColor = new Color(iconColor, 0.7f),
+                TargetLock = contact.IsTargeted,
+                TargetLockPercent = contact.TargetLockPercent,
+                Marker = marker
+            };
+            return true;
         }
 
         bool ShouldShowLongRangeWarning()
         {
             return _maxRange > DEFAULT_RANGE + 0.5f;
-        }
-
-        public override void OnMouseScroll(int delta, ref bool handled)
-        {
-            if (delta == 0 || handled)
-                return;
-
-            if (IsRangeScrollModifierPressed())
-            {
-                if (ScrollRangeByWheelDelta(delta))
-                    handled = true;
-                return;
-            }
-
-            if (_cameraControl.ZoomByWheelDelta(delta))
-                handled = true;
         }
 
         bool ScrollRangeByWheelDelta(int delta)
@@ -1357,488 +1024,11 @@ namespace LcdMod.Client.Apps
             _cameraPanMeters = ClampCameraPan(_cameraPanMeters);
             PersistRadarCameraConfig();
             _syncConfigNextRun = true;
+            UpdateScene();
+            UpdateFooter();
             Host.RenderSprites();
             RangeScrolled?.Invoke(delta);
             return true;
-        }
-
-        bool OnCameraZoomChanged(PanAndZoomCam control, float nextScale)
-        {
-            float nextZoomScale = ClampCameraZoomScale(nextScale);
-            if (NearlyEqual(_cameraZoomScale, nextZoomScale))
-                return false;
-
-            _cameraZoomScale = nextZoomScale;
-            _cameraPanMeters = ClampCameraPan(_cameraPanMeters);
-            PersistRadarCameraConfig();
-            Host.RenderSprites();
-            CameraMoved?.Invoke();
-            return true;
-        }
-
-        bool OnCameraDragged(object dataContext, object sender, Vector2 delta)
-        {
-            RadarLayout layout;
-            if (!TryCalculateRadarLayout(out layout) ||
-                layout.WorldUnitsPerPixelX <= 0f ||
-                layout.WorldUnitsPerPixelY <= 0f)
-            {
-                return false;
-            }
-
-            Vector2 nextPan = _cameraPanMeters - new Vector2(
-                delta.X * layout.WorldUnitsPerPixelX,
-                delta.Y * layout.WorldUnitsPerPixelY);
-            nextPan = ClampCameraPan(nextPan);
-            if (NearlyEqual(_cameraPanMeters, nextPan))
-                return false;
-
-            _cameraPanMeters = nextPan;
-            PersistRadarCameraConfig();
-            Host.RenderSprites();
-            CameraMoved?.Invoke();
-            return true;
-        }
-
-        void UpdateProjectionAngle()
-        {
-            float rads = MathHelper.ToRadians(PROJECTION_ANGLE_DEG);
-            _radarProjectionCos = (float)Math.Cos(rads);
-            _radarProjectionSin = (float)Math.Sin(rads);
-        }
-
-        void BuildTargetLayers(Color errColor, Color warnColor, Color allyColor, float worldRange)
-        {
-            _targetsBelowPlane.Clear();
-            _targetsAbovePlane.Clear();
-
-            MatrixD gridMatrix;
-            if (!TryGetReferenceWorldMatrix(out gridMatrix))
-                gridMatrix = Block.WorldMatrix;
-            int shown = Math.Min(_sortedContacts.Count, MAX_CONTACTS);
-            bool hasLockedTarget = false;
-            for (int i = 0; i < shown; i++)
-            {
-                TargetInfo info;
-                if (!TryBuildTargetInfo(_sortedContacts[i], gridMatrix, errColor, warnColor, allyColor, worldRange, out info))
-                    continue;
-
-                if (info.TargetLock)
-                    hasLockedTarget = true;
-
-                if (info.AbovePlane) _targetsAbovePlane.Add(info);
-                else _targetsBelowPlane.Add(info);
-            }
-
-            var colorMultiplier = 1 - 0.5f * _debugLockedTargetPercent;
-
-            if (hasLockedTarget)
-            {
-                for (int i = 0; i < _targetsBelowPlane.Count; i++)
-                {
-                    var info = _targetsBelowPlane[i];
-                    if (!info.TargetLock)
-                    {
-                        info.IconColor = info.IconColor.MulSaturation(colorMultiplier).MulValue(colorMultiplier);
-                        info.ElevationColor =
-                            info.ElevationColor.MulSaturation(colorMultiplier).MulValue(colorMultiplier);
-                        _targetsBelowPlane[i] = info;
-                    }
-                }
-
-                for (int i = 0; i < _targetsAbovePlane.Count; i++)
-                {
-                    var info = _targetsAbovePlane[i];
-                    if (!info.TargetLock)
-                    {
-                        info.IconColor = info.IconColor.MulSaturation(0.5f).MulValue(0.5f);
-                        info.ElevationColor = info.ElevationColor.MulSaturation(0.5f).MulValue(0.5f);
-                        _targetsAbovePlane[i] = info;
-                    }
-                }
-            }
-
-            _targetsBelowPlane.Sort((a, b) => a.Position.Y.CompareTo(b.Position.Y));
-            _targetsAbovePlane.Sort((a, b) => a.Position.Y.CompareTo(b.Position.Y));
-        }
-
-        bool TryGetReferenceWorldMatrix(out MatrixD world)
-        {
-            return _host.TryGetReferenceWorldMatrix(InteractionComponent.ReferenceMode, out world, true);
-        }
-
-        bool TryBuildTargetInfo(ContactRecord contact, MatrixD gridMatrix, Color errColor, Color warnColor,
-            Color allyColor,
-            float worldRange,
-            out TargetInfo targetInfo)
-        {
-            if (worldRange <= 0f)
-            {
-                targetInfo = default(TargetInfo);
-                return false;
-            }
-
-            var transformedDirection =
-                Vector3D.TransformNormal(contact.WorldPosition - gridMatrix.Translation, MatrixD.Transpose(gridMatrix));
-            var position = new Vector3((float)transformedDirection.X, (float)transformedDirection.Z,
-                (float)transformedDirection.Y);
-
-            bool inRange = position.X * position.X + position.Y * position.Y < worldRange * worldRange;
-            bool above = position.Z >= 0f;
-            Action<List<MySprite>, Vector2, Color, float, float> drawFunction;
-
-            if (inRange)
-            {
-                position /= worldRange;
-                drawFunction = ContactDrawFunction(contact);
-            }
-            else
-            {
-                Vector3 directionFlat = position;
-                directionFlat.Z = 0f;
-                if (directionFlat.LengthSquared() < 1e-6f)
-                {
-                    targetInfo = default(TargetInfo);
-                    return false;
-                }
-
-                position = Vector3.Normalize(directionFlat);
-                drawFunction = DrawOutOfRangeIcon;
-            }
-
-            Color iconColor = ContactColor(contact, errColor, warnColor, allyColor);
-            targetInfo = new TargetInfo
-            {
-                Position = position,
-                IconColor = iconColor,
-                IconTexture = contact.IconTexture,
-                ElevationColor = new Color(iconColor, 0.7f),
-                TargetLock = contact.IsTargeted,
-                TargetLockPercent = contact.TargetLockPercent,
-                AbovePlane = above,
-                DrawFunction = drawFunction
-            };
-            return true;
-        }
-
-        void DrawRadarPlaneBackground(List<MySprite> sprites, Vector2 centerPos, Vector2 radarPlaneSize,
-            float worldRange, float scale,
-            Color lineColor, Color backColor, Color planeColor)
-        {
-            float lineWidth = RADAR_RANGE_LINE_WIDTH * scale;
-            AddTexture(sprites, "Circle", centerPos, radarPlaneSize, lineColor);
-            AddTexture(sprites, "Circle", centerPos, radarPlaneSize - lineWidth * Vector2.One, backColor);
-
-            DrawRangeRing(sprites, centerPos, radarPlaneSize, worldRange, RING_3_M, lineWidth, lineColor, backColor);
-            DrawRangeRing(sprites, centerPos, radarPlaneSize, worldRange, RING_2_M, lineWidth, lineColor, backColor);
-            DrawRangeRing(sprites, centerPos, radarPlaneSize, worldRange, RING_1_M, lineWidth, lineColor, backColor);
-
-            AddTexture(sprites, "Circle", centerPos, radarPlaneSize, planeColor);
-        }
-
-        void DrawRangeRing(List<MySprite> sprites, Vector2 centerPos, Vector2 radarPlaneSize, float worldRange,
-            float ringDistance, float lineWidth, Color lineColor, Color backColor)
-        {
-            if (worldRange <= 0f || ringDistance <= 0f)
-                return;
-
-            float ratio = ringDistance / worldRange;
-            if (ratio <= 0f || ratio >= 1f)
-                return;
-
-            Vector2 ringSize = radarPlaneSize * ratio;
-            if (ringSize.X <= lineWidth || ringSize.Y <= lineWidth)
-                return;
-
-            AddTexture(sprites, "Circle", centerPos, ringSize, new Color(lineColor, 0.65f));
-            AddTexture(sprites, "Circle", centerPos, ringSize - lineWidth * Vector2.One, backColor);
-        }
-
-        void DrawRadarPlane(List<MySprite> sprites, Vector2 radarScreenCenter, Vector2 radarPlaneSize, float scale,
-            Color lineColor)
-        {
-            var iconSize = _shipIconSize * scale;
-            AddTexture(sprites, "Triangle", radarScreenCenter + new Vector2(0f, -0.2f * iconSize.Y), iconSize,
-                lineColor);
-
-            float lineWidth = QUADRANT_LINE_WIDTH * scale;
-            Color quadrantLineColor = new Color(lineColor, 0.5f);
-            Vector2 halfHorizontal = new Vector2(radarPlaneSize.X * 0.5f, 0f);
-            Vector2 halfVertical = new Vector2(0f, radarPlaneSize.Y * 0.5f);
-            Vector2 horizontalInner = halfHorizontal * (1f - QUADRANT_LINE_COVERAGE_PER_SIDE);
-            Vector2 verticalInner = halfVertical * (1f - QUADRANT_LINE_COVERAGE_PER_SIDE);
-            DrawLine(sprites, radarScreenCenter - halfHorizontal, radarScreenCenter - horizontalInner, lineWidth,
-                quadrantLineColor);
-            DrawLine(sprites, radarScreenCenter + horizontalInner, radarScreenCenter + halfHorizontal, lineWidth,
-                quadrantLineColor);
-            DrawLine(sprites, radarScreenCenter - halfVertical, radarScreenCenter - verticalInner, lineWidth,
-                quadrantLineColor);
-            DrawLine(sprites, radarScreenCenter + verticalInner, radarScreenCenter + halfVertical, lineWidth,
-                quadrantLineColor);
-
-            float angleTextSize = QUADRANT_LABEL_TEXT_SIZE * scale * FontScale;
-            float labelMargin = QUADRANT_LABEL_MARGIN_PX * scale;
-            Color angleColor = new Color(ForegroundColor, 0.72f);
-            float angleLabelHalfHeight =
-                Surface.MeasureStringInPixels(new StringBuilder("180"), "Debug", angleTextSize).Y * 0.5f;
-            Vector2 angleLabelOffset = new Vector2(0f, -angleLabelHalfHeight);
-            float sideLabelInwardOffset = labelMargin * 0.5f;
-            sprites.Add(new MySprite(
-                SpriteType.TEXT,
-                "0º",
-                radarScreenCenter - halfVertical - new Vector2(0f, labelMargin) + angleLabelOffset,
-                null,
-                angleColor,
-                TextFont,
-                TextAlignment.CENTER,
-                angleTextSize));
-            sprites.Add(new MySprite(
-                SpriteType.TEXT,
-                "90º",
-                radarScreenCenter + halfHorizontal + new Vector2(labelMargin - sideLabelInwardOffset, 0f) +
-                angleLabelOffset,
-                null,
-                angleColor,
-                TextFont,
-                TextAlignment.LEFT,
-                angleTextSize));
-            sprites.Add(new MySprite(
-                SpriteType.TEXT,
-                "180º",
-                radarScreenCenter + halfVertical + new Vector2(0f, labelMargin) + angleLabelOffset,
-                null,
-                angleColor,
-                TextFont,
-                TextAlignment.CENTER,
-                angleTextSize));
-            sprites.Add(new MySprite(
-                SpriteType.TEXT,
-                "270º",
-                radarScreenCenter - halfHorizontal - new Vector2(labelMargin - sideLabelInwardOffset, 0f) +
-                angleLabelOffset,
-                null,
-                angleColor,
-                TextFont,
-                TextAlignment.RIGHT,
-                angleTextSize));
-        }
-
-        void DrawTargetIcon(List<MySprite> sprites, Vector2 screenCenter, Vector2 radarPlaneSize, TargetInfo targetInfo,
-            float scale)
-        {
-            Vector3 targetPosPixels = targetInfo.Position * new Vector3(1f, _radarProjectionCos, _radarProjectionSin) *
-                                      radarPlaneSize.X * 0.5f;
-            var targetPosPlane = new Vector2(targetPosPixels.X, targetPosPixels.Y);
-            Vector2 iconPos = targetPosPlane - targetPosPixels.Z * Vector2.UnitY;
-
-            RoundVector2(ref iconPos);
-            RoundVector2(ref targetPosPlane);
-
-            float elevationLineWidth = Math.Max(1f, TGT_ELEVATION_LINE_WIDTH * scale);
-            var elevationSprite = new MySprite(SpriteType.TEXTURE, "SquareSimple",
-                screenCenter + (iconPos + targetPosPlane) * 0.5f,
-                new Vector2(elevationLineWidth, Math.Abs(targetPosPixels.Z)),
-                ScaleColorAlpha(targetInfo.ElevationColor, 1f));
-            RoundVector2(ref elevationSprite.Position);
-            RoundVector2(ref elevationSprite.Size);
-
-            Vector2 iconDrawPos = screenCenter + iconPos;
-            RoundVector2(ref iconDrawPos);
-
-            float shadowThickness = 2f * (float)Math.Max(1f, Math.Round(scale * 4f));
-            float shadowScale = scale * (_tgtIconSize.X + shadowThickness) / _tgtIconSize.X;
-
-            Vector2 iconSize = _tgtIconSize * scale;
-            iconSize.Y *= _radarProjectionCos;
-            var projectedIconSprite = new MySprite(SpriteType.TEXTURE, "Circle",
-                screenCenter + targetPosPlane, iconSize, ScaleColorAlpha(targetInfo.ElevationColor, 1f));
-            RoundVector2(ref projectedIconSprite.Position);
-
-            bool showProjectedElevation = Math.Abs(iconPos.Y - targetPosPlane.Y) > iconSize.Y;
-            if (targetInfo.AbovePlane)
-            {
-                if (showProjectedElevation)
-                {
-                    sprites.Add(projectedIconSprite);
-                    sprites.Add(elevationSprite);
-                }
-
-                DrawContactIcon(sprites, iconDrawPos, targetInfo, shadowScale, 0f);
-            }
-            else
-            {
-                if (showProjectedElevation) sprites.Add(elevationSprite);
-                DrawContactIcon(sprites, iconDrawPos, targetInfo, shadowScale, 0f);
-                if (showProjectedElevation) sprites.Add(projectedIconSprite);
-            }
-
-            if (targetInfo.TargetLock)
-            {
-                float lockOffsetPx = (1f - MathHelper.Clamp(targetInfo.TargetLockPercent, 0f, 1f)) *
-                                     LOCK_ANIM_DISTANCE * scale;
-                Vector2 targetBoxSize = (_tgtIconSize + 20f) * scale + new Vector2(lockOffsetPx * 2f);
-                if (targetInfo.TargetLockPercent >= 0.999f)
-                    DrawRotatedSquareOutline(sprites, iconDrawPos, (_tgtIconSize.X + 8f) * scale, 2f * scale,
-                        targetInfo.IconColor, MathHelper.PiOver4);
-                DrawBoxCorners(sprites, targetBoxSize, iconDrawPos, 12f * scale, 4f * scale, targetInfo.IconColor);
-            }
-        }
-
-
-        static void DrawLine(List<MySprite> sprites, Vector2 point1, Vector2 point2, float width, Color color)
-        {
-            Vector2 position = 0.5f * (point1 + point2);
-            Vector2 diff = point1 - point2;
-            float length = diff.Length();
-            if (length > 0f) diff /= length;
-            var size = new Vector2(length, width);
-            float angle = (float)Math.Acos(Vector2.Dot(diff, Vector2.UnitX));
-            angle *= Math.Sign(Vector2.Dot(diff, Vector2.UnitY));
-            sprites.Add(new MySprite(SpriteType.TEXTURE, "SquareSimple", position, size, color, null,
-                TextAlignment.CENTER, angle));
-        }
-
-        static void DrawRotatedSquareOutline(List<MySprite> sprites, Vector2 center, float size, float thickness,
-            Color color, float rotation)
-        {
-            float half = size * 0.5f;
-            var p1 = RotateVector(new Vector2(-half, -half), rotation) + center;
-            var p2 = RotateVector(new Vector2(half, -half), rotation) + center;
-            var p3 = RotateVector(new Vector2(half, half), rotation) + center;
-            var p4 = RotateVector(new Vector2(-half, half), rotation) + center;
-
-            DrawLine(sprites, p1, p2, thickness, color);
-            DrawLine(sprites, p2, p3, thickness, color);
-            DrawLine(sprites, p3, p4, thickness, color);
-            DrawLine(sprites, p4, p1, thickness, color);
-        }
-
-        static Vector2 RotateVector(Vector2 v, float radians)
-        {
-            float c = (float)Math.Cos(radians);
-            float s = (float)Math.Sin(radians);
-            return new Vector2(v.X * c - v.Y * s, v.X * s + v.Y * c);
-        }
-
-        static void DrawBoxCorners(List<MySprite> sprites, Vector2 boxSize, Vector2 centerPos, float lineLength,
-            float lineWidth, Color color)
-        {
-            var horizontalSize = new Vector2(lineLength, lineWidth);
-            var verticalSize = new Vector2(lineWidth, lineLength);
-            Vector2 horizontalOffset = 0.5f * horizontalSize;
-            Vector2 verticalOffset = 0.5f * verticalSize;
-            Vector2 boxHalfSize = 0.5f * boxSize;
-            Vector2 boxTopLeft = centerPos - boxHalfSize;
-            Vector2 boxBottomRight = centerPos + boxHalfSize;
-            Vector2 boxTopRight = centerPos + new Vector2(boxHalfSize.X, -boxHalfSize.Y);
-            Vector2 boxBottomLeft = centerPos + new Vector2(-boxHalfSize.X, boxHalfSize.Y);
-
-            AddTexture(sprites, "SquareSimple", boxTopLeft + horizontalOffset, horizontalSize, color);
-            AddTexture(sprites, "SquareSimple", boxTopLeft + verticalOffset, verticalSize, color);
-            AddTexture(sprites, "SquareSimple", boxTopRight + new Vector2(-horizontalOffset.X, horizontalOffset.Y),
-                horizontalSize, color);
-            AddTexture(sprites, "SquareSimple", boxTopRight + new Vector2(-verticalOffset.X, verticalOffset.Y),
-                verticalSize, color);
-            AddTexture(sprites, "SquareSimple", boxBottomLeft + new Vector2(horizontalOffset.X, -horizontalOffset.Y),
-                horizontalSize, color);
-            AddTexture(sprites, "SquareSimple", boxBottomLeft + new Vector2(verticalOffset.X, -verticalOffset.Y),
-                verticalSize, color);
-            AddTexture(sprites, "SquareSimple", boxBottomRight - horizontalOffset, horizontalSize, color);
-            AddTexture(sprites, "SquareSimple", boxBottomRight - verticalOffset, verticalSize, color);
-        }
-
-        static void AddTexture(List<MySprite> sprites, string texture, Vector2 position, Vector2 size, Color color,
-            float rotation = 0f)
-        {
-            sprites.Add(new MySprite(SpriteType.TEXTURE, texture, position, size, color, null, TextAlignment.CENTER,
-                rotation));
-        }
-
-        static void AddSpriteWithShadow(List<MySprite> sprites, MySprite sprite, float offset)
-        {
-            sprites.Add(sprite.Shadow(offset));
-            sprites.Add(sprite);
-        }
-
-        void DrawContactIcon(List<MySprite> sprites, Vector2 position, TargetInfo targetInfo, float scale,
-            float rotation)
-        {
-            if (!string.IsNullOrEmpty(targetInfo.IconTexture))
-            {
-                AddSpriteWithShadow(sprites, new MySprite(
-                    SpriteType.TEXTURE,
-                    targetInfo.IconTexture,
-                    position,
-                    new Vector2(DOT_SIZE * 1.5f) * scale,
-                    targetInfo.IconColor,
-                    null,
-                    TextAlignment.CENTER,
-                    rotation), scale);
-                return;
-            }
-
-            targetInfo.DrawFunction(sprites, position, targetInfo.IconColor, scale, rotation);
-        }
-
-        static Color ScaleColorAlpha(Color color, float scale)
-        {
-            if (scale > 0.999f) return color;
-            color.A = (byte)Math.Round(color.A * scale);
-            return color;
-        }
-
-        static void DrawSquare(List<MySprite> frame, Vector2 centerPos, Color color, float scale,
-            float rotation)
-        {
-            AddSpriteWithShadow(frame,
-                new MySprite(SpriteType.TEXTURE, "SquareSimple", centerPos, new Vector2(DOT_SIZE) * scale, color, null,
-                    TextAlignment.CENTER, rotation), scale);
-        }
-
-        static void DrawCircle(List<MySprite> frame, Vector2 centerPos, Color color, float scale,
-            float rotation)
-        {
-            AddSpriteWithShadow(frame,
-                new MySprite(SpriteType.TEXTURE, "Circle", centerPos, new Vector2(DOT_SIZE) * scale, color, null,
-                    TextAlignment.CENTER, rotation), scale);
-        }
-
-        static void DrawOutOfRangeIcon(List<MySprite> frame, Vector2 centerPos, Color color,
-            float scale,
-            float rotation)
-        {
-            float sin = (float)Math.Sin(rotation);
-            float cos = (float)Math.Cos(rotation);
-            scale *= 0.075f;
-
-            AddTexture(frame, "SquareSimple",
-                new Vector2(cos * 61f - sin * -12f, sin * 61f + cos * -12f) * scale + centerPos,
-                new Vector2(180f, 350f) * scale, color.MulValue(0.2f), -0.7854f + rotation);
-            AddTexture(frame, "SquareSimple",
-                new Vector2(cos * -61f - sin * -12f, sin * -61f + cos * -12f) * scale + centerPos,
-                new Vector2(180f, 350f) * scale, color.MulValue(0.2f), 0.7854f + rotation);
-            AddTexture(frame, "SquareSimple",
-                new Vector2(cos * 61f - sin * -12f, sin * 61f + cos * -12f) * scale + centerPos,
-                new Vector2(80f, 250f) * scale, color, -0.7854f + rotation);
-            AddTexture(frame, "SquareSimple",
-                new Vector2(cos * -61f - sin * -12f, sin * -61f + cos * -12f) * scale + centerPos,
-                new Vector2(80f, 250f) * scale, color, 0.7854f + rotation);
-        }
-
-        static void DrawTriangle(List<MySprite> frame, Vector2 centerPos, Color color, float scale,
-            float rotation)
-        {
-            Vector2 iconSize = new Vector2(DOT_SIZE) * scale;
-            Vector2 shadowSize = iconSize * 1.2f;
-
-            AddTexture(frame, "Triangle", centerPos, shadowSize, color.MulValue(0.2f), rotation);
-            AddTexture(frame, "Triangle", centerPos + new Vector2(0, iconSize.Y * .05f), iconSize, color, rotation);
-        }
-
-        static void RoundVector2(ref Vector2 vec)
-        {
-            vec.X = (float)Math.Round(vec.X);
-            vec.Y = (float)Math.Round(vec.Y);
         }
 
         Vector2 ClampCameraPan(Vector2 pan)
@@ -1884,151 +1074,9 @@ namespace LcdMod.Client.Apps
             return !float.IsNaN(value) && !float.IsInfinity(value);
         }
 
-        static Rectangle ToClipRectangle(RectangleF bounds)
-        {
-            int x = (int)Math.Floor(bounds.X);
-            int y = (int)Math.Floor(bounds.Y);
-            int right = (int)Math.Ceiling(bounds.Right);
-            int bottom = (int)Math.Ceiling(bounds.Bottom);
-            return new Rectangle(x, y, Math.Max(0, right - x), Math.Max(0, bottom - y));
-        }
-
-        static void RoundVector2(ref Vector2? vec)
-        {
-            if (!vec.HasValue) return;
-            var value = vec.Value;
-            value.X = (float)Math.Round(value.X);
-            value.Y = (float)Math.Round(value.Y);
-            vec = value;
-        }
-
-        void UpdateFooterHeights()
-        {
-            int entries = _sortedContacts.Count;
-            _footerHeight = CalculateFooterHeight(entries, LayoutScale);
-        }
-
-        void UpdateFooterControls()
-        {
-            bool showWarning = ShouldShowLongRangeWarning();
-            bool hasContacts = _sortedContacts.Count > 0;
-            if (_footerHeight <= 0f || !showWarning && !hasContacts)
-            {
-                _footerRows.Clear();
-                _footerControl.SetRows(_footerRows);
-                _footerControl.SetVisible(false);
-                return;
-            }
-
-            _footerControl.SetVisible(true);
-            _footerControl.FooterBackgroundColor = new Color(BackgroundColor.MulValue(0.8f), 0.5f);
-            _footerControl.SetRowHeight(GetFooterRowHeight(LayoutScale));
-            _footerRows.Clear();
-
-            if (showWarning)
-            {
-                Color warningColor = new Color(ColorComponent.ResolveWarningColor(), 0.9f);
-                _footerWarningControl.SetContent(
-                    "Warning",
-                    LocHelper.GetLoc(LONG_RANGE_WARNING_KEY),
-                    warningColor,
-                    warningColor,
-                    FOOTER_WARNING_TEXT_SIZE,
-                    0.9f);
-                _footerRows.Add(_footerWarningControl);
-            }
-
-            if (hasContacts)
-            {
-                Color headerColor = new Color(ForegroundColor, 0.75f);
-                _footerHeaderControl.SetHeader(
-                    LocHelper.GetLoc(MOD_PREFIX + "Radar_DetectedEntities"),
-                    GetFooterRangeText(),
-                    headerColor);
-                _footerRows.Add(_footerHeaderControl);
-
-                int visibleEntries = GetVisibleFooterEntryCount(_sortedContacts.Count);
-                int startIndex = 0;
-                if (_sortedContacts.Count > visibleEntries)
-                    startIndex = GetScrollStep(FOOTER_SCROLL_STEP_SECONDS) % _sortedContacts.Count;
-
-                var shipPos = Block.WorldMatrix.Translation;
-                var errColor = ColorComponent.ResolveErrorColor();
-                var warnColor = ColorComponent.ResolveWarningColor();
-                var allyColor = GetHeaderColor();
-                for (int i = 0; i < visibleEntries; i++)
-                {
-                    ContactRecord contact = _sortedContacts[(startIndex + i) % _sortedContacts.Count];
-                    Color iconColor = ContactColor(contact, errColor, warnColor, allyColor);
-                    ContactEntryControl control = GetFooterContactControl(i);
-                    control.SetContent(
-                        FooterIconTexture(contact),
-                        GetFooterContactText(contact, shipPos),
-                        iconColor,
-                        ForegroundColor,
-                        0.5f,
-                        0.78f);
-                    _footerRows.Add(control);
-                }
-            }
-
-            _footerControl.SetRows(_footerRows);
-            UpdateFooterControlBounds();
-        }
-
-        void UpdateFooterControlBounds()
-        {
-            if (_footerControl == null)
-                return;
-
-            if (!_footerControl.Visible || _footerHeight <= 0f)
-            {
-                _footerControl.SetVisible(false);
-                return;
-            }
-
-            _footerControl.SetRect(new RectangleF(
-                ViewBox.X,
-                ViewBox.Bottom - _footerHeight,
-                ViewBox.Width,
-                _footerHeight));
-        }
-
-        float CalculateFooterHeight(int entries, float layoutScale)
-        {
-            int rowCount = GetFooterRowCount(entries);
-            if (rowCount <= 0)
-                return 0f;
-
-            return rowCount * GetFooterRowHeight(layoutScale) + FOOTER_BOTTOM_PADDING_PX * layoutScale;
-        }
-
-        int GetFooterRowCount(int entries)
-        {
-            int rowCount = ShouldShowLongRangeWarning() ? 1 : 0;
-            int visibleEntries = GetVisibleFooterEntryCount(entries);
-            if (visibleEntries > 0)
-                rowCount += 1 + visibleEntries;
-
-            return rowCount;
-        }
-
         static int GetVisibleFooterEntryCount(int entries)
         {
-            return Math.Min(Math.Min(MAX_CONTACTS, Math.Max(0, entries)), FOOTER_MAX_ROWS);
-        }
-
-        static float GetFooterRowHeight(float layoutScale)
-        {
-            return Math.Max(1f, FOOTER_ROW_HEIGHT_PX * layoutScale);
-        }
-
-        ContactEntryControl GetFooterContactControl(int index)
-        {
-            while (_footerContactControls.Count <= index)
-                _footerContactControls.Add(new ContactEntryControl());
-
-            return _footerContactControls[index];
+            return Math.Min(Math.Min(MAX_CONTACTS, Math.Max(0, entries)), FOOTER_MAX_CONTACT_ROWS);
         }
 
         string GetFooterRangeText()
@@ -2050,15 +1098,6 @@ namespace LcdMod.Client.Apps
                 name = "[L] " + name;
 
             return distance + "  " + name;
-        }
-
-        void GetRadarCappedScales(out float cappedScale, out float cappedLayoutScale)
-        {
-            float configScale = Math.Max(GeneralComponent.GetScale(), 0.0001f);
-            float autoScale = Scale / configScale;
-            float cappedUserScale = Math.Min(configScale, 1f);
-            cappedScale = autoScale * cappedUserScale;
-            cappedLayoutScale = cappedScale * FontScale;
         }
 
         void BuildSortedContacts()
@@ -2098,20 +1137,6 @@ namespace LcdMod.Client.Apps
                     return frdColor;
                 default:
                     return warnColor;
-            }
-        }
-
-        static Action<List<MySprite>, Vector2, Color, float, float> ContactDrawFunction(ContactRecord contact)
-        {
-            switch (contact.Relationship)
-            {
-                case MyRelationsBetweenPlayerAndBlock.Owner:
-                case MyRelationsBetweenPlayerAndBlock.FactionShare:
-                    return DrawSquare;
-                case MyRelationsBetweenPlayerAndBlock.Enemies:
-                    return DrawCircle;
-                default:
-                    return DrawTriangle;
             }
         }
 

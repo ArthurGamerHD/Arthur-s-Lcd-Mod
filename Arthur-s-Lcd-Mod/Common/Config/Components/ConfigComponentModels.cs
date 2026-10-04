@@ -640,6 +640,8 @@ namespace LcdMod.Common.Config.Components
         [ProtoMember(2)] public double CameraPanX { get; set; }
         [ProtoMember(3)] public double CameraPanY { get; set; }
         [ProtoMember(4)] public float CameraZoomScale { get; set; } = 1f;
+        [ProtoMember(5)] public float CameraYawRadians { get; set; }
+        [ProtoMember(6), DefaultValue(0.6108652f)] public float CameraPitchRadians { get; set; } = 0.6108652f;
 
         public override ConfigComponent Clone()
         {
@@ -648,7 +650,9 @@ namespace LcdMod.Common.Config.Components
                 RangeScale = RangeScale,
                 CameraPanX = CameraPanX,
                 CameraPanY = CameraPanY,
-                CameraZoomScale = CameraZoomScale
+                CameraZoomScale = CameraZoomScale,
+                CameraYawRadians = CameraYawRadians,
+                CameraPitchRadians = CameraPitchRadians
             };
         }
     }
@@ -700,12 +704,20 @@ namespace LcdMod.Common.Config.Components
         [ProtoMember(9)] public double StaticCameraTargetOffsetX { get; set; }
         [ProtoMember(10)] public double StaticCameraTargetOffsetY { get; set; }
         [ProtoMember(11)] public double StaticCameraTargetOffsetZ { get; set; }
+        [ProtoMember(12)] public float[] StaticOrbitBasis { get; set; } = Array.Empty<float>();
+        [ProtoMember(13), DefaultValue(1f)] public float StaticZoom { get; set; } = 1f;
+        [ProtoMember(14)] public bool StaticOrbitLinesHidden { get; set; }
+        [ProtoMember(15)] public int MapLayer { get; set; }
+        [ProtoMember(16), DefaultValue(true)]
+        [TerminalControlSwitch(5466, "StarMapRenderSkybox", MOD_PREFIX + "PlanetaryMap_RenderSkybox", Slot = APP)]
+        public bool RenderSkybox { get; set; } = true;
 
         public override ConfigComponent Clone()
         {
             return new StarMapConfigComponent
             {
                 FoV = FoV,
+                RenderSkybox = RenderSkybox,
                 DisplayMyGps = DisplayMyGps,
                 IncludeRadioSignals = IncludeRadioSignals,
                 StaticOrbitYawRadians = StaticOrbitYawRadians,
@@ -714,6 +726,10 @@ namespace LcdMod.Common.Config.Components
                 StaticCameraTargetOffsetX = StaticCameraTargetOffsetX,
                 StaticCameraTargetOffsetY = StaticCameraTargetOffsetY,
                 StaticCameraTargetOffsetZ = StaticCameraTargetOffsetZ,
+                StaticOrbitBasis = ConfigComponentClone.Copy(StaticOrbitBasis),
+                StaticZoom = StaticZoom,
+                StaticOrbitLinesHidden = StaticOrbitLinesHidden,
+                MapLayer = MapLayer,
                 AlwaysDisplayedGpsHashes = ConfigComponentClone.Copy(AlwaysDisplayedGpsHashes),
                 AlwaysDisplayedGpsWaypoints = ConfigComponentClone.Copy(AlwaysDisplayedGpsWaypoints)
             };
@@ -738,12 +754,17 @@ namespace LcdMod.Common.Config.Components
         [ProtoMember(13)] public GpsDisplayWaypoint[] AlwaysDisplayedGpsWaypoints { get; set; } =
             Array.Empty<GpsDisplayWaypoint>();
         [ProtoMember(14)] public int MapLayer { get; set; }
+        [ProtoMember(15)] public float[] OrbitBasis { get; set; } = Array.Empty<float>();
+        [ProtoMember(16), DefaultValue(true)]
+        [TerminalControlSwitch(5465, "RenderSkybox", MOD_PREFIX + "PlanetaryMap_RenderSkybox", Slot = APP)]
+        public bool RenderSkybox { get; set; } = true;
 
         public override ConfigComponent Clone()
         {
             return new PlanetaryMapConfigComponent
             {
                 NorthUp = NorthUp,
+                RenderSkybox = RenderSkybox,
                 FollowCamera = FollowCamera,
                 OrbitYawRadians = OrbitYawRadians,
                 OrbitPitchRadians = OrbitPitchRadians,
@@ -756,7 +777,8 @@ namespace LcdMod.Common.Config.Components
                 IncludeRadioSignals = IncludeRadioSignals,
                 AlwaysDisplayedGpsHashes = ConfigComponentClone.Copy(AlwaysDisplayedGpsHashes),
                 AlwaysDisplayedGpsWaypoints = ConfigComponentClone.Copy(AlwaysDisplayedGpsWaypoints),
-                MapLayer = MapLayer
+                MapLayer = MapLayer,
+                OrbitBasis = ConfigComponentClone.Copy(OrbitBasis)
             };
         }
     }

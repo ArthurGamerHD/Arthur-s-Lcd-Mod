@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Styles xmlns="https://github.com/ArthurGamerHD/Adk"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- Map icons are size-less masks that fill the button, so they stay out of the shrink-to-fit Viewbox. -->
+  <Style Selector="Button.map-button">
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="ToggleButton.map-button">
+    <Setter Property="Width" Value="42" />
+    <Setter Property="Height" Value="42" />
+    <Setter Property="Padding" Value="9" />
+    <Setter Property="CornerRadius" Value="21" />
+    <Setter Property="Background" Value="{DynamicResource surfaceContainerHighColor}" />
+  </Style>
+  <Style Selector="ToggleButton.map-button Border.map-icon">
+    <Setter Property="Background" Value="{DynamicResource fontColor}" />
+  </Style>
+  <Style Selector="ToggleButton.map-button:checked Border.map-icon">
+    <Setter Property="Background" Value="{DynamicResource accentColor}" />
+  </Style>
+  <Style Selector="ToggleButton.map-button:pointerover Border.map-icon">
+    <Setter Property="Background" Value="{DynamicResource onAccentColor}" />
+  </Style>
+  <Style Selector="ToggleButton.map-button:disabled Border.map-icon">
+    <Setter Property="Background" Value="{DynamicResource disabledColor}" />
+  </Style>
+  <Style Selector="Button.map-layer">
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Stretch" />
+    <Setter Property="Width" Value="42" />
+    <Setter Property="Height" Value="42" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Background" Value="{DynamicResource surfaceContainerHighColor}" />
+  </Style>
+  <Style Selector="Border.map-layer-selection">
+    <Setter Property="BorderBrush" Value="{DynamicResource accentColor}" />
+    <Setter Property="BorderThickness" Value="2" />
+  </Style>
+  <Style Selector="Border.map-info">
+    <Setter Property="Background" Value="#A0000000" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="8 6" />
+  </Style>
+  <Style Selector="TextBlock.map-info-title">
+    <Setter Property="FontFamily" Value="{DynamicResource textFont}" />
+    <Setter Property="Foreground" Value="{DynamicResource accentColor}" />
+    <Setter Property="FontSize" Value="0.65" />
+  </Style>
+  <Style Selector="TextBlock.map-info-line">
+    <Setter Property="FontFamily" Value="{DynamicResource textFont}" />
+    <Setter Property="Foreground" Value="{DynamicResource fontColor}" />
+    <Setter Property="FontSize" Value="0.5" />
+  </Style>
+  <Style Selector="TextBlock.map-info-link">
+    <Setter Property="FontFamily" Value="{DynamicResource textFont}" />
+    <Setter Property="FontSize" Value="0.5" />
+  </Style>
+  <Style Selector="Button.map-info-action">
+    <Setter Property="HorizontalAlignment" Value="Left" />
+  </Style>
+</Styles>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    xmlns="https://github.com/ArthurGamerHD/Adk"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:radar="using:LcdMod.Client.Apps.Radar"
+    xmlns:maps="using:LcdMod.Client.Apps.Maps"
+    x:Class="LcdMod.Client.Apps.Radar.RadarSceneView"
+    x:DataType="radar:RadarViewModel">
+  <maps:CartographyMapView Surface="{Binding Surface}" Version="{Binding Version}" Markers="{Binding Billboards}"
+                           MarkersVersion="{Binding BillboardsVersion}" FontFamily="{DynamicResource textFont}" />
+</UserControl>

@@ -57,7 +57,7 @@ namespace LcdMod.Client.Config
             }
         }
 
-        public static float GetTextCellSizePixels(PlanetTextureQuality quality)
+        public static float GetCellSizePixels(PlanetTextureQuality quality)
         {
             switch (Normalize(quality))
             {

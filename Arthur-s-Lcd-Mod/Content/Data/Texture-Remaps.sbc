@@ -38,12 +38,6 @@
             <Selectable>false</Selectable>
         </LCDTextureDefinition>
 
-        <LCDTextureDefinition> <!-- Remap of Vanilla temperature sprite typo -->
-            <Id Type="LCDTextureDefinition" Subtype="IconTemperature"/>
-            <SpritePath>Textures/GUI/Icons/HUD 2017/OusideTemp.png</SpritePath>
-            <Selectable>false</Selectable>
-        </LCDTextureDefinition>
-
         <LCDTextureDefinition> <!-- Remap of Vanilla "Search" sprite -->
             <Id Type="LCDTextureDefinition" Subtype="Search"/>
             <SpritePath>Textures/GUI/Icons/HUD 2017/F1Icon.png</SpritePath>
@@ -131,6 +125,12 @@
         <LCDTextureDefinition> <!-- Remap of Vanilla Economy flat sell trend sprite -->
             <Id Type="LCDTextureDefinition" Subtype="Steady2"/>
             <SpritePath>Textures/GUI/Contracts/Steady2.png</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Remap of Vanilla Plus sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="Plus"/>
+            <SpritePath>Textures/GUI/Icons/HUD 2017/plus.png</SpritePath>
             <Selectable>false</Selectable>
         </LCDTextureDefinition>
     </LCDTextures>
