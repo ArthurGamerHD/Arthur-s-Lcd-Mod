@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Styles xmlns="https://github.com/ArthurGamerHD/Adk"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Style Selector="Button.farm-plot">
+    <Setter Property="Background" Value="#00000000" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="Border.farm-details">
+    <Setter Property="Background" Value="{DynamicResource surfaceContainerHighColor}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource borderVariantColor}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="10 8" />
+    <Setter Property="MaxWidth" Value="360" />
+  </Style>
+  <Style Selector="StackPanel.farm-details-body">
+    <Setter Property="Spacing" Value="8" />
+  </Style>
+  <Style Selector="Border.farm-details-icon">
+    <Setter Property="Width" Value="28" />
+    <Setter Property="Height" Value="28" />
+    <Setter Property="Margin" Value="0 0 8 0" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.farm-details-title">
+    <Setter Property="FontFamily" Value="{DynamicResource textFont}" />
+    <Setter Property="Foreground" Value="{DynamicResource accentColor}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="ScrollViewer.farm-details-scroll">
+    <Setter Property="MaxHeight" Value="240" />
+  </Style>
+</Styles>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Styles xmlns="https://github.com/ArthurGamerHD/Adk"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:LcdMod.Client.Apps.Controls">
+  <Style Selector="controls|TilingPanel.defense-tiles">
+    <Setter Property="Spacing" Value="6" />
+    <Setter Property="Margin" Value="3" />
+  </Style>
+  <Style Selector="Border.defense-shadow">
+    <Setter Property="CornerRadius" Value="5" />
+    <Setter Property="Margin" Value="2 2 0 0" />
+  </Style>
+  <Style Selector="Border.defense-card">
+    <Setter Property="CornerRadius" Value="5" />
+    <Setter Property="Margin" Value="0 0 2 2" />
+    <Setter Property="Padding" Value="8" />
+  </Style>
+  <Style Selector="Grid.shield-ring">
+    <Setter Property="Width" Value="73" />
+    <Setter Property="Height" Value="73" />
+  </Style>
+  <Style Selector="Arc.shield-ring">
+    <Setter Property="StartAngle" Value="-90" />
+    <Setter Property="StrokeThickness" Value="11.7" />
+  </Style>
+  <Style Selector="Image.shield-icon">
+    <Setter Property="Width" Value="32" />
+    <Setter Property="Height" Value="32" />
+  </Style>
+  <Style Selector="Grid.shield-details">
+    <Setter Property="Margin" Value="8 0 0 0" />
+  </Style>
+  <Style Selector="Viewbox.weapon-status">
+    <Setter Property="Margin" Value="0 3 0 4" />
+  </Style>
+  <Style Selector="Grid.weapon-status">
+    <Setter Property="Width" Value="150" />
+    <Setter Property="Height" Value="43" />
+  </Style>
+  <Style Selector="Image.weapon-icon">
+    <Setter Property="Width" Value="43" />
+    <Setter Property="Height" Value="43" />
+    <Setter Property="Margin" Value="0 0 8 0" />
+  </Style>
+  <Style Selector="Grid.weapon-row">
+    <Setter Property="Height" Value="10.75" />
+  </Style>
+  <Style Selector="Border.weapon-dot">
+    <Setter Property="Width" Value="5" />
+    <Setter Property="Height" Value="5" />
+    <Setter Property="Margin" Value="0 0 5 0" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="controls|FitTextBlock">
+    <Setter Property="FontFamily" Value="{DynamicResource textFont}" />
+    <Setter Property="MinFontSize" Value="0.05" />
+  </Style>
+  <Style Selector="controls|FitTextBlock.defense-detail">
+    <Setter Property="TextAlignment" Value="Left" />
+  </Style>
+  <Style Selector="controls|SegmentedBar">
+    <Setter Property="Height" Value="8" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+</Styles>

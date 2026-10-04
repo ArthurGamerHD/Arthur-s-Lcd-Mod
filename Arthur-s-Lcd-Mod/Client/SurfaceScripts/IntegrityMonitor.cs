@@ -57,13 +57,17 @@ namespace LcdMod.Client.SurfaceScripts
                 _app.LayoutChanged();
             }
 
+            EnsureRetainedAppView(_app);
             _app.Update();
             RenderSprites();
         }
 
         public override List<MySprite> GetSprites()
         {
-            return _app != null ? _app.GetSprites() : new List<MySprite>();
+            var sprites = new List<MySprite>();
+            if (_app != null)
+                DrawRetainedAppView(sprites);
+            return sprites;
         }
     }
 }

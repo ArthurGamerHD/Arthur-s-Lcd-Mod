@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl xmlns="https://github.com/ArthurGamerHD/Adk"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="using:LcdMod.Client.Apps.DockingAlignment"
+             x:Class="LcdMod.Client.Apps.DockingAlignment.DockingAlignmentView"
+             x:DataType="local:DockingAlignmentViewModel" ClipToBounds="True">
+  <Grid>
+    <Grid IsVisible="{Binding HasTarget}">
+      <local:DockingInstrumentControl x:Name="Instrument" FontScale="{Binding FontScale}"
+          Position="{Binding Position}" Rotation="{Binding Rotation}" Velocity="{Binding Velocity}"
+          Accent="{Binding Accent}" StatusColor="{Binding StatusColor}" ErrorColor="{Binding ErrorColor}" />
+      <Border x:Name="FooterBackground" Background="{Binding FooterBackground}" />
+      <TextBlock x:Name="PitchLabelText" Text="{Binding PitchLabel}" FontFamily="{Binding FontFamily}"
+          FontSize="{Binding LabelFont}" Foreground="{Binding Accent}" />
+      <TextBlock x:Name="YawLabelText" Text="{Binding YawLabel}" FontFamily="{Binding FontFamily}"
+          FontSize="{Binding LabelFont}" Foreground="{Binding Accent}" />
+      <TextBlock x:Name="RollLabelText" Text="{Binding RollLabel}" FontFamily="{Binding FontFamily}"
+          FontSize="{Binding LabelFont}" Foreground="{Binding Accent}" />
+      <TextBlock x:Name="PitchText" Text="{Binding Pitch, StringFormat='{0:0.0}°'}" FontFamily="{Binding FontFamily}"
+          FontSize="{Binding InstrumentFont}" Foreground="{Binding Foreground}" />
+      <TextBlock x:Name="YawText" Text="{Binding Yaw, StringFormat='{0:0.0}°'}" FontFamily="{Binding FontFamily}"
+          FontSize="{Binding InstrumentFont}" Foreground="{Binding Foreground}" />
+      <TextBlock x:Name="RollText" Text="{Binding Roll, StringFormat='{0:0.0}°'}" FontFamily="{Binding FontFamily}"
+          FontSize="{Binding InstrumentFont}" Foreground="{Binding Foreground}" />
+      <TextBlock x:Name="ReferenceNameText" Text="{Binding ReferenceName, StringFormat='Ref: {0}'}" FontFamily="{Binding FontFamily}"
+          FontSize="{Binding NameFont}" Foreground="{Binding Foreground}" TextTrimming="CharacterEllipsis" TextAlignment="Center" />
+      <TextBlock x:Name="TargetNameText" Text="{Binding TargetName, StringFormat='Tgt: {0}'}" FontFamily="{Binding FontFamily}"
+          FontSize="{Binding NameFont}" Foreground="{Binding Foreground}" TextTrimming="CharacterEllipsis" TextAlignment="Center" />
+      <TextBlock x:Name="LeftRightText" Text="{Binding LeftRight, StringFormat='L/R {0:0.00}m'}" FontFamily="{Binding FontFamily}"
+          FontSize="{Binding FooterFont}" Foreground="{Binding Foreground}" />
+      <TextBlock x:Name="ForwardBackText" Text="{Binding ForwardBack, StringFormat='F/B {0:0.00}m'}" FontFamily="{Binding FontFamily}"
+          FontSize="{Binding FooterFont}" Foreground="{Binding Foreground}" />
+      <TextBlock x:Name="UpDownText" Text="{Binding UpDown, StringFormat='U/D {0:0.00}m'}" FontFamily="{Binding FontFamily}"
+          FontSize="{Binding FooterFont}" Foreground="{Binding Foreground}" />
+      <TextBlock x:Name="DistanceText" Text="{Binding Distance, StringFormat='DST {0:0.##}m'}" FontFamily="{Binding FontFamily}"
+          FontSize="{Binding FooterFont}" Foreground="{Binding Foreground}" />
+      <TextBlock x:Name="AxisDistanceText" Text="{Binding AxisDistance, StringFormat='ADST {0:0.00}m'}" FontFamily="{Binding FontFamily}"
+          FontSize="{Binding FooterFont}" Foreground="{Binding Foreground}" />
+      <TextBlock x:Name="DistanceRateText" Text="{Binding DistanceRate, StringFormat='CDST {0:0.00}m/s'}" FontFamily="{Binding FontFamily}"
+          FontSize="{Binding FooterFont}" Foreground="{Binding Foreground}" />
+      <TextBlock x:Name="ClosingVelocityText" Text="{Binding ClosingVelocity, StringFormat='CVEL {0:0.00}m/s'}" FontFamily="{Binding FontFamily}"
+          FontSize="{Binding FooterFont}" Foreground="{Binding Foreground}" />
+      <TextBlock x:Name="FooterRollText" Text="{Binding FooterRoll, StringFormat='R° {0:0.0}°'}" FontFamily="{Binding FontFamily}"
+          FontSize="{Binding FooterFont}" Foreground="{Binding Foreground}" />
+    </Grid>
+    <Grid IsVisible="{Binding HasWarning}">
+      <Border x:Name="WarningIconShadow" Background="{Binding WarningShadowBrush}">
+        <Border.OpacityMask><ImageBrush Source="Warning" Stretch="Uniform" /></Border.OpacityMask>
+      </Border>
+      <Border x:Name="WarningIcon" Background="{Binding WarningBrush}">
+        <Border.OpacityMask><ImageBrush Source="Warning" Stretch="Uniform" /></Border.OpacityMask>
+      </Border>
+      <TextBlock x:Name="WarningTextShadow" Text="{Binding Warning}" FontFamily="White"
+                 FontSize="{Binding FontScale}" Foreground="{Binding WarningShadowColor}" />
+      <TextBlock x:Name="WarningText" Text="{Binding Warning}" FontFamily="White"
+                 FontSize="{Binding FontScale}" Foreground="{Binding WarningColor}" />
+    </Grid>
+  </Grid>
+</UserControl>

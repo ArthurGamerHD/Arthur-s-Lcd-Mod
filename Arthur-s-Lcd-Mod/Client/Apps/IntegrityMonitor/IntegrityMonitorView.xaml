@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    xmlns="https://github.com/ArthurGamerHD/Adk"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:integrity="using:LcdMod.Client.Apps.IntegrityMonitor"
+    xmlns:views="using:LcdMod.Client.Apps.Views"
+    x:Class="LcdMod.Client.Apps.IntegrityMonitor.IntegrityMonitorView"
+    x:DataType="integrity:IntegrityMonitorViewModel">
+  <Grid RowDefinitions="*,Auto">
+    <integrity:IntegrityMapView Cells="{Binding Cells}" Version="{Binding Version}" FitSide="{Binding FitSide}"
+                                MapRotation="{Binding MapRotation}" MapScale="{Binding MapScale}"
+                                IsVisible="{Binding HasMap}" />
+    <views:StatusMessageView DataContext="{Binding Status}" />
+    <Border Grid.Row="1" Background="{Binding LegendBackground}" Padding="6" IsVisible="{Binding HasLegend}">
+      <ItemsControl ItemsSource="{Binding Legend}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel ItemWidth="150" LineSpacing="4" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="integrity:IntegrityLegendEntry">
+            <Grid ColumnDefinitions="Auto,*">
+              <Border Width="12" Height="12" Background="{Binding Color}" Margin="0 0 6 0" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" Text="{Binding Caption}" FontSize="{DynamicResource fontScale}"
+                         FontFamily="{DynamicResource textFont}" Foreground="{DynamicResource fontColor}"
+                         TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+            </Grid>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </Border>
+  </Grid>
+</UserControl>

@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using LcdMod.Client.GridData;
-using LcdMod.Client.Modules.Defense.Providers;
 using LcdMod.Client.Modules.Defense.Providers.DefenseShields;
 using LcdMod.Client.Modules.Defense.Providers.Deflector;
 using LcdMod.Client.Modules.Defense.Providers.EnergyShield;

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Styles xmlns="https://github.com/ArthurGamerHD/Adk"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:thrust="using:LcdMod.Client.Apps.Thrust">
+  <Style Selector="thrust|ThrustLegendCellControl">
+    <Setter Property="FontSize" Value="{DynamicResource fontScale}" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Grid>
+          <Border Background="{TemplateBinding Marker}"
+                  Width="{TemplateBinding MarkerSize}" Height="{TemplateBinding MarkerSize}"
+                  Margin="{TemplateBinding MarkerMargin}" HorizontalAlignment="Left" VerticalAlignment="Top" />
+          <TextBlock Text="{TemplateBinding Label}" FontFamily="{TemplateBinding FontFamily}"
+                     FontSize="{TemplateBinding FontSize, Converter={StaticResource FontSizeMultiplier}, ConverterParameter=0.46, ConverterCulture=en-US}" Foreground="{TemplateBinding Foreground}"
+                     Margin="{TemplateBinding LabelMargin}" VerticalAlignment="Top" />
+          <TextBlock Text="{TemplateBinding Value}" FontFamily="{TemplateBinding FontFamily}"
+                     FontSize="{TemplateBinding FontSize, Converter={StaticResource FontSizeMultiplier}, ConverterParameter=0.46, ConverterCulture=en-US}" Foreground="{TemplateBinding Foreground}"
+                     Margin="{TemplateBinding ValueMargin}" TextAlignment="Right" VerticalAlignment="Top" />
+        </Grid>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+</Styles>

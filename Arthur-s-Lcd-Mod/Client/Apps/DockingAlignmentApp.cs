@@ -1,10 +1,7 @@
 using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using LcdMod.Client.Apps.Abstract;
-using LcdMod.Client.Extensions;
-using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Terminal.Controls;
 using Sandbox.Definitions;
@@ -16,8 +13,8 @@ using VRage.ModAPI;
 using VRage.Utils;
 using VRageMath;
 using static LcdMod.Common.Helpers.Constants;
-using ColorExtensions = VRageMath.ColorExtensions;
 using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
+using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 using MyShipConnectorStatus = Sandbox.ModAPI.Ingame.MyShipConnectorStatus;
 
 using LcdMod.Common.Config.Generation;
@@ -31,20 +28,8 @@ namespace LcdMod.Client.Apps
         const float TARGET_SEARCH_RANGE = 100f;
         const float TARGET_SEARCH_CONE_DEGREES = 45f;
         const long TARGET_SEARCH_DELAY_TICKS = 100L;
-        const int ANGLE_TICK_COUNT = 9;
-        const float ANGLE_TICK_DEGREES = 5f;
-        const float VELOCITY_SCALE = 0.65f;
-        const float REFERENCE_MARKER_SCALE = 0.5f;
-        const float VECTOR_TEXTURE_SCALE_RANGE = 20f;
-        const float MIN_VECTOR_TEXTURE_SCALE = 0f;
-        const float MAX_VECTOR_TEXTURE_SCALE = 2f;
-        const float MAX_VECTOR_ANGLE_DEGREES = ANGLE_TICK_COUNT * ANGLE_TICK_DEGREES;
-        const float MAX_TARGET_ANGLE_DEGREES = MAX_VECTOR_ANGLE_DEGREES;
-        const float MAX_VELOCITY_VECTOR_METERS_PER_SECOND = 10f;
+        const float MAX_TARGET_ANGLE_DEGREES = 45f;
 
-        // todo: convert to interactive app
-        public override IReadOnlyList<Control> VisualChildren { get; } = new Control[]{};
-        
         static readonly List<MyTerminalControlComboBoxItem> DockingDisplayModes =
             new List<MyTerminalControlComboBoxItem>
             {
@@ -69,13 +54,7 @@ namespace LcdMod.Client.Apps
         readonly List<IMyCubeGrid> _parkingSearchGrids = new List<IMyCubeGrid>();
         readonly List<IMySlimBlock> _parkingSearchBlocks = new List<IMySlimBlock>();
         readonly List<IMyEntity> _entityBuffer = new List<IMyEntity>();
-        readonly List<MySprite> _sprites = new List<MySprite>();
-        readonly List<MySprite> _staticSprites = new List<MySprite>();
-        readonly Dictionary<string, string> _connectorNameCache = new Dictionary<string, string>();
-
-        LayoutMetrics _layout;
-        bool _staticSpritesDirty = true;
-        int _staticChromeSpriteCount;
+        readonly DockingAlignment.DockingAlignmentViewModel _viewModel;
 
         IMyTerminalBlock _referenceBlock;
         IMyTerminalBlock _targetBlock;
@@ -90,20 +69,21 @@ namespace LcdMod.Client.Apps
         string _noTargetMessage;
         string _noCockpitMessage;
         string _dockingFailureMessage;
+        string _displayReferenceWarning;
         double _lastDockingAxisDistance = double.NaN;
         long _lastDockingAxisDistanceFrame = -1L;
 
         IMyCubeBlock Block => Host.Block;
-        Sandbox.ModAPI.Ingame.IMyTextSurface Surface => Host.Surface;
-        RectangleF ViewBox => Host.ViewBox;
+        IMyTextSurface Surface => Host.Surface;
         float Scale => GeneralComponent.GetScale();
         float FontScale => Host.Surface.FontSize;
-        float LayoutScale => Scale * FontScale;
+        internal override float WindowRenderScaling => Scale > 0f ? Scale : 1f;
         Color BackgroundColor => Host.BackgroundColor;
-        const float FOOTER_HEIGHT = 0f;
 
         public DockingAlignmentApp(IAppHost host) : base(host)
         {
+            _viewModel = new DockingAlignment.DockingAlignmentViewModel();
+            SetContent(new DockingAlignment.DockingAlignmentView(_viewModel));
         }
 
         
@@ -121,10 +101,6 @@ namespace LcdMod.Client.Apps
         public override void LayoutChanged()
         {
             base.LayoutChanged();
-            _sprites.Clear();
-            _staticSprites.Clear();
-            _staticSpritesDirty = true;
-            _connectorNameCache.Clear();
             _pitchLabel = LocHelper.GetLoc("BlockPropertyTitle_ProjectionRotationX");
             _yawLabel = LocHelper.GetLoc("BlockPropertyTitle_ProjectionRotationY");
             _rollLabel = LocHelper.GetLoc("BlockPropertyTitle_ProjectionRotationZ");
@@ -134,24 +110,19 @@ namespace LcdMod.Client.Apps
                 LocHelper.GetLoc("DisplayName_Block_MergeBlock"));
             _noTargetMessage = LocHelper.GetLoc(MOD_PREFIX + "DockingAlignment_NoTarget");
             _noCockpitMessage = LocHelper.GetLoc("TssTargetingInfo_NoMainCockpit");
+            _viewModel.RefreshLayout(FontScale, WindowRenderScaling, TextFont, Surface.ScriptForegroundColor,
+                GetHeaderColor(), BackgroundColor, ColorComponent.ResolveWarningColor(),
+                ColorComponent.ResolveErrorColor(), _pitchLabel, _yawLabel, _rollLabel);
         }
 
         public override void Update()
         {
-            EnsureStaticSprites();
-
-            _sprites.Clear();
-            AddStaticChromeSprites();
-
             if (!ResolveReferenceAndTarget())
             {
-                Host.DrawMessage(_sprites, _dockingFailureMessage, "Warning", ColorComponent.ResolveWarningColor(),
-                    GeneralComponent.GetScale());
+                _viewModel.ShowWarning(_dockingFailureMessage, true);
+                ResetDistanceRate();
                 return;
             }
-
-            _sprites.Clear();
-            _sprites.AddRange(_staticSprites);
 
             Vector3D positionOffset;
             Vector3D rotationOffset;
@@ -161,24 +132,37 @@ namespace LcdMod.Client.Apps
                 Math.Abs(rotationOffset.Y) > MAX_TARGET_ANGLE_DEGREES)
             {
                 _targetBlock = null;
-                _sprites.Clear();
-                AddStaticChromeSprites();
-                Host.DrawMessage(_sprites, _noTargetMessage, "Warning", ColorComponent.ResolveWarningColor(),
-                    GeneralComponent.GetScale());
+                _viewModel.ShowWarning(_noTargetMessage, true);
+                ResetDistanceRate();
                 return;
             }
 
             GetVelocityOffset(_referenceBlock, _targetBlock, out velocityOffset);
             var dockingAxisDistance = GetDockingAxisOffset(_referenceBlock, positionOffset);
             var closingVelocity = GetDockingAxisOffset(_referenceBlock, velocityOffset);
+            _displayReferenceWarning = null;
             RemapOffsetsToDisplayReference(ref positionOffset, ref rotationOffset, ref velocityOffset);
-
-            DrawAlignment(positionOffset, rotationOffset, velocityOffset, dockingAxisDistance, closingVelocity);
+            _viewModel.ShowWarning(_displayReferenceWarning, false);
+            var targetGridName = FormatingHelper.TrimName(_targetBlock.CubeGrid?.CustomName);
+            _viewModel.Update(positionOffset, rotationOffset, velocityOffset, GetStatusColor(),
+                dockingAxisDistance, GetClosingDistanceRate(dockingAxisDistance), closingVelocity,
+                _referenceBlock.CustomName ?? string.Empty,
+                (string.IsNullOrEmpty(targetGridName) ? string.Empty : targetGridName + " > ") +
+                (_targetBlock.CustomName ?? string.Empty));
         }
 
-        public override List<MySprite> GetSprites()
+        void ResetDistanceRate()
         {
-            return _sprites;
+            _lastDockingAxisDistance = double.NaN;
+            _lastDockingAxisDistanceFrame = -1L;
+        }
+
+        public override List<MySprite> GetSprites() { return new List<MySprite>(); }
+
+        public override void Close()
+        {
+            ClearParkingConnectorSearch();
+            base.Close();
         }
 
         IMyTerminalBlock GetConfiguredReferenceBlock()
@@ -509,8 +493,7 @@ namespace LcdMod.Client.Apps
                 case DockingDisplayMode.ControllerReference:
                     if (!Host.TryGetReferenceWorldMatrix((int)ReferenceMode.Controller, out displayRotation))
                     {
-                        Host.DrawMessage(_sprites, _noCockpitMessage, "Warning", ColorComponent.ResolveWarningColor(),
-                            GeneralComponent.GetScale());
+                        _displayReferenceWarning = _noCockpitMessage;
                         return false;
                     }
                     
@@ -518,216 +501,6 @@ namespace LcdMod.Client.Apps
                     return true;
                 default:
                     return false;
-            }
-        }
-
-        void EnsureStaticSprites()
-        {
-            if (!_staticSpritesDirty)
-                return;
-
-            _staticSpritesDirty = false;
-            _staticSprites.Clear();
-            Host.AddBackground(_staticSprites);
-            Host.DrawTitle(_staticSprites);
-            _staticChromeSpriteCount = _staticSprites.Count;
-
-            _layout = CalculateLayoutMetrics();
-
-            var accent = GetHeaderColor();
-            var mutedAccent = ColorExtensions.Alpha(accent, 0.66f);
-
-            DrawAlignmentTicks(_staticSprites, _layout.Square, mutedAccent);
-            DrawRollArcTicks(_staticSprites, _layout.Square, mutedAccent);
-            AddTexture(_staticSprites, "CircleHollow", _layout.Square.Center,
-                new Vector2(_layout.MarkerSize * REFERENCE_MARKER_SCALE), mutedAccent, 0f);
-
-            AddText(_staticSprites, _pitchLabel, NormalizedToSquare(_layout.Square, 0.35f, -0.06f),
-                _layout.Font * 0.65f, accent, TextAlignment.RIGHT);
-
-            AddText(_staticSprites, _yawLabel,
-                new Vector2(_layout.Square.Center.X, _layout.BottomY - _layout.Font * 32f),
-                _layout.Font * 0.65f, accent, TextAlignment.CENTER);
-
-            AddText(_staticSprites, _rollLabel,
-                new Vector2(_layout.Square.Center.X, _layout.RollArcTopY - _layout.Font * 22f),
-                _layout.Font * 0.65f, accent, TextAlignment.CENTER);
-
-            AddTexture(_staticSprites, "SquareSimple",
-                new Vector2(ViewBox.Center.X, _layout.FooterTop + _layout.FooterHeight * 0.5f),
-                new Vector2(ViewBox.Width, _layout.FooterHeight),
-                new Color(BackgroundColor.MulValue(0.8f), 0.5f),
-                0f);
-        }
-
-        void AddStaticChromeSprites()
-        {
-            for (int i = 0; i < _staticChromeSpriteCount && i < _staticSprites.Count; i++)
-                _sprites.Add(_staticSprites[i]);
-        }
-
-        LayoutMetrics CalculateLayoutMetrics()
-        {
-            var footerHeight = 58f * LayoutScale;
-            var referenceTextMargin = ViewBox.Height * 0.02f;
-            var contentTop = ContentTop();
-            var contentBottom = ViewBox.Bottom - FOOTER_HEIGHT - footerHeight;
-            var contentHeight = Math.Max(0f, contentBottom - contentTop);
-            var content = new RectangleF(ViewBox.X, contentTop, ViewBox.Width, contentHeight);
-            var squareSize = Math.Min(content.Width, content.Height);
-            var square = new RectangleF(
-                content.Center.X - squareSize / 2f,
-                content.Center.Y - squareSize / 2f,
-                squareSize,
-                squareSize);
-
-            var font = Math.Max(0.45f, Math.Min(0.95f, squareSize / 560f)) * Scale * FontScale;
-            var angleAxisLength = square.Width * 0.72f;
-            var angleHalfAxis = angleAxisLength * 0.5f;
-
-            return new LayoutMetrics
-            {
-                FooterHeight = footerHeight,
-                ReferenceTextMargin = referenceTextMargin,
-                FooterTop = ViewBox.Bottom - FOOTER_HEIGHT - footerHeight,
-                Square = square,
-                MarkerSize = squareSize * 0.1f,
-                Font = font,
-                BottomY = square.Bottom - squareSize * 0.08f,
-                PitchLineTop = square.Center.Y - angleHalfAxis,
-                RollArcTopY = square.Center.Y - squareSize * 0.42f,
-                RollArcLeftX = square.Center.X - square.Width * 0.32f
-            };
-        }
-
-        float ContentTop()
-        {
-            return Host.TitleVisible ? ViewBox.Y + 40f * LayoutScale : ViewBox.Y;
-        }
-
-        void DrawAlignment(Vector3D positionOffset, Vector3D rotationOffset, Vector3D velocityOffset,
-            double dockingAxisDistance, double closingVelocity)
-        {
-            var foreground = Surface.ScriptForegroundColor;
-            var statusColor = GetStatusColor();
-
-            DrawAngleGuides(_sprites, _layout.Square, statusColor, (float)rotationOffset.X, (float)rotationOffset.Y);
-            DrawRollIndicator(_sprites, _layout.Square, statusColor, (float)rotationOffset.Z);
-
-            var positionVector = new Vector2(
-                MathHelper.Clamp(-(float)positionOffset.X * 0.025f, -0.36f, 0.36f),
-                MathHelper.Clamp((float)positionOffset.Y * 0.025f, -0.36f, 0.36f));
-            AddTexture(_sprites, "AH_VelocityVector", NormalizedToSquare(_layout.Square, positionVector.X, positionVector.Y),
-                new Vector2(_layout.MarkerSize * GetVectorTextureScale(positionOffset.Z)), ColorComponent.ResolveErrorColor(), 0f);
-
-            var velocityVector = new Vector2(
-                MathHelper.Clamp(-(float)velocityOffset.X / MAX_VELOCITY_VECTOR_METERS_PER_SECOND, -1f, 1f) * 0.36f,
-                MathHelper.Clamp((float)velocityOffset.Y / MAX_VELOCITY_VECTOR_METERS_PER_SECOND, -1f, 1f) * 0.36f);
-
-
-            var velocityOpacity = MathHelper.Clamp((float)velocityOffset.Length(), 0f, 1f);
-
-            AddTexture(_sprites, "AH_VelocityVector", NormalizedToSquare(_layout.Square, velocityVector.X, velocityVector.Y),
-                new Vector2(_layout.MarkerSize * VELOCITY_SCALE * GetVectorTextureScale(velocityOffset.Z)),
-                statusColor.Alpha(velocityOpacity), 0);
-
-            AddText(_sprites, $"{rotationOffset.X:0.0}°", NormalizedToSquare(_layout.Square, 0.39f, -0.02f),
-                _layout.Font, foreground, TextAlignment.LEFT);
-
-            var yawValue = $"{rotationOffset.Y:0.0}°";
-
-            AddText(_sprites, yawValue, new Vector2(_layout.Square.Center.X, _layout.BottomY), _layout.Font,
-                foreground, TextAlignment.CENTER);
-
-            AddText(_sprites, $"{rotationOffset.Z:0.0}°",
-                new Vector2(_layout.RollArcLeftX, _layout.PitchLineTop), _layout.Font, foreground,
-                TextAlignment.RIGHT);
-
-            DrawReferenceNames(_layout.FooterHeight, _layout.ReferenceTextMargin, foreground, _layout.Font * 0.75f,
-                yawValue, _layout.Font);
-            DrawPositionFooter(positionOffset, rotationOffset, dockingAxisDistance, closingVelocity, _layout.FooterHeight,
-                foreground);
-        }
-
-        void DrawReferenceNames(float footerHeight, float referenceTextMargin, Color foreground, float font,
-            string yawValue, float yawFont)
-        {
-            var textOffsetY = FormatingHelper.GetSizeInPixel("A", TextFont, font, Surface).Y * 0.5f;
-            var y = ViewBox.Bottom - FOOTER_HEIGHT - footerHeight - referenceTextMargin - 8f * LayoutScale - textOffsetY;
-            var targetGridName = FormatingHelper.TrimName(_targetBlock.CubeGrid?.CustomName);
-            var labels = new[]
-            {
-                "Ref: " + (_referenceBlock.CustomName ?? string.Empty),
-                "Tgt: " + (string.IsNullOrEmpty(targetGridName) ? string.Empty : targetGridName + " > ") +
-                (_targetBlock.CustomName ?? string.Empty)
-            };
-
-            var columnWidth = ViewBox.Width * 0.5f;
-            var margin = 8f * LayoutScale;
-            var yawReservedWidth = FormatingHelper.GetSizeInPixel(yawValue, TextFont, yawFont, Surface).X + margin * 2f;
-            var centerLeft = ViewBox.Center.X - yawReservedWidth * 0.5f;
-            var centerRight = ViewBox.Center.X + yawReservedWidth * 0.5f;
-            for (int i = 0; i < labels.Length; i++)
-            {
-                var left = ViewBox.X + columnWidth * i + margin;
-                var right = ViewBox.X + columnWidth * (i + 1) - margin;
-                if (i == 0)
-                    right = Math.Min(right, centerLeft);
-                else
-                    left = Math.Max(left, centerRight);
-
-                var availableWidth = Math.Max(0f, right - left);
-                var centerX = (left + right) * 0.5f;
-                var text = GetTrimmedConnectorName(labels[i], availableWidth, font);
-
-                AddText(_sprites, text, new Vector2(centerX, y), font, foreground, TextAlignment.CENTER);
-            }
-        }
-
-        string GetTrimmedConnectorName(string source, float availableWidth, float font)
-        {
-            var cacheKey = source + "|" + ((int)Math.Round(availableWidth)) + "|" + ((int)Math.Round(font * 1000f));
-            string cached;
-            if (_connectorNameCache.TryGetValue(cacheKey, out cached))
-                return cached;
-
-            var sb = new StringBuilder(source ?? string.Empty);
-            Host.TrimText(ref sb, availableWidth, font);
-            cached = sb.ToString();
-            _connectorNameCache[cacheKey] = cached;
-            return cached;
-        }
-
-        void DrawPositionFooter(Vector3D positionOffset, Vector3D rotationOffset, double dockingAxisDistance,
-            double closingVelocity, float footerHeight, Color valueColor)
-        {
-            var footerTop = ViewBox.Bottom - FOOTER_HEIGHT - footerHeight;
-            var row1Y = footerTop + footerHeight * 0.36f;
-            var row2Y = footerTop + footerHeight * 0.78f;
-            var footerTextScale = Math.Max(0.36f, 0.52f * Scale) * FontScale;
-            var footerTextOffsetY = FormatingHelper.GetSizeInPixel("A", TextFont, footerTextScale, Surface).Y * 0.5f;
-            var closingDistance = GetClosingDistanceRate(dockingAxisDistance);
-
-            var labels = new[]
-            {
-                $"L/R {-positionOffset.X:0.00}m",
-                $"F/B {positionOffset.Z:0.00}m",
-                $"U/D {-positionOffset.Y:0.00}m",
-                $"DST {positionOffset.Length():0.##}m",
-                $"ADST {dockingAxisDistance:0.00}m",
-                $"CDST {closingDistance:0.00}m/s",
-                $"CVEL {closingVelocity:0.00}m/s",
-                $"R° {rotationOffset.Z:0.0}°"
-            };
-
-            var columnWidth = ViewBox.Width / 4f;
-            for (int i = 0; i < 4; i++)
-            {
-                var x = ViewBox.X + columnWidth * (i + 0.5f);
-                AddText(_sprites, labels[i], new Vector2(x, row1Y - footerTextOffsetY), footerTextScale, valueColor,
-                    TextAlignment.CENTER);
-                AddText(_sprites, labels[i + 4], new Vector2(x, row2Y - footerTextOffsetY), footerTextScale, valueColor,
-                    TextAlignment.CENTER);
             }
         }
 
@@ -748,104 +521,6 @@ namespace LcdMod.Client.Apps
             return result;
         }
 
-        static float GetVectorTextureScale(double value)
-        {
-            return MathHelper.Clamp(1f + (float)value / VECTOR_TEXTURE_SCALE_RANGE, MIN_VECTOR_TEXTURE_SCALE,
-                MAX_VECTOR_TEXTURE_SCALE);
-        }
-
-        void DrawRollArcTicks(List<MySprite> sprites, RectangleF square, Color color)
-        {
-            var tickScale = Scale * FontScale;
-            var radius = square.Width * 0.32f;
-            var center = new Vector2(square.Center.X, square.Center.Y - square.Height * 0.10f);
-
-            for (int i = -ANGLE_TICK_COUNT; i <= ANGLE_TICK_COUNT; i++)
-            {
-                if (i == 0)
-                    continue;
-
-                var angleDegrees = i * ANGLE_TICK_DEGREES - 90f;
-                var angleRadians = MathHelper.ToRadians(angleDegrees);
-                var direction = new Vector2((float)Math.Cos(angleRadians), (float)Math.Sin(angleRadians));
-                var isEven = Math.Abs(i) % 2 == 0;
-                var thickness = isEven ? 2.2f * tickScale : 1.2f * tickScale;
-                var tickLength = isEven ? 18f * tickScale : 10f * tickScale;
-                var tickColor = color.Alpha(isEven ? 0.75f : 0.35f);
-                var tickCenter = center + direction * radius;
-
-                AddTexture(sprites, "SquareSimple", tickCenter, new Vector2(tickLength, thickness), tickColor, angleRadians);
-            }
-        }
-
-        void DrawRollIndicator(List<MySprite> sprites, RectangleF square, Color indicatorColor, float rollOffsetDegrees)
-        {
-            var tickScale = Scale * FontScale;
-            var radius = square.Width * 0.32f;
-            var center = new Vector2(square.Center.X, square.Center.Y - square.Height * 0.10f);
-            var rollAngle = MathHelper.Clamp(rollOffsetDegrees, -MAX_VECTOR_ANGLE_DEGREES, MAX_VECTOR_ANGLE_DEGREES);
-            var indicatorAngleRadians = MathHelper.ToRadians(rollAngle - 90f);
-            var indicatorDirection = new Vector2((float)Math.Cos(indicatorAngleRadians),
-                (float)Math.Sin(indicatorAngleRadians));
-            AddTexture(sprites, "SquareSimple",
-                center + indicatorDirection * radius,
-                new Vector2(28f * tickScale, 3.5f * tickScale),
-                indicatorColor.Alpha(0.95f),
-                indicatorAngleRadians);
-        }
-
-        void DrawAngleGuides(List<MySprite> sprites, RectangleF square, Color color, float pitchDegrees, float yawDegrees)
-        {
-            var axisLength = square.Width * 0.72f;
-            var halfAxis = axisLength * 0.5f;
-            var thickness = 3f * Scale * FontScale;
-            var guideColor = color.Alpha(0.5f);
-            var yawOffset = MathHelper.Clamp(yawDegrees / MAX_VECTOR_ANGLE_DEGREES, -1f, 1f) * halfAxis;
-            var pitchOffset = MathHelper.Clamp(-pitchDegrees / MAX_VECTOR_ANGLE_DEGREES, -1f, 1f) * halfAxis;
-
-            AddTexture(sprites, "SquareSimple",
-                new Vector2(square.Center.X + yawOffset, square.Center.Y),
-                new Vector2(thickness, axisLength),
-                guideColor,
-                0f);
-
-            AddTexture(sprites, "SquareSimple",
-                new Vector2(square.Center.X, square.Center.Y + pitchOffset),
-                new Vector2(axisLength, thickness),
-                guideColor,
-                0f);
-        }
-
-        void DrawAlignmentTicks(List<MySprite> sprites, RectangleF square, Color color)
-        {
-            var tickScale = Scale * FontScale;
-            var axisLength = square.Width * 0.72f;
-            var pixelsPerDegree = axisLength / (MAX_VECTOR_ANGLE_DEGREES * 2f);
-            for (int i = -ANGLE_TICK_COUNT; i <= ANGLE_TICK_COUNT; i++)
-            {
-                if (i == 0)
-                    continue;
-
-                var isEven = Math.Abs(i) % 2 == 0;
-                var thickness = isEven ? 2.2f * tickScale : 1.2f * tickScale;
-                var tickLength = isEven ? 18f * tickScale : 10f * tickScale;
-                var tickColor = color.Alpha(isEven ? 0.75f : 0.35f);
-                var offset = i * ANGLE_TICK_DEGREES * pixelsPerDegree;
-
-                AddTexture(sprites, "SquareSimple",
-                    new Vector2(square.Center.X, square.Center.Y + offset),
-                    new Vector2(tickLength, thickness),
-                    tickColor,
-                    0f);
-
-                AddTexture(sprites, "SquareSimple",
-                    new Vector2(square.Center.X + offset, square.Center.Y),
-                    new Vector2(thickness, tickLength),
-                    tickColor,
-                    0f);
-            }
-        }
-
         Color GetStatusColor()
         {
             var connector = _referenceBlock as IMyShipConnector;
@@ -859,54 +534,6 @@ namespace LcdMod.Client.Apps
                 return GetHeaderColor();
 
             return Surface.ScriptForegroundColor;
-        }
-
-        static Vector2 NormalizedToSquare(RectangleF square, float x, float y)
-        {
-            return new Vector2(square.Center.X + x * square.Width, square.Center.Y + y * square.Height);
-        }
-
-        void AddTexture(List<MySprite> sprites, string texture, Vector2 position, Vector2 size, Color color, float rotation)
-        {
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = texture,
-                Position = position,
-                Size = size,
-                Color = color,
-                Alignment = TextAlignment.CENTER,
-                RotationOrScale = rotation
-            });
-        }
-
-        void AddText(List<MySprite> sprites, string text, Vector2 position, float scale, Color color,
-            TextAlignment alignment)
-        {
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXT,
-                Data = text,
-                Position = position,
-                RotationOrScale = scale,
-                Color = color,
-                Alignment = alignment,
-                FontId = TextFont
-            });
-        }
-
-        struct LayoutMetrics
-        {
-            public float FooterHeight;
-            public float ReferenceTextMargin;
-            public float FooterTop;
-            public RectangleF Square;
-            public float MarkerSize;
-            public float Font;
-            public float BottomY;
-            public float PitchLineTop;
-            public float RollArcTopY;
-            public float RollArcLeftX;
         }
 
         enum DockingDisplayMode

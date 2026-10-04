@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl xmlns="https://github.com/ArthurGamerHD/Adk"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:LcdMod.Client.Apps.Controls"
+             x:Class="LcdMod.Client.Apps.InGameClockDashboard.ClockForecastView"
+             x:DataType="LcdMod.Client.Apps.InGameClockDashboard.InGameClockDashboardViewModel">
+  <Grid>
+    <Grid RowDefinitions="60* 24* 16*" IsVisible="{Binding IsNotTiny}">
+      <controls:SpriteIcon Source="{Binding ForecastIcon}" SizeRatio="1" />
+      <TextBlock Grid.Row="1" Classes="clock-text" Text="{Binding ForecastTitle}" FontSize="{Binding ForecastTitleFontSize}"
+                 TextAlignment="Center" />
+      <TextBlock Grid.Row="2" Classes="clock-text" Text="{Binding ForecastArrival}" FontSize="{Binding ForecastArrivalFontSize}"
+                 TextAlignment="Center" VerticalAlignment="Top" />
+    </Grid>
+    <Grid RowDefinitions="34* 32* 34*" IsVisible="{Binding IsTiny}">
+      <controls:SpriteIcon Source="{Binding ForecastIcon}" SizeRatio="1" />
+      <TextBlock Grid.Row="1" Classes="clock-text" Text="{Binding ForecastTitle}" FontSize="{Binding ForecastTitleFontSize}"
+                 TextAlignment="Center" />
+      <TextBlock Grid.Row="2" Classes="clock-text" Text="{Binding ForecastArrival}" FontSize="{Binding ForecastArrivalFontSize}"
+                 TextAlignment="Center" VerticalAlignment="Top" />
+    </Grid>
+  </Grid>
+</UserControl>

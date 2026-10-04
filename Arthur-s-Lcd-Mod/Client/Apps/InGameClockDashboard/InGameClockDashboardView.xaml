@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl xmlns="https://github.com/ArthurGamerHD/Adk"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:clock="using:LcdMod.Client.Apps.InGameClockDashboard"
+             xmlns:controls="using:LcdMod.Client.Apps.Controls"
+             x:Class="LcdMod.Client.Apps.InGameClockDashboard.InGameClockDashboardView"
+             x:DataType="clock:InGameClockDashboardViewModel">
+  <UserControl.Styles>
+    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/ClockDashboard.xaml" />
+  </UserControl.Styles>
+  <Grid>
+    <Grid RowDefinitions="* *" IsVisible="{Binding IsSquare}">
+      <Border Classes="clock-card" CornerRadius="{Binding CardRadius}" Margin="{Binding TopCardMargin}" Padding="{Binding CardPadding}">
+        <Grid ColumnDefinitions="1* 2*">
+          <controls:SpriteIcon Source="{Binding WeatherIcon}" SizeRatio="0.8" />
+          <clock:ClockInfoView Grid.Column="1" />
+        </Grid>
+      </Border>
+      <Grid Grid.Row="1" RowDefinitions="0.8* 1.2*">
+        <Border Classes="clock-card" CornerRadius="{Binding CardRadius}" Margin="{Binding ForecastCardMargin}" Padding="{Binding ForecastCardPadding}">
+          <clock:ClockStatusView />
+        </Border>
+        <Border Grid.Row="1" Classes="clock-card" CornerRadius="{Binding CardRadius}" Margin="{Binding BottomCardMargin}" Padding="{Binding CardPadding}">
+          <clock:ClockEnvironmentView />
+        </Border>
+      </Grid>
+    </Grid>
+
+    <Grid ColumnDefinitions="1.15* 1*" IsVisible="{Binding IsWide}">
+      <Border Classes="clock-card" CornerRadius="{Binding CardRadius}" Margin="{Binding TopCardMargin}" Padding="{Binding CardPadding}">
+        <clock:ClockInfoView />
+      </Border>
+      <Grid Grid.Column="1" RowDefinitions="* * *">
+        <Border Classes="clock-card" CornerRadius="{Binding CardRadius}" Margin="{Binding TopCardMargin}" Padding="{Binding CardPadding}">
+          <controls:SpriteIcon Source="{Binding WeatherIcon}" SizeRatio="0.8" />
+        </Border>
+        <Border Grid.Row="1" Classes="clock-card" CornerRadius="{Binding CardRadius}" Margin="{Binding ForecastCardMargin}" Padding="{Binding ForecastCardPadding}">
+          <clock:ClockStatusView />
+        </Border>
+        <Border Grid.Row="2" Classes="clock-card" CornerRadius="{Binding CardRadius}" Margin="{Binding BottomCardMargin}" Padding="{Binding CardPadding}">
+          <clock:ClockEnvironmentView />
+        </Border>
+      </Grid>
+    </Grid>
+
+    <Grid ColumnDefinitions="0.15* 0.15* 0.40* 0.30*" IsVisible="{Binding IsTiny}">
+      <Border Classes="clock-card" CornerRadius="{Binding CardRadius}" Margin="{Binding TopCardMargin}" Padding="{Binding CardPadding}">
+        <controls:SpriteIcon Source="{Binding WeatherIcon}" SizeRatio="0.8" />
+      </Border>
+      <Border Grid.Column="1" Classes="clock-card" CornerRadius="{Binding CardRadius}" Margin="{Binding TopCardMargin}" Padding="{Binding CardPadding}">
+        <clock:ClockForecastView />
+      </Border>
+      <Border Grid.Column="2" Classes="clock-card" CornerRadius="{Binding CardRadius}" Margin="{Binding TopCardMargin}" Padding="{Binding CardPadding}">
+        <clock:ClockInfoView />
+      </Border>
+      <Grid Grid.Column="3" RowDefinitions="* *">
+        <Border Classes="clock-card" CornerRadius="{Binding CardRadius}" Margin="{Binding ForecastCardMargin}" Padding="{Binding ForecastCardPadding}">
+          <clock:ClockStatusView />
+        </Border>
+        <Border Grid.Row="1" Classes="clock-card" CornerRadius="{Binding CardRadius}" Margin="{Binding BottomCardMargin}" Padding="{Binding CardPadding}">
+          <clock:ClockEnvironmentView />
+        </Border>
+      </Grid>
+    </Grid>
+  </Grid>
+</UserControl>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl xmlns="https://github.com/ArthurGamerHD/Adk"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="using:LcdMod.Client.Apps.Thrust"
+             x:Class="LcdMod.Client.Apps.Thrust.ThrustView"
+             x:DataType="local:ThrustViewModel">
+  <Grid RowDefinitions="*,Auto">
+    <local:ThrustAxesControl Margin="{Binding AxesMargin}" Scale="{Binding Scale}"
+                            PositiveFill="{Binding PositiveFill}" NegativeFill="{Binding NegativeFill}"
+                            Gravity="{Binding Gravity}" GravityColor="{Binding GravityColor}" />
+    <Grid Width="{Binding PanelWidth}" Height="{Binding PanelHeight}" Margin="{Binding PanelMargin}"
+          RowDefinitions="Auto,Auto,Auto" HorizontalAlignment="Left" VerticalAlignment="Center">
+      <Border Height="{Binding CellHeight}"><local:ThrustTelemetryControl x:Name="SpeedCell" /></Border>
+      <Border Grid.Row="1" Height="{Binding PanelGap}" />
+      <Border Grid.Row="2" Height="{Binding CellHeight}"><local:ThrustTelemetryControl x:Name="StopDistanceCell" /></Border>
+    </Grid>
+    <Grid Width="{Binding PanelWidth}" Height="{Binding PanelHeight}" Margin="{Binding PanelMargin}"
+          RowDefinitions="Auto,Auto,Auto" HorizontalAlignment="Right" VerticalAlignment="Center">
+      <Border Height="{Binding CellHeight}"><local:ThrustTelemetryControl x:Name="StopTimeCell" /></Border>
+      <Border Grid.Row="1" Height="{Binding PanelGap}" />
+      <Border Grid.Row="2" Height="{Binding CellHeight}"><local:ThrustTelemetryControl x:Name="StopForceCell" /></Border>
+    </Grid>
+    <Border Grid.Row="1" Height="{Binding LegendHeight}" Background="{Binding LegendBackground}">
+      <Grid ColumnDefinitions="*,*,*" RowDefinitions="*,*">
+        <local:ThrustLegendCellControl x:Name="ForwardCell" />
+        <local:ThrustLegendCellControl x:Name="LeftCell" Grid.Column="1" />
+        <local:ThrustLegendCellControl x:Name="UpCell" Grid.Column="2" />
+        <local:ThrustLegendCellControl x:Name="BackwardCell" Grid.Row="1" />
+        <local:ThrustLegendCellControl x:Name="RightCell" Grid.Row="1" Grid.Column="1" />
+        <local:ThrustLegendCellControl x:Name="DownCell" Grid.Row="1" Grid.Column="2" />
+      </Grid>
+    </Border>
+    <TextBlock Grid.RowSpan="2" Text="{Binding Warning}" Foreground="{Binding WarningColor}"
+               FontSize="{Binding FontScale, Converter={StaticResource FontSizeMultiplier}, ConverterParameter=0.7, ConverterCulture=en-US}" FontFamily="{Binding FontFamily}"
+               HorizontalAlignment="Center" VerticalAlignment="Center" />
+  </Grid>
+</UserControl>

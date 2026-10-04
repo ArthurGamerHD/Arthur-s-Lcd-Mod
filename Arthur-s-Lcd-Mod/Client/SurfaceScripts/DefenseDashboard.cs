@@ -41,6 +41,7 @@ namespace LcdMod.Client.SurfaceScripts
             if (_app == null)
                 _app = new DefenseDashboardApp(this);
 
+            EnsureRetainedAppView(_app);
             _app.Update();
             RenderSprites();
         }
@@ -55,8 +56,7 @@ namespace LcdMod.Client.SurfaceScripts
             }
 
             AddBackground(sprites);
-            DrawTitle(sprites);
-            sprites.AddRange(_app.GetSprites());
+            DrawRetainedAppView(sprites);
             return sprites;
         }
     }

@@ -26,10 +26,7 @@ namespace LcdMod.Client.SurfaceScripts
         public const string TITLE = MOD_PREFIX + "EnergyDashboard";
         protected override string DefaultTitle => TITLE;
         public override IApp App => _app;
-        IApp _app;
-
-        public override List<Control> InteractiveList => _app.VisualChildren as List<Control>;
-        protected override bool RendersInteractiveEntriesInGetSprites => true;
+        EnergyDashboardApp _app;
 
         public EnergyDashboardSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)
         {
@@ -51,6 +48,7 @@ namespace LcdMod.Client.SurfaceScripts
             if (_app == null)
                 _app = new EnergyDashboardApp(this);
 
+            EnsureRetainedAppView(_app);
             UpdateViewBox();
             _app.Update();
             if (_app.IsDirty || InteractiveVisualsDirty)
@@ -61,9 +59,8 @@ namespace LcdMod.Client.SurfaceScripts
         {
             var sprites = new List<MySprite>();
             AddBackground(sprites);
-            DrawTitle(sprites);
             if (_app != null)
-                sprites.AddRange(_app.GetSprites());
+                DrawRetainedAppView(sprites);
             return sprites;
         }
     }

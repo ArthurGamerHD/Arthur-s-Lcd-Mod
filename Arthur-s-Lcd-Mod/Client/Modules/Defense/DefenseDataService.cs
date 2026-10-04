@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using LcdMod.Client.GridData;
 using LcdMod.Common.Helpers;
-using Sandbox.ModAPI;
 using VRage.Game.ModAPI;
 using IMyTerminalBlock = Sandbox.ModAPI.IMyTerminalBlock;
 

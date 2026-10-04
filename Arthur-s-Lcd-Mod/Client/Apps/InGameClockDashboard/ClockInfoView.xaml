@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl xmlns="https://github.com/ArthurGamerHD/Adk"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:LcdMod.Client.Apps.Controls"
+             x:Class="LcdMod.Client.Apps.InGameClockDashboard.ClockInfoView"
+             x:DataType="LcdMod.Client.Apps.InGameClockDashboard.InGameClockDashboardViewModel">
+  <Grid RowDefinitions="0.7* 2.4* 0.7*">
+    <TextBlock Classes="clock-text" Text="{Binding WeatherTemperature}" FontSize="{Binding WeatherTemperatureFontSize}"
+               TextAlignment="Center" />
+    <controls:FitTextBlock Grid.Row="1" Classes="clock-fit" Text="{Binding Time}" MinFontSize="{Binding TimeMinFontSize}"
+                           MaxFontSize="{Binding TimeMaxFontSize}" />
+    <TextBlock Grid.Row="2" Classes="clock-text" Text="{Binding Date}" FontSize="{Binding DateFontSize}" TextAlignment="Center" />
+  </Grid>
+</UserControl>

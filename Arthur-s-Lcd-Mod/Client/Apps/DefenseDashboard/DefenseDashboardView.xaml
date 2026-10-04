@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl xmlns="https://github.com/ArthurGamerHD/Adk"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:LcdMod.Client.Apps.Controls"
+             x:Class="LcdMod.Client.Apps.DefenseDashboard.DefenseDashboardView"
+             x:DataType="LcdMod.Client.Apps.DefenseDashboard.DefenseDashboardViewModel">
+  <UserControl.Styles>
+    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/DefenseDashboard.xaml" />
+  </UserControl.Styles>
+  <UniformGrid Columns="1">
+    <ItemsControl ItemsSource="{Binding Shields}" IsVisible="{Binding HasShields}">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate>
+          <controls:TilingPanel Classes="defense-tiles" FillFromBottom="True" />
+        </ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="LcdMod.Client.Apps.DefenseDashboard.ShieldStatusEntry">
+          <Grid>
+            <Border Classes="defense-shadow" Background="{Binding ShadowColor}" />
+            <Border Classes="defense-card" Background="{Binding CardColor}">
+              <Grid ColumnDefinitions="36* 64*">
+                <Viewbox>
+                  <Grid Classes="shield-ring">
+                    <Arc Classes="shield-ring" SweepAngle="360" Stroke="{Binding TrackColor}" />
+                    <Arc Classes="shield-ring" SweepAngle="{Binding GhostSweep}" Stroke="{Binding GhostColor, Converter={StaticResource MinimumContrast}}" IsVisible="{Binding HasGhost}" />
+                    <Arc Classes="shield-ring" SweepAngle="{Binding Sweep}" Stroke="{Binding StatusColor, Converter={StaticResource MinimumContrast}}" />
+                    <Image Classes="shield-icon" Source="ShieldIcon" />
+                  </Grid>
+                </Viewbox>
+                <Grid Grid.Column="1" Classes="shield-details" RowDefinitions="50* 78* 48*">
+                  <controls:FitTextBlock Classes="defense-detail" Text="{Binding Title}" MaxFontSize="{Binding TitleFontSize}"
+                                         Foreground="{Binding Foreground}" />
+                  <controls:FitTextBlock Grid.Row="1" Classes="defense-detail" Text="{Binding ChargeText}" MaxFontSize="{Binding ChargeFontSize}"
+                                         FontFamily="{Binding ChargeFont}" Foreground="{Binding Foreground}" />
+                  <controls:FitTextBlock Grid.Row="2" Classes="defense-detail" Text="{Binding DeltaText}" MaxFontSize="{Binding DeltaFontSize}"
+                                         Foreground="{Binding DeltaColor, Converter={StaticResource MinimumContrast}}" />
+                </Grid>
+              </Grid>
+            </Border>
+          </Grid>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+    <ItemsControl ItemsSource="{Binding Weapons}" IsVisible="{Binding HasWeapons}">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate>
+          <controls:TilingPanel Classes="defense-tiles" />
+        </ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="LcdMod.Client.Apps.DefenseDashboard.WeaponStatusEntry">
+          <Grid>
+            <Border Classes="defense-shadow" Background="{Binding ShadowColor}" />
+            <Border Classes="defense-card" Background="{Binding CardColor}">
+              <Grid RowDefinitions="22* 66* 12*">
+                <controls:FitTextBlock Text="{Binding Title}" MaxFontSize="{Binding TitleFontSize}" Foreground="{Binding Foreground}" />
+                <Viewbox Grid.Row="1" Classes="weapon-status">
+                  <Grid Classes="weapon-status" ColumnDefinitions="Auto *">
+                    <Image Classes="weapon-icon" Source="{Binding Icon}" />
+                    <ItemsControl Grid.Column="1" ItemsSource="{Binding Rows}" VerticalAlignment="Center">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="LcdMod.Client.Apps.DefenseDashboard.WeaponStatusRow">
+                          <Grid Classes="weapon-row" ColumnDefinitions="Auto *">
+                            <Border Classes="weapon-dot" Background="{Binding DotColor, Converter={StaticResource MinimumContrast}}" />
+                            <controls:FitTextBlock Grid.Column="1" Classes="defense-detail" Text="{Binding Text}"
+                                                   MaxFontSize="{Binding FontSize}" Foreground="{Binding Foreground}" />
+                          </Grid>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </Grid>
+                </Viewbox>
+                <controls:SegmentedBar Grid.Row="2" Segments="{Binding Segments}" Total="{Binding Total}" Track="{Binding TrackColor}" />
+              </Grid>
+            </Border>
+          </Grid>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+  </UniformGrid>
+</UserControl>

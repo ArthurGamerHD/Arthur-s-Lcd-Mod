@@ -6,20 +6,14 @@ using System.Text;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Farm;
 using LcdMod.Client.GridData;
-using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
-using LcdMod.Client.Gui.ControlsTemplates.Custom;
-using LcdMod.Client.Gui.ControlsTemplates.Panels;
-using LcdMod.Client.Gui.Tooltip;
 using LcdMod.Client.Helpers;
-using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
 using VRage.Game;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 using static LcdMod.Common.Helpers.Constants;
-using VisualWrapPanel = LcdMod.Client.Gui.ControlsTemplates.Panels.WrapPanel.WrapPanel;
 
 using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.Apps
@@ -28,13 +22,10 @@ namespace LcdMod.Client.Apps
     // ReSharper disable once PartialTypeWithSinglePart
     internal sealed partial class FarmApp : App, IApp
     {
-        const float SLOT_W = 100f;
-        const float SLOT_H = 100f;
-        const float SCROLLER_W = 8f;
         const int DATA_REFRESH_RUN_INTERVAL = 6;
         internal sealed class FarmEntry
         {
-            readonly List<ITooltipLine> _details = new List<ITooltipLine>();
+            readonly List<string> _details = new List<string>();
 
             public long EntryId { get; private set; }
             public FarmPlotEntry Plot { get; private set; }
@@ -98,11 +89,6 @@ namespace LcdMod.Client.Apps
                        !string.Equals(previousDetails, DetailsMarkdown, StringComparison.Ordinal);
             }
 
-            public IList<ITooltipLine> GetDetails()
-            {
-                return _details;
-            }
-
             void RefreshDetails(string detailedInfo)
             {
                 _details.Clear();
@@ -110,7 +96,7 @@ namespace LcdMod.Client.Apps
                 var logic = Plot?.Logic;
                 if (logic == null)
                 {
-                    _details.Add(new StaticTooltipLine(PercentText));
+                    _details.Add(PercentText);
                     DetailsMarkdown = BuildDetailsMarkdown();
                     return;
                 }
@@ -118,19 +104,19 @@ namespace LcdMod.Client.Apps
                 if (!string.IsNullOrEmpty(OutputName))
                 {
                     var amount = logic.OutputItemAmount;
-                    _details.Add(new StaticTooltipLine(amount > 0
+                    _details.Add(amount > 0
                         ? string.Format(FormatingHelper.Culture, LocHelper.GetLoc(MOD_PREFIX + "Farm_OutputAmount"),
                             OutputName, amount)
-                        : OutputName));
+                        : OutputName);
                 }
 
                 if (!string.IsNullOrEmpty(WaterText))
-                    _details.Add(new StaticTooltipLine(WaterText));
+                    _details.Add(WaterText);
 
                 AppendDetailedInfoLines(detailedInfo);
 
                 if (_details.Count == 0)
-                    _details.Add(new StaticTooltipLine(PercentText));
+                    _details.Add(PercentText);
 
                 DetailsMarkdown = BuildDetailsMarkdown();
             }
@@ -147,7 +133,7 @@ namespace LcdMod.Client.Apps
                     if (i == lines.Length - 1 && string.IsNullOrEmpty(lines[i]))
                         continue;
 
-                    _details.Add(new StaticTooltipLine(lines[i]));
+                    _details.Add(lines[i]);
                 }
             }
 
@@ -159,8 +145,7 @@ namespace LcdMod.Client.Apps
                 var sb = new StringBuilder();
                 for (int i = 0; i < _details.Count; i++)
                 {
-                    var line = _details[i];
-                    var text = line != null ? line.GetText() : string.Empty;
+                    var text = _details[i];
                     if (string.IsNullOrEmpty(text))
                         continue;
 
@@ -175,54 +160,47 @@ namespace LcdMod.Client.Apps
         }
 
         readonly IAppHost _surfaceHost;
-        readonly InteractiveSurfaceScript _interactiveHost;
         readonly List<FarmEntry> _entries = new List<FarmEntry>();
         readonly List<FarmEntry> _nextEntries = new List<FarmEntry>();
-        readonly List<Control> _children = new List<Control>();
         readonly Dictionary<long, FarmEntry> _entryById = new Dictionary<long, FarmEntry>();
         readonly Dictionary<long, FarmEntry> _entryModelsById = new Dictionary<long, FarmEntry>();
-        readonly Dictionary<long, FarmPlotControl> _entryControlById = new Dictionary<long, FarmPlotControl>();
         readonly HashSet<long> _activeEntryIds = new HashSet<long>();
         readonly List<long> _entryIdsToRemove = new List<long>();
         readonly FarmGrowthHelper _growthDefinitions = new FarmGrowthHelper();
-        readonly ScrollPanel _scrollPanel;
-        readonly VisualWrapPanel _gridPanel;
+        readonly Farm.FarmViewModel _viewModel;
         int _runsUntilDataRefresh;
         internal ColorConfigComponent FarmColors => ColorComponent;
 
+        public event Action PlotDetailsOpened;
+
         public FarmApp(IAppHost surfaceHost) : base(surfaceHost)
         {
+            _viewModel = new Farm.FarmViewModel(this);
+            _viewModel.DetailsOpened += () => PlotDetailsOpened?.Invoke();
+            SetContent(new Farm.FarmView { DataContext = _viewModel });
             NeedGridData(GridCapability.Blocks);
             _surfaceHost = surfaceHost;
-            _interactiveHost = surfaceHost as InteractiveSurfaceScript;
-            if (_interactiveHost == null)
-                throw new ArgumentException("FarmApp requires an InteractiveSurfaceScript host.", "surfaceHost");
 
-            _scrollPanel = AddLogicalChild(new ScrollPanel(CursorType.Default, this));
-            _scrollPanel.ScrollChanged = OnScrollPanelChanged;
-            _scrollPanel.SetVisible(false);
-            _gridPanel = new VisualWrapPanel();
-            _children.Add(_scrollPanel);
         }
 
-        public override IReadOnlyList<Control> VisualChildren => _children;
+        internal override float WindowRenderScaling => CardScale;
+
+        internal IReadOnlyList<FarmEntry> NativeEntries => _entries;
+        internal Color NativeBackground => _surfaceHost.BackgroundColor;
 
         public override void LayoutChanged()
         {
+            base.LayoutChanged();
             _runsUntilDataRefresh = 0;
             _entries.Clear();
             _nextEntries.Clear();
             _entryById.Clear();
             _entryModelsById.Clear();
-            ClearFarmEntryControls();
             MarkDirty();
         }
 
         public override void Update()
         {
-            if (_scrollPanel.UpdateAutoScroll())
-                MarkDirty();
-
             if (_runsUntilDataRefresh > 0)
             {
                 _runsUntilDataRefresh--;
@@ -246,9 +224,9 @@ namespace LcdMod.Client.Apps
                 changed = _entries.Count > 0 || _entryModelsById.Count > 0;
                 _entries.Clear();
                 _entryModelsById.Clear();
-                ClearFarmEntryControls();
                 if (changed)
                     MarkDirty();
+                _viewModel.Refresh();
                 return;
             }
 
@@ -272,11 +250,9 @@ namespace LcdMod.Client.Apps
             _entries.AddRange(_nextEntries);
             changed |= RemoveStaleEntryModels();
 
-            if (_entries.Count == 0)
-                _scrollPanel.SetVisible(false);
-
             if (changed)
                 MarkDirty();
+            _viewModel.Refresh();
         }
 
         public override bool HasVisibleItems()
@@ -284,19 +260,9 @@ namespace LcdMod.Client.Apps
             return _entries.Count > 0;
         }
 
-        FarmEntry GetFarmEntry(long entryId)
-        {
-            FarmEntry entry;
-            return _entryById.TryGetValue(entryId, out entry) ? entry : null;
-        }
-
         public override List<MySprite> GetSprites()
         {
-            BeginFarmEntryControlFrame();
-            var sprites = new List<MySprite>();
-            DrawFarmPlots(_surfaceHost, sprites);
-            ClearDirtyAfterRender();
-            return sprites;
+            return new List<MySprite>();
         }
 
         public void CompleteHostRender()
@@ -437,225 +403,9 @@ namespace LcdMod.Client.Apps
                 long entryId = _entryIdsToRemove[i];
                 _entryModelsById.Remove(entryId);
 
-                FarmPlotControl control;
-                if (_entryControlById.TryGetValue(entryId, out control))
-                {
-                    if (control != null && ReferenceEquals(control.Parent, _gridPanel))
-                        _gridPanel.RemoveChild(control);
-                    if (control != null)
-                        control.SetVisible(false);
-                    _entryControlById.Remove(entryId);
-                }
             }
 
             return _entryIdsToRemove.Count > 0;
-        }
-
-        void DrawFarmPlots(IAppHost owner, List<MySprite> sprites)
-        {
-            float minW = SLOT_W * owner.ConfiguredScale;
-            float minH = SLOT_H * owner.ConfiguredScale;
-            float contentTop = GetContentTop(owner) + 6f * owner.ConfiguredScale;
-
-            int count = _entries.Count;
-            if (count <= 0)
-                return;
-
-            _scrollPanel.SetContent(_gridPanel);
-            _gridPanel.RowHeight = minH;
-            _gridPanel.MinimumColumnWidth = minW;
-            _gridPanel.HorizontalGap = 0f;
-            _gridPanel.VerticalGap = 0f;
-            SyncFarmEntryControls(_gridPanel);
-            ConfigureFarmScrollPanel(owner, contentTop, minH);
-            _scrollPanel.Render(sprites);
-        }
-
-        void ConfigureFarmScrollPanel(IAppHost owner, float contentTop, float rowHeight)
-        {
-            var viewportHeight = Math.Max(0f, owner.ViewBox.Bottom - contentTop);
-            _scrollPanel.ConfigureAutomatic(
-                new RectangleF(owner.ViewBox.X, contentTop, owner.ViewBox.Width, viewportHeight),
-                SCROLLER_W * owner.ConfiguredScale,
-                rowHeight);
-            _scrollPanel.SetVisible(true);
-            if (!_children.Contains(_scrollPanel))
-                _children.Add(_scrollPanel);
-        }
-
-        void BeginFarmEntryControlFrame()
-        {
-            _children.Clear();
-            _scrollPanel.SetVisible(false);
-            foreach (var kv in _entryControlById)
-                if (kv.Value != null)
-                    kv.Value.SetVisible(false);
-        }
-
-        void ClearFarmEntryControls()
-        {
-            foreach (var kv in _entryControlById)
-                if (kv.Value != null)
-                    kv.Value.SetVisible(false);
-
-            _entryControlById.Clear();
-            _gridPanel.ClearChildren();
-            _children.Clear();
-        }
-
-        void SyncFarmEntryControls(Panel panel)
-        {
-            if (panel == null)
-                return;
-
-            var desiredIds = new Dictionary<long, bool>();
-            var desired = new List<Control>(_entries.Count);
-            for (int i = 0; i < _entries.Count; i++)
-            {
-                var entry = _entries[i];
-                if (entry == null)
-                    continue;
-
-                desiredIds[entry.EntryId] = true;
-                desired.Add(GetOrCreateFarmPlotControl(entry));
-            }
-
-            RemoveStalePanelChildren(panel, desiredIds);
-            EnsurePanelChildOrder(panel, desired);
-        }
-
-        FarmPlotControl GetOrCreateFarmPlotControl(FarmEntry entry)
-        {
-            if (entry == null)
-                return null;
-
-            FarmPlotControl control;
-            if (!_entryControlById.TryGetValue(entry.EntryId, out control) || control == null)
-            {
-                control = new FarmPlotControl(default(RectangleF), entry, BuildFarmEntryTooltip(entry.EntryId));
-                _entryControlById[entry.EntryId] = control;
-            }
-            else
-            {
-                control.Bind(entry);
-            }
-
-            control.SetVisible(true);
-            return control;
-        }
-
-        static void RemoveStalePanelChildren(Panel panel, Dictionary<long, bool> desiredIds)
-        {
-            var children = panel.VisualChildren;
-            if (children == null)
-                return;
-
-            for (int i = children.Count - 1; i >= 0; i--)
-            {
-                var child = children[i];
-                var entry = child?.DataContext as FarmEntry;
-                if (entry == null || desiredIds.ContainsKey(entry.EntryId))
-                    continue;
-
-                panel.RemoveChild(child);
-            }
-        }
-
-        static void EnsurePanelChildOrder(Panel panel, List<Control> desired)
-        {
-            if (panel == null || desired == null)
-                return;
-
-            var children = panel.VisualChildren;
-            bool changed = false;
-            for (int i = 0; i < desired.Count; i++)
-            {
-                var child = desired[i] as ControlTemplate;
-                if (child == null)
-                    continue;
-
-                if (!ReferenceEquals(child.Parent, panel))
-                {
-                    panel.AddChild(child);
-                    children = panel.VisualChildren;
-                    changed = true;
-                }
-
-                if (children == null || i >= children.Count || ReferenceEquals(children[i], child))
-                    continue;
-
-                int currentIndex = IndexOfChild(children, child);
-                if (currentIndex < 0)
-                    continue;
-
-                if (panel.MoveChild(child, i))
-                    changed = true;
-            }
-
-            if (changed)
-                panel.InvalidateLayout();
-        }
-
-        static int IndexOfChild(IReadOnlyList<Control> children, ControlTemplate child)
-        {
-            if (children == null || child == null)
-                return -1;
-
-            for (int i = 0; i < children.Count; i++)
-            {
-                if (ReferenceEquals(children[i], child))
-                    return i;
-            }
-
-            return -1;
-        }
-
-        void OnScrollPanelChanged(ScrollPanel panel)
-        {
-            _interactiveHost.RenderSprites();
-        }
-
-        InteractiveTooltip BuildFarmEntryTooltip(long entryId)
-        {
-            var markdownPanel = new MarkdownTooltipPanel(
-                _surfaceHost,
-                delegate
-                {
-                    var entry = GetFarmEntry(entryId);
-                    return entry != null ? entry.DetailsMarkdown : string.Empty;
-                });
-
-            return new InteractiveTooltip(
-                delegate
-                {
-                    var entry = GetFarmEntry(entryId);
-                    var block = entry != null && entry.Plot != null ? entry.Plot.Block : null;
-                    if (block != null && !string.IsNullOrEmpty(block.CustomName))
-                        return block.CustomName;
-                    return block != null ? block.DisplayNameText : string.Empty;
-                },
-                delegate
-                {
-                    return new List<ITooltipLine>();
-                },
-                null,
-                null,
-                TooltipActivationMode.Click,
-                TooltipActivationMode.Click,
-                delegate
-                {
-                    var entry = GetFarmEntry(entryId);
-                    return entry != null ? entry.OutputSprite : string.Empty;
-                },
-                delegate
-                {
-                    return markdownPanel;
-                });
-        }
-
-        float GetContentTop(IAppHost owner)
-        {
-            return owner.TitleVisible ? owner.ViewBox.Y + (40f * owner.ConfiguredScale * owner.Surface.FontSize) : owner.ViewBox.Y;
         }
 
         string GetRemainingText(FarmPlotEntry plot, float growthPercent, float ratio, string percentText)

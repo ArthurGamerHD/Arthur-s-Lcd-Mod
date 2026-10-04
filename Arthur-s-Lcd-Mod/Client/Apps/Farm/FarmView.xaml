@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl xmlns="https://github.com/ArthurGamerHD/Adk"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:LcdMod.Client.Apps.Controls"
+             xmlns:farm="using:LcdMod.Client.Apps.Farm"
+             x:Class="LcdMod.Client.Apps.Farm.FarmView"
+             x:DataType="LcdMod.Client.Apps.Farm.FarmViewModel">
+  <UserControl.Styles>
+    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/Cards.xaml" />
+    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/Slots.xaml" />
+    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/Markdown.xaml" />
+    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/Farm.xaml" />
+  </UserControl.Styles>
+  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+    <Grid>
+      <ItemsControl ItemsSource="{Binding CompactEntries}" IsVisible="{Binding IsCompact}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <UniformGrid Columns="{Binding Columns}" VerticalAlignment="Top" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="LcdMod.Client.Apps.Farm.FarmDisplayEntry">
+            <farm:FarmPlotButton Classes="farm-plot" Title="{Binding Title}" TitleIcon="{Binding OutputSprite}"
+                                 Details="{Binding Details}">
+              <controls:FarmPlotSlot OutputSprite="{Binding OutputSprite}"
+                                     Growth="{Binding Growth}" GrowthColor="{Binding GrowthColor}"
+                                     Water="{Binding Water}" WaterColor="{Binding WaterColor}"
+                                     Label="{Binding RemainingText}" LabelColor="{Binding StatusColor}" />
+            </farm:FarmPlotButton>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <ItemsControl ItemsSource="{Binding CardEntries}" IsVisible="{Binding IsCard}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <UniformGrid Columns="{Binding Columns}" VerticalAlignment="Top" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="LcdMod.Client.Apps.Farm.FarmDisplayEntry">
+            <farm:FarmPlotButton Classes="farm-plot" Title="{Binding Title}" TitleIcon="{Binding OutputSprite}"
+                                 Details="{Binding Details}">
+              <controls:BlockPropertyPercentage Classes="card" ItemIcon="{Binding Icon}" Label="{Binding Label}"
+                                                Value="{Binding Growth}" ValueText="{Binding PercentText}" />
+            </farm:FarmPlotButton>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </Grid>
+  </ScrollViewer>
+</UserControl>

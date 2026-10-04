@@ -2,6 +2,9 @@ using System.Collections.Generic;
 using LcdMod.Common.Config.Components;
 using IAutoScroll = LcdMod.Client.Terminal.Controls.Generic.IAutoScroll;
 using LcdMod.Client.Apps;
+using LcdMod.Client.Terminal.Controls;
+using LcdMod.Client.Utility;
+using VRage.ModAPI;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
@@ -19,8 +22,14 @@ namespace LcdMod.Client.SurfaceScripts
     [LcdSurface(typeof(FarmApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class FarmSurfaceScript : InteractiveSurfaceScript,
-        IAutoScroll
+        IAutoScroll,
+        IMultiDisplayMode
     {
+        public List<MyTerminalControlComboBoxItem> GetDisplayModes()
+        {
+            return DisplayModes.CompactAndCard;
+        }
+
         public override CursorType CursorType { get; protected set; } = CursorType.Default;
         public const string ID = MOD_PREFIX + "Farm";
         public const string TITLE = MOD_PREFIX + "Farm";
@@ -28,10 +37,7 @@ namespace LcdMod.Client.SurfaceScripts
         protected override string DefaultTitle => TITLE;
 
         public override IApp App => _app;
-        IApp _app;
-        public override List<Control> InteractiveList => _app.VisualChildren as List<Control>;
-        protected override bool RendersInteractiveEntriesInGetSprites => true;
-
+        FarmApp _app;
         public FarmSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)
         {
         }
@@ -57,6 +63,7 @@ namespace LcdMod.Client.SurfaceScripts
             if (_app == null)
                 _app = new FarmApp(this);
 
+            EnsureRetainedAppView(_app);
             _app.Update();
             if (_app.IsDirty || InteractiveVisualsDirty)
                 RenderSprites();
@@ -66,14 +73,12 @@ namespace LcdMod.Client.SurfaceScripts
         {
             var sprites = new List<MySprite>();
             AddBackground(sprites);
-            DrawTitle(sprites);
+            DrawRetainedAppView(sprites);
             if (!_app.HasVisibleItems())
             {
                 DrawMessage(sprites, LocHelper.Empty, "Warning", ColorComponent.ResolveWarningColor(), GeneralComponent.GetScale());
                 (_app as FarmApp)?.CompleteHostRender();
             }
-            else
-                sprites.AddRange(_app.GetSprites());
             return sprites;
         }
     }

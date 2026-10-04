@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Styles xmlns="https://github.com/ArthurGamerHD/Adk"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:LcdMod.Client.Apps.Controls">
+  <Style Selector="controls|FillableSlot">
+    <Setter Property="FontFamily" Value="{DynamicResource textFont}" />
+    <Setter Property="FontSize" Value="{DynamicResource fontScale}" />
+  </Style>
+  <Style Selector="controls|FillableSlot.card">
+    <Setter Property="Height" Value="{DynamicResource cardHeight}" />
+  </Style>
+  <Style Selector="controls|FarmPlotSlot">
+    <Setter Property="Height" Value="{DynamicResource cardHeight}" />
+    <Setter Property="FontFamily" Value="{DynamicResource textFont}" />
+    <Setter Property="FontSize" Value="{DynamicResource fontScale}" />
+    <Setter Property="MaskColor" Value="{DynamicResource secondaryContainerColor}" />
+    <Setter Property="FrameColor" Value="{DynamicResource borderColor}" />
+  </Style>
+  <Style Selector="Grid.power-footer-row">
+    <Setter Property="Margin" Value="6 0" />
+  </Style>
+  <Style Selector="TextBlock.power-footer-text">
+    <Setter Property="FontFamily" Value="{DynamicResource textFont}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+</Styles>

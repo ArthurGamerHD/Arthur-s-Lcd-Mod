@@ -49,7 +49,7 @@ namespace LcdMod.Client.SurfaceScripts
         public override IApp App => _app;
         protected override string DefaultTitle => TITLE;
 
-        public DockingAlignment(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)
+        public DockingAlignment(Sandbox.ModAPI.IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)
         {
         }
 
@@ -80,13 +80,17 @@ namespace LcdMod.Client.SurfaceScripts
                 _app.LayoutChanged();
             }
 
+            EnsureRetainedAppView(_app);
             _app.Update();
             RenderSprites();
         }
 
         public override List<MySprite> GetSprites()
         {
-            return _app != null ? _app.GetSprites() : new List<MySprite>();
+            var sprites = new List<MySprite>();
+            if (_app != null)
+                DrawRetainedAppView(sprites);
+            return sprites;
         }
     }
 }

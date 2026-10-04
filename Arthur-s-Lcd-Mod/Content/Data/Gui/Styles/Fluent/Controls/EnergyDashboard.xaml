@@ -1,0 +1,183 @@
+<Styles xmlns="https://github.com/ArthurGamerHD/Adk"
+        xmlns:energy="using:LcdMod.Client.Apps.EnergyDashboard">
+  <Style Selector="ScrollBar.scroll-viewer-scrollbar:vertical"><Setter Property="Width" Value="5" /></Style>
+
+  <Style Selector="energy|EnergyStatBar">
+    <Setter Property="FontSize" Value="{DynamicResource fontScale}" />
+    <Setter Property="FontFamily" Value="{DynamicResource textFont}" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Grid>
+          <TextBlock Text="{TemplateBinding DisplayLabel}" FontFamily="{TemplateBinding FontFamily}"
+                     FontSize="{TemplateBinding LabelFontSize}" Foreground="{TemplateBinding LabelForeground}"
+                     HorizontalAlignment="Left" VerticalAlignment="Top" />
+          <Grid Margin="{TemplateBinding BarMargin}">
+            <Border Background="{TemplateBinding TrackBrush}" />
+            <Border Background="{TemplateBinding FillBrush}" Width="{TemplateBinding FillWidth}"
+                    HorizontalAlignment="Left" IsVisible="{TemplateBinding HasFill}" />
+            <TextBlock Text="{TemplateBinding ValueText}" FontFamily="{TemplateBinding FontFamily}"
+                       FontSize="{TemplateBinding ValueFontSize}" Foreground="{TemplateBinding Foreground}"
+                       TextAlignment="Right" VerticalAlignment="Center" Margin="0 0 4 0" />
+          </Grid>
+        </Grid>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+
+  <Style Selector="energy|EnergyTierButton">
+    <Setter Property="FontSize" Value="{DynamicResource fontScale}" />
+    <Setter Property="FontFamily" Value="{DynamicResource textFont}" />
+    <Setter Property="Background" Value="{DynamicResource accentContainerColor}" />
+    <Setter Property="Foreground" Value="{DynamicResource onAccentContainerColor}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource borderVariantColor}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Grid>
+          <Border Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}" />
+          <Border Background="#00000000" BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}" />
+          <TextBlock Text="{TemplateBinding Label}" FontFamily="{TemplateBinding FontFamily}"
+                     FontSize="{TemplateBinding FontSize, Converter={StaticResource FontSizeMultiplier}, ConverterParameter=0.58, ConverterCulture=en-US}"
+                     Foreground="{TemplateBinding Foreground}" TextAlignment="Center" VerticalAlignment="Center" />
+        </Grid>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="energy|EnergyTierButton:pointerover">
+    <Setter Property="Background" Value="{DynamicResource accentContainerColor}" />
+    <Setter Property="Foreground" Value="{DynamicResource onAccentContainerColor}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource borderColor}" />
+    <Setter Property="BorderThickness" Value="2" />
+  </Style>
+  <Style Selector="energy|EnergyTierButton:pressed">
+    <Setter Property="Background" Value="{DynamicResource accentContainerColor}" />
+    <Setter Property="Foreground" Value="{DynamicResource onAccentContainerColor}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource accentColor}" />
+    <Setter Property="BorderThickness" Value="2" />
+  </Style>
+  <Style Selector="energy|EnergyTierButton:checked">
+    <Setter Property="Background" Value="{DynamicResource accentColor}" />
+    <Setter Property="Foreground" Value="{DynamicResource onAccentColor}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource accentColor}" />
+    <Setter Property="BorderThickness" Value="2" />
+  </Style>
+
+  <Style Selector="energy|EnergyGraphControl">
+    <Setter Property="FontSize" Value="{DynamicResource fontScale}" />
+    <Setter Property="FontFamily" Value="{DynamicResource textFont}" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Grid>
+          <TextBlock Text="{TemplateBinding Title}" FontFamily="{TemplateBinding FontFamily}"
+                     FontSize="{TemplateBinding TitleFontSize}" Foreground="{TemplateBinding Foreground}"
+                     Margin="4 2 0 0" HorizontalAlignment="Left" VerticalAlignment="Top" />
+          <TextBlock Text="{TemplateBinding AxisLabel0}" FontFamily="{TemplateBinding FontFamily}"
+                     FontSize="{TemplateBinding AxisFontSize}" Foreground="{TemplateBinding AxisForeground}"
+                     Margin="{TemplateBinding AxisMargin0}" TextAlignment="Right" VerticalAlignment="Top"
+                     IsVisible="{TemplateBinding HasAxis}" />
+          <TextBlock Text="{TemplateBinding AxisLabel1}" FontFamily="{TemplateBinding FontFamily}"
+                     FontSize="{TemplateBinding AxisFontSize}" Foreground="{TemplateBinding AxisForeground}"
+                     Margin="{TemplateBinding AxisMargin1}" TextAlignment="Right" VerticalAlignment="Top"
+                     IsVisible="{TemplateBinding HasAxis}" />
+          <TextBlock Text="{TemplateBinding AxisLabel2}" FontFamily="{TemplateBinding FontFamily}"
+                     FontSize="{TemplateBinding AxisFontSize}" Foreground="{TemplateBinding AxisForeground}"
+                     Margin="{TemplateBinding AxisMargin2}" TextAlignment="Right" VerticalAlignment="Top"
+                     IsVisible="{TemplateBinding HasAxis}" />
+          <TextBlock Text="{TemplateBinding AxisLabel3}" FontFamily="{TemplateBinding FontFamily}"
+                     FontSize="{TemplateBinding AxisFontSize}" Foreground="{TemplateBinding AxisForeground}"
+                     Margin="{TemplateBinding AxisMargin3}" TextAlignment="Right" VerticalAlignment="Top"
+                     IsVisible="{TemplateBinding HasAxis}" />
+          <Border Background="{TemplateBinding AxisBrush}" Width="{TemplateBinding TickWidth}"
+                  Height="{TemplateBinding TickHeight}" Margin="{TemplateBinding LeftTickMargin}"
+                  HorizontalAlignment="Left" VerticalAlignment="Top" IsVisible="{TemplateBinding HasTimeScale}" />
+          <Border Background="{TemplateBinding AxisBrush}" Width="{TemplateBinding TickWidth}"
+                  Height="{TemplateBinding TickHeight}" Margin="{TemplateBinding MiddleTickMargin}"
+                  HorizontalAlignment="Left" VerticalAlignment="Top" IsVisible="{TemplateBinding HasTimeScale}" />
+          <Border Background="{TemplateBinding AxisBrush}" Width="{TemplateBinding TickWidth}"
+                  Height="{TemplateBinding TickHeight}" Margin="{TemplateBinding RightTickMargin}"
+                  HorizontalAlignment="Left" VerticalAlignment="Top" IsVisible="{TemplateBinding HasTimeScale}" />
+          <TextBlock Text="{TemplateBinding LeftTime}" FontFamily="{TemplateBinding FontFamily}"
+                     FontSize="{TemplateBinding TimeFontSize}" Foreground="{TemplateBinding AxisForeground}"
+                     Margin="{TemplateBinding TimeMargin}" TextAlignment="Left" VerticalAlignment="Top"
+                     IsVisible="{TemplateBinding HasTimeScale}" />
+          <TextBlock Text="{TemplateBinding MiddleTime}" FontFamily="{TemplateBinding FontFamily}"
+                     FontSize="{TemplateBinding TimeFontSize}" Foreground="{TemplateBinding AxisForeground}"
+                     Margin="{TemplateBinding TimeMargin}" TextAlignment="Center" VerticalAlignment="Top"
+                     IsVisible="{TemplateBinding HasTimeScale}" />
+          <TextBlock Text="{TemplateBinding RightTime}" FontFamily="{TemplateBinding FontFamily}"
+                     FontSize="{TemplateBinding TimeFontSize}" Foreground="{TemplateBinding AxisForeground}"
+                     Margin="{TemplateBinding TimeMargin}" TextAlignment="Right" VerticalAlignment="Top"
+                     IsVisible="{TemplateBinding HasTimeScale}" />
+          <TextBlock Text="{TemplateBinding EmptyText}" FontFamily="{TemplateBinding FontFamily}"
+                     FontSize="{TemplateBinding EmptyFontSize}" Foreground="{TemplateBinding EmptyForeground}"
+                     Margin="{TemplateBinding PlotMargin}" TextAlignment="Center" VerticalAlignment="Center"
+                     IsVisible="{TemplateBinding IsEmpty}" />
+        </Grid>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+
+  <Style Selector="energy|EnergyPowerRowControl">
+    <Setter Property="FontSize" Value="{DynamicResource fontScale}" />
+    <Setter Property="FontFamily" Value="{DynamicResource textFont}" />
+    <Setter Property="Foreground" Value="{DynamicResource fontColor}" />
+    <Setter Property="Background" Value="#00000000" />
+    <Setter Property="TrackBrush" Value="{DynamicResource surfaceContainerHighColor}" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Grid>
+          <Border Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}" />
+          <Grid ColumnDefinitions="16*,52*,32*" RowDefinitions="42*,58*">
+            <Grid Grid.RowSpan="2" Width="{TemplateBinding IconSize}" Height="{TemplateBinding IconSize}"
+                  HorizontalAlignment="Center" VerticalAlignment="Center">
+              <Image Source="{TemplateBinding RowIcon}" Width="{TemplateBinding IconImageSize}" Height="{TemplateBinding IconImageSize}" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{TemplateBinding HasIcon}" />
+              <TextBlock Text="{TemplateBinding Glyph}" FontFamily="{TemplateBinding FontFamily}"
+                         FontSize="{TemplateBinding FontSize, Converter={StaticResource FontSizeMultiplier}, ConverterParameter=0.72, ConverterCulture=en-US}"
+                         Foreground="{TemplateBinding AccentColor}" TextAlignment="Center" VerticalAlignment="Center"
+                         IsVisible="{TemplateBinding HasGlyph}" />
+              <TextBlock Text="{TemplateBinding Amount}" FontFamily="{TemplateBinding FontFamily}"
+                         FontSize="{TemplateBinding FontSize, Converter={StaticResource FontSizeMultiplier}, ConverterParameter=0.42, ConverterCulture=en-US}"
+                         Foreground="{TemplateBinding AmountForeground}" TextAlignment="Right" VerticalAlignment="Bottom"
+                         Margin="0 0 1 1" />
+            </Grid>
+            <TextBlock Grid.Column="1" Grid.ColumnSpan="2" Text="{TemplateBinding Label}"
+                       FontFamily="{TemplateBinding FontFamily}"
+                       FontSize="{TemplateBinding FontSize, Converter={StaticResource FontSizeMultiplier}, ConverterParameter=0.48, ConverterCulture=en-US}"
+                       Foreground="{TemplateBinding Foreground}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+            <Grid Grid.Column="1" Grid.Row="1" ColumnDefinitions="1*,24*,1*" RowDefinitions="31*,38*,31*">
+              <Grid Grid.Column="1" Grid.Row="1">
+                <Border Background="{TemplateBinding TrackBrush}" CornerRadius="9999" IsVisible="{TemplateBinding HasTrack}" />
+                <Border Margin="{TemplateBinding FillClipMargin}" ClipToBounds="True" IsVisible="{TemplateBinding HasFill}">
+                  <Border Margin="{TemplateBinding FillMargin}" Background="{TemplateBinding FillBrush}" CornerRadius="9999" />
+                </Border>
+              </Grid>
+            </Grid>
+            <TextBlock Grid.Column="2" Grid.Row="1" Text="{TemplateBinding ValueText}"
+                       FontFamily="{TemplateBinding FontFamily}"
+                       FontSize="{TemplateBinding FontSize, Converter={StaticResource FontSizeMultiplier}, ConverterParameter=0.6, ConverterCulture=en-US}"
+                       Foreground="{TemplateBinding Foreground}" TextAlignment="Right" TextTrimming="CharacterEllipsis"
+                       VerticalAlignment="Center" />
+          </Grid>
+        </Grid>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="energy|EnergyPowerRowControl:pointerover">
+    <Setter Property="Background" Value="{DynamicResource surfaceContainerColor}" />
+    <Setter Property="Foreground" Value="{DynamicResource fontColor}" />
+  </Style>
+  <Style Selector="energy|EnergyPowerRowControl:pressed">
+    <Setter Property="Background" Value="{DynamicResource surfaceContainerColor}" />
+    <Setter Property="Foreground" Value="{DynamicResource fontColor}" />
+  </Style>
+  <Style Selector="energy|EnergyPowerRowControl:selected">
+    <Setter Property="Background" Value="{DynamicResource secondaryContainerColor}" />
+  </Style>
+
+</Styles>

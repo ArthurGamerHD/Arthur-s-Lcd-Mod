@@ -1,10 +1,8 @@
 using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Extensions;
-using LcdMod.Client.Gui;
 using LcdMod.Client.GridData;
 using LcdMod.Client.Helpers;
 using Sandbox.ModAPI;
@@ -14,7 +12,7 @@ using VRage.Utils;
 using VRageMath;
 using static LcdMod.Common.Helpers.Constants;
 using IMyCockpit = Sandbox.ModAPI.IMyCockpit;
-
+using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 
 using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.Apps
@@ -23,16 +21,6 @@ namespace LcdMod.Client.Apps
     // ReSharper disable once PartialTypeWithSinglePart
     internal sealed partial class ThrustApp : App
     {
-        const float AXIS_THICKNESS = 6f;
-        const float ARROW_SIZE_MULTIPLIER = 3f;
-        const float BASE_OPACITY = 0.25f;
-        const float LEGEND_HEIGHT_BASE = 56f;
-        const float TELEMETRY_PANEL_WIDTH_BASE = 122f;
-        const float TELEMETRY_CELL_HEIGHT_BASE = 52f;
-        const float TELEMETRY_PANEL_GAP_BASE = 8f;
-        const float TELEMETRY_PANEL_MARGIN_BASE = 8f;
-        const float GRAVITY_ARROW_LENGTH_FACTOR = 0.85f;
-        const float GRAVITY_NORMALIZE_MPS2 = 10f;
         const float GRAVITY_LOAD_WARN_THRESHOLD = 0.80f;
         const float GRAVITY_LOAD_CRITICAL_THRESHOLD = 0.95f;
         const float GRAVITY_ERROR_FLASH_SECONDS = 0.5f;
@@ -57,23 +45,27 @@ namespace LcdMod.Client.Apps
         double _stopSeconds;
         double _stopDistance;
         bool _hasStopEstimate;
+        readonly Thrust.ThrustViewModel _viewModel;
+        readonly Func<string, float, float, string> _trimTelemetryText;
 
         IMyCubeBlock Block => Host.Block;
-        Sandbox.ModAPI.Ingame.IMyTextSurface Surface => Host.Surface;
-        RectangleF ViewBox => Host.ViewBox;
+        IMyTextSurface Surface => Host.Surface;
         float Scale => GeneralComponent.GetScale();
+        internal override float WindowRenderScaling => Scale > 0f ? Scale : 1f;
         float FontScale => Host.Surface.FontSize;
-        float LayoutScale => Scale * FontScale;
         Color ForegroundColor => Host.ForegroundColor;
         Color BackgroundColor => Host.BackgroundColor;
-        float ContentTop => Host.TitleVisible ? Host.ViewBox.Y + 40f * LayoutScale : Host.ViewBox.Y;
 
         public bool HasData { get; private set; }
 
         public ThrustApp(IAppHost host)
             : base(host)
         {
+            _viewModel = new Thrust.ThrustViewModel();
+            _trimTelemetryText = TrimText;
+            SetContent(new Thrust.ThrustView(_viewModel));
             NeedGridData(GridCapability.Blocks);
+            RefreshPresentationLayout();
         }
 
         public override void Update()
@@ -125,7 +117,10 @@ namespace LcdMod.Client.Apps
             }
 
             if (!HasData)
+            {
+                RefreshPresentation();
                 return;
+            }
             
             for (int i = 0; i < _fills.Length; i++)
             {
@@ -135,100 +130,81 @@ namespace LcdMod.Client.Apps
 
             _hasGravity = TryGetNaturalGravityAndUtilization(_maxThrust, out _gravityVector, out _gravityLoad);
             UpdateStopEstimate(_maxThrust);
+            RefreshPresentation();
         }
 
-        public override List<MySprite> GetSprites()
+        public override void LayoutChanged()
         {
-            var sprites = new List<MySprite>();
-            DrawIsometricAxes(sprites, _fills, _hasGravity ? (Vector3D?)_gravityVector : null, _gravityLoad);
-            DrawTelemetrySidePanels(sprites);
-            DrawBottomLegend(sprites, _maxThrust);
-            DrawGravityLoadWarning(sprites, _hasGravity, _gravityLoad);
-            return sprites;
+            base.LayoutChanged();
+            RefreshPresentationLayout();
+            RefreshPresentation();
         }
 
-        void DrawIsometricAxes(List<MySprite> sprites, float[] fills, Vector3D? gravityVector, float gravityLoad)
+        string _gravityWarning;
+        string _gravityCritical;
+        Color _warningColor;
+        Color _criticalColor;
+
+        void RefreshPresentationLayout()
         {
-            float contentTop = ContentTop;
-            float legendHeight = GetBottomPanelHeight();
-            float contentBottom = ViewBox.Bottom - legendHeight;
-            float contentHeight = contentBottom - contentTop;
-            if (contentHeight <= 0f) return;
+            string[] keys = { "Thrust_Forward", "Thrust_Back", "Thrust_Left", "Thrust_Right", "Thrust_Up", "Thrust_Down" };
+            var labels = new string[keys.Length];
+            string labelFormat = LocHelper.GetLoc(MOD_PREFIX + "Common_Label_WithColon");
+            for (int i = 0; i < keys.Length; i++)
+                labels[i] = string.Format(FormatingHelper.Culture, labelFormat, LocHelper.GetLoc(keys[i]));
+            _viewModel.RefreshLayout(1f, FontScale, TextFont, ForegroundColor,
+                new Color(BackgroundColor.MulValue(0.8f), 0.5f), labels);
+            string gravityLabel = LocHelper.GetLoc(MOD_PREFIX + "Thrust_GravityLoad");
+            _gravityWarning = string.Format(LocHelper.GetLoc(MOD_PREFIX + "Warning"), gravityLabel);
+            _gravityCritical = string.Format(LocHelper.GetLoc(MOD_PREFIX + "Critical"), gravityLabel);
+            _warningColor = BoostAlertColor(ColorComponent.ResolveWarningColor());
+            _criticalColor = BoostAlertColor(ColorComponent.ResolveErrorColor());
+        }
 
-            var origin = new Vector2(ViewBox.Center.X, contentTop + (contentHeight * 0.5f));
-            float visualWidth = Math.Max(1f, ViewBox.Width - (GetTelemetryPanelWidth() + GetTelemetryPanelMargin()) * 2f);
-            float axisLength = Math.Min(visualWidth, contentHeight) * 0.35f;
-            float thickness = AXIS_THICKNESS * Scale;
-            float arrowSize = thickness * ARROW_SIZE_MULTIPLIER;
-            float cos30 = 0.8660254f;
-            float sin30 = 0.5f;
-            var xDir = new Vector2(cos30, sin30);
-            var zDir = new Vector2(cos30, -sin30);
-            var blockForward = Block.Orientation.Forward;
-            var blockBackward = Base6Directions.GetOppositeDirection(blockForward);
-            var blockLeft = Block.Orientation.Left;
-            var blockRight = Base6Directions.GetOppositeDirection(blockLeft);
-            var blockUp = Block.Orientation.Up;
-            var blockDown = Base6Directions.GetOppositeDirection(blockUp);
+        void RefreshPresentation()
+        {
+            _viewModel.Forward.UpdateValue(FormatingHelper.NewtonForceToString(_maxThrust[DIR_FORWARD]));
+            _viewModel.Backward.UpdateValue(FormatingHelper.NewtonForceToString(_maxThrust[DIR_BACKWARD]));
+            _viewModel.Left.UpdateValue(FormatingHelper.NewtonForceToString(_maxThrust[DIR_LEFT]));
+            _viewModel.Right.UpdateValue(FormatingHelper.NewtonForceToString(_maxThrust[DIR_RIGHT]));
+            _viewModel.Up.UpdateValue(FormatingHelper.NewtonForceToString(_maxThrust[DIR_UP]));
+            _viewModel.Down.UpdateValue(FormatingHelper.NewtonForceToString(_maxThrust[DIR_DOWN]));
+            _viewModel.Speed.UpdateMeasuredValue(_stopSpeed.ToString("0", FormatingHelper.Culture), _trimTelemetryText);
+            _viewModel.StopDistance.UpdateMeasuredValue(FormatStopDistance(), _trimTelemetryText);
+            _viewModel.StopTime.UpdateMeasuredValue(FormatStopTimeValue(), _trimTelemetryText);
+            _viewModel.StopForce.UpdateMeasuredValue(FormatStopForce(), _trimTelemetryText);
+            _viewModel.UpdateTelemetryOpacity(_stopSpeed);
 
-            DrawAxesPass(sprites, origin, axisLength, thickness, arrowSize, new Vector2(0f, -1f), Color.Green,
-                BASE_OPACITY);
-            DrawAxesPass(sprites, origin, axisLength, thickness, arrowSize, new Vector2(0f, 1f), Color.Green,
-                BASE_OPACITY);
-            DrawAxesPass(sprites, origin, axisLength, thickness, arrowSize, zDir, Color.Blue, BASE_OPACITY);
-            DrawAxesPass(sprites, origin, axisLength, thickness, arrowSize, -zDir, Color.Blue, BASE_OPACITY);
-            DrawAxesPass(sprites, origin, axisLength, thickness, arrowSize, xDir, Color.Red, BASE_OPACITY);
-            DrawAxesPass(sprites, origin, axisLength, thickness, arrowSize, -xDir, Color.Red, BASE_OPACITY);
-
-            DrawAxesPass(sprites, origin, axisLength * FillForDirection(fills, blockUp), thickness, arrowSize,
-                new Vector2(0f, -1f), Color.Green, 1f);
-            DrawAxesPass(sprites, origin, axisLength * FillForDirection(fills, blockDown), thickness, arrowSize,
-                new Vector2(0f, 1f), Color.Green, 1f);
-            DrawAxesPass(sprites, origin, axisLength * FillForDirection(fills, blockForward), thickness, arrowSize,
-                zDir, Color.Blue, 1f);
-            DrawAxesPass(sprites, origin, axisLength * FillForDirection(fills, blockBackward), thickness, arrowSize,
-                -zDir, Color.Blue, 1f);
-            DrawAxesPass(sprites, origin, axisLength * FillForDirection(fills, blockRight), thickness, arrowSize, xDir,
-                Color.Red, 1f);
-            DrawAxesPass(sprites, origin, axisLength * FillForDirection(fills, blockLeft), thickness, arrowSize, -xDir,
-                Color.Red, 1f);
-
-            if (gravityVector.HasValue)
+            Vector3 positive = Vector3.Zero, negative = Vector3.Zero, gravity = Vector3.Zero;
+            if (Block != null)
             {
-                var gravity = gravityVector.Value;
-                double gLenSq = gravity.LengthSquared();
-                if (gLenSq > 1e-6)
+                var orientation = Block.Orientation;
+                positive = new Vector3(
+                    FillForDirection(_fills, Base6Directions.GetOppositeDirection(orientation.Left)),
+                    FillForDirection(_fills, orientation.Up),
+                    FillForDirection(_fills, orientation.Forward));
+                negative = new Vector3(
+                    FillForDirection(_fills, orientation.Left),
+                    FillForDirection(_fills, Base6Directions.GetOppositeDirection(orientation.Up)),
+                    FillForDirection(_fills, Base6Directions.GetOppositeDirection(orientation.Forward)));
+                if (_hasGravity)
                 {
-                    var blockMatrix = Block.WorldMatrix;
-                    float gX = (float)Vector3D.Dot(gravity, blockMatrix.Right);
-                    float gY = (float)Vector3D.Dot(gravity, blockMatrix.Up);
-                    float gZ = (float)Vector3D.Dot(gravity, blockMatrix.Forward);
-
-                    // Project block-local gravity components into the same isometric basis used by axes.
-                    Vector2 projected = xDir * gX + new Vector2(0f, -1f) * gY + zDir * gZ;
-                    float projectedLen = projected.Length();
-                    if (projectedLen > 1e-4f)
-                    {
-                        projected /= projectedLen;
-                        float gravityStrength = (float)Math.Sqrt(gLenSq);
-                        float normalizedStrength = MathHelper.Clamp(gravityStrength / GRAVITY_NORMALIZE_MPS2, 0f, 1f);
-                        Color gravityColor = gravityLoad >= GRAVITY_LOAD_CRITICAL_THRESHOLD
-                            ? BoostAlertColor(ColorComponent.ResolveErrorColor())
-                            : gravityLoad >= GRAVITY_LOAD_WARN_THRESHOLD
-                                ? BoostAlertColor(ColorComponent.ResolveWarningColor())
-                                : ForegroundColor;
-                        DrawAxisRay(sprites, origin, projected,
-                            axisLength * GRAVITY_ARROW_LENGTH_FACTOR * normalizedStrength,
-                            thickness, arrowSize, gravityColor);
-                    }
+                    var matrix = Block.WorldMatrix;
+                    gravity = new Vector3((float)Vector3D.Dot(_gravityVector, matrix.Right),
+                        (float)Vector3D.Dot(_gravityVector, matrix.Up),
+                        (float)Vector3D.Dot(_gravityVector, matrix.Forward));
                 }
             }
+            bool critical = _hasGravity && _gravityLoad >= GRAVITY_LOAD_CRITICAL_THRESHOLD;
+            bool warning = _hasGravity && _gravityLoad >= GRAVITY_LOAD_WARN_THRESHOLD;
+            Color color = critical ? _criticalColor : warning ? _warningColor : ForegroundColor;
+            _viewModel.UpdateAxes(positive, negative, gravity, color);
+            bool showWarning = warning && (!critical || GetTimeStep(GRAVITY_ERROR_FLASH_SECONDS) % 2 == 0);
+            _viewModel.UpdateWarning(showWarning ? (critical ? _gravityCritical : _gravityWarning) : string.Empty, color);
         }
 
-        float GetBottomPanelHeight()
-        {
-            return LEGEND_HEIGHT_BASE * LayoutScale;
-        }
+        // The host renders Content through ADK; no legacy whole-app sprite path remains.
+        public override List<MySprite> GetSprites() { return new List<MySprite>(); }
 
         bool TryGetNaturalGravityAndUtilization(double[] maxThrust, out Vector3D gravity, out float utilization)
         {
@@ -257,51 +233,9 @@ namespace LcdMod.Client.Apps
             return null;
         }
 
-        void DrawGravityLoadWarning(List<MySprite> sprites, bool hasGravity, float gravityLoad)
-        {
-            if (!hasGravity) return;
-
-            if (gravityLoad >= GRAVITY_LOAD_CRITICAL_THRESHOLD)
-            {
-                bool visibleThisTick = (GetTimeStep(GRAVITY_ERROR_FLASH_SECONDS) % 2) == 0;
-                if (!visibleThisTick) return;
-
-                DrawMessage(sprites,
-                    string.Format(LocHelper.GetLoc(MOD_PREFIX + "Critical"), LocHelper.GetLoc(MOD_PREFIX + "Thrust_GravityLoad")),
-                    BoostAlertColor(ColorComponent.ResolveErrorColor()),
-                    0.7f * GeneralComponent.GetScale());
-                return;
-            }
-
-            if (gravityLoad >= GRAVITY_LOAD_WARN_THRESHOLD)
-            {
-                DrawMessage(sprites,
-                    string.Format(LocHelper.GetLoc(MOD_PREFIX + "Warning"), LocHelper.GetLoc(MOD_PREFIX + "Thrust_GravityLoad")),
-                    BoostAlertColor(ColorComponent.ResolveWarningColor()),
-                    0.7f * GeneralComponent.GetScale());
-            }
-        }
-
         static Color BoostAlertColor(Color color)
         {
             return color.MulValue(2f).MulSaturation(2f);
-        }
-
-        void DrawMessage(List<MySprite> sprites, string message, Color color, float scale)
-        {
-            var textScale = Math.Max(0.1f, scale) * FontScale;
-            var size = Surface.MeasureStringInPixels(new StringBuilder(message), TextFont, textScale);
-            var center = new Vector2(ViewBox.Center.X, (ContentTop + ViewBox.Bottom) * 0.5f);
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXT,
-                Data = message,
-                Position = new Vector2(center.X, center.Y - size.Y * 0.5f),
-                RotationOrScale = textScale,
-                Color = color,
-                Alignment = TextAlignment.CENTER,
-                FontId = TextFont
-            });
         }
 
         static int GetTimeStep(float secondsPerStep)
@@ -503,126 +437,6 @@ namespace LcdMod.Client.Apps
             return Math.Max(0d, maxThrust[index]);
         }
 
-        void DrawBottomLegend(List<MySprite> sprites, double[] maxThrust)
-        {
-            float legendRowsHeight = LEGEND_HEIGHT_BASE * LayoutScale;
-            float margin = 0f;
-            float left = ViewBox.X + margin;
-            float right = ViewBox.Right - margin;
-            float width = Math.Max(1f, right - left);
-            float top = ViewBox.Bottom - legendRowsHeight;
-            float padX = 6f * Scale;
-            float rowH = legendRowsHeight * 0.5f;
-            float colW = width / 3f;
-            float textScale = 0.46f * Scale * FontScale;
-            string forward = LocHelper.GetLoc("Thrust_Forward");
-            string backward = LocHelper.GetLoc("Thrust_Back");
-            string leftLabel = LocHelper.GetLoc("Thrust_Left");
-            string rightLabel = LocHelper.GetLoc("Thrust_Right");
-            string up = LocHelper.GetLoc("Thrust_Up");
-            string down = LocHelper.GetLoc("Thrust_Down");
-
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = "SquareSimple",
-                Position = new Vector2(left + width * 0.5f, top + legendRowsHeight * 0.5f),
-                Size = new Vector2(width, legendRowsHeight),
-                Color = new Color(BackgroundColor.MulValue(0.8f), 0.5f),
-                Alignment = TextAlignment.CENTER
-            });
-
-            DrawLegendCell(sprites, left, top, colW, rowH, padX, forward,
-                maxThrust[DIR_FORWARD], Color.Blue, ForegroundColor, textScale);
-            DrawLegendCell(sprites, left + colW, top, colW, rowH, padX, leftLabel, maxThrust[DIR_LEFT],
-                Color.Red, ForegroundColor, textScale);
-            DrawLegendCell(sprites, left + 2f * colW, top, colW, rowH, padX, up, maxThrust[DIR_UP],
-                Color.Green, ForegroundColor, textScale);
-
-            DrawLegendCell(sprites, left, top + rowH, colW, rowH, padX, backward,
-                maxThrust[DIR_BACKWARD], Color.Blue, ForegroundColor, textScale);
-            DrawLegendCell(sprites, left + colW, top + rowH, colW, rowH, padX, rightLabel,
-                maxThrust[DIR_RIGHT], Color.Red, ForegroundColor, textScale);
-            DrawLegendCell(sprites, left + 2f * colW, top + rowH, colW, rowH, padX, down, maxThrust[DIR_DOWN],
-                Color.Green, ForegroundColor, textScale);
-        }
-
-        void DrawTelemetrySidePanels(List<MySprite> sprites)
-        {
-            float contentTop = ContentTop;
-            float contentBottom = ViewBox.Bottom - GetBottomPanelHeight();
-            float contentHeight = contentBottom - contentTop;
-            if (contentHeight <= 0f)
-                return;
-
-            float panelWidth = GetTelemetryPanelWidth();
-            float margin = GetTelemetryPanelMargin();
-            float gap = TELEMETRY_PANEL_GAP_BASE * LayoutScale;
-            float cellHeight = Math.Min(
-                TELEMETRY_CELL_HEIGHT_BASE * LayoutScale,
-                Math.Max(30f * Scale, (contentHeight - gap) * 0.36f));
-            float panelHeight = cellHeight * 2f + gap;
-            if (panelHeight <= 0f || panelWidth <= 0f)
-                return;
-
-            float top = contentTop + Math.Max(0f, (contentHeight - panelHeight) * 0.5f);
-            float leftX = ViewBox.X + margin;
-            float rightX = ViewBox.Right - margin - panelWidth;
-
-            if(_stopSpeed == 0)
-                return;
-
-            DrawTelemetryCell(sprites, new RectangleF(leftX, top, panelWidth, cellHeight), _stopSpeed.ToString("0", FormatingHelper.Culture));
-            DrawTelemetryCell(sprites, new RectangleF(leftX, top + cellHeight + gap, panelWidth, cellHeight), FormatStopDistance());
-            DrawTelemetryCell(sprites, new RectangleF(rightX, top, panelWidth, cellHeight), FormatStopTimeValue());
-            DrawTelemetryCell(sprites, new RectangleF(rightX, top + cellHeight + gap, panelWidth, cellHeight), FormatStopForce());
-        }
-
-        float GetTelemetryPanelWidth()
-        {
-            return Math.Min(TELEMETRY_PANEL_WIDTH_BASE * LayoutScale, ViewBox.Width * 0.25f);
-        }
-
-        float GetTelemetryPanelMargin()
-        {
-            return TELEMETRY_PANEL_MARGIN_BASE * Scale;
-        }
-
-        void DrawTelemetryCell(List<MySprite> sprites, RectangleF rect, string value)
-        {
-            float hudScale = Math.Max(0.1f, Scale);
-            float valueScale = hudScale;
-            float textOffset = 5f * hudScale;
-            var boxSize = new Vector2(89f, 32f) * hudScale;
-            var rightCenter = rect.Center + new Vector2(boxSize.X * 0.5f, 0f);
-            var valueText = TrimText(value, boxSize.X - textOffset - 4f * hudScale, valueScale);
-            var valueSize = FormatingHelper.GetSizeInPixel(valueText, TextFont, valueScale, Surface);
-
-            var color = _stopSpeed > 1 ? ForegroundColor : new Color(ForegroundColor, (float)_stopSpeed);
-            
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = "AH_TextBox",
-                Position = rightCenter,
-                Size = boxSize,
-                Color = color,
-                Alignment = TextAlignment.RIGHT
-            });
-
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXT,
-                Data = valueText,
-                Position = new Vector2(rightCenter.X - textOffset, rect.Center.Y - valueSize.Y * 0.5f),
-                Size = boxSize,
-                Color = color,
-                Alignment = TextAlignment.RIGHT,
-                FontId = TextFont,
-                RotationOrScale = valueScale
-            });
-        }
-
         string TrimText(string value, float availableWidth, float textScale)
         {
             if (string.IsNullOrEmpty(value) || availableWidth <= 0f || Surface == null)
@@ -655,53 +469,6 @@ namespace LcdMod.Client.Apps
                 : FormatingHelper.FormatTimeHours((float)(seconds / 3600d));
         }
 
-        void DrawLegendCell(List<MySprite> sprites, float x, float y, float w, float h, float padX,
-            string label, double maxValue, Color markerColor, Color textColor, float textScale)
-        {
-            float yPos = y + (h - 14f * textScale) * 0.5f;
-            string valueText = FormatingHelper.NewtonForceToString(maxValue);
-            float markerSize = 8f * textScale / 0.46f;
-            float markerCenterY = y + h * 0.5f;
-            float textLeftX = x + padX + markerSize + 4f * ScaleFromText(textScale);
-
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = "SquareSimple",
-                Position = new Vector2(x + padX + markerSize, markerCenterY + markerSize * 0.5f),
-                Size = new Vector2(markerSize),
-                Color = markerColor,
-                Alignment = TextAlignment.RIGHT
-            });
-
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXT,
-                Data = string.Format(FormatingHelper.Culture, LocHelper.GetLoc(MOD_PREFIX + "Common_Label_WithColon"), label),
-                Position = new Vector2(textLeftX, yPos),
-                Color = textColor,
-                Alignment = TextAlignment.LEFT,
-                FontId = TextFont,
-                RotationOrScale = textScale
-            });
-
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXT,
-                Data = valueText,
-                Position = new Vector2(x + w - padX, yPos),
-                Color = textColor,
-                Alignment = TextAlignment.RIGHT,
-                FontId = TextFont,
-                RotationOrScale = textScale
-            });
-        }
-
-        static float ScaleFromText(float textScale)
-        {
-            return textScale / 0.46f;
-        }
-
         static float SafeFill(float[] fills, int idx)
         {
             if (fills == null || idx < 0 || idx >= fills.Length) return 0f;
@@ -711,57 +478,6 @@ namespace LcdMod.Client.Apps
         static float FillForDirection(float[] fills, Base6Directions.Direction direction)
         {
             return SafeFill(fills, DirIndex(direction));
-        }
-
-        void DrawAxesPass(List<MySprite> sprites, Vector2 origin, float length, float thickness, float arrowSize,
-            Vector2 direction, Color color, float opacity)
-        {
-            if (length <= 0f) return;
-
-            DrawAxisRay(sprites, origin, direction, length, thickness, arrowSize, WithOpacity(color, opacity));
-        }
-
-        static Color WithOpacity(Color color, float opacity)
-        {
-            float a = MathHelper.Clamp(opacity, 0f, 1f);
-            return new Color(color.R, color.G, color.B, (byte)(255f * a));
-        }
-
-        static void DrawAxisRay(List<MySprite> sprites, Vector2 origin, Vector2 direction, float length, float width,
-            float arrowSize, Color color)
-        {
-            float dirLength = direction.Length();
-            if (dirLength <= 0f) return;
-            direction /= dirLength;
-
-            Vector2 tip = origin + (direction * length);
-            DrawLine(sprites, origin, tip, width, color);
-            Vector2 arrowPosition = tip + (direction * (arrowSize * 0.5f));
-            DrawArrowTip(sprites, arrowPosition, direction, arrowSize, color);
-        }
-
-        static void DrawArrowTip(List<MySprite> sprites, Vector2 position, Vector2 direction, float size, Color color)
-        {
-            float angle = (float)Math.Atan2(direction.Y, direction.X);
-            float rotation = angle + MathHelper.PiOver2;
-
-            sprites.Add(new MySprite(SpriteType.TEXTURE, "Triangle", position, new Vector2(size, size), color, null,
-                TextAlignment.CENTER, rotation));
-        }
-
-        static void DrawLine(List<MySprite> sprites, Vector2 point1, Vector2 point2, float width, Color color)
-        {
-            Vector2 position = 0.5f * (point1 + point2);
-            Vector2 diff = point1 - point2;
-            float length = diff.Length();
-            if (length <= 0f) return;
-
-            diff /= length;
-            float angle = (float)Math.Acos(Vector2.Dot(diff, Vector2.UnitX));
-            angle *= Math.Sign(Vector2.Dot(diff, Vector2.UnitY));
-
-            sprites.Add(new MySprite(SpriteType.TEXTURE, "SquareSimple", position, new Vector2(length, width), color,
-                null, TextAlignment.CENTER, angle));
         }
 
         static int DirIndex(Base6Directions.Direction dir)
@@ -778,7 +494,5 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        // todo: convert to interactive app
-        public override IReadOnlyList<Control> VisualChildren { get; } = new Control[]{};
     }
 }

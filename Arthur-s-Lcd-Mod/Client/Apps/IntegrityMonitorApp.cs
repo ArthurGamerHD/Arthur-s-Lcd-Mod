@@ -2,10 +2,8 @@ using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Extensions;
-using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
 using Sandbox.ModAPI;
 using SpaceEngineers.Game.ModAPI;
@@ -61,19 +59,12 @@ namespace LcdMod.Client.Apps
             }
         };
         
-        // todo: convert to interactive app
-        public override IReadOnlyList<Control> VisualChildren { get; } = new Control[]{};
-        
         const int MAP_BUILD_BATCH_SIZE = 256;
 
         static readonly Dictionary<GridPairKey, CachedGridMapEntry> GridMapCache =
             new Dictionary<GridPairKey, CachedGridMapEntry>();
 
         public const string TITLE = "BroadcastStatus_IsPreviewGrid";
-
-        string _customTitle;
-        readonly HashSet<CellKind> _legendUsedKinds = new HashSet<CellKind>();
-        bool _legendHasMissing, _legendHasDamaged;
 
         readonly Dictionary<CellKind, string> _legendCategoryLocKeys = new Dictionary<CellKind, string>
         {
@@ -92,172 +83,112 @@ namespace LcdMod.Client.Apps
         readonly Color _damagedColor = new Color(Color.Red, .75f);
         readonly Color _missingColor = new Color(Color.DarkRed, .95f);
 
-        List<MySprite> _frameBuffer = new List<MySprite>();
         readonly List<MySprite> _sprites = new List<MySprite>();
+        readonly IntegrityMonitor.IntegrityMonitorViewModel _viewModel = new IntegrityMonitor.IntegrityMonitorViewModel();
+        string _customTitle;
         DepthMap2D? _depthCache;
-        View _view;
-        float _footerHeight;
-
         IMyProjector _projector;
 
         IMyCubeBlock Block => Host.Block;
-        Sandbox.ModAPI.Ingame.IMyTextSurface Surface => Host.Surface;
-        RectangleF ViewBox => Host.ViewBox;
-        float Scale => GeneralComponent.GetScale();
-        float FontScale => Host.Surface.FontSize;
-        Color BackgroundColor => Host.BackgroundColor;
-        float FooterHeight
-        {
-            get { return _footerHeight; }
-            set { _footerHeight = value; }
-        }
-        float ContentTop()
-        {
-            return Host.TitleVisible ? ViewBox.Y + 40f * Scale * FontScale : ViewBox.Y;
-        }
 
-        public string Title => _customTitle ?? TITLE;
+        public override string Title => _customTitle ?? LocHelper.GetLoc(TITLE);
+        internal override float WindowRenderScaling => CardScale;
 
         public IntegrityMonitorApp(IAppHost host) : base(host)
         {
+            SetContent(new IntegrityMonitor.IntegrityMonitorView { DataContext = _viewModel });
         }
 
         public override void LayoutChanged()
         {
             base.LayoutChanged();
-            _frameBuffer.Clear();
             CachedVersion = new DateTime();
-            _customTitle = LocHelper.GetLoc("BroadcastStatus_IsPreviewGrid");
         }
 
         public override void Update()
         {
-            FooterHeight = 0f;
-            _legendUsedKinds.Clear();
-            _legendHasMissing = false;
-            _legendHasDamaged = false;
-
             if (ProjectorReferenceComponent.EntityId == 0)
             {
-                DrawEmptyWithFilters();
+                ShowWithoutMap(LocHelper.GetLoc("ScreenBlueprintsRew_NoBlueprints"), "Warning", ColorComponent.ResolveWarningColor());
                 return;
             }
 
+            FindProjector(Block?.CubeGrid, ref _projector);
 
-            IMyCubeGrid grid = Block?.CubeGrid;
-            FindProjector(grid, ref _projector);
-
-            if ((_projector == null || !_projector.IsFunctional || _projector.Closed)
-                && ProjectorReferenceComponent.EntityId != 0
-                && _depthCache != null)
+            if ((_projector == null || !_projector.IsFunctional || _projector.Closed) && _depthCache != null)
             {
-                int blinkStep = GetTimeStep(0.5f);
-                bool showWarning = (blinkStep % 2) == 1;
-
-                _sprites.Clear();
-                Host.AddBackground(_sprites);
-                if (!_frameBuffer.Any())
-                {
-                    DrawDepthMap(_frameBuffer, (DepthMap2D)_depthCache, _view,
-                        MathHelper.ToRadians(DiagnosticComponent.Rotation), GeneralComponent.GetScale());
-                    DrawFooter(_frameBuffer);
-                }
-
-                _sprites.AddRange(_frameBuffer);
-                Host.DrawTitle(_sprites);
-
-                if (showWarning)
-                    Host.DrawMessage(_sprites,
+                if (GetTimeStep(0.5f) % 2 == 1)
+                    _viewModel.Status.Show(
                         string.Format(
                             LocHelper.GetLoc(_projector != null && !_projector.IsFunctional
                                 ? "SignalConnectivity_State_NotOperational"
                                 : "SignalConnectivity_State_NoLaserLink"),
-                            LocHelper.GetLoc("DisplayName_Block_Projector")), "Warning",
-                        ColorExtensions.MulValue(ColorComponent.ResolveErrorColor(), 2).MulSaturation(2),
-                        GeneralComponent.GetScale());
-
+                            LocHelper.GetLoc("DisplayName_Block_Projector")),
+                        "Warning",
+                        ColorExtensions.MulValue(ColorComponent.ResolveErrorColor(), 2).MulSaturation(2));
+                else
+                    _viewModel.Status.Hide();
                 return;
             }
 
-            _customTitle = _projector?.CustomName ?? LocHelper.GetLoc("BroadcastStatus_IsPreviewGrid");
+            SetTitle(_projector?.CustomName);
 
             if (_projector != null && !_projector.Enabled)
             {
-                _sprites.Clear();
-                Host.AddBackground(_sprites);
-                Host.DrawTitle(_sprites);
-                Host.DrawMessage(_sprites,
-                    (_projector.CustomName ?? string.Empty) + " " + LocHelper.GetLoc("AssemblerState_Disabled"),
-                    "GridPower", ColorComponent.ResolveWarningColor(), GeneralComponent.GetScale());
-                DrawFooter(_sprites);
+                ShowWithoutMap((_projector.CustomName ?? string.Empty) + " " + LocHelper.GetLoc("AssemblerState_Disabled"),
+                    "GridPower", ColorComponent.ResolveWarningColor());
                 return;
             }
 
-
             if (_projector?.ProjectedGrid == null || _projector.Closed)
             {
-                DrawEmpty();
+                ShowWithoutMap(LocHelper.Empty, "Warning", ColorComponent.ResolveWarningColor());
                 return;
             }
 
             try
             {
-                _customTitle = _projector?.ProjectedGrid?.CustomName;
-
+                SetTitle(_projector.ProjectedGrid.CustomName);
                 var map3D = GetOrUpdate3DMap(_projector);
-
                 if (map3D.LastUpdate.Ticks == 0)
                 {
-                    if (_frameBuffer.Any())
-                    {
-                        _sprites.Clear();
-                        Host.AddBackground(_sprites);
-                        _sprites.AddRange(_frameBuffer);
-                        Host.DrawTitle(_sprites);
-                        return;
-                    }
-
-                    _sprites.Clear();
-                    Host.AddBackground(_sprites);
-                    Host.DrawTitle(_sprites);
-                    Host.DrawLoading(_sprites, GeneralComponent.GetScale());
-                    DrawFooter(_sprites);
+                    if (_viewModel.HasMap)
+                        _viewModel.Status.Hide();
+                    else
+                        _viewModel.Status.ShowLoading(LocHelper.GetLoc("LoadingPleaseWait"), Host.Surface.ScriptForegroundColor);
                     return;
                 }
 
+                _viewModel.Status.Hide();
                 if (map3D.LastUpdate == CachedVersion)
-                {
-                    _sprites.Clear();
-                    Host.AddBackground(_sprites);
-                    _sprites.AddRange(_frameBuffer);
-                    Host.DrawTitle(_sprites);
                     return;
-                }
 
                 CachedVersion = map3D.LastUpdate;
-
-                _view = (View)GeneralComponent.DisplayMode;
-                var depth = BuildDepthMap(map3D.Cells, map3D.DamagedCells, map3D.MissingCells, map3D.CellTypes, _view);
+                var depth = BuildDepthMap(map3D.Cells, map3D.DamagedCells, map3D.MissingCells, map3D.CellTypes,
+                    (View)GeneralComponent.DisplayMode);
                 _depthCache = depth;
-
-                _frameBuffer.Clear();
-                DrawDepthMap(_frameBuffer, depth, _view, MathHelper.ToRadians(DiagnosticComponent.Rotation), GeneralComponent.GetScale());
-                DrawFooter(_frameBuffer);
-
-                _sprites.Clear();
-                Host.AddBackground(_sprites);
-                _sprites.AddRange(_frameBuffer);
-                Host.DrawTitle(_sprites);
+                PresentDepthMap(depth, (View)GeneralComponent.DisplayMode,
+                    MathHelper.ToRadians(DiagnosticComponent.Rotation), GeneralComponent.GetScale());
             }
             catch (Exception e)
             {
-                _sprites.Clear();
-                Host.AddBackground(_sprites);
-                Host.DrawTitle(_sprites);
-                Host.DrawMessage(_sprites, LocHelper.GetLoc("ScreenDebugOfficial_ErrorLogCaption") + "\n" + e.Message,
-                    "Warning", ColorComponent.ResolveErrorColor(), GeneralComponent.GetScale());
-                DrawFooter(_sprites);
+                ShowWithoutMap(LocHelper.GetLoc("ScreenDebugOfficial_ErrorLogCaption") + "\n" + e.Message, "Warning",
+                    ColorComponent.ResolveErrorColor());
             }
+        }
+
+        void ShowWithoutMap(string message, string icon, Color color)
+        {
+            _viewModel.ClearMap();
+            _viewModel.Status.Show(message, icon, color);
+        }
+
+        void SetTitle(string title)
+        {
+            if (string.Equals(_customTitle, title, StringComparison.Ordinal))
+                return;
+            _customTitle = title;
+            RaisePropertyChanged(nameof(Title));
         }
 
         public override List<MySprite> GetSprites()
@@ -267,57 +198,15 @@ namespace LcdMod.Client.Apps
 
         public DateTime CachedVersion { get; set; }
 
-        void DrawEmptyWithFilters()
-        {
-            _sprites.Clear();
-            Host.AddBackground(_sprites);
-            Host.DrawTitle(_sprites);
-            Host.DrawMessage(_sprites, LocHelper.GetLoc("ScreenBlueprintsRew_NoBlueprints"),
-                "Warning", ColorComponent.ResolveWarningColor(), GeneralComponent.GetScale());
-        }
-
-        void DrawEmpty()
-        {
-            _sprites.Clear();
-            Host.AddBackground(_sprites);
-            Host.DrawTitle(_sprites);
-            Host.DrawMessage(_sprites, LocHelper.Empty, "Warning", ColorComponent.ResolveWarningColor(), GeneralComponent.GetScale());
-        }
-
         static int GetTimeStep(float secondsPerStep)
         {
-            try
-            {
-                var session = MyAPIGateway.Session;
-                if (session == null)
-                    return 0;
-
-                if (secondsPerStep <= 0f)
-                    secondsPerStep = 1f / 60f;
-
-                var ticksPerStep = Math.Max(1, (int)Math.Round(secondsPerStep * 60f));
-                return session.GameplayFrameCounter / ticksPerStep;
-            }
-            catch (Exception ex)
-            {
-                MyLog.Default.WriteLine($"[LcdMod] IntegrityMonitor GetTimeStep error: {ex.Message}");
+            var session = MyAPIGateway.Session;
+            if (session == null)
                 return 0;
-            }
-        }
-
-        MySprite MakeText(Sandbox.ModAPI.Ingame.IMyTextSurface surface, string text, Vector2 position,
-            float scale, TextAlignment alignment)
-        {
-            return new MySprite
-            {
-                Type = SpriteType.TEXT,
-                Data = text,
-                Position = position,
-                Color = surface.ScriptForegroundColor,
-                Alignment = alignment,
-                FontId = TextFont,
-                RotationOrScale = scale * surface.FontSize
-            };
+            if (secondsPerStep <= 0f)
+                secondsPerStep = 1f / 60f;
+            var ticksPerStep = Math.Max(1, (int)Math.Round(secondsPerStep * 60f));
+            return session.GameplayFrameCounter / ticksPerStep;
         }
 
         static CachedGridMap GetOrUpdate3DMap(IMyProjector projector)
@@ -436,92 +325,49 @@ namespace LcdMod.Client.Apps
             entry.Current = new CachedGridMap(cells, missingCells, damagedCells, cellTypes, DateTime.Now);
         }
 
-        void DrawDepthMap(List<MySprite> sprites, DepthMap2D depthMap, View view, float rotation = 0f, float scale = 1f)
+        void PresentDepthMap(DepthMap2D depthMap, View view, float rotation, float scale)
         {
             if (depthMap.Width <= 0 || depthMap.Height <= 0)
             {
-                var center = new Vector2(ViewBox.Center.X, (ContentTop() + ViewBox.Bottom - FooterHeight) * 0.5f);
-                sprites.Add(MakeText(Surface, LocHelper.Empty, center, Scale, TextAlignment.CENTER));
+                ShowWithoutMap(LocHelper.Empty, "Warning", ColorComponent.ResolveWarningColor());
+                _viewModel.SetLegend(new List<IntegrityMonitor.IntegrityLegendEntry>(), Color.Transparent);
                 return;
             }
 
-            float margin = 0f;
-            float contentStart = ViewBox.X + margin;
-            float contentEnd = ViewBox.X + ViewBox.Width - margin;
-            float contentTop = ContentTop();
-            float contentBottom = ViewBox.Bottom - FooterHeight;
-
-            float contentWidth = Math.Max(0f, contentEnd - contentStart);
-            float contentHeight = Math.Max(0f, contentBottom - contentTop);
-            if (contentWidth <= 0f || contentHeight <= 0f)
-                return;
-
-            float mapScale = Math.Max(0.05f, scale);
             var cellColors = new Color?[depthMap.Width, depthMap.Height];
             var usedKinds = new HashSet<CellKind>();
             bool hasDamaged = false;
             bool hasMissing = false;
-
             for (int x = 0; x < depthMap.Width; x++)
+            for (int y = 0; y < depthMap.Height; y++)
             {
-                for (int y = 0; y < depthMap.Height; y++)
-                {
-                    var percent = depthMap.Percent[x, y];
-                    if (!percent.HasValue)
-                        continue;
-
-                    float shade = MathHelper.Clamp(percent.Value / 100f, 0f, 1f);
-                    float value = (255 - (60f + shade * 195f)) / 255;
-                    bool isDamaged = depthMap.Damaged[x, y];
-                    bool isMissing = depthMap.Missing[x, y];
-
-                    if (isMissing)
-                        hasMissing = true;
-                    else if (isDamaged)
-                        hasDamaged = true;
-                    else
-                        usedKinds.Add(depthMap.CellType[x, y]);
-
-                    var color = BlendWithAlpha(Color.Gray.MulValue(value),
-                        (isMissing ? _missingColor :
-                            isDamaged ? _damagedColor : GetColorForType(depthMap.CellType[x, y])));
-                    cellColors[x, y] = color;
-                }
+                var percent = depthMap.Percent[x, y];
+                if (!percent.HasValue)
+                    continue;
+                float shade = MathHelper.Clamp(percent.Value / 100f, 0f, 1f);
+                float value = (255 - (60f + shade * 195f)) / 255;
+                bool isDamaged = depthMap.Damaged[x, y];
+                bool isMissing = depthMap.Missing[x, y];
+                if (isMissing)
+                    hasMissing = true;
+                else if (isDamaged)
+                    hasDamaged = true;
+                else
+                    usedKinds.Add(depthMap.CellType[x, y]);
+                cellColors[x, y] = BlendWithAlpha(Color.Gray.MulValue(value),
+                    isMissing ? _missingColor : isDamaged ? _damagedColor : GetColorForType(depthMap.CellType[x, y]));
             }
 
-            float adjustedRotation = IsPositiveView(view) ? -rotation : rotation;
-            float snappedRotation = SnapAngle(adjustedRotation, MathHelper.ToRadians(2f));
+            float snappedRotation = SnapAngle(IsPositiveView(view) ? -rotation : rotation, MathHelper.ToRadians(2f));
             float renderRotation = snappedRotation;
-            float renderScale = 1.05f;
             if (IsRightAngleMultiple(snappedRotation))
             {
-                float squareRotation = snappedRotation;
-                cellColors = RotateColorGridNearestSquare(cellColors, squareRotation);
+                cellColors = RotateColorGridNearestSquare(cellColors, snappedRotation);
                 renderRotation = 0f;
-                renderScale = 1;
             }
-
-            int renderWidth = cellColors.GetLength(0);
-            int renderHeight = cellColors.GetLength(1);
-            int squareFitSide = Math.Max(depthMap.Width, depthMap.Height);
-            squareFitSide = Math.Max(1, squareFitSide);
-            float cellSize = Math.Min(contentWidth / squareFitSide, contentHeight / squareFitSide) * mapScale;
-            float mapWidth = renderWidth * cellSize;
-            float mapHeight = renderHeight * cellSize;
-            float mapX = contentStart + (contentWidth - mapWidth) * 0.5f;
-            float mapY = contentTop + (contentHeight - mapHeight) * 0.5f;
-            var mapCenter = new Vector2(mapX + mapWidth * 0.5f, mapY + mapHeight * 0.5f);
-            float cellWidth = cellSize;
-            float cellHeight = cellSize;
-
-            var root = BuildRenderTree(cellColors, 0, 0, renderWidth, renderHeight);
-            EmitRenderTree(sprites, root, mapX, mapY, cellWidth, cellHeight, renderHeight, mapCenter, renderRotation,
-                renderScale);
-            _legendUsedKinds.Clear();
-            foreach (var kind in usedKinds)
-                _legendUsedKinds.Add(kind);
-            _legendHasMissing = hasMissing;
-            _legendHasDamaged = hasDamaged;
+            _viewModel.SetMap(cellColors, Math.Max(depthMap.Width, depthMap.Height), renderRotation, Math.Max(.05f, scale));
+            _viewModel.SetLegend(BuildLegend(usedKinds, hasMissing, hasDamaged),
+                new Color(Host.BackgroundColor.MulValue(0.8f), 0.5f));
         }
 
         public static Color BlendWithAlpha(Color bottom, Color top)
@@ -542,264 +388,27 @@ namespace LcdMod.Client.Apps
             return new Color(r, g, b, a);
         }
 
-        void DrawFooter(List<MySprite> sprites)
+        List<IntegrityMonitor.IntegrityLegendEntry> BuildLegend(HashSet<CellKind> usedKinds, bool hasMissing, bool hasDamaged)
         {
-            if (!_legendHasMissing && _legendUsedKinds.Count == 0)
-                return;
-
-            float margin = 0f;
-            float contentStart = ViewBox.X + margin;
-            float contentEnd = ViewBox.X + ViewBox.Width - margin;
-            float contentWidth = Math.Max(1f, contentEnd - contentStart);
-
-            float legendTextScale = 0.75f * Scale * FontScale;
-            float legendScale = legendTextScale / 0.75f;
-            float squareSize = 12f * legendScale;
-            float rowHeight = Math.Max(18f * Scale, squareSize + 6f * legendScale);
-            float colWidth = 150f * Scale;
-            float pad = 6f * legendScale;
-
-            int totalEntries = (_legendHasMissing ? 1 : 0) +
-                               (_legendUsedKinds.Contains(CellKind.None) ? 1 : 0) +
-                               _colors.Count(pair => _legendUsedKinds.Contains(pair.Key));
-            int cols = Math.Max(1, (int)Math.Floor(contentWidth / Math.Max(1f, colWidth)));
-            int rows = (int)Math.Ceiling(totalEntries / (float)cols);
-            float legendHeight = rows * rowHeight + pad * 2f;
-            float legendTop = ViewBox.Bottom - legendHeight;
-
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = "SquareSimple",
-                Position = new Vector2(contentStart + contentWidth * 0.5f, legendTop + legendHeight * 0.5f),
-                Size = new Vector2(contentWidth, legendHeight),
-                Color = new Color(BackgroundColor.MulValue(0.8f), 0.5f),
-                Alignment = TextAlignment.CENTER
-            });
-
-            float x = contentStart + pad;
-            float y = ViewBox.Bottom - legendHeight + pad;
-            int idx = 0;
-
-            if (_legendUsedKinds.Contains(CellKind.None))
-                DrawLegendEntryAt(sprites, idx++, cols, x, y, colWidth, rowHeight, squareSize, Color.Gray,
-                    GetLegendCaption(CellKind.None));
-
-
-            if (_legendHasMissing)
-                DrawLegendEntryAt(sprites, idx++, cols, x, y, colWidth, rowHeight, squareSize, _missingColor,
-                    LocHelper.GetLoc(MISSING_BLOCK_LOCKEY));
-
-            if (_legendHasDamaged)
-                DrawLegendEntryAt(sprites, idx++, cols, x, y, colWidth, rowHeight, squareSize, _damagedColor,
-                    LocHelper.GetLoc(DAMAGED_BLOCK_LOCKEY));
-
-
+            var entries = new List<IntegrityMonitor.IntegrityLegendEntry>();
+            if (!hasMissing && usedKinds.Count == 0)
+                return entries;
+            if (usedKinds.Contains(CellKind.None))
+                entries.Add(new IntegrityMonitor.IntegrityLegendEntry(Color.Gray, GetLegendCaption(CellKind.None)));
+            if (hasMissing)
+                entries.Add(new IntegrityMonitor.IntegrityLegendEntry(_missingColor, LocHelper.GetLoc(MISSING_BLOCK_LOCKEY)));
+            if (hasDamaged)
+                entries.Add(new IntegrityMonitor.IntegrityLegendEntry(_damagedColor, LocHelper.GetLoc(DAMAGED_BLOCK_LOCKEY)));
             foreach (var pair in _colors)
-            {
-                if (!_legendUsedKinds.Contains(pair.Key))
-                    continue;
-                DrawLegendEntryAt(sprites, idx++, cols, x, y, colWidth, rowHeight, squareSize, pair.Value,
-                    GetLegendCaption(pair.Key));
-            }
+                if (usedKinds.Contains(pair.Key))
+                    entries.Add(new IntegrityMonitor.IntegrityLegendEntry(pair.Value, GetLegendCaption(pair.Key)));
+            return entries;
         }
 
         string GetLegendCaption(CellKind kind)
         {
             string key;
-            if (_legendCategoryLocKeys.TryGetValue(kind, out key))
-                return LocHelper.GetLoc(key);
-
-            return kind.ToString();
-        }
-
-        void DrawLegendEntryAt(List<MySprite> sprites, int idx, int cols, float startX, float startY, float colWidth,
-            float rowHeight, float squareSize, Color color, string caption)
-        {
-            int col = idx % cols;
-            int row = idx / cols;
-            float x = startX + col * colWidth;
-            float y = startY + row * rowHeight;
-            AddLegendRow(sprites, x, y, colWidth, squareSize, color, caption);
-        }
-
-        void AddLegendRow(List<MySprite> sprites, float x, float y, float colWidth, float squareSize, Color color,
-            string caption)
-        {
-            float textScale = 0.75f * Scale * FontScale;
-            float layoutScale = textScale / 0.75f;
-            float labelX = x + squareSize + 6f * layoutScale;
-            float availableTextWidth = Math.Max(0f, colWidth - (labelX - x) - 4f * layoutScale);
-            var captionSb = new StringBuilder(caption ?? string.Empty);
-            Host.TrimText(ref captionSb, availableTextWidth, 0.75f);
-            string trimmedCaption = captionSb.ToString();
-            float textHeight = FormatingHelper.GetSizeInPixel(trimmedCaption, TextFont, textScale, Surface).Y;
-
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXTURE,
-                Data = "SquareSimple",
-                Position = new Vector2(x + squareSize * 0.5f, y + squareSize * 0.5f),
-                Size = new Vector2(squareSize, squareSize),
-                Color = color,
-                Alignment = TextAlignment.CENTER
-            });
-
-            sprites.Add(new MySprite
-            {
-                Type = SpriteType.TEXT,
-                Data = trimmedCaption,
-                Position = new Vector2(labelX, y + squareSize * 0.5f - textHeight * 0.5f),
-                Color = Surface.ScriptForegroundColor,
-                Alignment = TextAlignment.LEFT,
-                FontId = TextFont,
-                RotationOrScale = textScale
-            });
-        }
-
-        static Vector2 RotateAround(Vector2 point, Vector2 origin, float rotation)
-        {
-            if (Math.Abs(rotation) < 0.0001f)
-                return point;
-
-            float sin = (float)Math.Sin(rotation);
-            float cos = (float)Math.Cos(rotation);
-            var delta = point - origin;
-
-            return new Vector2(
-                delta.X * cos - delta.Y * sin,
-                delta.X * sin + delta.Y * cos
-            ) + origin;
-        }
-
-        static RenderQuadNode BuildRenderTree(Color?[,] colors, int x, int y, int width, int height)
-        {
-            if (width <= 0 || height <= 0)
-                return null;
-
-            Color? first = colors[x, y];
-            bool allSame = true;
-
-            for (int ix = x; ix < x + width && allSame; ix++)
-            {
-                for (int iy = y; iy < y + height; iy++)
-                {
-                    if (colors[ix, iy] != first)
-                    {
-                        allSame = false;
-                        break;
-                    }
-                }
-            }
-
-            if (allSame)
-            {
-                if (!first.HasValue)
-                    return null;
-
-                return new RenderQuadNode
-                {
-                    X = x,
-                    Y = y,
-                    Width = width,
-                    Height = height,
-                    Color = first,
-                    Children = null
-                };
-            }
-
-            if (width == 1 && height == 1)
-            {
-                if (!first.HasValue)
-                    return null;
-
-                return new RenderQuadNode
-                {
-                    X = x,
-                    Y = y,
-                    Width = 1,
-                    Height = 1,
-                    Color = first,
-                    Children = null
-                };
-            }
-
-            int leftWidth = width / 2;
-            int rightWidth = width - leftWidth;
-            int bottomHeight = height / 2;
-            int topHeight = height - bottomHeight;
-
-            var children = new List<RenderQuadNode>(4);
-            AddChild(children, BuildRenderTree(colors, x, y, leftWidth, bottomHeight));
-            AddChild(children, BuildRenderTree(colors, x + leftWidth, y, rightWidth, bottomHeight));
-            AddChild(children, BuildRenderTree(colors, x, y + bottomHeight, leftWidth, topHeight));
-            AddChild(children, BuildRenderTree(colors, x + leftWidth, y + bottomHeight, rightWidth, topHeight));
-
-            if (children.Count == 0)
-                return null;
-
-            if (children.Count == 1)
-                return children[0];
-
-            return new RenderQuadNode
-            {
-                X = x,
-                Y = y,
-                Width = width,
-                Height = height,
-                Children = children.ToArray(),
-                Color = null
-            };
-        }
-
-        static void AddChild(List<RenderQuadNode> children, RenderQuadNode node)
-        {
-            if (node != null)
-                children.Add(node);
-        }
-
-        static int EmitRenderTree(
-            List<MySprite> sprites,
-            RenderQuadNode node,
-            float mapX,
-            float mapY,
-            float cellWidth,
-            float cellHeight,
-            int totalHeight,
-            Vector2 mapCenter,
-            float rotation,
-            float scale = 1f)
-        {
-            if (node == null)
-                return 0;
-
-            if (node.IsLeaf)
-            {
-                float drawX = mapX + node.X * cellWidth;
-                float drawY = mapY + (totalHeight - (node.Y + node.Height)) * cellHeight;
-                float rectWidth = node.Width * cellWidth;
-                float rectHeight = node.Height * cellHeight;
-                var rectCenter = new Vector2(drawX + rectWidth * 0.5f, drawY + rectHeight * 0.5f);
-
-                sprites.Add(new MySprite
-                {
-                    Type = SpriteType.TEXTURE,
-                    Data = "SquareSimple",
-                    Position = RotateAround(rectCenter, mapCenter, rotation),
-                    Size = new Vector2(rectWidth * scale, rectHeight * scale),
-                    Color = node.Color,
-                    Alignment = TextAlignment.CENTER,
-                    RotationOrScale = rotation
-                });
-                return 1;
-            }
-
-            int count = 0;
-            for (int i = 0; i < node.Children.Length; i++)
-                count += EmitRenderTree(sprites, node.Children[i], mapX, mapY, cellWidth, cellHeight, totalHeight,
-                    mapCenter, rotation, scale);
-
-            return count;
+            return _legendCategoryLocKeys.TryGetValue(kind, out key) ? LocHelper.GetLoc(key) : kind.ToString();
         }
 
         static Color?[,] RotateColorGridNearestSquare(Color?[,] source, float rotation)
@@ -1221,18 +830,6 @@ namespace LcdMod.Client.Apps
     {
         public CachedGridMap Current = CachedGridMap.Empty;
         public IEnumerator<bool> Updater;
-    }
-
-    class RenderQuadNode
-    {
-        public int X;
-        public int Y;
-        public int Width;
-        public int Height;
-        public Color? Color;
-        public RenderQuadNode[] Children;
-
-        public bool IsLeaf => Children == null || Children.Length == 0;
     }
     
     public enum View

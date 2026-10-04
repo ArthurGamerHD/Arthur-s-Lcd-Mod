@@ -37,11 +37,19 @@ namespace LcdMod.Client.SurfaceScripts
             return app;
         }
 
+        protected override void LayoutChanged()
+        {
+            base.LayoutChanged();
+            if (_app != null)
+                _app.LayoutChanged();
+        }
+
         public override void SafeRun()
         {
             if (_app == null)
                 _app = new ThrustApp(this);
 
+            EnsureRetainedAppView(_app);
             _app.Update();
 
             RenderSprites();
@@ -57,8 +65,7 @@ namespace LcdMod.Client.SurfaceScripts
             }
 
             AddBackground(sprites);
-            DrawTitle(sprites);
-            sprites.AddRange(_app.GetSprites());
+            DrawRetainedAppView(sprites);
             return sprites;
         }
     }

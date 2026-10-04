@@ -2,15 +2,12 @@ using System;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.GridData;
-using LcdMod.Client.Gui;
-using LcdMod.Client.Gui.ControlsTemplates.Custom;
-using LcdMod.Client.Gui.ControlsTemplates.Panels;
+using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Modules.Defense;
 using LcdMod.Common.Config.Components;
 using LcdMod.Common.Config.Generation;
 using Sandbox.Game.Entities;
-using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
 using VRageMath;
@@ -24,79 +21,56 @@ namespace LcdMod.Client.Apps
     [LcdApp(30)]
     internal sealed partial class DefenseDashboardApp : App
     {
-        readonly Grid _rootGrid;
-        readonly TilingPanel _shieldPanel;
-        readonly TilingPanel _weaponPanel;
-        readonly Dictionary<string, ShieldStatus> _shieldControls =
-            new Dictionary<string, ShieldStatus>(StringComparer.Ordinal);
-        readonly Dictionary<string, WeaponStatus> _weaponControls =
-            new Dictionary<string, WeaponStatus>(StringComparer.OrdinalIgnoreCase);
-        readonly HashSet<string> _desiredShieldKeys = new HashSet<string>(StringComparer.Ordinal);
-        readonly HashSet<string> _desiredWeaponKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         readonly Dictionary<string, WeaponAggregate> _weaponAggregates =
             new Dictionary<string, WeaponAggregate>(StringComparer.OrdinalIgnoreCase);
         readonly List<WeaponAggregate> _sortedWeapons = new List<WeaponAggregate>();
+        readonly DefenseDashboard.DefenseDashboardViewModel _viewModel;
 
         DefenseDataLease _lease;
-        Color _cardColor;
-        Color _warningColor;
-        Color _errorColor;
         bool _hasShields;
         bool _hasWeapons;
 
         public DefenseDashboardApp(IAppHost host) : base(host)
         {
+            _viewModel = new DefenseDashboard.DefenseDashboardViewModel(this);
+            SetContent(new DefenseDashboard.DefenseDashboardView { DataContext = _viewModel });
             NeedGridData(GridCapability.Blocks);
-            _rootGrid = AddLogicalChild(new Grid(default(RectangleF), new[] { 1f }, new[] { 1f, 1f }));
-            _shieldPanel = new TilingPanel
-            {
-                GapPixels = 6f,
-                PaddingPixels = 3f,
-                FillFromBottom = true
-            };
-            _weaponPanel = new TilingPanel { GapPixels = 6f, PaddingPixels = 3f };
-            _rootGrid.Set(_shieldPanel, 0, 0);
-            _rootGrid.Set(_weaponPanel, 0, 1);
-            UpdatePresentationColors();
             CaptureLease();
         }
 
         public bool HasData => _hasShields || _hasWeapons;
-
-        public override IReadOnlyList<Control> VisualChildren { get; } = new Control[] { };
+        internal IReadOnlyList<ShieldInfo> NativeShields =>
+            _lease != null && _lease.Service != null && _lease.Service.Latest.Shields != null
+                ? (IReadOnlyList<ShieldInfo>)_lease.Service.Latest.Shields
+                : Array.Empty<ShieldInfo>();
+        internal IReadOnlyList<WeaponAggregate> NativeWeapons => _sortedWeapons;
+        internal Color NativeCardColor => ThemeColor(ThemeResources.HeaderColor);
+        internal Color NativeAccentColor => ThemeColor(ThemeResources.AccentColor);
+        internal Color NativeWarningColor => ColorComponent.ResolveWarningColor();
+        internal Color NativeErrorColor => ColorComponent.ResolveErrorColor();
+        internal Color NativeForegroundColor => ThemeColor(ThemeResources.FontColor);
+        internal Color NativeMutedColor => ThemeColor(ThemeResources.MutedTextColor);
+        internal Color NativeSuccessColor => ThemeColor(ThemeResources.SuccessColor);
+        internal Color NativeTrackColor => ThemeColor(ThemeResources.SurfaceContainerHighestColor);
+        internal string NativeTextFont => TextFont;
+        internal override float WindowRenderScaling => CardScale;
 
         public override void Update()
         {
             CaptureLease();
-            UpdatePresentationColors();
-
             UpdateWeaponStatuses(Host.GridLogic);
+            _viewModel.Refresh();
         }
 
         public override void LayoutChanged()
         {
-            _rootGrid.InvalidateLayout();
+            base.LayoutChanged();
             MarkDirty();
         }
 
         public override List<MySprite> GetSprites()
         {
-            var sprites = new List<MySprite>();
-            float scale = Math.Max(0.25f, GeneralComponent.GetScale());
-            float fontScale = Math.Max(0.25f, Host.Surface.FontSize);
-            float titleOffset = Host.TitleVisible ? 40f * scale * fontScale : 0f;
-            RectangleF view = Host.ViewBox;
-            var content = new RectangleF(
-                view.X,
-                view.Y + titleOffset,
-                view.Width,
-                Math.Max(0f, view.Height - titleOffset));
-
-            ConfigureSections();
-            _rootGrid.Arrange(content);
-            _rootGrid.Render(sprites);
-            ClearDirtyAfterRender();
-            return sprites;
+            return new List<MySprite>();
         }
 
         public override void Close()
@@ -143,69 +117,11 @@ namespace LcdMod.Client.Apps
                 return;
 
             List<ShieldInfo> shields = service.Latest.Shields;
-            _desiredShieldKeys.Clear();
-            int desiredIndex = 0;
-            int count = shields?.Count ?? 0;
-            for (int i = 0; i < count; i++)
-            {
-                ShieldInfo shield = shields?[i];
-                if (shield == null)
-                    continue;
-
-                string baseKey = string.IsNullOrEmpty(shield.ProviderName) ? "Shield" : shield.ProviderName;
-                string key = baseKey;
-                int suffix = 2;
-                while (!_desiredShieldKeys.Add(key))
-                    key = baseKey + "#" + suffix++;
-
-                ShieldStatus control;
-                if (!_shieldControls.TryGetValue(key, out control))
-                {
-                    control = new ShieldStatus(key, shield);
-                    _shieldControls[key] = control;
-                }
-                else
-                {
-                    control.SetViewModel(shield);
-                }
-
-                control.SetPresentationColors(_cardColor, _warningColor, _errorColor);
-                _shieldPanel.AddChild(control);
-                _shieldPanel.MoveChild(control, desiredIndex++);
-            }
-
-            RemoveStaleShieldTiles();
-            _hasShields = desiredIndex > 0;
+            _hasShields = false;
+            for (int i = 0; shields != null && i < shields.Count && !_hasShields; i++)
+                _hasShields = shields[i] != null;
+            _viewModel.Refresh();
             MarkDirty();
-        }
-
-        void UpdatePresentationColors()
-        {
-            Color cardColor = GetHeaderColor();
-            Color warningColor = ColorComponent.ResolveWarningColor();
-            Color errorColor = ColorComponent.ResolveErrorColor();
-            bool changed = !_cardColor.Equals(cardColor) ||
-                           !_warningColor.Equals(warningColor) ||
-                           !_errorColor.Equals(errorColor);
-
-            _cardColor = cardColor;
-            _warningColor = warningColor;
-            _errorColor = errorColor;
-            if (!changed)
-                return;
-
-            foreach (var pair in _shieldControls)
-                pair.Value.SetPresentationColors(_cardColor, _warningColor, _errorColor);
-        }
-
-        void RemoveStaleShieldTiles()
-        {
-            for (int i = _shieldPanel.VisualChildren.Count - 1; i >= 0; i--)
-            {
-                var control = _shieldPanel.VisualChildren[i] as ShieldStatus;
-                if (control != null && !_desiredShieldKeys.Contains(control.ProviderKey))
-                    _shieldPanel.RemoveChild(control);
-            }
         }
 
         void UpdateWeaponStatuses(GridLogic gridLogic)
@@ -254,10 +170,10 @@ namespace LcdMod.Client.Apps
                 }
             }
 
-            SyncWeaponControls();
+            SortWeapons();
         }
 
-        void SyncWeaponControls()
+        void SortWeapons()
         {
             _sortedWeapons.Clear();
             foreach (var pair in _weaponAggregates)
@@ -271,57 +187,7 @@ namespace LcdMod.Client.Apps
                     : string.Compare(left.SubtypeId, right.SubtypeId, StringComparison.OrdinalIgnoreCase);
             });
 
-            _desiredWeaponKeys.Clear();
-            for (int i = 0; i < _sortedWeapons.Count; i++)
-            {
-                WeaponAggregate weapon = _sortedWeapons[i];
-                _desiredWeaponKeys.Add(weapon.SubtypeId);
-
-                WeaponStatus control;
-                if (!_weaponControls.TryGetValue(weapon.SubtypeId, out control))
-                {
-                    control = new WeaponStatus(weapon.SubtypeId);
-                    _weaponControls[weapon.SubtypeId] = control;
-                }
-
-                control.Bind(weapon.DisplayName, weapon.SpriteName, weapon.Total, weapon.Ready, weapon.Shooting,
-                    weapon.Warning, weapon.Unavailable, _cardColor, _warningColor, _errorColor);
-                _weaponPanel.AddChild(control);
-                _weaponPanel.MoveChild(control, i);
-            }
-
-            RemoveStaleWeaponTiles();
             _hasWeapons = _sortedWeapons.Count > 0;
-        }
-
-        void RemoveStaleWeaponTiles()
-        {
-            for (int i = _weaponPanel.VisualChildren.Count - 1; i >= 0; i--)
-            {
-                var control = _weaponPanel.VisualChildren[i] as WeaponStatus;
-                if (control != null && !_desiredWeaponKeys.Contains(control.SubtypeId))
-                    _weaponPanel.RemoveChild(control);
-            }
-        }
-
-        void ConfigureSections()
-        {
-            _shieldPanel.SetVisible(_hasShields);
-            _weaponPanel.SetVisible(_hasWeapons);
-
-            if (_hasShields && _hasWeapons)
-            {
-                _rootGrid.SetRows(1f, 1f);
-                return;
-            }
-
-            if (_hasShields)
-            {
-                _rootGrid.SetRows(1f, 0f);
-                return;
-            }
-
-            _rootGrid.SetRows(0f, 1f);
         }
 
         static WeaponState GetWeaponState(IMyTerminalBlock block)
@@ -376,7 +242,7 @@ namespace LcdMod.Client.Apps
             return "MissingIcon";
         }
 
-        sealed class WeaponAggregate
+        internal sealed class WeaponAggregate
         {
             public string SubtypeId;
             public string DisplayName;

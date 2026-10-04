@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl xmlns="https://github.com/ArthurGamerHD/Adk"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:LcdMod.Client.Apps.Controls"
+             x:Class="LcdMod.Client.Apps.InGameClockDashboard.ClockEnvironmentView"
+             x:DataType="LcdMod.Client.Apps.InGameClockDashboard.InGameClockDashboardViewModel">
+  <Grid RowDefinitions="* *">
+    <Grid ColumnDefinitions="0.75* 1.15* 3.1*">
+      <controls:SpriteIcon Classes="clock-tinted" Source="IconOxygen" SizeRatio="{Binding EnvironmentIconRatio}" />
+      <TextBlock Grid.Column="1" Classes="clock-text" Text="{Binding Oxygen}" FontSize="{Binding EnvironmentFontSize}" />
+      <ProgressBar Grid.Column="2" Classes="clock-bar" Minimum="0" Maximum="1" Value="{Binding OxygenRatio}"
+                   Foreground="{Binding OxygenColor}" Height="{Binding BarHeight}" CornerRadius="{Binding BarRadius}"
+                   Margin="{Binding BarMargin}" />
+    </Grid>
+    <Grid Grid.Row="1" ColumnDefinitions="0.75* 1.15* 3.1*">
+      <controls:SpriteIcon Classes="clock-tinted" Source="IconTemperature" SizeRatio="{Binding EnvironmentIconRatio}" />
+      <TextBlock Grid.Column="1" Classes="clock-text" Text="{Binding Temperature}" FontSize="{Binding EnvironmentFontSize}" />
+      <ProgressBar Grid.Column="2" Classes="clock-bar" Minimum="0" Maximum="1" Value="{Binding TemperatureRatio}"
+                   Foreground="{Binding TemperatureColor}" Height="{Binding BarHeight}" CornerRadius="{Binding BarRadius}"
+                   Margin="{Binding BarMargin}" />
+    </Grid>
+  </Grid>
+</UserControl>
