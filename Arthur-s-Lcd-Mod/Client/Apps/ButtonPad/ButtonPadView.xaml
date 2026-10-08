@@ -10,7 +10,7 @@
     <ItemsControl ItemsSource="{Binding Entries}" HorizontalAlignment="Center" VerticalAlignment="Center">
       <ItemsControl.ItemsPanel>
         <ItemsPanelTemplate>
-          <WrapPanel ItemWidth="{Binding ItemSize}" ItemHeight="{Binding ItemSize}" ItemSpacing="{Binding Spacing}" LineSpacing="{Binding Spacing}" />
+          <WrapPanel ItemWidth="{Binding CellWidth}" ItemHeight="{Binding CellHeight}" />
         </ItemsPanelTemplate>
       </ItemsControl.ItemsPanel>
       <ItemsControl.ItemTemplate>
@@ -22,7 +22,8 @@
                                  IsConfigured="{Binding IsConfigured}"
                                  PanelColor="{Binding PanelColor}"
                                  Command="{Binding Command}"
-                                 SecondaryCommand="{Binding SecondaryCommand}" />
+                                 SecondaryCommand="{Binding SecondaryCommand}"
+                                 Width="{Binding Size}" Height="{Binding Size}" />
         </DataTemplate>
       </ItemsControl.ItemTemplate>
     </ItemsControl>

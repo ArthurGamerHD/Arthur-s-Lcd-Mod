@@ -1921,13 +1921,6 @@ namespace LcdMod.Client.Games.EightBallPool
                 DrawLine(sprites, rightSideStart, rightSideEnd, sideFillWidth, rightSideColor);
             }
 
-#if DEBUG
-            var debugFunnelColor = new Color(255, 0, 255, 220);
-            var wallThickness = Math.Max(2f, _ballScreenRadius * 0.18f);
-            DrawLine(sprites, narrowLeft, mouthLeft, wallThickness, debugFunnelColor);
-            DrawLine(sprites, narrowRight, mouthRight, wallThickness, debugFunnelColor);
-#endif
-
             sprites.Add(MySprite.CreateClearClipRect());
         }
 

@@ -113,6 +113,22 @@ namespace LcdMod.Client.Apps.ButtonPad
         public bool IsIncreaseDecrease => _type == ActionParameterInfo.INCREASE_DECREASE;
         public bool HasScroll => IsNumber || IsIncreaseDecrease;
 
+        // Compact (pre-migration layout): only the controls, with Apply in a column on the right.
+        public bool ShowCaption => HasParameter && !IsCompact;
+        public bool ShowScrollLabel => HasScroll && !IsCompact;
+        public int ApplyRow => IsCompact ? 0 : 1;
+        public int ApplyColumn => IsCompact ? 1 : 0;
+        public float Spacing => IsCompact ? 4f : 8f;
+
+        protected override void OnCompactChanged()
+        {
+            RaisePropertyChanged<bool>(nameof(ShowCaption));
+            RaisePropertyChanged<bool>(nameof(ShowScrollLabel));
+            RaisePropertyChanged<int>(nameof(ApplyRow));
+            RaisePropertyChanged<int>(nameof(ApplyColumn));
+            RaisePropertyChanged<float>(nameof(Spacing));
+        }
+
         public string ParameterCaption => Loc(IsNumber ? "LcdMod_ButtonPad_ConfigureAction_NumberValue"
             : IsText ? "LcdMod_ButtonPad_ConfigureAction_TextValue"
             : IsColor ? "LcdMod_ButtonPad_ConfigureAction_ColorValue"

@@ -22,6 +22,12 @@ namespace LcdMod.Client.Apps.ButtonPad
 
         public IReadOnlyList<PickerRow> Rows => _rows;
         public bool IsEmpty => _rows.Count == 0;
+
+        protected override void OnCompactChanged()
+        {
+            foreach (var row in _rows)
+                row.RaiseLayout();
+        }
         protected abstract string NothingText { get; }
 
         public string EmptyText => _search.Trim().Length == 0 ? NothingText : Loc("LcdMod_ButtonPad_NoMatches");
@@ -111,6 +117,19 @@ namespace LcdMod.Client.Apps.ButtonPad
         public string Classes { get; }
         public ICommand Command { get; }
         public float FontSize => _owner.FontSize;
+        // Compact dialogs fill a very short screen; smaller rows keep three of them visible.
+        public float RowHeight => _owner.IsCompact ? 26f : 44f;
+        public float IconSize => _owner.IsCompact ? 20f : 38f;
+        public VRageMath.Vector4 RowMargin => new VRageMath.Vector4(0f, 0f, 0f, _owner.IsCompact ? 2f : 3f);
+        public VRageMath.Vector4 IconMargin => new VRageMath.Vector4(0f, 0f, _owner.IsCompact ? 6f : 10f, 0f);
+
+        internal void RaiseLayout()
+        {
+            RaisePropertyChanged<float>(nameof(RowHeight));
+            RaisePropertyChanged<float>(nameof(IconSize));
+            RaisePropertyChanged<VRageMath.Vector4>(nameof(RowMargin));
+            RaisePropertyChanged<VRageMath.Vector4>(nameof(IconMargin));
+        }
     }
 
     internal sealed class TargetPickerViewModel : ListPickerViewModel<PickActionTargetResult>

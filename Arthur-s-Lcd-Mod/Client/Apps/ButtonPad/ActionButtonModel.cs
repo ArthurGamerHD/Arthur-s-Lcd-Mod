@@ -12,6 +12,7 @@ namespace LcdMod.Client.Apps.ButtonPad
         string _variant = string.Empty;
         bool _isConfigured = true;
         VRageMath.Color _panelColor = VRageMath.Color.Transparent;
+        float _size = 92f;
         ICommand _command;
         ICommand _secondaryCommand;
 
@@ -23,6 +24,8 @@ namespace LcdMod.Client.Apps.ButtonPad
         public string Variant { get { return _variant; } set { RaiseAndSetIfChanged(ref _variant, value, nameof(Variant)); } }
         public bool IsConfigured { get { return _isConfigured; } set { RaiseAndSetIfChanged(ref _isConfigured, value, nameof(IsConfigured)); } }
         /// <summary>The slot's configured color, transparent when it uses the theme's.</summary>
+        /// <summary>The square button's side; it is centered in a larger layout cell so all gaps are even.</summary>
+        public float Size { get { return _size; } set { RaiseAndSetIfChanged(ref _size, value, nameof(Size)); } }
         public VRageMath.Color PanelColor { get { return _panelColor; } set { RaiseAndSetIfChanged(ref _panelColor, value, nameof(PanelColor)); } }
         public Action Clicked { get; set; }
         public Action SecondaryClicked { get; set; }

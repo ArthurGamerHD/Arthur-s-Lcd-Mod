@@ -89,10 +89,11 @@ namespace LcdMod.Client.Apps
 
         internal void BuildNativeEntries(
             List<ButtonPad.ActionButtonModel> destination,
-            out float itemSize,
-            out float spacing)
+            out float buttonSize,
+            out float cellWidth,
+            out float cellHeight)
         {
-            spacing = ButtonPanelLayout.SpacingPixels * Scale;
+            float spacing = ButtonPanelLayout.SpacingPixels * Scale;
 
             float availableHeight = Math.Max(0f, ViewBox.Bottom - GetContentTop());
             var layout = ButtonPanelLayout.Create(
@@ -102,7 +103,10 @@ namespace LcdMod.Client.Apps
                 ButtonPanelLayout.PreferredButtonSizePixels * Scale,
                 spacing,
                 GetMinimumConfiguredButtonCount());
-            itemSize = Math.Max(1f, layout.ButtonSize);
+            // Each button is centered in its cell, so the leftover space is shared evenly around every button.
+            buttonSize = Math.Max(1f, layout.ButtonSize);
+            cellWidth = Math.Max(buttonSize, layout.CellWidth);
+            cellHeight = Math.Max(buttonSize, layout.CellHeight);
 
             string styleClass = GetNativeStyleClass();
             int count = 0;
@@ -118,6 +122,7 @@ namespace LcdMod.Client.Apps
                     destination.Add(new ButtonPad.ActionButtonModel());
                 var model = destination[count++];
                 string icon = GetEntrySpriteName(entry);
+                model.Size = buttonSize;
                 model.Title = entry != null ? entry.Title ?? string.Empty : string.Empty;
                 model.Icon = !configured ? "Plus" : string.IsNullOrWhiteSpace(icon) ? "MissingIcon" : icon;
                 model.Status = GetEntryStatus(entry) ?? string.Empty;

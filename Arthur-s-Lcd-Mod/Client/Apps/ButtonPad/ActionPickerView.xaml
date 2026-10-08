@@ -11,8 +11,9 @@
     <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/Dialogs.xaml" />
   </Window.Styles>
   <Grid RowDefinitions="Auto,*">
+    <!-- Like the pre-migration compact dialog, a very short screen shows only the list. -->
     <TextBox Classes="clearButton" Text="{Binding SearchText, Mode=TwoWay}" PlaceholderText="{ext:loc LcdMod_ButtonPad_ActionDialog_SearchPlaceholder}"
-             Height="36" Margin="0 0 0 8">
+             Height="36" Margin="0 0 0 8" IsVisible="{Binding IsRegular}">
       <TextBox.InnerLeftContent>
         <Border Classes="search-icon">
           <Border.OpacityMask>
@@ -32,9 +33,9 @@
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="pad:PickerRow">
-                <Button Margin="0 0 0 3" Classes="{Binding Classes}" Command="{Binding Command}" Height="44">
+                <Button Margin="{Binding RowMargin}" Classes="{Binding Classes}" Command="{Binding Command}" Height="{Binding RowHeight}">
                   <Grid ColumnDefinitions="Auto,*">
-                    <Image Source="{Binding Icon}" Width="38" Height="38" Margin="0 0 10 0" />
+                    <Image Source="{Binding Icon}" Width="{Binding IconSize}" Height="{Binding IconSize}" Margin="{Binding IconMargin}" />
                     <TextBlock Grid.Column="1" Classes="dialog-text" Text="{Binding Name}" FontSize="{Binding FontSize}" VerticalAlignment="Center" />
                   </Grid>
                 </Button>

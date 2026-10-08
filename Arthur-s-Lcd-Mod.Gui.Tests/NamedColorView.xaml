@@ -1,8 +1,0 @@
-<UserControl xmlns="https://github.com/ArthurGamerHD/Adk"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="Arthur_s_Lcd_Mod.Gui.Tests.NamedColorView">
-  <StackPanel>
-    <TextBlock x:Name="NamedText" Text="Named" Foreground="cornflowerblue" />
-    <Border x:Name="ShortBorder" Background="#8F00" />
-  </StackPanel>
-</UserControl>

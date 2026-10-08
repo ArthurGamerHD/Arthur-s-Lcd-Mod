@@ -25,6 +25,13 @@ namespace LcdMod.Client.Apps.ButtonPad
 
         protected override Vector2 MeasureOverride(Vector2 availableSize)
         {
+            Border host = _model.IsCompact ? CompactKindHost : KindHost;
+            if (!ReferenceEquals(_kind.Parent, host))
+            {
+                KindHost.Child = null;
+                CompactKindHost.Child = null;
+                host.Child = _kind;
+            }
             _kind.TextScale = _model.FontSize;
             return base.MeasureOverride(availableSize);
         }

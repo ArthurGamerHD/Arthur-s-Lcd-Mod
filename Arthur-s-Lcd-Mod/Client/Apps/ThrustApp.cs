@@ -25,8 +25,6 @@ namespace LcdMod.Client.Apps
         const float GRAVITY_LOAD_CRITICAL_THRESHOLD = 0.95f;
         const float GRAVITY_ERROR_FLASH_SECONDS = 0.5f;
         const double STOP_SPEED_EPSILON = 5e-2d;
-        const double STOP_FORCE_EPSILON = 1e-3d;
-        const double STOP_ACCELERATION_EPSILON = 1e-3d;
         const int DIR_FORWARD = 0;
         const int DIR_BACKWARD = 1;
         const int DIR_LEFT = 2;
@@ -310,28 +308,34 @@ namespace LcdMod.Client.Apps
                 return;
             }
 
-            Vector3D brakeDirection = -velocity / _stopSpeed;
-            double opposingThrust = ComputeAvailableForceInDirection(maxThrust, brakeDirection);
-            if (opposingThrust <= STOP_FORCE_EPSILON)
-                return;
-
             double mass;
             if (!TryGetShipMass(out mass))
                 return;
 
             Vector3D gravity;
-            double gravityDeceleration = TryGetGravityAcceleration(out gravity)
-                ? Vector3D.Dot(gravity, brakeDirection)
-                : 0d;
+            if (!TryGetGravityAcceleration(out gravity))
+                gravity = Vector3D.Zero;
 
-            double netDeceleration = opposingThrust / mass + gravityDeceleration;
-            if (netDeceleration <= STOP_ACCELERATION_EPSILON)
+            var matrix = grid.WorldMatrix;
+            double seconds, distance, force;
+            if (!Common.Physics.DampenerStop.Simulate(Local(velocity, matrix), Local(gravity, matrix), mass,
+                    new[] { maxThrust[DIR_FORWARD], maxThrust[DIR_RIGHT], maxThrust[DIR_UP] },
+                    new[] { maxThrust[DIR_BACKWARD], maxThrust[DIR_LEFT], maxThrust[DIR_DOWN] },
+                    out seconds, out distance, out force))
                 return;
 
-            _stopNetForce = netDeceleration * mass;
-            _stopSeconds = _stopSpeed / netDeceleration;
-            _stopDistance = _stopSpeed * _stopSpeed / (2d * netDeceleration);
+            _stopNetForce = force;
+            _stopSeconds = seconds;
+            _stopDistance = distance;
             _hasStopEstimate = true;
+        }
+
+        static double[] Local(Vector3D vector, MatrixD matrix)
+        {
+            return new[]
+            {
+                Vector3D.Dot(vector, matrix.Forward), Vector3D.Dot(vector, matrix.Right), Vector3D.Dot(vector, matrix.Up)
+            };
         }
 
         bool TryGetGravityAcceleration(out Vector3D gravity)
@@ -372,39 +376,6 @@ namespace LcdMod.Client.Apps
             }
 
             return mass > 0d;
-        }
-
-        double ComputeAvailableForceInDirection(
-            double[] maxThrust,
-            Vector3D desiredWorldDirection)
-        {
-            if (maxThrust == null || maxThrust.Length < 6 || desiredWorldDirection.LengthSquared() <= 1e-8)
-                return 0d;
-
-            var grid = Block?.CubeGrid;
-            if (grid == null) return 0d;
-
-            desiredWorldDirection.Normalize();
-            var gridMatrix = grid.WorldMatrix;
-
-            double desiredForward = Vector3D.Dot(desiredWorldDirection, gridMatrix.Forward);
-            double desiredRight = Vector3D.Dot(desiredWorldDirection, gridMatrix.Right);
-            double desiredUp = Vector3D.Dot(desiredWorldDirection, gridMatrix.Up);
-
-            double availableForwardAxis = GetAxisForce(maxThrust,
-                desiredForward >= 0d ? DIR_FORWARD : DIR_BACKWARD);
-            double availableRightAxis = GetAxisForce(maxThrust,
-                desiredRight >= 0d ? DIR_RIGHT : DIR_LEFT);
-            double availableUpAxis = GetAxisForce(maxThrust,
-                desiredUp >= 0d ? DIR_UP : DIR_DOWN);
-
-            return ComputeAxisConstrainedForce(
-                desiredForward,
-                desiredRight,
-                desiredUp,
-                availableForwardAxis,
-                availableRightAxis,
-                availableUpAxis);
         }
 
         static double ComputeAxisConstrainedForce(

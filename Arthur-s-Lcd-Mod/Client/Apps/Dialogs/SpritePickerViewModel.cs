@@ -132,6 +132,18 @@ namespace LcdMod.Client.Apps.Dialogs
                 row.RaisePropertyChanged<float>(nameof(SpriteRow.FontSize));
         }
 
+        // Compact (pre-migration layout): search and Apply sit in a narrow column beside the list.
+        public bool ShowFooter => AllowMultiple && !IsCompact;
+        public bool ShowCompactApply => AllowMultiple && IsCompact;
+
+        protected override void OnCompactChanged()
+        {
+            foreach (var row in _all)
+                row.RaiseLayout();
+            RaisePropertyChanged<bool>(nameof(ShowFooter));
+            RaisePropertyChanged<bool>(nameof(ShowCompactApply));
+        }
+
         void Filter()
         {
             _filtered.Clear();
@@ -195,6 +207,19 @@ namespace LcdMod.Client.Apps.Dialogs
         public ICommand Command { get; }
         public string Classes => _classes;
         public float FontSize => _owner.FontSize;
+        // Compact dialogs fill a very short screen; smaller rows keep three of them visible.
+        public float RowHeight => _owner.IsCompact ? 26f : 40f;
+        public float IconSize => _owner.IsCompact ? 20f : 32f;
+        public VRageMath.Vector4 RowMargin => new VRageMath.Vector4(0f, 0f, 0f, _owner.IsCompact ? 2f : 3f);
+        public VRageMath.Vector4 IconMargin => new VRageMath.Vector4(0f, 0f, _owner.IsCompact ? 6f : 10f, 0f);
+
+        internal void RaiseLayout()
+        {
+            RaisePropertyChanged<float>(nameof(RowHeight));
+            RaisePropertyChanged<float>(nameof(IconSize));
+            RaisePropertyChanged<VRageMath.Vector4>(nameof(RowMargin));
+            RaisePropertyChanged<VRageMath.Vector4>(nameof(IconMargin));
+        }
 
         internal void Refresh()
         {

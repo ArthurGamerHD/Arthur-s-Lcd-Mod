@@ -10,12 +10,12 @@
   <Window.Styles>
     <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/Dialogs.xaml" />
   </Window.Styles>
-  <Grid RowDefinitions="*,Auto">
+  <Grid ColumnDefinitions="*,Auto" RowDefinitions="*,Auto">
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-      <StackPanel Spacing="8">
-        <TextBlock Classes="dialog-text" Text="{Binding ActionName}" FontSize="{Binding FontSize}" />
+      <StackPanel Spacing="{Binding Spacing}">
+        <TextBlock Classes="dialog-text" Text="{Binding ActionName}" FontSize="{Binding FontSize}" IsVisible="{Binding IsRegular}" />
         <TextBlock Classes="dialog-muted" Text="{ext:loc LcdMod_ButtonPad_ConfigureAction_NoParameters}" FontSize="{Binding FontSize}" IsVisible="{Binding HasNoParameter}" />
-        <TextBlock Classes="dialog-text" Text="{Binding ParameterCaption}" FontSize="{Binding SmallFontSize}" IsVisible="{Binding HasParameter}" />
+        <TextBlock Classes="dialog-text" Text="{Binding ParameterCaption}" FontSize="{Binding SmallFontSize}" IsVisible="{Binding ShowCaption}" />
         <Grid ColumnDefinitions="36,*,36" Height="36" IsVisible="{Binding IsNumber}">
           <Button Classes="dialog-button craft-step" Command="{Binding DecreaseCommand}"><TextBlock Classes="dialog-text" Text="−" FontSize="{Binding FontSize}" /></Button>
           <TextBox Grid.Column="1" Margin="6 0" Text="{Binding Number, Mode=TwoWay}" MaxLength="24" />
@@ -56,7 +56,7 @@
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
-        <TextBlock Classes="dialog-text" Text="{ext:loc LcdMod_ButtonPad_ConfigureAction_Scroll}" FontSize="{Binding SmallFontSize}" IsVisible="{Binding HasScroll}" />
+        <TextBlock Classes="dialog-text" Text="{ext:loc LcdMod_ButtonPad_ConfigureAction_Scroll}" FontSize="{Binding SmallFontSize}" IsVisible="{Binding ShowScrollLabel}" />
         <ItemsControl ItemsSource="{Binding ScrollModes}" IsVisible="{Binding HasScroll}">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate>
@@ -73,7 +73,9 @@
         </ItemsControl>
       </StackPanel>
     </ScrollViewer>
-    <Button Grid.Row="1" Classes="dialog-button primary" HorizontalAlignment="Right" Margin="0 10 0 0" Command="{Binding ApplyCommand}">
+    <Button Grid.Row="{Binding ApplyRow}" Grid.Column="{Binding ApplyColumn}"
+            Classes="dialog-button primary" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="4 4 0 0"
+            Command="{Binding ApplyCommand}">
       <TextBlock Classes="dialog-text" Text="{ext:loc LcdMod_ButtonPad_Apply}" FontSize="{Binding FontSize}" />
     </Button>
   </Grid>

@@ -10,8 +10,8 @@
   <Window.Styles>
     <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/Dialogs.xaml" />
   </Window.Styles>
-  <Grid RowDefinitions="Auto,*">
-    <Grid ColumnDefinitions="*,150" Height="36" Margin="0 0 0 8">
+  <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,*">
+    <Grid Grid.Column="1" ColumnDefinitions="*,150" Height="36" Margin="0 0 0 8" IsVisible="{Binding IsRegular}">
       <TextBox Classes="clearButton" Text="{Binding SearchText, Mode=TwoWay}" PlaceholderText="{ext:loc LcdMod_ButtonPad_TargetDialog_SearchPlaceholder}">
         <TextBox.InnerLeftContent>
           <Border Classes="search-icon">
@@ -23,7 +23,13 @@
       </TextBox>
       <Border x:Name="KindHost" Grid.Column="1" Margin="8 0 0 0" />
     </Grid>
-    <Border Grid.Row="1" Classes="dialog-panel">
+    <!-- Pre-migration compact layout: search over the kind filter in a narrow column beside the list. -->
+    <Grid Grid.RowSpan="2" Width="124" RowDefinitions="*,*" Margin="0 0 4 0" IsVisible="{Binding IsCompact}">
+      <TextBox Text="{Binding SearchText, Mode=TwoWay}" PlaceholderText="{ext:loc LcdMod_ButtonPad_TargetDialog_SearchPlaceholder}"
+               Margin="0 0 0 2" />
+      <Border x:Name="CompactKindHost" Grid.Row="1" Margin="0 2 0 0" />
+    </Grid>
+    <Border Grid.Row="1" Grid.Column="1" Classes="dialog-panel">
       <Grid>
         <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
           <ItemsControl ItemsSource="{Binding Rows}">
@@ -34,9 +40,9 @@
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="pad:PickerRow">
-                <Button Margin="0 0 0 3" Classes="{Binding Classes}" Command="{Binding Command}" Height="44">
+                <Button Margin="{Binding RowMargin}" Classes="{Binding Classes}" Command="{Binding Command}" Height="{Binding RowHeight}">
                   <Grid ColumnDefinitions="Auto,*">
-                    <Image Source="{Binding Icon}" Width="38" Height="38" Margin="0 0 10 0" />
+                    <Image Source="{Binding Icon}" Width="{Binding IconSize}" Height="{Binding IconSize}" Margin="{Binding IconMargin}" />
                     <TextBlock Grid.Column="1" Classes="dialog-text" Text="{Binding Name}" FontSize="{Binding FontSize}" VerticalAlignment="Center" />
                   </Grid>
                 </Button>

@@ -44,8 +44,10 @@ namespace LcdMod.Client.Apps.Dialogs
             get { return _isCompact; }
             set
             {
-                if (RaiseAndSetIfChanged(ref _isCompact, value, nameof(IsCompact)))
-                    RaisePropertyChanged<bool>(nameof(IsRegular));
+                if (!RaiseAndSetIfChanged(ref _isCompact, value, nameof(IsCompact)))
+                    return;
+                RaisePropertyChanged<bool>(nameof(IsRegular));
+                OnCompactChanged();
             }
         }
 
@@ -61,6 +63,10 @@ namespace LcdMod.Client.Apps.Dialogs
         }
 
         protected virtual void OnFontSizeChanged()
+        {
+        }
+
+        protected virtual void OnCompactChanged()
         {
         }
 
