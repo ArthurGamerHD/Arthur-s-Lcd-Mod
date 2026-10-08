@@ -9,6 +9,7 @@ namespace LcdMod.Client.Apps.Games
         {
             InitializeComponent();
             Styles = StyleSheet.LoadFromSource("/Data/Gui/Styles/Fluent/Controls/Games.xaml");
+            AddOverlay(new DoomFrameView());
             AddOverlay(new GameInputLayer());
         }
     }

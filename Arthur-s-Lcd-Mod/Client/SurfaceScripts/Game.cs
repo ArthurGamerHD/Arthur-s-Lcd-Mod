@@ -6,6 +6,7 @@ using LcdMod.Client.Games.Minesweeper;
 using LcdMod.Client.Games.EightBallPool;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Games;
+using LcdMod.Client.Games.ManagedDoom;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Terminal.Controls;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
@@ -31,7 +32,8 @@ namespace LcdMod.Client.SurfaceScripts
             Chess,
             Game2048,
             Minesweeper,
-            EightBallPool
+            EightBallPool,
+            Doom
         }
         
         public const string ID = MOD_PREFIX + "GameSurfaceScript";
@@ -60,6 +62,11 @@ namespace LcdMod.Client.SurfaceScripts
                 {
                     Key = (long)GameEnum.EightBallPool,
                     Value = MyStringId.GetOrCompute(MOD_PREFIX + "EightBallPool")
+                },
+                new MyTerminalControlComboBoxItem
+                {
+                    Key = (long)GameEnum.Doom,
+                    Value = MyStringId.GetOrCompute("DOOM")
                 }
             };
 
@@ -73,6 +80,14 @@ namespace LcdMod.Client.SurfaceScripts
         public GameSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)
         {
             BuildGlobalMenu();
+            LcdModSessionComponent.OnAfterSimulationUpdate += RunDoomFrame;
+        }
+
+        void RunDoomFrame()
+        {
+            if (_currentGame is DoomGame && Surface != null && MyAPIGateway.Session != null &&
+                LastRunTick != MyAPIGateway.Session.GameplayFrameCounter)
+                Run();
         }
 
         void BuildGlobalMenu()
@@ -105,6 +120,13 @@ namespace LcdMod.Client.SurfaceScripts
                 _viewApp.ViewModel.Reveal(CurrentFrame);
         }
 
+        internal void HideDoomCursor()
+        {
+            ResetPointerButtonInput();
+            CursorPosition = new Vector2(float.NaN, float.NaN);
+            RenderSprites();
+        }
+
         static long CurrentFrame => MyAPIGateway.Session == null ? 0L : MyAPIGateway.Session.GameplayFrameCounter;
 
         /// <summary>The area the game view occupies, between the title and footer; the games lay out inside it.</summary>
@@ -117,6 +139,13 @@ namespace LcdMod.Client.SurfaceScripts
         }
 
         public void Sync() => ConfigManager.Sync(Block, ProviderConfig);
+
+        internal void SyncDoomAudioSettings()
+        {
+            Sync();
+            if (LcdModSessionComponent.Client != null)
+                LcdModSessionComponent.Client.RefreshDoomAudioTerminalControls();
+        }
 
         public override void SafeRun()
         {
@@ -161,6 +190,9 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override void Dispose()
         {
+            LcdModSessionComponent.OnAfterSimulationUpdate -= RunDoomFrame;
+            (_currentGame as IDisposable)?.Dispose();
+            _currentGame = null;
             var viewApp = _viewApp;
             _viewApp = null;
             base.Dispose();
@@ -187,6 +219,11 @@ namespace LcdMod.Client.SurfaceScripts
                     _currentGame = new EightBallPoolGame(Surface as IMyTextSurface, this);
                     break;
                 }
+                case GameEnum.Doom:
+                {
+                    _currentGame = new DoomGame(this);
+                    break;
+                }
             }
 
             if(_currentGame != null)
@@ -211,6 +248,14 @@ namespace LcdMod.Client.SurfaceScripts
                 new Apps.Dialogs.DialogButton(Loc(MOD_PREFIX + "NewGame"), startNewGame, true));
         }
 
+        internal bool ShowDoomFailure(string failure, Action restart)
+        {
+            return _viewApp != null && _viewApp.ShowMessage(
+                "Doom stopped",
+                failure + "\n\nClick OK to restart Doom.",
+                new Apps.Dialogs.DialogButton(Loc(MOD_PREFIX + "Common_Button_OK"), restart, true));
+        }
+
         static string Loc(string key) => LcdMod.Client.Helpers.LocHelper.GetLoc(key);
 
         internal bool IsCurrentGame(IGame game)
@@ -232,6 +277,7 @@ namespace LcdMod.Client.SurfaceScripts
                 LcdModSessionComponent.OnSave -= old.Save;
                 _currentGame = null;
                 old.Save();
+                (old as IDisposable)?.Dispose();
             }
             else
             {

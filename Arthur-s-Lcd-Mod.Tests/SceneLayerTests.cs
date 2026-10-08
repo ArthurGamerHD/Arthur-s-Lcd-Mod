@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 
 namespace Arthur_s_Lcd_Mod.Tests;
 
@@ -66,5 +67,36 @@ public class SceneLayerTests
         string surface = File.ReadAllText(Path.Combine(repo, "Arthur-s-Lcd-Mod/Client/SurfaceScripts/Abstract/InteractiveSurfaceScript.cs"));
         Assert.DoesNotContain("reservedHeight", surface);
         Assert.DoesNotContain("GlobalMenu", surface);
+    }
+
+    [Fact]
+    public void DoomFooterUsesBorderedKeysInARealWasdGrid()
+    {
+        string repo = Repo();
+        var view = XDocument.Load(Path.Combine(repo, "Arthur-s-Lcd-Mod/Client/Apps/Games/GamesMenuView.xaml"));
+        XNamespace controls = "https://github.com/ArthurGamerHD/Adk";
+
+        var keycaps = view.Descendants(controls + "Border")
+            .Where(border => (string)border.Attribute("Classes") == "doom-keycap")
+            .ToList();
+        Assert.Equal(15, keycaps.Count);
+        Assert.All(keycaps, border => Assert.Single(border.Elements(controls + "TextBlock")));
+        Assert.Contains(keycaps, border => (string)border.Element(controls + "TextBlock")?.Attribute("Text") == "P");
+        Assert.Contains(view.Descendants(controls + "TextBlock"), text =>
+            (string)text.Attribute("Text") == "Pause/Resume");
+
+        var wasd = view.Descendants(controls + "Grid")
+            .Single(grid => (string)grid.Attribute("ColumnDefinitions") == "Auto Auto Auto");
+        var positions = wasd.Elements(controls + "Border").ToDictionary(
+            border => (string)border.Element(controls + "TextBlock")?.Attribute("Text"),
+            border => ((string)border.Attribute("Grid.Row"), (string)border.Attribute("Grid.Column")));
+        Assert.Equal(("0", "1"), positions["W"]);
+        Assert.Equal(("1", "0"), positions["A"]);
+        Assert.Equal(("1", "1"), positions["S"]);
+        Assert.Equal(("1", "2"), positions["D"]);
+
+        string style = File.ReadAllText(Path.Combine(repo, "Arthur-s-Lcd-Mod/Content/Data/Gui/Styles/Fluent/Controls/Games.xaml"));
+        Assert.Contains("Style Selector=\"Border.doom-keycap\"", style);
+        Assert.Contains("Property=\"BorderThickness\" Value=\"1\"", style);
     }
 }

@@ -15,6 +15,7 @@ using LcdMod.Client.Config;
 using LcdMod.Client.GridData;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
+using ManagedDoom.SE;
 using LcdMod.Client.Terminal;
 #if DEBUG
 using LcdMod.Client.Debugging;
@@ -81,6 +82,7 @@ namespace LcdMod.Client
         internal AudioImportService AudioImport { get { return _audioImport; } }
         internal AudioBroadcastClientService AudioBroadcast { get { return _audioBroadcast; } }
         internal GameAudioTestReportService AudioTestReport { get { return _audioTestReport; } }
+        internal void RefreshDoomAudioTerminalControls() { _terminalManager.RefreshDoomAudioControls(); }
 #if DEBUG
         internal CartographyDebugReportService CartographyDebugReport { get { return _cartographyDebugReport; } }
         internal VisibleTreeDebugService VisibleTreeDebug { get { return _visibleTreeDebug; } }
@@ -126,6 +128,7 @@ namespace LcdMod.Client
 
         public void UnloadData()
         {
+            DoomUserProfileStorage.FlushPending();
             Ftue.Unload();
 #if DEBUG
             if (_visibleTreeDebug != null)
@@ -210,6 +213,7 @@ namespace LcdMod.Client
                     {
                         OnUpdateBeforeSimulation?.Invoke();
                     }
+                    DoomUserProfileStorage.FlushPending();
                 }
             }
             catch (Exception e)

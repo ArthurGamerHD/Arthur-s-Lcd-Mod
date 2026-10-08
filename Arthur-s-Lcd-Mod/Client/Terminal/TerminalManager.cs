@@ -107,6 +107,10 @@ namespace LcdMod.Client.Terminal
             AddRegistration(registrations, 3200, new SliderRenderScale());
 
             AddRegistration(registrations, 3300, new ComboboxDisplayMode());
+            AddRegistration(registrations, 3305, new SliderDoomSfxVolume());
+            AddRegistration(registrations, 3310, new SliderDoomMusicVolume());
+            AddRegistration(registrations, 3315, new SliderDoomKeyboardTurnSensitivity());
+            AddRegistration(registrations, 3320, new SwitchDoomMouseTurning());
             AddRegistration(registrations, 3325, new ComboboxItemDisplayMode());
             AddRegistration(registrations, 3350, new ComboboxPlanetTextureQuality());
             AddRegistration(registrations, 3400, new ComboboxReferenceMode());
@@ -191,6 +195,13 @@ namespace LcdMod.Client.Terminal
             SearchScriptTextBox = null;
             SearchQuery = string.Empty;
             _settingsClipboard.Clear();
+        }
+
+        internal void RefreshDoomAudioControls()
+        {
+            foreach (var control in Controls)
+                if (control is SliderDoomVolume)
+                    control.TerminalControl.UpdateVisual();
         }
 
         void CustomControlGetter(IMyTerminalBlock block, List<IMyTerminalControl> controls)

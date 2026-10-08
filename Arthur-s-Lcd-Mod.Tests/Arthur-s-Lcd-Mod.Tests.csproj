@@ -35,6 +35,9 @@
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Config\Components\ConfigComponentModels.cs" LinkBase="ConfigSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Config\Components\MediaVisualizerSettings.cs" LinkBase="ConfigSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Config\Components\GeneralConfigComponentExtensions.cs" LinkBase="ConfigSource" />
+    <Compile Include="..\Arthur-s-Lcd-Mod\Common\Config\Components\GeneralConfigCustomDataExtensions.cs" LinkBase="ConfigSource" />
+    <Compile Include="..\Arthur-s-Lcd-Mod\Client\Games\ManagedDoom\SE\DoomInputSettings.cs" LinkBase="DoomSource" />
+    <Compile Include="..\Arthur-s-Lcd-Mod\Client\Games\ManagedDoom\SE\DoomVirtualFileSystem.cs" LinkBase="DoomSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Config\Components\ItemDisplayConfigComponentExtensions.cs" LinkBase="ConfigSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Config\Components\ComponentConfigEntityReferences.cs" LinkBase="ConfigSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Config\Models\ScreenProviderConfig.cs" LinkBase="ConfigSource" />

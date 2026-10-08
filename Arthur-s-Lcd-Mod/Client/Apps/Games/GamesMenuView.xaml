@@ -9,9 +9,71 @@
     <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/Games.xaml" />
   </UserControl.Styles>
   <!-- A docked menu takes its own row above the game; a menu revealed over a full-screen game overlays it. -->
-  <Grid RowDefinitions="Auto *">
+  <Grid RowDefinitions="Auto * Auto">
     <apps:GamesView Grid.Row="{Binding GameRow}" Grid.RowSpan="{Binding GameRowSpan}" />
     <games:GameMenuBar Entries="{Binding MenuEntries}" Version="{Binding MenuVersion}" IsVisible="{Binding MenuVisible}"
                        VerticalAlignment="Top" />
+    <Border Grid.Row="2" IsVisible="{Binding IsDoom}" Background="#DD101010" Padding="3 3">
+      <Grid RowDefinitions="Auto Auto Auto" ColumnDefinitions="*,*,*,*,*, *">
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.RowSpan="2" Spacing="4">
+          <Grid RowDefinitions="Auto Auto" ColumnDefinitions="Auto Auto Auto">
+            <Border Grid.Row="0" Grid.Column="1" Classes="doom-keycap" Margin="1">
+              <TextBlock Classes="doom-keycap-label" Text="W" />
+            </Border>
+            <Border Grid.Row="1" Grid.Column="0" Classes="doom-keycap" Margin="1">
+              <TextBlock Classes="doom-keycap-label" Text="A" />
+            </Border>
+            <Border Grid.Row="1" Grid.Column="1" Classes="doom-keycap" Margin="1">
+              <TextBlock Classes="doom-keycap-label" Text="S" />
+            </Border>
+            <Border Grid.Row="1" Grid.Column="2" Classes="doom-keycap" Margin="1">
+              <TextBlock Classes="doom-keycap-label" Text="D" />
+            </Border>
+          </Grid>
+          <TextBlock Classes="doom-tip-action" Text="Move" VerticalAlignment="Center" />
+        </StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="4">
+          <Border Classes="doom-keycap"><TextBlock Classes="doom-keycap-label" Text="Mouse" /></Border>
+          <TextBlock Classes="doom-tip-action" Text="Aim" VerticalAlignment="Center" />
+        </StackPanel>
+        <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="4">
+          <Border Classes="doom-keycap"><TextBlock Classes="doom-keycap-label" Text="LMB" /></Border>
+          <TextBlock Classes="doom-tip-action" Text="Shoot" VerticalAlignment="Center" />
+        </StackPanel>
+        <StackPanel Grid.Column="3" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="4">
+          <Border Classes="doom-keycap"><TextBlock Classes="doom-keycap-label" Text="Space" /></Border>
+          <TextBlock Classes="doom-tip-action" Text="Use" VerticalAlignment="Center" />
+        </StackPanel>
+        <StackPanel Grid.Column="4" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="4">
+          <Border Classes="doom-keycap"><TextBlock Classes="doom-keycap-label" Text="C" /></Border>
+          <TextBlock Classes="doom-tip-action" Text="Strafe" VerticalAlignment="Center" />
+        </StackPanel>
+        <StackPanel Grid.Column="5" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="4">
+          <Border Classes="doom-keycap"><TextBlock Classes="doom-keycap-label" Text="P" /></Border>
+          <TextBlock Classes="doom-tip-action" Text="Pause" VerticalAlignment="Center" />
+        </StackPanel>
+        <StackPanel Grid.Row="1"  Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="4">
+          <Border Classes="doom-keycap"><TextBlock Classes="doom-keycap-label" Text="Shift" /></Border>
+          <TextBlock Classes="doom-tip-action" Text="Run" VerticalAlignment="Center" />
+        </StackPanel>
+        <StackPanel Grid.Row="1" Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="2">
+          <Border Classes="doom-keycap"><TextBlock Classes="doom-keycap-label" Text="Q" /></Border>
+          <Border Classes="doom-keycap"><TextBlock Classes="doom-keycap-label" Text="E" /></Border>
+          <TextBlock Classes="doom-tip-action" Text="Weapon" VerticalAlignment="Center" />
+        </StackPanel>
+        <StackPanel Grid.Row="1" Grid.Column="3" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="4">
+          <Border Classes="doom-keycap"><TextBlock Classes="doom-keycap-label" Text="Tab" /></Border>
+          <TextBlock Classes="doom-tip-action" Text="Menu" VerticalAlignment="Center" />
+        </StackPanel>
+        <StackPanel Grid.Row="1" Grid.Column="4" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="4">
+          <Border Classes="doom-keycap"><TextBlock Classes="doom-keycap-label" Text="Alt" /></Border>
+          <TextBlock Classes="doom-tip-action" Text="Cursor" VerticalAlignment="Center" />
+        </StackPanel>
+        <StackPanel Grid.Row="1" Grid.Column="5" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="4">
+          <Border Classes="doom-keycap"><TextBlock Classes="doom-keycap-label" Text="Esc" /></Border>
+          <TextBlock Classes="doom-tip-action" Text="Exit" VerticalAlignment="Center" />
+        </StackPanel>
+      </Grid>
+    </Border>
   </Grid>
 </UserControl>

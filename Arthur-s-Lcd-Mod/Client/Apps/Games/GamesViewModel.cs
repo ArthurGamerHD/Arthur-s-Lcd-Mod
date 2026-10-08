@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Views;
 using LcdMod.Client.Games;
+using LcdMod.Client.Games.ManagedDoom;
 
 namespace LcdMod.Client.Apps.Games
 {
@@ -14,15 +15,29 @@ namespace LcdMod.Client.Apps.Games
         bool _titleVisible = true;
         long _revealedUntil = long.MinValue;
         bool _menuDocked;
+        object _game;
 
         public GamesViewModel(GamesConfigApp app) : base(app) { }
 
         public IReadOnlyList<GlobalMenuEntry> MenuEntries => _menuEntries;
 
         /// <summary>The running game; the view takes its input through <see cref="IGameInput"/>.</summary>
-        public object Game { get; set; }
+        public object Game
+        {
+            get { return _game; }
+            set
+            {
+                if (ReferenceEquals(_game, value))
+                    return;
+                _game = value;
+                RaisePropertyChanged<object>(nameof(Game));
+                RaisePropertyChanged<IGameInput>(nameof(GameInput));
+                RaisePropertyChanged<bool>(nameof(IsDoom));
+            }
+        }
 
         public IGameInput GameInput => Game as IGameInput;
+        public bool IsDoom => Game is DoomGame;
         public int MenuVersion => _menuVersion;
         public bool MenuVisible => _menuVisible;
         public int GameRow => _menuDocked ? 1 : 0;
