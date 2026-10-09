@@ -31,7 +31,6 @@ namespace LcdMod.Client.GridData
 
         bool _pendingFullRecalculation;
         bool _scheduled;
-        bool _scheduledUrgent;
         bool _workActive;
         bool _workFullRecalculation;
         int _workInventoryIndex;
@@ -124,12 +123,10 @@ namespace LcdMod.Client.GridData
         {
             if (_scheduled)
             {
-                _scheduledUrgent |= urgent;
                 return;
             }
 
             _scheduled = true;
-            _scheduledUrgent = urgent;
             _scheduleGeneration++;
             InventoryWorkScheduler.Enqueue(this, _scheduleGeneration, urgent, delayFrames);
         }
@@ -171,7 +168,6 @@ namespace LcdMod.Client.GridData
                 _consecutiveFailures++;
                 LogRecalculationError(null, error);
                 _scheduled = false;
-                _scheduledUrgent = false;
                 SchedulePendingRecalculation(true, GetRetryDelayFrames(_consecutiveFailures));
                 return InventoryRecalculationStep.Completed;
             }
@@ -257,7 +253,6 @@ namespace LcdMod.Client.GridData
             _processingItemTypes.Clear();
             _processingChangedInventories.Clear();
             _scheduled = false;
-            _scheduledUrgent = false;
 
             if (_pendingFullRecalculation ||
                 _pendingItemTypes.Count > 0 ||
@@ -335,7 +330,6 @@ namespace LcdMod.Client.GridData
         {
             _scheduleGeneration++;
             _scheduled = false;
-            _scheduledUrgent = false;
             _pendingFullRecalculation = false;
             _workActive = false;
             _workFullRecalculation = false;
