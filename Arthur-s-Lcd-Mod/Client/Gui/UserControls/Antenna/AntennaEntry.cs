@@ -90,7 +90,7 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
         {
             Set(ref _name, name ?? string.Empty, nameof(Name));
             Set(ref _statusIcon, statusIcon ?? string.Empty, nameof(StatusIcon));
-            Set(ref _statusText, statusText ?? string.Empty, nameof(StatusText));
+            Set(ref _statusText, statusText?.TrimEnd() ?? string.Empty, nameof(StatusText));
             if (Set(ref _statusColor, statusColor, nameof(StatusColor)))
             {
                 var foreground = statusColor.ContrastRatio(Color.Black) >=
