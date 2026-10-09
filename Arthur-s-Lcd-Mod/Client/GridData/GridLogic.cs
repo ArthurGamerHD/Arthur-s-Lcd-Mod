@@ -419,7 +419,7 @@ namespace LcdMod.Client.GridData
 
         public void WatchLinkType(GridLinkTypeEnum linkType)
         {
-            if (linkType == GridLinkTypeEnum.Mechanical)
+            if (linkType < 0 || linkType == GridLinkTypeEnum.Mechanical)
                 return;
 
             var current = GetLinkGroup(linkType);
@@ -434,8 +434,15 @@ namespace LcdMod.Client.GridData
                 return;
 
             grids.Clear();
-            if (MyAPIGateway.GridGroups == null || Grid == null)
+            if (Grid == null)
                 return;
+
+            // The terminal stores "local grid" as -1, which is not a GridLinkTypeEnum member.
+            if (linkType < 0 || MyAPIGateway.GridGroups == null)
+            {
+                grids.Add(Grid);
+                return;
+            }
 
             MyAPIGateway.GridGroups.GetGroup(Grid, linkType, grids);
         }

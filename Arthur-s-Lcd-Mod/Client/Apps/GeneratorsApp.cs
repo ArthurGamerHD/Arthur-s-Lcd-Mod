@@ -16,7 +16,8 @@ namespace LcdMod.Client.Apps
             new PowerEntryDefinition("wind", "DisplayName_BlockGroup_WindTurbines", "Wind Turbines"),
             new PowerEntryDefinition("reactor", "DisplayName_BlockGroup_Reactors", "Reactors"),
             new PowerEntryDefinition("engine", "DisplayName_BlockGroup_HydrogenEngines", "Engines"),
-            new PowerEntryDefinition("batteries", "DisplayName_BlockGroup_Batteries", "Batteries")
+            new PowerEntryDefinition("batteries", "DisplayName_BlockGroup_Batteries", "Batteries"),
+            new PowerEntryDefinition("other", "TssTargetingInfo_Other", "Other")
         };
 
         protected override PowerEntryDefinition[] EntryDefinitions => Definitions;
@@ -67,8 +68,8 @@ namespace LcdMod.Client.Apps
                 return true;
             }
 
-            entryKey = null;
-            return false;
+            entryKey = "other";
+            return true;
         }
     }
 }

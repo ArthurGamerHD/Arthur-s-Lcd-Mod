@@ -101,12 +101,11 @@ namespace LcdMod.Client.Apps.PowerFilled
         string _label;
         float _percentage;
         string _percentText;
-        FillableTexture _texture;
+        string _fillClass;
         Color _fillColor;
         Color _foreground;
         bool _drawCenterIcon;
         float _centerIconRotation;
-        float _centerIconScale;
 
         readonly Action _detailsOpened;
         readonly List<PowerDetailModel> _details = new List<PowerDetailModel>();
@@ -131,12 +130,11 @@ namespace LcdMod.Client.Apps.PowerFilled
         public string Label => _label;
         public float Percentage => _percentage;
         public string PercentText => _percentText;
-        public FillableTexture Texture => _texture;
+        public string FillClass => _fillClass;
         public Color FillColor => _fillColor;
         public Color Foreground => _foreground;
         public bool DrawCenterIcon => _drawCenterIcon;
         public float CenterIconRotation => _centerIconRotation;
-        public float CenterIconScale => _centerIconScale;
 
         public void Update(PowerEntry power, Color foreground)
         {
@@ -144,16 +142,11 @@ namespace LcdMod.Client.Apps.PowerFilled
             Set(ref _label, power.Entity == null ? string.Empty : power.Entity.CustomName ?? string.Empty, nameof(Label));
             RaiseAndSetIfChanged(ref _percentage, power.Ratio, nameof(Percentage));
             Set(ref _percentText, power.PercentText ?? string.Empty, nameof(PercentText));
-            if (!ReferenceEquals(_texture, power.FillableTexture))
-            {
-                _texture = power.FillableTexture;
-                RaisePropertyChanged<FillableTexture>(nameof(Texture));
-            }
+            Set(ref _fillClass, power.FillClass, nameof(FillClass));
             RaiseAndSetIfChanged(ref _fillColor, power.FillColor, nameof(FillColor));
             RaiseAndSetIfChanged(ref _foreground, foreground, nameof(Foreground));
             RaiseAndSetIfChanged(ref _drawCenterIcon, power.DrawCenterIcon, nameof(DrawCenterIcon));
             RaiseAndSetIfChanged(ref _centerIconRotation, power.CenterIconRotation, nameof(CenterIconRotation));
-            RaiseAndSetIfChanged(ref _centerIconScale, power.CenterIconScale, nameof(CenterIconScale));
             RaiseAndSetIfChanged(ref _hasDetails, power.HasDetails, nameof(HasDetails));
             UpdateDetails(power);
         }
@@ -183,7 +176,7 @@ namespace LcdMod.Client.Apps.PowerFilled
 
     internal sealed class PowerFooterRow : ObservableObject
     {
-        FillableTexture _texture;
+        string _fillClass = string.Empty;
         float _ratio;
         string _chargeText = string.Empty;
         string _statusText = string.Empty;
@@ -192,13 +185,12 @@ namespace LcdMod.Client.Apps.PowerFilled
         Color _rightColor;
         Color _foreground;
         bool _drawCenterIcon;
-        float _centerIconScale;
         float _height;
         float _iconSize;
         float _fontSize = 1f;
         Vector4 _textMargin;
 
-        public FillableTexture Texture => _texture;
+        public string FillClass => _fillClass;
         public float Ratio => _ratio;
         public string ChargeText => _chargeText;
         public string StatusText => _statusText;
@@ -207,7 +199,6 @@ namespace LcdMod.Client.Apps.PowerFilled
         public Color RightColor => _rightColor;
         public Color Foreground => _foreground;
         public bool DrawCenterIcon => _drawCenterIcon;
-        public float CenterIconScale => _centerIconScale;
         public float Height => _height;
         public float IconSize => _iconSize;
         public float FontSize => _fontSize;
@@ -216,11 +207,7 @@ namespace LcdMod.Client.Apps.PowerFilled
         public void Update(PowerCollector collector, Color foreground, float height, float fontSize, float textGap)
         {
             float ratio = (float)Math.Round(collector.AverageCharge * 100f, MidpointRounding.AwayFromZero) / 100f;
-            if (!ReferenceEquals(_texture, collector.FillableTexture))
-            {
-                _texture = collector.FillableTexture;
-                RaisePropertyChanged<FillableTexture>(nameof(Texture));
-            }
+            RaiseAndSetIfChanged(ref _fillClass, collector.FillClass, nameof(FillClass));
             RaiseAndSetIfChanged(ref _ratio, ratio, nameof(Ratio));
             RaiseAndSetIfChanged(ref _chargeText, FormatingHelper.PercentageToString(ratio) + " " + collector.FooterPrefix,
                 nameof(ChargeText));
@@ -231,7 +218,6 @@ namespace LcdMod.Client.Apps.PowerFilled
             RaiseAndSetIfChanged(ref _rightColor, collector.RightSideColor, nameof(RightColor));
             RaiseAndSetIfChanged(ref _foreground, foreground, nameof(Foreground));
             RaiseAndSetIfChanged(ref _drawCenterIcon, collector.DrawCenterIcon, nameof(DrawCenterIcon));
-            RaiseAndSetIfChanged(ref _centerIconScale, collector.CenterIconScale, nameof(CenterIconScale));
             RaiseAndSetIfChanged(ref _height, height, nameof(Height));
             RaiseAndSetIfChanged(ref _iconSize, height * .55f, nameof(IconSize));
             RaiseAndSetIfChanged(ref _fontSize, fontSize, nameof(FontSize));

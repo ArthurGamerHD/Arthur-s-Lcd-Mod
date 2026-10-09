@@ -171,7 +171,7 @@ namespace LcdMod.Client.Apps
         {
             Color foreground = Host.Surface.ScriptForegroundColor;
             double maxConsumptionW = EnergyDashboardPowerMetrics.GetMaxConsumerTotal(_latest);
-            float loadRatio = EnergyDashboardPowerMetrics.Ratio(_latest.TotalRequiredInputW, maxConsumptionW);
+            float loadRatio = EnergyDashboardPowerMetrics.LoadRatio(_latest);
             float chargeRatio = EnergyDashboardPowerMetrics.Ratio(_latest.StoredEnergyWh, _latest.MaxStoredEnergyWh);
             PresentBar(_viewModel.Consumption, "Consumption", _latest.TotalRequiredInputW, maxConsumptionW, false,
                 GetLoadColor(loadRatio), foreground);
@@ -381,7 +381,7 @@ namespace LcdMod.Client.Apps
                     string label = GetRowLabel(entry);
                     row.Model.Update(row.SpriteName,
                         string.IsNullOrEmpty(row.SpriteName) ? GetInitial(label) : string.Empty,
-                        entry.BlockCount.ToString(FormatingHelper.Culture), label,
+                        entry.BlockCount > 0 ? entry.BlockCount.ToString(FormatingHelper.Culture) : string.Empty, label,
                         charge ? FormatingHelper.WattHoursToString(row.CurrentW) : FormatingHelper.WattsToString(row.CurrentW),
                         EnergyDashboardPowerMetrics.Ratio(row.CurrentW, row.RatioDenominatorW));
                     rows.Add(row);
@@ -546,7 +546,7 @@ namespace LcdMod.Client.Apps
                 return;
 
             var requester = Host.GridLogic;
-            var linkType = (GridLinkTypeEnum)PowerComponent.GridLinkTypeInternal;
+            var linkType = PowerScopeResolver.NormalizeLinkType(PowerComponent.GridLinkTypeInternal);
             if (_lease != null && _lease.Service != null &&
                 ReferenceEquals(_lease.Service.Requester, requester) &&
                 _lease.Service.LinkType == linkType)

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.GridData;
 using LcdMod.Client.Helpers;
+using LcdMod.Client.Modules.Power;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI.Ingame;
 using VRageMath;
@@ -15,7 +16,6 @@ namespace LcdMod.Client.Gui.UserControls.Power
     {
         const float FULL_THRESHOLD = 0.995f;
         const float CHARGE_TREND_EPSILON_MWH = 0.000001f;
-        static readonly FillableTexture Texture = new FillableTexture("Battery", 1f, 55f, 55f, 32f, 10f, "IconEnergy");
 
         readonly List<IMyBatteryBlock> _visible = new List<IMyBatteryBlock>();
         readonly LinkedTypedBlockSourceSet<IMyBatteryBlock> _batteries =
@@ -34,7 +34,6 @@ namespace LcdMod.Client.Gui.UserControls.Power
         PowerStatusKind _statusKind = PowerStatusKind.None;
         Color _statusColor = Color.White;
         string _timeLabel = "--:--";
-        bool _isCharging;
 
         public BatteryPowerCollector(
             IAppHost host,
@@ -46,9 +45,8 @@ namespace LcdMod.Client.Gui.UserControls.Power
 
         public IReadOnlyList<IMyBatteryBlock> VisibleBatteries => _visible;
 
-        public string TextureName => "Battery";
         public override string FooterPrefix => LocHelper.GetLoc("HudEnergyGroupBatteries");
-        public override FillableTexture FillableTexture => Texture;
+        public override string FillClass => "Battery";
         public override string StatusText => _statusText;
         public override Color StatusColor => _statusColor;
         public override PowerStatusKind StatusKind => _statusKind;
@@ -68,7 +66,6 @@ namespace LcdMod.Client.Gui.UserControls.Power
             _statusKind = PowerStatusKind.None;
             _statusColor = Color.White;
             _timeLabel = "--:--";
-            _isCharging = false;
 
             _standbyEntriesBuffer.Clear();
 
@@ -80,15 +77,11 @@ namespace LcdMod.Client.Gui.UserControls.Power
 
             _batteries.Bind(grid, GridLinkType);
             const float eps = 0.001f;
-            float totalIn = 0f;
-            float totalOut = 0f;
-            float totalStoredDelta = 0f;
+            float totalStoredRate = 0f;
             float sumRatio = 0f;
             float totalStored = 0f;
             float totalMax = 0f;
             int fullCount = 0;
-            int batteriesIncreasing = 0;
-            int batteriesDecreasing = 0;
             int batteriesRecharging = 0;
 
             var batterySources = _batteries.Sources;
@@ -101,8 +94,6 @@ namespace LcdMod.Client.Gui.UserControls.Power
                     if (!HideEmpty || battery.MaxStoredPower > 0f)
                     {
                         _visible.Add(battery);
-                        totalIn += battery.CurrentInput;
-                        totalOut += battery.CurrentOutput;
                         totalStored += battery.CurrentStoredPower;
                         totalMax += battery.MaxStoredPower;
 
@@ -110,21 +101,9 @@ namespace LcdMod.Client.Gui.UserControls.Power
                         if (isRecharging)
                             batteriesRecharging++;
 
-                        var drawChargingIcon = isRecharging;
-                    
-                        var storedDelta = battery.CurrentInput - battery.CurrentOutput;
-                        if (storedDelta > CHARGE_TREND_EPSILON_MWH)
-                        {
-                            totalStoredDelta += storedDelta;
-                            batteriesIncreasing++;
-                            drawChargingIcon = true;
-                        }
-                        else if (storedDelta < -CHARGE_TREND_EPSILON_MWH)
-                        {
-                            totalStoredDelta += storedDelta;
-                            batteriesDecreasing++;
-                            drawChargingIcon = isRecharging;
-                        }
+                        var storedRate = PowerBlockMath.BatteryStoredPowerRate(battery);
+                        totalStoredRate += storedRate;
+                        var drawChargingIcon = isRecharging || storedRate > CHARGE_TREND_EPSILON_MWH;
 
                         var ratio = GetRatio(battery);
                         sumRatio += ratio;
@@ -148,37 +127,21 @@ namespace LcdMod.Client.Gui.UserControls.Power
             SwapEntryBuffers();
 
             bool hasRechargingBattery = batteriesRecharging > 0;
-            bool isTrendingCharging = batteriesIncreasing > 0 && totalStoredDelta > CHARGE_TREND_EPSILON_MWH;
-            bool isTrendingDischarging = batteriesDecreasing > 0 && totalStoredDelta < -CHARGE_TREND_EPSILON_MWH;
             if (_visible.Count > 0 && fullCount == _visible.Count)
             {
                 _statusKind = PowerStatusKind.Full;
                 _statusColor = HeaderColor;
-                _isCharging = true;
             }
-            else if (hasRechargingBattery || totalIn > totalOut + eps)
+            else if (totalStoredRate > CHARGE_TREND_EPSILON_MWH ||
+                     hasRechargingBattery && totalStoredRate >= -CHARGE_TREND_EPSILON_MWH)
             {
                 _statusKind = PowerStatusKind.Charging;
                 _statusColor = WarningColor;
-                _isCharging = true;
             }
-            else if (isTrendingCharging)
-            {
-                _statusKind = PowerStatusKind.Charging;
-                _statusColor = WarningColor;
-                _isCharging = true;
-            }
-            else if (totalOut > totalIn + eps)
+            else if (totalStoredRate < -CHARGE_TREND_EPSILON_MWH)
             {
                 _statusKind = PowerStatusKind.Discharging;
                 _statusColor = ErrorColor;
-                _isCharging = false;
-            }
-            else if (isTrendingDischarging)
-            {
-                _statusKind = PowerStatusKind.Discharging;
-                _statusColor = ErrorColor;
-                _isCharging = false;
             }
             else
             {
@@ -192,20 +155,24 @@ namespace LcdMod.Client.Gui.UserControls.Power
             _averageCharge = sumRatio / _visible.Count;
             _statusText = GetStatusText();
 
-            float netRate = Math.Abs(totalIn - totalOut);
-            if (netRate < eps)
+            if (_statusKind == PowerStatusKind.Full)
+            {
+                _timeLabel = "00:00";
+                SetRightSideText(_timeLabel, HeaderColor);
+            }
+            else if (Math.Abs(totalStoredRate) < eps)
             {
                 _timeLabel = "--:--";
                 SetRightSideText(_timeLabel, HeaderColor);
             }
-            else if (_isCharging)
+            else if (totalStoredRate > 0f)
             {
-                _timeLabel = _statusKind == PowerStatusKind.Full ? "00:00" : FormatingHelper.FormatTimeHours((totalMax - totalStored) / netRate);
-                SetRightSideText(_timeLabel, _statusKind == PowerStatusKind.Full ? HeaderColor : WarningColor);
+                _timeLabel = FormatingHelper.FormatTimeHours(PowerBlockMath.HoursAtRate(totalMax - totalStored, totalStoredRate));
+                SetRightSideText(_timeLabel, WarningColor);
             }
             else
             {
-                float hours = totalStored / netRate;
+                float hours = PowerBlockMath.HoursAtRate(totalStored, totalStoredRate);
                 _timeLabel = FormatingHelper.FormatTimeHours(hours);
                 Color timeColor = hours <= 5f / 60f ? ErrorColor : WarningColor;
                 SetRightSideText(_timeLabel, timeColor);
@@ -229,7 +196,7 @@ namespace LcdMod.Client.Gui.UserControls.Power
                 var detail = BuildBatteryDetails(capturedBattery);
                 entry = new PowerEntry(
                     entryId,
-                    Texture,
+                    FillClass,
                     ratio,
                     percentText,
                     fillColor,
@@ -242,7 +209,7 @@ namespace LcdMod.Client.Gui.UserControls.Power
             {
                 entry.Update(
                     entryId,
-                    Texture,
+                    FillClass,
                     ratio,
                     percentText,
                     fillColor,
@@ -288,7 +255,7 @@ namespace LcdMod.Client.Gui.UserControls.Power
 
             float ratio = GetRatio(battery);
             lines.Add(new PowerDetailLine(FormatLabelWithColon(LocHelper.GetLoc("RadialMenuGroupTitle_Power")) + " " + FormatingHelper.PercentageToString(ratio)));
-            lines.Add(new PowerDetailLine(LocHelper.GetLoc("BlockPropertiesText_StoredPower") + FormatingHelper.MegaWattHoursToString(battery.CurrentStoredPower) + " / " + FormatingHelper.WattHoursToString(battery.MaxStoredPower)));
+            lines.Add(new PowerDetailLine(LocHelper.GetLoc("BlockPropertiesText_StoredPower") + FormatingHelper.MegaWattHoursToString(battery.CurrentStoredPower) + " / " + FormatingHelper.MegaWattHoursToString(battery.MaxStoredPower)));
             lines.Add(new PowerDetailLine(LocHelper.GetLoc("BlockPropertyProperties_CurrentInput") + FormatingHelper.MegaWattsToString((battery.CurrentInput - battery.CurrentOutput)) 
                                                       // display I/O if is both charging and discharging at the same time
                                                       + (battery.CurrentInput  != 0 && battery.CurrentOutput != 0 ?  $" (+{FormatingHelper.MegaWattsToString(battery.CurrentInput)},-{FormatingHelper.MegaWattsToString(battery.CurrentOutput)})" : "")));
@@ -297,19 +264,19 @@ namespace LcdMod.Client.Gui.UserControls.Power
                 () => CycleBatteryMode(battery),
                 battery.HasLocalPlayerAccess));
             
-            float netRate = battery.CurrentInput - battery.CurrentOutput;
+            float storedRate = PowerBlockMath.BatteryStoredPowerRate(battery);
 
-            if (netRate > 0)
+            if (storedRate > 0)
             {
                 lines.Add(new PowerDetailLine(LocHelper.GetLoc("BlockPropertiesText_RechargedIn") +
-                                                FormatingHelper.FormatTimeHours(
-                                                    (battery.MaxStoredPower - battery.CurrentStoredPower) / netRate)));
+                                                FormatingHelper.FormatTimeHours(PowerBlockMath.HoursAtRate(
+                                                    battery.MaxStoredPower - battery.CurrentStoredPower, storedRate))));
             }
             else
             {
                 lines.Add(new PowerDetailLine(LocHelper.GetLoc("BlockPropertiesText_DepletedIn") +
-                                                FormatingHelper.FormatTimeHours(battery.CurrentStoredPower /
-                                                    -netRate)));
+                                                FormatingHelper.FormatTimeHours(PowerBlockMath.HoursAtRate(
+                                                    battery.CurrentStoredPower, storedRate))));
             }
 
             return lines;

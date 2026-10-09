@@ -6,6 +6,7 @@ using LcdMod.Client.GridData;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
+using LcdMod.Client.Modules.Power;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Utility;
 using LcdMod.Common.Helpers;
@@ -130,7 +131,7 @@ namespace LcdMod.Client.Apps.Abstract
 
         public override void Update()
         {
-            _producerSources.Bind(Host.GridLogic, (GridLinkTypeEnum)PowerComponent.GridLinkTypeInternal);
+            _producerSources.Bind(Host.GridLogic, PowerScopeResolver.NormalizeLinkType(PowerComponent.GridLinkTypeInternal));
             SumPowerSources(_totalsByKey);
             UpdateEntryValues();
             BuildVisibleEntries();
@@ -270,7 +271,7 @@ namespace LcdMod.Client.Apps.Abstract
 
                     var values = totals[key];
                     values.Current += ToWatts(prod != null ? prod.CurrentOutput : 0);
-                    values.Max += ToWatts(prod != null ? prod.MaxOutput : 0);
+                    values.Max += ToWatts(PowerBlockMath.AvailableOutput(prod));
                     values.Count++;
                     totals[key] = values;
                 }

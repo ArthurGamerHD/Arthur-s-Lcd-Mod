@@ -59,6 +59,17 @@ namespace LcdMod.Client.Apps.EnergyDashboard
             return Math.Max(snapshot.TotalRequiredInputW, total);
         }
 
+        /// <summary>
+        /// Demand against the supply available right now, as the vanilla power usage HUD measures it, so a grid asking for
+        /// more than it can produce reads as fully loaded.
+        /// </summary>
+        public static float LoadRatio(PowerSnapshot snapshot)
+        {
+            if (snapshot.MaxAvailableW <= 0)
+                return snapshot.TotalRequiredInputW > 0 ? 1f : 0f;
+            return Ratio(snapshot.TotalRequiredInputW, snapshot.MaxAvailableW);
+        }
+
         public static double GetChargeTotal(PowerSnapshot snapshot)
         {
             double total = 0.0;

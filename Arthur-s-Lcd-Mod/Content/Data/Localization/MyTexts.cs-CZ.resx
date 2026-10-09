@@ -562,6 +562,9 @@
     <data name="LcdMod_PhysicalConnection" xml:space="preserve">
     <value>Fyzické připojení</value>
   </data>
+    <data name="LcdMod_ElectricalConnection" xml:space="preserve">
+    <value>Elektrické připojení</value>
+    </data>
     <data name="LcdMod_LinkType" xml:space="preserve">
     <value>Typ propojení</value>
   </data>

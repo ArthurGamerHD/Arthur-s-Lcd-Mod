@@ -64,9 +64,11 @@ namespace LcdMod.Client.Modules.Power
             sum.Producers.BatteryMaxOutputW += value.Producers.BatteryMaxOutputW * weight;
             sum.Producers.OtherCurrentOutputW += value.Producers.OtherCurrentOutputW * weight;
             sum.Producers.OtherMaxOutputW += value.Producers.OtherMaxOutputW * weight;
+            sum.Producers.UnknownImportW += value.Producers.UnknownImportW * weight;
             sum.Consumers.OtherCurrentInputW += value.Consumers.OtherCurrentInputW * weight;
             sum.Consumers.OtherRequiredInputW += value.Consumers.OtherRequiredInputW * weight;
             sum.Consumers.OtherMaxRequiredInputW += value.Consumers.OtherMaxRequiredInputW * weight;
+            sum.Consumers.UnknownExportW += value.Consumers.UnknownExportW * weight;
             PowerSnapshot.EnsureSubtypeLists(ref sum);
             AddWeightedSubtypes(sum.ProducerSubtypes, value.ProducerSubtypes, weight);
             AddWeightedSubtypes(sum.ConsumerSubtypes, value.ConsumerSubtypes, weight);
@@ -100,9 +102,11 @@ namespace LcdMod.Client.Modules.Power
             sum.Producers.BatteryMaxOutputW /= d;
             sum.Producers.OtherCurrentOutputW /= d;
             sum.Producers.OtherMaxOutputW /= d;
+            sum.Producers.UnknownImportW /= d;
             sum.Consumers.OtherCurrentInputW /= d;
             sum.Consumers.OtherRequiredInputW /= d;
             sum.Consumers.OtherMaxRequiredInputW /= d;
+            sum.Consumers.UnknownExportW /= d;
             DivideSubtypes(sum.ProducerSubtypes, d);
             DivideSubtypes(sum.ConsumerSubtypes, d);
             DivideSubtypes(sum.ChargeSubtypes, d);

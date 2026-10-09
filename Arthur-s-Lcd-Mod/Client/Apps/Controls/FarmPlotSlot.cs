@@ -3,7 +3,6 @@ using Adk.Gui.Core;
 using Adk.Gui.Core.Invalidation;
 using Adk.Gui.Core.PropertySystem;
 using Adk.Gui.Rendering;
-using LcdMod.Client.Gui.UserControls.Power;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.Controls
@@ -12,7 +11,8 @@ namespace LcdMod.Client.Apps.Controls
     internal sealed class FarmPlotSlot : VisualElement
     {
         const string MASK_TEXTURE = "FarmPlotMask";
-        static readonly FillableTexture PlotTexture = new FillableTexture("FarmPlot", 0f, 0f, 0f, 0f, 70f);
+        const string PLOT_TEXTURE = "FarmPlot";
+        const float PLOT_BOTTOM_INSET = 70f / 192f;
 
         public static readonly StyledProperty<string> OutputSpriteProperty =
             StyledProperty.Register<FarmPlotSlot, string>(nameof(OutputSprite), string.Empty, UiInvalidation.Render);
@@ -86,11 +86,11 @@ namespace LcdMod.Client.Apps.Controls
             float frame = iconSize * .84f;
             var frameRect = new RectangleF(center - new Vector2(frame * .5f), new Vector2(frame));
             context.Texture(MASK_TEXTURE, frameRect, MaskColor);
-            context.Texture(PlotTexture.Name, frameRect, FrameColor);
+            context.Texture(PLOT_TEXTURE, frameRect, FrameColor);
             float item = iconSize * .58f;
             if (!string.IsNullOrEmpty(OutputSprite) && item > 0f)
             {
-                Vector2 itemCenter = PlotTexture.GetInnerRect(center, frame).Center;
+                var itemCenter = new Vector2(center.X, center.Y - frame * PLOT_BOTTOM_INSET * .5f);
                 context.Texture(OutputSprite, new RectangleF(itemCenter - new Vector2(item * .5f), new Vector2(item)),
                     Color.White, true);
             }

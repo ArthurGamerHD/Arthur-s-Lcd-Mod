@@ -563,6 +563,9 @@
     <data name="LcdMod_PhysicalConnection" xml:space="preserve">
     <value>物理接続</value>
   </data>
+    <data name="LcdMod_ElectricalConnection" xml:space="preserve">
+    <value>電気接続</value>
+    </data>
     <data name="LcdMod_LinkType" xml:space="preserve">
     <value>リンク種別</value>
   </data>

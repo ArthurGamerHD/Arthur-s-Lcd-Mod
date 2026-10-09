@@ -1,24 +1,29 @@
 using System;
 using System.Collections.Generic;
+using LcdMod.Client.Helpers;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 using SpaceEngineers.Game.ModAPI;
 using VRage.Game;
 using VRage.Game.ModAPI;
-using MyObjectBuilder_GasProperties = VRage.Game.ObjectBuilders.Definitions.MyObjectBuilder_GasProperties;
 
 namespace LcdMod.Client.Modules.Power
 {
     public sealed class SePowerCollector
     {
-        static readonly MyDefinitionId ElectricityId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
+        static readonly MyDefinitionId ElectricityId = PowerBlockMath.ElectricityId;
         const string ELECTRIC_THRUSTER_SUBTYPE_KEY = "PowerConsumer/ElectricThruster";
-        const string ELECTRIC_THRUSTER_DISPLAY_NAME = "Thrusters";
+        const string GYROSCOPE_SUBTYPE_KEY = "PowerConsumer/Gyroscope";
+        const string UNKNOWN_SUBTYPE_KEY = "Power/Unknown";
+        const double MIN_UNKNOWN_W = 10.0;
+        const double MIN_UNKNOWN_RATIO = 1e-4;
         readonly HashSet<MyResourceSinkComponent> _sinks = new HashSet<MyResourceSinkComponent>(ReferenceIdentityComparer<MyResourceSinkComponent>.Instance);
         readonly HashSet<long> _producerIds = new HashSet<long>();
         readonly HashSet<long> _batteryIds = new HashSet<long>();
         readonly HashSet<long> _jumpDriveIds = new HashSet<long>();
         readonly HashSet<long> _terminalIds = new HashSet<long>();
+        readonly HashSet<long> _gyroIds = new HashSet<long>();
+        readonly HashSet<long> _thrustIds = new HashSet<long>();
         readonly Dictionary<string, int> _syntheticSpriteKeyCounts = new Dictionary<string, int>(StringComparer.Ordinal);
 
         public PowerSnapshot Collect(IReadOnlyList<IMyCubeGrid> scopedGrids, long gameplayFrame)
@@ -33,6 +38,8 @@ namespace LcdMod.Client.Modules.Power
             CollectBatteries(scopedGrids, ref snapshot);
             CollectJumpDrives(scopedGrids, ref snapshot);
             CollectTerminalConsumers(scopedGrids, ref snapshot);
+            CollectGyros(scopedGrids, ref snapshot);
+            CountElectricThrusters(scopedGrids, snapshot.ConsumerSubtypes);
 
             FinalizeScopedTotals(ref snapshot);
             return snapshot;
@@ -45,11 +52,14 @@ namespace LcdMod.Client.Modules.Power
             _batteryIds.Clear();
             _jumpDriveIds.Clear();
             _terminalIds.Clear();
+            _gyroIds.Clear();
+            _thrustIds.Clear();
             _syntheticSpriteKeyCounts.Clear();
         }
 
-        static void FinalizeScopedTotals(ref PowerSnapshot snapshot)
+        void FinalizeScopedTotals(ref PowerSnapshot snapshot)
         {
+            AddUnknownBalance(ref snapshot);
             snapshot.KnownCurrentInputW = snapshot.ElectricThrusterCurrentInputW +
                                           snapshot.BatteryChargeInputW +
                                           snapshot.Consumers.OtherCurrentInputW;
@@ -59,7 +69,37 @@ namespace LcdMod.Client.Modules.Power
                 snapshot.ClassifiedRequiredInputW + snapshot.BatteryChargeInputW);
             snapshot.UnclassifiedRequiredInputW = Math.Max(0,
                 snapshot.TotalRequiredInputW - snapshot.ClassifiedRequiredInputW);
+            snapshot.TotalRequiredInputW += snapshot.Consumers.UnknownExportW;
             snapshot.MaxAvailableW = snapshot.Producers.KnownMaxOutputW;
+        }
+
+        /// <summary>
+        /// Everything produced in scope is consumed somewhere, so a gap between the two is power that left or entered the
+        /// scope (connectors outside a mechanical scope) or went to sinks that belong to no block, such as a character
+        /// recharging its suit.
+        /// </summary>
+        void AddUnknownBalance(ref PowerSnapshot snapshot)
+        {
+            double produced = snapshot.Producers.KnownCurrentOutputW;
+            double consumed = snapshot.ElectricThrusterCurrentInputW + snapshot.BatteryChargeInputW +
+                              snapshot.Consumers.OtherCurrentInputW;
+            double balance = produced - consumed;
+            if (Math.Abs(balance) < Math.Max(MIN_UNKNOWN_W, Math.Max(produced, consumed) * MIN_UNKNOWN_RATIO))
+                return;
+
+            string name = LocHelper.GetLoc("BlockOwner_Unknown");
+            if (balance > 0)
+            {
+                snapshot.Consumers.UnknownExportW = balance;
+                AddSyntheticSubtypeValue(snapshot.ConsumerSubtypes, null, UNKNOWN_SUBTYPE_KEY, string.Empty, string.Empty,
+                    name, balance, balance, balance, 0);
+            }
+            else
+            {
+                snapshot.Producers.UnknownImportW = -balance;
+                AddSyntheticSubtypeValue(snapshot.ProducerSubtypes, null, UNKNOWN_SUBTYPE_KEY, string.Empty, string.Empty,
+                    name, -balance, -balance, -balance, 0);
+            }
         }
 
         void CollectProducers(IReadOnlyList<IMyCubeGrid> grids, ref PowerSnapshot snapshot)
@@ -78,7 +118,7 @@ namespace LcdMod.Client.Modules.Power
                         continue;
 
                     double cur = MegaWattsToWatts(producer.CurrentOutput);
-                    double max = MegaWattsToWatts(producer.MaxOutput);
+                    double max = MegaWattsToWatts(PowerBlockMath.AvailableOutput(producer));
                     if (producer is IMyBatteryBlock)
                     {
                         snapshot.Producers.BatteryDischargeOutputW += cur;
@@ -159,8 +199,6 @@ namespace LcdMod.Client.Modules.Power
 
                     double storedWh = jumpDrive.CurrentStoredPower * 1000000.0;
                     double maxWh = jumpDrive.MaxStoredPower * 1000000.0;
-                    snapshot.StoredEnergyWh += storedWh;
-                    snapshot.MaxStoredEnergyWh += maxWh;
                     AddSubtypeValue(snapshot.ChargeSubtypes, jumpDrive, storedWh, storedWh, maxWh);
                 }
             }
@@ -208,7 +246,8 @@ namespace LcdMod.Client.Modules.Power
                             snapshot.ElectricThrusterRequiredInputW += required;
                             snapshot.ElectricThrusterMaxRequiredInputW += maxRequired;
                             AddSyntheticSubtypeValue(snapshot.ConsumerSubtypes, terminal, ELECTRIC_THRUSTER_SUBTYPE_KEY,
-                                "PowerConsumer", "ElectricThruster", ELECTRIC_THRUSTER_DISPLAY_NAME, current, required, maxRequired);
+                                "PowerConsumer", "ElectricThruster", LocHelper.GetLoc("HudEnergyGroupThrust"), current, required,
+                                maxRequired, 0);
                         }
                         else
                         {
@@ -220,6 +259,69 @@ namespace LcdMod.Client.Modules.Power
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Gyros have no sink of their own; <c>MyGridGyroSystem</c> draws for all of them through one grid-level sink that
+        /// a block scan cannot see.
+        /// </summary>
+        void CollectGyros(IReadOnlyList<IMyCubeGrid> grids, ref PowerSnapshot snapshot)
+        {
+            string name = LocHelper.GetLoc("DisplayName_BlockGroup_Gyroscopes");
+            for (int i = 0; i < grids.Count; i++)
+            {
+                var logic = LcdModSessionComponent.GetOrCreateGridLogic(grids[i]);
+                if (logic == null)
+                    continue;
+
+                var gyros = logic.Blocks.Gyros;
+                for (int g = 0; g < gyros.Count; g++)
+                {
+                    var gyro = gyros[g];
+                    if (gyro == null || !_gyroIds.Add(gyro.EntityId))
+                        continue;
+
+                    double required = MegaWattsToWatts(PowerBlockMath.GyroRequiredInput(gyro));
+                    if (required <= 0)
+                        continue;
+
+                    double current = gyro.IsWorking ? required : 0;
+                    snapshot.Consumers.OtherCurrentInputW += current;
+                    snapshot.Consumers.OtherRequiredInputW += required;
+                    snapshot.Consumers.OtherMaxRequiredInputW += required;
+                    AddSyntheticSubtypeValue(snapshot.ConsumerSubtypes, gyro, GYROSCOPE_SUBTYPE_KEY, "PowerConsumer",
+                        "Gyroscope", name, current, required, required);
+                }
+            }
+        }
+
+        /// <summary>
+        /// A grid's electric thrusters share one sink, attached to a single thruster, so the thruster row counts the
+        /// electric thrusters themselves instead of the sinks found.
+        /// </summary>
+        void CountElectricThrusters(IReadOnlyList<IMyCubeGrid> grids, List<PowerSubtypeSnapshot> consumers)
+        {
+            var entry = FindSubtypeEntry(consumers, ELECTRIC_THRUSTER_SUBTYPE_KEY);
+            if (entry == null)
+                return;
+
+            int count = 0;
+            for (int i = 0; i < grids.Count; i++)
+            {
+                var logic = LcdModSessionComponent.GetOrCreateGridLogic(grids[i]);
+                if (logic == null)
+                    continue;
+
+                var thrusts = logic.Blocks.Thrusts;
+                for (int t = 0; t < thrusts.Count; t++)
+                {
+                    var thrust = thrusts[t];
+                    if (thrust != null && _thrustIds.Add(thrust.EntityId) && PowerBlockMath.IsElectricThruster(thrust))
+                        count++;
+                }
+            }
+
+            entry.BlockCount = count;
         }
 
         void AddSubtypeValue(List<PowerSubtypeSnapshot> entries, IMyTerminalBlock block, double currentW, double requiredW, double maxW)
@@ -236,12 +338,13 @@ namespace LcdMod.Client.Modules.Power
         }
 
         void AddSyntheticSubtypeValue(List<PowerSubtypeSnapshot> entries, IMyTerminalBlock block, string key,
-            string typeId, string subtypeId, string displayName, double currentW, double requiredW, double maxW)
+            string typeId, string subtypeId, string displayName, double currentW, double requiredW, double maxW,
+            int blockCount = 1)
         {
             if (entries == null)
                 return;
 
-            string spriteKey = GetSpriteKey(block);
+            string spriteKey = block == null ? string.Empty : GetSpriteKey(block);
             var entry = FindSubtypeEntry(entries, key);
             if (entry == null)
             {
@@ -261,7 +364,7 @@ namespace LcdMod.Client.Modules.Power
             entry.CurrentW += currentW;
             entry.RequiredW += requiredW;
             entry.MaxW += maxW;
-            entry.BlockCount++;
+            entry.BlockCount += blockCount;
             UpdateRepresentativeSprite(entry, key, spriteKey);
         }
 

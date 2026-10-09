@@ -562,6 +562,9 @@
   <data name="LcdMod_PhysicalConnection" xml:space="preserve">
     <value>物理连接</value>
   </data>
+  <data name="LcdMod_ElectricalConnection" xml:space="preserve">
+    <value>电力连接</value>
+  </data>
   <data name="LcdMod_LinkType" xml:space="preserve">
     <value>连接类型</value>
   </data>

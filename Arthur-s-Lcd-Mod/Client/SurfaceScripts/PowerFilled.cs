@@ -15,7 +15,7 @@ using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
 using VRageMath;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
-using ComboboxLinkType = LcdMod.Client.Terminal.Controls.Generic.ComboboxLinkType;
+using ComboboxPowerLinkType = LcdMod.Client.Terminal.Controls.Generic.ComboboxPowerLinkType;
 using static LcdMod.Common.Helpers.Constants;
 
 using LcdMod.Common.Config.Generation;
@@ -26,7 +26,7 @@ namespace LcdMod.Client.SurfaceScripts
     public partial class PowerFilledSurfaceScript : InteractiveSurfaceScript,
         IAutoScroll,
         IMultiDisplayMode,
-        IUsesTerminalControl<ComboboxLinkType>
+        IUsesTerminalControl<ComboboxPowerLinkType>
     {
         public List<MyTerminalControlComboBoxItem> GetDisplayModes()
         {

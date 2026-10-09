@@ -7,7 +7,7 @@
              x:DataType="LcdMod.Client.Apps.PowerFilled.PowerFilledViewModel">
   <UserControl.Styles>
     <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/Cards.xaml" />
-    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/Slots.xaml" />
+    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/PowerFillGauge.xaml" />
     <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/PowerDetails.xaml" />
   </UserControl.Styles>
   <Grid RowDefinitions="* Auto">
@@ -22,12 +22,14 @@
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="LcdMod.Client.Apps.PowerFilled.PowerDisplayEntry">
               <power:PowerDetailsButton Classes="power-details-button" HasDetails="{Binding HasDetails}">
-                <controls:FillableSlot Classes="card" Texture="{Binding Texture}" Ratio="{Binding Percentage}"
-                                       FillColor="{Binding FillColor}" IconColor="{Binding Foreground}"
-                                       DrawCenterIcon="{Binding DrawCenterIcon}"
-                                       CenterIconRotation="{Binding CenterIconRotation}"
-                                       CenterIconScale="{Binding CenterIconScale}"
-                                       Label="{Binding PercentText}" />
+                <Grid Classes="power-fill-card" RowDefinitions="78* 22*" ColumnDefinitions="2* 6* 2*">
+                  <power:PowerFillGauge Classes="{Binding FillClass}" Value="{Binding Percentage}"
+                                        FillColor="{Binding FillColor}" Foreground="{Binding Foreground}"
+                                        ShowCenterIcon="{Binding DrawCenterIcon}"
+                                        CenterIconRotation="{Binding CenterIconRotation}" Grid.ColumnSpan="3" />
+                  <controls:FitTextBlock Classes="power-fill-label" Text="{Binding PercentText}" Foreground="{Binding Foreground}"
+                                         Grid.Row="1" Grid.Column="1" />
+                </Grid>
               </power:PowerDetailsButton>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
@@ -55,11 +57,10 @@
           <DataTemplate x:DataType="LcdMod.Client.Apps.PowerFilled.PowerFooterRow">
             <Grid Classes="power-footer-row" Height="{Binding Height}">
               <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <controls:FillableSlot Width="{Binding IconSize}" Height="{Binding IconSize}"
-                                       Texture="{Binding Texture}" Ratio="{Binding Ratio}"
-                                       FillColor="{Binding StatusColor}" IconColor="{Binding Foreground}"
-                                       DrawCenterIcon="{Binding DrawCenterIcon}"
-                                       CenterIconScale="{Binding CenterIconScale}" />
+                <power:PowerFillGauge Width="{Binding IconSize}" Height="{Binding IconSize}"
+                                      Classes="{Binding FillClass}" Value="{Binding Ratio}"
+                                      FillColor="{Binding StatusColor}" Foreground="{Binding Foreground}"
+                                      ShowCenterIcon="{Binding DrawCenterIcon}" />
                 <TextBlock Classes="power-footer-text" Text="{Binding ChargeText}" Margin="{Binding TextMargin}"
                            FontSize="{Binding FontSize}" Foreground="{Binding Foreground}" />
               </StackPanel>

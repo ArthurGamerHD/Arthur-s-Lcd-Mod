@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.GridData;
 using LcdMod.Client.Helpers;
+using LcdMod.Client.Modules.Power;
 using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
@@ -16,15 +17,6 @@ namespace LcdMod.Client.Gui.UserControls.Power
     {
         const float FULL_THRESHOLD = 0.999f;
         const float EPS = 0.001f;
-        static readonly FillableTexture Texture = new FillableTexture(
-            "JumpDrive",
-            1f,
-            21f,
-            21f,
-            32f,
-            10f,
-            "JumpDriveCore",
-            true);
         static readonly MyDefinitionId ElectricityId =
             new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
 
@@ -54,9 +46,8 @@ namespace LcdMod.Client.Gui.UserControls.Power
 
         public IReadOnlyList<IMyJumpDrive> VisibleJumpDrives => _visible;
 
-        public string TextureName => "JumpDrive";
         public override string FooterPrefix => LocHelper.GetLoc("DisplayName_BlockGroup_JumpDrives");
-        public override FillableTexture FillableTexture => Texture;
+        public override string FillClass => "JumpDrive";
         public override string StatusText => _statusText;
         public override Color StatusColor => _statusColor;
         public override PowerStatusKind StatusKind => _statusKind;
@@ -64,7 +55,6 @@ namespace LcdMod.Client.Gui.UserControls.Power
         public override bool HasVisibleItems => _visible.Count > 0;
         public override string RightSideText => _rightSideText;
         public override Color RightSideColor => _rightSideColor;
-        public override float CenterIconScale => 0.65f;
 
         public override void Collect(GridLogic grid, List<PowerEntry> entries)
         {
@@ -206,13 +196,12 @@ namespace LcdMod.Client.Gui.UserControls.Power
             {
                 entry = new PowerEntry(
                     entryId,
-                    Texture,
+                    FillClass,
                     ratio,
                     FormatingHelper.PercentageToString(ratio),
                     GetJumpDriveIconColor(ratio),
                     true,
                     centerRotation,
-                    CenterIconScale,
                     blockIcon,
                     capturedJumpDrive,
                     () => BuildJumpDriveDetails(capturedJumpDrive));
@@ -221,13 +210,12 @@ namespace LcdMod.Client.Gui.UserControls.Power
             {
                 entry.Update(
                     entryId,
-                    Texture,
+                    FillClass,
                     ratio,
                     FormatingHelper.PercentageToString(ratio),
                     GetJumpDriveIconColor(ratio),
                     true,
                     centerRotation,
-                    CenterIconScale,
                     blockIcon,
                     capturedJumpDrive,
                     () => BuildJumpDriveDetails(capturedJumpDrive));
@@ -317,7 +305,7 @@ namespace LcdMod.Client.Gui.UserControls.Power
             if (input <= EPS)
                 return false;
 
-            hours = remaining / input;
+            hours = remaining / (input * PowerBlockMath.JumpDriveEfficiency(jumpDrive));
             return true;
         }
 

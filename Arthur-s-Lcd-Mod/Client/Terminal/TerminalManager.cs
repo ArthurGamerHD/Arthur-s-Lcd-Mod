@@ -119,6 +119,7 @@ namespace LcdMod.Client.Terminal
             AddRegistration(registrations, 3700, new SwitchToggleLines());
 
             AddRegistration(registrations, 3800, new ComboboxLinkType());
+            AddRegistration(registrations, 3810, new ComboboxPowerLinkType());
             AddRegistration(registrations, 3900, new ListboxProjectorSelection());
             AddRegistration(registrations, 3950, new SliderButtonCount());
             AddRegistration(registrations, 3975, new ComboboxButtonStyle());

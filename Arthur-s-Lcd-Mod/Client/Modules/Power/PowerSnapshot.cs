@@ -47,14 +47,15 @@ namespace LcdMod.Client.Modules.Power
         public double BatteryMaxOutputW;
         public double OtherCurrentOutputW;
         public double OtherMaxOutputW;
+        public double UnknownImportW;
 
         public double KnownCurrentOutputW =>
             SolarCurrentOutputW + WindCurrentOutputW + ReactorCurrentOutputW +
-            HydrogenEngineCurrentOutputW + BatteryDischargeOutputW + OtherCurrentOutputW;
+            HydrogenEngineCurrentOutputW + BatteryDischargeOutputW + OtherCurrentOutputW + UnknownImportW;
 
         public double KnownMaxOutputW =>
             SolarMaxOutputW + WindMaxOutputW + ReactorMaxOutputW +
-            HydrogenEngineMaxOutputW + BatteryMaxOutputW + OtherMaxOutputW;
+            HydrogenEngineMaxOutputW + BatteryMaxOutputW + OtherMaxOutputW + UnknownImportW;
     }
 
     public struct ConsumerBreakdown
@@ -62,6 +63,7 @@ namespace LcdMod.Client.Modules.Power
         public double OtherCurrentInputW;
         public double OtherRequiredInputW;
         public double OtherMaxRequiredInputW;
+        public double UnknownExportW;
     }
 
     public struct PowerSnapshot

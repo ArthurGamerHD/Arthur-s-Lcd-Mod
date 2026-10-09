@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.GridData;
+using LcdMod.Client.Modules.Power;
 using Sandbox.ModAPI;
 using VRageMath;
 using VRage.Game.ModAPI;
@@ -50,13 +51,13 @@ namespace LcdMod.Client.Gui.UserControls.Power
         public abstract void Dispose();
 
         protected bool HideEmpty => PowerComponent.HideEmpty;
-        protected GridLinkTypeEnum GridLinkType => (GridLinkTypeEnum)PowerComponent.GridLinkTypeInternal;
+        protected GridLinkTypeEnum GridLinkType => PowerScopeResolver.NormalizeLinkType(PowerComponent.GridLinkTypeInternal);
         protected Color HeaderColor => Colors == null ? Color.White : Colors.ResolveHeaderColor(ParentBlock);
         protected Color WarningColor => Colors == null ? new Color(224, 160, 16) : Colors.ResolveWarningColor();
         protected Color ErrorColor => Colors == null ? new Color(96, 32, 32) : Colors.ResolveErrorColor();
 
         public abstract string FooterPrefix { get; }
-        public abstract FillableTexture FillableTexture { get; }
+        public abstract string FillClass { get; }
         public abstract string StatusText { get; }
         public abstract Color StatusColor { get; }
         public abstract PowerStatusKind StatusKind { get; }
@@ -70,7 +71,6 @@ namespace LcdMod.Client.Gui.UserControls.Power
         public virtual string RightSideText => string.Empty;
         public virtual Color RightSideColor => StatusColor;
         public virtual bool HasRightSideText => !string.IsNullOrEmpty(RightSideText);
-        public virtual float CenterIconScale => 1f;
         public virtual bool DrawCenterIcon => true;
 
         protected void BeginCenterIconSpinFrame()

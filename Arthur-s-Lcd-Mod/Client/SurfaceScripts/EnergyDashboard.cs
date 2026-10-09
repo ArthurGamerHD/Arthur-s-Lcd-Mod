@@ -10,7 +10,7 @@ using VRage.Game.GUI.TextPanel;
 using VRageMath;
 using ComboboxGraphWindow = LcdMod.Client.Terminal.Controls.Generic.ComboboxGraphWindow;
 using IMyCubeBlock = VRage.Game.ModAPI.IMyCubeBlock;
-using ComboboxLinkType = LcdMod.Client.Terminal.Controls.Generic.ComboboxLinkType;
+using ComboboxPowerLinkType = LcdMod.Client.Terminal.Controls.Generic.ComboboxPowerLinkType;
 using static LcdMod.Common.Helpers.Constants;
 
 using LcdMod.Common.Config.Generation;
@@ -20,7 +20,7 @@ namespace LcdMod.Client.SurfaceScripts
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class EnergyDashboardSurfaceScript : InteractiveSurfaceScript,
         IUsesTerminalControl<ComboboxGraphWindow>,
-        IUsesTerminalControl<ComboboxLinkType>
+        IUsesTerminalControl<ComboboxPowerLinkType>
     {
         public const string ID = MOD_PREFIX + "EnergyDashboard";
         public const string TITLE = MOD_PREFIX + "EnergyDashboard";

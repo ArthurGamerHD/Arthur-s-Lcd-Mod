@@ -21,7 +21,7 @@ namespace LcdMod.Client.SurfaceScripts
     [LcdSurface(typeof(GeneratorsApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class GeneratorsSurfaceScript : InteractiveSurfaceScript, IAutoScroll, IMultiDisplayMode,
-        IUsesTerminalControl<ComboboxLinkType>
+        IUsesTerminalControl<ComboboxPowerLinkType>
     {
         public const string ID = "GeneratorsGraph";
         public const string TITLE = "RadialMenuGroupTitle_Power";

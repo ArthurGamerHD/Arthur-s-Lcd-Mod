@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Styles xmlns="https://github.com/ArthurGamerHD/Adk"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:LcdMod.Client.Apps.Controls"
+        xmlns:power="using:LcdMod.Client.Apps.PowerFilled">
+  <!-- Laid out in the 192px space of the frame textures; the class styles place the fill area over the texture's interior. -->
+  <Style Selector="power|PowerFillGauge">
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Viewbox HorizontalAlignment="Center" VerticalAlignment="Bottom">
+          <Grid Width="192" Height="192">
+            <ProgressBar Classes="power-fill" Orientation="Vertical" Minimum="0" Maximum="1" Value="{TemplateBinding Value}"
+                         Foreground="{TemplateBinding FillColor}" Background="#00000000" CornerRadius="0" />
+            <Border Classes="power-frame" Background="{TemplateBinding Foreground}" />
+            <Grid Classes="power-core" IsVisible="{TemplateBinding ShowCenterIcon}">
+              <Border Classes="power-core" Background="{TemplateBinding Foreground}"
+                      RenderTransform="{TemplateBinding CenterIconTransform}" />
+            </Grid>
+          </Grid>
+        </Viewbox>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+
+  <Style Selector="power|PowerFillGauge.Battery ProgressBar.power-fill">
+    <Setter Property="Margin" Value="56 33 56 11" />
+  </Style>
+  <Style Selector="power|PowerFillGauge.Battery Grid.power-core">
+    <Setter Property="Margin" Value="56 33 56 11" />
+  </Style>
+  <Style Selector="power|PowerFillGauge.Battery Border.power-frame">
+    <Setter Property="OpacityMask">
+      <ImageBrush Source="Battery" />
+    </Setter>
+  </Style>
+  <Style Selector="power|PowerFillGauge.Battery Border.power-core">
+    <Setter Property="OpacityMask">
+      <ImageBrush Source="IconEnergy" Stretch="Uniform" />
+    </Setter>
+  </Style>
+
+  <Style Selector="power|PowerFillGauge.JumpDrive ProgressBar.power-fill">
+    <Setter Property="Margin" Value="22 33 22 11" />
+  </Style>
+  <Style Selector="power|PowerFillGauge.JumpDrive Grid.power-core">
+    <Setter Property="Margin" Value="22 33 22 11" />
+    <Setter Property="RenderTransform" Value="scale(0.65)" />
+  </Style>
+  <Style Selector="power|PowerFillGauge.JumpDrive Border.power-frame">
+    <Setter Property="OpacityMask">
+      <ImageBrush Source="JumpDrive" />
+    </Setter>
+  </Style>
+  <Style Selector="power|PowerFillGauge.JumpDrive Border.power-core">
+    <Setter Property="OpacityMask">
+      <ImageBrush Source="JumpDriveCore" Stretch="Uniform" />
+    </Setter>
+  </Style>
+
+  <Style Selector="Grid.power-fill-card">
+    <Setter Property="Height" Value="{DynamicResource cardHeight}" />
+  </Style>
+  <Style Selector="controls|FitTextBlock.power-fill-label">
+    <Setter Property="FontFamily" Value="{DynamicResource textFont}" />
+    <Setter Property="MaxFontSize" Value="{DynamicResource fontScale}" />
+    <Setter Property="MinFontSize" Value="0" />
+  </Style>
+  <Style Selector="Grid.power-footer-row">
+    <Setter Property="Margin" Value="6 0" />
+  </Style>
+  <Style Selector="TextBlock.power-footer-text">
+    <Setter Property="FontFamily" Value="{DynamicResource textFont}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+</Styles>

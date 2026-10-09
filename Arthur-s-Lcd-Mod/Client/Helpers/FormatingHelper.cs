@@ -260,13 +260,14 @@ namespace LcdMod.Client.Helpers
 
         public static string FormatTimeHours(float hours)
         {
-            if (float.IsNaN(hours) || float.IsInfinity(hours))
+            if (float.IsInfinity(hours))
+                return "--:--";
+            if (float.IsNaN(hours) || hours < 0f)
                 hours = 0f;
+            if (hours > 365f * 24f)
+                return LocHelper.GetLoc("Unit_years");
 
             var ts = TimeSpan.FromHours(hours);
-
-            if (ts.TotalDays > 365)
-                return LocHelper.GetLoc("Unit_years");
             if ((int)ts.TotalHours >= 48)
                 return
                     $"{ts.TotalDays:0} {LocHelper.GetLoc("Unit_days")} {ts.Hours:D2}:{ts.Minutes:D2}:{ts.Seconds:D2}";
