@@ -32,8 +32,4 @@
     <Setter Property="FontSize" Value="{DynamicResource fontScale}" />
     <Setter Property="FontFamily" Value="{DynamicResource textFont}" />
   </Style>
-  <Style Selector="Border.generators-footer">
-    <Setter Property="Background" Value="transparent" />
-    <Setter Property="Padding" Value="6 4" />
-  </Style>
 </Styles>

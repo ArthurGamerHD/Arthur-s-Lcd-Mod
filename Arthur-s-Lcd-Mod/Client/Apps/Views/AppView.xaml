@@ -39,7 +39,7 @@
     <ContentPresenter Content="{Binding Footer}"
                       Grid.Row="2"
                       Grid.ColumnSpan="2"
-                      IsVisible="{Binding ChromeVisible}"
+                      IsVisible="{Binding FooterVisible}"
                       Name="PART_FooterPresenter" />
   </Grid>
 </Window>

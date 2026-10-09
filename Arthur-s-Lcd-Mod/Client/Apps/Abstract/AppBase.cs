@@ -74,6 +74,7 @@ namespace LcdMod.Client.Apps.Abstract
         public int ContentRow => _contentRow;
         public int RowSpan => _rowSpan;
         public bool ChromeVisible => TitleEnabled && (_contentRow != 0 || _rowSpan != 3);
+        public bool FooterVisible => _footer != null;
         protected RectangleF RetainedContentBounds =>
             _hasRetainedContentBounds ? _retainedContentBounds : Host.ViewBox;
 
@@ -127,12 +128,14 @@ namespace LcdMod.Client.Apps.Abstract
                 return;
             _footer = footer;
             RaisePropertyChanged(nameof(Footer));
+            RaisePropertyChanged(nameof(FooterVisible));
+            SetContentLayout(!Host.TitleVisible);
         }
 
         protected void SetContentLayout(bool occupyAllRows)
         {
             int contentRow = occupyAllRows ? 0 : 1;
-            int rowSpan = occupyAllRows ? 3 : 1;
+            int rowSpan = occupyAllRows ? (_footer == null ? 3 : 2) : 1;
             if (_contentRow == contentRow && _rowSpan == rowSpan)
                 return;
             _contentRow = contentRow;

@@ -27,6 +27,7 @@ namespace LcdMod.Client.Apps
         {
             _viewModel = new Generators.GeneratorsViewModel(this);
             SetContent(new Generators.GeneratorsView { DataContext = _viewModel });
+            SetFooter(new Generators.GeneratorsFooterView { DataContext = _viewModel });
             InitializeEntries();
         }
 

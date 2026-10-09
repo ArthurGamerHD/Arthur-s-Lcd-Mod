@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl xmlns="https://github.com/ArthurGamerHD/Adk"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="LcdMod.Client.Apps.Generators.GeneratorsFooterView"
+             x:DataType="LcdMod.Client.Apps.Generators.GeneratorsViewModel">
+  <Grid ColumnDefinitions="Auto,Auto" HorizontalAlignment="Center" Margin="6 4">
+    <TextBlock x:Name="RangeLabel" Text="{Binding GraphWindowLabel}"
+               FontFamily="{DynamicResource textFont}" Foreground="{DynamicResource fontColor}"
+               VerticalAlignment="Center" Margin="0 0 8 0" />
+    <Border x:Name="RangeHost" Grid.Column="1" />
+  </Grid>
+</UserControl>

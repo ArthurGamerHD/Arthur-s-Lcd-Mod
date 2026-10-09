@@ -21,6 +21,7 @@ namespace LcdMod.Client.Apps.Generators
         }
 
         public IReadOnlyList<GeneratorDisplayEntry> Entries => _entries;
+        public string GraphWindowLabel => LocHelper.GetLoc("LcdMod_GraphWindow") + ":";
         public int RangeTier => _rangeTier;
         public float FontScale => _fontScale;
 
