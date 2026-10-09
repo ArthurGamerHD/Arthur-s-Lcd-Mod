@@ -7,21 +7,26 @@
   <UserControl.Styles>
     <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/PowerCard.xaml" />
   </UserControl.Styles>
-  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-    <ItemsControl ItemsSource="{Binding Entries}">
-      <ItemsControl.ItemsPanel>
-        <ItemsPanelTemplate>
-          <UniformGrid Columns="{Binding Columns}" VerticalAlignment="Top" />
-        </ItemsPanelTemplate>
-      </ItemsControl.ItemsPanel>
-      <ItemsControl.ItemTemplate>
-        <DataTemplate x:DataType="LcdMod.Client.Apps.Generators.GeneratorDisplayEntry">
-          <generators:PowerCardControl Title="{Binding Label}" InfoText="{Binding InfoText}" Usage="{Binding Usage}"
-                                       UsageBrush="{Binding UsageBrush}" Foreground="{Binding TextColor}"
-                                       CardBackground="{Binding CardBackground}" CardShadow="{Binding CardShadow}"
-                                       LineColor="{Binding LineColor}" LineThickness="{Binding LineThickness}" />
-        </DataTemplate>
-      </ItemsControl.ItemTemplate>
-    </ItemsControl>
-  </ScrollViewer>
+  <Grid RowDefinitions="* Auto">
+    <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+      <ItemsControl ItemsSource="{Binding Entries}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <UniformGrid Columns="{Binding Columns}" VerticalAlignment="Top" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="LcdMod.Client.Apps.Generators.GeneratorDisplayEntry">
+            <generators:PowerCardControl Title="{Binding Label}" InfoText="{Binding InfoText}" Usage="{Binding Usage}"
+                                         UsageBrush="{Binding UsageBrush}" Foreground="{Binding TextColor}"
+                                         CardBackground="{Binding CardBackground}" CardShadow="{Binding CardShadow}"
+                                         LineColor="{Binding LineColor}" LineThickness="{Binding LineThickness}" />
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+    <Border Grid.Row="1" Classes="generators-footer" HorizontalAlignment="Stretch">
+      <Border x:Name="RangeHost" HorizontalAlignment="Stretch" />
+    </Border>
+  </Grid>
 </UserControl>

@@ -26,6 +26,9 @@ namespace LcdMod.Client.Gui.UserControls.Power
 
         Dictionary<long, PowerEntry> _activeEntriesBuffer = new Dictionary<long, PowerEntry>();
         Dictionary<long, PowerEntry> _standbyEntriesBuffer = new Dictionary<long, PowerEntry>();
+        readonly Dictionary<long, TickWindowAverage> _rateAverages = new Dictionary<long, TickWindowAverage>();
+        readonly Dictionary<long, float> _displayedRates = new Dictionary<long, float>();
+        readonly List<long> _staleRateIds = new List<long>();
 
         float _averageCharge;
         string _statusText = string.Empty;
@@ -101,7 +104,7 @@ namespace LcdMod.Client.Gui.UserControls.Power
                         if (isRecharging)
                             batteriesRecharging++;
 
-                        var storedRate = PowerBlockMath.BatteryStoredPowerRate(battery);
+                        var storedRate = SampleStoredRate(battery);
                         totalStoredRate += storedRate;
                         var drawChargingIcon = isRecharging || storedRate > CHARGE_TREND_EPSILON_MWH;
 
@@ -125,6 +128,7 @@ namespace LcdMod.Client.Gui.UserControls.Power
             }
             
             SwapEntryBuffers();
+            PruneRateAverages();
 
             bool hasRechargingBattery = batteriesRecharging > 0;
             if (_visible.Count > 0 && fullCount == _visible.Count)
@@ -247,7 +251,49 @@ namespace LcdMod.Client.Gui.UserControls.Power
             return HeaderColor;
         }
 
-        static IList<PowerDetailLine> BuildBatteryDetails(IMyBatteryBlock battery)
+        /// <summary>
+        /// Stored-energy rate shown for the battery, averaged over one vanilla battery cycle: a full battery in Auto stops
+        /// and resumes charging on alternating 100-tick updates, so the instantaneous rate flips between charge and drain.
+        /// </summary>
+        float SampleStoredRate(IMyBatteryBlock battery)
+        {
+            float rate = PowerBlockMath.BatteryStoredPowerRate(battery);
+            TickWindowAverage average;
+            if (!_rateAverages.TryGetValue(battery.EntityId, out average))
+                _rateAverages[battery.EntityId] = average =
+                    new TickWindowAverage(TickWindowAverage.BATTERY_CYCLE_TICKS);
+
+            rate = (float)average.Add(rate, TickWindowAverage.BATTERY_CYCLE_TICKS);
+
+            _displayedRates[battery.EntityId] = rate;
+            return rate;
+        }
+
+        void PruneRateAverages()
+        {
+            _staleRateIds.Clear();
+            foreach (var id in _rateAverages.Keys)
+            {
+                if (!_activeEntriesBuffer.ContainsKey(id))
+                    _staleRateIds.Add(id);
+            }
+
+            for (int i = 0; i < _staleRateIds.Count; i++)
+            {
+                _rateAverages.Remove(_staleRateIds[i]);
+                _displayedRates.Remove(_staleRateIds[i]);
+            }
+        }
+
+        float GetDisplayedRate(IMyBatteryBlock battery)
+        {
+            float rate;
+            return _displayedRates.TryGetValue(battery.EntityId, out rate)
+                ? rate
+                : PowerBlockMath.BatteryStoredPowerRate(battery);
+        }
+
+        IList<PowerDetailLine> BuildBatteryDetails(IMyBatteryBlock battery)
         {
             var lines = new List<PowerDetailLine>();
             if (battery == null)
@@ -264,7 +310,7 @@ namespace LcdMod.Client.Gui.UserControls.Power
                 () => CycleBatteryMode(battery),
                 battery.HasLocalPlayerAccess));
             
-            float storedRate = PowerBlockMath.BatteryStoredPowerRate(battery);
+            float storedRate = GetDisplayedRate(battery);
 
             if (storedRate > 0)
             {

@@ -11,7 +11,11 @@ namespace LcdMod.Client.Apps.EnergyDashboard
     {
         public const int TIER_COUNT = 6;
         public const float ROW_HEIGHT = 44f;
-        const float HEADER_HEIGHT = 72f;
+        const float HEADER_HEIGHT = 76f;
+        const float PANEL_INSET = 9f;
+        const float PANEL_RADIUS = 8f;
+        const byte PANEL_ALPHA = 64;
+        const float TIER_FONT_SCALE = .58f;
         const float PAGE_TARGET_WIDTH = 480f;
         const float NAVIGATION_HEIGHT = 42f;
         const float ARROW_WIDTH = 42f;
@@ -27,17 +31,13 @@ namespace LcdMod.Client.Apps.EnergyDashboard
         int _pageTarget;
         bool _hasCharge = true;
 
+        readonly Action<int> _selectTier;
+
         public EnergyDashboardViewModel(string[] tierLabels, Action<int> selectTier)
         {
+            _selectTier = selectTier;
             for (int i = 0; i < TIER_COUNT; i++)
-            {
-                int tier = i;
-                _tiers[i] = new EnergyTierModel(tierLabels[i], new DelegateCommand(_ =>
-                {
-                    if (selectTier != null) selectTier(tier);
-                    SetSelectedTier(SelectedTier, true);
-                }));
-            }
+                _tiers[i] = new EnergyTierModel(tierLabels[i], this);
             ConsumerPage = new EnergyPageModel(this);
             ProducerPage = new EnergyPageModel(this);
             ChargePage = new EnergyPageModel(this);
@@ -57,10 +57,35 @@ namespace LcdMod.Client.Apps.EnergyDashboard
         public IReadOnlyList<EnergyPageModel> Pages => _pages;
         public bool HasCharge => _hasCharge;
         public int SelectedTier { get; private set; }
+
+        public int SelectedTierIndex
+        {
+            get { return SelectedTier; }
+            set
+            {
+                if (value == SelectedTier || value < 0 || value >= TIER_COUNT)
+                    return;
+                if (_selectTier != null)
+                    _selectTier(value);
+            }
+        }
+
         public int SelectedPage => Normalize(_pageTarget);
         public int PageTarget => _pageTarget;
         public int BarCount => _bars.Count;
         public int TierColumns => TIER_COUNT;
+        public Color PanelBackground { get; private set; } = new Color(255, 255, 255, PANEL_ALPHA);
+        public float TierFontSize { get; private set; } = TIER_FONT_SCALE;
+
+        /// <summary>
+        /// The panel's top corner under the first or last tab is square while that tab is selected, so the tab joins the
+        /// panel without a notch.
+        /// </summary>
+        public Vector4 PanelCornerRadius => new Vector4(
+            SelectedTier == 0 ? 0f : PANEL_RADIUS,
+            SelectedTier == TIER_COUNT - 1 ? 0f : PANEL_RADIUS,
+            PANEL_RADIUS,
+            PANEL_RADIUS);
         public float PageWidth { get; private set; }
         public float ViewportFraction { get; private set; } = 1f;
         public int VisiblePageCount { get; private set; } = 1;
@@ -88,12 +113,22 @@ namespace LcdMod.Client.Apps.EnergyDashboard
             UpdateMembership();
         }
 
-        public void SetSelectedTier(int tier, bool force = false)
+        public void SetSelectedTier(int tier)
         {
-            if (!force && SelectedTier == tier) return;
+            if (SelectedTier == tier) return;
             SelectedTier = tier;
+            RaisePropertyChanged<int>(nameof(SelectedTierIndex));
+            RaisePropertyChanged<Vector4>(nameof(PanelCornerRadius));
+        }
+
+        public void SetFontScale(float fontScale)
+        {
+            float size = fontScale * TIER_FONT_SCALE;
+            if (TierFontSize == size) return;
+            TierFontSize = size;
+            RaisePropertyChanged<float>(nameof(TierFontSize));
             for (int i = 0; i < _tiers.Length; i++)
-                _tiers[i].SetChecked(i == tier, force);
+                _tiers[i].RaiseFontSizeChanged();
         }
 
         public void RefreshColors(Color foreground, Color fontColor, Color accent, Color secondaryContainer)
@@ -101,6 +136,7 @@ namespace LcdMod.Client.Apps.EnergyDashboard
             Foreground = foreground;
             AccentColor = accent;
             SecondaryContainerColor = secondaryContainer;
+            PanelBackground = new Color(secondaryContainer.R, secondaryContainer.G, secondaryContainer.B, PANEL_ALPHA);
             ArrowColor = new Color(fontColor.R, fontColor.G, fontColor.B, (byte)(fontColor.A * 180 / 255));
             RefreshPageIndicators();
             RaisePropertyChanged<object>(string.Empty);
@@ -155,8 +191,8 @@ namespace LcdMod.Client.Apps.EnergyDashboard
 
         void UpdateLayout()
         {
-            float width = Math.Max(0f, _viewport.X);
-            float pagesHeight = Math.Max(0f, _viewport.Y - HEADER_HEIGHT);
+            float width = Math.Max(0f, _viewport.X - PANEL_INSET * 2f);
+            float pagesHeight = Math.Max(0f, _viewport.Y - HEADER_HEIGHT - PANEL_INSET * 2f);
             int count = _pages.Count;
             VisiblePageCount = Math.Max(1, Math.Min(count, (int)Math.Floor(width / PAGE_TARGET_WIDTH)));
             bool allPagesFit = VisiblePageCount >= count;
@@ -218,24 +254,22 @@ namespace LcdMod.Client.Apps.EnergyDashboard
         }
     }
 
+    /// <summary>A time-range tab; its content is the shared dashboard pages, reached through <see cref="Owner"/>.</summary>
     internal sealed class EnergyTierModel : ObservableObject
     {
-        bool _isChecked;
-
-        public EnergyTierModel(string label, ICommand command)
+        public EnergyTierModel(string label, EnergyDashboardViewModel owner)
         {
             Label = label;
-            Command = command;
+            Owner = owner;
         }
 
         public string Label { get; }
-        public bool IsChecked => _isChecked;
-        public ICommand Command { get; }
+        public EnergyDashboardViewModel Owner { get; }
+        public float FontSize => Owner.TierFontSize;
 
-        internal void SetChecked(bool value, bool force)
+        internal void RaiseFontSizeChanged()
         {
-            if (!RaiseAndSetIfChanged(ref _isChecked, value, nameof(IsChecked)) && force)
-                RaisePropertyChanged<bool>(nameof(IsChecked));
+            RaisePropertyChanged<float>(nameof(FontSize));
         }
     }
 

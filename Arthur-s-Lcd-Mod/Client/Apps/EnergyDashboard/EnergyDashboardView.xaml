@@ -9,7 +9,7 @@
     <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/EnergyDashboard.xaml" />
     <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/CarouselNavigation.xaml" />
   </UserControl.Styles>
-  <Grid RowDefinitions="48,24,*">
+  <Grid RowDefinitions="48,*">
     <ItemsControl ItemsSource="{Binding Bars}">
       <ItemsControl.ItemsPanel>
         <ItemsPanelTemplate>
@@ -24,97 +24,107 @@
         </DataTemplate>
       </ItemsControl.ItemTemplate>
     </ItemsControl>
-    <ItemsControl Grid.Row="1" ItemsSource="{Binding Tiers}">
-      <ItemsControl.ItemsPanel>
+    <TabControl Grid.Row="1" Classes="energy-tiers" ItemsSource="{Binding Tiers}"
+                SelectedIndex="{Binding SelectedTierIndex, Mode=TwoWay}">
+      <TabControl.ItemsPanel>
         <ItemsPanelTemplate>
           <UniformGrid Columns="{Binding TierColumns}" Rows="1" />
         </ItemsPanelTemplate>
-      </ItemsControl.ItemsPanel>
-      <ItemsControl.ItemTemplate>
+      </TabControl.ItemsPanel>
+      <TabControl.ItemTemplate>
         <DataTemplate x:DataType="energy:EnergyTierModel">
-          <energy:EnergyTierButton Margin="2" Label="{Binding Label}" IsChecked="{Binding IsChecked}"
-                                   Command="{Binding Command}" />
+          <TextBlock Classes="energy-tier" Text="{Binding Label}" FontSize="{Binding FontSize}" />
         </DataTemplate>
-      </ItemsControl.ItemTemplate>
-    </ItemsControl>
-    <Grid Grid.Row="2" RowDefinitions="*,Auto">
-      <Carousel ItemsSource="{Binding Pages}" SelectedIndex="{Binding SelectedPage}" WrapSelection="True"
-                ViewportFraction="{Binding ViewportFraction}">
-        <Carousel.ItemTemplate>
-          <DataTemplate x:DataType="energy:EnergyPageModel">
-            <Grid RowDefinitions="90*,140*">
-              <energy:EnergyGraphControl Title="{Binding Title}" AxisLabel0="{Binding AxisLabel0}"
-                                         AxisLabel1="{Binding AxisLabel1}" AxisLabel2="{Binding AxisLabel2}"
-                                         AxisLabel3="{Binding AxisLabel3}" LeftTime="{Binding LeftTime}"
-                                         MiddleTime="{Binding MiddleTime}" RightTime="{Binding RightTime}"
-                                         HasTimeScale="{Binding HasTimeScale}" IsEmpty="{Binding IsEmpty}"
-                                         EmptyText="{Binding EmptyText}" Series="{Binding Series}"
-                                         Foreground="{Binding Foreground}" />
-              <ScrollViewer Grid.Row="1" Classes="energy-list" VerticalScrollBarVisibility="Auto"
-                            HorizontalScrollBarVisibility="Disabled">
-                <ItemsControl ItemsSource="{Binding Rows}">
-                  <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                      <UniformGrid Columns="{Binding RowColumns}" VerticalAlignment="Top" />
-                    </ItemsPanelTemplate>
-                  </ItemsControl.ItemsPanel>
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="energy:EnergyPowerRowModel">
-                      <energy:EnergyPowerRowControl Height="44" Margin="0 0 6 0" RowIcon="{Binding Icon}" Glyph="{Binding Glyph}"
-                                                    Amount="{Binding Amount}" Label="{Binding Label}"
-                                                    ValueText="{Binding ValueText}" Ratio="{Binding Ratio}"
-                                                    AccentColor="{Binding Color}" AmountForeground="{Binding Foreground}"
-                                                    IsRowSelected="{Binding IsSelected}" Command="{Binding Command}"
-                                                    HoverCommand="{Binding HoverCommand}" />
+      </TabControl.ItemTemplate>
+      <TabControl.ContentTemplate>
+        <DataTemplate x:DataType="energy:EnergyTierModel">
+          <Border DataContext="{Binding Owner}">
+            <Grid x:DataType="energy:EnergyDashboardViewModel">
+              <Border Classes="energy-panel" Background="{Binding PanelBackground}"
+                      CornerRadius="{Binding PanelCornerRadius}" />
+              <Grid Classes="energy-panel-content" RowDefinitions="*,Auto">
+                <Carousel ItemsSource="{Binding Pages}" SelectedIndex="{Binding SelectedPage}" WrapSelection="True" ClipToBounds="True"
+                          ViewportFraction="{Binding ViewportFraction}">
+                  <Carousel.ItemTemplate>
+                    <DataTemplate x:DataType="energy:EnergyPageModel">
+                      <Grid RowDefinitions="90*,140*">
+                        <energy:EnergyGraphControl Title="{Binding Title}" AxisLabel0="{Binding AxisLabel0}"
+                                                   AxisLabel1="{Binding AxisLabel1}" AxisLabel2="{Binding AxisLabel2}"
+                                                   AxisLabel3="{Binding AxisLabel3}" LeftTime="{Binding LeftTime}"
+                                                   MiddleTime="{Binding MiddleTime}" RightTime="{Binding RightTime}"
+                                                   HasTimeScale="{Binding HasTimeScale}" IsEmpty="{Binding IsEmpty}"
+                                                   EmptyText="{Binding EmptyText}" Series="{Binding Series}"
+                                                   Foreground="{Binding Foreground}" />
+                        <ScrollViewer Grid.Row="1" Classes="energy-list" VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Disabled">
+                          <ItemsControl ItemsSource="{Binding Rows}">
+                            <ItemsControl.ItemsPanel>
+                              <ItemsPanelTemplate>
+                                <UniformGrid Columns="{Binding RowColumns}" VerticalAlignment="Top" />
+                              </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                              <DataTemplate x:DataType="energy:EnergyPowerRowModel">
+                                <energy:EnergyPowerRowControl Height="44" Margin="0 0 6 0" RowIcon="{Binding Icon}" Glyph="{Binding Glyph}"
+                                                              Amount="{Binding Amount}" Label="{Binding Label}"
+                                                              ValueText="{Binding ValueText}" Ratio="{Binding Ratio}"
+                                                              AccentColor="{Binding Color}" AmountForeground="{Binding Foreground}"
+                                                              IsRowSelected="{Binding IsSelected}" Command="{Binding Command}"
+                                                              HoverCommand="{Binding HoverCommand}" />
+                              </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                          </ItemsControl>
+                        </ScrollViewer>
+                      </Grid>
                     </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
-              </ScrollViewer>
-            </Grid>
-          </DataTemplate>
-        </Carousel.ItemTemplate>
-      </Carousel>
-      <Grid Grid.Row="1" Height="34" Margin="0 8 0 0" HorizontalAlignment="Center" IsVisible="{Binding ShowNavigation}"
-            ColumnDefinitions="Auto,8,Auto,8,Auto">
-        <Button Classes="carousel-arrow" Width="{Binding ArrowButtonWidth}" Command="{Binding PreviousPageCommand}">
-          <Border Background="{Binding ArrowColor}" Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center">
-            <Border.OpacityMask>
-              <ImageBrush Source="LeftArrow" />
-            </Border.OpacityMask>
-          </Border>
-        </Button>
-        <ItemsControl Grid.Column="2" Width="{Binding IndicatorButtonWidth}" ItemsSource="{Binding Pages}">
-          <ItemsControl.ItemsPanel>
-            <ItemsPanelTemplate>
-              <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" />
-            </ItemsPanelTemplate>
-          </ItemsControl.ItemsPanel>
-          <ItemsControl.ItemTemplate>
-            <DataTemplate x:DataType="energy:EnergyPageModel">
-              <Button Classes="carousel-dot" Width="16" Height="16" Command="{Binding SelectCommand}">
-                <Grid>
-                  <Border Background="{Binding DotColor}" OpacityMask="{Binding DotMask}" Width="8" Height="8"
-                          HorizontalAlignment="Center" VerticalAlignment="Center" />
-                  <Border Background="{Binding DotInnerColor}" Width="6" Height="6" IsVisible="{Binding IsCurrent}"
-                          HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <Border.OpacityMask>
-                      <ImageBrush Source="Circle" />
-                    </Border.OpacityMask>
-                  </Border>
+                  </Carousel.ItemTemplate>
+                </Carousel>
+                <Grid Grid.Row="1" Height="34" Margin="0 8 0 0" HorizontalAlignment="Center" IsVisible="{Binding ShowNavigation}"
+                      ColumnDefinitions="Auto,8,Auto,8,Auto">
+                  <Button Classes="carousel-arrow" Width="{Binding ArrowButtonWidth}" Command="{Binding PreviousPageCommand}">
+                    <Border Background="{Binding ArrowColor}" Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center">
+                      <Border.OpacityMask>
+                        <ImageBrush Source="LeftArrow" />
+                      </Border.OpacityMask>
+                    </Border>
+                  </Button>
+                  <ItemsControl Grid.Column="2" Width="{Binding IndicatorButtonWidth}" ItemsSource="{Binding Pages}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="energy:EnergyPageModel">
+                        <Button Classes="carousel-dot" Width="16" Height="16" Command="{Binding SelectCommand}">
+                          <Grid>
+                            <Border Background="{Binding DotColor}" OpacityMask="{Binding DotMask}" Width="8" Height="8"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <Border Background="{Binding DotInnerColor}" Width="6" Height="6" IsVisible="{Binding IsCurrent}"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center">
+                              <Border.OpacityMask>
+                                <ImageBrush Source="Circle" />
+                              </Border.OpacityMask>
+                            </Border>
+                          </Grid>
+                        </Button>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <Button Grid.Column="4" Classes="carousel-arrow" Width="{Binding ArrowButtonWidth}"
+                          Command="{Binding NextPageCommand}">
+                    <Border Background="{Binding ArrowColor}" Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center">
+                      <Border.OpacityMask>
+                        <ImageBrush Source="RightArrow" />
+                      </Border.OpacityMask>
+                    </Border>
+                  </Button>
                 </Grid>
-              </Button>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
-        <Button Grid.Column="4" Classes="carousel-arrow" Width="{Binding ArrowButtonWidth}"
-                Command="{Binding NextPageCommand}">
-          <Border Background="{Binding ArrowColor}" Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center">
-            <Border.OpacityMask>
-              <ImageBrush Source="RightArrow" />
-            </Border.OpacityMask>
+              </Grid>
+            </Grid>
           </Border>
-        </Button>
-      </Grid>
-    </Grid>
+        </DataTemplate>
+      </TabControl.ContentTemplate>
+    </TabControl>
   </Grid>
 </UserControl>

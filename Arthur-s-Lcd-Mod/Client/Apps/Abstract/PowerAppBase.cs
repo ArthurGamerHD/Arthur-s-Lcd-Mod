@@ -2,6 +2,7 @@ using LcdMod.Common.Mvvm;
 using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
+using LcdMod.Client.Config;
 using LcdMod.Client.GridData;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Gui.Styling;
@@ -28,6 +29,8 @@ namespace LcdMod.Client.Apps.Abstract
         protected const float LINE = 22f;
         protected const float MINIMUM_COL_WIDTH = 400f;
         protected const float GRID_CELL_LINES = 6f;
+        internal const int RANGE_TIER_COUNT = 6;
+        const int MAX_RANGE_WINDOW_TICKS = 5 * 60 * 60;
 
         protected struct PowerEntryDefinition
         {
@@ -89,6 +92,8 @@ namespace LcdMod.Client.Apps.Abstract
 
         readonly Dictionary<string, PowerEntry> _entriesByKey = new Dictionary<string, PowerEntry>();
         readonly Dictionary<string, PowerTotals> _totalsByKey = new Dictionary<string, PowerTotals>();
+        readonly Dictionary<string, TickWindowAverage> _currentAverages = new Dictionary<string, TickWindowAverage>();
+        readonly Dictionary<string, TickWindowAverage> _maxAverages = new Dictionary<string, TickWindowAverage>();
         string[] _entryOrder;
         PowerEntry[] _entriesOrdered;
         readonly List<PowerEntry> _visibleEntries = new List<PowerEntry>();
@@ -202,10 +207,14 @@ namespace LcdMod.Client.Apps.Abstract
             if (_entriesByKey.Count == 0)
                 InitializeEntries();
 
+            int windowTicks = GetRangeWindowTicks(RangeTier);
             for (int i = 0; i < _entryOrder.Length; i++)
             {
                 var key = _entryOrder[i];
                 var totals = _totalsByKey[key];
+                totals.Current = GetAverage(_currentAverages, key).Add(totals.Current, windowTicks);
+                totals.Max = GetAverage(_maxAverages, key).Add(totals.Max, windowTicks);
+
                 var usage = totals.Max > 0 ? (float)Math.Min(Math.Max(totals.Current / totals.Max, 0), 1) : 0f;
 
                 var entry = _entriesByKey[key];
@@ -218,6 +227,53 @@ namespace LcdMod.Client.Apps.Abstract
             }
 
             SyncOrderedEntries();
+        }
+
+        /// <summary>
+        /// Index into the dashboard ranges (1s, 5s, 30s, 1m, 5m, all) the output is averaged over. Vanilla batteries make
+        /// generator output swing between idle and full load every 100 ticks, so a single sample is rarely representative.
+        /// </summary>
+        internal int RangeTier
+        {
+            get
+            {
+                int tier = PowerComponent.PowerHistoryTier >= 0 ? PowerComponent.PowerHistoryTier : PowerComponent.GraphWindowIndex;
+                return Math.Max(0, Math.Min(tier, RANGE_TIER_COUNT - 1));
+            }
+        }
+
+        internal void SetRangeTier(int tier)
+        {
+            tier = Math.Max(0, Math.Min(tier, RANGE_TIER_COUNT - 1));
+            if (tier == RangeTier)
+                return;
+
+            PowerComponent.PowerHistoryTier = tier;
+            PowerComponent.GraphWindowIndex = tier;
+            if (Host.Block != null && Host.ProviderConfig != null)
+                ConfigManager.Sync(Host.Block, Host.ProviderConfig);
+            ClearAverages();
+        }
+
+        static int GetRangeWindowTicks(int tier)
+        {
+            return tier >= RANGE_TIER_COUNT - 1 ? 0 : (int)(EnergyDashboardApp.GetScaleWindowSeconds(tier) * 60f);
+        }
+
+        void ClearAverages()
+        {
+            foreach (var average in _currentAverages.Values)
+                average.Clear();
+            foreach (var average in _maxAverages.Values)
+                average.Clear();
+        }
+
+        static TickWindowAverage GetAverage(Dictionary<string, TickWindowAverage> averages, string key)
+        {
+            TickWindowAverage average;
+            if (!averages.TryGetValue(key, out average))
+                averages[key] = average = new TickWindowAverage(MAX_RANGE_WINDOW_TICKS);
+            return average;
         }
 
         void BuildVisibleEntries()

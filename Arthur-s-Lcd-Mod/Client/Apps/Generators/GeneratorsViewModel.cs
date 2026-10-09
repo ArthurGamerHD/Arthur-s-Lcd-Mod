@@ -12,6 +12,8 @@ namespace LcdMod.Client.Apps.Generators
         readonly GeneratorsApp _app;
         readonly List<GeneratorDisplayEntry> _entries = new List<GeneratorDisplayEntry>();
         readonly Dictionary<string, GeneratorDisplayEntry> _byKey = new Dictionary<string, GeneratorDisplayEntry>();
+        int _rangeTier = -1;
+        float _fontScale = 1f;
 
         public GeneratorsViewModel(GeneratorsApp app)
         {
@@ -19,6 +21,14 @@ namespace LcdMod.Client.Apps.Generators
         }
 
         public IReadOnlyList<GeneratorDisplayEntry> Entries => _entries;
+        public int RangeTier => _rangeTier;
+        public float FontScale => _fontScale;
+
+        public void SetRangeTier(int tier)
+        {
+            _app.SetRangeTier(tier);
+            RaiseAndSetIfChanged(ref _rangeTier, _app.RangeTier, nameof(RangeTier));
+        }
 
         protected override float MinimumColumnWidth => _app.IsGridDisplay ? 400f : 0f;
         protected override float RowHeight => 132f;
@@ -26,6 +36,8 @@ namespace LcdMod.Client.Apps.Generators
 
         public void Refresh()
         {
+            RaiseAndSetIfChanged(ref _rangeTier, _app.RangeTier, nameof(RangeTier));
+            RaiseAndSetIfChanged(ref _fontScale, _app.SurfaceFontSize, nameof(FontScale));
             _entries.Clear();
             IReadOnlyList<PowerApp.PowerEntry> source = _app.NativeEntries;
             for (int i = 0; i < source.Count; i++)

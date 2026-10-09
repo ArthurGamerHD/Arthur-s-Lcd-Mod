@@ -161,6 +161,7 @@ namespace LcdMod.Client.Apps
 
         void RefreshColors()
         {
+            _viewModel.SetFontScale(SurfaceFontSize);
             _viewModel.RefreshColors(Host.Surface.ScriptForegroundColor,
                 ResolveResource(ThemeResources.FontColor, Color.White),
                 ResolveResource(ThemeResources.AccentColor, Color.White),
@@ -796,7 +797,7 @@ namespace LcdMod.Client.Apps
             return Math.Max(0, Math.Min(tier, SCALE_TIER_COUNT - 1));
         }
 
-        static string GetScaleLabel(int index)
+        internal static string GetScaleLabel(int index)
         {
             switch (index)
             {
@@ -809,7 +810,7 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        static float GetScaleWindowSeconds(int index)
+        internal static float GetScaleWindowSeconds(int index)
         {
             switch (index)
             {

@@ -24,45 +24,25 @@
     </Setter>
   </Style>
 
-  <Style Selector="energy|EnergyTierButton">
-    <Setter Property="FontSize" Value="{DynamicResource fontScale}" />
-    <Setter Property="FontFamily" Value="{DynamicResource textFont}" />
-    <Setter Property="Background" Value="{DynamicResource accentContainerColor}" />
-    <Setter Property="Foreground" Value="{DynamicResource onAccentContainerColor}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource borderVariantColor}" />
+  <Style Selector="TabControl.energy-tiers">
+    <Setter Property="Background" Value="#00000000" />
     <Setter Property="BorderThickness" Value="0" />
-    <Setter Property="CornerRadius" Value="6" />
     <Setter Property="Padding" Value="0" />
-    <Setter Property="Template">
-      <ControlTemplate>
-        <Grid>
-          <Border Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}" />
-          <Border Background="#00000000" BorderBrush="{TemplateBinding BorderBrush}"
-                  BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}" />
-          <TextBlock Text="{TemplateBinding Label}" FontFamily="{TemplateBinding FontFamily}"
-                     FontSize="{TemplateBinding FontSize, Converter={StaticResource FontSizeMultiplier}, ConverterParameter=0.58, ConverterCulture=en-US}"
-                     Foreground="{TemplateBinding Foreground}" TextAlignment="Center" VerticalAlignment="Center" />
-        </Grid>
-      </ControlTemplate>
-    </Setter>
   </Style>
-  <Style Selector="energy|EnergyTierButton:pointerover">
-    <Setter Property="Background" Value="{DynamicResource accentContainerColor}" />
-    <Setter Property="Foreground" Value="{DynamicResource onAccentContainerColor}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource borderColor}" />
-    <Setter Property="BorderThickness" Value="2" />
+  <Style Selector="TabControl.energy-tiers TabItem">
+    <Setter Property="MinHeight" Value="28" />
+    <Setter Property="Padding" Value="4 2" />
+    <Setter Property="BorderThickness" Value="0" />
   </Style>
-  <Style Selector="energy|EnergyTierButton:pressed">
-    <Setter Property="Background" Value="{DynamicResource accentContainerColor}" />
-    <Setter Property="Foreground" Value="{DynamicResource onAccentContainerColor}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource accentColor}" />
-    <Setter Property="BorderThickness" Value="2" />
+  <Style Selector="TabControl.energy-tiers TabItem:selected">
+    <Setter Property="Background" Value="{DynamicResource energyPanelColor}" />
+    <Setter Property="BorderThickness" Value="0" />
   </Style>
-  <Style Selector="energy|EnergyTierButton:checked">
-    <Setter Property="Background" Value="{DynamicResource accentColor}" />
-    <Setter Property="Foreground" Value="{DynamicResource onAccentColor}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource accentColor}" />
-    <Setter Property="BorderThickness" Value="2" />
+  <Style Selector="TextBlock.energy-tier">
+    <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Grid.energy-panel-content">
+    <Setter Property="Margin" Value="9" />
   </Style>
 
   <Style Selector="energy|EnergyGraphControl">

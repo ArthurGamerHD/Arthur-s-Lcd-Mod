@@ -7,9 +7,12 @@ namespace LcdMod.Client.Apps.EnergyDashboard
 {
     internal sealed partial class EnergyDashboardView : UserControl
     {
+        const string PANEL_COLOR_RESOURCE = "energyPanelColor";
+
         public EnergyDashboardView(EnergyDashboardViewModel model)
         {
             Resources.Add("FontSizeMultiplier", new Views.FontSizeMultiplierConverter());
+            Resources.Add(PANEL_COLOR_RESOURCE, model.PanelBackground);
             InitializeComponent();
             DataContext = model;
         }
@@ -33,7 +36,14 @@ namespace LcdMod.Client.Apps.EnergyDashboard
 
         protected override Vector2 MeasureOverride(Vector2 availableSize)
         {
-            (DataContext as EnergyDashboardViewModel)?.SetViewport(availableSize);
+            var viewModel = DataContext as EnergyDashboardViewModel;
+            if (viewModel != null)
+            {
+                viewModel.SetViewport(availableSize);
+                Color current;
+                if (!Resources.TryGetValue(PANEL_COLOR_RESOURCE, out current) || current != viewModel.PanelBackground)
+                    Resources.Add(PANEL_COLOR_RESOURCE, viewModel.PanelBackground);
+            }
             return base.MeasureOverride(availableSize);
         }
     }
