@@ -3,6 +3,7 @@
     xmlns="https://github.com/ArthurGamerHD/Adk"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:energy="using:LcdMod.Client.Apps.EnergyDashboard"
+    xmlns:extensions="using:Adk.Gui.Extensions"
     x:Class="LcdMod.Client.Apps.EnergyDashboard.EnergyDashboardView"
     x:DataType="energy:EnergyDashboardViewModel">
   <UserControl.Styles>
@@ -60,7 +61,7 @@
                           <ItemsControl ItemsSource="{Binding Rows}">
                             <ItemsControl.ItemsPanel>
                               <ItemsPanelTemplate>
-                                <UniformGrid Columns="{Binding RowColumns}" VerticalAlignment="Top" />
+                                <extensions:VirtualizingUniformGrid Columns="{Binding RowColumns}" VerticalAlignment="Top" />
                               </ItemsPanelTemplate>
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>

@@ -26,7 +26,19 @@ namespace LcdMod.Client.ScreenAreas
             Vector3D rayDirection,
             out Vector2 uv)
         {
+            double distance;
+            return TryGetScreenUvIntersection(screen, rayOrigin, rayDirection, out uv, out distance);
+        }
+
+        public static bool TryGetScreenUvIntersection(
+            SurfaceScriptBase screen,
+            Vector3D rayOrigin,
+            Vector3D rayDirection,
+            out Vector2 uv,
+            out double distance)
+        {
             uv = Vector2.Zero;
+            distance = 0d;
             if (screen == null || screen.Block == null)
                 return false;
             if (rayDirection.LengthSquared() <= 1e-8)
@@ -38,13 +50,17 @@ namespace LcdMod.Client.ScreenAreas
             if (!TryGetScreenAreaGeometry(screen, out geometry))
                 return false;
 
-            return TryGetScreenUvIntersection(
+            Vector2 rawUv;
+            return TryGetScreenIntersection(
                 screen.Block.Model,
                 screen.Block.WorldMatrix,
                 geometry,
                 rayOrigin,
                 rayDirection,
-                out uv);
+                double.MaxValue,
+                out uv,
+                out rawUv,
+                out distance);
         }
 
         public static bool TryGetScreenPointIntersection(
@@ -53,12 +69,25 @@ namespace LcdMod.Client.ScreenAreas
             Vector3D rayDirection,
             out Vector2 screenPoint)
         {
+            double distance;
+            return TryGetScreenPointIntersection(screen, rayOrigin, rayDirection, out screenPoint, out distance);
+        }
+
+        /// <summary>Like the overload without it, also returning how far along the ray the screen was hit.</summary>
+        public static bool TryGetScreenPointIntersection(
+            SurfaceScriptBase screen,
+            Vector3D rayOrigin,
+            Vector3D rayDirection,
+            out Vector2 screenPoint,
+            out double distance)
+        {
             screenPoint = Vector2.Zero;
+            distance = 0d;
             if (screen == null || screen.Surface == null)
                 return false;
 
             Vector2 uv;
-            if (!TryGetScreenUvIntersection(screen, rayOrigin, rayDirection, out uv))
+            if (!TryGetScreenUvIntersection(screen, rayOrigin, rayDirection, out uv, out distance))
                 return false;
 
             screenPoint = ToSurfacePoint(screen.Surface, uv);
@@ -709,15 +738,7 @@ namespace LcdMod.Client.ScreenAreas
 
         static bool TryGetScreenAreaGeometry(SurfaceScriptBase screen, out MinimalMwmScreenAreaGeometry geometry)
         {
-            geometry = null;
-            if (screen == null || screen.Block == null)
-                return false;
-
-            return TryGetScreenAreaGeometry(
-                screen.Block,
-                screen.RotationOrSurfaceIndex,
-                screen.Description(),
-                out geometry);
+            return TryGetCachedScreenAreaGeometry(screen, out geometry);
         }
 
         static bool TryGetScreenAreaGeometry(IMyCubeBlock block, int surfaceIndex, out MinimalMwmScreenAreaGeometry geometry)
@@ -1156,23 +1177,19 @@ namespace LcdMod.Client.ScreenAreas
                 geometry.UvTriangles == null)
                 return false;
 
+            var mesh = GetLocalMesh(blockModel, geometry);
+            if (!RayMayHit(mesh, worldMatrix, rayOrigin, rayDirection, maxDistance))
+                return false;
+
             var bestDistance = double.MaxValue;
             var bestRawUv = Vector2.Zero;
             var hit = false;
-            var count = Math.Min(geometry.TriangleIndices.Count, geometry.UvTriangles.Count);
+            var count = mesh.A.Length;
             for (int i = 0; i < count; i++)
             {
-                var triangleIndex = geometry.TriangleIndices[i];
-                var t = blockModel.GetTriangle(triangleIndex);
-
-                Vector3 aLocal;
-                Vector3 bLocal;
-                Vector3 cLocal;
-                blockModel.GetVertex(t.I0, t.I1, t.I2, out aLocal, out bLocal, out cLocal);
-
-                var a = Vector3D.Transform((Vector3D)aLocal, worldMatrix);
-                var b = Vector3D.Transform((Vector3D)bLocal, worldMatrix);
-                var c = Vector3D.Transform((Vector3D)cLocal, worldMatrix);
+                var a = Vector3D.Transform((Vector3D)mesh.A[i], worldMatrix);
+                var b = Vector3D.Transform((Vector3D)mesh.B[i], worldMatrix);
+                var c = Vector3D.Transform((Vector3D)mesh.C[i], worldMatrix);
 
                 var normal = Vector3D.Cross(b - a, c - a);
                 if (Vector3D.Dot(normal, rayDirection) >= -1e-9)
@@ -1189,7 +1206,7 @@ namespace LcdMod.Client.ScreenAreas
                     continue;
 
                 var w = 1d - u - v;
-                if (!TryGetRuntimeTriangleUv(geometry, t.I0, t.I1, t.I2, w, u, v, out bestRawUv))
+                if (!TryGetRuntimeTriangleUv(geometry, mesh.I0[i], mesh.I1[i], mesh.I2[i], w, u, v, out bestRawUv))
                 {
                     var uvTriangle = geometry.UvTriangles[i];
                     bestRawUv = uvTriangle.A * (float)w + uvTriangle.B * (float)u + uvTriangle.C * (float)v;

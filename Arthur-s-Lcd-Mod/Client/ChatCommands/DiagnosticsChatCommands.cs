@@ -11,6 +11,16 @@ namespace LcdMod.Client.ChatCommands
     {
 #if DEBUG
         /// <summary>
+        /// Runs a deterministic 15-second look-at, scroll, and carousel workload on every local interactive LCD.
+        /// Running it again cancels the benchmark.
+        /// </summary>
+        [ChatCommand("BenchmarkScreens")]
+        public static void BenchmarkScreens()
+        {
+            Debugging.ScreenBenchmark.Start();
+        }
+
+        /// <summary>
         /// Opens a diagnostic text input dialog.
         /// </summary>
         /// <loc>LcdMod_ChatCommand_TextInput_Summary</loc>
@@ -31,6 +41,7 @@ namespace LcdMod.Client.ChatCommands
         public static void VisibleTreeDebug(bool? enabled)
         {
             var service = LcdModSessionComponent.Client?.VisibleTreeDebug;
+            LogHelper.LogInfo("[VisibleTreeDebug] command: service " + (service == null ? "missing" : "present"));
             if (service == null)
                 return;
             bool open = enabled ?? !service.IsOpen;
@@ -38,6 +49,17 @@ namespace LcdMod.Client.ChatCommands
                 service.Open();
             else
                 service.Close();
+        }
+
+        /// <summary>
+        /// Counts UI property and pseudo-class changes into the frame profile log. Allocates per change, so it skews timings.
+        /// </summary>
+        [ChatCommand("TraceUiChanges")]
+        public static void TraceUiChanges(bool? enabled)
+        {
+            bool enable = enabled ?? Adk.Gui.Core.Control.ChangeTrace == null;
+            Adk.Gui.Core.Control.ChangeTrace = enable ? Debugging.FrameProfiler.TraceChange : (System.Action<Adk.Gui.Core.Control, string>)null;
+            MyAPIGateway.Utilities.ShowNotification("UI change tracing " + (enable ? "on" : "off"));
         }
 
         /// <summary>

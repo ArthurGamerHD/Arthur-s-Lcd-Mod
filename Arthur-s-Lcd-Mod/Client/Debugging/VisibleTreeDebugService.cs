@@ -24,6 +24,8 @@ namespace LcdMod.Client.Debugging
             CaptureTarget();
             _window.Open();
             Refresh();
+            LcdMod.Common.Helpers.LogHelper.LogInfo("[VisibleTreeDebug] open requested: target=" +
+                (_target == null ? "none" : _target.GetType().Name) + ", window open=" + _window.IsOpen);
         }
 
         public void Close() { _window.Close(); }

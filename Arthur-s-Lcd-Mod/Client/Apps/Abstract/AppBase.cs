@@ -237,6 +237,16 @@ namespace LcdMod.Client.Apps.Abstract
             _gridCapabilities = GridCapability.None;
         }
 
+        /// <summary>What makes <see cref="IsDirty"/> true, for render diagnostics.</summary>
+        internal string DescribeDirtySource()
+        {
+            if (_isDirty)
+                return "app dirty flag";
+            return Adk.Gui.Core.VisualTree.DescribeInvalidation(_content) ??
+                   Adk.Gui.Core.VisualTree.DescribeInvalidation(_footer) ??
+                   Adk.Gui.Core.VisualTree.DescribeInvalidation(_backgroundContent) ?? "clean";
+        }
+
         public virtual bool IsDirty
         {
             get

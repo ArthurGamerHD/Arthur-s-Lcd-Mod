@@ -70,6 +70,26 @@ namespace LcdMod.Client.Modules.EyeTracking
 
         public void Update()
         {
+#if DEBUG
+            long profileStart = Debugging.FrameProfiler.Start();
+            _profiledTests = 0;
+            _profiledLookedAt = 0;
+            try
+            {
+                UpdateCore();
+            }
+            finally
+            {
+                Debugging.FrameProfiler.EndEyeTracking(profileStart, _profiledTests, _profiledLookedAt);
+            }
+        }
+
+        int _profiledTests;
+        int _profiledLookedAt;
+
+        void UpdateCore()
+        {
+#endif
             foreach (var module in _pendingModules)
                 _modules.Add(module);
 
@@ -97,7 +117,8 @@ namespace LcdMod.Client.Modules.EyeTracking
 
             var resolvedCount = 0;
             IEyeTracking lookingScreen = null;
-            double lookingDistanceSq = double.MaxValue;
+            double lookingDistance = double.MaxValue;
+            Vector2 lookingCoordinates = Vector2.Zero;
 
             foreach (var screen in _modules)
             {
@@ -113,28 +134,50 @@ namespace LcdMod.Client.Modules.EyeTracking
                     continue;
 
                 var blockPos = screen.Block.WorldMatrix.Translation;
-                var distanceSq = Vector3D.DistanceSquared(blockPos, cameraPos);
-
-                if (distanceSq > MAX_TRACKING_DISTANCE_SQ)
+                if (Vector3D.DistanceSquared(blockPos, cameraPos) > MAX_TRACKING_DISTANCE_SQ)
                     continue;
 
                 Vector2 lookAtCoordinates;
-
-                if (ScreenAreaGeometry.TryGetScreenPointIntersection(
+                double hitDistance;
+#if DEBUG
+                _profiledTests++;
+                long rayStart = Debugging.FrameProfiler.Start();
+#endif
+                bool hit = ScreenAreaGeometry.TryGetScreenPointIntersection(
                     surfaceScript,
                     cameraPos,
                     cameraForward,
-                    out lookAtCoordinates))
+                    out lookAtCoordinates,
+                    out hitDistance);
+#if DEBUG
+                Debugging.FrameProfiler.AddRayTest(rayStart);
+#endif
+
+                if (hit)
                 {
-                    screen.LookAt(lookAtCoordinates);
                     resolvedCount++;
 
-                    if (distanceSq < lookingDistanceSq)
+                    if (hitDistance < lookingDistance)
                     {
-                        lookingDistanceSq = distanceSq;
+                        lookingDistance = hitDistance;
                         lookingScreen = screen;
+                        lookingCoordinates = lookAtCoordinates;
                     }
                 }
+            }
+
+            // Only the nearest screen along the ray is being looked at; the ray passes through it to screens behind,
+            // and every looked-at screen redraws each frame.
+            if (lookingScreen != null)
+            {
+#if DEBUG
+                long lookAtStart = Debugging.FrameProfiler.Start();
+#endif
+                lookingScreen.LookAt(lookingCoordinates);
+#if DEBUG
+                Debugging.FrameProfiler.AddLookAt(lookAtStart);
+                _profiledLookedAt++;
+#endif
             }
 
             var pointerSurface = lookingScreen as InteractiveSurfaceScript;

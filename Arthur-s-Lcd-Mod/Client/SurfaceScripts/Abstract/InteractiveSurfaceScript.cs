@@ -93,6 +93,11 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             host.SetMiddleButton(false);
         }
 
+        const long RENDER_REASON_LOG_INTERVAL = 300;
+
+        long _lastRenderReasonLogFrame = -RENDER_REASON_LOG_INTERVAL;
+
+
         protected virtual bool RenderContinuouslyWhileLookedAt => true;
 
         public virtual void LookAt(Vector2 onScreenCoordinates)
@@ -111,6 +116,8 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 if (RenderContinuouslyWhileLookedAt || contentChanged)
                 {
                     _renderCursorOnly = !contentChanged && CanReuseContentFrame();
+                    if (!_renderCursorOnly)
+                        LogFullRenderReason(!hadRecentVisualContact, pointerChanged, App != null && App.IsDirty);
                     try
                     {
                         RenderSprites();
@@ -250,6 +257,24 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         readonly List<MySprite> _cursorFrame = new List<MySprite>();
         bool _hasContentFrame;
         bool _renderCursorOnly;
+
+        /// <summary>
+        /// Logs, at most every few seconds, why a looked-at screen redraws its whole content instead of only the cursor.
+        /// A steady stream of these means something invalidates the UI every frame.
+        /// </summary>
+        void LogFullRenderReason(bool newContact, bool cursorChanged, bool appDirty)
+        {
+            long frame = MyAPIGateway.Session.GameplayFrameCounter;
+            if (frame - _lastRenderReasonLogFrame < RENDER_REASON_LOG_INTERVAL)
+                return;
+            _lastRenderReasonLogFrame = frame;
+            LcdGuiHost host = RetainedGuiHost;
+            string reason = host == null ? "no retained host" : host.DescribeRenderReason() ?? "UI tree clean";
+            string dirtySource = appDirty && App is Apps.Abstract.App ? ((Apps.Abstract.App)App).DescribeDirtySource() : "-";
+            LogHelper.LogInfo("[Render] " + GetType().Name + " redraws while looked at (new contact=" + newContact +
+                              ", cursor changed=" + cursorChanged + ", app dirty=" + appDirty + " from " + dirtySource +
+                              "): tree " + reason);
+        }
 
         bool CanReuseContentFrame()
         {

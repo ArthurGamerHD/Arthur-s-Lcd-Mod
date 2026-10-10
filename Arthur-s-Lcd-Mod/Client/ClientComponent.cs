@@ -91,6 +91,9 @@ namespace LcdMod.Client
 
         public void LoadData()
         {
+#if DEBUG
+            ScreenBenchmark.ClearStaleLock();
+#endif
             AdkFluentStyles.ConfigureSourceLoader();
             Apps.Dialogs.DialogViewModel.Localize = LocHelper.GetLoc;
             LocalConfigManager.Load();
@@ -131,9 +134,13 @@ namespace LcdMod.Client
             DoomUserProfileStorage.FlushPending();
             Ftue.Unload();
 #if DEBUG
+            ScreenBenchmark.Stop("unloaded");
             if (_visibleTreeDebug != null)
                 _visibleTreeDebug.Dispose();
             _visibleTreeDebug = null;
+#if DEBUG
+            Adk.Gui.Core.Control.ChangeTrace = null;
+#endif
 #endif
             _audioPoc.Unload();
             _audioBroadcast.Unload();

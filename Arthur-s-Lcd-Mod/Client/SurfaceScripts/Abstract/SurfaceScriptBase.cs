@@ -1279,6 +1279,11 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
             if ((!force && LastRenderFrame == currentFrame) || WaitForFrame > currentFrame || _disposed || _asyncRenderPending)
                 return;
+#if DEBUG
+            long profileStart = Debugging.FrameProfiler.Start();
+            int profiledSprites = 0;
+            bool profiledUpload = false;
+#endif
             try
             {
                 var spriteList = PrepareSpritesForRender(RenderFrame(GetSprites));
@@ -1289,6 +1294,10 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 var renderOpacity = GetRenderOpacity();
                 bool published = PublishProxyFrame(spriteList);
                 bool uploaded = UpdateUploadedFrame(renderList, backgroundColor, renderOpacity, currentFrame);
+#if DEBUG
+                profiledSprites = renderList.Count;
+                profiledUpload = uploaded;
+#endif
                 if (published || uploaded)
                     NotifyRendered();
                 if (!uploaded)
@@ -1330,6 +1339,14 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             {
                 OnException(e);
             }
+#if DEBUG
+            finally
+            {
+                Debugging.FrameProfiler.EndRender(profileStart,
+                    GetType().Name + " @ " + ((Block as Sandbox.ModAPI.IMyTerminalBlock)?.CustomName ?? "?"),
+                    profiledSprites, profiledUpload);
+            }
+#endif
         }
 
         /// <summary>
@@ -1482,14 +1499,27 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             }
         }
 
+        LcdTextMetrics _boundsTextMetrics;
+        readonly List<MySprite> _clippedFrame = new List<MySprite>();
+
+        /// <summary>
+        /// Keeps only the sprites that can show on this surface: textures and text touching the active clip (the latest
+        /// clip rect intersected with the surface), and the clip rects they need. A render proxy receives its host's
+        /// whole frame, so without this any change elsewhere on the host made every proxy upload again.
+        /// </summary>
         List<MySprite> ClipSpriteListToSurfaceBounds(List<MySprite> sprites)
         {
             if (!ClipToBounds || sprites == null || sprites.Count == 0)
                 return sprites;
 
             var renderBounds = new RectangleF(0f, 0f, _textureSize.X, _textureSize.Y);
-            var renderSprites = new List<MySprite>(sprites.Count);
+            // Used only within this render; the upload and async paths copy it.
+            var renderSprites = _clippedFrame;
+            renderSprites.Clear();
             bool skipClippedSprites = false;
+            RectangleF activeBounds = renderBounds;
+            if (_boundsTextMetrics == null && Surface != null)
+                _boundsTextMetrics = new LcdTextMetrics(Surface);
 
             for (int i = 0; i < sprites.Count; i++)
             {
@@ -1498,6 +1528,8 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 if (!TryPrepareHostSpriteForRender(
                         sourceSprite,
                         renderBounds,
+                        _boundsTextMetrics,
+                        ref activeBounds,
                         ref skipClippedSprites,
                         out sprite))
                 {
@@ -1507,6 +1539,10 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                     continue;
                 }
 
+                // A clip rect followed by nothing visible is superseded by the next one.
+                if (sprite.Type == SpriteType.CLIP_RECT && renderSprites.Count > 0 &&
+                    renderSprites[renderSprites.Count - 1].Type == SpriteType.CLIP_RECT)
+                    renderSprites.RemoveAt(renderSprites.Count - 1);
                 renderSprites.Add(sprite);
 #if DEBUG
                 AddVisibleClipDebugSprites(sourceSprite, sprite, renderSprites);
@@ -1594,6 +1630,8 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         static bool TryPrepareHostSpriteForRender(
             MySprite sprite,
             RectangleF renderBounds,
+            LcdTextMetrics textMetrics,
+            ref RectangleF activeBounds,
             ref bool skipClippedSprites,
             out MySprite renderSprite)
         {
@@ -1603,6 +1641,9 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             {
                 bool keepClip = TryClipRectToRenderBounds(sprite, renderBounds, out renderSprite);
                 skipClippedSprites = !keepClip;
+                activeBounds = keepClip && renderSprite.Position.HasValue && renderSprite.Size.HasValue
+                    ? new RectangleF(renderSprite.Position.Value, renderSprite.Size.Value)
+                    : renderBounds;
                 return keepClip;
             }
 
@@ -1613,10 +1654,28 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             {
                 sprite = NormalizeTextureSprite(sprite, renderBounds);
                 renderSprite = sprite;
-                return TextureTouches(sprite, renderBounds);
+                return TextureTouches(sprite, activeBounds);
             }
 
+            if (sprite.Type == SpriteType.TEXT && textMetrics != null)
+                return TextTouches(sprite, textMetrics, activeBounds);
+
             return true;
+        }
+
+        static bool TextTouches(MySprite sprite, LcdTextMetrics textMetrics, RectangleF bounds)
+        {
+            if (!sprite.Position.HasValue || string.IsNullOrEmpty(sprite.Data))
+                return true;
+
+            Vector2 size = textMetrics.Measure(sprite.FontId ?? "White", sprite.Data, sprite.RotationOrScale);
+            Vector2 position = sprite.Position.Value;
+            float left = position.X;
+            if (sprite.Alignment == TextAlignment.CENTER)
+                left -= size.X * 0.5f;
+            else if (sprite.Alignment == TextAlignment.RIGHT)
+                left -= size.X;
+            return RectanglesTouch(new RectangleF(left, position.Y, size.X, size.Y), bounds);
         }
 
         static bool TextureTouches(MySprite sprite, RectangleF renderBounds)
@@ -1888,6 +1947,18 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             });
         }
 #endif
+
+        readonly List<MySprite> _frameSprites = new List<MySprite>();
+
+        /// <summary>
+        /// This script's sprite list for the frame being built, cleared and reused so a redraw does not reallocate and
+        /// regrow it. Every consumer copies the frame before the next one is built.
+        /// </summary>
+        protected List<MySprite> BeginFrameSprites()
+        {
+            _frameSprites.Clear();
+            return _frameSprites;
+        }
 
         public virtual List<MySprite> GetSprites()
         {

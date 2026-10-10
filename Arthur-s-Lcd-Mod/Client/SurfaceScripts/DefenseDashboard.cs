@@ -48,7 +48,7 @@ namespace LcdMod.Client.SurfaceScripts
 
         public override List<MySprite> GetSprites()
         {
-            var sprites = new List<MySprite>();
+            var sprites = BeginFrameSprites();
             if (_app == null || !_app.HasData)
             {
                 AddEmptySprites(sprites);
