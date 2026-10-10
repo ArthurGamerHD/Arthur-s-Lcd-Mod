@@ -28,6 +28,7 @@ namespace LcdMod.Client.Debugging
         static int _scrolls;
         static int _pageChanges;
         static int _errors;
+        static bool _lookAtAll;
 
         sealed class ScreenState
         {
@@ -42,7 +43,7 @@ namespace LcdMod.Client.Debugging
             DeleteLock();
         }
 
-        public static void Start()
+        public static void Start(bool lookAtAll)
         {
             if (IsRunning)
             {
@@ -88,9 +89,11 @@ namespace LcdMod.Client.Debugging
             }
 
             _screens = screens;
+            _lookAtAll = lookAtAll;
             _frames = _lookAts = _scrolls = _pageChanges = _errors = 0;
             Clock.Restart();
-            LogHelper.LogInfo("[ScreenBenchmark] Started 15-second run; screens=" + screens.Count + ", seed=" + Seed);
+            LogHelper.LogInfo("[ScreenBenchmark] Started 15-second run; screens=" + screens.Count + ", seed=" + Seed +
+                              ", look-at=" + (lookAtAll ? "all screens" : "one screen per frame"));
             MyAPIGateway.Utilities.ShowNotification("Screen benchmark started (15 s, " + screens.Count + " screens)");
             LcdModClientComponent.RunNextFrame.Add(Update);
         }
@@ -127,11 +130,15 @@ namespace LcdMod.Client.Debugging
 
             try
             {
-                foreach (ScreenState state in _screens)
+                // A player looks at one screen at a time: one screen per frame gets the look-at (input and hit-test
+                // layout), the rest only request a render, so the run measures rendering rather than pointer work.
+                int lookedAt = _frames % _screens.Count;
+                for (int i = 0; i < _screens.Count; i++)
                 {
+                    ScreenState state = _screens[i];
                     try
                     {
-                        RunScreen(state);
+                        RunScreen(state, _lookAtAll || i == lookedAt);
                     }
                     catch (Exception e)
                     {
@@ -155,7 +162,7 @@ namespace LcdMod.Client.Debugging
                 LcdModClientComponent.RunNextFrame.Add(Update);
         }
 
-        static void RunScreen(ScreenState state)
+        static void RunScreen(ScreenState state, bool lookAt)
         {
             InteractiveSurfaceScript screen = state.Screen;
             if (screen.Block == null || screen.Block.Closed || screen.Block.MarkedForClose)
@@ -186,6 +193,11 @@ namespace LcdMod.Client.Debugging
                 }
             }
 
+            if (!lookAt)
+            {
+                screen.RenderSprites();
+                return;
+            }
             screen.LookAt(position);
             _lookAts++;
         }

@@ -19,6 +19,9 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
     public abstract partial class InteractiveSurfaceScript : SurfaceScriptBase, IEyeTracking
     {
         public event Action<InteractiveSurfaceScript, List<MySprite>> OnRenderOverlay;
+
+        // Overlay handlers (FTUE tips) keep shared state, so screens showing one render on the main thread.
+        internal override bool CanRenderInParallel => base.CanRenderInParallel && OnRenderOverlay == null;
         public event Action<InteractiveSurfaceScript, Vector2> OnVisualContact;
 
         const long CURSOR_VISUAL_CONTACT_TIMEOUT_FRAMES = 6;
@@ -115,17 +118,10 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                                       App != null && App.IsDirty;
                 if (RenderContinuouslyWhileLookedAt || contentChanged)
                 {
-                    _renderCursorOnly = !contentChanged && CanReuseContentFrame();
-                    if (!_renderCursorOnly)
+                    bool cursorOnly = !contentChanged && CanReuseContentFrame();
+                    if (!cursorOnly)
                         LogFullRenderReason(!hadRecentVisualContact, pointerChanged, App != null && App.IsDirty);
-                    try
-                    {
-                        RenderSprites();
-                    }
-                    finally
-                    {
-                        _renderCursorOnly = false;
-                    }
+                    RequestRender(false, cursorOnly);
                 }
             }
             catch (Exception e)
@@ -256,7 +252,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         readonly List<MySprite> _contentFrame = new List<MySprite>();
         readonly List<MySprite> _cursorFrame = new List<MySprite>();
         bool _hasContentFrame;
-        bool _renderCursorOnly;
 
         /// <summary>
         /// Logs, at most every few seconds, why a looked-at screen redraws its whole content instead of only the cursor.
@@ -292,7 +287,8 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         {
             UpdateCursor();
 
-            if (_renderCursorOnly && _hasContentFrame)
+            // Rechecked here: the render may run later in the frame, after something else changed the content.
+            if (RenderingCursorOnly && CanReuseContentFrame())
             {
                 _cursorFrame.Clear();
                 _cursorFrame.AddRange(_contentFrame);

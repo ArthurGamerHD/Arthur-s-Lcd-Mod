@@ -86,6 +86,10 @@ namespace LcdMod.Client.SurfaceScripts
         }
 
 
+        protected override bool RendersInParallel => true;
+
+
+
         public override List<MySprite> GetSprites()
         {
             var sprites = BeginFrameSprites();

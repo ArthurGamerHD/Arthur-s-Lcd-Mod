@@ -12,12 +12,13 @@ namespace LcdMod.Client.ChatCommands
 #if DEBUG
         /// <summary>
         /// Runs a deterministic 15-second look-at, scroll, and carousel workload on every local interactive LCD.
-        /// Running it again cancels the benchmark.
+        /// One screen per frame is looked at unless <paramref name="allScreens"/> is true. Running it again cancels
+        /// the benchmark.
         /// </summary>
         [ChatCommand("BenchmarkScreens")]
-        public static void BenchmarkScreens()
+        public static void BenchmarkScreens(bool? allScreens)
         {
-            Debugging.ScreenBenchmark.Start();
+            Debugging.ScreenBenchmark.Start(allScreens ?? false);
         }
 
         /// <summary>
@@ -49,6 +50,17 @@ namespace LcdMod.Client.ChatCommands
                 service.Open();
             else
                 service.Close();
+        }
+
+        /// <summary>
+        /// Switches between rendering eligible screens on worker threads and one after another, to compare them.
+        /// </summary>
+        [ChatCommand("ParallelRender")]
+        public static void ParallelRender(bool? enabled)
+        {
+            bool enable = enabled ?? !SurfaceScripts.Abstract.SurfaceScriptBase.ParallelRendering;
+            SurfaceScripts.Abstract.SurfaceScriptBase.ParallelRendering = enable;
+            MyAPIGateway.Utilities.ShowNotification("Parallel screen rendering " + (enable ? "on" : "off"));
         }
 
         /// <summary>

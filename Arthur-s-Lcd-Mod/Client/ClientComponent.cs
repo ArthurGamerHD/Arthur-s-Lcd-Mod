@@ -183,6 +183,7 @@ namespace LcdMod.Client
             RunNextFrame.Clear();
             RunThisFrame.Clear();
             Blocker.Clear();
+            SurfaceScriptBase.ClearFrameRenders();
             RunOnePerFrame.Clear();
             InventoryWorkScheduler.Clear();
             AdkFluentStyles.Reset();
@@ -193,6 +194,7 @@ namespace LcdMod.Client
 
         public void UpdateBeforeSimulation()
         {
+            SurfaceScriptBase.BeginFrameRenders();
             try
             {
                 {
@@ -340,6 +342,16 @@ namespace LcdMod.Client
             }
             catch (Exception e)
             {
+                ErrorHandlerHelper.LogError(e, _session);
+            }
+
+            try
+            {
+                SurfaceScriptBase.FlushFrameRenders();
+            }
+            catch (Exception e)
+            {
+                SurfaceScriptBase.ClearFrameRenders();
                 ErrorHandlerHelper.LogError(e, _session);
             }
             

@@ -233,8 +233,10 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         static void ScheduleAnimationFrame(Action action)
         {
+            // Animations can start while a screen renders on a worker thread.
             if (action != null)
-                LcdModClientComponent.RunNextFrame.Add(action);
+                lock (LcdModClientComponent.RunNextFrame)
+                    LcdModClientComponent.RunNextFrame.Add(action);
         }
 
         void DrawSplash()
@@ -1170,15 +1172,19 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         public void AddBackground(List<MySprite> frame, Color? color = null)
         {
-            if (!_backgroundGrids.Any())
-            {
-                var backgroundColor = new Color(color ?? BackgroundColor, 0.66f);
-                var frameTemp = Surface.DrawFrame();
-                AddTiledBackground(frameTemp, backgroundColor);
-                frameTemp.AddToList(_backgroundGrids);
-            }
-
+            EnsureBackgroundGrids(color);
             frame.AddRange(_backgroundGrids);
+        }
+
+        /// <summary>Builds the tiled background once; it asks the game for a draw frame, so parallel renders warm it first.</summary>
+        void EnsureBackgroundGrids(Color? color)
+        {
+            if (_backgroundGrids.Count > 0)
+                return;
+            var backgroundColor = new Color(color ?? BackgroundColor, 0.66f);
+            var frameTemp = Surface.DrawFrame();
+            AddTiledBackground(frameTemp, backgroundColor);
+            frameTemp.AddToList(_backgroundGrids);
         }
 
         void AddTiledBackground(MySpriteDrawFrame frame, Color color)
@@ -1275,15 +1281,199 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         public void RenderSprites(bool force)
         {
+            RequestRender(force, false);
+        }
+
+        static readonly List<SurfaceScriptBase> QueuedRenders = new List<SurfaceScriptBase>();
+        static readonly List<SurfaceScriptBase> ParallelRenders = new List<SurfaceScriptBase>();
+        static readonly List<SurfaceScriptBase> LateRenders = new List<SurfaceScriptBase>();
+        static readonly List<SurfaceScriptBase> LateRendersSnapshot = new List<SurfaceScriptBase>();
+        static readonly Action<int> RenderQueuedInParallel = RenderParallelItem;
+        static bool _queueRenders;
+        static volatile bool _renderingInParallel;
+
+        /// <summary>Builds and uploads eligible queued screens on worker threads; off renders them one by one.</summary>
+        internal static bool ParallelRendering = true;
+
+        bool _renderQueued;
+        bool _queuedForce;
+        bool _queuedCursorOnly;
+        bool _inParallelBatch;
+        bool _parallelNotify;
+        Exception _parallelError;
+
+        /// <summary>True while the frame being rendered may reuse the previous content and only redraw the cursor.</summary>
+        protected bool RenderingCursorOnly { get; private set; }
+
+        /// <summary>
+        /// Whether this screen's whole render (layout, drawing and upload) touches only its own state, so it can run
+        /// on a worker thread while the rest of the game waits.
+        /// </summary>
+        protected virtual bool RendersInParallel => false;
+
+        internal virtual bool CanRenderInParallel => RendersInParallel && !_disposed;
+
+        /// <summary>
+        /// Renders now, or, during a game update, queues the screen for <see cref="FlushFrameRenders"/> so every
+        /// request of the frame (look-at, script runs, animations) becomes one render.
+        /// </summary>
+        protected void RequestRender(bool force, bool cursorOnly)
+        {
+            if (_renderingInParallel)
+            {
+                lock (LateRenders)
+                    if (!LateRenders.Contains(this))
+                        LateRenders.Add(this);
+                return;
+            }
+
+            if (_queueRenders)
+            {
+                if (_renderQueued)
+                {
+                    _queuedForce |= force;
+                    _queuedCursorOnly &= cursorOnly;
+                    return;
+                }
+                _renderQueued = true;
+                _queuedForce = force;
+                _queuedCursorOnly = cursorOnly;
+                QueuedRenders.Add(this);
+                return;
+            }
+
+            try
+            {
+                if (RenderNow(force, cursorOnly, true))
+                    NotifyRendered();
+            }
+            catch (Exception e)
+            {
+                OnException(e);
+            }
+        }
+
+        internal static void BeginFrameRenders()
+        {
+            _queueRenders = true;
+        }
+
+        /// <summary>
+        /// Renders the queued screens: eligible ones on worker threads, then the rest in order, render proxies last
+        /// so they mirror their hosts' new frames.
+        /// </summary>
+        internal static void FlushFrameRenders()
+        {
+            _queueRenders = false;
+            if (QueuedRenders.Count == 0)
+                return;
+
+            ParallelRenders.Clear();
+            if (ParallelRendering && MyAPIGateway.Parallel != null)
+            {
+                for (int i = 0; i < QueuedRenders.Count; i++)
+                {
+                    SurfaceScriptBase screen = QueuedRenders[i];
+                    if (!screen.CanRenderInParallel)
+                        continue;
+                    screen.EnsureBackgroundGrids(null);
+                    screen._inParallelBatch = true;
+                    screen._parallelNotify = false;
+                    screen._parallelError = null;
+                    ParallelRenders.Add(screen);
+                }
+            }
+
+            if (ParallelRenders.Count > 0)
+            {
+                _renderingInParallel = true;
+                try
+                {
+                    MyAPIGateway.Parallel.For(0, ParallelRenders.Count, RenderQueuedInParallel);
+                }
+                finally
+                {
+                    _renderingInParallel = false;
+                }
+            }
+
+            for (int i = 0; i < ParallelRenders.Count; i++)
+            {
+                SurfaceScriptBase screen = ParallelRenders[i];
+                screen._renderQueued = false;
+                screen._inParallelBatch = false;
+                try
+                {
+                    if (screen._parallelError != null)
+                        screen.OnException(screen._parallelError);
+                    else if (screen._parallelNotify)
+                        screen.NotifyRendered();
+                }
+                catch (Exception e)
+                {
+                    screen.OnException(e);
+                }
+            }
+
+            for (int pass = 0; pass < 2; pass++)
+            {
+                for (int i = 0; i < QueuedRenders.Count; i++)
+                {
+                    SurfaceScriptBase screen = QueuedRenders[i];
+                    if (!screen._renderQueued || (screen is RenderProxySurfaceScript) != (pass == 1))
+                        continue;
+                    screen._renderQueued = false;
+                    screen.RequestRender(screen._queuedForce, screen._queuedCursorOnly);
+                }
+            }
+            QueuedRenders.Clear();
+            ParallelRenders.Clear();
+
+            lock (LateRenders)
+            {
+                LateRendersSnapshot.AddRange(LateRenders);
+                LateRenders.Clear();
+            }
+            for (int i = 0; i < LateRendersSnapshot.Count; i++)
+                LateRendersSnapshot[i].RequestRender(false, false);
+            LateRendersSnapshot.Clear();
+        }
+
+        internal static void ClearFrameRenders()
+        {
+            _queueRenders = false;
+            QueuedRenders.Clear();
+            ParallelRenders.Clear();
+            lock (LateRenders)
+                LateRenders.Clear();
+        }
+
+        static void RenderParallelItem(int index)
+        {
+            SurfaceScriptBase screen = ParallelRenders[index];
+            try
+            {
+                screen._parallelNotify = screen.RenderNow(screen._queuedForce, screen._queuedCursorOnly, false);
+            }
+            catch (Exception e)
+            {
+                screen._parallelError = e;
+            }
+        }
+
+        /// <summary>Builds and uploads a frame; returns whether render listeners (such as proxies) must be told.</summary>
+        bool RenderNow(bool force, bool cursorOnly, bool allowAsync)
+        {
             var currentFrame = MyAPIGateway.Session.GameplayFrameCounter;
 
             if ((!force && LastRenderFrame == currentFrame) || WaitForFrame > currentFrame || _disposed || _asyncRenderPending)
-                return;
+                return false;
 #if DEBUG
             long profileStart = Debugging.FrameProfiler.Start();
             int profiledSprites = 0;
             bool profiledUpload = false;
 #endif
+            RenderingCursorOnly = cursorOnly;
             try
             {
                 var spriteList = PrepareSpritesForRender(RenderFrame(GetSprites));
@@ -1298,16 +1488,14 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 profiledSprites = renderList.Count;
                 profiledUpload = uploaded;
 #endif
-                if (published || uploaded)
-                    NotifyRendered();
                 if (!uploaded)
-                    return;
+                    return published;
 
 #if DEBUG
                 AddSpriteCountDebug(renderList);
 #endif
 
-                if (AsyncRender)
+                if (AsyncRender && allowAsync)
                 {
                     _asyncBuffer.Clear();
                     _asyncBuffer.AddRange(renderList);
@@ -1333,20 +1521,17 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                     _renderComp.RenderSpritesToTexture(RotationOrSurfaceIndex, renderList, _textureSize, _aspectRatio,
                         backgroundColor, renderOpacity);
                 }
-
+                return true;
             }
-            catch (Exception e)
-            {
-                OnException(e);
-            }
-#if DEBUG
             finally
             {
+                RenderingCursorOnly = false;
+#if DEBUG
                 Debugging.FrameProfiler.EndRender(profileStart,
                     GetType().Name + " @ " + ((Block as Sandbox.ModAPI.IMyTerminalBlock)?.CustomName ?? "?"),
                     profiledSprites, profiledUpload);
-            }
 #endif
+            }
         }
 
         /// <summary>

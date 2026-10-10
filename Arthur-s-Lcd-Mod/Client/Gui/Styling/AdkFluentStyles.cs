@@ -11,7 +11,8 @@ namespace LcdMod.Client.Gui.Styling
     internal static class AdkFluentStyles
     {
         static readonly TimeSpan UnknownSizeRetry = TimeSpan.FromSeconds(5);
-        static readonly Dictionary<string, Vector2> TextureSizes = new Dictionary<string, Vector2>(StringComparer.OrdinalIgnoreCase);
+        static readonly System.Collections.Concurrent.ConcurrentDictionary<string, Vector2> TextureSizes =
+            new System.Collections.Concurrent.ConcurrentDictionary<string, Vector2>(StringComparer.OrdinalIgnoreCase);
         static readonly Dictionary<string, DateTime> UnknownTextureSizes = new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
 
         internal static void ConfigureSourceLoader()
@@ -31,8 +32,11 @@ namespace LcdMod.Client.Gui.Styling
             Adk.Gui.Markup.HotReload.Log = null;
             Adk.Gui.Lcd.LcdTextureResolver.IsTextureDefined = null;
             Adk.Gui.Lcd.LcdTextureResolver.TextureSize = null;
-            TextureSizes.Clear();
-            UnknownTextureSizes.Clear();
+            lock (UnknownTextureSizes)
+            {
+                TextureSizes.Clear();
+                UnknownTextureSizes.Clear();
+            }
             LcdMod.Client.Gui.UserControls.BSoDQrCode.Release();
             Adk.Gui.Controls.Chrome.CaptionGlyphs.Release();
             Adk.Gui.Controls.WindowPlatforms.CaptionButtons = Adk.Gui.Controls.CaptionButtonsPlacement.Right;
@@ -62,7 +66,17 @@ namespace LcdMod.Client.Gui.Styling
                        VRage.Utils.MyStringHash.GetOrCompute(name)) != null;
         }
 
+        // Screens render in parallel; this cache is shared by all of them.
         static Vector2 GetTextureSize(string name)
+        {
+            Vector2 known;
+            if (TextureSizes.TryGetValue(name, out known))
+                return known;
+            lock (UnknownTextureSizes)
+                return GetTextureSizeLocked(name);
+        }
+
+        static Vector2 GetTextureSizeLocked(string name)
         {
             Vector2 size;
             if (TextureSizes.TryGetValue(name, out size))
@@ -78,7 +92,9 @@ namespace LcdMod.Client.Gui.Styling
                 return Vector2.Zero;
             }
             UnknownTextureSizes.Remove(name);
-            return TextureSizes[name] = new Vector2(pixels.X, pixels.Y);
+            var measured = new Vector2(pixels.X, pixels.Y);
+            TextureSizes[name] = measured;
+            return measured;
         }
 
         static string LoadSource(string source)

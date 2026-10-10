@@ -15,7 +15,8 @@ namespace LcdMod.Client.Gui.Styling.DataTemplates
 
         public static void InvalidateItemAssets()
         {
-            ItemNames.Clear();
+            lock (ItemNames)
+                ItemNames.Clear();
         }
 
         public static string GetItemDisplayName(ItemEntry item)
@@ -29,6 +30,12 @@ namespace LcdMod.Client.Gui.Styling.DataTemplates
         }
 
         static string ResolveItemName(MyItemType itemType)
+        {
+            lock (ItemNames)
+                return ResolveItemNameLocked(itemType);
+        }
+
+        static string ResolveItemNameLocked(MyItemType itemType)
         {
             string displayName;
             if (ItemNames.TryGetValue(itemType, out displayName))

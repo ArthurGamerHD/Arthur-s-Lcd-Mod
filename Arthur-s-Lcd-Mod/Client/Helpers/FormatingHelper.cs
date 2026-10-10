@@ -23,12 +23,16 @@ namespace LcdMod.Client.Helpers
         {
             Vector2 size;
             var key = text + font + fontSize;
-            if (FontSizeCache.TryGetValue(key, out size)) return size;
-            StringBuilderBuffer.Clear();
-            StringBuilderBuffer.Append(text);
-            size = surface.MeasureStringInPixels(StringBuilderBuffer, font, fontSize);
-            FontSizeCache[key] = size;
-            return size;
+            // The cache and the buffer are shared by screens rendering in parallel.
+            lock (FontSizeCache)
+            {
+                if (FontSizeCache.TryGetValue(key, out size)) return size;
+                StringBuilderBuffer.Clear();
+                StringBuilderBuffer.Append(text);
+                size = surface.MeasureStringInPixels(StringBuilderBuffer, font, fontSize);
+                FontSizeCache[key] = size;
+                return size;
+            }
         }
 
         /// <summary>

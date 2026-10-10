@@ -45,6 +45,13 @@ namespace LcdMod.Client.Helpers
 
         public static bool TryGetTextureSize(MyLCDTextureDefinition definition, out Vector2I size)
         {
+            // Screens render in parallel; the size cache is shared by all of them.
+            lock (Cache)
+                return TryGetTextureSizeLocked(definition, out size);
+        }
+
+        static bool TryGetTextureSizeLocked(MyLCDTextureDefinition definition, out Vector2I size)
+        {
             size = Vector2I.Zero;
             if (definition == null)
                 return false;
@@ -267,11 +274,12 @@ namespace LcdMod.Client.Helpers
             if (string.IsNullOrWhiteSpace(cacheKey) || size.X <= 0 || size.Y <= 0)
                 return;
 
-            Cache[NormalizeCacheKey(cacheKey)] = new CachedTextureSize
-            {
-                Found = true,
-                Size = size
-            };
+            lock (Cache)
+                Cache[NormalizeCacheKey(cacheKey)] = new CachedTextureSize
+                {
+                    Found = true,
+                    Size = size
+                };
         }
 
         static void TryDeleteTempTexture(string tempFileName)

@@ -27,14 +27,22 @@ namespace LcdMod.Client.Gui.Styling
 
     public static class ResourceKey
     {
-        static readonly Dictionary<string, ResourceKeyBase> Resources = new Dictionary<string, ResourceKeyBase>();
+        // Keys register once at startup but are looked up on every resource read, also by screens rendering in
+        // parallel; readers use the published snapshot without locking.
+        static volatile Dictionary<string, ResourceKeyBase> Resources = new Dictionary<string, ResourceKeyBase>();
+        static readonly object RegisterLock = new object();
         static int _nextId;
 
         public static ResourceKey<TValue> Register<TValue>(string name)
         {
-            var key = new ResourceKey<TValue>(_nextId++, name);
-            Resources.Add(name, key);
-            return key;
+            lock (RegisterLock)
+            {
+                var key = new ResourceKey<TValue>(_nextId++, name);
+                var next = new Dictionary<string, ResourceKeyBase>(Resources);
+                next.Add(name, key);
+                Resources = next;
+                return key;
+            }
         }
 
         public static ResourceKey<TValue> Get<TValue>(string name)

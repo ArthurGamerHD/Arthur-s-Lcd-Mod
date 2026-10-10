@@ -37,9 +37,12 @@ namespace LcdMod.Client.Debugging
             string parent = visual?.Parent == null ? "-" : visual.Parent.GetType().Name;
             string key = control.GetType().Name + (string.IsNullOrEmpty(control.StyleClass) ? "" : "." + control.StyleClass) +
                          " < " + parent + ": " + change;
-            int count;
-            Changes.TryGetValue(key, out count);
-            Changes[key] = count + 1;
+            lock (Screens)
+            {
+                int count;
+                Changes.TryGetValue(key, out count);
+                Changes[key] = count + 1;
+            }
         }
         static readonly List<ScreenCost> Sorted = new List<ScreenCost>();
         static long _windowStartFrame = -1;
@@ -79,6 +82,13 @@ namespace LcdMod.Client.Debugging
         public static void EndRender(long start, string screen, int sprites, bool uploaded)
         {
             long elapsed = Stopwatch.GetTimestamp() - start;
+            // Screens can render in parallel.
+            lock (Screens)
+                RecordRender(elapsed, screen, sprites, uploaded);
+        }
+
+        static void RecordRender(long elapsed, string screen, int sprites, bool uploaded)
+        {
             _renderTicks += elapsed;
             _renders++;
             ScreenCost cost;
