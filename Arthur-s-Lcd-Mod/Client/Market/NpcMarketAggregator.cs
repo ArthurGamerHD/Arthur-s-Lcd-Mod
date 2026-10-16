@@ -366,7 +366,7 @@ namespace LcdMod.Client.Market
 
         static Vector3D GetViewerPosition()
         {
-            var player = MyAPIGateway.Session?.LocalHumanPlayer;
+            var player = MyAPIGateway.Session.LocalHumanPlayer;
             return player?.GetPosition() ?? Vector3D.Zero;
         }
 

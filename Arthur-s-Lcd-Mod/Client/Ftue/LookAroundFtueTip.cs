@@ -32,7 +32,7 @@ namespace LcdMod.Client.Ftue
 
         public LookAroundFtueTip() : base(TIP_ID, typeof(IApp))
         {
-            _lookAroundControl = MyAPIGateway.Input?.GetGameControl(MyStringId.GetOrCompute("LOOKAROUND"));
+            _lookAroundControl = MyAPIGateway.Input.GetGameControl(MyStringId.GetOrCompute("LOOKAROUND"));
         }
 
         internal override void OnHooked(InteractiveSurfaceScript surface, IApp app)

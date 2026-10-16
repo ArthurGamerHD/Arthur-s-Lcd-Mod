@@ -40,7 +40,7 @@ namespace LcdMod.Client.GridData
         {
             sample = default(GridRoomEnvironmentSample);
             if (block == null || block.MarkedForClose || block.CubeGrid == null ||
-                block.CubeGrid.EntityId != _owner.Grid.EntityId || MyAPIGateway.Session == null)
+                block.CubeGrid.EntityId != _owner.Grid.EntityId)
             {
                 return false;
             }

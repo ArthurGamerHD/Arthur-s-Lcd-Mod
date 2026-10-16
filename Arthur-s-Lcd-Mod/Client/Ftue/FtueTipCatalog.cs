@@ -350,7 +350,7 @@ namespace LcdMod.Client.Ftue
         static string GetTextureStoragePath()
         {
             var utilities = MyAPIGateway.Utilities;
-            if (utilities?.GamePaths == null)
+            if (utilities.GamePaths == null)
                 return "%AppData%\\SpaceEngineers\\Storage";
 
             return Path.Combine(

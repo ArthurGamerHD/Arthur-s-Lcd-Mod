@@ -55,9 +55,6 @@ namespace LcdMod.Client.Audio
             }
 
             var utilities = MyAPIGateway.Utilities;
-            if (utilities == null)
-                return;
-
             if (!utilities.FileExistsInLocalStorage(fileName, typeof(AudioPocService)))
             {
                 Show("Local WAV file not found: " + fileName, "Red");
@@ -274,9 +271,7 @@ namespace LcdMod.Client.Audio
 
         bool EnsurePlayerEmitter()
         {
-            var player = MyAPIGateway.Session != null
-                ? MyAPIGateway.Session.LocalHumanPlayer
-                : null;
+            var player = MyAPIGateway.Session.LocalHumanPlayer;
             if (player == null)
             {
                 Show("Local player is not ready.", "Red");
@@ -334,7 +329,7 @@ namespace LcdMod.Client.Audio
 
         static void Show(string text, string font = "White")
         {
-            MyAPIGateway.Utilities?.ShowNotification(text, 5000, font);
+            MyAPIGateway.Utilities.ShowNotification(text, 5000, font);
         }
     }
 }

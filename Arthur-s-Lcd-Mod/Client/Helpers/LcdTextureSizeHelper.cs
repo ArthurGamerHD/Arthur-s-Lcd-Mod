@@ -444,7 +444,7 @@ namespace LcdMod.Client.Helpers
                 if (!Path.IsPathRooted(contentPath))
                 {
                     var session = MyAPIGateway.Session;
-                    if (session != null && session.Mods != null)
+                    if (session.Mods != null)
                     {
                         for (int i = 0; i < session.Mods.Count; i++)
                             AddSourceCandidate(result, Path.Combine(session.Mods[i].GetPath(), contentPath));

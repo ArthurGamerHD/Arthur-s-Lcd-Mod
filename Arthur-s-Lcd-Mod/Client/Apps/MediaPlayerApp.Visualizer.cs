@@ -24,8 +24,7 @@ namespace LcdMod.Client.Apps
         internal string MediaVisualizerTexture => _textureVisualizer?.CurrentTexture?.MaterialKey;
 
         bool CanRenderVisualizer => !_visualizerClosed && !_visualizerDetached && _interactiveHost != null &&
-            _nativeViewModel.ShowVisualizer && MyAPIGateway.GeneratedTextures != null &&
-            MyAPIGateway.GeneratedTextures.IsSupported;
+            _nativeViewModel.ShowVisualizer && MyAPIGateway.GeneratedTextures.IsSupported;
 
         bool NeedsVisualizerFrames => CanRenderVisualizer && _visualizerSilentTicks < 120;
 
@@ -161,9 +160,7 @@ namespace LcdMod.Client.Apps
 
         VisualizerRenderSize GetVisualizerRenderSize()
         {
-            int maxSide = MyAPIGateway.GeneratedTextures == null
-                ? AudioVisualizerOptions.MaximumTextureSize
-                : MyAPIGateway.GeneratedTextures.MaxTextureSide;
+            int maxSide = MyAPIGateway.GeneratedTextures.MaxTextureSide;
 
             if (maxSide <= 0)
                 maxSide = AudioVisualizerOptions.DefaultTextureSize;

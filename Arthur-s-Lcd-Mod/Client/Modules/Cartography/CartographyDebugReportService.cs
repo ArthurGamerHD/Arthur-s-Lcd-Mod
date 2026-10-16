@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text;
+using LcdMod.Client;
 using LcdMod.Common.Helpers;
 using Adk.Compression.Zip;
 using Sandbox.Definitions;
@@ -12,7 +13,7 @@ using Sandbox.ModAPI;
 using VRage.Game;
 using VRageMath;
 
-namespace LcdMod.Client.Modules.Cartography
+namespace Cartography
 {
     internal sealed class CartographyDebugReportService
     {
@@ -670,8 +671,7 @@ namespace LcdMod.Client.Modules.Cartography
 
         static void Show(string text, string font = "White")
         {
-            if (MyAPIGateway.Utilities != null)
-                MyAPIGateway.Utilities.ShowNotification(text, 5000, font);
+            MyAPIGateway.Utilities.ShowNotification(text, 5000, font);
         }
 
         static void WriteInt16(byte[] target, int offset, int value)

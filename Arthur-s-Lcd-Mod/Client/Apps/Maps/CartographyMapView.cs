@@ -384,7 +384,7 @@ namespace LcdMod.Client.Apps.Maps
         static int CurrentFrame()
         {
             var session = MyAPIGateway.Session;
-            return session == null ? 0 : session.GameplayFrameCounter;
+            return session.GameplayFrameCounter;
         }
 
         void Release()

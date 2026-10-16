@@ -65,8 +65,8 @@ namespace LcdMod.Client.Terminal.Controls.Gps
 
             gpsEntries.Clear();
             var session = MyAPIGateway.Session;
-            var player = session == null ? null : session.Player;
-            if (session == null || session.GPS == null || player == null)
+            var player = session.Player;
+            if (session.GPS == null || player == null)
                 return;
 
             session.GPS.GetGpsList(player.IdentityId, gpsEntries);

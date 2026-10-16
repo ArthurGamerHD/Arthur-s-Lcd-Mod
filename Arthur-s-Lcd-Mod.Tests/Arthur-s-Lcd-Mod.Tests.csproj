@@ -79,8 +79,4 @@
   <Import Project="..\External\Adk\Adk.Compression\Adk.Compression.projitems" Label="Shared" />
   <Import Project="..\External\Adk\Adk.Image\Adk.Image.projitems" Label="Shared" />
 
-  <ItemGroup>
-    <Compile Remove="$(MSBuildThisFileDirectory)..\External\Adk\Adk.Image\Imaging\RawRgbaBitmap.cs" />
-  </ItemGroup>
-
 </Project>

@@ -1239,6 +1239,9 @@ Pričekat ćemo neko vrijeme, a zatim je ponovno pokrenuti za vas.</value>
   <data name="LcdMod_PlanetaryMap_Water_Title" xml:space="preserve">
     <value>Voda</value>
   </data>
+  <data name="LcdMod_PlanetaryMap_Roads_Title" xml:space="preserve">
+    <value>Ceste</value>
+  </data>
   <data name="LcdMod_PlanetaryMap_StreetView_Title" xml:space="preserve">
     <value>Ulični prikaz</value>
   </data>

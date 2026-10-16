@@ -106,7 +106,7 @@ namespace LcdMod.Client.Apps
             _projectorViewModel.UpdateProjector(Block?.CubeGrid, ProjectorReferenceComponent.EntityId, _mode);
             if (_projectorViewModel.Projector?.CustomName != _customTitle) LayoutChanged();
             RefreshPresentation();
-            if (_nativeView.AdvanceAutoScroll(MyAPIGateway.Session == null ? 0 : MyAPIGateway.Session.GameplayFrameCounter,
+            if (_nativeView.AdvanceAutoScroll(MyAPIGateway.Session.GameplayFrameCounter,
                 InteractionComponent.AutoScrollStep)) MarkDirty();
 
             if (!_projectorDataInitialized && ProjectorReferenceComponent.EntityId != 0 && _projectorViewModel.Projector == null)

@@ -48,9 +48,9 @@ namespace LcdMod.Client.Helpers
             _markerIndexByEntityId.Clear();
 
             var session = MyAPIGateway.Session;
-            var player = session == null ? null : session.Player;
+            var player = session.Player;
             var receiverGrid = receiverBlock == null ? null : receiverBlock.CubeGrid;
-            if (receiverBlock == null || receiverGrid == null || player == null || MyAPIGateway.Entities == null)
+            if (receiverBlock == null || receiverGrid == null || player == null)
                 return;
 
             Vector3D receiverPosition = receiverBlock.WorldMatrix.Translation;

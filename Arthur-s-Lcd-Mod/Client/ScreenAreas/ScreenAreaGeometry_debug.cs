@@ -20,7 +20,7 @@ namespace LcdMod.Client.ScreenAreas
 
         public static void DebugDraw()
         {
-            if (MyAPIGateway.Utilities != null && MyAPIGateway.Utilities.IsDedicated)
+            if (MyAPIGateway.Utilities.IsDedicated)
                 return;
 
             if (_drawTick == 0)
@@ -114,9 +114,6 @@ namespace LcdMod.Client.ScreenAreas
             direction = Vector3D.Zero;
 
             var session = MyAPIGateway.Session;
-            if (session == null)
-                return false;
-
             var camera = session.Camera;
             if (camera != null)
             {
@@ -147,9 +144,6 @@ namespace LcdMod.Client.ScreenAreas
         static void DrawDebugText(DebugHitInfo hit)
         {
             var utilities = MyAPIGateway.Utilities;
-            if (utilities == null)
-                return;
-
             if (_debugNotifications.Count == 0)
             {
                 _debugNotifications.Add(utilities.CreateNotification("ScreenArea debug 0", 100, MyFontEnum.Green));

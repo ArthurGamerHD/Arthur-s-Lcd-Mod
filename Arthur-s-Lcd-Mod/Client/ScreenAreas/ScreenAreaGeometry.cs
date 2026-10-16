@@ -100,7 +100,7 @@ namespace LcdMod.Client.ScreenAreas
                 return false;
 
             var session = MyAPIGateway.Session;
-            var camera = session?.Camera;
+            var camera = session.Camera;
             if (camera == null)
                 return false;
 
@@ -990,7 +990,7 @@ namespace LcdMod.Client.ScreenAreas
                 return null;
 
             var candidates = BuildContentPathCandidates(content);
-            if (MyAPIGateway.Session != null && MyAPIGateway.Session.Mods != null)
+            if (MyAPIGateway.Session.Mods != null)
             {
                 for (int i = 0; i < candidates.Count; i++)
                 {

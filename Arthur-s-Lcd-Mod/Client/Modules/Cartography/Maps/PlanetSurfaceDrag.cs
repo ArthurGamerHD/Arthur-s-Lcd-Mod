@@ -1,7 +1,7 @@
 using System;
 using VRageMath;
 
-namespace LcdMod.Client.Apps.Maps
+namespace Cartography.Maps
 {
     /// <summary>Rotates an orthographic globe while preserving the surface point grabbed on mouse-down.</summary>
     internal sealed class PlanetSurfaceDrag

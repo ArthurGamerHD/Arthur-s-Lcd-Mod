@@ -104,7 +104,7 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        static long CurrentFrame => MyAPIGateway.Session != null ? MyAPIGateway.Session.GameplayFrameCounter : 0L;
+        static long CurrentFrame => MyAPIGateway.Session.GameplayFrameCounter;
 
         public override List<MySprite> GetSprites()
         {
@@ -145,9 +145,7 @@ namespace LcdMod.Client.Apps
         {
             try
             {
-                var source = MyAPIGateway.Entities != null
-                    ? MyAPIGateway.Entities.GetEntityById(entityId) as IMyTerminalBlock
-                    : null;
+                var source = MyAPIGateway.Entities.GetEntityById(entityId) as IMyTerminalBlock;
                 if (source == null || !source.HasInventory)
                     return;
 

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Adk.Gui.Rendering;
 using VRageMath;
 
-namespace LcdMod.Client.Modules.Cartography.Maps
+namespace Cartography.Maps
 {
     /// <summary>
     /// Captured raster work. Commands read only captured values and immutable cubemaps;

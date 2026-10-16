@@ -11,9 +11,6 @@ namespace LcdMod.Common.Market
         public static long NowElapsedTicks()
         {
             var session = MyAPIGateway.Session;
-            if (session == null)
-                return 0L;
-
             return (session.GameDateTime - Epoch).Ticks;
         }
 

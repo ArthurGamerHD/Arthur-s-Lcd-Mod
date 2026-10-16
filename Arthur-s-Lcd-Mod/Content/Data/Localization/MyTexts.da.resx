@@ -1240,6 +1240,9 @@ Vi venter et øjeblik og genstarter den derefter for dig.</value>
   <data name="LcdMod_PlanetaryMap_Water_Title" xml:space="preserve">
     <value>Vand</value>
   </data>
+  <data name="LcdMod_PlanetaryMap_Roads_Title" xml:space="preserve">
+    <value>Veje</value>
+  </data>
   <data name="LcdMod_PlanetaryMap_StreetView_Title" xml:space="preserve">
     <value>Gadevisning</value>
   </data>

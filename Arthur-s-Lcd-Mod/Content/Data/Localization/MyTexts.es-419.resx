@@ -1239,6 +1239,9 @@ Esperaremos un momento y luego la reiniciaremos por ti.</value>
   <data name="LcdMod_PlanetaryMap_Water_Title" xml:space="preserve">
     <value>Agua</value>
   </data>
+  <data name="LcdMod_PlanetaryMap_Roads_Title" xml:space="preserve">
+    <value>Carreteras</value>
+  </data>
   <data name="LcdMod_PlanetaryMap_StreetView_Title" xml:space="preserve">
     <value>Vista de calle</value>
   </data>

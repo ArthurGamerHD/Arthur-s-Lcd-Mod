@@ -173,7 +173,7 @@ namespace LcdMod.Client.Helpers
             gridBuilder.Editable = false;
             gridBuilder.DestructibleBlocks = false;
             gridBuilder.CubeBlocks.Add(blockBuilder);
-            var matrix = MyAPIGateway.Session?.LocalHumanPlayer?.Character?.PositionComp?.WorldMatrixRef;
+            var matrix = MyAPIGateway.Session.LocalHumanPlayer?.Character?.PositionComp?.WorldMatrixRef;
             gridBuilder.PositionAndOrientation = new MyPositionAndOrientation(matrix ?? MatrixD.Identity);
 
             MyAPIGateway.Utilities.InvokeOnGameThread(() =>
@@ -223,7 +223,7 @@ namespace LcdMod.Client.Helpers
                 if (Grid != null)
                     LcdModClientComponent.RunNextFrame.Add(Update);
 
-                var position = MyAPIGateway.Session?.LocalHumanPlayer?.GetPosition();
+                var position = MyAPIGateway.Session.LocalHumanPlayer?.GetPosition();
                 if(position != null && Grid != null)
                     Grid.SetPosition(position.Value);
             }

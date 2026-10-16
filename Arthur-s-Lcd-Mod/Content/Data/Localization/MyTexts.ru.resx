@@ -1239,6 +1239,9 @@
   <data name="LcdMod_PlanetaryMap_Water_Title" xml:space="preserve">
     <value>Вода</value>
   </data>
+  <data name="LcdMod_PlanetaryMap_Roads_Title" xml:space="preserve">
+    <value>Дороги</value>
+  </data>
   <data name="LcdMod_PlanetaryMap_StreetView_Title" xml:space="preserve">
     <value>Уличный вид</value>
   </data>

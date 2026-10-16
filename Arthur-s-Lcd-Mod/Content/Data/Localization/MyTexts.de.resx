@@ -1240,6 +1240,9 @@ Wir warten einen Moment und starten sie dann für dich neu.</value>
   <data name="LcdMod_PlanetaryMap_Water_Title" xml:space="preserve">
     <value>Wasser</value>
   </data>
+  <data name="LcdMod_PlanetaryMap_Roads_Title" xml:space="preserve">
+    <value>Straßen</value>
+  </data>
   <data name="LcdMod_PlanetaryMap_StreetView_Title" xml:space="preserve">
     <value>Straßenansicht</value>
   </data>

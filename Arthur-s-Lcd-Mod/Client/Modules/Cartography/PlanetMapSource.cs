@@ -1,15 +1,15 @@
 using System;
 using System.IO;
 using Adk.Image.Png;
+using ProceduralCubemapApi.Api;
 using Sandbox.ModAPI;
-using VoxelCubemapApi.Api;
 using VRageMath;
 using ArgumentOutOfRangeException = Adk.Compression.Exceptions.ArgumentOutOfRangeException;
 using InvalidDataException = Adk.Compression.Exceptions.InvalidDataException;
 
-namespace LcdMod.Client.Modules.Cartography
+namespace Cartography
 {
-    internal enum PlanetCubeFace
+    public enum PlanetCubeFace
     {
         Left = 0,
         Right = 1,
@@ -19,7 +19,7 @@ namespace LcdMod.Client.Modules.Cartography
         Front = 5
     }
 
-    internal sealed class PlanetMapSource
+    internal sealed partial class PlanetMapSource
     {
         public static readonly PlanetCubeFace[] ExportOrder =
         {

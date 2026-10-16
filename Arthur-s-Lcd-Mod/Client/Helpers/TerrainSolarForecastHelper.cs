@@ -154,9 +154,7 @@ namespace LcdMod.Client.Helpers
             if (grid == null || grid.Closed || grid.MarkedForClose || planet == null || planet.MarkedForClose)
                 return false;
 
-            long frame = MyAPIGateway.Session != null
-                ? MyAPIGateway.Session.GameplayFrameCounter
-                : long.MinValue;
+            long frame = MyAPIGateway.Session.GameplayFrameCounter;
             if (_terrainSolarReferenceFrame == frame &&
                 _terrainSolarReferenceGridId == grid.EntityId &&
                 _terrainSolarReferencePlanetId == planet.EntityId)
@@ -208,7 +206,7 @@ namespace LcdMod.Client.Helpers
 
         private IMyGravityProviderSystem GetTerrainSolarGravityProvider()
         {
-            if (_terrainSolarGravityProvider == null && MyAPIGateway.Session != null)
+            if (_terrainSolarGravityProvider == null)
             {
                 _terrainSolarGravityProvider = (IMyGravityProviderSystem)MyAPIGateway.Session
                     .GetComponentByInterfaceType<IMyGravityProviderSystem>();

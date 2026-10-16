@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Adk.Image;
 using VRageMath;
 
-namespace LcdMod.Client.Modules.Cartography
+namespace Cartography
 {
     internal sealed class PaintedPlanetFaces
     {

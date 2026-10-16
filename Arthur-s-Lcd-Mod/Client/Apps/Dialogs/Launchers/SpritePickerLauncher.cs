@@ -45,7 +45,7 @@ namespace LcdMod.Client.Apps.Dialogs.Launchers
         static bool IsDown(MyKeys any, MyKeys left, MyKeys right)
         {
             var input = MyAPIGateway.Input;
-            return input != null && (input.IsKeyPress(any) || input.IsKeyPress(left) || input.IsKeyPress(right));
+            return input.IsKeyPress(any) || input.IsKeyPress(left) || input.IsKeyPress(right);
         }
     }
 }

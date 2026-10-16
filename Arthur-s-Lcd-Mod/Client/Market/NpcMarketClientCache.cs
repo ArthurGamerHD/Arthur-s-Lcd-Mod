@@ -183,7 +183,7 @@ namespace LcdMod.Client.Market
             LogHelper.LogInfo("NPC market client sending request: request=" + requestId +
                               ", host=" + key.HostBlockEntityId + ", surface=" + key.HostSurfaceIndex +
                               ", noCache=" + noCache + ", localServer=" +
-                              (MyAPIGateway.Session != null && MyAPIGateway.Session.IsServer));
+                              MyAPIGateway.Session.IsServer);
 #endif
             var packet = new PacketRequestNpcMarket
             {
@@ -193,7 +193,7 @@ namespace LcdMod.Client.Market
                 HostSurfaceIndex = key.HostSurfaceIndex
             };
 
-            if (MyAPIGateway.Session != null && MyAPIGateway.Session.IsServer &&
+            if (MyAPIGateway.Session.IsServer &&
                 LcdModSessionComponent.Server != null)
             {
                 LcdModSessionComponent.Server.HandleLocalRequestNpcMarket(packet);

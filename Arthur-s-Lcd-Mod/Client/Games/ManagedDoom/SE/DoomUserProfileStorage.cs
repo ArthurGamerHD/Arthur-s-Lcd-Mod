@@ -27,9 +27,6 @@ namespace ManagedDoom.SE
                 return;
 
             var utilities = MyAPIGateway.Utilities;
-            if (utilities == null)
-                throw new InvalidOperationException("Space Engineers mod storage is unavailable.");
-
             if (utilities.FileExistsInLocalStorage(ArchiveName, typeof(LcdModClientComponent)))
             {
                 using (var reader = utilities.ReadBinaryFileInLocalStorage(ArchiveName, typeof(LcdModClientComponent)))
@@ -96,9 +93,6 @@ namespace ManagedDoom.SE
                     return;
 
                 var utilities = MyAPIGateway.Utilities;
-                if (utilities == null)
-                    throw new InvalidOperationException("Space Engineers mod storage is unavailable.");
-
                 using (var writer = utilities.WriteBinaryFileInLocalStorage(ArchiveName, typeof(LcdModClientComponent)))
                 {
                     if (writer == null)

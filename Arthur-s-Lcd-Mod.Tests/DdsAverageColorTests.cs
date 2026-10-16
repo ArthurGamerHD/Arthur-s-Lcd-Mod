@@ -113,10 +113,23 @@ public sealed class DdsAverageColorTests
 
 
     [Fact]
-    public void TryAverageSmallestMip_ReportsUnsupportedBc7Mode()
+    public void TryAverageSmallestMip_ReadsBc7Mode4()
     {
         byte[] dds = CreateEmptyBc7Dds();
         dds[148] = 1 << 4;
+        using var stream = new NonSeekableReadStream(dds);
+
+        Assert.True(DdsAverageColor.TryAverageSmallestMip(stream, out byte r, out byte g, out byte b));
+        Assert.Equal(0, r);
+        Assert.Equal(0, g);
+        Assert.Equal(0, b);
+    }
+
+    [Fact]
+    public void TryAverageSmallestMip_ReportsInvalidBc7ModeMarker()
+    {
+        byte[] dds = CreateEmptyBc7Dds();
+        dds[148] = 0;
         using var stream = new NonSeekableReadStream(dds);
 
         Assert.False(DdsAverageColor.TryAverageSmallestMip(
@@ -125,7 +138,7 @@ public sealed class DdsAverageColorTests
             out _,
             out _,
             out string failureReason));
-        Assert.Contains("unsupported mode 4", failureReason.ToLowerInvariant());
+        Assert.Contains("invalid mode marker", failureReason.ToLowerInvariant());
     }
 
     [Fact]

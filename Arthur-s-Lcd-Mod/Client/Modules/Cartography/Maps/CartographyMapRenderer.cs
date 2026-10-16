@@ -1,13 +1,14 @@
 using System;
 using System.Collections.Generic;
 using Jakaria.API;
+using Cartography;
 using Adk.Gui.Rendering;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRageMath;
 using VRage.Utils;
 
-namespace LcdMod.Client.Modules.Cartography.Maps
+namespace Cartography.Maps
 {
     public enum MapMode
     {
@@ -54,6 +55,7 @@ namespace LcdMod.Client.Modules.Cartography.Maps
         // mode transition so a panned/off-center focused planet does not jump.
         public Vector2 PlanetCenterOffsetNormalized;
         public bool WaterVisible = true;
+        public bool RoadsVisible = true;
         public bool RenderSkybox;
         public bool OrbitalLinesVisible = true;
         public CartographyLayer Layer = CartographyLayer.Satellite;
@@ -1597,6 +1599,8 @@ namespace LcdMod.Client.Modules.Cartography.Maps
             bool waterVisible = state.WaterVisible;
             frame.Commands.Add((target, first, end) => DrawGlobe(target, centerX, centerY, radius,
                 cubemap, view, right, up, waterVisible, firstRow: first, endRow: end));
+            if (state.RoadsVisible)
+                AddRoadLines(frame, planet, view, right, up, centerX, centerY, radius);
             if (state.Zoom <= 1.1f)
             {
                 PlanetSnapshot currentPlanet = data.FindPlayerPlanet();
@@ -1608,6 +1612,146 @@ namespace LcdMod.Client.Modules.Cartography.Maps
                     centerX, centerY, radius + 3, indicatorColor, first, end));
             }
 
+        }
+
+        // Built-road overlay style. Opacities are 0-255 and apply on top of the
+        // zoom fade below.
+        static readonly Color RoadFillColor = new Color(0xaa, 0xb4, 0xc8);
+        const byte RoadFillOpacity = 127;
+        static readonly Color RoadBorderColor = new Color(0x5e, 0x63, 0x6e);
+        const byte RoadBorderOpacity = 255;
+        const int RoadBorderPixels = 2;
+        // Roads narrower on screen than RoadFadeStartPixels fade out and vanish
+        // at RoadFadeEndPixels, so zooming out doesn't leave a web of bordered
+        // hairlines. The fade is logarithmic in width, i.e. linear in zoom
+        // steps: half opacity at the geometric mean (0.5px for 2px..0.125px).
+        const float RoadFadeStartPixels = 2f;
+        const float RoadFadeEndPixels = 0.125f;
+        // Mask values: high byte is the class (fill beats border), low byte the
+        // road's fade, so a plain max keeps the strongest covering road.
+        const int RoadMaskBorder = 1 << 8;
+        const int RoadMaskFill = 2 << 8;
+
+        /// <summary>
+        /// Built roads from the Voxel Cubemap API, drawn over the globe at their
+        /// physical width (one-pixel floor) with a border. Segments only; no
+        /// nodes, view only. Projection happens here; the strokes rasterize in
+        /// the row bands into a coverage mask that is blended once, so
+        /// overlapping segments and roads don't stack their translucency.
+        /// </summary>
+        void AddRoadLines(MapRenderFrame frame, PlanetSnapshot planet, Vector3 view,
+            Vector3 right, Vector3 up, int centerX, int centerY, int radius)
+        {
+            if (_cartography == null || radius <= 0 || planet.Radius <= 0f)
+                return;
+            IReadOnlyList<PlanetRoadLine> roads = _cartography.GetPlanetRoads(planet.Planet);
+            if (roads.Count == 0)
+                return;
+
+            Vector3D viewD = view;
+            Vector3D rightD = right;
+            Vector3D upD = up;
+            var points = new List<Vector2[]>(roads.Count);
+            var visibility = new List<bool[]>(roads.Count);
+            var fillRadii = new List<double>(roads.Count);
+            var fades = new List<byte>(roads.Count);
+            float minY = float.MaxValue;
+            float maxY = float.MinValue;
+            double maxOuterRadius = 0;
+            for (int r = 0; r < roads.Count; r++)
+            {
+                PlanetRoadLine road = roads[r];
+                // Unknown widths draw as a full-strength one-pixel road.
+                double pixelWidth = road.WidthMeters <= 0.0
+                    ? RoadFadeStartPixels
+                    : road.WidthMeters * radius / planet.Radius;
+                double fade = Math.Log(Math.Max(1e-9, pixelWidth) / RoadFadeEndPixels) /
+                              Math.Log(RoadFadeStartPixels / RoadFadeEndPixels);
+                byte fadeByte = (byte)Math.Round(255 * Math.Max(0, Math.Min(1, fade)));
+                if (fadeByte == 0)
+                    continue;
+
+                int samples = (int)Math.Max(16, Math.Min(1024, Math.Ceiling(road.Arc * radius * 2)));
+                var pixels = new Vector2[samples + 1];
+                var visible = new bool[samples + 1];
+                bool any = false;
+                for (int i = 0; i <= samples; i++)
+                {
+                    Vector3D direction = road.Evaluate(i / (double)samples);
+                    // Only the hemisphere facing the camera is drawn.
+                    if (Vector3D.Dot(direction, viewD) < 0.0)
+                        continue;
+                    var pixel = new Vector2(
+                        (float)(centerX + Vector3D.Dot(direction, rightD) * radius),
+                        (float)(centerY - Vector3D.Dot(direction, upD) * radius));
+                    pixels[i] = pixel;
+                    visible[i] = true;
+                    minY = Math.Min(minY, pixel.Y);
+                    maxY = Math.Max(maxY, pixel.Y);
+                    any = true;
+                }
+                if (!any)
+                    continue;
+                int width = (int)Math.Max(1, Math.Min(4096, Math.Round(pixelWidth)));
+                double fillRadius = Math.Max(Math.Sqrt(0.5), width / 2.0);
+                points.Add(pixels);
+                visibility.Add(visible);
+                fillRadii.Add(fillRadius);
+                fades.Add(fadeByte);
+                maxOuterRadius = Math.Max(maxOuterRadius, fillRadius + RoadBorderPixels);
+            }
+            if (points.Count == 0)
+                return;
+
+            int roadTop = (int)Math.Floor(minY - maxOuterRadius);
+            int roadBottom = (int)Math.Ceiling(maxY + maxOuterRadius) + 1;
+            frame.Commands.Add((target, first, end) =>
+            {
+                int top = Math.Max(first, Math.Max(0, roadTop));
+                int bottom = Math.Min(end, Math.Min(target.Height, roadBottom));
+                if (top >= bottom)
+                    return;
+                int width = target.Width;
+                var mask = new ushort[(bottom - top) * width];
+                // Each segment marks its outer capsule as border and its inner
+                // capsule as fill; the max keeps fill over any border.
+                for (int r = 0; r < points.Count; r++)
+                {
+                    Vector2[] pixels = points[r];
+                    bool[] visible = visibility[r];
+                    double fillRadius = fillRadii[r];
+                    ushort border = (ushort)(RoadMaskBorder | fades[r]);
+                    ushort fill = (ushort)(RoadMaskFill | fades[r]);
+                    for (int i = 1; i < pixels.Length; i++)
+                    {
+                        if (!visible[i - 1] || !visible[i])
+                            continue;
+                        if (RoadBorderPixels > 0)
+                            ScreenSpaceRoadStroke.Mark(mask, width, top, bottom,
+                                pixels[i - 1], pixels[i], fillRadius + RoadBorderPixels, border);
+                        ScreenSpaceRoadStroke.Mark(mask, width, top, bottom,
+                            pixels[i - 1], pixels[i], fillRadius, fill);
+                    }
+                }
+
+                Color fillColor = RoadFillColor;
+                fillColor.A = RoadFillOpacity;
+                Color borderColor = RoadBorderColor;
+                borderColor.A = RoadBorderOpacity;
+                for (int y = top; y < bottom; y++)
+                {
+                    int row = (y - top) * width;
+                    for (int x = 0; x < width; x++)
+                    {
+                        int value = mask[row + x];
+                        if (value == 0)
+                            continue;
+                        float coverage = (value & 0xff) / 255f;
+                        target.BlendPixel(x, y,
+                            value >= RoadMaskFill ? fillColor : borderColor, coverage);
+                    }
+                }
+            });
         }
 
         void AddSkyboxBackground(MapViewState state, Vector3 forwardWorld,
@@ -2488,7 +2632,7 @@ namespace LcdMod.Client.Modules.Cartography.Maps
         static bool AbortCameraHandoff(string handoff, string reason)
         {
             MyLog.Default.WriteLineAndConsole(string.Format(
-                "[Minimap] Camera handoff {0} aborted: {1}",
+                "[Cartography] Camera handoff {0} aborted: {1}",
                 handoff,
                 string.IsNullOrEmpty(reason) ? "unknown validation failure" : reason));
             return false;
@@ -2764,7 +2908,6 @@ namespace LcdMod.Client.Modules.Cartography.Maps
                 orbitUp, baseRight, baseUp, baseView);
             NormalizeProjection(ref view, ref right, ref up);
         }
-
 
         static Vector3 ComposeProjectionVector(
             Vector3 orbitVector,

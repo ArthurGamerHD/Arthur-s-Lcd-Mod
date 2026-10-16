@@ -25,6 +25,13 @@
   <Style Selector="ToggleButton.map-button:disabled Border.map-icon">
     <Setter Property="Background" Value="{DynamicResource disabledColor}" />
   </Style>
+  <!-- Road visibility: road-cyan fill while roads are shown (the default). -->
+  <Style Selector="ToggleButton.map-button.roads:checked">
+    <Setter Property="Background" Value="#55cdeb" />
+  </Style>
+  <Style Selector="ToggleButton.map-button.roads:checked Border.map-icon">
+    <Setter Property="Background" Value="#06222b" />
+  </Style>
   <Style Selector="Button.map-layer">
     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     <Setter Property="VerticalContentAlignment" Value="Stretch" />

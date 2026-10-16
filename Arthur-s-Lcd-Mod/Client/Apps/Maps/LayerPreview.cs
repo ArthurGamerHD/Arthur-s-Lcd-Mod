@@ -3,7 +3,7 @@ using Adk.Gui.Core;
 using Adk.Gui.Core.Invalidation;
 using Adk.Gui.Core.PropertySystem;
 using Adk.Gui.Rendering;
-using LcdMod.Client.Modules.Cartography;
+using Cartography;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.Maps

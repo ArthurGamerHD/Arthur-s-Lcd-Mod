@@ -43,6 +43,13 @@
         <Border Classes="map-icon" OpacityMask="{Binding WaterIcon}" />
       </ToggleButton>
     </StackPanel>
+    <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top" Margin="12" Spacing="8">
+      <ToggleButton Classes="map-button roads" IsVisible="{Binding RoadsToggleVisible}"
+                    IsChecked="{Binding IsRoadsShown}" Command="{Binding RoadsCommand}"
+                    ToolTip.Tip="{ext:loc LcdMod_PlanetaryMap_Roads_Title}" ToolTip.Placement="Left">
+        <Border Classes="map-icon" OpacityMask="{Binding RoadIcon}" />
+      </ToggleButton>
+    </StackPanel>
     <StackPanel HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="12" Spacing="8">
       <ToggleButton Classes="map-button" IsChecked="{Binding IsNorthLocked}" Command="{Binding OrientationCommand}"
                     ToolTip.Tip="{Binding OrientationTip}" ToolTip.Placement="Left">

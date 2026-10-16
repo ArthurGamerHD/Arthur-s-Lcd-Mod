@@ -199,12 +199,6 @@ namespace LcdMod.Client.Audio
                 return false;
             }
 
-            if (MyAPIGateway.Utilities == null)
-            {
-                failureReason = "Local storage is not available.";
-                return false;
-            }
-
             try
             {
                 lock (ArchiveLock)
@@ -393,8 +387,7 @@ namespace LcdMod.Client.Audio
 
             try
             {
-                if (MyAPIGateway.Utilities == null ||
-                    !MyAPIGateway.Utilities.FileExistsInLocalStorage(ARCHIVE_FILE_NAME, typeof(LcdModClientComponent)))
+                if (!MyAPIGateway.Utilities.FileExistsInLocalStorage(ARCHIVE_FILE_NAME, typeof(LcdModClientComponent)))
                 {
                     _cachedEntries = new List<MinimalZip.Entry>();
                     return new List<MinimalZip.Entry>();

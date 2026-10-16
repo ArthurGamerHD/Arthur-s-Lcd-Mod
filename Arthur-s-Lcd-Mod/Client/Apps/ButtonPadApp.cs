@@ -1106,8 +1106,7 @@ namespace LcdMod.Client.Apps
 
         static void NotifyActionFailure(string message)
         {
-            if (MyAPIGateway.Utilities != null)
-                MyAPIGateway.Utilities.ShowNotification(message, 1500);
+            MyAPIGateway.Utilities.ShowNotification(message, 1500);
         }
 
         float GetContentTop()

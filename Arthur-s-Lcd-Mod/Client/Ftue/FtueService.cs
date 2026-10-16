@@ -319,7 +319,7 @@ namespace LcdMod.Client.Ftue
 
         static bool TipMatchesWhitelist(FtueTip tip, Type appType)
         {
-            if (tip == null || appType == null || MyAPIGateway.Reflection == null)
+            if (tip == null || appType == null)
                 return false;
 
             var whitelist = tip.AppTypeWhitelist;

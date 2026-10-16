@@ -12,7 +12,7 @@ namespace LcdMod.Common.Helpers
         public static void LogError(Exception error, Type source)
         {
             MyLog.Default.WriteLineAndConsole(error.ToString());
-            if (MyAPIGateway.Session?.Player != null)
+            if (MyAPIGateway.Session.Player != null)
                 MyAPIGateway.Utilities.ShowNotification(
                     $"[ ERROR: {source.FullName}: {error.Message} | Send SpaceEngineers.Log to mod author ]", 10000,
                     MyFontEnum.Red);

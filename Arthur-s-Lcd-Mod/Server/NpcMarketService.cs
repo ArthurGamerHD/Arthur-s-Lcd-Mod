@@ -344,7 +344,7 @@ namespace LcdMod.Server
 
         void DeliverPacket(ulong steamId, PacketSyncNpcMarket packet)
         {
-            var player = MyAPIGateway.Session != null ? MyAPIGateway.Session.Player : null;
+            var player = MyAPIGateway.Session.Player;
             if (LcdModSessionComponent.Client != null && player != null && player.SteamUserId == steamId)
             {
 #if DEBUG

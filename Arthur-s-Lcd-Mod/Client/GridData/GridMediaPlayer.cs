@@ -885,7 +885,7 @@ namespace LcdMod.Client.GridData
                 return 0f;
 
             var session = MyAPIGateway.Session;
-            var camera = session == null ? null : session.Camera;
+            var camera = session.Camera;
             if (camera == null)
                 return 1f;
 

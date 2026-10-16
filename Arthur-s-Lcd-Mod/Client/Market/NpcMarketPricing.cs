@@ -8,8 +8,8 @@ namespace LcdMod.Client.Market
         public static int ApplyViewerPrice(long npcFactionId, int rawPrice, StoreItemTypes listingType)
         {
             var session = MyAPIGateway.Session;
-            var player = session?.Player;
-            var factions = session?.Factions;
+            var player = session.Player;
+            var factions = session.Factions;
             if (player == null || factions == null)
                 return rawPrice;
 

@@ -240,7 +240,7 @@ namespace LcdMod.Client.Apps
         bool IsLocallyAccessDenied()
         {
             var terminalBlock = Host.Block as IMyTerminalBlock;
-            var localPlayer = MyAPIGateway.Session != null ? MyAPIGateway.Session.LocalHumanPlayer : null;
+            var localPlayer = MyAPIGateway.Session.LocalHumanPlayer;
             return terminalBlock != null &&
                    localPlayer != null &&
                    !terminalBlock.HasPlayerAccess(localPlayer.IdentityId);
@@ -403,7 +403,7 @@ namespace LcdMod.Client.Apps
             if (group == null)
                 return;
 
-            var createGps = MyAPIGateway.Input != null && MyAPIGateway.Input.IsAnyCtrlKeyPressed();
+            var createGps = MyAPIGateway.Input.IsAnyCtrlKeyPressed();
 
             if (createGps)
             {
@@ -469,7 +469,7 @@ namespace LcdMod.Client.Apps
         internal void CreateTemporaryGps(NpcMarketStationQuote quote, string itemName)
         {
             var session = MyAPIGateway.Session;
-            var gpsCollection = session?.GPS;
+            var gpsCollection = session.GPS;
             if (quote == null || gpsCollection == null)
                 return;
 
@@ -496,7 +496,7 @@ namespace LcdMod.Client.Apps
         {
             var session = MyAPIGateway.Session;
             var snapshot = NpcMarketClientCache.GetSnapshot(CacheKey);
-            if (session == null || snapshot == null || snapshot.NextEconomyTickWorldElapsedTicks <= 0)
+            if (snapshot == null || snapshot.NextEconomyTickWorldElapsedTicks <= 0)
                 return null;
 
             var remainingTicks = snapshot.NextEconomyTickWorldElapsedTicks - WorldTime.NowElapsedTicks();
@@ -725,9 +725,6 @@ namespace LcdMod.Client.Apps
             }
 
             var session = MyAPIGateway.Session;
-            if (session == null)
-                return;
-
             var framesPerStep = Math.Max(1, (int)Math.Round(seconds * 60f));
             var frame = session.GameplayFrameCounter;
             var content = Content as Adk.Gui.Core.VisualElement;

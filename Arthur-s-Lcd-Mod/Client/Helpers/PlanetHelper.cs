@@ -92,9 +92,6 @@ namespace LcdMod.Client.Helpers
             PlanetGeneratorNamesById.Clear();
             PlanetEntities.Clear();
 
-            if (MyAPIGateway.Entities == null)
-                return;
-
             MyAPIGateway.Entities.GetEntities(PlanetEntities, e => e is MyPlanet);
             foreach (var entity in PlanetEntities)
             {

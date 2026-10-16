@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Generated;
 using LcdMod.Client.Gui;
@@ -13,6 +14,7 @@ using VRage.Input;
 using VRage.ModAPI;
 using VRage.Utils;
 using VRageMath;
+using LcdEyeTracking.Api;
 using InteractiveSurfaceScript = LcdMod.Client.SurfaceScripts.Abstract.InteractiveSurfaceScript;
 
 namespace LcdMod.Client.Modules.EyeTracking
@@ -37,6 +39,29 @@ namespace LcdMod.Client.Modules.EyeTracking
         readonly IMyControl _moveCameraControl =
             MyAPIGateway.Input.GetGameControl(MyStringId.GetOrCompute("LOOKAROUND"));
 
+        // Optional LCD Eye Tracking API mod. When it is loaded, gaze and clicks for every
+        // mod's screens come from it (so screens from different mods don't compete),
+        // and this module only forwards its events. Without it, tracking runs here.
+        const long EYE_TRACKING_API_REPLY_CHANNEL = (LcdMod.Common.Helpers.Constants.WORKSHOP_ID << 8) | 3L;
+        static LcdEyeTrackingApi _eyeTrackingApi;
+        bool _eyeTrackingApiResolved;
+
+        sealed class ApiRegistration
+        {
+            public long Handle;
+            public long Group;
+            public PointerFlags Flags;
+        }
+
+        readonly Dictionary<IEyeTracking, ApiRegistration> _apiRegistrations =
+            new Dictionary<IEyeTracking, ApiRegistration>();
+        readonly Dictionary<InteractiveSurfaceScript, long> _apiCaptureGroups =
+            new Dictionary<InteractiveSurfaceScript, long>();
+        long _nextApiCaptureGroup;
+
+        /// <summary>True when the LCD Eye Tracking API mod tracks the screens instead of this module.</summary>
+        public static bool UsesEyeTrackingApi => _eyeTrackingApi != null;
+
         public void Hook(IEyeTracking instance)
         {
             if (instance != null)
@@ -57,6 +82,7 @@ namespace LcdMod.Client.Modules.EyeTracking
                 UpdatePointerButtonTarget(null, false, false, false, false, false);
 
             _modules.Remove(instance);
+            UnregisterFromApi(instance);
         }
 
         public int Count => _modules.Count;
@@ -95,10 +121,31 @@ namespace LcdMod.Client.Modules.EyeTracking
 
             _pendingModules.Clear();
 
+            if (!_eyeTrackingApiResolved)
+            {
+                _eyeTrackingApiResolved = true;
+                try
+                {
+                    _eyeTrackingApi = LcdEyeTrackingApiClient.TryGet(EYE_TRACKING_API_REPLY_CHANNEL);
+                }
+                catch (Exception e)
+                {
+                    _eyeTrackingApi = null;
+                    ErrorHandlerHelper.LogError(e, this);
+                }
+                if (_eyeTrackingApi != null)
+                    LogHelper.LogInfo("LCD Eye Tracking API " + _eyeTrackingApi.GetApiVersion() + " found; screen input comes from it.");
+            }
+            if (_eyeTrackingApi != null)
+            {
+                UpdateApiRegistrations();
+                return;
+            }
+
             if (LcdTextEntryScreen.IsActive)
                 return;
 
-            var player = MyAPIGateway.Session?.LocalHumanPlayer;
+            var player = MyAPIGateway.Session.LocalHumanPlayer;
             var entity = player?.Controller?.ControlledEntity?.Entity as IMyShipController as MyCubeBlock;
 
             Vector3D cameraPos;
@@ -202,9 +249,133 @@ namespace LcdMod.Client.Modules.EyeTracking
             _lastActiveNearbyCount = resolvedCount;
         }
 
+        void UpdateApiRegistrations()
+        {
+            foreach (var screen in _modules)
+            {
+                var surfaceScript = screen as InteractiveSurfaceScript;
+                var surface = surfaceScript == null ? null : surfaceScript.Surface as Sandbox.ModAPI.IMyTextSurface;
+                if (surfaceScript == null || screen.Block == null || surface == null)
+                    continue;
+
+                // Proxies of one app share its input owner, so a held button may cross panels.
+                long group = GetApiCaptureGroup(surfaceScript.PointerInputOwner ?? surfaceScript);
+                ApiRegistration registration;
+                if (!_apiRegistrations.TryGetValue(screen, out registration) || registration.Group != group)
+                {
+                    UnregisterFromApi(screen);
+                    registration = new ApiRegistration
+                    {
+                        Group = group,
+                        Handle = _eyeTrackingApi.Register(surfaceScript.Block, surface,
+                            position => OnApiLookAt(surfaceScript, position),
+                            () => OnApiLeave(surfaceScript),
+                            (button, pressed) => OnApiButton(surfaceScript, button, pressed),
+                            delta => OnApiScroll(surfaceScript, delta),
+                            () => OnApiCaptureLost(surfaceScript),
+                            group)
+                    };
+                    _apiRegistrations[screen] = registration;
+                }
+                if (registration.Handle == 0L)
+                    continue;
+
+                PointerFlags flags = PointerFlags.RequiresHeartbeat |
+                                   (surfaceScript.RequiresAlt ? PointerFlags.RequiresAlt : PointerFlags.None);
+                if (registration.Flags != flags)
+                {
+                    registration.Flags = flags;
+                    _eyeTrackingApi.SetFlags(registration.Handle, flags);
+                }
+                if (HasRecentlyRun(surfaceScript))
+                    _eyeTrackingApi.Heartbeat(registration.Handle);
+            }
+        }
+
+        long GetApiCaptureGroup(InteractiveSurfaceScript owner)
+        {
+            long group;
+            if (!_apiCaptureGroups.TryGetValue(owner, out group))
+                _apiCaptureGroups[owner] = group = ++_nextApiCaptureGroup;
+            return group;
+        }
+
+        void UnregisterFromApi(IEyeTracking screen)
+        {
+            ApiRegistration registration;
+            if (!_apiRegistrations.TryGetValue(screen, out registration))
+                return;
+            _apiRegistrations.Remove(screen);
+            var surfaceScript = screen as InteractiveSurfaceScript;
+            if (surfaceScript != null)
+                _apiCaptureGroups.Remove(surfaceScript);
+            if (_eyeTrackingApi != null && registration.Handle != 0L)
+                _eyeTrackingApi.Unregister(registration.Handle);
+        }
+
+        // A native text-entry screen owns the keyboard and mouse; only releases get through.
+        void OnApiLookAt(InteractiveSurfaceScript surface, Vector2 position)
+        {
+            if (LcdTextEntryScreen.IsActive)
+                return;
+            RunApiEvent(surface, () =>
+            {
+                surface.LookAt(position);
+                UpdatePointerTarget(surface);
+                _lastActiveNearbyCount = 1;
+            });
+        }
+
+        void OnApiLeave(InteractiveSurfaceScript surface)
+        {
+            if (ReferenceEquals(_pointerSurface, surface))
+                UpdatePointerTarget(null);
+            _lastActiveNearbyCount = 0;
+        }
+
+        void OnApiButton(InteractiveSurfaceScript surface, int button, bool pressed)
+        {
+            if (pressed && LcdTextEntryScreen.IsActive)
+                return;
+            RunApiEvent(surface, () =>
+            {
+                InteractiveSurfaceScript owner = surface.PointerInputOwner;
+                if (owner != null && owner.HandlesPointerButtonInput)
+                    owner.SetPointerButtonState((ControlClickButton)button, pressed);
+            });
+        }
+
+        void OnApiScroll(InteractiveSurfaceScript surface, int delta)
+        {
+            if (!LcdTextEntryScreen.IsActive)
+                RunApiEvent(surface, () => surface.MouseScroll(delta));
+        }
+
+        void OnApiCaptureLost(InteractiveSurfaceScript surface)
+        {
+            RunApiEvent(surface, () =>
+            {
+                InteractiveSurfaceScript owner = surface.PointerInputOwner;
+                if (owner != null)
+                    owner.ResetPointerButtonInput();
+            });
+        }
+
+        static void RunApiEvent(InteractiveSurfaceScript surface, Action action)
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception e)
+            {
+                surface.OnException(e);
+            }
+        }
+
         static bool HasRecentlyRun(InteractiveSurfaceScript surfaceScript)
         {
-            if (surfaceScript == null || MyAPIGateway.Session == null)
+            if (surfaceScript == null)
                 return false;
 
             return surfaceScript.LastRunTick != long.MinValue &&
@@ -256,7 +427,7 @@ namespace LcdMod.Client.Modules.EyeTracking
 
         static void UpdateScrollState(IEyeTracking lookingScreen)
         {
-            if (lookingScreen == null || MyAPIGateway.Input == null)
+            if (lookingScreen == null)
                 return;
 
             var delta = MyAPIGateway.Input.DeltaMouseScrollWheelValue();
@@ -283,9 +454,6 @@ namespace LcdMod.Client.Modules.EyeTracking
             direction = Vector3D.Zero;
 
             var session = MyAPIGateway.Session;
-
-            if (session == null)
-                return false;
 
             var camera = session.Camera;
 

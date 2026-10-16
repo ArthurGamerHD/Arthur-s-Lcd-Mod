@@ -1,21 +1,20 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using LcdMod.Common.Helpers;
 using Adk.Image;
+using ProceduralCubemapApi.Api;
 using Sandbox.ModAPI;
-using VoxelCubemapApi.Api;
 
-namespace LcdMod.Client.Modules.Cartography
+namespace Cartography
 {
-    public sealed class CartographyModule
+    public sealed partial class CartographyModule
     {
         internal readonly Maps.SessionSkybox Skybox = new Maps.SessionSkybox();
         const long VOXEL_CUBEMAP_API_REPLY_CHANNEL =
-            (LcdMod.Common.Helpers.Constants.WORKSHOP_ID << 8) | 2L;
+            (CartographyHost.CommunicationId << 8) | 2L;
 
         static readonly Version MinimumVoxelCubemapApiVersion =
-            new Version(0, 0, 7);
+            new Version(0, 0, 17);
 
         sealed class RuntimePlanetMetadataRegistration
         {
@@ -84,7 +83,6 @@ namespace LcdMod.Client.Modules.Cartography
                 }
             }
         }
-
 
         struct FailedPlanetTypeCacheKey : IEquatable<FailedPlanetTypeCacheKey>
         {
@@ -306,7 +304,6 @@ namespace LcdMod.Client.Modules.Cartography
             return new CartographyTicket(job.Id, delegate { Cancel(job.Id); });
         }
 
-
         static ColorCubemapCacheKey CreateColorCubemapCacheKey(
             CartographyRequest request,
             string planetGeneratorSubtype,
@@ -339,7 +336,7 @@ namespace LcdMod.Client.Modules.Cartography
                 return null;
 
             Sandbox.Game.Entities.MyPlanet planet;
-            if (!Helpers.PlanetHelper.PlanetsById.TryGetValue(
+            if (!CartographyHost.PlanetsById.TryGetValue(
                     request.PlanetEntityId,
                     out planet) ||
                 planet == null ||
@@ -450,6 +447,48 @@ namespace LcdMod.Client.Modules.Cartography
             return winner;
         }
 
+        static readonly List<PlanetRoadLine> NoRoads = new List<PlanetRoadLine>();
+        // Dropped when the API reports the planet changed (InvalidatePlanetNoLock),
+        // so the next render requests the roads again.
+        readonly Dictionary<long, List<PlanetRoadLine>> _planetRoads =
+            new Dictionary<long, List<PlanetRoadLine>>();
+
+        /// <summary>
+        /// Built roads (material-layer lines) on a planet, read from the Voxel
+        /// Cubemap API for display only. Cached until the API's runtime-planet
+        /// change notification invalidates the planet.
+        /// </summary>
+        public IReadOnlyList<PlanetRoadLine> GetPlanetRoads(Sandbox.Game.Entities.MyPlanet planet)
+        {
+            if (planet == null || planet.MarkedForClose)
+                return NoRoads;
+            List<PlanetRoadLine> cached;
+            lock (_sync)
+            {
+                if (_planetRoads.TryGetValue(planet.EntityId, out cached))
+                    return cached;
+            }
+
+            List<PlanetRoadLine> lines = NoRoads;
+            ApiProvider api = ResolveVoxelCubemapApi();
+            if (api != null)
+            {
+                try
+                {
+                    lines = PlanetRoadLine.ParseListing(api.GetPlanetModificationsXml(planet.EntityId));
+                }
+                catch
+                {
+                    // Optional overlay: an unreadable listing just shows no roads.
+                    lines = NoRoads;
+                }
+            }
+
+            lock (_sync)
+                _planetRoads[planet.EntityId] = lines;
+            return lines;
+        }
+
         ApiProvider ResolveVoxelCubemapApi()
         {
             lock (_sync)
@@ -461,7 +500,7 @@ namespace LcdMod.Client.Modules.Cartography
             ApiProvider api = null;
             try
             {
-                api = VoxelCubemapApiClient.TryGet(
+                api = ProceduralCubemapApiClient.TryGet(
                     VOXEL_CUBEMAP_API_REPLY_CHANNEL);
                 if (api != null)
                 {
@@ -528,6 +567,8 @@ namespace LcdMod.Client.Modules.Cartography
 
         void InvalidatePlanetNoLock(long planetEntityId, string oldPlanetGeneratorSubtype)
         {
+            _planetRoads.Remove(planetEntityId);
+
             var colorKeys = new List<ColorCubemapCacheKey>();
             foreach (ColorCubemapCacheKey key in _colorCubemapCache.Keys)
             {
@@ -643,7 +684,6 @@ namespace LcdMod.Client.Modules.Cartography
                                              : request.PlanetGeneratorSubtype)
             };
         }
-
 
         static bool SameColorCubemapIdentity(
             ColorCubemapCacheKey left,
@@ -955,7 +995,7 @@ namespace LcdMod.Client.Modules.Cartography
             }
 
             if (allowCallback && job.WorkerError != null)
-                ErrorHandlerHelper.LogError(job.WorkerError, typeof(CartographyModule));
+                CartographyHost.LogError(job.WorkerError, typeof(CartographyModule));
 
             if (allowCallback && callback != null)
             {
@@ -965,7 +1005,7 @@ namespace LcdMod.Client.Modules.Cartography
                 }
                 catch (Exception error)
                 {
-                    ErrorHandlerHelper.LogError(error, typeof(CartographyModule));
+                    CartographyHost.LogError(error, typeof(CartographyModule));
                 }
             }
 
@@ -990,7 +1030,7 @@ namespace LcdMod.Client.Modules.Cartography
                 }
                 catch (Exception error)
                 {
-                    ErrorHandlerHelper.LogError(error, typeof(CartographyModule));
+                    CartographyHost.LogError(error, typeof(CartographyModule));
                 }
             }
         }
@@ -1010,7 +1050,7 @@ namespace LcdMod.Client.Modules.Cartography
                 }
                 catch (Exception error)
                 {
-                    ErrorHandlerHelper.LogError(error, typeof(CartographyModule));
+                    CartographyHost.LogError(error, typeof(CartographyModule));
                 }
             }
         }

@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Maps;
 using LcdMod.Client.Helpers;
-using LcdMod.Client.Modules.Cartography;
-using LcdMod.Client.Modules.Cartography.Maps;
+using Cartography;
+using Cartography.Maps;
 using LcdMod.Common.Config.Components;
 using Sandbox.Engine.Utils;
 using Sandbox.Game.Entities;
@@ -243,7 +243,7 @@ namespace LcdMod.Client.Apps.PlanetaryMap
             PlanetSnapshot planet = ResolveFocusedPlanet();
             if (planet == null || planet.Planet == null || planet.Planet.MarkedForClose || !TryGetSurfacePosition(pixel, out surface))
                 return;
-            var gpsCollection = MyAPIGateway.Session == null ? null : MyAPIGateway.Session.GPS;
+            var gpsCollection = MyAPIGateway.Session.GPS;
             if (gpsCollection == null)
                 return;
             IMyGps gps = gpsCollection.Create(FormatSurfaceGpsName(LocalDirection(planet.Planet, surface - planet.Position)),
@@ -280,7 +280,7 @@ namespace LcdMod.Client.Apps.PlanetaryMap
 
         protected override void OnMarkerClicked(MapMarker marker)
         {
-            var gpsCollection = MyAPIGateway.Session == null ? null : MyAPIGateway.Session.GPS;
+            var gpsCollection = MyAPIGateway.Session.GPS;
             if (gpsCollection == null || marker.Kind != MapMarkerKind.Radio)
                 return;
             IMyGps gps = gpsCollection.Create(LocalGpsName(marker.Name), string.Empty, marker.WorldPosition, false, true);
@@ -319,8 +319,6 @@ namespace LcdMod.Client.Apps.PlanetaryMap
         static void ShowStreetViewNotification()
         {
             var utilities = MyAPIGateway.Utilities;
-            if (utilities == null)
-                return;
             IMyHudNotification notification = utilities.CreateNotification(
                 LocHelper.GetLoc(MOD_PREFIX + "PlanetaryMap_StreetView_ActiveNotification"), 500);
             notification.Show();
@@ -358,8 +356,6 @@ namespace LcdMod.Client.Apps.PlanetaryMap
             if (ResolveFocusedPlanet() == null)
                 return false;
             var session = MyAPIGateway.Session;
-            if (session == null)
-                return false;
             if (session.SessionSettings != null && session.SessionSettings.EnableSpectator)
                 return true;
             var player = session.Player;
@@ -400,7 +396,7 @@ namespace LcdMod.Client.Apps.PlanetaryMap
 
             _gpsProjections.Clear();
             var session = MyAPIGateway.Session;
-            if (needsLive && session != null && session.GPS != null && session.Player != null)
+            if (needsLive && session.GPS != null && session.Player != null)
             {
                 _gpsEntries.Clear();
                 session.GPS.GetGpsList(session.Player.IdentityId, _gpsEntries);

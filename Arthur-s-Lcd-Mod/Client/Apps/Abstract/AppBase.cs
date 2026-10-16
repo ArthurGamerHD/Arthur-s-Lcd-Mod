@@ -186,12 +186,11 @@ namespace LcdMod.Client.Apps.Abstract
                 return true;
             }
 
+            // Building the theme first also registers the ThemeResources keys, which the lookup below needs.
+            EnsureResources();
             ResourceKey<T> resourceKey;
             if (ResourceKey.TryGet(key, out resourceKey))
-            {
-                EnsureResources();
                 return _resources.TryGet(resourceKey, out value);
-            }
             value = default(T);
             return false;
         }

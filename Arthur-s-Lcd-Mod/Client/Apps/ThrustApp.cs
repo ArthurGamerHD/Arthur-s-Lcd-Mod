@@ -241,9 +241,6 @@ namespace LcdMod.Client.Apps
             try
             {
                 var session = MyAPIGateway.Session;
-                if (session == null)
-                    return 0;
-
                 if (secondsPerStep <= 0f)
                     secondsPerStep = 1f / 60f;
 

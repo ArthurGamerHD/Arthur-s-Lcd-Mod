@@ -26,9 +26,6 @@ namespace LcdMod.Client.Audio
         internal void ImportAudios()
         {
             var utilities = MyAPIGateway.Utilities;
-            if (utilities == null)
-                return;
-
             if (!utilities.FileExistsInLocalStorage(AUDIO_IMPORT_LIST_FILE, typeof(LcdModClientComponent)))
             {
                 Show("audio_import.txt does not exist in mod storage.", "Red");
@@ -181,12 +178,6 @@ namespace LcdMod.Client.Audio
             failureReason = string.Empty;
 
             var utilities = MyAPIGateway.Utilities;
-            if (utilities == null)
-            {
-                failureReason = "Utilities are not ready.";
-                return false;
-            }
-
             if (!utilities.FileExistsInLocalStorage(sourcePath, typeof(LcdModClientComponent)))
             {
                 failureReason = "Local WAV file not found: " + sourcePath;
@@ -280,7 +271,7 @@ namespace LcdMod.Client.Audio
 
         static ulong GetLocalOwnerSteamId()
         {
-            return MyAPIGateway.Session?.Player?.SteamUserId ?? 0;
+            return MyAPIGateway.Session.Player?.SteamUserId ?? 0;
         }
 
         static void NotifyFailure(string sourcePath, string failureReason)
@@ -317,7 +308,7 @@ namespace LcdMod.Client.Audio
 
         static void Show(string text, string font = "White")
         {
-            MyAPIGateway.Utilities?.ShowNotification(text, 5000, font);
+            MyAPIGateway.Utilities.ShowNotification(text, 5000, font);
         }
     }
 }

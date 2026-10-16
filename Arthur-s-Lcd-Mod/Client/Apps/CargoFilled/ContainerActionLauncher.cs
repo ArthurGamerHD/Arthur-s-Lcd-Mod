@@ -96,7 +96,7 @@ namespace LcdMod.Client.Apps.CargoFilled
                     return;
 
                 var mode = ToMode(request.Transfer);
-                if (MyAPIGateway.Session != null && MyAPIGateway.Session.IsServer)
+                if (MyAPIGateway.Session.IsServer)
                 {
                     int moved = InventoryDistributorCommon.Execute(source, targets, keys, mode);
                     message = string.Format(LocHelper.GetLoc(Constants.MOD_PREFIX + "CargoActions_ActionDone"),

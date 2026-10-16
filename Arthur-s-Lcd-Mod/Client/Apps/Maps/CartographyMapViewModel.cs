@@ -4,8 +4,8 @@ using Adk.Gui.Core.Input;
 using Adk.Gui.Rendering;
 using Adk.Gui.Styling;
 using Jakaria.API;
-using LcdMod.Client.Modules.Cartography;
-using LcdMod.Client.Modules.Cartography.Maps;
+using Cartography;
+using Cartography.Maps;
 using LcdMod.Common.Mvvm;
 using VRageMath;
 
@@ -100,6 +100,8 @@ namespace LcdMod.Client.Apps.Maps
         bool _waterVisible;
         bool _waterEnabled;
         bool _isWaterHidden;
+        bool _roadsToggleVisible;
+        bool _isRoadsShown = true;
         bool _orbitLinesShown = true;
         bool _isCentered = true;
         string _status = string.Empty;
@@ -123,6 +125,7 @@ namespace LcdMod.Client.Apps.Maps
             OrientationCommand = new DelegateCommand(_ => ToggleOrientation());
             FollowCommand = new DelegateCommand(_ => ToggleFollow());
             WaterCommand = new DelegateCommand(_ => ToggleWater());
+            RoadsCommand = new DelegateCommand(_ => ToggleRoads());
             OrbitLinesCommand = new DelegateCommand(_ => ToggleOrbitLines());
             RecenterCommand = new DelegateCommand(_ => Recenter());
         }
@@ -134,6 +137,7 @@ namespace LcdMod.Client.Apps.Maps
         public ICommand OrientationCommand { get; }
         public ICommand FollowCommand { get; }
         public ICommand WaterCommand { get; }
+        public ICommand RoadsCommand { get; }
         public ICommand OrbitLinesCommand { get; }
         public ICommand RecenterCommand { get; }
         public bool IsNorthLocked => _isNorthLocked;
@@ -142,6 +146,7 @@ namespace LcdMod.Client.Apps.Maps
         public Transform OrientationTransform => new RotateTransform(MathHelper.ToDegrees(_orientationRotation));
         public IMapSurface Surface => this;
         public BackgroundBrush WaterIcon { get; } = Mask("WaterIcon");
+        public BackgroundBrush RoadIcon { get; } = Mask("RoadIcon");
         public BackgroundBrush CompassIcon { get; } = Mask("CompassIcon");
         public BackgroundBrush FollowIcon => _isFollowing ? LockIcon : FreeIcon;
         public BackgroundBrush OrbitLinesIconMask => _orbitLinesShown ? OrbitOnIcon : OrbitOffIcon;
@@ -151,6 +156,8 @@ namespace LcdMod.Client.Apps.Maps
         public bool WaterVisible => _waterVisible;
         public bool WaterEnabled => _waterEnabled;
         public bool IsWaterHidden => _isWaterHidden;
+        public bool RoadsToggleVisible => _roadsToggleVisible;
+        public bool IsRoadsShown => _isRoadsShown;
         public bool OrbitLinesShown => _orbitLinesShown;
         public string Status => _status;
         public bool HasStatus => _hasStatus;
@@ -271,6 +278,13 @@ namespace LcdMod.Client.Apps.Maps
             RaiseAndSetIfChanged(ref _waterEnabled, waterApi && cubemap != null && cubemap.WaterOverlay != null,
                 nameof(WaterEnabled));
             RaiseAndSetIfChanged(ref _isWaterHidden, !State.WaterVisible, nameof(IsWaterHidden));
+            // Read-only overlay: offered only when the Voxel Cubemap API lists at
+            // least one built road on the planet (no API means an empty listing).
+            PlanetSnapshot roadPlanet = IsPlanetary ? ResolveFocusedPlanet() : null;
+            bool hasRoads = roadPlanet != null && roadPlanet.Planet != null && _rendererModule != null &&
+                            _rendererModule.GetPlanetRoads(roadPlanet.Planet).Count > 0;
+            RaiseAndSetIfChanged(ref _roadsToggleVisible, hasRoads, nameof(RoadsToggleVisible));
+            RaiseAndSetIfChanged(ref _isRoadsShown, State.RoadsVisible, nameof(IsRoadsShown));
 
             PlanetCubeFace face = GetReferencePreviewFace();
             for (int i = 0; i < _layers.Count; i++)
@@ -390,6 +404,13 @@ namespace LcdMod.Client.Apps.Maps
             if (!_waterEnabled)
                 return;
             State.WaterVisible = !State.WaterVisible;
+            ViewChanged();
+            Host.PlayClick();
+        }
+
+        void ToggleRoads()
+        {
+            State.RoadsVisible = !State.RoadsVisible;
             ViewChanged();
             Host.PlayClick();
         }

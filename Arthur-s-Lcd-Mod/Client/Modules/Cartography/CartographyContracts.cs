@@ -1,6 +1,6 @@
 using System;
 
-namespace LcdMod.Client.Modules.Cartography
+namespace Cartography
 {
     public enum CartographyProjection
     {
@@ -35,7 +35,7 @@ namespace LcdMod.Client.Modules.Cartography
 
         /// <summary>
         /// Builds an immutable, mipmapped cubemap of native VRageMath.Color texels.
-        /// This is intended for live LCD apps that render full-color sprite masks.
+        /// This is intended for live map views that render full-color data.
         /// </summary>
         public bool ReturnColorCubemap;
 

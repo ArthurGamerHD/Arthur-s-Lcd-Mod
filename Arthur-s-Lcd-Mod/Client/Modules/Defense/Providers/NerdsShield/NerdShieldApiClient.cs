@@ -26,7 +26,7 @@ namespace LcdMod.Client.Modules.Defense.Providers.NerdsShield
 
         public void Load()
         {
-            if (_listening || MyAPIGateway.Utilities == null)
+            if (_listening)
                 return;
 
             MyAPIGateway.Utilities.RegisterMessageHandler(MOD_API_MESSAGE_ID, OnModMessageReceived);
@@ -35,7 +35,7 @@ namespace LcdMod.Client.Modules.Defense.Providers.NerdsShield
 
         public void Unload()
         {
-            if (_listening && MyAPIGateway.Utilities != null)
+            if (_listening)
                 MyAPIGateway.Utilities.UnregisterMessageHandler(MOD_API_MESSAGE_ID, OnModMessageReceived);
 
             _listening = false;

@@ -90,7 +90,7 @@ namespace LcdMod.Client.Audio
             var metadata = BuildBroadcastMetadata(asset, runtimeWaveBytes, wave);
             var packet = new PacketRequestBroadcastAudio(metadata, runtimeWaveBytes);
 
-            if (MyAPIGateway.Session != null && MyAPIGateway.Session.IsServer && LcdModSessionComponent.Server != null)
+            if (MyAPIGateway.Session.IsServer && LcdModSessionComponent.Server != null)
             {
                 LcdModSessionComponent.Server.HandleLocalRequestBroadcastAudio(packet);
             }
@@ -183,10 +183,8 @@ namespace LcdMod.Client.Audio
                 Offset = 0,
                 ChunkIndex = 0,
                 InitialChunksSent = 0,
-                NextSendFrame = MyAPIGateway.Session == null ? 0L : MyAPIGateway.Session.GameplayFrameCounter + 1L,
-                NextListenerRefreshFrame = MyAPIGateway.Session == null
-                    ? STREAM_LISTENER_REFRESH_FRAMES
-                    : MyAPIGateway.Session.GameplayFrameCounter + STREAM_LISTENER_REFRESH_FRAMES
+                NextSendFrame = MyAPIGateway.Session.GameplayFrameCounter + 1L,
+                NextListenerRefreshFrame = MyAPIGateway.Session.GameplayFrameCounter + STREAM_LISTENER_REFRESH_FRAMES
             });
 
             SendOpenStream(open);
@@ -303,10 +301,7 @@ namespace LcdMod.Client.Audio
             if (packet == null)
                 return false;
 
-            ulong localSteamId = MyAPIGateway.Session?.Player?.SteamUserId ??
-                                 (MyAPIGateway.Multiplayer == null
-                                     ? 0UL
-                                     : MyAPIGateway.Multiplayer.MyId);
+            ulong localSteamId = MyAPIGateway.Session.Player?.SteamUserId ?? MyAPIGateway.Multiplayer.MyId;
             return localSteamId != 0 && packet.RequestedBySteamId == localSteamId;
         }
 
@@ -390,7 +385,7 @@ namespace LcdMod.Client.Audio
             if (_outgoingMediaStreams.Count == 0)
                 return;
 
-            var frame = MyAPIGateway.Session == null ? 0L : MyAPIGateway.Session.GameplayFrameCounter;
+            var frame = MyAPIGateway.Session.GameplayFrameCounter;
             for (var i = _outgoingMediaStreams.Count - 1; i >= 0; i--)
             {
                 var stream = _outgoingMediaStreams[i];
@@ -473,7 +468,7 @@ namespace LcdMod.Client.Audio
 
         static void SendOpenStream(PacketMediaStreamControl packet)
         {
-            if (MyAPIGateway.Session != null && MyAPIGateway.Session.IsServer && LcdModSessionComponent.Server != null)
+            if (MyAPIGateway.Session.IsServer && LcdModSessionComponent.Server != null)
                 LcdModSessionComponent.Server.HandleLocalMediaStreamControl(packet);
             else
                 LcdModSessionComponent.NetworkManager.TransmitToServer(packet, sendToAllPlayers: false, sendToSender: false);
@@ -481,7 +476,7 @@ namespace LcdMod.Client.Audio
 
         static void SendStreamChunk(PacketRequestMediaStreamChunk packet)
         {
-            if (MyAPIGateway.Session != null && MyAPIGateway.Session.IsServer && LcdModSessionComponent.Server != null)
+            if (MyAPIGateway.Session.IsServer && LcdModSessionComponent.Server != null)
                 LcdModSessionComponent.Server.HandleLocalRequestMediaStreamChunk(packet);
             else
                 LcdModSessionComponent.NetworkManager.TransmitToServer(packet, sendToAllPlayers: false, sendToSender: false);
@@ -489,7 +484,7 @@ namespace LcdMod.Client.Audio
 
         static void SendStreamControl(PacketMediaStreamControl packet)
         {
-            if (MyAPIGateway.Session != null && MyAPIGateway.Session.IsServer && LcdModSessionComponent.Server != null)
+            if (MyAPIGateway.Session.IsServer && LcdModSessionComponent.Server != null)
                 LcdModSessionComponent.Server.HandleLocalMediaStreamControl(packet);
             else
                 LcdModSessionComponent.NetworkManager.TransmitToServer(packet, sendToAllPlayers: false, sendToSender: false);
@@ -580,7 +575,7 @@ namespace LcdMod.Client.Audio
 
         void PlayPcm(byte[] pcmBytes)
         {
-            var player = MyAPIGateway.Session?.LocalHumanPlayer;
+            var player = MyAPIGateway.Session.LocalHumanPlayer;
             var character = player?.Character as MyEntity;
             var emitter = new MyEntity3DSoundEmitter(character);
 
@@ -603,7 +598,7 @@ namespace LcdMod.Client.Audio
 
         static void Show(string text, string font = "White")
         {
-            MyAPIGateway.Utilities?.ShowNotification(text, 5000, font);
+            MyAPIGateway.Utilities.ShowNotification(text, 5000, font);
         }
     }
 }

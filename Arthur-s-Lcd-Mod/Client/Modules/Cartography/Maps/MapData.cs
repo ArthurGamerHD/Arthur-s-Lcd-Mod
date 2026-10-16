@@ -6,7 +6,7 @@ using VRage.ModAPI;
 using VRage.Game.ModAPI;
 using VRageMath;
 
-namespace LcdMod.Client.Modules.Cartography.Maps
+namespace Cartography.Maps
 {
     public sealed class PlanetSnapshot
     {
@@ -140,7 +140,6 @@ namespace LcdMod.Client.Modules.Cartography.Maps
             world = controlledEntity.WorldMatrix;
             return true;
         }
-
 
         public PlanetSnapshot FindPlanet(long entityId)
         {

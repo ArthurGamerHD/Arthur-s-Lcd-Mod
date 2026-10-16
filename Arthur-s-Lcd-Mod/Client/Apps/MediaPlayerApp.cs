@@ -841,7 +841,7 @@ namespace LcdMod.Client.Apps
 
         bool IsShiftPressed()
         {
-            return MyAPIGateway.Input != null && MyAPIGateway.Input.IsAnyShiftKeyPressed();
+            return MyAPIGateway.Input.IsAnyShiftKeyPressed();
         }
 
         bool IsPlaylistVisible()
@@ -940,8 +940,7 @@ namespace LcdMod.Client.Apps
             var displayName = NormalizePlaylistDisplayName(name);
             if (string.IsNullOrEmpty(displayName))
             {
-                if (MyAPIGateway.Utilities != null)
-                    MyAPIGateway.Utilities.ShowNotification(ResolveLoc(LOC_PLAYLIST_NAME_EMPTY));
+                MyAPIGateway.Utilities.ShowNotification(ResolveLoc(LOC_PLAYLIST_NAME_EMPTY));
                 return;
             }
 
@@ -953,8 +952,7 @@ namespace LcdMod.Client.Apps
             AppendM3U(fileName, entries, false);
             RegisterSavedPlaylist(fileName, displayName);
             MediaAudioFilePickerTreeProvider.InvalidateCache();
-            if (MyAPIGateway.Utilities != null)
-                MyAPIGateway.Utilities.ShowNotification(string.Format(FormatingHelper.Culture, ResolveLoc(LOC_PLAYLIST_SAVED_FORMAT), displayName));
+            MyAPIGateway.Utilities.ShowNotification(string.Format(FormatingHelper.Culture, ResolveLoc(LOC_PLAYLIST_SAVED_FORMAT), displayName));
             MarkDirty();
         }
 
@@ -1639,19 +1637,15 @@ namespace LcdMod.Client.Apps
             if (string.IsNullOrWhiteSpace(failureReason))
                 failureReason = "unknown error";
 
-            if (MyAPIGateway.Utilities != null)
-            {
-                MyAPIGateway.Utilities.ShowNotification(
-                    string.Format(FormatingHelper.Culture, ResolveLoc(LOC_DELETE_FAILED_FORMAT), failureReason),
-                    4000,
-                    "Red");
-            }
+            MyAPIGateway.Utilities.ShowNotification(
+                string.Format(FormatingHelper.Culture, ResolveLoc(LOC_DELETE_FAILED_FORMAT), failureReason),
+                4000,
+                "Red");
         }
 
         static void ShowAudioDeleteNotification(string message)
         {
-            if (MyAPIGateway.Utilities != null)
-                MyAPIGateway.Utilities.ShowNotification(message);
+            MyAPIGateway.Utilities.ShowNotification(message);
         }
 
         string GetLocalAudioDeleteDisplayName(MediaAudioFileReference reference)
@@ -1714,7 +1708,7 @@ namespace LcdMod.Client.Apps
         List<PlaylistEntry> CreatePlaylistEntries(MediaAudioPlaylistReference playlist)
         {
             var entries = new List<PlaylistEntry>();
-            if (playlist == null || string.IsNullOrEmpty(playlist.FileName) || MyAPIGateway.Utilities == null)
+            if (playlist == null || string.IsNullOrEmpty(playlist.FileName))
                 return entries;
 
             try
@@ -1931,7 +1925,7 @@ namespace LcdMod.Client.Apps
 
         static void RegisterSavedPlaylist(string fileName, string displayName)
         {
-            if (string.IsNullOrEmpty(fileName) || MyAPIGateway.Utilities == null)
+            if (string.IsNullOrEmpty(fileName))
                 return;
 
             var records = ReadPlaylistIndex();
@@ -1959,8 +1953,7 @@ namespace LcdMod.Client.Apps
         static Dictionary<string, string> ReadPlaylistIndex()
         {
             var records = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            if (MyAPIGateway.Utilities == null ||
-                !MyAPIGateway.Utilities.FileExistsInLocalStorage(PLAYLIST_INDEX_FILE, typeof(LcdModClientComponent)))
+            if (!MyAPIGateway.Utilities.FileExistsInLocalStorage(PLAYLIST_INDEX_FILE, typeof(LcdModClientComponent)))
                 return records;
 
             try
@@ -1995,7 +1988,7 @@ namespace LcdMod.Client.Apps
 
         void AppendM3U(string fileName, IList<PlaylistEntry> entries, bool append)
         {
-            if (string.IsNullOrEmpty(fileName) || entries == null || entries.Count == 0 || MyAPIGateway.Utilities == null)
+            if (string.IsNullOrEmpty(fileName) || entries == null || entries.Count == 0)
                 return;
 
             try
@@ -2217,13 +2210,13 @@ namespace LcdMod.Client.Apps
                 SourceId = string.Empty,
                 DisplayName = string.Empty,
                 PositionSeconds = SanitizeCommandPosition(positionSeconds),
-                ClientFrame = MyAPIGateway.Session == null ? 0L : MyAPIGateway.Session.GameplayFrameCounter
+                ClientFrame = MyAPIGateway.Session.GameplayFrameCounter
             };
 
             if (includeSource && !TryFillMediaPlayerCommandSource(packet))
                 return false;
 
-            if (MyAPIGateway.Session != null && MyAPIGateway.Session.IsServer && LcdModSessionComponent.Server != null)
+            if (MyAPIGateway.Session.IsServer && LcdModSessionComponent.Server != null)
                 LcdModSessionComponent.Server.HandleLocalRequestMediaPlayerCommand(packet);
             else
                 LcdModSessionComponent.NetworkManager.TransmitToServer(packet, false);
@@ -2298,7 +2291,7 @@ namespace LcdMod.Client.Apps
 
         static bool IsMultiplayerMediaCommandRequired()
         {
-            return MyAPIGateway.Multiplayer != null && MyAPIGateway.Multiplayer.MultiplayerActive;
+            return MyAPIGateway.Multiplayer.MultiplayerActive;
         }
 
         double GetPlayerPositionSeconds()

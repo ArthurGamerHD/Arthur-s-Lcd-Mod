@@ -22,7 +22,7 @@ namespace LcdMod.Client.Apps.Maps
         public AsyncMapTexture(Vector2I size)
         {
             var textures = MyAPIGateway.GeneratedTextures;
-            if (textures != null && textures.IsSupported)
+            if (textures.IsSupported)
                 _texture = textures.Create("CartographyMap", size, MyGeneratedTextureFormat.Srgb);
         }
 

@@ -14,7 +14,7 @@ namespace LcdMod.Client.Audio
 
         public static implicit operator AudioWavesDefinition(MyAudioDefinition definition)
         {
-            if (definition == null || MyAPIGateway.Utilities == null)
+            if (definition == null)
                 return null;
 
             var builder = definition.GetObjectBuilder() as

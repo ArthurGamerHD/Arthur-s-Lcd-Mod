@@ -168,12 +168,6 @@ namespace LcdMod.Client.Audio
                 return false;
             }
 
-            if (MyAPIGateway.Utilities == null)
-            {
-                failureReason = "Local storage is not available.";
-                return false;
-            }
-
             try
             {
                 if (!MyAPIGateway.Utilities.FileExistsInLocalStorage(playlist.FileName, typeof(LcdModClientComponent)))
@@ -270,8 +264,7 @@ namespace LcdMod.Client.Audio
         static List<PlaylistIndexRecord> LoadPlaylistIndex()
         {
             var records = new List<PlaylistIndexRecord>();
-            if (MyAPIGateway.Utilities == null ||
-                !MyAPIGateway.Utilities.FileExistsInLocalStorage(PLAYLIST_INDEX_FILE, typeof(LcdModClientComponent)))
+            if (!MyAPIGateway.Utilities.FileExistsInLocalStorage(PLAYLIST_INDEX_FILE, typeof(LcdModClientComponent)))
                 return records;
 
             try
@@ -332,9 +325,6 @@ namespace LcdMod.Client.Audio
 
         static void SavePlaylistIndex(List<PlaylistIndexRecord> records)
         {
-            if (MyAPIGateway.Utilities == null)
-                return;
-
             try
             {
                 if (records == null || records.Count == 0)
@@ -369,7 +359,7 @@ namespace LcdMod.Client.Audio
 
         static void AddPlaylistFileIfExists(FolderModel root, string fileName, string displayName)
         {
-            if (root == null || string.IsNullOrWhiteSpace(fileName) || MyAPIGateway.Utilities == null)
+            if (root == null || string.IsNullOrWhiteSpace(fileName))
                 return;
 
             try

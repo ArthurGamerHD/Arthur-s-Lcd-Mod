@@ -1706,7 +1706,7 @@ namespace LcdMod.Client.Games.EightBallPool
         {
             try
             {
-                if (_script == null || MyAPIGateway.Session == null)
+                if (_script == null)
                     return false;
 
                 var block = _script.Block;
@@ -2476,7 +2476,7 @@ namespace LcdMod.Client.Games.EightBallPool
 
         long GetCurrentGameplayFrame()
         {
-            return MyAPIGateway.Session != null ? MyAPIGateway.Session.GameplayFrameCounter : 0L;
+            return MyAPIGateway.Session.GameplayFrameCounter;
         }
 
         static string Loc(string key)

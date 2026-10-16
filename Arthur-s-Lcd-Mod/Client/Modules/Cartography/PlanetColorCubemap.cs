@@ -4,11 +4,11 @@ using Adk.Image;
 using VRageMath;
 using ArgumentOutOfRangeException = Adk.Compression.Exceptions.ArgumentOutOfRangeException;
 
-namespace LcdMod.Client.Modules.Cartography
+namespace Cartography
 {
     /// <summary>
     /// One square cubemap mip stored directly as native Space Engineers colors.
-    /// The LCD app can sample this without converting through a text palette.
+    /// The map renderer can sample this without converting through a text palette.
     /// </summary>
     public sealed class PlanetColorMip
     {

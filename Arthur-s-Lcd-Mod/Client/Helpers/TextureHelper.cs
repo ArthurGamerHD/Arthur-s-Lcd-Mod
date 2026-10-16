@@ -248,13 +248,13 @@ namespace LcdMod.Client.Helpers
             if (ownerId == 0)
                 return false;
 
-            var localOwnerId = MyAPIGateway.Session?.Player?.SteamUserId ?? 0;
+            var localOwnerId = MyAPIGateway.Session.Player?.SteamUserId ?? 0;
             return ownerId != localOwnerId;
         }
 
         public static bool TryQueueTextureRequest(ulong ownerId, string textureName, string registrationName = null)
         {
-            var localOwnerId = MyAPIGateway.Session?.Player?.SteamUserId ?? 0;
+            var localOwnerId = MyAPIGateway.Session.Player?.SteamUserId ?? 0;
             if (localOwnerId == 0 || ownerId == 0 || ownerId == localOwnerId)
                 return false;
 
@@ -281,7 +281,7 @@ namespace LcdMod.Client.Helpers
 
             LcdModClientComponent.RunNextFrame.Add(delegate
             {
-                if (MyAPIGateway.Session?.Player == null)
+                if (MyAPIGateway.Session.Player == null)
                     return;
 
                 if (MyAPIGateway.Session.IsServer && LcdModSessionComponent.Server != null)
@@ -749,7 +749,7 @@ namespace LcdMod.Client.Helpers
             if (string.IsNullOrWhiteSpace(id))
                 return;
 
-            var localUserId = MyAPIGateway.Session?.Player?.SteamUserId ?? 0;
+            var localUserId = MyAPIGateway.Session.Player?.SteamUserId ?? 0;
             ulong inputOwnerId;
             string inputTextureName;
             var inputIsTextureKey =
@@ -1054,7 +1054,7 @@ namespace LcdMod.Client.Helpers
             if (string.IsNullOrWhiteSpace(archiveFile))
                 return false;
 
-            var localUserId = MyAPIGateway.Session?.Player?.SteamUserId ?? 0;
+            var localUserId = MyAPIGateway.Session.Player?.SteamUserId ?? 0;
             byte[] textureBytes;
             int width;
             int height;
@@ -1335,7 +1335,7 @@ namespace LcdMod.Client.Helpers
         {
             TextureTransferHelper.MigrateCachedTextureStorageToZip();
 
-            var localUserId = MyAPIGateway.Session?.Player?.SteamUserId ?? 0;
+            var localUserId = MyAPIGateway.Session.Player?.SteamUserId ?? 0;
             var entries = TextureTransferHelper.GetCachedTextureEntries();
             for (var i = 0; i < entries.Count; i++)
             {

@@ -105,7 +105,7 @@ namespace LcdMod.Client.Debugging
 
         static void FlushIfDue()
         {
-            long frame = MyAPIGateway.Session?.GameplayFrameCounter ?? 0;
+            long frame = MyAPIGateway.Session.GameplayFrameCounter;
             if (_windowStartFrame < 0)
                 _windowStartFrame = frame;
             long frames = frame - _windowStartFrame;

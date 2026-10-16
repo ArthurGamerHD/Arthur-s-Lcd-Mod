@@ -56,7 +56,7 @@ namespace LcdMod.Client.Games.ManagedDoom
         protected override void OnHandleInput()
         {
             var input = MyAPIGateway.Input;
-            if (input == null || !_surface.IsCurrentGame(_game) ||
+            if (!_surface.IsCurrentGame(_game) ||
                 _surface.Block == null || _surface.Block.MarkedForClose ||
                 input.IsNewKeyPressed(MyKeys.Escape) || input.IsNewKeyPressed(MyKeys.F10))
             {

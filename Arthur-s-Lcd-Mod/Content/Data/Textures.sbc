@@ -290,6 +290,12 @@
             <Selectable>false</Selectable>
         </LCDTextureDefinition>
 
+        <LCDTextureDefinition> <!-- Planetary Map: Road overlay sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="RoadIcon"/>
+            <SpritePath>Textures/Sprites/RoadIcon.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
         <LCDTextureDefinition> <!-- Planetary Map: Water overlay sprite -->
             <Id Type="LCDTextureDefinition" Subtype="WaterIcon"/>
             <SpritePath>Textures/Sprites/WaterIcon.dds</SpritePath>

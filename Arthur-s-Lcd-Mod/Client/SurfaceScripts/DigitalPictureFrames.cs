@@ -82,9 +82,6 @@ namespace LcdMod.Client.SurfaceScripts
         protected override string GetDetailedInfoCustomText()
         {
             var utilities = MyAPIGateway.Utilities;
-            if (utilities == null)
-                return string.Empty;
-
             return "You can add your custom textures to: " +
                    Path.Combine(
                        utilities.GamePaths.UserDataPath.EndsWith("Roaming\\SpaceEngineers")

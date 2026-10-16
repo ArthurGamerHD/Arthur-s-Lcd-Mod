@@ -28,7 +28,7 @@ namespace LcdMod.Client.Apps.Controls
             if (outer <= 0f)
                 return;
             var session = MyAPIGateway.Session;
-            float rotation = (float)((session != null ? session.GameplayFrameCounter / 60.0 : 0.0) * 2.4);
+            float rotation = (float)((session.GameplayFrameCounter / 60.0) * 2.4);
             float inner = outer * .6f;
             context.Texture(TEXTURE, new RectangleF(Bounds.Center - new Vector2(outer * .5f), new Vector2(outer)), Foreground, false, rotation);
             context.Texture(TEXTURE, new RectangleF(Bounds.Center - new Vector2(inner * .5f), new Vector2(inner)), Foreground, false, -rotation);

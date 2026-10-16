@@ -113,7 +113,7 @@ namespace LcdMod.Server.Audio
                 PositionSeconds = SanitizePlaybackPosition(packet.PositionSeconds),
                 ClientFrame = packet.ClientFrame,
                 RequestedBySteamId = senderSteamId,
-                ServerFrame = MyAPIGateway.Session == null ? 0L : MyAPIGateway.Session.GameplayFrameCounter
+                ServerFrame = MyAPIGateway.Session.GameplayFrameCounter
             };
 
             var recipients = BroadcastMediaPlayerCommand(sync, block);
@@ -181,7 +181,7 @@ namespace LcdMod.Server.Audio
                 AppTypeId = packet.AppTypeId,
                 Title = session.Title,
                 TotalDurationTicks = packet.TotalDurationTicks < 0L ? 0L : packet.TotalDurationTicks,
-                ServerFrame = MyAPIGateway.Session == null ? 0L : MyAPIGateway.Session.GameplayFrameCounter
+                ServerFrame = MyAPIGateway.Session.GameplayFrameCounter
             };
 
             var recipients = BroadcastMediaStreamInvite(sync, session, block);
@@ -227,7 +227,7 @@ namespace LcdMod.Server.Audio
                 PcmBytes = packet.PcmBytes,
                 DurationTicks = packet.DurationTicks,
                 IsFinal = packet.IsFinal,
-                ServerFrame = MyAPIGateway.Session == null ? 0L : MyAPIGateway.Session.GameplayFrameCounter
+                ServerFrame = MyAPIGateway.Session.GameplayFrameCounter
             };
 
             BroadcastMediaStreamChunkToListeners(sync, session, block);
@@ -308,7 +308,7 @@ namespace LcdMod.Server.Audio
                 AppTypeId = (int)AppType.MediaPlayer,
                 Title = session.Title,
                 TotalDurationTicks = 0L,
-                ServerFrame = MyAPIGateway.Session == null ? 0L : MyAPIGateway.Session.GameplayFrameCounter
+                ServerFrame = MyAPIGateway.Session.GameplayFrameCounter
             };
 
             BroadcastMediaStreamInvite(invite, session, block);
@@ -562,7 +562,7 @@ namespace LcdMod.Server.Audio
             var players = new List<IMyPlayer>();
             MyAPIGateway.Players.GetPlayers(players);
             var recipients = 0;
-            var localSteamId = MyAPIGateway.Session?.Player?.SteamUserId ?? 0;
+            var localSteamId = MyAPIGateway.Session.Player?.SteamUserId ?? 0;
             var deliveredToLocalClient = false;
 
             for (var i = 0; i < players.Count; i++)
@@ -595,7 +595,7 @@ namespace LcdMod.Server.Audio
             var players = new List<IMyPlayer>();
             MyAPIGateway.Players.GetPlayers(players);
             var recipients = 0;
-            var localSteamId = MyAPIGateway.Session?.Player?.SteamUserId ?? 0UL;
+            var localSteamId = MyAPIGateway.Session.Player?.SteamUserId ?? 0UL;
             var deliveredToLocalClient = false;
 
             for (var i = 0; i < players.Count; i++)
@@ -618,7 +618,7 @@ namespace LcdMod.Server.Audio
 
             if (!deliveredToLocalClient && localSteamId != 0 && LcdModSessionComponent.Client != null)
             {
-                var localPlayer = MyAPIGateway.Session == null ? null : MyAPIGateway.Session.LocalHumanPlayer;
+                var localPlayer = MyAPIGateway.Session.LocalHumanPlayer;
                 if (IsPlayerInMediaSyncRange(localPlayer, block))
                 {
                     LcdModSessionComponent.Client.HandleLocalSyncMediaPlayerCommand(packet);
@@ -635,7 +635,7 @@ namespace LcdMod.Server.Audio
             MyAPIGateway.Players.GetPlayers(players);
             var recipients = 0;
             var currentCandidates = new HashSet<ulong>();
-            var localSteamId = MyAPIGateway.Session?.Player?.SteamUserId ?? 0UL;
+            var localSteamId = MyAPIGateway.Session.Player?.SteamUserId ?? 0UL;
             var deliveredToLocalClient = false;
 
             for (var i = 0; i < players.Count; i++)
@@ -667,7 +667,7 @@ namespace LcdMod.Server.Audio
 
             if (!deliveredToLocalClient && localSteamId != 0 && LcdModSessionComponent.Client != null)
             {
-                var localPlayer = MyAPIGateway.Session == null ? null : MyAPIGateway.Session.LocalHumanPlayer;
+                var localPlayer = MyAPIGateway.Session.LocalHumanPlayer;
                 if (IsPlayerInMediaSyncRange(localPlayer, block) &&
                     (session.ListenerSteamIds == null || !session.ListenerSteamIds.Contains(localSteamId)) &&
                     (session.InRangeCandidateSteamIds == null || !session.InRangeCandidateSteamIds.Contains(localSteamId)))
@@ -719,7 +719,7 @@ namespace LcdMod.Server.Audio
             MyAPIGateway.Players.GetPlayers(players);
             var staleListeners = new List<ulong>();
             var seenListeners = new HashSet<ulong>();
-            var localSteamId = MyAPIGateway.Session?.Player?.SteamUserId ?? 0UL;
+            var localSteamId = MyAPIGateway.Session.Player?.SteamUserId ?? 0UL;
 
             foreach (var player in players.Where(player => player != null && !player.IsBot && player.SteamUserId != 0).Where(player => session.ListenerSteamIds.Contains(player.SteamUserId)))
             {
@@ -763,7 +763,7 @@ namespace LcdMod.Server.Audio
                 ListenerSteamIds = ToArray(session.ListenerSteamIds)
             };
 
-            var localSteamId = MyAPIGateway.Session?.Player?.SteamUserId ?? 0UL;
+            var localSteamId = MyAPIGateway.Session.Player?.SteamUserId ?? 0UL;
             if (localSteamId != 0 && session.SenderSteamId == localSteamId && LcdModSessionComponent.Client != null)
                 LcdModSessionComponent.Client.HandleLocalMediaStreamControl(packet);
             else

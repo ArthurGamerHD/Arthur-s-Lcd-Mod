@@ -1,14 +1,13 @@
 using System;
 using System.IO;
 using Adk.Image;
-using LcdMod.Common.Imaging;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Utils;
 using VRageMath;
 
-namespace LcdMod.Client.Modules.Cartography.Maps
+namespace Cartography.Maps
 {
     /// <summary>One async texture cache per cartography session, shared by all map surfaces.</summary>
     internal sealed class SessionSkybox

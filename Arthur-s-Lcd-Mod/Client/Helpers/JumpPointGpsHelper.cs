@@ -32,9 +32,7 @@ namespace LcdMod.Client.Helpers
             if (grid == null || grid.Closed || grid.MarkedForClose)
                 return false;
 
-            var frame = MyAPIGateway.Session != null
-                ? MyAPIGateway.Session.GameplayFrameCounter
-                : -1;
+            var frame = MyAPIGateway.Session.GameplayFrameCounter;
             if (_cacheFrame != frame)
             {
                 _pointsByPlanet.Clear();
@@ -86,7 +84,7 @@ namespace LcdMod.Client.Helpers
             Vector3D jumpPoint,
             long frame)
         {
-            if (frame < 0 || MyAPIGateway.Session == null || MyAPIGateway.Session.GPS == null)
+            if (frame < 0 || MyAPIGateway.Session.GPS == null)
                 return;
 
             GpsEntry entry;

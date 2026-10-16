@@ -137,7 +137,7 @@ namespace LcdMod.Client.GridData
 
         public void Update()
         {
-            if (!IsAlive || MyAPIGateway.Session == null)
+            if (!IsAlive)
                 return;
 
             MediaPlayers.Update();
@@ -259,9 +259,7 @@ namespace LcdMod.Client.GridData
                 return;
 
             _items = new TypedItemCollection();
-            var currentFrame = MyAPIGateway.Session != null
-                ? MyAPIGateway.Session.GameplayFrameCounter
-                : 0L;
+            var currentFrame = MyAPIGateway.Session.GameplayFrameCounter;
             var reconciliationOffset = (int)((TargetGrid & long.MaxValue) %
                                              INVENTORY_RECONCILIATION_INTERVAL_FRAMES);
             _nextInventoryReconciliationFrame = currentFrame + reconciliationOffset;
@@ -333,21 +331,21 @@ namespace LcdMod.Client.GridData
 
         IMyGridGroupData GetParentGroup()
         {
-            return MyAPIGateway.GridGroups != null && Grid != null
+            return Grid != null
                 ? MyAPIGateway.GridGroups.GetGridGroup(GridLinkTypeEnum.Mechanical, Grid)
                 : null;
         }
 
         IMyGridGroupData GetTerminalParentGroup()
         {
-            return MyAPIGateway.GridGroups != null && Grid != null
+            return Grid != null
                 ? MyAPIGateway.GridGroups.GetGridGroup(GridLinkTypeEnum.Logical, Grid)
                 : null;
         }
 
         IMyGridTerminalSystem GetTerminalSystem()
         {
-            return MyAPIGateway.TerminalActionsHelper != null && Grid != null
+            return Grid != null
                 ? MyAPIGateway.TerminalActionsHelper.GetTerminalSystemForGrid(Grid)
                 : null;
         }
@@ -438,7 +436,7 @@ namespace LcdMod.Client.GridData
                 return;
 
             // The terminal stores "local grid" as -1, which is not a GridLinkTypeEnum member.
-            if (linkType < 0 || MyAPIGateway.GridGroups == null)
+            if (linkType < 0)
             {
                 grids.Add(Grid);
                 return;
@@ -449,7 +447,7 @@ namespace LcdMod.Client.GridData
 
         IMyGridGroupData GetLinkGroup(GridLinkTypeEnum linkType)
         {
-            return MyAPIGateway.GridGroups != null && Grid != null
+            return Grid != null
                 ? MyAPIGateway.GridGroups.GetGridGroup(linkType, Grid)
                 : null;
         }

@@ -63,7 +63,7 @@ namespace LcdMod.Client.Apps
         {
             base.Update();
             RefreshPresentation();
-            if (_nativeView.AdvanceAutoScroll(MyAPIGateway.Session == null ? 0 : MyAPIGateway.Session.GameplayFrameCounter,
+            if (_nativeView.AdvanceAutoScroll(MyAPIGateway.Session.GameplayFrameCounter,
                 InteractionComponent.AutoScrollStep)) MarkDirty();
         }
 

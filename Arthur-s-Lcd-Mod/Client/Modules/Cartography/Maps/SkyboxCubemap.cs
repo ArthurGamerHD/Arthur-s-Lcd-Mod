@@ -1,8 +1,9 @@
 using System;
 using System.IO;
+using Adk.Image.Dds;
 using VRageMath;
 
-namespace LcdMod.Common.Imaging
+namespace Cartography.Maps
 {
     /// <summary>Immutable DDS cube in Direct3D face order (+X, -X, +Y, -Y, +Z, -Z).</summary>
     internal sealed class SkyboxCubemap
@@ -36,7 +37,7 @@ namespace LcdMod.Common.Imaging
                 if (dxgi == 71 || dxgi == 72) format = 1;
                 else if (dxgi == 74 || dxgi == 75) format = 2;
                 else if (dxgi == 77 || dxgi == 78) format = 3;
-                else if (dxgi == 98 || dxgi == 99) format = 7;
+                else if (dxgi == 97 || dxgi == 98 || dxgi == 99) format = 7;
                 else if (dxgi == 28 || dxgi == 29 || dxgi == 87 || dxgi == 91)
                 {
                     format = 0;
@@ -68,8 +69,8 @@ namespace LcdMod.Common.Imaging
             // A mipless mod texture still gets bounded output; only one source row/block is retained.
             int outputSide = Math.Min(selectedSide, maximumSide);
             var faces = new Color[6][];
-            var bc7 = new Bc7Decoder();
             byte[] block = new byte[64];
+            byte[] bc7Row = null;
             byte[] skip = new byte[8192];
             for (int face = 0; face < 6; face++)
             {
@@ -100,9 +101,20 @@ namespace LcdMod.Common.Imaging
                             continue;
                         }
                         int blockBytes = format == 1 ? 8 : 16;
+                        int rowWidth = (size + 3) / 4 * 4;
+                        if (format == 7)
+                        {
+                            // Decode the whole block row padded to full blocks so every 4x4 block is written.
+                            if (bc7Row == null || bc7Row.Length < rowWidth * 16) bc7Row = new byte[rowWidth * 16];
+                            string failure;
+                            if (!DdsDecoder.TryDecodeBc7Blocks(source, 0, rowWidth, 4, bc7Row, rowWidth * 4, out failure))
+                                throw new InvalidOperationException(failure);
+                        }
                         for (int bx = 0; bx < (size + 3) / 4; bx++)
                         {
-                            if (format == 7) bc7.Decode(source, bx * blockBytes, block);
+                            if (format == 7)
+                                for (int by = 0; by < 4; by++)
+                                    Buffer.BlockCopy(bc7Row, by * rowWidth * 4 + bx * 16, block, by * 16, 16);
                             else DecodeBcColor(source, bx * blockBytes + (format == 1 ? 0 : 8), format == 1, block);
                             int firstX = (bx * 4 * outputSide + size - 1) / size;
                             int firstY = (row * 4 * outputSide + size - 1) / size;

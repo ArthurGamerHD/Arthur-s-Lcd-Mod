@@ -101,7 +101,7 @@ namespace LcdMod.Server
 
         public void HandleLocalRequestNpcMarket(PacketRequestNpcMarket packet)
         {
-            var player = MyAPIGateway.Session?.Player;
+            var player = MyAPIGateway.Session.Player;
             _npcMarket.HandleRequest(player?.SteamUserId ?? MyAPIGateway.Multiplayer.MyId, packet);
         }
 
@@ -113,7 +113,7 @@ namespace LcdMod.Server
 
         public void HandleLocalRequestBroadcastAudio(PacketRequestBroadcastAudio packet)
         {
-            var player = MyAPIGateway.Session?.Player;
+            var player = MyAPIGateway.Session.Player;
             _audioBroadcast.HandleRequest(player?.SteamUserId ?? MyAPIGateway.Multiplayer.MyId, packet);
         }
 
@@ -126,7 +126,7 @@ namespace LcdMod.Server
 
         public void HandleLocalRequestMediaPlayerCommand(PacketRequestMediaPlayerCommand packet)
         {
-            var player = MyAPIGateway.Session?.Player;
+            var player = MyAPIGateway.Session.Player;
             _audioBroadcast.HandleMediaPlayerCommandRequest(player?.SteamUserId ?? MyAPIGateway.Multiplayer.MyId, packet);
         }
 
@@ -138,7 +138,7 @@ namespace LcdMod.Server
 
         public void HandleLocalRequestMediaStreamChunk(PacketRequestMediaStreamChunk packet)
         {
-            var player = MyAPIGateway.Session?.Player;
+            var player = MyAPIGateway.Session.Player;
             _audioBroadcast.HandleMediaStreamChunkRequest(player?.SteamUserId ?? MyAPIGateway.Multiplayer.MyId, packet);
         }
 
@@ -151,7 +151,7 @@ namespace LcdMod.Server
 
         public void HandleLocalMediaStreamControl(PacketMediaStreamControl packet)
         {
-            var player = MyAPIGateway.Session?.Player;
+            var player = MyAPIGateway.Session.Player;
             _audioBroadcast.HandleMediaStreamControl(player?.SteamUserId ?? MyAPIGateway.Multiplayer.MyId, packet);
         }
 
@@ -441,7 +441,7 @@ namespace LcdMod.Server
                 return;
             }
 
-            var localSteamId = MyAPIGateway.Session?.Player?.SteamUserId ?? 0;
+            var localSteamId = MyAPIGateway.Session.Player?.SteamUserId ?? 0;
             if (localSteamId != 0 && owner.SteamUserId == localSteamId && LcdModSessionComponent.Client != null)
             {
                 LogHelper.LogInfo($"Server forwarding texture request {cacheKey} to local host client for requester {requesterId}");
@@ -518,7 +518,7 @@ namespace LcdMod.Server
 
         static void SendTextureToRequester(PacketSyncTexture packet, ulong requester)
         {
-            var localSteamId = MyAPIGateway.Session?.Player?.SteamUserId ?? 0;
+            var localSteamId = MyAPIGateway.Session.Player?.SteamUserId ?? 0;
             if (localSteamId != 0 && requester == localSteamId && LcdModSessionComponent.Client != null)
             {
                 LogHelper.LogInfo(

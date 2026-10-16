@@ -22,7 +22,7 @@ namespace LcdMod.Client.Modules.Power
             _maxWindowTicks = maxWindowTicks;
         }
 
-        public static long CurrentTick => MyAPIGateway.Session?.GameplayFrameCounter ?? 0;
+        public static long CurrentTick => MyAPIGateway.Session.GameplayFrameCounter;
 
         /// <summary>
         /// Adds a sample and returns the mean over the last <paramref name="windowTicks"/> ticks (capped at the maximum

@@ -147,8 +147,6 @@ namespace LcdMod.Client.Apps
             try
             {
                 var session = MyAPIGateway.Session;
-                if (session == null) return;
-
                 var shipPos = Block.WorldMatrix.Translation;
                 float range = _maxRange;
                 var ownGrid = Block.CubeGrid;
@@ -452,7 +450,7 @@ namespace LcdMod.Client.Apps
         static bool IsRangeScrollModifierPressed()
         {
             var input = MyAPIGateway.Input;
-            return input != null && input.IsAnyCtrlKeyPressed();
+            return input.IsAnyCtrlKeyPressed();
         }
 
         float GetConfiguredRange()
@@ -550,7 +548,7 @@ namespace LcdMod.Client.Apps
             long lockedEntityId;
             float lockedPercent;
 
-            var player = MyAPIGateway.Session?.LocalHumanPlayer;
+            var player = MyAPIGateway.Session.LocalHumanPlayer;
             RefreshCachedCharacterTargetLocking(player);
 
             var lockedGridId = GetLockedTargetGridIdFromTargetLockingComponent(_cachedCharacterTargetLocking,
@@ -587,7 +585,7 @@ namespace LcdMod.Client.Apps
             if (lockedGridId != 0)
                 return lockedGridId;
 
-            var cameraEntity = MyAPIGateway.Session?.CameraController?.Entity;
+            var cameraEntity = MyAPIGateway.Session.CameraController?.Entity;
             lockedGridId = GetLockedTargetGridIdFromEntity(cameraEntity, out lockedEntityId, out lockedPercent);
             if (lockedEntityId != 0 && targetEntityId == 0)
             {
@@ -753,7 +751,7 @@ namespace LcdMod.Client.Apps
             if (ownerId == 0)
                 return null;
 
-            var faction = MyAPIGateway.Session?.Factions?.TryGetPlayerFaction(ownerId);
+            var faction = MyAPIGateway.Session.Factions?.TryGetPlayerFaction(ownerId);
             if (faction == null)
                 return null;
 
@@ -1162,8 +1160,6 @@ namespace LcdMod.Client.Apps
             try
             {
                 var sess = MyAPIGateway.Session;
-                if (sess == null)
-                    return 0;
                 int ticksPerStep = Math.Max(1, secondsPerStep * 60);
                 return sess.GameplayFrameCounter / ticksPerStep;
             }

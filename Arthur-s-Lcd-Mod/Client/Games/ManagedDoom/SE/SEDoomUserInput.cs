@@ -317,9 +317,6 @@ namespace ManagedDoom.SE
                 DoomInputSettings.GetKeyboardTurnSensitivity(config));
 
             var input = MyAPIGateway.Input;
-            if (input == null)
-                return;
-
             var heldKeys = 0;
             if (input.IsKeyPress(MyKeys.W))
                 heldKeys |= ForwardMask;

@@ -17,9 +17,6 @@ namespace LcdMod.Client.Modules.Defense.Providers.DefenseShields
 
         public void Load()
         {
-            if (MyAPIGateway.Utilities == null)
-                return;
-
             _api.Load();
         }
 
@@ -29,8 +26,7 @@ namespace LcdMod.Client.Modules.Defense.Providers.DefenseShields
                 return;
 
             _apiRetryFrames++;
-            if (MyAPIGateway.Utilities != null)
-                _api.Load();
+            _api.Load();
         }
 
         public void Unload()

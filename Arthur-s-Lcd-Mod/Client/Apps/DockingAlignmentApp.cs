@@ -270,7 +270,7 @@ namespace LcdMod.Client.Apps
                         _referenceBlock = connector;
                         _targetBlock = target;
                         _targetSearchReferenceBlockId = connector.EntityId;
-                        _lastTargetSearchFrame = MyAPIGateway.Session?.GameplayFrameCounter ?? 0L;
+                        _lastTargetSearchFrame = MyAPIGateway.Session.GameplayFrameCounter;
                         yield break;
                     }
 
@@ -281,7 +281,7 @@ namespace LcdMod.Client.Apps
 
         IMyTerminalBlock GetClosestTarget(IMyTerminalBlock reference)
         {
-            var frame = MyAPIGateway.Session?.GameplayFrameCounter ?? 0L;
+            var frame = MyAPIGateway.Session.GameplayFrameCounter;
             var referenceChanged = _targetSearchReferenceBlockId != reference.EntityId;
             if (referenceChanged)
             {
@@ -506,7 +506,7 @@ namespace LcdMod.Client.Apps
 
         double GetClosingDistanceRate(double dockingAxisDistance)
         {
-            var frame = MyAPIGateway.Session?.GameplayFrameCounter ?? 0L;
+            var frame = MyAPIGateway.Session.GameplayFrameCounter;
             var result = 0d;
             if (!double.IsNaN(_lastDockingAxisDistance) && _lastDockingAxisDistanceFrame >= 0L &&
                 frame > _lastDockingAxisDistanceFrame)

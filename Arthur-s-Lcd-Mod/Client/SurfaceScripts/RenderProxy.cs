@@ -158,8 +158,7 @@ namespace LcdMod.Client.SurfaceScripts
                 if (terminalBlock != null)
                     ConfigManager.Sync(terminalBlock);
 
-                if (MyAPIGateway.Session != null)
-                    _rebindBlockedUntilFrame = MyAPIGateway.Session.GameplayFrameCounter + 1;
+                _rebindBlockedUntilFrame = MyAPIGateway.Session.GameplayFrameCounter + 1;
 
                 RenderSprites();
             }
@@ -953,8 +952,7 @@ namespace LcdMod.Client.SurfaceScripts
             _resolvedHostRotationIndex = -1;
             _hostScriptUnsupported = false;
 
-            if (MyAPIGateway.Session != null)
-                _rebindBlockedUntilFrame = MyAPIGateway.Session.GameplayFrameCounter + 1;
+            _rebindBlockedUntilFrame = MyAPIGateway.Session.GameplayFrameCounter + 1;
         }
 
         bool TryGetParentInteractive(out InteractiveSurfaceScript parentInteractive)
@@ -1075,8 +1073,7 @@ namespace LcdMod.Client.SurfaceScripts
             {
                 _hostScriptUnsupported = false;
                 UnsubscribeFromParentRender();
-                if (MyAPIGateway.Session != null)
-                    _rebindBlockedUntilFrame = MyAPIGateway.Session.GameplayFrameCounter + 1;
+                _rebindBlockedUntilFrame = MyAPIGateway.Session.GameplayFrameCounter + 1;
                 return;
             }
 
@@ -1122,8 +1119,7 @@ namespace LcdMod.Client.SurfaceScripts
 
         void ResolveParentFromConfig()
         {
-            if (MyAPIGateway.Session != null &&
-                MyAPIGateway.Session.GameplayFrameCounter < _rebindBlockedUntilFrame)
+            if (MyAPIGateway.Session.GameplayFrameCounter < _rebindBlockedUntilFrame)
             {
                 _parent = null;
                 return;
@@ -1229,7 +1225,7 @@ namespace LcdMod.Client.SurfaceScripts
                            _lastObservedReferenceId != referenceId ||
                            !_lastObservedOffsetX.Equals(x) ||
                            !_lastObservedOffsetY.Equals(y);
-            if (!changed || MyAPIGateway.Session == null)
+            if (!changed)
                 return;
 
             _lastObservedReferenceId = referenceId;

@@ -16,7 +16,7 @@ namespace LcdMod.Client.Ftue
 
         public static bool IsSurfaceEligible(InteractiveSurfaceScript surface)
         {
-            var player = MyAPIGateway.Session?.LocalHumanPlayer;
+            var player = MyAPIGateway.Session.LocalHumanPlayer;
             if (surface == null || surface.Block == null || player == null)
                 return false;
 

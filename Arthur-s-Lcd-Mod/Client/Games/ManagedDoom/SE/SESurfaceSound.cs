@@ -212,7 +212,7 @@ namespace ManagedDoom.SE
             float gain = 0f;
             if (_block != null && !_block.MarkedForClose && !_block.Closed)
             {
-                var camera = MyAPIGateway.Session == null ? null : MyAPIGateway.Session.Camera;
+                var camera = MyAPIGateway.Session.Camera;
                 if (camera == null)
                     gain = 1f;
                 else

@@ -6,8 +6,8 @@ using LcdMod.Client.Apps.Maps;
 using LcdMod.Client.Apps.Views;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Helpers;
-using LcdMod.Client.Modules.Cartography;
-using LcdMod.Client.Modules.Cartography.Maps;
+using Cartography;
+using Cartography.Maps;
 using LcdMod.Common.Config.Components;
 using LcdMod.Common.Mvvm;
 using Sandbox.Game.Entities;
@@ -485,7 +485,7 @@ namespace LcdMod.Client.Apps.StarMap
         bool TryGetGravityWell(Vector3D position, out IMyNaturalGravityComponent well)
         {
             well = null;
-            if (_gravityProvider == null && MyAPIGateway.Session != null)
+            if (_gravityProvider == null)
                 _gravityProvider = (IMyGravityProviderSystem)MyAPIGateway.Session.GetComponentByInterfaceType<IMyGravityProviderSystem>();
             if (_gravityProvider == null || !_gravityProvider.IsPositionInNaturalGravity(position))
                 return false;
@@ -495,7 +495,7 @@ namespace LcdMod.Client.Apps.StarMap
 
         void SampleAltitude(int altitude, long planetId)
         {
-            long frame = MyAPIGateway.Session == null ? 0L : MyAPIGateway.Session.GameplayFrameCounter;
+            long frame = MyAPIGateway.Session.GameplayFrameCounter;
             float warningAltitude = 100f;
             var grid = _host.Block.CubeGrid as MyCubeGrid;
             if (grid != null)
@@ -718,7 +718,7 @@ namespace LcdMod.Client.Apps.StarMap
 
         void CreateGps(string name, Vector3D position, Color color, bool sendToChat)
         {
-            var gpsCollection = MyAPIGateway.Session == null ? null : MyAPIGateway.Session.GPS;
+            var gpsCollection = MyAPIGateway.Session.GPS;
             if (gpsCollection == null)
                 return;
             string localName = string.IsNullOrWhiteSpace(name) ? LocHelper.GetLoc(MOD_PREFIX + "Gps_Unknown_Name") : name;
@@ -730,7 +730,7 @@ namespace LcdMod.Client.Apps.StarMap
             _gpsCreatedStatus = string.Format(FormatingHelper.Culture, LocHelper.GetLoc(MOD_PREFIX + "Gps_CreatedFormat"), localName);
             _gpsCreatedStatusUntil = _runs + GPS_CREATED_STATUS_UPDATES;
             Host.PlayGps();
-            if (sendToChat && MyAPIGateway.Utilities != null)
+            if (sendToChat)
                 MyAPIGateway.Utilities.ShowMessage(_host.Title, string.Format(CultureInfo.InvariantCulture,
                     "GPS:{0}:{1:0.###}:{2:0.###}:{3:0.###}:{4}:", localName.Replace(":", "_"), position.X, position.Y,
                     position.Z, color.ToAHex()));
@@ -800,7 +800,7 @@ namespace LcdMod.Client.Apps.StarMap
             GpsDisplayWaypoint[] always = config.AlwaysDisplayedGpsWaypoints ?? Array.Empty<GpsDisplayWaypoint>();
             int[] legacy = config.AlwaysDisplayedGpsHashes ?? Array.Empty<int>();
             _gpsProjections.Clear();
-            if ((config.DisplayMyGps || legacy.Length != 0) && session != null && session.GPS != null && session.Player != null)
+            if ((config.DisplayMyGps || legacy.Length != 0) && session.GPS != null && session.Player != null)
             {
                 _gpsEntries.Clear();
                 session.GPS.GetGpsList(session.Player.IdentityId, _gpsEntries);

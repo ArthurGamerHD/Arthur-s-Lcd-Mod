@@ -54,8 +54,7 @@ namespace LcdMod.Client.Gui.Styling
         static void ReportHotReload(string message)
         {
             LcdMod.Common.Helpers.LogHelper.Log(VRage.Utils.MyLogSeverity.Info, message);
-            if (MyAPIGateway.Utilities != null)
-                MyAPIGateway.Utilities.ShowMessage("lcdMod", message);
+            MyAPIGateway.Utilities.ShowMessage("lcdMod", message);
         }
 #endif
 
@@ -99,8 +98,6 @@ namespace LcdMod.Client.Gui.Styling
 
         static string LoadSource(string source)
         {
-            if (MyAPIGateway.Utilities == null)
-                throw new InvalidOperationException("The ADK stylesheet loader requires MyAPIGateway.Utilities.");
             using (TextReader reader = MyAPIGateway.Utilities.ReadFileInModLocation(
                        source,
                        LcdModSessionComponent.CurrentModItem))

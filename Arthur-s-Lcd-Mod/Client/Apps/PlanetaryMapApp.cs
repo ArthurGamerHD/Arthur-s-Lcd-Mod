@@ -5,7 +5,7 @@ using LcdMod.Client.Apps.PlanetaryMap;
 using LcdMod.Client.Config;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
-using LcdMod.Client.Modules.Cartography;
+using Cartography;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Common.Config.Components;

@@ -41,7 +41,7 @@ namespace LcdMod.Server.Modules.RoomEnvironment
 
         public void HandleLocalRequestGridRoomEnvironment(PacketRequestGridRoomEnvironment packet)
         {
-            var player = MyAPIGateway.Session?.Player;
+            var player = MyAPIGateway.Session.Player;
             ulong requester = player?.SteamUserId ?? MyAPIGateway.Multiplayer.MyId;
             HandleGridRoomEnvironmentRequest(requester, packet);
         }
@@ -87,9 +87,7 @@ namespace LcdMod.Server.Modules.RoomEnvironment
 
         bool CanServeGridRoomEnvironment(ulong requester, long blockEntityId)
         {
-            long currentTick = MyAPIGateway.Session != null
-                ? MyAPIGateway.Session.GameplayFrameCounter
-                : 0L;
+            long currentTick = MyAPIGateway.Session.GameplayFrameCounter;
 
             Dictionary<long, long> byBlock;
             if (!_requestTicks.TryGetValue(requester, out byBlock))
@@ -153,7 +151,7 @@ namespace LcdMod.Server.Modules.RoomEnvironment
             ulong requester,
             PacketSyncGridRoomEnvironment packet)
         {
-            var localSteamId = MyAPIGateway.Session?.Player?.SteamUserId ?? 0;
+            var localSteamId = MyAPIGateway.Session.Player?.SteamUserId ?? 0;
             var clientRoomEnvironment = LcdModSessionComponent.Client?.RoomEnvironment;
             if (clientRoomEnvironment != null &&
                 (requester == localSteamId ||

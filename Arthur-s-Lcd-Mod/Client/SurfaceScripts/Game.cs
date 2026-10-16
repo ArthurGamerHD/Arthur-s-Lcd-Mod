@@ -85,8 +85,7 @@ namespace LcdMod.Client.SurfaceScripts
 
         void RunDoomFrame()
         {
-            if (_currentGame is DoomGame && Surface != null && MyAPIGateway.Session != null &&
-                LastRunTick != MyAPIGateway.Session.GameplayFrameCounter)
+            if (_currentGame is DoomGame && Surface != null && LastRunTick != MyAPIGateway.Session.GameplayFrameCounter)
                 Run();
         }
 
@@ -127,7 +126,7 @@ namespace LcdMod.Client.SurfaceScripts
             RenderSprites();
         }
 
-        static long CurrentFrame => MyAPIGateway.Session == null ? 0L : MyAPIGateway.Session.GameplayFrameCounter;
+        static long CurrentFrame => MyAPIGateway.Session.GameplayFrameCounter;
 
         /// <summary>The area the game view occupies, between the title and footer; the games lay out inside it.</summary>
         internal RectangleF GameViewBox => _viewApp != null ? _viewApp.GameBounds : ViewBox;

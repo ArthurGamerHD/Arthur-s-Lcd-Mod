@@ -1282,7 +1282,7 @@ namespace LcdMod.Client.Games.Minesweeper
 
         static long GetCurrentGameplayFrame()
         {
-            return MyAPIGateway.Session != null ? MyAPIGateway.Session.GameplayFrameCounter : 0L;
+            return MyAPIGateway.Session.GameplayFrameCounter;
         }
 
         string SerializeHistory()

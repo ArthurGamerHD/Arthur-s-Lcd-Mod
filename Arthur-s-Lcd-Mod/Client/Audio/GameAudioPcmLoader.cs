@@ -329,11 +329,11 @@ namespace LcdMod.Client.Audio
         {
             resolved = null;
 
-            if (string.IsNullOrWhiteSpace(path) || MyAPIGateway.Utilities == null)
+            if (string.IsNullOrWhiteSpace(path))
                 return false;
 
             var session = MyAPIGateway.Session;
-            if (session != null && session.Mods != null)
+            if (session.Mods != null)
             {
                 for (int i = 0; i < session.Mods.Count; i++)
                 {

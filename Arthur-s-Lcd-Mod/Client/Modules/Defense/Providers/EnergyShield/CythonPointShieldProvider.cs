@@ -25,7 +25,6 @@ namespace LcdMod.Client.Modules.Defense.Providers.EnergyShield
         bool _loaded;
         bool _availabilityKnown;
         bool _modAvailable;
-        long _gameplayFrame;
 
         struct LiveShieldValue
         {
@@ -52,7 +51,7 @@ namespace LcdMod.Client.Modules.Defense.Providers.EnergyShield
         public void Load()
         {
             RefreshAvailability();
-            if (_loaded || !_modAvailable || MyAPIGateway.Multiplayer == null)
+            if (_loaded || !_modAvailable)
                 return;
 
             MyAPIGateway.Multiplayer.RegisterSecureMessageHandler(SHIELD_SYNC_CHANNEL, HandleShieldSync);
@@ -62,12 +61,11 @@ namespace LcdMod.Client.Modules.Defense.Providers.EnergyShield
         public void Update(long gameplayFrame)
         {
             Load();
-            _gameplayFrame = gameplayFrame;
         }
 
         public void Unload()
         {
-            if (_loaded && MyAPIGateway.Multiplayer != null)
+            if (_loaded)
                 MyAPIGateway.Multiplayer.UnregisterSecureMessageHandler(SHIELD_SYNC_CHANNEL, HandleShieldSync);
 
             _loaded = false;
@@ -115,7 +113,7 @@ namespace LcdMod.Client.Modules.Defense.Providers.EnergyShield
             if (_availabilityKnown)
                 return;
 
-            var mods = MyAPIGateway.Session?.Mods;
+            var mods = MyAPIGateway.Session.Mods;
             if (mods == null || mods.Count == 0)
                 return;
 
@@ -296,9 +294,7 @@ namespace LcdMod.Client.Modules.Defense.Providers.EnergyShield
             _liveValues[entityId] = new LiveShieldValue
             {
                 CurrentPoints = currentPoints,
-                ReceivedFrame = MyAPIGateway.Session != null
-                    ? MyAPIGateway.Session.GameplayFrameCounter
-                    : _gameplayFrame
+                ReceivedFrame = MyAPIGateway.Session.GameplayFrameCounter
             };
         }
     }

@@ -311,9 +311,6 @@ namespace LcdMod.Client.Audio
 
         void ShowProgress(int tested, int total)
         {
-            if (MyAPIGateway.Utilities == null)
-                return;
-
             _progressNotification = MyAPIGateway.Utilities.CreateNotification(
                 BuildProgressText(tested, total),
                 int.MaxValue);
@@ -322,9 +319,6 @@ namespace LcdMod.Client.Audio
 
         void UpdateProgress(int tested, int total)
         {
-            if (MyAPIGateway.Utilities == null)
-                return;
-
             MyAPIGateway.Utilities.InvokeOnGameThread(delegate
             {
                 if (_progressNotification == null)
@@ -500,7 +494,7 @@ namespace LcdMod.Client.Audio
 
         static void Show(string text, string font = "White")
         {
-            MyAPIGateway.Utilities?.ShowNotification(text, 5000, font);
+            MyAPIGateway.Utilities.ShowNotification(text, 5000, font);
         }
     }
 }

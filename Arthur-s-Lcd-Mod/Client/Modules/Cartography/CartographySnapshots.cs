@@ -14,7 +14,7 @@ using VRage.Game;
 using VRage.Utils;
 using VRageMath;
 
-namespace LcdMod.Client.Modules.Cartography
+namespace Cartography
 {
 
     internal sealed class MaterialRuleSnapshot
@@ -567,7 +567,7 @@ namespace LcdMod.Client.Modules.Cartography
         }
     }
 
-    internal static class CartographySnapshotBuilder
+    internal static partial class CartographySnapshotBuilder
     {
         const double DEFAULT_PLANET_RADIUS_METERS = 60000d;
 
@@ -816,14 +816,14 @@ namespace LcdMod.Client.Modules.Cartography
             if (request.PlanetEntityId != 0)
             {
                 MyPlanet direct;
-                if (Helpers.PlanetHelper.PlanetsById.TryGetValue(request.PlanetEntityId, out direct))
+                if (CartographyHost.PlanetsById.TryGetValue(request.PlanetEntityId, out direct))
                     return direct;
             }
 
             if (string.IsNullOrWhiteSpace(request.PlanetGeneratorSubtype))
                 return null;
 
-            foreach (var pair in Helpers.PlanetHelper.PlanetsById)
+            foreach (var pair in CartographyHost.PlanetsById)
             {
                 var candidate = pair.Value;
                 if (candidate == null || candidate.MarkedForClose || candidate.Generator == null)

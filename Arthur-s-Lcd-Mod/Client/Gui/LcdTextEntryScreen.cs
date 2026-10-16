@@ -70,7 +70,7 @@ namespace LcdMod.Client.Gui
         protected override void OnHandleInput()
         {
             var input = MyAPIGateway.Input;
-            if (input == null || _host.IsDisposed || _surface.Block == null || _surface.Block.MarkedForClose)
+            if (_host.IsDisposed || _surface.Block == null || _surface.Block.MarkedForClose)
             {
                 CloseNow();
                 return;

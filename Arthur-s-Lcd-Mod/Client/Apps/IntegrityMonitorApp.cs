@@ -201,8 +201,6 @@ namespace LcdMod.Client.Apps
         static int GetTimeStep(float secondsPerStep)
         {
             var session = MyAPIGateway.Session;
-            if (session == null)
-                return 0;
             if (secondsPerStep <= 0f)
                 secondsPerStep = 1f / 60f;
             var ticksPerStep = Math.Max(1, (int)Math.Round(secondsPerStep * 60f));

@@ -226,9 +226,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         static long GetAnimationFrame()
         {
-            return MyAPIGateway.Session != null
-                ? MyAPIGateway.Session.GameplayFrameCounter
-                : 0L;
+            return MyAPIGateway.Session.GameplayFrameCounter;
         }
 
         static void ScheduleAnimationFrame(Action action)
@@ -791,7 +789,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             try
             {
                 var sess = MyAPIGateway.Session;
-                if (sess == null) return 0;
                 if (secondsPerStep <= 0f) secondsPerStep = 1f / 60f;
 
                 // SE runs at 60 game ticks per second.
@@ -1096,7 +1093,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             float innerSize = outerSize * 0.6f;
 
             var session = MyAPIGateway.Session;
-            double seconds = session != null ? session.GameplayFrameCounter / 60.0 : 0.0;
+            double seconds = session.GameplayFrameCounter / 60.0;
             float outerRotation = (float)(seconds * 2.4);
             float innerRotation = -outerRotation;
 
@@ -1292,7 +1289,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         static bool _queueRenders;
         static volatile bool _renderingInParallel;
 
-        /// <summary>Builds and uploads eligible queued screens on worker threads; off renders them one by one.</summary>
         internal static bool ParallelRendering = true;
 
         bool _renderQueued;
@@ -1301,8 +1297,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         bool _inParallelBatch;
         bool _parallelNotify;
         Exception _parallelError;
-
-        /// <summary>True while the frame being rendered may reuse the previous content and only redraw the cursor.</summary>
         protected bool RenderingCursorOnly { get; private set; }
 
         /// <summary>
@@ -1369,7 +1363,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 return;
 
             ParallelRenders.Clear();
-            if (ParallelRendering && MyAPIGateway.Parallel != null)
+            if (ParallelRendering)
             {
                 for (int i = 0; i < QueuedRenders.Count; i++)
                 {

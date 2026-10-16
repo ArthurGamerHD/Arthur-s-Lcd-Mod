@@ -60,6 +60,14 @@ namespace LcdMod.Client.Modules.InputBlock
 
             _pendingModules.Clear();
 
+            // The LCD Eye Tracking API mod blocks tool input itself while a screen is looked at.
+            if (EyeTracking.EyeTrackingModule.UsesEyeTrackingApi)
+            {
+                _lastActiveNearbyCount = 0;
+                SetInputBlocked(false);
+                return;
+            }
+
             int activeCount;
             bool shouldBlock = ShouldBlockInput(out activeCount);
             _lastActiveNearbyCount = activeCount;
@@ -74,7 +82,7 @@ namespace LcdMod.Client.Modules.InputBlock
         {
             activeCount = 0;
 
-            var player = MyAPIGateway.Session?.LocalHumanPlayer;
+            var player = MyAPIGateway.Session.LocalHumanPlayer;
             var entity = player?.Controller?.ControlledEntity?.Entity as MyCubeBlock;
 
             if (LocalPlayerBlockStateHelper.IsBlockPlacerActive())
@@ -123,7 +131,7 @@ namespace LcdMod.Client.Modules.InputBlock
             if (_useInputBlocked == blocked)
                 return;
 
-            if (MyAPIGateway.Session?.LocalHumanPlayer == null)
+            if (MyAPIGateway.Session.LocalHumanPlayer == null)
                 return;
 
             LcdModClientComponent.SetLocalPlayerUseInputBlocked(blocked);
@@ -144,7 +152,7 @@ namespace LcdMod.Client.Modules.InputBlock
 
         static bool HasRecentlyRun(IInputBlock screen)
         {
-            if (screen == null || MyAPIGateway.Session == null)
+            if (screen == null)
                 return false;
 
             return screen.LastRunTick != long.MinValue &&
@@ -158,9 +166,6 @@ namespace LcdMod.Client.Modules.InputBlock
             direction = Vector3D.Zero;
 
             var session = MyAPIGateway.Session;
-            if (session == null)
-                return false;
-
             var camera = session.Camera;
             if (camera != null)
             {

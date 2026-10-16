@@ -228,7 +228,7 @@ namespace LcdMod.Client.Apps
         {
             try
             {
-                if (MyAPIGateway.GeneratedTextures == null || !MyAPIGateway.GeneratedTextures.IsSupported)
+                if (!MyAPIGateway.GeneratedTextures.IsSupported)
                     throw new InvalidOperationException("Doom requires beta generated textures.");
 
                 DoomUserProfileStorage.Initialize();
@@ -301,9 +301,6 @@ namespace LcdMod.Client.Apps
                 _audio.DispatchPending();
 
                 var parallel = MyAPIGateway.Parallel;
-                if (parallel == null)
-                    throw new InvalidOperationException("Space Engineers parallel API is unavailable.");
-
                 var workerDoom = _doom;
                 var workerVideo = _video;
                 var workerInput = _input;
@@ -629,9 +626,6 @@ namespace LcdMod.Client.Apps
             bytes = null;
 
             var utilities = MyAPIGateway.Utilities;
-            if (utilities == null)
-                return false;
-
             if (LcdModSessionComponent.ModItem != null)
             {
                 var modItem = (MyObjectBuilder_Checkpoint.ModItem)LcdModSessionComponent.ModItem;

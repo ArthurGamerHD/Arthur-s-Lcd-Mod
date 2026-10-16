@@ -58,14 +58,11 @@ namespace LcdMod.Client.Apps.ViewModel
         {
             Items = new ObservableList<ItemEntry>();
             _rootGridLogic = gridLogic;
-            if (MyAPIGateway.Session != null)
-            {
-                var reconciliationSeed =
-                    ((gridLogic != null ? gridLogic.TargetGrid : 0L) ^ GetHashCode()) & long.MaxValue;
-                _nextInventoryReconciliationFrame =
-                    MyAPIGateway.Session.GameplayFrameCounter +
-                    reconciliationSeed % INVENTORY_RECONCILIATION_INTERVAL_FRAMES;
-            }
+            var reconciliationSeed =
+                ((gridLogic != null ? gridLogic.TargetGrid : 0L) ^ GetHashCode()) & long.MaxValue;
+            _nextInventoryReconciliationFrame =
+                MyAPIGateway.Session.GameplayFrameCounter +
+                reconciliationSeed % INVENTORY_RECONCILIATION_INTERVAL_FRAMES;
             UpdateSelection(selection, blockSelection, true);
         }
 
@@ -522,7 +519,7 @@ namespace LcdMod.Client.Apps.ViewModel
 
         void ReconcileScopedInventoryIfDue()
         {
-            if (!HasBlockWhitelist() || MyAPIGateway.Session == null)
+            if (!HasBlockWhitelist())
                 return;
 
             var currentFrame = MyAPIGateway.Session.GameplayFrameCounter;

@@ -201,7 +201,7 @@ namespace ManagedDoom.SE
                 return 0f;
 
             var session = MyAPIGateway.Session;
-            var camera = session != null ? session.Camera : null;
+            var camera = session.Camera;
             if (camera == null)
                 return 1f;
 

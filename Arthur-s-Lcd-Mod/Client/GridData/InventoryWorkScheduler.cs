@@ -34,9 +34,7 @@ namespace LcdMod.Client.GridData
             if (collection == null)
                 return;
 
-            var currentFrame = MyAPIGateway.Session != null
-                ? MyAPIGateway.Session.GameplayFrameCounter
-                : 0L;
+            var currentFrame = MyAPIGateway.Session.GameplayFrameCounter;
             var work = new WorkItem
             {
                 Collection = collection,
@@ -52,9 +50,7 @@ namespace LcdMod.Client.GridData
             if (Urgent.Count == 0 && Background.Count == 0)
                 return;
 
-            var currentFrame = MyAPIGateway.Session != null
-                ? MyAPIGateway.Session.GameplayFrameCounter
-                : long.MaxValue;
+            var currentFrame = MyAPIGateway.Session.GameplayFrameCounter;
             var inventoryScans = 0;
             var dequeued = 0;
             var urgentBurst = 0;

@@ -123,13 +123,6 @@ namespace LcdMod.Client.Gui.UserControls.Power
         void UpdateSpinTiming()
         {
             var session = MyAPIGateway.Session;
-            if (session == null)
-            {
-                _spinDeltaSeconds = 1f / 6f;
-                _lastSpinFrameCounter = -1;
-                return;
-            }
-
             long frameCounter = session.GameplayFrameCounter;
             if (_lastSpinFrameCounter < 0 || frameCounter < _lastSpinFrameCounter)
             {

@@ -65,7 +65,7 @@ namespace LcdMod.Client.Apps
             if (count <= 1 || interval <= 0f)
                 return 0;
             var session = MyAPIGateway.Session;
-            double totalSeconds = session != null ? session.ElapsedPlayTime.TotalSeconds : 0d;
+            double totalSeconds = session.ElapsedPlayTime.TotalSeconds;
             return (int)(totalSeconds / interval) % count;
         }
 

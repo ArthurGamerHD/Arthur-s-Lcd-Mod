@@ -8,7 +8,7 @@ using LcdMod.Client.Market;
 using LcdMod.Client.Ftue;
 using LcdMod.Client.Modules.Power;
 using LcdMod.Client.Modules.Defense;
-using LcdMod.Client.Modules.Cartography;
+using Cartography;
 using LcdMod.Client.Modules.RoomEnvironment;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Config;
@@ -271,9 +271,7 @@ namespace LcdMod.Client
             if (action == null)
                 return;
 
-            long currentFrame = MyAPIGateway.Session != null
-                ? MyAPIGateway.Session.GameplayFrameCounter
-                : 0L;
+            long currentFrame = MyAPIGateway.Session.GameplayFrameCounter;
             RunOnePerFrame.Add(new ScheduledOnePerFrameAction
             {
                 Action = action,
@@ -286,9 +284,7 @@ namespace LcdMod.Client
             if (RunOnePerFrame.Count == 0)
                 return;
 
-            long currentFrame = MyAPIGateway.Session != null
-                ? MyAPIGateway.Session.GameplayFrameCounter
-                : long.MaxValue;
+            long currentFrame = MyAPIGateway.Session.GameplayFrameCounter;
             int scheduledIndex = -1;
             for (int i = 0; i < RunOnePerFrame.Count; i++)
             {
@@ -398,7 +394,7 @@ namespace LcdMod.Client
             if (packet == null || string.IsNullOrWhiteSpace(packet.TextureName))
                 return;
 
-            var localSteamId = MyAPIGateway.Session?.Player?.SteamUserId ?? 0;
+            var localSteamId = MyAPIGateway.Session.Player?.SteamUserId ?? 0;
             if (localSteamId == 0 || packet.OwnerSteamId != localSteamId)
                 return;
 
@@ -420,7 +416,7 @@ namespace LcdMod.Client
             int height;
             TextureTransferHelper.TryGetDdsDimensions(textureBytes, out width, out height);
 
-            var ownerName = MyAPIGateway.Session?.Player?.DisplayName ?? string.Empty;
+            var ownerName = MyAPIGateway.Session.Player?.DisplayName ?? string.Empty;
             var metadata = new TextureTransferHelper.TextureMetadata
             {
                 OwnerSteamId = localSteamId,
@@ -461,7 +457,7 @@ namespace LcdMod.Client
             if (packet == null || string.IsNullOrWhiteSpace(packet.TextureName) || !TextureTransferHelper.IsValidTexturePayload(packet.Data))
                 return;
 
-            var localSteamId = MyAPIGateway.Session?.Player?.SteamUserId ?? 0;
+            var localSteamId = MyAPIGateway.Session.Player?.SteamUserId ?? 0;
             if (localSteamId != 0 && packet.RequesterSteamId != 0 && packet.RequesterSteamId != localSteamId)
                 return;
 
@@ -620,7 +616,7 @@ namespace LcdMod.Client
                 return 0.0;
 
             var position = packet.PositionSeconds;
-            if (packet.ServerFrame > 0 && MyAPIGateway.Session != null)
+            if (packet.ServerFrame > 0)
             {
                 var frameDelta = MyAPIGateway.Session.GameplayFrameCounter - packet.ServerFrame;
                 if (frameDelta > 0)

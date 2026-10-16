@@ -22,7 +22,7 @@ namespace LcdMod.Client.Helpers
             ClockDashboardSnapshot previous)
         {
             var snapshot = CreateDefaultSnapshot();
-            if (MyAPIGateway.Session == null || block == null || block.MarkedForClose)
+            if (block == null || block.MarkedForClose)
             {
                 return snapshot;
             }
@@ -182,7 +182,7 @@ namespace LcdMod.Client.Helpers
         {
             try
             {
-                var weatherApi = MyAPIGateway.Session != null ? MyAPIGateway.Session.WeatherEffects : null;
+                var weatherApi = MyAPIGateway.Session.WeatherEffects;
                 if (weatherApi == null)
                 {
                     snapshot.WeatherDisplayName = ClockDashboardLocalization.Unavailable;
@@ -374,7 +374,7 @@ namespace LcdMod.Client.Helpers
             try
             {
                 float speed = Math.Max(0f, planet.GetWindSpeed(position));
-                var weatherApi = MyAPIGateway.Session != null ? MyAPIGateway.Session.WeatherEffects : null;
+                var weatherApi = MyAPIGateway.Session.WeatherEffects;
                 if (weatherApi != null)
                     speed *= Math.Max(0f, weatherApi.GetWindMultiplier(position));
 
@@ -434,9 +434,7 @@ namespace LcdMod.Client.Helpers
         {
             try
             {
-                var oxygenProvider = MyAPIGateway.Session != null
-                    ? MyAPIGateway.Session.OxygenProviderSystem
-                    : null;
+                var oxygenProvider = MyAPIGateway.Session.OxygenProviderSystem;
                 return oxygenProvider != null
                     ? MathHelper.Clamp(oxygenProvider.GetOxygenInPoint(position), 0f, 1f)
                     : 0f;
@@ -544,7 +542,7 @@ namespace LcdMod.Client.Helpers
             try
             {
                 var session = MyAPIGateway.Session;
-                var sector = session?.GetSector();
+                var sector = session.GetSector();
                 var environment = sector?.Environment;
                 if (environment != null)
                 {
