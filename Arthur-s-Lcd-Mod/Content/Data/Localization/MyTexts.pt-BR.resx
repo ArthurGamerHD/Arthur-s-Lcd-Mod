@@ -832,10 +832,10 @@ Vamos aguardar um pouco e então reiniciá-la para você.</value>
     <value>Confira a gravidade, a atmosfera, a temperatura, o vento e a posição.</value>
   </data>
   <data name="LcdMod_Ftue_PictureFrameCustomTextures_Line1" xml:space="preserve">
-    <value>Adicione texturas `.dds` personalizadas em {0}.</value>
+    <value>Adicione suas próprias imagens `.png` ou `.dds` em {0}.</value>
   </data>
   <data name="LcdMod_Ftue_PictureFrameCustomTextures_Line2" xml:space="preserve">
-    <value>Copie-as para o local e execute `/lcdmod importtextures`.</value>
+    <value>Elas são importadas ao carregar um mundo, ou execute `/lcdmod importtextures`.</value>
   </data>
   <data name="LcdMod_Ftue_PowerFilledDetails_Line1" xml:space="preserve">
     <value>Clique em uma bateria ou Jump drive para ver informações detalhadas.</value>
@@ -1029,9 +1029,6 @@ Vamos aguardar um pouco e então reiniciá-la para você.</value>
   </data>
   <data name="LcdMod_FilePicker_PickFolder" xml:space="preserve">
     <value>Escolher pasta</value>
-  </data>
-  <data name="LcdMod_FilePicker_Root" xml:space="preserve">
-    <value>Raiz</value>
   </data>
   <data name="LcdMod_FilePicker_SearchTitle" xml:space="preserve">
     <value>Pesquisar arquivo</value>
@@ -1321,10 +1318,6 @@ Vamos aguardar um pouco e então reiniciá-la para você.</value>
     <value>Enables, disables, or toggles rendering of textures owned by other users.</value>
     <comment>TODO_TRANSLATION</comment>
   </data>
-  <data name="LcdMod_ChatCommand_LegacyLocalTextureStorage_Summary" xml:space="preserve">
-    <value>Enables, disables, or toggles legacy local texture storage.</value>
-    <comment>TODO_TRANSLATION</comment>
-  </data>
   <data name="LcdMod_ChatCommand_DebugInteractive_Summary" xml:space="preserve">
     <value>Enables, disables, or toggles interactive control-boundary debugging.</value>
     <comment>TODO_TRANSLATION</comment>
@@ -1365,20 +1358,12 @@ Vamos aguardar um pouco e então reiniciá-la para você.</value>
     <value>Preloads block textures as LCD sprites.</value>
     <comment>TODO_TRANSLATION</comment>
   </data>
-  <data name="LcdMod_ChatCommand_ImportLocalTexture_Summary" xml:space="preserve">
-    <value>Imports a local texture file.</value>
-    <comment>TODO_TRANSLATION</comment>
-  </data>
   <data name="LcdMod_ChatCommand_RemoveLocalTexture_Summary" xml:space="preserve">
-    <value>Removes a local texture so it is not loaded after restart.</value>
+    <value>Removes an image from your local image library.</value>
     <comment>TODO_TRANSLATION</comment>
   </data>
   <data name="LcdMod_ChatCommand_ImportTextures_Summary" xml:space="preserve">
-    <value>Imports the texture files listed in import.txt.</value>
-    <comment>TODO_TRANSLATION</comment>
-  </data>
-  <data name="LcdMod_ChatCommand_ClearCache_Summary" xml:space="preserve">
-    <value>Clears cached remote textures while keeping local textures.</value>
+    <value>Imports new .png and .dds images from the mod storage folder.</value>
     <comment>TODO_TRANSLATION</comment>
   </data>
 
@@ -1396,14 +1381,6 @@ Vamos aguardar um pouco e então reiniciá-la para você.</value>
   </data>
   <data name="LcdMod_ChatCommand_RenderUserGeneratedTextures_Disabled_Message" xml:space="preserve">
     <value>Rendering textures owned by other users disabled.</value>
-    <comment>TODO_TRANSLATION</comment>
-  </data>
-  <data name="LcdMod_ChatCommand_LegacyLocalTextureStorage_Enabled_Message" xml:space="preserve">
-    <value>Legacy local texture storage enabled. Restart the game if already loaded local textures do not refresh.</value>
-    <comment>TODO_TRANSLATION</comment>
-  </data>
-  <data name="LcdMod_ChatCommand_LegacyLocalTextureStorage_Disabled_Message" xml:space="preserve">
-    <value>Legacy local texture storage disabled. Restart the game if already loaded local textures do not refresh.</value>
     <comment>TODO_TRANSLATION</comment>
   </data>
   <data name="LcdMod_ChatCommand_DebugInteractive_Enabled_Message" xml:space="preserve">
@@ -1466,10 +1443,6 @@ Vamos aguardar um pouco e então reiniciá-la para você.</value>
   </data>
   <data name="LcdMod_ChatCommand_ResetFtue_NoneFound_Message" xml:space="preserve">
     <value>No completed FTUE tips were found.</value>
-    <comment>TODO_TRANSLATION</comment>
-  </data>
-  <data name="LcdMod_ChatCommand_ClearCache_Completed_Message" xml:space="preserve">
-    <value>Remote texture cache cleared. Local images were kept.</value>
     <comment>TODO_TRANSLATION</comment>
   </data>
   <data name="LcdMod_ChatCommand_Help_Title" xml:space="preserve">
@@ -1799,18 +1772,6 @@ Vamos aguardar um pouco e então reiniciá-la para você.</value>
     <value>Sprite Picker</value>
     <comment>TODO_TRANSLATION</comment>
   </data>
-  <data name="LcdMod_SpritePicker_SearchPlaceholder" xml:space="preserve">
-    <value>Search sprites</value>
-    <comment>TODO_TRANSLATION</comment>
-  </data>
-  <data name="LcdMod_SpritePicker_Empty" xml:space="preserve">
-    <value>No sprites found</value>
-    <comment>TODO_TRANSLATION</comment>
-  </data>
-  <data name="LcdMod_SpritePicker_NoMatchesFormat" xml:space="preserve">
-    <value>No sprites match "{0}"</value>
-    <comment>TODO_TRANSLATION</comment>
-  </data>
   <data name="LcdMod_SpritePicker_SelectedFormat" xml:space="preserve">
     <value>{0} selected</value>
     <comment>TODO_TRANSLATION</comment>
@@ -1818,6 +1779,18 @@ Vamos aguardar um pouco e então reiniciá-la para você.</value>
   <data name="LcdMod_SpritePicker_MultiSelectHint" xml:space="preserve">
     <value>Ctrl+click adds a sprite, Shift+click selects a range</value>
     <comment>TODO_TRANSLATION</comment>
+  </data>
+  <data name="LcdMod_SpritePicker_Root_Local" xml:space="preserve">
+    <value>Minhas imagens</value>
+  </data>
+  <data name="LcdMod_SpritePicker_Root_Sprites" xml:space="preserve">
+    <value>Sprites de LCD</value>
+  </data>
+  <data name="LcdMod_SpritePicker_Root_Blocks" xml:space="preserve">
+    <value>Blocos</value>
+  </data>
+  <data name="LcdMod_SpritePicker_RemoveFromLibrary" xml:space="preserve">
+    <value>Remover da biblioteca</value>
   </data>
   <data name="LcdMod_Common_Button_Apply" xml:space="preserve">
     <value>Apply</value>

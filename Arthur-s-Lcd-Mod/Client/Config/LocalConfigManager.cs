@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using LcdMod.Client.Helpers;
-using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 
 namespace LcdMod.Client.Config
@@ -12,7 +10,6 @@ namespace LcdMod.Client.Config
 
         public static bool AdvancedTweakables => Config != null && Config.AdvancedTweekables;
         public static bool RenderOtherUserTextures => Config == null || Config.RenderOtherUserTextures;
-        public static bool UseLegacyLocalTextureStorage => Config != null && Config.UseLegacyLocalTextureStorage;
         public static bool AcceptMediaStreams => Config == null || Config.AcceptMediaStreams;
         public static Adk.Gui.Controls.CaptionButtonsPlacement CaptionButtons =>
             Config?.CaptionButtons ?? Adk.Gui.Controls.CaptionButtonsPlacement.Left;
@@ -53,37 +50,9 @@ namespace LcdMod.Client.Config
                 Config = new LcdModLocalConfig();
             }
 
-            var legacyLocalTextures = Config.LocalTextures == null
-                ? new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-                : new HashSet<string>(Config.LocalTextures, StringComparer.OrdinalIgnoreCase);
-
             Config.TextureQuality = PlanetTextureQualitySettings.Normalize(Config.TextureQuality);
 
-            TextureTransferHelper.UseLegacyLocalTextureStorage = UseLegacyLocalTextureStorage;
-
-            if (UseLegacyLocalTextureStorage)
-            {
-                Config.LocalTextures = legacyLocalTextures;
-                TextureHelper.LoadLegacyLocalTextures();
-            }
-            else
-            {
-                // LocalTextures is retained only as a one-time migration input in ZIP mode.
-                // Runtime state is rebuilt from local_textures.zip and the property is not serialized.
-                Config.LocalTextures = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                foreach (var localTexture in legacyLocalTextures)
-                    TextureHelper.MigrateLegacyLocalTexture(localTexture);
-
-                TextureHelper.LoadLocalTextures();
-            }
-
-            TextureHelper.LoadCachedTextures();
-
-            TextureHelper.Import();
-            TextureHelper.ExportConverter();
-
-            if (hadLegacyLocalTextures && !UseLegacyLocalTextureStorage)
+            if (hadLegacyLocalTextures)
                 Save();
         }
 
@@ -208,7 +177,8 @@ namespace LcdMod.Client.Config
         static bool ContainsLegacyLocalTextures(string xml)
         {
             return !string.IsNullOrWhiteSpace(xml) &&
-                   xml.IndexOf("<LocalTextures", StringComparison.OrdinalIgnoreCase) >= 0;
+                   (xml.IndexOf("<LocalTextures", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    xml.IndexOf("<UseLegacyLocalTextureStorage", StringComparison.OrdinalIgnoreCase) >= 0);
         }
 
         static LcdModLocalConfig DeserializeConfig(string xml)

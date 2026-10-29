@@ -1,4 +1,5 @@
 using System;
+using LcdMod.Client.Images;
 using System.Collections.Generic;
 using System.Linq;
 using Generated;
@@ -82,6 +83,7 @@ namespace LcdMod.Client.Config
             foreach (var app in apps)
                 app.RequestRedraw();
 
+            GridImageClientService.Instance?.UploadReferenced(block, providerConfig);
             LcdModSessionComponent.NetworkManager.TransmitToServer(
                 new NetworkPackageSyncComponentConfig(storageEntity.EntityId, providerConfig));
             Save(storageEntity, providerConfig);

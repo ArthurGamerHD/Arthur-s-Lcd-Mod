@@ -6,7 +6,6 @@ namespace LcdMod.Client.Config
     {
         public LcdModLocalConfig()
         {
-            LocalTextures = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
             CompletedFtueTips = new HashSet<string>(System.StringComparer.Ordinal);
             RenderOtherUserTextures = true;
             AcceptMediaStreams = true;
@@ -20,7 +19,6 @@ namespace LcdMod.Client.Config
         public bool DebugSurface { get; set; }
         public bool SpriteCountDebug { get; set; }
         public bool VisibleClip { get; set; }
-        public bool UseLegacyLocalTextureStorage { get; set; }
         public bool AcceptMediaStreams { get; set; }
         public PlanetTextureQuality TextureQuality { get; set; }
         public Adk.Gui.Controls.CaptionButtonsPlacement CaptionButtons { get; set; }
@@ -28,9 +26,6 @@ namespace LcdMod.Client.Config
         public HashSet<string> CompletedFtueTips { get; set; }
 
         public LcdMod.Common.Config.Components.MediaVisualizerInstanceSettings[] MediaVisualizerInstances { get; set; }
-
-        // Legacy migration input for ZIP mode, and active runtime state when legacy storage is enabled.
-        public HashSet<string> LocalTextures { get; set; }
 
         public bool ShouldSerializeCompletedFtueTips()
         {
@@ -40,11 +35,6 @@ namespace LcdMod.Client.Config
         public bool ShouldSerializeMediaVisualizerInstances()
         {
             return MediaVisualizerInstances != null;
-        }
-
-        public bool ShouldSerializeLocalTextures()
-        {
-            return UseLegacyLocalTextureStorage && LocalTextures != null && LocalTextures.Count > 0;
         }
     }
 }

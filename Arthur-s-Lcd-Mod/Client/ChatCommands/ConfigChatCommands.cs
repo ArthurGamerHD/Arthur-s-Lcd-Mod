@@ -50,44 +50,6 @@ namespace LcdMod.Client.ChatCommands
                     : LocHelper.GetLoc("LcdMod_ChatCommand_RenderUserGeneratedTextures_Disabled_Message"));
         }
 
-        /// <summary>
-        /// Enables, disables, or toggles legacy local texture storage.
-        /// </summary>
-        /// <loc>LcdMod_ChatCommand_LegacyLocalTextureStorage_Summary</loc>
-        [ChatCommand("LegacyLocalTextureStorage")]
-        public static void SetLegacyLocalTextureStorage(bool? enabled)
-        {
-            var config = LocalConfigManager.EnsureConfig();
-
-            if (config.LocalTextures == null)
-                config.LocalTextures = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-            bool useLegacyLocalTextureStorage = enabled ?? !LocalConfigManager.UseLegacyLocalTextureStorage;
-            config.UseLegacyLocalTextureStorage = useLegacyLocalTextureStorage;
-            TextureTransferHelper.UseLegacyLocalTextureStorage = useLegacyLocalTextureStorage;
-
-            if (useLegacyLocalTextureStorage)
-            {
-                TextureHelper.EnableLegacyLocalTextureStorage();
-            }
-            else
-            {
-                var legacyLocalTextures = new HashSet<string>(config.LocalTextures, StringComparer.OrdinalIgnoreCase);
-                config.LocalTextures = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                foreach (var localTexture in legacyLocalTextures)
-                    TextureHelper.MigrateLegacyLocalTexture(localTexture);
-            }
-
-            LocalConfigManager.Save();
-
-            MyAPIGateway.Utilities.ShowMessage(
-                "lcdMod",
-                LocalConfigManager.UseLegacyLocalTextureStorage
-                    ? LocHelper.GetLoc("LcdMod_ChatCommand_LegacyLocalTextureStorage_Enabled_Message")
-                    : LocHelper.GetLoc("LcdMod_ChatCommand_LegacyLocalTextureStorage_Disabled_Message"));
-        }
-
 #if DEBUG
         /// <summary>
         /// Enables, disables, or toggles interactive control-boundary debugging.

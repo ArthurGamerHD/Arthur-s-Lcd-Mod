@@ -59,11 +59,13 @@ namespace LcdMod.Client.Apps
             });
             SetContentLayout(true);
         }
-        float Scale => GeneralComponent.GetScale();
+        float Scale => CardScale;
+
+        internal override float WindowRenderScaling => CardScale;
 
         float FontScale => _host != null && _host.Surface != null ? Math.Max(0.1f, _host.Surface.FontSize) : 1f;
 
-        float TextScale => LINE_SCALE * Scale * FontScale;
+        float TextScale => LINE_SCALE * FontScale;
 
         public override List<MySprite> GetSprites()
         {
@@ -79,8 +81,8 @@ namespace LcdMod.Client.Apps
             var lineHeight = TextWrappingHelper.GetLineHeight(
                 _host.Surface,
                 DEBUG_FONT,
-                TextScale,
-                2f * Math.Max(0.5f, Scale * FontScale));
+                TextScale * Scale,
+                2f * Math.Max(0.5f, Scale * FontScale)) / Scale;
 
             _scrollViewer.WheelStep = lineHeight;
             for (int i = 0; i < _lineItems.ItemCount; i++)

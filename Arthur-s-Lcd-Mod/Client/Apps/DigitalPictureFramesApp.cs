@@ -5,6 +5,7 @@ using Adk.Gui.Styling;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Config;
 using LcdMod.Client.Helpers;
+using LcdMod.Client.Images;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
@@ -55,6 +56,13 @@ namespace LcdMod.Client.Apps
             }
         }
 
+        internal bool NativeIsLoading(string sprite)
+        {
+            return GetImageState(sprite) == GridImageState.Loading;
+        }
+
+        internal int NativeDisplayMode => GeneralComponent.DisplayMode;
+
         internal bool NativeCanEdit => HasLocalPlayerAccess();
         internal string NativePickText => LocHelper.GetLoc(MOD_PREFIX + "PickTexture");
         internal void OpenNativePicker() { OnPickBackgroundClicked(); }
@@ -69,15 +77,15 @@ namespace LcdMod.Client.Apps
             return (int)(totalSeconds / interval) % count;
         }
 
+        internal override float WindowRenderScaling => CardScale;
+
         internal BackgroundBrush CreateNativeBrush(string sprite)
         {
-            float scale = GeneralComponent.GetScale();
             var brush = new ImageBrush(sprite) { TransformOrigin = RelativePoint.Center };
             switch ((PictureFrameDisplayMode)GeneralComponent.DisplayMode)
             {
                 case PictureFrameDisplayMode.Center:
                     brush.Stretch = Stretch.None;
-                    brush.Transform = new ScaleTransform(scale, scale);
                     break;
                 case PictureFrameDisplayMode.Fit:
                     brush.Stretch = Stretch.Uniform;
@@ -91,21 +99,31 @@ namespace LcdMod.Client.Apps
                     {
                         brush.TileMode = TileMode.Tile;
                         brush.DestinationRect = new RelativeRect(0f, 0f, size.X, size.Y, RelativeUnit.Absolute);
-                        brush.Transform = new ScaleTransform(scale, scale);
                     }
                     break;
             }
             return brush;
         }
 
-        // A configured image only counts once it can render here: allowed for this player and defined as an LCD
-        // texture (synced textures are defined when their download completes).
-        static bool CanDisplay(string sprite)
+        bool CanDisplay(string sprite)
         {
-            return TextureHelper.CanRenderTexture(sprite) &&
-                   Sandbox.Definitions.MyDefinitionManager.Static != null &&
-                   Sandbox.Definitions.MyDefinitionManager.Static.GetDefinition<Sandbox.Definitions.MyLCDTextureDefinition>(
-                       VRage.Utils.MyStringHash.GetOrCompute(sprite)) != null;
+            if (GridImageClientService.IsImageSprite(sprite))
+            {
+                GridImageState state = GetImageState(sprite);
+                return state == GridImageState.Ready || state == GridImageState.Loading;
+            }
+
+            return TextureHelper.EnsureRegistered(sprite);
+        }
+
+        GridImageState GetImageState(string sprite)
+        {
+            var images = GridImageClientService.Instance;
+            if (images == null || !GridImageClientService.IsImageSprite(sprite))
+                return GridImageState.Missing;
+
+            var grid = _interactiveHost?.Block?.CubeGrid;
+            return images.GetState(sprite, grid?.EntityId ?? 0);
         }
 
         static string[] GetConfiguredSprites(DigitalPictureFramesConfigComponent config)

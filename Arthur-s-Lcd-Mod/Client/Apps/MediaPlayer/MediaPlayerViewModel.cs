@@ -176,7 +176,7 @@ namespace LcdMod.Client.Apps.MediaPlayer
 
         public void Refresh()
         {
-            float s = _app.MediaLayoutScale;
+            const float s = 1f;
             float fs = _app.MediaFontScale;
             LayoutScale = s;
             TextFont = _app.MediaTextFont;

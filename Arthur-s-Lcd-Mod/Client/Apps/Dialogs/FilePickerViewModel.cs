@@ -7,6 +7,7 @@ namespace LcdMod.Client.Apps.Dialogs
 {
     /// <summary>
     /// Browses a folder tree. A click selects an entry and a second click on it opens the folder or picks the file.
+    /// In multi-file mode folders open on a single click and files toggle in an ordered selection that Apply returns.
     /// The selection's context actions are offered in the footer; back and forward walk the visited folders.
     /// </summary>
     internal sealed class FilePickerViewModel : DialogViewModel
@@ -15,6 +16,8 @@ namespace LcdMod.Client.Apps.Dialogs
 
         readonly FilePickerMode _mode;
         readonly Action<FilePickerResult> _selected;
+        readonly Action<string[]> _applied;
+        readonly List<string> _selectedKeys = new List<string>();
         readonly Action<string> _currentPathChanged;
         readonly Func<FilePickerResult, List<FilePickerContextAction>> _contextActions;
         readonly List<FolderModel> _roots = new List<FolderModel>();
@@ -30,25 +33,54 @@ namespace LcdMod.Client.Apps.Dialogs
         string _search = string.Empty;
         string _loadingText = string.Empty;
         bool _loading;
+        bool _busy;
         bool _closed;
+        string _anchor;
 
         public FilePickerViewModel(string title, FilePickerMode mode, IEnumerable<FolderModel> roots,
             Action<FilePickerResult> selected, string initialPath = null, Action<string> currentPathChanged = null,
             Func<FilePickerResult, List<FilePickerContextAction>> contextActions = null)
+            : this(title, mode, roots, selected, null, initialPath, currentPathChanged, contextActions)
+        {
+        }
+
+        FilePickerViewModel(string title, FilePickerMode mode, IEnumerable<FolderModel> roots,
+            Action<FilePickerResult> selected, Action<string[]> applied, string initialPath,
+            Action<string> currentPathChanged, Func<FilePickerResult, List<FilePickerContextAction>> contextActions)
         {
             _mode = mode;
             _selected = selected;
+            _applied = applied;
             _currentPathChanged = currentPathChanged;
             _contextActions = contextActions;
             _initialPath = initialPath;
             Title = string.IsNullOrWhiteSpace(title)
                 ? Loc(mode == FilePickerMode.PickFolder ? "LcdMod_FilePicker_PickFolder" : "LcdMod_FilePicker_PickFile")
                 : title;
+            SelectionHint = Loc("LcdMod_SpritePicker_MultiSelectHint");
             SelectCommand = new DelegateCommand(_ => Accept());
             BackCommand = new DelegateCommand(_ => Navigate(_back, _forward));
             ForwardCommand = new DelegateCommand(_ => Navigate(_forward, _back));
             SetRoots(roots);
         }
+
+        /// <summary>A multi-file picker; files are identified by their string <see cref="FileModel.Tag"/>, or their path.</summary>
+        public static FilePickerViewModel Multiple(string title, IEnumerable<FolderModel> roots, IEnumerable<string> selected,
+            Action<string[]> applied, string initialPath = null, Action<string> currentPathChanged = null,
+            Func<FilePickerResult, List<FilePickerContextAction>> contextActions = null)
+        {
+            var model = new FilePickerViewModel(title, FilePickerMode.PickFiles, roots, null, applied, initialPath,
+                currentPathChanged, contextActions);
+            if (selected != null)
+                foreach (string key in selected)
+                    if (!string.IsNullOrWhiteSpace(key) && !ContainsKey(model._selectedKeys, key.Trim()))
+                        model._selectedKeys.Add(key.Trim());
+            model.RefreshSelection();
+            return model;
+        }
+
+        public Func<bool> IsToggleModifierDown { get; set; } = () => false;
+        public Func<bool> IsRangeModifierDown { get; set; } = () => false;
 
         public IReadOnlyList<FileRow> Rows => _rows;
         public IReadOnlyList<FileActionRow> Actions => _actions;
@@ -57,15 +89,21 @@ namespace LcdMod.Client.Apps.Dialogs
         public ICommand ForwardCommand { get; }
         public bool IsClosed => _closed;
         public bool IsLoading => _loading;
+        public bool IsBusy => _loading || _busy;
         public bool IsBrowsing => !_loading;
+        public bool IsMultiple => _mode == FilePickerMode.PickFiles;
+        public bool ShowSelectionSummary => IsMultiple && _actions.Count == 0;
+        public string SelectionText => Loc("LcdMod_SpritePicker_SelectedFormat", _selectedKeys.Count);
+        public string SelectionHint { get; }
         public string LoadingText => _loadingText;
         public bool IsEmpty => !_loading && _rows.Count == 0;
         public bool HasActions => _actions.Count > 0;
         public bool CanGoBack => !_loading && _back.Count > 0;
         public bool CanGoForward => !_loading && _forward.Count > 0;
-        public string SelectText => Loc(_mode == FilePickerMode.PickFolder ? "LcdMod_FilePicker_SelectFolder" : "LcdMod_FilePicker_SelectFile");
+        public string SelectText => Loc(IsMultiple ? "LcdMod_Common_Button_Apply"
+            : _mode == FilePickerMode.PickFolder ? "LcdMod_FilePicker_SelectFolder" : "LcdMod_FilePicker_SelectFile");
         public string CurrentPath => _current == null || string.IsNullOrEmpty(_current.FullPath) ? string.Empty : _current.FullPath;
-        public string PathText => CurrentPath.Length == 0 ? Loc("LcdMod_FilePicker_Root") : CurrentPath.Replace('/', '\\');
+        public string PathText => CurrentPath.Length == 0 ? "/" : "/" + Normalize(CurrentPath) + "/";
 
         public string EmptyText => _search.Trim().Length == 0
             ? Loc("LcdMod_FilePicker_NoFilesFound")
@@ -77,6 +115,8 @@ namespace LcdMod.Client.Apps.Dialogs
             {
                 if (_loading)
                     return false;
+                if (IsMultiple)
+                    return true;
                 return _mode == FilePickerMode.PickFile ? _selectedFile != null : _selectedFolder != null || _current != null;
             }
         }
@@ -114,12 +154,22 @@ namespace LcdMod.Client.Apps.Dialogs
             if (!changed)
                 return;
             RaisePropertyChanged<bool>(nameof(IsBrowsing));
+            RaisePropertyChanged<bool>(nameof(IsBusy));
             RaisePropertyChanged<bool>(nameof(IsEmpty));
             RaisePropertyChanged<bool>(nameof(CanSelect));
             RaiseHistory();
             RefreshActions();
             if (!loading && _currentPathChanged != null)
                 _currentPathChanged(CurrentPath);
+        }
+
+        /// <summary>Shows the progress bar while the list stays usable, for work that only adds entries.</summary>
+        public void SetBusy(bool busy)
+        {
+            if (_busy == busy)
+                return;
+            _busy = busy;
+            RaisePropertyChanged<bool>(nameof(IsBusy));
         }
 
         protected internal override void OnClosed()
@@ -137,7 +187,12 @@ namespace LcdMod.Client.Apps.Dialogs
 
         internal bool IsSelected(object entry)
         {
-            return entry != null && (ReferenceEquals(entry, _selectedFolder) || ReferenceEquals(entry, _selectedFile));
+            if (entry == null)
+                return false;
+            var file = entry as FileModel;
+            if (IsMultiple && file != null)
+                return ContainsKey(_selectedKeys, KeyFor(file));
+            return ReferenceEquals(entry, _selectedFolder) || ReferenceEquals(entry, _selectedFile);
         }
 
         internal void Click(FileRow row)
@@ -147,6 +202,14 @@ namespace LcdMod.Client.Apps.Dialogs
             if (row.IsUp)
             {
                 Open(row.Folder);
+                return;
+            }
+            if (IsMultiple)
+            {
+                if (row.Folder != null)
+                    Open(row.Folder);
+                else
+                    Toggle(row.File);
                 return;
             }
             if (row.Folder != null)
@@ -163,10 +226,67 @@ namespace LcdMod.Client.Apps.Dialogs
                 Select(null, row.File);
         }
 
+        void Toggle(FileModel file)
+        {
+            string key = KeyFor(file);
+            if (IsRangeModifierDown() && _anchor != null)
+                SelectRange(_anchor, key);
+            else if (IsToggleModifierDown())
+            {
+                if (!RemoveKey(_selectedKeys, key))
+                    _selectedKeys.Add(key);
+                _anchor = key;
+            }
+            else
+            {
+                _selectedKeys.Clear();
+                _selectedKeys.Add(key);
+                _anchor = key;
+            }
+            _selectedFile = file;
+            RefreshSelection();
+        }
+
+        void SelectRange(string from, string to)
+        {
+            var files = new List<string>();
+            foreach (var row in _rows)
+                if (row.File != null)
+                    files.Add(KeyFor(row.File));
+            int start = files.FindIndex(key => string.Equals(key, from, StringComparison.OrdinalIgnoreCase));
+            int end = files.FindIndex(key => string.Equals(key, to, StringComparison.OrdinalIgnoreCase));
+            _selectedKeys.Clear();
+            if (start < 0 || end < 0)
+            {
+                _selectedKeys.Add(to);
+                _anchor = to;
+                return;
+            }
+            for (int i = Math.Min(start, end); i <= Math.Max(start, end); i++)
+                _selectedKeys.Add(files[i]);
+        }
+
+        void RefreshSelection()
+        {
+            foreach (var row in _rows)
+                row.Refresh();
+            RaisePropertyChanged<string>(nameof(SelectionText));
+            RaisePropertyChanged<bool>(nameof(CanSelect));
+            RefreshActions();
+        }
+
         void Accept()
         {
             if (!CanSelect)
                 return;
+            if (IsMultiple)
+            {
+                var keys = _selectedKeys.ToArray();
+                Close();
+                if (_applied != null)
+                    _applied(keys);
+                return;
+            }
             Finish(_mode == FilePickerMode.PickFile ? FileResult(_selectedFile) : FolderResult(_selectedFolder ?? _current));
         }
 
@@ -345,6 +465,7 @@ namespace LcdMod.Client.Apps.Dialogs
             }
             RaisePropertyChanged<IReadOnlyList<FileActionRow>>(nameof(Actions));
             RaisePropertyChanged<bool>(nameof(HasActions));
+            RaisePropertyChanged<bool>(nameof(ShowSelectionSummary));
         }
 
         internal void Run(FilePickerContextAction action)
@@ -419,6 +540,30 @@ namespace LcdMod.Client.Apps.Dialogs
                 if (string.IsNullOrEmpty(file.FullPath))
                     file.FullPath = string.IsNullOrEmpty(folder.FullPath) ? file.Name : folder.FullPath + "/" + file.Name;
             }
+        }
+
+        static string KeyFor(FileModel file)
+        {
+            return file.Tag as string ?? file.FullPath;
+        }
+
+        static bool ContainsKey(List<string> keys, string key)
+        {
+            foreach (string item in keys)
+                if (string.Equals(item, key, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            return false;
+        }
+
+        static bool RemoveKey(List<string> keys, string key)
+        {
+            for (int i = 0; i < keys.Count; i++)
+                if (string.Equals(keys[i], key, StringComparison.OrdinalIgnoreCase))
+                {
+                    keys.RemoveAt(i);
+                    return true;
+                }
+            return false;
         }
 
         static void Push(List<string> history, string path)
@@ -514,7 +659,7 @@ namespace LcdMod.Client.Apps.Dialogs
             File = entry as FileModel;
             Name = Folder != null ? Folder.Name : File.Name;
             Subtitle = (Folder != null ? Folder.Subtitle : File.Subtitle) ?? string.Empty;
-            Icon = Folder != null ? "Folder" : IconFor(File);
+            Icon = Folder != null ? "Folder" : !string.IsNullOrEmpty(File.Icon) ? File.Icon : IconFor(File);
         }
 
         public bool IsUp { get; }

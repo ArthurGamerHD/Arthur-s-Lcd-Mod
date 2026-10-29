@@ -73,7 +73,8 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Listbox
 
         static MyTerminalControlListBoxItem CreateListBoxItem(string spriteName)
         {
-            return ListBoxItemHelper.GetOrComputeListBoxItem(spriteName, spriteName, spriteName);
+            return ListBoxItemHelper.GetOrComputeListBoxItem(
+                TextureHelper.GetSpriteDisplayName(spriteName), spriteName, spriteName);
         }
 
         static string[] GetSelectedSprites(DigitalPictureFramesConfigComponent config)

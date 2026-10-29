@@ -473,6 +473,39 @@ namespace LcdMod.Client.Market
             return path;
         }
 
+        /// <summary>Registers the Engineers Exchange icon behind a generated sprite name by matching its gas or prefab key.</summary>
+        internal static bool TryRegisterIcon(string spriteName)
+        {
+            var definitions = MyDefinitionManager.Static;
+            if (definitions == null)
+                return false;
+
+            if (IsIconFor(spriteName, "Gas:Oxygen"))
+                return ResolveGasDefinition("Oxygen", "Oxygen", OXYGEN_ICON_PATH).SpriteName == spriteName;
+            if (IsIconFor(spriteName, "Gas:Hydrogen"))
+                return ResolveGasDefinition("Hydrogen", "Hydrogen", HYDROGEN_ICON_PATH).SpriteName == spriteName;
+
+            foreach (var definition in definitions.GetAllDefinitions())
+            {
+                var gas = definition as MyGasProperties;
+                if (gas != null && IsIconFor(spriteName, "Gas:" + gas.Id.SubtypeName))
+                    return ResolveGasDefinition(gas.Id.SubtypeName, gas.Id.SubtypeName, string.Empty).SpriteName == spriteName;
+            }
+
+            foreach (var prefab in definitions.GetPrefabDefinitions())
+            {
+                if (IsIconFor(spriteName, "Prefab:" + prefab.Key))
+                    return ResolvePrefab(new NpcMarketOfferDto { PrefabName = prefab.Key }).SpriteName == spriteName;
+            }
+
+            return false;
+        }
+
+        static bool IsIconFor(string spriteName, string registrationKey)
+        {
+            return string.Equals(TextureHelper.GeneratedSpriteName(registrationKey), spriteName, StringComparison.Ordinal);
+        }
+
         static NpcMarketPresentation ResolveFixedGas(string fallbackName, string fallbackIconPath, NpcMarketOfferDto offer)
         {
             var gas = ResolveGasDefinition(offer.ItemType == ItemTypes.Oxygen ? "Oxygen" : "Hydrogen", fallbackName, fallbackIconPath);

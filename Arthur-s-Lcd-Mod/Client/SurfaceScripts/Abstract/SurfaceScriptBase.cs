@@ -14,6 +14,7 @@ using LcdMod.Client.GridData;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Gui.UserControls;
 using LcdMod.Client.Helpers;
+using LcdMod.Client.Images;
 using LcdMod.Client.ScreenAreas;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Terminal.Controls.Groups;
@@ -1470,7 +1471,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             RenderingCursorOnly = cursorOnly;
             try
             {
-                var spriteList = PrepareSpritesForRender(RenderFrame(GetSprites));
+                var spriteList = PrepareSpritesForRender(RenderFrame(GetSprites), Block?.CubeGrid?.EntityId ?? 0);
                 CacheFrameForProxies(spriteList);
                 var renderList = ClipToBounds ? ClipSpriteListToSurfaceBounds(spriteList) : spriteList;
                 LastRenderFrame = currentFrame;
@@ -2008,7 +2009,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                    a.Y < b.Bottom;
         }
 
-        static List<MySprite> PrepareSpritesForRender(List<MySprite> sprites)
+        static List<MySprite> PrepareSpritesForRender(List<MySprite> sprites, long gridId)
         {
             if (sprites == null || sprites.Count == 0)
                 return sprites ?? new List<MySprite>();
@@ -2017,44 +2018,19 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             for (int i = 0; i < sprites.Count; i++)
             {
                 var sprite = sprites[i];
-                if (sprite.Type == SpriteType.TEXTURE && !string.IsNullOrWhiteSpace(sprite.Data) && char.IsNumber(sprite.Data[0]))
+                bool replaced = false;
+                if (sprite.Type == SpriteType.TEXTURE && GridImageClientService.IsImageSprite(sprite.Data))
                 {
-                    if (!TextureHelper.CanRenderTexture(sprite.Data))
+                    var images = GridImageClientService.Instance;
+                    if (images == null || images.GetState(sprite.Data, gridId) != GridImageState.Ready)
                     {
                         ApplyMissingTextureFallback(ref sprite);
-                    }
-                    else if (!TextureHelper.IsKnownTexture(sprite.Data))
-                    {
-                        if (TextureHelper.HasTextureParseFailed(sprite.Data))
-                        {
-                            ApplyMissingTextureFallback(ref sprite);
-                        }
-                        else
-                        {
-                            ulong ownerId;
-                            string textureName;
-                            if (TextureTransferHelper.TryParseTextureKey(sprite.Data, out ownerId, out textureName))
-                            {
-                                var registrationName = TextureTransferHelper.BuildTextureKey(ownerId, textureName);
-                                var isKnownTexture = TextureHelper.IsKnownTexture(registrationName);
-                                var isPendingTexture = TextureHelper.HasPendingTextureRequest(registrationName);
-
-                                if (!isKnownTexture && !isPendingTexture)
-                                    TextureHelper.TryQueueTextureRequest(ownerId, textureName, registrationName);
-
-                                if (!isKnownTexture)
-                                    ApplyMissingTextureFallback(ref sprite);
-                            }
-                            else
-                            {
-                                TextureHelper.MarkTextureParseFailed(sprite.Data);
-                                ApplyMissingTextureFallback(ref sprite);
-                            }
-                        }
+                        replaced = true;
                     }
                 }
 
-                if (CanRenderSprite(sprite))
+                bool renderable = CanRenderSprite(sprite);
+                if (renderable && !replaced)
                 {
                     prepared?.Add(sprite);
                     continue;
@@ -2066,6 +2042,9 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                     for (int j = 0; j < i; j++)
                         prepared.Add(sprites[j]);
                 }
+
+                if (renderable)
+                    prepared.Add(sprite);
             }
 
             return prepared ?? sprites;

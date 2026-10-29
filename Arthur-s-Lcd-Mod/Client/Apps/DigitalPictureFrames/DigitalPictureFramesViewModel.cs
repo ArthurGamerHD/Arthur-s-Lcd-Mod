@@ -13,6 +13,7 @@ namespace LcdMod.Client.Apps.DigitalPictureFrames
         int _selectedPage;
         bool _canEdit;
         string _pickText = string.Empty;
+        int _displayMode = -1;
 
         public DigitalPictureFramesViewModel(DigitalPictureFramesApp app)
         {
@@ -49,8 +50,16 @@ namespace LcdMod.Client.Apps.DigitalPictureFrames
                 }
             }
 
+            int displayMode = _app.NativeDisplayMode;
+            bool styleChanged = displayMode != _displayMode;
+            _displayMode = displayMode;
+
             for (int i = 0; i < _pages.Count; i++)
-                _pages[i].Update(_app.CreateNativeBrush(_pages[i].Sprite));
+            {
+                PicturePage page = _pages[i];
+                page.Update(_app.NativeIsLoading(page.Sprite), styleChanged, _app.CreateNativeBrush);
+            }
+
             SelectedPage = _app.NativeSelectedIndex(_pages.Count);
             RaiseAndSetIfChanged(ref _canEdit, _app.NativeCanEdit, nameof(CanEdit));
             RaiseAndSetIfChanged(ref _pickText, _app.NativePickText, nameof(PickText));
@@ -70,6 +79,7 @@ namespace LcdMod.Client.Apps.DigitalPictureFrames
     internal sealed class PicturePage : ObservableObject
     {
         BackgroundBrush _image;
+        bool _isLoading;
 
         public PicturePage(string sprite)
         {
@@ -78,9 +88,12 @@ namespace LcdMod.Client.Apps.DigitalPictureFrames
 
         public string Sprite { get; }
         public BackgroundBrush Image => _image;
+        public bool IsLoading => _isLoading;
 
-        public void Update(BackgroundBrush image)
+        public void Update(bool isLoading, bool styleChanged, Func<string, BackgroundBrush> createBrush)
         {
+            RaiseAndSetIfChanged(ref _isLoading, isLoading, nameof(IsLoading));
+            BackgroundBrush image = isLoading ? null : _image == null || styleChanged ? createBrush(Sprite) : _image;
             RaiseAndSetIfChanged(ref _image, image, nameof(Image));
         }
     }

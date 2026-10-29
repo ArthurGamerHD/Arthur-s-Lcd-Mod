@@ -42,10 +42,11 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Listbox
 
         static MyTerminalControlListBoxItem CreateListBoxItem(string spriteName)
         {
-            var displayName = spriteName;
+            var displayName = TextureHelper.GetSpriteDisplayName(spriteName);
             MyLCDTextureDefinition definition;
             var id = new MyDefinitionId(typeof(MyObjectBuilder_LCDTextureDefinition), spriteName);
-            if (MyDefinitionManager.Static.TryGetDefinition(id, out definition) &&
+            if (displayName == spriteName &&
+                MyDefinitionManager.Static.TryGetDefinition(id, out definition) &&
                 definition != null &&
                 !string.IsNullOrWhiteSpace(definition.LocalizationId))
             {

@@ -15,7 +15,7 @@ namespace LcdMod.Client.Apps
             public string Icon;
         }
 
-        internal float MediaLayoutScale => GeneralComponent.GetScale() > 0f ? GeneralComponent.GetScale() : 1f;
+        internal override float WindowRenderScaling => CardScale;
         internal float MediaFontScale => Host.Surface.FontSize > 0f ? Host.Surface.FontSize : 1f;
         internal string MediaTextFont => TextFont;
         internal Color MediaForeground => Host.ForegroundColor;

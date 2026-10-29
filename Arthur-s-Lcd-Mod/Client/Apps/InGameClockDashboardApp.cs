@@ -30,7 +30,8 @@ namespace LcdMod.Client.Apps
             SetContent(new InGameClockDashboardView { DataContext = _viewModel });
         }
 
-        internal float ConfigScale => GeneralComponent.GetScale() > 0f ? GeneralComponent.GetScale() : 1f;
+        internal float ConfigScale => CardScale;
+        internal override float WindowRenderScaling => CardScale;
         internal float SurfaceFontScale => Host.Surface.FontSize > 0f ? Host.Surface.FontSize : 1f;
 
         public override void Update()

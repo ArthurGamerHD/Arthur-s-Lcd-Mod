@@ -62,6 +62,8 @@ namespace LcdMod.Client.Apps
 
         float Scale => GeneralComponent.GetScale();
 
+        internal override float WindowRenderScaling => CardScale;
+
         float FontScale => Host.Surface.FontSize;
 
         float LayoutScale => Scale * FontScale;
@@ -104,9 +106,11 @@ namespace LcdMod.Client.Apps
                 spacing,
                 GetMinimumConfiguredButtonCount());
             // Each button is centered in its cell, so the leftover space is shared evenly around every button.
-            buttonSize = Math.Max(1f, layout.ButtonSize);
-            cellWidth = Math.Max(buttonSize, layout.CellWidth);
-            cellHeight = Math.Max(buttonSize, layout.CellHeight);
+            // The layout is solved in surface pixels; the window scales logical units back up by CardScale.
+            float pixelButton = Math.Max(1f, layout.ButtonSize);
+            buttonSize = pixelButton / CardScale;
+            cellWidth = Math.Max(pixelButton, layout.CellWidth) / CardScale;
+            cellHeight = Math.Max(pixelButton, layout.CellHeight) / CardScale;
 
             string styleClass = GetNativeStyleClass();
             int count = 0;

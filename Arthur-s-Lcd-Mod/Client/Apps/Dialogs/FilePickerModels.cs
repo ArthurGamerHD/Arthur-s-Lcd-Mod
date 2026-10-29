@@ -6,7 +6,8 @@ namespace LcdMod.Client.Apps.Dialogs
     internal enum FilePickerMode
     {
         PickFile,
-        PickFolder
+        PickFolder,
+        PickFiles
     }
 
     internal sealed class FolderModel
@@ -30,6 +31,7 @@ namespace LcdMod.Client.Apps.Dialogs
         public string Name { get; set; }
         public string FullPath { get; set; }
         public string IconPath { get; set; }
+        public string Icon { get; set; }
         public string Subtitle { get; set; }
         public object Tag { get; set; }
 

@@ -15,6 +15,7 @@ using LcdMod.Client.Config;
 using LcdMod.Client.GridData;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Helpers;
+using LcdMod.Client.Images;
 using ManagedDoom.SE;
 using LcdMod.Client.Terminal;
 #if DEBUG
@@ -55,6 +56,8 @@ namespace LcdMod.Client
         readonly AudioImportService _audioImport = new AudioImportService();
         readonly AudioBroadcastClientService _audioBroadcast = new AudioBroadcastClientService();
         readonly GameAudioTestReportService _audioTestReport = new GameAudioTestReportService();
+        readonly GridImageClientService _images = new GridImageClientService();
+        readonly LocalImageLibrary _imageLibrary = new LocalImageLibrary();
 #if DEBUG
         readonly CartographyDebugReportService _cartographyDebugReport;
         VisibleTreeDebugService _visibleTreeDebug;
@@ -97,6 +100,8 @@ namespace LcdMod.Client
             AdkFluentStyles.ConfigureSourceLoader();
             Apps.Dialogs.DialogViewModel.Localize = LocHelper.GetLoc;
             LocalConfigManager.Load();
+            _images.Load();
+            _imageLibrary.Load();
             Adk.Gui.Controls.WindowPlatforms.CaptionButtons = LocalConfigManager.CaptionButtons;
             Apps.Markdown.MarkdownImage.BlockSpriteResolver = name =>
             {
@@ -145,7 +150,10 @@ namespace LcdMod.Client
             _audioPoc.Unload();
             _audioBroadcast.Unload();
             LocalConfigManager.Save();
+            _imageLibrary.Unload();
+            _images.Unload();
             TextureHelper.UnloadColorfulIconsApi();
+            TextureHelper.ClearRegistrations();
             Games.Chess.ChessGame.ReleasePieceTextures();
             if (PowerData != null)
                 PowerData.Clear();
@@ -179,7 +187,6 @@ namespace LcdMod.Client
 
             ListBoxItemHelper.PerTypeCache.Clear();
             NpcMarketClientCache.Reset();
-            //TextureHelper.UnloadTextureCache();
             RunNextFrame.Clear();
             RunThisFrame.Clear();
             Blocker.Clear();
@@ -214,6 +221,7 @@ namespace LcdMod.Client
                         DefenseData.Update(MyAPIGateway.Session.GameplayFrameCounter);
 
                     _session.UpdateModules();
+                    _images.Update();
 #if DEBUG
                     if (_visibleTreeDebug != null)
                         _visibleTreeDebug.Update();
@@ -380,90 +388,15 @@ namespace LcdMod.Client
             LcdModSessionComponent.ApplySyncedConfig(block, settings, packet.Config);
         }
 
-        [NetworkCallback(typeof(PacketRequestTexture), NetworkCallbackFilter.FromServer | NetworkCallbackFilter.IsClient)]
-        public void HandleRequestTexture(PacketRequestTexture packet)
+        [NetworkCallback(typeof(PacketGridImageData), NetworkCallbackFilter.FromServer | NetworkCallbackFilter.IsClient)]
+        public void HandleGridImageData(PacketGridImageData packet)
         {
-            if (packet == null || string.IsNullOrWhiteSpace(packet.TextureName))
-                return;
-
-            HandleLocalRequestTexture(packet);
+            HandleLocalGridImageData(packet);
         }
 
-        public void HandleLocalRequestTexture(PacketRequestTexture packet)
+        public void HandleLocalGridImageData(PacketGridImageData packet)
         {
-            if (packet == null || string.IsNullOrWhiteSpace(packet.TextureName))
-                return;
-
-            var localSteamId = MyAPIGateway.Session.Player?.SteamUserId ?? 0;
-            if (localSteamId == 0 || packet.OwnerSteamId != localSteamId)
-                return;
-
-            byte[] textureBytes;
-            string fileName;
-            string failureReason;
-            if (!TextureTransferHelper.TryReadTextureBytesForSync( packet.OwnerSteamId,
-                    packet.TextureName, out textureBytes, out fileName, out failureReason))
-            {
-                LogHelper.Log(MyLogSeverity.Warning,
-                    $"Client did not find requested texture {TextureTransferHelper.BuildTextureKey(packet.OwnerSteamId, packet.TextureName)} for requester {packet.RequesterSteamId}: {failureReason}");
-                return;
-            }
-
-            LogHelper.LogInfo(
-                $"Client found requested texture {TextureTransferHelper.BuildTextureKey(packet.OwnerSteamId, packet.TextureName)} at {fileName} for requester {packet.RequesterSteamId}");
-
-            int width;
-            int height;
-            TextureTransferHelper.TryGetDdsDimensions(textureBytes, out width, out height);
-
-            var ownerName = MyAPIGateway.Session.Player?.DisplayName ?? string.Empty;
-            var metadata = new TextureTransferHelper.TextureMetadata
-            {
-                OwnerSteamId = localSteamId,
-                OwnerName = ownerName,
-                RegistrationName = TextureTransferHelper.BuildTextureKey(localSteamId, packet.TextureName),
-                TextureName = TextureTransferHelper.NormalizeTextureName(packet.TextureName),
-                SourceFileName = fileName,
-                Width = width,
-                Height = height,
-                LastUpdatedUtcTicks = DateTime.UtcNow.Ticks
-            };
-
-            var syncPacket = new PacketSyncTexture(packet.OwnerSteamId, packet.TextureName, packet.RequesterSteamId,
-                textureBytes, metadata);
-            LogHelper.LogInfo(
-                $"Client sending requested texture {TextureTransferHelper.BuildTextureKey(packet.OwnerSteamId, packet.TextureName)} to server ({textureBytes.Length} bytes)");
-            if (_session.Session.IsServer && LcdModSessionComponent.Server != null)
-            {
-                LcdModSessionComponent.Server.HandleLocalSyncTexture(syncPacket);
-                return;
-            }
-
-            LcdModSessionComponent.NetworkManager.TransmitToServer(syncPacket, false);
-        }
-
-        
-        [NetworkCallback(typeof(PacketSyncTexture), NetworkCallbackFilter.FromServer | NetworkCallbackFilter.IsClient)]
-        public void HandleSyncTexture(PacketSyncTexture packet)
-        {
-            if (packet == null || string.IsNullOrWhiteSpace(packet.TextureName) || !TextureTransferHelper.IsValidTexturePayload(packet.Data))
-                return;
-
-            HandleLocalSyncTexture(packet);
-        }
-
-        public void HandleLocalSyncTexture(PacketSyncTexture packet)
-        {
-            if (packet == null || string.IsNullOrWhiteSpace(packet.TextureName) || !TextureTransferHelper.IsValidTexturePayload(packet.Data))
-                return;
-
-            var localSteamId = MyAPIGateway.Session.Player?.SteamUserId ?? 0;
-            if (localSteamId != 0 && packet.RequesterSteamId != 0 && packet.RequesterSteamId != localSteamId)
-                return;
-
-            LogHelper.LogInfo(
-                $"Client received requested texture {TextureTransferHelper.BuildTextureKey(packet.OwnerSteamId, packet.TextureName)} from server ({packet.Data.Length} bytes)");
-            TextureHelper.SaveRemoteTexture(packet);
+            _images.HandleImageData(packet);
         }
 
         [NetworkCallback(typeof(PacketSyncNpcMarket), NetworkCallbackFilter.FromServer | NetworkCallbackFilter.IsClient)]
