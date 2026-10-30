@@ -117,7 +117,9 @@ namespace LcdMod.Client.Apps.Dialogs
                     return false;
                 if (IsMultiple)
                     return true;
-                return _mode == FilePickerMode.PickFile ? _selectedFile != null : _selectedFolder != null || _current != null;
+                return _mode == FilePickerMode.PickFile
+                    ? _selectedFile != null && !_selectedFile.IsBlocked
+                    : _selectedFolder != null || _current != null;
             }
         }
 
@@ -220,7 +222,7 @@ namespace LcdMod.Client.Apps.Dialogs
                     Select(row.Folder, null);
                 return;
             }
-            if (ReferenceEquals(_selectedFile, row.File) && _mode == FilePickerMode.PickFile)
+            if (ReferenceEquals(_selectedFile, row.File) && _mode == FilePickerMode.PickFile && !row.File.IsBlocked)
                 Finish(FileResult(row.File));
             else
                 Select(null, row.File);
@@ -228,6 +230,13 @@ namespace LcdMod.Client.Apps.Dialogs
 
         void Toggle(FileModel file)
         {
+            if (file.IsBlocked)
+            {
+                _selectedFile = file;
+                RefreshSelection();
+                return;
+            }
+
             string key = KeyFor(file);
             if (IsRangeModifierDown() && _anchor != null)
                 SelectRange(_anchor, key);
@@ -250,9 +259,15 @@ namespace LcdMod.Client.Apps.Dialogs
         void SelectRange(string from, string to)
         {
             var files = new List<string>();
+            var blocked = new List<string>();
             foreach (var row in _rows)
-                if (row.File != null)
-                    files.Add(KeyFor(row.File));
+            {
+                if (row.File == null)
+                    continue;
+                files.Add(KeyFor(row.File));
+                if (row.File.IsBlocked)
+                    blocked.Add(KeyFor(row.File));
+            }
             int start = files.FindIndex(key => string.Equals(key, from, StringComparison.OrdinalIgnoreCase));
             int end = files.FindIndex(key => string.Equals(key, to, StringComparison.OrdinalIgnoreCase));
             _selectedKeys.Clear();
@@ -264,6 +279,7 @@ namespace LcdMod.Client.Apps.Dialogs
             }
             for (int i = Math.Min(start, end); i <= Math.Max(start, end); i++)
                 _selectedKeys.Add(files[i]);
+            _selectedKeys.RemoveAll(key => ContainsKey(blocked, key));
         }
 
         void RefreshSelection()
@@ -659,6 +675,7 @@ namespace LcdMod.Client.Apps.Dialogs
             File = entry as FileModel;
             Name = Folder != null ? Folder.Name : File.Name;
             Subtitle = (Folder != null ? Folder.Subtitle : File.Subtitle) ?? string.Empty;
+            Warning = File != null ? File.Warning ?? string.Empty : string.Empty;
             Icon = Folder != null ? "Folder" : !string.IsNullOrEmpty(File.Icon) ? File.Icon : IconFor(File);
         }
 
@@ -667,7 +684,9 @@ namespace LcdMod.Client.Apps.Dialogs
         public FileModel File { get; }
         public string Name { get; }
         public string Subtitle { get; }
-        public bool HasSubtitle => Subtitle.Length > 0;
+        public bool HasSubtitle => Subtitle.Length > 0 && !HasWarning;
+        public string Warning { get; } = string.Empty;
+        public bool HasWarning => Warning.Length > 0;
         public string Icon { get; }
         public ICommand Command { get; }
         public string Classes => _classes;
@@ -694,7 +713,11 @@ namespace LcdMod.Client.Apps.Dialogs
             if (string.Equals(extension, ".wav", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(extension, ".m3u", StringComparison.OrdinalIgnoreCase))
                 return "FileWav";
-            return "MissingIcon";
+            if (string.Equals(extension, ".mkv", StringComparison.OrdinalIgnoreCase))
+                return "FileMkv";
+            if (string.Equals(extension, ".webm", StringComparison.OrdinalIgnoreCase))
+                return "FileWebm";
+            return "FileBlank";
         }
     }
 

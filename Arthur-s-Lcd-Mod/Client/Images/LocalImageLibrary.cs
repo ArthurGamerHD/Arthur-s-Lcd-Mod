@@ -12,7 +12,7 @@ using VRage.Utils;
 namespace LcdMod.Client.Images
 {
     /// <summary>
-    /// The player's own images, kept in local_textures.zip. Loose .png/.dds files dropped into the mod
+    /// The player's own images, kept in local_textures.zip. Loose .png/.apng/.dds files dropped into the mod
     /// storage folder are moved into the archive, and each source is encoded once into a grid payload
     /// cached beside it, so picking an image never re-encodes it.
     /// </summary>
@@ -288,6 +288,7 @@ namespace LcdMod.Client.Images
             try
             {
                 files.AddRange(PathUtils.GetFilesRecursively(storageRoot, "*.png"));
+                files.AddRange(PathUtils.GetFilesRecursively(storageRoot, "*.apng"));
                 files.AddRange(PathUtils.GetFilesRecursively(storageRoot, "*.dds"));
             }
             catch (Exception e)
@@ -405,6 +406,7 @@ namespace LcdMod.Client.Images
             return !string.IsNullOrEmpty(name) && name.IndexOf('/') < 0 &&
                    !name.StartsWith(GridImageCodec.SPRITE_PREFIX, StringComparison.Ordinal) &&
                    (name.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
+                    name.EndsWith(".apng", StringComparison.OrdinalIgnoreCase) ||
                     name.EndsWith(".dds", StringComparison.OrdinalIgnoreCase));
         }
 
@@ -496,12 +498,13 @@ namespace LcdMod.Client.Images
                 writer.Write(
                     "Arthur's Lcd Mod - Custom Images\n" +
                     "================================\n\n" +
-                    "Copy .png or .dds images into this folder:\n" +
+                    "Copy .png, .apng (animated PNG) or .dds images into this folder:\n" +
                     "   " + storageRoot + "\n\n" +
                     "They are imported automatically the next time you load a world, or right away with:\n" +
                     "   /lcdmod importtextures\n\n" +
                     "Imported files are moved into " + Constants.LOCAL_TEXTURES + " and show up in the image pickers.\n" +
-                    "PNG images are converted for you; no external tools are needed.\n\n" +
+                    "PNG images are converted for you; no external tools are needed.\n" +
+                    "Animated PNGs play on Picture Frame screens, in step for every player.\n\n" +
                     "When you put an image on a screen, it is embedded into the grid, so it travels with the grid,\n" +
                     "its blueprints and saves, and other players see it without you being online.\n\n" +
                     "Limits:\n" +

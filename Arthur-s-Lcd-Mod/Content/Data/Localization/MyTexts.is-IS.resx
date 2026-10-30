@@ -1786,6 +1786,9 @@ Við bíðum í smá stund og endurræsum hana síðan fyrir þig.</value>
   <data name="LcdMod_SpritePicker_Root_Local" xml:space="preserve">
     <value>Myndirnar mínar</value>
   </data>
+  <data name="LcdMod_SpritePicker_Animated" xml:space="preserve">
+    <value>hreyfimynd</value>
+  </data>
   <data name="LcdMod_SpritePicker_Root_Sprites" xml:space="preserve">
     <value>LCD-myndeiningar</value>
   </data>

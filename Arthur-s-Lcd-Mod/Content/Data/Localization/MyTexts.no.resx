@@ -1782,6 +1782,9 @@ Vi venter en stund og starter den deretter på nytt for deg.</value>
   <data name="LcdMod_SpritePicker_Root_Local" xml:space="preserve">
     <value>Mine bilder</value>
   </data>
+  <data name="LcdMod_SpritePicker_Animated" xml:space="preserve">
+    <value>animert</value>
+  </data>
   <data name="LcdMod_SpritePicker_Root_Sprites" xml:space="preserve">
     <value>LCD-sprites</value>
   </data>

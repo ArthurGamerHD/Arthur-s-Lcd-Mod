@@ -33,7 +33,13 @@ namespace LcdMod.Client.Apps.Dialogs
         public string IconPath { get; set; }
         public string Icon { get; set; }
         public string Subtitle { get; set; }
+
+        /// <summary>Why the file cannot be used, e.g. an unsupported codec. Such files are listed but cannot be picked.</summary>
+        public string Warning { get; set; }
+
         public object Tag { get; set; }
+
+        public bool IsBlocked => !string.IsNullOrEmpty(Warning);
 
         public override string ToString()
         {

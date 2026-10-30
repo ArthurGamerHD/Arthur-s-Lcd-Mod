@@ -14,6 +14,17 @@ namespace LcdMod.Common.Networking
         Close = 7
     }
 
+    public enum MediaStreamContentKind
+    {
+        Pcm = 0,
+
+        /// <summary>
+        /// A chunked Matroska video: segment -1 is the chunk index, the others are the chunks around the
+        /// sender's playhead, each sent in pieces by byte offset.
+        /// </summary>
+        Video = 1
+    }
+
     [ProtoContract]
     [NetworkPayload(17)]
     public sealed partial class PacketMediaStreamControl
@@ -30,6 +41,7 @@ namespace LcdMod.Common.Networking
         [ProtoMember(10)] public long ServerFrame;
         [ProtoMember(11)] public bool StopPlayback;
         [ProtoMember(12)] public ulong[] ListenerSteamIds;
+        [ProtoMember(13)] public MediaStreamContentKind ContentKind;
 
     }
 
@@ -42,6 +54,10 @@ namespace LcdMod.Common.Networking
         [ProtoMember(3)] public byte[] PcmBytes;
         [ProtoMember(4)] public long DurationTicks;
         [ProtoMember(5)] public bool IsFinal;
+        [ProtoMember(6)] public int Offset;
+        [ProtoMember(7)] public int Segment;
+        [ProtoMember(8)] public int SegmentLength;
+        [ProtoMember(9)] public long PositionTicks;
 
     }
 
@@ -55,6 +71,10 @@ namespace LcdMod.Common.Networking
         [ProtoMember(4)] public long DurationTicks;
         [ProtoMember(5)] public bool IsFinal;
         [ProtoMember(6)] public long ServerFrame;
+        [ProtoMember(7)] public int Offset;
+        [ProtoMember(8)] public int Segment;
+        [ProtoMember(9)] public int SegmentLength;
+        [ProtoMember(10)] public long PositionTicks;
 
     }
 }

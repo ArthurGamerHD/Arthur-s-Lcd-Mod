@@ -5,6 +5,7 @@ using Generated;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Config;
 using LcdMod.Client.Audio;
+using LcdMod.Client.Video;
 using LcdMod.Client.GridData;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Apps.Dialogs;
@@ -68,6 +69,7 @@ namespace LcdMod.Client.Apps
         MediaAudioFileReference _pickedAudio;
         InteractiveSurfaceScript _interactiveHost;
         MediaPlayer.MediaPlayerViewModel _nativeViewModel;
+        bool _videoChrome;
 
         static readonly MediaItem[] EmptyLibrary = Array.Empty<MediaItem>();
 
@@ -117,6 +119,13 @@ namespace LcdMod.Client.Apps
         const string LOC_LOCAL_AUDIO_DELETED_FORMAT = MOD_PREFIX + "MediaPlayer_LocalAudioDeletedFormat";
         const string LOC_PLAYLIST_DELETED_FORMAT = MOD_PREFIX + "MediaPlayer_PlaylistDeletedFormat";
         const string LOC_COMMON_CANCEL = MOD_PREFIX + "Common_Button_Cancel";
+        const string LOC_PICK = MOD_PREFIX + "MediaPlayer_Pick";
+        const string LOC_PREVIOUS = MOD_PREFIX + "MediaPlayer_Previous";
+        const string LOC_NEXT = MOD_PREFIX + "MediaPlayer_Next";
+        const string LOC_SHUFFLE = MOD_PREFIX + "MediaPlayer_Shuffle";
+        const string LOC_REPEAT = MOD_PREFIX + "MediaPlayer_Repeat";
+        const string LOC_PLAYLIST = MOD_PREFIX + "MediaPlayer_Playlist";
+        const string LOC_STOP = MOD_PREFIX + "MediaPlayer_Stop";
 
         readonly Dictionary<string, string> _locKeysCache = new Dictionary<string, string>();
 
@@ -288,6 +297,7 @@ namespace LcdMod.Client.Apps
         {
             base.LayoutChanged();
             _locKeysCache.Clear();
+            MediaSetVideoChrome(_videoChrome);
         }
 
         string ResolveLoc(string key)
@@ -395,6 +405,9 @@ namespace LcdMod.Client.Apps
                         return "Local/" + _pickedAudio.LocalAsset.SourcePath.Replace('\\', '/');
                 }
 
+                if (_pickedAudio.IsVideo)
+                    return _pickedAudio.PickerFullPath;
+
                 if (!string.IsNullOrEmpty(_pickedAudio.DefinitionPath))
                     return "Content/" + _pickedAudio.DefinitionPath.Replace('\\', '/');
 
@@ -467,6 +480,13 @@ namespace LcdMod.Client.Apps
 
         static string GetAudioFileIcon(string path)
         {
+            if (!string.IsNullOrEmpty(path) && path.EndsWith(".mkv", StringComparison.OrdinalIgnoreCase))
+                return "FileMkv";
+            if (!string.IsNullOrEmpty(path) && path.EndsWith(".webm", StringComparison.OrdinalIgnoreCase))
+                return "FileWebm";
+            if (Adk.Video.MediaProbe.IsVideoExtension(path))
+                return "FileBlank";
+
             return GameAudioPcmLoader.GetContainerKind(path) == GameAudioContainerKind.Xwma
                 ? "FileXwm"
                 : "FileWav";
@@ -795,6 +815,15 @@ namespace LcdMod.Client.Apps
             _player.Volume = _volume;
 
             CancelPendingLocalAudioStream();
+            if (_pickedAudio != null && _pickedAudio.IsVideo)
+            {
+                var source = new LocalVideoChunkSource(_pickedAudio.LocalVideo);
+                _player.PlayVideo(block, GetPickedAudioTitle(_pickedAudio), source, startPaused);
+                TryStartLocalVideoStream(block, source);
+                MarkDirty();
+                return;
+            }
+
             if (_pickedAudio != null && _pickedAudio.IsLocal)
             {
                 TryStartLocalAudioStream(block);
@@ -2043,6 +2072,9 @@ namespace LcdMod.Client.Apps
                     return "Local/" + reference.LocalAsset.SourcePath.Replace('\\', '/');
             }
 
+            if (reference.IsVideo)
+                return reference.PickerFullPath;
+
             if (!string.IsNullOrEmpty(reference.DefinitionPath))
                 return "Content/" + reference.DefinitionPath.Replace('\\', '/');
 
@@ -2231,7 +2263,7 @@ namespace LcdMod.Client.Apps
 
             if (_pickedAudio != null)
             {
-                if (_pickedAudio.IsLocal && _pickedAudio.LocalAsset != null)
+                if ((_pickedAudio.IsLocal && _pickedAudio.LocalAsset != null) || _pickedAudio.IsVideo)
                     return false;
 
                 if (_pickedAudio.IsSoundBlock)
@@ -2275,6 +2307,21 @@ namespace LcdMod.Client.Apps
                 block,
                 Host.SurfaceIndex,
                 _pickedAudio.LocalAsset,
+                GetPickedAudioTitle(_pickedAudio));
+        }
+
+        void TryStartLocalVideoStream(IMyTerminalBlock block, LocalVideoChunkSource source)
+        {
+            if (!IsMultiplayerMediaCommandRequired() || block == null || _pickedAudio == null ||
+                !_pickedAudio.IsVideo || LcdModSessionComponent.Client == null)
+            {
+                return;
+            }
+
+            LcdModSessionComponent.Client.StartMediaPlayerLocalVideoStream(
+                block,
+                Host.SurfaceIndex,
+                source,
                 GetPickedAudioTitle(_pickedAudio));
         }
 
@@ -2430,7 +2477,8 @@ namespace LcdMod.Client.Apps
                     current.Files.Sort(ComparePickerFiles);
                     for (int i = 0; i < current.Files.Count; i++)
                     {
-                        if (current.Files[i] != null && (current.Files[i].Tag as MediaAudioFileReference) != null)
+                        if (current.Files[i] != null && !current.Files[i].IsBlocked &&
+                            (current.Files[i].Tag as MediaAudioFileReference) != null)
                             result.Add(current.Files[i]);
                     }
                 }
@@ -2576,6 +2624,9 @@ namespace LcdMod.Client.Apps
 
             if (reference.IsLocal && reference.LocalAsset != null && reference.LocalAsset.DurationTicks > 0)
                 return FormatDuration(TimeSpan.FromTicks(reference.LocalAsset.DurationTicks).TotalSeconds);
+
+            if (reference.IsVideo && reference.LocalVideo.Probe != null && reference.LocalVideo.Probe.Duration > 0)
+                return FormatDuration(reference.LocalVideo.Probe.Duration);
 
             return GetPickedAudioDetail(reference);
         }
@@ -2794,6 +2845,9 @@ namespace LcdMod.Client.Apps
 
             if (reference.IsLocal && reference.LocalAsset != null)
                 return "Local · " + reference.LocalAsset.RuntimePath;
+
+            if (reference.IsVideo)
+                return "Video · " + reference.LocalVideo.FileName;
 
             var format = GameAudioPcmLoader.GetContainerDisplayName(GameAudioPcmLoader.GetContainerKind(reference.DefinitionPath));
             var owner = string.IsNullOrEmpty(reference.FirstSoundSubtype)

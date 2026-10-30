@@ -13,6 +13,11 @@ namespace LcdMod.Client.Apps.MediaPlayer
         const float MAX_BUTTON_HEIGHT = 56f;
         const float SIDE_PADDING = 12f;
         const float LINE_GAP = 5f;
+        const double SEEK_STEP_SECONDS = 10d;
+        static readonly TimeSpan DockHideDelay = TimeSpan.FromSeconds(15);
+        static readonly Color DockSecondaryColor = new Color(58, 58, 58);
+        static readonly Color DockPrimaryColor = new Color(124, 124, 124);
+        static readonly Color DockActiveColor = new Color(254, 254, 254);
 
         readonly MediaPlayerApp _app;
         readonly List<MediaPlayerApp.MediaQueueRow> _queueData = new List<MediaPlayerApp.MediaQueueRow>();
@@ -20,6 +25,10 @@ namespace LcdMod.Client.Apps.MediaPlayer
         IReadOnlyList<MediaPlaylistRowModel> _rows = new MediaPlaylistRowModel[0];
         Vector2 _viewport;
         int _visualizerVersion;
+        Vector2 _lastPointer;
+        DateTime _lastActivity = DateTime.MinValue;
+        bool _captionsEnabled = true;
+        bool _volumeFlyoutOpen;
 
         public MediaPlayerViewModel(MediaPlayerApp app)
         {
@@ -35,6 +44,19 @@ namespace LcdMod.Client.Apps.MediaPlayer
             ConfigureVisualizerCommand = new DelegateCommand(_ => Run(_app.OpenVisualizerSettings));
             ClearQueueCommand = new DelegateCommand(_ => Run(_app.MediaClearQueue));
             SaveQueueCommand = new DelegateCommand(_ => Run(_app.MediaSaveQueue));
+            SeekBackCommand = new DelegateCommand(_ => SeekBy(-SEEK_STEP_SECONDS));
+            SeekForwardCommand = new DelegateCommand(_ => SeekBy(SEEK_STEP_SECONDS));
+            CaptionsCommand = new DelegateCommand(_ =>
+            {
+                _captionsEnabled = !_captionsEnabled;
+                MarkActivity();
+                Refresh();
+            });
+            VideoSurfaceCommand = new DelegateCommand(_ =>
+            {
+                MarkActivity();
+                Run(_app.MediaTogglePlay);
+            });
         }
 
         public ICommand PickCommand { get; }
@@ -49,12 +71,27 @@ namespace LcdMod.Client.Apps.MediaPlayer
         public ICommand StopCommand { get; }
         public ICommand ClearQueueCommand { get; }
         public ICommand SaveQueueCommand { get; }
+        public ICommand SeekBackCommand { get; }
+        public ICommand SeekForwardCommand { get; }
+        public ICommand CaptionsCommand { get; }
+        public ICommand VideoSurfaceCommand { get; }
+        public string PickText { get; private set; } = string.Empty;
+        public string PreviousText { get; private set; } = string.Empty;
+        public string NextText { get; private set; } = string.Empty;
+        public string ShuffleText { get; private set; } = string.Empty;
+        public string RepeatText { get; private set; } = string.Empty;
+        public string PlaylistText { get; private set; } = string.Empty;
+        public string StopText { get; private set; } = string.Empty;
+        public bool VideoPlaylistVisible { get; private set; }
+        public Vector4 VideoPlaylistMargin { get; private set; }
+        public Vector4 VideoPlaylistPadding { get; private set; }
         public MediaPlayerApp App => _app;
 
         public bool IsDefault { get; private set; } = true;
         public bool IsWide { get; private set; }
         public bool IsSmall { get; private set; }
-        public bool IsRegular => !IsSmall;
+        public bool IsVideo { get; private set; }
+        public bool IsRegular => !IsVideo && !IsSmall;
         public float PlaylistGap { get; private set; }
         public Vector4 PlaylistGapMargin => new Vector4(0f, PlaylistGap, 0f, 0f);
         public Vector4 OverlayListMargin => new Vector4(PlaylistGap, 0f, PlaylistGap, 0f);
@@ -81,7 +118,40 @@ namespace LcdMod.Client.Apps.MediaPlayer
         public Vector4 MediaIconMargin { get; private set; }
         public float[] VisualizerLevels => _app.MediaVisualizerLevels;
         public string VisualizerTexture => _app.MediaVisualizerTexture;
+        public float VisualizerAspectRatio => _app.MediaVisualizerAspectRatio;
         public int VisualizerVersion => _visualizerVersion;
+        public string Subtitle { get; private set; } = string.Empty;
+        public bool HasSubtitle => _captionsEnabled && Subtitle.Length > 0;
+        public float SubtitleFontSize { get; private set; } = .75f;
+        public Vector4 CaptionPadding { get; private set; }
+        public float CaptionRadius { get; private set; }
+        public Vector4 CaptionMargin { get; private set; }
+
+        public bool DockVisible { get; private set; }
+        public float DockHeight { get; private set; }
+        public float DockRadius { get; private set; }
+        public Vector4 DockMargin { get; private set; }
+        public Vector4 DockPadding { get; private set; }
+        public float DockButtonWidth { get; private set; }
+        public Vector4 DockProgressMargin { get; private set; }
+        public Color DockForeground => DockPrimaryColor;
+        public Color DockTrackColor => DockSecondaryColor;
+        public Color CaptionsColor { get; private set; }
+        public bool IsPlaying { get; private set; }
+        public object VideoKey => _app.MediaVideoKey;
+        public float FlashDiameter { get; private set; }
+        public float DockSlideDistance => DockHeight + DockMargin.W;
+        public bool VideoTitleEnabled { get; private set; }
+        public string VideoTitle { get; private set; } = string.Empty;
+        public float VideoTitleFontSize { get; private set; }
+        public float VideoTitleIconSize { get; private set; }
+        public bool HasCaptions { get; private set; }
+        public string VolumeIcon => Volume <= 0f ? "SoundLow" : "SoundHigh";
+        public float DockVolumeIconSize { get; private set; }
+        public float VolumeSliderLength { get; private set; }
+        public MediaGlyphKind CaptionsGlyph => !HasCaptions
+            ? MediaGlyphKind.CaptionsUnavailable
+            : _captionsEnabled ? MediaGlyphKind.CaptionsOn : MediaGlyphKind.CaptionsOff;
         public string FileIcon { get; private set; } = "FileWav";
 
         public bool ProgressVisible { get; private set; }
@@ -165,6 +235,20 @@ namespace LcdMod.Client.Apps.MediaPlayer
             DurationSeconds = _app.MediaDurationSeconds;
             CanSeek = _app.MediaCanSeek;
             _visualizerVersion++;
+            string subtitle = _app.MediaSubtitle ?? string.Empty;
+            if (!string.Equals(subtitle, Subtitle, StringComparison.Ordinal))
+            {
+                Subtitle = subtitle;
+                RaisePropertyChanged<string>(nameof(Subtitle));
+                RaisePropertyChanged<bool>(nameof(HasSubtitle));
+            }
+            bool dockVisible = IsVideo && (!_app.MediaPlaying || VideoPlaylistVisible || _volumeFlyoutOpen || DateTime.UtcNow - _lastActivity < DockHideDelay);
+            if (dockVisible != DockVisible)
+            {
+                DockVisible = dockVisible;
+                RaisePropertyChanged<bool>(nameof(DockVisible));
+            }
+            RaisePropertyChanged<float>(nameof(VisualizerAspectRatio));
             RaisePropertyChanged<double>(nameof(PositionSeconds));
             RaisePropertyChanged<double>(nameof(DurationSeconds));
             RaisePropertyChanged<bool>(nameof(CanSeek));
@@ -172,7 +256,37 @@ namespace LcdMod.Client.Apps.MediaPlayer
             RaisePropertyChanged<string>(nameof(VisualizerTexture));
         }
 
-        public bool HasFrameBoundContent => ProgressVisible || ShowVisualizer;
+        public bool HasFrameBoundContent => ProgressVisible || ShowVisualizer || IsVideo;
+
+        internal void NotifyPointer(Vector2 point)
+        {
+            if (point == _lastPointer)
+                return;
+            _lastPointer = point;
+            MarkActivity();
+        }
+
+        internal void SetVolumeFlyoutOpen(bool open)
+        {
+            _volumeFlyoutOpen = open;
+            MarkActivity();
+        }
+
+        void MarkActivity()
+        {
+            _lastActivity = DateTime.UtcNow;
+            if (IsVideo && !DockVisible)
+            {
+                DockVisible = true;
+                RaisePropertyChanged<bool>(nameof(DockVisible));
+            }
+        }
+
+        void SeekBy(double seconds)
+        {
+            MarkActivity();
+            Run(() => _app.MediaSeek(Math.Max(0d, Math.Min(_app.MediaDurationSeconds, _app.MediaPositionSeconds + seconds))));
+        }
 
         public void Refresh()
         {
@@ -214,7 +328,12 @@ namespace LcdMod.Client.Apps.MediaPlayer
             Volume = _app.MediaVolume;
 
             UpdateTransport(s, fs);
-            if (small)
+            IsVideo = !small && _app.MediaHasVideo;
+            IsPlaying = _app.MediaPlaying;
+            _app.MediaSetVideoChrome(IsVideo);
+            if (IsVideo)
+                LayoutVideo(_viewport.X, _viewport.Y, s, fs);
+            else if (small)
                 LayoutSmall(width, height, s, playlistVisible);
             else
                 LayoutRegular(width, height, s, playlistVisible, wide);
@@ -291,8 +410,9 @@ namespace LcdMod.Client.Apps.MediaPlayer
             ShowPlaylistBody = BodyVisible && playlistBody;
             float innerPad = Math.Max(1f, 3f * s);
             MediaIconMargin = new Vector4(innerPad);
-            ShowVisualizer = BodyVisible && !playlistBody && _app.MediaVisualizerEnabled;
-            ShowFileIcon = BodyVisible && !playlistBody && !_app.MediaVisualizerEnabled;
+            bool showsVideo = _app.MediaHasVideo;
+            ShowVisualizer = BodyVisible && !playlistBody && (_app.MediaVisualizerEnabled || showsVideo);
+            ShowFileIcon = BodyVisible && !playlistBody && !_app.MediaVisualizerEnabled && !showsVideo;
 
             ShowStopButton = wide;
             ShowPlaylistButton = !wide;
@@ -301,6 +421,63 @@ namespace LcdMod.Client.Apps.MediaPlayer
             PlaylistOverlay = false;
             float playlistHeight = wide ? height : Math.Max(1f, bodyHeight);
             ActionHeight = Math.Max(22f * s, Math.Min(32f * s, playlistHeight * .22f));
+        }
+
+        void LayoutVideo(float width, float height, float s, float fs)
+        {
+            PathVisible = false;
+            BodyVisible = false;
+            ShowFileIcon = false;
+            ShowPlaylistBody = false;
+            PlaylistPanelVisible = false;
+            PlaylistOverlay = false;
+            VolumeVisible = false;
+            ShowVisualizer = true;
+
+            float dockHeight = MathHelper.Clamp(Math.Min(width, height) * .075f, 22f * s, 44f * s);
+            DockHeight = dockHeight;
+            DockRadius = Math.Max(3f, dockHeight * .27f);
+            AreaMargin = Vector4.Zero;
+            float side = Math.Max(SIDE_PADDING * s, Math.Min(width * .08f, 40f * s));
+            float bottom = Math.Max(4f, 5f * s);
+            DockMargin = new Vector4(side, 0f, side, bottom);
+            DockPadding = new Vector4(DockRadius, 0f, DockRadius, 0f);
+            DockButtonWidth = dockHeight;
+            DockProgressMargin = new Vector4(Math.Max(4f, 8f * s), 0f, Math.Max(4f, 8f * s), 0f);
+            ProgressVisible = true;
+            HasCaptions = _app.MediaHasSubtitles;
+            DockVolumeIconSize = dockHeight * .55f;
+            VolumeSliderLength = MathHelper.Clamp(height * .35f, 60f * s, 160f * s);
+            CaptionsColor = HasCaptions && _captionsEnabled ? DockActiveColor : DockPrimaryColor;
+
+            SubtitleFontSize = .75f * fs;
+            float captionPad = Math.Max(4f, 8f * s);
+            CaptionPadding = new Vector4(captionPad, 2f * s, captionPad, 2f * s);
+            CaptionRadius = DockRadius;
+            CaptionMargin = new Vector4(SIDE_PADDING * s, 0f, SIDE_PADDING * s, Math.Max(4f, 10f * s));
+            FlashDiameter = MathHelper.Clamp(Math.Min(width, height) * .2f, 32f * s, 96f * s);
+            VideoTitleEnabled = _app.TitleEnabled;
+            VideoTitle = _app.MediaTitleText;
+            VideoTitleFontSize = 1.3f * _app.SurfaceFontSize;
+            VideoTitleIconSize = 32f * _app.SurfaceFontSize;
+
+            PickText = _app.MediaPickText;
+            PreviousText = _app.MediaPreviousText;
+            NextText = _app.MediaNextText;
+            ShuffleText = _app.MediaShuffleText;
+            RepeatText = _app.MediaRepeatText;
+            PlaylistText = _app.MediaPlaylistText;
+            StopText = _app.MediaStopText;
+
+            float gap = Math.Max(4f, 8f * s);
+            VideoPlaylistVisible = _app.MediaPlaylistVisible;
+            PlaylistWidth = Math.Max(120f * s, Math.Min(width * .42f, 280f * s));
+            VideoPlaylistMargin = new Vector4(0f, side, side, dockHeight + bottom + gap);
+            VideoPlaylistPadding = new Vector4(gap);
+            PlaylistGap = Math.Max(3f, 5f * s);
+            PlaylistCompact = false;
+            PlaylistNormal = true;
+            ActionHeight = Math.Max(22f * s, Math.Min(32f * s, height * .08f));
         }
 
         void LayoutSmall(float width, float height, float s, bool playlistVisible)

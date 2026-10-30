@@ -4,13 +4,16 @@
              xmlns:media="using:LcdMod.Client.Apps.MediaPlayer"
              x:Class="LcdMod.Client.Apps.MediaPlayer.MediaVisualizerView"
              x:DataType="media:MediaPlayerViewModel">
-  <media:MediaVisualizer Source="{Binding VisualizerTexture}"
-                         Version="{Binding VisualizerVersion}"
-                         IsVisible="{Binding ShowVisualizer}">
-    <media:MediaVisualizer.ContextMenu>
-      <ContextMenu>
-        <MenuItem Header="{Binding ConfigureVisualizerText}" Command="{Binding ConfigureVisualizerCommand}" />
-      </ContextMenu>
-    </media:MediaVisualizer.ContextMenu>
-  </media:MediaVisualizer>
+  <Grid>
+    <media:MediaVisualizer Source="{Binding VisualizerTexture}"
+                           Version="{Binding VisualizerVersion}"
+                           AspectRatio="{Binding VisualizerAspectRatio}"
+                           IsVisible="{Binding ShowVisualizer}">
+      <media:MediaVisualizer.ContextMenu>
+        <ContextMenu>
+          <MenuItem Header="{Binding ConfigureVisualizerText}" Command="{Binding ConfigureVisualizerCommand}" />
+        </ContextMenu>
+      </media:MediaVisualizer.ContextMenu>
+    </media:MediaVisualizer>
+  </Grid>
 </UserControl>

@@ -1782,6 +1782,9 @@ Mēs brīdi pagaidīsim un pēc tam to restartēsim jūsu vietā.</value>
   <data name="LcdMod_SpritePicker_Root_Local" xml:space="preserve">
     <value>Mani attēli</value>
   </data>
+  <data name="LcdMod_SpritePicker_Animated" xml:space="preserve">
+    <value>animēts</value>
+  </data>
   <data name="LcdMod_SpritePicker_Root_Sprites" xml:space="preserve">
     <value>LCD spraiti</value>
   </data>

@@ -27,6 +27,34 @@ public sealed class GridImageCodecTests
     }
 
     [Fact]
+    public void TryEncode_AnimatedPngIsStoredAsAnimationKeyedByItsBytes()
+    {
+        byte[] apng = File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Data", "Video", "animated.png"));
+
+        Assert.True(GridImageCodec.TryEncode("animated.png", apng, out var image, out var error), error);
+
+        Assert.True(GridImageCodec.IsAnimation(image.Payload));
+        Assert.Equal(GridImageCodec.ComputeId(apng), image.Id);
+        Assert.Equal((32, 24), (image.Width, image.Height));
+        Assert.True(GridImageCodec.TryDecodeAnimation(image.Id, image.Payload, out var video, out error), error);
+        Assert.True(video.FrameCount > 1);
+    }
+
+    [Fact]
+    public void TryDecodeAnimation_RejectsATamperedAnimation()
+    {
+        byte[] apng = File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Data", "Video", "animated.png"));
+        Assert.True(GridImageCodec.TryEncode("animated.png", apng, out var image, out var error), error);
+
+        var tampered = (byte[])apng.Clone();
+        tampered[tampered.Length - 20] ^= 0xFF;
+        image.Payload.Data = tampered;
+
+        Assert.False(GridImageCodec.TryDecodeAnimation(image.Id, image.Payload, out _, out _));
+        Assert.False(GridImageCodec.TryDecode(image.Id, image.Payload, out _, out _));
+    }
+
+    [Fact]
     public void TryEncode_PngRoundTripsToTheSameDdsAndId()
     {
         byte[] png = PngEncoder.Encode(Photo(70, 45), 70, 45, DeflateLevel.Fast);

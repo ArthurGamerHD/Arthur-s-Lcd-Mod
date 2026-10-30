@@ -14,6 +14,14 @@ namespace LcdMod.Common.Helpers
         public const int MAX_GRID_IMAGE_PAYLOAD_BYTES = 24 * 1024 * 1024;
         public const int MAX_IMAGE_DIMENSION = 2048;
 
+        /// <summary>Videos play and travel in chunks of about five seconds; the limit is per chunk, not per file.</summary>
+        public const int MAX_VIDEO_CHUNK_BYTES = 8 * 1024 * 1024;
+        public const int MAX_VIDEO_INDEX_BYTES = 2 * 1024 * 1024;
+
+        /// <summary>Video stream segments below zero: the chunk index, then captions from a separate subtitle file.</summary>
+        public const int VIDEO_MANIFEST_SEGMENT = -1;
+        public const int VIDEO_SUBTITLE_SEGMENT = -2;
+
         public const string MOD_PREFIX = "LcdMod_";
 
         public const string CONFIG_FILE = "LcdMod.local.xml";

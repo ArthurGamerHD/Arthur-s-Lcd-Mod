@@ -165,6 +165,7 @@ namespace LcdMod.Server.Audio
                 BlockEntityId = packet.BlockEntityId,
                 SurfaceIndex = packet.SurfaceIndex,
                 Title = SanitizeMediaCommandText(packet.Title, MEDIA_COMMAND_DISPLAY_MAX_LENGTH),
+                ContentKind = packet.ContentKind,
                 ListenerSteamIds = new HashSet<ulong>(),
                 InRangeCandidateSteamIds = new HashSet<ulong>()
             };
@@ -181,7 +182,8 @@ namespace LcdMod.Server.Audio
                 AppTypeId = packet.AppTypeId,
                 Title = session.Title,
                 TotalDurationTicks = packet.TotalDurationTicks < 0L ? 0L : packet.TotalDurationTicks,
-                ServerFrame = MyAPIGateway.Session.GameplayFrameCounter
+                ServerFrame = MyAPIGateway.Session.GameplayFrameCounter,
+                ContentKind = session.ContentKind
             };
 
             var recipients = BroadcastMediaStreamInvite(sync, session, block);
@@ -202,12 +204,7 @@ namespace LcdMod.Server.Audio
             if (!_mediaStreams.TryGetValue(new MediaStreamKey(senderSteamId, packet.ClientStreamId), out session))
                 return;
 
-            if (packet.PcmBytes == null ||
-                packet.PcmBytes.Length == 0 ||
-                packet.PcmBytes.Length > MEDIA_STREAM_CHUNK_MAX_BYTES ||
-                (packet.PcmBytes.Length & 1) != 0 ||
-                packet.ChunkIndex < 0 ||
-                packet.DurationTicks <= 0L)
+            if (!IsValidMediaStreamChunk(session, packet))
             {
                 RejectMediaStream(senderSteamId, packet.ClientStreamId, "chunk validation failed");
                 return;
@@ -227,7 +224,11 @@ namespace LcdMod.Server.Audio
                 PcmBytes = packet.PcmBytes,
                 DurationTicks = packet.DurationTicks,
                 IsFinal = packet.IsFinal,
-                ServerFrame = MyAPIGateway.Session.GameplayFrameCounter
+                ServerFrame = MyAPIGateway.Session.GameplayFrameCounter,
+                Offset = packet.Offset,
+                Segment = packet.Segment,
+                SegmentLength = packet.SegmentLength,
+                PositionTicks = packet.PositionTicks
             };
 
             BroadcastMediaStreamChunkToListeners(sync, session, block);
@@ -308,7 +309,8 @@ namespace LcdMod.Server.Audio
                 AppTypeId = (int)AppType.MediaPlayer,
                 Title = session.Title,
                 TotalDurationTicks = 0L,
-                ServerFrame = MyAPIGateway.Session.GameplayFrameCounter
+                ServerFrame = MyAPIGateway.Session.GameplayFrameCounter,
+                ContentKind = session.ContentKind
             };
 
             BroadcastMediaStreamInvite(invite, session, block);
@@ -336,11 +338,35 @@ namespace LcdMod.Server.Audio
             return TryValidateMediaPlayerBlock(senderSteamId, packet.BlockEntityId, packet.SurfaceIndex, out block);
         }
 
+        static bool IsValidMediaStreamChunk(MediaStreamSession session, PacketRequestMediaStreamChunk packet)
+        {
+            if (packet.PcmBytes == null ||
+                packet.PcmBytes.Length == 0 ||
+                packet.PcmBytes.Length > MEDIA_STREAM_CHUNK_MAX_BYTES ||
+                packet.ChunkIndex < 0)
+            {
+                return false;
+            }
+
+            if (session.ContentKind == MediaStreamContentKind.Video)
+            {
+                int maxLength = packet.Segment < 0 ? LcdMod.Common.Helpers.Constants.MAX_VIDEO_INDEX_BYTES : LcdMod.Common.Helpers.Constants.MAX_VIDEO_CHUNK_BYTES;
+                return packet.Segment >= LcdMod.Common.Helpers.Constants.VIDEO_SUBTITLE_SEGMENT && !packet.IsFinal &&
+                       packet.SegmentLength > 0 && packet.SegmentLength <= maxLength &&
+                       packet.Offset >= 0 && packet.Offset <= packet.SegmentLength - packet.PcmBytes.Length;
+            }
+
+            return (packet.PcmBytes.Length & 1) == 0 && packet.DurationTicks > 0L;
+        }
+
         bool TryValidateMediaStreamRequest(ulong senderSteamId, PacketMediaStreamControl packet, out IMyTerminalBlock block)
         {
             block = null;
 
             if (senderSteamId == 0 || packet == null)
+                return false;
+
+            if (packet.ContentKind != MediaStreamContentKind.Pcm && packet.ContentKind != MediaStreamContentKind.Video)
                 return false;
 
             if (packet.ClientStreamId == 0 ||
@@ -856,6 +882,7 @@ namespace LcdMod.Server.Audio
             public long BlockEntityId;
             public int SurfaceIndex;
             public string Title;
+            public MediaStreamContentKind ContentKind;
             public HashSet<ulong> ListenerSteamIds;
             public HashSet<ulong> InRangeCandidateSteamIds;
         }

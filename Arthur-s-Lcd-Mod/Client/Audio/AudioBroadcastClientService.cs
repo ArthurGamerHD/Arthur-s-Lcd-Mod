@@ -5,6 +5,7 @@ using LcdMod.Common.Audio;
 using LcdMod.Client.Config;
 using LcdMod.Client.GridData;
 using LcdMod.Client.Helpers;
+using LcdMod.Client.Video;
 using LcdMod.Common.Helpers;
 using LcdMod.Common.Networking;
 using Sandbox.Game.Entities;
@@ -23,6 +24,11 @@ namespace LcdMod.Client.Audio
         const int STREAM_CHUNK_PCM_BYTES = STREAM_SAMPLE_RATE * STREAM_BLOCK_ALIGN;
         const int STREAM_INITIAL_CHUNKS = 3;
         const long STREAM_LISTENER_REFRESH_FRAMES = 300L;
+        const int VIDEO_PIECE_BYTES = 60 * 1024;
+        const long VIDEO_PIECE_INTERVAL_FRAMES = 3L;
+        const int VIDEO_MANIFEST_SEGMENT = Constants.VIDEO_MANIFEST_SEGMENT;
+        const int VIDEO_SUBTITLE_SEGMENT = Constants.VIDEO_SUBTITLE_SEGMENT;
+        const int VIDEO_CHUNKS_AHEAD = 2;
 
         readonly List<MyEntity3DSoundEmitter> _activeEmitters = new List<MyEntity3DSoundEmitter>();
         readonly HashSet<long> _recentPlaybackIds = new HashSet<long>();
@@ -39,6 +45,16 @@ namespace LcdMod.Client.Audio
             public long BlockEntityId;
             public int SurfaceIndex;
             public GridMediaPlayer Player;
+            public string Title;
+            public bool IsVideo;
+            public byte[] Manifest;
+            public HashSet<int> ManifestOffsets;
+            public int ManifestReceived;
+            public RemoteVideoChunkSource Remote;
+            public byte[] SubtitleData;
+            public HashSet<int> SubtitleOffsets;
+            public int SubtitleReceived;
+            public SubtitleTrack Subtitles;
         }
 
         sealed class OutgoingMediaStream
@@ -54,6 +70,15 @@ namespace LcdMod.Client.Audio
             public long NextListenerRefreshFrame;
             public bool CloseSent;
             public ulong[] ListenerSteamIds;
+            public MediaStreamContentKind Kind;
+            public LocalVideoChunkSource Video;
+            public readonly HashSet<int> SentChunks = new HashSet<int>();
+            public bool ManifestPending = true;
+            public bool SubtitlesPending;
+            public int SendingSegment = int.MinValue;
+            public byte[] SendingData;
+            public int SendingOffset;
+            public long SendingPositionTicks;
         }
 
         internal void StreamAudio(string query)
@@ -192,6 +217,48 @@ namespace LcdMod.Client.Audio
             return true;
         }
 
+        /// <summary>
+        /// Shares a local video with the players near the screen, the way streaming services do: a small
+        /// manifest (header and chunk table) goes first, then the chunks around the sender's playhead as it
+        /// plays, in pieces through the server. Late joiners get the manifest and the current chunks, so they
+        /// join where the video is, and no limit applies to the length of the file.
+        /// </summary>
+        public void StartMediaPlayerLocalVideoStream(IMyTerminalBlock block, int surfaceIndex, LocalVideoChunkSource source, string title)
+        {
+            if (block == null || source == null)
+                return;
+
+            CancelMediaPlayerLocalAudioStream(block.EntityId, surfaceIndex, stopPlayback: true);
+            var clientStreamId = ++_nextClientStreamId;
+            if (clientStreamId == 0)
+                clientStreamId = ++_nextClientStreamId;
+
+            var frame = MyAPIGateway.Session.GameplayFrameCounter;
+            _outgoingMediaStreams.Add(new OutgoingMediaStream
+            {
+                ClientStreamId = clientStreamId,
+                BlockEntityId = block.EntityId,
+                SurfaceIndex = surfaceIndex,
+                Kind = MediaStreamContentKind.Video,
+                Video = source,
+                SubtitlesPending = source.Subtitles != null,
+                NextSendFrame = frame + 1L,
+                NextListenerRefreshFrame = frame + STREAM_LISTENER_REFRESH_FRAMES
+            });
+
+            SendOpenStream(new PacketMediaStreamControl
+            {
+                Intent = MediaStreamControlIntent.Request,
+                ClientStreamId = clientStreamId,
+                BlockEntityId = block.EntityId,
+                SurfaceIndex = surfaceIndex,
+                AppTypeId = (int)Generated.AppType.MediaPlayer,
+                Title = string.IsNullOrWhiteSpace(title) ? source.Video.Name : title,
+                TotalDurationTicks = TimeSpan.FromSeconds(source.Index.Duration).Ticks,
+                ContentKind = MediaStreamContentKind.Video
+            });
+        }
+
         public bool CancelMediaPlayerLocalAudioStream(
             long blockEntityId,
             int surfaceIndex,
@@ -282,17 +349,34 @@ namespace LcdMod.Client.Audio
                 return;
             }
 
+            if (_incomingMediaStreams.ContainsKey(packet.ServerStreamId))
+            {
+                SendStreamControl(new PacketMediaStreamControl { Intent = MediaStreamControlIntent.Accepted, ServerStreamId = packet.ServerStreamId });
+                return;
+            }
+
             CancelMediaPlayerLocalAudioStream(
                 packet.BlockEntityId,
                 packet.SurfaceIndex,
                 stopPlayback: true);
-            player.StartStream(block, packet.Title);
-            _incomingMediaStreams[packet.ServerStreamId] = new IncomingMediaStream
+            var incoming = new IncomingMediaStream
             {
                 BlockEntityId = packet.BlockEntityId,
                 SurfaceIndex = packet.SurfaceIndex,
-                Player = player
+                Player = player,
+                Title = packet.Title,
+                IsVideo = packet.ContentKind == MediaStreamContentKind.Video
             };
+            if (incoming.IsVideo)
+            {
+                player.ResetPlaybackEngine();
+            }
+            else
+            {
+                player.StartStream(block, packet.Title);
+            }
+
+            _incomingMediaStreams[packet.ServerStreamId] = incoming;
             SendStreamControl(new PacketMediaStreamControl { Intent = MediaStreamControlIntent.Accepted, ServerStreamId = packet.ServerStreamId });
         }
 
@@ -318,12 +402,106 @@ namespace LcdMod.Client.Audio
             if (player == null)
                 return;
 
+            if (stream.IsVideo)
+            {
+                ReceiveVideoPiece(packet, stream, player);
+                return;
+            }
+
             player.AppendStreamChunk(packet.PcmBytes, packet.DurationTicks / (double)TimeSpan.TicksPerSecond);
             if (packet.IsFinal)
             {
                 player.EndStream();
                 _incomingMediaStreams.Remove(packet.ServerStreamId);
             }
+        }
+
+        void ReceiveVideoPiece(PacketSyncMediaStreamChunk packet, IncomingMediaStream stream, GridMediaPlayer player)
+        {
+            if (packet.Segment == VIDEO_SUBTITLE_SEGMENT)
+            {
+                ReceiveVideoSubtitles(packet, stream);
+                return;
+            }
+
+            if (packet.Segment != VIDEO_MANIFEST_SEGMENT)
+            {
+                if (stream.Remote != null)
+                    stream.Remote.Receive(packet.Segment, packet.SegmentLength, packet.Offset, packet.PcmBytes);
+                return;
+            }
+
+            if (stream.Remote != null || packet.SegmentLength <= 0 || packet.SegmentLength > Constants.MAX_VIDEO_INDEX_BYTES)
+                return;
+
+            if (stream.Manifest == null || stream.Manifest.Length != packet.SegmentLength)
+            {
+                stream.Manifest = new byte[packet.SegmentLength];
+                stream.ManifestOffsets = new HashSet<int>();
+                stream.ManifestReceived = 0;
+            }
+
+            if (packet.Offset < 0 || packet.Offset > stream.Manifest.Length - packet.PcmBytes.Length ||
+                !stream.ManifestOffsets.Add(packet.Offset))
+            {
+                return;
+            }
+
+            Buffer.BlockCopy(packet.PcmBytes, 0, stream.Manifest, packet.Offset, packet.PcmBytes.Length);
+            stream.ManifestReceived += packet.PcmBytes.Length;
+            if (stream.ManifestReceived < stream.Manifest.Length)
+                return;
+
+            var block = MyEntities.GetEntityById(stream.BlockEntityId) as IMyTerminalBlock;
+            if (block == null)
+                return;
+
+            try
+            {
+                stream.Remote = new RemoteVideoChunkSource(
+                    Adk.Video.Matroska.MatroskaChunkIndex.Deserialize(stream.Manifest, Constants.MAX_VIDEO_CHUNK_BYTES));
+            }
+            catch (Exception error)
+            {
+                LogHelper.Log(MyLogSeverity.Warning, "Rejected a streamed video manifest: " + error.Message);
+                return;
+            }
+
+            stream.Manifest = null;
+            stream.ManifestOffsets = null;
+            stream.Remote.Subtitles = stream.Subtitles;
+            player.PlayVideo(block, stream.Title, stream.Remote, false,
+                packet.PositionTicks / (double)TimeSpan.TicksPerSecond);
+        }
+
+        void ReceiveVideoSubtitles(PacketSyncMediaStreamChunk packet, IncomingMediaStream stream)
+        {
+            if (stream.Subtitles != null || packet.SegmentLength <= 0 || packet.SegmentLength > Constants.MAX_VIDEO_INDEX_BYTES)
+                return;
+
+            if (stream.SubtitleData == null || stream.SubtitleData.Length != packet.SegmentLength)
+            {
+                stream.SubtitleData = new byte[packet.SegmentLength];
+                stream.SubtitleOffsets = new HashSet<int>();
+                stream.SubtitleReceived = 0;
+            }
+
+            if (packet.Offset < 0 || packet.Offset > stream.SubtitleData.Length - packet.PcmBytes.Length ||
+                !stream.SubtitleOffsets.Add(packet.Offset))
+            {
+                return;
+            }
+
+            Buffer.BlockCopy(packet.PcmBytes, 0, stream.SubtitleData, packet.Offset, packet.PcmBytes.Length);
+            stream.SubtitleReceived += packet.PcmBytes.Length;
+            if (stream.SubtitleReceived < stream.SubtitleData.Length)
+                return;
+
+            stream.Subtitles = SubtitleTrack.FromBytes(stream.SubtitleData);
+            stream.SubtitleData = null;
+            stream.SubtitleOffsets = null;
+            if (stream.Remote != null)
+                stream.Remote.Subtitles = stream.Subtitles;
         }
 
         void HandleStreamClose(PacketMediaStreamControl packet)
@@ -334,6 +512,12 @@ namespace LcdMod.Client.Audio
             IncomingMediaStream stream;
             if (!_incomingMediaStreams.TryGetValue(packet.ServerStreamId, out stream))
                 return;
+
+            if (stream.IsVideo && !packet.StopPlayback)
+            {
+                _incomingMediaStreams.Remove(packet.ServerStreamId);
+                return;
+            }
 
             if (packet.StopPlayback && stream.Player != null)
                 stream.Player.ResetPlaybackEngine();
@@ -350,7 +534,17 @@ namespace LcdMod.Client.Audio
 
             foreach (var stream in _outgoingMediaStreams.Where(stream => stream != null && stream.ClientStreamId == packet.ClientStreamId))
             {
-                stream.ListenerSteamIds = packet.ListenerSteamIds ?? Array.Empty<ulong>();
+                var listeners = packet.ListenerSteamIds ?? Array.Empty<ulong>();
+                if (stream.Kind == MediaStreamContentKind.Video &&
+                    listeners.Any(id => stream.ListenerSteamIds == null || !stream.ListenerSteamIds.Contains(id)))
+                {
+                    stream.ManifestPending = true;
+                    stream.SubtitlesPending = stream.Video != null && stream.Video.Subtitles != null;
+                    stream.SentChunks.Clear();
+                    stream.SendingData = null;
+                }
+
+                stream.ListenerSteamIds = listeners;
                 return;
             }
         }
@@ -389,6 +583,13 @@ namespace LcdMod.Client.Audio
             for (var i = _outgoingMediaStreams.Count - 1; i >= 0; i--)
             {
                 var stream = _outgoingMediaStreams[i];
+                if (stream != null && stream.Kind == MediaStreamContentKind.Video)
+                {
+                    if (!UpdateOutgoingVideoStream(stream, frame))
+                        _outgoingMediaStreams.RemoveAt(i);
+                    continue;
+                }
+
                 if (stream == null || stream.PcmBytes == null || stream.Offset >= stream.PcmBytes.Length)
                 {
                     if (stream != null && !stream.CloseSent)
@@ -447,6 +648,115 @@ namespace LcdMod.Client.Audio
                 stream.CloseSent = true;
                 SendStreamControl(new PacketMediaStreamControl { Intent = MediaStreamControlIntent.Close, ClientStreamId = stream.ClientStreamId, StopPlayback = false });
             }
+        }
+
+        /// <summary>Sends the next video piece when one is due; false once the video stopped playing here.</summary>
+        bool UpdateOutgoingVideoStream(OutgoingMediaStream stream, long frame)
+        {
+            GridMediaPlayer player = ResolvePlayer(stream.BlockEntityId, stream.SurfaceIndex);
+            if (player == null || player.Video == null || !ReferenceEquals(player.Video.Source, stream.Video))
+            {
+                SendStreamControl(new PacketMediaStreamControl { Intent = MediaStreamControlIntent.Close, ClientStreamId = stream.ClientStreamId, StopPlayback = false });
+                return false;
+            }
+
+            if (frame >= stream.NextListenerRefreshFrame)
+            {
+                SendStreamControl(new PacketMediaStreamControl { Intent = MediaStreamControlIntent.Refresh, ClientStreamId = stream.ClientStreamId });
+                stream.NextListenerRefreshFrame = frame + STREAM_LISTENER_REFRESH_FRAMES;
+            }
+
+            if (stream.ListenerSteamIds == null || stream.ListenerSteamIds.Length == 0 || frame < stream.NextSendFrame)
+                return true;
+
+            if (stream.SendingData == null && !PickNextVideoSegment(stream, player))
+                return true;
+
+            int size = Math.Min(VIDEO_PIECE_BYTES, stream.SendingData.Length - stream.SendingOffset);
+            var piece = new byte[size];
+            Buffer.BlockCopy(stream.SendingData, stream.SendingOffset, piece, 0, size);
+            SendStreamChunk(new PacketRequestMediaStreamChunk
+            {
+                ClientStreamId = stream.ClientStreamId,
+                ChunkIndex = stream.ChunkIndex++,
+                PcmBytes = piece,
+                Offset = stream.SendingOffset,
+                Segment = stream.SendingSegment,
+                SegmentLength = stream.SendingData.Length,
+                PositionTicks = stream.SendingPositionTicks
+            });
+
+            stream.SendingOffset += size;
+            stream.NextSendFrame = frame + VIDEO_PIECE_INTERVAL_FRAMES;
+            if (stream.SendingOffset >= stream.SendingData.Length)
+            {
+                if (stream.SendingSegment == VIDEO_MANIFEST_SEGMENT)
+                    stream.ManifestPending = false;
+                else if (stream.SendingSegment == VIDEO_SUBTITLE_SEGMENT)
+                    stream.SubtitlesPending = false;
+                else
+                    stream.SentChunks.Add(stream.SendingSegment);
+                stream.SendingData = null;
+            }
+
+            return true;
+        }
+
+        /// <summary>The manifest when a listener needs it, otherwise the first unsent chunk around the playhead.</summary>
+        static bool PickNextVideoSegment(OutgoingMediaStream stream, GridMediaPlayer player)
+        {
+            stream.SendingOffset = 0;
+            stream.SendingPositionTicks = TimeSpan.FromSeconds(player.CurrentPositionSeconds).Ticks;
+            if (stream.ManifestPending)
+            {
+                stream.SendingSegment = VIDEO_MANIFEST_SEGMENT;
+                stream.SendingData = stream.Video.Index.Serialize();
+                return true;
+            }
+
+            if (stream.SubtitlesPending)
+            {
+                byte[] subtitles = stream.Video.Subtitles == null ? null : stream.Video.Subtitles.ToBytes();
+                if (subtitles != null && subtitles.Length > 0 && subtitles.Length <= Constants.MAX_VIDEO_INDEX_BYTES)
+                {
+                    stream.SendingSegment = VIDEO_SUBTITLE_SEGMENT;
+                    stream.SendingData = subtitles;
+                    return true;
+                }
+                stream.SubtitlesPending = false;
+            }
+
+            var index = stream.Video.Index;
+            int current = index.ChunkAt(player.CurrentPositionSeconds);
+            int last = Math.Min(index.ChunkCount - 1, current + VIDEO_CHUNKS_AHEAD);
+            for (int chunk = current; chunk <= last; chunk++)
+            {
+                if (stream.SentChunks.Contains(chunk))
+                    continue;
+
+                byte[] data = stream.Video.TryGet(chunk);
+                if (data == null)
+                {
+                    stream.Video.Request(chunk);
+                    return false;
+                }
+
+                stream.SendingSegment = chunk;
+                stream.SendingData = data;
+                return true;
+            }
+
+            return false;
+        }
+
+        static GridMediaPlayer ResolvePlayer(long blockEntityId, int surfaceIndex)
+        {
+            var block = MyEntities.GetEntityById(blockEntityId) as IMyTerminalBlock;
+            if (block == null || block.CubeGrid == null)
+                return null;
+
+            var gridLogic = LcdModSessionComponent.GetOrCreateGridLogic(block.CubeGrid);
+            return gridLogic == null ? null : gridLogic.MediaPlayers.Get(blockEntityId, surfaceIndex);
         }
 
         GridMediaPlayer ResolveStreamPlayer(IncomingMediaStream stream)

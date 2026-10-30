@@ -53,7 +53,11 @@
     <Compile Include="..\Arthur-s-Lcd-Mod\Client\Modules\Defense\ShieldInfo.cs" LinkBase="DefenseSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Client\Audio\GameAudioPcmLoader.cs" LinkBase="AudioSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Client\Audio\VisualizerPcmWindow.cs" LinkBase="AudioSource" />
+    <Compile Include="..\Arthur-s-Lcd-Mod\Client\Video\MediaPcm.cs" LinkBase="VideoSource" />
+    <Compile Include="..\Arthur-s-Lcd-Mod\Client\Video\SubtitleMarkup.cs" LinkBase="VideoSource" />
+    <Compile Include="..\Arthur-s-Lcd-Mod\Client\Video\SubtitleTrack.cs" LinkBase="VideoSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Client\GridData\InventoryEventTracker.cs" LinkBase="GridDataSource" />
+    <Compile Include="..\External\Adk\Adk.Gui\Styling\Transform.cs" LinkBase="AdkGuiSource" />
   </ItemGroup>
 
   <ItemGroup>
@@ -61,6 +65,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Data\Spazzmatica_Polka.xwm">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Data\Video\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
@@ -81,5 +88,6 @@
   <Import Project="..\External\Adk\Adk.Audio\Adk.Audio.projitems" Label="Shared" />
   <Import Project="..\External\Adk\Adk.Compression\Adk.Compression.projitems" Label="Shared" />
   <Import Project="..\External\Adk\Adk.Image\Adk.Image.projitems" Label="Shared" />
+  <Import Project="..\External\Adk\Adk.Video\Adk.Video.projitems" Label="Shared" />
 
 </Project>

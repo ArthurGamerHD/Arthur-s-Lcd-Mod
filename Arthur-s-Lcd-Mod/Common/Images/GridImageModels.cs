@@ -6,7 +6,8 @@ namespace LcdMod.Common.Images
     public enum GridImageEncoding
     {
         DeflatedDds = 1,
-        Png = 2
+        Png = 2,
+        Apng = 3
     }
 
     [ProtoContract]

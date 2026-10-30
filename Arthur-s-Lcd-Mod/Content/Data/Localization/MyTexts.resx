@@ -1644,6 +1644,9 @@ We are waiting for a while, and then we will restart it for you.</value>
   <data name="LcdMod_SpritePicker_Root_Local" xml:space="preserve">
     <value>My images</value>
   </data>
+  <data name="LcdMod_SpritePicker_Animated" xml:space="preserve">
+    <value>animated</value>
+  </data>
   <data name="LcdMod_SpritePicker_Root_Sprites" xml:space="preserve">
     <value>LCD sprites</value>
   </data>

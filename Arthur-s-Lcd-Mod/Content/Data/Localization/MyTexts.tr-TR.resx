@@ -1782,6 +1782,9 @@ Bir süre bekleyeceğiz ve ardından sizin için yeniden başlatacağız.</value
   <data name="LcdMod_SpritePicker_Root_Local" xml:space="preserve">
     <value>Görsellerim</value>
   </data>
+  <data name="LcdMod_SpritePicker_Animated" xml:space="preserve">
+    <value>animasyonlu</value>
+  </data>
   <data name="LcdMod_SpritePicker_Root_Sprites" xml:space="preserve">
     <value>LCD sprite'ları</value>
   </data>

@@ -1782,6 +1782,9 @@ Odotamme hetken ja käynnistämme sen sitten uudelleen puolestasi.</value>
   <data name="LcdMod_SpritePicker_Root_Local" xml:space="preserve">
     <value>Omat kuvat</value>
   </data>
+  <data name="LcdMod_SpritePicker_Animated" xml:space="preserve">
+    <value>animoitu</value>
+  </data>
   <data name="LcdMod_SpritePicker_Root_Sprites" xml:space="preserve">
     <value>LCD-spritet</value>
   </data>

@@ -117,5 +117,6 @@ Do not edit it manually, use the mod source on 'https://github.com/ArthurGamerHD
     <Import Project="..\External\Adk\Adk.Gui.Lcd\Adk.Gui.Lcd.projitems" Label="Shared" />
     <Import Project="..\External\Adk\Adk.Gui.ScreenSpace\Adk.Gui.ScreenSpace.projitems" Label="Shared" />
     <Import Project="..\External\Adk\Adk.Image\Adk.Image.projitems" Label="Shared" />
+    <Import Project="..\External\Adk\Adk.Video\Adk.Video.projitems" Label="Shared" />
     <Import Project="..\External\SE-Procedural-Voxel-Cubemap-Api\ClientApi\ClientApi.projitems" Label="Shared" />
 </Project>

@@ -1783,6 +1783,9 @@ Attenderemo un momento e poi la riavvieremo per te.</value>
   <data name="LcdMod_SpritePicker_Root_Local" xml:space="preserve">
     <value>Le mie immagini</value>
   </data>
+  <data name="LcdMod_SpritePicker_Animated" xml:space="preserve">
+    <value>animata</value>
+  </data>
   <data name="LcdMod_SpritePicker_Root_Sprites" xml:space="preserve">
     <value>Sprite LCD</value>
   </data>

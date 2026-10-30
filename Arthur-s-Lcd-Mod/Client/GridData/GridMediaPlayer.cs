@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Adk.Audio;
+using Adk.Video.Matroska;
 using LcdMod.Client.Audio;
+using LcdMod.Client.Video;
 using LcdMod.Common.Audio;
 using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
@@ -41,6 +43,8 @@ namespace LcdMod.Client.GridData
         double _pausedPositionSeconds;
         int _currentBytesPerSecond;
         PcmWaveData _currentPcm;
+        MediaVideoPlayback _video;
+        double _videoCursorSeconds;
         float _lastAppliedEmitterVolume = -1f;
         bool _decodePending;
         bool _streaming;
@@ -79,6 +83,9 @@ namespace LcdMod.Client.GridData
         public bool IsDecoding => _decodePending;
         public bool IsPaused => _paused;
 
+        /// <summary>The video of the file playing, or null for audio.</summary>
+        internal MediaVideoPlayback Video => _video;
+
         public float Volume
         {
             get { return _volume; }
@@ -95,12 +102,12 @@ namespace LcdMod.Client.GridData
 
         public bool IsPlaying
         {
-            get { return !_paused && (_streaming || _decodePending || _pendingBuffers.Count > 0 || IsEmitterPlaying); }
+            get { return !_paused && (_streaming || _decodePending || _pendingBuffers.Count > 0 || IsEmitterPlaying || IsVideoBuffering); }
         }
 
         public bool CanSeek
         {
-            get { return _currentPcm != null && CurrentDurationSeconds > 0.0 && !_decodePending; }
+            get { return (_currentPcm != null || _video != null) && CurrentDurationSeconds > 0.0 && !_decodePending; }
         }
 
         public double CurrentPositionSeconds
@@ -115,7 +122,7 @@ namespace LcdMod.Client.GridData
 
         public bool IsActive
         {
-            get { return _streaming || _decodePending || _paused || _pendingBuffers.Count > 0 || IsEmitterPlaying; }
+            get { return _streaming || _decodePending || _paused || _pendingBuffers.Count > 0 || IsEmitterPlaying || IsVideoBuffering; }
         }
 
         public bool HasLoadedAudio
@@ -123,6 +130,7 @@ namespace LcdMod.Client.GridData
             get
             {
                 return _currentPcm != null ||
+                       _video != null ||
                        CurrentDurationSeconds > 0.0 ||
                        !string.IsNullOrEmpty(CurrentSoundSubtype) ||
                        !string.IsNullOrEmpty(CurrentWavePath);
@@ -317,6 +325,81 @@ namespace LcdMod.Client.GridData
                 delegate { CompleteGameAudioPlayback(work); });
         }
 
+        /// <summary>
+        /// Plays a chunked Matroska video from <paramref name="source"/>, local or streamed by another player.
+        /// Audio is queued chunk by chunk from the playhead as the chunks are decoded, so pausing, seeking and
+        /// remote commands work as for other audio while only a few seconds are in memory; the picture follows
+        /// the same clock.
+        /// </summary>
+        internal void PlayVideo(IMyTerminalBlock sourceBlock, string title, VideoChunkSource source,
+            bool startPaused = false, double startPositionSeconds = 0.0)
+        {
+            _lastError = null;
+
+            if (IsSourceBlockUnavailable(sourceBlock))
+            {
+                Fail("Screen block is not available.");
+                return;
+            }
+
+            if (source == null)
+            {
+                Fail("Select a video first.");
+                return;
+            }
+
+            MediaVideoPlayback video;
+            try
+            {
+                video = new MediaVideoPlayback(source);
+            }
+            catch (Exception error)
+            {
+                Fail("Video could not be opened: " + error.Message);
+                return;
+            }
+
+            StopInternal(false);
+
+            _sourceBlock = sourceBlock;
+            _video = video;
+            CurrentSoundSubtype = string.IsNullOrEmpty(title) ? "Video" : title;
+            CurrentWavePath = (source as LocalVideoChunkSource)?.Video.FileName ?? "video.mkv";
+            CurrentDurationSeconds = video.Duration;
+            _currentBytesPerSecond = STREAM_SAMPLE_RATE * STREAM_BLOCK_ALIGN;
+            _paused = startPaused;
+            RebuildPendingBuffersFromPosition(ClampToDuration(startPositionSeconds));
+            _status = startPaused ? "Paused" : "Buffering video";
+            if (!startPaused)
+                SubmitPendingBuffers();
+        }
+
+        bool IsVideoBuffering
+        {
+            get { return _video != null && !_paused && _videoCursorSeconds < CurrentDurationSeconds - 0.01; }
+        }
+
+        /// <summary>Queues decoded video audio from the cursor until enough is waiting or the next chunk is not ready.</summary>
+        void QueueVideoAudio()
+        {
+            double queued = 0;
+            foreach (PlaybackBuffer buffer in _pendingBuffers)
+                queued += buffer.DurationSeconds;
+
+            while (queued < TARGET_SUBMITTED_SECONDS + BUFFER_CHUNK_SECONDS &&
+                   _videoCursorSeconds < CurrentDurationSeconds - 0.001)
+            {
+                byte[] pcm;
+                double taken;
+                if (!_video.TryTakeAudio(_videoCursorSeconds, BUFFER_CHUNK_SECONDS, out pcm, out taken))
+                    break;
+
+                _pendingBuffers.Enqueue(new PlaybackBuffer { Samples = pcm, DurationSeconds = taken });
+                _videoCursorSeconds += taken;
+                queued += taken;
+            }
+        }
+
         void StartGameAudioDecode(IMyTerminalBlock sourceBlock, string displayName, string relativeWavePath, bool startPaused, double startPositionSeconds)
         {
             StopInternal(false);
@@ -425,7 +508,7 @@ namespace LcdMod.Client.GridData
 
             _paused = false;
             RebuildPendingBuffersFromPosition(_pausedPositionSeconds);
-            _status = _pendingBuffers.Count > 0 ? "Playing" : "Finished";
+            _status = _pendingBuffers.Count > 0 || _video != null ? "Playing" : "Finished";
             SubmitPendingBuffers();
         }
 
@@ -458,7 +541,7 @@ namespace LcdMod.Client.GridData
                 return;
             }
 
-            _status = _pendingBuffers.Count > 0 ? "Playing" : "Finished";
+            _status = _pendingBuffers.Count > 0 || _video != null ? "Playing" : "Finished";
             SubmitPendingBuffers();
         }
 
@@ -469,6 +552,9 @@ namespace LcdMod.Client.GridData
                 StopInternal(true);
                 return;
             }
+
+            if (_video != null)
+                _video.Update(GetCurrentPositionSeconds());
 
             if (_paused)
                 return;
@@ -659,6 +745,14 @@ namespace LcdMod.Client.GridData
             _playbackClock.Reset();
             _submittedSeconds = 0.0;
 
+            if (_video != null)
+            {
+                _playbackSegmentStartSeconds = seconds;
+                _pausedPositionSeconds = seconds;
+                _videoCursorSeconds = seconds;
+                return;
+            }
+
             if (_currentPcm == null ||
                 _currentPcm.Samples == null ||
                 _currentPcm.SampleRate == 0 ||
@@ -737,6 +831,10 @@ namespace LcdMod.Client.GridData
             {
                 position = 0.0;
             }
+            else if (IsVideoBuffering)
+            {
+                position = _playbackSegmentStartSeconds;
+            }
             else
             {
                 position = string.IsNullOrEmpty(CurrentSoundSubtype) ? 0.0 : CurrentDurationSeconds;
@@ -753,6 +851,11 @@ namespace LcdMod.Client.GridData
         void SubmitPendingBuffers()
         {
             AdvancePlaybackSegmentIfEmitterStopped();
+            if (_video != null && !_paused)
+            {
+                _video.Update(GetCurrentPositionSeconds());
+                QueueVideoAudio();
+            }
 
             if (_pendingBuffers.Count == 0)
             {
@@ -761,7 +864,8 @@ namespace LcdMod.Client.GridData
                     _playbackClock.Reset();
                     _submittedSeconds = 0.0;
                     if (!_decodePending && !_paused)
-                        _status = _streaming ? "Buffering stream" : string.IsNullOrEmpty(CurrentSoundSubtype) ? "Idle" : "Finished";
+                        _status = _streaming ? "Buffering stream" : IsVideoBuffering ? "Buffering video" :
+                            string.IsNullOrEmpty(CurrentSoundSubtype) ? "Idle" : "Finished";
                 }
                 return;
             }
@@ -791,6 +895,8 @@ namespace LcdMod.Client.GridData
                     maxDistance: GetSpatializationMaxDistance());
                 if (starting)
                     ApplyEmitterVolume(force: true);
+                if (starting && _video != null)
+                    _status = "Playing video";
 
                 if (_currentPcm == null)
                 {
@@ -957,6 +1063,10 @@ namespace LcdMod.Client.GridData
             _pausedPositionSeconds = 0.0;
             _currentBytesPerSecond = 0;
             _currentPcm = null;
+            if (_video != null)
+                _video.Dispose();
+            _video = null;
+            _videoCursorSeconds = 0.0;
             _streaming = false;
             _paused = false;
             _status = "Stopped";

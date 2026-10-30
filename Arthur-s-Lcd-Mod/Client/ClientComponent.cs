@@ -102,6 +102,7 @@ namespace LcdMod.Client
             LocalConfigManager.Load();
             _images.Load();
             _imageLibrary.Load();
+            Video.LocalVideoLibrary.WriteReadme();
             Adk.Gui.Controls.WindowPlatforms.CaptionButtons = LocalConfigManager.CaptionButtons;
             Apps.Markdown.MarkdownImage.BlockSpriteResolver = name =>
             {
@@ -151,6 +152,7 @@ namespace LcdMod.Client
             _audioBroadcast.Unload();
             LocalConfigManager.Save();
             _imageLibrary.Unload();
+            Video.LocalVideoLibrary.Unload();
             _images.Unload();
             TextureHelper.UnloadColorfulIconsApi();
             TextureHelper.ClearRegistrations();
@@ -426,6 +428,11 @@ namespace LcdMod.Client
         public bool StartMediaPlayerLocalAudioStream(IMyTerminalBlock block, int surfaceIndex, AudioAssetMetadata asset, string title)
         {
             return _audioBroadcast.StartMediaPlayerLocalAudioStream(block, surfaceIndex, asset, title);
+        }
+
+        internal void StartMediaPlayerLocalVideoStream(IMyTerminalBlock block, int surfaceIndex, Video.LocalVideoChunkSource source, string title)
+        {
+            _audioBroadcast.StartMediaPlayerLocalVideoStream(block, surfaceIndex, source, title);
         }
 
         public bool CancelMediaPlayerLocalAudioStream(long blockEntityId, int surfaceIndex, bool stopPlayback)

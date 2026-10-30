@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Adk.Video.Apng;
 using LcdMod.Common.Helpers;
 using LcdMod.Common.Images;
 using LcdMod.Common.Networking;
@@ -72,6 +73,18 @@ namespace LcdMod.Server.Images
 
         static void Verify(VerifyWork work)
         {
+            if (GridImageCodec.IsAnimation(work.Payload))
+            {
+                ApngVideo video;
+                if (!GridImageCodec.TryDecodeAnimation(work.Id, work.Payload, out video, out work.Error))
+                    return;
+
+                work.Width = video.Width;
+                work.Height = video.Height;
+                work.Valid = true;
+                return;
+            }
+
             byte[] dds;
             if (!GridImageCodec.TryDecode(work.Id, work.Payload, out dds, out work.Error))
                 return;

@@ -24,6 +24,10 @@ namespace LcdMod.Client.Apps
         readonly List<string> _displayable = new List<string>();
         readonly InteractiveSurfaceScript _interactiveHost;
         readonly DigitalPictureFrames.DigitalPictureFramesViewModel _viewModel;
+        GridImageAnimation _animation;
+        int _renderedAnimationVersion = -1;
+        bool _animationFrameScheduled;
+        bool _closed;
 
         public DigitalPictureFramesApp(InteractiveSurfaceScript host)
             : base(host)
@@ -36,6 +40,63 @@ namespace LcdMod.Client.Apps
         public override void Update()
         {
             _viewModel.Refresh();
+            ScheduleAnimationFrame();
+        }
+
+        public override void Close()
+        {
+            _closed = true;
+            base.Close();
+        }
+
+        /// <summary>The texture to draw for <paramref name="sprite"/>: an animated image's current frame, or the sprite itself.</summary>
+        internal string NativeTextureFor(string sprite)
+        {
+            GridImageAnimation animation = GridImageClientService.Instance?.GetAnimation(sprite);
+            if (animation == null)
+                return sprite;
+
+            animation.Advance(MyAPIGateway.Session.ElapsedPlayTime.TotalSeconds);
+            return animation.TextureName;
+        }
+
+        void ScheduleAnimationFrame()
+        {
+            if (_animationFrameScheduled || !UpdateSelectedAnimation())
+                return;
+
+            _animationFrameScheduled = true;
+            LcdModClientComponent.RunNextFrame.Add(delegate
+            {
+                _animationFrameScheduled = false;
+                if (!UpdateSelectedAnimation())
+                    return;
+
+                _animation.Advance(MyAPIGateway.Session.ElapsedPlayTime.TotalSeconds);
+                if (_animation.Version != _renderedAnimationVersion)
+                {
+                    _renderedAnimationVersion = _animation.Version;
+                    _viewModel.Refresh();
+                    _interactiveHost?.RenderSprites();
+                }
+
+                ScheduleAnimationFrame();
+            });
+        }
+
+        bool UpdateSelectedAnimation()
+        {
+            IReadOnlyList<string> sprites = _closed ? null : NativeSprites;
+            GridImageAnimation animation = sprites == null || sprites.Count == 0
+                ? null
+                : GridImageClientService.Instance?.GetAnimation(sprites[NativeSelectedIndex(sprites.Count)]);
+            if (!ReferenceEquals(animation, _animation))
+            {
+                _animation = animation;
+                _renderedAnimationVersion = -1;
+            }
+
+            return _animation != null;
         }
 
         public override List<MySprite> GetSprites()
@@ -79,9 +140,9 @@ namespace LcdMod.Client.Apps
 
         internal override float WindowRenderScaling => CardScale;
 
-        internal BackgroundBrush CreateNativeBrush(string sprite)
+        internal BackgroundBrush CreateNativeBrush(string sprite, string texture)
         {
-            var brush = new ImageBrush(sprite) { TransformOrigin = RelativePoint.Center };
+            var brush = new ImageBrush(texture) { TransformOrigin = RelativePoint.Center };
             switch ((PictureFrameDisplayMode)GeneralComponent.DisplayMode)
             {
                 case PictureFrameDisplayMode.Center:

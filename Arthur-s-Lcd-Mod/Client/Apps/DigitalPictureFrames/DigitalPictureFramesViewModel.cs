@@ -57,7 +57,7 @@ namespace LcdMod.Client.Apps.DigitalPictureFrames
             for (int i = 0; i < _pages.Count; i++)
             {
                 PicturePage page = _pages[i];
-                page.Update(_app.NativeIsLoading(page.Sprite), styleChanged, _app.CreateNativeBrush);
+                page.Update(_app.NativeIsLoading(page.Sprite), styleChanged, _app.NativeTextureFor, _app.CreateNativeBrush);
             }
 
             SelectedPage = _app.NativeSelectedIndex(_pages.Count);
@@ -79,6 +79,7 @@ namespace LcdMod.Client.Apps.DigitalPictureFrames
     internal sealed class PicturePage : ObservableObject
     {
         BackgroundBrush _image;
+        string _texture;
         bool _isLoading;
 
         public PicturePage(string sprite)
@@ -90,10 +91,15 @@ namespace LcdMod.Client.Apps.DigitalPictureFrames
         public BackgroundBrush Image => _image;
         public bool IsLoading => _isLoading;
 
-        public void Update(bool isLoading, bool styleChanged, Func<string, BackgroundBrush> createBrush)
+        public void Update(bool isLoading, bool styleChanged, Func<string, string> resolveTexture,
+            Func<string, string, BackgroundBrush> createBrush)
         {
+            string texture = isLoading ? null : resolveTexture(Sprite);
+            isLoading |= texture == null;
             RaiseAndSetIfChanged(ref _isLoading, isLoading, nameof(IsLoading));
-            BackgroundBrush image = isLoading ? null : _image == null || styleChanged ? createBrush(Sprite) : _image;
+            bool rebuild = _image == null || styleChanged || !string.Equals(texture, _texture, StringComparison.Ordinal);
+            _texture = texture;
+            BackgroundBrush image = isLoading ? null : rebuild ? createBrush(Sprite, texture) : _image;
             RaiseAndSetIfChanged(ref _image, image, nameof(Image));
         }
     }

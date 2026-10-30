@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Adk.Video.Apng;
 using LcdMod.Client.Config;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Common.Helpers;
@@ -37,6 +38,7 @@ namespace LcdMod.Client.Images
         const int MAX_CONCURRENT_BUILDS = 2;
         const int REQUEST_INTERVAL_FRAMES = 600;
         const int MISSING_AFTER_FRAMES = 300;
+        const int RELEASE_UNUSED_ANIMATION_FRAMES = 600;
 
         public static GridImageClientService Instance { get; private set; }
 
@@ -48,6 +50,7 @@ namespace LcdMod.Client.Images
             public GridImagePayload Payload;
             public bool Local;
             public bool Building;
+            public GridImageAnimation Animation;
             public long FirstSeenFrame = -1;
             public long NextRequestFrame;
         }
@@ -73,6 +76,12 @@ namespace LcdMod.Client.Images
 
             lock (_lock)
             {
+                foreach (ImageRecord record in _records.Values)
+                {
+                    if (record.Animation != null)
+                        record.Animation.Dispose();
+                }
+
                 _records.Clear();
                 _pendingGrids.Clear();
                 _buildQueue.Clear();
@@ -110,6 +119,20 @@ namespace LcdMod.Client.Images
                     _pendingGrids[id] = gridId;
 
                 return record.State;
+            }
+        }
+
+        /// <summary>The player of an animated image once it is ready, or null for still images. Game thread only.</summary>
+        public GridImageAnimation GetAnimation(string spriteName)
+        {
+            string id;
+            if (!GridImageCodec.TryParseSpriteName(spriteName, out id))
+                return null;
+
+            lock (_lock)
+            {
+                ImageRecord record;
+                return _records.TryGetValue(id, out record) ? record.Animation : null;
             }
         }
 
@@ -265,6 +288,12 @@ namespace LcdMod.Client.Images
                     _activeBuilds++;
                     StartBuild(record);
                 }
+
+                foreach (ImageRecord record in _records.Values)
+                {
+                    if (record.Animation != null && frame - record.Animation.LastUsedFrame > RELEASE_UNUSED_ANIMATION_FRAMES)
+                        record.Animation.Release();
+                }
             }
         }
 
@@ -318,6 +347,12 @@ namespace LcdMod.Client.Images
 
         static void Build(BuildWork work)
         {
+            if (GridImageCodec.IsAnimation(work.Payload))
+            {
+                GridImageCodec.TryDecodeAnimation(work.Id, work.Payload, out work.Animation, out work.Error);
+                return;
+            }
+
             try
             {
                 string storageRoot;
@@ -378,12 +413,23 @@ namespace LcdMod.Client.Images
             {
                 _activeBuilds--;
                 record.Building = false;
-                if (work.Path == null)
+                if (work.Animation != null)
+                {
+                    record.Animation = new GridImageAnimation(record.Id, work.Animation);
+                    record.State = GridImageState.Ready;
+                }
+                else if (work.Path == null)
                 {
                     record.State = GridImageState.Failed;
                     LogHelper.Log(MyLogSeverity.Warning, "Image " + record.Id + " could not be rebuilt: " + work.Error);
                     return;
                 }
+            }
+
+            if (work.Animation != null)
+            {
+                RequestRedrawAll();
+                return;
             }
 
             string spriteName = GridImageCodec.ToSpriteName(record.Id);
@@ -400,6 +446,11 @@ namespace LcdMod.Client.Images
             lock (_lock)
                 record.State = GridImageState.Ready;
 
+            RequestRedrawAll();
+        }
+
+        static void RequestRedrawAll()
+        {
             foreach (SurfaceScriptBase surface in new List<SurfaceScriptBase>(SurfaceScriptBase.Instances))
                 surface?.RequestRedraw();
         }
@@ -476,6 +527,7 @@ namespace LcdMod.Client.Images
             public string Id;
             public GridImagePayload Payload;
             public string Path;
+            public ApngVideo Animation;
             public string Error;
         }
     }

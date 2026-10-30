@@ -141,6 +141,29 @@ namespace VRage.Game
 
 namespace VRageMath
 {
+    public struct Vector2
+    {
+        public float X;
+        public float Y;
+
+        public Vector2(float x, float y)
+        {
+            X = x;
+            Y = y;
+        }
+
+        public Vector2(float value) : this(value, value)
+        {
+        }
+
+        public static Vector2 Zero => new Vector2(0f);
+        public static Vector2 One => new Vector2(1f);
+        public static bool operator ==(Vector2 a, Vector2 b) => a.X == b.X && a.Y == b.Y;
+        public static bool operator !=(Vector2 a, Vector2 b) => !(a == b);
+        public override bool Equals(object obj) => obj is Vector2 other && this == other;
+        public override int GetHashCode() => (X.GetHashCode() * 397) ^ Y.GetHashCode();
+    }
+
     public static class MathHelper
     {
         public static int Clamp(int value, int min, int max)

@@ -1783,6 +1783,9 @@
   <data name="LcdMod_SpritePicker_Root_Local" xml:space="preserve">
     <value>マイ画像</value>
   </data>
+  <data name="LcdMod_SpritePicker_Animated" xml:space="preserve">
+    <value>アニメーション</value>
+  </data>
   <data name="LcdMod_SpritePicker_Root_Sprites" xml:space="preserve">
     <value>LCDスプライト</value>
   </data>

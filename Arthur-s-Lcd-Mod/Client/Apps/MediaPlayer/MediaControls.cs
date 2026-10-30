@@ -1,4 +1,5 @@
 using System;
+using Adk.Gui.Animation;
 using Adk.Gui.Core;
 using Adk.Gui.Core.Invalidation;
 using Adk.Gui.Core.PropertySystem;
@@ -20,7 +21,10 @@ namespace LcdMod.Client.Apps.MediaPlayer
         Shuffle,
         Repeat,
         Save,
-        FileIcon
+        FileIcon,
+        CaptionsOn,
+        CaptionsOff,
+        CaptionsUnavailable
     }
 
     static class MediaDrawing
@@ -67,6 +71,29 @@ namespace LcdMod.Client.Apps.MediaPlayer
         }
     }
 
+    /// <summary>Wheel steps that grow with the held modifiers: none, Ctrl, Shift, then Ctrl+Shift.</summary>
+    static class MediaWheel
+    {
+        public static double Step(double plain, double ctrl, double shift, double both)
+        {
+            var input = Sandbox.ModAPI.MyAPIGateway.Input;
+            bool ctrlDown = input != null && input.IsAnyCtrlKeyPressed();
+            bool shiftDown = input != null && input.IsAnyShiftKeyPressed();
+            return ctrlDown && shiftDown ? both : shiftDown ? shift : ctrlDown ? ctrl : plain;
+        }
+    }
+
+    /// <summary>Hands mouse-wheel input over its children to <see cref="Scrolled"/>.</summary>
+    internal sealed class MediaWheelPanel : Adk.Gui.Layout.Panel
+    {
+        public Func<int, bool> Scrolled { get; set; }
+
+        internal override bool PointerScrolled(Vector2 point, int delta)
+        {
+            return Scrolled != null && Scrolled(delta);
+        }
+    }
+
     internal sealed class MediaGlyph : VisualElement
     {
         public static readonly StyledProperty<MediaGlyphKind> KindProperty =
@@ -76,6 +103,11 @@ namespace LcdMod.Client.Apps.MediaPlayer
         public static readonly StyledProperty<Color> GlyphColorProperty =
             StyledProperty.Register<MediaGlyph, Color>(nameof(GlyphColor), Color.White, UiInvalidation.Render);
         public Color GlyphColor { get { return GetValue(GlyphColorProperty); } set { SetValue(GlyphColorProperty, value); } }
+
+        /// <summary>Colour of marks drawn over the glyph, such as the cross on unavailable captions.</summary>
+        public static readonly StyledProperty<Color> MarkColorProperty =
+            StyledProperty.Register<MediaGlyph, Color>(nameof(MarkColor), Color.Red, UiInvalidation.Render);
+        public Color MarkColor { get { return GetValue(MarkColorProperty); } set { SetValue(MarkColorProperty, value); } }
 
         public static readonly StyledProperty<string> TextureProperty =
             StyledProperty.Register<MediaGlyph, string>(nameof(Texture), string.Empty, UiInvalidation.Render);
@@ -155,6 +187,11 @@ namespace LcdMod.Client.Apps.MediaPlayer
                     context.Fill(new RectangleF(center.X + offset - barWidth * .5f, center.Y - barHeight * .5f, barWidth,
                         barHeight), color);
                     break;
+                case MediaGlyphKind.CaptionsOn:
+                case MediaGlyphKind.CaptionsOff:
+                case MediaGlyphKind.CaptionsUnavailable:
+                    DrawCaptions(context, center, size, color, Kind, MarkColor);
+                    break;
                 case MediaGlyphKind.Repeat:
                     MediaDrawing.Centered(context, "Repeat", center, new Vector2(size * .62f), color);
                     string suffix = Suffix;
@@ -175,6 +212,14 @@ namespace LcdMod.Client.Apps.MediaPlayer
             float gap = size * .15f;
             for (int i = -1; i <= 1; i++)
                 context.Fill(new RectangleF(center.X - width * .5f, center.Y + gap * i - height * .5f, width, height), color);
+        }
+
+        static void DrawCaptions(RenderContext context, Vector2 center, float size, Color color, MediaGlyphKind kind, Color markColor)
+        {
+            var icon = new Vector2(size * .62f);
+            MediaDrawing.Centered(context, kind == MediaGlyphKind.CaptionsOn ? "CloseCaption" : "CloseCaptionOff", center, icon, color);
+            if (kind == MediaGlyphKind.CaptionsUnavailable)
+                MediaDrawing.Centered(context, "Cross", center, icon * .8f, markColor);
         }
 
         static void DrawTrack(RenderContext context, Vector2 center, float size, Color color, bool forward)
@@ -288,8 +333,12 @@ namespace LcdMod.Client.Apps.MediaPlayer
 
         public Action<double> SeekRequested { get; set; }
 
+        static readonly TimeSpan ScrollChainWindow = TimeSpan.FromSeconds(.5);
+
         bool _dragging;
         double _dragSeconds;
+        double _scrollTarget;
+        DateTime _lastScroll;
 
         float TextScale => Math.Max(.4f, .55f * LayoutScale);
 
@@ -329,6 +378,23 @@ namespace LcdMod.Client.Apps.MediaPlayer
             if (SeekRequested != null)
                 SeekRequested(_dragSeconds);
             Invalidate(UiInvalidation.Render);
+        }
+
+        /// <summary>Wheel up seeks forward: 1 s per notch, 10 s with Ctrl, 100 s with Shift, 1000 s with both.</summary>
+        internal override bool PointerScrolled(Vector2 point, int delta)
+        {
+            if (!CanSeek || delta == 0 || SeekRequested == null)
+                return false;
+
+            double step = MediaWheel.Step(1d, 10d, 100d, 1000d);
+
+            // A seek can take a moment to show in PositionSeconds, so quick notches build on the last target.
+            DateTime now = DateTime.UtcNow;
+            double from = now - _lastScroll < ScrollChainWindow ? _scrollTarget : PositionSeconds;
+            _scrollTarget = MathHelper.Clamp(from + (delta > 0 ? step : -step), 0d, Math.Max(0d, DurationSeconds));
+            _lastScroll = now;
+            SeekRequested(_scrollTarget);
+            return true;
         }
 
         protected override void DrawSelf(RenderContext context)
@@ -455,6 +521,19 @@ namespace LcdMod.Client.Apps.MediaPlayer
             _dragging = false;
         }
 
+        /// <summary>Wheel up raises the volume: 1% per notch, 5% with Ctrl, 10% with Shift, 20% with both.</summary>
+        internal override bool PointerScrolled(Vector2 point, int delta)
+        {
+            if (delta == 0)
+                return false;
+            float step = (float)MediaWheel.Step(.01d, .05d, .1d, .2d);
+            float value = MathHelper.Clamp(Value + (delta > 0 ? step : -step), 0f, 1f);
+            Value = value;
+            if (ValueChanged != null)
+                ValueChanged(value);
+            return true;
+        }
+
         void Commit(Vector2 point)
         {
             RectangleF track = TrackBounds();
@@ -498,6 +577,11 @@ namespace LcdMod.Client.Apps.MediaPlayer
             StyledProperty.Register<MediaVisualizer, int>(nameof(Version), 0, UiInvalidation.Render);
         public int Version { get { return GetValue(VersionProperty); } set { SetValue(VersionProperty, value); } }
 
+        /// <summary>Width over height of the texture: 1 for the square visualizer, the picture's for video.</summary>
+        public static readonly StyledProperty<float> AspectRatioProperty =
+            StyledProperty.Register<MediaVisualizer, float>(nameof(AspectRatio), 1f, UiInvalidation.Render);
+        public float AspectRatio { get { return GetValue(AspectRatioProperty); } set { SetValue(AspectRatioProperty, value); } }
+
         protected override Vector2 MeasureOverride(Vector2 availableSize)
         {
             return Vector2.Zero;
@@ -512,16 +596,146 @@ namespace LcdMod.Client.Apps.MediaPlayer
         {
             if (string.IsNullOrEmpty(Source) || Bounds.Width <= 0f || Bounds.Height <= 0f)
                 return;
-            // The texture is square; drawing it square keeps circles round on any screen shape.
-            float side = Math.Min(Bounds.Width, Bounds.Height);
+            // Fit the texture at its own aspect ratio, so circles stay round and video keeps its shape.
+            float aspect = AspectRatio > 0f ? AspectRatio : 1f;
+            var size = Bounds.Width / Bounds.Height > aspect
+                ? new Vector2(Bounds.Height * aspect, Bounds.Height)
+                : new Vector2(Bounds.Width, Bounds.Width / aspect);
             context.DrawTexture(TextureSource.FromKey(Source),
-                new RectangleF(Bounds.Center - new Vector2(side * .5f), new Vector2(side)), Color.White);
+                new RectangleF(Bounds.Center - size * .5f, size), Color.White);
         }
     }
 }
 
 namespace LcdMod.Client.Apps.MediaPlayer
 {
+    /// <summary>Briefly shows a play triangle or pause bars in its centre whenever <see cref="IsPlaying"/> changes.</summary>
+    internal sealed class MediaPlaybackFlash : VisualElement
+    {
+        public static readonly StyledProperty<bool> IsPlayingProperty =
+            StyledProperty.Register<MediaPlaybackFlash, bool>(nameof(IsPlaying), false);
+        public bool IsPlaying { get { return GetValue(IsPlayingProperty); } set { SetValue(IsPlayingProperty, value); } }
+
+        public static readonly StyledProperty<float> AlphaProperty =
+            StyledProperty.Register<MediaPlaybackFlash, float>(nameof(Alpha), 0f, UiInvalidation.Render);
+        public float Alpha { get { return GetValue(AlphaProperty); } set { SetValue(AlphaProperty, value); } }
+
+        public static readonly StyledProperty<float> DiameterProperty =
+            StyledProperty.Register<MediaPlaybackFlash, float>(nameof(Diameter), 64f, UiInvalidation.Render);
+        public float Diameter { get { return GetValue(DiameterProperty); } set { SetValue(DiameterProperty, value); } }
+
+        const int FadeFrames = 30;
+
+        protected override void OnPropertyChanged(IStyledProperty property)
+        {
+            base.OnPropertyChanged(property);
+            if (property != IsPlayingProperty || AnimationController == null)
+                return;
+            Alpha = 1f;
+            this.Animate(AlphaProperty, 0f, FadeFrames, AnimationInterpolators.Float, EasingMode.EaseInCubic);
+        }
+
+        protected override Vector2 MeasureOverride(Vector2 availableSize)
+        {
+            return Vector2.Zero;
+        }
+
+        protected override void DrawSelf(RenderContext context)
+        {
+            float alpha = MathHelper.Clamp(Alpha, 0f, 1f);
+            if (alpha <= 0f || Bounds.Width <= 0f || Bounds.Height <= 0f)
+                return;
+            float diameter = Math.Min(Diameter, Math.Min(Bounds.Width, Bounds.Height));
+            Vector2 center = Bounds.Center;
+            MediaDrawing.Circle(context, center, diameter, new Color(0, 0, 0, (int)(160 * alpha)));
+            Color color = Color.White * alpha;
+            if (IsPlaying)
+            {
+                float triangle = diameter * .42f;
+                MediaDrawing.Centered(context, "Triangle", center + new Vector2(diameter * .04f, 0f), new Vector2(triangle), color,
+                    MathHelper.PiOver2);
+                return;
+            }
+            float barWidth = Math.Max(1f, diameter * .12f);
+            float barHeight = diameter * .42f;
+            float offset = barWidth * 1.05f;
+            context.Fill(new RectangleF(center.X - offset - barWidth * .5f, center.Y - barHeight * .5f, barWidth, barHeight), color);
+            context.Fill(new RectangleF(center.X + offset - barWidth * .5f, center.Y - barHeight * .5f, barWidth, barHeight), color);
+        }
+    }
+
+    /// <summary>A dock button whose flyout opens upwards with a vertical volume slider.</summary>
+    internal sealed class MediaVolumeButton : Adk.Gui.Controls.Button
+    {
+        public static readonly StyledProperty<float> VolumeProperty =
+            StyledProperty.Register<MediaVolumeButton, float>(nameof(Volume), 1f);
+        public float Volume { get { return GetValue(VolumeProperty); } set { SetValue(VolumeProperty, value); } }
+
+        public static readonly StyledProperty<float> SliderLengthProperty =
+            StyledProperty.Register<MediaVolumeButton, float>(nameof(SliderLength), 120f);
+        public float SliderLength { get { return GetValue(SliderLengthProperty); } set { SetValue(SliderLengthProperty, value); } }
+
+        readonly Adk.Gui.Controls.Slider _slider;
+
+        public Action<float> VolumeChanged { get; set; }
+        public Action<bool> FlyoutToggled { get; set; }
+
+        public MediaVolumeButton()
+        {
+            _slider = new Adk.Gui.Controls.Slider
+            {
+                StyleClass = "media-volume-slider",
+                Orientation = Orientation.Vertical,
+                Minimum = 0f,
+                Maximum = 1f,
+                Height = SliderLength,
+                ValueChanged = value =>
+                {
+                    if (VolumeChanged != null)
+                        VolumeChanged(value);
+                }
+            };
+            _slider.SetCurrentValue(Volume);
+            var flyoutContent = new MediaWheelPanel { Scrolled = Scroll };
+            flyoutContent.AddChild(new Adk.Gui.Controls.Border { StyleClass = "media-volume-flyout", Child = _slider });
+            Flyout = new Adk.Gui.Controls.Primitives.Popup
+            {
+                Child = flyoutContent,
+                Placement = Adk.Gui.Controls.Primitives.PlacementMode.Top,
+                IsLightDismissEnabled = true,
+                Opened = () => FlyoutToggled?.Invoke(true),
+                Closed = () => FlyoutToggled?.Invoke(false)
+            };
+        }
+
+        internal override bool PointerScrolled(Vector2 point, int delta)
+        {
+            return Scroll(delta);
+        }
+
+        /// <summary>Wheel up raises the volume: 1% per notch, 5% with Ctrl, 10% with Shift, 20% with both.</summary>
+        bool Scroll(int delta)
+        {
+            if (delta == 0)
+                return false;
+            float step = (float)MediaWheel.Step(.01d, .05d, .1d, .2d);
+            float value = MathHelper.Clamp(Volume + (delta > 0 ? step : -step), 0f, 1f);
+            Volume = value;
+            if (VolumeChanged != null)
+                VolumeChanged(value);
+            return true;
+        }
+
+        protected override void OnPropertyChanged(IStyledProperty property)
+        {
+            base.OnPropertyChanged(property);
+            if (property == VolumeProperty && !_slider.IsPressed)
+                _slider.SetCurrentValue(Volume);
+            else if (property == SliderLengthProperty)
+                _slider.Height = SliderLength;
+        }
+    }
+
     internal sealed class MediaPlaylistRow : Adk.Gui.Controls.Button
     {
         public static readonly StyledProperty<bool> IsCurrentProperty =

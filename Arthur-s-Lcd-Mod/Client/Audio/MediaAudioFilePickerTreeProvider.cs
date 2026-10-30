@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using LcdMod.Client.Apps.Dialogs;
+using LcdMod.Client.Video;
 using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
@@ -18,6 +19,7 @@ namespace LcdMod.Client.Audio
         public const string SOURCE_LOCAL = "Local";
         public const string SOURCE_SOUND_BLOCK = "SoundBlock";
         public const string SOURCE_CONTENT = "Content";
+        public const string SOURCE_VIDEO = "Videos";
 
         public string Source { get; set; }
         public string DefinitionPath { get; set; }
@@ -28,6 +30,7 @@ namespace LcdMod.Client.Audio
         public string PickerFolderPath { get; set; }
         public int ReferenceCount { get; set; }
         public AudioAssetMetadata LocalAsset { get; set; }
+        public LocalVideo LocalVideo { get; set; }
 
         public bool IsLocal
         {
@@ -42,6 +45,11 @@ namespace LcdMod.Client.Audio
         public bool IsSoundBlock
         {
             get { return string.Equals(Source, SOURCE_SOUND_BLOCK, StringComparison.OrdinalIgnoreCase); }
+        }
+
+        public bool IsVideo
+        {
+            get { return string.Equals(Source, SOURCE_VIDEO, StringComparison.OrdinalIgnoreCase) && LocalVideo != null; }
         }
     }
 
@@ -84,6 +92,7 @@ namespace LcdMod.Client.Audio
             var roots = new List<FolderModel>
             {
                 BuildLocalRoot(),
+                BuildVideoRoot(),
                 BuildPlaylistRoot(),
                 BuildSoundBlockRoot(),
                 BuildContentRoot()
@@ -232,6 +241,68 @@ namespace LcdMod.Client.Audio
             }
 
             return root;
+        }
+
+        static FolderModel BuildVideoRoot()
+        {
+            var root = new FolderModel
+            {
+                Name = MediaAudioFileReference.SOURCE_VIDEO,
+                FullPath = MediaAudioFileReference.SOURCE_VIDEO,
+                Subtitle = "Videos in the mod storage folder"
+            };
+
+            List<LocalVideo> videos = LocalVideoLibrary.Scan();
+            for (int i = 0; i < videos.Count; i++)
+            {
+                LocalVideo video = videos[i];
+                var fullPath = MediaAudioFileReference.SOURCE_VIDEO + "/" + video.FileName;
+                root.Files.Add(new FileModel
+                {
+                    Name = video.FileName,
+                    FullPath = fullPath,
+                    IconPath = video.FileName,
+                    Subtitle = BuildVideoSubtitle(video),
+                    Warning = video.IsPlayable ? null : video.Problem,
+                    Tag = new MediaAudioFileReference
+                    {
+                        Source = MediaAudioFileReference.SOURCE_VIDEO,
+                        DefinitionPath = video.FileName,
+                        GameContentPath = video.FileName,
+                        PickerFullPath = fullPath,
+                        PickerFolderPath = root.FullPath,
+                        LocalVideo = video,
+                        ReferenceCount = 1
+                    }
+                });
+            }
+
+            return root;
+        }
+
+        static string BuildVideoSubtitle(LocalVideo video)
+        {
+            var probe = video.Probe;
+            if (probe == null)
+                return string.Empty;
+
+            var parts = new List<string>();
+            if (probe.Duration > 0)
+                parts.Add(probe.Duration.ToString("0.0", CultureInfo.InvariantCulture) + "s");
+            if (probe.Width > 0 && probe.Height > 0)
+                parts.Add(probe.Width.ToString(CultureInfo.InvariantCulture) + "x" + probe.Height.ToString(CultureInfo.InvariantCulture));
+
+            string codecs = probe.VideoCodec ?? Adk.Video.MediaProbe.ContainerName(probe.Container);
+            if (!string.IsNullOrEmpty(probe.AudioCodec))
+                codecs += " / " + probe.AudioCodec;
+            parts.Add(codecs);
+            if (probe.HasSubtitles || video.Subtitles != null)
+                parts.Add("subtitles");
+            if (video.Index != null && video.Index.IsDamaged)
+                parts.Add("damaged, plays " + video.Index.Duration.ToString("0", CultureInfo.InvariantCulture) + "s");
+
+            parts.Add((video.Length / 1024.0 / 1024.0).ToString("0.0", CultureInfo.InvariantCulture) + " MiB");
+            return string.Join(" · ", parts);
         }
 
         static FolderModel BuildPlaylistRoot()

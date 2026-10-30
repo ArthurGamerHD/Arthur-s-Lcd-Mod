@@ -116,6 +116,36 @@
             <Selectable>false</Selectable>
         </LCDTextureDefinition>
 
+        <LCDTextureDefinition> <!-- Custom MKV File Icon Sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="FileMkv"/>
+            <SpritePath>Textures/Sprites/FileMkv.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Custom WebM File Icon Sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="FileWebm"/>
+            <SpritePath>Textures/Sprites/FileWebm.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Custom Closed Captions On Sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="CloseCaption"/>
+            <SpritePath>Textures/Sprites/CloseCaption.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Custom Closed Captions Off Sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="CloseCaptionOff"/>
+            <SpritePath>Textures/Sprites/CloseCaptionOff.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Custom Unknown File Icon Sprite -->
+            <Id Type="LCDTextureDefinition" Subtype="FileBlank"/>
+            <SpritePath>Textures/Sprites/FileBlank.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
         <LCDTextureDefinition> <!-- Custom Boolean Input Icon Sprite -->
             <Id Type="LCDTextureDefinition" Subtype="BooleanInput"/>
             <SpritePath>Textures/Sprites/BooleanInput.dds</SpritePath>

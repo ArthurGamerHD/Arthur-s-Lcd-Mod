@@ -5,6 +5,8 @@ using Adk.Compression.Zip;
 using Adk.Image;
 using Adk.Image.Dds;
 using Adk.Image.Png;
+using Adk.Video;
+using Adk.Video.Apng;
 using LcdMod.Common.Helpers;
 
 namespace LcdMod.Common.Images
@@ -19,6 +21,7 @@ namespace LcdMod.Common.Images
         public const int LCD_PROFILE = 1;
         const int ID_LENGTH = 32;
         const int DDS_HEADER_BYTES = 128;
+        const int MAX_ANIMATION_FRAMES = 4096;
         const double PNG_TRIAL_MARGIN = 1.2d;
 
         static readonly byte[] SpritePrefixBytes = Encoding.ASCII.GetBytes(SPRITE_PREFIX);
@@ -139,10 +142,14 @@ namespace LcdMod.Common.Images
 
             try
             {
+                if (MediaProbe.IsAnimatedPng(source))
+                    return TryEncodeApng(source, out image, out error);
+
                 if (IsPng(source))
                     return TryEncodePng(source, out image, out error);
 
-                if (fileName != null && fileName.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+                if (fileName != null && (fileName.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
+                                         fileName.EndsWith(".apng", StringComparison.OrdinalIgnoreCase)))
                 {
                     error = "the file is not a valid PNG";
                     return false;
@@ -223,6 +230,93 @@ namespace LcdMod.Common.Images
             return TryFinish(dds, width, height, payload, out image, out error);
         }
 
+        /// <summary>
+        /// Animated PNGs are stored as they are and identified by the hash of the file; every frame is
+        /// decoded once here so a broken animation is rejected at import rather than on screen.
+        /// </summary>
+        public static bool TryEncodeApng(byte[] apng, out EncodedGridImage image, out string error)
+        {
+            image = null;
+            ApngVideo video;
+            if (!TryLoadAnimation(apng, out video, out error))
+                return false;
+
+            ApngFrameDecoder decoder = video.CreateDecoder();
+            for (int i = 0; i < video.FrameCount; i++)
+                decoder.DecodeNext();
+
+            var payload = new GridImagePayload { Encoding = GridImageEncoding.Apng, Data = apng };
+            if (!CheckPayloadSize(payload, out error))
+                return false;
+
+            image = new EncodedGridImage
+            {
+                Id = ComputeId(apng),
+                Width = video.Width,
+                Height = video.Height,
+                Payload = payload
+            };
+            return true;
+        }
+
+        public static bool IsAnimation(GridImagePayload payload)
+        {
+            return payload != null && payload.Encoding == GridImageEncoding.Apng;
+        }
+
+        /// <summary>Loads an animated payload and checks it hashes to <paramref name="id"/>.</summary>
+        public static bool TryDecodeAnimation(string id, GridImagePayload payload, out ApngVideo video, out string error)
+        {
+            video = null;
+            if (!IsAnimation(payload) || payload.Data == null || payload.Data.Length == 0)
+            {
+                error = "missing animation payload";
+                return false;
+            }
+
+            if (payload.Data.Length > Constants.MAX_IMAGE_PAYLOAD_BYTES)
+            {
+                error = "payload exceeds the size limits";
+                return false;
+            }
+
+            if (!string.Equals(ComputeId(payload.Data), id, StringComparison.Ordinal))
+            {
+                error = "animation does not match its id";
+                return false;
+            }
+
+            try
+            {
+                return TryLoadAnimation(payload.Data, out video, out error);
+            }
+            catch (Exception e)
+            {
+                video = null;
+                error = e.Message;
+                return false;
+            }
+        }
+
+        static bool TryLoadAnimation(byte[] apng, out ApngVideo video, out string error)
+        {
+            video = ApngVideo.Load(apng);
+            if (!CheckDimensions(video.Width, video.Height, out error))
+            {
+                video = null;
+                return false;
+            }
+
+            if (video.FrameCount > MAX_ANIMATION_FRAMES)
+            {
+                error = "the animation has " + video.FrameCount + " frames, above the " + MAX_ANIMATION_FRAMES + " limit";
+                video = null;
+                return false;
+            }
+
+            return true;
+        }
+
         static byte[] TryCreatePngCandidate(
             byte[] pixels, int width, int height, byte[] dds, DdsEncodeOptions options, int deflatedDdsBytes)
         {
@@ -243,14 +337,9 @@ namespace LcdMod.Common.Images
             byte[] dds, int width, int height, GridImagePayload payload, out EncodedGridImage image, out string error)
         {
             image = null;
-            if (payload.Data.Length > Constants.MAX_IMAGE_PAYLOAD_BYTES)
-            {
-                error = "the compressed image is " + payload.Data.Length / 1024 + " KiB, above the " +
-                        Constants.MAX_IMAGE_PAYLOAD_BYTES / 1024 + " KiB limit";
+            if (!CheckPayloadSize(payload, out error))
                 return false;
-            }
 
-            error = null;
             image = new EncodedGridImage
             {
                 Id = ComputeId(dds),
@@ -332,6 +421,19 @@ namespace LcdMod.Common.Images
                 return false;
             }
 
+            return true;
+        }
+
+        static bool CheckPayloadSize(GridImagePayload payload, out string error)
+        {
+            if (payload.Data.Length > Constants.MAX_IMAGE_PAYLOAD_BYTES)
+            {
+                error = "the compressed image is " + payload.Data.Length / 1024 + " KiB, above the " +
+                        Constants.MAX_IMAGE_PAYLOAD_BYTES / 1024 + " KiB limit";
+                return false;
+            }
+
+            error = null;
             return true;
         }
 

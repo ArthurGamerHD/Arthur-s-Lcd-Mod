@@ -1782,6 +1782,9 @@
   <data name="LcdMod_SpritePicker_Root_Local" xml:space="preserve">
     <value>Мої зображення</value>
   </data>
+  <data name="LcdMod_SpritePicker_Animated" xml:space="preserve">
+    <value>анімоване</value>
+  </data>
   <data name="LcdMod_SpritePicker_Root_Sprites" xml:space="preserve">
     <value>Спрайти LCD</value>
   </data>

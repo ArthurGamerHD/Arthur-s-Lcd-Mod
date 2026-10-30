@@ -114,12 +114,14 @@ namespace LcdMod.Client.Apps.Dialogs.Launchers
                 {
                     var item = library.Items[i];
                     string sprite = GridImageCodec.ToSpriteName(item.Image.Id);
+                    bool animated = GridImageCodec.IsAnimation(item.Image.Payload);
                     local.Files.Add(new FileModel
                     {
                         Name = item.Name,
                         Tag = sprite,
-                        Icon = sprite,
-                        Subtitle = item.Image.Width + " x " + item.Image.Height
+                        Icon = animated ? AnimationPreview(sprite) : sprite,
+                        Subtitle = item.Image.Width + " x " + item.Image.Height +
+                                   (animated ? " · " + LocHelper.GetLoc("LcdMod_SpritePicker_Animated") : string.Empty)
                     });
                 }
             }
@@ -140,6 +142,21 @@ namespace LcdMod.Client.Apps.Dialogs.Launchers
             AddRoot(roots, "LcdMod_MarketApp", new List<KeyValuePair<string, string>>(generated));
 
             return roots;
+        }
+
+        static string AnimationPreview(string sprite)
+        {
+            var images = GridImageClientService.Instance;
+            if (images == null)
+                return sprite;
+
+            images.GetState(sprite, 0);
+            GridImageAnimation animation = images.GetAnimation(sprite);
+            if (animation == null)
+                return sprite;
+
+            animation.Advance(0);
+            return animation.TextureName ?? sprite;
         }
 
         static List<KeyValuePair<string, string>> ByDisplayPath(List<string> sprites)

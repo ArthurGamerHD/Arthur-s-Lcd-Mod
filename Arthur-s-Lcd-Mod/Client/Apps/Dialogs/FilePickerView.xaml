@@ -63,6 +63,8 @@
                       <TextBlock Classes="dialog-text" Text="{Binding Name}" FontSize="{Binding FontSize}" />
                       <TextBlock Classes="dialog-muted" Text="{Binding Subtitle}" FontSize="{Binding SmallFontSize}"
                                  HorizontalAlignment="Left" IsVisible="{Binding HasSubtitle}" />
+                      <TextBlock Classes="dialog-warning" Text="{Binding Warning}" FontSize="{Binding SmallFontSize}"
+                                 IsVisible="{Binding HasWarning}" />
                     </StackPanel>
                   </Grid>
                 </Button>

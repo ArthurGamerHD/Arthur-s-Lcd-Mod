@@ -1782,6 +1782,9 @@ Ootame veidi ja seejärel taaskäivitame selle teie eest.</value>
   <data name="LcdMod_SpritePicker_Root_Local" xml:space="preserve">
     <value>Minu pildid</value>
   </data>
+  <data name="LcdMod_SpritePicker_Animated" xml:space="preserve">
+    <value>animeeritud</value>
+  </data>
   <data name="LcdMod_SpritePicker_Root_Sprites" xml:space="preserve">
     <value>LCD-spraidid</value>
   </data>

@@ -1782,6 +1782,9 @@ Chvíli počkáme a potom ji za vás restartujeme.</value>
   <data name="LcdMod_SpritePicker_Root_Local" xml:space="preserve">
     <value>Moje obrázky</value>
   </data>
+  <data name="LcdMod_SpritePicker_Animated" xml:space="preserve">
+    <value>animovaný</value>
+  </data>
   <data name="LcdMod_SpritePicker_Root_Sprites" xml:space="preserve">
     <value>Sprity LCD</value>
   </data>

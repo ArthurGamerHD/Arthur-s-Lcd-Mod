@@ -36,5 +36,100 @@
       <media:MediaVolumeView Grid.Row="3" Height="{Binding VolumeHeight}" Margin="{Binding VolumeMargin}"
                              IsVisible="{Binding VolumeVisible}" />
     </Grid>
+
+    <Grid IsVisible="{Binding IsVideo}">
+      <Button Classes="media-surface" Command="{Binding VideoSurfaceCommand}">
+        <Button.ContextMenu>
+          <ContextMenu>
+            <MenuItem Header="{Binding PickText}" Icon="Folder" Command="{Binding PickCommand}" IsEnabled="{Binding PickEnabled}" />
+            <MenuItem Header="{Binding PreviousText}" Command="{Binding PreviousCommand}" IsEnabled="{Binding LibraryEnabled}">
+              <MenuItem.Icon>
+                <Border Classes="menu-icon" Width="10" Height="10" RenderTransform="rotate(-90deg)">
+                  <Border.OpacityMask>
+                    <ImageBrush Source="Triangle" Stretch="Uniform" />
+                  </Border.OpacityMask>
+                </Border>
+              </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="{Binding NextText}" Command="{Binding NextCommand}" IsEnabled="{Binding LibraryEnabled}">
+              <MenuItem.Icon>
+                <Border Classes="menu-icon" Width="10" Height="10" RenderTransform="rotate(90deg)">
+                  <Border.OpacityMask>
+                    <ImageBrush Source="Triangle" Stretch="Uniform" />
+                  </Border.OpacityMask>
+                </Border>
+              </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="{Binding ShuffleText}" Icon="Shuffle" Command="{Binding ShuffleCommand}" />
+            <MenuItem Header="{Binding RepeatText}" Icon="Repeat" Command="{Binding RepeatCommand}" />
+            <MenuItem Header="{Binding PlaylistText}" Command="{Binding PlaylistCommand}">
+              <MenuItem.Icon>
+                <StackPanel Classes="menu-dashes" VerticalAlignment="Center">
+                  <Border Classes="menu-dash" />
+                  <Border Classes="menu-dash" />
+                  <Border Classes="menu-dash" />
+                </StackPanel>
+              </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="{Binding StopText}" Command="{Binding StopCommand}" IsEnabled="{Binding StopEnabled}">
+              <MenuItem.Icon>
+                <Border Classes="menu-square" />
+              </MenuItem.Icon>
+            </MenuItem>
+          </ContextMenu>
+        </Button.ContextMenu>
+      </Button>
+      <media:MediaPlaybackFlash IsPlaying="{Binding IsPlaying}" Diameter="{Binding FlashDiameter}" />
+      <Grid VerticalAlignment="Top" IsVisible="{Binding VideoTitleEnabled}">
+        <Grid x:Name="VideoTitle" ColumnDefinitions="Auto *">
+          <Border Background="{DynamicResource headerColor}" OpacityMask="{DynamicResource factionIconMask}"
+                  Width="{Binding VideoTitleIconSize}" Height="{Binding VideoTitleIconSize}" VerticalAlignment="Center"
+                  Margin="0 0 8 0" />
+          <TextBlock Grid.Column="1" Classes="media-path" Text="{Binding VideoTitle}" Foreground="{DynamicResource headerColor}"
+                     FontSize="{Binding VideoTitleFontSize}" VerticalAlignment="Center" />
+        </Grid>
+      </Grid>
+      <Border Classes="media-dock" Width="{Binding PlaylistWidth}" Margin="{Binding VideoPlaylistMargin}"
+              Padding="{Binding VideoPlaylistPadding}" CornerRadius="{Binding DockRadius}" HorizontalAlignment="Right"
+              IsVisible="{Binding VideoPlaylistVisible}">
+        <media:MediaPlaylistView />
+      </Border>
+      <StackPanel x:Name="VideoDockHost" VerticalAlignment="Bottom">
+        <Border Classes="media-caption" CornerRadius="{Binding CaptionRadius}" Padding="{Binding CaptionPadding}"
+                Margin="{Binding CaptionMargin}" IsVisible="{Binding HasSubtitle}">
+          <TextBlock x:Name="Caption" Classes="media-subtitle" FontSize="{Binding SubtitleFontSize}" />
+        </Border>
+        <Border x:Name="Dock" Classes="media-dock" Height="{Binding DockHeight}" CornerRadius="{Binding DockRadius}"
+                Margin="{Binding DockMargin}" Padding="{Binding DockPadding}">
+          <Grid ColumnDefinitions="Auto Auto Auto * Auto Auto">
+            <Button Classes="media-button" Width="{Binding DockButtonWidth}" Command="{Binding SeekBackCommand}"
+                    IsEnabled="{Binding CanSeek}">
+              <media:MediaGlyph Kind="PreviousTrack" GlyphColor="{Binding DockForeground}" />
+            </Button>
+            <Button Grid.Column="1" Classes="media-button" Width="{Binding DockButtonWidth}" Command="{Binding TogglePlayCommand}"
+                    IsEnabled="{Binding PlayEnabled}">
+              <media:MediaGlyph Kind="{Binding PlayGlyph}" GlyphColor="{Binding DockForeground}" />
+            </Button>
+            <Button Grid.Column="2" Classes="media-button" Width="{Binding DockButtonWidth}" Command="{Binding SeekForwardCommand}"
+                    IsEnabled="{Binding CanSeek}">
+              <media:MediaGlyph Kind="NextTrack" GlyphColor="{Binding DockForeground}" />
+            </Button>
+            <media:MediaProgress x:Name="DockProgress" Grid.Column="3" Margin="{Binding DockProgressMargin}"
+                                 PositionSeconds="{Binding PositionSeconds}" DurationSeconds="{Binding DurationSeconds}"
+                                 CanSeek="{Binding CanSeek}" TextColor="{Binding DockForeground}" TrackColor="{Binding DockTrackColor}"
+                                 FillColor="{Binding ActiveColor}" FontFamily="{Binding TextFont}" LayoutScale="{Binding LayoutScale}" />
+            <media:MediaVolumeButton x:Name="DockVolume" Grid.Column="4" Classes="media-button" Width="{Binding DockButtonWidth}"
+                                     Volume="{Binding Volume}" SliderLength="{Binding VolumeSliderLength}">
+              <controls:SpriteIcon Source="{Binding VolumeIcon}" SizeRatio="1" Tint="{Binding DockForeground}"
+                                   Width="{Binding DockVolumeIconSize}" Height="{Binding DockVolumeIconSize}" />
+            </media:MediaVolumeButton>
+            <Button Grid.Column="5" Classes="media-button" Width="{Binding DockButtonWidth}" Command="{Binding CaptionsCommand}"
+                    IsEnabled="{Binding HasCaptions}">
+              <media:MediaGlyph Kind="{Binding CaptionsGlyph}" GlyphColor="{Binding CaptionsColor}" MarkColor="{Binding ErrorColor}" />
+            </Button>
+          </Grid>
+        </Border>
+      </StackPanel>
+    </Grid>
   </Grid>
 </UserControl>

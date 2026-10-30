@@ -15,6 +15,8 @@ namespace LcdMod.Client.Apps
             public string Icon;
         }
 
+        Dictionary<string, string> _surfaceFonts;
+
         internal override float WindowRenderScaling => CardScale;
         internal float MediaFontScale => Host.Surface.FontSize > 0f ? Host.Surface.FontSize : 1f;
         internal string MediaTextFont => TextFont;
@@ -60,6 +62,45 @@ namespace LcdMod.Client.Apps
         internal bool MediaCanSeek => _player != null && _player.CanSeek;
         internal float MediaVolume => _volume;
         internal bool MediaVisualizerEnabled => MediaPlayerComponent.VisualizerEnabled;
+        internal bool MediaHasVideo => _player != null && _player.Video != null;
+
+        internal float MediaVisualizerAspectRatio
+        {
+            get
+            {
+                var video = _player?.Video;
+                return video == null || video.Height <= 0 ? 1f : video.Width / (float)video.Height;
+            }
+        }
+
+        internal object MediaVideoKey => _player?.Video;
+        internal bool MediaHasSubtitles => _player?.Video != null && _player.Video.HasSubtitles;
+
+        /// <summary>The surface's own name for <paramref name="face"/>, or null when the surface has no such font.</summary>
+        internal string MediaResolveFont(string face)
+        {
+            if (string.IsNullOrEmpty(face))
+                return null;
+            if (_surfaceFonts == null)
+            {
+                var fonts = new List<string>();
+                Host.Surface.GetFonts(fonts);
+                _surfaceFonts = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                foreach (string font in fonts)
+                    _surfaceFonts[font] = font;
+            }
+            string resolved;
+            return _surfaceFonts.TryGetValue(face, out resolved) ? resolved : null;
+        }
+
+        internal string MediaSubtitle
+        {
+            get
+            {
+                var video = _player?.Video;
+                return video == null ? null : video.SubtitleAt(_player.CurrentPositionSeconds);
+            }
+        }
         internal float[] MediaVisualizerLevels => _visualizerLevels;
         internal string MediaFileIcon => GetCurrentAudioFileIcon();
         internal int MediaQueueIndex => _queueIndex;
@@ -67,6 +108,13 @@ namespace LcdMod.Client.Apps
         internal string MediaClearQueueText => ResolveLoc(LOC_CLEAR_QUEUE);
         internal string MediaSaveQueueText => ResolveLoc(LOC_SAVE_QUEUE);
         internal string MediaQueueEmptyText => ResolveLoc(LOC_QUEUE_EMPTY);
+        internal string MediaPickText => ResolveLoc(LOC_PICK);
+        internal string MediaPreviousText => ResolveLoc(LOC_PREVIOUS);
+        internal string MediaNextText => ResolveLoc(LOC_NEXT);
+        internal string MediaShuffleText => ResolveLoc(LOC_SHUFFLE);
+        internal string MediaRepeatText => ResolveLoc(LOC_REPEAT);
+        internal string MediaPlaylistText => ResolveLoc(LOC_PLAYLIST);
+        internal string MediaStopText => ResolveLoc(LOC_STOP);
 
         internal void FillQueueRows(List<MediaQueueRow> rows)
         {
@@ -81,6 +129,22 @@ namespace LcdMod.Client.Apps
                     Icon = string.IsNullOrEmpty(entry.Icon) ? GetPlaylistEntryIcon(entry) : entry.Icon
                 });
             }
+        }
+
+        internal string MediaTitleText
+        {
+            get
+            {
+                string title = Title;
+                return title == LOC_TITLE ? ResolveLoc(LOC_TITLE) : title;
+            }
+        }
+
+        /// <summary>Video draws its own sliding title, so the app chrome's title gives way to it.</summary>
+        internal void MediaSetVideoChrome(bool video)
+        {
+            _videoChrome = video;
+            SetContentLayout(video || !Host.TitleVisible);
         }
 
         internal void MediaPick() { PickAudio(); }

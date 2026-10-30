@@ -21,7 +21,9 @@ namespace LcdMod.Client.Apps
         int _appliedVisualizerWidth;
         int _appliedVisualizerHeight;
 
-        internal string MediaVisualizerTexture => _textureVisualizer?.CurrentTexture?.MaterialKey;
+        internal string MediaVisualizerTexture => _player != null && _player.Video != null
+            ? _player.Video.TextureName
+            : _textureVisualizer?.CurrentTexture?.MaterialKey;
 
         bool CanRenderVisualizer => !_visualizerClosed && !_visualizerDetached && _interactiveHost != null &&
             _nativeViewModel.ShowVisualizer && MyAPIGateway.GeneratedTextures.IsSupported;
@@ -30,7 +32,7 @@ namespace LcdMod.Client.Apps
 
         void TickVisualizerTexture()
         {
-            if (!CanRenderVisualizer)
+            if (!CanRenderVisualizer || (_player != null && _player.Video != null))
             {
                 ReleaseVisualizerTexture();
                 return;

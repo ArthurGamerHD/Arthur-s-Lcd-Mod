@@ -1782,6 +1782,9 @@ Vom aștepta puțin, apoi o vom reporni pentru tine.</value>
   <data name="LcdMod_SpritePicker_Root_Local" xml:space="preserve">
     <value>Imaginile mele</value>
   </data>
+  <data name="LcdMod_SpritePicker_Animated" xml:space="preserve">
+    <value>animată</value>
+  </data>
   <data name="LcdMod_SpritePicker_Root_Sprites" xml:space="preserve">
     <value>Sprite-uri LCD</value>
   </data>

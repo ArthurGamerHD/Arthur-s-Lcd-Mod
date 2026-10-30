@@ -1782,6 +1782,9 @@ Várunk egy kicsit, majd újraindítjuk helyetted.</value>
   <data name="LcdMod_SpritePicker_Root_Local" xml:space="preserve">
     <value>Saját képek</value>
   </data>
+  <data name="LcdMod_SpritePicker_Animated" xml:space="preserve">
+    <value>animált</value>
+  </data>
   <data name="LcdMod_SpritePicker_Root_Sprites" xml:space="preserve">
     <value>LCD-sprite-ok</value>
   </data>
